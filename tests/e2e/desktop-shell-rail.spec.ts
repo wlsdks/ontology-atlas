@@ -80,7 +80,7 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
     expect(rail.present, "레일은 DOM 에 상주해야 한다(언마운트가 아니라 숨김)").toBe(true);
     expect(
       rail.width,
-      "볼트 없는 웹 방문자의 관문에 워크벤치 레일이 떴다 — 아직 아무 데도 못 가는 6개의 문이다",
+      "볼트 없는 웹 방문자의 관문에 워크벤치 레일이 떴다 — 아직 아무 데도 못 가는 7개의 문이다",
     ).toBe(0);
   });
 
@@ -97,7 +97,7 @@ test.describe("데스크톱 셸의 좌측 레일", () => {
    *
    * #961 (bulk migration of hand controls into the value layer) applied `shape:"card"`
    * to the outer `<a>` of the destination tiles, which put the 1px hairline that shape
-   * carries onto all six tiles — the pre-migration hand classes had no border, and that
+   * carries onto all seven tiles — the pre-migration hand classes had no border, and that
    * commit's premise was an exact conversion that changes no pixels. The owner caught it
    * on the real thing (2026-08-08). A value-layer migration leaves only legitimate token
    * values in the code, so no value lint can see this class of defect — the only way is

@@ -2916,6 +2916,71 @@ await test("infer_imports — import graph exposes structuredContent", async () 
   }
 });
 
+await test("inspect_architecture — profile intent and observed imports produce an agent brief", async () => {
+  const vaultRoot = makeVault([
+    {
+      slug: "architecture/payments",
+      content: [
+        "---",
+        "architecture_schema: architecture-profile/v1",
+        "profile_uid: 22c86542-7512-4b6e-8c73-77be4730c772",
+        "profile_slug: payments-core",
+        "project_uid: e91d8a44-a95b-4faf-840d-e71c8b2d935c",
+        "title: Payments Core",
+        "patterns: [dependency:hexagonal]",
+        "scope_paths: [src/payments/**]",
+        "role_domain: [src/payments/domain/**]",
+        "role_adapter: [src/payments/adapters/**]",
+        "allow_domain: []",
+        "allow_adapter: [domain]",
+        "evidence: [ARCHITECTURE.md]",
+        "---",
+        "",
+        "# Payments architecture",
+        "",
+      ].join("\n"),
+    },
+  ]);
+  const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-architecture-")));
+  try {
+    mkdirSync(join(repoRoot, "src", "payments", "domain"), { recursive: true });
+    mkdirSync(join(repoRoot, "src", "payments", "adapters"), { recursive: true });
+    writeFileSync(
+      join(repoRoot, "src", "payments", "domain", "payment.ts"),
+      'import { save } from "../adapters/postgres";\nexport const payment = save;\n',
+      "utf-8",
+    );
+    writeFileSync(
+      join(repoRoot, "src", "payments", "adapters", "postgres.ts"),
+      "export const save = true;\n",
+      "utf-8",
+    );
+
+    const { responses } = await rpcForRepo(vaultRoot, repoRoot, [
+      ...INIT_REQUESTS,
+      callTool(2, "inspect_architecture", { rootPath: repoRoot, profileSlug: "payments-core" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), result);
+    assert.equal(result.contract, "architectureBrief:v1");
+    assert.equal(result.sideEffect, 0);
+    assert.equal(result.profile.slug, "payments-core");
+    assert.equal(result.conformance.status, "violated");
+    assert.deepEqual(result.conformance.violations[0], {
+      fromRole: "domain",
+      toRole: "adapter",
+      from: "src/payments/domain/payment.ts",
+      to: "src/payments/adapters/postgres.ts",
+      kind: "static",
+      rule: "allow-domain",
+    });
+    assert.equal(result.agentPlanContract.contract, "architectureChangePlan:v1");
+  } finally {
+    rmSync(vaultRoot, { recursive: true, force: true });
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 await test("infer_imports — Go package evidence stays typed while focus and index return bounded summaries", async () => {
   const vaultRoot = makeVault();
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-go-summary-")));

@@ -84,6 +84,18 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
+    name: 'reviewed architecture profile is a clean non-graph document',
+    input: '---\narchitecture_schema: architecture-profile/v1\nprofile_uid: 11890f3e-7b5d-4c0a-8f14-123456789abc\nproject_uid: 21890f3e-7b5d-4c0a-8f14-123456789abc\ntitle: Web architecture\n---\n',
+    expectedCodes: [],
+    expectedOk: true,
+  },
+  {
+    name: 'unknown architecture profile contract does not bypass missing-kind',
+    input: '---\narchitecture_schema: architecture-profile/v0\ntitle: Stale architecture\n---\n',
+    expectedCodes: ['missing-kind'],
+    expectedOk: true,
+  },
+  {
     name: 'unknown kind value → unknown-kind (warning, ok=true)',
     input: '---\nuid: 21890f3e-7b5d-4c0a-8f14-123456789abc\nkind: bogus\ntitle: Foo\n---\n',
     expectedCodes: ['unknown-kind'],

@@ -211,6 +211,28 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:architecture',
+    reason: 'architecture profile, conformance, agent packet, and cross-surface parity changed',
+    matches: [
+      /^docs\/ontology\/architecture\//,
+      /^mcp\/src\/architecture-profile\.(?:mjs|test\.mjs)$/,
+      /^cli\/src\/(?:commands\/architecture|lib\/architecture-results)\.mjs$/,
+      /^src\/entities\/architecture-profile\//,
+      /^src\/views\/architecture\//,
+      /^tests\/contract\/architecture-profile\.contract\.test\.ts$/,
+      /^tests\/fixtures\/architecture-profile-cases\.mjs$/,
+    ],
+  },
+  {
+    command: 'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
+    reason: 'Architecture workflow reachability, scroll anchoring, or mobile navigation changed',
+    matches: [
+      /^src\/views\/architecture\//,
+      /^src\/widgets\/bottom-tab-bar\/ui\/BottomTabBar\.tsx$/,
+      /^tests\/e2e\/architecture-workbench\.spec\.ts$/,
+    ],
+  },
+  {
     command: 'pnpm test:contracts',
     reason:
       'cross-package parser/schema contract, or a UI file the design-system and a11y contracts scan from disk',
@@ -237,8 +259,8 @@ const RULES = [
     command: 'pnpm test:mcp:unit',
     reason: 'MCP core unit implementation changed',
     matches: [
-      /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
-      /^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines|source-hidden-field-trial)\.test\.mjs$/,
+      /^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
+      /^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines|source-hidden-field-trial)\.test\.mjs$/,
       /^tests\/fixtures\/source-hidden-field-trial\/v1\.json$/,
     ],
   },
@@ -260,7 +282,7 @@ const RULES = [
   {
     command: 'pnpm integration:mcp:repo-analysis',
     reason: 'MCP code-to-vault analysis handler surface changed',
-    matches: [/^mcp\/src\/(?:analyze|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports)\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports)\.mjs$/, /^tsconfig\.json$/],
   },
   {
     command: 'pnpm integration:mcp:vault-read',
@@ -750,7 +772,7 @@ const RULES = [
   {
     command: 'pnpm integration:cli:repo-analysis',
     reason: 'CLI repo analysis or bootstrap command changed',
-    matches: [/^cli\/src\/commands\/(?:analyze|infer-imports|bootstrap)\.mjs$/, /^tsconfig\.json$/],
+    matches: [/^cli\/src\/commands\/(?:analyze|infer-imports|architecture|bootstrap)\.mjs$/, /^tsconfig\.json$/],
   },
   {
     command: 'pnpm integration:cli:local-vault',
@@ -906,6 +928,7 @@ const ESCALATIONS = [
 
 const MCP_DIRECT_UNIT_TESTS = new Map([
   ['mcp/src/analyze.mjs', 'mcp/src/analyze.test.mjs'],
+  ['mcp/src/architecture-profile.mjs', 'mcp/src/architecture-profile.test.mjs'],
   ['mcp/src/meaning-evaluation.mjs', 'mcp/src/meaning-evaluation.test.mjs'],
   ['mcp/src/construction-qualification.mjs', 'mcp/src/construction-qualification.test.mjs'],
   ['mcp/src/construction-lifecycle.mjs', 'mcp/src/construction-lifecycle.test.mjs'],

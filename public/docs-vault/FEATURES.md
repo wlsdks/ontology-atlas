@@ -1,7 +1,8 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-22 (re-verified current routes, installed app commitments,
+> Last updated: 2026-08-26 (added the separate Architecture contract/workbench,
+> source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
 > `/ontology/studio` route to the contextual writer within the map; Insights is
@@ -31,8 +32,8 @@ agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/docs`, `/ontology/insights`, `/projects`, `/agents`, and `/git` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 54 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/ontology/insights`, `/projects`, and `/agents`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **CLI** (R12 / R14 / R15+ · 57 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
@@ -54,6 +55,7 @@ input (humans + AI agents)     parse           store              output
         ▼                       ▼                ▼                ▼
   .md in vault  →          frontmatter   →  user disk      →  Topology (/, /topology) map + INDEX
   (frontmatter)                              (vault)           Topology contextual write + review
+  + architecture-profile/v1                                  Architecture (/architecture) intent + conformance handoff
   + AI agent (MCP)                                            Docs workspace (/docs)
                                                               Insights (/ontology/insights) maintenance board
                                                               compatibility redirects (/ontology, /ontology/edit, /ontology/studio)
@@ -385,16 +387,16 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 - **Did not create two sets of guidance devices.** Uses the map's tour device (`useGuidedTour`
   state management · overlay darkening screen and showing only one spot · explanation card ·
   progress dot · skip) as is, and swaps in screen-specific step lists into `useGuidedTour({ steps })`. The map's 8-step journey (guidance attached to canvas nodes · step waiting for actual click · developer branch) remains held by HomePage as before.
-- **Docs Vault · Studio · Insights · Project · Records** each have 2 cards — ① What this screen does (center card not attached to anything) ② One thing to see first here (highlights one actually existing element on screen: `docs-vault-doc-list` · `studio-entry-choice` · `do-next-touchups` · `project-selector-card` · `atlas-git-panel`). Does not list features, only answers "what can be done here" in one question. If the second card's target element is not on screen at that moment (e.g., document list collapsed), it automatically becomes a single card.
+- **Architecture · Docs Vault · Insights · Project · Agents · Records** each have 2 cards — ① What this screen does (center card not attached to anything) ② One thing to see first here (highlights one actually existing element on screen). Does not list features, only answers "what can be done here" in one question. If the second card's target element is not on screen at that moment (e.g., document list collapsed), it automatically becomes a single card.
 - This guidance is held by the app shell (`AppShell`) and re-rendered with `key` every time the screen changes — if each page renders its own, one page missing means no one knows (#65 series misalignment). Does not draw this guidance on the map.
 - **Does not interfere** — "Seen" records are kept separately per screen (`guided-tour:<id>:v1`).
-  Seeing it on one screen does not make the remaining five screens' guides disappear, and already-seen screens do not auto-appear again. Auto-starting only happens when passing the same conditions as the map (`canAutoStartGuidedTour`).
+  Seeing it on one screen does not make the remaining six screens' guides disappear, and already-seen screens do not auto-appear again. Auto-starting only happens when passing the same conditions as the map (`canAutoStartGuidedTour`).
 - **Does not appear at all for those who move first (2026-07-28)** — Auto-appearance guides
   open after 700ms, and if the screen is covered at that time, waits up to 30 seconds. During
   that wait, if the user clicks or presses a key first, **cancels appearing entirely**
   (brought over `watchGuidedTourAutoStartCancel` used by the map). Cards appearing late over someone who started exploring themselves are interference, not guidance. Such cancellations are not recorded as "seen", so the opportunity comes again on next visit.
   Does not appear even on screens where it says "This screen cannot be opened here" (e.g., studio when width is less than `lg`) — introducing a non-existent screen is a lie.
-- **View Again** — Settings Menu › Screen › "Screen Guide". Located in the same place on all six screens (on the map, the top-right compass tile remains the primary entry, this menu row is auxiliary). If each screen had its own help button, the number of buttons would vary per screen, so consolidated into one location in the settings menu always.
+- **View Again** — Settings Menu › Screen › "Screen Guide". Located in the same place on all seven screens (on the map, the top-right compass tile remains the primary entry, this menu row is auxiliary). If each screen had its own help button, the number of buttons would vary per screen, so consolidated into one location in the settings menu always.
 - The button on the last card is `[Complete]` not `[Next]` — does not promise a non-existent next chapter (applied same rule to map tour).
 
 #### Top-left brand pill (`HeroCollapsed`, compact-only since 2026-06-11)
@@ -440,6 +442,28 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 | `Esc` | Close the highest-priority open layer or addressed map state |
 
 ---
+
+### `/architecture` — Living Blueprint for implementation boundaries
+
+- Architecture is separate from the Ontology Map and from the public five-kind
+  ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps
+  reviewed pattern axes, scopes, roles, paths, evidence, and allowed dependency
+  direction in the same Git-backed folder without becoming a map node.
+- The stable role blueprint persists across **Understand → Plan → Verify**.
+  Pattern names are declared summaries; Atlas does not infer Clean, Hexagonal,
+  MVP, or Feature-Sliced Design from folder names.
+- `inspect_architecture` and CLI `architecture` scan supported source imports and
+  return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
+  Unsupported languages, unmapped edges, unruled edges, and empty roles fail
+  closed; absence of evidence is never a green result.
+- Plan copies a state-bound `architectureChangePlan:v1` request. In the installed
+  app, an exact CLI fallback is included only when the project source binding,
+  vault path, and Atlas CLI entry are all verified absolute paths; otherwise the
+  packet says the fallback is unavailable instead of inventing a command.
+- At narrow widths the role model remains first in document order. If a mode
+  change increases the support panel height while the user is already at the
+  scroll end, the scroll owner re-anchors to the new end so the copy action stays
+  above the bottom-tab reserve.
 
 ### `/docs` — Ontology workspace (reader + editor + palette)
 
@@ -785,7 +809,11 @@ RATIO-SYSTEM 1600px container / 960px centered utility column.
 
 ---
 
-### `/git` — Record (record destination, workbench redesign 2026-07-27)
+### `/git` — Record (primary desktop destination; redesigned 2026-07-27)
+
+Architecture was added without replacing this destination. Git keeps its primary
+desktop rail tile, uncommitted-change badge, `G G` shortcut, and contextual
+change-review, snapshot, and history links.
 
 **One sentence on what this screen does**: Verify what concept I changed and decide whether to leave it in one git commit. Therefore, the most prominent things on the screen are **the list of changed concepts and the "Leave" button** pair; everything else is either evidence for that judgment or merely the top/bottom borders of the screen.
 
@@ -927,7 +955,7 @@ file export + the local stdio MCP genuinely can't serve them.
 - **Save-conflict guard** — if a file changed on disk between read and write, `/docs` editor save surfaces a localized conflict notice and keeps the buffer dirty instead of silently overwriting unsaved edits
 - Effect: When files are edited via IDE · AI agent · CLI, the graph updates and toasts appear within ~1.5–5s without the user needing to click the web tab again.
 
-#### Read tools (19)
+#### Read tools (20)
 1. **connection_info** — active vault/repo roots plus the actually advertised `readOnly`, `toolCount`, `toolNames`, and `toolsetHash`; explicit `OATLAS_REPO_ROOT` wins, otherwise repo root is auto-discovered from the active vault's Git top-level before falling back to process cwd
 2. **git_status** — vault-scoped working-tree state and risk; no writes or remote transport
 3. **git_history** `{ limit? }` — newest-first commits that touched the active vault pathspec only (default 20, max 100), with `limited` / `hasMore`, shallow-repository state, and `historyComplete` so truncated evidence is not mistaken for complete history
@@ -956,6 +984,7 @@ Business capability candidates follow the same principle. They are proposed only
 17. **analyze_repo_structure** `{ rootPath?, maxDepth?, ignore?, proposal?, qualification? }` — side-effect-free bootstrap candidates from package / README / source layout plus the executable construction lifecycle. A valid complete proposal first returns an exact non-writing `reviewPlan`, plan/source digests, eight phase states, every `requiredGapId`, and a shadow-only `admission` receipt (`self_qualified`, `partial_visible_gap`, `human_review_required`, or `hard_block`); `self_qualified` is an auto-write candidate signal, not write permission. `canWrite` remains false and `writePlan` is absent until the existing human acceptance gate is satisfied. A separately identified evaluator then measures approved executive/employee/FDE/agent CQs, current claims/citations, seven quality axes, the complete source-hidden task, and cold-start/prior-CQ regression. After the user sees the exact plan and accepts its digest/revision plus every visible gap, the unchanged proposal and `constructionQualification:v1` packet may release a `writePlan` exactly equal to the reviewed rows. Maker-only evaluation, missing authority, `not_measured`, stale/private provenance, red mandatory axes, source/plan drift, regression failure, or an unaccepted gap fails closed. Acceptance is declared provenance, not authenticated identity or a truth certificate. Its five proposal competency answers still carry `answered` / `partial` / `visible-gap` plus typed concept, relation, evidence, and path witnesses, and the project body preserves that audit. `Excludes` is reserved for sourced product/concept boundaries: unknown or unmeasured evidence belongs in `Uncertainty` or a competency gap, and `epistemic-exclusion-boundary` blocks a proposal that would persist those unknowns as scope. Root `ARCHITECTURE.md` and classified Markdown under bounded `docs`, `site`, and `website` discovery can join the existing six-document semantic packet; archive-like paths and repository-escaping symlinks cannot. README extraction preserves purpose, responsibility/architecture, and ability blocks inside the existing 1,200-character budget instead of letting sponsor/backer/TOC sections consume it. Root package contracts remain bounded evidence, not meaning nodes: Rust reads allowlisted `Cargo.toml` package/features fields and returns separate literal `cfg`/`cfg_attr` provenance without evaluating predicates, executing code, or allowing relation writes. Python reads bounded static package evidence and import-participating boundaries; unused or unsafe inputs are skipped. Root Go modules contribute at most 24 import-participating package-directory element candidates, never path-derived capabilities. A proposal call recomputes the existing read-only import receipt so selectively proposed TS/JS/Python file endpoints and Go file/package endpoints are validated without relying on prior-call state, and import-backed `depends_on` must match observed direction. After the exact released rows land, the agent validates, compiles, connects the source, and finalizes project meaning.
 18. **infer_imports** `{ rootPath?, sourceFolders?, ignore?, maxFiles?, reviewMode?, afterReviewId? }` — side-effect-free TS/JS plus root-package Python file imports and root-module Go package imports. Existing file/module edges remain unchanged. Go is exposed separately as `packageImportEvidence` contract `goPackageImports:v1`: each row preserves the importing file, repository-relative source and target package directories, literal import spec, production/test role, and value usage without inventing a target file. It reads root-contained module-local imports only, never runs `go`, a compiler, module cache, or network, skips nested modules plus Go build-excluded `vendor`/`testdata`/underscore-prefixed fixture trees, ignores import-shaped lines inside multiline raw strings, caps files with the shared default 5000, caps each file at 256 KiB and 256 imports, and names external Go modules as out of scope. Its `coverage` receipt says which languages are supported; Cargo detection still marks Rust `use`/`mod`/macro dependency graphs unsupported. File and package receipts distinguish source role and usage; `value` does not claim runtime execution. Every collapsed edge includes whole-edge counts, their joint `productValueCount`, and up to five exact evidence receipts. Missing vault edges and Go package evidence are review-only, never executable write proposals. Compact and focus delivery surface Go counts plus the explicit full-evidence call instead of silently dropping a large package graph. CLI `infer-imports --apply` is disabled, and bootstrap/index cannot auto-create import endpoints or semantic `depends_on`; an agent must inspect both concepts, explain the meaning-level dependency, obtain human approval, and supply nonblank `why` before one explicit write.
 19. **index_project** `{ rootPath?, maxFiles?, threshold?, skipImports? }` — side-effect-free project indexing checkpoint that combines repo structure analysis, file-import and Go package-import indexing, and vault validation. It reuses one full import receipt for analyzer evidence, reports file and package relation counts separately, and preserves coverage instead of reducing uncertainty to one count. `plan.conceptDelta` separates raw candidates into existing, ambiguous-alias review, and genuinely new buckets, and `next.reviewCalls` gives exact calls for retrieving full rows before applying anything.
+20. **inspect_architecture** `{ rootPath?, profileSlug? }` — reads one reviewed `architecture-profile/v1`, scans current imports with the same bounded source analyzer, and returns role coverage, observed role edges, violations, explicit unknowns, and the required `architectureChangePlan:v1` fields. Side effect 0; named architecture patterns remain declarations rather than inferred source facts.
 
 For `agent_brief`, structural readiness is not meaning confidence. A fresh call
 for an explicit project derives `meaningAssessment:v1` from three independent
@@ -969,7 +998,7 @@ that could hide a stale source or unresolved witness.
 path plus aligned `nodeSummaries[]`, so dependency-cycle diagnostics are readable
 without extra node lookups.
 
-#### Write tools (14)
+#### Write tools (16)
 
 All destructive dry-runs (`git_snapshot`, relation remove/replace,
 rename/reclassify/merge/delete, and absorb) expose the same agent decision
@@ -1011,6 +1040,8 @@ contract: `previewReady`, `canConfirm`, `wouldChange`, and
 12. **absorb_document** `{ filePath, confirm?, allowOutsideRepo? }` — classifies a local agent-instruction document, writes accepted policy nodes, backs up the source, then rewrites it as a slim pointer. Canonical paths outside `repoRoot`, including symlink escapes, are blocked until a reviewed dry-run is repeated with `allowOutsideRepo:true`
 13. **git_snapshot** `{ confirm?, expectedHead?, message? }` — validates and commits only the active vault pathspec locally; blocks stale HEAD, detached HEAD, Git operations in progress, and validator errors; never pushes
 14. **finalize_project_meaning** `{ projectSlug, expected_mtime }` — post-write finalization for one explicit project. It reads the five competency answers from the current project Markdown; after current vault validation and a complete project scope, it resolves every typed witness against the current graph/source inventory and stores a versioned receipt with optimistic-concurrency protection. It stores no raw answers or private source coordinates. `ok: true` means the receipt write succeeded, not that the ontology or source is verified; callers read the returned categorical `meaningAssessment` or a fresh explicit-project `agent_brief`.
+15. **connect_project_source** `{ projectSlug, rootPath?, confirm?, repair? }` — dry-run/confirm binding of one project to a local source folder, with a measured source receipt; private absolute paths stay in the gitignored vault sidecar.
+16. **disconnect_project_source** `{ projectSlug, confirm? }` — dry-run/confirm removal of that binding and receipt without touching ontology Markdown or other projects.
 
 ---
 
@@ -1024,10 +1055,10 @@ their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
 just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 6 destinations: Map (`/`, `/topology`) · Docs (`/docs`) · Insights
-  (`/ontology/insights`) · Projects (`/projects` or `/project/*`) · Agents
-  (`/agents`) · Git (`/git`). Workshop is the map's contextual relation-writing
-  surface, not a rail destination.
+- 7 destinations: Map (`/`, `/topology`) · Architecture (`/architecture`) ·
+  Docs (`/docs`) · Insights (`/ontology/insights`) · Projects (`/projects` or
+  `/project/*`) · Agents (`/agents`) · Git (`/git`). Workshop remains the map's
+  contextual relation-writing surface.
 - Bottom utility tier: the `settingsSlot` plus the web-only Get App tile.
   `AppShell` supplies the app-wide settings trigger by default; a page can
   override the slot for a surface-specific control.
@@ -1100,10 +1131,9 @@ just unmounted).
   settings sheet; neither is a navigation destination.
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
-- 4 core destinations: Map · Docs · Insights · Projects. Contextual relation
-  writing and Git remain desktop workbench actions, and the retired ERD builder
-  tab was removed 2026-07-24. Web adds Get App as a fifth utility, not a
-  destination.
+- 5 persistent destinations: Map · Architecture · Docs · Insights · Projects.
+  Contextual relation writing, Agents entry points, and Git keep their existing
+  narrow-screen paths. Web adds Get App as a sixth utility, not a destination.
 - Min height 56 px (safe-area)
 - Hidden only on the standalone `/download/` surface. Root without a loaded
   vault is the gateway; after a vault loads, root shares the map destination.

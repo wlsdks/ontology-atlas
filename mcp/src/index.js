@@ -125,6 +125,10 @@ import { writeFileSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import {
+  buildArchitectureBrief,
+  findArchitectureProfiles,
+} from './architecture-profile.mjs';
+import {
   CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
 } from './construction-qualification.mjs';
 import {
@@ -4546,6 +4550,261 @@ const TOOLS = [
     },
   },
   {
+    name: 'inspect_architecture',
+    description:
+      'Read one reviewed architecture-profile/v1 document from the active vault, scan the connected repository with the existing bounded static import analyzer, and return an architectureBrief:v1 for humans and coding agents. The profile declares scoped roles and intended dependency rules; source imports are observed evidence. The result distinguishes conforms, violated, and unknown, and never treats unsupported languages, empty role mappings, or unmapped edges as compliance. Pattern labels are human/document declarations, not folder-name inference. side effect 0.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rootPath: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Repository root to inspect. Defaults to the active resolved repository root from connection_info.',
+        },
+        profileSlug: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Architecture profile_slug. Optional only when the vault contains exactly one architecture profile.',
+        },
+        maxFiles: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 50000,
+          description: 'Positive source-file scan cap (default 5000, max 50000).',
+        },
+      },
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        contract: { type: 'string', enum: ['architectureBrief:v1'] },
+        sideEffect: { type: 'integer', enum: [0] },
+        profile: {
+          type: 'object',
+          properties: {
+            uid: { ...NON_BLANK_STRING_SCHEMA },
+            slug: { ...NON_BLANK_STRING_SCHEMA },
+            projectUid: { ...NON_BLANK_STRING_SCHEMA },
+            title: { ...NON_BLANK_STRING_SCHEMA },
+            patterns: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  axis: { ...NON_BLANK_STRING_SCHEMA },
+                  name: { ...NON_BLANK_STRING_SCHEMA },
+                },
+                required: ['axis', 'name'],
+                additionalProperties: false,
+              },
+            },
+            scopePaths: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+            excludePaths: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+            roles: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { ...NON_BLANK_STRING_SCHEMA },
+                  paths: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+                  allowedDependencies: {
+                    type: ['array', 'null'],
+                    items: { ...NON_BLANK_STRING_SCHEMA },
+                  },
+                },
+                required: ['id', 'paths', 'allowedDependencies'],
+                additionalProperties: false,
+              },
+            },
+            dependencyPolicy: { type: 'string', enum: ['explicit', 'lower-only'] },
+            evidence: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+          },
+          required: [
+            'uid',
+            'slug',
+            'projectUid',
+            'title',
+            'patterns',
+            'scopePaths',
+            'excludePaths',
+            'roles',
+            'dependencyPolicy',
+            'evidence',
+          ],
+          additionalProperties: false,
+        },
+        conformance: {
+          type: 'object',
+          properties: {
+            contract: { type: 'string', enum: ['architectureConformance:v1'] },
+            status: { type: 'string', enum: ['conforms', 'violated', 'unknown'] },
+            roles: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { ...NON_BLANK_STRING_SCHEMA },
+                  paths: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+                  matchedFileCount: { type: 'integer', minimum: 0 },
+                  matchedFiles: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+                  matchedFilesLimited: { type: 'boolean' },
+                },
+                required: ['id', 'paths', 'matchedFileCount', 'matchedFiles', 'matchedFilesLimited'],
+                additionalProperties: false,
+              },
+            },
+            observedRoleEdges: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  fromRole: { ...NON_BLANK_STRING_SCHEMA },
+                  toRole: { ...NON_BLANK_STRING_SCHEMA },
+                  count: { type: 'integer', minimum: 0 },
+                  evidence: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        from: { ...NON_BLANK_STRING_SCHEMA },
+                        to: { ...NON_BLANK_STRING_SCHEMA },
+                        kind: { ...NON_BLANK_STRING_SCHEMA },
+                      },
+                      required: ['from', 'to', 'kind'],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ['fromRole', 'toRole', 'count', 'evidence'],
+                additionalProperties: false,
+              },
+            },
+            violationCount: { type: 'integer', minimum: 0 },
+            violations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  fromRole: { ...NON_BLANK_STRING_SCHEMA },
+                  toRole: { ...NON_BLANK_STRING_SCHEMA },
+                  from: { ...NON_BLANK_STRING_SCHEMA },
+                  to: { ...NON_BLANK_STRING_SCHEMA },
+                  kind: { ...NON_BLANK_STRING_SCHEMA },
+                  rule: { ...NON_BLANK_STRING_SCHEMA },
+                },
+                required: ['fromRole', 'toRole', 'from', 'to', 'kind', 'rule'],
+                additionalProperties: false,
+              },
+            },
+            violationsLimited: { type: 'boolean' },
+            unknown: {
+              type: 'object',
+              properties: {
+                coverageIncomplete: { type: 'boolean' },
+                unmappedEdges: { type: 'integer', minimum: 0 },
+                unruledEdges: { type: 'integer', minimum: 0 },
+                emptyRoles: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+              },
+              required: ['coverageIncomplete', 'unmappedEdges', 'unruledEdges', 'emptyRoles'],
+              additionalProperties: false,
+            },
+            source: {
+              type: 'object',
+              properties: {
+                rootPath: { type: ['string', 'null'] },
+                filesScanned: { type: 'integer', minimum: 0 },
+                supportedLanguages: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+              },
+              required: ['rootPath', 'filesScanned', 'supportedLanguages'],
+              additionalProperties: false,
+            },
+          },
+          required: [
+            'contract',
+            'status',
+            'roles',
+            'observedRoleEdges',
+            'violationCount',
+            'violations',
+            'violationsLimited',
+            'unknown',
+            'source',
+          ],
+          additionalProperties: false,
+        },
+        agentPlanContract: {
+          type: 'object',
+          properties: {
+            contract: { type: 'string', enum: ['architectureChangePlan:v1'] },
+            requiredFields: {
+              type: 'array',
+              items: {
+                type: 'string',
+                enum: [
+                  'touchedRoles',
+                  'plannedPaths',
+                  'expectedNewDependencies',
+                  'crossedBoundaries',
+                  'preservedInterfaces',
+                  'verificationCommands',
+                  'unknowns',
+                ],
+              },
+            },
+          },
+          required: ['contract', 'requiredFields'],
+          additionalProperties: false,
+        },
+        nextActions: {
+          type: 'array',
+          items: {
+            oneOf: [
+              {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', enum: ['inspect_violations'] },
+                  count: { type: 'integer', minimum: 0 },
+                },
+                required: ['id', 'count'],
+                additionalProperties: false,
+              },
+              {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', enum: ['close_measurement_gaps'] },
+                  unknown: {
+                    type: 'object',
+                    properties: {
+                      coverageIncomplete: { type: 'boolean' },
+                      unmappedEdges: { type: 'integer', minimum: 0 },
+                      unruledEdges: { type: 'integer', minimum: 0 },
+                      emptyRoles: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
+                    },
+                    required: ['coverageIncomplete', 'unmappedEdges', 'unruledEdges', 'emptyRoles'],
+                    additionalProperties: false,
+                  },
+                },
+                required: ['id', 'unknown'],
+                additionalProperties: false,
+              },
+              {
+                type: 'object',
+                properties: {
+                  id: { type: 'string', enum: ['plan_within_architecture'] },
+                  profileSlug: { ...NON_BLANK_STRING_SCHEMA },
+                },
+                required: ['id', 'profileSlug'],
+                additionalProperties: false,
+              },
+            ],
+          },
+        },
+      },
+      required: ['contract', 'sideEffect', 'profile', 'conformance', 'agentPlanContract', 'nextActions'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'infer_imports',
     description:
       'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages and bounded src/source-layout Python packages. A valid root Go module additionally exposes typed local package-import evidence; it stays separate from legacy file edges and never self-approves a semantic relation. ' +
@@ -6146,6 +6405,7 @@ const READ_TOOL_NAMES = new Set([
   'compile_ontology',
   'query_ontology',
   'validate_vault',
+  'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
   'index_project',
@@ -6437,6 +6697,8 @@ server.setRequestHandler('tools/call', async (request) => {
         return ok(queryOntologyTool(args));
       case 'validate_vault':
         return ok(validateVaultTool(args));
+      case 'inspect_architecture':
+        return ok(inspectArchitectureTool(args));
       case 'analyze_repo_structure':
         return ok(analyzeRepoStructureTool(args));
       case 'infer_imports':
@@ -9752,6 +10014,53 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore, proposal, qualif
     proposal,
     qualification,
     sourceDigest,
+  });
+}
+
+function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {
+  requireOptionalNonBlankString(rootPath, 'rootPath');
+  requireOptionalNonBlankString(profileSlug, 'profileSlug');
+  requireOptionalPositiveInteger(maxFiles, 'maxFiles', { max: 50000 });
+  const target = rootPath ? assertScanRootAllowed(rootPath) : REPO_ROOT;
+  const profiles = findArchitectureProfiles(loadVaultDocs(VAULT_ROOT));
+  if (profiles.length === 0) {
+    const error = new Error(
+      'No architecture-profile/v1 document exists in the active vault. Add a reviewed Markdown profile under architecture/ before inspecting source conformance.',
+    );
+    error.repairFields = {
+      errorCode: 'architecture_profile_missing',
+      profileDirectory: 'architecture/',
+    };
+    throw error;
+  }
+  let profile = null;
+  if (profileSlug !== undefined) {
+    profile = profiles.find((candidate) => candidate.slug === profileSlug) ?? null;
+    if (!profile) {
+      const error = new Error(`Architecture profile not found: ${profileSlug}.`);
+      error.repairFields = {
+        errorCode: 'architecture_profile_not_found',
+        profileSlug,
+        availableProfileSlugs: profiles.map((candidate) => candidate.slug),
+      };
+      throw error;
+    }
+  } else if (profiles.length === 1) {
+    [profile] = profiles;
+  } else {
+    const error = new Error(
+      `Multiple architecture profiles exist; pass profileSlug. Available profiles: ${profiles.map((candidate) => candidate.slug).join(', ')}.`,
+    );
+    error.repairFields = {
+      errorCode: 'architecture_profile_required',
+      availableProfileSlugs: profiles.map((candidate) => candidate.slug),
+    };
+    throw error;
+  }
+  const imports = inferImports(target, { maxFiles });
+  return buildArchitectureBrief(profile, {
+    ...imports,
+    rootPath: target,
   });
 }
 

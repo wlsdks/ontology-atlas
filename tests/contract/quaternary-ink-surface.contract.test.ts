@@ -166,3 +166,13 @@ describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 글로벌 
     }
   });
 });
+
+describe("실측으로 잡힌 자리가 되돌아가지 않는다 — 아키텍처 프로필 행", () => {
+  it("눌리는 프로필 행의 범위 설명은 tertiary 부터 쓴다", () => {
+    const src = read("src/views/architecture/ui/ArchitectureWorkbench.tsx");
+    const scopeLine = /<span\s+className="([^"]*)"[^>]*>\s*\{profile\.scopePaths\.join/.exec(src);
+    expect(scopeLine, "프로필 범위 행을 못 찾았다 — 단언 대상을 다시 찾아라").not.toBeNull();
+    expect(scopeLine?.[1]).toContain("--color-text-tertiary");
+    expect(scopeLine?.[1]).not.toContain("--color-text-quaternary");
+  });
+});

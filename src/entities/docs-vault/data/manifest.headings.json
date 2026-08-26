@@ -2881,6 +2881,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-26 · Architecture becomes a reviewed, agent-executable contract",
+      "slug": "2026-08-26-architecture-becomes-a-reviewed-agent-executable-contract"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-25 · Atlas narrows its identity to the codebase",
       "slug": "2026-08-25-atlas-narrows-its-identity-to-the-codebase"
     },
@@ -5859,6 +5864,21 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-26 — Architecture is additive; Git remains a primary destination",
+      "slug": "2026-08-26-architecture-is-additive-git-remains-a-primary-destination"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-26 — Architecture is a separate reviewed contract and primary workbench destination",
+      "slug": "2026-08-26-architecture-is-a-separate-reviewed-contract-and-primary-workbench-destination"
+    },
+    {
+      "depth": 3,
+      "text": "Design Council Verdict — Living Blueprint",
+      "slug": "design-council-verdict-living-blueprint"
     },
     {
       "depth": 2,
@@ -10831,6 +10851,11 @@
     },
     {
       "depth": 3,
+      "text": "`/architecture` — Living Blueprint for implementation boundaries",
+      "slug": "architecture-living-blueprint-for-implementation-boundaries"
+    },
+    {
+      "depth": 3,
       "text": "`/docs` — Ontology workspace (reader + editor + palette)",
       "slug": "docs-ontology-workspace-reader-editor-palette"
     },
@@ -11091,8 +11116,8 @@
     },
     {
       "depth": 3,
-      "text": "`/git` — Record (record destination, workbench redesign 2026-07-27)",
-      "slug": "git-record-record-destination-workbench-redesign-2026-07-27"
+      "text": "`/git` — Record (primary desktop destination; redesigned 2026-07-27)",
+      "slug": "git-record-primary-desktop-destination-redesigned-2026-07-27"
     },
     {
       "depth": 4,
@@ -11141,13 +11166,13 @@
     },
     {
       "depth": 4,
-      "text": "Read tools (19)",
-      "slug": "read-tools-19"
+      "text": "Read tools (20)",
+      "slug": "read-tools-20"
     },
     {
       "depth": 4,
-      "text": "Write tools (14)",
-      "slug": "write-tools-14"
+      "text": "Write tools (16)",
+      "slug": "write-tools-16"
     },
     {
       "depth": 2,
@@ -12530,6 +12555,13 @@
       "slug": "observations-viewed-as-failures"
     }
   ],
+  "ontology/architecture/ontology-atlas-web": [
+    {
+      "depth": 1,
+      "text": "Atlas Web Workbench Architecture",
+      "slug": "atlas-web-workbench-architecture"
+    }
+  ],
   "ontology/capabilities/acp-runtime": [
     {
       "depth": 2,
@@ -12599,6 +12631,33 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/capabilities/architecture-guided-development": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Agent Contract",
+      "slug": "agent-contract"
+    },
+    {
+      "depth": 2,
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
     },
     {
       "depth": 2,
@@ -13236,6 +13295,28 @@
       "slug": "confidence"
     }
   ],
+  "ontology/domains/codebase-architecture": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Inclusion / Exclusion",
+      "slug": "inclusion-exclusion"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
   "ontology/domains/design-system": [
     {
       "depth": 2,
@@ -13408,6 +13489,72 @@
       "depth": 2,
       "text": "Rationale",
       "slug": "rationale"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/elements/app-nav-rail": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/elements/architecture-profile-contract": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/elements/architecture-workbench": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
     },
     {
       "depth": 2,

@@ -3612,7 +3612,7 @@ function HomePageImpl() {
   }, [closeCreateNode, tour]);
 
   // The map's own re-entry is the compass tile top right, but the settings menu's
-  // guide row has to be in the same place across all six destinations so nobody hunts
+  // guide row has to be in the same place across all seven destinations so nobody hunts
   // for it per screen. The other five register through the shell's `DestinationGuide`;
   // the map registers this function.
   useRegisterGuideReplay(openGuidedTour);

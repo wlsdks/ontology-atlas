@@ -111,7 +111,11 @@ describe("`.claude/rules` path scoping contract", () => {
     expect(dead, `아무 파일도 안 맞는 글롭 — 이 규칙은 실리지 않는다:\n${dead.join("\n")}`).toEqual(
       [],
     );
-  }, 15_000);
+  // The pre-push hook intentionally runs this contract in both the full unit lane
+  // and the contract lane while saturating the machine. The same 42-glob scan is
+  // ~3.2s alone but measured 15.9–17.0s in that supported parallel path, so its
+  // timeout covers the hook's execution model rather than assuming an idle CPU.
+  }, 30_000);
 
   it("keeps the resident rules under 20 KB — resistance on the way back", () => {
     // The exact ceiling does not matter; what matters is that **somewhere notices** when

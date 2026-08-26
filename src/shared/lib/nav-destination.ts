@@ -1,5 +1,6 @@
 export type AppNavDestinationId =
   | "map"
+  | "architecture"
   | "docs"
   | "insights"
   | "projects"
@@ -13,8 +14,8 @@ export type AppNavDestinationId =
  * is "active" for a given pathname, so it lives here once instead of being
  * duplicated per widget. Compatibility routes under `/ontology/edit` and
  * `/ontology/studio` fold into `map`, while `/ontology/insights` keeps its own
- * destination. The mobile `BottomTabBar` renders the four core destinations
- * Map / Docs / Insights / Projects.
+ * destination. The mobile `BottomTabBar` renders the five persistent reading
+ * and planning destinations from `MOBILE_DESTINATION_IDS`.
  */
 export function resolveActiveNavDestination(pathname: string): AppNavDestinationId | null {
   // `usePathname()` from `@/i18n/navigation` is already locale-agnostic, but
@@ -25,6 +26,7 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   if (path.startsWith("/ontology/edit") || path.startsWith("/ontology/studio"))
     return "map";
   if (path.startsWith("/ontology/insights")) return "insights";
+  if (path.startsWith("/architecture")) return "architecture";
   if (path.startsWith("/git")) return "git";
   // Agents — destination added 2026-08-20 (decision ledger 90). `/agents` is its
   // only route so the rung's position is arbitrary; it matches the rail's order.
@@ -56,9 +58,9 @@ const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
  *
  * `.claude/rules/surfaces.md` pins the web's primary job as the **gateway**: a
  * place to open the map with no install, and a link to share. The left rail is
- * chrome for someone already working in a vault. Standing six destinations (map,
- * docs, insights, projects, agents, git) in front of a visitor who has opened
- * nothing makes it a workbench, not a gateway — they see six doors none of which
+ * chrome for someone already working in a vault. Standing seven destinations (map,
+ * architecture, docs, insights, projects, agents, git) in front of a visitor who has opened
+ * nothing makes it a workbench, not a gateway — they see seven doors none of which
  * they can walk through yet.
  *
  * **Why the shell decides this, not the page**: making each page remember its own

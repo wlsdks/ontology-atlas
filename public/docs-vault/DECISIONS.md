@@ -40,6 +40,184 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-26 — Architecture is additive; Git remains a primary destination
+
+**Convened**: solo PO pass · **Trigger**: the owner inspected the delivered
+navigation and corrected the substitution explicitly: "Architecture is added;
+do not remove another destination."
+**Rubric**: 24/24 (fatal zero: none)
+**Decision**: restore Git beside Architecture and preserve every pre-existing
+entry path.
+**Applied rule**: owner correction · additive slice · no route or public-contract
+change.
+**Accountable**: owner.
+
+**Prior decision**: the same-day Architecture record remains standing for the
+separate profile, conformance, MCP/CLI, and Living Blueprint contracts. Its rail
+replacement clause is overturned by this record. The recorded falsifier — a
+developer seeking Git from the rail — was observed immediately in the owner's
+first review, so the losing dissent won.
+
+**Observed phenomenon**: `/git` and its workbench still existed, but the primary
+rail, active-route marker, `G G` shortcut, guided tour, and uncommitted-change
+badge no longer exposed it. Architecture therefore arrived as a replacement even
+though the owner intended a new destination.
+
+**Decision details**:
+
+1. The desktop primary rail has seven destinations: Map · Architecture · Docs ·
+   Insights · Projects · Agents · Git.
+2. Git retains `/git`, the History icon, active-route state, uncommitted-change
+   badge, `G G`, and its two-step destination guide. Architecture retains
+   `/architecture`, `G R`, and its Living Blueprint.
+3. The mobile bottom bar remains the measured five-item set: Map · Architecture ·
+   Docs · Insights · Projects. This correction restores the desktop LNB that was
+   removed; it does not invent another mobile slot.
+4. Future destination work may not fund an addition by silently removing an
+   existing destination. Removal needs its own explicit owner decision.
+
+**Recorded dissent**: seven destination rows plus the fixed utility tier may
+become unreachable at the minimum window height or under UI zoom.
+**Falsifier**: if rendered measurement shows Git, another destination, or the
+utility tier clipped, occluded, or unreachable, revisit rail sizing and scroll
+ownership. Do not remove a destination as the first remedy.
+**Revisit**: on a measured reachability failure at a supported desktop viewport,
+or when the owner explicitly retires a destination.
+
+**Status**: standing. The prior record's Git-demotion clause is overturned.
+
+---
+
+## 2026-08-26 — Architecture is a separate reviewed contract and primary workbench destination
+
+**Trigger**: the owner fixed Atlas as a developer-facing codebase ontology, then
+clarified that an ontology map does not answer the architecture question. They
+asked for MVP, Hexagonal, Clean Architecture, and similar project structure to
+be visible as a distinct, visually strong surface that helps agentic development,
+approved the separated design, asked implementation to begin on a separate
+branch, and finally made near-production installed-app iteration the long-term
+goal.
+
+**Prior decisions**: the 2026-08-25 codebase-ontology decision stands: source
+indexes own structural facts and Atlas owns reviewed meaning. Decision (92)
+stands: the Map is the ontology reading/writing surface and Studio remains a
+compatibility redirect. Decisions (90)/(91) established that a primary rail has
+a hard ceiling and a new destination must name what leaves. This record changes
+the exact six-item set rather than silently adding a seventh: Architecture takes
+Git's primary slot; `/git` remains a live contextual workbench route.
+
+**Observed phenomenon**: the current product could show what a codebase builds
+and what a concept affects, but it could not answer which implementation roles a
+change may cross. Folder names alone cannot prove Clean, Hexagonal, MVP, or FSD;
+source tools can derive imports but do not preserve reviewed intent. A generic
+diagram would create another drawing with no executable consequence for an
+agent.
+
+**PO decision**: **Shape a bounded slice, contract first.** Five seats completed
+one independent round and one rebuttal round. The slice had to beat Docs plus
+source search on scoped role, allowed dependency, violation, and unknown tasks
+before route promotion. The canonical record is a separate Git-backed
+`architecture-profile/v1`, not an ontology kind and not an overloaded ontology
+`document`. Pattern names are declared; observations are derived; unknown is
+never compliant. The owner then explicitly approved the dedicated destination
+and rail replacement.
+
+**Decision**:
+
+1. Architecture and the Ontology Map remain separate. The Map explains product
+   meaning, evidence, and impact. Architecture explains implementation roles,
+   scoped paths, and allowed dependency direction.
+2. A profile is non-kind Markdown with a writer-minted UUID, project UID,
+   pattern axes, scope/exclusions, role paths, dependency policy, and evidence.
+   It appears in Docs but never in the ontology graph.
+3. MCP `inspect_architecture` and CLI `architecture` return the same
+   `architectureBrief:v1`: profile, `architectureConformance:v1`, role coverage,
+   observed role edges, bounded violations, explicit unknowns, and
+   `architectureChangePlan:v1`. Both have side effect 0.
+4. Conformance is `conforms`, `violated`, or `unknown`. Unsupported languages,
+   truncated scans, unmapped or unruled edges, and empty roles fail closed. A
+   pattern label is never inferred from folders.
+5. `/architecture` is the Living Blueprint. The same ordered role model remains
+   while the person moves through Understand → Plan → Verify. Plan hands the
+   selected profile to an agent before editing; Verify repeats the source check
+   afterwards.
+6. The installed app includes an exact CLI fallback only after it verifies the
+   project source binding, vault absolute path, and Atlas CLI entry. Surfaces
+   without those facts say the fallback is unavailable instead of emitting a
+   placeholder command.
+7. The six primary destinations are Map · Architecture · Docs · Insights ·
+   Projects · Agents. `/git` is not deleted or redirected; contextual history and
+   recording links continue to open it.
+
+**Selected design direction**: *Living Blueprint — one stable role spine across
+Understand, Plan, and Verify; reviewed intent beside source-derived conformance;
+the exact agent plan is a first-class state.* Rejected alternatives were the
+status quo (Docs plus source only), merging architecture into the Ontology Map,
+and a free-layout diagram generator.
+
+### Design Council Verdict — Living Blueprint
+
+**Convened because**: a new primary surface changes hierarchy, responsive
+navigation, installed-app workbench behavior, information visualization, and
+agent handoff. **Selected seats**: lead, system, interaction, information
+visualization, workbench, responsive, and handoff. Round 1 ran in isolated
+batches with unique ports and no exchanged positions; Round 2 used the same
+seats for one cross-critique.
+
+| Seat | Verdict | Prescription/evidence |
+|---|---|---|
+| Lead | conditional → preserve role-first | Re-anchor the changed stage instead of reordering the role model |
+| System | conditional → reject | The measured mobile transition overrides static class evidence; interactive profile caption starts at tertiary |
+| Interaction | reject | Copy needs reachable stage feedback, explicit clipboard states, and an empty-state exit |
+| Information visualization | conditional | Remove Plan dashes from reviewed roles; a non-graph blueprint is more expressive than a false topology |
+| Workbench | conditional → reject | Installed 1512 proof is real; scroll reachability and complete overview need measurement |
+| Responsive | reject → green after fix | At 600–834, Plan grew the scroll range by 96px and left the CTA behind the fixed tab |
+| Handoff | reject → green after fix | MCP worked, but copied content omitted an executable CLI fallback and verified absolute paths |
+
+**Primary moment**: before changing code, a developer selects a reviewed scope,
+understands which roles may depend on which, and gives the same typed facts to an
+agent. **Attention winner**: the stable role blueprint. **Decisive disagreement**:
+put the stage panel before the blueprint versus keep role-first and re-anchor the
+scroll. **Applied rule**: smallest slice, charter first, no union. The guardian
+kept role-first and fixed scroll continuity. The later Plan-dash removal,
+verified-path handoff, clipboard state, and profile ink correction landed as
+separate bounded slices, each with its own test rather than as a combined visual
+redesign.
+
+**Remove/dim/collapse/align**: remove dashed borders that falsely made reviewed
+roles look provisional; demote Git from the primary rail without removing its
+route; align a prior scroll end to the newly mounted stage; keep unknown amber
+only on explicit source-check statements.
+
+**Proof after application**: parser/conformance cross-surface gate; focused MCP
+and CLI integration; `test:architecture` planted-contract RED then GREEN;
+quaternary-ink RED then GREEN; 600px browser E2E RED with 96px remaining then
+GREEN; responsive sweep with zero horizontal overflow; 390×844 coarse-pointer
+measurement (44×44 stage controls, 0px new-end distance, 19.4px CTA clearance,
+successful center hit); production build; installed macOS app route/WebView
+proof; Codex Computer Use for real vault connection, seven roles, Plan/copy/
+Verify, and close/relaunch vault restoration.
+
+**Recorded dissent**: a dedicated destination may still duplicate ArchUnit,
+dependency-cruiser, CodeGraph, or a maintained `ARCHITECTURE.md`, while consuming
+the primary slot previously used for Git. Teams may not maintain role mappings,
+and a polished profile can lend authority to a stale or fashionable pattern
+label.
+
+**Falsifier**: reopen this decision if a three-repository task comparison does
+not beat Docs plus source tools on role/boundary/violation/agent-plan accuracy;
+if real profiles are mostly unknown or wrong; if an unsupported scan ever renders
+green; if developers repeatedly seek Git from the rail but do not revisit
+Architecture; or if a profile becomes a second source of observed imports.
+The first response is demotion into Docs/agent handoff, not inventing more
+diagram features.
+
+**Revisit**: after ten real architecture-guided code changes or the first
+falsifier observation. **Accountable**: owner for surface/rail approval;
+design-guardian for the bounded applied fixes. **Status**: standing.
+
+---
+
 ## 2026-08-25 — Atlas narrows to a codebase ontology, without becoming a code index
 
 **Context**: the owner rejected two successive master framings while reviewing

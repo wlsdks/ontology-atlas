@@ -2,8 +2,8 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 35,
-    "readToolCount": 19,
+    "toolCount": 36,
+    "readToolCount": 20,
     "writeToolCount": 16,
     "tools": [
       {
@@ -288,6 +288,16 @@
         "required": []
       },
       {
+        "name": "inspect_architecture",
+        "mode": "read",
+        "arguments": [
+          "maxFiles",
+          "profileSlug",
+          "rootPath"
+        ],
+        "required": []
+      },
+      {
         "name": "list_concepts",
         "mode": "read",
         "arguments": [
@@ -486,7 +496,7 @@
     ]
   },
   "cli": {
-    "commandCount": 56,
+    "commandCount": 57,
     "commands": [
       "absorb",
       "add",
@@ -496,6 +506,7 @@
       "agent-setup",
       "all-paths",
       "analyze",
+      "architecture",
       "backlinks",
       "blast-radius",
       "bootstrap",

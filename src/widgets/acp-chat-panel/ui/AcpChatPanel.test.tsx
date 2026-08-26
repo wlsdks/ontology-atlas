@@ -1660,6 +1660,13 @@ describe('답변 속 노드 이름 — 지도와 잇는다', () => {
       method: 'session/update',
       params: { update: { sessionUpdate: 'agent_message_chunk', content: { text } } },
     });
+    // The live bubble reveals through requestAnimationFrame. Wait for the full
+    // sentence before returning so a test never holds a slug span that the next
+    // reveal frame replaces between lookup and pointer dispatch.
+    await waitFor(
+      () => expect(document.querySelector('[data-acp-entry="agent"]')).toHaveTextContent(text),
+      { timeout: 5_000 },
+    );
     return hovered;
   }
 

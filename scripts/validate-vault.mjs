@@ -163,14 +163,17 @@ function validate(raw) {
 
   const rawKind = frontmatter.kind;
   const hasKindKey = "kind" in frontmatter;
+  const isArchitectureProfile = frontmatter.architecture_schema === "architecture-profile/v1";
 
   if (!hasKindKey) {
-    issues.push({
-      code: "missing-kind",
-      severity: "warning",
-      message:
-        "frontmatter has no `kind:`: a graph node needs one.",
-    });
+    if (!isArchitectureProfile) {
+      issues.push({
+        code: "missing-kind",
+        severity: "warning",
+        message:
+          "frontmatter has no `kind:`: a graph node needs one.",
+      });
+    }
   } else if (typeof rawKind !== "string" || rawKind.trim() === "") {
     issues.push({
       code: "empty-kind",
