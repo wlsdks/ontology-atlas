@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.203.0",
+        "package": "droid@0.204.0",
         "args": [
           "exec",
           "--output-format",
