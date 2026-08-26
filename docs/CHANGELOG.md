@@ -49,6 +49,20 @@
   shipping compatibility asset while its rejected visual direction is replaced
   in a separate design decision.
 
+## 2026-08-26 · The Architecture tab has something to show
+
+- It was empty for every first-time visitor, and the data was never the problem: the tool's own
+  ontology carried a complete profile and the parser accepted it. The screen reads whichever bundled
+  sample is selected, everyone with no stored choice gets the storefront one, and that sample had no
+  architecture profile at all. A tab in the rail that can only say "nothing here" spends the one
+  click somebody gives a new surface, so the sample now carries a profile of its own.
+- The empty state used to name a schema and ask the reader to write the document by hand. It now
+  says an agent reads the folders and the real imports and drafts it, and its button goes to the map
+  where an agent is already connected rather than to a list of documents.
+- An architecture record is not one of the documents in the reading surface, and it no longer
+  appears there. Listed among them it sorted first, so opening Docs opened a page of frontmatter
+  instead of something written to be read.
+
 ## 2026-08-26 · A change you are asked to approve reads as one tidy list
 
 - The rows describing a relation, its two ends and the reason for it were four separate grids that
