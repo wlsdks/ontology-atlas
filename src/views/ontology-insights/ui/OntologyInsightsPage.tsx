@@ -79,6 +79,9 @@ import type { MeaningGapLabels } from "./tabs/MeaningGapSection";
 import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
+import { FlowTab } from "./tabs/FlowTab";
+import { buildBusinessFlowRequest } from "@/features/vault-agent";
+import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 import { controlClass } from '@/shared/ui/control-class';
 
@@ -146,6 +149,9 @@ const HANDOFF_PAYLOAD: Record<InsightsTab, string> = {
   connections: 'query_ontology({operation:"centrality"}) → query_ontology({operation:"blast_radius", slug:"<hub-slug>"})',
   boundaries: 'query_ontology({operation:"domain_matrix"}) → 교차 예시는 query_ontology({operation:"match_edges"})',
   freshness: 'query_ontology({operation:"maintenance_plan"}) → find_orphans({}) → query_ontology({operation:"growth_plan"})',
+  // The only payload whose output is prose. It reads bodies rather than running an
+  // operation, because a narrative rests on what the nodes say, not on a count.
+  flow: 'list_concepts({summary:true}) → get_concepts({body:"full"}) 로 project 와 domain 본문 → 문단마다 슬러그 인용',
 };
 
 interface InsightsBadgeInput {
@@ -170,6 +176,9 @@ const INSIGHTS_TAB_BADGE: Record<
   composition: (i) => i.totalNodes,
   connections: (i) => i.totalEdges,
   boundaries: (i) => i.crossDomainEdges,
+  // Prose, not a measurement — the same empty slot freshness uses, for the same
+  // reason: a badge here would have to invent a unit the tab does not have.
+  flow: () => undefined,
   freshness: () => undefined,
 };
 
@@ -1177,6 +1186,26 @@ export function OntologyInsightsPage() {
                   href: mapNodeHref,
                   ariaLabel: (title) => t("freshnessRowAriaLabel", { title }),
                 }}
+              />
+            ) : null}
+            {tab === "flow" ? (
+              <FlowTab
+                labels={{
+                  title: t("flow.title"),
+                  lead: t("flow.lead"),
+                  action: t("flow.action"),
+                  actionHint: t("flow.actionHint"),
+                  requestLabel: t("flow.requestLabel"),
+                  unavailableTitle: t("flow.unavailableTitle"),
+                  unavailableBody: t("flow.unavailableBody"),
+                  copy: t("flow.copy"),
+                  copied: t("flow.copied"),
+                  noVaultTitle: t("flow.noVaultTitle"),
+                  noVaultBody: t("flow.noVaultBody"),
+                }}
+                request={buildBusinessFlowRequest({ request: t("flow.request") }, null)}
+                hasVault={vault.status === "loaded"}
+                canLaunchAgent={isAcpBridgeAvailable()}
               />
             ) : null}
           </div>

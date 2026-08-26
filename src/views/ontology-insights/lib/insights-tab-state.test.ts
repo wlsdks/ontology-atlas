@@ -20,6 +20,9 @@ describe("parseInsightsTab", () => {
       "connections",
       "boundaries",
       "freshness",
+      // Written by an agent rather than computed from the graph — the one tab
+      // whose question ("what is this product and how does it move") is prose.
+      "flow",
     ]);
     for (const tab of INSIGHTS_TABS) {
       expect(parseInsightsTab(tab)).toBe(tab);
