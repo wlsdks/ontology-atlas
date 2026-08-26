@@ -5,7 +5,7 @@ import { useDogfoodSample } from './sample-source';
 
 test.use({ viewport: { width: 600, height: 900 } });
 
-test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 인계 버튼이 남는다', async ({ page }) => {
+test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 문장 버튼이 남는다', async ({ page }) => {
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -33,7 +33,7 @@ test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 인계 버튼�
     { message: 'Plan content changed the scroll height without preserving the prior end anchor' },
   ).toBeLessThanOrEqual(1);
 
-  const report = await page.getByRole('button', { name: '에이전트 인계문 복사' }).evaluate(
+  const report = await page.getByRole('button', { name: '에이전트에 붙여넣을 문장 복사' }).evaluate(
     (button) => {
       const bar = document.querySelector<HTMLElement>('nav[data-tabbar="primary"]');
       const buttonRect = button.getBoundingClientRect();

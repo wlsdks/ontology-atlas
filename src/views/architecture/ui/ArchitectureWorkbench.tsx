@@ -17,6 +17,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { Button, EmptyState, RowButton, Surface, buttonVariants } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
+import { useDraftHandoffRoute } from '../model/use-draft-handoff-route';
 import { ArchitectureFlow } from './ArchitectureFlow';
 
 type Mode = 'understand' | 'plan' | 'verify';
@@ -30,6 +31,9 @@ export function ArchitectureWorkbench({
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
 }) {
   const t = useTranslations('architecture');
+  const draftHandoff = useDraftHandoffRoute();
+  const draftRoute = draftHandoff.route;
+  const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
   const [mode, setMode] = useState<Mode>('understand');
   const [copyState, setCopyState] = useState<CopyState>('idle');
@@ -79,7 +83,11 @@ export function ArchitectureWorkbench({
         <EmptyState
           title={t('noProfiles')}
           titleAs="h1"
-          description={t('noProfilesBody')}
+          description={
+            draftRoute === 'clipboard'
+              ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}`
+              : t('noProfilesBody')
+          }
           icon={<Boxes aria-hidden />}
           tone="solid"
           align="center"
@@ -107,20 +115,71 @@ export function ArchitectureWorkbench({
            * first-run door: analysing the repository here would be a second canonical
            * implementation of `analyze_repo_structure`, which `AGENTS.md` forbids.
            */
+          /*
+           * ⚠️ **Two doors, because one of them was silently a dead end.**
+           *
+           * The agent door queues the sentence and moves to the map, where the dock opens it as
+           * the first turn. But the map resolves the runner as `runtimeId ?? acpRuntime?.id`, and
+           * with neither it returns early and the queued sentence is consumed and discarded — so
+           * with no agent connected the person pressed a button, changed screens, and nothing
+           * happened. That is the defect this button was built to fix, relocated one route right.
+           *
+           * The clipboard door is the one that always works, including in a browser, where
+           * spawning a process is an impossibility rather than a gap. It reuses Plan mode's
+           * clipboard vocabulary verbatim; a second set of words for the same act is how two
+           * dialects start.
+           *
+           * The app still does not call MCP itself. That is the 2026-08-24 decision behind the
+           * first-run door: analysing the repository here would be a second canonical
+           * implementation of `analyze_repo_structure`, which `AGENTS.md` forbids.
+           */
           action={(
-            <Link
-              href="/topology/"
-              className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
-              data-testid="architecture-draft-from-code"
-              /*
-               * The queue is written synchronously before the navigation, so the sentence is
-               * already in session storage by the time the map mounts and consumes it. It stays an
-               * anchor because the act really is a navigation — the agent dock lives on the map.
-               */
-              onClick={() => queueAgentChatIntent(null, buildArchitectureDraftPrompt(null))}
-            >
-              {t('draftFromCode')}
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {draftRoute === 'clipboard' ? null : (
+                <Link
+                  href="/topology/"
+                  className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
+                  data-testid="architecture-draft-from-code"
+                  /*
+                   * Written synchronously before the navigation, so the sentence is already in
+                   * session storage by the time the map mounts and consumes it. It stays an anchor
+                   * because the act really is a navigation — the agent dock lives on the map.
+                   */
+                  onClick={() => queueAgentChatIntent(draftHandoff.runtimeId, buildArchitectureDraftPrompt(null))}
+                >
+                  {t('draftFromCode')}
+                </Link>
+              )}
+              <Button
+                variant={draftRoute === 'clipboard' ? 'primary' : 'outline'}
+                size="md"
+                disabled={draftCopyState === 'pending'}
+                data-testid="architecture-copy-draft-handoff"
+                data-architecture-draft-copy-state={draftCopyState}
+                onClick={() => {
+                  setDraftCopyState('pending');
+                  navigator.clipboard
+                    .writeText(buildArchitectureDraftPrompt(null))
+                    .then(() => setDraftCopyState('copied'))
+                    .catch(() => setDraftCopyState('error'));
+                }}
+              >
+                {draftCopyState === 'pending'
+                  ? t('copyingHandoff')
+                  : draftCopyState === 'copied'
+                    ? t('copiedHandoff')
+                    : draftCopyState === 'error'
+                      ? t('copyHandoffError')
+                      : t('copyHandoff')}
+              </Button>
+              <span className="sr-only" role="status" aria-live="polite">
+                {draftCopyState === 'copied'
+                  ? t('copiedHandoff')
+                  : draftCopyState === 'error'
+                    ? t('copyHandoffError')
+                    : ''}
+              </span>
+            </div>
           )}
         />
       </main>
