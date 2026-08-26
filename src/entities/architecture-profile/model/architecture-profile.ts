@@ -127,16 +127,49 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   };
 }
 
+/**
+ * ⚠️ **A collision has to say which two documents collided.**
+ *
+ * Measured 2026-08-26: `atlas architecture .` at this repository's root died with
+ * `Duplicate architecture profile slug: atlas-web.` and nothing else. The cause was the
+ * repository's own generated mirror — `pnpm docs-vault:build` copies the vault into
+ * `public/docs-vault/`, so one profile was found twice. The message named neither document, so
+ * the only way to learn that was to grep for the slug.
+ *
+ * Two collisions are not the same thing, and conflating them is what made the message useless:
+ * identical `profile_uid` with identical frontmatter is **one record reached twice** and there is
+ * nothing for a person to resolve, while a disagreement is a real conflict that must still fail
+ * closed — now naming both documents, because "which two?" is the whole question.
+ *
+ * `mcp/src/architecture-profile.mjs` carries the same behaviour; the parity contract keeps them
+ * from drifting.
+ */
+function profileFingerprint(frontmatter: Record<string, unknown>): string {
+  // Key order must not decide identity: two mirrors of one file can serialise differently.
+  return JSON.stringify(
+    Object.fromEntries(Object.entries(frontmatter).sort(([left], [right]) => (left < right ? -1 : 1))),
+  );
+}
+
 export function deriveArchitectureProfiles(
   docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
 ): ArchitectureProfile[] {
   const profiles: ArchitectureProfile[] = [];
-  const seen = new Set<string>();
+  const seen = new Map<string, { uid: string; fingerprint: string; documentSlug: string }>();
   for (const doc of docs) {
     if (doc.frontmatter.architecture_schema !== ARCHITECTURE_PROFILE_CONTRACT) continue;
     const profile = parseArchitectureProfile(doc.frontmatter);
-    if (seen.has(profile.slug)) throw new Error(`Duplicate architecture profile slug: ${profile.slug}.`);
-    seen.add(profile.slug);
+    const fingerprint = profileFingerprint(doc.frontmatter);
+    const previous = seen.get(profile.slug);
+    if (previous) {
+      if (previous.uid === profile.uid && previous.fingerprint === fingerprint) continue;
+      throw new Error(
+        `Duplicate architecture profile slug: ${profile.slug}. ` +
+          `${previous.documentSlug} and ${doc.slug} both declare it with different contents. ` +
+          'Give one of them another profile_slug, or narrow the scan so only one is read.',
+      );
+    }
+    seen.set(profile.slug, { uid: profile.uid, fingerprint, documentSlug: doc.slug });
     profiles.push({ ...profile, documentSlug: doc.slug });
   }
   return profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en'));
