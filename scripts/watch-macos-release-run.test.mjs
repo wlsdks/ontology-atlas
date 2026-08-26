@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -101,11 +101,58 @@ test("desktop release run dispatches the protected-main workflow and watches it"
     assert.match(result.stderr, /waiting for release-macos\.yml workflow_dispatch run/);
     assert.match(result.stdout, /watching release-macos\.yml run 12345/);
     assert.match(result.stdout, /completed successfully/);
-    assert.match(result.stdout, /ontology-atlas-release-facts-v0\.1\.0/);
-    assert.match(result.stdout, /gh run download 12345 --repo wlsdks\/ontology-atlas --name ontology-atlas-release-facts-v0\.1\.0/);
-    assert.match(result.stdout, /src\/views\/download\/model\/macos-release\.generated\.ts/);
-    assert.match(result.stdout, /normal protected-main PR/);
+    /*
+     * ⚠️ It used to print a list of commands and stop, on the reasoning that the bot token cannot
+     * push to protected main. True, and irrelevant: a person dispatches the release, so the
+     * credentials that pushed the tag can open this PR. Handing somebody a checklist at the end of
+     * a twenty-minute build is handing them a step to forget, and it was forgotten twice on
+     * 2026-08-25 -- the public page advertised rc.10 while rc.11 and rc.12 had both shipped.
+     */
+    assert.match(result.stdout, /refreshing \/download for v0\.1\.0/);
   });
+});
+
+/*
+ * ⚠️ The three defects the automation's **first real outing** produced, on 2026-08-25, after rc.13
+ * had already published. Unit tests were green for all three; only running it found them.
+ */
+test("desktop release run gives gh room to stream a whole build", () => {
+  const source = readFileSync("scripts/watch-macos-release-run.mjs", "utf8");
+  /*
+   * `gh run watch` streams for the length of the build. Node's 1 MB spawnSync default overflowed
+   * with `spawnSync gh ENOBUFS` after the release had been dispatched, so the build finished while
+   * the command meant to follow it never got there.
+   */
+  assert.match(source, /maxBuffer:\s*\d+\s*\*\s*1024\s*\*\s*1024/);
+});
+
+test("desktop release run can retry only the refresh, without releasing again", () => {
+  /*
+   * The worst of the three. When the refresh failed, the only way back to it was dispatching a
+   * whole second release of a tag that had already published — a recovery path that costs a
+   * duplicate signed build is not a recovery path.
+   */
+  const stdout = execFileSync(process.execPath, ["scripts/watch-macos-release-run.mjs", "--help"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  assert.match(stdout, /--refresh-only/);
+
+  const source = readFileSync("scripts/watch-macos-release-run.mjs", "utf8");
+  assert.match(source, /options\.refreshOnly/);
+  // The dispatch must sit behind the flag, not merely be mentioned near it.
+  assert.match(source, /if \(options\.refreshOnly\)[\s\S]{0,200}refreshDownloadPage\(options\)/);
+});
+
+test("desktop release run reads its own helper's two return shapes", () => {
+  /*
+   * `run` answers with a string on success and with the raw spawn result when failure is allowed.
+   * Reading `.status` off both crashed the refresh on its first outing with
+   * `Cannot read properties of undefined (reading 'trim')`.
+   */
+  const source = readFileSync("scripts/watch-macos-release-run.mjs", "utf8");
+  assert.match(source, /typeof result === "string"/);
+  assert.doesNotMatch(source, /const attempt = run\(/);
 });
 
 test("desktop release run fails when the dispatched workflow run never appears", () => {
@@ -127,6 +174,6 @@ test("desktop release run help describes protected-main dispatch and watch", () 
   assert.match(stdout, /desktop:release-run/);
   assert.match(stdout, /workflow_dispatch/);
   assert.match(stdout, /protected ref/);
-  assert.match(stdout, /release-facts artifact/);
-  assert.match(stdout, /protected-main PR/);
+  assert.match(stdout, /refreshes what \/download says/);
+  assert.match(stdout, /Merging\s+that PR is what moves the public download page/);
 });

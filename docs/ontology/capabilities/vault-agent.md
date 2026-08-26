@@ -11,7 +11,11 @@ created_by: human
 ---
 
 ## Definition
+
 The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs in the vault point to a single source. Local runners apply limited read order and round-trip time limits. One correction is issued if any of mandatory reads, detailed payload remaining exact citations, or Korean responses to Korean questions are omitted; answers not followed on the second attempt are not loaded for the user. Structure audits verify from selecting `domain` candidates after census up to argument contracts reading details of all 8 max exact slugs. The model rejects responses if it synthesizes capabilities/elements as non-existent when only one project root is selected or census confirms existence. Final synthesis preserves incompleteness of the verified scope without using count, fan-out, recommended node counts, or bridge evidence as defects. If batch detail reading exceeds character limits, instead of keeping only the first line, all candidates are first compressed into the same shape of definition excerpt, relationship count, and resolved neighbors, recording only remaining slugs and body text characters in the actual payload as the read scope. Each `*Info` field preserves what was truncated and requires a single concept re-read before editing. This surface is for vault-only curators who cannot see source code, so it does not directly create or edit project's `## Competency answers`. System prompt, write-intent, and final apply boundaries all prevent this, passing source-backed credentials to the repository-reading Atlas MCP builder.
+
+
+## Constraints: Client config and native vault writes
 
 The agent config state in App Settings counts only two actual client configs, not disguising example templates as connections. Source-checkout and app-bundled launch shape, current vault coordinates
 must match to be ready, and live stdio connection and tool inventory are proven by separate `mcp-verify`.
@@ -19,6 +23,8 @@ Native vault writes retain Unix's piece-by-piece no-follow directory FD traversa
 checks, and atomic rename. Thus, a parent name changing to an external symbolic link after inspection
 does not redirect a current vault write outside its opened directory. Windows reparse-point races are still
 unproven and provide no guarantee beyond static link checks.
+
+## Identity Boundary
 
 The "interactive agent in the app" mentioned here is the single vault-agent panel owned by this capability:
 it's a provider-neutral loop attaching to keys entered by users or local runners, calling only vault tools. The app

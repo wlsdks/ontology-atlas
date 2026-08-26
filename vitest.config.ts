@@ -2,11 +2,19 @@ import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
+import packageJson from './package.json' with { type: 'json' };
+
 export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
     globals: true,
+    /*
+     * ⚠️ Mirrors what `next.config.ts` does at build time. `/download` reads its version from
+     * `package.json` rather than carrying a copy, and without this the tests would see the
+     * deliberate `unknown` fallback and fail on a repair that is working correctly.
+     */
+    env: { NEXT_PUBLIC_RELEASE_VERSION: packageJson.version },
     setupFiles: ['./vitest.setup.ts'],
     include: [
       'app/**/*.test.{ts,tsx}',

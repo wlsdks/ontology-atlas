@@ -17,14 +17,14 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   BarChart3,
+  Blocks,
   Bot,
   Download,
   BookOpen,
   FolderKanban,
   // `History as HistoryIcon` — under certain HMR/bundle states the bare `History`
   // identifier resolves to the global DOM History constructor and crashes the screen
-  // with "Illegal constructor" (AtlasGitPanel hit the same accident). An alias can
-  // never collide with a global.
+  // with "Illegal constructor". The alias cannot collide with that global.
   History as HistoryIcon,
   Map as MapIcon,
 } from "lucide-react";
@@ -64,9 +64,9 @@ export interface AppNavRailProps {
    *  `AppShell` passes through what it read from `useNavRailShellValue()`. */
   contextHrefs?: NavRailContextHrefs | null;
   /**
-   * The trail destination's uncommitted change count — an ambient signal from off
-   * screen. `AppShell` reads it through `useAtlasGitContext()` and passes it in, so
-   * the widget never imports a feature directly. At `0` the badge disappears.
+   * The Git destination's uncommitted change count. `AppShell` reads the same
+   * changeset as the Git workbench and passes only the count, preserving the
+   * widget boundary. At zero the ambient badge disappears.
    */
   gitDirtyCount?: number;
   /**
@@ -229,14 +229,10 @@ export function AppNavRail({
   // the screen and stay here.
   const destinations: RailDestination[] = [
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
+    { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
-    // Trail — promoted to a destination on 2026-07-25. The old "rail utility tile plus
-    // a 560px modal" was absorbed (two entrances is how the #65 family of defects
-    // recurs). The icon stays History — a three-node git graph glyph reads as "the
-    // ontology graph" in this rail and collides with the map icon and the brand hexagon
-    // (rejected by the Design Guardian).
     // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
     // screens were pulled out of the settings sheet to here.
     //
@@ -254,6 +250,8 @@ export function AppNavRail({
       // of the eye cannot be read if it changes every second).
       badgeCount: agentsNoticeCount,
     },
+    // Owner correction, 2026-08-26: Architecture is additive. Git keeps its
+    // primary destination, current-route marker, and uncommitted-change badge.
     { id: "git", href: DESTINATION_HREF.git, label: t("git"), Icon: HistoryIcon, badgeCount: gitDirtyCount },
   ];
 

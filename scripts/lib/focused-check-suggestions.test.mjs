@@ -51,6 +51,7 @@ describe('focused check suggestions', () => {
       // vault edit can invalidate the committed copy of it.
       'pnpm gateway:specimen:check',
       'pnpm test:run tests/contract/em-dash-ratchet.contract.test.ts',
+      'pnpm test:run tests/contract/vault-section-shape.contract.test.ts',
     ]);
   });
 
@@ -360,6 +361,29 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test mcp/src/infer-imports.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:repo-analysis',
+      'pnpm vault:validate',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
+  it('routes architecture changes through the cross-surface gate and rendered workflow', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/architecture-profile.mjs',
+      'cli/src/commands/architecture.mjs',
+      'src/views/architecture/ui/ArchitectureWorkbench.tsx',
+    ]);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec eslint src/views/architecture/ui/ArchitectureWorkbench.tsx',
+      'pnpm exec vitest run src/views/architecture/ui/ArchitectureWorkbench.test.tsx',
+      'pnpm test:architecture',
+      'pnpm exec playwright test tests/e2e/architecture-workbench.spec.ts',
+      'pnpm test:contracts',
+      'pnpm exec node --test mcp/src/architecture-profile.test.mjs',
+      'pnpm test:mcp:unit',
+      'pnpm integration:mcp:repo-analysis',
+      'pnpm exec tsc --noEmit',
+      'pnpm integration:cli:repo-analysis',
       'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);

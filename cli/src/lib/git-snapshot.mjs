@@ -258,8 +258,8 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'push-non-fast-forward',
-      message: '원격이 앞섰어요: `git pull` 후 다시 스냅샷하세요.',
-      note: '커밋은 이미 로컬에 기록됨',
+      message: 'the remote has moved ahead: run `git pull`, then snapshot again.',
+      note: 'the commit is already recorded locally',
       guidance: 'git pull',
     };
   }
@@ -272,9 +272,9 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'gpg-sign-failed',
-      message: '커밋 서명(gpg)에 실패했어요: 서명 키를 확인하세요.',
+      message: 'commit signing (gpg) failed: check your signing key.',
       note: firstLine,
-      guidance: 'git config commit.gpgsign false   # 서명을 끄고 다시 스냅샷',
+      guidance: 'git config commit.gpgsign false   # turn signing off, then snapshot again',
     };
   }
 
@@ -286,9 +286,9 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'merge-in-progress',
-      message: '머지/리베이스가 진행 중이라 vault 범위만 커밋할 수 없어요: 진행 중인 작업을 먼저 마치거나 중단하세요.',
+      message: 'a merge or rebase is in progress, so a vault-scoped commit is not possible: finish or abort it first.',
       note: null,
-      guidance: 'git status   # 진행 중 상태 확인',
+      guidance: 'git status   # see what is in progress',
     };
   }
 
@@ -296,9 +296,9 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (text.includes('conflict') || text.includes('automatic merge failed')) {
     return {
       reason: 'pull-conflict',
-      message: 'pull 중 충돌이 났어요: 충돌 파일을 해결한 뒤 커밋하세요.',
+      message: 'the pull hit a conflict: resolve the conflicting files, then commit.',
       note: null,
-      guidance: 'git status   # 충돌 파일 확인',
+      guidance: 'git status   # see the conflicting files',
     };
   }
 
@@ -306,9 +306,9 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (text.includes('would be overwritten') || text.includes('overwritten by merge')) {
     return {
       reason: 'local-changes',
-      message: '커밋 안 된 로컬 변경이 있어 막혔어요: 먼저 snapshot 으로 커밋하거나 stash 하세요.',
+      message: 'uncommitted local changes are in the way: commit them with snapshot, or stash them.',
       note: null,
-      guidance: 'ontology-atlas snapshot   # 로컬 변경을 먼저 커밋',
+      guidance: 'ontology-atlas snapshot   # commit the local changes first',
     };
   }
 
@@ -320,7 +320,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   ) {
     return {
       reason: 'no-upstream',
-      message: '이 브랜치에 연결된 원격이 없어요: 먼저 upstream 을 설정하세요.',
+      message: 'this branch has no remote: set an upstream first.',
       note: null,
       guidance: 'git push -u origin <branch>',
     };
@@ -330,7 +330,7 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (text.includes('pre-commit') || text.includes('commit-msg') || text.includes('hook')) {
     return {
       reason: 'pre-commit-hook',
-      message: '커밋 훅이 스냅샷을 거부했어요: 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.',
+      message: 'a commit hook rejected the snapshot: fix what the hook reported, then snapshot again.',
       note: firstLine,
       guidance: null,
     };
@@ -341,14 +341,14 @@ export function classifyGitError(err, { operation = 'git' } = {}) {
   if (operation === 'commit') {
     return {
       reason: 'commit-rejected',
-      message: '커밋이 거부됐어요 (커밋 훅이 막았을 수 있어요).',
+      message: 'the commit was rejected (a commit hook may have blocked it).',
       note: firstLine,
       guidance: null,
     };
   }
   return {
     reason: 'git-command-failed',
-    message: `git ${operation} 명령이 실패했어요.`,
+    message: `the git ${operation} command failed.`,
     note: firstLine,
     guidance: null,
   };

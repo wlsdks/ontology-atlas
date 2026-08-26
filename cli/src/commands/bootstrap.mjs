@@ -310,20 +310,21 @@ function printUsage(stream = process.stderr) {
       `                           [--apply-readme-domains]\n` +
       `                           [--max-depth N] [--max-files N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
-      `  1줄 review plan. semantic node write는 하지 않고 analyzer 후보와\n` +
-      `  exact evidence import 후보만 반환합니다. constructionQualification:v1\n` +
-      `  + human acceptance + unchanged writePlan은 연결된 MCP lifecycle에서만\n` +
-      `  해제됩니다. 모든 cold-start 실행은 approval_required(종료 3)입니다.\n\n` +
-      `  README 제목에서만 나온 도메인은 심지 않고 검토 후보로 남깁니다 —\n` +
-      `  코드 구조가 뒷받침하거나 --apply-readme-domains 일 때만 적용.\n` +
+      `  A one-line review plan. It writes no semantic node; it returns analyzer\n` +
+      `  candidates and exact-evidence import candidates only. constructionQualification:v1\n` +
+      `  plus human acceptance plus an unchanged writePlan are released solely by the\n` +
+      `  connected MCP lifecycle. Every cold-start run is approval_required (exit 3).\n\n` +
+      `  A domain seen only in a README heading is left as a review candidate rather\n` +
+      `  than planted -- it lands only when the code structure backs it, or under\n` +
+      `  --apply-readme-domains.\n` +
       `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +
       `  --max-files N: import walk default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  ontology-atlas bootstrap                       # cwd → cwd vault\n` +
-      `  ontology-atlas bootstrap ~/my-app --vault .    # 다른 repo 분석\n` +
-      `  ontology-atlas bootstrap --threshold 3         # 약한 import 차단\n` +
-      `  ontology-atlas bootstrap --skip-imports        # 노드만 (1단계)\n` +
-      `  ontology-atlas bootstrap --reapply             # 성장한 vault에 명시 재적용\n` +
-      `  ontology-atlas bootstrap --json                # 머신 가독\n`,
+      `  ontology-atlas bootstrap ~/my-app --vault .    # analyze another repo\n` +
+      `  ontology-atlas bootstrap --threshold 3         # block weak imports\n` +
+      `  ontology-atlas bootstrap --skip-imports        # nodes only (stage 1)\n` +
+      `  ontology-atlas bootstrap --reapply             # re-apply explicitly to a grown vault\n` +
+      `  ontology-atlas bootstrap --json                # machine readable\n`,
   );
 }

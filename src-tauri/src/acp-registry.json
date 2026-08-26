@@ -114,7 +114,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.57",
+        "package": "cline@3.0.58",
         "args": [
           "--acp"
         ]
@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.137.1",
+        "package": "@tencent-ai/codebuddy-code@2.139.0",
         "args": [
           "--acp"
         ]
@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.3.18",
+        "package": "dimcode@0.3.20",
         "args": [
           "acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.202.0",
+        "package": "droid@0.204.0",
         "args": [
           "exec",
           "--output-format",
@@ -329,7 +329,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.56.0",
+        "package": "@google/gemini-cli@0.57.0",
         "args": [
           "--acp"
         ]
@@ -365,7 +365,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.6.0",
+        "package": "glm-acp-agent@1.6.1",
         "args": []
       }
     },
@@ -415,7 +415,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.8",
+        "package": "@xai-official/grok@1.0.10",
         "args": [
           "agent",
           "stdio"
@@ -629,7 +629,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.22.0",
+        "package": "@qwen-code/qwen-code@0.22.1",
         "args": [
           "--acp",
           "--experimental-skills"

@@ -19,6 +19,13 @@ locale data (`display_ko`) or inside the intentionally localized
 `cli/templates/vault-ko/**` tree. `pnpm docs:language` inventories and ratchets
 the remaining migration scopes.
 
+That rule covers the strings a program prints, not only Markdown. `source:language`
+reads comments and cannot see a string literal, which is how the CLI came to print
+Korean on 140 lines while that gate stayed green;
+`tests/contract/cli-output-language.contract.test.ts` now holds `cli/src/**` at zero.
+Its one allowlisted path, `cli/src/lib/absorb.mjs`, is Korean *matcher data* for the
+user's own document, which is the `display_ko` exception rather than a new one.
+
 ## Priority
 
 | Document | Priority | Update when |

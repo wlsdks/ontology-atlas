@@ -14,6 +14,7 @@ import {
 
 import {
   PROJECT_VAULT_DIR,
+  pickedTheMapFolder,
   projectAlreadyHasVault,
   projectVaultLocation,
   type ProjectVaultLocation,
@@ -48,6 +49,14 @@ export interface BuildFromCodeState {
   location: ProjectVaultLocation | null;
   /** True when the chosen project already has an `atlas` folder, so the copy says "use" not "create". */
   reusesExisting: boolean;
+  /**
+   * The person picked the map folder itself rather than the project around it.
+   *
+   * ⚠️ Measured 2026-08-25: that produced `…/atlas/atlas` on screen, offered with a straight face.
+   * The flow now names the mistake and proposes the parent, because a confirmation that proposes
+   * nonsense is one people stop reading — fatal for a step whose whole job is to be read.
+   */
+  pickedMapFolder: boolean;
   errorText: string | null;
 }
 
@@ -62,6 +71,7 @@ const IDLE: BuildFromCodeState = {
   stage: 'idle',
   location: null,
   reusesExisting: false,
+  pickedMapFolder: false,
   errorText: null,
 };
 
@@ -91,7 +101,13 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         setState(IDLE);
         return;
       }
-      const location = projectVaultLocation(getTauriVaultRootPath(handle) ?? null);
+      const picked = getTauriVaultRootPath(handle) ?? null;
+      // Handed the map instead of the project: step up one, and say so rather than proposing
+      // `…/atlas/atlas`.
+      const pickedMapFolder = pickedTheMapFolder(picked);
+      const location = projectVaultLocation(
+        pickedMapFolder ? (picked ?? '').replace(/[/\\]+[^/\\]+$/, '') : picked,
+      );
       if (!location) {
         setState({ ...IDLE, errorText: '' });
         return;
@@ -105,7 +121,7 @@ export function useBuildFromCode({ openRecord, handoff }: BuildFromCodeDeps) {
         // An unreadable project is not fatal here: the confirm step still shows the path, and the
         // create below will surface the real reason if it is a permission problem.
       }
-      setState({ stage: 'confirm', location, reusesExisting, errorText: null });
+      setState({ stage: 'confirm', location, reusesExisting, pickedMapFolder, errorText: null });
     } catch (err) {
       setState({ ...IDLE, errorText: messageOf(err) });
     }

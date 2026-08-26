@@ -238,7 +238,7 @@ await test('list — empty vault: 0 노드 메시지', async () => {
   try {
     const r = await run(['list', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /ontology 노드 0|0 ontology 노드/);
+    assert.match(r.stdout, /0 ontology nodes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2063,7 +2063,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(clean, /pnpm test:dogfood:graph-db\s+Narrow dogfood graph DB pack runner contract/);
   assert.match(clean, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
-  assert.match(clean, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
+  assert.match(clean, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 90000\s+Source-checkout dogfood verify with explicit args/);
   assert.match(clean, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
   assert.match(clean, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-tool-inventory\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
@@ -2079,7 +2079,7 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.match(stripAnsi(r.stderr), /Received: "nope"/);
   assert.match(stripAnsi(r.stderr), /--timeout-ms N/);
   assert.match(stripAnsi(r.stderr), /OATLAS_VERIFY_TIMEOUT_MS=N/);
-  assert.match(stripAnsi(r.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(r.stderr), /ontology-atlas mcp-verify --timeout-ms 60000/);
 
   const partial = await run(['mcp-verify', '--timeout-ms=1000ms']);
   assert.equal(partial.code, 1);
@@ -2087,29 +2087,29 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.match(stripAnsi(partial.stderr), /Received: "1000ms"/);
   assert.match(stripAnsi(partial.stderr), /--timeout-ms N/);
   assert.match(stripAnsi(partial.stderr), /OATLAS_VERIFY_TIMEOUT_MS=N/);
-  assert.match(stripAnsi(partial.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(partial.stderr), /ontology-atlas mcp-verify --timeout-ms 60000/);
 
   const explicitVault = await run(['mcp-verify', 'ontology', '--timeout-ms=1000ms']);
   assert.equal(explicitVault.code, 1);
   assert.match(stripAnsi(explicitVault.stderr), /--timeout-ms must be a positive integer/);
   assert.match(stripAnsi(explicitVault.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(explicitVault.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(explicitVault.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
 
   const explicitVaultFlag = await run(['mcp-verify', '--vault', 'ontology', '--timeout-ms=1000ms']);
   assert.equal(explicitVaultFlag.code, 1);
-  assert.match(stripAnsi(explicitVaultFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(explicitVaultFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
 
   const missing = await run(['mcp-verify', '--timeout-ms']);
   assert.equal(missing.code, 1);
   assert.match(stripAnsi(missing.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(missing.stderr), /Received: undefined/);
-  assert.match(stripAnsi(missing.stderr), /ontology-atlas mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(missing.stderr), /ontology-atlas mcp-verify --timeout-ms 60000/);
 
   const nextFlag = await run(['mcp-verify', '--timeout-ms', '--vault', 'ontology']);
   assert.equal(nextFlag.code, 1);
   assert.match(stripAnsi(nextFlag.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(nextFlag.stderr), /Received: "--vault"/);
-  assert.match(stripAnsi(nextFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(nextFlag.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
 
   const envTimeout = await run(['mcp-verify', 'ontology'], {
     env: { OATLAS_VERIFY_TIMEOUT_MS: '1000ms' },
@@ -2117,7 +2117,7 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.equal(envTimeout.code, 1);
   assert.match(stripAnsi(envTimeout.stderr), /OATLAS_VERIFY_TIMEOUT_MS must be a positive integer/);
   assert.match(stripAnsi(envTimeout.stderr), /Received: "1000ms"/);
-  assert.match(stripAnsi(envTimeout.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 15000/);
+  assert.match(stripAnsi(envTimeout.stderr), /ontology-atlas mcp-verify --vault ontology --timeout-ms 60000/);
   assert.doesNotMatch(stripAnsi(envTimeout.stderr), /npm run verify -- --timeout-ms 15000/);
 
   const envKillGrace = await run(['mcp-verify', 'ontology'], {
@@ -2155,7 +2155,9 @@ await test('mcp-verify — passes CLI retry hint to the verify script', async ()
   });
 
   assert.equal(r.code, 1);
-  assert.match(stripAnsi(r.stderr), /retry=ontology-atlas mcp-verify --vault '.+vault with space' --timeout-ms 15000/);
+  // ⚠️ Double the timeout that was actually used, never a literal: the hint is printed *after* a
+  // run timed out, so a fixed number becomes a dead end the moment a default moves onto it.
+  assert.match(stripAnsi(r.stderr), /retry=ontology-atlas mcp-verify --vault '.+vault with space' --timeout-ms 60000/);
   assert.doesNotMatch(stripAnsi(r.stderr), /npm run verify -- --timeout-ms 15000/);
 });
 
@@ -2643,7 +2645,7 @@ await test('list — kind 있는 노드만 카운트', async () => {
   try {
     const r = await run(['list', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /2 ontology 노드/);
+    assert.match(r.stdout, /2 ontology nodes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3018,7 +3020,7 @@ await test('validate --fail-on=does-not-exist — stderr 에 unknown code 경고
     const r = await run(['validate', root, '--fail-on=does-not-exist']);
     // The unknown-code warning must appear on stderr (execution is unaffected — no match, so exit 0).
     assert.equal(r.code, 0);
-    assert.match(r.stderr, /알려지지 않은 code|--list-codes/);
+    assert.match(r.stderr, /unknown codes|--list-codes/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3562,7 +3564,7 @@ await test('find — title 부분매칭', async () => {
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /auth-token/);
-    assert.match(clean, /1 매칭/);
+    assert.match(clean, /1 matches/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3649,7 +3651,7 @@ await test('find — 매칭 0 도 exit 0 (정상)', async () => {
   try {
     const r = await run(['find', 'xyz999', root]);
     assert.equal(r.code, 0);
-    assert.match(r.stdout, /매칭 0/);
+    assert.match(r.stdout, /matched nothing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -5930,7 +5932,7 @@ await test('overview — graph fixture 의 counts + 허브 정확', async () => 
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     // header — 3 nodes (no vault-readme)
-    assert.match(clean, /3 노드/);
+    assert.match(clean, /3 nodes/);
     // KIND distribution — capability 2 / domain 1
     assert.match(clean, /capability\s+2/);
     assert.match(clean, /domain\s+1/);
@@ -6077,7 +6079,7 @@ await test('overview --limit 3 — 허브 N 만 출력', async () => {
     assert.equal(r.code, 0);
     const clean = stripAnsi(r.stdout);
     // Hub lines carry rank prefixes 1-3 only — nothing at 4+
-    assert.match(clean, /허브 노드.*상위 3/);
+    assert.match(clean, /Hub nodes.*top 3/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -7958,6 +7960,68 @@ function makeRepoFixture() {
   mkdirSync(join(repo, 'src', 'features', 'billing'), { recursive: true });
   return repo;
 }
+
+await test('architecture --json — returns the same fail-closed agent brief as MCP', async () => {
+  const vault = withVault([
+    {
+      slug: 'architecture/payments',
+      content: [
+        '---',
+        'architecture_schema: architecture-profile/v1',
+        'profile_uid: 22c86542-7512-4b6e-8c73-77be4730c772',
+        'profile_slug: payments-core',
+        'project_uid: e91d8a44-a95b-4faf-840d-e71c8b2d935c',
+        'title: Payments Core',
+        'patterns: [dependency:hexagonal]',
+        'scope_paths: [src/payments/**]',
+        'role_domain: [src/payments/domain/**]',
+        'role_adapter: [src/payments/adapters/**]',
+        'allow_domain: []',
+        'allow_adapter: [domain]',
+        'evidence: [ARCHITECTURE.md]',
+        '---',
+        '',
+        '# Payments architecture',
+        '',
+      ].join('\n'),
+    },
+  ]);
+  const repo = mkdtempSync(join(tmpdir(), 'cli-architecture-'));
+  try {
+    mkdirSync(join(repo, 'src', 'payments', 'domain'), { recursive: true });
+    mkdirSync(join(repo, 'src', 'payments', 'adapters'), { recursive: true });
+    writeFileSync(
+      join(repo, 'src', 'payments', 'domain', 'payment.ts'),
+      'import { save } from "../adapters/postgres";\nexport const payment = save;\n',
+      'utf-8',
+    );
+    writeFileSync(
+      join(repo, 'src', 'payments', 'adapters', 'postgres.ts'),
+      'export const save = true;\n',
+      'utf-8',
+    );
+
+    const result = await run([
+      'architecture',
+      repo,
+      '--vault',
+      vault,
+      '--profile',
+      'payments-core',
+      '--json',
+    ]);
+    assert.equal(result.code, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.contract, 'architectureBrief:v1');
+    assert.equal(payload.sideEffect, 0);
+    assert.equal(payload.conformance.status, 'violated');
+    assert.equal(payload.conformance.violations[0].fromRole, 'domain');
+    assert.equal(payload.agentPlanContract.contract, 'architectureChangePlan:v1');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
 
 await test('init — fresh starter vault compiles clean (no ambiguous alias / compile issue) [cold-start]', async () => {
   // A freshly scaffolded vault must be CLEAN so the SessionStart hook stays

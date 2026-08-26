@@ -1,0 +1,63 @@
+`capabilities/mcp-server`를 frontmatter에서 참조하는 노드는 총 3개입니다.
+
+### domain (1)
+
+- `domains/agent-integration` — **AI Agent Integration**
+  - 참조 키: `capabilities`
+
+### capability (2)
+
+- `capabilities/acp-runtime` — **In-App Coding Agent Runtime (ACP)**
+  - 참조 키: `dependencies`
+
+- `capabilities/cli-developer-entry` — **CLI Developer Entry**
+  - 참조 키: `dependencies`
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a0374d-53e0-7412-87e3-7ddbfdb5ac52
+--------
+user
+capabilities/mcp-server 를 frontmatter 에서 참조하고 있는 모든 노드를 찾아 kind 별로 분류해줘.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+frontmatter의 구조화된 참조를 기준으로 vault를 조회한 뒤, `kind`별로 묶어 정확한 노드 목록을 정리하겠습니다.
+hook: PreToolUse
+hook: PreToolUse Completed
+mcp: ontology-atlas/find_backlinks started
+mcp: ontology-atlas/find_backlinks (completed)
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`capabilities/mcp-server`를 frontmatter에서 참조하는 노드는 총 3개입니다.
+
+### domain (1)
+
+- `domains/agent-integration` — **AI Agent Integration**
+  - 참조 키: `capabilities`
+
+### capability (2)
+
+- `capabilities/acp-runtime` — **In-App Coding Agent Runtime (ACP)**
+  - 참조 키: `dependencies`
+
+- `capabilities/cli-developer-entry` — **CLI Developer Entry**
+  - 참조 키: `dependencies`
+hook: Stop
+hook: Stop Completed
+tokens used
+32,397

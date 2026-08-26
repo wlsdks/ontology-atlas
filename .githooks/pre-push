@@ -110,7 +110,10 @@ touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
 # condition under which a timing ratio cannot be trusted; it went red once on a
 # push whose diff could not affect it. CI runs them on a quiet runner, where the
 # number means something.
-touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --exclude "**/*.perf.test.*"'
+# `tests/contract/**` has its own unconditional lane below. Running those 209 files
+# here too duplicated 2,101 tests under the same saturation and repeatedly pushed a
+# 3.2s filesystem-glob assertion past 15s without adding any coverage.
+touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
 touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links && pnpm docs-vault:check'

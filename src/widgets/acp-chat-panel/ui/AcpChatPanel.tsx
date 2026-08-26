@@ -48,6 +48,7 @@ import {
 } from '@/entities/knowledge-graph';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
+import { turnLiveness } from '@/features/acp-session/model/turn-liveness';
 import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
 import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
 import { useAgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
@@ -280,6 +281,7 @@ export function AcpChatPanel({
   const reducedMotion = usePrefersReducedMotion();
   const {
     status,
+    lastTurnUpdateAt,
     events,
     slashCommands,
     error,
@@ -716,6 +718,39 @@ export function AcpChatPanel({
 
   const busy = status === 'thinking';
   const canType = status === 'ready' || status === 'thinking';
+  /*
+   * ⚠️ A turn that stopped answering looks exactly like one still working, because `prompt` is given
+   * no timeout on purpose (`turn-liveness.ts`). Measured in the installed rc.11 build: nine steps
+   * finished, the adapter went idle, and the composer stayed shut for thirteen minutes with the
+   * screen still claiming progress. `cancel` already recovers it; nothing said so.
+   */
+  /*
+   * ⚠️ The measurement carries **the timestamp it was taken against**, and render trusts it only
+   * while that basis is still current. Without that, a turn that went silent would leave its
+   * thirteen minutes on screen for one tick of the next turn.
+   *
+   * The clock is read in the interval, never during render: a component that asks the time while
+   * rendering is impure, and `react-hooks/purity` rejects it. Nothing is set from the effect body
+   * either, so no render cascades out of it.
+   */
+  const [silence, setSilence] = useState<{ basis: number; minutes: number } | null>(null);
+  useEffect(() => {
+    if (!busy || lastTurnUpdateAt === null) return;
+    const id = window.setInterval(() => {
+      const now = Date.now();
+      setSilence(
+        turnLiveness(status, lastTurnUpdateAt, now, pending !== null) === 'silent'
+          ? {
+              basis: lastTurnUpdateAt,
+              minutes: Math.max(1, Math.floor((now - lastTurnUpdateAt) / 60_000)),
+            }
+          : null,
+      );
+    }, 5_000);
+    return () => window.clearInterval(id);
+  }, [busy, lastTurnUpdateAt, pending, status]);
+  const turnSilent = busy && silence !== null && silence.basis === lastTurnUpdateAt;
+  const silentMinutes = silence?.minutes ?? 0;
   // When the dock's first frame loads and immediately after session replacement,
   // the process effect has not yet started,
   // so the actual state is idle. While this panel is open, the user sees 「Waiting for Connection」 — we project only the screen state as starting without touching the protocol state. As long as sessionEnabled=true, 「Off」 does not flash during render cycles.
@@ -1326,6 +1361,24 @@ export function AcpChatPanel({
             className="pointer-events-none invisible absolute inset-x-0 top-0 h-0 overflow-hidden"
           />
         </div>
+        {/*
+          ⚠️ Named, not guessed at. The panel does not claim the agent is broken -- it cannot know --
+          it says how long the silence has been and points at the control that already recovers it.
+          Saying nothing was the rc.11 defect: the screen kept claiming progress while the person sat
+          locked out with no way to tell that pressing Stop was the way back.
+        */}
+        {turnSilent ? (
+          <p
+            data-testid="acp-chat-turn-silent"
+            role="status"
+            className="mt-2 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+          >
+            <span className="text-[color:var(--color-text-secondary)]">
+              {t('turnSilent', { minutes: silentMinutes })}
+            </span>{' '}
+            {t('turnSilentHint')}
+          </p>
+        ) : null}
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="flex min-w-0 flex-1 items-center gap-2">{choicesRow}</span>
           <span className="flex shrink-0 items-center gap-1.5">

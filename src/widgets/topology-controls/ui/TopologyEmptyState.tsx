@@ -14,7 +14,7 @@ import { controlClass } from '@/shared/ui';
  * visible actions land in the current Topology/Workshop workflow.
  */
 export function TopologyEmptyState({
-  projectCount,
+  conceptCount,
   reason,
   canCreateNode = false,
   onCreateNode,
@@ -22,7 +22,7 @@ export function TopologyEmptyState({
   onStartFromDocs,
   canPickFolder = false,
 }: {
-  projectCount: number;
+  conceptCount: number;
   reason?: 'no-projects' | 'no-relations';
   /** With a writable local vault, "create the first node from the topology" is the primary entry. */
   canCreateNode?: boolean;
@@ -56,14 +56,20 @@ export function TopologyEmptyState({
   canPickFolder?: boolean;
 }) {
   const t = useTranslations('topology.empty');
-  const isNoProjects = reason ? reason === 'no-projects' : projectCount === 0;
+  /*
+   * ⚠️ Renamed from `projectCount` (owner, 2026-08-25: *"what is 'a project to draw'? it just means
+   * there are no ontology concepts, right?"*). The caller passes the graph's **node** count, so the
+   * old name described neither the value nor what the screen was telling people — and the copy it
+   * fed leaked the `project` kind, a schema word, into the one sentence a newcomer reads first.
+   */
+  const isNoProjects = reason ? reason === 'no-projects' : conceptCount === 0;
   const showPickerPath = canPickFolder;
   const hasDocsToBootstrap = docsFoundCount > 0 && onStartFromDocs !== undefined;
   const kicker = hasDocsToBootstrap
     ? t('kickerDocsFound', { count: docsFoundCount })
     : isNoProjects
-      ? t('kicker', { count: projectCount })
-      : t('kickerNoDeps', { count: projectCount });
+      ? t('kicker', { count: conceptCount })
+      : t('kickerNoDeps', { count: conceptCount });
 
   /*
    * ── The actions **read as one set** (2026-08-03, owner: *"I don't like crooked buttons."* —
@@ -126,9 +132,17 @@ export function TopologyEmptyState({
                 )
               : t('bodyNoDeps')}
         </p>
-        <p className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
-          {t('crossViewHint')}
-        </p>
+        {/*
+          ⚠️ Not while the folder is empty (owner, 2026-08-25: *"I don't understand what this means
+          either"*). The line says the concepts you made stay visible in the other screens — and at
+          zero concepts it is telling somebody where to find something they do not have, using two
+          screen names they have not met. It belongs to the state where there is something to find.
+        */}
+        {isNoProjects ? null : (
+          <p className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
+            {t('crossViewHint')}
+          </p>
+        )}
         <div className="mt-4 flex flex-col gap-1.5 border-t border-[color:var(--color-divider)] pt-4">
           {hasDocsToBootstrap ? (
             <button
@@ -152,10 +166,21 @@ export function TopologyEmptyState({
               {t('ctaCreateNode')}
             </button>
           ) : null}
-          <Link href="/ontology/" className={SECONDARY}>
-            <Network size={ICON_SIZE.md} aria-hidden="true" />
-            {t('ctaTree')}
-          </Link>
+          {/*
+            ⚠️ Same rule as `crossViewHint` above, one step further along (owner instruction,
+            2026-08-25, after being told the affordance-count no-go stood in the way). The hint only
+            *named* a screen the person has nothing in; this offered to **take them there**, and
+            `/ontology/` is a pure redirect back to `/topology/` with INDEX expanded — the screen
+            this panel is drawn on. At zero concepts pressing it is a round trip that ends where it
+            started, showing an empty index. Where concepts exist, expanding that index is a real
+            action, so the row stays.
+          */}
+          {isNoProjects ? null : (
+            <Link href="/ontology/" className={SECONDARY}>
+              <Network size={ICON_SIZE.md} aria-hidden="true" />
+              {t('ctaTree')}
+            </Link>
+          )}
           <Link href="/topology/?workbench=create" className={SECONDARY}>
             <GitBranch size={ICON_SIZE.md} aria-hidden="true" />
             {t(isNoProjects ? 'ctaBuilder' : 'ctaBuilderNoDeps')}

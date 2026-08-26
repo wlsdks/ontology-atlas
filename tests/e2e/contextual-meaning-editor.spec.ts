@@ -101,6 +101,56 @@ test('map relation editor previews, reviews, and writes one relation without lea
     ),
   ).toBe(true);
 
+  /*
+   * ⚠️ The relation rows (from · relation · to · why) used to be **one grid each**, aligned only because
+   * `4.5rem` was written four times. 72px held four 11px two-character labels — about 22px of text —
+   * and the 50px left over read as a gap between a label and its own value (owner, on the installed
+   * rc.13 build). They share one grid now, so this measures the property that replaced the number:
+   * every label starts at the same x, every value starts at the same x, and neither column is
+   * mostly empty.
+   */
+  const relationFit = await review.evaluate((element) => {
+    const list = element.querySelector<HTMLElement>('dl');
+    if (!list) return null;
+    const labels = [...list.querySelectorAll<HTMLElement>('dt')];
+    const values = [...list.querySelectorAll<HTMLElement>('dd')];
+    const box = (el: HTMLElement) => el.getBoundingClientRect();
+    return {
+      labelCount: labels.length,
+      labelLefts: labels.map((el) => Math.round(box(el).left)),
+      valueLefts: values.map((el) => Math.round(box(el).left)),
+      /*
+       * ⚠️ **The text, not the cell.** A grid item fills its column, so `dt.getBoundingClientRect()`
+       * returns the column width whatever the label says — comparing the two measures a thing
+       * against itself. A probe caught exactly that: restoring the hardcoded 4.5rem left this
+       * check green. A Range around the text node measures what is actually drawn.
+       */
+      widestLabelText: Math.max(
+        ...labels.map((el) => {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          return Math.round(range.getBoundingClientRect().width);
+        }),
+      ),
+      columnWidth: labels.length ? Math.round(box(labels[0]).width) : 0,
+    };
+  });
+  /*
+   * ⚠️ Not `if (relationFit)`. A silent skip would let this whole measurement disappear the day the
+   * markup changes, and a gate that can vanish without saying so is not a gate.
+   */
+  expect(relationFit, 'the review must render a relation detail list to measure').not.toBeNull();
+  {
+    expect(relationFit!.labelCount, 'relation detail must render its labels').toBeGreaterThan(1);
+    expect(new Set(relationFit!.labelLefts).size, 'labels share one column').toBe(1);
+    expect(new Set(relationFit!.valueLefts).size, 'values share one column').toBe(1);
+    /*
+     * The column is sized by its widest label, so the slack inside it is the difference between
+     * the labels themselves — never the 50px of dead space a hardcoded 4.5rem left behind.
+     */
+    expect(relationFit!.columnWidth - relationFit!.widestLabelText).toBeLessThanOrEqual(1);
+  }
+
   await page.getByTestId('meaning-editor-apply').click();
   await expect(page.getByTestId('topology-map-v2')).toHaveAttribute(
     'data-preview-phase',

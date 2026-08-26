@@ -32,9 +32,26 @@ function refsOf(doc: VaultDoc, key: string): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
+/**
+ * ⚠️ **An architecture profile is deliberately not one of these documents.**
+ *
+ * `docs/ARCHITECTURE.md` and decision (120) both settle it: a file carrying
+ * `architecture_schema: architecture-profile/v1` has **no `kind:`**, so it never becomes a Map
+ * node — "not an ontology kind and not an overloaded ontology `document`". These three checks
+ * were written before profiles existed and say "every document", which would force the sample's
+ * profile to grow a `kind`, a `uid` and a `relates` edge purely to satisfy them. That is the
+ * contract bending the design rather than describing it.
+ *
+ * So the graph checks read the graph documents, and the profile is excluded by the one property
+ * that defines it. The exclusion is narrow on purpose: anything without that schema is still held
+ * to every rule below.
+ */
+const isArchitectureProfile = (doc: VaultDoc): boolean =>
+  doc.frontmatter?.architecture_schema === 'architecture-profile/v1';
+
 describe('sample storefront vault — connected business graph', () => {
   const derivation = deriveOntologyFromVault(sampleStorefrontManifest);
-  const docs = sampleStorefrontManifest.docs;
+  const docs = sampleStorefrontManifest.docs.filter((doc) => !isArchitectureProfile(doc));
 
   it('vault 문서 전원이 kind 노드로 유도된다 (기대 분포는 매니페스트에서 유도)', () => {
     const expectedKindCounts: Record<string, number> = {};

@@ -180,8 +180,8 @@ export async function runInferImports(args) {
   }
 
   process.stdout.write(
-    `${COLORS.dim}side effect 0: vault 변경 안 함. import는 코드 근거일 뿐 의미 관계를 자동 승인하지 않습니다. ` +
-      `양쪽 개념과 근거를 검토하고 이유를 설명한 뒤 사용자 승인을 받아 한 건씩 기록하세요.${COLORS.reset}\n`,
+    `${COLORS.dim}side effect 0: the vault is unchanged. An import is code evidence; it does not approve a semantic relation. ` +
+      `Review both concepts and the evidence, explain the reason, then record them one at a time with the user's approval.${COLORS.reset}\n`,
   );
   return 0;
 }
@@ -265,11 +265,11 @@ function printUsage(stream = process.stderr) {
       `  resolve relative imports, tsconfig paths, and fallback @/* aliases,\n` +
       `  classify external (npm) separately and unresolved aliases explicitly,\n` +
       `  collapse to module edges (capability A → B with import count).\n\n` +
-      `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: vault 변경 안 함, moduleEdges 만 출력.\n` +
+      `  Default: ${COLORS.bold}side effect 0${COLORS.reset}: the vault is unchanged; only moduleEdges are printed.\n` +
       `  ${COLORS.bold}--apply${COLORS.reset}: disabled: import evidence cannot self-approve a semantic relation.\n` +
-      `  ${COLORS.bold}--threshold N${COLORS.reset}: count < N 인 약한 module edge 를 필터.\n` +
-      `  큰 codebase 의 accidental cross-feature import 가 ontology 에\n` +
-      `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n` +
+      `  ${COLORS.bold}--threshold N${COLORS.reset}: filter out weak module edges with count < N.\n` +
+      `  Keeps an accidental cross-feature import in a large codebase out of the\n` +
+      `  ontology. Applies to preview, --apply and --json alike.\n` +
       `  ${COLORS.bold}--max-files N${COLORS.reset}: default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `  ${COLORS.bold}--full${COLORS.reset}: explicitly request the complete module-edge arrays when the MCP response would otherwise be compacted.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +

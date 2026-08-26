@@ -68,6 +68,8 @@ export const STROKES = {
  * alone is copper.
  */
 const BRAND_SOLID = '#5E6AD2';
+const BRAND_TAGLINE = 'Understand your codebase.';
+const BRAND_ARIA_LABEL = `Ontology Atlas — ${BRAND_TAGLINE}`;
 
 /**
  * Single-hue ramp for brand assets only — the exemption `forbidden.md` opens
@@ -250,7 +252,7 @@ export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
   const baseline = tagline ? H * 0.52 : H * 0.66;
 
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ontology Atlas — Map your codebase knowledge.">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${BRAND_ARIA_LABEL}">` +
     `<g transform="translate(${ml.toFixed(2)} ${mt.toFixed(2)}) scale(${scale.toFixed(6)})">` +
     markBody('full', tone === 'brand' ? {} : { paint: ink }) +
     '</g>' +
@@ -260,7 +262,7 @@ export function lockupSvg({ tone = 'brand', tagline = true } = {}) {
     (tagline
       ? `<text x="${textX.toFixed(1)}" y="${(baseline + tagSize * 1.72).toFixed(1)}" fill="${taglineFill}" ` +
         `font-family="${FONT_STACK}" font-size="${tagSize.toFixed(1)}" font-weight="450">` +
-        `Map your codebase knowledge.</text>`
+        `${BRAND_TAGLINE}</text>`
       : '') +
     '</svg>\n'
   );
@@ -290,13 +292,13 @@ export function ogImageSvg() {
   const mt = markTop - (56 - STROKES.outer / 2) * scale;
   const ml = cx - markW / 2 - (82.8 - STROKES.outer / 2) * scale;
   return (
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Ontology Atlas — Map your codebase knowledge.">` +
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${BRAND_ARIA_LABEL}">` +
     `<rect width="${W}" height="${H}" fill="#08090A"/>` +
     `<g transform="translate(${ml.toFixed(2)} ${mt.toFixed(2)}) scale(${scale.toFixed(6)})">${markBody('full')}</g>` +
     `<text x="${cx}" y="${(markTop + INK + 108).toFixed(0)}" text-anchor="middle" fill="#F2F3F8" ` +
     `font-family="${FONT_STACK}" font-size="${wordSize}" font-weight="600" letter-spacing="-0.02em">Ontology Atlas</text>` +
     `<text x="${cx}" y="${(markTop + INK + 108 + tagSize * 1.85).toFixed(0)}" text-anchor="middle" fill="${BRAND_SOLID}" ` +
-    `font-family="${FONT_STACK}" font-size="${tagSize}" font-weight="450">Map your codebase knowledge.</text>` +
+    `font-family="${FONT_STACK}" font-size="${tagSize}" font-weight="450">${BRAND_TAGLINE}</text>` +
     '</svg>\n'
   );
 }

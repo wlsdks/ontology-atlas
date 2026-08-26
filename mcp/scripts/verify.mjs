@@ -172,6 +172,7 @@ export const EXPECTED_READ_TOOLS = [
   'compile_ontology',
   'query_ontology',
   'validate_vault',
+  'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
   'index_project',
@@ -4316,7 +4317,7 @@ function log(level, msg) {
   console.log(`${tag} ${msg}`);
 }
 
-export function parseVerifyTimeoutMs(value, fallback = 8000) {
+export function parseVerifyTimeoutMs(value, fallback = 30000) {
   if (value == null || value === '') return fallback;
   if (!/^[1-9]\d*$/.test(String(value))) return false;
   const parsed = Number.parseInt(value, 10);

@@ -1,4 +1,11 @@
 {
+  "architecture/storefront-services": [
+    {
+      "depth": 1,
+      "text": "Storefront Services",
+      "slug": "storefront-services"
+    }
+  ],
   "capabilities/account-closure": [
     {
       "depth": 1,

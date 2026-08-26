@@ -1,19 +1,22 @@
-# Agent Memory Positioning
+# Codebase Ontology Positioning
 
 > Current product framing for launch, README copy, and prioritization.
-> Last updated: 2026-06-21.
+> Last updated: 2026-08-25.
 
 ## One-line Position
 
-**A repo-native memory layer for Claude Code, Cursor, and Codex.**
+**Understand what your codebase builds, why it is structured that way, and what
+a change will affect.**
 
-ontology-atlas keeps a local, git-backed mental model of a codebase that AI
-coding agents can read, query, and maintain through MCP.
+Ontology Atlas is a local-first codebase ontology workbench. It keeps product
+meaning, capability boundaries, implementation evidence, dependencies, and
+impact in Markdown beside the code. People and AI agents read and maintain the
+same ontology; Git diffs remain the judgment surface.
 
 ## The User Problem
 
-AI coding agents are useful, but they forget the durable structure of a
-codebase between sessions:
+Source code is good at showing *how* a system works. It rarely preserves the
+answers people and agents need before changing it:
 
 - which domains and capabilities exist
 - which files implement which capability
@@ -21,8 +24,10 @@ codebase between sessions:
 - which architectural decisions were already discovered
 - which documentation is canonical and which is stale
 
-Without a shared memory layer, every agent session starts by re-discovering the
-same project shape from source files and chat history.
+Without a codebase ontology, those answers remain scattered across source,
+docs, tickets, and people's heads. A person or agent must reconstruct them
+before every consequential change, and two readers can reach different answers
+without a reviewable place to reconcile them.
 
 The minimum supported path is intentionally plain: connect Atlas MCP or run the
 Atlas CLI from Claude Code, Codex, Cursor, or another coding agent, and the agent
@@ -30,6 +35,9 @@ should already receive a useful workspace brief, graph health check, handoff
 packet, and reviewable memory-diff workflow. No CodeGraph, Serena, language
 server, grep wrapper, or external source-index service is required for the
 product to be usable.
+
+AI coding agents benefit because the answers survive between sessions, but
+agent memory is a benefit rather than the product category.
 
 Atlas should not promise to replace code-reading tools. Built-in source search,
 grep, language servers, Serena, CodeGraph, AST indexes, and similar tools are
@@ -40,18 +48,20 @@ evidence, and validation path that explain why those code facts matter.
 
 ## Product Bet
 
-The product is not valuable because it is "an ontology editor." Developers do
-not want another system they must manually maintain.
+The product is not valuable because it can edit arbitrary ontologies, and it is
+not valuable because it duplicates a code index. It is valuable when the
+ontology explains a real codebase and stays current as that codebase changes.
 
-The product is valuable if it reduces the maintenance cost of AI-agent memory:
+The core loop is:
 
 1. Open a repo and generate an ontology draft automatically.
 2. Let the agent propose mental-model changes after real code work.
 3. Let the developer review those changes like a git diff.
-4. Make the next agent session visibly better because the memory is already in
-   the repo.
+4. Make the next human or agent decision visibly better because the explanation
+   is already in the repo.
 
-That loop is the product. The ontology graph is the implementation substrate.
+That loop is the product. AI-agent continuity is one payoff; shared and
+reviewable codebase understanding is the broader outcome.
 
 The coding-agent value is therefore not "Atlas reads all code for you." The
 value is "Atlas tells the agent what to inspect, why it matters, and what must
@@ -61,21 +71,24 @@ code-intelligence tools.
 
 ## Why This Can Matter
 
-The strongest positioning is:
+The strongest positioning is the concrete outcome:
 
-> Your AI coding agent forgets your codebase. Give it a local, git-backed memory
-> it can read and maintain.
+> Understand what your codebase builds, why it is structured that way, and what
+> a change will affect.
 
-This is stronger than:
+This is clearer than either implementation-first or memory-first framing:
 
 > Local-first ontology graph workbench with deterministic compiler and MCP tools.
 
-The second sentence is technically accurate, but it leads with implementation
-language. The first sentence leads with the daily pain of AI-assisted coding.
+> Give your AI coding agent a local, git-backed memory.
+
+The first alternative leads with implementation language. The second reduces
+the product to one audience and makes it sound like a conversation-memory store.
+The current line names the decision a person is trying to make.
 
 ## Success Conditions
 
-ontology-atlas becomes a real product if a new repo can show value in one short
+Ontology Atlas becomes a real product if a new repo can show value in one short
 loop:
 
 ```text
@@ -87,8 +100,8 @@ Target: the first visible value should appear within 10 minutes.
 
 ## Failure Conditions
 
-The product fails if users feel they must become ontology maintainers before
-they get value.
+The product fails if users feel they must become general-purpose ontology
+maintainers before they understand their codebase.
 
 Risk signals:
 
@@ -191,11 +204,13 @@ Near-term product implications:
 
 ## Positioning Guardrail
 
-Use "ontology" in technical documentation and architecture. Use "repo-native
-memory layer" in launch copy and first-contact README text.
+Use the plain outcome in launch copy and first-contact README text. Use
+"codebase ontology workbench" to name the category. Use "agent memory" only for
+the specific continuity benefit, never as the master identity.
 
-The marketable promise is not that users can draw a better graph. The promise is
-that their AI coding agent stops starting from zero.
+The promise is not that users can draw a better graph or model arbitrary
+knowledge. The promise is that they can see what a codebase builds, why it has
+its current shape, and what a change will affect.
 
 When explaining the code side, use this boundary:
 

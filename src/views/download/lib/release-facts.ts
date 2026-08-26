@@ -3,10 +3,13 @@
  * not fabricated marketing numbers. Each one traces to an actual repo
  * source of truth:
  *
- * - `RELEASE_VERSION` — `package.json` / `src-tauri/tauri.conf.json`
- *   `version` (release-status tooling already enforces these three stay
- *   aligned — see `check-macos-release-status.mjs`'s `version_alignment`
- *   check).
+ * - `RELEASE_VERSION` — **read from `package.json` at build time**, not transcribed. It was a
+ *   hand-typed literal until 2026-08-25, which made it a fourth place to remember beside
+ *   `package.json`, `tauri.conf.json` and `Cargo.toml` while being a copy of the first rather than
+ *   an independent source. `desktop:release-status` catches a stale copy, but it runs at the tag
+ *   and not in CI, so a wrong download page survived every check until somebody tried to ship.
+ *   `next.config.ts` puts the value on `NEXT_PUBLIC_RELEASE_VERSION`; importing the manifest here
+ *   would drag the whole dependency list into the client bundle.
  * - `RELEASE_MIN_MACOS` — `src-tauri/tauri.conf.json`
  *   `bundle.macOS.minimumSystemVersion`.
  * - `buildDmgName` — the real asset-naming convention enforced by
@@ -35,9 +38,14 @@
  * So the value lives here and **drift is caught by a test** — the same discipline as the CLI side.
  * Adding or removing a tool turns `release-facts.test.ts` red first.
  */
-export const MCP_TOOL_COUNT = 35;
+export const MCP_TOOL_COUNT = 36;
 
-export const RELEASE_VERSION = "1.0.0-rc.10";
+/*
+ * ⚠️ The fallback exists for tooling that renders this module without Next's build-time `env`
+ * (unit tests, scripts). It must never be a version string: a plausible-looking wrong number is
+ * worse on a download page than an obviously broken one, because nobody checks it.
+ */
+export const RELEASE_VERSION = process.env.NEXT_PUBLIC_RELEASE_VERSION ?? 'unknown';
 export const RELEASE_MIN_MACOS = "macOS 12";
 export const RELEASE_ARCHES = ["aarch64", "x64"] as const;
 export type ReleaseArch = (typeof RELEASE_ARCHES)[number];

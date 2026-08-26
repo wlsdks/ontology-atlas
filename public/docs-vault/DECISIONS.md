@@ -40,6 +40,303 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-26 — Architecture is additive; Git remains a primary destination
+
+**Convened**: solo PO pass · **Trigger**: the owner inspected the delivered
+navigation and corrected the substitution explicitly: "Architecture is added;
+do not remove another destination."
+**Rubric**: 24/24 (fatal zero: none)
+**Decision**: restore Git beside Architecture and preserve every pre-existing
+entry path.
+**Applied rule**: owner correction · additive slice · no route or public-contract
+change.
+**Accountable**: owner.
+
+**Prior decision**: the same-day Architecture record remains standing for the
+separate profile, conformance, MCP/CLI, and Living Blueprint contracts. Its rail
+replacement clause is overturned by this record. The recorded falsifier — a
+developer seeking Git from the rail — was observed immediately in the owner's
+first review, so the losing dissent won.
+
+**Observed phenomenon**: `/git` and its workbench still existed, but the primary
+rail, active-route marker, `G G` shortcut, guided tour, and uncommitted-change
+badge no longer exposed it. Architecture therefore arrived as a replacement even
+though the owner intended a new destination.
+
+**Decision details**:
+
+1. The desktop primary rail has seven destinations: Map · Architecture · Docs ·
+   Insights · Projects · Agents · Git.
+2. Git retains `/git`, the History icon, active-route state, uncommitted-change
+   badge, `G G`, and its two-step destination guide. Architecture retains
+   `/architecture`, `G R`, and its Living Blueprint.
+3. The mobile bottom bar remains the measured five-item set: Map · Architecture ·
+   Docs · Insights · Projects. This correction restores the desktop LNB that was
+   removed; it does not invent another mobile slot.
+4. Future destination work may not fund an addition by silently removing an
+   existing destination. Removal needs its own explicit owner decision.
+
+**Recorded dissent**: seven destination rows plus the fixed utility tier may
+become unreachable at the minimum window height or under UI zoom.
+**Falsifier**: if rendered measurement shows Git, another destination, or the
+utility tier clipped, occluded, or unreachable, revisit rail sizing and scroll
+ownership. Do not remove a destination as the first remedy.
+**Revisit**: on a measured reachability failure at a supported desktop viewport,
+or when the owner explicitly retires a destination.
+
+**Status**: standing. The prior record's Git-demotion clause is overturned.
+
+---
+
+## 2026-08-26 — Architecture is a separate reviewed contract and primary workbench destination
+
+**Trigger**: the owner fixed Atlas as a developer-facing codebase ontology, then
+clarified that an ontology map does not answer the architecture question. They
+asked for MVP, Hexagonal, Clean Architecture, and similar project structure to
+be visible as a distinct, visually strong surface that helps agentic development,
+approved the separated design, asked implementation to begin on a separate
+branch, and finally made near-production installed-app iteration the long-term
+goal.
+
+**Prior decisions**: the 2026-08-25 codebase-ontology decision stands: source
+indexes own structural facts and Atlas owns reviewed meaning. Decision (92)
+stands: the Map is the ontology reading/writing surface and Studio remains a
+compatibility redirect. Decisions (90)/(91) established that a primary rail has
+a hard ceiling and a new destination must name what leaves. This record changes
+the exact six-item set rather than silently adding a seventh: Architecture takes
+Git's primary slot; `/git` remains a live contextual workbench route.
+
+**Observed phenomenon**: the current product could show what a codebase builds
+and what a concept affects, but it could not answer which implementation roles a
+change may cross. Folder names alone cannot prove Clean, Hexagonal, MVP, or FSD;
+source tools can derive imports but do not preserve reviewed intent. A generic
+diagram would create another drawing with no executable consequence for an
+agent.
+
+**PO decision**: **Shape a bounded slice, contract first.** Five seats completed
+one independent round and one rebuttal round. The slice had to beat Docs plus
+source search on scoped role, allowed dependency, violation, and unknown tasks
+before route promotion. The canonical record is a separate Git-backed
+`architecture-profile/v1`, not an ontology kind and not an overloaded ontology
+`document`. Pattern names are declared; observations are derived; unknown is
+never compliant. The owner then explicitly approved the dedicated destination
+and rail replacement.
+
+**Decision**:
+
+1. Architecture and the Ontology Map remain separate. The Map explains product
+   meaning, evidence, and impact. Architecture explains implementation roles,
+   scoped paths, and allowed dependency direction.
+2. A profile is non-kind Markdown with a writer-minted UUID, project UID,
+   pattern axes, scope/exclusions, role paths, dependency policy, and evidence.
+   It appears in Docs but never in the ontology graph.
+3. MCP `inspect_architecture` and CLI `architecture` return the same
+   `architectureBrief:v1`: profile, `architectureConformance:v1`, role coverage,
+   observed role edges, bounded violations, explicit unknowns, and
+   `architectureChangePlan:v1`. Both have side effect 0.
+4. Conformance is `conforms`, `violated`, or `unknown`. Unsupported languages,
+   truncated scans, unmapped or unruled edges, and empty roles fail closed. A
+   pattern label is never inferred from folders.
+5. `/architecture` is the Living Blueprint. The same ordered role model remains
+   while the person moves through Understand → Plan → Verify. Plan hands the
+   selected profile to an agent before editing; Verify repeats the source check
+   afterwards.
+6. The installed app includes an exact CLI fallback only after it verifies the
+   project source binding, vault absolute path, and Atlas CLI entry. Surfaces
+   without those facts say the fallback is unavailable instead of emitting a
+   placeholder command.
+7. The six primary destinations are Map · Architecture · Docs · Insights ·
+   Projects · Agents. `/git` is not deleted or redirected; contextual history and
+   recording links continue to open it.
+
+**Selected design direction**: *Living Blueprint — one stable role spine across
+Understand, Plan, and Verify; reviewed intent beside source-derived conformance;
+the exact agent plan is a first-class state.* Rejected alternatives were the
+status quo (Docs plus source only), merging architecture into the Ontology Map,
+and a free-layout diagram generator.
+
+### Design Council Verdict — Living Blueprint
+
+**Convened because**: a new primary surface changes hierarchy, responsive
+navigation, installed-app workbench behavior, information visualization, and
+agent handoff. **Selected seats**: lead, system, interaction, information
+visualization, workbench, responsive, and handoff. Round 1 ran in isolated
+batches with unique ports and no exchanged positions; Round 2 used the same
+seats for one cross-critique.
+
+| Seat | Verdict | Prescription/evidence |
+|---|---|---|
+| Lead | conditional → preserve role-first | Re-anchor the changed stage instead of reordering the role model |
+| System | conditional → reject | The measured mobile transition overrides static class evidence; interactive profile caption starts at tertiary |
+| Interaction | reject | Copy needs reachable stage feedback, explicit clipboard states, and an empty-state exit |
+| Information visualization | conditional | Remove Plan dashes from reviewed roles; a non-graph blueprint is more expressive than a false topology |
+| Workbench | conditional → reject | Installed 1512 proof is real; scroll reachability and complete overview need measurement |
+| Responsive | reject → green after fix | At 600–834, Plan grew the scroll range by 96px and left the CTA behind the fixed tab |
+| Handoff | reject → green after fix | MCP worked, but copied content omitted an executable CLI fallback and verified absolute paths |
+
+**Primary moment**: before changing code, a developer selects a reviewed scope,
+understands which roles may depend on which, and gives the same typed facts to an
+agent. **Attention winner**: the stable role blueprint. **Decisive disagreement**:
+put the stage panel before the blueprint versus keep role-first and re-anchor the
+scroll. **Applied rule**: smallest slice, charter first, no union. The guardian
+kept role-first and fixed scroll continuity. The later Plan-dash removal,
+verified-path handoff, clipboard state, and profile ink correction landed as
+separate bounded slices, each with its own test rather than as a combined visual
+redesign.
+
+**Remove/dim/collapse/align**: remove dashed borders that falsely made reviewed
+roles look provisional; demote Git from the primary rail without removing its
+route; align a prior scroll end to the newly mounted stage; keep unknown amber
+only on explicit source-check statements.
+
+**Proof after application**: parser/conformance cross-surface gate; focused MCP
+and CLI integration; `test:architecture` planted-contract RED then GREEN;
+quaternary-ink RED then GREEN; 600px browser E2E RED with 96px remaining then
+GREEN; responsive sweep with zero horizontal overflow; 390×844 coarse-pointer
+measurement (44×44 stage controls, 0px new-end distance, 19.4px CTA clearance,
+successful center hit); production build; installed macOS app route/WebView
+proof; Codex Computer Use for real vault connection, seven roles, Plan/copy/
+Verify, and close/relaunch vault restoration.
+
+**Recorded dissent**: a dedicated destination may still duplicate ArchUnit,
+dependency-cruiser, CodeGraph, or a maintained `ARCHITECTURE.md`, while consuming
+the primary slot previously used for Git. Teams may not maintain role mappings,
+and a polished profile can lend authority to a stale or fashionable pattern
+label.
+
+**Falsifier**: reopen this decision if a three-repository task comparison does
+not beat Docs plus source tools on role/boundary/violation/agent-plan accuracy;
+if real profiles are mostly unknown or wrong; if an unsupported scan ever renders
+green; if developers repeatedly seek Git from the rail but do not revisit
+Architecture; or if a profile becomes a second source of observed imports.
+The first response is demotion into Docs/agent handoff, not inventing more
+diagram features.
+
+**Revisit**: after ten real architecture-guided code changes or the first
+falsifier observation. **Accountable**: owner for surface/rail approval;
+design-guardian for the bounded applied fixes. **Status**: standing.
+
+---
+
+## 2026-08-25 — Atlas narrows to a codebase ontology, without becoming a code index
+
+**Context**: the owner rejected two successive master framings while reviewing
+the brand. "A shared meaning layer" was too abstract to understand, while "AI
+agent memory" described one benefit and made the product sound like a session
+memory store. The owner selected the plain account of the actual decision Atlas
+supports: understand what a codebase builds, why it is structured that way, and
+what a change will affect. They then explicitly chose to move from a broad
+ontology position to a codebase ontology position.
+
+**Prior records affected**: Product Direction v4 led with repo-native agent
+memory; v8 broadened the audience to everyone making decisions about a product
+or system; v10 made the shared human/agent meaning layer canonical. Their
+operating truths survive, but neither agent memory nor unconstrained product
+ontology remains the market category. This record narrows those positions
+explicitly rather than silently rewriting them.
+
+**Review path**: the owner explicitly excluded the standing PO seats from this
+brand question. Three fresh independent seats — visual identity, brand
+strategy/naming, and category marketing — reviewed the current artifact and
+positioning without seeing earlier icon candidates, then completed one
+cross-critique. They agreed that the current icon is an over-specified system
+diagram, that `Atlas` and especially `Ontology` invite category clichés, that
+DNA is campaign language rather than a name or icon instruction, and that a new
+public name must be singular rather than endorsed by a second product name. A
+subsequent fifteen-name round ended with all three seats voting `KEEP: NONE`;
+there is no approved replacement name.
+
+**Decision**:
+
+1. Ontology Atlas is a **local-first codebase ontology workbench**. Its primary
+   boundary and entry point is a codebase.
+2. The first-contact promise is: **understand what your codebase builds, why it
+   is structured that way, and what a change will affect.**
+3. This is not a code-only ontology. Product strategy, policy, ownership, and
+   business concepts remain first-class when they explain the product the code
+   implements, an implementation boundary, or change impact. Unrelated
+   organizational knowledge does not define the product category.
+4. Source search, AST indexes, language servers, grep, and CodeGraph retain
+   structural authority. Atlas records the curated meaning and evidence that
+   explain why those facts matter; it does not index every symbol.
+5. People and AI agents still maintain the same Git-backed Markdown ontology.
+   Agent continuity is a product benefit and adoption wedge, not the master
+   identity.
+6. The `Ontology Atlas` product name remains until a stronger singular
+   masterbrand wins a controlled comprehension and recall test. The nested-hex
+   mark remains only as the shipping compatibility asset; the owner has rejected
+   it as the final visual direction, and no replacement is approved here.
+
+**What this removes**: first-contact copy that leads with agent forgetting,
+"shared meaning layer" as an unexplained category, and the assumption that a
+general ontology unrelated to a codebase belongs in Atlas merely because the
+schema can represent it. It removes no node kind, relation, surface, MCP/CLI
+contract, export, or existing vault content.
+
+**Recorded dissent**: narrowing the entry point to a codebase may make planners,
+marketers, and leaders read Atlas as a developer-only product, even though they
+remain intended readers and decision participants. It may also understate valid
+product meaning that is not reducible to a file path.
+
+**Counter**: the boundary is not "every concept has a source path." The boundary
+is that the ontology explains a product implemented by a codebase and supports a
+decision about that codebase. Business meaning stays because it makes code
+legible; general knowledge leaves because it makes the product category
+indistinguishable from an ontology editor.
+
+**Falsifier**: target users shown the new wording still classify Atlas mainly as
+a code index, or real teams repeatedly need the same workbench for ontologies
+with no codebase, implementation evidence, or code-change decision. Either
+observation reopens the boundary. A new name reopens only when it materially
+beats `Ontology Atlas` on unaided comprehension, delayed recall, pronunciation,
+and search ownership under identical copy.
+
+**Accountable**: owner
+
+**Status**: valid
+
+---
+## 2026-08-25 (115) — MCP `instructions` names which question each tool answers, before it lists the tools
+
+**Prior decisions**: none on this surface. (113), 2026-08-24, moved the write
+checkpoint into the server that performs the write; this record is about the read
+side of the same boundary and does not disturb it.
+
+**Observed phenomenon**: measured against a live server, the `instructions`
+carried in `initialize` are **32,787 characters**, and every session receives them
+at system-prompt level. They name more than forty operations and never say when to
+reach for one — item 15 alone is a single 3,140-character comma list. Asked for
+the ACP runtime's boundary and its reason, an agent called `get_concept` four
+times, gave up, and ran `rg` forty-seven times against the source. The answer was
+in the vault's `## Boundaries` the whole time.
+
+**Decision**: prepend a 1,098-character routing block. Nothing existing is
+removed. Its first sentence is the substance: *the vault answers why and the
+source answers what; a reason, a boundary, an exclusion, or a decision is not in
+the code, so grep cannot find it.*
+
+**Recorded dissent**: the instructions already cost roughly 9,400 tokens per
+session, and adding to them makes the measured problem worse rather than better.
+This is correct, and the intended payment was to collapse two enumerations
+(3,140 and 1,643 characters) that `query_ontology`'s own `tools/list` description
+already carries. That was attempted and **reverted**:
+`mcp/src/integration.test.mjs` pins `relationDecisionGuide`, `skip_existing`,
+`componentLimit` and others as required substrings of `instructions`. Overturning
+that pin is a separate decision, not a side effect of this one, so the shrink
+remains open and this record leaves the payload larger than it found it.
+
+**Falsifier**: if agents still prefer source search over the vault on boundary and
+reason questions, the block bought nothing. Measurement point:
+`pnpm benchmark --only=B1` — MCP call count and whether the answer cites
+`## Boundaries`. First re-measurement moved MCP calls from 2 to a median of 5, but
+that is n=1 against n=3 and is not claimed as significant.
+
+**Revisit**: after `ontology-field-trial` runs on a repository nobody here knows.
+`docs/benchmark/FINDINGS-2026-08-25.md` holds the full evidence, including why
+this repository cannot answer the question on its own.
+
+**Status**: standing
+
 ## 2026-08-25 (114) — A summary node reports when its description falls behind its membership, and never rewrites it
 
 **Prior decisions**: none on this surface. (7), 2026-08-14, established the
@@ -20690,6 +20987,192 @@ exactly between two rules that each looked complete.
 
 **Falsifier**: the door appearing on a vault that is empty only because it is
 still loading, which would make it flicker on every open.
+
+**Status**: valid
+
+---
+## 2026-08-25 — `atlas` becomes reachable, without a registry
+
+**Context**: the owner asked whether the product ships a CLI, and if so to make
+`atlas` take you in — *"very high quality; if we are doing it, much better than
+now. Every feature usable from the CLI alone."* — and separately: *"no npm yet."*
+
+**What the investigation found**: the CLI was far better stocked than expected —
+56 commands covering reads, writes, graph queries and Git. Against the 35 MCP
+tools only eight had no CLI counterpart, and one of those was load-bearing:
+`relate` could **create** a relation and nothing could remove one. A person
+working only in the terminal had to open the Markdown and hand-edit frontmatter
+to undo their own typo, which is exactly the hand-editing every other write
+command exists to avoid. "Everything from the CLI" was false in one specific,
+fixable place.
+
+The larger problem was not capability but **reach**. The only way to run any of
+it was `node <checkout>/cli/src/index.mjs`, the `bin` name existed but was
+installed nowhere, and the bare command printed all 56 rows.
+
+**Decisions**:
+
+1. **`remove-relation`**, the mirror of `relate` — same argument order, same
+   flags, same `expectedRevision` guard. It takes the edge's `relation_notes`
+   entry with it, because a sentence explaining an edge that no longer exists is
+   an orphan a later reader trusts precisely because it is written down.
+
+2. **`install-shim`** writes a one-line `exec` launcher into `~/.local/bin/atlas`.
+   No registry, no `sudo`, nothing outside the person's home. This satisfies the
+   four conditions in `surfaces.md`: the user types it, the exact contents are
+   printed first, it lands in a user-owned location, and it pins this checkout's
+   absolute path. A file the command did not write is never replaced or deleted —
+   recognition is by a marker we wrote, never by the filename, because deleting
+   somebody's own script is the worst thing this command could do.
+
+3. **The bare command stops being the reference.** It reads the working directory
+   and names the few things that make sense from there. Printing 56 commands
+   answers *"what else can this do"*, a question the person has not asked; the one
+   who typed the bare word has said they do not know the next one. `--help` keeps
+   the full list.
+
+**Not done, deliberately**: no npm publish, and nothing is distributed. The `bin`
+name and the shim are both local facts about a checkout, which is why
+`decisions:check` reports no council trigger — a name that reaches nobody is not
+yet a public contract. Publishing remains the owner's call.
+
+**Recorded dissent**: a shim is a worse install than a package manager — it does
+not update, it breaks if the checkout moves, and it asks people to edit their
+shell profile. The counter is that the alternative on offer was no install at
+all, and an honest one-line launcher a person can read and delete beats a command
+nobody can type.
+
+**Falsifier — observed the same hour, and closed.** The recorded falsifier was
+"someone moves or deletes their checkout and gets a confusing failure". Testing it
+immediately produced exactly that: a Node module-loader stack trace naming neither
+`atlas` nor the folder that went missing. The shim now checks its target before
+`exec` and exits 127 with a sentence naming the missing path and what to do about
+it. Writing a falsifier down and then trying it took one command, and it was the
+difference between a documented risk and a defect that shipped.
+
+**Status**: valid
+
+---
+## 2026-08-25 — One word per thing, and it may be the accurate one
+
+**Overturns** the standing rule in `.claude/rules/design.md`: *"Use 'ontology'
+only in the brand and in sentences that define it. Elsewhere use map, concept, or
+workspace."*
+
+**Why it was overturned**: avoiding the accurate word did not produce plain
+language. It produced **four names for one thing**. A measured inventory of the
+Korean catalogue found the person's own folder called by four different names
+across 41 strings, and the word for "map" doing duty for both the meaning graph
+and the screen that draws it.
+
+The owner met the result of that on screen and could not read it: the empty map
+said *"there are no projects to draw"*, which describes the node count as a count
+of `project` — one of the five schema kinds. A newcomer's first sentence was
+written in this repository's private vocabulary, by a rule meant to keep private
+vocabulary out.
+
+**Two corrections, the same day.** First: *"make these terms consistent and not
+strange. You may use the word ontology."* Then, after a repair that flattened
+every folder word to something plainer and replaced the word for validation with a
+vaguer verb: *"proper domain terms are fine — do not mangle them into something
+odd for the sake of non-developers. The universal technical term is what matters."*
+
+Both failures are the same size. A split vocabulary makes a reader learn four
+words for one thing; a flattened one teaches them a word that no file, CLI command
+or MCP tool will ever repeat back, so they learn the real one later anyway.
+
+**Decision**: one word per thing, and the word is the domain's own. The folder is
+the ontology folder; the graph is the ontology; the map is the view of it; a node
+is a concept; a kind keeps its real name wherever the kind is the point. The
+canonical spellings live in the gate rather than the rule, so a change lands in
+one place: `tests/contract/user-facing-vocabulary.contract.test.ts`.
+
+**`vault` was considered and rejected on the owner's own test.** It is Obsidian's
+coinage, not a universal term — Logseq says graph, Foam and Zettlr say workspace,
+and knowledge engineering does not use the word. Nothing forbids it; it is simply
+not the standard that was asked for. Inside code, CLI, MCP and docs it stays,
+because there it is a filesystem and API name, and identifiers keep their spelling
+even inside copy: `pnpm vault:validate` is a name, not a synonym.
+
+**Also removed**: `topology-plain-language.contract.test.ts` pinned the exact
+Korean of sixteen labels. `documentation.md` forbids pinning a sentence written by
+a person, and this gate proved why — repairing the copy broke four assertions that
+had no opinion about the repair. What survives is the half a machine can judge:
+no internal vocabulary in a label, and every relation type having its own
+non-empty name.
+
+**Recorded dissent**: the ontology term is longer and more technical than the map word, and
+a first-time visitor may bounce off it. The counter is that they meet it in the
+product's own name, in every file's frontmatter and in every agent tool, so the
+question is not whether they learn it but whether they learn it once.
+
+**Falsifier**: someone reads a screen and cannot tell the ontology from the map,
+or reports the folder term as jargon. Either means the accurate word was the wrong
+trade after all.
+
+**Status**: valid
+
+---
+
+## 2026-08-25 — The empty map stops offering a round trip to itself
+
+**Convened because**: this removes an affordance from the topology empty state,
+and the 2026-08-02 first-run-card record put **"adding or removing an
+affordance"** in that slice's no-go list. That no-go was an appetite boundary,
+not a permanent ban, but overturning it needs a record, which is this one.
+
+**Accountable**: the owner. The blocker was named to them explicitly — that the
+standing decision requires an owner instruction before an affordance count moves
+— and they answered to go ahead. That instruction is the grounds; this record is
+not a self-approval.
+
+**Prior decision**: 2026-08-02 stands in every other respect. Only the no-go on
+affordance count is overturned, and only for this one removal.
+
+**Observed phenomenon**: the empty map offered its `ctaTree` row, pointing at
+`/ontology/`. That route is not a destination. `app/[locale]/ontology/page.tsx`
+renders `OntologyRedirectPage`, which redirects to `/topology/` with INDEX
+expanded — the screen the empty-state panel is drawn on. At zero concepts,
+pressing it leaves the screen and comes back to the same screen, now showing an
+empty index.
+
+**User problem**: someone whose ontology is empty is offered, among two or three
+actions, one that cannot change their situation. They spend their first
+interaction learning that a control does nothing, on the screen where they have
+the least context to judge which of the remaining controls is worth pressing.
+
+**Solution independence**: the problem holds under any other fix — routing the
+row somewhere real, or relabelling it. What is wrong is offering a way to look at
+a list before anything can be in it, not the wording or the href.
+
+**Second observation (the falsifier)**: if this is real, the same illness should
+appear elsewhere on the same panel. It does, and it was already repaired: the
+`crossViewHint` line is hidden at zero concepts for the recorded reason that it
+"is telling somebody where to find something they do not have, using two screen
+names they have not met" (owner, 2026-08-25). The CTA is that line with a link
+attached. This change puts both behind the same predicate.
+
+**Decision**: `ctaTree` renders only when the panel is not in its no-concepts
+state, matching `crossViewHint`. Where concepts exist, expanding the index is a
+real action and the row stays.
+
+**Ontology value**: the empty state stops implying a browsable ontology exists
+before one has been authored.
+
+**Agent value**: none claimed. This is a human-facing panel; an agent reaches the
+same data through `list_concepts`, which correctly returns an empty set.
+
+**Recorded dissent**: a removed row is a removed path, and someone who *wants*
+the index panel expanded on an empty map now has no button for it. The counter is
+that INDEX is reachable from the map chrome itself, and that a control whose only
+effect is to redraw the screen you are on is not a path.
+
+**Falsifier**: someone on an empty map looks for a way to open the concept list
+and cannot find one, or the two remaining actions are reported as too few to
+choose from. Either means the row was carrying weight this record did not see.
+
+**Gate**: `TopologyEmptyState.test.tsx` — the row is absent at zero concepts and
+present with one. Probed by forcing the condition true: 2 failed.
 
 **Status**: valid
 

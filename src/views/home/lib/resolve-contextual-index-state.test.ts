@@ -9,6 +9,7 @@ const resting = {
   graphEmpty: false,
   emptyManualExpand: false,
   agentDockOpen: false,
+  startStepsOpen: false,
 };
 
 describe("resolveContextualIndexState", () => {

@@ -3,10 +3,15 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
-import { BarChart3, BookOpen, Download, FolderKanban, Map as MapIcon } from 'lucide-react';
+import { BarChart3, Blocks, BookOpen, Download, FolderKanban, Map as MapIcon } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
+import {
+  DESTINATION_HREF,
+  MOBILE_DESTINATION_IDS,
+  type MobileDestinationId,
+} from '@/shared/config/destinations';
 import { shouldHideBottomTabBar } from '../lib/is-tab-active';
 import { shouldShowGetAppTile } from '@/shared/lib/show-get-app-tile';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
@@ -25,14 +30,25 @@ interface TabItem {
   icon: typeof MapIcon;
 }
 
-// Mobile-only bottom tab bar — it shares the four core destinations of the
-// desktop `AppNavRail` (lg+) and decides active state through the same
-// `resolveActiveNavDestination`, so the two widgets cannot drift apart.
+// Mobile-only bottom tab bar — it keeps the five reading/planning destinations
+// from the desktop `AppNavRail` (lg+). Agents remains a desktop destination and
+// an in-context map action below lg; architecture must stay here because a route
+// whose selected destination disappears from the mobile shell has no location
+// marker at all. Active state still comes from the same
+// `resolveActiveNavDestination`, so the two widgets cannot disagree.
 const TABS: ReadonlyArray<TabItem> = [
-  { id: 'map', href: '/topology/', labelKey: 'map', icon: MapIcon },
-  { id: 'docs', href: '/docs/', labelKey: 'docs', icon: BookOpen },
-  { id: 'insights', href: '/ontology/insights/', labelKey: 'insights', icon: BarChart3 },
-  { id: 'projects', href: '/projects/', labelKey: 'projects', icon: FolderKanban },
+  ...MOBILE_DESTINATION_IDS.map((id) => ({
+    id,
+    href: DESTINATION_HREF[id],
+    labelKey: id,
+    icon: ({
+      map: MapIcon,
+      architecture: Blocks,
+      docs: BookOpen,
+      insights: BarChart3,
+      projects: FolderKanban,
+    } satisfies Record<MobileDestinationId, typeof MapIcon>)[id],
+  })),
 ];
 
 export function BottomTabBar() {
@@ -46,7 +62,7 @@ export function BottomTabBar() {
    *
    * Measured 2026-07-28: the rail is `lg:flex`, so the number of `/download`
    * links visible at 390 and 768 was **zero** — mobile and tablet web visitors
-   * had no route to the download at all. The owner gave it the fifth slot.
+   * had no route to the download at all. The owner gave it the web-only utility slot.
    *
    * It is a **utility, not a destination**, so it lives outside the `TABS`
    * array and never touches `resolveActiveNavDestination`. `/download` hides
@@ -126,7 +142,7 @@ export function BottomTabBar() {
       })}
 
       {/*
-        Fifth slot — a web-only utility, not a destination, so it stays outside
+        Sixth visible slot on the web — a utility, not a destination, so it stays outside
         the `TABS` array and the active decision is untouched. It reuses the
         sibling tabs' touch-target classes (`--topology-bottom-tab-min-height`
         plus the coarse-pointer contract): shrinking it because it is "only" a

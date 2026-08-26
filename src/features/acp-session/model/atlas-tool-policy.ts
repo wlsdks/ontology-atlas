@@ -21,6 +21,7 @@ const ATLAS_READ_TOOLS = new Set([
   'compile_ontology',
   'query_ontology',
   'validate_vault',
+  'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
   'index_project',

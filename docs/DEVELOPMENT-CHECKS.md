@@ -57,6 +57,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Gateway evidence specimen | `pnpm gateway:specimen:check` | `pnpm gateway:specimen` to refresh |
 | Docs vs code surface | `pnpm docs:check` | `pnpm test:docs:checks` |
 | Source comment language | `pnpm source:language` | `pnpm test:source:language` |
+| CLI printed-output language | `pnpm test:contracts` | `tests/contract/cli-output-language.contract.test.ts` |
 | Agent instruction files | `pnpm agents:check` | the harness contracts under `tests/contract/` named below |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
@@ -259,6 +260,18 @@ someone improved the prose. They are gone; these two nets replace them.
   tests/fixtures, and historical prototypes have independent zero baselines. Each scope
   must scan files and comments, preventing an empty inventory from reporting a false
   green result.
+- **`cli-output-language.contract.test.ts` — the strings the CLI prints.**
+  `source:language` reads *comments*, so a Korean string literal was invisible to it:
+  measured 2026-08-25, the CLI carried Korean in 140 lines across 23 files while that
+  gate reported a clean zero, and sixteen help rows switched language inside one
+  sentence. The debt was translated rather than recorded, so this contract's baseline
+  is zero. It counts Hangul code points in non-test `cli/src/**/*.mjs` and names the
+  offending file and line; it pins no sentence. `cli/src/lib/absorb.mjs` is the single
+  allowlisted path, because its Korean is a *matcher* for the user's own Korean
+  document — the same typed data as `display_ko` — and a second assertion proves that
+  allowlisted file still holds matcher syntax, so the exception cannot quietly grow to
+  cover a file that was merely never translated. `cli/templates/vault-ko/**` stays
+  outside the scan as the intentionally localized tree.
 - **`docs:surface:check` — generate, then diff.** `scripts/build-docs-surface.mjs`
   boots the real MCP server, asks it `tools/list`, and writes every tool name,
   read/write mode, argument name, and required argument — plus the CLI command
@@ -751,16 +764,17 @@ committing or publishing changes.
 | `pnpm integration:cli:diagnosis` | CLI `health` / `agent-brief` / `workspace-brief` diagnosis contracts |
 | `pnpm integration:cli:graph-read` | CLI read-only graph command contracts, including `match-nodes` / `match-edges` scans, `explain` relation evidence, `domain-matrix` coupling summaries, `reachability`, bounded `all-paths --plan` traversal guards, explicit `pattern-walk` traversals, and `project-map` containment summaries |
 | `pnpm integration:cli:graph-write` | CLI graph write dry-run/confirm safety contracts |
-| `pnpm integration:cli:repo-analysis` | CLI `index` / `analyze` / `infer-imports` / `bootstrap` code-to-vault contracts |
+| `pnpm integration:cli:repo-analysis` | CLI `index` / `analyze` / `infer-imports` / `architecture` / `bootstrap` code-to-vault contracts |
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
+| `pnpm test:architecture` | Architecture profile parser/conformance, web↔MCP parity, Living Blueprint interaction, focused `inspect_architecture`, and CLI `architecture --json` contracts. The changed-path advisor also adds the rendered mobile reachability E2E. Probed by changing the shared fixture contract to `architecture-profile/v0`: the gate failed 10 tests, then returned green after restoration. |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` / `.codex/config.toml` registration templates |
 | `pnpm test:mcp:unit` | Every `mcp/src/*.test.mjs` except the integration suite — discovered by glob, not a hand-kept list, so a new test file cannot be silently excluded. Runs in CI (`Checks` → `MCP unit tests`). Use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one |
 | `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed |
 | `pnpm integration:mcp:surface` | MCP JSON-RPC `tools/list`, `initialize`, and `tools/call` surface contracts |
-| `pnpm integration:mcp:repo-analysis` | MCP `index_project` / `analyze_repo_structure` / `infer_imports` code-to-vault contracts; advisor routes those implementation files here before broader read/query gates |
+| `pnpm integration:mcp:repo-analysis` | MCP `index_project` / `analyze_repo_structure` / `infer_imports` / `inspect_architecture` code-to-vault contracts; advisor routes those implementation files here before broader read/query gates |
 | `pnpm integration:mcp:graph` | MCP `compile_ontology` / `query_ontology` graph artifact/query contracts |
 | `pnpm integration:mcp:vault-read` | MCP list/get/find/path/orphans/validate vault read contracts |
 | `pnpm integration:mcp:read` | MCP `query_concepts` and shared read/query validation contracts |

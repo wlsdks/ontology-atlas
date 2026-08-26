@@ -7,6 +7,142 @@
 
 ---
 
+## 2026-08-26 · Architecture becomes a reviewed, agent-executable contract
+
+- Added a separate `/architecture` Living Blueprint. It does not reuse the
+  Ontology Map or add an ontology kind: `architecture-profile/v1` records
+  reviewed pattern axes, scopes, implementation roles, path mappings, dependency
+  rules, and evidence as a non-kind Markdown document.
+- Added MCP `inspect_architecture` and CLI `architecture`. Both compare current
+  supported imports with the reviewed profile, return the same
+  `architectureBrief:v1`, and fail closed as `unknown` when coverage, mappings,
+  rules, or roles are incomplete. The first dogfood run found 18 real
+  `shared → entities` boundary violations and 75 unmapped edges; none were hidden
+  or auto-fixed.
+- The Plan stage now copies `architectureChangePlan:v1` plus a runnable CLI
+  fallback only when the installed app can verify the project source, vault, and
+  Atlas CLI absolute paths. Other surfaces state that the fallback is unavailable
+  instead of fabricating one.
+- Architecture is additive in the primary rail: Git remains present with its
+  uncommitted-change badge, `G G` shortcut, guided tour, and `/git` route. Mobile
+  keeps Architecture visible in the bottom navigation so the selected destination
+  never disappears.
+- Installed-app and responsive dogfood caught two live defects: the center column
+  had no xl scroll owner, and changing to the taller Plan stage at the previous
+  mobile scroll end put the copy action behind the fixed tab bar. Both are fixed;
+  390×844 now measures 44×44 stage targets, 0px distance from the new scroll end,
+  19.4px CTA clearance, and a successful center hit-test.
+- Added `pnpm test:architecture`, changed-path routing, cross-surface contracts,
+  mobile E2E, and RED/GREEN gate probes for the profile contract and interactive
+  profile-row ink.
+
+## 2026-08-25 · Atlas narrows its identity to the codebase
+
+- The public promise now says what the product helps a person understand: what
+  a codebase builds, why it is structured that way, and what a change will
+  affect. "Agent memory" remains a benefit, not the product category.
+- Atlas now names itself as a codebase ontology workbench, not a general-purpose
+  ontology editor or a source-code index. Product and business concepts remain
+  in scope when they explain the product the code implements or the impact of a
+  change.
+- The product name is unchanged. The existing nested-hex mark remains the
+  shipping compatibility asset while its rejected visual direction is replaced
+  in a separate design decision.
+
+## 2026-08-26 · A change you are asked to approve reads as one tidy list
+
+- The rows describing a relation, its two ends and the reason for it were four separate grids that
+  lined up only because one width was written four times. Measured in the browser: that width held
+  a two-character label and left 53 pixels empty beside it, four times over, which is what made the
+  block look crooked. The list shares one grid now and the column fits its labels, so the alignment
+  holds by itself.
+- The first label also sat flush against the highlighted row above it, because the panel had space
+  underneath and none on top.
+
+## 2026-08-26 · The download page keeps up with the release on its own
+
+- The version was written by hand in a fourth file that only copied `package.json`, and nothing
+  noticed a stale copy until release time. It is read from `package.json` now, so bumping a version
+  touches three files and the download page follows.
+- Worse, the published page had to be refreshed by a separate command after each release, and that
+  command was forgotten twice: the site advertised rc.10 while rc.11 and rc.12 had both shipped.
+  Releasing now regenerates those facts from the published release and opens the pull request for
+  them. Merging it is the only step left, and it is the one that moves the page.
+- If any of that fails the release is still fine. It says what to finish by hand rather than
+  reporting a failure for a page that is one commit behind.
+- A permission card no longer sits under a line saying the agent has gone quiet. Updates do stop
+  while an answer is awaited, but the person is the one being waited on, and the card already says
+  so.
+
+## 2026-08-25 · The chat says when the agent has stopped answering
+
+- Found by pressing the installed build: a turn ended on the agent's side without the app ever
+  learning. All nine of its steps finished, the adapter stayed up but used a third of a second of
+  processor time over thirteen minutes, and no result arrived. The panel kept saying it was working
+  and refused every keystroke, so there was no way to type and no hint that Stop was the way back.
+- A turn is deliberately given no time limit, because one that reads a whole codebase can take
+  minutes. That stays. What is new is that a working turn talks constantly, so silence far longer
+  than any gap between its steps now means something and is said out loud.
+- The panel does not claim the agent is broken, because it cannot know that. It says how long the
+  silence has been and points at Stop, which already recovered the session and simply went unnamed.
+
+## 2026-08-25 · Verify waits long enough for a slower machine
+
+- The `v1.0.0-rc.11` release blocked at its MCP gate: verify timed out after 15 seconds on the x64
+  macOS runner while the arm64 build of the same commit passed. Nothing was broken. Verify walks the
+  whole source tree, 1,419 files here, not the 84-node ontology, and takes 12.6 seconds on a fast
+  laptop, so a 15-second budget left 2.4 seconds of margin and any slower machine failed.
+- The default is now 30 seconds and the release gate 90. A verify timeout exists to catch a server
+  that is hung, not one that is slow: extra patience costs nothing when things work, and a release
+  blocked by a runner's speed costs a whole build. Running `mcp-verify` on this project's own
+  ontology needs no flag now; it could not complete under the old 8-second default at all.
+- The retry hint doubles the timeout that was actually used instead of naming a fixed number, which
+  would otherwise become the advice to retry at the value that just failed.
+
+## 2026-08-25 · The map lives inside your project, and the door finds the people who need it
+
+- **A door for somebody who already has code.** The first-run card offered four actions and none of
+  them made an ontology from a repository that already exists: opening an empty folder gave an empty
+  map, creating one gave five example nodes. The card now leads with reading your codebase, hands
+  the work to the connected agent through MCP, and shows you the folder it will create before
+  anything is written.
+- **The map is created inside the project, in a folder named `atlas`.** It used to land beside the
+  project rather than in it. The confirm step names the exact path first, and nothing reaches the
+  disk until you accept it.
+- **The agent can see the code.** An app-started session was handed the vault path and nothing else,
+  so an agent asked to survey a repository was reading only the ontology folder. It now receives the
+  project root as well.
+- **The door appears for anyone who has not built a map yet**, not only for somebody who has never
+  opened a folder. Opening an empty folder used to hide the one action that would have filled it.
+- **Every permission request now says where the write lands** (an ontology write, a file inside the
+  project you picked, or somewhere else on your disk) in three distinguishable colours rather than
+  a path string you had to parse. The durable 「allow for this conversation」 choice is separated from
+  the one-off answers.
+- **The empty map stops offering a round trip to itself.** 「Browse concepts」 pointed at a route that
+  redirects back to the map, so on an empty ontology it left the screen and came back to the same
+  screen with an empty index.
+- **Three dead ends in the map-from-code flow are closed**, and `init` no longer rewires a project it
+  was not run inside.
+
+## 2026-08-25 · The `atlas` command works from anywhere, and one thing has one name
+
+- `atlas install-shim` puts `atlas` on your PATH, so the CLI is a word you type rather than a path
+  you remember. It writes one launcher into `~/.local/bin` (no registry, no sudo, nothing outside
+  your home directory) and prints the exact contents first.
+- Typing bare `atlas` used to print all 56 commands. It now reads your situation (in a codebase
+  with no ontology, in an empty one, in a full one) and names the few steps that make sense from
+  there. The full list stays one flag away.
+- `atlas remove-relation` takes a relation back off a node, the mirror of `relate`. It also removes
+  that relation's recorded rationale, so a reason for a relation that no longer exists cannot
+  survive it.
+- **One word per thing.** A measured inventory found the ontology folder called by four different
+  names across 41 strings, and the empty map saying 「no projects to draw」: a sentence built from a
+  schema kind, describing a number that was actually the node count. Proper ontology terms are used
+  as they are; what is gone is the synonyms.
+- The CLI now prints one language. 140 lines carried Korean in strings a command prints, sixteen of
+  them switching language inside a single sentence, because the gate that guards this reads comments
+  and cannot see a string literal.
+
 ## 2026-08-25 · The released app carries its third-party notices
 
 - The macOS app and Windows installer now ship `NOTICE.md` and `LICENSE` inside the bundle. The app

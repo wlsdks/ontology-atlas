@@ -1,0 +1,566 @@
+결론: 현재 기록상 `mcp-server` capability 범위 밖입니다.
+
+- `mcp-server`가 소유하는 범위는 로컬 Markdown vault의 읽기·안전한 쓰기, ontology compiler/graph query, 검증·dry-run 계약입니다. 반면 `AST/source search engine`은 명시적으로 제외돼 있습니다. [mcp-server.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/capabilities/mcp-server.md:93)
+- 제품 경계도 “Not a code index”라고 명시합니다. 심볼 위치와 호출 관계는 grep, language server, AST index, CodeGraph의 책임이고, Atlas는 그 코드가 왜 중요한지·어떤 capability를 섬기는지·무엇을 검증할지를 담당합니다. [README.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/README.md:472)
+- 유효한 결정 원장은 현재 source `focus` 조회조차 `symbol coupling`을 주장하지 않는다고 제한합니다. 심볼 수준 기능이 필요하면 “별도 symbol/CodeGraph integration boundary를 설계한다”고 기록돼 있습니다. [DECISIONS.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/DECISIONS.md:7053) [DECISIONS.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/DECISIONS.md:7064)
+- 같은 결정은 Atlas를 의미·승인 계층으로, CodeGraph·AST·테스트 도구를 결합 대상 구조 도구로 유지한다고 명시합니다. [DECISIONS.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/DECISIONS.md:7131)
+
+즉, MCP라는 전송면에서 노출할 수 없다고 기록된 것은 아닙니다. 다만 현재 `mcp-server` capability가 코드 심볼 검색을 소유한다는 기록은 없고, 오히려 명시적 제외 대상이자 별도 통합 경계가 필요한 대상으로 기록돼 있습니다. 그 별도 경계의 구체적인 형태는 아직 결정되어 있지 않습니다.
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.149.1
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: max
+reasoning summaries: none
+session id: 01a037db-d081-7ff1-9a70-7af7fd580877
+--------
+user
+MCP 서버에 코드 심볼 검색을 넣으려고 해. 이 기능이 mcp-server capability 의 범위 안인지 밖인지, 이 프로젝트에 이미 기록된 경계가 뭐라고 말하는지 알려줘. 새로 판단하지 말고 기록된 것만.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+프로젝트의 기존 온톨로지 기록만 조회해서, `mcp-server` capability의 명시된 범위와 경계 문구를 인용 가능한 근거와 함께 정리하겠습니다. 새 기능의 적합성은 제가 재판단하지 않겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+mcp: ontology-atlas/list_concepts started
+mcp: ontology-atlas/list_kinds started
+mcp: ontology-atlas/list_concepts (completed)
+hook: PostToolUse
+mcp: ontology-atlas/list_kinds (completed)
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+mcp: ontology-atlas/find_backlinks started
+mcp: ontology-atlas/get_concepts started
+mcp: ontology-atlas/find_backlinks (completed)
+hook: PostToolUse
+mcp: ontology-atlas/get_concepts (completed)
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+codex
+기존 capability 본문에서 이미 직접적인 제외 문구를 확인했습니다. 이제 그 문구와 상위 도메인/프로젝트 원칙의 일치 여부만 대조해, “범위 안/밖”을 기록 그대로 확정하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n -i 'AST/source search|source structure search|CodeGraph|code symbol|symbol search|structural questions|source search engine|source search tools|structural.*search|source.*index' AGENTS.md docs/ontology docs/ARCHITECTURE.md docs/FEATURES.md README.md" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+README.md:479:- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+AGENTS.md:14:Atlas complements CodeGraph, grep, AST indexes, language servers, and source
+AGENTS.md:15:search. Those tools answer structural questions; Atlas provides the durable
+AGENTS.md:148:## Context, delegation, and CodeGraph
+AGENTS.md:150:Use the smallest sufficient context. Prefer a focused vault query, CodeGraph,
+AGENTS.md:157:If `.codegraph/` exists, start structural code questions there with exact
+AGENTS.md:159:and safety. `.claude/rules/codegraph.md` owns the routing table and the failure
+AGENTS.md:160:modes; every code directory's `AGENTS.md` points at it. Without CodeGraph, use
+docs/FEATURES.md:841:| **Source checkout** (fallback) | `node <checkout>/mcp/src/index.js` with `OATLAS_VAULT` set. | Clone the repo, then either paste the config or let `node <checkout>/cli/src/index.mjs init` / `agent-setup --write` write it. |
+docs/FEATURES.md:945:`impact` and `blast_radius` follow only the `depends_on` relations that humans have explicitly written. Structural relationships such as what contains what are excluded from impact scope and risk calculations — for such structural questions, `reachability` and `subgraph` provide the answers. Each dependency edge is marked as either `review_required` (needs human review) or `declared_with_rationale` (reason provided), depending on whether a rationale is recorded. Until there is a current-source receipt confirming that each relationship remains factually accurate, the completeness and `risk` of this answer remain `unknown`.
+docs/FEATURES.md:956:18. **infer_imports** `{ rootPath?, sourceFolders?, ignore?, maxFiles?, reviewMode?, afterReviewId? }` — side-effect-free TS/JS plus root-package Python file imports and root-module Go package imports. Existing file/module edges remain unchanged. Go is exposed separately as `packageImportEvidence` contract `goPackageImports:v1`: each row preserves the importing file, repository-relative source and target package directories, literal import spec, production/test role, and value usage without inventing a target file. It reads root-contained module-local imports only, never runs `go`, a compiler, module cache, or network, skips nested modules plus Go build-excluded `vendor`/`testdata`/underscore-prefixed fixture trees, ignores import-shaped lines inside multiline raw strings, caps files with the shared default 5000, caps each file at 256 KiB and 256 imports, and names external Go modules as out of scope. Its `coverage` receipt says which languages are supported; Cargo detection still marks Rust `use`/`mod`/macro dependency graphs unsupported. File and package receipts distinguish source role and usage; `value` does not claim runtime execution. Every collapsed edge includes whole-edge counts, their joint `productValueCount`, and up to five exact evidence receipts. Missing vault edges and Go package evidence are review-only, never executable write proposals. Compact and focus delivery surface Go counts plus the explicit full-evidence call instead of silently dropping a large package graph. CLI `infer-imports --apply` is disabled, and bootstrap/index cannot auto-create import endpoints or semantic `depends_on`; an agent must inspect both concepts, explain the meaning-level dependency, obtain human approval, and supply nonblank `why` before one explicit write.
+docs/ontology/capabilities/cli-developer-entry.md:49:  generation/storage without user approval, replacement of source structure search tools.
+docs/ontology/capabilities/mcp-server.md:97:- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba AGENTS.md | sed -n '10,20p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+exec
+/bin/zsh -lc "nl -ba docs/ontology/domains/agent-integration.md | sed -n '1,180p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+    10	graph, Git is the source of truth, and people judge meaning through plain files
+    11	and diffs. Agents use the same vault through MCP/CLI. The macOS app carries the
+    12	MCP server; source checkouts run it directly. There is no npm package.
+    13	
+    14	Atlas complements CodeGraph, grep, AST indexes, language servers, and source
+    15	search. Those tools answer structural questions; Atlas provides the durable
+    16	meaning layer: task starting point, domain/capability context, evidence, impact
+    17	boundary, and verification path.
+    18	
+    19	The public meta-model belongs only in `docs/ONTOLOGY-ATLAS-SPEC.md` §2/§5.
+    20	Do not create competing kind or relation glossaries. The product is
+
+ succeeded in 0ms:
+     1	---
+     2	uid: 0f1364a5-7d0f-4fa5-b913-454d47b33cca
+     3	slug: domains/agent-integration
+     4	kind: domain
+     5	title: AI Agent Integration
+     6	display_ko: AI 에이전트 연동
+     7	display_en: AI Agent Integration
+     8	capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+     9	elements: [elements/agents-destination, elements/vault-agent-panel]
+    10	created_by: human
+    11	relation_notes: { capabilities/acp-runtime: "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.", capabilities/agent-work-visibility: Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs. }
+    12	---
+    13	
+    14	## Definition
+    15	Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user.
+    16	
+    17	## Evidence
+    18	- README.md: "Your agent reads and maintains it over MCP... one button writes your agent's config and proves the connection."
+    19	- mcp/src/index.js · mcp/src/tool-inventory.mjs: coupled boundary deriving `tools/list` and
+    20	  full/read-only initialize inventory from active registry
+    21	- cli/src/commands/agent-brief.mjs: passing `--project` as explicit project selector matching MCP `agent_brief.project`
+    22	
+    23	## Inclusion / Exclusion
+    24	- Included: MCP read/write tools (`mcp/`) advertising current list at runtime, local CLI,
+    25	  in-app connect button, client config writing and `mcp-verify` connection proof,
+    26	  ACP executor detection and launching with isolated settings within the app
+    27	  (`capabilities/acp-runtime`)
+    28	- Excluded: the graph schema itself (that belongs to the graph-modeling domain)
+    29	
+    30	## Project Meaning Handover
+    31	
+    32	`finalize_project_meaning` bundles the competency answer for human-readable project Markdown into body digest and graph/source provenance after graph write, vault validation, and project compile.
+    33	the sidecar does not store raw answers, raw witnesses, or private source root/remote.
+    34	Subsequently, the new MCP process's `agent_brief.meaningAssessment` re-validates against the current Markdown and inventory; if source currentness cannot be confirmed, it closes as `review_required` even if a stored receipt exists.
+    35	
+    36	The CLI `agent-brief --project <slug>` is not an option to merge results from multiple projects, but a selector that explicitly specifies one project containment tree to read the same MCP `agent_brief`.
+    37	
+    38	## Confidence
+    39	high (0.9): MCP registry and CLI integration test directly verify the current contract
+
+hook: PostToolUse
+hook: PostToolUse
+exec
+/bin/zsh -lc "nl -ba docs/ontology/capabilities/mcp-server.md | sed -n '1,120p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+exec
+/bin/zsh -lc "nl -ba README.md | sed -n '470,490p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+   470	  it itself.
+   471	
+   472	## What this is not
+   473	
+   474	- **Not a wiki, and not agent memory.** A wiki only people write rots the week
+   475	  it is written; a store only agents write drifts with nobody left to judge it.
+   476	  Atlas is one layer both audiences read and write, and the arbiter is a git
+   477	  diff. The side-by-side comparison is
+   478	  [above](#why-not-just-use-a-notes-tool).
+   479	- **Not a code index.** Grep, language servers, AST indexes, and CodeGraph
+   480	  answer where a symbol lives and what calls it, and Atlas replaces none of
+   481	  them. It answers why that artifact matters, which capability it serves, and
+   482	  what to verify before changing it — it tells the agent which structural
+   483	  question is worth asking. Curated, not exhaustive.
+   484	- **Not an RDF, OWL, SKOS, or SHACL implementation.** Atlas exports a bounded
+   485	  graph shape, but its Markdown vault is not an RDF serialization, its validator
+   486	  is not a SHACL processor, and its query engine is not a reasoner. A persisted
+   487	  relation is a declared claim, never an entailment, and an absent one is a
+   488	  visible gap, never a negative fact. The boundary is written down instead of
+   489	  implied:
+   490	  [specification §5.2](docs/ONTOLOGY-ATLAS-SPEC.md#52-standards-boundary).
+
+ succeeded in 0ms:
+     1	---
+     2	uid: 895c062c-28f0-4564-a6a5-0ef2a6b56e51
+     3	slug: capabilities/mcp-server
+     4	kind: capability
+     5	title: MCP Server
+     6	domain: domains/agent-integration
+     7	elements: []
+     8	path: mcp/src
+     9	created_by: "agent:unknown"
+    10	dependencies: [capabilities/vault-ontology]
+    11	relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
+    12	display_ko: AI 연결 서버
+    13	display_en: AI Connection Server
+    14	---
+    15	
+    16	# MCP Server
+    17	
+    18	It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop.
+    19	
+    20	## User Outcomes
+    21	
+    22	- The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
+    23	- Upon connection, it verifies actual vault/repository coordinates and tool inventory to detect incorrect folders or stale client states.
+    24	- Before writing, it reads the current document and blocks concurrent edits, duplicates, broken relationships, and destructive changes with structured errors and dry-runs.
+    25	
+    26	## Active Tool Inventory Contract
+    27	
+    28	- The current set of tools is `TOOLS_FOR_LIST`, which applies annotations and a read-only filter to the registry in `mcp/src/index.js`. Both the `Tool inventory` section of `tools/list` and initialize derive from the same array, so no other document owns a numeric or full name list.
+    29	- A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
+    30	- `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
+    31	
+    32	## Identity Boundaries
+    33	
+    34	- `uid` is the permanent machine identity that persists across renames, while `slug` is the human-readable and editable current address. All node responses return both.
+    35	- Exact reads and external interop identities may use UIDs. Markdown relations, URLs, and graph operation inputs maintain slugs.
+    36	- rename/reclassify preserves the UID. merge preserves the target UID and records the absorbed UID in `merged_uids`. Standard patches cannot alter `uid` or `merged_uids`.
+    37	- `find_evidence` includes `isNode` in all search rows to distinguish graph nodes from standard Markdown. Only rows with `isNode:true` are required to have permanent `uid` and `kind`; standard documents do not fabricate these fields. `nodesOnly:true` is an explicit filter for handoffs requiring only nodes, while default searches do not hide local document evidence.
+    38	
+    39	## Ontology Construction Lifecycle
+    40	
+    41	The complete proposal from `analyze_repo_structure` is not immediate write permission. The first call returns only the exact `reviewPlan`, plan/source digest, eight-stage status, remaining gap IDs, and maintains `canWrite:false`. An evaluator separated from the maker executes human owner CQ, current claim/citation, seven quality axes, full source-hidden tasks, cold-start, or previous CQ regression. The user must then approve this exact plan and gaps. Only upon resubmitting the same proposal and digest-bound `constructionQualification:v1` packet will the identical `writePlan` be revealed for rows seen initially. Source/plan drift, maker-only status, `not_measured`, red mandatory axis, regression failure, or unapproved gaps result in a fail-closed state. The `admission` within the same response classifies shadow-only states as `self_qualified`, `partial_visible_gap`, `human_review_required`, and `hard_block`. `self_qualified` is merely a signal of an automatic reflection candidate where all independent evidence passed; actual writes do not bypass existing human approval or digest-bound `writePlan` gates. Measured feature gaps appear in partial state, while policy/ownership/domain boundaries/conflicts remain for human review, and stale/unsupported/non-independent evaluations/source-hidden/regression failures remain hard blocks. Each qualification claim must include `proposalRefs` pointing to the exact `concept:`, `relation:`, `competency:`, and `impact:` rows of the current `reviewPlan`, with lifecycle `proposalCoverage` classifying missing/external proposal/source-hidden unverified rows as fail-closed. This is a receipt ensuring target matching for evaluator handoff, not a score or semantic judgment automatically approving the business truth of the claim.
+    42	
+    43	Approval is declared provenance, not identity verification or a truth certificate. Project Markdown persists existing competency answers/witnesses/visible gaps; the finalizer receipt persists its body and current graph/source combination. Detailed CQ revision, axes, exact gap acceptance, and pre-write regression are execution evidence in MCP responses/agent transcripts and do not claim automatic restoration after restart. No new tools, kinds, sidecars, or writer tokens are created.
+    44	
+    45	## Source Connection
+    46	
+    47	`connect_project_source` / `disconnect_project_source` bind and unbind project nodes to/from the local code folder they describe. Previously, `agent_brief` would output `connect_source` as the next action without a tool to execute it; the only path was the macOS app's folder picker. Both tools write nothing before `confirm: true`, leaving the absolute root only in gitignored `.ontology-atlas/project-sources.json`.
+    48	
+    49	## Core Flow
+    50	
+    51	1. Connect `connection_info` → `list_kinds` / `list_concepts` → `validate_vault` to check connection and vault status first.
+    52	2. Read only the necessary scope of meaning, evidence, paths, and impacts using `get_concept` / `get_concepts` and graph query tools.
+    53	3. Review new meaning candidates for code evidence and duplication, writing only those approved by the user.
+    54	4. Pass the previous `mtime` for existing node writes. Destructive operations like rename/merge/delete require explicit confirmation after preview.
+    55	5. After changes, re-validate the graph via `validate_vault`, compile, and health/maintenance flows.
+    56	
+    57	## Constraints: Source binding and currentness
+    58	
+    59	After the installed app binds a human-selected source root to the sidecar, new MCP processes reproduce the same bounded fingerprint locally. Source currentness is read as `current` only when matching the storage receipt exactly; changes fail-closed as `source_changed`. Private absolute paths and raw source inventory are not included in MCP responses.
+    60	
+    61	## Constraints: Competency qualification
+    62	
+    63	When a repository proposal signs competency as `answered`, it only checks that the required witness array is not empty. It verifies that `abilities` cover all proposed domains via typed domain→capability witnesses, and that `evidence` cites every capability slug and canonical path together. If only some are covered, it returns a structured error with the missing target slugs and does not create a write plan. Honest `partial`/`visible-gap` proposals can still be reviewed and stored.
+    64	
+    65	If project purpose, proposed domain, or project→domain relation has confidence ≥0.8, or `scope`/`domains` are `answered`, two distinct current semantic sources must actually support the non-literal meaning of that claim. The purpose requires both sources to align with the purpose claim; domains require both sources to provide a domain name and an explicit responsibility sentence. Duplicated text across documents, unrelated trusted documents, roadmap/negated/deprecated evidence, package manifests, and implementation paths do not count as a second semantic authority. If only one source exists, it remains below confidence 0.8 with an explicit `partial` gap (reviewable), but inflating it to high-confidence/completed causes failure before review/write plan. The analyzer also prioritizes project identity sentences over later feature sentences, and marks domains as corroborated candidates only when separate product/architecture responsibility sentences exist. Implementation elements overlapping domain names or having only one candidate are not auto-assigned roles but remain as project-scoped evidence.
+    66	
+    67	## Constraints: Cold-start evidence reading
+    68	
+    69	Do not blindly truncate the first 1,200 characters of README. Preserve purpose, responsibility/architecture, and ability/capability prose within heading-scoped blocks, structurally excluding sponsor/backer/funding/donation/TOC and link/image-only decorations, then pass them in original order. Do not change the existing limits: 1,200 chars/doc, 8 headings/doc, 6 docs/packet, and 256 KiB pre-read cap. `Excludes` should contain only product/concept boundaries stated by the source. "Not yet proven" or "outside bounded scan" are `Uncertainty`/competency gaps; if a proposal includes these as exclusions, block them via `epistemic-exclusion-boundary` before write plan.
+    70	
+    71	Cold-start semantic evidence is carried by existing `semanticEvidence` packets from classified current Markdown under root `ARCHITECTURE.md`, `docs/`, `site/`, and `website/`. Explore up to 200 Markdown files and 1,000 directory entries across all three roots, stopping at 256 KiB pre-read for general semantic documents. Visit each actual path in the same directory only once; exclude archives and symlinks that are broken or outside the repository. Maintain the final packet limit of 6 docs and 1,200 chars/doc. For proposals arriving in the same call, recalculate existing read-only import receipts to verify TS/JS/Python file endpoints and Go importing-file/package-directory endpoints and directions. These documents and paths serve as evidence/provenance only; they do not auto-approve business meaning or `depends_on`. Without maker-independent qualification and human exact-plan approval, do not open `writePlan`. If relationship rationale directly names the exact repository `path:` of both endpoint concepts, that path must also appear in evidence for the same relationship. Fail closed with `relation-path-citation-mismatch` if only other documents are cited; do not block general semantic sentences by guessing filenames.
+    72	
+    73	## Constraints: Meaning repair review
+    74	
+    75	When a fresh `agent_brief` reads current source and incomplete competency together, set the first `nextActions` to `review_competency_repair`. The connected `meaningRepair:v2` compact manifest contains only disposition count, provenance, `reviewRevision`, and the first `meaning_repair_review` call; a separate `meaningRepairReviewPage:v1` carries current project Markdown declarations, structural review candidates from typed containment, canonical-path candidates directly supported by current source receipts, and all unresolved targets. Containment and path existence are not human semantic approval or action proof, so do not auto-convert candidates to `answered` or write them. If source/provenance/scope/validation/mtime is unstable, block repair while preserving existing source/health behavior. The first review read splits project, domain, and capability into deterministic, stateless cursors by their exact union. Each page has max 20 items, ≤5 KiB JSON, and provides literal `get_concepts(body:"full")` calls for the same target. `reviewRevision` binds graph/source/typed row/mtime; the verifier checks missing/duplicate/order/size/recency up to the last page, plus kind/mmtime/non-truncation of each full-body and source/bundle parity.
+    76	
+    77	## Constraints: Import inference by language
+    78	
+    79	In Python cold start, read `README.rst`, non-executed static `setup.py` package contract, and top-level `__init__.py` package as bounded evidence. `infer_imports` condenses static imports from that package into file/module edges. This result is implementation evidence; do not auto-promote to domain/capability/semantic `depends_on`. Each module edge carries up to 5 exact file-edge receipts and presence of other evidence. Edges not in the vault return `rationale_review_required` instead of executable `proposedAction`. If the implementation path is already known, use `focusPath` or `reviewMode:"focus"` first. This mode returns exact incoming/outgoing static import counts (up to 100 receipts) and a stateless cursor for that file without a loadable vault. Empty results do not imply no impact; they fix symbol/test/dynamic behavior and ontology meaning as still pending separate confirmation. If `reviewMode` is omitted, return the existing full graph only when expected MCP total response (text + structured content) is ≤128 KiB. For larger reconciled scans, return only one review candidate, exact evidence, preflight calls for both concepts/relations, stop conditions, stateless cursor, and a `delivery` receipt with auto-selection reason/expected bytes instead of the full array. `reviewMode:"next"` explicitly requests this compact packet. `reviewMode:"full"` preserves the full shape but requires a second confirmation `allowLargeResponse:true` if exceeding 128 KiB. Oversized omission calls without a loadable vault for reconciliation return structured errors with two recovery options instead of faking safe packets. Internal analysis of `index_project` fixes explicit full to ensure this delivery default does not change existing plan meaning. Separate product/test code and value/type-only usage per evidence; calculate `productValueCount` (intersection of two-dimensional counts across all imports, not bounded samples) for module edges. Explicit type imports in JS/TS and imports inside Python's explicit `TYPE_CHECKING` guard are type-only. `value` means other static imports, not claiming runtime execution. If product code value usage is 0, do not hide test/type evidence but do not ask that import alone to approve product `depends_on`; require separate product meaning evidence. Additionally, the agent must read both concepts and direction, explain semantic rationale, and ask the human; record only one approved item with a non-empty `why`.
+    80	
+    81	Go repositories with a root `go.mod` read module-local imports as bounded text without running compiler, `go list`, module cache, or network. Do not mix package directories into existing file edges or fabricate arbitrary target files; instead, preserve importing file and repository-relative source/target package directory, literal import spec, and production/test role in a separate `goPackageImports:v1` receipt. Full scans share existing file caps; each Go file stops at 256 KiB/256 imports; nested and external modules are explicitly out of scope. Exclude import-like text inside multi-line raw strings and `vendor`/`testdata`/underscore-prefixed fixture trees as evidence outside Go build boundaries. The analyzer passes package directories with high production/value import participation as up to 24 implementation element/path candidates only; do not promote folder names to domain/capability or auto-approve package edges as semantic `depends_on`. Compact/focus responses leave package evidence count and explicit full-evidence calls to prevent large graphs from silently disappearing.
+    82	
+    83	C/Autotools repositories also do not report empty import graph as "no dependencies." If bounded manifest/source discovery confirms actual `.c`/`.h` files, `infer_imports.coverage` marks `c` as unsupported language and returns `allDetectedLanguagesSupported:false`. Use static `AC_INIT` literals as project name evidence; in bounded README prose, prioritize sentences stating purpose over release status. Do not create domain/capability from this evidence alone; do not analyze C include/build dependency graphs or auto-promote to semantic relations.
+    84	
+    85	The same Autotools analysis reads literal declarations in root or one-level-down `Makefile.am` pointed to by static `AC_CONFIG_FILES` without execution. Distinguish install-target headers, existing `.h.in` templates, non-`EXTRA` core source, raw/API specialized source, and optional platform backends from `EXTRA_*_SOURCES`, preserving role-based representatives within 36 sources first. Internal `noinst_HEADERS`, variables/shell/wildcards/absolute/parent paths do not serve as role evidence. This build-role is observation evidence for implementation handoff; it does not auto-approve canonical capability or C impact.
+    86	
+    87	Rust repositories also do not report empty import graph as "no dependencies." `infer_imports.coverage` explicitly states that `use`/`mod`/macro dependency scan is unsupported when Cargo is detected, limiting the meaning of 0 edges to "no observed static imports" within supported languages. Instead, `analyze_repo_structure.configurationEvidence` and `index_project.configurationEvidence` preserve `[features]` declarations of root package or literal direct workspace members inside the repository, and literal `cfg`/`cfg_attr` feature predicates of conventional Cargo target sources as path/line/form/polarity/source role. This receipt does not evaluate predicates or execute build scripts/macros; it does not claim/write runtime impact, import dependency, or semantic `depends_on`. It does not hide workspace/package/feature/mapping/source limits or rejected members/predicates. Schema match in `relation_check` is also not semantic approval. New `depends_on` returns `approvalGate.writeAllowed:false` without executable `proposedAction`, written only after human explicit approval of observable capability, semantic rationale, and exact direction. The analyzer connects up to 12 element/path candidates for Python implementation boundaries participating in actual imports. Base on direct module/package boundaries, but allow security/policy/risk exact endpoints to reserve up to 2 slots to prevent risk ownership from being diluted in long import responses. Exclude unused files and conflicting flat slugs. `depends_on` proposed based on this path must match observed import direction to pass proposal validation. The model may select up to 4 exact import file endpoints outside auto-candidates for different exploration roles. The server does not auto-node these files; it fail-closes verifying only the proposal's exact path/limit/file-edge direction.
+    88	
+    89	## Constraints: Impact and blast radius
+    90	
+    91	`impact` and `blast_radius` follow only declared `depends_on`. Containment/domain/element relations are structural evidence for `reachability`/`subgraph`; do not promote to impact or risk. Return `review_required` if no `relation_notes` on declared dependency, `declared_with_rationale` if present. Both are currently not source-backed due to lack of current-source receipt per relation unit; keep completeness and risk as `unknown`. Therefore, 0 dependency declarations are not interpreted as low-risk or no impact.
+    92	
+    93	## Inclusions / Exclusions
+    94	
+    95	- Included: MCP tool registration and I/O contracts, Vault parser/writer, deterministic compiler and
+    96	  graph query, concurrency/dry-run/validation safeguards, bundled server for installed apps.
+    97	- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
+    98	  auto-saving creation proposals without human approval.
+    99	
+   100	## Implementation Basis
+   101	
+   102	- `mcp/src/index.js` · `mcp/src/tool-inventory.mjs`: Boundary that creates both
+   103	  `tools/list` and mode-specific initialize inventory from the active tool registry.
+   104	- `mcp/src/analyze.mjs` · `mcp/src/rust-feature-evidence.mjs` ·
+   105	  `mcp/src/infer-imports.mjs`: Bounded repository meaning ingress, Rust configuration provenance,
+   106	  evidence for TS/JS/Python file-imports and Go package-imports without execution, Autotools C/Rust unsupported
+   107	  scope and exact-path relationship evidence.
+   108	- `mcp/src/vault.mjs` · `mcp/src/schema.mjs`: File read/write and UID/slug specifications.
+   109	- `mcp/src/ontology-compiler.mjs` · `mcp/src/ontology-engine.mjs`: Compile/query.
+   110	- `mcp/src/competency-coverage.mjs` · `mcp/src/meaning-evaluation.mjs`: Quantified
+   111	  competency coverage and source-backed proposal write gate.
+   112	- `mcp/src/construction-qualification.mjs` · `mcp/src/construction-lifecycle.mjs`:
+   113	  Maker-independent categorical qualification, exact plan/source/approval binding, step-by-step
+   114	  write eligibility.
+   115	- `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs`:
+   116	  Re-verification of bounded source currentness for installed apps and public receipt boundary.
+   117	- `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: Current declarations,
+   118	  separating structure/source candidates and unresolved targets into action-first human approval packets.
+   119	- `mcp/scripts/verify.mjs` · `mcp/src/integration.test.mjs` ·
+   120	  `scripts/dogfood-mcp-walk.mjs`: Initialize/tools-list exact parity and installation/live usage verification.
+
+hook: PostToolUse
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/ontology/capabilities/cli-developer-entry.md | sed -n '41,53p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+    41	   However, `infer-imports --apply` is blocked, and bootstrap/index does not automatically write import endpoints or semantic `depends_on`. Preview lines are marked with `imports`, and imports are review candidates with precise justification, not approved dependencies.
+    42	5. Verify connections, impacts, and local Git checkpoints with `mcp-verify`, `preflight`, and `snapshot`.
+    43	
+    44	## Inclusions / Exclusions
+    45	
+    46	- Included: vault scaffold/import/validate, MCP connection diagnostics, deterministic graph queries and
+    47	  agent handoff, repo analysis suggestions, explicit write/apply, vault scope Git preflight/snapshot.
+    48	- Excluded: npm global distribution, remote backends, model execution, automatic push, semantic
+    49	  generation/storage without user approval, replacement of source structure search tools.
+    50	
+    51	## Implementation Basis
+    52	
+    53	- `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs`: command dispatcher and registry
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "rg -n -i 'code index|CodeGraph|AST index|source search|symbol lives|what calls|structural search' docs/DECISIONS.md docs/ONTOLOGY-ATLAS-SPEC.md docs/ARCHITECTURE.md" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+docs/DECISIONS.md:4491:CodeGraph 규칙이 이미 같은 말을 한다 — *"'not found' 를 부재의 증거로 쓰지
+docs/DECISIONS.md:7069:별도 symbol/CodeGraph integration boundary를 설계한다. focus 결과를 의미 관련성 순위로
+docs/DECISIONS.md:7133:  포지셔닝은 철회한다. Atlas는 의미/승인 layer이며 CodeGraph·AST·테스트 도구와
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+결정 원장에도 `symbol/CodeGraph integration boundary`가 따로 언급된 기록이 있어, 해당 결정의 문맥을 추가로 확인하겠습니다. 이 기록이 capability 본문의 제외 문구보다 더 구체적인 근거가 될 수 있습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "nl -ba docs/DECISIONS.md | sed -n '7000,7160p'" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+  7000	
+  7001	## 2026-08-14 — 대형 온톨로지 목록은 누락을 표시하고 끝까지 읽게 한다
+  7002	
+  7003	### 관찰
+  7004	
+  7005	독립 Luna MCP 계약 시험에서 500개를 넘는 vault의 `list_concepts({limit:500})`가
+  7006	`total`만 크게 반환하고 나머지 노드를 찾을 방법을 주지 않았다. 첫 census가
+  7007	완전한 것처럼 보이는 무표식 절단은 이후 source-hidden 판단과 handoff의 근거를
+  7008	오염시킨다. 같은 시험에서 summary 목록만으로는 capability/domain의 본문 근거가
+  7009	닫히지 않아, 목록을 읽었다는 사실과 의미를 이해했다는 사실도 분리할 필요가
+  7010	있었다.
+  7011	
+  7012	### 결정 (집행)
+  7013	
+  7014	- MCP `list_concepts`는 필터 후 canonical slug 순으로 정렬하고 `offset`과
+  7015	  `limit`을 받는다. 응답은 `returned`, `limited`, `pagination`을 포함하며
+  7016	  `hasMore`일 때 반드시 `nextOffset`을 제공한다.
+  7017	- 첫 페이지를 전체 census로 표현하지 않는다. MCP README, verifier, local
+  7018	  read-only agent adapter가 같은 페이지 계약을 사용하고, 100+ fixture에서
+  7019	  페이지 합집합이 중복·누락 없이 원래 total을 회복하는지 검사한다.
+  7020	- 목록/summary는 census일 뿐이다. field-trial handoff가 domain, capability,
+  7021	  project boundary, implementation, impact를 완료로 표시하려면
+  7022	  `get_concept({body:"full"})` 또는 `get_concepts({body:"full"})`의 exact
+  7023	  follow-up 근거를 남긴다. 본문이 없거나 잘리면 partial/unknown으로 남긴다.
+  7024	- 이번 slice는 새 kind/relation/tool, UI pagination, semantic qualification,
+  7025	  automatic vault write를 포함하지 않는다.
+  7026	
+  7027	### 반증 조건
+  7028	
+  7029	독립적인 100+ node zero-state 세션 3회에서 첫 목록 응답만으로도 누락 없이
+  7030	복원되고, `hasMore`/`nextOffset`을 사용하지 않아도 source-hidden claim이
+  7031	동일하게 검증되는 것이 관찰되면 pagination 또는 full-body handoff gate의
+  7032	우선순위를 재평가한다. 반대로 한 번이라도 page metadata 없이 500개 밖의 노드를
+  7033	놓치거나 summary만으로 본문 의미를 단정하면 이 결정은 유지된다.
+  7034	
+  7035	**서명 (accountable)**: jinan 위임 하에 집행
+  7036	**상태**: 유효
+  7037	
+  7038	---
+  7039	
+  7040	## 2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다
+  7041	
+  7042	### 반증 관측
+  7043	
+  7044	같은 날 앞 결정을 반영한 fresh 서버로 무코칭 시험을 다시 했다. Claude Code는
+  7045	`reviewMode:"next"`를 골라 13회·overflow 0으로 끝났지만, Codex는 도구 설명에 있는
+  7046	두 번째 확인 `{reviewMode:"full",allowLargeResponse:true}`까지 스스로 승인해 3.94 MB
+  7047	complete scan을 세 번 호출했다. 최종 답은 좋았지만 transcript가 3.8 MB가 됐다.
+  7048	“명시적 확인이면 에이전트가 비용을 이해했다”는 전제가 실제 사용자에게는 성립하지
+  7049	않았다. 앞 기록의 해자 자리 반대가 이겼다.
+  7050	
+  7051	### 결정
+  7052	
+  7053	- FDE가 analyzer/ontology에서 구현 file path를 하나 얻었으면 complete import graph보다
+  7054	  `focusPath`를 먼저 쓴다. `reviewMode:"focus"`를 명시해도 같은 계약이다.
+  7055	- focus는 exact file-level static imports를 incoming/outgoing으로 세고, deterministic
+  7056	  cursor와 최대 100개 영수증만 반환한다. vault/reconciliation이 없어도 된다.
+  7057	- focus는 source boundary일 뿐 runtime blast radius, affected behavior, symbol coupling,
+  7058	  test completeness, semantic `depends_on`을 주장하지 않는다. `writeAllowed:false`다.
+  7059	- full+confirmation은 호환성과 오프라인 전수 감사용으로 남지만 기본 FDE impact
+  7060	  경로로 설명하지 않는다.
+  7061	
+  7062	### 가장 강한 반대와 반증 조건
+  7063	
+  7064	가장 강한 반대는 exact path를 모르는 cold start에서는 focus가 아무 도움도 주지
+  7065	않는다는 것이다. analyzer의 entrypoint/path evidence가 빈약하면 여전히 global queue나
+  7066	source tool이 필요하다. 수정 후 fresh Codex·Claude가 Refined의 feature registration
+  7067	질문에서 `source/feature-manager.tsx` focus를 발견하지 못하거나 full을 다시 고르면 이
+  7068	결정도 충분하지 않다. 그때는 `index_project` plan에 executable focus call을 직접 싣거나,
+  7069	별도 symbol/CodeGraph integration boundary를 설계한다. focus 결과를 의미 관련성 순위로
+  7070	정렬하는 일은 하지 않는다.
+  7071	
+  7072	**서명 (accountable)**: 소유자 jinan의 장기 MCP 품질 개선 위임 아래 집행
+  7073	**상태**: 유효
+  7074	
+  7075	---
+  7076	
+  7077	## 2026-08-13 — 대형 import evidence는 기본 호출에서 128 KiB를 넘기지 않는다
+  7078	
+  7079	### 관찰한 문제
+  7080	
+  7081	빈 starter vault에서 실제 오픈소스 세 곳(Pyspinel · Textual · Refined GitHub)을
+  7082	Codex와 Claude Code에 각각 Atlas MCP만 연결해 무코칭으로 조사했다. 작은 저장소는
+  7083	검토 가능한 proposal까지 갔지만, Refined GitHub의 `infer_imports` complete shape는
+  7084	874개 고유 후보·253개 endpoint를 만들며 예상 MCP 결과가 3,942,607 bytes였다.
+  7085	두 클라이언트는 이 배열을 명시적으로 `full` 요청하거나 전체를 다시 읽으려 했고,
+  7086	한 번의 첫 접촉에 수십만~백만 input token을 썼다. 이는 온톨로지 품질 문제가 되기
+  7087	전에 전달 계약이 FDE의 작업 기억을 소진하는 결함이다.
+  7088	
+  7089	### 결정
+  7090	
+  7091	- `infer_imports`에서 `reviewMode`를 생략하면, 완전한 MCP 결과 envelope의 UTF-8
+  7092	  예상 크기가 **128 KiB 이하일 때만** 기존 complete shape를 그대로 반환한다.
+  7093	- 128 KiB를 넘고 reconciliation이 가능하면 자동으로 쓰기 없는
+  7094	  `nextRelationReview:v1` 한 건, stateless cursor, 실제 예상 크기와 한계를 담은
+  7095	  `delivery` receipt를 반환한다. 전체 응답을 원하면 receipt가 명시하는
+  7096	  `{reviewMode:"full",allowLargeResponse:true}` 두 번째 확인이 필요하다.
+  7097	- reconciliation vault가 없거나 `reconcile:false`이면 자동으로 사실을 요약하지
+  7098	  않는다. bounded 경로와 명시적 full 경로를 함께 알리는 오류로 닫는다.
+  7099	- `reviewMode:"next"`는 계속 명시적 bounded path다. `index_project`의 내부 분석은
+  7100	  full+confirmation을 명시해 기존 proposal 의미를 바꾸지 않는다.
+  7101	- import evidence는 계속 source fact일 뿐 semantic `depends_on`이 아니다.
+  7102	  사람 승인 없는 relation/frontmatter write는 0이다.
+  7103	
+  7104	### 왜 이 경계인가
+  7105	
+  7106	자동 compact 자체는 차별점이 아니라 MCP 위생이다. 독립 PO 판정도 Ontology
+  7107	value 4/4 · Agent value 4/4지만 Differentiation 2/4였다. Atlas의 실질 가치는
+  7108	bounded source evidence → 양쪽 ontology concept 확인 → semantic rationale → 사람
+  7109	승인 → Git Markdown relation으로 이어지는 경계를 큰 저장소에서도 보존하는 데
+  7110	있다. 실측 Refined 응답은 3.94 MB 예상 complete envelope에서 약 9 KB의 기본
+  7111	wire result로 줄었고, 874건 전체 cursor 순회는 3.11 MB 누적·100건 표본은 100개
+  7112	고유 후보/54 endpoint로 손실 없이 진행됐다.
+  7113	
+  7114	### 카운슬과 가장 강한 반대
+  7115	
+  7116	근거·결·지킴이·해자 네 자리는 독립 실물/계약 검토를 완료했고 모두
+  7117	Build and verify였다. 이번에는 동시성 한계 때문에 지렛대 자리를 독립 agent로
+  7118	완주하지 못했으며, accountable 집행자가 기회비용을 직접 검토했다. 이 불완전성을
+  7119	5석 만장일치로 포장하지 않는다.
+  7120	
+  7121	가장 강한 반대는 “폭주를 막았을 뿐, FDE가 어디서 시작하고 무엇이 영향받는지는
+  7122	아직 못 답한다”이다. Refined의 사전식 첫 후보는 중앙 seam인
+  7123	`feature-manager`가 아니라 `action-pr-link`였고, 특정 endpoint의 incoming/outgoing
+  7124	관계와 fan-in/out을 바로 묻는 focus 조회가 없다.
+  7125	
+  7126	### 반증 조건과 다음 행동
+  7127	
+  7128	- 수정 후 fresh Atlas-only Codex·Claude 중 둘 이상이 다시 full+confirmation을
+  7129	  선택하거나 대량 cursor를 순회하면, 전달 기본값만으로 P0가 닫혔다는 판단은
+  7130	  틀리다. endpoint/source-path focus filter를 P0로 승격한다.
+  7131	- 세 실제 저장소 중 둘 이상에서 Atlas-only plan이 direct source reading 없이
+  7132	  capability 경계·변경 시작점·검증 경로를 안전하게 답하지 못하면 “FDE 단독 도구”
+  7133	  포지셔닝은 철회한다. Atlas는 의미/승인 layer이며 CodeGraph·AST·테스트 도구와
+  7134	  결합하는 계약을 유지한다.
+  7135	- 100+ **후보**를 처리했다는 사실을 100+ **승인된 의미 노드** 품질로 말하지
+  7136	  않는다. 100+ node qualification은 별도 사람 승인 plan과 source-hidden 평가가
+  7137	  있을 때만 통과한다.
+  7138	
+  7139	**서명 (accountable)**: 소유자 jinan의 장기 MCP 품질 개선 위임 아래 집행
+  7140	**상태**: 유효
+  7141	
+  7142	---
+  7143	## 2026-08-13 — 프로젝트 상세: 방사 도메인 지도를 은퇴시키고 행+비율 막대 한 문법으로 (갈래 B)
+  7144	
+  7145	**소집**: 갈래 문서(A~D, 실측 포함)를 소유자에게 제시, 소유자가 B를 골랐다:
+  7146	*"담당 추천은 B — 못 지키는 약속을 잘 지키는 그림으로 바꾸고, 헛걸음(N개 더)과 같은
+  7147	숫자 세 번 말하기가 함께 사라집니다 이걸로 해보고"*.
+  7148	
+  7149	**계기 (실측)**: 소유자 스크린샷 셋(*"디자인적으로 별로"* · *"아쉬워"* · *"대충 만든 것
+  7150	같음, 아예 리디자인"*). 방사 지도의 캡션은 「많이 담긴 도메인이 더 크게」를 약속하는데
+  7151	17개 칩과 6개 칩의 크기 차이가 **4.7px**(17 vs 16은 0.3px), 선 2개가 허브 글자 관통.
+  7152	카드 9장은 견본 2줄의 기준이 화면에 없고 「역량 N개 더」는 눌리지 않으며, 같은 도메인
+  7153	개수를 한 화면이 세 번(칩·지도·카드) 말했다.
+  7154	
+  7155	**정한 것**: 방사 지도(MiniDomainMap)와 카드 격자(DomainCompositionGrid) 은퇴 →
+  7156	구성 탭에 도메인 행 9줄(공유 비율 막대 + 그 자리 펼침 + 펼친 안에서 지도 focus 링크).
+  7157	
+  7158	**구현이 사양에서 갈라진 한 곳 (실측 근거)**: 갈래 B 원문은 히어로 우측에도 행 9줄을
+  7159	두라고 했는데, 그대로 넣어 재 보니 히어로가 206→495px(화면의 50%)로 커지고 왼쪽 열에
+  7160	290px 빈 띠, 그리고 구성 탭과 **같은 아홉 줄이 한 화면에 두 번** — B가 없애려던 바로
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+결론: 현재 기록상 `mcp-server` capability 범위 밖입니다.
+
+- `mcp-server`가 소유하는 범위는 로컬 Markdown vault의 읽기·안전한 쓰기, ontology compiler/graph query, 검증·dry-run 계약입니다. 반면 `AST/source search engine`은 명시적으로 제외돼 있습니다. [mcp-server.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/ontology/capabilities/mcp-server.md:93)
+- 제품 경계도 “Not a code index”라고 명시합니다. 심볼 위치와 호출 관계는 grep, language server, AST index, CodeGraph의 책임이고, Atlas는 그 코드가 왜 중요한지·어떤 capability를 섬기는지·무엇을 검증할지를 담당합니다. [README.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/README.md:472)
+- 유효한 결정 원장은 현재 source `focus` 조회조차 `symbol coupling`을 주장하지 않는다고 제한합니다. 심볼 수준 기능이 필요하면 “별도 symbol/CodeGraph integration boundary를 설계한다”고 기록돼 있습니다. [DECISIONS.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/DECISIONS.md:7053) [DECISIONS.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/DECISIONS.md:7064)
+- 같은 결정은 Atlas를 의미·승인 계층으로, CodeGraph·AST·테스트 도구를 결합 대상 구조 도구로 유지한다고 명시합니다. [DECISIONS.md](/Users/stark/orca/workspaces/oh-my-ontology/main-2/docs/DECISIONS.md:7131)
+
+즉, MCP라는 전송면에서 노출할 수 없다고 기록된 것은 아닙니다. 다만 현재 `mcp-server` capability가 코드 심볼 검색을 소유한다는 기록은 없고, 오히려 명시적 제외 대상이자 별도 통합 경계가 필요한 대상으로 기록돼 있습니다. 그 별도 경계의 구체적인 형태는 아직 결정되어 있지 않습니다.
+hook: Stop
+hook: Stop Completed
+tokens used
+68,856

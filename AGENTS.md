@@ -5,11 +5,12 @@
 
 ## Product and non-negotiable architecture
 
-Ontology Atlas is a local-first workbench for understanding a product from
-business meaning to implementation evidence. Vault Markdown frontmatter is the
-graph, Git is the source of truth, and people judge meaning through plain files
-and diffs. Agents use the same vault through MCP/CLI. The macOS app carries the
-MCP server; source checkouts run it directly. There is no npm package.
+Ontology Atlas is a local-first codebase ontology for understanding what code
+builds, why it is structured that way, and what changes affect, across product
+meaning and implementation evidence. Vault Markdown frontmatter is the graph;
+Git is the source of truth, and people judge meaning through files and
+diffs. Agents use the same vault through MCP/CLI. The macOS app carries its MCP
+server; source checkouts run it directly. There is no npm package.
 
 Atlas complements CodeGraph, grep, AST indexes, language servers, and source
 search. Those tools answer structural questions; Atlas provides the durable
@@ -25,7 +26,7 @@ The app is the vault's home and the web is a gateway or second-best workbench.
 They share one folder, parser contract, and vault-local records; they do not
 promise identical screens. Keep degradation honest.
 
-> **One product/system, one ontology, that people and their AI agents grow together.**
+> **One codebase ontology, maintained by people and AI agents.**
 
 No backend, login, auth provider, environment setup, seed data, API routes, or
 server actions belong here. `output: 'export'` is intentional.

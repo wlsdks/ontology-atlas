@@ -15,10 +15,16 @@ If the effect is large, this folder becomes evidence in the README. If small, we
 
 Either way, **measurement before further investment**.
 
+> **Read [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) first.** It records
+> what the first real run measured, why three earlier attempts measured nothing,
+> and the one rule that came out of it: *if it would disappear along with the
+> source, do not put it in the vault.*
+
 ## What's in here
 
 | File | Purpose |
 |---|---|
+| [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. |
 | [`tasks.md`](tasks.md) | 7 benchmark tasks — 3 categories (cross-cutting / semantic / negative-control). Each task has a known correct answer for human grading. |
 | [`rubric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. |
 | [`results/2026-05-template.md`](results/2026-05-template.md) | Empty matrix (task × agent × mode). Fill in after each measurement run. |

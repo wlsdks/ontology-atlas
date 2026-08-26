@@ -251,6 +251,7 @@
   "navRail": {
     "ariaLabel": "Primary navigation",
     "map": "Map",
+    "architecture": "Architecture",
     "docs": "Docs",
     "insights": "Insights",
     "projects": "Projects",
@@ -258,6 +259,63 @@
     "git": "History",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections: Windows is in progress"
+  },
+  "architecture": {
+    "eyebrow": "CODE ARCHITECTURE",
+    "title": "Architecture",
+    "description": "See the reviewed implementation roles before an agent changes code.",
+    "profileList": "Applied scopes",
+    "sourceCheckRequired": "Source check required",
+    "sourceCheckBody": "The profile is reviewed intent. Current imports are inspected by Atlas MCP or CLI; this screen does not turn missing evidence into a green result.",
+    "patterns": "Pattern axes",
+    "roles": "Roles and dependency direction",
+    "rolePaths": "{count, plural, one {# path} other {# paths}}",
+    "dependencyLowerOnly": "Dependencies point to lower roles only",
+    "dependencyExplicit": "Project-specific allowed dependencies",
+    "modesAria": "Architecture workflow stage",
+    "modes": {
+      "understand": "Understand",
+      "plan": "Plan",
+      "verify": "Verify"
+    },
+    "understandTitle": "Read the intended structure",
+    "understandBody": "Pattern names summarize the contract. Roles, paths, and dependency rules are the facts an agent must follow.",
+    "evidenceTitle": "Reviewed evidence",
+    "planTitle": "Architecture-first agent plan",
+    "planBody": "Give the selected scope to the connected coding agent before implementation. The agent must return a typed plan before editing.",
+    "handoffPreview": "Agent handoff preview",
+    "copyHandoff": "Copy agent handoff",
+    "copyingHandoff": "Copying agent handoff…",
+    "copiedHandoff": "Agent handoff copied",
+    "copyHandoffError": "Could not copy. Try again",
+    "openDocs": "Draft it from my code",
+    "verifyTitle": "Verify the actual change",
+    "verifyBody": "Run the same source inspection after editing and compare planned dependencies with actual imports.",
+    "unknownIsNotCompliant": "Unknown is not compliant. Unsupported languages, unmapped paths, and empty roles remain explicit gaps.",
+    "verifyCommands": "Agent check: inspect_architecture → focused tests → inspect_architecture",
+    "noProfiles": "This codebase's structure has not been recorded yet",
+    "noProfilesBody": "An AI agent reads the folders and the real imports and drafts it for you. There is nothing to write by hand: look at the draft, then correct it or accept it.",
+    "roleLabels": {
+      "routing": "Routes",
+      "app": "Application shell",
+      "views": "Views",
+      "widgets": "Widgets",
+      "features": "Features",
+      "entities": "Entities",
+      "shared": "Shared foundation",
+      "domain": "Domain",
+      "application": "Application",
+      "port": "Ports",
+      "adapter": "Adapters",
+      "core": "Core",
+      "integration": "Integrations"
+    },
+    "patternLabels": {
+      "feature-sliced-design": "Feature-Sliced Design",
+      "hexagonal": "Hexagonal",
+      "mvp": "MVP",
+      "custom": "Custom"
+    }
   },
   "ontologyRelations": {
     "relationShort": {
@@ -333,8 +391,8 @@
     "korean": "한국어"
   },
   "mapEntry": {
-    "headline": "The shared meaning layer for people and their AI agents.",
-    "lede": "Turn the Markdown already living in your repository into a queryable model of product domains, capabilities, implementation evidence, dependencies, and impact: then grow it together through MCP, CLI, and a visual workbench.",
+    "headline": "Understand what your codebase builds, why it is structured that way, and what a change will affect.",
+    "lede": "Keep product domains, capabilities, implementation evidence, dependencies, and impact in Markdown beside the code, where people and AI agents can maintain the same codebase ontology.",
     "demoNote": "This screen is the live map. It is drawing Ontology Atlas describing itself: domains, capabilities, and elements read straight from the info block at the top of each file.",
     "mapComing": "Loading the map…",
     "loadingDetail": "Reading this folder's concepts and relations, then fitting them on screen."
@@ -421,15 +479,18 @@
     "errorRootRejected": "This folder cannot become a map. Pick a folder that holds documents, not a system folder or your whole home folder.",
     "errorPathMissing": "That folder is gone. It looks like it was moved or deleted. Pick another one.",
     "errorPermission": "Atlas cannot read this folder. Pick it again to grant access.",
-    "buildFromCodeWillCreate": "The map folder goes here. Your code is untouched, and only this folder is new.",
-    "buildFromCodeReuse": "This project already has a map folder. Nothing new is created; Atlas continues in it.",
-    "buildFromCodeCreateGo": "Create it here",
-    "buildFromCodeReuseGo": "Continue in it",
+    "buildFromCodeWillCreate": "Create the map folder inside this project?",
+    "buildFromCodeReuse": "Continue in this project's map folder?",
+    "buildFromCodeCreateGo": "Create",
+    "buildFromCodeReuseGo": "Continue",
     "buildFromCodeCreating": "Creating…",
     "buildFromCodeCancel": "Cancel",
     "buildFromCodeFailed": "The folder could not be created. Check that you can write to this project.",
     "errorPermissionDenied": "macOS is protecting the folder “{folder}”. Allow Ontology Atlas in System Settings under Privacy & Security, then Files and Folders, and open it again.",
-    "errorPermissionDeniedThisFolder": "this one"
+    "errorPermissionDeniedThisFolder": "this one",
+    "buildFromCodeSteppedUp": "That folder is a map folder, so Atlas stepped up to the project holding it.",
+    "buildFromCodeSafety": "Your code is left alone; only this folder is new.",
+    "buildFromCodeSafetyReuse": "Nothing new is created; the existing folder is used as it is."
   },
   "guidedTour": {
     "progressLabel": "{current}/{total}",
@@ -497,6 +558,14 @@
       "projectsCard": {
         "title": "One card, one product",
         "body": "Each bar shows how that area splits between claims (capabilities) and evidence (elements). Size is on the right, as a number. Open the card for detail, or jump straight to that spot on the map."
+      },
+      "architectureWhat": {
+        "title": "How this codebase is allowed to fit together",
+        "body": "The Map explains what the codebase builds. Architecture records implementation roles, allowed dependency directions, and the exact packet a coding agent must read before editing."
+      },
+      "architectureBlueprint": {
+        "title": "Keep the blueprint stable while work moves",
+        "body": "Understand, Plan, and Verify reuse the same role positions. Planned and observed changes alter state, not the meaning of the layout."
       },
       "gitWhat": {
         "title": "A record of what changed, and when",
@@ -782,6 +851,7 @@
         "walkNeighbors": "Move to a connected concept",
         "navBlockedByOverlay": "Close the open panel first. Press Esc to close it",
         "goTo_map": "Go to map",
+        "goTo_architecture": "Go to architecture",
         "goTo_docs": "Go to docs",
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
@@ -1631,7 +1701,7 @@
       "contractToggleLabel": "Workspace checks",
       "contractToggleHide": "Close workspace checks",
       "contractToggleShow": "Show workspace checks",
-      "crumbBack": "Workspace",
+      "crumbBack": "Your folder",
       "vaultPillFolders": "{count} folders",
       "vaultPillSwap": "Switch folder",
       "vaultPillSampleLabel": "Built-in sample (this tool's own documents)",
@@ -2145,9 +2215,9 @@
       "toastSavedAction": "View on map",
       "toastExists": "A node with that address already exists.",
       "toastError": "Could not create the node.",
-      "unavailableHeading": "Workspace required",
+      "unavailableHeading": "You need a folder first",
       "unavailableBody": "Open your folder before creating concepts from the map.",
-      "unavailableAction": "Open workspace",
+      "unavailableAction": "Open your folder",
       "primaryNamePlaceholder": "Concept name (English)",
       "secondaryNamePlaceholder": "Korean name (optional)",
       "localeNamesHint": "The field above is the name for your current screen language (English). Add the Korean name so Korean screens read it too.",
@@ -2250,14 +2320,14 @@
       "sparseFilterTitle": "Filters are hiding the relations",
       "sparseFilterBody": "The current filters leave too few concepts or projects to draw a connected map.",
       "clearFilters": "Clear filters",
-      "kicker": "Map · {count, plural, one {# project} other {# projects}}",
+      "kicker": "Map · {count} concepts",
       "kickerNoDeps": "Map · {count, plural, one {# concept} other {# concepts}} · 0 relations",
-      "titleNoProjects": "No projects to draw yet",
+      "titleNoProjects": "This folder is still empty",
       "titleNoDeps": "No relations to draw yet",
-      "bodyNoProjectsDownload": "Install the desktop app and open a local folder to start the map from the first project concept.",
-      "bodyNoProjectsPicker": "Open a local folder or save the first project concept in Save/edit to start the relation map.",
+      "bodyNoProjectsDownload": "Install the desktop app and open your folder to start filling it.",
+      "bodyNoProjectsPicker": "Write one yourself, or let an AI agent read your code and fill it in one go.",
       "bodyNoDeps": "Create one relation in Save/edit and its line will appear here.",
-      "crossViewHint": "Full map documents and changes stay available in Browse and Save/edit.",
+      "crossViewHint": "Whatever you make stays visible in Browse and in Save/edit.",
       "ctaCreateNode": "Create concept",
       "ctaTree": "Browse concepts",
       "ctaBuilder": "Open Save/edit",
@@ -2434,9 +2504,10 @@
       "back": "Back",
       "agent": {
         "title": "Connect an AI agent",
-        "bodyFound": "Found an AI tool on this machine: {runtime}. You can chat with it right here and fill in the map together.",
+        "bodyFound": "Found an AI tool on this computer. Connect it and you can fill the ontology together in conversation.",
         "bodyMissing": "If you use Claude Agent, you can open a guarded chat here. Codex and other MCP clients can connect to this folder from their own app or terminal. Everything else works without connecting.",
-        "cta": "Open agent settings"
+        "cta": "Open agent settings",
+        "runtimeReady": "Ready to talk to inside the app"
       },
       "analyze": {
         "title": "Let AI draft the map from your code",
@@ -3413,7 +3484,7 @@
       "remove": "Remove existing fact",
       "rename": "Rename concept",
       "merge": "Merge concepts",
-      "write": "Change vault"
+      "write": "Change your folder"
     },
     "from": "From",
     "relation": "Relation",
@@ -3457,6 +3528,8 @@
     "composerLabel": "Write what you want done",
     "send": "Send",
     "stop": "Stop",
+    "turnSilent": "The agent has said nothing for {minutes} minutes",
+    "turnSilentHint": "It may still be working, or it may have finished without telling us. Press Stop to type again.",
     "status": {
       "idle": "Off",
       "starting": "Connecting",

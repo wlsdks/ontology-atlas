@@ -241,9 +241,8 @@ function AppNavRailSlot() {
   // (measured 2026-07-25: map 3, docs/insights/projects 2, that page 1). Structure a
   // page has to remember is the source of drift, so the default moves up to the shell
   // and a page overrides only when it needs a special slot.
-  // The badge count reads **the same hook** as the destination — if the two values
-  // diverge you get the trust-breaking case where the list is empty but a number
-  // remains. It is based on the session changeset, so it works on both web and desktop.
+  // The badge count reads the same session changeset as the Git workbench. If the
+  // two diverged, the rail could claim changes while the destination showed none.
   const { changeset: gitChangeset } = useAtlasGitContext();
   const gitDirtyCount = gitChangeset.touchedNodeIds.size;
 

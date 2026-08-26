@@ -85,6 +85,13 @@ async function run<T>(name: string, args: unknown = {}): Promise<T> {
 // The MCP side reads the vault folder directly, never through our manifest.
 const mcpVault = await import('../../mcp/src/vault.mjs');
 
+function loadMcpOntologyDocs() {
+  return (mcpVault.loadVaultDocs(VAULT_DIR) as Array<{
+    slug: string;
+    frontmatter: Record<string, unknown>;
+  }>).filter((doc) => typeof doc.frontmatter.kind === 'string');
+}
+
 describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 실물)', () => {
   it('종류별 개수와 "이름만 불린 개념" 수가 통째로 같다', async () => {
     // Even the field names match — the in-screen agent and the terminal agent must state
@@ -102,31 +109,37 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
   it('kind 별 문서 slug 집합이 같다', async () => {
     // Fetching everything at once hits the round-trip character limit and truncates
     // rows — that is the contract, not a defect (it protects the user's cost). So the
-    // comparison narrows by kind, the same way real usage does.
-    const mcpDocs = mcpVault.loadVaultDocs(VAULT_DIR) as Array<{
-      slug: string;
-      frontmatter: Record<string, unknown>;
-    }>;
+    // comparison narrows by kind and follows bounded pages, the same way real usage does.
+    const mcpDocs = loadMcpOntologyDocs();
     const kinds = [...new Set(mcpDocs.map((doc) => String(doc.frontmatter.kind)))];
     for (const kind of kinds) {
       const expected = mcpDocs
         .filter((doc) => String(doc.frontmatter.kind) === kind)
         .map((doc) => doc.slug)
         .sort();
-      const ours = await run<{ rows: Array<{ slug: string }>; truncated?: boolean }>(
-        'list_concepts',
-        { kind, limit: 500 },
-      );
-      expect(ours.truncated ?? false).toBe(false);
-      expect(ours.rows.map((row) => row.slug).sort()).toEqual(expected);
+      const actual: string[] = [];
+      let offset = 0;
+      let pages = 0;
+      do {
+        const ours = await run<{
+          rows: Array<{ slug: string }>;
+          truncated?: boolean;
+          pagination: { hasMore: boolean; nextOffset: number | null };
+        }>('list_concepts', { kind, limit: 40, offset });
+        expect(ours.truncated ?? false, `${kind} page ${pages + 1} exceeded the agent result cap`).toBe(false);
+        actual.push(...ours.rows.map((row) => row.slug));
+        pages += 1;
+        if (!ours.pagination.hasMore) break;
+        expect(ours.pagination.nextOffset, `${kind} says it has another page without a cursor`).toBeGreaterThan(offset);
+        offset = ours.pagination.nextOffset!;
+      } while (pages < 20);
+      expect(pages, `${kind} pagination did not terminate`).toBeLessThan(20);
+      expect(actual.sort()).toEqual(expected);
     }
   });
 
   it('같은 노드를 물으면 같은 kind 를 답한다', async () => {
-    const mcpDocs = mcpVault.loadVaultDocs(VAULT_DIR) as Array<{
-      slug: string;
-      frontmatter: Record<string, unknown>;
-    }>;
+    const mcpDocs = loadMcpOntologyDocs();
     // The first few only — a sample suffices for the contract, and an exhaustive run is merely slow.
     for (const doc of mcpDocs.slice(0, 12)) {
       const ours = await run<{ kind: string; hasDocument: boolean }>('get_concept', {
@@ -138,7 +151,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
   });
 
   it('백링크 대상 집합이 같다', async () => {
-    const mcpDocs = mcpVault.loadVaultDocs(VAULT_DIR) as Array<{ slug: string }>;
+    const mcpDocs = loadMcpOntologyDocs();
     // The contract means something only on a node that really has backlinks.
     const withBacklinks = mcpDocs
       .map((doc) => ({
@@ -170,10 +183,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
   });
 
   it('제목 검색이 같은 문서를 찾는다', async () => {
-    const mcpDocs = mcpVault.loadVaultDocs(VAULT_DIR) as Array<{
-      slug: string;
-      frontmatter: Record<string, unknown>;
-    }>;
+    const mcpDocs = loadMcpOntologyDocs();
     const sample = mcpDocs.find(
       (doc) => typeof doc.frontmatter.title === 'string' && doc.frontmatter.title.trim(),
     );
@@ -185,7 +195,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
   });
 
   it('볼트 본문은 신뢰할 수 없는 데이터로 감싸여 나간다', async () => {
-    const mcpDocs = mcpVault.loadVaultDocs(VAULT_DIR) as Array<{ slug: string }>;
+    const mcpDocs = loadMcpOntologyDocs();
     const documented = mcpDocs.find((doc) => doc.slug !== 'README') as { slug: string };
     const result = await execute(call('get_concept', { slug: documented.slug }));
     expect(result.content).toContain('<untrusted_vault_content>');
@@ -205,7 +215,7 @@ describe('에이전트 읽기 실행기 ↔ MCP 볼트 읽기 (dogfood 볼트 �
     // current; this holds that premise once more.
     const readme = readFileSync(join(VAULT_DIR, 'README.md'), 'utf-8');
     expect(readme.length).toBeGreaterThan(0);
-    const mcpDocs = mcpVault.loadVaultDocs(VAULT_DIR) as Array<{ slug: string }>;
+    const mcpDocs = loadMcpOntologyDocs();
     expect(port.docs.length).toBe(mcpDocs.length);
   });
 });

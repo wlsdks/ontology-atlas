@@ -2510,6 +2510,29 @@ function HomePageImpl() {
     acpDockFrameOpen ||
     vaultAgentOpen ||
     Boolean(llmBridgeAvailable && routeState.askIntent);
+  /*
+   * ⚠️ Lifted out of the JSX so INDEX can yield to it (owner, 2026-08-25). The checklist centres in
+   * the map area; with INDEX open that area is not the window, so the surface asking for attention
+   * sat off the middle while claiming it. `resolve-contextual-index-state` now collapses INDEX while
+   * this is true, which is the same shape as the existing agent-dock and meaning-editor rules.
+   */
+  // Declared here rather than beside its dismiss handler: `resolveContextualIndexState` below needs
+  // it, and INDEX cannot yield to a surface whose visibility is computed after INDEX is resolved.
+  const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
+    readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
+  );
+  /**
+   * Dismisses the first-steps card, meaning the last step is behind them. Session
+   * scoped, so reopening the app shows the guidance again.
+   */
+  const dismissStartSteps = useCallback(() => {
+    writeFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY);
+    setStartStepsDismissed(true);
+  }, []);
+
+  const startStepsVisible =
+    canCreateNode && !startStepsDismissed && !agentDockRequestedOpen;
+
   const renderedIndexState = resolveContextualIndexState({
     baseState: baseRenderedIndexState,
     meaningEditorOpen: Boolean(meaningEditorIntent),
@@ -2547,7 +2570,9 @@ function HomePageImpl() {
    * Atlas MCP write. Removing it from the shared predicate removes it from both
    * this selector and the Agents destination instead of leaving one unsafe door.
    */
-  const [acpRuntimes, setAcpRuntimes] = useState<Array<{ id: string; label: string }>>([]);
+  const [acpRuntimes, setAcpRuntimes] = useState<
+    Array<{ id: string; label: string; icon: string | null; brandInk: string | null }>
+  >([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
   const [pendingAgentChatRuntimeId, setPendingAgentChatRuntimeId] = useState<string | null>(null);
   /**
@@ -2602,7 +2627,9 @@ function HomePageImpl() {
       if (cancelled) return;
       const usable = (list ?? [])
         .filter((r) => r.state === 'ready' && r.verified && isGuardedRuntime(r.id, r.isolated))
-        .map((r) => ({ id: r.id, label: r.label }));
+        // The mark and its brand colour ride along so the start checklist can *show* the tool it
+        // found rather than only name it. Both are already on the registry row.
+        .map((r) => ({ id: r.id, label: r.label, icon: r.icon, brandInk: r.brandInk }));
       setAcpRuntimes(usable);
       setAcpRuntimeId((current) =>
         current && usable.some((r) => r.id === current) ? current : (usable[0]?.id ?? null),
@@ -3296,18 +3323,6 @@ function HomePageImpl() {
   }, [analyzePrompt, openVaultAgent]);
 
   /**
-   * Dismisses the first-steps card, meaning the last step is behind them. Session
-   * scoped, so reopening the app shows the guidance again.
-   */
-  const [startStepsDismissed, setStartStepsDismissed] = useState(() =>
-    readFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY),
-  );
-  const dismissStartSteps = useCallback(() => {
-    writeFirstRunStarterDismissed(VAULT_START_STEPS_DISMISSED_KEY);
-    setStartStepsDismissed(true);
-  }, []);
-
-  /**
    * **Toasts step aside for whatever stands on the right** (owner's screen,
    * 2026-08-16).
    *
@@ -3628,7 +3643,7 @@ function HomePageImpl() {
   }, [closeCreateNode, tour]);
 
   // The map's own re-entry is the compass tile top right, but the settings menu's
-  // guide row has to be in the same place across all six destinations so nobody hunts
+  // guide row has to be in the same place across all seven destinations so nobody hunts
   // for it per screen. The other five register through the shell's `DestinationGuide`;
   // the map registers this function.
   useRegisterGuideReplay(openGuidedTour);
@@ -5436,10 +5451,12 @@ function HomePageImpl() {
                    * It is guidance for a person who has not started. Someone talking to an agent
                    * has started. Dismissal is untouched: closing the panel brings it back.
                    */
-                  canCreateNode && !startStepsDismissed && !agentDockOpen ? (
+                  startStepsVisible ? (
                     <VaultStartSteps
                       agentConnected={agentConnect.status.kind === "connected"}
                       acpRuntimeLabel={acpRuntimeLabel}
+                      acpRuntimeIcon={acpRuntime?.icon ?? null}
+                      acpRuntimeInk={acpRuntime?.brandInk ?? null}
                       onCreateNode={openCreateNodeWithKind}
                       // Someone who opened an empty folder through "choose an existing
                       // folder" gets the same starter as "start fresh in an empty folder",
@@ -5495,7 +5512,7 @@ function HomePageImpl() {
                     />
                   ) : (
                   <TopologyEmptyState
-                    projectCount={emptyTopologyNodeCount}
+                    conceptCount={emptyTopologyNodeCount}
                     reason={topologyOverlayState.emptyReason}
                     canCreateNode={canCreateNode}
                     onCreateNode={openCreateNode}

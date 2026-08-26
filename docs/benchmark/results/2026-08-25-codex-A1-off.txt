@@ -1,0 +1,664 @@
+`local-vault-management` 도메인에는 capability 4개와 직접 귀속된 element 8개가 있습니다.
+
+한 줄 설명: 로컬 디스크의 Markdown 폴더를 데이터 소스로 선택하고, Git을 진실의 원천으로 사용하며, 샘플 볼트를 제공하는 로컬 우선 데이터 관리 계층입니다.
+
+### Capability
+
+- **Data Source Mode Branching** (`데이터 출처 모드 분기`)  
+  폴더 선택 여부에 따라 vault-picked 모드와 static/sample 모드로 앱 동작을 분기합니다.  
+  `src/features/data-source-mode`
+
+- **Local Folder Mounting** (`내 폴더 열기`)  
+  File System Access API로 로컬 Markdown 폴더를 선택·마운트하고 실시간 데이터 소스로 사용합니다.  
+  `src/features/docs-vault-local`
+
+- **Project Data Access** (`프로젝트 데이터 읽기`)  
+  선택된 로컬 vault 또는 정적 샘플에서 프로젝트 목록과 본문을 읽고, 로컬 모드에서 생성·수정·삭제를 제공합니다.  
+  `src/features/project-data-source`
+
+- **Sample Vault Demo Source** (`예시 볼트 출처`)  
+  설치 없이 사용할 수 있는 번들 예시 vault를 제공합니다.  
+  `src/features/vault-sample-source`
+
+### Element
+
+- **Atlas Git Panel** (`아틀라스 기록 패널`) — vault의 Git 상태와 snapshot을 보여주는 패널  
+  `src/widgets/atlas-git-panel`
+
+- **Docs Vault (entity)** (`문서함 엔티티`) — vault 데이터 모델  
+  `src/entities/docs-vault`
+
+- **Docs Vault (view)** (`문서함 화면`) — `/docs` 페이지  
+  `src/views/docs-vault`
+
+- **Docs Vault (widget)** (`문서함 위젯`) — vault 트리/목록 UI  
+  `src/widgets/docs-vault`
+
+- **Git** (`git 연동`) — Git 상태·히스토리 화면  
+  `src/views/git`
+
+- **Local Fs Handle** (`로컬 파일시스템 핸들`) — File System Access API 핸들 엔티티  
+  `src/entities/local-fs-handle`
+
+- **Native Vault Filesystem Bridge** (`네이티브 볼트 파일시스템 브리지`) — Tauri WebView가 선택된 vault 내부 파일과 디렉터리를 읽고 쓰도록 연결하는 네이티브 브리지  
+  `src-tauri/src/lib.rs`
+
+- **Private Vault Sidecar Boundary** (`볼트 사이드카 경계`) — MCP/CLI의 `.ontology-atlas` 내부 receipt·activity log 파일 경계를 관리하며 원자적 교체와 충돌 감지를 담당  
+  `mcp/src/vault-sidecar.mjs`
+
+참고로 `Project Data Access`는 `elements/project`도 연결하지만, 해당 element 자체의 도메인은 `project-portfolio`로 선언되어 있습니다.
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.147.0
+--------
+workdir: /Users/stark/orca/workspaces/oh-my-ontology/main-2
+model: gpt-5.6-luna
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: xhigh
+reasoning summaries: none
+session id: 01a03740-6cfa-7210-ba54-e8264fd930b3
+--------
+user
+이 repo 의 ontology vault (docs/ontology/) 에서 local-vault-management 도메인 아래에 어떤 capability 와 element 들이 있는지 정리해줘. 도메인 자체의 한 줄 설명도 포함.
+hook: SessionStart
+hook: SessionStart
+hook: SessionStart Completed
+hook: SessionStart Failed
+hook: UserPromptSubmit
+hook: UserPromptSubmit Completed
+codex
+`docs/ontology/`의 vault를 직접 조회해서 `local-vault-management` 도메인과 그 하위 capability/element를 확인한 뒤, 각 항목의 설명과 함께 한국어로 정리하겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc 'rg --files docs/ontology && rg -n -i "local-vault-management|local vault management" docs/ontology' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+docs/ontology/ontology-atlas.md
+docs/ontology/elements/acp-ontology-write-review.md
+docs/ontology/elements/download.md
+docs/ontology/elements/project-drawer.md
+docs/ontology/elements/ontology-redirect.md
+docs/ontology/elements/docs-vault-entity.md
+docs/ontology/elements/ontology-meaning-editor.md
+docs/ontology/elements/ontology-edit-redirect.md
+docs/ontology/elements/search-hint.md
+docs/ontology/elements/full-detail-a1.md
+docs/ontology/elements/local-fs-handle.md
+docs/ontology/elements/git.md
+docs/ontology/elements/public-quick-actions.md
+docs/ontology/elements/recent-node-row.md
+docs/ontology/elements/topology-index-panel.md
+docs/ontology/elements/vault-agent-panel.md
+docs/ontology/elements/root-entry.md
+docs/ontology/elements/ontology-class.md
+docs/ontology/elements/home.md
+docs/ontology/elements/ontology-insights.md
+docs/ontology/elements/knowledge-graph.md
+docs/ontology/elements/search-palette.md
+docs/ontology/elements/project-detail.md
+docs/ontology/elements/docs-quick-drawer.md
+docs/ontology/elements/project.md
+docs/ontology/elements/category.md
+docs/ontology/elements/status.md
+docs/ontology/elements/global-search.md
+docs/ontology/elements/atlas-git-panel.md
+docs/ontology/elements/gesture-hint.md
+docs/ontology/elements/docs-vault-widget.md
+docs/ontology/elements/topology-controls.md
+docs/ontology/elements/docs-vault-view.md
+docs/ontology/elements/native-vault-filesystem-bridge.md
+docs/ontology/elements/first-run.md
+docs/ontology/elements/app-nav-rail.md
+docs/ontology/elements/topology-map-v2.md
+docs/ontology/elements/ontology-change-review.md
+docs/ontology/elements/private-vault-sidecar-boundary.md
+docs/ontology/elements/bottom-tab-bar.md
+docs/ontology/elements/app-settings-menu.md
+docs/ontology/elements/gateway-doc.md
+docs/ontology/elements/domain-capacity-bar.md
+docs/ontology/elements/shortcut-sheet.md
+docs/ontology/elements/gateway-chrome.md
+docs/ontology/elements/project-selector.md
+docs/ontology/elements/agents-destination.md
+docs/ontology/elements/project-editor.md
+docs/ontology/README.md
+docs/ontology/capabilities/agent-work-visibility.md
+docs/ontology/capabilities/data-source-mode.md
+docs/ontology/capabilities/first-run-starter.md
+docs/ontology/capabilities/cli-developer-entry.md
+docs/ontology/capabilities/control-primitives.md
+docs/ontology/capabilities/design-gate-ratchets.md
+docs/ontology/capabilities/docs-vault-local.md
+docs/ontology/capabilities/construction-review.md
+docs/ontology/capabilities/guided-tour.md
+docs/ontology/capabilities/summary-freshness.md
+docs/ontology/capabilities/project-quick-edit.md
+docs/ontology/capabilities/design-build-handoff.md
+docs/ontology/capabilities/reviewed-ontology-writing.md
+docs/ontology/capabilities/acp-runtime.md
+docs/ontology/capabilities/vault-agent.md
+docs/ontology/capabilities/topology-browsing.md
+docs/ontology/capabilities/project-source-evidence.md
+docs/ontology/capabilities/mcp-server.md
+docs/ontology/capabilities/locale-switch.md
+docs/ontology/capabilities/vault-sample-source.md
+docs/ontology/capabilities/project-share.md
+docs/ontology/capabilities/design-token-ramps.md
+docs/ontology/capabilities/app-update.md
+docs/ontology/capabilities/desktop-download-decision.md
+docs/ontology/capabilities/vault-ontology.md
+docs/ontology/capabilities/taxonomy.md
+docs/ontology/capabilities/project-data-source.md
+docs/ontology/capabilities/project-edit.md
+docs/ontology/domains/onboarding-and-shell.md
+docs/ontology/domains/project-portfolio.md
+docs/ontology/domains/design-system.md
+docs/ontology/domains/topology-navigation.md
+docs/ontology/domains/agent-integration.md
+docs/ontology/domains/local-vault-management.md
+docs/ontology/domains/graph-modeling.md
+docs/ontology/ontology-atlas.md:12:contains: [domains/agent-integration, domains/design-system, domains/graph-modeling, domains/local-vault-management, domains/onboarding-and-shell, domains/project-portfolio, domains/topology-navigation]
+docs/ontology/ontology-atlas.md:25:- In scope: Graph schema, compilation, querying, MCP/CLI agent integration, local vault management, topology browsing, project portfolio, onboarding/deployment/app shell
+docs/ontology/ontology-atlas.md:46:Seven stable responsibility boundaries cover agent integration, design-system stewardship, graph modeling, local vault management, onboarding and shell delivery, project portfolio work, and topology navigation.
+docs/ontology/ontology-atlas.md:48:- Concepts: `ontology-atlas`, `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`
+docs/ontology/ontology-atlas.md:49:- Relations: `ontology-atlas` --contains--> `domains/agent-integration`, `ontology-atlas` --contains--> `domains/design-system`, `ontology-atlas` --contains--> `domains/graph-modeling`, `ontology-atlas` --contains--> `domains/local-vault-management`, `ontology-atlas` --contains--> `domains/onboarding-and-shell`, `ontology-atlas` --contains--> `domains/project-portfolio`, `ontology-atlas` --contains--> `domains/topology-navigation`
+docs/ontology/ontology-atlas.md:58:- Concepts: `domains/agent-integration`, `domains/design-system`, `domains/graph-modeling`, `domains/local-vault-management`, `domains/onboarding-and-shell`, `domains/project-portfolio`, `domains/topology-navigation`, `capabilities/acp-runtime`, `capabilities/agent-work-visibility`, `capabilities/app-update`, `capabilities/cli-developer-entry`, `capabilities/construction-review`, `capabilities/control-primitives`, `capabilities/data-source-mode`, `capabilities/design-build-handoff`, `capabilities/design-gate-ratchets`, `capabilities/design-token-ramps`, `capabilities/desktop-download-decision`, `capabilities/docs-vault-local`, `capabilities/first-run-starter`, `capabilities/guided-tour`, `capabilities/locale-switch`, `capabilities/mcp-server`, `capabilities/project-data-source`, `capabilities/project-edit`, `capabilities/project-quick-edit`, `capabilities/project-share`, `capabilities/project-source-evidence`, `capabilities/reviewed-ontology-writing`, `capabilities/taxonomy`, `capabilities/topology-browsing`, `capabilities/vault-agent`, `capabilities/vault-ontology`, `capabilities/vault-sample-source`
+docs/ontology/ontology-atlas.md:59:- Relations: `domains/agent-integration` --capabilities--> `capabilities/acp-runtime`, `domains/agent-integration` --capabilities--> `capabilities/agent-work-visibility`, `domains/agent-integration` --capabilities--> `capabilities/cli-developer-entry`, `domains/agent-integration` --capabilities--> `capabilities/mcp-server`, `domains/agent-integration` --capabilities--> `capabilities/vault-agent`, `domains/design-system` --capabilities--> `capabilities/control-primitives`, `domains/design-system` --capabilities--> `capabilities/design-build-handoff`, `domains/design-system` --capabilities--> `capabilities/design-gate-ratchets`, `domains/design-system` --capabilities--> `capabilities/design-token-ramps`, `domains/graph-modeling` --capabilities--> `capabilities/reviewed-ontology-writing`, `domains/graph-modeling` --capabilities--> `capabilities/taxonomy`, `domains/graph-modeling` --capabilities--> `capabilities/vault-ontology`, `domains/local-vault-management` --capabilities--> `capabilities/data-source-mode`, `domains/local-vault-management` --capabilities--> `capabilities/docs-vault-local`, `domains/local-vault-management` --capabilities--> `capabilities/project-data-source`, `domains/local-vault-management` --capabilities--> `capabilities/vault-sample-source`, `domains/onboarding-and-shell` --capabilities--> `capabilities/app-update`, `domains/onboarding-and-shell` --capabilities--> `capabilities/desktop-download-decision`, `domains/onboarding-and-shell` --capabilities--> `capabilities/first-run-starter`, `domains/onboarding-and-shell` --capabilities--> `capabilities/guided-tour`, `domains/onboarding-and-shell` --capabilities--> `capabilities/locale-switch`, `domains/project-portfolio` --capabilities--> `capabilities/construction-review`, `domains/project-portfolio` --capabilities--> `capabilities/project-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-quick-edit`, `domains/project-portfolio` --capabilities--> `capabilities/project-share`, `domains/project-portfolio` --capabilities--> `capabilities/project-source-evidence`, `domains/topology-navigation` --capabilities--> `capabilities/topology-browsing`
+docs/ontology/elements/docs-vault-entity.md:7:domain: domains/local-vault-management
+docs/ontology/elements/local-fs-handle.md:7:domain: domains/local-vault-management
+docs/ontology/elements/git.md:7:domain: domains/local-vault-management
+docs/ontology/elements/atlas-git-panel.md:7:domain: domains/local-vault-management
+docs/ontology/elements/docs-vault-widget.md:7:domain: domains/local-vault-management
+docs/ontology/elements/docs-vault-view.md:7:domain: domains/local-vault-management
+docs/ontology/elements/native-vault-filesystem-bridge.md:7:domain: domains/local-vault-management
+docs/ontology/elements/private-vault-sidecar-boundary.md:7:domain: domains/local-vault-management
+docs/ontology/elements/agents-destination.md:39:- **API Keys and workspaces remain in settings.** The former is governed by the 2026-08-16 "Path Freeze · Non-highlight", while the latter involves a different axis of Vault's response (`local-vault-management`).
+docs/ontology/README.md:23:  local vault management, onboarding & shell, project portfolio, topology
+docs/ontology/capabilities/data-source-mode.md:7:domain: domains/local-vault-management
+docs/ontology/capabilities/vault-sample-source.md:7:domain: domains/local-vault-management
+docs/ontology/capabilities/docs-vault-local.md:7:domain: domains/local-vault-management
+docs/ontology/capabilities/project-data-source.md:7:domain: domains/local-vault-management
+docs/ontology/domains/onboarding-and-shell.md:22:- Exclusions: The vault data source itself (local-vault-management)
+docs/ontology/domains/local-vault-management.md:3:slug: domains/local-vault-management
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,240p' docs/ontology/domains/local-vault-management.md
+for f in docs/ontology/capabilities/data-source-mode.md docs/ontology/capabilities/docs-vault-local.md docs/ontology/capabilities/project-data-source.md docs/ontology/capabilities/vault-sample-source.md; do
+  printf '\\n--- %s ---\\n' \""'$f"
+  sed -n '"'1,260p' \""'$f"
+done' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+---
+uid: 48bf1a02-e1f8-4b8c-b06e-d6f261466109
+slug: domains/local-vault-management
+kind: domain
+title: Local Vault & Data Source Management
+display_ko: 로컬 볼트 및 데이터소스 관리
+display_en: Local Vault & Data Source Management
+capabilities: [capabilities/data-source-mode, capabilities/docs-vault-local, capabilities/project-data-source, capabilities/vault-sample-source]
+elements: [elements/atlas-git-panel, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/git, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
+created_by: human
+relation_notes: { elements/native-vault-filesystem-bridge: The native vault filesystem bridge is a direct implementation element of the local vault/data source domain. }
+---
+
+## Definition
+A local-first, backend-0 data source layer that selects markdown folders on the local disk (File System Access API), uses git as the source of truth, and provides demo sample vaults.
+
+## Evidence
+- README.md: "A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database."
+- docs/ARCHITECTURE.md: "There is no backend, no server database, no auth provider. The user's markdown folder is the single source of truth." (risky-citation warning: cite alongside README.md for mutual verification)
+
+## Inclusion / Exclusion
+- Included: Folder selection, mode branching (vault-picked vs static/sample), active project determination, sample vaults
+- Excluded: The graph editing UI itself (Studio handles graph-modeling)
+
+## Confidence
+high (0.9): Direct README citation + cross-reference with independent source (ARCHITECTURE.md)
+
+--- docs/ontology/capabilities/data-source-mode.md ---
+---
+uid: 5cd03c77-f1ed-448f-bb17-c4c3c804418a
+slug: capabilities/data-source-mode
+kind: capability
+title: Data Source Mode Branching
+display_ko: 데이터 출처 모드 분기
+domain: domains/local-vault-management
+elements: []
+path: src/features/data-source-mode
+created_by: "agent:unknown"
+---
+
+## Definition
+The ability to branch app behavior between vault-picked mode and static/sample mode depending on whether a folder is selected.
+
+## Evidence
+- src/features/data-source-mode (implementation evidence)
+- docs/FEATURES.md: "Mode branching (data source)" section (Note: risky-citation warning: includes negated/deprecated-state descriptions; requires re-verification)
+
+## Confidence
+medium-high (0.85): However, the citation from docs/FEATURES.md needs freshness verification.
+
+--- docs/ontology/capabilities/docs-vault-local.md ---
+---
+uid: 2f1761bb-5498-4675-9c45-099709bb6c2b
+slug: capabilities/docs-vault-local
+kind: capability
+title: Local Folder Mounting
+display_ko: 내 폴더 열기
+domain: domains/local-vault-management
+elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
+path: src/features/docs-vault-local
+created_by: human
+relation_notes: { elements/native-vault-filesystem-bridge: The local folder mount of the installed app is evidence of native implementation performing actual file/directory mutation. }
+---
+
+## Definition
+The ability to select and mount a local markdown folder via the File System Access API, using it as a real-time data source.
+
+## Evidence
+- src/features/docs-vault-local (implementation evidence)
+
+## Confidence
+high (0.9): Consistent with local-first principle documentation
+
+--- docs/ontology/capabilities/project-data-source.md ---
+---
+uid: 0563e7ee-3818-4bbd-97fa-4035ad43a03d
+slug: capabilities/project-data-source
+kind: capability
+title: Project Data Access
+display_ko: 프로젝트 데이터 읽기
+domain: domains/local-vault-management
+elements: [elements/project]
+path: src/features/project-data-source
+created_by: "agent:unknown"
+---
+
+## Definition
+Data access boundary that reads project lists and bodies from a selected local vault or static sample, providing
+project create/update partial-update/delete permissions in local mode only.
+
+## Included / Excluded
+- Included: Manifest list derivation, slug-based body lazy read, local/static branching, local CRUD gate.
+- Excluded: Single active project selection state, ontology relationship determination, static sample writing.
+
+## Basis
+- `src/features/project-data-source/model/use-projects.ts`: Local/static list branching.
+- `src/features/project-data-source/model/use-project-body.ts`: Static asset or local
+  file handle body reading.
+- `src/features/project-data-source/model/use-project-mutations.ts`: CRUD and static write blocking.
+- `src/features/project-data-source/model/use-project-mutations.test.ts`: Path/key preservation,
+  rename, duplication, UUID, deletion verification.
+- `src/views/project-detail/ui/ProjectDetailPage.test.tsx`: Body fallback priority verification.
+
+## Confidence
+medium: Implementation/mutation tests and consumer tests exist, but direct integration verification of list/body hooks is limited.
+
+--- docs/ontology/capabilities/vault-sample-source.md ---
+---
+uid: 9d0c5be0-e2dc-4487-8b52-1db955939352
+slug: capabilities/vault-sample-source
+kind: capability
+title: Sample Vault Demo Source
+display_ko: 예시 볼트 출처
+domain: domains/local-vault-management
+elements: []
+path: src/features/vault-sample-source
+created_by: "agent:unknown"
+---
+
+## Definition
+Source for a bundled example vault (demo mode) enabling experience without installation.
+
+## Evidence
+- src/features/vault-sample-source (implementation evidence)
+- README.md: "The installed macOS app reading the example vault in files in a folder"
+
+## Confidence
+medium-high (0.8)
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+도메인 정의와 연결된 capability 4개를 확인했습니다. 이어서 도메인에 직접 귀속된 element 8개의 frontmatter와 정의를 대조해, capability별 연결 관계까지 빠뜨리지 않겠습니다.
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "for f in docs/ontology/elements/atlas-git-panel.md docs/ontology/elements/docs-vault-entity.md docs/ontology/elements/docs-vault-view.md docs/ontology/elements/docs-vault-widget.md docs/ontology/elements/git.md docs/ontology/elements/local-fs-handle.md docs/ontology/elements/native-vault-filesystem-bridge.md docs/ontology/elements/private-vault-sidecar-boundary.md; do
+  printf '\\n--- %s ---\\n' \""'$f"
+  sed -n '"'1,180p' \""'$f"
+done' in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+
+--- docs/ontology/elements/atlas-git-panel.md ---
+---
+uid: 2aab69c2-c4c9-4446-bb37-f48457a00fd0
+slug: elements/atlas-git-panel
+kind: element
+title: Atlas Git Panel
+display_ko: 아틀라스 기록 패널
+domain: domains/local-vault-management
+path: src/widgets/atlas-git-panel
+created_by: "agent:unknown"
+---
+
+Panel widget displaying the vault's git status/snapshot.
+
+--- docs/ontology/elements/docs-vault-entity.md ---
+---
+uid: ef8e3784-815c-4201-ad2e-f8d799af737a
+slug: elements/docs-vault-entity
+kind: element
+title: Docs Vault (entity)
+display_ko: 문서함 (엔티티)
+domain: domains/local-vault-management
+path: src/entities/docs-vault
+created_by: "agent:unknown"
+---
+
+Vault data model entity. Implementation evidence for capabilities/docs-vault-local.
+
+--- docs/ontology/elements/docs-vault-view.md ---
+---
+uid: a2b4089e-0496-4ad2-b09d-8f2bcefd9ce4
+slug: elements/docs-vault-view
+kind: element
+title: Docs Vault (view)
+display_ko: 문서함 (화면)
+domain: domains/local-vault-management
+path: src/views/docs-vault
+created_by: "agent:unknown"
+---
+
+/docs page. Implementation evidence for capabilities/docs-vault-local.
+
+--- docs/ontology/elements/docs-vault-widget.md ---
+---
+uid: ad381f17-ccc6-4ce5-b6e7-2141e487781d
+slug: elements/docs-vault-widget
+kind: element
+title: Docs Vault (widget)
+display_ko: 문서함 (위젯)
+domain: domains/local-vault-management
+path: src/widgets/docs-vault
+created_by: "agent:unknown"
+---
+
+Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-local.
+
+--- docs/ontology/elements/git.md ---
+---
+uid: 0c5386c8-d36f-4ce7-88fb-9179c6234dc2
+slug: elements/git
+kind: element
+title: Git
+display_ko: git 연동
+domain: domains/local-vault-management
+path: src/views/git
+created_by: "agent:unknown"
+---
+
+Git status/history page.
+
+--- docs/ontology/elements/local-fs-handle.md ---
+---
+uid: e73d3580-a0a2-465f-9d86-9837f8cc4c35
+slug: elements/local-fs-handle
+kind: element
+title: Local Fs Handle
+display_ko: 로컬 파일시스템 핸들
+domain: domains/local-vault-management
+path: src/entities/local-fs-handle
+created_by: "agent:unknown"
+---
+
+File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.
+
+--- docs/ontology/elements/native-vault-filesystem-bridge.md ---
+---
+uid: ea43fdf2-9b52-49a8-90d3-68bb9904e860
+slug: elements/native-vault-filesystem-bridge
+kind: element
+title: Native Vault Filesystem Bridge
+display_ko: 네이티브 볼트 파일시스템 브리지
+domain: domains/local-vault-management
+path: src-tauri/src/lib.rs
+created_by: "agent:unknown"
+---
+
+Native bridge that allows the Tauri WebView to read and write files and directories within the selected vault. Unix mutations hold canonical roots and relative parent directories as no-follow directory file descriptors, complete regular files with umask-based temporary inodes for atomic replacement within the same parent, and create directories from stable parents. After inspection, even if the parent name is replaced by an external symlink, it does not create side effects outside the vault. Windows reparse-point race conditions remain a separate residual boundary.
+
+--- docs/ontology/elements/private-vault-sidecar-boundary.md ---
+---
+uid: cf8a7154-61e7-44e2-969e-b977d5019121
+slug: elements/private-vault-sidecar-boundary
+kind: element
+title: Private Vault Sidecar Boundary
+display_ko: 볼트 사이드카 경계
+domain: domains/local-vault-management
+path: mcp/src/vault-sidecar.mjs
+created_by: "agent:unknown"
+---
+
+The common file boundary where MCP and CLI handle private receipts and activity logs under `.ontology-atlas`. It closes symlink/junctions between the sidecar directory and final files, handles file identity changes and hardlink aliases, and provides atomic replacement and conflict detection. Due to limitations of the pure Node path API, it does not claim complete directory handle isolation against race conditions where an attacker with the same UID changes the parent name between checks.
+
+hook: PostToolUse
+hook: PostToolUse Completed
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+hook: PreToolUse Completed
+exec
+/bin/zsh -lc "sed -n '1,120p' docs/ontology/elements/project.md
+sed -n '1,120p' docs/ontology/README.md" in /Users/stark/orca/workspaces/oh-my-ontology/main-2
+ succeeded in 0ms:
+---
+uid: 74fbd403-d9df-4c44-b5c3-958890da21ff
+slug: elements/project
+kind: element
+title: Project (entity)
+display_ko: 프로젝트 (엔티티)
+domain: domains/project-portfolio
+path: src/entities/project
+created_by: "agent:unknown"
+---
+
+Project node data model entity. Implementation evidence for capabilities/project-data-source.
+---
+uid: c467d5e2-50ac-45f2-bbf0-996a1b6e1dd7
+slug: README
+kind: vault-readme
+title: Ontology Atlas: its own ontology vault
+display_ko: 아틀라스 자기 볼트
+display_en: Atlas self-ontology vault
+created_by: "agent:unknown"
+---
+
+# Ontology Atlas: its own ontology vault
+
+This folder is **Ontology Atlas described in its own data format** (dogfooding).
+Every `.md` file here is one node of the product's meaning model: the same
+`project / domain / capability / element` graph the app draws and the MCP
+server serves to AI agents. If you are an agent reading this: this vault *is*
+the shared mental model between the humans building Atlas and you.
+
+## Where to start
+
+- `ontology-atlas.md`: the `kind: project` root. Everything hangs off it.
+- `domains/`: the six functional areas (agent integration, graph modeling,
+  local vault management, onboarding & shell, project portfolio, topology
+  navigation). Domain boundaries are human judgment: see `created_by:`.
+- `capabilities/`: user-visible features inside those domains, including the
+  two agent surfaces: `capabilities/mcp-server` (runtime-advertised tools in
+  `mcp/`) and `capabilities/cli-developer-entry` (local commands in `cli/`).
+- `elements/`: implementation evidence. Each element names a *role* (flat
+  slug); the file location lives in its `path:` frontmatter, never in the slug.
+
+**No document writes the census number**: it rots the moment anyone adds a
+node. Ask the vault itself:
+
+```bash
+node cli/src/index.mjs overview        # from the repo root
+```
+
+## How this vault is written
+
+- Frontmatter is the graph; git is the review. Plain markdown, no backend.
+- Every node has immutable lowercase UUIDv4 `uid` identity and a mutable,
+  readable `slug` address. Relations stay slug-based; exact agent handoff and
+  `urn:uuid:<uid>` export identity use UID. Never hand-patch UID or
+  merge-owned `merged_uids`.
+- Slugs are flat identifiers under their kind folder (`elements/topology-map-v2`,
+  never `elements/src/widgets/topology-map-v2`): path-style slugs collide on
+  tail aliases and are rejected at every write door.
+- Every node carries `created_by:`: `human` for nodes that exist only because
+  a person judged them (project definition, domain boundaries, the charter
+  capabilities), `agent:*` for everything derivable from code.
+- Agents write through the MCP server (`add_concept`, `patch_concept`,
+  `rename_concept`, …) or the CLI (`node cli/src/index.mjs add …`); both stamp
+  provenance and run the same construction gates.
+
+## What a section is for
+
+A node body holds two different things, and only one of them earns its context
+cost. **Decisions** (which capability sits in which domain, what is explicitly
+excluded, which limit must not be crossed, why one shape beat another) exist
+nowhere in the source. **Descriptions** of what the code does can be re-derived
+by any agent that reads the code.
+
+So the test for a sentence is: *if the source were deleted, would this be lost?*
+If no, it is a second copy that can drift out of date. Write it in the code, not
+here.
+
+The failure to avoid is not length. It is **a decision wearing a descriptive
+heading**. A rule filed under `Core Flow` or `Definition` is a rule nobody can
+find. Give it a heading that says what it is:
+
+| Heading | Holds |
+|---|---|
+| `Definition` | One paragraph. What this node *is*, not how it works. |
+| `Core Flow` | The ordered steps, and nothing that is not a step. |
+| `Constraints: <topic>` | Limits, fail-closed rules, and what must never happen. |
+| `<topic> Contract` | An enumerated obligation another surface relies on. |
+| `Inclusions / Exclusions`, `<topic> Boundary` | Where this node stops. |
+| `Evidence`, `Grounds` | The source paths that ground the claims above. |
+
+Those names are examples, not a fixed vocabulary: `Identity Boundaries` and
+`Active Tool Inventory Contract` were each invented for one node and are the
+best sections in this vault. Invent a name when the node needs one.
+
+`tests/contract/vault-section-shape.contract.test.ts` caps a single section at
+6,600 bytes. When it fails, the fix is to name the second idea, never to delete
+the text.
+
+## Verify the agent loop
+
+After connecting an agent (the installed app's connect button, or
+`agent-setup` from this checkout), ask it to prove the connection before it
+edits anything. `agent-setup --json` also labels each config's launch scope:
+source-checkout configs are **source-bound**, while only the installed app's
+bundled binary is portable across working directories. A relative
+`./mcp/src/index.js` example copied into an unrelated empty folder is a review
+template, not a live connection:
+
+> Use the ontology-atlas MCP server to run `validate_vault`, then
+> `query_ontology({ "operation""workspace_brief" })`, then
+> `query_ontology({ "operation""health" })`. Tell me whether this vault is
+> readable and graph-clean before proposing changes.
+
+The CLI equivalents, from the repo root:
+
+```bash
+node cli/src/index.mjs validate docs/ontology
+node cli/src/index.mjs health
+node cli/src/index.mjs maintenance docs/ontology
+node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000
+```
+
+In a multi-project vault, select one containment tree explicitly instead of
+combining project ontologies:
+
+```bash
+node cli/src/index.mjs agent-brief docs/ontology --project <project-slug> --json
+```
+
+After accepted concept/relation writes and validation, MCP
+`finalize_project_meaning` binds the human-editable project Markdown competency
+
+hook: PostToolUse
+hook: PostToolUse Completed
+codex
+`local-vault-management` 도메인에는 capability 4개와 직접 귀속된 element 8개가 있습니다.
+
+한 줄 설명: 로컬 디스크의 Markdown 폴더를 데이터 소스로 선택하고, Git을 진실의 원천으로 사용하며, 샘플 볼트를 제공하는 로컬 우선 데이터 관리 계층입니다.
+
+### Capability
+
+- **Data Source Mode Branching** (`데이터 출처 모드 분기`)  
+  폴더 선택 여부에 따라 vault-picked 모드와 static/sample 모드로 앱 동작을 분기합니다.  
+  `src/features/data-source-mode`
+
+- **Local Folder Mounting** (`내 폴더 열기`)  
+  File System Access API로 로컬 Markdown 폴더를 선택·마운트하고 실시간 데이터 소스로 사용합니다.  
+  `src/features/docs-vault-local`
+
+- **Project Data Access** (`프로젝트 데이터 읽기`)  
+  선택된 로컬 vault 또는 정적 샘플에서 프로젝트 목록과 본문을 읽고, 로컬 모드에서 생성·수정·삭제를 제공합니다.  
+  `src/features/project-data-source`
+
+- **Sample Vault Demo Source** (`예시 볼트 출처`)  
+  설치 없이 사용할 수 있는 번들 예시 vault를 제공합니다.  
+  `src/features/vault-sample-source`
+
+### Element
+
+- **Atlas Git Panel** (`아틀라스 기록 패널`) — vault의 Git 상태와 snapshot을 보여주는 패널  
+  `src/widgets/atlas-git-panel`
+
+- **Docs Vault (entity)** (`문서함 엔티티`) — vault 데이터 모델  
+  `src/entities/docs-vault`
+
+- **Docs Vault (view)** (`문서함 화면`) — `/docs` 페이지  
+  `src/views/docs-vault`
+
+- **Docs Vault (widget)** (`문서함 위젯`) — vault 트리/목록 UI  
+  `src/widgets/docs-vault`
+
+- **Git** (`git 연동`) — Git 상태·히스토리 화면  
+  `src/views/git`
+
+- **Local Fs Handle** (`로컬 파일시스템 핸들`) — File System Access API 핸들 엔티티  
+  `src/entities/local-fs-handle`
+
+- **Native Vault Filesystem Bridge** (`네이티브 볼트 파일시스템 브리지`) — Tauri WebView가 선택된 vault 내부 파일과 디렉터리를 읽고 쓰도록 연결하는 네이티브 브리지  
+  `src-tauri/src/lib.rs`
+
+- **Private Vault Sidecar Boundary** (`볼트 사이드카 경계`) — MCP/CLI의 `.ontology-atlas` 내부 receipt·activity log 파일 경계를 관리하며 원자적 교체와 충돌 감지를 담당  
+  `mcp/src/vault-sidecar.mjs`
+
+참고로 `Project Data Access`는 `elements/project`도 연결하지만, 해당 element 자체의 도메인은 `project-portfolio`로 선언되어 있습니다.
+hook: Stop
+hook: Stop Completed
+tokens used
+35,398

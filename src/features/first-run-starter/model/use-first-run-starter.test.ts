@@ -324,6 +324,26 @@ describe('내 코드로 지도 만들기 — 코드를 이미 가진 사람의 �
     );
   });
 
+  /*
+   * ⚠️ Measured on the installed app, 2026-08-25. Picking an existing `atlas` folder as "the
+   * project" produced `…/atlas/atlas` on screen and offered to create it. Nothing crashes, but a
+   * confirmation that proposes nonsense with a straight face is one people stop reading — fatal for
+   * a step whose entire job is to be read.
+   */
+  it('지도 폴더를 골랐으면 한 단계 올라가고, 올라갔다고 말한다', async () => {
+    mocks.pickedProject = '/Users/dana/my-product/atlas';
+    const { result } = renderHook(() => useFirstRunStarter());
+    await act(async () => {
+      await result.current.build.chooseProject();
+    });
+
+    expect(result.current.build.pickedMapFolder).toBe(true);
+    expect(
+      result.current.build.location?.displayPath,
+      'atlas 안에 atlas 를 만들자고 제안했다',
+    ).toBe('/Users/dana/my-product/atlas');
+  });
+
   it('이미 atlas 폴더가 있으면 새로 만든다고 하지 않는다', async () => {
     mocks.projectEntries = ['src', 'atlas', 'package.json'];
     const { result } = renderHook(() => useFirstRunStarter());
