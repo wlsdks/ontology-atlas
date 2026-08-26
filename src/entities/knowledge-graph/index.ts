@@ -14,6 +14,8 @@ export {
   buildTopologyMeaningEditorEdgeHref,
   buildTopologyMeaningCreateHref,
   buildOntologyInsightsReturnHref,
+  BUSINESS_FLOW_ASK_VALUE,
+  buildBusinessFlowHref,
   buildOntologyNodeHref,
   edgeAuthoredByFromNode,
   meaningEditRelationForEdgeType,

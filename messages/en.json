@@ -1280,7 +1280,8 @@
         "connections": "Connections",
         "boundaries": "Boundaries",
         "freshness": "Recent changes",
-        "structure": "Structure"
+        "structure": "Structure",
+        "flow": "Flow"
       },
       "tabCountTitle": {
         "do-next": "Items to fix",
@@ -1473,6 +1474,20 @@
         "inlineNeedsText": "Write one sentence to enable saving",
         "inlineNeedsDomain": "Pick one area",
         "inlineReadOnlyHint": "The example folder cannot be edited. Open your own folder to write right here."
+      },
+      "flow": {
+        "title": "Business flow",
+        "lead": "Have the agent explain what this product is and how it flows, from the vault alone. It does not read the source.",
+        "action": "Draw the business flow",
+        "actionHint": "Puts this request in the conversation. You send it.",
+        "requestLabel": "The request that goes to the agent",
+        "unavailableTitle": "The app does this",
+        "unavailableBody": "A browser cannot start a process, so no agent launches here. Copying the request below into the terminal you already use gets the same answer.",
+        "copy": "Copy request",
+        "copied": "Copied",
+        "noVaultTitle": "Open a folder first",
+        "noVaultBody": "There is no vault to explain yet.",
+        "request": "Read only this vault and explain this product's business flow. Do not read the source code.\n\n1) One paragraph on what this product is and who uses it.\n2) One paragraph per domain: what it is responsible for and which capabilities it holds.\n3) One paragraph on how these join into a single flow.\n\nRules:\n- Every paragraph names the node slugs it rests on, so I can open them and disagree.\n- Do not close an answer on a summary row; read bodies with get_concept with the body read in full.\n- If an answer is partial or a visible gap, carry that qualifier all the way through. In particular, do not state exclusions as settled fact when the vault records scope as partial.\n- A capability's excludes bound that capability only. Do not widen them to project scope.\n- When the vault cannot answer, say so and say why. Do not fill the gap from code."
       }
     }
   },

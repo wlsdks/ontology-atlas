@@ -9,6 +9,203 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-26 (second subject) — the exclusion gate fires on an unfamiliar repository
+
+**Subject**: an unfamiliar Apache-2.0 Python network-infrastructure source of truth, 85 MB shallow clone. Run the same day as the entry below, against the
+same six frozen questions, specifically to see whether the fix that run produced
+holds somewhere it was not designed against.
+
+### The result this run exists for
+
+The earlier subject's project node excluded something nothing supported, and the
+source-hidden reader repeated it as fact. The fix warns when a project states
+exclusions while its own scope answer is unfinished. Here that warning fired
+during analysis, on a different language, domain and repository:
+
+> The project states 2 exclusion(s) while its scope competency answer is
+> "partial". A project-level exclusion cannot be checked against the source, so
+> it carries that same status until the scope answer is complete.
+
+The two proposed exclusions did **not** reach the vault, and the written project
+node has no `## Excludes` section at all. So the source-hidden reader answered q6
+with a refusal instead of an invention:
+
+> I cannot answer this at project scope from the vault. The project node has no
+> `## Excludes` section. Its uncertainty and partial scope answer describe gaps.
+
+That is the same question that produced this trial's only failed claim a run
+earlier. A caveat worth keeping: the warning is advisory, so it did not *force*
+the drop — what can be said is that the pairing was visible at review time and
+the unwitnessed boundaries did not survive it.
+
+### Phase 1 — build
+
+| | |
+|---|---|
+| wall clock, analysis through validation | **14 min 43 s**, one uninterrupted run |
+| meaningful nodes | **17** (1 project · 4 domains · 8 capabilities · 4 elements) |
+| relations | **30** |
+| scaffold cleanup | all five example records removed |
+
+**Phase 1 completed without stalling, and why is the reusable part.** The two
+earlier attempts stopped at the approval gate because a non-interactive run has
+nobody to accept the plan. Reading `construction-lifecycle.mjs` first showed the
+acceptance record is *declared provenance*, not authenticated identity, so the
+run can pre-authorise sight unseen: accept whatever digest returns and every id
+in `requiredGapIds`, supply `acceptance.decidedBy` and `authority: human`, and
+keep `decidedBy` different from the builder id. That single change is the whole
+difference between one attempt and three.
+
+### Phase 2 — citation accuracy
+
+| | |
+|---|---|
+| cited paths checked | **47** |
+| paths that exist in the clone | **47 (100%)** |
+| validation | 20 files, 0 issues |
+
+### Phase 3 — handoff (vault only, clone moved off the tree)
+
+Six of six answered from **13 full-body reads**, all untruncated.
+
+Better than the first subject on the question that matters most. Asked what
+breaks, this vault had a declared dependency to give, and the answer carried its
+limits rather than inflating them:
+
+> a declared, rationale-bearing dependency — not a proven or exhaustive runtime
+> blast radius
+
+### Phase 4 — hallucination check
+
+Every cited path resolved, and the capability's stated boundary held against the
+code: the IP/VLAN capability claims VRFs, prefixes, VLANs and AS numbers and
+disclaims DNS service operation, and the clone has models for each of the four
+and no DNS service implementation.
+
+**Failed claims: 0.**
+
+### What this run says about the previous one
+
+The first subject's numbers were not luck — a second unfamiliar repository, in a
+different language, produced 100% citation accuracy and six of six answers again.
+The difference is where the honesty came from. The first vault stated a boundary
+it could not support and the reader passed it on; this one recorded no boundary
+it could not support, and the reader said so.
+
+### Contamination found and removed
+
+A codex process from an earlier attempt was still alive and wrote a **second,
+disjoint 16-node slice** into the same vault mid-run — competing domains over the
+same subject, sharing zero references with the reviewed slice. The census briefly
+read 34. The project node pointed only at the reviewed slice, so the intruders
+were orphans; they were moved to `logs/orphan-slice-backup/` rather than deleted,
+and validation was re-run clean. **A trial must confirm that previous runs are
+dead before it starts**, which is now the third way this harness has been found
+measuring something other than what it claimed.
+
+---
+
+## 2026-08-26 — first run with a witnessed-exclusion defect
+
+**Subject**: an unfamiliar Apache-2.0 Go community Q&A platform, 15 MB shallow
+clone. Vault started with the five scaffold records. Third language family tried
+(after a TypeScript monorepo and a Rust library), chosen because a product with
+users has boundaries that general knowledge cannot guess.
+
+### Phase 1 — build
+
+| | |
+|---|---|
+| wall clock, analysis to approval gate | **7 min 43 s** |
+| wall clock, approval to last write | **~12 min** |
+| meaningful nodes | **20** (1 project · 5 domains · 9 capabilities · 5 elements) |
+| relations | **37** compiled directed edges |
+| driver | a fresh Codex MCP agent, no bootstrap skill named |
+| scaffold cleanup | all five example records deleted |
+
+**The build does not complete unattended, and that is the product working.** The
+agent analysed the repository, produced a five-domain plan with a `planDigest`,
+and stopped without writing, naming three gaps: partial scope, partial domain
+authority, and impact as a visible gap because *static imports alone do not
+assert a semantic `depends_on`*. A non-interactive `codex exec` has nobody to
+approve, so phase 1 stalls there. Resuming the same session with an explicit
+plan acceptance completed the write.
+
+**Protocol change this forces**: phase 1 is two steps, not one. The skill's
+"give it the vault and let it build" is incomplete — budget an approval turn, and
+record the plan digest and the gap list, because that list is evidence about the
+analyzer that the finished vault no longer shows.
+
+### Phase 2 — citation accuracy
+
+| | |
+|---|---|
+| cited paths checked | **106** (15 frontmatter `path:` · 91 in bodies) |
+| paths that exist in the clone | **106 (100%)** |
+| capabilities with implementation evidence | **9 / 9** |
+
+Fifteen times the sample of the previous run, same rate. Three apparent misses
+were `init` scaffolding pointing at Atlas's own files, not claims about the
+subject; they are excluded and named rather than hidden.
+
+### Phase 3 — handoff (vault only, source physically moved off the tree)
+
+Six of six answered, from **7 full-body reads**, all untruncated. The clone was
+moved outside the trial directory first: the 2026-08-25 benchmark work showed an
+agent will find a folder renamed in place.
+
+**Answered and checkable from the vault alone**: project outcome with the
+partial-evidence qualifier carried; all five domains with per-domain code
+locations; one capability's includes and excludes; its canonical entry path.
+
+**Explicitly refused rather than guessed** — the most valuable line of the run:
+
+> "The vault cannot say what would break if this capability changed. Its impact
+> query finds zero declared incoming dependencies... imports or composition alone
+> do not prove `depends_on`. `domains/platform-extensibility` references the
+> capability as an owned ability, but that is containment, not causal dependency."
+
+Containment was not promoted to dependency, and absence of edges was not read as
+proof of independence.
+
+### Phase 4 — hallucination check
+
+| | |
+|---|---|
+| path claims verified | **16 / 16** |
+| semantic claims verified | canonical plugin entry, vector-search and AI-conversation placement, per-domain service locations — all confirmed |
+| **failed claims** | **1 of 3 project-level exclusions** |
+
+**The failed claim.** The project node excludes *"general-purpose content
+management"*. Nothing in the repository supports it: the README's own words place
+the product as a forum, help centre, **or knowledge management platform**, and no
+document states the exclusion. The other two exclusions survive — the node's
+`## Uncertainty` and its `scope: partial` competency answer both declare
+infrastructure tooling and external plugin behaviour to be evidence boundaries
+rather than product domains, which is a stated modelling decision rather than an
+invented fact.
+
+So the defect is narrow and precise: **`Excludes` accepts an entry with no
+witness, while the competency answer beside it is required to carry one.** An
+exclusion is the one claim a source-hidden reader can never check, which makes
+it the worst place in the schema to allow an unwitnessed entry.
+
+**Second, smaller defect — in the handoff, not the vault.** The answering agent
+carried the `scope: partial` qualifier into q1 and dropped it in q6, presenting
+all three exclusions as equally established. The vault was more honest than the
+answer given from it.
+
+### Next actions this run names
+
+1. Require a witness for every `Excludes` entry, or mark unwitnessed entries as
+   proposed. Same rule the competency answers already follow.
+2. Make the partial-scope qualifier travel with the exclusions it governs, so a
+   handoff answer cannot quietly upgrade them.
+3. Amend the skill: phase 1 is analysis then approval, and the gap list at the
+   gate is recorded output.
+
+---
+
 ## 2026-08-02 — compact evidence-first run
 
 **Subject**: an unfamiliar dual MIT/Apache-2.0 Rust scientific-computing

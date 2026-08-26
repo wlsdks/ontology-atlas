@@ -41,6 +41,7 @@ describe("parseHomeRouteState", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -254,6 +255,7 @@ describe("applyHomeRouteState", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -281,6 +283,7 @@ describe("applyHomeRouteState", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -306,6 +309,7 @@ describe("applyHomeRouteState", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
       expandedParents: [],
       realmSlug: null,
       recentWindow: null,
@@ -333,6 +337,7 @@ describe("applyHomeRouteState", () => {
         insightsReturnTab: null,
         insightsReturnReviewId: null,
         askIntent: null,
+      askBusinessFlow: false,
         expandedParents: [],
         realmSlug: null,
         recentWindow: null,
@@ -571,6 +576,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
     });
     // The prefix without a tab names no return destination — no chip.
     expect(
@@ -581,6 +587,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
     });
   });
 
@@ -606,6 +613,7 @@ describe("insights return marker (?via=insights:<tab>)", () => {
       insightsReturnTab: null,
       insightsReturnReviewId: null,
       askIntent: null,
+      askBusinessFlow: false,
     });
     expect(dismissed.get("via")).toBeNull();
     expect(dismissed.get("review")).toBeNull();
@@ -963,5 +971,40 @@ describe("VAULT_SCOPED_HOME_QUERY_KEYS", () => {
     for (const key of VAULT_SCOPED_HOME_QUERY_KEYS) {
       expect(known.has(key), `${key} 는 HOME_QUERY_KEYS 에 없다`).toBe(true);
     }
+  });
+});
+
+/**
+ * The insights flow tab holds the button and the conversation lives beside the
+ * map, so this value is the whole bridge between them. It rides the `ask` key
+ * without becoming an `askIntent`, because that field feeds `nodeIntent`, which
+ * cannot answer a request that names no node.
+ */
+describe("business-flow ask value", () => {
+  it("parses into its own field and never into askIntent", () => {
+    const state = parseHomeRouteState(new URLSearchParams("ask=business-flow"));
+
+    expect(state.askBusinessFlow).toBe(true);
+    expect(
+      state.askIntent,
+      "askIntent means an intent about one node; this one is about the whole graph",
+    ).toBeNull();
+  });
+
+  it("survives a round trip through the URL", () => {
+    const params = applyHomeRouteState(new URLSearchParams(), {
+      ...DEFAULT_HOME_ROUTE_STATE,
+      askBusinessFlow: true,
+    });
+
+    expect(params.get("ask")).toBe("business-flow");
+    expect(parseHomeRouteState(params).askBusinessFlow).toBe(true);
+  });
+
+  it("leaves a node intent on the same key untouched", () => {
+    const state = parseHomeRouteState(new URLSearchParams("ask=missing-definition"));
+
+    expect(state.askIntent).toBe("missing-definition");
+    expect(state.askBusinessFlow).toBe(false);
   });
 });

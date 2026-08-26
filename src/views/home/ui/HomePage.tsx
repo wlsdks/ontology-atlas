@@ -250,6 +250,7 @@ import {
   sentenceForIntent,
   type FirstWordsLabels,
   type ScreenContextSnapshot,
+  buildBusinessFlowRequest,
 } from "@/features/vault-agent";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
@@ -408,6 +409,12 @@ function HomePageImpl() {
   const tMeaningEditor = useTranslations('meaningEditor');
   const reducedMotion = usePrefersReducedMotion();
   const siteT = useTranslations('metadata');
+  /*
+   * The same key insights shows in its flow tab. Reading it here rather than
+   * receiving the text keeps one sentence in one place; two copies would drift
+   * the first time a rule in it changed.
+   */
+  const businessFlowRequestText = useTranslations('ontologyPages.insights.flow')('request');
   // "The language on screen right now" for the create composer's per-locale
   // name-input contract.
   const activeLocale = useLocale();
@@ -3200,7 +3207,24 @@ function HomePageImpl() {
    * restores the same context. The URL carries only the **kind of intent**; the
    * sentence is written here, by the same generator as the empty-chat chips.
    */
+  /** Constant: the URL is constant, so the seat must not re-fire on every render. */
+  const BUSINESS_FLOW_PREFILL_NONCE = 0;
+
   const askPrefill = useMemo(() => {
+    /*
+     * The whole-graph request arrives named, not carried, so it is rebuilt here
+     * from the app's own localized string. That keeps the sentence out of a URL
+     * that gets copied and shared, and means a link made last week still opens
+     * this week's request rather than a frozen copy of it.
+     */
+    if (llmBridgeAvailable && routeState.askBusinessFlow) {
+      return {
+        text: buildBusinessFlowRequest({ request: businessFlowRequestText }),
+        // Constant for a constant URL, so a re-render never overwrites a draft
+        // the person has started editing.
+        nonce: BUSINESS_FLOW_PREFILL_NONCE,
+      };
+    }
     if (!llmBridgeAvailable || !routeState.askIntent) return null;
     const intent = nodeIntent(selectedOntologyNode, routeState.askIntent);
     if (!intent) return null;
@@ -3209,7 +3233,14 @@ function HomePageImpl() {
       // The same URL gives the same value, so a render never overwrites the draft.
       nonce: hashAskRequest(routeState.askIntent, "ref" in intent ? intent.ref : ""),
     };
-  }, [llmBridgeAvailable, routeState.askIntent, selectedOntologyNode, firstWordsLabels]);
+  }, [
+    llmBridgeAvailable,
+    routeState.askBusinessFlow,
+    routeState.askIntent,
+    selectedOntologyNode,
+    firstWordsLabels,
+    businessFlowRequestText,
+  ]);
 
   /**
    * Closing also withdraws the request in the URL. Otherwise the derived state reopens
