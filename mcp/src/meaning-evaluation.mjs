@@ -411,6 +411,35 @@ export function validateMeaningProposalAgainstAnalysis(
           'Excludes must state a sourced product/concept boundary, not an unknown or unmeasured evidence limit. Move this statement to uncertainty or a competency gap.',
         ));
       }
+      /*
+       * **A project exclusion inherits the scope answer that governs it.**
+       *
+       * Measured in the 2026-08-26 field trial: a project node excluded
+       * "general-purpose content management" while nothing in the subject
+       * supported it, and the source-hidden reader repeated it as established
+       * fact. An exclusion is the one claim that reader can never check — there
+       * is no code for a thing deliberately not built — so it is the worst place
+       * in the schema to let an unqualified assertion through.
+       *
+       * Fabrication itself is not machine-detectable and this does not pretend
+       * to detect it. What is derivable is that the same proposal already typed
+       * its scope answer as unfinished, and that qualifier did not travel to the
+       * exclusions it governs. The finding is a warning, not an error: the
+       * boundary may well be right, and a human accepting the plan is the one
+       * who decides. It exists so the reviewer sees the pairing rather than
+       * discovering it from a handoff answer months later.
+       */
+      if (concept === proposal.project && concept.excludes.some((row) => nonEmpty(row))) {
+        const scopeStatus = proposal.competencyAnswers?.scope?.status;
+        if (scopeStatus && scopeStatus !== 'answered') {
+          findings.push(finding(
+            'unqualified-project-exclusion',
+            'warning',
+            `${path}.excludes`,
+            `The project states ${concept.excludes.length} exclusion(s) while its scope competency answer is "${scopeStatus}". A project-level exclusion cannot be checked against the source, so it carries that same status until the scope answer is complete.`,
+          ));
+        }
+      }
     }
     validateCitationsAndConfidence({
       row: concept,
