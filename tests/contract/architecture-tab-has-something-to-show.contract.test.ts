@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { deriveArchitectureProfiles } from '@/entities/architecture-profile';
+import { filterDocsByCollection } from '@/views/docs-vault/lib/docs-vault-collection';
 import dogfoodManifest from '../../src/entities/docs-vault/data/manifest.json';
 import storefrontManifest from '../../src/entities/docs-vault/data/sample-storefront.manifest.json';
 import ko from '../../messages/ko.json';
@@ -68,6 +69,34 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
     for (const profile of profiles) {
       expect(profile.frontmatter.kind, `${profile.slug} must not carry a kind`).toBeUndefined();
       expect(profile.frontmatter.uid, `${profile.slug} must not carry a graph uid`).toBeUndefined();
+    }
+  });
+
+  /*
+   * ⚠️ **And it does not appear in Docs either.** Docs is the ontology folder's reading surface, so
+   * a profile listed there is the same overload decision (120) refuses, at a different door. It is
+   * measurable, not a matter of taste: with the profile listed it sorted first, Docs opened it, and
+   * `<main>` fell to 26 elements against the floor of 40 in `a11y-vault-backed.spec.ts` -- the
+   * reading surface's opening screen became a twenty-line frontmatter record. Removing it put that
+   * screen back to 92.
+   */
+  it('문서함 목록에는 프로필이 없다 — all 로 봐도', () => {
+    for (const [name, manifest] of [
+      ['dogfood', dogfoodManifest],
+      ['storefront', storefrontManifest],
+    ] as const) {
+      const docs = docsOf(manifest) as Array<
+        Parameters<typeof filterDocsByCollection>[0][number] & { slug: string }
+      >;
+      for (const collection of ['all', 'guides', 'ontology'] as const) {
+        const listed = filterDocsByCollection(docs, collection);
+        const leaked = listed.filter(
+          (doc) =>
+            (doc as { frontmatter: Record<string, unknown> }).frontmatter.architecture_schema ===
+            'architecture-profile/v1',
+        );
+        expect(leaked.map((doc) => doc.slug), `${name}/${collection} lists a profile`).toEqual([]);
+      }
     }
   });
 

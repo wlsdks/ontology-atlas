@@ -27,13 +27,31 @@ export function resolveDocsVaultCollection(
   return 'guides';
 }
 
+/**
+ * ⚠️ **An architecture profile is not a document in this list, including under 'all'.**
+ *
+ * `docs/ARCHITECTURE.md` and decision (120) settle what it is: a parallel, non-ontology record
+ * that carries no `kind:` and never becomes a Map node — "not an ontology kind and not an
+ * overloaded ontology `document`". Docs is the ontology folder's reading surface, so a profile
+ * showing up there is the same overload the decision refuses, just at a different door.
+ *
+ * It is also measurable rather than a matter of taste. Adding one profile to the storefront sample
+ * put it first in that folder, Docs opened it, and `<main>` fell to 26 elements against a floor of
+ * 40 (`a11y-vault-backed.spec.ts`) — the reading surface's opening screen became a twenty-line
+ * frontmatter record. `/architecture` is where this content has a shape built for it.
+ */
+function isArchitectureProfile(doc: Pick<VaultDoc, 'frontmatter'>): boolean {
+  return doc.frontmatter.architecture_schema === 'architecture-profile/v1';
+}
+
 export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>>(
   docs: T[],
   collection: DocsVaultCollection,
 ): T[] {
+  const readable = docs.filter((doc) => !isArchitectureProfile(doc));
   // 'all' means no filter — every document in this folder.
-  if (collection === 'all') return docs;
-  return docs.filter((doc) => resolveDocsVaultCollection(doc) === collection);
+  if (collection === 'all') return readable;
+  return readable.filter((doc) => resolveDocsVaultCollection(doc) === collection);
 }
 
 /**
