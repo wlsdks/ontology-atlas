@@ -315,7 +315,13 @@
       "hexagonal": "헥사고날",
       "mvp": "MVP",
       "custom": "사용자 정의"
-    }
+    },
+    "reachAria": "{role}는 {targets}에 의존할 수 있습니다",
+    "reachNone": "아무 역할에도 의존하지 않습니다",
+    "ladderDirection": "화살표는 소스 코드 의존 방향입니다",
+    "legendAllowed": "의존 가능",
+    "legendSelf": "자기 자신",
+    "legendColumns": "열 번호는 계층 번호와 같습니다"
   },
   "ontologyRelations": {
     "relationShort": {
