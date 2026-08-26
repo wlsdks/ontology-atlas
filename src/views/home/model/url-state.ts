@@ -3,6 +3,7 @@ import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
 import {
   buildInsightsReturnMarker,
+  BUSINESS_FLOW_ASK_VALUE,
   ONTOLOGY_DEEPLINK_ASK_KEY,
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_VIA_KEY,
@@ -81,6 +82,17 @@ export interface HomeRouteState {
    * values are demoted to null at parse time.
    */
   askIntent: FirstWordsNodeIntentKind | null;
+  /*
+   * The whole-graph request, which is the one `ask` value that names no node.
+   * It rides the same key rather than a new one, and is parsed into its own field
+   * instead of into `askIntent`, because that type means "an intent about a single
+   * node" and widening it would make `nodeIntent` accept a call it cannot answer.
+   *
+   * Only the name travels. The sentence is rebuilt at the destination, so a link
+   * that is copied, logged, or shared carries no folder text, and a stale link
+   * still opens the current request rather than the one it was made from.
+   */
+  askBusinessFlow: boolean;
   /**
    * Density gate — the parent slugs the user expanded out of the cluster chips
    * they were folded into (`?open=slug1,slug2`). A parent with more children
@@ -251,6 +263,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   insightsReturnTab: null,
   insightsReturnReviewId: null,
   askIntent: null,
+  askBusinessFlow: false,
   expandedParents: [],
   realmSlug: null,
   recentWindow: null,
@@ -534,6 +547,7 @@ export function parseHomeRouteState(
       ? searchParams.get(HOME_QUERY_KEYS.review)
       : null,
     askIntent: parseNodeIntentKind(searchParams.get(HOME_QUERY_KEYS.ask)),
+    askBusinessFlow: searchParams.get(HOME_QUERY_KEYS.ask) === BUSINESS_FLOW_ASK_VALUE,
     expandedParents: parseExpandedParentsParam(
       searchParams.get(HOME_QUERY_KEYS.open),
     ),
@@ -684,7 +698,11 @@ export function applyHomeRouteState(
   );
   setOrDelete(next, HOME_QUERY_KEYS.realm, state.realmSlug);
   setOrDelete(next, HOME_QUERY_KEYS.recent, serializeRecentWindowParam(state.recentWindow));
-  setOrDelete(next, HOME_QUERY_KEYS.ask, state.askIntent);
+  setOrDelete(
+    next,
+    HOME_QUERY_KEYS.ask,
+    state.askBusinessFlow ? BUSINESS_FLOW_ASK_VALUE : state.askIntent,
+  );
   setOrDelete(
     next,
     HOME_QUERY_KEYS.via,

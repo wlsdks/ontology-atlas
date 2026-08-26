@@ -81,6 +81,8 @@ import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { FlowTab } from "./tabs/FlowTab";
 import { buildBusinessFlowRequest } from "@/features/vault-agent";
+import { buildBusinessFlowHref } from "@/entities/knowledge-graph";
+import { useRouter } from "@/i18n/navigation";
 import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 import { controlClass } from '@/shared/ui/control-class';
@@ -245,6 +247,7 @@ export function OntologyInsightsPage() {
     [tab],
   );
 
+  const router = useRouter();
   const { insight, error } = useOntologyInsight();
   const docFreshnessIndex = useVaultDocFreshnessIndex();
   const vault = useLocalVault();
@@ -1206,6 +1209,12 @@ export function OntologyInsightsPage() {
                 request={buildBusinessFlowRequest({ request: t("flow.request") }, null)}
                 hasVault={vault.status === "loaded"}
                 canLaunchAgent={isAcpBridgeAvailable()}
+                onPrefill={() => {
+                  // The conversation lives beside the map, so pressing travels
+                  // there and the request is rebuilt on arrival. The return
+                  // marker is stamped so the map can offer the way back.
+                  router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));
+                }}
               />
             ) : null}
           </div>
