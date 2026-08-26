@@ -97,3 +97,55 @@ describe('agent-brief project meaning summary', () => {
     assert.doesNotMatch(lines.join('\n'), /confidence|score|%|\/private/);
   });
 });
+
+/*
+ * ⚠️ **A run that exits 1 has to say why in the stream a machine reads.**
+ *
+ * `readinessExitCode`'s own note says the human one-line explanation is deliberately kept out of
+ * JSON, "read by machines, which look at `status` and `readiness` directly". That holds for the
+ * plain `--json` output and did not hold for `--verify-fallbacks --json`, whose report carries
+ * neither field. Measured 2026-08-26 on this repository's dogfood vault: the command printed
+ * `ok: true, failed: 0` and exited 1, and the reason — readiness `needs_attention` at 75 —
+ * appeared nowhere. Correct and unattributable at the same time.
+ */
+describe('agent-brief --verify-fallbacks --json', () => {
+  it('carries the readiness verdict that decides the exit code', async () => {
+    const { spawnSync } = await import('node:child_process');
+    const run = spawnSync(
+      process.execPath,
+      [
+        'cli/src/index.mjs',
+        'agent-brief',
+        'docs/ontology',
+        '--verify-fallbacks',
+        '--json',
+        '--fallback-timeout-ms',
+        '20000',
+        '--fallback-concurrency',
+        '4',
+      ],
+      { cwd: process.cwd(), encoding: 'utf8' },
+    );
+    const report = JSON.parse(run.stdout.slice(run.stdout.indexOf('{')));
+
+    assert.equal(report.operation, 'agent_fallback_check');
+    // The fallback verdict and the readiness verdict are different questions, and both are here.
+    assert.equal(typeof report.ok, 'boolean');
+    assert.ok('status' in report, 'the readiness status must travel with the report');
+    assert.ok('readiness' in report, 'the readiness detail must travel with the report');
+
+    /*
+     * The exit code is the max of the two verdicts, so whenever it is 1 at least one of them must
+     * explain it. This is the assertion that fails if either field is dropped again.
+     */
+    if (run.status === 1) {
+      assert.ok(
+        report.failed > 0 || report.status !== 'ready',
+        `exit 1 with nothing in the output to attribute it to: ${JSON.stringify({
+          failed: report.failed,
+          status: report.status,
+        })}`,
+      );
+    }
+  });
+});

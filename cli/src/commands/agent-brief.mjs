@@ -146,7 +146,23 @@ export function readinessExitCode(result, exitZero) {
 async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS, concurrency = DEFAULT_FALLBACK_CONCURRENCY } = {}) {
   const report = await buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs, concurrency });
   if (json) {
-    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    /*
+     * ⚠️ **The readiness verdict travels with the report, because it is what decides the exit code.**
+     *
+     * `readinessExitCode`'s note says the one-line explanation is deliberately kept out of JSON
+     * "read by machines, which look at `status` and `readiness` directly". That is true of the
+     * plain `--json` output and false of this one: the fallback report carries neither field, so a
+     * run that printed `ok: true, failed: 0` and exited 1 gave no visible reason anywhere.
+     * Measured 2026-08-26 on this repository's own dogfood vault, whose readiness is
+     * `needs_attention` at 75 — the exit was correct and unattributable at the same time.
+     */
+    process.stdout.write(
+      JSON.stringify(
+        { ...report, status: result?.status ?? null, readiness: result?.readiness ?? null },
+        null,
+        2,
+      ) + '\n',
+    );
     return report;
   }
   renderFallbackVerificationReport(report);
