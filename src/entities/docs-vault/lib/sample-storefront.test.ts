@@ -35,7 +35,8 @@ function refsOf(doc: VaultDoc, key: string): string[] {
 /**
  * ⚠️ **An architecture profile is deliberately not one of these documents.**
  *
- * `docs/ARCHITECTURE.md` and decision (120) both settle it: a file carrying
+ * `docs/ARCHITECTURE.md` and the 2026-08-26 decision "Architecture is a separate reviewed
+ * contract and primary workbench destination" both settle it: a file carrying
  * `architecture_schema: architecture-profile/v1` has **no `kind:`**, so it never becomes a Map
  * node — "not an ontology kind and not an overloaded ontology `document`". These three checks
  * were written before profiles existed and say "every document", which would force the sample's

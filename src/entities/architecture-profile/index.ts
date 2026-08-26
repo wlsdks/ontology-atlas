@@ -1,5 +1,6 @@
 export {
   buildArchitectureAgentPrompt,
+  buildArchitectureDraftPrompt,
   deriveArchitectureProfiles,
   parseArchitectureProfile,
   type ArchitectureHandoffContext,

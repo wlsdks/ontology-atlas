@@ -40,6 +40,76 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-26 — The first architecture draft is proposed by an agent and named by a person
+
+**Convened because**: on the installed rc.15, with the owner's own folder connected,
+`/architecture` showed its empty state and the button under it navigated to the map
+and produced nothing. The sentence above it stated as present fact that an agent
+reads the folders and the real imports and drafts this. The first proposed slice
+included a new public MCP contract, which convened five seats.
+
+**Prior decisions**: the 2026-08-26 record "Architecture is a separate reviewed
+contract and primary workbench destination" stands — §4 "a pattern label is never
+inferred from folders", §3 "both have side effect 0", §5 Understand → Plan → Verify.
+The 2026-08-24 decision behind the first-run door also stands: **the app does not call
+MCP; it hands the agent a sentence.** This record appends a drafting step ahead of §5
+and overturns nothing else.
+
+**Observed phenomenon**: no path in the product produces a profile. The two that exist
+were both committed by hand, and `inspect_architecture` throws
+`architecture_profile_missing` while none of the 35 tools can satisfy it. The dead end
+is in the agent channel as well as the screen.
+
+**Decision**:
+
+1. The empty state's button **carries the task**. `queueAgentChatIntent` puts the
+   drafting sentence in session storage and the map opens it as the first turn. The app
+   still does not call MCP.
+2. **No new MCP tool.** The agent already reads with `infer_imports` and
+   `analyze_repo_structure` and writes with its own file tools. A new tool would mostly
+   add a place to revive §4's folder inference in the shape of role names.
+3. **Rules are not derived from observations.** The draft writes no `allow_*` and no
+   `dependency_policy`. Measured here: `atlas architecture` reports 18 real
+   Feature-Sliced Design violations, `shared → entities` among them, and a rule derived
+   from those same imports would emit `allow_shared: [entities]` and render this
+   repository `conforms` — reaching the prior record's own falsifier, "if an unsupported
+   scan ever renders green", by design. Omitting both keys leaves every edge unruled and
+   therefore `unknown`, and unknown is never compliant.
+4. **The person names the pattern and the roles.** Deriving a role id from a folder is
+   §4's ban routed around one identifier at a time, so the agent proposes path groups
+   with literal path-derived ids only. `patterns` cannot be empty in either parser, so
+   **the record cannot exist until a person has named it** — approval is structural
+   rather than a dialog to click through.
+5. The draft is stamped `created_by: agent:<tool>`. `evidence` carries the human
+   authorities that already govern the boundary — a lint config, an architecture
+   document — and never the edge list just observed, which is the prior record's other
+   falsifier ("if a profile becomes a second source of observed imports").
+
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 3 · Ontology value 2 ·
+Agent value 3 · Verification 4 = **20/24**, no fatal zero. Ontology value 2 is a ceiling
+rather than a gap: a profile is deliberately not a graph node, and what improves is the
+update path and provenance.
+
+**Decisive disagreement**: the evidence seat returned *Investigate first*, on the
+grounds that the alternative was mispriced — somebody who has already attached a coding
+agent can simply ask it, and nobody has measured whether that works. This record accepts
+that dissent and ships only the sentence handoff, because a screen making a false
+statement is not a reason to wait for a trial.
+
+**Falsifier**: in five real first sessions a person reaches a reviewed profile inside ten
+minutes without this button, which would mean the defect was the copy and the bridge was
+unnecessary. Or the human rewrites or discards the draft in three of five repositories,
+which would mean "we analyse it and record it" is wrong for real code. Or the drafted
+profiles come back mostly `unknown`, which would mean there was no signal to derive from.
+
+**Gate**: `architecture-profile.test.ts` — the sentence refuses rule derivation, pattern
+naming, role naming, and observed edges as evidence. `ArchitectureWorkbench.test.tsx` —
+the click leaves a task behind; reverting the handler fails it.
+
+**Status**: valid
+
+---
+
 ## 2026-08-26 — SegmentedControl hover contract: unselected lift and strong, selected silent
 
 **Convened**: the `design-system` seat, as `.claude/rules/design.md` requires for

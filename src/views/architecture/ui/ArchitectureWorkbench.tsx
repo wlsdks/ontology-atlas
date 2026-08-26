@@ -5,8 +5,10 @@ import { Bot, Boxes, CircleHelp, FileCode2, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
+import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import {
   buildArchitectureAgentPrompt,
+  buildArchitectureDraftPrompt,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
@@ -88,20 +90,36 @@ export function ArchitectureWorkbench({
            */
           className="max-w-[640px] [&_h1]:break-keep [&_h1]:font-[var(--font-weight-strong)] [&_h1]:text-display [&_h1]:text-[color:var(--color-text-primary)]"
           /*
-           * ⚠️ **Sends them where the work happens, not where the file lives.** This used to point
-           * at Docs and tell the reader to author an `architecture-profile/v1` document by hand.
-           * Owner, 2026-08-26: *"a user is never going to write the architecture down -- we should
-           * analyse it and record it"*. Nobody opens a documents list in order to hand-write twenty
-           * lines of frontmatter, and naming the schema in the first sentence a stranger reads is
-           * this repository's own vocabulary leaking onto the screen.
+           * ⚠️ **The button carries the task; it used to only change the address.**
            *
-           * The map is where an agent is already connected and already reads a codebase, so the
-           * button goes there. That is one hop rather than a task list, and it reuses the flow that
-           * is measured to work rather than inventing a second one.
+           * This was a bare link to the map, defended by "the map is where an agent is already
+           * connected". Measured on the installed rc.15 with the owner's own folder: pressing it
+           * moved the person to the map and produced nothing, while the sentence above promised an
+           * agent would read the folder and the imports and draft this. Being *where* an agent
+           * lives is not the agent doing the thing the sentence promised.
+           *
+           * `queueAgentChatIntent` is the bridge that survives the route change — a window event
+           * alone is lost, because the map's subscriber does not exist on this route. The runner is
+           * left unnamed: this screen holds the task, not a runner list, and the map already reads
+           * `runtimeId ?? acpRuntime?.id`.
+           *
+           * The app still does not call MCP itself. That is the 2026-08-24 decision behind the
+           * first-run door: analysing the repository here would be a second canonical
+           * implementation of `analyze_repo_structure`, which `AGENTS.md` forbids.
            */
           action={(
-            <Link href="/topology/" className={cn(buttonVariants({ variant: 'primary', size: 'sm' }))}>
-              {t('openDocs')}
+            <Link
+              href="/topology/"
+              className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
+              data-testid="architecture-draft-from-code"
+              /*
+               * The queue is written synchronously before the navigation, so the sentence is
+               * already in session storage by the time the map mounts and consumes it. It stays an
+               * anchor because the act really is a navigation — the agent dock lives on the map.
+               */
+              onClick={() => queueAgentChatIntent(null, buildArchitectureDraftPrompt(null))}
+            >
+              {t('draftFromCode')}
             </Link>
           )}
         />

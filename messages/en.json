@@ -288,13 +288,12 @@
     "copyingHandoff": "Copying agent handoff…",
     "copiedHandoff": "Agent handoff copied",
     "copyHandoffError": "Could not copy. Try again",
-    "openDocs": "Draft it from my code",
     "verifyTitle": "Verify the actual change",
     "verifyBody": "Run the same source inspection after editing and compare planned dependencies with actual imports.",
     "unknownIsNotCompliant": "Unknown is not compliant. Unsupported languages, unmapped paths, and empty roles remain explicit gaps.",
     "verifyCommands": "Agent check: inspect_architecture → focused tests → inspect_architecture",
     "noProfiles": "This codebase's structure has not been recorded yet",
-    "noProfilesBody": "An AI agent reads the folders and the real imports and drafts it for you. There is nothing to write by hand: look at the draft, then correct it or accept it.",
+    "noProfilesBody": "A connected agent reads the folders and the real imports and proposes a draft architecture profile. There is nothing to write by hand: review the draft, and accepting it saves one file in your ontology folder.",
     "roleLabels": {
       "routing": "Routes",
       "app": "Application shell",
@@ -316,12 +315,13 @@
       "mvp": "MVP",
       "custom": "Custom"
     },
-    "reachAria": "{role} may depend on {targets}",
+    "reachAria": "{role}: may depend on {targets}",
     "reachNone": "depends on no other role",
     "ladderDirection": "the arrow is source-code dependency",
     "legendAllowed": "may depend on",
     "legendSelf": "itself",
-    "legendColumns": "column numbers match the layer numbers"
+    "legendColumns": "column numbers match the layer numbers",
+    "draftFromCode": "Draft from this codebase"
   },
   "ontologyRelations": {
     "relationShort": {

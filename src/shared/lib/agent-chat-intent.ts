@@ -59,7 +59,18 @@ export function requestAgentChat(
  * that route. Session storage carries exactly one one-shot runtime id across the
  * route change; the map consumes and removes it before opening the dock.
  */
-export function queueAgentChatIntent(runtimeId: string, prompt: string | null = null): void {
+export function queueAgentChatIntent(
+  /*
+   * ⚠️ **Null means "whichever runner is already connected".** The map's handler has always read
+   * `runtimeId ?? acpRuntime?.id`, but the queue used to discard any entry without a runtime name,
+   * so a caller that knows the *task* but not the *runner* had no way through. `/architecture` is
+   * exactly that caller: it holds the drafting sentence and has no runner list on screen. Refusing
+   * the entry there would drop the sentence and leave the person on the map with an empty box —
+   * the defect this bridge exists to prevent.
+   */
+  runtimeId: string | null,
+  prompt: string | null = null,
+): void {
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.setItem(
@@ -72,7 +83,8 @@ export function queueAgentChatIntent(runtimeId: string, prompt: string | null = 
 }
 
 export interface QueuedAgentChatIntent {
-  runtimeId: string;
+  /** `null` when the caller named a task but not a runner; the map falls back to the connected one. */
+  runtimeId: string | null;
   /** The first turn to open with, or `null` for an empty conversation. */
   prompt: string | null;
 }
@@ -90,12 +102,21 @@ export function consumeQueuedAgentChatIntent(): QueuedAgentChatIntent | undefine
   if (!raw) return undefined;
   try {
     const parsed = JSON.parse(raw) as Partial<AgentChatIntentDetail>;
-    if (typeof parsed.runtimeId !== 'string' || parsed.runtimeId.length === 0) return undefined;
+    const runtimeId =
+      typeof parsed.runtimeId === 'string' && parsed.runtimeId.length > 0 ? parsed.runtimeId : null;
+    const prompt =
+      typeof parsed.prompt === 'string' && parsed.prompt.trim() ? parsed.prompt : null;
+    /*
+     * An entry that names neither a runner nor a task is malformed — there is nothing to act on.
+     * One of the two is enough: a runner alone opens the dock, a task alone opens it on whatever is
+     * connected.
+     */
+    if (!runtimeId && !prompt) return undefined;
     return {
-      runtimeId: parsed.runtimeId,
+      runtimeId,
       // A malformed or absent prompt degrades to an ordinary open rather than failing the whole
       // request — the door's first promise is the conversation, the sentence is the convenience.
-      prompt: typeof parsed.prompt === 'string' && parsed.prompt.trim() ? parsed.prompt : null,
+      prompt,
     };
   } catch {
     return undefined;

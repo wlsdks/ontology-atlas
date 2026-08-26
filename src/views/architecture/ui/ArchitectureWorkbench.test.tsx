@@ -9,6 +9,7 @@ import {
 } from '@/entities/architecture-profile';
 import { FSD_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
+import { consumeQueuedAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 
 function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
@@ -23,6 +24,46 @@ function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
 }
 
 const order_all = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+
+/*
+ * ⚠️ **The empty state is what a real user actually sees, and it is not reachable from a browser.**
+ * Both bundled samples carry a profile by contract, and `useDataSourceMode` needs a real folder
+ * handle — so this jsdom render is the only place the zero-profile screen can be measured at all.
+ * It was inert on the installed rc.15: the button navigated to the map and carried nothing, while
+ * the sentence above it promised an agent would read the folder and the imports and draft this.
+ */
+describe('ArchitectureWorkbench — nothing recorded yet', () => {
+  function renderEmpty() {
+    return render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench profiles={[]} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('hands the drafting task to the agent instead of only changing the address', () => {
+    window.sessionStorage.clear();
+    renderEmpty();
+    fireEvent.click(screen.getByTestId('architecture-draft-from-code'));
+
+    const queued = consumeQueuedAgentChatIntent();
+    expect(queued, 'the click must leave a task behind, not just a destination').toBeDefined();
+    // Unnamed runner: this screen holds the task and has no runner list; the map falls back to
+    // whichever agent is connected.
+    expect(queued?.runtimeId).toBeNull();
+    expect(queued?.prompt).toContain('Draft a first architecture profile');
+  });
+
+  /*
+   * The copy stated as present fact something the product did not do. It may promise only what the
+   * click can keep — a proposal the person reviews, from an agent that has to be connected.
+   */
+  it('promises a proposal from a connected agent, not a finished file', () => {
+    renderEmpty();
+    expect(screen.getByText(/A connected agent/)).toBeInTheDocument();
+    expect(screen.getByText(/proposes a draft/)).toBeInTheDocument();
+  });
+});
 
 describe('ArchitectureWorkbench', () => {
   it('opens with a scoped living blueprint instead of an ontology graph', () => {

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { deriveArchitectureProfiles } from '@/entities/architecture-profile';
-import { filterDocsByCollection } from '@/views/docs-vault/lib/docs-vault-collection';
+import {
+  filterDocsByCollection,
+  isArchitectureProfile,
+} from '@/views/docs-vault/lib/docs-vault-collection';
 import dogfoodManifest from '../../src/entities/docs-vault/data/manifest.json';
 import storefrontManifest from '../../src/entities/docs-vault/data/sample-storefront.manifest.json';
 import ko from '../../messages/ko.json';
@@ -53,7 +56,8 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   /*
    * ⚠️ **A profile is not a Map node, and the schema alone must not be what says so.**
    *
-   * `docs/ARCHITECTURE.md` and decision (120) settle it: a file carrying this schema has no
+   * `docs/ARCHITECTURE.md` and the 2026-08-26 decision "Architecture is a separate reviewed
+   * contract and primary workbench destination" settle it: a file carrying this schema has no
    * `kind:`, because it is "not an ontology kind and not an overloaded ontology `document`". I
    * broke that rule while adding the sample -- gave it `kind: document`, a `uid` and a `relates`
    * edge -- because the sample's own graph contract demanded every document be a connected node,
@@ -73,14 +77,39 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
   });
 
   /*
-   * ⚠️ **And it does not appear in Docs either.** Docs is the ontology folder's reading surface, so
-   * a profile listed there is the same overload decision (120) refuses, at a different door. It is
-   * measurable, not a matter of taste: with the profile listed it sorted first, Docs opened it, and
-   * `<main>` fell to 26 elements against the floor of 40 in `a11y-vault-backed.spec.ts` -- the
-   * reading surface's opening screen became a twenty-line frontmatter record. Removing it put that
-   * screen back to 92.
+   * ⚠️ **It is listed in Docs, and it is never what Docs opens by itself.**
+   *
+   * This case used to assert the opposite -- that a profile never appears in Docs at all -- and
+   * that was an unrecorded overturn of the standing 2026-08-26 architecture record, whose §2 says
+   * a profile "appears in Docs but never in the ontology graph". The comment defending it cited a
+   * decision number the ledger has never issued.
+   *
+   * The measured defect was narrower than the fix. The profile sorted first in its folder, Docs
+   * *auto-opened* it, and `<main>` fell to 26 elements against the floor of 40 in
+   * `a11y-vault-backed.spec.ts` -- the reading surface's opening screen became a twenty-line
+   * frontmatter record. Membership was never the problem; the unattended choice was.
    */
-  it('문서함 목록에는 프로필이 없다 — all 로 봐도', () => {
+  it('문서함 목록에 프로필이 있다 — 기록이 그렇게 정했다', () => {
+    for (const [name, manifest] of [
+      ['dogfood', dogfoodManifest],
+      ['storefront', storefrontManifest],
+    ] as const) {
+      const docs = docsOf(manifest) as Array<
+        Parameters<typeof filterDocsByCollection>[0][number] & { slug: string }
+      >;
+      const listed = filterDocsByCollection(docs, 'all');
+      const profiles = listed.filter((doc) =>
+        isArchitectureProfile(doc as { frontmatter: Record<string, unknown> }),
+      );
+      expect(profiles.length, `${name} hides its profile from Docs`).toBeGreaterThan(0);
+    }
+  });
+
+  /*
+   * ⚠️ And the part that was actually measured: a profile must never be the document Docs opens
+   * on its own. This is the assertion that keeps `<main>` above its floor.
+   */
+  it('문서함이 스스로 여는 문서는 프로필이 아니다', () => {
     for (const [name, manifest] of [
       ['dogfood', dogfoodManifest],
       ['storefront', storefrontManifest],
@@ -90,12 +119,20 @@ describe('아키텍처 탭 — 레일에 있는 탭은 보여 줄 것이 있어�
       >;
       for (const collection of ['all', 'guides', 'ontology'] as const) {
         const listed = filterDocsByCollection(docs, collection);
-        const leaked = listed.filter(
-          (doc) =>
-            (doc as { frontmatter: Record<string, unknown> }).frontmatter.architecture_schema ===
-            'architecture-profile/v1',
+        if (listed.length === 0) continue;
+        const opened = listed.find(
+          (doc) => !isArchitectureProfile(doc as { frontmatter: Record<string, unknown> }),
         );
-        expect(leaked.map((doc) => doc.slug), `${name}/${collection} lists a profile`).toEqual([]);
+        /*
+         * `undefined` is a pass, and the storefront sample's guides collection is exactly that
+         * case: its only member is the profile, so there is nothing to read and Docs opens
+         * nothing rather than falling back to the record it must not open.
+         */
+        if (!opened) continue;
+        expect(
+          isArchitectureProfile(opened as { frontmatter: Record<string, unknown> }),
+          `${name}/${collection} would open a profile unattended`,
+        ).toBe(false);
       }
     }
   });

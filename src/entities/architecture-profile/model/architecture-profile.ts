@@ -127,16 +127,49 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   };
 }
 
+/**
+ * ⚠️ **A collision has to say which two documents collided.**
+ *
+ * Measured 2026-08-26: `atlas architecture .` at this repository's root died with
+ * `Duplicate architecture profile slug: atlas-web.` and nothing else. The cause was the
+ * repository's own generated mirror — `pnpm docs-vault:build` copies the vault into
+ * `public/docs-vault/`, so one profile was found twice. The message named neither document, so
+ * the only way to learn that was to grep for the slug.
+ *
+ * Two collisions are not the same thing, and conflating them is what made the message useless:
+ * identical `profile_uid` with identical frontmatter is **one record reached twice** and there is
+ * nothing for a person to resolve, while a disagreement is a real conflict that must still fail
+ * closed — now naming both documents, because "which two?" is the whole question.
+ *
+ * `mcp/src/architecture-profile.mjs` carries the same behaviour; the parity contract keeps them
+ * from drifting.
+ */
+function profileFingerprint(frontmatter: Record<string, unknown>): string {
+  // Key order must not decide identity: two mirrors of one file can serialise differently.
+  return JSON.stringify(
+    Object.fromEntries(Object.entries(frontmatter).sort(([left], [right]) => (left < right ? -1 : 1))),
+  );
+}
+
 export function deriveArchitectureProfiles(
   docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
 ): ArchitectureProfile[] {
   const profiles: ArchitectureProfile[] = [];
-  const seen = new Set<string>();
+  const seen = new Map<string, { uid: string; fingerprint: string; documentSlug: string }>();
   for (const doc of docs) {
     if (doc.frontmatter.architecture_schema !== ARCHITECTURE_PROFILE_CONTRACT) continue;
     const profile = parseArchitectureProfile(doc.frontmatter);
-    if (seen.has(profile.slug)) throw new Error(`Duplicate architecture profile slug: ${profile.slug}.`);
-    seen.add(profile.slug);
+    const fingerprint = profileFingerprint(doc.frontmatter);
+    const previous = seen.get(profile.slug);
+    if (previous) {
+      if (previous.uid === profile.uid && previous.fingerprint === fingerprint) continue;
+      throw new Error(
+        `Duplicate architecture profile slug: ${profile.slug}. ` +
+          `${previous.documentSlug} and ${doc.slug} both declare it with different contents. ` +
+          'Give one of them another profile_slug, or narrow the scan so only one is read.',
+      );
+    }
+    seen.set(profile.slug, { uid: profile.uid, fingerprint, documentSlug: doc.slug });
     profiles.push({ ...profile, documentSlug: doc.slug });
   }
   return profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en'));
@@ -165,5 +198,68 @@ export function buildArchitectureAgentPrompt(
     'Do not treat unknown as compliant, and do not infer a named pattern from folder names.',
     'Before editing, return an architectureChangePlan:v1 with touchedRoles, plannedPaths, expectedNewDependencies, crossedBoundaries, preservedInterfaces, verificationCommands, and unknowns.',
     'After editing, call inspect_architecture again and compare the actual conformance result with the plan.',
+  ].join('\n');
+}
+
+/**
+ * The sentence the architecture tab's empty state hands a connected agent.
+ *
+ * ⚠️ **Why a sentence and not a function call.** The standing 2026-08-24 decision behind
+ * `first-run-starter`'s "make a map from my code" door settles this: the app never calls MCP —
+ * that is the agents' surface — so a door that analysed the repository itself would create a
+ * second canonical implementation of `analyze_repo_structure`, which `AGENTS.md` forbids. Handing
+ * the work to the agent is not a workaround; it is the shape this product argues for.
+ *
+ * ⚠️ **What this sentence must refuse to ask for, and why each refusal was measured.**
+ *
+ * - **It may not ask for `allow_*` or `dependency_policy`.** Deriving rules from observed imports
+ *   makes the status quo the rule. Measured on this repository: `atlas architecture` reports 18
+ *   real Feature-Sliced Design violations, `shared → entities` among them. A rule derived from
+ *   those same imports would have emitted `allow_shared: [entities]` and rendered the repository
+ *   `conforms` — reaching the standing record's own falsifier, *"if an unsupported scan ever
+ *   renders green"*, by design rather than by bug. Omitting both keys leaves every edge unruled,
+ *   which the evaluator reports as `unknown` — and unknown is never compliant.
+ * - **It may not ask the agent to name the pattern, or to name the roles.** The record's clause is
+ *   "a pattern label is never inferred from folders". A role id is that claim in miniature:
+ *   emitting `role_entities` or `role_adapters` from folder names is inferring Feature-Sliced
+ *   Design or Hexagonal one identifier at a time, the ban routed around. Path-derived literal ids
+ *   are an observation and carry no claim.
+ * - **`patterns` cannot be left empty for the human to fill in later.** Both parsers require it
+ *   non-empty, so a profile without it does not load at all. That constraint is the feature: the
+ *   record cannot exist until a person has named the pattern, which makes approval structural
+ *   rather than a dialog they click through.
+ * - **`evidence` may not receive a generated edge list.** The same record's falsifier includes
+ *   "if a profile becomes a second source of observed imports". Evidence points at the human
+ *   authorities that already govern the boundary — a rules file, an architecture document.
+ */
+export function buildArchitectureDraftPrompt(
+  context: ArchitectureHandoffContext | null = null,
+): string {
+  const sourceRoot = context?.sourceRoot ?? null;
+  // The absolute path when the desktop bridge knows it, and never an invented one.
+  const target = sourceRoot ?? 'the codebase this ontology folder describes';
+  return [
+    `Draft a first architecture profile for ${target}.`,
+    '',
+    'Work in this order and stop where it says to stop:',
+    '1. Read the folder tree, then call `infer_imports` for the dependency edges that are actually',
+    '   observed. Report which languages the scan could read and which files it skipped.',
+    '2. Propose the scope globs and a set of path groups, using literal ids taken from the paths',
+    '   themselves. Do not name a pattern, and do not give a group an architectural name — that',
+    '   would be inferring the pattern one identifier at a time. Say which observed imports put',
+    '   each path in each group.',
+    '3. Show me the proposal and stop. Ask me two things: what this architecture is called, and',
+    '   what each group should be named. I answer those; you do not guess them.',
+    '4. Only then write one file under `architecture/` in the ontology folder, with',
+    '   `architecture_schema: architecture-profile/v1`, a freshly minted lowercase UUIDv4',
+    '   `profile_uid`, the `project_uid` of the project node this describes, the names I gave you,',
+    '   the path groups as `role_<id>` globs, and `created_by: agent:<your tool name>`.',
+    '   Write no `kind:` and no `uid:` — this record is deliberately not a node in the map.',
+    '   Write no `allow_*` keys and no `dependency_policy`: the rules are mine to state, and',
+    '   deriving them from what the code happens to do today would turn existing violations into',
+    '   permissions. Leaving them out reports every edge as unknown, which is the honest start.',
+    '   Put the human authorities that already govern the boundary in `evidence` — a lint config,',
+    '   an architecture document — never a list of the edges you just observed.',
+    '5. Run `inspect_architecture` on the result and show me what it says.',
   ].join('\n');
 }

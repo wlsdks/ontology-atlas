@@ -28,19 +28,23 @@ export function resolveDocsVaultCollection(
 }
 
 /**
- * ⚠️ **An architecture profile is not a document in this list, including under 'all'.**
+ * ⚠️ **An architecture profile is listed here, but never the document Docs opens by itself.**
  *
- * `docs/ARCHITECTURE.md` and decision (120) settle what it is: a parallel, non-ontology record
- * that carries no `kind:` and never becomes a Map node — "not an ontology kind and not an
- * overloaded ontology `document`". Docs is the ontology folder's reading surface, so a profile
- * showing up there is the same overload the decision refuses, just at a different door.
+ * This used to remove profiles from the list entirely, and that was an unrecorded overturn of the
+ * standing 2026-08-26 record "Architecture is a separate reviewed contract and primary workbench
+ * destination", whose §2 says in as many words that a profile "appears in Docs but never in the
+ * ontology graph". The comment defending the removal cited a decision number the ledger has never
+ * issued.
  *
- * It is also measurable rather than a matter of taste. Adding one profile to the storefront sample
- * put it first in that folder, Docs opened it, and `<main>` fell to 26 elements against a floor of
- * 40 (`a11y-vault-backed.spec.ts`) — the reading surface's opening screen became a twenty-line
- * frontmatter record. `/architecture` is where this content has a shape built for it.
+ * The measured defect was real but narrower than the fix. The profile sorted first in its folder,
+ * Docs **auto-opened** it, and `<main>` fell to 26 elements against a floor of 40
+ * (`a11y-vault-backed.spec.ts`) — the reading surface's opening screen became a twenty-line
+ * frontmatter record. That is a default-selection defect, not a membership one, so the exclusion
+ * now lives only in the default-selection path. Removing it from the list also cost something
+ * real: with drafting shipped, a person's brand-new profile would be invisible everywhere except
+ * a surface they may not know exists.
  */
-function isArchitectureProfile(doc: Pick<VaultDoc, 'frontmatter'>): boolean {
+export function isArchitectureProfile(doc: Pick<VaultDoc, 'frontmatter'>): boolean {
   return doc.frontmatter.architecture_schema === 'architecture-profile/v1';
 }
 
@@ -48,10 +52,9 @@ export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 
   docs: T[],
   collection: DocsVaultCollection,
 ): T[] {
-  const readable = docs.filter((doc) => !isArchitectureProfile(doc));
   // 'all' means no filter — every document in this folder.
-  if (collection === 'all') return readable;
-  return readable.filter((doc) => resolveDocsVaultCollection(doc) === collection);
+  if (collection === 'all') return docs;
+  return docs.filter((doc) => resolveDocsVaultCollection(doc) === collection);
 }
 
 /**
@@ -64,12 +67,22 @@ export function filterDocsByCollection<T extends Pick<VaultDoc, 'frontmatter' | 
  *
  * With a genuinely empty vault there is no fallback — switching to `'all'` still gives zero, which
  * only churns state and gives the user nothing. That slot belongs to the empty-state copy.
+ *
+ * ⚠️ **Non-empty is not the same as having something to read.** Measured 2026-08-26, when
+ * architecture profiles were restored to the list: the storefront sample's guides collection holds
+ * exactly one document and it is a profile, which Docs must never open unattended. Choosing that
+ * collection therefore opened nothing, and `<main>` fell below its element floor — the same thin
+ * screen the floor was written to catch, arrived at from the other direction. The preference has
+ * to be counted in readable documents.
  */
 export function resolveInitialDocsCollection<
   T extends Pick<VaultDoc, 'frontmatter' | 'path' | 'slug'>,
 >(docs: T[], preferred: DocsVaultDocCollection = 'guides'): DocsVaultCollection {
   if (docs.length === 0) return preferred;
-  return filterDocsByCollection(docs, preferred).length > 0 ? preferred : 'all';
+  const readable = filterDocsByCollection(docs, preferred).filter(
+    (doc) => !isArchitectureProfile(doc),
+  );
+  return readable.length > 0 ? preferred : 'all';
 }
 
 export function buildTagIndexForDocs(docs: Pick<VaultDoc, 'slug' | 'tags'>[]): Record<string, string[]> {

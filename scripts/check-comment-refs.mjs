@@ -158,6 +158,71 @@ for (const file of files) {
   }
 }
 
+/*
+ * ⚠️ **A decision number is a pointer too, and nothing was checking it.**
+ *
+ * Measured 2026-08-26: three code comments cited a decision number in the hundred-and-twenties.
+ * No such record exists — the ledger's numbering stops at 115 and the newest records carry only
+ * a date and a title. The number was invented while writing the comment, and it read as
+ * authority: a reviewer following it finds nothing, and the rule the comment claims to be
+ * enforcing appears unsourced.
+ *
+ * This is the same failure this file already guards for `.md` paths — a pointer that stops
+ * resolving — so it belongs in the same lane rather than a new one. The repair is to cite the
+ * record by date and title when it has no number, which is what the ledger itself does.
+ */
+const LEDGER = path.join(ROOT, "docs/DECISIONS.md");
+const ledgerText = existsSync(LEDGER) ? readFileSync(LEDGER, "utf8") : "";
+const knownDecisions = new Set(
+  [...ledgerText.matchAll(/^## .*\((\d+)\)/gm)].map((match) => match[1]),
+);
+const DECISION_CITATION = /decisions? \((\d+)\)/g;
+const danglingDecisions = [];
+let decisionsChecked = 0;
+
+for (const file of files) {
+  let source;
+  try {
+    source = readFileSync(file, "utf8");
+  } catch {
+    continue;
+  }
+  if (!source.includes("ecision")) continue;
+  for (const [lineNo, line] of commentLines(source)) {
+    for (const match of line.matchAll(DECISION_CITATION)) {
+      decisionsChecked += 1;
+      if (!knownDecisions.has(match[1])) {
+        danglingDecisions.push({ file: path.relative(ROOT, file), lineNo, cited: match[1] });
+      }
+    }
+  }
+}
+
+if (danglingDecisions.length > 0) {
+  console.error("\n[comment-refs] code comments cite decision numbers that the ledger does not have:\n");
+  for (const row of danglingDecisions) {
+    console.error(`  ${row.file}:${row.lineNo}  →  decision (${row.cited})`);
+  }
+  console.error(
+    `\ndocs/DECISIONS.md numbers ${knownDecisions.size} record(s). The newest records carry a\n` +
+      "date and a title instead of a number — cite those the way the ledger writes them, e.g.\n" +
+      '"the 2026-08-26 decision \\"Architecture is a separate reviewed contract\\"".\n',
+  );
+  process.exit(1);
+}
+
+/*
+ * The ledger must have parsed. Zero known numbers means the heading pattern broke, and every
+ * citation would then pass for the wrong reason.
+ */
+if (knownDecisions.size === 0) {
+  console.error(
+    "\n[comment-refs] parsed zero numbered records from docs/DECISIONS.md.\n" +
+      "The heading pattern broke — every decision citation would pass unchecked.\n",
+  );
+  process.exit(1);
+}
+
 if (missing.length > 0) {
   console.error("\n[comment-refs] code comments point at markdown that does not exist:\n");
   for (const m of missing) {
@@ -185,6 +250,7 @@ if (checked === 0) {
 }
 
 console.log(
-  `[comment-refs] ok · ${checked} markdown citations in code comments, all resolve ` +
-    `(${files.length} files scanned)`,
+  `[comment-refs] ok · ${checked} markdown citations and ${decisionsChecked} decision citations ` +
+    `in code comments, all resolve (${files.length} files scanned, ` +
+    `${knownDecisions.size} numbered records)`,
 );
