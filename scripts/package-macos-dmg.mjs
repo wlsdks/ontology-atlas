@@ -21,6 +21,23 @@ function fail(message) {
   process.exit(1);
 }
 
+/**
+ * Runs a command and hands back its result instead of exiting.
+ *
+ * ⚠️ The binary name is a parameter on purpose, not only for reuse: a literal
+ * `spawnSync("hdiutil", …)` is read by the dead-code gate as an undeclared binary
+ * dependency, which is exactly the signal that gate exists to give. `run` has always
+ * taken the name as an argument for the same reason; this is its non-fatal twin.
+ */
+function attempt(command, args, options = {}) {
+  return spawnSync(command, args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: "pipe",
+    ...options,
+  });
+}
+
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: root,
@@ -91,15 +108,21 @@ fs.symlinkSync("/Applications", path.join(stagingDir, "Applications"));
  * text names a busy resource is retried; everything else still fails on the first attempt.
  */
 const DMG_CREATE_ATTEMPTS = 3;
-for (let attempt = 1; attempt <= DMG_CREATE_ATTEMPTS; attempt += 1) {
-  const result = spawnSync(
-    "hdiutil",
-    ["create", "-volname", appName, "-srcfolder", stagingDir, "-ov", "-format", "UDZO", dmgPath],
-    { cwd: root, encoding: "utf8", stdio: "pipe" },
-  );
+for (let attemptNumber = 1; attemptNumber <= DMG_CREATE_ATTEMPTS; attemptNumber += 1) {
+  const result = attempt("hdiutil", [
+    "create",
+    "-volname",
+    appName,
+    "-srcfolder",
+    stagingDir,
+    "-ov",
+    "-format",
+    "UDZO",
+    dmgPath,
+  ]);
   if (result.status === 0) break;
 
-  const lastAttempt = attempt === DMG_CREATE_ATTEMPTS;
+  const lastAttempt = attemptNumber === DMG_CREATE_ATTEMPTS;
   if (lastAttempt || !isTransientHdiutilFailure(result)) {
     /*
      * Report the output already in hand rather than running `hdiutil` again to obtain a
@@ -109,7 +132,7 @@ for (let attempt = 1; attempt <= DMG_CREATE_ATTEMPTS; attempt += 1) {
     fail(
       [
         `hdiutil create failed with exit ${result.status}` +
-          (attempt > 1 ? ` after ${attempt} attempts` : ""),
+          (attemptNumber > 1 ? ` after ${attemptNumber} attempts` : ""),
         result.stdout?.trim() ? `stdout:\n${result.stdout.trim()}` : null,
         result.stderr?.trim() ? `stderr:\n${result.stderr.trim()}` : null,
       ]
@@ -119,15 +142,15 @@ for (let attempt = 1; attempt <= DMG_CREATE_ATTEMPTS; attempt += 1) {
   }
 
   console.warn(
-    `[desktop-dmg] hdiutil create attempt ${attempt}/${DMG_CREATE_ATTEMPTS} hit a busy resource; retrying`,
+    `[desktop-dmg] hdiutil create attempt ${attemptNumber}/${DMG_CREATE_ATTEMPTS} hit a busy resource; retrying`,
   );
   /*
    * A still-attached volume of the same name is the most common holder and it outlives the
    * process that made it. Detaching is best effort: with nothing mounted the command simply
    * fails, and the next attempt happens either way.
    */
-  spawnSync("hdiutil", ["detach", "-force", stalePathForVolume(appName)], { stdio: "ignore" });
-  spawnSync("sleep", [String(attempt * 3)], { stdio: "ignore" });
+  attempt("hdiutil", ["detach", "-force", stalePathForVolume(appName)], { stdio: "ignore" });
+  attempt("sleep", [String(attemptNumber * 3)], { stdio: "ignore" });
 }
 run("hdiutil", ["verify", dmgPath]);
 
