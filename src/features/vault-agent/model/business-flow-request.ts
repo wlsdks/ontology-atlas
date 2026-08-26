@@ -47,21 +47,17 @@ export interface BusinessFlowRequestLabels {
 }
 
 /**
- * The request, with the vault folder named so the agent starts in the right place.
+ * The request, checked against the length a person will actually read.
  *
- * `vaultRoot` is absent on the web, where no agent can be launched at all
- * (`isAcpBridgeAvailable()` is false because a browser cannot start a process).
- * The sentence is still built there so the screen can show what *would* be asked
- * rather than an empty box; the caller decides whether it is pressable.
+ * It names no folder path. An earlier draft interpolated one and was wrong twice
+ * over: the insights route does not know where the vault sits on disk, and a
+ * literal path in an ICU message needs an argument that, when the caller stopped
+ * passing it, silently rendered the raw message key on screen instead of the
+ * sentence. The agent is already started in the folder it is meant to read, so
+ * "this vault" is both true and safer than a path we would have to guess.
  */
-export function buildBusinessFlowRequest(
-  labels: BusinessFlowRequestLabels,
-  vaultRoot: string | null,
-): string {
-  const scoped = vaultRoot
-    ? labels.request.replace("{vault}", vaultRoot)
-    : labels.request.replace(" ({vault})", "").replace("{vault}", "");
-  const trimmed = scoped.trim();
+export function buildBusinessFlowRequest(labels: BusinessFlowRequestLabels): string {
+  const trimmed = labels.request.trim();
   if (trimmed.length <= MAX_CHARS) return trimmed;
   // Truncating a rule mid-sentence would ship a prompt whose last instruction is
   // half-written, so the overflow is reported rather than silently cut.

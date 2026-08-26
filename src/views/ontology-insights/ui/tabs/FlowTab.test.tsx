@@ -26,9 +26,9 @@ const labels: FlowTabLabels = {
 const REQUEST = "Read only this vault and explain this product's business flow.";
 
 describe("FlowTab", () => {
-  it("says there is nothing to explain before a folder is open", () => {
+  it("says there is nothing to explain when the graph is empty", () => {
     render(
-      <FlowTab labels={labels} request={REQUEST} hasVault={false} canLaunchAgent onPrefill={vi.fn()} />,
+      <FlowTab labels={labels} request={REQUEST} hasGraph={false} hasOwnFolder={false} canLaunchAgent onPrefill={vi.fn()} />,
     );
 
     expect(screen.getByText(labels.noVaultTitle)).toBeInTheDocument();
@@ -42,12 +42,12 @@ describe("FlowTab", () => {
   it("draws the control only where an agent can actually be launched", () => {
     const onPrefill = vi.fn();
     const { rerender } = render(
-      <FlowTab labels={labels} request={REQUEST} hasVault canLaunchAgent onPrefill={onPrefill} />,
+      <FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent onPrefill={onPrefill} />,
     );
     expect(screen.getByTestId("flow-prefill")).toBeInTheDocument();
 
     rerender(
-      <FlowTab labels={labels} request={REQUEST} hasVault canLaunchAgent={false} onPrefill={onPrefill} />,
+      <FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent={false} onPrefill={onPrefill} />,
     );
     expect(
       screen.queryByTestId("flow-prefill"),
@@ -58,12 +58,12 @@ describe("FlowTab", () => {
 
   it("shows the request in both cases, because that is what a reader checks the answer against", () => {
     const { rerender } = render(
-      <FlowTab labels={labels} request={REQUEST} hasVault canLaunchAgent onPrefill={vi.fn()} />,
+      <FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent onPrefill={vi.fn()} />,
     );
     expect(screen.getByText(REQUEST)).toBeInTheDocument();
     expect(screen.getByTestId("flow-copy")).toBeInTheDocument();
 
-    rerender(<FlowTab labels={labels} request={REQUEST} hasVault canLaunchAgent={false} />);
+    rerender(<FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent={false} />);
     expect(
       screen.getByText(REQUEST),
       "the browser case is the one where copying the text is the whole point",
@@ -72,10 +72,37 @@ describe("FlowTab", () => {
 
   it("hands the exact request to the conversation, unedited", () => {
     const onPrefill = vi.fn();
-    render(<FlowTab labels={labels} request={REQUEST} hasVault canLaunchAgent onPrefill={onPrefill} />);
+    render(<FlowTab labels={labels} request={REQUEST} hasGraph hasOwnFolder canLaunchAgent onPrefill={onPrefill} />);
 
     fireEvent.click(screen.getByTestId("flow-prefill"));
 
     expect(onPrefill).toHaveBeenCalledWith(REQUEST);
+  });
+});
+
+/*
+ * The sample graph case. Refusing to draw the tab while the five sibling tabs
+ * are full of counts from that same graph reads as a broken screen, so the tab
+ * appears and only the launch waits for a folder of the person's own.
+ */
+describe("FlowTab on the built-in sample", () => {
+  it("shows the request but not the launch", () => {
+    render(
+      <FlowTab
+        labels={labels}
+        request={REQUEST}
+        hasGraph
+        hasOwnFolder={false}
+        canLaunchAgent
+        onPrefill={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(REQUEST)).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("flow-prefill"),
+      "an agent needs a folder of its own to read",
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(labels.noVaultTitle)).not.toBeInTheDocument();
   });
 });

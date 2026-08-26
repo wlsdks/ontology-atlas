@@ -1206,8 +1206,9 @@ export function OntologyInsightsPage() {
                   noVaultTitle: t("flow.noVaultTitle"),
                   noVaultBody: t("flow.noVaultBody"),
                 }}
-                request={buildBusinessFlowRequest({ request: t("flow.request") }, null)}
-                hasVault={vault.status === "loaded"}
+                request={buildBusinessFlowRequest({ request: t("flow.request") })}
+                hasGraph={totalNodes > 0}
+                hasOwnFolder={vault.status === "loaded"}
                 canLaunchAgent={isAcpBridgeAvailable()}
                 onPrefill={() => {
                   // The conversation lives beside the map, so pressing travels

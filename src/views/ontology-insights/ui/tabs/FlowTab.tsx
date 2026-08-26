@@ -51,11 +51,19 @@ export interface FlowTabProps {
   /** The exact text handed to the agent, already scoped to this folder. */
   request: string;
   /**
-   * Whether a folder is actually open. The insights route knows a vault is loaded
-   * but not where it sits on disk, so the request is written without a path
-   * rather than inventing one — a wrong path in a prompt is worse than no path.
+   * Whether there is a graph to explain at all. This is the same condition the
+   * five sibling tabs draw on, and it is deliberately **not** "the person has
+   * opened their own folder": the screen behind this tab is already full of a
+   * sample graph in that case, so refusing to draw here reads as broken.
    */
-  hasVault: boolean;
+  hasGraph: boolean;
+  /**
+   * Whether the graph is the person's own folder rather than the built-in sample.
+   * Only the launch depends on it — an agent needs a folder of its own to read —
+   * while the request stays visible either way, because reading it is how someone
+   * decides whether to open a folder in the first place.
+   */
+  hasOwnFolder: boolean;
   /**
    * Whether an agent can actually be launched here. False in a browser, which
    * cannot start a process; the tab then offers the request for copying rather
@@ -69,13 +77,14 @@ export interface FlowTabProps {
 export function FlowTab({
   labels,
   request,
-  hasVault,
+  hasGraph,
+  hasOwnFolder,
   canLaunchAgent,
   onPrefill,
 }: FlowTabProps) {
   const [copied, setCopied] = useState(false);
 
-  if (!hasVault) {
+  if (!hasGraph) {
     return (
       <section className="flex flex-col gap-3" data-testid="flow-tab">
         <InsightsSectionTitle level={2}>{labels.noVaultTitle}</InsightsSectionTitle>
@@ -84,7 +93,7 @@ export function FlowTab({
     );
   }
 
-  const pressable = canLaunchAgent && Boolean(onPrefill);
+  const pressable = canLaunchAgent && hasOwnFolder && Boolean(onPrefill);
 
   async function copyRequest() {
     try {

@@ -3192,7 +3192,7 @@ function HomePageImpl() {
      */
     if (llmBridgeAvailable && routeState.askBusinessFlow) {
       return {
-        text: buildBusinessFlowRequest({ request: businessFlowRequestText }, null),
+        text: buildBusinessFlowRequest({ request: businessFlowRequestText }),
         // Constant for a constant URL, so a re-render never overwrites a draft
         // the person has started editing.
         nonce: BUSINESS_FLOW_PREFILL_NONCE,
