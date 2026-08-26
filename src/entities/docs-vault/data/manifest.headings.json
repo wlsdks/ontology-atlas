@@ -5877,6 +5877,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-26 — SegmentedControl hover contract: unselected lift and strong, selected silent",
+      "slug": "2026-08-26-segmentedcontrol-hover-contract-unselected-lift-and-strong-selected-silent"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-26 — Architecture is additive; Git remains a primary destination",
       "slug": "2026-08-26-architecture-is-additive-git-remains-a-primary-destination"
     },

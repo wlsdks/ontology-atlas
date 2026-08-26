@@ -66,6 +66,18 @@ import { controlClass, type ControlSize } from "./control-class";
  * **never disable the group**, because that removes the only tab stop and drops
  * keyboard users back to the top of the document.
  *
+ * **Hover (2026-08-26).** An unselected segment answers the pointer with the
+ * value layer's registered pair for this shape — `hoverSurface: 'lift'`
+ * (`--color-overlay-2`) plus `hoverInk: 'strong'` (`--color-text-primary`), the
+ * same language the sibling `RowButton` list on `/architecture` already wears.
+ * Measured before this: `/ko/architecture/` had **0 of 4** visible controls
+ * answering hover, starving `tests/e2e/hover-contrast.spec.ts` below its floor
+ * of 3 compared controls. The **selected** segment deliberately stays silent:
+ * the three hover axes never emit under `active` (hover on a selection weakened
+ * its border 2.09 → 1.48 where they overlapped, ledger entry 10/11), and
+ * raising the `a16` selection tint one step is the exact tint-hover AA failure
+ * family the hover-contrast gate documents.
+ *
  * ⚠️ **The overlay-1 well only works paired with border-soft** (the premise of
  * the hierarchy seat's approval, 2026-08-15): the well surface itself measures
  * ≈1.16:1 against its surroundings and is effectively invisible, which is the
@@ -173,6 +185,8 @@ export function SegmentedControl<T extends string | number | boolean>({
               shape: variant === "well" ? "segment" : "chip",
               size,
               active: item["aria-checked"],
+              hoverInk: "strong",
+              hoverSurface: "lift",
               className: fill ? "min-w-0 flex-1" : undefined,
             })}
           >

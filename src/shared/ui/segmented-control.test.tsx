@@ -112,6 +112,30 @@ describe("SegmentedControl", () => {
     }
   });
 
+  it("호버 계약 — 선택 안 된 항목은 lift+strong 으로 답하고, 선택된 항목은 침묵한다", () => {
+    /*
+     * 2026-08-26: all three segments on /ko/architecture/ gave no hover answer
+     * at all, starving the hover-contrast gate below its floor of 3 compared
+     * controls. The values are the pair already registered in the value layer
+     * (hoverSurface lift -> overlay-2, hoverInk strong -> text-primary), and
+     * under `active` the three hover axes structurally never emit (hover on a
+     * selection measured its border weakening 2.09 -> 1.48). This case pins
+     * both halves: it turns red if the emission disappears, and also if the
+     * selected item starts speaking.
+     */
+    render(<Harness />);
+    const unselected = screen.getByRole("radio", { name: "가" });
+    const selected = screen.getByRole("radio", { name: "나" });
+    expect(selected.getAttribute("aria-checked")).toBe("true");
+    for (const cls of [
+      "hover:bg-[color:var(--color-overlay-2)]",
+      "hover:text-[color:var(--color-text-primary)]",
+    ]) {
+      expect(unselected.className, cls).toContain(cls);
+      expect(selected.className, cls).not.toContain(cls);
+    }
+  });
+
   it("boolean 값 2택도 같은 문법이다 (구 SegmentSwitch 흡수)", () => {
     const onChange = vi.fn();
     render(

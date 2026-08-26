@@ -40,6 +40,55 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-26 — SegmentedControl hover contract: unselected lift and strong, selected silent
+
+**Convened**: the `design-system` seat, as `.claude/rules/design.md` requires for
+`src/shared/ui/segmented-control.tsx` · **Trigger**: `tests/e2e/hover-contrast.spec.ts`
+failing on a route added the previous day.
+
+**Decision.** `SegmentedControl` opts every segment into the value layer's
+registered hover pair, `hoverSurface: 'lift'` (`--color-overlay-2`) and
+`hoverInk: 'strong'` (`--color-text-primary`). By those axes' own `active: false`
+guard the pair reaches only unselected segments. The selected segment takes no
+hover.
+
+**Evidence.** The new architecture route measured **0 of 4** visible controls
+answering a real pointer, and the hover-contrast instrument fell below its floor
+of three compared controls (`compared = 2` route-wide, static build, 1512x900).
+The failure was not a contrast violation: it was the guard against a route going
+green while measuring almost nothing. After the change unselected segments move
+tertiary-on-transparent to primary-on-overlay-2, `compared` reaches 4, and all 19
+audited routes pass. **Zero new tokens** — these are the 2026-08-15 hover-axis
+registrations this primitive had never wired, so the gap was wiring rather than
+value.
+
+**Recorded dissent.** The considered alternative was giving the selected segment
+a hover too, so it also counts toward the floor. Rejected on two prior
+measurements: hover on a selection weakened the selection's own legibility
+(border contrast 2.09 to 1.48), and the selected fill is the `--color-indigo-a16`
+tint family, where a one-step raise under bright ink is the documented tint-hover
+AA failure (a24 measured 4.13). Silence is the safe answer and was already the
+codified one.
+
+**Falsifier.** If a future route's only hover-capable controls are a selected
+segment plus fewer than three others, the floor becomes unreachable by design.
+That reopens this decision — it does not lower the instrument's floor.
+
+**Not widened.** The fourth inert control on that route is a row button that
+already declares the same pair; it measured silent only because the sample folder
+has one profile, so the row is permanently active and the value layer correctly
+suppresses its hover. Hand-wired segment sites elsewhere stay hover-silent and
+belong to their own adoption round.
+
+**Gates.** `segmented-control.test.tsx` pins both halves — unselected segments
+must carry both hover classes, the selected one must carry neither, so the test
+turns red if emission is dropped or if the selected item starts speaking.
+`tests/e2e/hover-contrast.spec.ts` measures the rendered result and its own
+self-probe stays live.
+
+**Status**: standing
+
+
 ## 2026-08-26 — Architecture is additive; Git remains a primary destination
 
 **Convened**: solo PO pass · **Trigger**: the owner inspected the delivered
