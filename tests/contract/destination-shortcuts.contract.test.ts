@@ -5,6 +5,7 @@ import {
   DESTINATION_HREF,
   DESTINATION_IDS,
   DESTINATION_KEY,
+  MOBILE_DESTINATION_IDS,
   NAV_LEADER_KEY,
   NAV_LEADER_WINDOW_MS,
 } from "@/shared/config/destinations";
@@ -129,6 +130,16 @@ describe("목적지 이동 단축키 — 표가 정본이다", () => {
 });
 
 describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
+  it("모바일 셸에서도 현재 아키텍처 목적지가 사라지지 않는다", () => {
+    expect(MOBILE_DESTINATION_IDS).toContain("architecture");
+    expect(new Set(MOBILE_DESTINATION_IDS).size).toBe(MOBILE_DESTINATION_IDS.length);
+    for (const id of MOBILE_DESTINATION_IDS) expect(DESTINATION_IDS).toContain(id);
+
+    const bottomTabs = read("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
+    expect(bottomTabs).toContain("MOBILE_DESTINATION_IDS.map");
+    expect(bottomTabs).toContain("DESTINATION_HREF[id]");
+  });
+
   it("레일이 주소를 손으로 다시 적지 않는다", () => {
     const rail = read("src/widgets/app-nav-rail/ui/AppNavRail.tsx");
     expect(rail, "레일이 표를 import 하지 않는다").toContain("DESTINATION_HREF");
@@ -186,36 +197,35 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   });
 
   /**
-   * **Seven is the ceiling** (owner decision, 2026-08-21).
+   * **Seven is the ceiling** (owner correction, 2026-08-26).
    *
    * At the minimum window (`minHeight: 720`) the rail stacks logo + destination tiles
-   * + the utility layer vertically. Measured at the workbench seat: an eighth tile
-   * fits with **8px** to spare above the utility layer. Above 2400px wide the UI scale
-   * rises to 1.1, so eight require **761px** and exceed that minimum window by 41px —
-   * which is why scroll handling lands in the rail together with this ceiling.
+   * + the utility layer vertically. The earlier seven/eight-item measurements prove
+   * why scroll handling is required under zoom. Architecture is additive, so seven
+   * remain primary; an eighth requires another measured navigation decision.
    *
-   * What this check blocks is an eighth arriving quietly. Needing eight means
-   * **naming what to remove first** — the path the owner chose (the alternative,
-   * raising the minimum window height to 780, was rejected).
+   * What this check blocks is an eighth arriving quietly. It does not permit a new
+   * destination to evict an existing one as an implementation shortcut.
    */
-  it("목적지는 여섯을 넘지 않는다 — 일곱째는 무엇을 뺄지 먼저 정한다", () => {
+  it("목적지는 일곱을 넘지 않는다 — 여덟째는 별도 결정을 요구한다", () => {
     expect(
       DESTINATION_IDS.length,
       `레일 목적지가 ${DESTINATION_IDS.length}개다 — ` +
-        `일곱째를 넣으려면 무엇을 뺄지 먼저 정하고 이 상한을 같이 고쳐라`,
-    ).toBeLessThanOrEqual(6);
+        `여덟째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
+    ).toBeLessThanOrEqual(7);
   });
 
   it("상한이 헐겁지 않다 — 여유를 무료로 두지 않는다", () => {
     /*
      * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Seven exist today, so the floor is six.
+     * next. Seven exist today, and the owner explicitly required both Architecture
+     * and Git to remain.
      */
     expect(
       DESTINATION_IDS.length,
-      "목적지가 줄었다 — 위 상한도 같이 내려라",
-    ).toBe(6);
+      "목적지가 줄었다 — Architecture 추가가 기존 목적지를 제거하면 안 된다",
+    ).toBe(7);
   });
 
   it("레일이 넘칠 때 스크롤할 수 있다 — 상한만으로는 배율을 못 막는다", () => {

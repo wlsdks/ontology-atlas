@@ -133,6 +133,8 @@ ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17: autonomous ingest 
        --threshold N --skip-imports --json    ${COLORS.dim}review filter · imports skip · machine output${COLORS.reset}
   ontology-atlas analyze [rootPath]           Walk a repo, propose ontology node candidates (side effect 0)
        --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
+  ontology-atlas architecture [rootPath]      Compare reviewed architecture intent with current source imports
+       --profile slug --max-files N --json    ${COLORS.dim}roles · rules · violations · agent plan contract${COLORS.reset}
   ontology-atlas infer-imports [rootPath] TS/JS/Python import graph → depends_on edge candidates (side effect 0)
        --apply --full --threshold N --max-files N ${COLORS.dim}apply disabled · review/full delivery · default 5000 max${COLORS.reset}
   ontology-atlas preflight [vault]            ${COLORS.green}Commit preflight${COLORS.reset}: staged files → vault nodes → blast-radius summary

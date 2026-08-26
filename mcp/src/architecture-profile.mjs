@@ -1,0 +1,319 @@
+const PROFILE_CONTRACT = 'architecture-profile/v1';
+const BRIEF_CONTRACT = 'architectureBrief:v1';
+const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const ROLE_ID = /^[a-z][a-z0-9-]*$/;
+const MATCHED_FILE_SAMPLE_LIMIT = 20;
+const VIOLATION_SAMPLE_LIMIT = 50;
+
+function nonBlank(value, name) {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error(`${name} must be a non-empty string.`);
+  }
+  return value.trim();
+}
+
+function stringArray(value, name, { allowEmpty = false } = {}) {
+  if (!Array.isArray(value) || (!allowEmpty && value.length === 0)) {
+    throw new Error(`${name} must be ${allowEmpty ? 'an' : 'a non-empty'} array of strings.`);
+  }
+  const rows = value.map((item, index) => nonBlank(item, `${name}[${index}]`));
+  if (new Set(rows).size !== rows.length) throw new Error(`${name} must not contain duplicates.`);
+  return rows;
+}
+
+function normalizePath(value) {
+  return String(value || '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
+}
+
+function matchesPathPattern(path, pattern) {
+  const candidate = normalizePath(path);
+  const normalized = normalizePath(pattern);
+  if (!normalized) return false;
+  let source = '^';
+  for (let index = 0; index < normalized.length; index += 1) {
+    const char = normalized[index];
+    if (char === '*' && normalized[index + 1] === '*') {
+      if (normalized[index + 2] === '/') {
+        source += '(?:.*/)?';
+        index += 2;
+      } else {
+        source += '.*';
+        index += 1;
+      }
+      continue;
+    }
+    if (char === '*') {
+      source += '[^/]*';
+      continue;
+    }
+    if (char === '?') {
+      source += '[^/]';
+      continue;
+    }
+    source += /[\\^$+?.()|{}[\]]/.test(char) ? `\\${char}` : char;
+  }
+  return new RegExp(`${source}$`).test(candidate);
+}
+
+function parsePatterns(value) {
+  return stringArray(value, 'patterns').map((row, index) => {
+    const separator = row.indexOf(':');
+    if (separator <= 0 || separator === row.length - 1) {
+      throw new Error(`patterns[${index}] must use axis:name.`);
+    }
+    return {
+      axis: nonBlank(row.slice(0, separator), `patterns[${index}].axis`),
+      name: nonBlank(row.slice(separator + 1), `patterns[${index}].name`),
+    };
+  });
+}
+
+export function parseArchitectureProfile(frontmatter) {
+  if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
+    throw new Error('architecture profile frontmatter must be an object.');
+  }
+  if (frontmatter.architecture_schema !== PROFILE_CONTRACT) {
+    throw new Error(`architecture_schema must be ${PROFILE_CONTRACT}.`);
+  }
+  const uid = nonBlank(frontmatter.profile_uid, 'profile_uid');
+  const projectUid = nonBlank(frontmatter.project_uid, 'project_uid');
+  if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
+  if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
+
+  const roleEntries = Object.entries(frontmatter)
+    .filter(([key]) => key.startsWith('role_') && key !== 'role_order')
+    .map(([key, value]) => {
+      const id = key.slice('role_'.length);
+      if (!ROLE_ID.test(id)) throw new Error(`Invalid architecture role id: ${id}.`);
+      return [id, stringArray(value, key)];
+    });
+  if (roleEntries.length < 2) throw new Error('architecture profile needs at least two roles.');
+  const rolePaths = new Map(roleEntries);
+  const roleOrder = frontmatter.role_order === undefined
+    ? [...rolePaths.keys()].sort()
+    : stringArray(frontmatter.role_order, 'role_order');
+  if (roleOrder.length !== rolePaths.size || roleOrder.some((id) => !rolePaths.has(id))) {
+    throw new Error('role_order must name every role exactly once.');
+  }
+
+  const dependencyPolicy = frontmatter.dependency_policy === undefined
+    ? 'explicit'
+    : nonBlank(frontmatter.dependency_policy, 'dependency_policy');
+  if (!['explicit', 'lower-only'].includes(dependencyPolicy)) {
+    throw new Error('dependency_policy must be explicit or lower-only.');
+  }
+  const allows = new Map();
+  for (const roleId of roleOrder) {
+    const key = `allow_${roleId}`;
+    if (!Object.hasOwn(frontmatter, key)) continue;
+    const targets = stringArray(frontmatter[key], key, { allowEmpty: true });
+    const unknown = targets.find((target) => !rolePaths.has(target));
+    if (unknown) throw new Error(`${key} references unknown role: ${unknown}.`);
+    allows.set(roleId, targets);
+  }
+
+  return {
+    contract: PROFILE_CONTRACT,
+    uid,
+    slug: nonBlank(frontmatter.profile_slug, 'profile_slug'),
+    projectUid,
+    title: nonBlank(frontmatter.title, 'title'),
+    patterns: parsePatterns(frontmatter.patterns),
+    scopePaths: stringArray(frontmatter.scope_paths, 'scope_paths'),
+    excludePaths: frontmatter.exclude_paths === undefined
+      ? []
+      : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
+    roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id) })),
+    dependencyPolicy,
+    allows,
+    evidence: stringArray(frontmatter.evidence, 'evidence'),
+  };
+}
+
+export function findArchitectureProfiles(docs) {
+  const profiles = [];
+  const seen = new Set();
+  for (const doc of Array.isArray(docs) ? docs : []) {
+    if (doc?.frontmatter?.architecture_schema !== PROFILE_CONTRACT) continue;
+    const profile = parseArchitectureProfile(doc.frontmatter);
+    if (seen.has(profile.slug)) {
+      throw new Error(`Duplicate architecture profile slug: ${profile.slug}.`);
+    }
+    seen.add(profile.slug);
+    profiles.push({ ...profile, documentSlug: doc.slug ?? null });
+  }
+  return profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en'));
+}
+
+function matchingRoles(profile, path) {
+  return profile.roles
+    .filter((role) => role.paths.some((pattern) => matchesPathPattern(path, pattern)))
+    .map((role) => role.id);
+}
+
+function inScope(profile, path) {
+  return profile.scopePaths.some((pattern) => matchesPathPattern(path, pattern))
+    && !profile.excludePaths.some((pattern) => matchesPathPattern(path, pattern));
+}
+
+function excludedFromScope(profile, path) {
+  return profile.excludePaths.some((pattern) => matchesPathPattern(path, pattern));
+}
+
+function ruleFor(profile, fromRole, toRole) {
+  if (fromRole === toRole) return { allowed: true, rule: 'same-role' };
+  if (profile.dependencyPolicy === 'lower-only') {
+    const fromIndex = profile.roles.findIndex((role) => role.id === fromRole);
+    const toIndex = profile.roles.findIndex((role) => role.id === toRole);
+    return { allowed: fromIndex < toIndex, rule: 'lower-only' };
+  }
+  if (!profile.allows.has(fromRole)) return { allowed: null, rule: `allow-${fromRole}` };
+  return {
+    allowed: profile.allows.get(fromRole).includes(toRole),
+    rule: `allow-${fromRole}`,
+  };
+}
+
+export function evaluateArchitectureConformance(profile, importResult) {
+  const edges = Array.isArray(importResult?.edges) ? importResult.edges : [];
+  const filesByRole = new Map(profile.roles.map((role) => [role.id, new Set()]));
+  const observed = new Map();
+  const violations = [];
+  let unmappedEdges = 0;
+  let unruledEdges = 0;
+
+  for (const edge of edges) {
+    // Architecture rules govern dependencies *originating* in the selected
+    // scope. Excluded sources (tests, fixtures, generated code) do not become
+    // violations merely because their target is production code. A production
+    // source pointing outside the model remains an explicit unknown below.
+    if (!inScope(profile, edge.from)) continue;
+    if (excludedFromScope(profile, edge.to)) continue;
+    const fromRoles = matchingRoles(profile, edge.from);
+    const toRoles = matchingRoles(profile, edge.to);
+    if (fromRoles.length !== 1 || toRoles.length !== 1) {
+      unmappedEdges += 1;
+      continue;
+    }
+    const [fromRole] = fromRoles;
+    const [toRole] = toRoles;
+    filesByRole.get(fromRole).add(normalizePath(edge.from));
+    filesByRole.get(toRole).add(normalizePath(edge.to));
+    const key = `${fromRole}\u0000${toRole}`;
+    const row = observed.get(key) ?? {
+      fromRole,
+      toRole,
+      count: 0,
+      evidence: [],
+    };
+    row.count += 1;
+    if (row.evidence.length < 3) {
+      row.evidence.push({ from: normalizePath(edge.from), to: normalizePath(edge.to), kind: edge.kind ?? 'unknown' });
+    }
+    observed.set(key, row);
+
+    const decision = ruleFor(profile, fromRole, toRole);
+    if (decision.allowed === null) {
+      unruledEdges += 1;
+    } else if (!decision.allowed) {
+      violations.push({
+        fromRole,
+        toRole,
+        from: normalizePath(edge.from),
+        to: normalizePath(edge.to),
+        kind: edge.kind ?? 'unknown',
+        rule: decision.rule,
+      });
+    }
+  }
+
+  const roles = profile.roles.map((role) => {
+    const matched = [...filesByRole.get(role.id)].sort();
+    return {
+      id: role.id,
+      paths: role.paths,
+      matchedFileCount: matched.length,
+      matchedFiles: matched.slice(0, MATCHED_FILE_SAMPLE_LIMIT),
+      matchedFilesLimited: matched.length > MATCHED_FILE_SAMPLE_LIMIT,
+    };
+  });
+  const emptyRoles = roles.filter((role) => role.matchedFiles.length === 0).map((role) => role.id);
+  const coverageIncomplete = importResult?.coverage?.allDetectedLanguagesSupported !== true;
+  const hasUnknown = coverageIncomplete || unmappedEdges > 0 || unruledEdges > 0 || emptyRoles.length > 0;
+  const status = violations.length > 0 ? 'violated' : hasUnknown ? 'unknown' : 'conforms';
+
+  return {
+    contract: 'architectureConformance:v1',
+    status,
+    roles,
+    observedRoleEdges: [...observed.values()].sort((a, b) =>
+      `${a.fromRole}:${a.toRole}`.localeCompare(`${b.fromRole}:${b.toRole}`, 'en'),
+    ),
+    violationCount: violations.length,
+    violations: violations.slice(0, VIOLATION_SAMPLE_LIMIT),
+    violationsLimited: violations.length > VIOLATION_SAMPLE_LIMIT,
+    unknown: {
+      coverageIncomplete,
+      unmappedEdges,
+      unruledEdges,
+      emptyRoles,
+    },
+    source: {
+      rootPath: importResult?.rootPath ?? null,
+      filesScanned: Number(importResult?.filesScanned ?? 0),
+      supportedLanguages: Array.isArray(importResult?.coverage?.supportedLanguages)
+        ? importResult.coverage.supportedLanguages
+        : [],
+    },
+  };
+}
+
+export function buildArchitectureBrief(profile, importResult) {
+  const conformance = evaluateArchitectureConformance(profile, importResult);
+  const nextActions = [];
+  if (conformance.violations.length > 0) {
+    nextActions.push({ id: 'inspect_violations', count: conformance.violations.length });
+  }
+  if (conformance.status === 'unknown') {
+    nextActions.push({ id: 'close_measurement_gaps', unknown: conformance.unknown });
+  }
+  nextActions.push({ id: 'plan_within_architecture', profileSlug: profile.slug });
+  return {
+    contract: BRIEF_CONTRACT,
+    sideEffect: 0,
+    profile: {
+      uid: profile.uid,
+      slug: profile.slug,
+      projectUid: profile.projectUid,
+      title: profile.title,
+      patterns: profile.patterns,
+      scopePaths: profile.scopePaths,
+      excludePaths: profile.excludePaths,
+      roles: profile.roles.map((role) => ({
+        id: role.id,
+        paths: role.paths,
+        allowedDependencies: profile.dependencyPolicy === 'lower-only'
+          ? profile.roles
+              .slice(profile.roles.findIndex((row) => row.id === role.id) + 1)
+              .map((row) => row.id)
+          : profile.allows.get(role.id) ?? null,
+      })),
+      dependencyPolicy: profile.dependencyPolicy,
+      evidence: profile.evidence,
+    },
+    conformance,
+    agentPlanContract: {
+      contract: 'architectureChangePlan:v1',
+      requiredFields: [
+        'touchedRoles',
+        'plannedPaths',
+        'expectedNewDependencies',
+        'crossedBoundaries',
+        'preservedInterfaces',
+        'verificationCommands',
+        'unknowns',
+      ],
+    },
+    nextActions,
+  };
+}

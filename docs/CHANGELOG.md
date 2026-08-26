@@ -7,6 +7,35 @@
 
 ---
 
+## 2026-08-26 · Architecture becomes a reviewed, agent-executable contract
+
+- Added a separate `/architecture` Living Blueprint. It does not reuse the
+  Ontology Map or add an ontology kind: `architecture-profile/v1` records
+  reviewed pattern axes, scopes, implementation roles, path mappings, dependency
+  rules, and evidence as a non-kind Markdown document.
+- Added MCP `inspect_architecture` and CLI `architecture`. Both compare current
+  supported imports with the reviewed profile, return the same
+  `architectureBrief:v1`, and fail closed as `unknown` when coverage, mappings,
+  rules, or roles are incomplete. The first dogfood run found 18 real
+  `shared → entities` boundary violations and 75 unmapped edges; none were hidden
+  or auto-fixed.
+- The Plan stage now copies `architectureChangePlan:v1` plus a runnable CLI
+  fallback only when the installed app can verify the project source, vault, and
+  Atlas CLI absolute paths. Other surfaces state that the fallback is unavailable
+  instead of fabricating one.
+- Architecture is additive in the primary rail: Git remains present with its
+  uncommitted-change badge, `G G` shortcut, guided tour, and `/git` route. Mobile
+  keeps Architecture visible in the bottom navigation so the selected destination
+  never disappears.
+- Installed-app and responsive dogfood caught two live defects: the center column
+  had no xl scroll owner, and changing to the taller Plan stage at the previous
+  mobile scroll end put the copy action behind the fixed tab bar. Both are fixed;
+  390×844 now measures 44×44 stage targets, 0px distance from the new scroll end,
+  19.4px CTA clearance, and a successful center hit-test.
+- Added `pnpm test:architecture`, changed-path routing, cross-surface contracts,
+  mobile E2E, and RED/GREEN gate probes for the profile contract and interactive
+  profile-row ink.
+
 ## 2026-08-25 · Atlas narrows its identity to the codebase
 
 - The public promise now says what the product helps a person understand: what

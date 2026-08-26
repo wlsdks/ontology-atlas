@@ -17,6 +17,8 @@ export const KNOWN_VAULT_KINDS = [
   'vault-readme',
 ];
 
+const ARCHITECTURE_PROFILE_SCHEMA = 'architecture-profile/v1';
+
 const GRAPH_ARRAY_KEYS = [
   'domains',
   'capabilities',
@@ -68,14 +70,17 @@ export function validateVaultDocument(raw) {
 
   const rawKind = frontmatter.kind;
   const hasKindKey = 'kind' in frontmatter;
+  const isArchitectureProfile = frontmatter.architecture_schema === ARCHITECTURE_PROFILE_SCHEMA;
 
   if (!hasKindKey) {
-    issues.push({
-      code: 'missing-kind',
-      severity: 'warning',
-      message:
-        'frontmatter has no `kind:`: a file needs one to become a graph node.',
-    });
+    if (!isArchitectureProfile) {
+      issues.push({
+        code: 'missing-kind',
+        severity: 'warning',
+        message:
+          'frontmatter has no `kind:`: a file needs one to become a graph node.',
+      });
+    }
   } else if (typeof rawKind !== 'string' || rawKind.trim() === '') {
     issues.push({
       code: 'empty-kind',

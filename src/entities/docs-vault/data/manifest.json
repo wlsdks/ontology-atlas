@@ -11,7 +11,7 @@
       "headings": [],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
       "wordCount": 2809,
-      "updatedAt": "2026-08-25",
+      "updatedAt": "2026-08-26",
       "linksOut": []
     },
     {
@@ -69,8 +69,8 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 3792,
-      "updatedAt": "2026-08-23",
+      "wordCount": 3955,
+      "updatedAt": "2026-08-26",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -425,8 +425,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The public ",
-      "wordCount": 78781,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Added a sep",
+      "wordCount": 79044,
       "updatedAt": "2026-08-26",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -466,8 +466,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 181313,
-      "updatedAt": "2026-08-25",
+      "wordCount": 182797,
+      "updatedAt": "2026-08-26",
       "linksOut": [
         "slug"
       ]
@@ -560,8 +560,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 11883,
-      "updatedAt": "2026-08-25",
+      "wordCount": 11936,
+      "updatedAt": "2026-08-26",
       "linksOut": []
     },
     {
@@ -571,9 +571,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-22 (re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility redirect to /topology?index=expanded, /ontology/edit and /ontology/studio route to the contextual writer within th",
-      "wordCount": 22685,
-      "updatedAt": "2026-08-25",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-26 (added the separate Architecture contract/workbench, source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility red",
+      "wordCount": 23050,
+      "updatedAt": "2026-08-26",
       "linksOut": [
         "slug",
         "project:slug",
@@ -888,6 +888,73 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/architecture/ontology-atlas-web",
+      "path": "docs/ontology/architecture/ontology-atlas-web.md",
+      "title": "Atlas Web Workbench",
+      "tags": [],
+      "frontmatter": {
+        "architecture_schema": "architecture-profile/v1",
+        "profile_uid": "e9f5fe88-3711-4b3c-9f77-3b6f809db82c",
+        "profile_slug": "atlas-web",
+        "project_uid": "8c48b61f-1f75-448e-87a5-6ea2a7b02cf8",
+        "title": "Atlas Web Workbench",
+        "created_by": "human",
+        "patterns": [
+          "source-organization:feature-sliced-design"
+        ],
+        "scope_paths": [
+          "app/**",
+          "src/**"
+        ],
+        "exclude_paths": [
+          "**/*.test.ts",
+          "**/*.test.tsx",
+          "**/*.test.mjs",
+          "**/*.spec.ts"
+        ],
+        "role_order": [
+          "routing",
+          "app",
+          "views",
+          "widgets",
+          "features",
+          "entities",
+          "shared"
+        ],
+        "role_routing": [
+          "app/**"
+        ],
+        "role_app": [
+          "src/app/**"
+        ],
+        "role_views": [
+          "src/views/**"
+        ],
+        "role_widgets": [
+          "src/widgets/**"
+        ],
+        "role_features": [
+          "src/features/**"
+        ],
+        "role_entities": [
+          "src/entities/**"
+        ],
+        "role_shared": [
+          "src/shared/**"
+        ],
+        "dependency_policy": "lower-only",
+        "evidence": [
+          "docs/ARCHITECTURE.md#fsd-layers",
+          "eslint.config.mjs"
+        ]
+      },
+      "headings": [],
+      "excerpt": "This profile records the reviewed source-organization contract for the Next.js workbench. It is not an ontology node. The Ontology Map continues to describe what the codebase builds and why; this profile describes which implementation roles may depend on which lower roles. The root app/ directory owns locale-prefixed r",
+      "wordCount": 94,
+      "updatedAt": "2026-08-26",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/acp-runtime",
       "path": "docs/ontology/capabilities/acp-runtime.md",
       "title": "In-App Coding Agent Runtime (ACP)",
@@ -965,6 +1032,32 @@
       "excerpt": "The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types. Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings,",
       "wordCount": 260,
       "updatedAt": "2026-08-24",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/architecture-guided-development",
+      "path": "docs/ontology/capabilities/architecture-guided-development.md",
+      "title": "Architecture-Guided Development",
+      "tags": [],
+      "frontmatter": {
+        "uid": "82f9af2b-f9b0-4c52-9d63-3cda3ad4b4a8",
+        "slug": "capabilities/architecture-guided-development",
+        "kind": "capability",
+        "title": "Architecture-Guided Development",
+        "display_en": "Architecture-Guided Development",
+        "display_ko": "아키텍처 기반 개발",
+        "domain": "domains/codebase-architecture",
+        "elements": [
+          "elements/architecture-profile-contract",
+          "elements/architecture-workbench"
+        ],
+        "path": "mcp/src/architecture-profile.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The ability for a developer and coding agent to start from a reviewed architecture profile, understand the intended implementation roles, produce an explicit change plan, and verify the resulting source dependencies against the same contract. Unlike the MCP transport, visual design handoff, or ontology map, this capabi",
+      "wordCount": 207,
+      "updatedAt": "2026-08-26",
       "linksOut": []
     },
     {
@@ -1641,6 +1734,33 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/domains/codebase-architecture",
+      "path": "docs/ontology/domains/codebase-architecture.md",
+      "title": "Codebase Architecture",
+      "tags": [],
+      "frontmatter": {
+        "uid": "f088ee9c-cde9-4119-8955-4bb91e452538",
+        "slug": "domains/codebase-architecture",
+        "kind": "domain",
+        "title": "Codebase Architecture",
+        "display_en": "Codebase Architecture",
+        "display_ko": "코드베이스 아키텍처",
+        "capabilities": [
+          "capabilities/architecture-guided-development"
+        ],
+        "created_by": "agent:unknown",
+        "elements": [
+          "elements/architecture-profile-contract",
+          "elements/architecture-workbench"
+        ]
+      },
+      "headings": [],
+      "excerpt": "The responsibility area that declares reviewed implementation roles and dependency rules for a codebase, then compares observed source imports with that intent. It stays separate from the ontology map: architecture profiles describe how implementation is organized, while ontology nodes preserve what the product means a",
+      "wordCount": 131,
+      "updatedAt": "2026-08-26",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/domains/design-system",
       "path": "docs/ontology/domains/design-system.md",
       "title": "Design System & Enforcement",
@@ -1915,12 +2035,13 @@
         "display_ko": "앱 내비게이션 레일",
         "domain": "domains/onboarding-and-shell",
         "path": "src/widgets/app-nav-rail",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "display_en": "App Navigation Rail"
       },
       "headings": [],
-      "excerpt": "App navigation rail widget.",
-      "wordCount": 4,
-      "updatedAt": "2026-08-23",
+      "excerpt": "The persistent desktop workbench navigation rail. It exposes seven primary destinations in one stable order: Map, Architecture, Docs, Insights, Projects, Agents, and Git. Architecture is additive; Git retains its active-route state, uncommitted-change badge, G G shortcut, and guided entry. src/widgets/app-nav-rail: rai",
+      "wordCount": 142,
+      "updatedAt": "2026-08-26",
       "linksOut": []
     },
     {
@@ -1942,6 +2063,50 @@
       "excerpt": "App settings menu widget.",
       "wordCount": 4,
       "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/architecture-profile-contract",
+      "path": "docs/ontology/elements/architecture-profile-contract.md",
+      "title": "Architecture Profile Contract",
+      "tags": [],
+      "frontmatter": {
+        "uid": "cfe54c34-45b6-45b0-9755-b260b8ecf606",
+        "slug": "elements/architecture-profile-contract",
+        "kind": "element",
+        "title": "Architecture Profile Contract",
+        "display_en": "Architecture Profile Contract",
+        "display_ko": "아키텍처 프로필 계약",
+        "domain": "domains/codebase-architecture",
+        "path": "mcp/src/architecture-profile.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The machine-readable architecture-profile/v1 contract and conformance evaluator that keeps declared pattern axes, scoped roles, dependency rules, observed imports, violations, and unknowns in one fail-closed result. It differs from the workbench element because it produces typed facts for MCP and CLI consumers rather t",
+      "wordCount": 118,
+      "updatedAt": "2026-08-26",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/architecture-workbench",
+      "path": "docs/ontology/elements/architecture-workbench.md",
+      "title": "Architecture Workbench",
+      "tags": [],
+      "frontmatter": {
+        "uid": "39f620c5-b115-41a7-be34-e544c7587074",
+        "slug": "elements/architecture-workbench",
+        "kind": "element",
+        "title": "Architecture Workbench",
+        "display_en": "Architecture Workbench",
+        "display_ko": "아키텍처 워크벤치",
+        "domain": "domains/codebase-architecture",
+        "path": "src/views/architecture",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The human-readable Living Blueprint surface at /architecture: it keeps implementation roles primary, lets a developer move through Understand, Plan, and Verify, and produces a copyable agent handoff grounded in the reviewed profile. It differs from the profile-contract element because it judges and communicates typed a",
+      "wordCount": 142,
+      "updatedAt": "2026-08-26",
       "linksOut": []
     },
     {
@@ -2866,6 +3031,7 @@
         "elements": [],
         "contains": [
           "domains/agent-integration",
+          "domains/codebase-architecture",
           "domains/design-system",
           "domains/graph-modeling",
           "domains/local-vault-management",
@@ -2878,8 +3044,8 @@
       },
       "headings": [],
       "excerpt": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. It links product domains and capabilities to implementation evidence, dependencies, and impact in a computable Markdown graph that people and AI agents maintain together. README.m",
-      "wordCount": 713,
-      "updatedAt": "2026-08-25",
+      "wordCount": 742,
+      "updatedAt": "2026-08-26",
       "linksOut": []
     },
     {
@@ -3507,6 +3673,52 @@
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/onboarding-and-shell]**",
         "linkText": "domains/onboarding-and-shell"
+      }
+    ],
+    "ontology/elements/architecture-profile-contract": [
+      {
+        "fromSlug": "ontology/capabilities/architecture-guided-development",
+        "context": "frontmatter · **[elements/architecture-profile-contract]**",
+        "linkText": "elements/architecture-profile-contract"
+      },
+      {
+        "fromSlug": "ontology/domains/codebase-architecture",
+        "context": "frontmatter · **[elements/architecture-profile-contract]**",
+        "linkText": "elements/architecture-profile-contract"
+      }
+    ],
+    "ontology/elements/architecture-workbench": [
+      {
+        "fromSlug": "ontology/capabilities/architecture-guided-development",
+        "context": "frontmatter · **[elements/architecture-workbench]**",
+        "linkText": "elements/architecture-workbench"
+      },
+      {
+        "fromSlug": "ontology/domains/codebase-architecture",
+        "context": "frontmatter · **[elements/architecture-workbench]**",
+        "linkText": "elements/architecture-workbench"
+      }
+    ],
+    "ontology/domains/codebase-architecture": [
+      {
+        "fromSlug": "ontology/capabilities/architecture-guided-development",
+        "context": "frontmatter · **[domains/codebase-architecture]**",
+        "linkText": "domains/codebase-architecture"
+      },
+      {
+        "fromSlug": "ontology/elements/architecture-profile-contract",
+        "context": "frontmatter · **[domains/codebase-architecture]**",
+        "linkText": "domains/codebase-architecture"
+      },
+      {
+        "fromSlug": "ontology/elements/architecture-workbench",
+        "context": "frontmatter · **[domains/codebase-architecture]**",
+        "linkText": "domains/codebase-architecture"
+      },
+      {
+        "fromSlug": "ontology/ontology-atlas",
+        "context": "frontmatter · **[domains/codebase-architecture]**",
+        "linkText": "domains/codebase-architecture"
       }
     ],
     "ontology/elements/project-detail": [
@@ -4176,6 +4388,13 @@
         "fromSlug": "ontology/domains/agent-integration",
         "context": "frontmatter · **[capabilities/vault-agent]**",
         "linkText": "capabilities/vault-agent"
+      }
+    ],
+    "ontology/capabilities/architecture-guided-development": [
+      {
+        "fromSlug": "ontology/domains/codebase-architecture",
+        "context": "frontmatter · **[capabilities/architecture-guided-development]**",
+        "linkText": "capabilities/architecture-guided-development"
       }
     ],
     "ontology/capabilities/control-primitives": [
@@ -4893,6 +5112,20 @@
         "type": "dir",
         "children": [
           {
+            "name": "architecture",
+            "path": "ontology/architecture",
+            "type": "dir",
+            "children": [
+              {
+                "name": "ontology-atlas-web",
+                "path": "ontology/architecture/ontology-atlas-web",
+                "type": "doc",
+                "slug": "ontology/architecture/ontology-atlas-web",
+                "title": "Atlas Web Workbench"
+              }
+            ]
+          },
+          {
             "name": "capabilities",
             "path": "ontology/capabilities",
             "type": "dir",
@@ -4917,6 +5150,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/app-update",
                 "title": "App Auto-Update"
+              },
+              {
+                "name": "architecture-guided-development",
+                "path": "ontology/capabilities/architecture-guided-development",
+                "type": "doc",
+                "slug": "ontology/capabilities/architecture-guided-development",
+                "title": "Architecture-Guided Development"
               },
               {
                 "name": "cli-developer-entry",
@@ -5108,6 +5348,13 @@
                 "title": "AI Agent Integration"
               },
               {
+                "name": "codebase-architecture",
+                "path": "ontology/domains/codebase-architecture",
+                "type": "doc",
+                "slug": "ontology/domains/codebase-architecture",
+                "title": "Codebase Architecture"
+              },
+              {
                 "name": "design-system",
                 "path": "ontology/domains/design-system",
                 "type": "doc",
@@ -5183,6 +5430,20 @@
                 "type": "doc",
                 "slug": "ontology/elements/app-settings-menu",
                 "title": "App Settings Menu"
+              },
+              {
+                "name": "architecture-profile-contract",
+                "path": "ontology/elements/architecture-profile-contract",
+                "type": "doc",
+                "slug": "ontology/elements/architecture-profile-contract",
+                "title": "Architecture Profile Contract"
+              },
+              {
+                "name": "architecture-workbench",
+                "path": "ontology/elements/architecture-workbench",
+                "type": "doc",
+                "slug": "ontology/elements/architecture-workbench",
+                "title": "Architecture Workbench"
               },
               {
                 "name": "atlas-git-panel",

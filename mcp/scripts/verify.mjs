@@ -172,6 +172,7 @@ export const EXPECTED_READ_TOOLS = [
   'compile_ontology',
   'query_ontology',
   'validate_vault',
+  'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
   'index_project',

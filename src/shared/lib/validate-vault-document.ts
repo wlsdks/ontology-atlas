@@ -124,14 +124,18 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
 
   const rawKind = frontmatter.kind;
   const hasKindKey = "kind" in frontmatter;
+  const isArchitectureProfile =
+    frontmatter.architecture_schema === "architecture-profile/v1";
 
   if (!hasKindKey) {
-    issues.push({
-      code: "missing-kind",
-      severity: "warning",
-      message:
-        "frontmatter 에 `kind:` 가 없습니다 — graph 노드가 되려면 kind 가 필요합니다.",
-    });
+    if (!isArchitectureProfile) {
+      issues.push({
+        code: "missing-kind",
+        severity: "warning",
+        message:
+          "frontmatter 에 `kind:` 가 없습니다 — graph 노드가 되려면 kind 가 필요합니다.",
+      });
+    }
   } else if (typeof rawKind !== "string" || rawKind.trim() === "") {
     issues.push({
       code: "empty-kind",
@@ -283,10 +287,12 @@ export function validateVaultDocFrontmatter(
   const issues: VaultDocumentIssue[] = [];
   const hasKindKey = "kind" in frontmatter;
   const rawKind = frontmatter.kind;
+  const isArchitectureProfile =
+    frontmatter.architecture_schema === "architecture-profile/v1";
   const hasOntologySignal = ONTOLOGY_SIGNAL_KEYS.some(
     (key) => key in frontmatter,
   );
-  const isOntologyIntent = hasKindKey || hasOntologySignal;
+  const isOntologyIntent = hasKindKey || (hasOntologySignal && !isArchitectureProfile);
 
   if (!isOntologyIntent) {
     // Docs-only: nothing here claims to be an ontology node, so staying quiet is correct.

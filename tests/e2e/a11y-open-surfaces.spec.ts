@@ -147,7 +147,7 @@ const MIN_RULES_PASSED = 15;
  * `MeaningEditorPanel.test.tsx`, the creation swap by `CreateNodeForm.test.tsx`, and
  * the installed-app verification opens the real surfaces.
  */
-const APPEARING_SURFACES_IN_SOURCE = 29;
+const APPEARING_SURFACES_IN_SOURCE = 30;
 
 interface Opener {
   readonly name: string;
@@ -163,6 +163,8 @@ interface Opener {
     readonly mimeType: string;
     readonly body: string;
   };
+  /** Built-in sample needed before this route exposes its conditional surface. */
+  readonly dogfood?: boolean;
 }
 
 const CONSTRUCTION_PLAN_DIGEST = `sha256:${"a".repeat(64)}`;
@@ -261,6 +263,20 @@ const OPENERS: readonly Opener[] = [
       body: CONSTRUCTION_REVIEW_FILE,
     },
   },
+  {
+    name: "아키텍처 계획",
+    route: "/ko/architecture/",
+    trigger: "architecture-mode-plan",
+    surface: '[data-architecture-stage="plan"]',
+    dogfood: true,
+  },
+  {
+    name: "아키텍처 검증",
+    route: "/ko/architecture/",
+    trigger: "architecture-mode-verify",
+    surface: '[data-architecture-stage="verify"]',
+    dogfood: true,
+  },
 ];
 
 /**
@@ -274,6 +290,11 @@ const BASELINE: Readonly<Record<string, number>> = {
 };
 
 async function openAndAudit(page: Page, o: Opener) {
+  if (o.dogfood) {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("demo:sample-source:v1", "dogfood");
+    });
+  }
   await page.goto(`${o.route}?guides=off`, { waitUntil: "domcontentloaded" });
   // The map's screen is only settled once the physics simulation converges.
   await page.waitForTimeout(2500);
@@ -371,7 +392,7 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   ).toEqual([]);
 });
 
-test("측정 목록이 분모를 잃지 않는다 — 6/22 라고 말할 수 있어야 한다", async () => {
+test("측정 목록이 분모를 잃지 않는다 — 8/30 이라고 말할 수 있어야 한다", async () => {
   expect(OPENERS.length, "열 표면 목록이 비면 위 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
   expect(
     new Set(OPENERS.map((o) => o.route)).size,

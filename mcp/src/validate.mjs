@@ -72,6 +72,8 @@ export const KNOWN_VAULT_KINDS = [
   'vault-readme',
 ];
 
+const ARCHITECTURE_PROFILE_SCHEMA = 'architecture-profile/v1';
+
 const GRAPH_ARRAY_KEYS = [
   'domains',
   'capabilities',
@@ -119,14 +121,17 @@ export function validateVaultDocument(raw) {
 
   const rawKind = frontmatter.kind;
   const hasKindKey = 'kind' in frontmatter;
+  const isArchitectureProfile = frontmatter.architecture_schema === ARCHITECTURE_PROFILE_SCHEMA;
 
   if (!hasKindKey) {
-    issues.push({
-      code: 'missing-kind',
-      severity: 'warning',
-      message:
-        'frontmatter 에 `kind:` 가 없습니다: graph 노드가 되려면 kind 가 필요합니다.',
-    });
+    if (!isArchitectureProfile) {
+      issues.push({
+        code: 'missing-kind',
+        severity: 'warning',
+        message:
+          'frontmatter 에 `kind:` 가 없습니다: graph 노드가 되려면 kind 가 필요합니다.',
+      });
+    }
   } else if (typeof rawKind !== 'string' || rawKind.trim() === '') {
     issues.push({
       code: 'empty-kind',

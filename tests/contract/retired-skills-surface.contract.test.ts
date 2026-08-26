@@ -21,6 +21,7 @@ describe("retired Skills product surface", () => {
   it("keeps the primary destination set exact and Skills-free", () => {
     expect(DESTINATION_IDS).toEqual([
       "map",
+      "architecture",
       "docs",
       "insights",
       "projects",
@@ -30,6 +31,8 @@ describe("retired Skills product surface", () => {
     expect(resolveActiveNavDestination("/skills")).toBeNull();
     expect(resolveActiveNavDestination("/ko/skills/")).toBeNull();
     expect(resolveActiveNavDestination("/agents")).toBe("agents");
+    expect(resolveActiveNavDestination("/architecture")).toBe("architecture");
+    expect(resolveActiveNavDestination("/git")).toBe("git");
   });
 
   it("removes the route and all three product implementation layers", () => {
