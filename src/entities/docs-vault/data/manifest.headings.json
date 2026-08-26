@@ -2881,6 +2881,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-26 · The Architecture tab draws a shape, and its empty state does something",
+      "slug": "2026-08-26-the-architecture-tab-draws-a-shape-and-its-empty-state-does-something"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-26 · Architecture becomes a reviewed, agent-executable contract",
       "slug": "2026-08-26-architecture-becomes-a-reviewed-agent-executable-contract"
     },
