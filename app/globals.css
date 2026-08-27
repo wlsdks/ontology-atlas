@@ -1186,9 +1186,17 @@
     }
   }
 
+  /* One stagger token, one easing family. The step index arrives as a unitless
+     custom property, so no raw time value ever rides an inline style. 26ms keeps
+     the deepest 7-role cascade inside the 400ms confirmed-response window
+     (6 × 26ms + 240ms = 396ms), which the bare 100ms stagger measurably broke. */
+  :root {
+    --architecture-flow-stagger: 26ms;
+  }
+
   .architecture-flow-run {
-    animation: architectureFlowRun var(--motion-settle) ease-out both;
-    animation-delay: var(--architecture-flow-delay, 0ms);
+    animation: architectureFlowRun var(--motion-settle) var(--motion-ease) both;
+    animation-delay: calc(var(--architecture-flow-stagger) * var(--architecture-flow-step, 0));
   }
 
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.

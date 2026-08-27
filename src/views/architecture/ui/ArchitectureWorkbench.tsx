@@ -47,13 +47,35 @@ export function ArchitectureWorkbench({
   const layoutScrollRef = useRef<HTMLDivElement>(null);
   const stagePanelRef = useRef<HTMLElement>(null);
   const reanchorScrollEndRef = useRef(false);
+  const modeChangedRef = useRef(false);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
     [profiles, selectedSlug],
   );
 
   useLayoutEffect(() => {
-    if (!reanchorScrollEndRef.current) return;
+    /*
+     * Below xl the stage panel stacks under the blueprint, so a mode press up in the header can
+     * change content the person cannot see (measured 2026-08-27: at 1040 and 390 the panel top
+     * sat at 701/902 in shorter viewports and nothing visibly happened). When the press was not
+     * the scroll-end case below, bring the newly entered stage into view. `modeChangedRef` keeps
+     * the initial mount from scrolling a fresh page.
+     */
+    if (!reanchorScrollEndRef.current) {
+      if (
+        modeChangedRef.current &&
+        typeof window !== 'undefined' &&
+        !window.matchMedia('(min-width: 1280px)').matches
+      ) {
+        const active = stagePanelRef.current?.querySelector<HTMLElement>(
+          `[data-architecture-stage="${mode}"]`,
+        );
+        if (typeof active?.scrollIntoView === 'function') {
+          active.scrollIntoView({ block: 'nearest' });
+        }
+      }
+      return;
+    }
     const scroller = layoutScrollRef.current;
     const panel = stagePanelRef.current;
     if (!scroller || !panel) {
@@ -223,6 +245,7 @@ export function ArchitectureWorkbench({
       scroller && maxScrollTop > 0 && maxScrollTop - scroller.scrollTop <= 1,
     );
     if (nextMode !== mode) setCopyState('idle');
+    modeChangedRef.current = true;
     setMode(nextMode);
   }
 
@@ -370,7 +393,7 @@ export function ArchitectureWorkbench({
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('understandTitle')}
             </h2>
-            <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('understandBody')}
             </p>
             {/* Every number here is derived from the reviewed profile and the vault join — the
@@ -406,7 +429,7 @@ export function ArchitectureWorkbench({
                 </li>
               ))}
             </ul>
-            <p className="mt-5 text-body text-[color:var(--color-text-tertiary)]">
+            <p className="mt-5 break-keep text-body text-[color:var(--color-text-tertiary)]">
               {t('sourceCheckBody')}
             </p>
           </Surface>
@@ -416,7 +439,7 @@ export function ArchitectureWorkbench({
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('planTitle')}
             </h2>
-            <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('planBody')}
             </p>
             <pre
@@ -456,7 +479,7 @@ export function ArchitectureWorkbench({
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('verifyTitle')}
             </h2>
-            <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('verifyBody')}
             </p>
             <p className="mt-4 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-3 py-3 text-body text-[color:var(--color-amber-source-a90)]">

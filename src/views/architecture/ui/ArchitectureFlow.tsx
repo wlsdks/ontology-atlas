@@ -26,7 +26,7 @@ import {
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
 import { useSwapHeight } from '@/shared/lib/use-presence';
-import { Chip, RowButton } from '@/shared/ui';
+import { Chip, RowButton, StaggeredFadeIn } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import type { RoleSourceModule } from '../model/source-modules';
 
@@ -104,10 +104,19 @@ interface BandProps {
   isLast: boolean;
   policy: 'explicit' | 'lower-only';
   focus: string | null;
-  focusRow: number | null;
-  deepestReachRow: number | null;
+  /** The flow run's origin row and deepest reach — set only by a deliberate act (click or
+   *  keyboard focus), never by hover, so scanning the pointer down the page stays quiet. */
+  runRow: number | null;
+  runDeepestRow: number | null;
+  /** Bumped per deliberate trigger; keys the dots so a re-run replays instead of resuming. */
+  runSeq: number;
   onFocus: (id: string | null) => void;
   onFocusToggle: (id: string) => void;
+  onRun: (id: string) => void;
+  onRunClear: () => void;
+  /** Injected by the entrance cascade (`StaggeredFadeIn` clones its children). */
+  className?: string;
+  style?: React.CSSProperties;
   reachesOf: (id: string) => Set<string>;
   inFocus: (id: string) => boolean;
   roleLabel: (id: string) => string;
@@ -134,10 +143,13 @@ function ArchitectureBand({
   isLast,
   policy,
   focus,
-  focusRow,
-  deepestReachRow,
+  runRow,
+  runDeepestRow,
+  runSeq,
   onFocus,
   onFocusToggle,
+  onRun,
+  onRunClear,
   reachesOf,
   inFocus,
   roleLabel,
@@ -150,18 +162,31 @@ function ArchitectureBand({
   showFewerLabel,
   sinkLabel,
   reachInlineLabel,
+  className,
+  style,
 }: BandProps) {
   const expandKey = rung.map((id) => (expandedRoles.has(id) ? '1' : '0')).join('');
   const { hostRef: swapHostRef, capture: captureSwapHeight } = useSwapHeight(expandKey);
 
   return (
-    <li
+    /*
+     * The outer li is the entrance cascade's target: StaggeredFadeIn injects inline
+     * opacity/transform onto it, which must not fight the focus dim — so the dim and the border
+     * live one element down, on the band box itself.
+     */
+    <li className={className} style={style}>
+    <div
       className={`relative rounded-card border bg-[color:var(--color-elevated)] transition-[opacity,border-color] duration-[var(--motion-fast)] ${
         rung.some((id) => focus === id)
-          ? 'border-[color:var(--color-indigo-a30)]'
+          ? 'border-[color:var(--color-indigo-a60)]'
           : 'border-[color:var(--color-border-soft)]'
       } ${rung.every((id) => !inFocus(id)) ? 'opacity-40' : 'opacity-100'}`}
-      onMouseEnter={() => onFocus(rung[0] ?? null)}
+      onPointerEnter={(event) => {
+        /* Hover is a mouse concept. On touch, Chromium synthesizes mouseenter right before the
+           tap's click, which turned the first tap into an instant focus-then-toggle-off — the
+           screen's only interaction produced nothing (measured 2026-08-27). */
+        if (event.pointerType === 'mouse') onFocus(rung[0] ?? null);
+      }}
     >
       {/*
         The ordered spine, drawn where the reference draws it: one downward connector in each gap
@@ -172,7 +197,7 @@ function ArchitectureBand({
       {!isLast ? (
         <span
           aria-hidden
-          className="pointer-events-none absolute left-1/2 top-full h-4 w-4 -translate-x-1/2"
+          className="pointer-events-none absolute left-1/2 top-[calc(100%+1px)] h-4 w-4 -translate-x-1/2"
           data-testid={depth === 0 ? 'architecture-flow-inward' : undefined}
         >
           <span className="absolute inset-y-0 left-1/2 w-[1.5px] -translate-x-1/2 bg-[color:var(--color-indigo-a60)]" />
@@ -184,16 +209,16 @@ function ArchitectureBand({
           >
             <path d="M0,0 L4,6 L8,0 Z" fill="var(--color-indigo-a60)" />
           </svg>
-          {focusRow !== null &&
-          deepestReachRow !== null &&
-          depth >= focusRow &&
-          depth < deepestReachRow ? (
+          {runRow !== null &&
+          runDeepestRow !== null &&
+          depth >= runRow &&
+          depth < runDeepestRow ? (
             <span
-              key={`${focus}-${depth}`}
+              key={`${runSeq}-${depth}`}
               className="architecture-flow-run absolute -ml-[3px] left-1/2 top-0 size-1.5 rounded-full bg-[color:var(--color-indigo-brand)]"
               style={
                 {
-                  '--architecture-flow-delay': `${(depth - focusRow) * 100}ms`,
+                  '--architecture-flow-step': depth - runRow,
                 } as React.CSSProperties
               }
               data-testid={`architecture-flow-run-${depth}`}
@@ -217,9 +242,19 @@ function ArchitectureBand({
                 active={focus === id}
                 hoverInk="strong"
                 hoverSurface="lift"
-                onMouseEnter={() => onFocus(id)}
-                onFocus={() => onFocus(id)}
-                onBlur={() => onFocus(null)}
+                onPointerEnter={(event) => {
+                  if (event.pointerType === 'mouse') onFocus(id);
+                }}
+                onFocus={() => {
+                  onFocus(id);
+                  /* The run is a deliberate act's answer — keyboard focus and click land here;
+                     a pointer merely passing over a band does not. */
+                  onRun(id);
+                }}
+                onBlur={() => {
+                  onFocus(null);
+                  onRunClear();
+                }}
                 onClick={() => onFocusToggle(id)}
                 data-testid={`architecture-role-${id}`}
                 data-focus-state={
@@ -233,43 +268,58 @@ function ArchitectureBand({
                 }
                 className="min-w-0 flex-1 justify-start px-2 py-1.5 text-left"
               >
-                <span className="flex min-w-0 flex-1 items-center gap-2.5">
-                  {(() => {
-                    const RoleIcon = ROLE_ICONS[id] ?? Layers;
-                    return (
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]">
-                        <RoleIcon size={ICON_SIZE.sm} aria-hidden />
-                      </span>
-                    );
-                  })()}
-                  <span className="shrink-0 font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                    {depth + 1}
-                  </span>
-                  <span
-                    className={
-                      reachesOf(id).size === 0
-                        ? 'shrink-0 text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]'
-                        : 'shrink-0 text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]'
-                    }
-                  >
-                    {roleLabel(id)}
-                  </span>
-                  <span
-                    className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]"
-                    title={(pathsOf.get(id) ?? []).join('  ·  ')}
-                  >
-                    {(pathsOf.get(id) ?? []).join('  ·  ')}
-                  </span>
-                  {policy === 'explicit' ? (
-                    <span
-                      className="ml-2 shrink-0 text-caption text-[color:var(--color-text-tertiary)]"
-                      data-testid={`architecture-reach-${id}`}
-                    >
-                      {reachesOf(id).size === 0
-                        ? sinkLabel
-                        : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
+                {/*
+                  One row on md and up; two rows below it. Measured at 390px: a single row left
+                  the reach span painting 37px past the band and the glob caption truncated to
+                  zero width — a fact deleted without notice. Below md, identity takes row one
+                  and the facts take row two at full width.
+                */}
+                <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-center md:gap-2.5">
+                  <span className="flex min-w-0 items-center gap-2.5">
+                    {(() => {
+                      const RoleIcon = ROLE_ICONS[id] ?? Layers;
+                      return (
+                        <span className="flex size-8 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]">
+                          <RoleIcon size={ICON_SIZE.sm} aria-hidden />
+                        </span>
+                      );
+                    })()}
+                    <span className="shrink-0 font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                      {depth + 1}
                     </span>
-                  ) : null}
+                    <span
+                      className={
+                        reachesOf(id).size === 0
+                          ? 'truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-indigo-text-soft)]'
+                          : 'truncate text-body-lg font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]'
+                      }
+                    >
+                      {roleLabel(id)}
+                    </span>
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-center md:gap-2.5">
+                    <span
+                      className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)] md:min-w-[10ch]"
+                      title={(pathsOf.get(id) ?? []).join('  ·  ')}
+                    >
+                      {(pathsOf.get(id) ?? []).join('  ·  ')}
+                    </span>
+                    {policy === 'explicit' ? (
+                      <span
+                        className="min-w-0 truncate text-caption text-[color:var(--color-text-tertiary)] md:shrink-0"
+                        title={
+                          reachesOf(id).size === 0
+                            ? sinkLabel
+                            : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))
+                        }
+                        data-testid={`architecture-reach-${id}`}
+                      >
+                        {reachesOf(id).size === 0
+                          ? sinkLabel
+                          : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
+                      </span>
+                    ) : null}
+                  </span>
                 </span>
               </RowButton>
             </div>
@@ -290,7 +340,9 @@ function ArchitectureBand({
                    * without a pointer. `RowButton` is the registered primitive; a hand-written
                    * control would raise a ratchet that has stood at zero.
                    */
-                  onMouseEnter={() => onFocus(id)}
+                  onPointerEnter={(event) => {
+                  if (event.pointerType === 'mouse') onFocus(id);
+                }}
                   onFocus={() => onFocus(id)}
                   onBlur={() => onFocus(null)}
                   onClick={() => onFocusToggle(id)}
@@ -417,7 +469,18 @@ function ArchitectureBand({
                       {roleLabel(id)}
                     </p>
                   ) : null}
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5">
+                  {/*
+                    Revealed cards rise in sequence — the expand is one event, so the height swap
+                    and the first card start together and the rest follow inside the same beat.
+                  */}
+                  <StaggeredFadeIn
+                    key={`${id}-${isExpanded ? 'open' : 'closed'}`}
+                    as="div"
+                    className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
+                    stagger={24}
+                    duration={180}
+                    translateY={6}
+                  >
                     {visible.map((module) => (
                       <div
                         key={module.path}
@@ -441,7 +504,7 @@ function ArchitectureBand({
                         </span>
                       </div>
                     ))}
-                  </div>
+                  </StaggeredFadeIn>
                 </div>
               );
             })}
@@ -449,6 +512,7 @@ function ArchitectureBand({
         </div>
       </div>
       )}
+    </div>
     </li>
   );
 }
@@ -495,6 +559,12 @@ export function ArchitectureFlow({
 }) {
   const layout = useMemo(() => buildArchitectureLayout(profile), [profile]);
   const [focus, setFocus] = useState<string | null>(null);
+  /*
+   * The flow run's trigger is separate from hover focus on purpose (measured 2026-08-27: bound to
+   * hover, reading down the page fired the cascade three times in 276ms). Only a deliberate act —
+   * click or keyboard focus — starts a run; `runSeq` keys the dots so a repeat replays cleanly.
+   */
+  const [run, setRun] = useState<{ origin: string | null; seq: number }>({ origin: null, seq: 0 });
   const [expandedRoles, setExpandedRoles] = useState<ReadonlySet<string>>(new Set());
 
   const pathsOf = useMemo(
@@ -522,16 +592,16 @@ export function ArchitectureFlow({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rungs is derived from layout
   }, [layout]);
   /*
-   * The flow run: focusing a layer sends one staggered pulse down every gap between it and its
-   * deepest reach — the dependency direction seen as motion, on request, never as an ambient loop.
+   * The flow run: a deliberate act on a layer sends one staggered pulse down every gap between it
+   * and its deepest reach — dependency direction seen as motion, on request, never an ambient loop.
    */
-  const focusRow = focus === null ? null : rowIndexOf.get(focus) ?? null;
-  const deepestReachRow =
-    focus === null || focusRow === null
+  const runRow = run.origin === null ? null : rowIndexOf.get(run.origin) ?? null;
+  const runDeepestRow =
+    run.origin === null || runRow === null
       ? null
-      : [...reaches(focus)].reduce(
+      : [...reaches(run.origin)].reduce(
           (deepest, id) => Math.max(deepest, rowIndexOf.get(id) ?? -1),
-          focusRow,
+          runRow,
         );
 
   return (
@@ -544,14 +614,24 @@ export function ArchitectureFlow({
         {sourceUnavailableBody !== null ? (
           /* Before the bands, so a reader learns why they are bare before wondering. */
           <p className="mb-2" data-testid="architecture-source-unavailable">
-            <span className="block rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-3 text-caption text-[color:var(--color-text-quaternary)]">
+            <span className="block break-keep rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-3 text-caption text-[color:var(--color-text-quaternary)]">
               {sourceUnavailableBody}
             </span>
           </p>
         ) : null}
-        <ol
+        {/*
+          The entrance cascade: bands rise in dependency order on mount and on every profile
+          switch (the wrapper is keyed by the profile). The system's one stagger primitive owns
+          the pattern — reduced motion shows everything immediately through its motion-reduce
+          overrides.
+        */}
+        <StaggeredFadeIn
+          key={profile.slug}
+          as="ol"
           className="relative m-0 flex list-none flex-col gap-4 p-0"
-          data-testid="architecture-matrix"
+          stagger={45}
+          duration={240}
+          translateY={10}
         >
           {rungs.map((rung, depth) => (
             <ArchitectureBand
@@ -561,10 +641,13 @@ export function ArchitectureFlow({
               isLast={depth === rungs.length - 1}
               policy={layout.policy}
               focus={focus}
-              focusRow={focusRow}
-              deepestReachRow={deepestReachRow}
+              runRow={runRow}
+              runDeepestRow={runDeepestRow}
+              runSeq={run.seq}
               onFocus={setFocus}
               onFocusToggle={(id) => setFocus((current) => (current === id ? null : id))}
+              onRun={(id) => setRun((current) => ({ origin: id, seq: current.seq + 1 }))}
+              onRunClear={() => setRun((current) => ({ origin: null, seq: current.seq }))}
               reachesOf={reaches}
               inFocus={inFocus}
               roleLabel={roleLabel}
@@ -586,7 +669,7 @@ export function ArchitectureFlow({
               reachInlineLabel={reachInlineLabel}
             />
           ))}
-        </ol>
+        </StaggeredFadeIn>
 
         {/*
           One mark is left on the stage, so one sentence explains it. The old three-part legend
