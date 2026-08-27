@@ -25,7 +25,7 @@ function normalizePath(value) {
   return String(value || '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
 }
 
-function matchesPathPattern(path, pattern) {
+export function matchesPathPattern(path, pattern) {
   const candidate = normalizePath(path);
   const normalized = normalizePath(pattern);
   if (!normalized) return false;

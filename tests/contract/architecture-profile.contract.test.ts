@@ -4,14 +4,17 @@ import {
   AMBIGUOUS_PROFILE_FRONTMATTER,
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
+  PATH_MATCH_CASES,
 } from '../fixtures/architecture-profile-cases.mjs';
 import {
   parseArchitectureProfile as parseWebProfile,
   deriveArchitectureProfiles as deriveWebProfiles,
+  matchesArchitecturePath as matchesWebPath,
 } from '@/entities/architecture-profile';
 import {
   parseArchitectureProfile as parseMcpProfile,
   findArchitectureProfiles as findMcpProfiles,
+  matchesPathPattern as matchesMcpPath,
 } from '../../mcp/src/architecture-profile.mjs';
 
 describe('architecture-profile/v1 cross-surface contract', () => {
@@ -67,4 +70,17 @@ describe('architecture-profile/v1 cross-surface contract', () => {
     expect(call).toThrow(/architecture\/atlas-web/);
     expect(call).toThrow(/architecture\/other/);
   });
+
+  /*
+   * One glob dialect. The web occupant join (role bands on /architecture) and the MCP conformance
+   * scan must place the same path in the same role; a divergence would let the screen show a
+   * concept inside a role that an agent's brief says it is outside of.
+   */
+  it.each(PATH_MATCH_CASES.map((c) => [c.path, c.pattern, c.matches] as const))(
+    'path %s vs pattern %s matches identically in web and MCP (%s)',
+    (path, pattern, matches) => {
+      expect(matchesWebPath(path, pattern)).toBe(matches);
+      expect(matchesMcpPath(path, pattern)).toBe(matches);
+    },
+  );
 });

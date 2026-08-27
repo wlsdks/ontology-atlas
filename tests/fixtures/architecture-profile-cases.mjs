@@ -78,3 +78,23 @@ export const HEXAGONAL_FORBIDDEN_EDGE = Object.freeze({
   to: 'src/payments/adapters/postgres.ts',
   kind: 'static',
 });
+
+/**
+ * Path-pattern semantics shared by the web occupant join and the MCP conformance scan.
+ * One dialect: a profile must place a path identically in the app and in an agent's brief.
+ */
+export const PATH_MATCH_CASES = Object.freeze([
+  { path: 'src/views/home/ui/HomePage.tsx', pattern: 'src/views/**', matches: true },
+  { path: 'src/views', pattern: 'src/views/**', matches: false },
+  { path: 'src/views/home', pattern: 'src/*/home', matches: true },
+  { path: 'src/views/home', pattern: 'src/*', matches: false },
+  { path: 'src/views/home', pattern: 'src/*/*', matches: true },
+  { path: 'services/checkout/domain/order.ts', pattern: 'services/*/domain/**', matches: true },
+  { path: 'services/checkout/nested/domain/order.ts', pattern: 'services/*/domain/**', matches: false },
+  { path: 'src/shared/lib/date.ts', pattern: '**/*.test.ts', matches: false },
+  { path: 'src/shared/lib/date.test.ts', pattern: '**/*.test.ts', matches: true },
+  { path: './src/entities/project/', pattern: 'src/entities/**', matches: true },
+  { path: 'src\\entities\\project', pattern: 'src/entities/**', matches: true },
+  { path: 'app/[locale]/topology/page.tsx', pattern: 'app/**', matches: true },
+  { path: 'src/views/home', pattern: '', matches: false },
+]);
