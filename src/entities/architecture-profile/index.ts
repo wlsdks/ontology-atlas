@@ -9,8 +9,4 @@ export {
 export {
   buildArchitectureLayout,
 } from './model/architecture-layout';
-export {
-  deriveRoleOccupants,
-  matchesArchitecturePath,
-  type ArchitectureOccupant,
-} from './model/architecture-occupants';
+export { matchesArchitecturePath } from './model/architecture-occupants';

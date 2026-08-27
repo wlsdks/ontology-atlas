@@ -10,9 +10,9 @@ import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
   type ArchitectureHandoffContext,
-  type ArchitectureOccupant,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
+import type { RoleSourceModule } from '../model/source-modules';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
@@ -27,12 +27,15 @@ type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 export function ArchitectureWorkbench({
   profiles,
   handoffContexts = {},
-  occupantsByProfile = {},
+  sourceModulesByProfile = {},
+  sourceListingCapable = false,
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
-  /** Per profile slug, the role-glob × vault-`path` join the page derived. */
-  occupantsByProfile?: Readonly<Record<string, Record<string, ArchitectureOccupant[]>>>;
+  /** Per profile slug, the read-only source-directory walk the page performed (installed app). */
+  sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
+  /** Whether this surface can list a source folder at all — false in a browser, by nature. */
+  sourceListingCapable?: boolean;
 }) {
   const t = useTranslations('architecture');
   const draftHandoff = useDraftHandoffRoute();
@@ -191,11 +194,11 @@ export function ArchitectureWorkbench({
   }
 
   const handoff = buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null);
-  const selectedOccupants = occupantsByProfile[selected.slug] ?? {};
-  /* Unique placements: one concept matching two roles is one concept, not two. */
-  const placedConceptCount = new Set(
-    Object.values(selectedOccupants).flat().map((occupant) => occupant.slug),
-  ).size;
+  const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
+  /* Unique placements: one module two globs both reach is one module, not two. */
+  const moduleTotal = selectedModules
+    ? new Set(Object.values(selectedModules).flat().map((module) => module.path)).size
+    : null;
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
   const roleLabel = (id: string) =>
@@ -345,15 +348,15 @@ export function ArchitectureWorkbench({
               {/* The policy sentence is the section description above; do not print it twice. */}
               <ArchitectureFlow
                 profile={selected}
-                occupants={occupantsByProfile[selected.slug] ?? {}}
+                modules={selectedModules}
                 roleLabel={roleLabel}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
                 directionLabel={t('ladderDirection')}
-                occupantCountLabel={(count) => t('occupantCount', { count })}
+                moduleCountLabel={(count) => t('moduleCount', { count })}
                 moreLabel={(count) => t('moreOccupants', { count })}
                 showFewerLabel={t('fewerOccupants')}
-                noOccupantsBody={t('noOccupantsBody')}
+                sourceUnavailableBody={sourceListingCapable ? null : t('sourceListingUnavailable')}
                 reachInlineLabel={(targets) => t('reachInline', { targets })}
               />
             </div>
@@ -376,7 +379,7 @@ export function ArchitectureWorkbench({
             <dl className="mt-5 grid grid-cols-2 gap-2" data-testid="architecture-stats">
               {([
                 [selected.roles.length, t('statRoles')],
-                [placedConceptCount, t('statPlaced')],
+                ...(moduleTotal !== null ? ([[moduleTotal, t('statModules')]] as const) : []),
                 [selected.patterns.length, t('patterns')],
                 [selected.evidence.length, t('statEvidence')],
               ] as const).map(([value, label]) => (

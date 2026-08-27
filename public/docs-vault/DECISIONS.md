@@ -40,6 +40,45 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-27 — Architecture bands hold source modules, not ontology concepts
+
+**Convened**: owner correction during the same day's occupied-bands build ·
+**Trigger**: reviewing the shipped bands, the owner drew the line the product
+had blurred: "the ontology is the meaning-based map; architecture is literally
+about the project source — it has no relation to the [ontology] nodes." The
+bands were filled by joining role globs to ontology concept `path` frontmatter,
+which made the blueprint show only what the meaning layer happened to record
+and made concepts read as if they were source.
+
+**Decision**: the bands now list **source modules** — a read-only directory
+walk of the bound project source (installed app), one directory level per glob
+segment, `exclude_paths` filtered with the MCP's own glob dialect. No file is
+opened and no import is read, so the standing falsifier (the profile must not
+become a second source of observed imports) holds. A browser cannot list a
+source folder; the stage states that impossibility once instead of rendering
+bands that look empty. The ontology-concept join (`deriveRoleOccupants`) was
+removed the same day it shipped; `matchesArchitecturePath` survives as the
+shared glob dialect, still contract-tested against the MCP. Expanding a band
+now animates its height through the in-house `useSwapHeight`, and the band
+markup moved into one `ArchitectureBand` component (less parent complexity, a
+per-band host for the motion).
+
+**Recorded dissent (the removed join's case)**: the concept join was the only
+occupant source a browser could compute, and it tied roles to reviewed meaning
+(the same-day PO pass scored its ontology value 4). It lost because it answered
+"which meaning mentions this layer" while the surface's question is "what does
+this layer contain" — and a listing that silently shows only vault-recorded
+concepts under-reports the source by construction.
+
+**Falsifier**: if real use shows people needing "which concepts live in this
+layer" on this screen (repeated map round-trips from a band), bring the meaning
+layer back as an explicit secondary mark on module cards — as a decision, not a
+quiet revert. Revisit at the conformance-record council, where role-matched
+files from `inspect_architecture` may subsume the walk entirely.
+
+**Status**: standing. **Accountable**: owner (model correction); this
+session's builder for the applied slice.
+
 ## 2026-08-27 — Role bands carry their occupants: the blueprint joins role globs to vault paths
 
 **Convened**: solo PO pass (22/24, no fatal zeros) + `/design-directions` with

@@ -453,12 +453,16 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   Pattern names are declared summaries; Atlas does not infer Clean, Hexagonal,
   MVP, or Feature-Sliced Design from folder names.
 - Each role is a boxed layer container listing its occupants as cards: the
-  ontology's `capability` and `element` concepts whose `path` frontmatter falls
-  inside that role's globs, each card carrying the kind glyph, canonical title,
-  and implementation path, with a per-band derived count, a bounded one-row
-  preview, and a "+N more" expansion. The join reads reviewed vault facts only —
-  it never scans source imports. A vault whose concepts record no matching paths
-  keeps the constant-pitch ladder plus one sentence saying so.
+  **source modules** the role's globs actually contain, from a read-only
+  directory walk of the bound project source in the installed app (name,
+  repo-relative path, directory/file mark), with a per-band derived count, a
+  bounded one-row preview, and a "+N more" expansion that animates the band's
+  height. The walk lists directories only — it never opens a file or reads an
+  import; the profile's `exclude_paths` filter with the same glob dialect the
+  MCP scans with. A browser cannot read a source folder, and the stage says so
+  once instead of pretending empty bands. The ontology stays on the map: bands
+  never show ontology concepts (the ontology is the meaning layer, architecture
+  is the source layer).
 - `inspect_architecture` and CLI `architecture` scan supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Unsupported languages, unmapped edges, unruled edges, and empty roles fail

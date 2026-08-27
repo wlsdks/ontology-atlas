@@ -4,9 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   deriveArchitectureProfiles,
-  deriveRoleOccupants,
   type ArchitectureHandoffContext,
-  type ArchitectureOccupant,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
 import { useDataSourceMode } from '@/features/data-source-mode';
@@ -18,6 +16,11 @@ import {
   listTauriVaultEntries,
   readTauriVaultText,
 } from '@/shared/lib/tauri-vault-fs';
+import {
+  deriveRoleSourceModules,
+  type RoleSourceModule,
+  type SourceDirEntry,
+} from '../model/source-modules';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
@@ -54,22 +57,21 @@ export function ArchitecturePage() {
     [localVault.manifest, mode, staticManifest.docs],
   );
   const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
-  const occupantsByProfile = useMemo(() => {
-    const out: Record<string, Record<string, ArchitectureOccupant[]>> = {};
-    for (const profile of profiles) out[profile.slug] = deriveRoleOccupants(profile, docs);
-    return out;
-  }, [docs, profiles]);
   const profileKey = profiles.map((profile) => profile.slug).join('\0');
   const [loadedHandoffContexts, setLoadedHandoffContexts] = useState<{
     handle: FileSystemDirectoryHandle | null;
     profileKey: string;
     contexts: Record<string, ArchitectureHandoffContext>;
-  }>({ handle: null, profileKey: '', contexts: EMPTY_HANDOFF_CONTEXTS });
-  const handoffContexts = mode === 'local'
+    modules: Record<string, Record<string, RoleSourceModule[]>>;
+  }>({ handle: null, profileKey: '', contexts: EMPTY_HANDOFF_CONTEXTS, modules: {} });
+  const loaded = mode === 'local'
     && loadedHandoffContexts.handle === localVault.handle
-    && loadedHandoffContexts.profileKey === profileKey
-    ? loadedHandoffContexts.contexts
-    : EMPTY_HANDOFF_CONTEXTS;
+    && loadedHandoffContexts.profileKey === profileKey;
+  const handoffContexts = loaded ? loadedHandoffContexts.contexts : EMPTY_HANDOFF_CONTEXTS;
+  const sourceModulesByProfile = loaded ? loadedHandoffContexts.modules : undefined;
+  /* A browser cannot list a source folder; only the installed app's bridge can. */
+  const sourceListingCapable =
+    mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +84,7 @@ export function ArchitecturePage() {
     const store = createVaultFileProjectSourceStore(handle);
     void (async () => {
       const next: Record<string, ArchitectureHandoffContext> = {};
+      const nextModules: Record<string, Record<string, RoleSourceModule[]>> = {};
       for (const profile of profiles) {
         const projectSlug = projectSlugForProfile(profile, docs);
         if (!projectSlug) continue;
@@ -93,8 +96,27 @@ export function ArchitecturePage() {
           vaultRoot,
           cliEntry: await verifiedAtlasCliEntry(sourceRoot),
         };
+        /*
+         * A read-only directory walk fills the blueprint's bands with the source modules each
+         * role glob actually contains. Listing only — no file is opened, no import is read;
+         * conformance stays with the MCP and CLI.
+         */
+        const listDir = async (relativePath: string): Promise<SourceDirEntry[] | null> => {
+          try {
+            const entries = await listTauriVaultEntries(sourceRoot, relativePath);
+            return entries.map((entry) => ({
+              name: entry.name,
+              kind: entry.kind === 'directory' ? 'dir' : 'file',
+            }));
+          } catch {
+            return null;
+          }
+        };
+        nextModules[profile.slug] = await deriveRoleSourceModules(profile, listDir);
       }
-      if (!cancelled) setLoadedHandoffContexts({ handle, profileKey, contexts: next });
+      if (!cancelled) {
+        setLoadedHandoffContexts({ handle, profileKey, contexts: next, modules: nextModules });
+      }
     })();
 
     return () => { cancelled = true; };
@@ -104,7 +126,8 @@ export function ArchitecturePage() {
     <ArchitectureWorkbench
       profiles={profiles}
       handoffContexts={handoffContexts}
-      occupantsByProfile={occupantsByProfile}
+      sourceModulesByProfile={sourceModulesByProfile}
+      sourceListingCapable={sourceListingCapable}
     />
   );
 }

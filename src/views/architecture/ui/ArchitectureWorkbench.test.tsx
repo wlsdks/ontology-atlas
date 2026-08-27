@@ -254,46 +254,50 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /*
-   * ⚠️ **A band carries its occupants, and an empty vault does not echo "0" seven times.** The
-   * occupant join is the reviewed profile's globs against the reviewed concepts' `path` — never a
-   * source scan. When nothing matches anywhere, the ladder keeps its proven constant pitch and one
-   * sentence below the panel says so once; per-band counts appear only when the join found
-   * anything, so a count of 0 is information about *that* band, not a repeated apology.
+   * ⚠️ **A band carries source modules, not ontology concepts** (owner correction, 2026-08-27:
+   * the ontology is the meaning map; architecture is about what the project source contains).
+   * The modules come from a read-only directory walk of the bound project source — never an
+   * import scan — so they exist only where a listing exists. Per-band counts appear only then,
+   * and a count of 0 is information about *that* band, not a repeated apology.
    */
-  it('fills a band with the concepts whose path its globs place there', () => {
+  it('fills a band with the source modules its globs contain, when a listing exists', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
         <ArchitectureWorkbench
           profiles={[profile]}
-          occupantsByProfile={{
+          sourceListingCapable
+          sourceModulesByProfile={{
             [profile.slug]: {
               views: [
-                { uid: 'u1', slug: 'elements/home', title: 'Home', kind: 'element', path: 'src/views/home' },
-                { uid: 'u2', slug: 'elements/docs', title: 'Docs View', kind: 'element', path: 'src/views/docs-vault' },
+                { name: 'home', path: 'src/views/home', kind: 'dir' },
+                { name: 'docs-vault', path: 'src/views/docs-vault', kind: 'dir' },
               ],
-              shared: [
-                { uid: null, slug: 'capabilities/tokens', title: 'Design Tokens', kind: 'capability', path: 'src/shared/lib/cn.ts' },
-              ],
+              shared: [{ name: 'cn.ts', path: 'src/shared/lib/cn.ts', kind: 'file' }],
             },
           }}
         />
       </NextIntlClientProvider>,
     );
-    const views = screen.getByTestId('architecture-occupants-views');
-    expect(views).toHaveTextContent('Home');
-    expect(views).toHaveTextContent('Docs View');
-    expect(screen.getByTestId('architecture-occupant-count-views')).toHaveTextContent('2 concepts');
-    expect(screen.getByTestId('architecture-occupant-count-widgets')).toHaveTextContent('0 concepts');
-    expect(screen.queryByTestId('architecture-occupants-widgets')).toBeNull();
-    expect(screen.queryByTestId('architecture-occupants-empty')).toBeNull();
+    const views = screen.getByTestId('architecture-modules-views');
+    expect(views).toHaveTextContent('home');
+    expect(views).toHaveTextContent('docs-vault');
+    expect(screen.getByTestId('architecture-module-count-views')).toHaveTextContent('2 modules');
+    expect(screen.getByTestId('architecture-module-count-widgets')).toHaveTextContent('0 modules');
+    expect(screen.queryByTestId('architecture-modules-widgets')).toBeNull();
+    // A listing exists here, so the browser impossibility sentence must not show.
+    expect(screen.queryByTestId('architecture-source-unavailable')).toBeNull();
   });
 
-  it('keeps the constant ladder plus one honest sentence when nothing matches anywhere', () => {
+  /*
+   * A browser cannot read a source folder — `.claude/rules/surfaces.md` says to state an
+   * impossibility rather than render a gap that looks like emptiness.
+   */
+  it('says a browser cannot list source instead of pretending empty bands', () => {
     renderWorkbench();
-    expect(screen.getByTestId('architecture-occupants-empty')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-occupant-count-views')).toBeNull();
-    expect(screen.queryByTestId('architecture-occupants-views')).toBeNull();
+    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-module-count-views')).toBeNull();
+    expect(screen.queryByTestId('architecture-modules-views')).toBeNull();
   });
 
   it('keeps the same blueprint while switching from understand to plan and verify', () => {
