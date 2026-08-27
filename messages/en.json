@@ -330,6 +330,8 @@
     "reachNone": "depends on no other role",
     "ladderDirection": "the arrow is source-code dependency",
     "reachInline": "may depend on {targets}",
+    "layerConcepts": "Reviewed concepts in this layer",
+    "conceptCount": "{count, plural, one {# concept} other {# concepts}}",
     "moduleCount": "{count, plural, one {# module} other {# modules}}",
     "moreOccupants": "+{count} more",
     "fewerOccupants": "Show fewer",

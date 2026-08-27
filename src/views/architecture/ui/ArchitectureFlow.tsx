@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   AppWindow,
+  ChevronDown,
   Blocks,
   Cable,
   Cog,
@@ -26,8 +27,9 @@ import {
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
 import { useSwapHeight } from '@/shared/lib/use-presence';
-import { Chip, RowButton, StaggeredFadeIn } from '@/shared/ui';
+import { Chip, RowButton, StaggeredFadeIn, TopologyV2KindGlyph } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 
 /**
@@ -123,8 +125,15 @@ interface BandProps {
   pathsOf: ReadonlyMap<string, string[]>;
   /** `null` while no source listing exists on this surface. */
   modules: Readonly<Record<string, RoleSourceModule[]>> | null;
+  /** The labeled meaning layer: reviewed concepts whose `path` sits inside the role's globs. */
+  concepts: Readonly<Record<string, RoleConcept[]>>;
   expandedRoles: ReadonlySet<string>;
   onToggleExpanded: (id: string) => void;
+  /** Roles whose click-open detail (the concepts section) is showing. */
+  openRoles: ReadonlySet<string>;
+  onToggleOpen: (id: string) => void;
+  layerConceptsLabel: string;
+  conceptCountLabel: (count: number) => string;
   moduleCountLabel: (count: number) => string;
   moreLabel: (count: number) => string;
   showFewerLabel: string;
@@ -155,8 +164,13 @@ function ArchitectureBand({
   roleLabel,
   pathsOf,
   modules,
+  concepts,
   expandedRoles,
   onToggleExpanded,
+  openRoles,
+  onToggleOpen,
+  layerConceptsLabel,
+  conceptCountLabel,
   moduleCountLabel,
   moreLabel,
   showFewerLabel,
@@ -165,7 +179,9 @@ function ArchitectureBand({
   className,
   style,
 }: BandProps) {
-  const expandKey = rung.map((id) => (expandedRoles.has(id) ? '1' : '0')).join('');
+  const expandKey = rung
+    .map((id) => `${expandedRoles.has(id) ? '1' : '0'}${openRoles.has(id) ? 'o' : '-'}`)
+    .join('');
   const { hostRef: swapHostRef, capture: captureSwapHeight } = useSwapHeight(expandKey);
 
   return (
@@ -234,6 +250,7 @@ function ArchitectureBand({
         opens into the reference's diagram region: label column leading, module cards filling the
         rest, height animating on expand/collapse (`useSwapHeight`).
       */}
+      <div ref={swapHostRef} className="overflow-hidden">
       {modules === null ? (
         <div className="flex items-center gap-3 px-3.5 py-2">
           {rung.map((id) => (
@@ -255,7 +272,14 @@ function ArchitectureBand({
                   onFocus(null);
                   onRunClear();
                 }}
-                onClick={() => onFocusToggle(id)}
+                onClick={() => {
+                  /* Click is the detail act: it pins the focus AND opens the layer in place.
+                     Height is measured before the DOM changes so the opening is a movement. */
+                  captureSwapHeight();
+                  onFocusToggle(id);
+                  onToggleOpen(id);
+                }}
+                aria-expanded={openRoles.has(id)}
                 data-testid={`architecture-role-${id}`}
                 data-focus-state={
                   focus === null
@@ -332,7 +356,6 @@ function ArchitectureBand({
           ))}
         </div>
       ) : (
-      <div ref={swapHostRef} className="overflow-hidden">
         <div className="flex items-center gap-5 p-3.5">
           <div className="flex w-52 shrink-0 flex-col gap-2">
             {rung.map((id) => (
@@ -351,7 +374,12 @@ function ArchitectureBand({
                 }}
                   onFocus={() => onFocus(id)}
                   onBlur={() => onFocus(null)}
-                  onClick={() => onFocusToggle(id)}
+                  onClick={() => {
+                    captureSwapHeight();
+                    onFocusToggle(id);
+                    onToggleOpen(id);
+                  }}
+                  aria-expanded={openRoles.has(id)}
                   data-testid={`architecture-role-${id}`}
                   data-focus-state={
                     focus === null
@@ -413,6 +441,13 @@ function ArchitectureBand({
                         </span>
                       ) : null}
                     </span>
+                    <ChevronDown
+                      size={ICON_SIZE.sm}
+                      aria-hidden
+                      className={`ml-auto shrink-0 text-[color:var(--color-text-quaternary)] transition-transform duration-[var(--motion-fast)] ${
+                        openRoles.has(id) ? 'rotate-180' : ''
+                      }`}
+                    />
                   </span>
                 </RowButton>
                 {/*
@@ -522,8 +557,61 @@ function ArchitectureBand({
             })}
           </div>
         </div>
-      </div>
       )}
+
+      {/*
+        The click-open detail: the labeled meaning layer. Decision (2026-08-27): the source
+        modules row answers "what does this layer contain"; this section answers "which reviewed
+        concepts live here" — two named layers, never mixed. Kind is carried by the same glyph
+        family the map draws, distinct from the folder/file marks of the source layer above.
+      */}
+      {rung.map((id) => {
+        if (!openRoles.has(id)) return null;
+        const roleConcepts = concepts[id] ?? [];
+        return (
+          <div
+            key={`${id}-concepts`}
+            className="border-t border-[color:var(--color-divider)] px-3.5 pb-3.5 pt-3"
+            data-testid={`architecture-concepts-${id}`}
+          >
+            <p className="text-caption text-[color:var(--color-text-quaternary)]">
+              {rung.length > 1 ? `${roleLabel(id)} · ` : ''}
+              {layerConceptsLabel} · {conceptCountLabel(roleConcepts.length)}
+            </p>
+            {roleConcepts.length > 0 ? (
+              <StaggeredFadeIn
+                key={`${id}-concepts-grid`}
+                as="div"
+                className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
+                stagger={24}
+                duration={180}
+                translateY={6}
+              >
+                {roleConcepts.map((concept) => (
+                  <div
+                    key={concept.slug}
+                    title={concept.path}
+                    className="flex h-14 min-w-0 items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3"
+                  >
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]">
+                      <TopologyV2KindGlyph kind={concept.kind} size={18} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                        {concept.title}
+                      </span>
+                      <span className="block truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                        {concept.path}
+                      </span>
+                    </span>
+                  </div>
+                ))}
+              </StaggeredFadeIn>
+            ) : null}
+          </div>
+        );
+      })}
+      </div>
     </div>
     </li>
   );
@@ -532,6 +620,7 @@ function ArchitectureBand({
 export function ArchitectureFlow({
   profile,
   modules,
+  concepts,
   roleLabel,
   reachLabel,
   sinkLabel,
@@ -541,6 +630,8 @@ export function ArchitectureFlow({
   showFewerLabel,
   sourceUnavailableBody,
   reachInlineLabel,
+  layerConceptsLabel,
+  conceptCountLabel,
 }: {
   profile: ArchitectureProfile;
   /**
@@ -548,6 +639,8 @@ export function ArchitectureFlow({
    * or `null` when this surface has no listing (browser, unbound project, still loading).
    */
   modules: Readonly<Record<string, RoleSourceModule[]>> | null;
+  /** Reviewed concepts per role id (the labeled meaning layer for the click-open detail). */
+  concepts: Readonly<Record<string, RoleConcept[]>>;
   roleLabel: (id: string) => string;
   /** Reads one layer's reach aloud, because a drawing is not a sentence. */
   reachLabel: (role: string, targets: string) => string;
@@ -568,6 +661,8 @@ export function ArchitectureFlow({
   sourceUnavailableBody: string | null;
   /** "may depend on {targets}", written in role names — the explicit policy's visible reach. */
   reachInlineLabel: (targets: string) => string;
+  layerConceptsLabel: string;
+  conceptCountLabel: (count: number) => string;
 }) {
   const layout = useMemo(() => buildArchitectureLayout(profile), [profile]);
   const [focus, setFocus] = useState<string | null>(null);
@@ -578,6 +673,8 @@ export function ArchitectureFlow({
    */
   const [run, setRun] = useState<{ origin: string | null; seq: number }>({ origin: null, seq: 0 });
   const [expandedRoles, setExpandedRoles] = useState<ReadonlySet<string>>(new Set());
+  /* Click-open detail per role: the in-place expansion the click answers with. */
+  const [openRoles, setOpenRoles] = useState<ReadonlySet<string>>(new Set());
 
   const pathsOf = useMemo(
     () => new Map(profile.roles.map((role) => [role.id, role.paths])),
@@ -665,6 +762,18 @@ export function ArchitectureFlow({
               roleLabel={roleLabel}
               pathsOf={pathsOf}
               modules={modules}
+              concepts={concepts}
+              openRoles={openRoles}
+              onToggleOpen={(id) =>
+                setOpenRoles((current) => {
+                  const next = new Set(current);
+                  if (next.has(id)) next.delete(id);
+                  else next.add(id);
+                  return next;
+                })
+              }
+              layerConceptsLabel={layerConceptsLabel}
+              conceptCountLabel={conceptCountLabel}
               expandedRoles={expandedRoles}
               onToggleExpanded={(id) =>
                 setExpandedRoles((current) => {

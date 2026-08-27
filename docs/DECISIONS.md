@@ -40,6 +40,45 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-27 — A layer opens in place: the click's answer is the labeled meaning layer
+
+**Convened**: owner direction during the continued design pass · **Trigger**:
+looking at the browser surface, the owner pressed a layer and nothing detailed
+happened ("no detail effect on click... it should expand right here and show
+some structure — is it because there is no data?"). It was because there was no
+data: the same-day source-modules record had removed the ontology-concept join,
+and a browser cannot list source, so bands had nothing to open.
+
+**Decision**: the source-modules record's own falsifier fired ("if real use
+shows people needing 'which concepts live in this layer' on this screen —
+bring the meaning layer back as an explicit secondary mark, as a decision"),
+and this is that decision. Clicking a layer now pins its focus and opens an
+in-place detail section titled as the meaning layer ("Reviewed concepts in
+this layer · N"), listing the reviewed concepts whose `path` frontmatter sits
+inside the role's globs — derived in the view model (`deriveRoleConcepts`)
+with the same contract-tested glob dialect, real on every surface including
+the vault-less demo. The two layers stay named and separate: source modules
+(folder/file marks, installed app) remain the band's primary content; concepts
+(kind glyphs) appear only in the click-open section under their own label. The
+open animates through the band's existing height swap with a staggered card
+reveal; the row carries a rotating chevron and a concept-count invite;
+`aria-expanded` states the openness.
+
+**Recorded dissent (from the fired record, still standing)**: mixing meaning
+and source in one band was the confusion the source-modules record removed;
+the labels and the distinct icon families are the guard, and if a walkthrough
+shows readers conflating the two layers again, the concepts section moves out
+of the band (to the rail or the map) rather than gaining more markers.
+
+**Falsifier**: reopen if the concepts section is measured as the thing people
+read INSTEAD of the map for concept detail (the map remains the ontology
+reading surface — this section is a placement index, not a node view); or if
+the click-open detail keeps under 2 opens per session in real use (then the
+click should return to focus-only).
+
+**Status**: standing. **Accountable**: owner (direction); this session's
+builder for the applied slice.
+
 ## 2026-08-27 — Conformance records are dated machine receipts; the measurement must be true before it is durable
 
 **Convened**: /po-council, all five seats, one independent round and one rebuttal

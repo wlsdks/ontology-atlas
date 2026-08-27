@@ -352,6 +352,40 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.queryByTestId('architecture-modules-views')).toBeNull();
   });
 
+  /*
+   * The click answers with detail, in place (owner ask, 2026-08-27, and the second record's fired
+   * falsifier): pressing a layer opens its reviewed-concepts section inside the band — the
+   * labeled meaning layer, distinct from the source-module row — and pressing again closes it.
+   */
+  it('opens a layer\'s reviewed concepts in place on click, labeled as concepts', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench
+          profiles={[profile]}
+          conceptsByProfile={{
+            [profile.slug]: {
+              views: [
+                { slug: 'elements/home', title: 'Home', kind: 'element', path: 'src/views/home' },
+              ],
+            },
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.queryByTestId('architecture-concepts-views')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
+    const detail = screen.getByTestId('architecture-concepts-views');
+    expect(detail).toHaveTextContent('Reviewed concepts in this layer');
+    expect(detail).toHaveTextContent('1 concept');
+    expect(detail).toHaveTextContent('Home');
+    expect(screen.getByTestId('architecture-role-views')).toHaveAttribute('aria-expanded', 'true');
+
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
+    expect(screen.queryByTestId('architecture-concepts-views')).toBeNull();
+  });
+
   it('keeps the same blueprint while switching from understand to plan and verify', () => {
     renderWorkbench();
     const role = screen.getByTestId('architecture-role-features');

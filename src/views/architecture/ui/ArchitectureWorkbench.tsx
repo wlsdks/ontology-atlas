@@ -13,6 +13,7 @@ import {
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
 import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
+import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -51,6 +52,7 @@ export function ArchitectureWorkbench({
   sourceModulesByProfile = {},
   sourceListingCapable = false,
   recordsByProfile = {},
+  conceptsByProfile = {},
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -60,6 +62,8 @@ export function ArchitectureWorkbench({
   sourceListingCapable?: boolean;
   /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
+  /** Per profile slug, the reviewed concepts joined into each role (the click-open detail). */
+  conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
 }) {
   const t = useTranslations('architecture');
   const draftHandoff = useDraftHandoffRoute();
@@ -462,6 +466,7 @@ export function ArchitectureWorkbench({
               <ArchitectureFlow
                 profile={selected}
                 modules={selectedModules}
+                concepts={conceptsByProfile[selected.slug] ?? {}}
                 roleLabel={roleLabel}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
@@ -471,6 +476,8 @@ export function ArchitectureWorkbench({
                 showFewerLabel={t('fewerOccupants')}
                 sourceUnavailableBody={sourceListingCapable ? null : t('sourceListingUnavailable')}
                 reachInlineLabel={(targets) => t('reachInline', { targets })}
+                layerConceptsLabel={t('layerConcepts')}
+                conceptCountLabel={(count) => t('conceptCount', { count })}
               />
             </div>
           </div>

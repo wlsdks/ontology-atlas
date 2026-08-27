@@ -16,6 +16,7 @@ import {
   listTauriVaultEntries,
   readTauriVaultText,
 } from '@/shared/lib/tauri-vault-fs';
+import { deriveRoleConcepts, type RoleConcept } from '../model/role-concepts';
 import {
   deriveRoleSourceModules,
   type RoleSourceModule,
@@ -58,6 +59,12 @@ export function ArchitecturePage() {
     [localVault.manifest, mode, staticManifest.docs],
   );
   const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
+  /* The click-open meaning layer: reviewed concepts joined into roles, real on every surface. */
+  const conceptsByProfile = useMemo(() => {
+    const out: Record<string, Record<string, RoleConcept[]>> = {};
+    for (const profile of profiles) out[profile.slug] = deriveRoleConcepts(profile, docs);
+    return out;
+  }, [docs, profiles]);
   const profileKey = profiles.map((profile) => profile.slug).join('\0');
   const [loadedHandoffContexts, setLoadedHandoffContexts] = useState<{
     handle: FileSystemDirectoryHandle | null;
@@ -138,6 +145,7 @@ export function ArchitecturePage() {
       sourceModulesByProfile={sourceModulesByProfile}
       sourceListingCapable={sourceListingCapable}
       recordsByProfile={recordsByProfile}
+      conceptsByProfile={conceptsByProfile}
     />
   );
 }
