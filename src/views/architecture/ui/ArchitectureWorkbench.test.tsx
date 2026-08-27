@@ -179,7 +179,8 @@ describe('ArchitectureWorkbench', () => {
     renderWorkbench();
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeInTheDocument();
     expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
-    expect(screen.getByText(/Feature-Sliced Design/)).toBeInTheDocument();
+    // Twice on purpose: the stage's pattern chip, and the scope rail's profile caption.
+    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(2);
     expect(screen.getByTestId('architecture-role-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-role-shared')).toBeInTheDocument();
     expect(screen.getByText('Source check required')).toBeInTheDocument();

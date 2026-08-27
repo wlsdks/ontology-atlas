@@ -279,7 +279,13 @@ function ArchitectureBand({
                     {(() => {
                       const RoleIcon = ROLE_ICONS[id] ?? Layers;
                       return (
-                        <span className="flex size-8 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]">
+                        <span
+                          className={`flex size-8 shrink-0 items-center justify-center rounded-micro border transition-colors duration-[var(--motion-fast)] ${
+                            focus === id
+                              ? 'border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]'
+                              : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]'
+                          }`}
+                        >
                           <RoleIcon size={ICON_SIZE.sm} aria-hidden />
                         </span>
                       );
@@ -362,7 +368,13 @@ function ArchitectureBand({
                     {(() => {
                       const RoleIcon = ROLE_ICONS[id] ?? Layers;
                       return (
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]">
+                        <span
+                          className={`flex size-9 shrink-0 items-center justify-center rounded-micro border transition-colors duration-[var(--motion-fast)] ${
+                            focus === id
+                              ? 'border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]'
+                              : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-secondary)]'
+                          }`}
+                        >
                           <RoleIcon size={ICON_SIZE.lg} aria-hidden />
                         </span>
                       );

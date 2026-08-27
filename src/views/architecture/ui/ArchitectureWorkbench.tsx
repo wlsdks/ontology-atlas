@@ -366,6 +366,10 @@ export function ArchitectureWorkbench({
                   <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {profile.scopePaths.join(' · ')}
                   </span>
+                  <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-quaternary)]">
+                    {t('railRoles', { count: profile.roles.length })}
+                    {profile.patterns[0] ? ` · ${patternLabel(profile.patterns[0].name)}` : ''}
+                  </span>
                 </span>
               </RowButton>
             ))}
@@ -479,13 +483,11 @@ export function ArchitectureWorkbench({
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('understandTitle')}
             </h2>
-            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('understandBody')}
-            </p>
-            {/* Every number here is derived from the reviewed profile and the vault join — the
-                reference mockup's stat cards carried an uptime nobody measures, and that is the
-                part that did not survive translation. */}
-            <dl className="mt-5 grid grid-cols-2 gap-2" data-testid="architecture-stats">
+            {/* Numbers before prose: the derived facts win the first glance, the explanation
+                follows for whoever wants it. Every number here comes from the reviewed profile
+                and the source walk — the reference mockup's stat cards carried an uptime nobody
+                measures, and that is the part that did not survive translation. */}
+            <dl className="mt-4 grid grid-cols-2 gap-2" data-testid="architecture-stats">
               {([
                 [selected.roles.length, t('statRoles')],
                 ...(moduleTotal !== null ? ([[moduleTotal, t('statModules')]] as const) : []),
@@ -496,15 +498,18 @@ export function ArchitectureWorkbench({
                   key={label}
                   className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
                 >
-                  <dd className="m-0 text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]">
+                  <dd className="m-0 text-display font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-text-primary)]">
                     {value}
                   </dd>
-                  <dt className="mt-0.5 text-caption text-[color:var(--color-text-quaternary)]">
+                  <dt className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
                     {label}
                   </dt>
                 </div>
               ))}
             </dl>
+            <p className="mt-4 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]">
+              {t('understandBody')}
+            </p>
             <h3 className="mt-6 text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
               {t('evidenceTitle')}
             </h3>

@@ -334,6 +334,7 @@
     "moreOccupants": "+{count}개 더 보기",
     "fewerOccupants": "접기",
     "statRoles": "역할",
+    "railRoles": "역할 {count}개",
     "statModules": "소스 모듈",
     "statEvidence": "근거 파일",
     "sourceListingUnavailable": "소스 모듈은 소스 폴더가 연결된 설치 앱에서 표시됩니다. 브라우저는 소스 폴더를 읽을 수 없습니다.",

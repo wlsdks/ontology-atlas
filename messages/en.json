@@ -334,6 +334,7 @@
     "moreOccupants": "+{count} more",
     "fewerOccupants": "Show fewer",
     "statRoles": "Roles",
+    "railRoles": "{count, plural, one {# role} other {# roles}}",
     "statModules": "Source modules",
     "statEvidence": "Evidence files",
     "sourceListingUnavailable": "Source modules appear in the installed app once a project source is connected. A browser cannot read a source folder.",
