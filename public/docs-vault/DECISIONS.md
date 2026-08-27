@@ -40,6 +40,155 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-27 — Conformance records are dated machine receipts; the measurement must be true before it is durable
+
+**Convened**: /po-council, all five seats, one independent round and one rebuttal
+round · **Trigger**: persisting `architectureBrief:v1` as a vault-local record and
+rendering it on `/architecture` changes a public MCP/CLI contract and adds a
+stored artifact; both 2026-08-27 records scheduled this council as their revisit
+point.
+
+**Prior decisions**: 2026-08-26 "Architecture is a separate reviewed contract"
+items 3-6 stand (side effect 0, unknown fails closed, no fabricated green, no
+pattern inference). Both 2026-08-27 records stand; this record answers the
+occupied-bands revisit clause: **the record does not subsume the directory walk**
+(`matchedFiles` is a 20-item sample under `MATCHED_FILE_SAMPLE_LIMIT` against 193
+real files in `views`; a sample rendered as contents is the same under-reporting
+that killed the concept join). The 2026-08-26 "no new MCP tool" ruling is read as
+drafting-specific (its stated risk was role-name invention) and is not silently
+extended; no new MCP tool ships in this slice anyway.
+
+**Convened because**: public MCP/CLI contract change plus a stored artifact.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Investigate first: fix the measurement before persisting it | Problem insight 2 · User moment 2 |
+| Craft | Shape a slice: stamp semantics as prescribed, overlay deferred | Verification 2 |
+| Steward | Shape a slice: reuse receipt + sidecar machinery | Ontology value 3 · Agent value 4 |
+| Wedge | Build smaller: CLI-flag writer, anti-suppression semantics | Differentiation 3 |
+| Leverage | Shape a slice: two-session ceiling | appetite and slice |
+
+**Rubric total**: 16/24 (fatal zeros: none). The two low pairs are why the slice
+is reordered rather than why it is refused.
+
+**Decisive disagreement**: persist now (four seats) versus fix the measurement
+first (evidence). Evidence's measured fact decides the ordering: all 18 current
+dogfood violations are `import type` edges from `src/shared/lib/ontology-tree/*`
+into `@/entities/knowledge-graph`, which `eslint.config.mjs:1012-1040` (cited in
+the profile's own `evidence:`) explicitly allows in every direction. The scanner
+carries no type-only concept (every edge is `kind: 'static'`). Persisting today
+would stamp a false red with date-and-commit authority: the standing "unsupported
+scan renders green" falsifier with the opposite sign, and worse, because a record
+outlives its session.
+
+**Applied rule**: Charter first (fail-closed truthfulness outranks shipping the
+container) and Smallest slice (the ordering absorbs the Investigate-first hold
+into one build plan instead of a separate trial).
+
+**Decision (accountable: owner)** — build in this order, each point a contract:
+
+1. **Measure truly first.** Import inference carries type-only vs value through
+   to the edge kind. Without a profile-declared ruling for type-only edges,
+   they leave the violation count and land in the `unknown` block as their own
+   named class — never silently dropped, never counted as violations a cited
+   authority permits. Unknown remains never compliant. No record of any kind is
+   written before this lands and a human confirms the re-measured dogfood
+   verdict.
+2. **The brief gains a stamp** (additive on `architectureBrief:v1`): measured-at
+   ISO time, source revision — a real commit short-sha for git sources, a
+   `sha256:` fingerprint for folder sources, never conflated — dirty flag, and
+   tool version. `inspect_architecture` and `atlas architecture` keep side
+   effect 0. This point is shippable alone if appetite runs out.
+3. **The record is `architectureRecord:v1`**: a JSON envelope wrapping the
+   stamped brief, minus `source.rootPath` (no absolute machine path leaves the
+   sidecar), plus the profile's uid/slug and content hash — never the profile
+   body. Home: `<vault>/.ontology-atlas/architecture/<profile-slug>.json`,
+   overwritten per slug through the existing `vault-sidecar` atomic replacement,
+   with one appended `activity.jsonl` line. No `expected_mtime` dance: this is a
+   single-writer machine receipt, not authored Markdown. Not an ontology kind,
+   not in-vault Markdown, never committed (`.ontology-atlas/.gitignore` is `*`).
+4. **Writer: `atlas architecture --record`, opt-in, CLI only.** No `record:`
+   flag on `inspect_architecture` (a read tool that sometimes writes breaks the
+   standing side-effect-0 clause), and no new MCP tool in this slice. The writer
+   refuses mechanically when every observed edge carries one identical kind —
+   a scanner that cannot discriminate must not mint receipts.
+5. **Surface renders three states, receipt vocabulary, honest degradation.**
+   No record → today's amber "Source check required", unchanged, reading as
+   "not measured on this computer", never as a defect. Record whose revision or
+   fingerprint the installed app re-verifies → dated status: "checked {date} at
+   commit {sha}" (plus "with uncommitted edits" when dirty; folder sources get
+   the fingerprint sentence, no sha). Mismatch → `source_changed`, amber
+   semantics, the old status never rendered as current. The browser reads the
+   sidecar (the existing `use-local-vault` path) but cannot re-probe, so it says
+   the stamp and that this browser cannot confirm the source still matches. The
+   status line always carries the unknown counts beside the verdict ("N
+   violations · M edges unmapped"); a bare status word is a lie by omission.
+   Copy fix rides along: "green result" becomes "pass" in both catalogs.
+6. **Cut from this slice**: violations drawn on the blueprint (needs
+   `/design-directions`; if ever drawn they go on the spine as counter-direction
+   error-ink marks, never inside bands); band occupant replacement (the walk
+   stays; the record may add the authoritative per-role file count, labelled as
+   files, never rendered beside the module count as a second unlabelled number,
+   and the 20-file sample never renders as cards); any MCP write; any staleness
+   trend or history UI; anti-suppression is permanent: a record never mutes a
+   violation the way dependency-cruiser/ArchUnit baselines do.
+
+**Named next decision (not in this slice)**: the disposition path — what a
+person does with a real violation (fix, or accept as a reviewed exception with
+cited authority). Until it exists, records persist unactioned red; that is
+accepted knowingly and bounded by the amber-forward rendering.
+
+**Slice**: IN — points 1-5, dogfood re-measurement, cross-package contract
+test, record-rejects-profile parser gate, docs. OUT — point 6's list.
+**Appetite** — two build sessions, ceiling: session 1 = type-only measurement +
+stamp + record contract + `--record` + tests; session 2 = surface states +
+strings + docs. If it threatens the ceiling, cut session 2 and ship the stamp
+plus writer.
+
+**Verification demanded (craft's gate set)**: dirty-tree stamp RED-first;
+non-git folder status matches no sha regex; planted violation → record →
+rendered state → removal → re-record, screenshots both states; source-changed
+asserted on rendered DOM text; deployed-web degradation at 1512 and 390 (no
+date anywhere when no record); one fixture through CLI output and web parser;
+parser-rejection gate both ways (profile parser rejects record fields, record
+parser rejects rule fields).
+
+**Recorded dissent**:
+- *Evidence*: the whole build should wait for a verified measurement and one
+  real usage cycle; zero observed workflow damage today (activity log has no
+  architecture-surface usage, one authored profile, zero agent-drafted
+  profiles). Falsifier: if the type-only fix still leaves the dogfood repo
+  `violated` and a human agrees the remainder is real, the hold was pure cost.
+- *Steward*: a confirm-gated MCP recording tool should ship now; CLI-only fails
+  the minimum agent path (an MCP-restricted agent cannot record). Falsifier: an
+  observed agent session that needs to record and cannot reach the CLI — build
+  the tool then, as a decision.
+- *Craft*: the record should be committed beside the profile so teammates judge
+  the dated status through diffs; a gitignored receipt makes a
+  project-level-looking claim from per-machine state. Falsifier: a teammate or
+  PR reviewer asks for the last measured status, or the per-machine record is
+  mistaken for project truth — reopen a committed or exportable record as an
+  explicit decision.
+- *Leverage*: `record: true` on `inspect_architecture` with a declared side
+  effect 1 (rejected on the standing side-effect-0 clause); the textual
+  violations list may be cut with session 2.
+- *Wedge*: the record's presence might subsume the walk (rejected on the
+  20-item sample measurement). Falsifier, adopted for the whole loop: if
+  records are regenerated fresh every session and never read back in three
+  consecutive sessions, persistence was ceremony — feed the pill live instead
+  and retire the file.
+
+**Falsifiers (live)**: any surface renders `conforms` from a record it could
+not revision-verify; a profile file ever gains a field sourced from a record;
+records' revisions never match HEAD in normal use; the wedge ceremony falsifier
+above.
+
+**Revisit**: at the disposition-path decision; or after the first three real
+recorded checks on a non-dogfood repository; or on any falsifier observation.
+
+**Human signature**: stark (owner) — approved in-session, 2026-08-27.
+**Status**: standing.
+
 ## 2026-08-27 — Architecture bands hold source modules, not ontology concepts
 
 **Convened**: owner correction during the same day's occupied-bands build ·
