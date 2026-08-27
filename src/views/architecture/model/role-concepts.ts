@@ -17,6 +17,17 @@ export interface RoleConcept {
   title: string;
   kind: 'capability' | 'element';
   path: string;
+  /** Reviewed `dependencies` targets (slugs) — real vault relations, never inferred. */
+  dependsOn: string[];
+  /** Reviewed `relates` targets (slugs). */
+  relatesTo: string[];
+}
+
+/** One reviewed relation between two placed concepts, drawable on the blueprint. */
+export interface ConceptEdge {
+  from: string;
+  to: string;
+  type: 'dependency' | 'related';
 }
 
 interface ConceptSourceDoc {
@@ -41,6 +52,8 @@ export function deriveRoleConcepts(
     const rawPath = doc.frontmatter.path;
     if (typeof rawPath !== 'string' || rawPath.trim() === '') continue;
     const path = normalizePath(rawPath);
+    const stringList = (value: unknown): string[] =>
+      Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
     const concept: RoleConcept = {
       slug: doc.slug,
       title:
@@ -49,6 +62,8 @@ export function deriveRoleConcepts(
           : doc.slug,
       kind,
       path,
+      dependsOn: stringList(doc.frontmatter.dependencies),
+      relatesTo: stringList(doc.frontmatter.relates),
     };
     for (const role of profile.roles) {
       if (role.paths.some((pattern) => matchesArchitecturePath(path, pattern))) {
@@ -63,4 +78,42 @@ export function deriveRoleConcepts(
     );
   }
   return byRole;
+}
+
+/**
+ * The reviewed relations among placed concepts — the blueprint's only card-to-card edges, by
+ * decision: every stroke is a `dependencies` or `relates` fact somebody reviewed, never an
+ * inferred import. Targets are kept only when they are themselves placed (they have a card that
+ * can anchor the stroke); slugs match on the full slug or its tail, the vault's own linking rule.
+ */
+export function deriveConceptEdges(
+  byRole: Readonly<Record<string, RoleConcept[]>>,
+): ConceptEdge[] {
+  const placed = new Map<string, string>();
+  for (const concepts of Object.values(byRole)) {
+    for (const concept of concepts) {
+      placed.set(concept.slug, concept.slug);
+      const tail = concept.slug.split('/').pop();
+      if (tail && !placed.has(tail)) placed.set(tail, concept.slug);
+    }
+  }
+  const seen = new Set<string>();
+  const edges: ConceptEdge[] = [];
+  for (const concepts of Object.values(byRole)) {
+    for (const concept of concepts) {
+      const add = (targets: string[], type: ConceptEdge['type']) => {
+        for (const target of targets) {
+          const resolved = placed.get(target) ?? placed.get(target.split('/').pop() ?? '');
+          if (!resolved || resolved === concept.slug) continue;
+          const key = `${concept.slug}\u0000${resolved}\u0000${type}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          edges.push({ from: concept.slug, to: resolved, type });
+        }
+      };
+      add(concept.dependsOn, 'dependency');
+      add(concept.relatesTo, 'related');
+    }
+  }
+  return edges;
 }

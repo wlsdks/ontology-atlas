@@ -478,6 +478,8 @@ export function ArchitectureWorkbench({
                 reachInlineLabel={(targets) => t('reachInline', { targets })}
                 layerConceptsLabel={t('layerConcepts')}
                 conceptCountLabel={(count) => t('conceptCount', { count })}
+                legendDependency={t('legendDependency')}
+                legendRelated={t('legendRelated')}
               />
             </div>
           </div>

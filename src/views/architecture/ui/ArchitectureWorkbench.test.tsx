@@ -366,16 +366,21 @@ describe('ArchitectureWorkbench', () => {
           conceptsByProfile={{
             [profile.slug]: {
               views: [
-                { slug: 'elements/home', title: 'Home', kind: 'element', path: 'src/views/home' },
+                {
+                  slug: 'elements/home',
+                  title: 'Home',
+                  kind: 'element',
+                  path: 'src/views/home',
+                  dependsOn: [],
+                  relatesTo: [],
+                },
               ],
             },
           }}
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.queryByTestId('architecture-concepts-views')).toBeNull();
-
-    fireEvent.click(screen.getByTestId('architecture-role-views'));
+    /* The resting state is the full diagram: sections open by default. */
     const detail = screen.getByTestId('architecture-concepts-views');
     expect(detail).toHaveTextContent('Reviewed concepts in this layer');
     expect(detail).toHaveTextContent('1 concept');
@@ -384,6 +389,10 @@ describe('ArchitectureWorkbench', () => {
 
     fireEvent.click(screen.getByTestId('architecture-role-views'));
     expect(screen.queryByTestId('architecture-concepts-views')).toBeNull();
+    expect(screen.getByTestId('architecture-role-views')).toHaveAttribute('aria-expanded', 'false');
+
+    fireEvent.click(screen.getByTestId('architecture-role-views'));
+    expect(screen.getByTestId('architecture-concepts-views')).toBeInTheDocument();
   });
 
   it('keeps the same blueprint while switching from understand to plan and verify', () => {

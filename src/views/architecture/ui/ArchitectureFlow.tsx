@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   AppWindow,
   ChevronDown,
@@ -29,7 +29,7 @@ import {
 import { useSwapHeight } from '@/shared/lib/use-presence';
 import { Chip, RowButton, StaggeredFadeIn, TopologyV2KindGlyph } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import type { RoleConcept } from '../model/role-concepts';
+import { deriveConceptEdges, type ConceptEdge, type RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 
 /**
@@ -132,6 +132,12 @@ interface BandProps {
   /** Roles whose click-open detail (the concepts section) is showing. */
   openRoles: ReadonlySet<string>;
   onToggleOpen: (id: string) => void;
+  /** Concept sections showing every card instead of the preview row. */
+  conceptsMore: ReadonlySet<string>;
+  onToggleConceptsMore: (id: string) => void;
+  moreLabelForConcepts: (count: number) => string;
+  /** Slugs taking part in any reviewed relation — the preview shows these first. */
+  edgeParticipants: ReadonlySet<string>;
   layerConceptsLabel: string;
   conceptCountLabel: (count: number) => string;
   moduleCountLabel: (count: number) => string;
@@ -169,6 +175,10 @@ function ArchitectureBand({
   onToggleExpanded,
   openRoles,
   onToggleOpen,
+  conceptsMore,
+  onToggleConceptsMore,
+  moreLabelForConcepts,
+  edgeParticipants,
   layerConceptsLabel,
   conceptCountLabel,
   moduleCountLabel,
@@ -180,7 +190,12 @@ function ArchitectureBand({
   style,
 }: BandProps) {
   const expandKey = rung
-    .map((id) => `${expandedRoles.has(id) ? '1' : '0'}${openRoles.has(id) ? 'o' : '-'}`)
+    .map(
+      (id) =>
+        `${expandedRoles.has(id) ? '1' : '0'}${openRoles.has(id) ? 'o' : '-'}${
+          conceptsMore.has(id) ? '+' : '.'
+        }`,
+    )
     .join('');
   const { hostRef: swapHostRef, capture: captureSwapHeight } = useSwapHeight(expandKey);
 
@@ -568,6 +583,20 @@ function ArchitectureBand({
       {rung.map((id) => {
         if (!openRoles.has(id)) return null;
         const roleConcepts = concepts[id] ?? [];
+        const showAll = conceptsMore.has(id);
+        /*
+         * The preview shows the connective tissue first: concepts that participate in a reviewed
+         * relation outrank isolated ones, so the strokes between bands exist at rest instead of
+         * hiding behind "+N more". Stable within each half — the path order stays the tiebreak.
+         */
+        const ordered = edgeParticipants.size
+          ? [...roleConcepts].sort(
+              (a, b) =>
+                Number(edgeParticipants.has(b.slug)) - Number(edgeParticipants.has(a.slug)),
+            )
+          : roleConcepts;
+        const visibleConcepts = showAll ? ordered : ordered.slice(0, CARD_PREVIEW);
+        const hiddenConcepts = roleConcepts.length - visibleConcepts.length;
         return (
           <div
             key={`${id}-concepts`}
@@ -580,17 +609,18 @@ function ArchitectureBand({
             </p>
             {roleConcepts.length > 0 ? (
               <StaggeredFadeIn
-                key={`${id}-concepts-grid`}
+                key={`${id}-concepts-grid-${showAll ? 'all' : 'preview'}`}
                 as="div"
                 className="mt-2.5 grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5"
                 stagger={24}
                 duration={180}
                 translateY={6}
               >
-                {roleConcepts.map((concept) => (
+                {visibleConcepts.map((concept) => (
                   <div
                     key={concept.slug}
                     title={concept.path}
+                    data-concept-slug={concept.slug}
                     className="flex h-14 min-w-0 items-center gap-3 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3"
                   >
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-micro border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)]">
@@ -608,12 +638,135 @@ function ArchitectureBand({
                 ))}
               </StaggeredFadeIn>
             ) : null}
+            {hiddenConcepts > 0 || showAll ? (
+              <div className="mt-2">
+                <Chip
+                  size="sm"
+                  aria-expanded={showAll}
+                  data-testid={`architecture-concepts-toggle-${id}`}
+                  onClick={() => {
+                    captureSwapHeight();
+                    onToggleConceptsMore(id);
+                  }}
+                >
+                  {showAll ? showFewerLabel : moreLabelForConcepts(hiddenConcepts)}
+                </Chip>
+              </div>
+            ) : null}
           </div>
         );
       })}
       </div>
     </div>
     </li>
+  );
+}
+
+/**
+ * The card-to-card strokes, and the rule that licenses them: every edge here is a **reviewed
+ * vault relation** (`dependencies` solid, `relates` dashed) between two placed concepts — never
+ * an inferred import, never a decoration. Geometry is measured from the rendered cards
+ * (offset chains ignore the entrance transforms), so an edge exists exactly when both of its
+ * endpoints are on screen; collapsing a band retracts its strokes with it.
+ */
+function ConceptEdgeLayer({
+  edges,
+  containerRef,
+  refreshKey,
+}: {
+  edges: ConceptEdge[];
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  refreshKey: string;
+}) {
+  const [paths, setPaths] = useState<
+    { d: string; type: ConceptEdge['type']; from: string; to: string }[]
+  >([]);
+
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const measure = () => {
+      const anchorOf = (el: HTMLElement) => {
+        let x = 0;
+        let y = 0;
+        let node: HTMLElement | null = el;
+        while (node && node !== container) {
+          x += node.offsetLeft;
+          y += node.offsetTop;
+          node = node.offsetParent as HTMLElement | null;
+        }
+        return { x, y, w: el.offsetWidth, h: el.offsetHeight };
+      };
+      const bySlug = new Map<string, { x: number; y: number; w: number; h: number }>();
+      container.querySelectorAll<HTMLElement>('[data-concept-slug]').forEach((el) => {
+        const slug = el.dataset.conceptSlug;
+        if (slug) bySlug.set(slug, anchorOf(el));
+      });
+      const next: { d: string; type: ConceptEdge['type']; from: string; to: string }[] = [];
+      for (const edge of edges) {
+        const a = bySlug.get(edge.from);
+        const b = bySlug.get(edge.to);
+        if (!a || !b) continue;
+        const downward = b.y >= a.y;
+        const sx = a.x + a.w / 2;
+        const sy = downward ? a.y + a.h : a.y;
+        const tx = b.x + b.w / 2;
+        const ty = downward ? b.y : b.y + b.h;
+        const bend = Math.max(24, Math.abs(ty - sy) / 2);
+        const c1 = downward ? sy + bend : sy - bend;
+        const c2 = downward ? ty - bend : ty + bend;
+        next.push({
+          d: `M ${sx} ${sy} C ${sx} ${c1}, ${tx} ${c2}, ${tx} ${ty}`,
+          type: edge.type,
+          from: edge.from,
+          to: edge.to,
+        });
+      }
+      setPaths(next);
+    };
+    measure();
+    /* The band height swap pins heights for --motion-base; measure again after it settles. */
+    const settle = setTimeout(measure, 260);
+    const onResize = () => measure();
+    window.addEventListener('resize', onResize);
+    return () => {
+      clearTimeout(settle);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [edges, containerRef, refreshKey]);
+
+  if (paths.length === 0) return null;
+  return (
+    <svg
+      aria-hidden
+      data-testid="architecture-concept-edges"
+      className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+    >
+      <defs>
+        <marker
+          id="architecture-concept-arrow"
+          viewBox="0 0 8 8"
+          refX="6.5"
+          refY="4"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto"
+        >
+          <path d="M0,0 L8,4 L0,8 z" fill="var(--color-indigo-a60)" />
+        </marker>
+      </defs>
+      {paths.map((path) => (
+        <path
+          key={`${path.from}->${path.to}-${path.type}`}
+          d={path.d}
+          fill="none"
+          stroke={path.type === 'dependency' ? 'var(--color-indigo-a60)' : 'var(--color-indigo-a30)'}
+          strokeWidth={1.5}
+          strokeDasharray={path.type === 'related' ? '4 4' : undefined}
+          markerEnd={path.type === 'dependency' ? 'url(#architecture-concept-arrow)' : undefined}
+        />
+      ))}
+    </svg>
   );
 }
 
@@ -632,6 +785,8 @@ export function ArchitectureFlow({
   reachInlineLabel,
   layerConceptsLabel,
   conceptCountLabel,
+  legendDependency,
+  legendRelated,
 }: {
   profile: ArchitectureProfile;
   /**
@@ -663,6 +818,9 @@ export function ArchitectureFlow({
   reachInlineLabel: (targets: string) => string;
   layerConceptsLabel: string;
   conceptCountLabel: (count: number) => string;
+  /** Legend entries for the two reviewed relation strokes. */
+  legendDependency: string;
+  legendRelated: string;
 }) {
   const layout = useMemo(() => buildArchitectureLayout(profile), [profile]);
   const [focus, setFocus] = useState<string | null>(null);
@@ -673,8 +831,36 @@ export function ArchitectureFlow({
    */
   const [run, setRun] = useState<{ origin: string | null; seq: number }>({ origin: null, seq: 0 });
   const [expandedRoles, setExpandedRoles] = useState<ReadonlySet<string>>(new Set());
-  /* Click-open detail per role: the in-place expansion the click answers with. */
-  const [openRoles, setOpenRoles] = useState<ReadonlySet<string>>(new Set());
+  /*
+   * The detail sections open by default — the resting state is the full diagram, the click
+   * collapses or re-focuses (owner direction, 2026-08-27: the first impression must be the
+   * living picture, not a list of rows waiting to be asked).
+   */
+  const [openState, setOpenState] = useState<{ key: string; roles: ReadonlySet<string> }>(() => ({
+    key: profile.slug,
+    roles: new Set(profile.roles.map((role) => role.id)),
+  }));
+  const openRoles =
+    openState.key === profile.slug
+      ? openState.roles
+      : new Set(profile.roles.map((role) => role.id));
+  const setOpenRoles = (updater: (current: ReadonlySet<string>) => ReadonlySet<string>) =>
+    setOpenState(() => ({ key: profile.slug, roles: updater(openRoles) }));
+  /* Concept sections showing all cards instead of the preview row. */
+  const [conceptsMore, setConceptsMore] = useState<ReadonlySet<string>>(new Set());
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const conceptEdges = useMemo(() => deriveConceptEdges(concepts), [concepts]);
+  const edgeParticipants = useMemo(() => {
+    const set = new Set<string>();
+    for (const edge of conceptEdges) {
+      set.add(edge.from);
+      set.add(edge.to);
+    }
+    return set;
+  }, [conceptEdges]);
+  const edgeRefreshKey = `${profile.slug}|${[...openRoles].sort().join(',')}|${[...conceptsMore]
+    .sort()
+    .join(',')}|${[...expandedRoles].sort().join(',')}|${modules ? 'm' : '-'}`;
 
   const pathsOf = useMemo(
     () => new Map(profile.roles.map((role) => [role.id, role.paths])),
@@ -719,7 +905,11 @@ export function ArchitectureFlow({
       data-testid="architecture-flow"
       onMouseLeave={() => setFocus(null)}
     >
-      <div className="flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+      <div
+        ref={stageRef}
+        className="relative flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+      >
+        <ConceptEdgeLayer edges={conceptEdges} containerRef={stageRef} refreshKey={edgeRefreshKey} />
         {sourceUnavailableBody !== null ? (
           /* Before the bands, so a reader learns why they are bare before wondering. */
           <p className="mb-2" data-testid="architecture-source-unavailable">
@@ -772,6 +962,17 @@ export function ArchitectureFlow({
                   return next;
                 })
               }
+              conceptsMore={conceptsMore}
+              edgeParticipants={edgeParticipants}
+              onToggleConceptsMore={(id) =>
+                setConceptsMore((current) => {
+                  const next = new Set(current);
+                  if (next.has(id)) next.delete(id);
+                  else next.add(id);
+                  return next;
+                })
+              }
+              moreLabelForConcepts={moreLabel}
               layerConceptsLabel={layerConceptsLabel}
               conceptCountLabel={conceptCountLabel}
               expandedRoles={expandedRoles}
@@ -796,8 +997,28 @@ export function ArchitectureFlow({
           One mark is left on the stage, so one sentence explains it. The old three-part legend
           died with the dot matrix; keeping its rows would explain marks that no longer exist.
         */}
-        <p className="mt-1 border-t border-[color:var(--color-divider)] pt-3 text-caption text-[color:var(--color-text-quaternary)]">
-          {directionLabel}
+        <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-caption text-[color:var(--color-text-quaternary)]">
+          <span>{directionLabel}</span>
+          <span className="flex items-center gap-1.5">
+            <svg width={18} height={6} aria-hidden>
+              <line x1={0} y1={3} x2={18} y2={3} stroke="var(--color-indigo-a60)" strokeWidth={1.5} />
+            </svg>
+            {legendDependency}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg width={18} height={6} aria-hidden>
+              <line
+                x1={0}
+                y1={3}
+                x2={18}
+                y2={3}
+                stroke="var(--color-indigo-a30)"
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+              />
+            </svg>
+            {legendRelated}
+          </span>
         </p>
       </div>
 

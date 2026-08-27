@@ -40,6 +40,37 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-27 — The blueprint's rest state is the full diagram, and its only edges are reviewed relations
+
+**Convened**: owner direction ("still lacking"), same continued pass ·
+**Trigger**: with the click-open detail shipped, the resting screen was still
+seven thin rows — the reference's first impression is a complete diagram — and
+nothing connected the cards.
+
+**Decision**: two changes, one licensing rule. (1) The concept sections open
+by default: the rest state shows every layer's preview cards, and the click
+now collapses or re-focuses; the preview orders **connected concepts first**,
+so the strokes exist at rest instead of hiding behind "+N more". (2) Between
+cards the blueprint draws **reviewed vault relations only** — `dependencies`
+solid with an arrowhead, `relates` dashed, both in the one indigo family,
+measured from the rendered cards so an edge exists exactly when both endpoints
+are on screen. The licensing rule: every stroke is a frontmatter fact somebody
+reviewed; inferred imports stay with the MCP/CLI and the future record
+overlay, and the standing no-invented-edges line is unchanged — these are not
+invented. Three true relations were added to the dogfood vault in the same
+pass (map view → knowledge graph, docs view → docs entity, canvas renderer →
+knowledge graph), each with its rationale in `relation_notes` — the honest way
+to make the diagram richer is to record more true relations, not to draw
+untyped lines.
+
+**Falsifier**: if edge counts grow past legibility (≈30 visible) without a
+focus filter, add edge dimming outside the focused layer's reach before adding
+any other control; if readers mistake concept strokes for import facts in a
+walkthrough, the legend labels move onto the strokes themselves.
+
+**Status**: standing. **Accountable**: owner (direction); this session's
+builder for the applied slice.
+
 ## 2026-08-27 — A layer opens in place: the click's answer is the labeled meaning layer
 
 **Convened**: owner direction during the continued design pass · **Trigger**:

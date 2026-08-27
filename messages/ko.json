@@ -330,6 +330,8 @@
     "reachNone": "아무 역할에도 의존하지 않습니다",
     "ladderDirection": "화살표는 소스 코드 의존 방향입니다",
     "reachInline": "{targets}에 의존 가능",
+    "legendDependency": "리뷰된 개념 의존",
+    "legendRelated": "관련(리뷰됨)",
     "layerConcepts": "이 계층의 리뷰된 개념",
     "conceptCount": "개념 {count}개",
     "moduleCount": "모듈 {count}개",
