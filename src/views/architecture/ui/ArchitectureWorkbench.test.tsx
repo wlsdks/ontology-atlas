@@ -19,7 +19,10 @@ import {
   parseArchitectureProfile,
   type ArchitectureHandoffContext,
 } from '@/entities/architecture-profile';
-import { FSD_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
+import {
+  FSD_PROFILE_FRONTMATTER,
+  HEXAGONAL_PROFILE_FRONTMATTER,
+} from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
 import { consumeQueuedAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 
@@ -156,40 +159,54 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /*
-   * ⚠️ **The matrix is where the policy is checkable.** Five rounds of this screen were a list of
-   * roles with decoration attached, and the last one -- concentric rings -- failed for a measured
-   * reason: the nested-rectangle literature puts the legibility limit at 2-3 levels and
-   * Feature-Sliced Design has seven. Rings also cannot state an exception, only imply permission.
+   * ⚠️ **The policy is still fully stated, without the dot matrix** (owner decision 2026-08-27:
+   * under `lower-only` the matrix repeated what the sentence, the band order, and the connectors
+   * already said, so it was removed as a second notation for one fact). What must survive its
+   * removal, and what this test pins:
    *
-   * Rows are the consumer and columns the provider, so a legal layering draws a filled triangle and
-   * a hole is a gap in it. That shape is the assertion: it fails the moment a rule points upward,
-   * whatever the layer count, and it needs no separate mark for an exception because the position
-   * of an empty cell *is* the exception.
+   * - the bands appear in dependency order, deepest last, so the order itself is the rule;
+   * - the assistive list still reads every layer's reach aloud, layer by layer;
+   * - a `lower-only` profile writes no per-band reach caption (that would be the same seven-fold
+   *   echo the dots were), while an `explicit` profile writes each role's reach in role names.
    */
-  it('states the whole policy as a triangle', () => {
+  it('states the whole policy without a matrix', () => {
     renderWorkbench();
     const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
-    const cellsOf = (id: string) =>
-      [...screen.getByTestId(`architecture-matrix-row-${id}`).children].map((cell) =>
-        cell.getAttribute('data-reach'),
-      );
 
-    order.forEach((id, row) => {
-      const cells = cellsOf(id);
-      expect(cells, `${id} needs one cell per layer`).toHaveLength(order.length);
-      expect(cells[row], `${id} marks itself at column ${row + 1}`).toBe('self');
-      expect(
-        cells.slice(0, row),
-        `${id} must not be allowed to depend on a layer above it`,
-      ).not.toContain('on');
-      expect(
-        cells.slice(row + 1).every((cell) => cell === 'on'),
-        `${id} must reach every layer beneath it`,
-      ).toBe(true);
-    });
+    const flow = screen.getByTestId('architecture-flow');
+    const bandOrder = [...flow.querySelectorAll('[data-testid^="architecture-rung-"]')].map(
+      (band) => band.getAttribute('data-testid')!.replace('architecture-rung-', ''),
+    );
+    expect(bandOrder, 'bands must appear in dependency order').toEqual(order);
 
-    // One stroke with one stated meaning, rather than an arrow per permitted pair.
+    // lower-only: the stage subtitle owns the sentence; no per-band caption repeats it.
+    expect(screen.queryByTestId('architecture-reach-routing')).toBeNull();
+
+    // The assistive list still states each layer's reach in words.
+    expect(
+      screen.getByText(
+        'Routes: may depend on Application shell, Views, Widgets, Features, Entities, Shared foundation',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Shared foundation: depends on no other role')).toBeInTheDocument();
+
+    // One connector meaning, one legend sentence for it.
     expect(screen.getByTestId('architecture-flow-inward')).toBeInTheDocument();
+  });
+
+  it('writes each role\'s reach in role names when the policy is an explicit graph', () => {
+    const profile = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench profiles={[profile]} />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('architecture-reach-adapter')).toHaveTextContent(
+      'may depend on Application · Ports · Domain',
+    );
+    expect(screen.getByTestId('architecture-reach-domain')).toHaveTextContent(
+      'depends on no other role',
+    );
   });
 
   /*
@@ -216,6 +233,67 @@ describe('ArchitectureWorkbench', () => {
 
     fireEvent.blur(screen.getByTestId('architecture-role-features'));
     expect(stateOf('features')).toBe('rest');
+  });
+
+  /*
+   * The flow run is motion answering a question — "which way does this layer's reach flow" — and
+   * it exists only between the focused layer and its deepest reach, one pulse per gap, never as an
+   * ambient loop. The gap above the focused layer stays still: nothing flows into a layer from
+   * below, and drawing motion there would be an invented fact.
+   */
+  it('sends the flow run down the gaps between a focused layer and its reach', () => {
+    renderWorkbench();
+    fireEvent.focus(screen.getByTestId('architecture-role-features'));
+    // features sits on row 4 of 7; its reach ends at shared (row 6): gaps 4 and 5 run.
+    expect(screen.getByTestId('architecture-flow-run-4')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-flow-run-5')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-flow-run-3')).toBeNull();
+
+    fireEvent.blur(screen.getByTestId('architecture-role-features'));
+    expect(screen.queryByTestId('architecture-flow-run-4')).toBeNull();
+  });
+
+  /*
+   * ⚠️ **A band carries its occupants, and an empty vault does not echo "0" seven times.** The
+   * occupant join is the reviewed profile's globs against the reviewed concepts' `path` — never a
+   * source scan. When nothing matches anywhere, the ladder keeps its proven constant pitch and one
+   * sentence below the panel says so once; per-band counts appear only when the join found
+   * anything, so a count of 0 is information about *that* band, not a repeated apology.
+   */
+  it('fills a band with the concepts whose path its globs place there', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench
+          profiles={[profile]}
+          occupantsByProfile={{
+            [profile.slug]: {
+              views: [
+                { uid: 'u1', slug: 'elements/home', title: 'Home', kind: 'element', path: 'src/views/home' },
+                { uid: 'u2', slug: 'elements/docs', title: 'Docs View', kind: 'element', path: 'src/views/docs-vault' },
+              ],
+              shared: [
+                { uid: null, slug: 'capabilities/tokens', title: 'Design Tokens', kind: 'capability', path: 'src/shared/lib/cn.ts' },
+              ],
+            },
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+    const views = screen.getByTestId('architecture-occupants-views');
+    expect(views).toHaveTextContent('Home');
+    expect(views).toHaveTextContent('Docs View');
+    expect(screen.getByTestId('architecture-occupant-count-views')).toHaveTextContent('2 concepts');
+    expect(screen.getByTestId('architecture-occupant-count-widgets')).toHaveTextContent('0 concepts');
+    expect(screen.queryByTestId('architecture-occupants-widgets')).toBeNull();
+    expect(screen.queryByTestId('architecture-occupants-empty')).toBeNull();
+  });
+
+  it('keeps the constant ladder plus one honest sentence when nothing matches anywhere', () => {
+    renderWorkbench();
+    expect(screen.getByTestId('architecture-occupants-empty')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-occupant-count-views')).toBeNull();
+    expect(screen.queryByTestId('architecture-occupants-views')).toBeNull();
   });
 
   it('keeps the same blueprint while switching from understand to plan and verify', () => {

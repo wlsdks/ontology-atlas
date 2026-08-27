@@ -10,6 +10,7 @@ import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
   type ArchitectureHandoffContext,
+  type ArchitectureOccupant,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
 import { cn } from '@/shared/lib/cn';
@@ -26,9 +27,12 @@ type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 export function ArchitectureWorkbench({
   profiles,
   handoffContexts = {},
+  occupantsByProfile = {},
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
+  /** Per profile slug, the role-glob × vault-`path` join the page derived. */
+  occupantsByProfile?: Readonly<Record<string, Record<string, ArchitectureOccupant[]>>>;
 }) {
   const t = useTranslations('architecture');
   const draftHandoff = useDraftHandoffRoute();
@@ -187,6 +191,11 @@ export function ArchitectureWorkbench({
   }
 
   const handoff = buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null);
+  const selectedOccupants = occupantsByProfile[selected.slug] ?? {};
+  /* Unique placements: one concept matching two roles is one concept, not two. */
+  const placedConceptCount = new Set(
+    Object.values(selectedOccupants).flat().map((occupant) => occupant.slug),
+  ).size;
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
   const roleLabel = (id: string) =>
@@ -286,7 +295,7 @@ export function ArchitectureWorkbench({
         </aside>
 
         <section className="min-w-0 p-5 md:p-8 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
-          <div className="mx-auto flex w-full max-w-4xl flex-col">
+          <div className="mx-auto flex w-full max-w-5xl flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h2 id="architecture-blueprint-title" className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
@@ -307,7 +316,7 @@ export function ArchitectureWorkbench({
               </span>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {selected.patterns.map((pattern) => (
                 <span
                   key={`${pattern.axis}:${pattern.name}`}
@@ -332,19 +341,20 @@ export function ArchitectureWorkbench({
               `data-architecture-mode` stays here because the scroll-reanchor test uses it to tell
               which stage is mounted; it moved with the block it was attached to.
             */}
-            <div className="mt-6" data-testid="architecture-flow-panel" data-architecture-mode={mode}>
+            <div className="mt-3" data-testid="architecture-flow-panel" data-architecture-mode={mode}>
               {/* The policy sentence is the section description above; do not print it twice. */}
               <ArchitectureFlow
                 profile={selected}
+                occupants={occupantsByProfile[selected.slug] ?? {}}
                 roleLabel={roleLabel}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
                 directionLabel={t('ladderDirection')}
-                legend={{
-                  allowed: t('legendAllowed'),
-                  self: t('legendSelf'),
-                  columns: t('legendColumns'),
-                }}
+                occupantCountLabel={(count) => t('occupantCount', { count })}
+                moreLabel={(count) => t('moreOccupants', { count })}
+                showFewerLabel={t('fewerOccupants')}
+                noOccupantsBody={t('noOccupantsBody')}
+                reachInlineLabel={(targets) => t('reachInline', { targets })}
               />
             </div>
           </div>
@@ -360,6 +370,29 @@ export function ArchitectureWorkbench({
             <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('understandBody')}
             </p>
+            {/* Every number here is derived from the reviewed profile and the vault join — the
+                reference mockup's stat cards carried an uptime nobody measures, and that is the
+                part that did not survive translation. */}
+            <dl className="mt-5 grid grid-cols-2 gap-2" data-testid="architecture-stats">
+              {([
+                [selected.roles.length, t('statRoles')],
+                [placedConceptCount, t('statPlaced')],
+                [selected.patterns.length, t('patterns')],
+                [selected.evidence.length, t('statEvidence')],
+              ] as const).map(([value, label]) => (
+                <div
+                  key={label}
+                  className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+                >
+                  <dd className="m-0 text-title font-[var(--font-weight-strong)] tabular-nums text-[color:var(--color-text-primary)]">
+                    {value}
+                  </dd>
+                  <dt className="mt-0.5 text-caption text-[color:var(--color-text-quaternary)]">
+                    {label}
+                  </dt>
+                </div>
+              ))}
+            </dl>
             <h3 className="mt-6 text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
               {t('evidenceTitle')}
             </h3>

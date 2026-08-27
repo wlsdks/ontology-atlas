@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 import {
   deriveArchitectureProfiles,
+  deriveRoleOccupants,
   type ArchitectureHandoffContext,
+  type ArchitectureOccupant,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
 import { useDataSourceMode } from '@/features/data-source-mode';
@@ -52,6 +54,11 @@ export function ArchitecturePage() {
     [localVault.manifest, mode, staticManifest.docs],
   );
   const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
+  const occupantsByProfile = useMemo(() => {
+    const out: Record<string, Record<string, ArchitectureOccupant[]>> = {};
+    for (const profile of profiles) out[profile.slug] = deriveRoleOccupants(profile, docs);
+    return out;
+  }, [docs, profiles]);
   const profileKey = profiles.map((profile) => profile.slug).join('\0');
   const [loadedHandoffContexts, setLoadedHandoffContexts] = useState<{
     handle: FileSystemDirectoryHandle | null;
@@ -93,5 +100,11 @@ export function ArchitecturePage() {
     return () => { cancelled = true; };
   }, [docs, localVault.handle, localVault.status, mode, profileKey, profiles]);
 
-  return <ArchitectureWorkbench profiles={profiles} handoffContexts={handoffContexts} />;
+  return (
+    <ArchitectureWorkbench
+      profiles={profiles}
+      handoffContexts={handoffContexts}
+      occupantsByProfile={occupantsByProfile}
+    />
+  );
 }

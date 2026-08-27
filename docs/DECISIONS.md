@@ -40,6 +40,106 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-27 — Role bands carry their occupants: the blueprint joins role globs to vault paths
+
+**Convened**: solo PO pass (22/24, no fatal zeros) + `/design-directions` with
+`chief` authoring four structural options · **Trigger**: the owner asked for the
+architecture visualization to become substantially better and supplied a
+reference mockup (multi-hue layered diagram with per-component edges, stat
+cards, and an activity feed). The screen showed reviewed roles as glob strings
+with zero occupants, three modes rendered a byte-identical center, and content
+filled ~35% of a 1512×944 viewport.
+
+**Decision**: direction **B — Occupied bands**, chosen by the owner from four.
+Each dependency-ladder rung becomes a boxed layer container — the reference
+mockup's boxes-holding-parts mental model on the charter's neutral surfaces —
+whose label column keeps a role icon, index, role name, globs, and a derived
+occupant count; the body lists equal-height occupant cards
+(kind glyph tile, canonical title, implementation path) derived solely from the
+profile-glob × vault-`path` join (`deriveRoleOccupants`), with a bounded
+preview (`CARD_PREVIEW`) and a "+N more" expansion; focus-and-recede dims a
+band as one unit. The ordered spine is drawn where the reference draws it — one
+downward connector in each gap between adjacent layer boxes, all carrying the
+single legend meaning. This evolves the earlier one-gutter-stroke rendering
+without reopening the rejected arrow-per-permitted-pair: rows are ordered by
+reach depth, so every real dependency points down and one stroke per gap states
+exactly that. Role icons come from a fixed id→icon map in one neutral ink
+(unknown ids fall back to a generic layer mark); they decorate the reviewed
+name and never substitute for it. The owner interjected twice during the build
+— first that the chip-styled cut read as a table, then that the boxed cut was
+still flat next to the reference — and the band-as-container direction was
+unchanged while the rendering moved to elevated boxed containers, icon-led
+headers, cards, and in-gap connectors. The glob dialect is the MCP's verbatim —
+`matchesArchitecturePath` mirrors `matchesPathPattern` and the cross-surface
+contract test runs one fixture table through both. Occupant cards link to
+their concept on the map (a real action on a typed fact; still no edges
+between cards), and focusing a layer sends a one-shot staggered pulse down the
+spine gaps between it and its deepest reach — the owner asked to see the flow
+as motion; the run is on-request, transform-and-opacity only, `--motion-settle`
+per gap, registered in the reduced-motion roster as deliberately stopped
+because the static arrowheads state the same direction without a time axis.
+
+**Mockup translation, refused parts**: multi-hue layer tints (one indigo
+charter), a four-type colored edge legend (only intent exists on this surface),
+per-component edges (false topology — no observed data here), uptime/SLA and
+Share (underivable in a local-first static app), Recent Activity (deferred, not
+refused). Conformance overlay stays off this surface until the
+`architectureBrief:v1` record loop lands; that loop changes a public contract
+and requires `/po-council` before work starts.
+
+**Rejected directions**: A status quo (its winning condition — real vaults
+matching ~0 occupants — was disproved: the dogfood vault joins 67 concept
+placements across 7 roles); C spine-plus-roster (re-opens the recorded
+two-blocks-of-the-same-thing failure); D mode-lens bands (defensible later
+layer on top of B, exceeds this slice).
+
+**Falsifier observed, then knowingly traded**: unbounded occupants pushed the
+seventh matrix row 181px below the fold on the dogfood vault — exactly B's
+stated falsifier — and a compressed geometry briefly put it back at 936px in a
+941px viewport. The owner then rejected the compressed look twice ("still not
+good — do not try to preserve the current one; make it refined; rebuild if
+needed") and chose generous scale: a framed stage panel, diagram-region bands (label column
+leading, occupant cards filling the rest), in-gap connectors, and derived stat
+tiles in the Understand rail. That scale
+puts the last matrix row at 1207px in a 941px viewport, so on a 7-role profile
+the full policy needs one short scroll. This is an owner-decided trade
+of chief's fold falsifier for refinement, recorded rather than hidden; the
+card preview cap still bounds each band to one row, and an all-empty vault
+still fits entirely.
+
+**Partial overturn of 2026-08-26 (the on-screen dot matrix)**: the owner asked,
+mid-build, whether the dot matrix could go ("can't this just be removed?"), and
+it went. The overturning argument: under `lower-only` the matrix is a second
+notation for a rule the subtitle sentence, the band order, and the connectors
+already state completely, so seven aligned dot rows were repetition dressed as
+rigor; under `explicit`, where the rule really is a graph, each role's label now
+writes its reach in role names ("may depend on Application · Ports · Domain"),
+which needs no decoding. The losing dissent, preserved: the matrix was chosen
+over five rejected rounds on Ghoniem/Fekete/Castagliola's measurement that a
+matrix beats node-link past ~20 vertices, and it alone made "there are no
+exceptions" a visible triangle rather than an absence — written reach lists
+state permissions but make a *hole* in the policy harder to spot at a glance.
+The assistive reach list and the cross-surface conformance tools keep the full
+policy machine-checkable. **Falsifier for the overturn**: if an explicit-policy
+profile with 6+ roles ships and users or agents misread an allowed pair, or a
+policy hole survives review that the triangle would have shown, reopen the
+matrix (or a per-band reach visualization) as a decision, not a quiet revert.
+
+**Recorded dissent (direction cost)**: variable band heights loosen the old
+constant-pitch ladder silhouette (chief, direction B's stated cost); an
+all-empty vault keeps constant pitch, so the loss applies only where occupancy
+pays for it.
+
+**Falsifier**: reopen if the occupant join ever grows an import reader (the
+profile must not become a second source of observed imports); if a three-band
+vault reads worse than the pre-band ladder in a walkthrough; or if the "+N
+more" expansion is measured as the primary way people read a band (the preview
+hid the content instead of bounding it).
+
+**Revisit**: at the conformance-record council, or on the first falsifier
+observation. **Accountable**: owner (direction selection); this session's
+builder for the applied slice. **Status**: standing.
+
 ## 2026-08-26 — The first architecture draft is proposed by an agent and named by a person
 
 **Convened because**: on the installed rc.15, with the owner's own folder connected,

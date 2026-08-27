@@ -42,6 +42,14 @@ const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "agent-pending-dot": "끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
+  // Architecture spine flow (2026-08-27). A one-shot directional run down the gaps
+  // between a focused layer and its reach — decorative direction emphasis, not the
+  // carrier of the fact. The static arrowheads on every connector and the focus
+  // opacity states say the same direction without any time axis, so collapsing this
+  // run under reduced motion loses zero information; giving it a "short equivalent"
+  // would just re-introduce the very movement being declined.
+  "architecture-flow-run":
+    "One-shot flow run on focus; the static arrowheads and focus states already state the direction, so reduced motion rightly stops the run itself.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
   // Gateway landing (2026-08-18 remake). An endless caret blink is the same family
