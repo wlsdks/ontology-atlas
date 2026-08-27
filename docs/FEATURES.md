@@ -460,9 +460,21 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   height. The walk lists directories only — it never opens a file or reads an
   import; the profile's `exclude_paths` filter with the same glob dialect the
   MCP scans with. A browser cannot read a source folder, and the stage says so
-  once instead of pretending empty bands. The ontology stays on the map: bands
-  never show ontology concepts (the ontology is the meaning layer, architecture
-  is the source layer).
+  once instead of pretending empty bands. This row is the source layer alone — a
+  source module and an ontology concept never share a row.
+- Clicking a layer pins its focus and expands the band in place. The opened band
+  carries a separately labelled **meaning layer** section listing the reviewed
+  concepts whose `path` falls inside the role's globs, joined with the same
+  contract-tested glob dialect and drawn with the map's kind glyphs, so the two
+  layers stay named and apart. Concepts that take part in a reviewed relation are
+  ordered first, the row states `aria-expanded`, and the section is real on every
+  surface — including the vault-less demo, where the source row cannot be.
+- The blueprint's edges are reviewed vault relations only: `dependencies` solid
+  with an arrowhead, `relates` dashed, one indigo family. A stroke is measured
+  from the rendered cards, so it exists exactly when both endpoints are on screen
+  and retracts when a band closes. Inferred imports stay with the MCP and the
+  conformance record; the surface draws no line it cannot name a reviewed fact
+  for.
 - `inspect_architecture` and CLI `architecture` scan supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Unsupported languages, unmapped edges, unruled edges, and empty roles fail

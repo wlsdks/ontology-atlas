@@ -279,6 +279,15 @@ export function ArchitectureWorkbench({
     : null;
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
+  /* Every number is derived from the reviewed profile or the source walk. The module
+     tile drops out where no source folder can be read, which is what makes the count
+     odd — the grid below handles that rather than the list pretending otherwise. */
+  const statTiles: readonly (readonly [number, string])[] = [
+    [selected.roles.length, t('statRoles')],
+    ...(moduleTotal !== null ? ([[moduleTotal, t('statModules')]] as const) : []),
+    [selected.patterns.length, t('patterns')],
+    [selected.evidence.length, t('statEvidence')],
+  ];
   const roleLabel = (id: string) =>
     t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
 
@@ -370,7 +379,11 @@ export function ArchitectureWorkbench({
                   <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {profile.scopePaths.join(' · ')}
                   </span>
-                  <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-quaternary)]">
+                  {/* Tertiary, not quaternary: this row is clickable, so its selected state
+                      composites overlay-2 where quaternary measures 4.36:1 — below AA. The
+                      design system's surface license already prescribes tertiary from rows
+                      that can be clicked (`docs/DESIGN-SYSTEM.md`, quaternary ink). */}
+                  <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {t('railRoles', { count: profile.roles.length })}
                     {profile.patterns[0] ? ` · ${patternLabel(profile.patterns[0].name)}` : ''}
                   </span>
@@ -495,19 +508,25 @@ export function ArchitectureWorkbench({
             {/* Numbers before prose: the derived facts win the first glance, the explanation
                 follows for whoever wants it. Every number here comes from the reviewed profile
                 and the source walk — the reference mockup's stat cards carried an uptime nobody
-                measures, and that is the part that did not survive translation. */}
+                measures, and that is the part that did not survive translation.
+
+                Position carries that priority, not size: the numeral sits at the title step,
+                because the display step is the page title's own size and nothing outside an h1
+                may match it. `text-title` is also where the app's other derived numerals live
+                (DomainCapacityBar, the insights overview).
+
+                An odd tile count would otherwise leave a half-width hole in the second column —
+                visible whenever no source folder can be read and the module tile drops out,
+                which is every browser. The last tile takes the whole row instead. */}
             <dl className="mt-4 grid grid-cols-2 gap-2" data-testid="architecture-stats">
-              {([
-                [selected.roles.length, t('statRoles')],
-                ...(moduleTotal !== null ? ([[moduleTotal, t('statModules')]] as const) : []),
-                [selected.patterns.length, t('patterns')],
-                [selected.evidence.length, t('statEvidence')],
-              ] as const).map(([value, label]) => (
+              {statTiles.map(([value, label], index) => (
                 <div
                   key={label}
-                  className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+                  className={`rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] ${
+                    statTiles.length % 2 === 1 && index === statTiles.length - 1 ? 'col-span-2' : ''
+                  }`}
                 >
-                  <dd className="m-0 text-display font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-text-primary)]">
+                  <dd className="m-0 text-title font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-text-primary)]">
                     {value}
                   </dd>
                   <dt className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
