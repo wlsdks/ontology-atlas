@@ -19,6 +19,7 @@ import {
   parseArchitectureProfile,
   type ArchitectureHandoffContext,
 } from '@/entities/architecture-profile';
+import { parseArchitectureRecord, type ArchitectureRecordSource } from '@/entities/architecture-record';
 import {
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
@@ -39,6 +40,56 @@ function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
 }
 
 const order_all = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
+
+/*
+ * A persisted conformance receipt, parsed the way the page reads the sidecar — through
+ * `parseArchitectureRecord`, so these tests also fail if the surface and the parser drift apart.
+ */
+function buildRecord({
+  source = { kind: 'git', revision: 'a8df66d', dirty: false },
+  status = 'violated',
+  violationCount = 3,
+  typeOnlyEdgeCount = 18 as number | undefined,
+}: {
+  source?: ArchitectureRecordSource;
+  status?: 'conforms' | 'violated' | 'unknown';
+  violationCount?: number;
+  typeOnlyEdgeCount?: number | undefined;
+} = {}) {
+  return parseArchitectureRecord({
+    contract: 'architectureRecord:v1',
+    profile: {
+      uid: 'e9f5fe88-3711-4b3c-9f77-3b6f809db82c',
+      slug: 'atlas-web',
+      contentHash: `sha256:${'ab'.repeat(32)}`,
+    },
+    brief: {
+      contract: 'architectureBrief:v1',
+      sideEffect: 0,
+      measured: {
+        at: '2026-08-27T09:30:00.000Z',
+        tool: { name: 'ontology-atlas', version: '1.0.0-rc.16' },
+        source,
+      },
+      conformance: {
+        status,
+        violationCount,
+        violations: [],
+        ...(typeOnlyEdgeCount === undefined ? {} : { typeOnlyEdgeCount }),
+        unknown: { coverageIncomplete: false, unmappedEdges: 2, unruledEdges: 0, emptyRoles: [] },
+      },
+    },
+  });
+}
+
+function renderWithRecord(record: ReturnType<typeof buildRecord>) {
+  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+  return render(
+    <NextIntlClientProvider locale="en" messages={en}>
+      <ArchitectureWorkbench profiles={[profile]} recordsByProfile={{ [profile.slug]: record }} />
+    </NextIntlClientProvider>,
+  );
+}
 
 /*
  * ⚠️ **The empty state is what a real user actually sees, and it is not reachable from a browser.**
@@ -364,5 +415,79 @@ describe('ArchitectureWorkbench', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'Could not copy. Try again' }))
       .toHaveAttribute('data-architecture-copy-state', 'error'));
+  });
+});
+
+/*
+ * ⚠️ **A conformance receipt is a dated machine measurement, not a live claim** (2026-08-27
+ * council, point 5). What these tests pin: the stamp renders the receipt's own vocabulary (date,
+ * commit short sha for git, the fingerprint sentence — never a sha — for folders, the dirty
+ * suffix); the verdict never appears as a bare status word (the counts always ride beside it);
+ * the tones reuse the existing signal families; and the surface admits it cannot re-verify the
+ * source rather than presenting the stamp as current.
+ */
+describe('ArchitectureWorkbench — persisted conformance receipt', () => {
+  it('renders a git receipt as a dated stamp with counts beside the verdict, never a bare status', () => {
+    renderWithRecord(buildRecord());
+    const pill = screen.getByTestId('architecture-record-pill');
+    // The verdict and its accounting are one line: N violations · M edges unmapped · type-only labelled.
+    expect(pill).toHaveTextContent('Violated · 3 violations · 2 edges unmapped · 18 type-only edges');
+    expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
+      'Checked 2026-08-27 at commit a8df66d',
+    );
+    // The receipt replaces the amber "not measured" pill; both at once would be two claims.
+    expect(screen.queryByText('Source check required')).toBeNull();
+    // This surface cannot re-probe the source, and must say so instead of claiming currency.
+    expect(screen.getByTestId('architecture-record-cannot-confirm')).toHaveTextContent(
+      'This browser cannot confirm the source still matches this record.',
+    );
+  });
+
+  it('marks a dirty git measurement as taken with uncommitted edits', () => {
+    renderWithRecord(buildRecord({ source: { kind: 'git', revision: 'a8df66d', dirty: true } }));
+    expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
+      'Checked 2026-08-27 at commit a8df66d with uncommitted edits',
+    );
+  });
+
+  /* A fingerprint is not a revision: the folder stamp must never show a sha-looking token. */
+  it('renders a folder receipt with the fingerprint sentence and no sha-looking token', () => {
+    renderWithRecord(
+      buildRecord({
+        source: { kind: 'folder', fingerprint: `sha256:${'cd'.repeat(32)}` },
+        status: 'conforms',
+        violationCount: 0,
+        typeOnlyEdgeCount: undefined,
+      }),
+    );
+    const stamp = screen.getByTestId('architecture-record-stamp');
+    expect(stamp).toHaveTextContent('Checked 2026-08-27 against a content fingerprint of the source folder');
+    expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
+    // Counts still ride beside the verdict even when everything is zero.
+    expect(screen.getByTestId('architecture-record-pill')).toHaveTextContent(
+      'Conforms · 0 violations · 2 edges unmapped',
+    );
+  });
+
+  it('wears the existing signal tone families: error for violated, success for conforms, amber for unknown', () => {
+    const { unmount } = renderWithRecord(buildRecord());
+    expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-danger');
+    unmount();
+
+    const conforming = renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
+    expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-success');
+    conforming.unmount();
+
+    renderWithRecord(buildRecord({ status: 'unknown', violationCount: 0 }));
+    expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-amber-source');
+  });
+
+  it('keeps the unchanged amber "Source check required" state when no record exists', () => {
+    renderWorkbench();
+    expect(screen.getByText('Source check required')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-record-pill')).toBeNull();
+    // No record means no date anywhere: an absent measurement must not look dated.
+    expect(screen.queryByTestId('architecture-record-stamp')).toBeNull();
+    expect(screen.queryByTestId('architecture-record-cannot-confirm')).toBeNull();
   });
 });

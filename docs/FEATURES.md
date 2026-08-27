@@ -467,6 +467,11 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Unsupported languages, unmapped edges, unruled edges, and empty roles fail
   closed; absence of evidence is never a green result.
+- The status pill renders the persisted `architectureRecord:v1` receipt
+  (`.ontology-atlas/architecture/<slug>.json`) as a dated stamp — commit short
+  sha or folder fingerprint, dirty flag — with counts always beside the verdict;
+  no record keeps the amber "Source check required", and the surface says it
+  cannot re-verify the source rather than claiming the stamp is current.
 - Plan copies a state-bound `architectureChangePlan:v1` request. In the installed
   app, an exact CLI fallback is included only when the project source binding,
   vault path, and Atlas CLI entry are all verified absolute paths; otherwise the

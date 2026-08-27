@@ -21,6 +21,7 @@ import {
   type RoleSourceModule,
   type SourceDirEntry,
 } from '../model/source-modules';
+import { useArchitectureRecords } from '../model/use-architecture-record';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
@@ -72,6 +73,14 @@ export function ArchitecturePage() {
   /* A browser cannot list a source folder; only the installed app's bridge can. */
   const sourceListingCapable =
     mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
+  /*
+   * Persisted conformance receipts live in the vault sidecar, so both surfaces read them through
+   * the same handle. Static/demo mode carries no sidecar and therefore never a record.
+   */
+  const recordsByProfile = useArchitectureRecords(
+    mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
+    profiles.map((profile) => profile.slug),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -128,6 +137,7 @@ export function ArchitecturePage() {
       handoffContexts={handoffContexts}
       sourceModulesByProfile={sourceModulesByProfile}
       sourceListingCapable={sourceListingCapable}
+      recordsByProfile={recordsByProfile}
     />
   );
 }

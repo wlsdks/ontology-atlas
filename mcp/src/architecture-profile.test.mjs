@@ -47,7 +47,83 @@ test('feature-sliced profile accepts lower dependencies and rejects an upward ed
     from: FSD_FORBIDDEN_EDGE.from,
     to: FSD_FORBIDDEN_EDGE.to,
     kind: 'static',
+    importUsage: 'unknown',
     rule: 'lower-only',
+  });
+});
+
+test('type_only_dependencies parses with a free default and rejects other values', () => {
+  assert.equal(parseArchitectureProfile(FSD_PROFILE_FRONTMATTER).typeOnlyDependencies, 'free');
+  assert.equal(
+    parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER).typeOnlyDependencies,
+    'free',
+  );
+  assert.equal(
+    parseArchitectureProfile({ ...FSD_PROFILE_FRONTMATTER, type_only_dependencies: 'ruled' })
+      .typeOnlyDependencies,
+    'ruled',
+  );
+  assert.throws(
+    () => parseArchitectureProfile({ ...FSD_PROFILE_FRONTMATTER, type_only_dependencies: 'loose' }),
+    (error) => error.message === 'type_only_dependencies must be ruled or free.',
+  );
+});
+
+test('a type-only edge across a forbidden pair is free by default and ruled on request', () => {
+  // The 2026-08-27 measured fact: every dogfood "violation" was an
+  // `import type` edge a cited authority explicitly allows. A type-only edge
+  // must never become a violation unless the profile declares that ruling.
+  const typeOnlyForbiddenEdge = {
+    from: 'src/payments/domain/payment.ts',
+    to: 'src/payments/adapters/postgres.ts',
+    kind: 'static',
+    importUsage: 'type_only',
+  };
+  const importResult = {
+    edges: [
+      ...HEXAGONAL_ALLOWED_EDGES.map((edge) => ({ ...edge, importUsage: 'value' })),
+      typeOnlyForbiddenEdge,
+    ],
+    filesScanned: 8,
+    coverage: { allDetectedLanguagesSupported: true, supportedLanguages: ['typescript'] },
+  };
+
+  const free = evaluateArchitectureConformance(
+    parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER),
+    importResult,
+  );
+  assert.equal(free.status, 'conforms');
+  assert.equal(free.violationCount, 0);
+  assert.equal(free.typeOnlyEdgeCount, 1);
+  assert.deepEqual(free.source.importUsageCounts, {
+    value: 2,
+    type_only: 1,
+    unknown: 0,
+    missing: 0,
+  });
+  // Out of the violated/allowed accounting entirely: no observed role edge
+  // for the type-only pair either.
+  assert.ok(
+    free.observedRoleEdges.every(
+      (edge) => !(edge.fromRole === 'domain' && edge.toRole === 'adapter'),
+    ),
+  );
+
+  const ruled = evaluateArchitectureConformance(
+    parseArchitectureProfile({ ...HEXAGONAL_PROFILE_FRONTMATTER, type_only_dependencies: 'ruled' }),
+    importResult,
+  );
+  assert.equal(ruled.status, 'violated');
+  assert.equal(ruled.violationCount, 1);
+  assert.equal(ruled.typeOnlyEdgeCount, 1);
+  assert.deepEqual(ruled.violations[0], {
+    fromRole: 'domain',
+    toRole: 'adapter',
+    from: typeOnlyForbiddenEdge.from,
+    to: typeOnlyForbiddenEdge.to,
+    kind: 'static',
+    importUsage: 'type_only',
+    rule: 'allow-domain',
   });
 });
 

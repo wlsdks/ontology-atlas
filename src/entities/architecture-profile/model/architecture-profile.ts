@@ -26,6 +26,13 @@ export interface ArchitectureProfile {
   excludePaths: string[];
   roles: ArchitectureRole[];
   dependencyPolicy: 'explicit' | 'lower-only';
+  /**
+   * Whether `import type`-only edges are governed by the same allow rules (`ruled`) or stay
+   * outside the violation count as their own named unknown class (`free`, the default).
+   * 2026-08-27 council: the dogfood repo's 18 "violations" were all type-only edges a cited
+   * authority permits; counting them as violations stamped a false red.
+   */
+  typeOnlyDependencies: 'ruled' | 'free';
   allows: Record<string, string[]>;
   evidence: string[];
   documentSlug?: string | null;
@@ -99,6 +106,12 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   if (rawPolicy !== 'explicit' && rawPolicy !== 'lower-only') {
     throw new Error('dependency_policy must be explicit or lower-only.');
   }
+  const rawTypeOnly = frontmatter.type_only_dependencies === undefined
+    ? 'free'
+    : frontmatter.type_only_dependencies;
+  if (rawTypeOnly !== 'ruled' && rawTypeOnly !== 'free') {
+    throw new Error('type_only_dependencies must be ruled or free.');
+  }
   const allows: Record<string, string[]> = {};
   for (const roleId of roleOrder) {
     const key = `allow_${roleId}`;
@@ -122,6 +135,7 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id)! })),
     dependencyPolicy: rawPolicy,
+    typeOnlyDependencies: rawTypeOnly,
     allows,
     evidence: stringArray(frontmatter.evidence, 'evidence'),
   };

@@ -35,6 +35,7 @@ export const HEXAGONAL_PROFILE_FRONTMATTER = Object.freeze({
   allow_application: ['domain', 'port'],
   allow_port: ['domain'],
   allow_adapter: ['application', 'port', 'domain'],
+  type_only_dependencies: 'free',
   evidence: ['docs/architecture/payments.md'],
 });
 

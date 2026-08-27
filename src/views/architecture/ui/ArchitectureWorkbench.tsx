@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, CircleHelp, FileCode2, ShieldCheck } from 'lucide-react';
+import { Bot, Boxes, CircleHelp, FileCode2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
@@ -12,6 +12,7 @@ import {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
+import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
 import type { RoleSourceModule } from '../model/source-modules';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
@@ -24,11 +25,32 @@ import { ArchitectureFlow } from './ArchitectureFlow';
 type Mode = 'understand' | 'plan' | 'verify';
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 
+/*
+ * Receipt-status ink (2026-08-27 council, point 5): the three verdicts wear the existing signal
+ * families — success emerald, error red, amber for unknown — and nothing else. The counts always
+ * ride beside the verdict; a bare status word is a lie by omission.
+ */
+const RECORD_TONE_CLASS: Record<ArchitectureRecordStatus, string> = {
+  conforms:
+    'border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]',
+  violated:
+    'border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a12)] text-[color:var(--color-danger-text)]',
+  unknown:
+    'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
+};
+
+const RECORD_STATUS_ICON: Record<ArchitectureRecordStatus, typeof ShieldCheck> = {
+  conforms: ShieldCheck,
+  violated: ShieldAlert,
+  unknown: CircleHelp,
+};
+
 export function ArchitectureWorkbench({
   profiles,
   handoffContexts = {},
   sourceModulesByProfile = {},
   sourceListingCapable = false,
+  recordsByProfile = {},
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -36,6 +58,8 @@ export function ArchitectureWorkbench({
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   /** Whether this surface can list a source folder at all — false in a browser, by nature. */
   sourceListingCapable?: boolean;
+  /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
+  recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
 }) {
   const t = useTranslations('architecture');
   const draftHandoff = useDraftHandoffRoute();
@@ -217,6 +241,34 @@ export function ArchitectureWorkbench({
 
   const handoff = buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null);
   const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
+  /*
+   * ⚠️ **The receipt is rendered as what it is: a dated machine measurement, not a live claim**
+   * (2026-08-27 council, point 5). Three states: no record keeps the amber "Source check
+   * required" — not measured on this computer, never a defect. A record renders its stamp —
+   * date plus commit short sha for git sources, the fingerprint sentence (never a sha) for
+   * folder sources, "with uncommitted edits" when dirty — and the verdict always carries the
+   * counts beside it: violations and unknown-edge accounting, type-only edges labelled when the
+   * scanner reported them. This surface cannot re-probe the source (a browser cannot, and no
+   * re-verification bridge exists yet), so it says exactly that instead of claiming the stamp
+   * is current.
+   */
+  const record = recordsByProfile[selected.slug] ?? null;
+  const conformance = record?.brief.conformance ?? null;
+  const measured = record?.brief.measured ?? null;
+  const recordDate = measured ? measured.at.slice(0, 10) : '';
+  const recordDirty = measured?.source.kind === 'git' && measured.source.dirty;
+  const recordCounts = conformance
+    ? [
+        t('recordCounts', {
+          violations: conformance.violationCount,
+          unmapped: (conformance.unknown?.unmappedEdges ?? 0) + (conformance.unknown?.unruledEdges ?? 0),
+        }),
+        ...(conformance.typeOnlyEdgeCount !== undefined
+          ? [t('recordTypeOnly', { count: conformance.typeOnlyEdgeCount })]
+          : []),
+      ].join(' · ')
+    : null;
+  const RecordStatusIcon = conformance ? RECORD_STATUS_ICON[conformance.status] : CircleHelp;
   /* Unique placements: one module two globs both reach is one module, not two. */
   const moduleTotal = selectedModules
     ? new Set(Object.values(selectedModules).flat().map((module) => module.path)).size
@@ -333,13 +385,47 @@ export function ArchitectureWorkbench({
                     : t('dependencyExplicit')}
                 </p>
               </div>
-              <span className={badgeClass({
-                shape: 'pill',
-                className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-              })}>
-                <CircleHelp size={ICON_SIZE.sm} aria-hidden />
-                {t('sourceCheckRequired')}
-              </span>
+              {record && conformance && measured ? (
+                <div
+                  className="flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
+                  data-testid="architecture-record-status"
+                  data-architecture-record-status={conformance.status}
+                >
+                  <span
+                    className={badgeClass({
+                      shape: 'pill',
+                      className: RECORD_TONE_CLASS[conformance.status],
+                    })}
+                    data-testid="architecture-record-pill"
+                  >
+                    <RecordStatusIcon size={ICON_SIZE.sm} aria-hidden />
+                    {t(`recordStatus.${conformance.status}`)} · {recordCounts}
+                  </span>
+                  <p
+                    className="text-caption text-[color:var(--color-text-tertiary)]"
+                    data-testid="architecture-record-stamp"
+                  >
+                    {measured.source.kind === 'git'
+                      ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
+                      : t('recordCheckedFolder', { date: recordDate })}
+                    {recordDirty ? ` ${t('recordDirty')}` : ''}
+                  </p>
+                  <p
+                    className="text-caption text-[color:var(--color-text-quaternary)]"
+                    data-testid="architecture-record-cannot-confirm"
+                  >
+                    {t('recordCannotConfirm')}
+                  </p>
+                </div>
+              ) : (
+                <span className={badgeClass({
+                  shape: 'pill',
+                  className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
+                })}>
+                  <CircleHelp size={ICON_SIZE.sm} aria-hidden />
+                  {t('sourceCheckRequired')}
+                </span>
+              )}
             </div>
 
             <div className="mt-3 flex flex-wrap gap-2">

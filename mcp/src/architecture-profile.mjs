@@ -102,6 +102,12 @@ export function parseArchitectureProfile(frontmatter) {
   if (!['explicit', 'lower-only'].includes(dependencyPolicy)) {
     throw new Error('dependency_policy must be explicit or lower-only.');
   }
+  const typeOnlyDependencies = frontmatter.type_only_dependencies === undefined
+    ? 'free'
+    : frontmatter.type_only_dependencies;
+  if (!['ruled', 'free'].includes(typeOnlyDependencies)) {
+    throw new Error('type_only_dependencies must be ruled or free.');
+  }
   const allows = new Map();
   for (const roleId of roleOrder) {
     const key = `allow_${roleId}`;
@@ -125,6 +131,7 @@ export function parseArchitectureProfile(frontmatter) {
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id) })),
     dependencyPolicy,
+    typeOnlyDependencies,
     allows,
     evidence: stringArray(frontmatter.evidence, 'evidence'),
   };
@@ -218,6 +225,18 @@ export function evaluateArchitectureConformance(profile, importResult) {
   const violations = [];
   let unmappedEdges = 0;
   let unruledEdges = 0;
+  let typeOnlyEdgeCount = 0;
+  // Whole-scan usage discrimination receipt. `missing` counts edges the scanner
+  // emitted without any importUsage field; the record writer's mechanical gate
+  // reads these counts to refuse minting a receipt from a scan that cannot
+  // tell a type-only import from a value import.
+  const importUsageCounts = { value: 0, type_only: 0, unknown: 0, missing: 0 };
+  for (const edge of edges) {
+    if (edge.importUsage === undefined) importUsageCounts.missing += 1;
+    else if (Object.hasOwn(importUsageCounts, edge.importUsage)) {
+      importUsageCounts[edge.importUsage] += 1;
+    } else importUsageCounts.unknown += 1;
+  }
 
   for (const edge of edges) {
     // Architecture rules govern dependencies *originating* in the selected
@@ -231,6 +250,16 @@ export function evaluateArchitectureConformance(profile, importResult) {
     if (fromRoles.length !== 1 || toRoles.length !== 1) {
       unmappedEdges += 1;
       continue;
+    }
+    // Type-only edges have a profile-declared ruling (2026-08-27 decision):
+    // under 'free' (the default) a cited compile-time-only import is neither a
+    // violation nor an allowed edge -- it leaves the violated/allowed
+    // accounting entirely and is reported as its own named class. Under
+    // 'ruled' it is evaluated exactly like a value edge. Edges without usage
+    // information ('unknown' or absent) keep the existing fail-closed path.
+    if (edge.importUsage === 'type_only') {
+      typeOnlyEdgeCount += 1;
+      if (profile.typeOnlyDependencies !== 'ruled') continue;
     }
     const [fromRole] = fromRoles;
     const [toRole] = toRoles;
@@ -259,6 +288,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
         from: normalizePath(edge.from),
         to: normalizePath(edge.to),
         kind: edge.kind ?? 'unknown',
+        importUsage: edge.importUsage ?? 'unknown',
         rule: decision.rule,
       });
     }
@@ -289,6 +319,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
     violationCount: violations.length,
     violations: violations.slice(0, VIOLATION_SAMPLE_LIMIT),
     violationsLimited: violations.length > VIOLATION_SAMPLE_LIMIT,
+    typeOnlyEdgeCount,
     unknown: {
       coverageIncomplete,
       unmappedEdges,
@@ -301,11 +332,63 @@ export function evaluateArchitectureConformance(profile, importResult) {
       supportedLanguages: Array.isArray(importResult?.coverage?.supportedLanguages)
         ? importResult.coverage.supportedLanguages
         : [],
+      importUsageCounts,
     },
   };
 }
 
-export function buildArchitectureBrief(profile, importResult) {
+const GIT_REVISION_RE = /^[0-9a-f]{40}$/;
+const FOLDER_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
+const MEASURED_GIT_SHORT_SHA_LENGTH = 12;
+
+/**
+ * Dated measurement stamp for an architectureBrief:v1 (2026-08-27 decision,
+ * point 2). The stamp says when the scan ran, which tool produced it, and the
+ * exact source state it saw: a real commit short-sha plus dirty flag for git
+ * sources, a `sha256:` inventory fingerprint for plain folders. The two are
+ * never conflated: a git stamp carries no fingerprint and a folder stamp
+ * carries no sha.
+ */
+export function buildArchitectureMeasuredStamp(inspection, { at, toolName, toolVersion } = {}) {
+  const measuredAt = at ?? new Date().toISOString();
+  if (typeof measuredAt !== 'string' || Number.isNaN(Date.parse(measuredAt))) {
+    throw new Error('measured stamp requires an ISO-8601 time.');
+  }
+  const tool = {
+    name: nonBlank(toolName, 'measured stamp tool name'),
+    version: nonBlank(toolVersion, 'measured stamp tool version'),
+  };
+  if (inspection?.kind === 'git') {
+    if (typeof inspection.revision !== 'string' || !GIT_REVISION_RE.test(inspection.revision)) {
+      throw new Error('measured stamp requires a full git commit sha from the source inspection.');
+    }
+    if (typeof inspection.dirty !== 'boolean') {
+      throw new Error('measured stamp requires a boolean git dirty flag.');
+    }
+    return {
+      at: measuredAt,
+      tool,
+      source: {
+        kind: 'git',
+        revision: inspection.revision.slice(0, MEASURED_GIT_SHORT_SHA_LENGTH),
+        dirty: inspection.dirty,
+      },
+    };
+  }
+  if (inspection?.kind === 'folder') {
+    if (typeof inspection.fingerprint !== 'string' || !FOLDER_FINGERPRINT_RE.test(inspection.fingerprint)) {
+      throw new Error('measured stamp requires a sha256: folder fingerprint from the source inspection.');
+    }
+    return {
+      at: measuredAt,
+      tool,
+      source: { kind: 'folder', fingerprint: inspection.fingerprint },
+    };
+  }
+  throw new Error('measured stamp requires a git or folder source inspection.');
+}
+
+export function buildArchitectureBrief(profile, importResult, { measured } = {}) {
   const conformance = evaluateArchitectureConformance(profile, importResult);
   const nextActions = [];
   if (conformance.violations.length > 0) {
@@ -336,8 +419,10 @@ export function buildArchitectureBrief(profile, importResult) {
           : profile.allows.get(role.id) ?? null,
       })),
       dependencyPolicy: profile.dependencyPolicy,
+      typeOnlyDependencies: profile.typeOnlyDependencies,
       evidence: profile.evidence,
     },
+    ...(measured !== undefined ? { measured } : {}),
     conformance,
     agentPlanContract: {
       contract: 'architectureChangePlan:v1',
