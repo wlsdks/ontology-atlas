@@ -62,6 +62,29 @@ describe('sketch strokes', () => {
     }
   });
 
+  it('bows a long edge visibly, so a rectangle does not read as ruled', () => {
+    /*
+     * ⚠️ The defect found by cropping the built export on 2026-08-28: the bow was a flat multiple
+     * of the amplitude, so a 148px edge moved 1.4px and the two rectangles looked drawn with a
+     * ruler while only the stadium caps looked drawn by hand. Half the notation is the claim that
+     * a declared rule is hand-drawn, so an invisible wobble is a missing fact, not a small one.
+     */
+    const [pass] = sketchRect('views', 0, 0, 148, 62);
+    const segments = (pass ?? '').split('M ').filter(Boolean);
+    const deviations = segments.map((segment) => {
+      const [start, rest] = segment.split(' Q ');
+      const [control, end] = (rest ?? '').split(', ');
+      const at = (text: string) => (text ?? '').trim().split(' ').map(Number) as [number, number];
+      const [sx, sy] = at(start ?? '');
+      const [cx, cy] = at(control ?? '');
+      const [ex, ey] = at(end ?? '');
+      /* A quadratic passes at half the control point's offset from the chord's midpoint. */
+      return Math.hypot(cx - (sx + ex) / 2, cy - (sy + ey) / 2) / 2;
+    });
+    /* Every edge bows, and the long ones bow further than the short ones would on a flat rule. */
+    expect(Math.max(...deviations)).toBeGreaterThan(1);
+  });
+
   it('gives a stadium real arc caps, not a corner radius', () => {
     /* ISO 5807's terminator is a stadium. A rounded rectangle is a different symbol, so the caps
        are arcs of half the height rather than a large `rx`. */

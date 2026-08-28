@@ -125,6 +125,15 @@ export function ArchitectureSketch({
         viewBox={`0 0 ${width} ${height}`}
         width="100%"
         height={height}
+        /*
+         * ⚠️ **Pin the drawing to the left.** Measured on the built export at 1512: the element
+         * is 1348 wide while a four-role profile's viewBox is 804, and the default
+         * `xMidYMid` centred it — so a flow that reads left to right began 272px inside the
+         * canvas, with an equal field of empty dots on either side. The boxes do not grow to
+         * fill instead: 148×62 is a measured size, and stretching a node to use up width would
+         * invent one.
+         */
+        preserveAspectRatio="xMinYMid meet"
         role="presentation"
         data-testid="architecture-graph"
         data-edge-source={graph.edgeSource}

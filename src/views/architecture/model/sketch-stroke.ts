@@ -71,8 +71,18 @@ function sketchSegment(
   next: () => number,
   amplitude: number,
 ): string {
-  const cx = (from[0] + to[0]) / 2 + next() * amplitude * 1.6;
-  const cy = (from[1] + to[1]) / 2 + next() * amplitude * 1.6;
+  /*
+   * ⚠️ **The bow scales with the segment's length.** A flat multiple of the amplitude bowed a
+   * 148px edge by 1.4px, which at 1× is no bow at all: measured on the built export on
+   * 2026-08-28, the two rectangles read as ruled while only the stadium caps looked drawn — and
+   * half the notation is the claim that a declared rule looks hand-drawn. A hand's wobble is
+   * proportional to how far it travels, not a constant. `next()` is still consumed twice
+   * whatever the length, so the sequence stays aligned across passes.
+   */
+  const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+  const bow = amplitude * (2 + length / 60);
+  const cx = (from[0] + to[0]) / 2 + next() * bow;
+  const cy = (from[1] + to[1]) / 2 + next() * bow;
   return `M ${from[0].toFixed(2)} ${from[1].toFixed(2)} Q ${cx.toFixed(2)} ${cy.toFixed(2)}, ${to[0].toFixed(
     2,
   )} ${to[1].toFixed(2)}`;
@@ -158,10 +168,12 @@ export function sketchConnector(
 ): string {
   const next = wobbler(seed);
   const drift = () => next() * amplitude;
+  /* The same rule as `sketchSegment`: a longer reach wanders further. */
+  const sag = () => next() * amplitude * (1 + Math.abs(bx - ax) / 70);
   return (
     `M ${(ax + drift()).toFixed(2)} ${(ay + drift()).toFixed(2)} ` +
-    `C ${(ax + bow).toFixed(2)} ${(ay + drift()).toFixed(2)}, ` +
-    `${(bx - bow).toFixed(2)} ${(by + drift()).toFixed(2)}, ` +
+    `C ${(ax + bow).toFixed(2)} ${(ay + sag()).toFixed(2)}, ` +
+    `${(bx - bow).toFixed(2)} ${(by + sag()).toFixed(2)}, ` +
     `${(bx + drift()).toFixed(2)} ${(by + drift()).toFixed(2)}`
   );
 }

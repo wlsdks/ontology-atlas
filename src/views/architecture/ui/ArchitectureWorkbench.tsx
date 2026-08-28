@@ -523,6 +523,14 @@ export function ArchitectureWorkbench({
 
         <section className="min-w-0 p-5 md:p-8 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col">
+            {/*
+              ⚠️ **`ml-auto` on the status block, because `justify-between` stops applying the
+              moment the row wraps.** Measured on the built export at 1512 (2026-08-28): the
+              block reported `x=336`, the heading's own x — it had dropped to its own line, and a
+              `text-right` box 400px wide then sat in the left half of an 804px column as
+              right-aligned prose with a ragged left edge. `ml-auto` holds it at the right edge on
+              both the shared row and its own.
+            */}
             <div className="flex flex-wrap items-start justify-between gap-3">
               {/*
                 ⚠️ **The kind of drawing is the subject, not a tag.** The pattern rode in a 9.5px
@@ -567,7 +575,7 @@ export function ArchitectureWorkbench({
               </div>
               {record && conformance && measured ? (
                 <div
-                  className="flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
+                  className="ml-auto flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
                   data-testid="architecture-record-status"
                   data-architecture-record-status={conformance.status}
                 >
@@ -612,7 +620,7 @@ export function ArchitectureWorkbench({
                  * replaced.
                  */
                 <div
-                  className="flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
+                  className="ml-auto flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
                   data-testid="architecture-source-check"
                 >
                   <span className={badgeClass({
