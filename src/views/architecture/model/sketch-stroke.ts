@@ -57,6 +57,23 @@ export interface SketchOptions {
 }
 
 /**
+ * ⚠️ **The second pass echoes the first; it does not draw its own line.**
+ *
+ * Each pass used to take fresh noise, so on a short edge the two could bow in opposite directions
+ * and the pair read as one thick, leaning line — a rectangle looking like a parallelogram, which
+ * in ISO 5807 is a different symbol entirely. Measured on the installed app, then in the geometry:
+ * no single path leaned more than 1.12 degrees, but the long edges bowed 0.3–1.3% of their length
+ * while the short ones bowed 1.4–2.6%, so the divergence concentrated exactly where the eye reads
+ * a shape's uprightness.
+ *
+ * A hand that goes round twice lands near its own first line, not near the true rectangle. So the
+ * wobble is drawn once per shape and the second pass repeats it with a small deviation.
+ */
+function echo(base: number, next: () => number, spread: number): number {
+  return base + next() * spread;
+}
+
+/**
  * One pass of a line between two points that were already drifted by the caller.
  *
  * ⚠️ **The endpoints arrive drifted; this function must not drift them again.** Drifting inside
@@ -68,7 +85,7 @@ export interface SketchOptions {
 function sketchSegment(
   from: readonly [number, number],
   to: readonly [number, number],
-  next: () => number,
+  bows: readonly [number, number],
   amplitude: number,
 ): string {
   /*
@@ -81,8 +98,8 @@ function sketchSegment(
    */
   const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
   const bow = amplitude * (2 + length / 60);
-  const cx = (from[0] + to[0]) / 2 + next() * bow;
-  const cy = (from[1] + to[1]) / 2 + next() * bow;
+  const cx = (from[0] + to[0]) / 2 + bows[0] * bow;
+  const cy = (from[1] + to[1]) / 2 + bows[1] * bow;
   return `M ${from[0].toFixed(2)} ${from[1].toFixed(2)} Q ${cx.toFixed(2)} ${cy.toFixed(2)}, ${to[0].toFixed(
     2,
   )} ${to[1].toFixed(2)}`;
@@ -98,18 +115,30 @@ export function sketchRect(
   { amplitude = 0.9, passes = 2 }: SketchOptions = {},
 ): string[] {
   const next = wobbler(seed);
-  return Array.from({ length: passes }, () => {
+  /* One hand, one wobble: drawn once for the shape, then repeated with a small deviation. */
+  const cornerDrift = Array.from({ length: 8 }, () => next() * amplitude);
+  const edgeBows = Array.from({ length: 8 }, () => next());
+  const spread = amplitude * 0.4;
+
+  return Array.from({ length: passes }, (_unused, pass) => {
+    const first = pass === 0;
+    const at = (index: number, value: number) =>
+      value + (first ? cornerDrift[index]! : echo(cornerDrift[index]!, next, spread));
     /* Corners are drifted once and then shared by the two edges that meet there, so the outline
        closes. See `sketchSegment` for what happens when they are not. */
-    const drift = (value: number) => value + next() * amplitude;
     const corners: [number, number][] = [
-      [drift(x), drift(y)],
-      [drift(x + width), drift(y)],
-      [drift(x + width), drift(y + height)],
-      [drift(x), drift(y + height)],
+      [at(0, x), at(1, y)],
+      [at(2, x + width), at(3, y)],
+      [at(4, x + width), at(5, y + height)],
+      [at(6, x), at(7, y + height)],
     ];
     return corners
-      .map((corner, index) => sketchSegment(corner, corners[(index + 1) % corners.length]!, next, amplitude))
+      .map((corner, index) => {
+        const bows: [number, number] = first
+          ? [edgeBows[index * 2]!, edgeBows[index * 2 + 1]!]
+          : [echo(edgeBows[index * 2]!, next, 0.3), echo(edgeBows[index * 2 + 1]!, next, 0.3)];
+        return sketchSegment(corner, corners[(index + 1) % corners.length]!, bows, amplitude);
+      })
       .join(' ');
   });
 }
@@ -131,21 +160,28 @@ export function sketchStadium(
 ): string[] {
   const next = wobbler(seed);
   const radius = height / 2;
-  return Array.from({ length: passes }, () => {
+  /* One hand, one wobble — see `echo`. The caps and tangents are drawn once and repeated. */
+  const capDrift = next() * amplitude;
+  const tangentDrift = Array.from({ length: 8 }, () => next() * amplitude);
+  const spread = amplitude * 0.4;
+
+  return Array.from({ length: passes }, (_unused, pass) => {
+    const first = pass === 0;
     /*
      * ⚠️ The caps wobble too. With an exact radius the straight edges were unsteady while the two
      * arcs were machine-perfect, and the eye reads that mixture as a mistake rather than as a
      * drawing (zoomed inspection, installed app, 2026-08-28). A hand does not suddenly become a
      * compass at the corner.
      */
-    const capRadius = radius + next() * amplitude;
+    const capRadius = radius + (first ? capDrift : echo(capDrift, next, spread));
     /* The four tangent points where a straight edge meets a cap, each drifted once and reused by
        both the line and the arc that share it, so the outline closes. */
-    const drift = (value: number) => value + next() * amplitude;
-    const topLeft: [number, number] = [drift(x + radius), drift(y)];
-    const topRight: [number, number] = [drift(x + width - radius), drift(y)];
-    const bottomRight: [number, number] = [drift(x + width - radius), drift(y + height)];
-    const bottomLeft: [number, number] = [drift(x + radius), drift(y + height)];
+    const at = (index: number, value: number) =>
+      value + (first ? tangentDrift[index]! : echo(tangentDrift[index]!, next, spread));
+    const topLeft: [number, number] = [at(0, x + radius), at(1, y)];
+    const topRight: [number, number] = [at(2, x + width - radius), at(3, y)];
+    const bottomRight: [number, number] = [at(4, x + width - radius), at(5, y + height)];
+    const bottomLeft: [number, number] = [at(6, x + radius), at(7, y + height)];
     return (
       `M ${topLeft[0].toFixed(2)} ${topLeft[1].toFixed(2)} ` +
       `L ${topRight[0].toFixed(2)} ${topRight[1].toFixed(2)} ` +

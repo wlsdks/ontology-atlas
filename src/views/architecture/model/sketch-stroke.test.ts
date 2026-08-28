@@ -85,6 +85,28 @@ describe('sketch strokes', () => {
     expect(Math.max(...deviations)).toBeGreaterThan(1);
   });
 
+  it('lands its second pass on its own first line, not on a line of its own', () => {
+    /*
+     * ⚠️ The defect the installed app showed on 2026-08-28: a rectangle read as a parallelogram,
+     * which in ISO 5807 is a different symbol. No single path leaned more than 1.12 degrees — the
+     * two passes were bowing in opposite directions, and on the short edges, where they bowed
+     * 1.4-2.6% of their length against 0.3-1.3% on the long ones, the pair merged into one thick
+     * leaning line. A hand going round twice lands near its own first line.
+     */
+    const [first, second] = sketchRect('port', 0, 0, 148, 62);
+    const points = (pass: string) =>
+      [...pass.matchAll(/M ([-\d.]+) ([-\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    const a = points(first ?? '');
+    const b = points(second ?? '');
+    expect(a).toHaveLength(4);
+    expect(b).toHaveLength(4);
+    for (const [index, corner] of a.entries()) {
+      const apart = Math.hypot(corner[0]! - b[index]![0]!, corner[1]! - b[index]![1]!);
+      expect(apart).toBeGreaterThan(0); // still two strokes, not one drawn twice
+      expect(apart).toBeLessThan(1); // and not two independent rectangles
+    }
+  });
+
   it('gives a stadium real arc caps, not a corner radius', () => {
     /* ISO 5807's terminator is a stadium. A rounded rectangle is a different symbol, so the caps
        are arcs of half the height rather than a large `rx`. */

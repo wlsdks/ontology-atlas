@@ -195,7 +195,19 @@ export function ArchitectureSketch({
             markerHeight="6"
             orient="auto"
           >
-            <path d="M0,0.5 L7.5,4 L0,7.5" fill="none" stroke="context-stroke" strokeWidth={1.4} />
+            {/*
+              ⚠️ **An explicit stroke, not `context-stroke`.** The arrowhead was invisible in the
+              installed app while Chromium drew it correctly: WebKit does not resolve
+              `context-stroke` here, so the marker had `fill="none"` and no colour at all — and the
+              legend claimed an arrow the drawing did not have. Both stroke kinds already use the
+              same indigo, so naming it costs nothing and works in both engines.
+            */}
+            <path
+              d="M0,0.5 L7.5,4 L0,7.5"
+              fill="none"
+              stroke="var(--color-indigo-a60)"
+              strokeWidth={1.4}
+            />
           </marker>
         </defs>
 
