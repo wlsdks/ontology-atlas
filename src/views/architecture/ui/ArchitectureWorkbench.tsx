@@ -278,6 +278,17 @@ export function ArchitectureWorkbench({
   const roleReachOf = useMemo(() => {
     const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
     for (const edge of roleLayout?.edges ?? []) map.get(edge.from)?.push(edge.to);
+    /*
+     * ⚠️ **In the screen's own order, not the file's.** These arrive in the order the profile
+     * happens to list them, while the sentences under the canvas read down the chain — so one
+     * role's targets appeared as "port, domain" beside the drawing and "domain · port" in its
+     * card. A fresh-eyes walkthrough on 2026-08-28 caught it as "same fact, three orderings", and
+     * a reader comparing the two should not have to re-sort one of them in their head.
+     */
+    const rank = new Map(roleOrder.map((id, index) => [id, index]));
+    for (const targets of map.values()) {
+      targets.sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
+    }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
   }, [roleLayout]);

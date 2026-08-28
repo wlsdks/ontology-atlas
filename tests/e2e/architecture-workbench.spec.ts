@@ -184,3 +184,43 @@ test('a shared link opens the stage it names', async ({ page }) => {
     'true',
   );
 });
+
+test('the canvas can be grabbed and dragged, and a drag is not a click', async ({ page }) => {
+  /*
+   * ⚠️ The drawing keeps its true size, so a wide profile is reachable only by scrolling — and a
+   * fresh-eyes walkthrough on 2026-08-28 found that pressing and dragging left `scrollLeft` at 0.
+   * The only gesture that worked was a horizontal trackpad swipe, which nothing on screen names
+   * and a mouse cannot perform at all.
+   *
+   * Both halves are asserted, because they are in tension: a drag must move the canvas, and a
+   * press that barely moves must still select the node under it. A threshold is the only thing
+   * separating them, and a threshold with no test is a guess.
+   */
+  await page.setViewportSize({ width: 700, height: 900 });
+  await page.goto('/ko/architecture/');
+
+  const scroller = page.locator('[data-testid="architecture-graph"]').locator('..');
+  const canvas = (await scroller.boundingBox())!;
+  const scrollLeft = () => scroller.evaluate((element) => element.scrollLeft);
+  expect(await scrollLeft(), 'this width must cut the drawing for the test to mean anything')
+    .toBe(0);
+  expect(
+    await scroller.evaluate((element) => element.scrollWidth - element.clientWidth),
+  ).toBeGreaterThan(1);
+
+  /* Drag along the empty ground below the boxes, right to left. */
+  const y = canvas.y + canvas.height - 18;
+  await page.mouse.move(canvas.x + canvas.width - 40, y);
+  await page.mouse.down();
+  await page.mouse.move(canvas.x + 60, y, { steps: 12 });
+  await page.mouse.up();
+  expect(await scrollLeft(), 'press and drag must pan the canvas').toBeGreaterThan(0);
+
+  /* And the node that press began on is not selected by it. */
+  const node = page.getByTestId('architecture-graph-box-adapter');
+  await expect(node).toHaveAttribute('aria-pressed', 'false');
+
+  /* A plain click still chooses a role. */
+  await node.click();
+  await expect(node).toHaveAttribute('aria-pressed', 'true');
+});

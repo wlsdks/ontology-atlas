@@ -154,6 +154,62 @@ export function ArchitectureSketch({
     },
     [readCoveredEdges],
   );
+  /*
+   * ⚠️ **Press and drag pans the canvas.** The drawing keeps its true size, so a wide profile is
+   * reachable only by scrolling — and a fresh-eyes walkthrough on 2026-08-28 found that pressing
+   * and dragging left `scrollLeft` at 0: the only thing that worked was a horizontal trackpad
+   * swipe, which nothing on screen names and a mouse cannot perform at all. Grabbing the canvas is
+   * what every node editor does with it.
+   *
+   * Mouse only. Touch already pans this box natively, and taking pointer capture there would
+   * fight the browser rather than help it.
+   *
+   * A drag must not also select whatever was under the cursor when it started. The threshold is
+   * what separates the two: below it the press is still a click, above it the click is swallowed
+   * once. This is not drag-only discovery — the count chip says what is off the edge, the wheel
+   * still works, and the sentences carry the whole answer without any of it.
+   */
+  const pan = useRef<{ startX: number; startScroll: number; moved: boolean } | null>(null);
+  const swallowClick = useRef(false);
+  const PAN_THRESHOLD = 4;
+
+  const onPanStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    /*
+     * ⚠️ **The flag lives until the next press, not until it is used.** A drag that ends on empty
+     * ground produces no click to consume it, so it stayed armed and swallowed the next real one —
+     * caught by the gate below, which presses a node right after a drag. The order is fixed:
+     * pointerup, then any click, then the next pointerdown, so clearing here can never eat the
+     * click the drag is meant to suppress.
+     */
+    swallowClick.current = false;
+    const element = scrollerRef.current;
+    if (!element || event.pointerType !== 'mouse' || event.button !== 0) return;
+    if (element.scrollWidth <= element.clientWidth + 1) return;
+    pan.current = { startX: event.clientX, startScroll: element.scrollLeft, moved: false };
+  };
+  const onPanMove = (event: React.PointerEvent<HTMLDivElement>) => {
+    const element = scrollerRef.current;
+    const state = pan.current;
+    if (!element || !state) return;
+    const dx = event.clientX - state.startX;
+    if (!state.moved && Math.abs(dx) < PAN_THRESHOLD) return;
+    if (!state.moved) {
+      state.moved = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    element.scrollLeft = state.startScroll - dx;
+    readCoveredEdges();
+  };
+  const onPanEnd = (event: React.PointerEvent<HTMLDivElement>) => {
+    const state = pan.current;
+    pan.current = null;
+    if (!state?.moved) return;
+    swallowClick.current = true;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   const coveredMask = (() => {
     /* The fade is as wide as this panel's own inset, so the covered edge and the padded edge
        agree rather than each picking a number. */
@@ -289,6 +345,10 @@ export function ArchitectureSketch({
       <div
         ref={attachScroller}
         onScroll={readCoveredEdges}
+        onPointerDown={onPanStart}
+        onPointerMove={onPanMove}
+        onPointerUp={onPanEnd}
+        onPointerCancel={onPanEnd}
         /*
          * ⚠️ **A visible scrollbar, because the fade alone was not perceived.** A fresh-eyes
          * walkthrough measured 180px hidden at 700 and 490px at 390 and reported "no scrollbar, no
@@ -304,7 +364,10 @@ export function ArchitectureSketch({
          * a second answer. It also says how much is hidden and can be dragged, which the fade
          * could never do. The mask stays: where there is ink at the edge, it still softens the cut.
          */
-        className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]"
+        className={cn(
+          covered.left || covered.right ? 'cursor-grab active:cursor-grabbing' : undefined,
+          'overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
+        )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
       >
         <svg
@@ -443,7 +506,13 @@ export function ArchitectureSketch({
               aria-label={`${roleLabel(box.id)} · ${counts}`}
               data-graph-box={box.id}
               data-testid={`architecture-graph-box-${box.id}`}
-              onClick={() => onSelect(box.id)}
+              onClick={() => {
+                if (swallowClick.current) {
+                  swallowClick.current = false;
+                  return;
+                }
+                onSelect(box.id);
+              }}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
