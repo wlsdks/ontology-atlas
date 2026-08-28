@@ -333,7 +333,7 @@
     "reachInline": "{targets}에 의존 가능",
     "legendDependency": "리뷰된 개념 의존",
     "legendRelated": "관련(리뷰됨)",
-    "layerConcepts": "이 역할의 리뷰된 개념",
+    "layerConcepts": "이 역할의 리뷰된 개념 {count}개",
     "conceptCount": "개념 {count}개",
     "moduleCount": "모듈 {count}개",
     "moreOccupants": "+{count}개 더 보기",

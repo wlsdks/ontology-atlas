@@ -828,8 +828,7 @@ export function ArchitectureWorkbench({
                   moduleCountLabel={(count) => t('moduleCount', { count })}
                   moreLabel={(count) => t('moreOccupants', { count })}
                   showFewerLabel={t('fewerOccupants')}
-                  layerConceptsLabel={t('layerConcepts')}
-                  conceptCountLabel={(count) => t('conceptCount', { count })}
+                  layerConceptsLabel={(count) => t('layerConcepts', { count })}
                 />
               )}
             </div>

@@ -333,7 +333,7 @@
     "reachInline": "may depend on {targets}",
     "legendDependency": "reviewed concept dependency",
     "legendRelated": "related (reviewed)",
-    "layerConcepts": "Reviewed concepts in this role",
+    "layerConcepts": "Reviewed concepts in this role: {count}",
     "conceptCount": "{count, plural, one {# concept} other {# concepts}}",
     "moduleCount": "{count, plural, one {# module} other {# modules}}",
     "moreOccupants": "+{count} more",

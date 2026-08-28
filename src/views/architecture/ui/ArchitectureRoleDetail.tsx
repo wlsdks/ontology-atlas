@@ -51,7 +51,6 @@ export function ArchitectureRoleDetail({
   moreLabel,
   showFewerLabel,
   layerConceptsLabel,
-  conceptCountLabel,
 }: {
   /** The selected role's id — used for the test hooks the surface already names. */
   roleId: string;
@@ -85,8 +84,13 @@ export function ArchitectureRoleDetail({
   moreLabel: (count: number) => string;
   /** Collapses an expanded grid back to its preview row. */
   showFewerLabel: string;
-  layerConceptsLabel: string;
-  conceptCountLabel: (count: number) => string;
+  /**
+   * ⚠️ Carries its own count. Rendered beside a separate count label it read "reviewed concepts in
+   * this role · 23 concepts" — the same noun twice with a middot between, which the design rules
+   * name as a stutter rather than an emphasis. The modules side never had it, because there the
+   * count stands alone with no heading above it.
+   */
+  layerConceptsLabel: (count: number) => string;
 }) {
   /*
    * Expansion belongs to the panel, and it is keyed by the role so selecting another box starts
@@ -311,7 +315,7 @@ export function ArchitectureRoleDetail({
         data-testid={`architecture-concepts-${roleId}`}
       >
         <p className="text-caption text-[color:var(--color-text-quaternary)]">
-          {layerConceptsLabel} · {conceptCountLabel(concepts.length)}
+          {layerConceptsLabel(concepts.length)}
         </p>
         {concepts.length > 0 ? (
           <StaggeredFadeIn
