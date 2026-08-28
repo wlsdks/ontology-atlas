@@ -558,6 +558,52 @@ completeness and cites a source-backed boundary. During construction,
 as `Excludes`; that is an evidence limit for `Uncertainty`, not negative product
 scope.
 
+A source-backed project exclusion under an unfinished scope answer remains the
+`unqualified-project-exclusion` warning. It is one exact `requiredGapId`:
+independent source-aware citation review and explicit human acceptance can
+carry it forward, while leaving it unaccepted still blocks `writePlan`. The
+source-hidden phase keeps raw-source detail partial until that source-aware
+check; absence of raw source is not itself a claim mismatch.
+
+A mandatory warning that cannot become a human gap now blocks the first
+non-writing review instead of waiting for a qualification packet. The response
+still carries the exact review plan for repair, but lifecycle
+`writeEligibility` is `blocked` and the response is not a candidate release.
+Repair `proposal-warning-not-gap-eligible:*` diagnostics before starting the
+source-hidden or source-aware lane.
+
+`recommend_relations` likewise separates missing ownership from a redundant
+inverse. An element with `domain:` and an existing resolved `elements` or
+`contains` parent already has membership plus ownership, so no direct
+domain→element suggestion is emitted. A domain-assigned element with no
+containment parent still receives `missing_domain_containment`, and missing
+domain→capability containment is unchanged.
+
+After a valid first candidate, the agent seals one external ordered manifest of
+claim ids, statements, and exact `proposalRefs`. A source-hidden evaluator and a
+differently identified source-aware citation auditor may then run concurrently
+from that same manifest, without exchanging source or answers. Their scratch
+receipts join only if the hidden output was sealed first and every manifest row
+is unchanged; human acceptance follows the clean join. These receipts improve
+orchestration and auditability without adding an MCP field, identity proof, or
+write authority. If isolation is unavailable, the fail-closed lifecycle remains
+serial.
+
+The source-checkout bootstrap skill includes a read-only scratch helper for
+sealing, hidden/audit packaging, joining, exact acceptance binding, and release
+comparison. It imports the same lifecycle evaluators but never invokes MCP and
+never writes a vault. Proposal meaning, claims, witnesses, CQ answers, axes, and
+source verdicts remain agent-authored; a person still supplies the acceptance
+request digest, plan revision, and exact gap set before any executable response
+can be turned into bounded writer-call data.
+
+One proposal ref may carry several immutable qualification claims. Ref coverage
+alone is not enough: material `Definition`, `Includes`, `Excludes`, and
+`Uncertainty` assertions are audited separately. Source-use context must not be
+widened, and a measurement limit such as “not measured by this import packet”
+must retain that qualifier instead of becoming an absolute source-absence
+claim.
+
 Source currentness and competency provenance have different repair actions.
 When the source receipt itself is stale, the gap remains
 `source_changed` and the action is `remeasure_source`. When source is already

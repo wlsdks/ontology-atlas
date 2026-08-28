@@ -989,6 +989,34 @@ Business capability candidates follow the same principle. They are proposed only
 19. **index_project** `{ rootPath?, maxFiles?, threshold?, skipImports? }` — side-effect-free project indexing checkpoint that combines repo structure analysis, file-import and Go package-import indexing, and vault validation. It reuses one full import receipt for analyzer evidence, reports file and package relation counts separately, and preserves coverage instead of reducing uncertainty to one count. `plan.conceptDelta` separates raw candidates into existing, ambiguous-alias review, and genuinely new buckets, and `next.reviewCalls` gives exact calls for retrieving full rows before applying anything.
 20. **inspect_architecture** `{ rootPath?, profileSlug? }` — reads one reviewed `architecture-profile/v1`, scans current imports with the same bounded source analyzer, and returns the profile's governed import usages, usage-qualified role edges and receipts, violations, explicit unknowns, and the required `architectureChangePlan:v1` fields. Unknown usage stays fail-closed and cannot be declared away. Side effect 0; named architecture patterns remain declarations rather than inferred source facts.
 
+For first-pass construction, an `unqualified-project-exclusion` is an exact
+human-acceptance gap rather than a qualification-time hidden block.
+Source-hidden review keeps unverifiable raw-source detail partial until
+source-aware citation checking. After persistence, health does not recommend a
+duplicate direct-domain edge for an element whose `domain` membership and
+resolved containment owner already exist; genuinely unowned elements and
+missing capability containment remain review work.
+Mandatory proposal warnings that are not human-gap eligible block the first
+review plan before qualification work begins, so a pass-shaped analyzer result
+with unsafe citation/evidence warnings is a rejected draft rather than a
+candidate release.
+
+The first candidate's exact claim ids, statements, and `proposalRefs` can be
+sealed once and handed to isolated source-hidden and source-aware review lanes
+in parallel. The lanes do not share source or answers, any manifest mutation
+blocks their join, and human acceptance remains after that join; this is an
+agent orchestration receipt rather than a new server permission or schema.
+In source checkouts, the mirrored bootstrap skill provides a deterministic
+scratch helper for those receipt stages. Agents still decide every meaning,
+answer, evidence mapping, and citation verdict; the helper only removes repeated
+JSON/digest/witness projection and emits non-executing writer-call data after an
+exact executable release.
+Several qualification claims may share a concept ref so its material
+Definition, Includes, Excludes, and Uncertainty assertions are checked
+independently. Source-use wording and analyzer/packet measurement qualifiers
+remain exact; neither may be widened into a broader product claim or absolute
+absence.
+
 For `agent_brief`, structural readiness is not meaning confidence. A fresh call
 for an explicit project derives `meaningAssessment:v1` from three independent
 dimensions: the current graph structure, the versioned competency receipt and

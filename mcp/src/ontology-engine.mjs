@@ -3172,6 +3172,15 @@ export function createOntologyEngine(artifact, options = {}) {
       const domainSlug = resolveOptional(node.domain);
       if (!domainSlug) continue;
       const relation = node.kind === 'capability' ? 'capabilities' : 'elements';
+      // `element.domain` already records domain membership, while a resolved
+      // capability/project `elements` edge records ownership. Section 5 permits
+      // containment views to display the domain inverse without writing it.
+      // Recommending a second direct domain edge in that shape makes an exact
+      // approved plan look unfinished after it lands. Unowned elements still
+      // fall through to the direct-domain recommendation below.
+      if (node.kind === 'element' && hasResolvedContainmentParent(node.slug)) {
+        continue;
+      }
       if (hasResolvedEdge(domainSlug, node.slug, relation) || hasResolvedEdge(domainSlug, node.slug, 'contains')) {
         continue;
       }
@@ -4595,6 +4604,12 @@ export function createOntologyEngine(artifact, options = {}) {
   function hasResolvedEdge(from, to, via) {
     return (outgoing.get(from) || []).some(
       (edge) => edge.resolved && edge.to === to && edge.via === via,
+    );
+  }
+
+  function hasResolvedContainmentParent(slug) {
+    return (incoming.get(slug) || []).some(
+      (edge) => edge.resolved && (edge.via === 'elements' || edge.via === 'contains'),
     );
   }
 

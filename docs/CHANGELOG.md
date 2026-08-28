@@ -7,6 +7,54 @@
 
 ---
 
+## 2026-08-29 · One reviewed construction ends without hidden repair
+
+- A source-backed project exclusion under partial scope now reaches the human
+  as an exact `unqualified-project-exclusion` gap. Leaving that gap unaccepted
+  still blocks the write; evidence-limit exclusions remain hard errors.
+- Candidate evaluation keeps raw-source detail partial until source-aware
+  citation verification instead of treating source absence as a mismatch or
+  deleting an otherwise accurate claim.
+- Health no longer recommends a redundant direct domain relation for an element
+  that already has `domain` membership and a resolved `elements` / `contains`
+  owner. Genuinely unowned elements and missing capability containment remain
+  review work.
+- The first fresh trial held one candidate release, zero post-write relation
+  recommendations, 69/69 path-claim occurrences, and 47/47 persisted claims,
+  but took 1,923.581 seconds and exposed 23/25 claim statements changing after
+  source-hidden review. This falsified the 20-minute completion target even
+  though every final claim was accurate.
+- Bootstrap now seals exact claim rows before isolated source-hidden and
+  source-aware lanes run in parallel. Results may join only without actor,
+  access, digest, statement, or reference drift, and human acceptance still
+  follows the join. No public field, tool, schema, or write bypass was added.
+- A second fresh trial proved the isolation path: 25/25 qualification claims,
+  65/65 citations, 459.813 seconds of real lane overlap, 51/51 path occurrences,
+  and 40/40 persisted claims, but still took 2,061.604 seconds because agents
+  regenerated 2,158 lines of scratch receipt code.
+- The mirrored bootstrap skill now ships a read-only qualification handoff
+  helper. It packages compact agent-authored semantics through seal, hidden,
+  audit, join, exact human acceptance, and release verification stages without
+  invoking MCP or writing the vault; 26 mutation and happy-path tests protect
+  actor, access, claim, citation, gap, request, and write-plan boundaries.
+- Independent forward use caught and fixed analyzer-body newline preservation
+  and cold-start regression evidence in the helper. It also exposed mandatory
+  citation/evidence warnings that appeared pass-shaped until qualification;
+  those warnings now block the first review and cannot be counted as a
+  candidate release.
+- The final unfamiliar-repository run reached a reviewable candidate in 748
+  seconds and completed the exact write in 2,252.861 seconds, with one candidate
+  release and zero post-write recommendations. This is 54.38% faster than the
+  4,938.794-second recent trial, but it falsifies the 20-minute hypothesis; the
+  measured development triggers are now 15 minutes to review and 40 minutes to
+  independently qualified write, never a public runtime guarantee.
+- Its first persisted audit caught three failures (45/48): one widened use case
+  and two measurement qualifiers collapsed into false absence. Qualification
+  now permits several claims per proposal ref and requires separate material
+  Definition/Includes/Excludes/Uncertainty claims. A corrected fresh handoff
+  replay verified 75/75 claims, 9/9 claim paths, and 73/73 vault/receipt paths
+  with zero exhaustive quantifiers.
+
 ## 2026-08-28 · Bounded capability lists stay bounded through agent handoff
 
 - `analyze_repo_structure` now rejects an evidence limit such as “operations

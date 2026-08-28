@@ -40,6 +40,411 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-29 — First-pass performance is staged, and body assertions are the audit unit
+
+**Convened because**: the final fresh trial completed safely but falsified the
+1,200-second target and its first persisted handoff failed three source claims.
+Both observations are more useful than preserving an aspirational number. This
+solo PO revisit replaces an internal experiment gate; it does not publish a
+cross-device/runtime promise or weaken qualification.
+
+**Observed final fresh trial**:
+
+- One reviewable candidate was released on the first proposal draft at **748
+  seconds**. It contained 7 authored nodes and 9 relations. Sealing finished at
+  1,045 seconds; builder stage logging finished at 1,072 seconds. The isolated
+  evaluator windows overlapped for 303 seconds. Exact human acceptance,
+  executable re-analysis, 7/7 concept writes, 9/9 relation writes, four starter
+  deletions, source binding, and finalization ended at **2,252.861 seconds**.
+- The final graph had 8 nodes including the vault README, 14/14 resolved edges,
+  0 issues, 0 unresolved edges, 0 orphans, 0 cycles, 0 relation
+  recommendations, and 0 maintenance actions. Phase 2 resolved **63/63 path
+  occurrences** across six unique paths.
+- Qualification verified 25/25 sealed claims and 84/84 claim-witness citations.
+  The persisted source-hidden reader used 8/8 full bodies with 0 truncation and
+  emitted 48 claims, but Phase 4 verified only **45/48**. One definition widened
+  a named source use case to a broader scenario. Two uncertainty answers dropped
+  their “not measured by the static packet” qualifier and became false absence
+  claims despite current browser evidence.
+- The cause was structural: the helper required exact proposal-ref coverage but
+  prohibited several claims sharing one ref, so one definition claim could hide
+  the other Includes/Excludes/Uncertainty assertions in the same body. The
+  helper now allows repeated refs while preserving first-occurrence coverage
+  order, and the workflow requires each material body assertion to be audited.
+- A forward repair changed only those three scratch-vault statements. A fresh
+  source-hidden reader then emitted 75 granular claims from the corrected vault;
+  an independent source-aware audit verified **75/75**, 9/9 claim path
+  occurrences, and 73/73 vault/receipt path occurrences, with 0 failures/skips
+  and 0 `only` / `all` / `every` / `exactly` occurrences.
+
+**Measured comparison**: the latest pre-repair trial took 4,938.794 seconds,
+three candidate releases, and eight post-write relation recommendations. The
+final run took 2,252.861 seconds, one candidate release, and zero recommendations:
+**2,685.933 seconds saved, 54.38% lower wall time, 2.19× throughput** while
+retaining independent qualification and exact writes.
+
+**PO pass**: 24/24, Build and verify. The 20-minute target failed in every safe
+end-to-end attempt; keeping it would reward deleting the source-hidden or
+source-aware work that gives Atlas its reason to exist.
+
+**Decision (accountable: jinan)**:
+
+1. Retire 1,200 seconds as this slice's completion gate. It was an unproven
+   hypothesis, never a public promise. Preserve the failed measurements.
+2. Keep two observed development-machine budgets for small unfamiliar
+   repositories: reviewable candidate by 15 minutes and independently qualified
+   final write by 40 minutes. These are regression triggers, not product or
+   cross-machine guarantees; promote them only after three clean helper runs.
+3. Speed never compensates for quality. A clean first pass still requires one
+   candidate release, no mandatory warning entering qualification, exact claim/
+   citation coverage, 100% persisted claim verification, zero exhaustive
+   quantifiers, and zero plan-caused post-write recommendations.
+4. Proposal-ref coverage is necessary but not sufficient. Material Definition,
+   Includes, Excludes, and Uncertainty assertions each receive immutable claims;
+   multiple claims may share a proposal ref. Source-use wording and measurement
+   qualifiers remain exact through candidate, persistence, and handoff.
+5. The final run's original 45/48 remains a recorded RED. The 75/75 forward
+   repair is proof for the exact defect and new rule, not a rewrite of that
+   measurement. The next fresh construction must pass 100% on its first
+   persisted audit.
+6. `BASELINE.md` does not move: this run did not beat the recorded global build
+   cost or unanswered-question measures. This decision records the named
+   recent-trial comparison without erasing the stronger historical baseline.
+
+**Recorded dissent**: a 40-minute trigger can normalize a slow workflow, and a
+forward repair is weaker than a new clean subject. **Falsifier**: any of the
+next three helper runs exceeds 40 minutes on a comparable small repository,
+needs more than one candidate release, changes a sealed claim, fails a first
+persisted claim, or emits plan-caused maintenance. **Revisit**: immediately on
+the first observation; otherwise after those three runs.
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — Mandatory warnings fail the candidate before qualification
+
+**Convened because**: the helper's independent forward use reached a
+`proposalValidation.status: pass` review plan with fourteen risky citation and
+competency-evidence warnings. Those warnings are deliberately not human-gap
+eligible, but lifecycle exposed them only after both qualification lanes had
+finished. This is a solo application of the standing first-pass council rule:
+mandatory evidence warnings cannot be laundered through acceptance and must not
+remain a late surprise.
+
+**Observed forward use**:
+
+- The helper first found two mechanical defects and failed closed without vault
+  writes: analyzer-authored body newlines were rejected as padded text, and a
+  cold-start qualification could not add its required current regression
+  witness. RED/GREEN probes now preserve exact body bytes/digests and derive a
+  reserved regression witness from the frozen CQ set while leaving
+  maintainability as the evaluator's judgment.
+- After those fixes, `seal`, `hidden`, and `audit` each executed in about 0.06
+  seconds. Nine grouped claims covered 27/27 proposal refs; the citation lane
+  verified 9/9 claims, 43/43 claim-witness pairs, and 46/46 source fragments.
+- Join then correctly refused fourteen `proposal-warning-not-gap-eligible:*`
+  diagnostics. The plan had never been a releasable candidate even though the
+  analyzer status was `pass`; counting it as one wasted the entire independent
+  evaluation.
+
+**PO pass**: 24/24, Build and verify. This is a candidate-stage truth fix, not a
+new approval policy: gap-eligible warnings remain reviewable; mandatory warnings
+become visible blockers earlier.
+
+**Decision (accountable: jinan)**:
+
+1. With no qualification packet, lifecycle inspects mandatory non-gap proposal
+   warnings. Any such warning returns `writeEligibility: blocked`, an exact
+   `proposal-warning-not-gap-eligible:*` diagnostic, the review plan for repair,
+   and no write plan.
+2. A gap-eligible partial/visible warning remains `reviewable` and produces its
+   exact required gap. `unqualified-project-exclusion` keeps the human-sovereign
+   behavior decided by the standing council.
+3. Candidate-release metrics count only a lifecycle `reviewable` plan. A
+   pass-shaped but mandatory-warning-blocked response is a rejected draft and
+   must be repaired before sealing or starting either evaluator.
+4. The helper recomputes this first lifecycle gate from current source code, so
+   stale sealed packets fail after the change. No public field, writer, or new
+   warning category is added.
+
+**Recorded dissent**: moving mandatory warnings earlier can add proposal repair
+rounds and make analyzer `status: pass` appear internally inconsistent.
+**Falsifier**: a gap-eligible warning becomes blocked, a mandatory warning still
+reaches the lanes, or a final fresh trial loses exact claim/citation accuracy.
+**Revisit**: immediately on the first observation.
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — Deterministic scratch receipts replace per-run qualification code
+
+**Convened because**: the sealed parallel-lane decision received its required
+second fresh test. Its isolation and claim-integrity hypothesis passed, but its
+1,151.581-second performance projection failed. This solo PO revisit stays
+inside the existing bootstrap skill: no public MCP tool, schema, field, writer,
+UI, or automatic approval changes.
+
+**Prior decision**: “Qualification claims are sealed before parallel review”
+remains authoritative for actor/access/claim isolation. Its 1,200-second
+falsifier fired, so the sequencing stays and the per-run mechanical assembly is
+replaced.
+
+**Observed second fresh trial**:
+
+- One unfamiliar MIT TypeScript editor extension produced one valid candidate
+  release after one rejected proposal draft. The exact plan wrote 7 authored
+  nodes and 9 relations; the final graph had 14/14 resolved edges, 0 issues, 0
+  orphans, 0 relation recommendations, and 0 maintenance actions.
+- First tool to final write took **2,061.604 seconds**. Candidate release took
+  448 seconds; candidate sealing added 168 seconds; the isolated hidden and
+  citation lanes ran for 629.980 and 459.813 seconds with **459.813 seconds of
+  actual overlap**; manual join added 360 seconds; final release/write
+  orchestration added 411 seconds, including 175.066 seconds from first to last
+  write.
+- The sealed manifest remained immutable. Source-aware qualification verified
+  **25/25 claims** and **65/65 citations** with distinct actors and no forbidden
+  access. Phase 2 resolved **51/51 path-claim occurrences**. A physically
+  source-hidden persisted-vault reader used 7/7 full bodies with 0 truncation,
+  answered 2 questions fully and 4 partially, and emitted 40 atomic claims.
+  Phase 4 verified **40/40 claims**, with 0 failed/skipped claims, 0 local scope
+  promotions, and 0 introduced exhaustive quantifiers.
+- The parallel logic was not the remaining cost. Agents generated ten temporary
+  scripts totaling 2,158 lines to repeat canonical JSON, hashes, CQ witness
+  projection, audit joining, acceptance binding, and release comparison. The
+  engine's concept/relation writes remained below one second.
+
+**PO pass**: 24/24, Build and verify. Problem insight 4; user moment 4;
+ontology value 4; agent value 4; differentiation 4; verification 4. The helper
+removes repeated mechanics while leaving every meaning and truth judgment with
+the independent agents and person.
+
+**Decision (accountable: jinan)**:
+
+1. Ship one mirrored `ontology-bootstrap/scripts/qualification-handoff.mjs`
+   scratch helper with `seal`, `hidden`, `audit`, `join`, `accept`, and `release`
+   stages. It imports the existing qualification/lifecycle evaluators and adds
+   no public contract.
+2. The agent still authors the proposal, claim statements, witness selection,
+   competency answers/targets, quality-axis judgments, and source audit. The
+   helper derives only repeated witness refs, pending citations, canonical
+   projections/digests, exact gaps, and bounded writer-call files.
+3. `join` remains pre-acceptance and requires distinct actors, declared access
+   boundaries, overlapping parallel windows, source/plan/manifest identity,
+   complete source-hidden coverage, and verified claim/witness pairs. It cannot
+   invent or modify claims.
+4. `accept` requires the person's exact id, `authority: human`, request digest,
+   plan digest/revision, and complete gap set. `release` requires the unchanged
+   proposal and accepted qualification in the final analyzer request plus an
+   executable response whose write plan equals the sealed review plan.
+5. The helper never invokes MCP or writes a vault. It atomically creates a new
+   scratch artifact directory; agents still execute the existing MCP writers in
+   concept-then-relation order and validate/finalize afterward.
+6. Run the helper's mutation suite, one independent forward use, and a final
+   unfamiliar-repository timed field trial before merge.
+
+**Recorded dissent**: a 1,100-line internal helper can become a parallel private
+contract and still leave too little margin because semantic source-hidden work
+is irreducible. **Falsifier**: the helper authors a semantic judgment or human
+identity, invokes a writer, accepts missing/foreign/mutated evidence, produces a
+write plan before exact acceptance, or the final fresh run still exceeds 1,200
+seconds / loses claim or citation accuracy / emits a repair recommendation.
+**Revisit**: immediately on the first observation; otherwise after three helper
+uses.
+
+**Slice**: IN mirrored read-only scratch helper · compact semantic inputs ·
+canonical stage receipts · mutation tests · independent forward test · final
+fresh trial · OUT public MCP/CLI schema · vault writer · automatic acceptance ·
+semantic generation · identity authentication · generic NLP.
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — Qualification claims are sealed before parallel review
+
+**Convened because**: the fresh run required by the first-pass completion
+decision crossed its 1,200-second falsifier and exposed claim text changing
+after the source-hidden measurement. This is a solo PO revisit of that standing
+council decision, not a new council: the repair sequences existing evaluation
+roles and receipts without adding a public tool, field, schema, writer, UI, or
+product boundary.
+
+**Prior decision**: “One reviewed construction ends without hidden repair”
+remains the authority for warning/gap parity and element recommendation
+semantics. Its time and unchanged-source-hidden-claim falsifiers fired, so its
+instruction to revisit immediately is active here.
+
+**Observed fresh trial**:
+
+- One unfamiliar Apache-2.0 Python command-line converter produced one valid
+  candidate release after two analyzer calls. The exact released plan contained
+  7 authored nodes and 9 relations; the compiled graph had 14/14 resolved edges,
+  0 issues, 0 orphans, and 0 post-write relation recommendations.
+- First tool to final write took **1,923.581 seconds**, down 61.05% from
+  4,938.794 seconds but still 723.581 seconds above the target. The release gate
+  itself took 0.236 seconds and the 7 concept plus 9 relation writes took 0.428
+  seconds. The critical path was serial agent orchestration: candidate work,
+  dispatch delay, source-hidden evaluation, then source-aware audit and packet
+  assembly.
+- Phase 2 resolved **69/69 path-claim occurrences** across five unique paths.
+  A physically source-hidden persisted-vault reader used 7/7 full bodies with 0
+  truncation, answered 2 questions fully and 4 partially, and emitted 47 atomic
+  claims. Phase 4 verified **47/47 claims**, with 0 skipped/failed claims and 0
+  introduced `only` / `all` / `every` / `exactly` quantifiers.
+- The qualification audit itself found a separate boundary failure: 23 of 25
+  source-hidden claim statements were rewritten after source became visible,
+  while their ids and `proposalRefs` stayed the same. The rewritten statements
+  and final citations were accurate, but id-only coverage made the source-hidden
+  receipt appear to cover wording it had never seen.
+
+**PO pass**: 24/24, Build and verify. Problem insight 4; user moment 4;
+ontology value 4; agent value 4; differentiation 4; verification 4. The user
+moment is the first AI construction before Atlas can become a useful shared
+meaning asset. The measured delay is removable without weakening the asset.
+
+**Decision (accountable: jinan)**:
+
+1. Immediately after the first candidate round-trip passes, seal one ordered
+   scratch claim manifest containing final `id`, `statement`, and exact
+   `proposalRefs`, plus its digest. It is orchestration evidence, not a new MCP
+   contract or permission.
+2. Start a source-hidden evaluator and differently identified source-aware
+   citation auditor concurrently from that manifest. Builder, evaluator, and
+   auditor identities differ. The hidden lane receives no source/shared vault/
+   audit output; the citation lane receives no hidden answers; neither lane
+   exchanges results while running.
+3. The hidden lane seals its CQ/axis/source-hidden receipt first. The citation
+   lane returns pass/fail evidence for each immutable claim and cannot rewrite
+   it. Record both branch timestamps and require actual overlap before claiming
+   the parallel performance result.
+4. Join only when actor, access, digest, row count/order, statement,
+   `proposalRefs`, source audit, and proposal coverage all match. The final
+   qualification `claims` array must equal the manifest byte-for-byte. Any
+   mismatch blocks the join and all writes.
+5. Human acceptance remains after the clean join and exact gap display. If the
+   lanes cannot be isolated, retain the safe serial lifecycle and report its
+   cost instead of weakening independence.
+6. A second unfamiliar-repository fresh trial is mandatory before merge. The
+   first run is correctness evidence and a performance RED, not completion.
+
+**Recorded dissent**: scratch isolation and self-declared actors are not OS
+authentication; a careless coordinator can claim parallelism while leaking
+source or answers, and the projected 1,151.581-second path has only 48.419
+seconds of margin. **Falsifier**: the second run exceeds 1,200 seconds, releases
+more than one candidate, lacks overlapping lane timestamps, mutates any manifest
+row, shares an actor or forbidden input, records acceptance before the join,
+falls below 100% claim/citation accuracy, introduces an exhaustive quantifier,
+or produces a post-write relation recommendation. **Revisit**: immediately on
+the first such observation.
+
+**Slice**: IN sealed scratch manifest · isolated parallel read-only evaluation ·
+explicit actor/access/timing receipts · mutation probes · second fresh trial ·
+OUT public schema/tool/field/UI · identity authentication · automatic approval ·
+new write authority · generic NLP.
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — One reviewed construction ends without hidden repair
+
+**Convened because**: the owner accepted the next construction-quality slice
+after the 2026-08-28 field trial. It changes public
+`analyze_repo_structure` lifecycle semantics and the meaning of health
+recommendations, so all five PO seats ran one independent round and one
+rebuttal.
+
+**Prior decisions**: the 2026-08-28 bounded-evidence rule stands. The
+2026-08-12 construction decision also stands: accepted competency gaps and
+maintenance outside an exact plan do not retroactively make the approved write
+false, and Atlas never adds that maintenance after approval. The §5 domain
+membership rule is decisive here: `element.domain` is stored child→parent and a
+containment view may display the inverse without writing another relation.
+
+**Observed phenomenon**: one unfamiliar-repository trial took 4,938.794 seconds
+and three candidate versions before its first write. A partial-scope project
+exclusion was already surfaced as a warning intended for human judgment, but
+the lifecycle treated that warning as non-approvable only after qualification.
+After the exact 21-concept / 20-relation plan was accepted and written, health
+recommended eight `domain --elements--> element` rows even though every element
+already stored its reviewed domain membership. The final handoff remained
+accurate at 36/36 claims with zero exhaustive-quantifier failures.
+
+### PO Council Verdict — first-pass construction completion
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify the two late failure classes; treat the 20-minute target as unproven until a fresh run | Problem insight 4 · User moment 4 |
+| Craft | Move completion truth before approval and prove source/bundled behavior, not schema parity alone | Verification 4 |
+| Steward | Preserve reviewed local meaning and prohibit hidden post-approval writes | Ontology value 4 · Agent value 4 |
+| Wedge | The checks are hygiene; the wedge is a trustworthy Git-local meaning asset that accumulates without semantic debt | Differentiation 4 |
+| Leverage | Two working days; do not open endpoint repair, registration, scale, Rust, schema, tool, or UI work | appetite and slice |
+
+**Rubric total**: 24/24 (fatal zeros: none)
+
+**Decisive disagreement**: four seats initially proposed requiring eight new
+explicit domain→element rows. Their strongest rebuttal was that this duplicates
+canonical `element.domain`, inflates the approved graph, and optimizes a health
+heuristic rather than meaning. The accountable decision accepts that rebuttal:
+keep capability→element ownership and child→domain membership, and stop health
+from recommending a redundant direct domain edge when an element already has a
+resolved containment owner. An element with no `elements` / `contains` parent
+still receives the direct-domain recommendation. Capability containment
+recommendations remain unchanged because domains author a canonical
+`capabilities` list.
+
+The same constraint changes the exclusion decision. Do not promote
+`unqualified-project-exclusion` to an error: its existing warning deliberately
+lets a source-aware evaluator and the human owner judge a possibly valid
+boundary. Instead, make it an exact `requiredGapId`; an unaccepted warning still
+blocks write eligibility. Evidence-limit wording remains the hard
+`epistemic-exclusion-boundary` error. This preserves human sovereignty while
+removing a qualification-time surprise.
+
+**Decision (accountable: jinan)**:
+
+1. `unqualified-project-exclusion` joins the bounded set of proposal warnings
+   that can proceed only through independent evaluation and exact human gap
+   acceptance. The MCP description that every honest warning becomes a gap must
+   become true in code.
+2. `recommend_relations` does not propose a domain→element inverse when a valid
+   `element.domain` plus an existing `elements` / `contains` parent already
+   express membership and ownership. It continues to report unowned elements,
+   missing domain→capability containment, and every genuinely absent relation.
+3. Bootstrap and candidate-evaluation guidance must separate transport from
+   truth: a source-hidden reader marks source-body detail partial when it cannot
+   verify it; the source-aware citation audit decides support. False source
+   attribution remains a defect, but accurate source-backed detail is not
+   deleted merely because raw source is absent from the handoff packet.
+4. One frozen replay and one fresh four-phase trial must measure candidate
+   releases, wall time, post-write recommendations, citation/claim accuracy,
+   unanswered questions, and exhaustive-quantifier failures separately.
+
+**Recorded dissent**: making a partial-scope project exclusion approvable can
+repeat the exact kind of negative claim a source-hidden reader cannot verify,
+and suppressing the inverse recommendation can hide a useful human-authored
+domain index. **Falsifier**: an accepted partial exclusion produces any failed
+claim; an element becomes unreachable from its project/domain/capability path;
+the fresh run needs more than one released candidate, exceeds 1,200 seconds,
+emits any post-write relation recommendation caused by the released plan, loses
+100% citation/claim accuracy, or introduces an exhaustive quantifier.
+**Revisit**: immediately on the first falsifier; otherwise after three fresh
+constructions.
+
+**Slice**: IN lifecycle warning/gap parity · element membership recommendation
+correction · mirrored bootstrap and field-trial guidance · exact RED/GREEN
+probes · source/bundled behavior parity · frozen replay · one fresh field trial ·
+dogfood ontology synchronization · appetite two working days · OUT automatic
+post-approval relations · generic prose entailment/NLP · new tool/schema/kind/UI ·
+Rust dependency resolution · endpoint repair · client registration · 100+ node
+qualification · historical-vault backfill · broad documentation rewrite.
+
+**Status**: valid
+
+---
+
 ## 2026-08-28 — Bounded capability evidence never becomes exhaustive scope
 
 **Convened because**: the owner asked both to make README's reason to use Atlas
