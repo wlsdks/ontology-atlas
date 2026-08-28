@@ -95,3 +95,34 @@ describe('the run control', () => {
     expect(screen.getByTestId('architecture-graph-run')).not.toBeDisabled();
   });
 });
+
+describe('the rule sentences', () => {
+  it('are painted, not left one pixel wide in the accessibility tree', () => {
+    /*
+     * ⚠️ The walkthrough on 2026-08-28 found the complete answer to the screen's own question
+     * inside an `sr-only` box measured at one pixel. A fact only the accessibility tree carries is
+     * a fact on no screen at all.
+     */
+    const { container } = draw();
+    const list = container.querySelector('[data-testid="architecture-edge-sentences"]');
+    expect(list).not.toBeNull();
+    expect(list?.className).not.toContain('sr-only');
+  });
+
+  it('read down the chain, not in the order the canvas paints them', () => {
+    /* The canvas paints the longest skip first so short strokes land on top; read as sentences
+       that order scatters the same role across the list. */
+    const { container } = draw();
+    const froms = [...container.querySelectorAll('[data-testid="architecture-edge-sentences"] li')]
+      .map((li) => li.textContent?.split(':')[0]?.trim() ?? '');
+    const firstSeen = new Map<string, number>();
+    froms.forEach((from, index) => {
+      if (!firstSeen.has(from)) firstSeen.set(from, index);
+    });
+    /* Every run of one role is contiguous: a role never reappears after another has begun. */
+    for (const [role, start] of firstSeen) {
+      const last = froms.lastIndexOf(role);
+      expect(froms.slice(start, last + 1).every((f) => f === role)).toBe(true);
+    }
+  });
+});

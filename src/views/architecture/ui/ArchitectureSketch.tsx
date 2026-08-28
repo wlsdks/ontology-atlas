@@ -99,6 +99,25 @@ export function ArchitectureSketch({
     (edge) => edge.columnSpan <= 1 || selected === edge.from || selected === edge.to,
   );
 
+  /*
+   * ⚠️ **Reading order is not drawing order.** `buildArchitectureGraph` sorts by column span
+   * descending so the longest skip is painted first and short strokes land on top of it. Read as
+   * sentences that order scatters: the storefront profile listed adapter, adapter, application,
+   * adapter, application, port. Grouped by where the rule starts, the same six read down the
+   * chain, so the list is sorted here instead of changing what the canvas paints.
+   */
+  const sentenceOrder = useMemo(() => {
+    const columnOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
+    const at = (id: string) => columnOf.get(id) ?? 0;
+    return [...graph.edges].sort(
+      (a, b) =>
+        at(a.from) - at(b.from) ||
+        at(a.to) - at(b.to) ||
+        a.from.localeCompare(b.from) ||
+        a.to.localeCompare(b.to),
+    );
+  }, [graph.boxes, graph.edges]);
+
   const slots = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
   const width = PAD_X * 2 + graph.columns * BOX_W + (graph.columns - 1) * COL_GAP;
   /*
@@ -113,46 +132,59 @@ export function ArchitectureSketch({
 
   return (
     <div className="architecture-canvas-ground relative rounded-panel border border-[color:var(--color-border-soft)]">
+      {/*
+        ⚠️ **The control has its own row rather than floating over the drawing.** As an absolute
+        overlay it sat in the top-right corner: at 1512 that is empty dot field, and once the
+        canvas became a scrolling viewport it covered a node outright at 390. An opaque chip on
+        top of a node is the accepted-overlap the design system forbids, and a control alone in an
+        empty corner reads as decoration.
+      */}
       {graph.edges.length === 0 ? null : (
-        <button
-          type="button"
-          onClick={() => {
-            pending.current = visibleEdges.length;
-            setRunSeq((seq) => seq + 1);
-            setRunning(true);
-          }}
-          disabled={running}
-          data-testid="architecture-graph-run"
-          className={cn(
-            controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverBorder: 'strong' }),
-            'absolute right-4 top-4 z-10 bg-[color:var(--color-elevated)]',
-          )}
-        >
-          <svg width={9} height={10} viewBox="0 0 9 10" aria-hidden>
-            <path d="M0.5 0.5 L8.5 5 L0.5 9.5 Z" fill="currentColor" />
-          </svg>
-          {runLabel}
-        </button>
+        <div className="flex justify-end px-[var(--card-pad)] pt-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              pending.current = visibleEdges.length;
+              setRunSeq((seq) => seq + 1);
+              setRunning(true);
+            }}
+            disabled={running}
+            data-testid="architecture-graph-run"
+            className={cn(
+              controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverBorder: 'strong' }),
+              'bg-[color:var(--color-elevated)]',
+            )}
+          >
+            <svg width={9} height={10} viewBox="0 0 9 10" aria-hidden>
+              <path d="M0.5 0.5 L8.5 5 L0.5 9.5 Z" fill="currentColor" />
+            </svg>
+            {runLabel}
+          </button>
+        </div>
       )}
 
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        width="100%"
-        height={height}
-        /*
-         * ⚠️ **Pin the drawing to the left.** Measured on the built export at 1512: the element
-         * is 1348 wide while a four-role profile's viewBox is 804, and the default
-         * `xMidYMid` centred it — so a flow that reads left to right began 272px inside the
-         * canvas, with an equal field of empty dots on either side. The boxes do not grow to
-         * fill instead: 148×62 is a measured size, and stretching a node to use up width would
-         * invent one.
-         */
-        preserveAspectRatio="xMinYMid meet"
-        role="presentation"
-        data-testid="architecture-graph"
-        data-edge-source={graph.edgeSource}
-        className="block max-w-full"
-      >
+      {/*
+        ⚠️ **The drawing keeps its size and the canvas scrolls.** It used to be `width="100%"`,
+        which fits the viewBox to the element — and at 390 that is a 0.39 scale, so measured on the
+        built export the labels rendered at roughly 4px and the counts were a smudge, while the run
+        button (plain HTML, outside the SVG) stayed full size and became the largest thing on the
+        canvas.
+
+        Scaling an SVG scales the text inside it, which is how a transform quietly produces sizes
+        the type ramp forbids and no lint rule can see. `.claude/rules/design.md` already answers
+        this for wide content: a diagram scrolls inside its own container and the page body never
+        does. That is also what every node editor does — the canvas is a viewport, not a fit.
+      */}
+      <div className="overflow-x-auto">
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          width={width}
+          height={height}
+          role="presentation"
+          data-testid="architecture-graph"
+          data-edge-source={graph.edgeSource}
+          className="block"
+        >
         <defs>
           <marker
             id="architecture-sketch-arrow"
@@ -334,18 +366,35 @@ export function ArchitectureSketch({
             </g>
           );
         })}
-      </svg>
+        </svg>
+      </div>
 
-      {/* The drawing is presentational, so every stroke states itself here. */}
-      <ol className="sr-only">
-        {graph.edges.map((edge) => (
-          <li key={`${edge.kind}-${edge.from}-${edge.to}`}>
-            {edge.kind === 'permitted'
-              ? permittedEdgeLabel(roleLabel(edge.from), roleLabel(edge.to))
-              : trafficEdgeLabel(roleLabel(edge.from), roleLabel(edge.to), edge.count ?? 0)}
-          </li>
-        ))}
-      </ol>
+      {/*
+        ⚠️ **Painted, not screen-reader-only.** This list held the complete answer to the question
+        the screen exists to answer — every rule, all at once — inside an `sr-only` box measured at
+        one pixel wide, so a fresh-eyes walker could reach it only through the DOM (walkthrough,
+        2026-08-28). `docs/AGENT-DESIGN-METHOD.md` names this exact failure: a fact only the
+        accessibility tree carries is a fact on no screen at all.
+
+        It also fixes the drawing's own limit. At rest the canvas draws the spine and holds skips
+        back until a role is chosen, so a profile with six declared rules shows three strokes. The
+        sentences carry all six, and a measured count carries a number that a stroke width can only
+        approximate.
+      */}
+      {graph.edges.length === 0 ? null : (
+        <ol
+          className="flex flex-wrap gap-x-4 gap-y-1 rounded-b-panel border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-[var(--card-pad)] py-2.5 text-caption text-[color:var(--color-text-tertiary)]"
+          data-testid="architecture-edge-sentences"
+        >
+          {sentenceOrder.map((edge) => (
+            <li key={`${edge.kind}-${edge.from}-${edge.to}`} className="break-keep">
+              {edge.kind === 'permitted'
+                ? permittedEdgeLabel(roleLabel(edge.from), roleLabel(edge.to))
+                : trafficEdgeLabel(roleLabel(edge.from), roleLabel(edge.to), edge.count ?? 0)}
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }

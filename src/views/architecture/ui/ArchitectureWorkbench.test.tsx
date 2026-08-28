@@ -373,7 +373,7 @@ describe('ArchitectureWorkbench', () => {
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');
-    expect(detail).toHaveTextContent('Reviewed concepts in this layer');
+    expect(detail).toHaveTextContent('Reviewed concepts in this role');
     expect(detail).toHaveTextContent('Home');
   });
 
