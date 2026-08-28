@@ -598,8 +598,11 @@ export function ArchitectureWorkbench({
                 reachInlineLabel={(targets) => t('reachInline', { targets })}
                 layerConceptsLabel={t('layerConcepts')}
                 conceptCountLabel={(count) => t('conceptCount', { count })}
-                legendDependency={t('legendDependency')}
-                legendRelated={t('legendRelated')}
+                legendPermitted={t('legendPermitted')}
+                legendTraffic={t('legendTraffic')}
+                permittedEdgeLabel={(from, to) => t('permittedEdge', { from, to })}
+                trafficEdgeLabel={(from, to, count) => t('trafficEdge', { from, to, count })}
+                selectRoleHint={t('selectRoleHint')}
               />
             </div>
           </div>

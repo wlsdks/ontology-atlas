@@ -39,7 +39,6 @@ function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   );
 }
 
-const order_all = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
 
 /*
  * A persisted conformance receipt, parsed the way the page reads the sidecar — through
@@ -181,8 +180,8 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
     // Twice on purpose: the stage's pattern chip, and the scope rail's profile caption.
     expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(2);
-    expect(screen.getByTestId('architecture-role-routing')).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-role-shared')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-bottom-tab-reserve')).toHaveClass(
       'h-[var(--topology-mobile-bottom-tab-reserve)]',
@@ -202,53 +201,34 @@ describe('ArchitectureWorkbench', () => {
     renderWorkbench();
     for (const id of ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared']) {
       expect(
-        screen.getAllByTestId(`architecture-role-${id}`),
+        screen.getAllByTestId(`architecture-graph-box-${id}`),
         `${id} must be drawn once, not once per block`,
       ).toHaveLength(1);
     }
-    // The glob is the part that was literally duplicated, so it is what the guard reads.
-    expect(screen.getAllByText('src/shared/**')).toHaveLength(1);
+    /* The glob lives in the detail panel now, and only for the selected role, so it appears
+       nowhere at all until a box is chosen. That is the strongest form of "not duplicated". */
+    expect(screen.queryByText('src/shared/**')).toBeNull();
   });
 
   /*
-   * ⚠️ **The policy is still fully stated, without the dot matrix** (owner decision 2026-08-27:
-   * under `lower-only` the matrix repeated what the sentence, the band order, and the connectors
-   * already said, so it was removed as a second notation for one fact). What must survive its
-   * removal, and what this test pins:
-   *
-   * - the bands appear in dependency order, deepest last, so the order itself is the rule;
-   * - the assistive list still reads every layer's reach aloud, layer by layer;
-   * - a `lower-only` profile writes no per-band reach caption (that would be the same seven-fold
-   *   echo the dots were), while an `explicit` profile writes each role's reach in role names.
+   * ⚠️ **The policy is still fully stated, and the columns are how.** Under `lower-only` the
+   * permitted set is "everything to my right", which the column order already says: this profile
+   * has 21 permitted edges among 7 roles and drawing them would restate the order twenty-one
+   * times (`docs/DECISIONS.md`, 2026-08-28 (3)). What must survive that decision, and what this
+   * test pins: the boxes appear in dependency order left to right; no permitted stroke is drawn;
+   * and the assistive list still reads every layer's reach aloud, layer by layer.
    */
-  it('states the whole policy without a matrix', () => {
+  it('states the whole policy through the columns, drawing no derivable edge', () => {
     renderWorkbench();
     const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
 
-    const flow = screen.getByTestId('architecture-flow');
-    const bandOrder = [...flow.querySelectorAll('[data-testid^="architecture-rung-"]')].map(
-      (band) => band.getAttribute('data-testid')!.replace('architecture-rung-', ''),
+    const graph = screen.getByTestId('architecture-graph');
+    const boxOrder = [...graph.querySelectorAll('[data-graph-box]')].map(
+      (box) => box.getAttribute('data-graph-box')!,
     );
-    expect(bandOrder, 'bands must appear in dependency order').toEqual(order);
-
-    /*
-     * ⚠️ This assertion is the reverse of what it was, and the reversal is the point.
-     *
-     * It used to require `architecture-reach-routing` to be absent under `lower-only`, on the
-     * reasoning that the stage subtitle plus the band order state the whole rule and a per-band
-     * caption would only repeat it. A walkthrough on 2026-08-28, walked by a reader who had never
-     * heard of this pattern, measured that reasoning failing: given the explicit-policy profile
-     * they answered "what may this role depend on" in one glance by quoting the row, and given
-     * this lower-only profile they could not answer it at all. The sentence they needed was
-     * rendered — in the `sr-only` list asserted below, which measures 1px wide. A fact carried
-     * only by the accessibility tree is a fact the screen does not state.
-     */
-    expect(screen.getByTestId('architecture-reach-routing')).toHaveTextContent(
-      'may depend on Application shell · Views · Widgets · Features · Entities · Shared foundation',
-    );
-    expect(screen.getByTestId('architecture-reach-shared')).toHaveTextContent(
-      'depends on no other role',
-    );
+    expect(boxOrder, 'boxes must appear in dependency order').toEqual(order);
+    expect(graph).toHaveAttribute('data-edge-source', 'none');
+    expect(screen.queryByTestId('architecture-graph-edges')).toBeNull();
 
     // The assistive list keeps stating the same reach in its own words.
     expect(
@@ -257,78 +237,82 @@ describe('ArchitectureWorkbench', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('Shared foundation: depends on no other role')).toBeInTheDocument();
-
-    // One connector meaning, one legend sentence for it.
-    expect(screen.getByTestId('architecture-flow-inward')).toBeInTheDocument();
   });
 
-  it('writes each role\'s reach in role names when the policy is an explicit graph', () => {
+  it("draws every permitted edge when the policy is an explicit graph", () => {
+    /*
+     * The mirror of the test above. Under `explicit` the permitted set cannot be read off the
+     * order at all: adapter reaches three roles directly, and a reader who assumed a chain would
+     * be wrong. So here the strokes are the information and every one of them is drawn.
+     */
     const profile = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
         <ArchitectureWorkbench profiles={[profile]} />
       </NextIntlClientProvider>,
     );
+    expect(screen.getByTestId('architecture-graph')).toHaveAttribute(
+      'data-edge-source',
+      'permitted',
+    );
+    expect(screen.getByText('Adapters may depend on Domain')).toBeInTheDocument();
+    expect(screen.getByText('Adapters may depend on Ports')).toBeInTheDocument();
+    expect(screen.getByText('Ports may depend on Domain')).toBeInTheDocument();
+  });
+
+  it("writes a role's reach in role names in its detail panel", () => {
+    const profile = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench profiles={[profile]} />
+      </NextIntlClientProvider>,
+    );
+    fireEvent.click(screen.getByTestId('architecture-graph-box-adapter'));
     expect(screen.getByTestId('architecture-reach-adapter')).toHaveTextContent(
       'may depend on Application · Ports · Domain',
     );
+
+    fireEvent.click(screen.getByTestId('architecture-graph-box-domain'));
     expect(screen.getByTestId('architecture-reach-domain')).toHaveTextContent(
       'depends on no other role',
     );
   });
 
   /*
-   * ⚠️ **The interaction is the part a static picture cannot do.** "Can you see a flow in this?"
-   * was asked of a drawing with no way to ask it a question. Focusing a layer raises it and
-   * everything it may reach and recedes the rest -- Shneiderman's focus-plus-context, and the same
-   * ego-focus the map already uses. Keyboard focus drives it too, so the reach is not pointer-only.
+   * ⚠️ **Two interactions were removed with the band shape, and this test replaces both**
+   * (`docs/DECISIONS.md`, 2026-08-28 (3)). Hover focus used to raise a layer and everything it
+   * could reach while receding the rest, and a staggered pulse used to run down the gaps between
+   * a focused layer and its deepest reach. Neither survives a graph whose boxes are 64px tall and
+   * whose edges are drawn between them rather than implied by adjacency. What replaces them is
+   * selection: a box is chosen, it says so, and the panel answers with that role.
    */
-  it('raises a focused layer and its reach, and recedes the rest', () => {
+  it('selects a role, says so, and answers with that role in the panel', () => {
     renderWorkbench();
-    const stateOf = (id: string) =>
-      screen.getByTestId(`architecture-role-${id}`).getAttribute('data-focus-state');
+    const views = screen.getByTestId('architecture-graph-box-views');
+    expect(views).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('architecture-role-detail-empty')).toBeInTheDocument();
 
-    expect(order_all.map(stateOf).every((state) => state === 'rest')).toBe(true);
+    fireEvent.click(views);
+    expect(views).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'views');
+    expect(screen.queryByTestId('architecture-role-detail-empty')).toBeNull();
 
-    fireEvent.focus(screen.getByTestId('architecture-role-features'));
-    expect(stateOf('features')).toBe('focused');
-    // Everything beneath it is reachable...
-    expect(stateOf('entities')).toBe('reached');
-    expect(stateOf('shared')).toBe('reached');
-    // ...and everything above it is not.
-    expect(stateOf('widgets')).toBe('dimmed');
-    expect(stateOf('routing')).toBe('dimmed');
+    fireEvent.click(screen.getByTestId('architecture-graph-box-shared'));
+    expect(views).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
 
-    fireEvent.blur(screen.getByTestId('architecture-role-features'));
-    expect(stateOf('features')).toBe('rest');
+    /* Clicking the chosen box again lets go of it, so a reader can get back to the whole map. */
+    fireEvent.click(screen.getByTestId('architecture-graph-box-shared'));
+    expect(screen.getByTestId('architecture-role-detail-empty')).toBeInTheDocument();
   });
 
   /*
-   * The flow run is motion answering a question — "which way does this layer's reach flow" — and
-   * it exists only between the focused layer and its deepest reach, one pulse per gap, never as an
-   * ambient loop. The gap above the focused layer stays still: nothing flows into a layer from
-   * below, and drawing motion there would be an invented fact.
+   * ⚠️ **A role's source modules come from a read-only directory walk of the bound project
+   * source** (owner correction, 2026-08-27: the ontology is the meaning map, architecture is what
+   * the source contains). Never an import scan, so they exist only where a listing exists. They
+   * live in the detail panel now rather than inside a band; the box carries only the count.
    */
-  it('sends the flow run down the gaps between a focused layer and its reach', () => {
-    renderWorkbench();
-    fireEvent.focus(screen.getByTestId('architecture-role-features'));
-    // features sits on row 4 of 7; its reach ends at shared (row 6): gaps 4 and 5 run.
-    expect(screen.getByTestId('architecture-flow-run-4')).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-flow-run-5')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-flow-run-3')).toBeNull();
-
-    fireEvent.blur(screen.getByTestId('architecture-role-features'));
-    expect(screen.queryByTestId('architecture-flow-run-4')).toBeNull();
-  });
-
-  /*
-   * ⚠️ **A band carries source modules, not ontology concepts** (owner correction, 2026-08-27:
-   * the ontology is the meaning map; architecture is about what the project source contains).
-   * The modules come from a read-only directory walk of the bound project source — never an
-   * import scan — so they exist only where a listing exists. Per-band counts appear only then,
-   * and a count of 0 is information about *that* band, not a repeated apology.
-   */
-  it('fills a band with the source modules its globs contain, when a listing exists', () => {
+  it('fills the panel with the source modules a role\'s globs contain, when a listing exists', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -347,33 +331,22 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    const views = screen.getByTestId('architecture-modules-views');
-    expect(views).toHaveTextContent('home');
-    expect(views).toHaveTextContent('docs-vault');
-    expect(screen.getByTestId('architecture-module-count-views')).toHaveTextContent('2 modules');
-    expect(screen.getByTestId('architecture-module-count-widgets')).toHaveTextContent('0 modules');
-    expect(screen.queryByTestId('architecture-modules-widgets')).toBeNull();
-    // A listing exists here, so the browser impossibility sentence must not show.
-    expect(screen.queryByTestId('architecture-source-unavailable')).toBeNull();
+
+    /* The count is on the box, so a reader sees where the weight is without choosing anything. */
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent('2 modules');
+    expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveTextContent('0 modules');
+
+    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    const listed = screen.getByTestId('architecture-modules-views');
+    expect(listed).toHaveTextContent('home');
+    expect(listed).toHaveTextContent('src/views/docs-vault');
   });
 
   /*
-   * A browser cannot read a source folder — `.claude/rules/surfaces.md` says to state an
-   * impossibility rather than render a gap that looks like emptiness.
+   * The reviewed concepts are the meaning layer, kept named and separate from the source layer
+   * above them, and they answer the selection the same way the modules do.
    */
-  it('says a browser cannot list source instead of pretending empty bands', () => {
-    renderWorkbench();
-    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-module-count-views')).toBeNull();
-    expect(screen.queryByTestId('architecture-modules-views')).toBeNull();
-  });
-
-  /*
-   * The click answers with detail, in place (owner ask, 2026-08-27, and the second record's fired
-   * falsifier): pressing a layer opens its reviewed-concepts section inside the band — the
-   * labeled meaning layer, distinct from the source-module row — and pressing again closes it.
-   */
-  it('opens a layer\'s reviewed concepts in place on click, labeled as concepts', () => {
+  it("answers a selection with the role's reviewed concepts, labeled as concepts", () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     render(
       <NextIntlClientProvider locale="en" messages={en}>
@@ -396,38 +369,29 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    /* The resting state is the full diagram: sections open by default. */
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent('1 concept');
+
+    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');
     expect(detail).toHaveTextContent('Reviewed concepts in this layer');
-    expect(detail).toHaveTextContent('1 concept');
     expect(detail).toHaveTextContent('Home');
-    expect(screen.getByTestId('architecture-role-views')).toHaveAttribute('aria-expanded', 'true');
-
-    fireEvent.click(screen.getByTestId('architecture-role-views'));
-    expect(screen.queryByTestId('architecture-concepts-views')).toBeNull();
-    expect(screen.getByTestId('architecture-role-views')).toHaveAttribute('aria-expanded', 'false');
-
-    fireEvent.click(screen.getByTestId('architecture-role-views'));
-    expect(screen.getByTestId('architecture-concepts-views')).toBeInTheDocument();
   });
 
   it('keeps the same blueprint while switching from understand to plan and verify', () => {
     renderWorkbench();
-    const role = screen.getByTestId('architecture-role-features');
-    const roleBox = role.getBoundingClientRect();
-    const roleClassName = role.className;
+    const box = screen.getByTestId('architecture-graph-box-features');
+    const boxClassName = box.className;
 
     fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
     expect(screen.getByText('Architecture-first agent plan')).toBeInTheDocument();
     expect(screen.getByText(/inspect_architecture/)).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-role-features')).toBe(role);
-    expect(role.getBoundingClientRect()).toEqual(roleBox);
-    expect(role.className).toBe(roleClassName);
+    expect(screen.getByTestId('architecture-graph-box-features')).toBe(box);
+    expect(box.className).toBe(boxClassName);
 
     fireEvent.click(screen.getByRole('radio', { name: 'Verify' }));
     expect(screen.getByText('Verify the actual change')).toBeInTheDocument();
     expect(screen.getByText(/unknown is not compliant/i)).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-role-features')).toBe(role);
+    expect(screen.getByTestId('architecture-graph-box-features')).toBe(box);
   });
 
   it('reanchors a prior scroll end after a taller workflow stage mounts', async () => {
