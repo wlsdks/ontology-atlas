@@ -94,6 +94,23 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     );
   });
 
+  it("정확성 시험은 바쁜 로컬 훅에서만 넉넉한 timeout을 쓴다", () => {
+    const correctnessLanes = ["unit", "contract"].map((name) =>
+      executable.split("\n").find((line) => new RegExp(`lane ${name} `).test(line)) ?? "",
+    );
+
+    for (const lane of correctnessLanes) {
+      expect(lane, "unit/contract 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
+      expect(lane, "병렬 부하에서 기본 timeout이 정확성 시험을 오탐한다").toContain(
+        "--testTimeout=30000",
+      );
+    }
+
+    // CI stays authoritative and keeps the normal timeout on its quiet runner.
+    const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
+    expect(ci).not.toContain("--testTimeout");
+  });
+
   it("실패한 레인만 출력한다 — 여덟 개가 동시에 떠들면 아무도 안 읽는다", () => {
     expect(executable).toMatch(/failed/);
     expect(executable, "실패 로그를 보여주지 않는다").toMatch(/tail .*\.log/);

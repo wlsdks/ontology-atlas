@@ -8,6 +8,7 @@ import { pathToFileURL } from "node:url";
 import { parseSha256Checksum } from "./lib/macos-checksum.mjs";
 import { parseHdiutilMountDir, verifyApplicationsSymlink } from "./lib/macos-dmg-layout.mjs";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
+import { verifyMcpBinary } from "./verify-mcp-binary.mjs";
 
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
@@ -28,7 +29,8 @@ function printHelp() {
 Checks the named .sha256 file, mounts the DMG read-only, copies ${appBundleName}
 to a temporary install directory with ditto, opens that copied app through
 LaunchServices, requires a visible Ontology Atlas window plus Accessibility text,
-then detaches and removes the temporary install.
+starts the MCP sidecar inside the copied bundle against docs/ontology, then
+detaches and removes the temporary install.
 `);
 }
 
@@ -57,6 +59,10 @@ export function buildInstalledAppVerifyArgs(installedApp, holdMs) {
     "--min-window-size=1040x720",
     "--require-accessibility-text=Ontology Atlas",
   ];
+}
+
+export function installedMcpBinaryPath(installedApp) {
+  return path.join(installedApp, "Contents", "MacOS", "ontology-atlas-mcp");
 }
 
 /**
@@ -153,6 +159,7 @@ async function main() {
   let mountDir = null;
   let tempDir = null;
   let verificationError = null;
+  let installedMcpResult = null;
 
   try {
     run("hdiutil", ["verify", dmgPath]);
@@ -177,6 +184,10 @@ async function main() {
     verifyBundleSignature(installedApp);
 
     run(process.execPath, buildInstalledAppVerifyArgs(installedApp, holdMs));
+    installedMcpResult = await verifyMcpBinary({
+      binaryPath: installedMcpBinaryPath(installedApp),
+      vaultPath: path.join(root, "docs", "ontology"),
+    });
   } catch (error) {
     verificationError = error;
   } finally {
@@ -197,7 +208,7 @@ async function main() {
   }
 
   console.log(
-    `[desktop-install-verify] copied and launched ${appBundleName} from ${dmgPath} for ${holdMs}ms with LaunchServices app content proof`,
+    `[desktop-install-verify] copied and launched ${appBundleName} from ${dmgPath} for ${holdMs}ms with LaunchServices app content proof and installed MCP sidecar proof (${installedMcpResult.toolCount} tools, version ${installedMcpResult.version})`,
   );
 }
 

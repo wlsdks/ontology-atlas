@@ -66,7 +66,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app/,
   );
-  assert.match(result.stdout, /✓ CLI\/MCP setup gate is available/);
+  assert.match(
+    result.stdout,
+    /✓ CLI\/MCP setup gate executes fallbacks while keeping advisory readiness in JSON/,
+  );
   assert.match(
     result.stdout,
     /✓ agent workflow guide cites official Claude Code and Codex MCP client contracts/,
@@ -103,7 +106,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps/,
+    /✓ desktop install smoke proves the copied DMG app and its installed MCP sidecar both run/,
   );
   assert.match(
     result.stdout,
@@ -116,6 +119,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(
     result.stdout,
     /✓ desktop checker tests cover the GitHub release operator, source, run-watch, checksum filename, and completion gates/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ desktop checker tests bound loopback-heavy Node test concurrency to 4/,
   );
   assert.match(
     result.stdout,
@@ -165,7 +172,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local release preflight runs readiness, third-party notice currency, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, LaunchServices app content proof, DMG, and install smoke/,
+    /✓ desktop local release preflight validates shipped vault data, builds the MCP sidecar before bridge tests, and proves app, DMG, and install artifacts without source dogfood state/,
   );
   assert.match(
     result.stdout,

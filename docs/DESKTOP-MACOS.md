@@ -254,15 +254,17 @@ for a macOS prototype:
   vault source, and point users back to the macOS download path instead of
   calling the browser folder picker.
 - `pnpm desktop:release-preflight` is the local operator shortcut before
-  creating the release tag: it runs readiness checks, docs-vault freshness, desktop checker
-  tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the
-  dogfood vault, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
-  static build, packaged-route smoke, app/DMG build, LaunchServices app content
+  creating the release tag: it runs readiness checks, docs-vault freshness and
+  vault validation, desktop checker and runtime split tests, builds the bundled
+  MCP sidecar before native bridge tests, then runs the runtime doctor, static
+  build, packaged-route smoke, app/DMG build, LaunchServices app content
   proof (`--open-app --require-window --require-owner-name="Ontology Atlas"
   --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`),
   DMG mount/checksum smoke, and temporary install launch smoke. It does not require
   Developer ID credentials, so it is the fast local proof for an unsigned
-  prototype artifact.
+  prototype artifact. Source MCP walking, fallback execution, and ontology
+  readiness are checked in the separate `dogfood:release-gate` lane rather than
+  coupled to desktop artifact production.
 - `pnpm desktop:release-artifact` is the credentialed artifact path for direct
   downloads: it requires Developer ID/notary credentials, rebuilds and route-smokes
   the app, signs the `.app`, packages the DMG, notarizes/staples it, runs
@@ -376,8 +378,9 @@ Computer Use.
 It mounts the image, requires the drag target symlink to point to
 `/Applications`, copies `Ontology Atlas.app` to a temporary install folder,
 verifies that copied app through the same LaunchServices app content proof used
-by `desktop:release-preflight`, and cleans up the temp install after detaching
-the image.
+by `desktop:release-preflight`, executes the copied bundle's
+`Contents/MacOS/ontology-atlas-mcp` against `docs/ontology`, and cleans up the
+temp install after detaching the image.
 
 ## Installed-App Log
 

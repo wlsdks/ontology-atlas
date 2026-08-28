@@ -97,7 +97,7 @@ node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000
 사람이 읽는 터미널 출력 대신 작은 JSON 보고서가 필요한 자동화라면:
 
 ```bash
-node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
+node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4
 ```
 
 에이전트를 이 문서함이 아니라 코드베이스 루트에서 열었다면 `.` 대신 문서함

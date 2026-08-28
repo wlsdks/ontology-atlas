@@ -794,7 +794,7 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.equal(data.clientStatus.codex.registration, 'unverified');
     assert.match(data.commands.setupRepair, /agent-setup .* --root .* --write/);
     assert.match(data.commands.restartGuidance, /Restart Claude Code, Cursor, or Codex from .* after repair/);
-    assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
+    assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json --exit-zero/);
     assert.deepEqual(
       data.commands.graphRunbook.map((command) =>
         command.replace(CLI_INVOCATION, 'ontology-atlas').replace(data.vaultRoot, '<vault>')
@@ -1014,7 +1014,7 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     assert.match(clean, /First-contact proof contract:/);
     assert.match(clean, /Config state · agent-setup --json reports root-specific/);
     assert.match(clean, /MCP verify · mcp-verify can boot the local MCP server/);
-    assert.match(clean, /JSON setup gate · agent-brief --verify-fallbacks --json returns ok\/performanceOk/);
+    assert.match(clean, /JSON setup gate · agent-brief --verify-fallbacks --json --exit-zero returns ok\/performanceOk/);
     assert.match(clean, /Graph briefs · workspace-brief and agent-brief --graph-db-pack/);
     assert.match(clean, /After code changes:/);
     assert.match(clean, /sync docs\/ontology before finishing/);
@@ -6730,10 +6730,10 @@ await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fal
   }
 });
 
-await test('agent-brief --verify-fallbacks --json — fails closed when fallback command times out', async () => {
+await test('agent-brief --verify-fallbacks --json --exit-zero — fails closed when fallback command times out', async () => {
   const root = await buildGraphFixture();
   try {
-    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-timeout-ms', '1', '--fallback-concurrency', '1']);
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--exit-zero', '--fallback-timeout-ms', '1', '--fallback-concurrency', '1']);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');

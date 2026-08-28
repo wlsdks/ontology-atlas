@@ -113,7 +113,10 @@ touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
 # `tests/contract/**` has its own unconditional lane below. Running those 209 files
 # here too duplicated 2,101 tests under the same saturation and repeatedly pushed a
 # 3.2s filesystem-glob assertion past 15s without adding any coverage.
-touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
+# Unit and contract assertions are correctness gates, not performance gates. This
+# hook can run eleven lanes at once, so only these saturated local invocations get
+# a 30-second per-test timeout. Focused runs and CI retain Vitest's normal timeout.
+touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --testTimeout=30000 --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
 touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links && pnpm docs-vault:check'
@@ -125,7 +128,7 @@ touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 # Cheap enough (~1 min) that filtering would buy noise, not time.
 lane source_language 'pnpm source:language'
 lane dead_code 'pnpm knip'
-lane contract 'pnpm exec vitest run tests/contract/'
+lane contract 'pnpm exec vitest run --testTimeout=30000 tests/contract/'
 lane comment_refs 'node scripts/check-comment-refs.mjs'
 lane decisions 'pnpm decisions:check'
 
