@@ -3042,7 +3042,7 @@ await test("inspect_architecture — profile intent and observed imports produce
     assert.equal(result.measured.source.kind, "folder");
     assert.match(result.measured.source.fingerprint, /^sha256:[0-9a-f]{64}$/);
     assert.equal("revision" in result.measured.source, false);
-    assert.equal(result.conformance.typeOnlyEdgeCount, 0);
+    assert.equal(result.conformance.excludedByUsage, 0);
     assert.equal(result.conformance.source.importUsageCounts.value >= 1, true);
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });

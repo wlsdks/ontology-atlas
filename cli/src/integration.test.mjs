@@ -8115,7 +8115,7 @@ await test('architecture --record — persists a stamped record and strips machi
     assert.match(record.brief.measured.source.fingerprint, /^sha256:[0-9a-f]{64}$/);
     assert.equal(record.brief.conformance.status, 'conforms');
     assert.equal(record.brief.conformance.violationCount, 0);
-    assert.equal(record.brief.conformance.typeOnlyEdgeCount, 1);
+    assert.equal(record.brief.conformance.excludedByUsage, 1);
     assert.equal(hasKeyDeep(record, 'rootPath'), false);
 
     // One activity.jsonl line records the write.
@@ -8186,7 +8186,7 @@ await test('architecture --record — refuses a scan with no import-usage discri
         kind: 'static', importUsage: 'unknown', rule: 'allow-domain',
       }],
       violationsLimited: false,
-      typeOnlyEdgeCount: 0,
+      excludedByUsage: 0,
       unknown: { coverageIncomplete: false, unmappedEdges: 0, unruledEdges: 0, emptyRoles: [] },
       source: {
         rootPath: null,
