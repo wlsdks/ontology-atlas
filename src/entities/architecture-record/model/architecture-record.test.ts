@@ -124,6 +124,69 @@ describe('parseArchitectureRecord', () => {
  * cross-surface parity test owns web-versus-MCP equality; this pins the web parser's own
  * default and its exact refusal wording, which that deep-equality cannot see.
  */
+describe('parseArchitectureRecord — observed role traffic', () => {
+  /*
+   * The traffic between roles is measured by the scanner and already written into every record
+   * `atlas architecture --record` produces (verified 2026-08-28: 26 rows on this repository).
+   * The type simply never declared it, so the surface that reads the record threw it away.
+   */
+  it('reads the role edges a record already carries, and tolerates their absence', () => {
+    const base = gitRecord();
+    const withEdges = parseArchitectureRecord({
+      ...base,
+      brief: {
+        ...base.brief,
+        conformance: {
+          ...base.brief.conformance,
+          observedRoleEdges: [
+            { fromRole: 'views', toRole: 'shared', count: 260, evidence: [{ from: 'a', to: 'b' }] },
+            { fromRole: 'routing', toRole: 'widgets', count: 1 },
+          ],
+        },
+      },
+    });
+    const edges = withEdges.brief.conformance.observedRoleEdges ?? [];
+    expect(edges.map((edge) => [edge.fromRole, edge.toRole, edge.count])).toEqual([
+      ['views', 'shared', 260],
+      ['routing', 'widgets', 1],
+    ]);
+
+    expect(parseArchitectureRecord(gitRecord()).brief.conformance.observedRoleEdges).toBeUndefined();
+  });
+
+  it('refuses a role edge whose count is not a count', () => {
+    const base = gitRecord();
+    expect(() =>
+      parseArchitectureRecord({
+        ...base,
+        brief: {
+          ...base.brief,
+          conformance: {
+            ...base.brief.conformance,
+            observedRoleEdges: [{ fromRole: 'views', toRole: 'shared', count: -1 }],
+          },
+        },
+      }),
+    ).toThrow(/observedRoleEdges/);
+  });
+
+  it('refuses a role edge that does not name both of its ends', () => {
+    const base = gitRecord();
+    expect(() =>
+      parseArchitectureRecord({
+        ...base,
+        brief: {
+          ...base.brief,
+          conformance: {
+            ...base.brief.conformance,
+            observedRoleEdges: [{ fromRole: 'views', count: 3 }],
+          },
+        },
+      }),
+    ).toThrow(/observedRoleEdges\[0\]\.toRole/);
+  });
+});
+
 describe('parseArchitectureProfile — type_only_dependencies', () => {
   const base = {
     architecture_schema: 'architecture-profile/v1',

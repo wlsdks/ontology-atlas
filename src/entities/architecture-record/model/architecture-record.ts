@@ -23,10 +23,32 @@ interface ArchitectureRecordMeasured {
   source: ArchitectureRecordSource;
 }
 
+/**
+ * One measured crossing: how many imports actually ran from one role to another.
+ *
+ * This is observation, never rule. The profile says what *may* cross; this says what *did*, at
+ * the moment stamped in `measured`. `fromRole === toRole` is legal and common (the scanner's
+ * first rule allows same-role imports unconditionally) and is by far the largest count on this
+ * repository, which is why anything ranking these must exclude it.
+ */
+export interface ArchitectureRoleEdge {
+  fromRole: string;
+  toRole: string;
+  count: number;
+}
+
 interface ArchitectureRecordConformance {
   status: ArchitectureRecordStatus;
   violationCount: number;
   violations: unknown[];
+  /**
+   * The measured traffic between roles. Optional because a record written before this field was
+   * declared parses unchanged and simply has nothing to draw. Rows carry an `evidence` array too;
+   * it is deliberately undeclared, because this parser validates and passes through rather than
+   * rewriting, and normalizing one field in a pass-through parser is a question for the next
+   * reader with no answer.
+   */
+  observedRoleEdges?: ArchitectureRoleEdge[];
   /** Type-only edges left outside the violation count as their own named class. */
   typeOnlyEdgeCount?: number;
   unknown?: {
@@ -115,6 +137,17 @@ function parseMeasured(value: unknown): ArchitectureRecordMeasured {
   return measured as unknown as ArchitectureRecordMeasured;
 }
 
+function assertRoleEdges(value: unknown, name: string): void {
+  if (value === undefined) return;
+  if (!Array.isArray(value)) fail(`${name} must be an array.`);
+  value.forEach((row, index) => {
+    const edge = asObject(row, `${name}[${index}]`);
+    nonBlank(edge.fromRole, `${name}[${index}].fromRole`);
+    nonBlank(edge.toRole, `${name}[${index}].toRole`);
+    countOf(edge.count, `${name}[${index}].count`);
+  });
+}
+
 function parseConformance(value: unknown): ArchitectureRecordConformance {
   const conformance = asObject(value, 'brief.conformance');
   if (!STATUSES.includes(conformance.status as ArchitectureRecordStatus)) {
@@ -122,6 +155,7 @@ function parseConformance(value: unknown): ArchitectureRecordConformance {
   }
   countOf(conformance.violationCount, 'brief.conformance.violationCount');
   if (!Array.isArray(conformance.violations)) fail('brief.conformance.violations must be an array.');
+  assertRoleEdges(conformance.observedRoleEdges, 'brief.conformance.observedRoleEdges');
   if (conformance.typeOnlyEdgeCount !== undefined) {
     countOf(conformance.typeOnlyEdgeCount, 'brief.conformance.typeOnlyEdgeCount');
   }
