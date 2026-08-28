@@ -1163,41 +1163,65 @@
     animation: agentPendingPulse 2.4s ease-in-out infinite;
   }
 
-  /* Architecture spine flow — dependency direction shown as motion, on request only.
-     Fires once per focus change (never an ambient loop): a small dot runs down each
-     gap between the focused layer and its reach, staggered so the run reads as one
-     continuous flow. Only transform and opacity move; the dot is a solid fill, not a
-     glow. Under reduced motion the global kill collapses it and the static arrowheads
-     plus the focus opacity states keep stating the same direction — see the
-     reduced-motion roster entry. */
-  @keyframes architectureFlowRun {
-    from {
-      transform: translateY(-6px);
-      opacity: 0;
-    }
+  /*
+ * ## Architecture canvas — the surface a graph is drawn on (2026-08-28)
+ *
+ * A node graph needs its ground to read as ground. Every editor in this shape draws one: n8n,
+ * ComfyUI and Figma all put a faint dot field behind the nodes, and without it a set of boxes on a
+ * flat panel reads as a row of cards rather than as a canvas somebody laid things out on. This
+ * product already draws the same thing on the map, in canvas 2D, through
+ * `--topology-v2-grid-minor`; those values belong to a WebGL-free 2D renderer and are consumed by
+ * `getComputedStyle`, so a DOM surface needs its own pair rather than borrowing them.
+ *
+ * **Ink, not decoration.** The background always loses to the data (Tufte, the same rule
+ * `--canvas-bg-ink-max` states for the map). The dot is one step above the panel it sits on and
+ * nothing more: at 1px on a 22px pitch it is perceptible as a field and illegible as a mark, which
+ * is exactly what a coordinate ground should be.
+ *
+ * No image, no gradient background, no aurora. `radial-gradient` here paints one flat dot per tile
+ * and carries no colour transition at all; it is the tiling primitive, not a gradient effect.
+ */
+:root {
+  /* Measured 2026-08-28: #1b1c1f on the canvas ground was invisible at 1px on a 22px pitch — a
+     field nobody perceives is not a field. This is one step under the soft border, which reads as
+     ground and still loses to every mark drawn on it. */
+  --architecture-canvas-dot: #2a2b30;
+  --architecture-canvas-pitch: 22px;
+  /* The lit top edge of a raised node: one step above `--color-elevated`, which is the smallest
+     move that reads as a face catching light rather than as a second border. */
+  --architecture-node-lit-edge: #2e2f33;
+}
 
-    20% {
-      opacity: 1;
-    }
+/*
+ * ## Depth on a dark surface is made of face lightness, not shadow (2026-08-28)
+ *
+ * The usual elevation trick fails here: a cast shadow barely reads on a near-black ground. What
+ * reads on dark is the thing light actually does — **a lighter face is a higher face**, because a
+ * surface nearer the viewer catches more of it. This product's surface ramp is already that
+ * statement (canvas #08090a → panel #0f1011 → elevated #191a1b), so the canvas needs no new
+ * colour: it needs the ramp used as a height ladder rather than as three interchangeable greys.
+ *
+ * Two faces, stated with two devices the design system already licenses:
+ *
+ * - **The ground is a well.** An inset hairline along its top edge is the shadow the wall casts
+ *   into a recess, which is what says "things sit *in* here" rather than "this is another card".
+ * - **A node is a raised slab.** A one-pixel lighter line along its top edge is the lit top face.
+ *   The shadow ramp's comment names exactly this: an inset hairline is material, and material is
+ *   allowed where a hand-written elevation shadow is not.
+ *
+ * No gradient, no glow, no blur. Both devices are a single flat line of colour.
+ */
+.architecture-canvas-ground {
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(var(--architecture-canvas-dot) 1px, transparent 1px);
+  background-size: var(--architecture-canvas-pitch) var(--architecture-canvas-pitch);
+  background-position: center center;
+  box-shadow: inset 0 1px 0 var(--color-shadow-a35);
+}
 
-    to {
-      transform: translateY(14px);
-      opacity: 0;
-    }
-  }
-
-  /* One stagger token, one easing family. The step index arrives as a unitless
-     custom property, so no raw time value ever rides an inline style. 26ms keeps
-     the deepest 7-role cascade inside the 400ms confirmed-response window
-     (6 × 26ms + 240ms = 396ms), which the bare 100ms stagger measurably broke. */
-  :root {
-    --architecture-flow-stagger: 26ms;
-  }
-
-  .architecture-flow-run {
-    animation: architectureFlowRun var(--motion-settle) var(--motion-ease) both;
-    animation-delay: calc(var(--architecture-flow-stagger) * var(--architecture-flow-step, 0));
-  }
+.architecture-canvas-node {
+  box-shadow: inset 0 1px 0 var(--architecture-node-lit-edge);
+}
 
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.
      Rendering immediately causes subtitles to flash on every normal entry, which is worse

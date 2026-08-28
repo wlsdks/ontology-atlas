@@ -107,6 +107,15 @@ export function ArchitectureGraph({
 
       const next: DrawnEdge[] = [];
       for (const edge of graph.edges) {
+        /*
+         * ⚠️ **At rest the canvas draws the spine; skips arrive with a selection.** This profile
+         * measures nineteen crossings, and drawing every one of them at once braided them into a
+         * tangle under the row (installed app, 2026-08-28) — the same "bundle of wires" failure
+         * the reverted arcs had, moved a few pixels down. Adjacent crossings are the flow itself
+         * and stay; a crossing that skips a column is a fact about one role, which is exactly what
+         * choosing that role is for. The legend states this rather than leaving it a mystery.
+         */
+        if (edge.columnSpan > 1 && selected !== edge.from && selected !== edge.to) continue;
         const a = byRole.get(edge.from);
         const b = byRole.get(edge.to);
         if (!a || !b) continue;
@@ -158,13 +167,13 @@ export function ArchitectureGraph({
       clearTimeout(settle);
       window.removeEventListener('resize', onResize);
     };
-  }, [edgeKey, graph.edges]);
+  }, [edgeKey, graph.edges, selected]);
 
   const slotsPerColumn = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
 
   return (
     <div
-      className="relative overflow-x-auto"
+      className="architecture-canvas-ground relative overflow-x-auto rounded-panel border border-[color:var(--color-border-soft)] px-7 py-6"
       data-testid="architecture-graph"
       data-edge-source={graph.edgeSource}
     >
@@ -186,6 +195,20 @@ export function ArchitectureGraph({
           >
             <path d="M0,0 L8,4 L0,8 Z" fill="var(--color-indigo-a60)" />
           </marker>
+          {/* Traffic points too. The legend says the strokes carry direction, and a legend that
+              names a mark the drawing does not make is the defect this screen already fixed once
+              in the other direction (2026-08-28 (2)). */}
+          <marker
+            id="architecture-graph-arrow-traffic"
+            viewBox="0 0 8 8"
+            refX="6.5"
+            refY="4"
+            markerWidth="5"
+            markerHeight="5"
+            orient="auto"
+          >
+            <path d="M0,0 L8,4 L0,8 Z" fill="var(--color-indigo-a38)" />
+          </marker>
         </defs>
         {drawn.map((edge) => (
           <path
@@ -197,7 +220,14 @@ export function ArchitectureGraph({
             }
             strokeWidth={edge.strokeWidth}
             strokeLinecap="round"
-            markerEnd={edge.kind === 'permitted' ? 'url(#architecture-graph-arrow)' : undefined}
+            opacity={
+              selected === null || edge.from === selected || edge.to === selected ? 1 : 0.22
+            }
+            markerEnd={
+              edge.kind === 'permitted'
+                ? 'url(#architecture-graph-arrow)'
+                : 'url(#architecture-graph-arrow-traffic)'
+            }
             data-edge-kind={edge.kind}
             data-edge-from={edge.from}
             data-edge-to={edge.to}
@@ -218,6 +248,18 @@ export function ArchitectureGraph({
         {graph.boxes.map((box) => {
           const RoleIcon = roleIcons[box.id] ?? Layers;
           const isSelected = selected === box.id;
+          const hasIncoming = graph.edges.some((edge) => edge.to === box.id);
+          const hasOutgoing = graph.edges.some((edge) => edge.from === box.id);
+          /* Focus plus context, the interaction the removed bands had: what the chosen role
+             touches stays lit and the rest recedes. Nothing is hidden, so the shape survives. */
+          const dimmed =
+            selected !== null &&
+            !isSelected &&
+            !graph.edges.some(
+              (edge) =>
+                (edge.from === selected && edge.to === box.id) ||
+                (edge.to === selected && edge.from === box.id),
+            );
           return (
             <button
               key={box.id}
@@ -231,23 +273,47 @@ export function ArchitectureGraph({
                 shape: 'card',
                 hoverSurface: 'lift',
                 active: isSelected,
-                className: `min-w-0 flex-col items-start gap-1 px-3 py-2.5 text-left ${
+                className: `architecture-canvas-node relative min-w-0 flex-col items-stretch gap-0 overflow-hidden p-0 text-left transition-opacity duration-[var(--motion-fast)] ${
                   isSelected
-                    ? 'border-[color:var(--color-indigo-a60)] bg-[color:var(--color-indigo-a08)]'
-                    : 'border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)]'
-                }`,
+                    ? 'border-[color:var(--color-indigo-a60)]'
+                    : 'border-[color:var(--color-border-soft)]'
+                } ${dimmed ? 'opacity-40' : 'opacity-100'} bg-[color:var(--color-elevated)]`,
               })}
             >
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-micro text-[color:var(--color-text-secondary)]">
+              {/*
+                Ports. The single clearest signal a node editor gives: this is where a line
+                attaches. Without them an edge appears to touch the box somewhere unspecified,
+                which is what made the reverted arcs unreadable even after they were routed
+                correctly. Drawn only on the side that actually has a line, so a port is never a
+                promise of a connection that is not there.
+              */}
+              {hasIncoming ? (
+                <span
+                  aria-hidden
+                  className="absolute left-0 top-1/2 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-indigo-a60)]"
+                />
+              ) : null}
+              {hasOutgoing ? (
+                <span
+                  aria-hidden
+                  className="absolute right-0 top-1/2 size-1.5 translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--color-indigo-a60)]"
+                />
+              ) : null}
+
+              {/* Identity on its own ground, facts beneath a hairline. One box, two registers. */}
+              <span
+                className={`flex min-w-0 items-center gap-2 px-3 py-2 ${
+                  isSelected ? 'bg-[color:var(--color-indigo-a08)]' : 'bg-[color:var(--color-overlay-1)]'
+                }`}
+              >
+                <span className="flex size-5 shrink-0 items-center justify-center text-[color:var(--color-text-secondary)]">
                   <RoleIcon size={ICON_SIZE.sm} />
                 </span>
                 <span className="truncate text-body font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]">
                   {roleLabel(box.id)}
                 </span>
               </span>
-              {/* Two counts and nothing else. Everything a band used to hold is in the panel. */}
-              <span className="block truncate text-caption text-[color:var(--color-text-tertiary)]">
+              <span className="block truncate border-t border-[color:var(--color-divider)] px-3 py-1.5 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
                 {moduleCounts === null
                   ? conceptCountLabel(conceptCounts[box.id] ?? 0)
                   : `${moduleCountLabel(moduleCounts[box.id] ?? 0)} · ${conceptCountLabel(

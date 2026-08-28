@@ -85,6 +85,7 @@ export function ArchitectureFlow({
   conceptCountLabel,
   legendPermitted,
   legendTraffic,
+  legendSkipHint,
   permittedEdgeLabel,
   trafficEdgeLabel,
 }: {
@@ -114,6 +115,7 @@ export function ArchitectureFlow({
   conceptCountLabel: (count: number) => string;
   legendPermitted: string;
   legendTraffic: string;
+  legendSkipHint: string;
   permittedEdgeLabel: (from: string, to: string) => string;
   trafficEdgeLabel: (from: string, to: string, count: number) => string;
 }) {
@@ -207,6 +209,11 @@ export function ArchitectureFlow({
                 </svg>
                 {legendTraffic}
               </span>
+            ) : null}
+            {/* The canvas hides skips until an end is chosen, so it says so. A drawing that
+                quietly withholds a fact is the same defect as one that quietly invents it. */}
+            {graph.edges.some((edge) => edge.columnSpan > 1) ? (
+              <span>{legendSkipHint}</span>
             ) : null}
           </p>
         )}
