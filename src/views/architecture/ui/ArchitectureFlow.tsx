@@ -189,7 +189,6 @@ export function ArchitectureFlow({
               </svg>
               {legendShapeWork}
             </span>
-            <span>{directionLabel}</span>
             {graph.edgeSource === 'permitted' || graph.edgeSource === 'both' ? (
               <span className="flex items-center gap-1.5">
                 <svg width={18} height={6} aria-hidden>
@@ -220,6 +219,12 @@ export function ArchitectureFlow({
                 {legendTraffic}
               </span>
             ) : null}
+            {/*
+              ⚠️ Both sentences come after every swatch. In DOM order the direction sentence used
+              to arrive third — between the two shape swatches and the stroke one — so a reader
+              scanning for what a mark means met a sentence in the middle of the marks.
+            */}
+            <span>{directionLabel}</span>
             {/* The canvas hides skips until an end is chosen, so it says so. A drawing that
                 quietly withholds a fact is the same defect as one that quietly invents it. */}
             {graph.edges.some((edge) => edge.columnSpan > 1) ? (

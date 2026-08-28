@@ -805,12 +805,33 @@ export function ArchitectureWorkbench({
             */}
             <div className="mt-5">
               {activeRole === null ? (
-                <p
-                  className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3 text-body text-[color:var(--color-text-tertiary)]"
+                <div
+                  className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] text-body text-[color:var(--color-text-tertiary)]"
                   data-testid="architecture-role-detail-empty"
                 >
-                  {t('selectRoleHint')}
-                </p>
+                  {/*
+                    ⚠️ **Declining a link silently looks exactly like not having clicked yet.** The
+                    address can name a role this profile does not have — a link from another
+                    profile, or one kept after the profile changed — and the screen used to render
+                    the invitation below and nothing else. A fresh-eyes walker arriving on
+                    `?role=widgets` measured the page as pixel-identical to an untouched one, and
+                    so could not tell "the link pointed somewhere I do not have" from "I have not
+                    picked anything". The refusal was already correct; it was simply not stated.
+
+                    The address is still left as the sender wrote it. That is coherent now rather
+                    than silent: the URL says what was asked for, and the screen says why it cannot
+                    serve it.
+                  */}
+                  {selectedRole === null ? null : (
+                    <p
+                      className="mb-2 text-[color:var(--color-text-secondary)]"
+                      data-testid="architecture-role-not-in-profile"
+                    >
+                      {t('roleNotInProfile', { role: selectedRole })}
+                    </p>
+                  )}
+                  <p className="m-0">{t('selectRoleHint')}</p>
+                </div>
               ) : (
                 <ArchitectureRoleDetail
                   roleId={activeRole}

@@ -296,4 +296,23 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
 
   await page.goto('/ko/architecture/?role=not-a-real-role');
   await expect(page.locator('[data-testid^="architecture-concepts-"]')).toHaveCount(0);
+
+  /*
+   * ⚠️ And it says so. Declining a link silently renders a page identical to one nobody has
+   * clicked on yet: a second fresh-eyes walker arrived on a role this profile does not have and
+   * could not tell "the link pointed somewhere I do not have" from "I have not picked anything".
+   * The three arrival states must be distinguishable from each other, which is why all three are
+   * asserted here rather than only the one that changed.
+   */
+  const notice = page.getByTestId('architecture-role-not-in-profile');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('not-a-real-role');
+
+  await page.goto('/ko/architecture/');
+  await expect(page.getByTestId('architecture-role-detail-empty')).toBeVisible();
+  await expect(notice).toHaveCount(0);
+
+  await page.goto('/ko/architecture/?role=application');
+  await expect(page.getByTestId('architecture-role-detail-empty')).toHaveCount(0);
+  await expect(notice).toHaveCount(0);
 });
