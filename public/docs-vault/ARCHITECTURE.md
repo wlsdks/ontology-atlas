@@ -109,7 +109,8 @@ file, and write tools save confirmed changes back into the markdown.
 Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
 never becomes a Map node. It declares pattern axes, scoped implementation roles,
-path mappings, allowed dependency direction, and reviewed evidence. MCP
+path mappings, an optional one-sentence `summary_<role id>` per role, allowed
+dependency direction, and reviewed evidence. MCP
 `inspect_architecture` and CLI `architecture` derive the observed import model
 from the connected source and compare it with that declaration. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;

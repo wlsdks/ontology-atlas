@@ -320,6 +320,11 @@ export function ArchitectureWorkbench({
     : null;
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
+  /* An axis is free text in the contract, so a profile may declare one nobody has translated.
+     Saying nothing is then the honest answer: inventing a friendly explanation for an axis we do
+     not recognise would be the folder-name inference decision (2026-08-26) in another costume. */
+  const axisBody = (axis: string) =>
+    t.has(`patternAxes.${axis}.body`) ? t(`patternAxes.${axis}.body`) : '';
   /* Every number is derived from the reviewed profile or the source walk. The module
      tile drops out where no source folder can be read, which is what makes the count
      odd — the grid below handles that rather than the list pretending otherwise. */
@@ -437,11 +442,33 @@ export function ArchitectureWorkbench({
         <section className="min-w-0 p-5 md:p-8 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 id="architecture-blueprint-title" className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {/*
+                ⚠️ **The kind of drawing is the subject, not a tag.** The pattern rode in a 9.5px
+                chip below the heading while the heading said "roles and dependency direction" —
+                a sentence true of every architecture diagram ever drawn. So the screen never told
+                a first reader which of the two questions it was answering, and the owner asked
+                the honest one back: *is this really architecture?* The data always knew: the axis
+                is literally `source-organization` on this profile and `dependency` on the
+                storefront sample. It now leads, with the axis naming the question and the pattern
+                naming the answer. C4's review checklist calls this "clarify the diagram type and
+                scope" — the first thing it asks of any architecture drawing.
+              */}
+              <div className="min-w-0">
+                <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
                   {t('roles')}
+                </p>
+                <h2
+                  id="architecture-blueprint-title"
+                  className="mt-1 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
+                  data-testid="architecture-pattern-heading"
+                >
+                  {selected.patterns.length > 0
+                    ? selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · ')
+                    : t('patternsUndeclared')}
                 </h2>
-                <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
+                {/* The axis name is not repeated here: the sentence below already opens with it,
+                    and naming it twice in two lines reads as a stutter rather than an emphasis. */}
+                <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
                   {selected.dependencyPolicy === 'lower-only'
                     ? t('dependencyLowerOnly')
                     : t('dependencyExplicit')}
@@ -490,19 +517,17 @@ export function ArchitectureWorkbench({
               )}
             </div>
 
-            <div className="mt-3 flex flex-wrap gap-2">
-              {selected.patterns.map((pattern) => (
-                <span
-                  key={`${pattern.axis}:${pattern.name}`}
-                  className={badgeClass({
-                    shape: 'tag',
-                    className: 'border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]',
-                  })}
-                >
-                  {pattern.axis} · {patternLabel(pattern.name)}
-                </span>
-              ))}
-            </div>
+            {/* The chips are gone: the pattern is the heading now, and repeating it beneath
+                would be the same name twice with nothing added. What the chips carried that the
+                heading cannot — what the axis actually means — is one sentence instead. */}
+            {selected.patterns.length > 0 ? (
+              <p
+                className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-quaternary)]"
+                data-testid="architecture-axis-explainer"
+              >
+                {selected.patterns.map((pattern) => axisBody(pattern.axis)).join(' ')}
+              </p>
+            ) : null}
 
             {/*
               ⚠️ **One artifact, not a picture and then a list of the same thing.** This was two

@@ -32,6 +32,35 @@ describe('architecture-profile/v1 cross-surface contract', () => {
   });
 
   /*
+   * A role's sentence is part of the contract, not a screen decoration: the same `summary_<id>`
+   * has to reach the blueprint and the agent brief identically, and a profile that describes only
+   * some of its roles must stay valid — the field arrived after profiles existed.
+   */
+  it.each([
+    ['web', parseWebProfile],
+    ['mcp', parseMcpProfile],
+  ])('%s reads role summaries, and silence where none was written', (_surface, parse) => {
+    const profile = parse(FSD_PROFILE_FRONTMATTER);
+    const byId = new Map(profile.roles.map((role) => [role.id, role.summary]));
+    expect(byId.get('routing')).toBe(
+      'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
+    );
+    expect(byId.get('views')).toBe(
+      'One module per route-level screen, assembled from the layers beneath it.',
+    );
+    expect(byId.get('shared')).toBeUndefined();
+  });
+
+  it.each([
+    ['web', parseWebProfile],
+    ['mcp', parseMcpProfile],
+  ])('%s refuses a summary for a role that does not exist', (_surface, parse) => {
+    expect(() =>
+      parse({ ...FSD_PROFILE_FRONTMATTER, summary_nowhere: 'describes nothing' }),
+    ).toThrow(/summary_nowhere/);
+  });
+
+  /*
    * ⚠️ **One record reached twice is not a conflict.** Measured 2026-08-26: `atlas architecture .`
    * at this repository's root died with `Duplicate architecture profile slug: atlas-web.` and
    * nothing else. The cause was the repository's own generated mirror — `pnpm docs-vault:build`

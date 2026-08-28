@@ -40,6 +40,80 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 — A role may say what it is for, and the pattern axis is the stage's subject
+
+**Convened**: solo PO pass (`/po-pass`) followed by `/design-directions` ·
+**Trigger**: the owner read the installed build and asked two things back — *"how
+would someone who does not know this tell what these are?"* and *"is this really
+architecture?"* The first is an observation about the screen. The second is an
+observation about the data, and the data agreed: this profile's declared axis is
+literally `source-organization`, and its own body calls itself a
+source-organization contract.
+
+**Prior decisions**: (2026-08-26) stands — Architecture explains implementation
+roles, scoped paths, and allowed dependency direction, and a pattern label is
+never inferred from folder names. This record extends that refusal one level
+down: a role id is a folder name too. (2026-08-27) records stand untouched; the
+rest state, the click-open meaning layer, and the reviewed-relation edges are not
+changed here.
+
+**Observed phenomenon**: measured against C4's published diagram review
+checklist, the blueprint failed all six readability items — no descriptive
+names (the labels are folder names), no element descriptions, no acronym
+definitions, no statement of the diagram's type or scope, no arrow intent
+labels, no key for its marks. The only thing naming the kind of drawing was a
+9.5px chip. And the contract had nowhere to put a description even if the screen
+had wanted one.
+
+**Rubric**: 22/24, no fatal zero. Problem insight 4 · User moment 4 ·
+Differentiation 3 · Ontology value 3 · Agent value 4 · Verification 4.
+
+**Decision**: two changes, both inside the standing shape.
+
+1. `architecture-profile/v1` gains an optional `summary_<role id>`: one reviewed
+   sentence per role. Both parsers read it under the cross-surface contract, it
+   travels in `architectureBrief:v1` and `architectureChangePlan:v1`, and it is
+   absent rather than empty where nobody wrote one. Profiles written before the
+   field stay valid. The key is `summary_<id>` and not `role_summary_<id>`
+   because every `role_*` key is a path group.
+2. The declared pattern axis becomes the stage's subject: the pattern name is the
+   heading, one sentence beneath says what that axis governs, and the former
+   heading keeps its words as an eyebrow. An axis nobody has translated prints
+   its raw string and no invented explanation, for the same reason (2026-08-26)
+   forbids inferring a pattern from folder names.
+
+**Applied rule**: smallest slice. No new route, no new mode, no new surface.
+
+**Rejected alternatives**: the status quo (nothing changes, and the reader is
+assumed to know FSD); a pattern-axis tab bar making the axis a second mode
+dimension, rejected because the owner has already refused mode proliferation and
+because a profile declaring one axis would carry a one-tab tab bar forever; and
+the drawn-policy graph below.
+
+**Preserved dissent**: the strongest losing argument is one the code already
+carries. A graph drawing one arrow per permitted pair was considered and rejected
+when the blueprint was built, on the grounds that ordering rows by longest-path
+reach depth makes every real dependency point down, so one stroke per gap states
+the whole rule without 21 strokes on a seven-role profile. The proposal to draw
+the declared policy as a derived graph — the band list demoted to an index rail
+beside it, the way `/topology` already splits — is that rejected shape returning,
+and it was the recommendation of the directions pass. It is not taken here
+because taking it needs an explicit overturn of that reasoning, not a slice.
+
+**Falsifier**: if this ships and a reader who does not know the pattern still
+cannot say which roles a change may cross — observable as a `/user-walkthrough`
+with a declared "does not know FSD" knowledge state failing that same question —
+then the naming was never the problem and the drawn-policy graph was right. The
+opposite observation is the second falsifier: if role summaries stay unwritten
+across profiles, the field is a place nobody fills and the screen is back where
+it started carrying more schema.
+
+**Review**: after a profile is authored by someone other than this repository's
+maintainer, or 2026-11-28, whichever comes first.
+
+**Status**: standing. **Accountable**: owner (asked for the work, and was shown
+the directions before it began).
+
 ## 2026-08-27 — The blueprint's rest state is the full diagram, and its only edges are reviewed relations
 
 **Convened**: owner direction ("still lacking"), same continued pass ·

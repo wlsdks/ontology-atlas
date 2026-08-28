@@ -132,6 +132,8 @@ interface BandProps {
   inFocus: (id: string) => boolean;
   roleLabel: (id: string) => string;
   pathsOf: ReadonlyMap<string, string[]>;
+  /** One sentence per role that declared it; roles written before the field stay silent. */
+  summaryOf: ReadonlyMap<string, string>;
   /** `null` while no source listing exists on this surface. */
   modules: Readonly<Record<string, RoleSourceModule[]>> | null;
   /** The labeled meaning layer: reviewed concepts whose `path` sits inside the role's globs. */
@@ -178,6 +180,7 @@ function ArchitectureBand({
   inFocus,
   roleLabel,
   pathsOf,
+  summaryOf,
   modules,
   concepts,
   expandedRoles,
@@ -340,12 +343,19 @@ function ArchitectureBand({
                 className="min-w-0 flex-1 justify-start px-2 py-1.5 text-left"
               >
                 {/*
-                  One row on md and up; two rows below it. Measured at 390px: a single row left
-                  the reach span painting 37px past the band and the glob caption truncated to
-                  zero width — a fact deleted without notice. Below md, identity takes row one
-                  and the facts take row two at full width.
+                  Two rows below md, and two rows again once a role carries a sentence. Measured
+                  at 390px: one row left the reach span painting 37px past the band and the glob
+                  truncated to zero width, a fact deleted without notice. Measured at 1512 with
+                  the sentence added: name, sentence, glob and reach on one line gave the sentence
+                  324px and clipped it at roughly 55 characters, which is a sentence deleted the
+                  same way. So identity and purpose take row one, and the two addresses (where it
+                  lives, what it may reach) take row two.
                 */}
-                <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-row md:items-center md:gap-2.5">
+                <span
+                  className={`flex min-w-0 flex-1 flex-col gap-1 ${
+                    summaryOf.get(id) ? '' : 'md:flex-row md:items-center md:gap-2.5'
+                  }`}
+                >
                   <span className="flex min-w-0 items-center gap-2.5">
                     {(() => {
                       const RoleIcon = ROLE_ICONS[id] ?? Layers;
@@ -373,10 +383,31 @@ function ArchitectureBand({
                     >
                       {roleLabel(id)}
                     </span>
+                    {/*
+                      The compact row is the shape a browser gets, and a browser is exactly where
+                      a reader is most likely to be meeting these role names for the first time.
+                      Leaving the sentence to the source-listing shape would have withheld it from
+                      the only audience with nothing else to go on. It sits beside the name, ahead
+                      of both addresses, for the same reason it does in the tall band: purpose
+                      before address.
+                    */}
+                    {summaryOf.get(id) ? (
+                      <span
+                        className="min-w-0 flex-1 truncate text-caption text-[color:var(--color-text-tertiary)]"
+                        title={summaryOf.get(id)}
+                        data-testid={`architecture-role-summary-${id}`}
+                      >
+                        {summaryOf.get(id)}
+                      </span>
+                    ) : null}
                   </span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-center md:gap-2.5">
+                  <span
+                    className={`flex min-w-0 flex-1 flex-col gap-0.5 md:flex-row md:items-center md:gap-2.5 ${
+                      summaryOf.get(id) ? 'md:pl-[42px]' : ''
+                    }`}
+                  >
                     <span
-                      className="min-w-0 flex-1 truncate font-mono text-caption text-[color:var(--color-text-quaternary)] md:min-w-[10ch]"
+                      className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)] md:shrink-0 md:basis-auto md:max-w-[26ch]"
                       title={(pathsOf.get(id) ?? []).join('  ·  ')}
                     >
                       {(pathsOf.get(id) ?? []).join('  ·  ')}
@@ -404,7 +435,9 @@ function ArchitectureBand({
         </div>
       ) : (
         <div className="flex items-center gap-5 p-3.5">
-          <div className="flex w-52 shrink-0 flex-col gap-2">
+          {/* 208px held a name and a glob; a sentence needs a measure. At 256px the module grid
+              beside it still resolves to the same two columns it did before. */}
+          <div className="flex w-64 shrink-0 flex-col gap-2">
             {rung.map((id) => (
               <div key={id} className="min-w-0" data-testid={`architecture-rung-${id}`}>
                 <RowButton
@@ -512,8 +545,26 @@ function ArchitectureBand({
                       : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
                   </p>
                 ) : null}
+                {/*
+                  ⚠️ **A role id is a folder name, and a folder name is what decision (2026-08-26)
+                  forbids reading intent from.** Without this sentence the band could only say
+                  `widgets · src/widgets/**`, which answers nothing for a reader who does not
+                  already know the answer — the owner's own question on the installed build was
+                  "how would someone who does not know this tell what these are?". The sentence
+                  outranks the glob because the glob is the address and this is the purpose.
+                  It sits outside the RowButton on purpose: it is prose to read, not part of the
+                  control's accessible name.
+                */}
+                {summaryOf.get(id) ? (
+                  <p
+                    className="mt-1 break-keep px-2 text-body leading-body text-[color:var(--color-text-tertiary)]"
+                    data-testid={`architecture-role-summary-${id}`}
+                  >
+                    {summaryOf.get(id)}
+                  </p>
+                ) : null}
                 <p
-                  className="mt-0.5 truncate px-2 font-mono text-caption text-[color:var(--color-text-quaternary)]"
+                  className="mt-1 truncate px-2 font-mono text-caption text-[color:var(--color-text-quaternary)]"
                   title={(pathsOf.get(id) ?? []).join('  ·  ')}
                 >
                   {(pathsOf.get(id) ?? []).join('  ·  ')}
@@ -905,6 +956,15 @@ export function ArchitectureFlow({
     () => new Map(profile.roles.map((role) => [role.id, role.paths])),
     [profile],
   );
+  const summaryOf = useMemo(
+    () =>
+      new Map(
+        profile.roles
+          .filter((role) => role.summary)
+          .map((role) => [role.id, role.summary as string]),
+      ),
+    [profile],
+  );
   /** Outer to inner. Roles sharing a depth share a rung: neither may depend on the other. */
   const rungs = layout.rows;
   const order = rungs.flat();
@@ -990,6 +1050,7 @@ export function ArchitectureFlow({
               inFocus={inFocus}
               roleLabel={roleLabel}
               pathsOf={pathsOf}
+              summaryOf={summaryOf}
               modules={modules}
               concepts={concepts}
               openRoles={openRoles}

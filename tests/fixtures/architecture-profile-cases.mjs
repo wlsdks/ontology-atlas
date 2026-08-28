@@ -15,6 +15,8 @@ export const FSD_PROFILE_FRONTMATTER = Object.freeze({
   role_features: ['src/features/**'],
   role_entities: ['src/entities/**'],
   role_shared: ['src/shared/**'],
+  summary_routing: 'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
+  summary_views: 'One module per route-level screen, assembled from the layers beneath it.',
   dependency_policy: 'lower-only',
   evidence: ['docs/ARCHITECTURE.md#fsd-layers'],
 });
@@ -35,6 +37,7 @@ export const HEXAGONAL_PROFILE_FRONTMATTER = Object.freeze({
   allow_application: ['domain', 'port'],
   allow_port: ['domain'],
   allow_adapter: ['application', 'port', 'domain'],
+  summary_domain: 'The rules the business would still have on paper. Depends on nothing.',
   type_only_dependencies: 'free',
   evidence: ['docs/architecture/payments.md'],
 });

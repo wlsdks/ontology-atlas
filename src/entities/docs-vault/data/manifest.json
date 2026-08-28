@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-27",
+  "generatedAt": "2026-08-28",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -69,8 +69,8 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 3955,
-      "updatedAt": "2026-08-26",
+      "wordCount": 3962,
+      "updatedAt": "2026-08-28",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -466,8 +466,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 187278,
-      "updatedAt": "2026-08-27",
+      "wordCount": 187967,
+      "updatedAt": "2026-08-28",
       "linksOut": [
         "slug"
       ]
@@ -572,8 +572,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-26 (added the separate Architecture contract/workbench, source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility red",
-      "wordCount": 23383,
-      "updatedAt": "2026-08-27",
+      "wordCount": 23508,
+      "updatedAt": "2026-08-28",
       "linksOut": [
         "slug",
         "project:slug",
@@ -942,6 +942,13 @@
         "role_shared": [
           "src/shared/**"
         ],
+        "summary_routing": "Locale-prefixed Next entry wrappers. They name a page and hand off; no logic lives here.",
+        "summary_app": "Providers and start-up wiring the whole app shares: theme, i18n, and the stores a page assumes are already running.",
+        "summary_views": "One module per screen a route can open, assembled from the layers below it.",
+        "summary_widgets": "A composite block a screen drops in whole, such as the map canvas or the agent panel.",
+        "summary_features": "One thing a person does (open a folder, write a relation, copy a handoff) with the state that act needs.",
+        "summary_entities": "A thing the product talks about, with its shape and the rules for reading and writing it.",
+        "summary_shared": "Primitives everything may use: design tokens, UI parts, pure helpers, and types. It depends on nothing here.",
         "dependency_policy": "lower-only",
         "evidence": [
           "docs/ARCHITECTURE.md#fsd-layers",
@@ -951,7 +958,7 @@
       "headings": [],
       "excerpt": "This profile records the reviewed source-organization contract for the Next.js workbench. It is not an ontology node. The Ontology Map continues to describe what the codebase builds and why; this profile describes which implementation roles may depend on which lower roles. The root app/ directory owns locale-prefixed r",
       "wordCount": 94,
-      "updatedAt": "2026-08-26",
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {

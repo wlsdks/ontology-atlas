@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-26",
+  "generatedAt": "2026-08-28",
   "docs": [
     {
       "slug": "architecture/storefront-services",
@@ -48,6 +48,10 @@
           "port",
           "domain"
         ],
+        "summary_domain": "The rules the business would still have on paper: prices, stock, refunds. It depends on nothing.",
+        "summary_application": "The steps that carry out one request, calling the domain and going out through ports.",
+        "summary_port": "The interfaces the inside declares so it can talk outward without knowing who answers.",
+        "summary_adapter": "The outside edge: HTTP, queues, databases. It is replaceable, and nothing inside depends on it.",
         "evidence": [
           "storefront.md"
         ]
@@ -55,7 +59,7 @@
       "headings": [],
       "excerpt": "Each of the nine areas is one service, and inside a service the dependency direction runs inward. Adapters may reach the application and the ports; the application may reach the domain; the domain reaches nothing at all. That is what keeps a payment change from rippling into the catalogue. The map says which areas exis",
       "wordCount": 89,
-      "updatedAt": "2026-08-26",
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {

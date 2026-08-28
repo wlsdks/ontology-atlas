@@ -16,6 +16,13 @@ role_widgets: [src/widgets/**]
 role_features: [src/features/**]
 role_entities: [src/entities/**]
 role_shared: [src/shared/**]
+summary_routing: Locale-prefixed Next entry wrappers. They name a page and hand off; no logic lives here.
+summary_app: Providers and start-up wiring the whole app shares: theme, i18n, and the stores a page assumes are already running.
+summary_views: One module per screen a route can open, assembled from the layers below it.
+summary_widgets: A composite block a screen drops in whole, such as the map canvas or the agent panel.
+summary_features: One thing a person does (open a folder, write a relation, copy a handoff) with the state that act needs.
+summary_entities: A thing the product talks about, with its shape and the rules for reading and writing it.
+summary_shared: Primitives everything may use: design tokens, UI parts, pure helpers, and types. It depends on nothing here.
 dependency_policy: lower-only
 evidence: [docs/ARCHITECTURE.md#fsd-layers, eslint.config.mjs]
 ---

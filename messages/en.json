@@ -341,6 +341,22 @@
     "railRoles": "{count, plural, one {# role} other {# roles}}",
     "statModules": "Source modules",
     "statEvidence": "Evidence files",
+    "patternsUndeclared": "No pattern declared",
+    "patternAxes": {
+      "source-organization": {
+        "label": "Source organization",
+        "body": "Source organization says which folder a file belongs in. It is not the runtime shape of the system."
+      },
+      "dependency": {
+        "label": "Dependency",
+        "body": "Dependency says which roles a change may reach from where it sits."
+      },
+      "presentation": {
+        "label": "Presentation",
+        "body": "Presentation says how a screen is split between what it shows and what decides."
+      }
+    },
+    "roleUndescribed": "This role has no description yet.",
     "sourceListingUnavailable": "Source modules appear once a project source folder is connected. A browser cannot read a source folder, so this stays empty here.",
     "sourceListingUnbound": "No source folder is connected yet. Open the folder this profile describes and the bands fill with the modules its globs actually contain.",
     "draftFromCode": "Draft from this codebase",

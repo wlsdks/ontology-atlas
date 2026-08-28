@@ -447,11 +447,22 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 
 - Architecture is separate from the Ontology Map and from the public five-kind
   ontology schema. A non-kind `architecture-profile/v1` Markdown document keeps
-  reviewed pattern axes, scopes, roles, paths, evidence, and allowed dependency
-  direction in the same Git-backed folder without becoming a map node.
+  reviewed pattern axes, scopes, roles, paths, role descriptions, evidence, and
+  allowed dependency direction in the same Git-backed folder without becoming a
+  map node.
 - The stable role blueprint persists across **Understand → Plan → Verify**.
   Pattern names are declared summaries; Atlas does not infer Clean, Hexagonal,
   MVP, or Feature-Sliced Design from folder names.
+- The declared **pattern axis leads the stage**: the heading is the pattern name,
+  and a sentence beneath it says what that axis governs (`source-organization`
+  says which folder a file belongs in and is not the runtime shape;
+  `dependency` says which roles a change may reach). An axis nobody has
+  translated shows its raw string and no invented explanation, and a profile
+  declaring no pattern says so.
+- A role may carry one sentence, `summary_<role id>`, saying what it is for. It
+  is read by the blueprint and by the agent handoff alike, because a role id is
+  a folder name and folder names are exactly what Atlas refuses to read intent
+  from. Roles written before the field stay valid and say nothing.
 - Each role is a boxed layer container listing its occupants as cards: the
   **source modules** the role's globs actually contain, from a read-only
   directory walk of the bound project source in the installed app (name,

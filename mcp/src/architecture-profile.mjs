@@ -80,6 +80,18 @@ export function parseArchitectureProfile(frontmatter) {
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
+  /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
+     prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
+     shape `allow_<id>` already uses. Mirrors the web parser under the cross-surface contract. */
+  const roleSummaries = new Map(
+    Object.entries(frontmatter)
+      .filter(([key]) => key.startsWith('summary_'))
+      .map(([key, value]) => {
+        const id = key.slice('summary_'.length);
+        if (!ROLE_ID.test(id)) throw new Error(`Invalid architecture role id: ${id}.`);
+        return [id, nonBlank(value, key)];
+      }),
+  );
   const roleEntries = Object.entries(frontmatter)
     .filter(([key]) => key.startsWith('role_') && key !== 'role_order')
     .map(([key, value]) => {
@@ -94,6 +106,11 @@ export function parseArchitectureProfile(frontmatter) {
     : stringArray(frontmatter.role_order, 'role_order');
   if (roleOrder.length !== rolePaths.size || roleOrder.some((id) => !rolePaths.has(id))) {
     throw new Error('role_order must name every role exactly once.');
+  }
+  for (const summaryId of roleSummaries.keys()) {
+    if (!rolePaths.has(summaryId)) {
+      throw new Error(`summary_${summaryId} describes a role that does not exist.`);
+    }
   }
 
   const dependencyPolicy = frontmatter.dependency_policy === undefined
@@ -129,7 +146,12 @@ export function parseArchitectureProfile(frontmatter) {
     excludePaths: frontmatter.exclude_paths === undefined
       ? []
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
-    roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id) })),
+    roles: roleOrder.map((id) => {
+      const summary = roleSummaries.get(id);
+      return summary === undefined
+        ? { id, paths: rolePaths.get(id) }
+        : { id, paths: rolePaths.get(id), summary };
+    }),
     dependencyPolicy,
     typeOnlyDependencies,
     allows,
@@ -299,6 +321,10 @@ export function evaluateArchitectureConformance(profile, importResult) {
     return {
       id: role.id,
       paths: role.paths,
+      /* The reviewed sentence rides with the role, so an agent reading the brief is handed the
+         role's purpose instead of inferring it from `src/widgets/**` — the exact inference the
+         2026-08-26 decision forbids for pattern names. Absent where none was written. */
+      ...(role.summary === undefined ? {} : { summary: role.summary }),
       matchedFileCount: matched.length,
       matchedFiles: matched.slice(0, MATCHED_FILE_SAMPLE_LIMIT),
       matchedFilesLimited: matched.length > MATCHED_FILE_SAMPLE_LIMIT,
@@ -412,6 +438,7 @@ export function buildArchitectureBrief(profile, importResult, { measured } = {})
       roles: profile.roles.map((role) => ({
         id: role.id,
         paths: role.paths,
+        ...(role.summary === undefined ? {} : { summary: role.summary }),
         allowedDependencies: profile.dependencyPolicy === 'lower-only'
           ? profile.roles
               .slice(profile.roles.findIndex((row) => row.id === role.id) + 1)

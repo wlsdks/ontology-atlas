@@ -341,6 +341,22 @@
     "railRoles": "역할 {count}개",
     "statModules": "소스 모듈",
     "statEvidence": "근거 파일",
+    "patternsUndeclared": "선언된 패턴 없음",
+    "patternAxes": {
+      "source-organization": {
+        "label": "소스 조직",
+        "body": "소스 조직은 파일이 어느 폴더에 속하는지를 말합니다. 시스템이 실행될 때의 모양은 아닙니다."
+      },
+      "dependency": {
+        "label": "의존 규칙",
+        "body": "의존 규칙은 어느 역할에서 어느 역할까지 닿아도 되는지를 말합니다."
+      },
+      "presentation": {
+        "label": "표현 분리",
+        "body": "표현 분리는 화면이 보여주는 쪽과 결정하는 쪽으로 어떻게 나뉘는지를 말합니다."
+      }
+    },
+    "roleUndescribed": "이 역할에는 아직 설명이 없습니다.",
     "sourceListingUnavailable": "소스 모듈은 소스 폴더가 연결돼야 표시됩니다. 브라우저는 소스 폴더를 읽을 수 없어 여기서는 비어 있습니다.",
     "sourceListingUnbound": "아직 연결된 소스 폴더가 없습니다. 이 프로필이 설명하는 폴더를 열면 각 밴드가 글롭이 실제로 담고 있는 모듈로 채워집니다.",
     "draftFromCode": "코드에서 초안 만들기",
