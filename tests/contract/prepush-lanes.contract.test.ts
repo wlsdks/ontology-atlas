@@ -101,6 +101,9 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
 
     for (const lane of correctnessLanes) {
       expect(lane, "unit/contract 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
+      expect(lane, "병렬 레인이 Vitest worker를 무제한으로 늘려 다른 정확성 시험을 굶긴다").toContain(
+        "--maxWorkers=4",
+      );
       expect(lane, "병렬 부하에서 기본 timeout이 정확성 시험을 오탐한다").toContain(
         "--testTimeout=30000",
       );
