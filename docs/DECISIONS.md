@@ -40,6 +40,90 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 (3) — The diagram leaves the document: a horizontal graph, and only edges that carry something the columns cannot
+
+**Convened**: solo, on a failed build the owner rejected on sight ·
+**Trigger**: the owner asked for the architecture surface to be a building X-ray
+with a workflow's shape, notes pinned to places, and the ability to insert
+between, then looked at the first attempt and asked whether anyone could read it.
+
+**Prior decisions**: (2026-08-26) stands, including its rejection of a free-layout
+diagram generator; nothing here is hand-placed and every position is computed.
+(2026-08-27) selected the occupied-band stage from four directions, and **this
+record replaces that shape**. It is one day old, which is why this is a record and
+not a slice.
+
+**Observed**: two measurements, one from a build and one from the data.
+
+The build. Traffic arcs drawn onto the existing full-width bands were unreadable.
+Every arc left and arrived at the same x, because a band is a full-width block, so
+the whole set collapsed into a bundle of near-parallel wires against the right
+edge with detached dashed fragments beside it. The cause is structural: a block
+250px tall and 764px wide gives an edge nothing to attach to, so no thinning,
+dimming or reordering would have rescued it. Reverted in `4553e13c8`.
+
+The data. Counting the permitted edges of both sample profiles:
+
+| profile | policy | permitted edges | measured traffic |
+|---|---|---:|---:|
+| Atlas Web Workbench, 7 roles | `lower-only` | 21 | 26 rows with counts |
+| Storefront Services, 4 roles | `explicit` | 6 | none recorded |
+
+Under `lower-only` every one of the 21 means "everything below me", so the whole
+set is derivable from the order. Under `explicit` the set is the information and
+cannot be read off the order at all.
+
+**Decision**: three parts.
+
+1. **The diagram and the document separate.** The centre becomes a horizontal
+   layered graph of compact role boxes, one column per rank, reusing the ranks
+   `buildArchitectureLayout` already computes. Everything a band carried inside
+   itself — the role sentence, the reach, the globs, the source modules, the
+   reviewed concepts — moves to a detail panel beside the drawing, filled by
+   selecting a box.
+2. **A stroke must carry something the columns cannot.** Permitted edges are
+   drawn only under `explicit`. Measured traffic is drawn wherever a record
+   exists, under either policy. Under `lower-only` the permitted set is drawn as
+   nothing at all, because the columns already say it. The same screen therefore
+   draws different strokes for different profiles, and that is the rule rather
+   than an inconsistency.
+3. **Horizontal, and no layout library.** Left to right is the convention the
+   reader already has: n8n's editor is left-to-right by construction, with nodes
+   taking input on the left and emitting on the right, and React Flow treats graph
+   direction as a first-class setting on both layouts it recommends. Seven nodes
+   with ranks already computed do not need Dagre or ELK, and adopting either would
+   need its own record under the renderer rule in `AGENTS.md`.
+
+**Applied rule**: replace, do not accumulate. The band shape is removed rather
+than kept beside the graph as a second mode; two representations of one truth
+leave the reader deciding which to trust, and the 2026-08-27 dot-matrix removal
+was already this lesson once.
+
+**Rejected alternatives**: keeping the bands and tuning the arcs, rejected because
+the failure is structural rather than visual; a mode toggle between document and
+diagram, rejected because it multiplies the existing three-mode axis and the owner
+has refused mode proliferation before; drawing all 21 permitted edges once the
+picture was horizontal, rejected because turning a restatement sideways does not
+make it informative.
+
+**Preserved dissent**: the band stage is dense and scannable, and someone reading
+88 source modules is better served by a list than by any graph. This record's
+answer is that the graph and the list are different jobs and the detail panel is
+where the list survives. If in use the panel turns out to be where everyone
+actually lives and the graph is glanced at once and ignored, the graph is
+decoration and this record was wrong.
+
+**Falsifier**: a fresh-eyes walkthrough under the 2026-08-28 protocol, asked which
+boundary carries the most traffic, which the least, and whether what they are
+looking at is a rule or a measurement. Cannot answer, or answers "a rule", and the
+strokes come out the way the arcs did.
+
+**Review**: after that walkthrough, and again if a real profile passes roughly
+fifteen roles, at which point the no-layout-library decision is the one to reopen.
+
+**Status**: standing. **Accountable**: owner (asked for the shape, rejected the
+first attempt, and approved the rewritten plan).
+
 ## 2026-08-28 (2) — A rule the screen does not print is a rule the reader does not have
 
 **Convened**: solo, on the falsifier of the record below · **Trigger**: that
