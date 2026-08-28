@@ -293,9 +293,17 @@ export function ArchitectureWorkbench({
                   {t('roles')}
                 </h2>
                 <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
-                  {selected.dependencyPolicy === 'lower-only'
-                    ? t('dependencyLowerOnly')
-                    : t('dependencyExplicit')}
+                  <span className="block">
+                    {selected.dependencyPolicy === 'lower-only'
+                      ? t('dependencyLowerOnly')
+                      : t('dependencyExplicit')}
+                  </span>
+                  <span className="mt-1 block">
+                    {selected.dependencyUsages.length === 1 &&
+                    selected.dependencyUsages[0] === 'value'
+                      ? t('dependencyUsagesValue')
+                      : t('dependencyUsagesAll')}
+                  </span>
                 </p>
               </div>
               <span className={badgeClass({

@@ -69,13 +69,14 @@ describe('buildArchitectureDraftPrompt', () => {
   const prompt = () => buildArchitectureDraftPrompt(null);
 
   /*
-   * Measured on this repository: `atlas architecture` reports 18 real Feature-Sliced Design
-   * violations, `shared → entities` among them. A rule derived from those same imports would emit
-   * `allow_shared: [entities]` and render the repository `conforms` — reaching the standing
-   * record's own falsifier, "if an unsupported scan ever renders green", by design.
+   * Observed edges can prove what the source currently does, but cannot declare whether a
+   * direction or import usage is allowed. Deriving any of those rules from the same observation
+   * would make the status quo self-approving.
    */
   it('never asks for rules to be derived from what the code happens to do', () => {
-    expect(prompt()).toMatch(/no `allow_\*` keys and no `dependency_policy`/);
+    expect(prompt()).toMatch(
+      /no `allow_\*` keys, no `dependency_policy`, and no `dependency_usages`/,
+    );
     expect(prompt()).toMatch(/unknown/);
   });
 

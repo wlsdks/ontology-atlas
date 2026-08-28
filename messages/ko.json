@@ -272,6 +272,8 @@
     "rolePaths": "경로 {count}개",
     "dependencyLowerOnly": "의존은 아래 역할로만 향합니다",
     "dependencyExplicit": "프로젝트가 정한 허용 의존 규칙",
+    "dependencyUsagesValue": "값을 가져오는 의존만 규칙을 적용하고, 타입 전용 의존은 위반으로 세지 않고 계속 보여줍니다",
+    "dependencyUsagesAll": "값과 타입 전용 의존 모두 규칙을 적용합니다",
     "modesAria": "아키텍처 작업 단계",
     "modes": {
       "understand": "이해",

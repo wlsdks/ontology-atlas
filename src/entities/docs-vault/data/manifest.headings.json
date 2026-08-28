@@ -2881,6 +2881,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-28 · Architecture distinguishes value and type-only imports",
+      "slug": "2026-08-28-architecture-distinguishes-value-and-type-only-imports"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-26 · The Architecture tab draws a shape, and its empty state does something",
       "slug": "2026-08-26-the-architecture-tab-draws-a-shape-and-its-empty-state-does-something"
     },
@@ -5879,6 +5884,16 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-28 — Architecture profiles declare which import usages dependency rules govern",
+      "slug": "2026-08-28-architecture-profiles-declare-which-import-usages-dependency-rules-govern"
+    },
+    {
+      "depth": 3,
+      "text": "PO Council Verdict — profile-wide import-usage policy",
+      "slug": "po-council-verdict-profile-wide-import-usage-policy"
     },
     {
       "depth": 2,

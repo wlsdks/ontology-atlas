@@ -40,6 +40,98 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 — Architecture profiles declare which import usages dependency rules govern
+
+**Convened because**: the owner asked to continue with the next AI-executable
+quality problem after release-gate hardening. This changes the public
+`architecture-profile/v1`, MCP `inspect_architecture`, CLI `architecture`, and
+web-reader contract, so five PO seats ran one independent round and one rebuttal
+round. Only three seats could run concurrently; later seats received no earlier
+verdicts, so cross-talk was prevented even though full simultaneous independence
+was unavailable.
+
+**Prior decisions**: the 2026-08-26 separation of Architecture from the Ontology
+Map stands. Declared policy remains separate from observed source, pattern names
+are never inferred from folders, and unknown is never compliant. This record
+corrects one measured premise in the later 2026-08-26 draft decision: the reported
+18 `shared → entities` rows were not real FSD violations. All 18 production rows
+are explicit `import type` edges, while the profile's cited authority,
+`eslint.config.mjs`, permits type-only imports in every direction. The import
+scanner already reported `importUsage: type_only`; conformance discarded it.
+
+### PO Council Verdict — profile-wide import-usage policy
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify; the false remediation action and corrupted ledger premise are observed harm | Problem insight 4 · User moment 4 |
+| Craft | Build and verify; preserve one existing policy sentence and require runtime parity | Verification 4 |
+| Steward | Build and verify only the profile-wide policy slice | Ontology value 3 · Agent value 4 |
+| Wedge | Build and verify as trust hygiene, not a new moat | Differentiation 2 |
+| Leverage | Build and verify in one PR with a two-day appetite | appetite and slice |
+
+**Rubric total**: 21/24 (fatal zeros: none)
+
+**Decisive disagreement**: the strongest opposition was that import-usage
+qualification is table-stakes, no public user harm has been observed, and a
+self-dogfood defect could overfit a permanent public field. The decision proceeds
+because the false result already escaped into `inspect_violations` and this ledger,
+but accepts the differentiation score of 2 and forbids scope expansion.
+
+**Decision (accountable: owner)**: add one optional profile-wide
+`dependency_usages` array. It accepts a non-empty subset of `value` and
+`type_only`. A missing field preserves the v1 behaviour of governing both known
+usages. `unknown` is never declarable and always keeps conformance fail-closed.
+Observed role edges retain usage counts and exact receipt usage; violations retain
+their usage; the unknown receipt counts unclassified usage. The Atlas web profile
+declares `[value]`, so its 18 type-only rows remain observed but leave the violation
+list. Its existing 77 unmapped edges keep the overall result `unknown`.
+
+**Recorded dissent**: a profile-wide switch may be too coarse for a repository
+that governs type knowledge differently per role, and additive fields can burden
+strict consumers. **Falsifier**: an unfamiliar-repository field trial requires a
+per-role exception to state the reviewed policy; a legacy profile changes verdict;
+an upward value edge stops turning red; unknown usage turns green; or self-dogfood
+changes anything beyond moving the 18 type-only rows out of violations while
+preserving the 77 unmapped count. **Revisit**: stop and design a versioned contract
+instead of adding a DSL if any falsifier appears.
+
+**Slice**: IN one backward-compatible field, MCP/web parser parity, usage-qualified
+receipts, CLI and existing workbench policy wording, RED probes, self-dogfood, one
+field trial, and synchronization of the existing Architecture capability/element ·
+OUT schema v2, per-role usage rules, automatic ESLint parsing, global type-only
+suppression, new tools/routes/controls, the unrelated Architecture receipt branch,
+and cleanup of the 77 unmapped edges.
+
+**Field trial**: an unfamiliar MIT TypeScript protocol-client repository was
+tested outside this checkout. The ontology-bootstrap phase took 1 h 0 min 56 s
+including two independent evaluation rounds and explicit owner approval; its
+released plan added 10 meaningful nodes and 14 relations while leaving the five
+starter records untouched. Validation and compilation ended at 15 total nodes,
+30/30 resolved edges, zero issues, and 18/18 current source witnesses. Phase 2
+verified 55/55 meaningful path claims (the only two misses were Atlas paths in
+the explicitly excluded starter README). A fresh source-hidden reader used one
+10-node full-body batch with no truncation and answered three of six questions
+completely and three partially, refusing unmeasured encoding mechanics, arbitrary
+operation ownership, and project-level exclusions. Phase 4 verified 14/15 claims;
+the failure was an over-narrow capability sentence that named four directory
+operations while the source documents additional operations. This is a separate
+construction-quality follow-up and is retained rather than repaired inside the
+trial. The existing field-trial baseline remains unchanged because 93.3% claim
+accuracy is worse than its latest zero-failure run.
+
+The Architecture-specific comparison used 362 observed source edges from the same
+unfamiliar repository. A legacy profile produced 10 violations (4 value and 6
+type-only); the identical profile with `dependency_usages: [value]` produced the
+same 4 value violations, excluded 115 type-only observations from verdicts while
+retaining their counts and receipts, and kept unmapped/unknown counts at zero. No
+per-role exception or schema version was required, so the recorded falsifier did
+not fire. Candidate-packet mutation checks rejected 141/141 missing, foreign,
+truncated, digest, gap, and source-hidden-claim mutations before approval.
+
+**Status**: valid
+
+---
+
 ## 2026-08-26 — The first architecture draft is proposed by an agent and named by a person
 
 **Convened because**: on the installed rc.15, with the owner's own folder connected,

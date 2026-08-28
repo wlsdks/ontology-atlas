@@ -110,11 +110,15 @@ Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
 never becomes a Map node. It declares pattern axes, scoped implementation roles,
 path mappings, allowed dependency direction, and reviewed evidence. MCP
-`inspect_architecture` and CLI `architecture` derive the observed import model
-from the connected source and compare it with that declaration. Their
+`inspect_architecture` and CLI `architecture` derive the usage-qualified
+observed import model from the connected source and compare it with that
+declaration. Optional `dependency_usages` says which known import usages the
+dependency rules govern; missing v1 fields preserve value plus type-only
+behaviour, while unclassified usage can never be declared away. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
-unsupported languages, incomplete scans, unmapped edges, unruled edges, and
-empty roles prevent a false green result. The `/architecture` Living Blueprint
+unsupported languages, incomplete scans, unknown usages, unmapped edges,
+unruled edges, and empty roles prevent a false green result. The
+`/architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown.
 

@@ -272,6 +272,8 @@
     "rolePaths": "{count, plural, one {# path} other {# paths}}",
     "dependencyLowerOnly": "Dependencies point to lower roles only",
     "dependencyExplicit": "Project-specific allowed dependencies",
+    "dependencyUsagesValue": "Rules apply to value imports; type-only imports stay visible without counting as violations",
+    "dependencyUsagesAll": "Rules apply to value and type-only imports",
     "modesAria": "Architecture workflow stage",
     "modes": {
       "understand": "Understand",

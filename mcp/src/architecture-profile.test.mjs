@@ -26,6 +26,7 @@ test('feature-sliced profile accepts lower dependencies and rejects an upward ed
         from: 'src/shared/lib/date.test.ts',
         to: 'src/entities/project/model/project.ts',
         kind: 'static',
+        importUsage: 'type_only',
       },
     ],
     filesScanned: 12,
@@ -47,8 +48,47 @@ test('feature-sliced profile accepts lower dependencies and rejects an upward ed
     from: FSD_FORBIDDEN_EDGE.from,
     to: FSD_FORBIDDEN_EDGE.to,
     kind: 'static',
+    importUsage: 'value',
     rule: 'lower-only',
   });
+});
+
+test('profile-declared usages exclude type-only verdicts while unknown stays fail-closed', () => {
+  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+  assert.deepEqual(profile.dependencyUsages, ['value']);
+
+  const typeOnly = evaluateArchitectureConformance(profile, {
+    edges: [
+      ...FSD_ALLOWED_EDGES,
+      { ...FSD_FORBIDDEN_EDGE, importUsage: 'type_only' },
+    ],
+    filesScanned: 12,
+    coverage: { allDetectedLanguagesSupported: true, supportedLanguages: ['typescript'] },
+  });
+  assert.equal(typeOnly.status, 'conforms');
+  assert.equal(typeOnly.violationCount, 0);
+  assert.equal(typeOnly.excludedByUsage, 1);
+  const sharedToEntities = typeOnly.observedRoleEdges.find(
+    (edge) => edge.fromRole === 'shared' && edge.toRole === 'entities',
+  );
+  assert.deepEqual(sharedToEntities?.importUsageCounts, {
+    value: 0,
+    type_only: 1,
+    unknown: 0,
+  });
+  assert.equal(sharedToEntities?.evidence[0]?.importUsage, 'type_only');
+
+  const unknown = evaluateArchitectureConformance(profile, {
+    edges: [
+      ...FSD_ALLOWED_EDGES,
+      { ...FSD_FORBIDDEN_EDGE, importUsage: 'unknown' },
+    ],
+    filesScanned: 12,
+    coverage: { allDetectedLanguagesSupported: true, supportedLanguages: ['typescript'] },
+  });
+  assert.equal(unknown.status, 'unknown');
+  assert.equal(unknown.violationCount, 0);
+  assert.equal(unknown.unknown.unknownImportUsages, 1);
 });
 
 test('hexagonal profile keeps pattern axes independent and catches domain to adapter', () => {
@@ -70,7 +110,7 @@ test('hexagonal profile keeps pattern axes independent and catches domain to ada
 test('unmapped source or unsupported language stays unknown instead of green', () => {
   const profile = parseArchitectureProfile(AMBIGUOUS_PROFILE_FRONTMATTER);
   const result = evaluateArchitectureConformance(profile, {
-    edges: [{ from: 'src/misc/a.py', to: 'src/core/b.py', kind: 'static' }],
+    edges: [{ from: 'src/misc/a.py', to: 'src/core/b.py', kind: 'static', importUsage: 'value' }],
     filesScanned: 2,
     coverage: { allDetectedLanguagesSupported: false, supportedLanguages: ['python'] },
   });
@@ -90,6 +130,7 @@ test('architecture brief gives an agent scope, rules, evidence, and a plan contr
   assert.equal(brief.contract, 'architectureBrief:v1');
   assert.equal(brief.sideEffect, 0);
   assert.equal(brief.profile.slug, 'atlas-web');
+  assert.deepEqual(brief.profile.dependencyUsages, ['value']);
   assert.deepEqual(brief.agentPlanContract.requiredFields, [
     'touchedRoles',
     'plannedPaths',

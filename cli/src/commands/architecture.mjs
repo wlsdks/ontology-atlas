@@ -64,6 +64,7 @@ export async function runArchitecture(args) {
     `${COLORS.bold}architecture${COLORS.reset} ${COLORS.cyan}${result.profile.title}${COLORS.reset} ` +
       `${COLORS.dim}(${result.profile.slug})${COLORS.reset}\n` +
       `  ${COLORS.bold}patterns${COLORS.reset}  ${patterns}\n` +
+      `  ${COLORS.bold}usages${COLORS.reset}   ${result.profile.dependencyUsages.join(', ')}\n` +
       `  ${COLORS.bold}status${COLORS.reset}    ${statusColor}${result.conformance.status}${COLORS.reset}\n` +
       `  ${COLORS.bold}source${COLORS.reset}    ${result.conformance.source.filesScanned} files · ` +
       `${result.conformance.source.supportedLanguages.join(', ') || 'coverage unknown'}\n\n`,
@@ -78,18 +79,21 @@ export async function runArchitecture(args) {
     process.stdout.write(`\n  ${COLORS.red}${COLORS.bold}violations${COLORS.reset}\n`);
     for (const violation of result.conformance.violations.slice(0, 20)) {
       process.stdout.write(
-        `    ${violation.fromRole} → ${violation.toRole} ${COLORS.dim}${violation.from} → ${violation.to}${COLORS.reset}\n`,
+        `    ${violation.fromRole} → ${violation.toRole} ` +
+          `${COLORS.dim}[${violation.importUsage}] ${violation.from} → ${violation.to}${COLORS.reset}\n`,
       );
     }
   }
   const unknown = result.conformance.unknown;
   if (
     unknown.coverageIncomplete || unknown.unmappedEdges > 0 ||
-    unknown.unruledEdges > 0 || unknown.emptyRoles.length > 0
+    unknown.unruledEdges > 0 || unknown.unknownImportUsages > 0 ||
+    unknown.emptyRoles.length > 0
   ) {
     process.stdout.write(
       `\n  ${COLORS.yellow}${COLORS.bold}unknown${COLORS.reset} ` +
       `${COLORS.dim}unmapped=${unknown.unmappedEdges} · unruled=${unknown.unruledEdges} · ` +
+      `usage unknown=${unknown.unknownImportUsages} · ` +
       `empty roles=${unknown.emptyRoles.length} · coverage incomplete=${unknown.coverageIncomplete}${COLORS.reset}\n`,
     );
   }
@@ -140,8 +144,8 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas architecture [rootPath] [--vault path] [--profile slug] [--max-files N] [--json]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
-      `  Reads a reviewed architecture-profile/v1 from the vault, derives current static imports,\n` +
-      `  and reports scoped roles, intended dependency rules, violations, and measurement gaps.\n` +
+      `  Reads a reviewed architecture-profile/v1 from the vault, derives usage-qualified imports,\n` +
+      `  and reports scoped roles, governed usages, dependency violations, and measurement gaps.\n` +
       `  It never infers a named pattern from folders and never writes the vault.\n`,
   );
 }

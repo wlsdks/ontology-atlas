@@ -129,6 +129,11 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.getByTestId('architecture-role-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-role-shared')).toBeInTheDocument();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Rules apply to value imports; type-only imports stay visible without counting as violations',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('architecture-bottom-tab-reserve')).toHaveClass(
       'h-[var(--topology-mobile-bottom-tab-reserve)]',
       'lg:hidden',
