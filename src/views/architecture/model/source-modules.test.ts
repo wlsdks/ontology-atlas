@@ -78,3 +78,55 @@ describe('deriveRoleSourceModules', () => {
     ]);
   });
 });
+
+describe('dot-prefixed entries', () => {
+  it('are not modules, on any of the three walks', async () => {
+    /*
+     * ⚠️ Found in the installed app on 2026-08-28: the widgets role led with `.gitkeep` and
+     * counted it among its 23 modules, so the screen stated a number wrong by one. On somebody
+     * else's project the same walk would show `.DS_Store`, `.eslintrc.js` and `.env.local` — the
+     * last named by `.claude/rules/local-first.md` when it says to skip dotfiles while reading the
+     * user's disk.
+     */
+    const tree: Record<string, { name: string; kind: 'dir' | 'file' }[]> = {
+      'src/widgets': [
+        { name: '.gitkeep', kind: 'file' },
+        { name: '.DS_Store', kind: 'file' },
+        { name: 'acp-chat-panel', kind: 'dir' },
+      ],
+      'src/shared/lib': [
+        { name: '.eslintrc.js', kind: 'file' },
+        { name: 'cn.ts', kind: 'file' },
+      ],
+      services: [
+        { name: '.git', kind: 'dir' },
+        { name: 'checkout', kind: 'dir' },
+      ],
+      'services/checkout/domain': [{ name: 'price.ts', kind: 'file' }],
+      'services/.git/domain': [{ name: 'nope.ts', kind: 'file' }],
+    };
+    const listDir = async (path: string) => tree[path] ?? null;
+
+    /* A concrete base with `**`: children are the modules. */
+    expect((await listPatternModules('src/widgets/**', listDir)).map((m) => m.name)).toEqual([
+      'acp-chat-panel',
+    ]);
+    /* A wildcard leaf: matching entries are the modules. */
+    expect((await listPatternModules('src/shared/lib/*', listDir)).map((m) => m.name)).toEqual([
+      'cn.ts',
+    ]);
+    /* A branched base: a dot-named branch is not walked into at all. */
+    expect((await listPatternModules('services/*/domain/**', listDir)).map((m) => m.path)).toEqual([
+      'services/checkout/domain',
+    ]);
+  });
+
+  it('still tells a missing directory from an empty one', async () => {
+    /* The filter must not turn "no such directory" into "a directory with nothing in it" — the
+       surface says something different for each. */
+    const listDir = async (path: string) =>
+      path === 'src/hidden-only' ? [{ name: '.gitkeep', kind: 'file' as const }] : null;
+    expect(await listPatternModules('src/hidden-only/**', listDir)).toEqual([]);
+    expect(await listPatternModules('src/absent/**', listDir)).toEqual([]);
+  });
+});

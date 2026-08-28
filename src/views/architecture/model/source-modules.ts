@@ -64,6 +64,22 @@ export async function listPatternModules(
 ): Promise<RoleSourceModule[]> {
   const normalized = normalizePattern(pattern);
   if (!normalized) return [];
+  /*
+   * ⚠️ **Dot-prefixed entries are not modules**, and the filter belongs at the entrance so that
+   * none of the three walks below can forget it. Found in the installed app on 2026-08-28: the
+   * widgets role listed `.gitkeep` as its first module and counted it among 23, so the screen
+   * stated a number that was wrong by one and led with a git placeholder.
+   *
+   * On somebody else's project this matters more than a placeholder. The same walk would show
+   * `.DS_Store` and `.eslintrc.js` as modules of a role, and `.env.local` — which
+   * `.claude/rules/local-first.md` names by name when it says to skip dotfiles while reading the
+   * user's disk. A `null` still means "no such directory", which is a different fact from "a
+   * directory holding nothing worth showing".
+   */
+  const listVisible: SourceDirLister = async (relativePath) => {
+    const entries = await listDir(relativePath);
+    return entries === null ? null : entries.filter((entry) => !entry.name.startsWith('.'));
+  };
   const segments = normalized.split('/');
   const firstWildcard = segments.findIndex((segment) => /[*?]/.test(segment));
   const branchNameFrom = firstWildcard === -1 ? 0 : firstWildcard;
@@ -77,19 +93,19 @@ export async function listPatternModules(
   const walk = async (index: number, base: string, branched: boolean): Promise<void> => {
     const segment = segments[index];
     if (segment === undefined) {
-      if (base && (await listDir(base)) !== null) {
+      if (base && (await listVisible(base)) !== null) {
         out.push({ name: moduleName(base, branched), path: base, kind: 'dir' });
       }
       return;
     }
     if (segment === '**') {
       if (branched) {
-        if ((await listDir(base)) !== null) {
+        if ((await listVisible(base)) !== null) {
           out.push({ name: moduleName(base, true), path: base, kind: 'dir' });
         }
         return;
       }
-      for (const entry of (await listDir(base)) ?? []) {
+      for (const entry of (await listVisible(base)) ?? []) {
         out.push({
           name: entry.name,
           path: base ? `${base}/${entry.name}` : entry.name,
@@ -100,7 +116,7 @@ export async function listPatternModules(
     }
     if (/[*?]/.test(segment)) {
       const matcher = segmentToRegExp(segment);
-      for (const entry of (await listDir(base)) ?? []) {
+      for (const entry of (await listVisible(base)) ?? []) {
         if (!matcher.test(entry.name)) continue;
         const childPath = base ? `${base}/${entry.name}` : entry.name;
         if (index === segments.length - 1) {
@@ -113,7 +129,7 @@ export async function listPatternModules(
     }
     const childPath = base ? `${base}/${segment}` : segment;
     if (index === segments.length - 1) {
-      const entry = ((await listDir(base)) ?? []).find((candidate) => candidate.name === segment);
+      const entry = ((await listVisible(base)) ?? []).find((candidate) => candidate.name === segment);
       if (entry) out.push({ name: moduleName(childPath, branched), path: childPath, kind: entry.kind });
       return;
     }
