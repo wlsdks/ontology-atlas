@@ -40,6 +40,74 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 — First-contact diagnosis does not compute history it discards
+
+**Convened because**: solo PO pass. The changed-path gate classified any edit to
+`mcp/src/index.js` as a possible public MCP contract change and required a ledger
+record. That trigger is intentionally broad; this slice changes an internal
+calculation path, not a tool name, input/output schema, status, or verdict.
+
+**Prior decisions**: 2026-08-25 (114) remains standing. Summary freshness still
+compares a summary body's last meaningful change with its containment history,
+never rewrites prose, and remains visible through
+`validate_vault.summaryFreshness`, `maintenance_plan`, and the installed-app row.
+Its falsifier was not observed: a two-commit fixture whose membership changed
+without a body rewrite still reports the summary stale.
+
+**Observed phenomenon**: on the 88-node dogfood vault, the graph engine answered
+`overview`, `components`, and `growth_plan` in 4–8ms, while both cold and repeated
+`workspace_brief` calls took about 1.1s. The first-answer attachment called the
+full validator, calculated Git-backed summary history once per project/domain,
+then discarded `summaryFreshness` because `health`, `workspace_brief`, and
+`agent_brief` do not return it. The existing concurrency-4 fallback gate made the
+same cost visible as 4.574s for `workspace-brief` and 4.771s for `health`.
+
+**User problem**: a coding agent beginning or resuming work cannot receive the
+trusted health-plus-next-action handoff at interactive speed, making raw source
+search the faster substitute at the moment Atlas should explain why the code
+matters. Removing the measured history work removes the delay; the second
+observable is repeated calls paying it again, and the problem remains true under
+any implementation that preserves the same typed handoff.
+
+**Decision**: `attachVaultValidation` asks the existing validator for only the
+schema, graph-reference, and source-path facts it returns. Public
+`validate_vault` and `maintenance_plan` still perform Git-backed summary
+freshness, and project meaning/source currentness remains fail-closed. No cache,
+new tool, CLI flag, response field, route, or UI is added.
+
+**PO pass**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 3 · Agent value 4 · Verification 4 = **23/24** (fatal zeros: none).
+Escalation was not required because the public MCP/CLI/vault contract and product
+positioning are unchanged. Verdict: **Build and verify**.
+
+**Verification**: a Git-tracing integration probe first failed with ten
+`git log`/`git show` calls across `health` and `workspace_brief`, then passed with
+zero across all three first-answer operations. Its explicit `validate_vault`
+control still reads history and reports the planted stale domain. Seven-run local
+medians moved source `workspace_brief` from 1,102.8ms to 37.0ms, its repeated call
+from 1,067.7ms to 19.0ms, and CLI from 1,294.5ms to 212.6ms. The rebuilt app
+binary measured 23.8ms for the brief and 99.4ms from process start through the
+first brief. A 3,152-file bound-source control remained `verified_current` and
+measured 184.0ms cold / 161.2ms repeated, proving source-currentness was not
+silently removed.
+
+**Recorded dissent**: separating the attached projection from full validation
+could let the two paths drift, or teach a caller to treat absence of summary
+freshness as a clean bill. The response never carried that field before, the
+documentation names the explicit history-reading surfaces, and the paired trace
+test requires both zero first-answer history calls and one live stale-summary
+verdict.
+
+**Falsifier**: any first-answer response loses a validator warning, source-path
+drift, meaning/source-currentness downgrade, or output parity; the public stale
+fixture stops firing; or a representative bound-source vault remains above
+500ms on repeated `workspace_brief` after graph work is excluded. Any observation
+reopens the boundary instead of weakening validation further.
+
+**Status**: valid
+
+---
+
 ## 2026-08-28 — Architecture profiles declare which import usages dependency rules govern
 
 **Convened because**: the owner asked to continue with the next AI-executable

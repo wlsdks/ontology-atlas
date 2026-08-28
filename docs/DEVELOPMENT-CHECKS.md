@@ -29,7 +29,9 @@ nothing to run by hand). Three hooks live there:
 | `pre-push` | path lanes that CI would fail, run in parallel with e2e left to CI — decision (96), which overturns (95) |
 
 The parallel pre-push hook can saturate a local machine, so its unit and contract
-Vitest lanes alone use four workers and a 30-second per-test timeout. Focused runs
+Vitest lanes alone use two workers and a 30-second per-test timeout. Four workers
+per lane still starved ordinary React state-transition tests when eleven lanes
+ran together; two divides the local CPU budget without changing coverage. Focused runs
 and CI keep the normal worker pool and timeout; the hook changes local scheduling
 and waiting tolerance, not assertions or coverage.
 

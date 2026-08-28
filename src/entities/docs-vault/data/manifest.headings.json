@@ -5892,6 +5892,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-28 — First-contact diagnosis does not compute history it discards",
+      "slug": "2026-08-28-first-contact-diagnosis-does-not-compute-history-it-discards"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-28 — Architecture profiles declare which import usages dependency rules govern",
       "slug": "2026-08-28-architecture-profiles-declare-which-import-usages-dependency-rules-govern"
     },

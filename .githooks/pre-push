@@ -114,10 +114,12 @@ touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
 # here too duplicated 2,101 tests under the same saturation and repeatedly pushed a
 # 3.2s filesystem-glob assertion past 15s without adding any coverage.
 # Unit and contract assertions are correctness gates, not performance gates. This
-# hook can run twelve lanes at once, so only these saturated local invocations get
-# four workers and a 30-second per-test timeout. Focused runs and CI retain Vitest's
-# normal worker pool and timeout.
-touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --maxWorkers=4 --testTimeout=30000 --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
+# hook can run twelve lanes at once. Four workers in each correctness lane still
+# starved two ordinary React state-transition tests past their explicit 5-second
+# wait on 2026-08-28, so only these saturated local invocations get two workers
+# and a 30-second per-test timeout. Focused runs and CI retain Vitest's normal
+# worker pool and timeout.
+touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --maxWorkers=2 --testTimeout=30000 --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
 touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
 touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links && pnpm docs-vault:check'
@@ -129,7 +131,7 @@ touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
 # Cheap enough (~1 min) that filtering would buy noise, not time.
 lane source_language 'pnpm source:language'
 lane dead_code 'pnpm knip'
-lane contract 'pnpm exec vitest run --maxWorkers=4 --testTimeout=30000 tests/contract/'
+lane contract 'pnpm exec vitest run --maxWorkers=2 --testTimeout=30000 tests/contract/'
 lane comment_refs 'node scripts/check-comment-refs.mjs'
 lane decisions 'pnpm decisions:check'
 
