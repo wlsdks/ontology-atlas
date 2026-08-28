@@ -2,7 +2,10 @@
 
 import { useMemo, useState } from 'react';
 
-import type { ArchitectureGraph as Graph } from '../model/graph-layout';
+import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
+
+import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import { sketchConnector, sketchRect, sketchStadium } from '../model/sketch-stroke';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
@@ -20,7 +23,7 @@ interface Placed {
   id: string;
   x: number;
   y: number;
-  shape: 'terminator' | 'process';
+  shape: GraphBoxShape;
 }
 
 /**
@@ -106,7 +109,10 @@ export function ArchitectureSketch({
           type="button"
           onClick={() => setRunSeq((seq) => seq + 1)}
           data-testid="architecture-graph-run"
-          className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-1 text-caption text-[color:var(--color-text-secondary)] transition-colors duration-[var(--motion-fast)] hover:border-[color:var(--color-indigo-a30)]"
+          className={cn(
+            controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverBorder: 'strong' }),
+            'absolute right-4 top-4 z-10 bg-[color:var(--color-elevated)]',
+          )}
         >
           <svg width={9} height={10} viewBox="0 0 9 10" aria-hidden>
             <path d="M0.5 0.5 L8.5 5 L0.5 9.5 Z" fill="currentColor" />

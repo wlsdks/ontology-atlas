@@ -25,7 +25,7 @@ interface GraphBox {
   shape: GraphBoxShape;
 }
 
-export interface GraphEdge {
+interface GraphEdge {
   from: string;
   to: string;
   /** `permitted` is a reviewed rule; `traffic` is an observed count. Never the same mark. */
