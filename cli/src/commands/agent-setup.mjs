@@ -98,7 +98,7 @@ const FIRST_CONTACT_PROOF_CONTRACT = Object.freeze([
   Object.freeze({
     id: 'json_gate',
     label: 'JSON setup gate',
-    proves: 'agent-brief --verify-fallbacks --json returns ok/performanceOk before the agent edits.',
+    proves: 'agent-brief --verify-fallbacks --json --exit-zero returns ok/performanceOk before the agent edits.',
   }),
   Object.freeze({
     id: 'graph_briefs',
@@ -242,7 +242,7 @@ function buildAgentSetup(parsed) {
       codexTrustGuidance:
         'Config presence is not a connection. In a fresh Codex session, open the exact project root and approve the trust prompt; then run `codex mcp list` from that folder and confirm ontology-atlas appears before treating registration as verified. If the project config is ignored, use the Global Codex fallback command below, restart Codex, and repeat `codex mcp list` plus `connection_info`. This CLI cannot inspect Codex trust or credentials, so status remains unknown/unverified.',
       verify: `${CLI} mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
-      setupGate: `${CLI} agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+      setupGate: `${CLI} agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
       graphRunbook: buildGraphRunbookCommands(vaultRoot),
       codexGlobal: [
         'codex',

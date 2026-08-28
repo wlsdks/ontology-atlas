@@ -1938,7 +1938,7 @@
       "proofContractMcpVerify": "server connection",
       "proofContractMcpVerifyDesc": "mcp-verify boots the local server, checks its current tool inventory, and actually reads this folder.",
       "proofContractJsonGate": "self-check",
-      "proofContractJsonGateDesc": "agent-brief --verify-fallbacks --json reports \"does it work\" and \"is it fast\" before edits.",
+      "proofContractJsonGateDesc": "agent-brief --verify-fallbacks --json --exit-zero reports \"does it work\" and \"is it fast\" before edits.",
       "proofContractGraphBriefs": "folder summaries",
       "proofContractGraphBriefsDesc": "workspace-brief and agent-brief --graph-db-pack each describe the same folder.",
       "needsReview": "needs review",

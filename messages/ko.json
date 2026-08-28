@@ -1938,7 +1938,7 @@
       "proofContractMcpVerify": "서버 연결",
       "proofContractMcpVerifyDesc": "mcp-verify 가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봅니다.",
       "proofContractJsonGate": "자체 점검",
-      "proofContractJsonGateDesc": "agent-brief --verify-fallbacks --json 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.",
+      "proofContractJsonGateDesc": "agent-brief --verify-fallbacks --json --exit-zero 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.",
       "proofContractGraphBriefs": "폴더 요약",
       "proofContractGraphBriefsDesc": "workspace-brief 와 agent-brief --graph-db-pack 이 같은 폴더를 각각 설명해요.",
       "needsReview": "점검 필요",

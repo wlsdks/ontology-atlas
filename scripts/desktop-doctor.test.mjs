@@ -15,7 +15,7 @@ function makeDoctorRoot() {
     JSON.stringify({
       scripts: {
         "cli:mcp-verify": "node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000",
-        "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       },
     }),
   );

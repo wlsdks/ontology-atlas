@@ -1008,7 +1008,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(cliPack).toContain("MCP-connected: Claude Code, Codex, or Cursor can call local read/write tools");
     expect(cliPack).toContain("Setup gate: run the JSON fallback check before edits");
     expect(cliPack).toContain("Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
-    expect(cliPack).toContain("[self_check] node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(cliPack).toContain("[self_check] node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
     expect(cliPack).toContain("1. [runtime_gate] pnpm dogfood:graph-db");
     expect(cliPack).toContain("Runtime replay includes: health --json, focused_blast_radius, scan follow-ups, relation_name_parity, pattern_walk/project_map containment, bounded all_paths evidence, relation_check, and relation explanation.");
     expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(

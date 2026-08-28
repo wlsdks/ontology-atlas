@@ -78,7 +78,7 @@ describe('OntologyStarterCta', () => {
       expect.stringContaining('agent_brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
@@ -134,7 +134,7 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
     expect(copyTextMock).toHaveBeenCalledWith(
-      'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+      'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
     expect(await screen.findByRole('button', { name: 'JSON 점검 복사됨' })).toBeInTheDocument();
   });
@@ -164,7 +164,7 @@ describe('OntologyStarterCta', () => {
 
   it('vault 절대경로에 작은따옴표가 있어도 JSON gate 명령을 shell-safe 하게 만든다', () => {
     expect(buildOntologyStarterJsonGateCommand("/Users/dana/Client's Vault")).toContain(
-      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Client'\\''s Vault' --verify-fallbacks --json",
+      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Client'\\''s Vault' --verify-fallbacks --json --exit-zero",
     );
   });
 });
