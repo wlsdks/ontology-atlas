@@ -480,6 +480,8 @@ export function ArchitectureWorkbench({
                 legendPermitted={t('legendPermitted')}
                 legendTraffic={t('legendTraffic')}
                 legendSkipHint={t('legendSkipHint')}
+                legendShapeEnd={t('legendShapeEnd')}
+                legendShapeWork={t('legendShapeWork')}
                 runLabel={t('runFlow')}
                 permittedEdgeLabel={(from, to) => t('permittedEdge', { from, to })}
                 trafficEdgeLabel={(from, to, count) => t('trafficEdge', { from, to, count })}

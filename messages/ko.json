@@ -360,6 +360,8 @@
     "roleUndescribed": "이 역할에는 아직 설명이 없습니다.",
     "dependencySameRole": "같은 역할 안에서는 모듈끼리 언제나 서로 참조할 수 있습니다.",
     "legendPermitted": "프로필이 허용한 리뷰된 의존",
+    "legendShapeEnd": "양 끝의 역할",
+    "legendShapeWork": "거쳐 가는 역할",
     "legendSkipHint": "계층을 건너뛰는 연결은 그 양끝 중 하나를 고르면 나타납니다.",
     "runFlow": "흐름 실행",
     "legendTraffic": "측정된 import. 굵기가 그 개수입니다",

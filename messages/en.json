@@ -360,6 +360,8 @@
     "roleUndescribed": "This role has no description yet.",
     "dependencySameRole": "Inside one role, modules may always reference each other.",
     "legendPermitted": "a reviewed dependency the profile permits",
+    "legendShapeEnd": "a role at either end",
+    "legendShapeWork": "a role in between",
     "legendSkipHint": "A crossing that skips a layer appears when you choose one of its ends.",
     "runFlow": "Run the flow",
     "legendTraffic": "measured imports; thickness is how many",

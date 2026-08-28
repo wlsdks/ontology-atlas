@@ -14823,38 +14823,43 @@
   "TECH-STACK": [
     {
       "depth": 1,
-      "text": "TECH STACK — Technology Stack Decision Record",
-      "slug": "tech-stack-technology-stack-decision-record"
+      "text": "Technology stack",
+      "slug": "technology-stack"
     },
     {
       "depth": 2,
-      "text": "Web Front-end",
+      "text": "What would have to happen to change each decision",
+      "slug": "what-would-have-to-happen-to-change-each-decision"
+    },
+    {
+      "depth": 3,
+      "text": "Web front end",
       "slug": "web-front-end"
     },
     {
-      "depth": 2,
+      "depth": 3,
       "text": "Desktop",
       "slug": "desktop"
     },
     {
-      "depth": 2,
-      "text": "CLI · MCP · Testing",
-      "slug": "cli-mcp-testing"
+      "depth": 3,
+      "text": "CLI, MCP, and testing",
+      "slug": "cli-mcp-and-testing"
     },
     {
       "depth": 2,
-      "text": "LLM · Layer 2 (Deferred decision — implement when relevant gate triggers)",
-      "slug": "llm-layer-2-deferred-decision-implement-when-relevant-gate-triggers"
+      "text": "Layer 2 and LLM connections, decided but not built",
+      "slug": "layer-2-and-llm-connections-decided-but-not-built"
     },
     {
       "depth": 2,
-      "text": "What We Decided Against (Rejection Log)",
-      "slug": "what-we-decided-against-rejection-log"
+      "text": "Rejected, and why",
+      "slug": "rejected-and-why"
     },
     {
       "depth": 2,
-      "text": "Immediate Actions (This Cycle — historical, superseded)",
-      "slug": "immediate-actions-this-cycle-historical-superseded"
+      "text": "The 2026-07-17 action list, kept as history",
+      "slug": "the-2026-07-17-action-list-kept-as-history"
     }
   ],
   "TOPOLOGY-FOCUS-AND-SCALE": [

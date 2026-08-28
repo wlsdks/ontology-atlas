@@ -572,8 +572,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 11936,
-      "updatedAt": "2026-08-26",
+      "wordCount": 11951,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
@@ -3245,13 +3245,13 @@
     {
       "slug": "TECH-STACK",
       "path": "docs/TECH-STACK.md",
-      "title": "TECH STACK — Technology Stack Decision Record",
+      "title": "Technology stack",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Decisions were recorded on 2026-07-17; package/runtime facts were refreshed from the repository on 2026-08-23. Decision principle: Maintaining verified stacks is the default (same logic as rejecting full rewrites — replacement is only allowed when measured benefits clearly exceed migration costs). Next full review: Jan",
-      "wordCount": 973,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Decisions recorded 2026-07-17. Package and runtime facts refreshed from the repository 2026-08-23. Next full review January 2027, or sooner if one of the branch conditions below actually fires. The default is to keep a stack that has been verified working. It is the same reasoning that rejected a full rewrite: a replac",
+      "wordCount": 1260,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
@@ -6092,7 +6092,7 @@
         "path": "TECH-STACK",
         "type": "doc",
         "slug": "TECH-STACK",
-        "title": "TECH STACK — Technology Stack Decision Record"
+        "title": "Technology stack"
       },
       {
         "name": "TOPOLOGY-FOCUS-AND-SCALE",

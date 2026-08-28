@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
@@ -70,6 +70,15 @@ export function ArchitectureSketch({
   runLabel: string;
 }) {
   const [runSeq, setRunSeq] = useState(0);
+  /*
+   * ⚠️ **The run has to end.** `.architecture-flow-running` carries the dash pattern as a static
+   * rule, so leaving the class on left every stroke dashed for good, with no way back and no
+   * control to stop it (fresh-eyes walkthrough, 2026-08-28). The count comes from the paths
+   * themselves through `onAnimationEnd`, so the duration lives in exactly one place — the token
+   * the CSS reads — and never has to be repeated here as a number.
+   */
+  const [running, setRunning] = useState(false);
+  const pending = useRef(0);
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
@@ -107,7 +116,12 @@ export function ArchitectureSketch({
       {graph.edges.length === 0 ? null : (
         <button
           type="button"
-          onClick={() => setRunSeq((seq) => seq + 1)}
+          onClick={() => {
+            pending.current = visibleEdges.length;
+            setRunSeq((seq) => seq + 1);
+            setRunning(true);
+          }}
+          disabled={running}
           data-testid="architecture-graph-run"
           className={cn(
             controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverBorder: 'strong' }),
@@ -195,13 +209,24 @@ export function ArchitectureSketch({
               strokeLinecap="round"
               markerEnd="url(#architecture-sketch-arrow)"
               opacity={receded ? 0.18 : 1}
-              className={runSeq === 0 ? undefined : 'architecture-flow-running'}
+              className={running ? 'architecture-flow-running' : undefined}
+              onAnimationEnd={() => {
+                pending.current -= 1;
+                if (pending.current <= 0) setRunning(false);
+              }}
               style={
-                runSeq === 0
-                  ? undefined
-                  : ({
-                      '--architecture-run-step': placed.get(edge.from)?.x ?? 0,
+                running
+                  ? ({
+                      /*
+                       * ⚠️ **The column, not the x.** This was fed `placed.get(...).x` — a pixel
+                       * coordinate — and the CSS multiplies the step by the stagger token, so the
+                       * three strokes of the storefront profile started at 2520ms, 20520ms and
+                       * 38520ms. The walkthrough measured a "run" that took forty seconds to
+                       * cross four boxes. A stagger counts places in a queue.
+                       */
+                      '--architecture-run-step': graph.boxes.find((b) => b.id === edge.from)?.column ?? 0,
                     } as React.CSSProperties)
+                  : undefined
               }
               data-edge-kind={edge.kind}
               data-edge-from={edge.from}

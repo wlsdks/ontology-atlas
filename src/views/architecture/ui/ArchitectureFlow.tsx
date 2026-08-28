@@ -47,6 +47,8 @@ export function ArchitectureFlow({
   legendPermitted,
   legendTraffic,
   legendSkipHint,
+  legendShapeEnd,
+  legendShapeWork,
   runLabel,
   permittedEdgeLabel,
   trafficEdgeLabel,
@@ -78,6 +80,8 @@ export function ArchitectureFlow({
   legendPermitted: string;
   legendTraffic: string;
   legendSkipHint: string;
+  legendShapeEnd: string;
+  legendShapeWork: string;
   runLabel: string;
   permittedEdgeLabel: (from: string, to: string) => string;
   trafficEdgeLabel: (from: string, to: string, count: number) => string;
@@ -142,6 +146,43 @@ export function ArchitectureFlow({
         */}
         {graph.edges.length === 0 ? null : (
           <p className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-caption text-[color:var(--color-text-quaternary)]">
+            {/*
+              ⚠️ **The shape key comes first, because the shapes are drawn before any stroke is.**
+              A fresh-eyes walkthrough on 2026-08-28 read the whole legend and still could not say
+              what the two shapes meant: it explained only the lines. `docs/AGENT-DESIGN-METHOD.md`
+              states the rule this broke — every legend row names a mark that is on screen, and
+              every mark on screen states itself somewhere readable. A shape carrying meaning with
+              no key is the second half of that failing.
+            */}
+            <span className="flex items-center gap-1.5">
+              <svg width={22} height={12} aria-hidden>
+                <rect
+                  x={1}
+                  y={1}
+                  width={20}
+                  height={10}
+                  rx={5}
+                  fill="none"
+                  stroke="var(--color-architecture-sketch-ink)"
+                  strokeWidth={1.2}
+                />
+              </svg>
+              {legendShapeEnd}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <svg width={22} height={12} aria-hidden>
+                <rect
+                  x={1}
+                  y={1}
+                  width={20}
+                  height={10}
+                  fill="none"
+                  stroke="var(--color-architecture-sketch-ink)"
+                  strokeWidth={1.2}
+                />
+              </svg>
+              {legendShapeWork}
+            </span>
             <span>{directionLabel}</span>
             {graph.edgeSource === 'permitted' || graph.edgeSource === 'both' ? (
               <span className="flex items-center gap-1.5">
