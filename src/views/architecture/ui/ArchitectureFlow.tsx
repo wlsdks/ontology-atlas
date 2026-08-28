@@ -119,8 +119,8 @@ export function ArchitectureFlow({
 
 
   return (
-    <div className="flex w-full flex-col gap-3" data-testid="architecture-flow">
-      <div className="relative flex flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+    <div className="flex w-full min-h-0 flex-1 flex-col gap-3" data-testid="architecture-flow">
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
         {sourceUnavailableBody !== null ? (
           <p
             className="break-keep rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2.5 text-caption text-[color:var(--color-text-quaternary)]"

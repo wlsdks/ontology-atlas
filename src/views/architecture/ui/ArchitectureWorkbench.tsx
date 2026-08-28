@@ -49,21 +49,29 @@ function parseArchitectureStage(raw: string | null): Mode {
  * means "this screen, nothing chosen" and a link carries only what somebody actually picked.
  */
 function buildArchitectureHref(
-  view: { stage: Mode; role: string | null },
+  view: { stage: Mode; role: string | null; stageOpen: boolean },
   pathname: string,
 ): string {
   const query = new URLSearchParams();
-  if (view.stage !== 'understand') query.set('stage', view.stage);
+  /*
+   * ⚠️ The stage parameter says the panel is open, not merely which stage is selected. A bare
+   * address means the drawing has the frame to itself, which is the state this screen opens in.
+   */
+  if (view.stageOpen) query.set('stage', view.stage);
   if (view.role) query.set('role', view.role);
   const search = query.toString();
   return search ? `${pathname}?${search}` : pathname;
 }
 
 /** Whichever of the two the address carries, trusting neither. */
-function readArchitectureAddress(): { stage: Mode; role: string | null } {
-  if (typeof window === 'undefined') return { stage: 'understand', role: null };
+function readArchitectureAddress(): { stage: Mode; role: string | null; stageOpen: boolean } {
+  if (typeof window === 'undefined') return { stage: 'understand', role: null, stageOpen: false };
   const params = new URL(window.location.href).searchParams;
-  return { stage: parseArchitectureStage(params.get('stage')), role: params.get('role') };
+  return {
+    stage: parseArchitectureStage(params.get('stage')),
+    role: params.get('role'),
+    stageOpen: params.get('stage') !== null,
+  };
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 
@@ -122,6 +130,14 @@ export function ArchitectureWorkbench({
    * need under static export.
    */
   const [mode, setMode] = useState<Mode>(() => readArchitectureAddress().stage);
+  /*
+   * ⚠️ **The stage panel is a dock, not a column.** It owned a third of the width and, because its
+   * row was sized by its own content, most of the height too: the drawing got 174px of a 1000px
+   * window while a 444px agent packet sat below it. The map already answers this — its agent panel
+   * opens on demand and reserves width only while open, and nothing else permanently owns the
+   * space beside the canvas. Choosing a stage opens it; choosing the open one again closes it.
+   */
+  const [stageOpen, setStageOpen] = useState(() => readArchitectureAddress().stageOpen);
 
   /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
      it sit in different rows of the page grid: the drawing takes the full width, the answer is
@@ -146,6 +162,7 @@ export function ArchitectureWorkbench({
       const address = readArchitectureAddress();
       setMode(address.stage);
       setSelectedRole(address.role);
+      setStageOpen(address.stageOpen);
     };
     window.addEventListener('popstate', syncFromHistory);
     return () => window.removeEventListener('popstate', syncFromHistory);
@@ -184,14 +201,16 @@ export function ArchitectureWorkbench({
       return;
     }
     const scroller = layoutScrollRef.current;
-    const panel = stagePanelRef.current;
-    if (!scroller || !panel) {
+    if (!scroller) {
       reanchorScrollEndRef.current = false;
       return;
     }
+    /* The stage panel is a dock, so at the moment a stage is chosen it does not exist yet. This
+       effect exists to wait for something unmounted, so it waits for the dock too. */
+    const root = stagePanelRef.current ?? scroller;
 
     const alignWhenActiveStageMounts = () => {
-      const active = panel.querySelector(
+      const active = root.querySelector(
         `[data-architecture-stage="${mode}"][data-surface-state="entered"]`,
       );
       if (!active) return false;
@@ -204,7 +223,7 @@ export function ArchitectureWorkbench({
     const observer = new MutationObserver(() => {
       if (alignWhenActiveStageMounts()) observer.disconnect();
     });
-    observer.observe(panel, {
+    observer.observe(root, {
       attributes: true,
       attributeFilter: ['data-surface-state'],
       childList: true,
@@ -514,7 +533,9 @@ export function ArchitectureWorkbench({
     );
     if (nextMode !== mode) setCopyState('idle');
     modeChangedRef.current = true;
+    const nextOpen = !(stageOpen && nextMode === mode);
     setMode(nextMode);
+    setStageOpen(nextOpen);
     /*
      * The same document, a different query view. A Next router navigation would move focus to the
      * document root inside the WebView, so the address is updated through native history the way
@@ -524,7 +545,10 @@ export function ArchitectureWorkbench({
     window.history.replaceState(
       window.history.state,
       '',
-      buildArchitectureHref({ stage: nextMode, role: selectedRole }, window.location.pathname),
+      buildArchitectureHref(
+        { stage: nextMode, role: selectedRole, stageOpen: nextOpen },
+        window.location.pathname,
+      ),
     );
   }
 
@@ -570,7 +594,10 @@ export function ArchitectureWorkbench({
         ref={layoutScrollRef}
         data-testid="architecture-layout-scroll"
         data-architecture-scroll-reanchor="mode-end"
-        className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_340px] xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden"
+        className={cn(
+          'grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto] xl:overflow-y-auto',
+          stageOpen ? 'xl:grid-cols-[240px_minmax(0,1fr)_340px]' : 'xl:grid-cols-[240px_minmax(0,1fr)]',
+        )}
       >
         {/*
           ⚠️ **The canvas takes the width; the columns sit under it.** Measured on the installed
@@ -581,7 +608,7 @@ export function ArchitectureWorkbench({
           rather than standing a column permanently in its way.
         */}
         <div
-          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-span-2 xl:col-span-3"
+          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-span-2 xl:col-start-1 xl:col-end-3 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col"
           data-testid="architecture-flow-panel"
           data-architecture-mode={mode}
         >
@@ -602,7 +629,10 @@ export function ArchitectureWorkbench({
                   window.history.replaceState(
                     window.history.state,
                     '',
-                    buildArchitectureHref({ stage: mode, role: next }, window.location.pathname),
+                    buildArchitectureHref(
+                      { stage: mode, role: next, stageOpen },
+                      window.location.pathname,
+                    ),
                   );
                 }}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
@@ -632,7 +662,7 @@ export function ArchitectureWorkbench({
               />
         </div>
 
-        <aside className="border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:min-h-0 xl:overflow-y-auto">
+        <aside className="border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:min-h-0 xl:overflow-y-auto xl:col-start-1 xl:row-start-2">
           <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
             {t('profileList')}
           </h2>
@@ -667,7 +697,7 @@ export function ArchitectureWorkbench({
           </div>
         </aside>
 
-        <section className="min-w-0 p-5 md:p-8 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
+        <section className="min-w-0 p-5 md:p-8 xl:col-start-2 xl:row-start-2 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col">
             {/*
               ⚠️ **`ml-auto` on the status block, because `justify-between` stops applying the
@@ -868,7 +898,8 @@ export function ArchitectureWorkbench({
           </div>
         </section>
 
-        <aside ref={stagePanelRef} className="border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-span-2 xl:col-span-1 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto">
+        {!stageOpen ? null : (
+        <aside ref={stagePanelRef} className="border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-span-2 xl:col-start-3 xl:col-end-4 xl:row-start-1 xl:row-end-3 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto">
           <div className="grid">
           <Surface open={mode === 'understand'} as="section" data-architecture-stage="understand" className="col-start-1 row-start-1 min-w-0">
             <FileCode2 size={ICON_SIZE.lg} className="text-[color:var(--color-indigo-text-soft)]" aria-hidden />
@@ -997,6 +1028,7 @@ export function ArchitectureWorkbench({
           </Surface>
           </div>
         </aside>
+        )}
         <div
           aria-hidden
           data-testid="architecture-bottom-tab-reserve"

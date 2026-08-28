@@ -280,7 +280,7 @@ export function ArchitectureSketch({
   const height = PAD_Y * 2 + slots * BOX_H + (slots - 1) * ROW_GAP + skipRoom;
 
   return (
-    <div className="architecture-canvas-ground relative rounded-panel border border-[color:var(--color-border-soft)]">
+    <div className="architecture-canvas-ground relative flex min-h-0 flex-1 flex-col rounded-panel border border-[color:var(--color-border-soft)]">
       {/*
         ⚠️ **The control has its own row rather than floating over the drawing.** As an absolute
         overlay it sat in the top-right corner: at 1512 that is empty dot field, and once the
@@ -389,7 +389,7 @@ export function ArchitectureSketch({
          */
         className={cn(
           covered.left || covered.right ? 'cursor-grab active:cursor-grabbing' : undefined,
-          'overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
+          'flex min-h-0 flex-1 items-center overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
         )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
       >
@@ -400,7 +400,14 @@ export function ArchitectureSketch({
           role="presentation"
           data-testid="architecture-graph"
           data-edge-source={graph.edgeSource}
-          className="block"
+          /*
+           * ⚠️ `shrink-0`, because the scroller is a flex container now — it centres the drawing in
+           * a canvas taller than the drawing. A flex item shrinks by default, so without this the
+           * drawing quietly scaled itself down to whatever width it was handed, which is the
+           * defect this file already fixed once by taking `width="100%"` off. Scaling an SVG
+           * scales the text inside it, where no lint rule can see the size it produces.
+           */
+          className="block shrink-0"
         >
         <defs>
           <marker
