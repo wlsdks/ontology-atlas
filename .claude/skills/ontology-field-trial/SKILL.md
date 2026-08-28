@@ -219,6 +219,14 @@ is partial/unknown and must say so; do not infer the body from its title or
 path. This gate exists because a fresh 2026-08 trial answered 4/6 questions
 fully while silently stopping after summary reads.
 
+A full body still does not make a finite `Definition` or `Includes` list
+exhaustive. Report “the vault names/models these items” unless the same body
+explicitly claims completeness and cites a source-backed product boundary.
+Never introduce `only`, `all`, `every`, or `exactly` from list membership alone;
+carry `Excludes` and `Uncertainty` separately. If an exclusion merely says an
+item was not named/listed in bounded evidence, mark the answer partial and report
+that construction defect instead of repeating it as product scope.
+
 ## Phase 4 — hallucination check (measures: trust)
 
 Take phase 3's answers back to the clone and verify each claim. An answer that

@@ -7,6 +7,26 @@
 
 ---
 
+## 2026-08-28 · Bounded capability lists stay bounded through agent handoff
+
+- `analyze_repo_structure` now rejects an evidence limit such as “operations
+  not named in the bounded semantic excerpt” when it is proposed as
+  `Excludes`. Unlisted behavior belongs in `Uncertainty` or a competency gap;
+  sourced neighboring responsibilities remain valid exclusions.
+- `agent_brief`, the bootstrap skill, and the source-hidden field-trial handoff
+  rule treat `Definition` / `Includes` lists as representative unless an exact
+  cited source establishes completeness. Agents are told not to introduce
+  `only`, `all`, `every`, or `exactly` from list membership alone.
+- README keeps its existing hero and now states the concrete use moment: before
+  a change, people and agents share where to start, what else is touched, what
+  to verify, and which scope remains uncertain.
+- A fresh unfamiliar-repository field trial preserved 21/21 full bodies,
+  resolved 140/140 path-claim occurrences, and verified 36/36 persisted-handoff
+  claims. The source-hidden reader introduced none of the four exhaustive
+  quantifiers and did not repeat the prior 14/15 scope-promotion failure; all
+  six answers remained explicitly partial where product authority or typed
+  dependency impact was still missing.
+
 ## 2026-08-28 · First ontology answers batch and reuse summary history
 
 - `health`, `workspace_brief`, and `agent_brief` preserve their complete nested

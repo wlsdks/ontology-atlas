@@ -75,6 +75,11 @@ Source code shows how a system works. It rarely preserves which product
 capability the code serves, why its boundaries exist, or what a change could
 affect. Atlas keeps those answers beside the code in a folder of Markdown files.
 
+Use Atlas before a change so a person and an AI agent start from the same
+answer: what the code is for, where to begin, what else it touches, and what to
+verify. That answer stays bounded — a list of observed capabilities is not
+treated as exhaustive, and unsupported scope remains visible uncertainty.
+
 Each file's frontmatter declares what it is (`project`, `domain`, `capability`,
 `element`, or a linked `document`) and what it points at. That folder is the
 whole database.

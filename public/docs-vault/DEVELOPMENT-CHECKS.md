@@ -68,6 +68,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Agent instruction files | `pnpm agents:check` | the harness contracts under `tests/contract/` named below |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
+| Capability quantifier integrity | `node scripts/run-focused-node-test.mjs --test-name-pattern "bounded-evidence omissions" mcp/src/meaning-evaluation.test.mjs` | `pnpm test:mcp:unit`, source/bundle MCP parity, then the four-phase source-hidden field trial |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
 | Business meaning corpus | `pnpm test:meaning-corpus` | source-hidden field trial and fixture-specific review |

@@ -549,6 +549,15 @@ inconsistent; no numeric confidence is synthesized. Pass `project` to
 `ontology-atlas agent-brief <vault> --project SLUG`, to select one project in a
 multi-project vault.
 
+The same handoff preserves capability quantifiers. `Definition` / `Includes`
+lists are bounded positive claims, not exhaustive inventories. The
+`agent_brief.writePolicy` and copyable prompt forbid introducing
+`only` / `all` / `every` / `exactly` unless the full node body explicitly states
+completeness and cites a source-backed boundary. During construction,
+`epistemic-exclusion-boundary` rejects “not named/listed in bounded evidence”
+as `Excludes`; that is an evidence limit for `Uncertainty`, not negative product
+scope.
+
 Source currentness and competency provenance have different repair actions.
 When the source receipt itself is stale, the gap remains
 `source_changed` and the action is `remeasure_source`. When source is already
