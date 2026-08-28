@@ -118,6 +118,40 @@ before citing a ban:
   Tailwind's `from-purple-* … to-pink-*` and nothing else; a CSS `radial-gradient` painting a dot
   field was never blocked. Read the selector before you decide you are stuck.
 
+## A screen that claims a number has to be checked against its source
+
+Reading a screenshot catches a wrong shape. It cannot catch a wrong number, because a number looks
+correct however wrong it is. So when a surface prints a count, count the same thing yourself, from
+the source, by a route that shares no code with the screen.
+
+Done here on 2026-08-28, on the two counts the architecture canvas prints:
+
+| Claim | Independent count | Result |
+|---|---|---|
+| source modules per role | `ls` of each role's glob base, minus dot-prefixed entries | six roles matched; one was over by one |
+| reviewed concepts per role | the vault's own frontmatter `path` fields, matched against the same globs | all seven matched |
+
+The one mismatch was real: a role listed `.gitkeep` as its first module and counted it. The point
+is not the placeholder — it is that the defect was invisible to every other method. It survived
+a full-page screenshot, a zoom, two fresh-eyes walkthroughs, and every gate, because "22" and "23"
+look equally true.
+
+Two things make the check worth trusting:
+
+- **Take a different route to the number.** Reusing the screen's own function proves only that it
+  agrees with itself. Here the comparison was a shell listing and a frontmatter scan, neither of
+  which shares a line with the walk being audited.
+- **Distrust the checker too.** The first version of the vault scan used `lstrip('./')`, which
+  strips a *set of characters* rather than a prefix, and turned `.claude/…` into `claude/…` — a
+  vault defect that did not exist. The same session's table scan had already produced twenty false
+  hits by substituting inline code with a placeholder. A one-off script written to audit something
+  is exactly as unreviewed as the thing it audits, so read its disagreements before believing them.
+
+What this cannot do is stay green. It is a measurement, not a gate: role counts change whenever the
+repository does. Gate the rule the measurement exposed instead — here, that a dot-prefixed entry is
+not a module.
+
+
 ## Drawing depth: the techniques, and where each comes from
 
 Everything above is a rule this repository paid for. This section is not — it is a **reference
