@@ -937,11 +937,18 @@ export function ArchitectureWorkbench({
               (2026-08-28 inspection, installed app: "…does not embed a current conformance").
               The covered edge gets the same fade the select listbox uses, on the same helpers, so
               two surfaces solving one problem do not answer it differently.
+
+              ⚠️ **On the wide layout the cap is lifted, because the panel around it is already a
+              scroller.** A second walkthrough measured 254px hidden inside a 190px box while 237px
+              of that panel sat unused below it — and raising the viewport 200px gave the packet
+              none of it, because 12rem is a constant and the panel is not. Two nested scrollers
+              was the defect; one is the fix, and it needs no new number. Below `xl` the panel does
+              not scroll, so the cap and its fade stay exactly as they were.
             */}
             <pre
               ref={attachHandoff}
               onScroll={readHandoffEdges}
-              className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)]"
+              className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)] xl:max-h-none xl:overflow-visible"
               style={handoffMask ? { maskImage: handoffMask, WebkitMaskImage: handoffMask } : undefined}
               aria-label={t('handoffPreview')}
               tabIndex={0}

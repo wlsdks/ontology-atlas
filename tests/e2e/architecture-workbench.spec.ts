@@ -87,6 +87,44 @@ test('the agent packet says it is longer than its box, before anything is scroll
   );
 });
 
+test('the agent packet stops capping itself inside a panel that already scrolls', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ A second fresh-eyes walkthrough found 254px hidden inside a 190px box while the panel
+   * around it had room to spare. Measured on the built export: raising the viewport by 200px gave
+   * the packet none of it, because a 12rem cap is a constant and the panel is not — and that panel
+   * is itself a scroller on the wide layout, so the packet was the inner one of two.
+   *
+   * The cap is not gone, only lifted where the outer scroller exists. Below that breakpoint the
+   * panel does not scroll, so the cap and its fade still do the work, and both sides are asserted
+   * because a fix that quietly removed the narrow-width affordance would pass a one-width test.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/?stage=plan');
+  const packet = page.locator('pre[aria-label]').first();
+  await expect(packet).toBeVisible();
+
+  const wide = await packet.evaluate((element) => ({
+    hidden: element.scrollHeight - element.clientHeight,
+    outerScrolls: (() => {
+      const panel = element.closest('aside');
+      return panel ? panel.scrollHeight > panel.clientHeight + 1 : false;
+    })(),
+  }));
+  expect(wide.hidden, 'nothing is hidden once the cap is lifted').toBeLessThanOrEqual(1);
+  expect(wide.outerScrolls, 'the panel around it is the scroller now').toBe(true);
+
+  /* Narrow: no outer scroller, so the packet keeps its own cap and says when it is covered. */
+  await page.setViewportSize({ width: 700, height: 900 });
+  const narrow = await packet.evaluate((element) => ({
+    hidden: element.scrollHeight - element.clientHeight,
+    mask: getComputedStyle(element).maskImage,
+  }));
+  expect(narrow.hidden).toBeGreaterThan(1);
+  expect(narrow.mask).not.toBe('none');
+});
+
 test('the canvas says when the drawing runs past its right edge', async ({ page }) => {
   /*
    * ⚠️ The drawing keeps its true size and the canvas is a viewport, so a profile wider than the
