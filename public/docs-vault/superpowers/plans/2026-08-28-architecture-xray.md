@@ -409,9 +409,12 @@ git commit -m "feat: the stage draws the traffic between layers, thickness for c
 **Why this task exists and is not optional:** the 2026-08-28 walkthrough's headline finding was a rule that lived only in the accessibility tree. Shipping the mirror image of that defect, a rule that lives only in the drawing, would be the same mistake pointed the other way. Every arc states its count in words, and the legend says what thickness means.
 
 **New strings:**
-- `trafficLegend` — en: `Line thickness is how many imports cross that boundary.` ko: `선의 굵기는 그 경계를 지나는 import 수입니다.`
-- `trafficCount` — en: `{from} reaches {to} in {count, plural, one {# import} other {# imports}}` ko: `{from} 에서 {to} 로 가는 import {count}개`
-- `trafficSameRole` — en: `{role} references itself in {count, plural, one {# import} other {# imports}}` ko: `{role} 안에서 서로 참조하는 import {count}개`
+Each goes in both catalogues; the English is given here because contributor prose in this
+repository is English, and the localized value is authored directly in `messages/ko.json`.
+
+- `trafficLegend` — `Line thickness is how many imports cross that boundary.`
+- `trafficCount` — `{from} reaches {to} in {count, plural, one {# import} other {# imports}}`
+- `trafficSameRole` — `{role} references itself in {count, plural, one {# import} other {# imports}}`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -604,7 +607,7 @@ Expected: FAIL, no such testid.
 
 - [ ] **Step 3: Render it**
 
-Add the string `roleNoteLabel` (en `Note`, ko `메모`) to both catalogues and render it as a prefix.
+Add the string `roleNoteLabel` (English `Note`) to both catalogues and render it as a prefix.
 
 - [ ] **Step 4: Run the tests**
 
