@@ -113,7 +113,6 @@ interface BandProps {
   rung: string[];
   depth: number;
   isLast: boolean;
-  policy: 'explicit' | 'lower-only';
   focus: string | null;
   /** The flow run's origin row and deepest reach — set only by a deliberate act (click or
    *  keyboard focus), never by hover, so scanning the pointer down the page stays quiet. */
@@ -167,7 +166,6 @@ function ArchitectureBand({
   rung,
   depth,
   isLast,
-  policy,
   focus,
   runRow,
   runDeepestRow,
@@ -412,21 +410,23 @@ function ArchitectureBand({
                     >
                       {(pathsOf.get(id) ?? []).join('  ·  ')}
                     </span>
-                    {policy === 'explicit' ? (
-                      <span
-                        className="min-w-0 truncate text-caption text-[color:var(--color-text-tertiary)] md:shrink-0"
-                        title={
-                          reachesOf(id).size === 0
-                            ? sinkLabel
-                            : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))
-                        }
-                        data-testid={`architecture-reach-${id}`}
-                      >
-                        {reachesOf(id).size === 0
+                    {/* Both policies, for the reason recorded at the tall band's copy of this
+                        sentence: the 2026-08-28 walkthrough could answer "what may this reach"
+                        on the explicit profile and not on the lower-only one, because only the
+                        explicit profile said it out loud. */}
+                    <span
+                      className="min-w-0 truncate text-caption text-[color:var(--color-text-tertiary)] md:shrink-0"
+                      title={
+                        reachesOf(id).size === 0
                           ? sinkLabel
-                          : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
-                      </span>
-                    ) : null}
+                          : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))
+                      }
+                      data-testid={`architecture-reach-${id}`}
+                    >
+                      {reachesOf(id).size === 0
+                        ? sinkLabel
+                        : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
+                    </span>
                   </span>
                 </span>
               </RowButton>
@@ -538,20 +538,25 @@ function ArchitectureBand({
                   </span>
                 </RowButton>
                 {/*
-                  Under `explicit` the allowed reach really is a graph, so it is written in role
-                  names a person can read without decoding cells. `lower-only` writes nothing
-                  here: the stage subtitle plus the band order already state the whole rule.
+                  ⚠️ **The reach is written out under both policies, because the ordering does not
+                  say it.** This block used to render only under `explicit`, on the reasoning that
+                  the stage subtitle plus the band order already state the whole `lower-only` rule.
+                  A walkthrough on 2026-08-28, walked by a reader who had never heard of this
+                  pattern, measured that reasoning failing: on the explicit profile they answered
+                  "what may this role depend on" in one glance by quoting the row, and on the
+                  lower-only profile they could not answer it at all. The sentence they needed did
+                  exist — inside the `sr-only` list below, measured at 1px wide. A fact only the
+                  accessibility tree carries is a fact the screen does not state. Writing the names
+                  costs the top row six of them; inferring them cost the reader the answer.
                 */}
-                {policy === 'explicit' ? (
-                  <p
-                    className="mt-0.5 px-2 text-caption text-[color:var(--color-text-tertiary)]"
-                    data-testid={`architecture-reach-${id}`}
-                  >
-                    {reachesOf(id).size === 0
-                      ? sinkLabel
-                      : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
-                  </p>
-                ) : null}
+                <p
+                  className="mt-0.5 px-2 text-caption text-[color:var(--color-text-tertiary)]"
+                  data-testid={`architecture-reach-${id}`}
+                >
+                  {reachesOf(id).size === 0
+                    ? sinkLabel
+                    : reachInlineLabel([...reachesOf(id)].map(roleLabel).join(' · '))}
+                </p>
                 {/*
                   ⚠️ **A role id is a folder name, and a folder name is what decision (2026-08-26)
                   forbids reading intent from.** Without this sentence the band could only say
@@ -1045,7 +1050,6 @@ export function ArchitectureFlow({
               rung={rung}
               depth={depth}
               isLast={depth === rungs.length - 1}
-              policy={layout.policy}
               focus={focus}
               runRow={runRow}
               runDeepestRow={runDeepestRow}

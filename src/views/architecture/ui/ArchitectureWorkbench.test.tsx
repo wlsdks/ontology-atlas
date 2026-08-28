@@ -231,10 +231,26 @@ describe('ArchitectureWorkbench', () => {
     );
     expect(bandOrder, 'bands must appear in dependency order').toEqual(order);
 
-    // lower-only: the stage subtitle owns the sentence; no per-band caption repeats it.
-    expect(screen.queryByTestId('architecture-reach-routing')).toBeNull();
+    /*
+     * ⚠️ This assertion is the reverse of what it was, and the reversal is the point.
+     *
+     * It used to require `architecture-reach-routing` to be absent under `lower-only`, on the
+     * reasoning that the stage subtitle plus the band order state the whole rule and a per-band
+     * caption would only repeat it. A walkthrough on 2026-08-28, walked by a reader who had never
+     * heard of this pattern, measured that reasoning failing: given the explicit-policy profile
+     * they answered "what may this role depend on" in one glance by quoting the row, and given
+     * this lower-only profile they could not answer it at all. The sentence they needed was
+     * rendered — in the `sr-only` list asserted below, which measures 1px wide. A fact carried
+     * only by the accessibility tree is a fact the screen does not state.
+     */
+    expect(screen.getByTestId('architecture-reach-routing')).toHaveTextContent(
+      'may depend on Application shell · Views · Widgets · Features · Entities · Shared foundation',
+    );
+    expect(screen.getByTestId('architecture-reach-shared')).toHaveTextContent(
+      'depends on no other role',
+    );
 
-    // The assistive list still states each layer's reach in words.
+    // The assistive list keeps stating the same reach in its own words.
     expect(
       screen.getByText(
         'Routes: may depend on Application shell, Views, Widgets, Features, Entities, Shared foundation',
@@ -533,5 +549,20 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     // No record means no date anywhere: an absent measurement must not look dated.
     expect(screen.queryByTestId('architecture-record-stamp')).toBeNull();
     expect(screen.queryByTestId('architecture-record-cannot-confirm')).toBeNull();
+  });
+
+  /*
+   * ⚠️ The pill used to end the sentence: a warning naming an absence with nowhere to go
+   * (fresh-eyes walkthrough, 2026-08-28). It must name the command that writes the record —
+   * and it must not grow a control claiming this screen can measure the source, which it cannot.
+   */
+  it('tells the reader what produces the missing measurement, without offering to run it', () => {
+    renderWorkbench();
+    expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
+      'atlas architecture --record',
+    );
+    expect(
+      screen.getByTestId('architecture-source-check').querySelector('button, a'),
+    ).toBeNull();
   });
 });

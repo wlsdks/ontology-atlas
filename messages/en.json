@@ -267,6 +267,7 @@
     "profileList": "Applied scopes",
     "sourceCheckRequired": "Source check required",
     "sourceCheckBody": "The profile is reviewed intent. Current imports are inspected by Atlas MCP or CLI; this screen does not turn missing evidence into a pass.",
+    "sourceCheckNext": "Run atlas architecture --record in the repository to write one, or hand this profile to your agent from the Plan stage.",
     "recordStatus": {
       "conforms": "Conforms",
       "violated": "Violated",
@@ -357,6 +358,7 @@
       }
     },
     "roleUndescribed": "This role has no description yet.",
+    "dependencySameRole": "Inside one role, modules may always reference each other.",
     "sourceListingUnavailable": "Source modules appear once a project source folder is connected. A browser cannot read a source folder, so this stays empty here.",
     "sourceListingUnbound": "No source folder is connected yet. Open the folder this profile describes and the bands fill with the modules its globs actually contain.",
     "draftFromCode": "Draft from this codebase",

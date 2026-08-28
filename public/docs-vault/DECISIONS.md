@@ -40,6 +40,59 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 (2) — A rule the screen does not print is a rule the reader does not have
+
+**Convened**: solo, on the falsifier of the record below · **Trigger**: that
+record shipped with a falsifier — if a reader who does not know the pattern still
+cannot say which roles a change may cross, the naming was never the problem. A
+`/user-walkthrough` was run to settle it, walked by a fresh agent held to a
+declared knowledge state (never heard of Feature-Sliced Design, hexagonal, ports
+and adapters) and forbidden from reading any file in this repository, so the
+rendered page was its only source.
+
+**Observed**: the falsifier fired, and named a cause neither option predicted.
+Given the explicit-policy sample the walker answered both halves of the question
+in one glance without clicking, quoting the row verbatim (rendered in English as
+*"may depend on Application · Port · Domain"*). Given the lower-only sample it
+placed the file correctly and
+then could not say what that role may depend on at all. The naming worked in both.
+What differed was that only the explicit profile printed the reach.
+
+The sentence the walker needed was rendered on the lower-only profile too — inside
+the assistive `<ol class="sr-only">`, measured at **1px wide by 24px tall**. The
+walker found it only by dumping `document.body.innerText`, and recorded that on
+the screen itself the sentence does not exist.
+
+**Prior reasoning overturned**: the band deliberately wrote no per-role reach
+under `lower-only`, on the grounds that the stage subtitle plus the ordering state
+the whole rule and a caption would only repeat it. That is true of the rule and
+false of the reader: it asks a first-time reader to hold seven numbered rows in
+mind and compute the allowed set. A component test asserted the absence; the
+assertion is now reversed and carries this measurement in its comment.
+
+**Decision**: both policies print the reach in role names, in both band shapes.
+The cost is real and accepted: the top row of a seven-role profile now lists six
+names. Inferring them cost the reader the answer, which is more.
+
+**Not decided**: the drawn-policy graph stays unbuilt. The walkthrough is evidence
+against it, not for it — the failure was a suppressed sentence, not a missing
+picture, and the reader who had the sentence needed nothing else.
+
+**Still open, from the same walkthrough and not addressed here**: neither profile
+says whether a role may import from another module in its own role; the role row
+is a `<button>` whose click collapses its concepts with no disclosure marker,
+which the walker read as content disappearing; the amber "source check required"
+pill is non-interactive with no next step; and role descriptions render in
+English under localized chrome.
+
+**Falsifier**: if a later walkthrough finds the six-name list on the top row is
+itself unreadable — skipped, or misread as a path — then the list is the wrong
+form and the rule needs a shape rather than a sentence, which is the graph's case
+made properly.
+
+**Status**: standing. **Accountable**: owner (asked for the best available
+direction for the reader).
+
 ## 2026-08-28 — A role may say what it is for, and the pattern axis is the stage's subject
 
 **Convened**: solo PO pass (`/po-pass`) followed by `/design-directions` ·

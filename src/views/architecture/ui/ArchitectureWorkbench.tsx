@@ -471,7 +471,16 @@ export function ArchitectureWorkbench({
                 <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
                   {selected.dependencyPolicy === 'lower-only'
                     ? t('dependencyLowerOnly')
-                    : t('dependencyExplicit')}
+                    : t('dependencyExplicit')}{' '}
+                  {/*
+                    The scanner's first rule is `if (fromRole === toRole) return { allowed: true,
+                    rule: 'same-role' }` — unconditional, under both policies. The screen never
+                    said it, and the 2026-08-28 walkthrough asked exactly this and found nothing:
+                    "whether a file may import from another module in its own role" was the one
+                    question left open on both samples. It is not an open question in the
+                    contract, only on the screen, so the screen says it.
+                  */}
+                  {t('dependencySameRole')}
                 </p>
               </div>
               {record && conformance && measured ? (
@@ -507,13 +516,37 @@ export function ArchitectureWorkbench({
                   </p>
                 </div>
               ) : (
-                <span className={badgeClass({
-                  shape: 'pill',
-                  className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-                })}>
-                  <CircleHelp size={ICON_SIZE.sm} aria-hidden />
-                  {t('sourceCheckRequired')}
-                </span>
+                /*
+                 * ⚠️ **A warning with no next step is a dead end** (fresh-eyes walkthrough,
+                 * 2026-08-28: *"`Source check required` is a dead-end warning. Non-interactive
+                 * span, no tooltip, no next step."*). The pill named an absence and stopped
+                 * there, while the only sentence explaining it sat far below in the Understand
+                 * stage. The line beneath the pill now names the one command that writes the
+                 * missing record and the stage that hands the same job to an agent.
+                 *
+                 * Deliberately not a button: this screen never measures anything — conformance
+                 * comes only from `inspect_architecture` or `atlas architecture` — and a control
+                 * that looked like it could scan would be a worse lie than the silence it
+                 * replaced.
+                 */
+                <div
+                  className="flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
+                  data-testid="architecture-source-check"
+                >
+                  <span className={badgeClass({
+                    shape: 'pill',
+                    className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
+                  })}>
+                    <CircleHelp size={ICON_SIZE.sm} aria-hidden />
+                    {t('sourceCheckRequired')}
+                  </span>
+                  <p
+                    className="break-keep text-caption text-[color:var(--color-text-tertiary)]"
+                    data-testid="architecture-source-check-next"
+                  >
+                    {t('sourceCheckNext')}
+                  </p>
+                </div>
               )}
             </div>
 
