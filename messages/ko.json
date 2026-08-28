@@ -284,6 +284,8 @@
     "rolePaths": "경로 {count}개",
     "dependencyLowerOnly": "의존은 아래 역할로만 향합니다.",
     "dependencyExplicit": "허용되는 의존은 프로필이 역할마다 지정합니다.",
+    "dependencyUsagesValue": "값을 가져오는 의존만 규칙을 적용하고, 타입 전용 의존은 위반으로 세지 않고 계속 보여줍니다.",
+    "dependencyUsagesAll": "값과 타입 전용 의존 모두 규칙을 적용합니다.",
     "modesAria": "아키텍처 작업 단계",
     "modes": {
       "understand": "이해",
@@ -1992,7 +1994,7 @@
       "proofContractMcpVerify": "서버 연결",
       "proofContractMcpVerifyDesc": "mcp-verify 가 로컬 서버를 띄우고 현재 도구 목록을 확인한 뒤, 이 폴더를 실제로 읽어 봅니다.",
       "proofContractJsonGate": "자체 점검",
-      "proofContractJsonGateDesc": "agent-brief --verify-fallbacks --json 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.",
+      "proofContractJsonGateDesc": "agent-brief --verify-fallbacks --json --exit-zero 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.",
       "proofContractGraphBriefs": "폴더 요약",
       "proofContractGraphBriefsDesc": "workspace-brief 와 agent-brief --graph-db-pack 이 같은 폴더를 각각 설명해요.",
       "needsReview": "점검 필요",

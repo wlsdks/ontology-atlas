@@ -40,6 +40,299 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 — Bounded capability evidence never becomes exhaustive scope
+
+**Convened because**: the owner asked both to make README's reason to use Atlas
+explicit and to repair the latest unfamiliar-repository field trial's 14/15
+claim accuracy. README first-contact words and construction/handoff truth are
+hard-to-reverse reputation surfaces, so all five PO seats ran an independent
+round and one rebuttal. Three seats ran concurrently; the later two received the
+same literal evidence brief with no earlier verdicts.
+
+**Prior decisions**: the 2026-08-25 codebase-ontology positioning stands: Atlas
+explains what code builds, why its boundaries matter, and what a change affects;
+it does not replace source search. The 2026-08-16
+`epistemic-exclusion-boundary` decision also stands. Its principle was right,
+but its phrase detector recognized “not proven/measured” and missed “operations
+not named in the bounded semantic excerpt.”
+
+**Observed phenomenon**: a persisted capability named four operations supported
+by bounded README evidence and placed all operations not named in that excerpt
+under `Excludes`. A fresh source-hidden agent read the full body, upgraded the
+list to “covers only,” and used that closed boundary in its ownership answer.
+The source documents additional operations. Phase 4 verified 14 of 15 claims;
+this was the sole failure.
+
+### PO Council Verdict — capability quantifier integrity and README use moment
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify the exact observed defect; keep README copy conditional on blind comprehension evidence | Problem insight 4 · User moment 4 |
+| Craft | Keep the hero; add at most one compact use moment and prove the built handoff wording | Verification 4 |
+| Steward | Make `Includes` representative by default, `Excludes` sourced, and unlisted behavior uncertain | Ontology value 4 · Agent value 4 |
+| Wedge | Treat the regex as hygiene; the compounding wedge is reviewed local meaning that survives source-hidden handoff | Differentiation 4 |
+| Leverage | Two working days; extend the existing gate and guidance, then run one fresh four-phase trial | appetite and slice |
+
+**Rubric total**: 24/24 (fatal zeros: none)
+
+**Decisive disagreement**: the README already explains Atlas well, so another
+sentence could duplicate the hero while the actual measured constraint is
+handoff accuracy. A blind reader of the current README already identified the
+product, its difference from source search, and the pre-change use moment. What
+remained unclear was how its meaning claims stay bounded. The chosen copy does
+not restate the category: it adds that one use moment and says observed lists
+are non-exhaustive while unsupported scope remains uncertainty. A second blind
+reader named that boundary explicitly, so the copy earned its place.
+
+**Decision (accountable: jinan)**:
+
+1. Keep the hero and standing product promise unchanged. Add two sentences only
+   under `In 30 seconds`: use Atlas before a change to share the start, impact,
+   and verification answer; observed capability lists are not exhaustive and
+   unsupported scope stays uncertain.
+2. Extend the existing proposal error, not the schema. `Excludes` phrases such
+   as “not named/listed/mentioned in this bounded excerpt/evidence/scan/packet”
+   are evidence limits and fail as `epistemic-exclusion-boundary` before any
+   `writePlan`. A sourced neighboring responsibility remains valid.
+3. `Includes` is representative unless a same-boundary cited source explicitly
+   proves completeness. Bootstrap guidance must not create `only`, `all`,
+   `every`, `exactly`, `complete`, or `exhaustive` from selected examples;
+   unlisted behavior moves to `Uncertainty` or a competency gap.
+4. `agent_brief.writePolicy`, its copyable handoff prompt, and the field-trial
+   full-body rule must tell a source-hidden reader to say “the vault names/models
+   these items,” not promote list membership to exhaustive source scope.
+
+**Recorded dissent**: an English phrase regex can overfit one failure, reject a
+legitimate closed-set boundary, and create false confidence while equivalent
+wording survives. **Falsifier**: a sourced neighboring responsibility is
+rejected; the exact old phrase reaches `writePlan`; a source-hidden reader still
+introduces an unsupported exhaustive quantifier; or the fresh trial has any
+failed claim. **Revisit**: after three more unfamiliar-repository claim audits,
+or immediately on the first false positive.
+
+**Slice**: IN README two-sentence reinforcement · narrow existing proposal
+error · exact failure and legitimate-boundary controls · agent-brief handoff
+policy · mirrored bootstrap/extraction/field-trial rules · source/bundle parity ·
+one fresh four-phase trial · existing ontology nodes synchronized · appetite two
+working days · OUT new field/schema/tool/UI · generic NLP quantifier policing ·
+exhaustive operation inventory · old-vault backfill · frozen trial repair ·
+broad README rewrite.
+
+**Gate probe and fresh field trial (completed 2026-08-29)**:
+
+- The exact frozen failure phrase first reached a write plan under the old
+  matcher, then failed with `epistemic-exclusion-boundary` after the repair.
+  Four bounded-omission variants fail, while a sourced neighboring
+  responsibility remains accepted. Missing, foreign, source-hidden-uncovered,
+  and truncated candidate rows also lose write eligibility; the unchanged
+  packet preserves every body, array order, digest, revision, and required gap.
+- An unfamiliar dual-licensed Rust/Bash CLI framework took **4,938.794 seconds**
+  from the first analysis call through the last scratch-vault write because
+  three review-only candidate passes removed an unqualified project exclusion
+  and then source-inspected detail the packet itself could not demonstrate.
+  The released slice contains 21 authored nodes (1 project · 4 domains · 8
+  capabilities · 8 elements), 20 reviewed relations, and 36 resolved compiled
+  edges. Validation reports 0 issues, 0 unresolved edges, and 0 orphans.
+- Citation accuracy is **140/140 path-claim occurrences** across 11 unique
+  paths; the independent persisted-answer audit separately resolves **61/61**
+  cited path instances. A physically isolated reader used 21/21 full bodies
+  with 0 truncation and answered all six frozen questions, truthfully marking
+  all six partial because purpose/domain authority and typed Rust impact remain
+  open.
+- Phase 4 verifies **36/36 claims (100%)**, with 0 failures, 0 skipped claims,
+  and 0 introduced `only` / `all` / `every` / `exactly` quantifiers. Local
+  Excludes stayed local, missing relations stayed unmeasured, and the prior
+  14/15 scope-promotion defect did not recur.
+
+**Comparison and limit**: the run holds the recorded 100% citation/claim
+accuracy target and fixes the named failed-claim shape, but it is slower than
+the 5 min 36 s compact baseline and closes none of the six questions fully.
+`BASELINE.md` therefore does not move. This slice proves bounded handoff
+integrity; it does not create Rust dependency evidence, complete product
+authority, or a faster construction loop.
+
+**Status**: valid
+
+---
+
+## 2026-08-28 — First-contact diagnosis preserves and reuses summary history
+
+**Convened because**: solo PO pass. The changed-path gate classified the edit to
+`mcp/src/index.js` as a possible public MCP contract change and required a ledger
+record. That broad trigger proved useful: review found that `summaryFreshness`
+was already nested inside the validation receipt of `health`, `workspace_brief`,
+and `agent_brief`, even though the first performance draft treated it as discarded.
+
+**Prior decisions**: 2026-08-25 (114) remains standing. Summary freshness still
+compares a summary body's last meaningful change with its containment history,
+never rewrites prose, and remains visible through all existing MCP diagnosis,
+validation, maintenance, and installed-app surfaces. Its falsifier was not
+observed: a two-commit fixture whose membership changed without a body rewrite
+still reports the summary stale.
+
+**Observed phenomenon**: on the 88-node dogfood vault, the graph engine answered
+`overview`, `components`, and `growth_plan` in 4–8ms, while cold and repeated
+`workspace_brief` calls both took about 1.1s. The history reader started one
+`git log` process per project/domain and one `git show` process per revision: 75
+Git processes for nine summary nodes and 66 revision bodies on this vault. The
+existing concurrency-4 fallback gate made the same cost visible as 4.574s for
+`workspace-brief` and 4.771s for `health`.
+
+**User problem**: a coding agent beginning or resuming work cannot receive the
+trusted health-plus-next-action handoff at interactive speed, making raw source
+search the faster substitute at the moment Atlas should explain why the code
+matters. The second observable is repeated calls paying immutable-history cost
+again; the problem remains true under any solution that preserves the same typed
+handoff.
+
+**Rejected first slice**: omit summary history from the attached validator. It
+produced the largest speedup, but the new integration probe immediately showed
+`health.validation.summaryFreshness` had disappeared. That was a public evidence
+regression, not an optimization, so it was rejected before merge and the response
+was restored.
+
+**Decision**: preserve every response field and verdict. Read the union history
+through one bounded `git log`, read all immutable revision bodies through one
+`git cat-file --batch` process, and reuse cloned revision records only when Git
+root, vault path, HEAD, requested slug order, and revision bound all match. A new
+HEAD invalidates the cache. If the union limit is reached before a quieter node's
+history is complete, that node falls back to its own bounded log. Current vault
+Markdown, schema/reference checks, source-path drift, and project source/meaning
+currentness are still re-read on every call. No tool, CLI flag, response field,
+route, UI, or vault schema changes.
+
+**PO pass**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 3 · Agent value 4 · Verification 4 = **23/24** (fatal zeros: none).
+Escalation is not required for the final slice because the public MCP/CLI/vault
+contract and product positioning are unchanged. Verdict: **Build and verify**.
+
+**Verification**: the Git-tracing probe is RED for both unsafe shortcuts and the
+old process fan-out. It requires the planted stale domain in all three nested
+first-answer receipts, one union log and one object batch across the three calls,
+zero per-revision `git show` processes, and the same live verdict from a fresh
+`validate_vault` process. Unit probes require cached results to be cloned, a HEAD
+change to invalidate them, and a quiet path hidden behind the union bound to fall
+back rather than disappear. Seven-run local medians moved source
+`workspace_brief` from 1,102.8ms to 130.0ms, repeated from 1,067.7ms to 38.7ms,
+initialize-through-first-brief from 1,217.3ms to 249.6ms, and CLI from 1,294.5ms
+to 297.8ms. The rebuilt app binary measured 117.8ms for the brief and 186.6ms
+from process start through the first brief. A live response deep-comparison against
+the `origin/main` server was exactly equal, including the nested current
+`summaryFreshness` receipt. The 32-command concurrency-4 fallback
+gate moved from 9.187s to 1.976s wall time while keeping all 32 commands green. A
+3,152-file source-bound control remained `verified_current`, measured 267.2ms
+cold / 171.2ms repeated, and reached its first brief in 383.9ms.
+
+**Recorded dissent**: an in-process history cache can outlive an unusual Git
+history mutation that leaves HEAD unchanged, and a union-path log must not change
+per-file history semantics around deep or merge-heavy history. The cache is
+bounded to eight exact keys and stores only immutable committed blobs; returned
+maps are cloned. The extra-commit union sentinel and per-file fallback preserve
+quiet histories, while the public stale fixture and explicit HEAD-invalidation
+probe guard the ordinary contract.
+
+**Falsifier**: any nested validation field or stale verdict changes; a merge-heavy
+fixture differs from the former per-file result; same-HEAD history expansion is
+observed returning a stale cache; the union fallback omits an older quiet node;
+or a representative bound-source vault remains above 500ms on repeated
+`workspace_brief`. Any observation reopens or removes the cache instead of
+weakening validation.
+
+**Status**: valid
+
+---
+
+## 2026-08-28 — Architecture profiles declare which import usages dependency rules govern
+
+**Convened because**: the owner asked to continue with the next AI-executable
+quality problem after release-gate hardening. This changes the public
+`architecture-profile/v1`, MCP `inspect_architecture`, CLI `architecture`, and
+web-reader contract, so five PO seats ran one independent round and one rebuttal
+round. Only three seats could run concurrently; later seats received no earlier
+verdicts, so cross-talk was prevented even though full simultaneous independence
+was unavailable.
+
+**Prior decisions**: the 2026-08-26 separation of Architecture from the Ontology
+Map stands. Declared policy remains separate from observed source, pattern names
+are never inferred from folders, and unknown is never compliant. This record
+corrects one measured premise in the later 2026-08-26 draft decision: the reported
+18 `shared → entities` rows were not real FSD violations. All 18 production rows
+are explicit `import type` edges, while the profile's cited authority,
+`eslint.config.mjs`, permits type-only imports in every direction. The import
+scanner already reported `importUsage: type_only`; conformance discarded it.
+
+### PO Council Verdict — profile-wide import-usage policy
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify; the false remediation action and corrupted ledger premise are observed harm | Problem insight 4 · User moment 4 |
+| Craft | Build and verify; preserve one existing policy sentence and require runtime parity | Verification 4 |
+| Steward | Build and verify only the profile-wide policy slice | Ontology value 3 · Agent value 4 |
+| Wedge | Build and verify as trust hygiene, not a new moat | Differentiation 2 |
+| Leverage | Build and verify in one PR with a two-day appetite | appetite and slice |
+
+**Rubric total**: 21/24 (fatal zeros: none)
+
+**Decisive disagreement**: the strongest opposition was that import-usage
+qualification is table-stakes, no public user harm has been observed, and a
+self-dogfood defect could overfit a permanent public field. The decision proceeds
+because the false result already escaped into `inspect_violations` and this ledger,
+but accepts the differentiation score of 2 and forbids scope expansion.
+
+**Decision (accountable: owner)**: add one optional profile-wide
+`dependency_usages` array. It accepts a non-empty subset of `value` and
+`type_only`. A missing field preserves the v1 behaviour of governing both known
+usages. `unknown` is never declarable and always keeps conformance fail-closed.
+Observed role edges retain usage counts and exact receipt usage; violations retain
+their usage; the unknown receipt counts unclassified usage. The Atlas web profile
+declares `[value]`, so its 18 type-only rows remain observed but leave the violation
+list. Its existing 77 unmapped edges keep the overall result `unknown`.
+
+**Recorded dissent**: a profile-wide switch may be too coarse for a repository
+that governs type knowledge differently per role, and additive fields can burden
+strict consumers. **Falsifier**: an unfamiliar-repository field trial requires a
+per-role exception to state the reviewed policy; a legacy profile changes verdict;
+an upward value edge stops turning red; unknown usage turns green; or self-dogfood
+changes anything beyond moving the 18 type-only rows out of violations while
+preserving the 77 unmapped count. **Revisit**: stop and design a versioned contract
+instead of adding a DSL if any falsifier appears.
+
+**Slice**: IN one backward-compatible field, MCP/web parser parity, usage-qualified
+receipts, CLI and existing workbench policy wording, RED probes, self-dogfood, one
+field trial, and synchronization of the existing Architecture capability/element ·
+OUT schema v2, per-role usage rules, automatic ESLint parsing, global type-only
+suppression, new tools/routes/controls, the unrelated Architecture receipt branch,
+and cleanup of the 77 unmapped edges.
+
+**Field trial**: an unfamiliar MIT TypeScript protocol-client repository was
+tested outside this checkout. The ontology-bootstrap phase took 1 h 0 min 56 s
+including two independent evaluation rounds and explicit owner approval; its
+released plan added 10 meaningful nodes and 14 relations while leaving the five
+starter records untouched. Validation and compilation ended at 15 total nodes,
+30/30 resolved edges, zero issues, and 18/18 current source witnesses. Phase 2
+verified 55/55 meaningful path claims (the only two misses were Atlas paths in
+the explicitly excluded starter README). A fresh source-hidden reader used one
+10-node full-body batch with no truncation and answered three of six questions
+completely and three partially, refusing unmeasured encoding mechanics, arbitrary
+operation ownership, and project-level exclusions. Phase 4 verified 14/15 claims;
+the failure was an over-narrow capability sentence that named four directory
+operations while the source documents additional operations. This is a separate
+construction-quality follow-up and is retained rather than repaired inside the
+trial. The existing field-trial baseline remains unchanged because 93.3% claim
+accuracy is worse than its latest zero-failure run.
+
+The Architecture-specific comparison used 362 observed source edges from the same
+unfamiliar repository. A legacy profile produced 10 violations (4 value and 6
+type-only); the identical profile with `dependency_usages: [value]` produced the
+same 4 value violations, excluded 115 type-only observations from verdicts while
+retaining their counts and receipts, and kept unmapped/unknown counts at zero. No
+per-role exception or schema version was required, so the recorded falsifier did
+not fire. Candidate-packet mutation checks rejected 141/141 missing, foreign,
+truncated, digest, gap, and source-hidden-claim mutations before approval.
+
+**Status**: valid
+
+---
 ## 2026-08-28 (3) — The diagram leaves the document: a horizontal graph, and only edges that carry something the columns cannot
 
 **Convened**: solo, on a failed build the owner rejected on sight ·

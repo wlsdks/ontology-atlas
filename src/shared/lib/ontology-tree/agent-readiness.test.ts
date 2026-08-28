@@ -113,7 +113,7 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain("node $ATLAS/cli/src/index.mjs agent-brief [vault]");
     expect(prompt).toContain("node $ATLAS/cli/src/index.mjs agent-brief [vault] --graph-db-pack");
     expect(prompt).toContain(
-      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(prompt).toContain("node $ATLAS/cli/src/index.mjs match-nodes [vault] --kind unknown --limit 20");
     expect(prompt).toContain("node $ATLAS/cli/src/index.mjs infer-imports [repo] --vault [vault] --max-files 5000");
@@ -142,7 +142,7 @@ describe("buildAgentReadinessSummary", () => {
     expect(commands.map((item) => item.command)).toEqual([
       "node $ATLAS/cli/src/index.mjs agent-brief [vault]",
       "node $ATLAS/cli/src/index.mjs agent-brief [vault] --graph-db-pack",
-      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       "node $ATLAS/cli/src/index.mjs workspace-brief [vault]",
       "node $ATLAS/cli/src/index.mjs health [vault]",
       "node $ATLAS/cli/src/index.mjs cycles [vault] --max-hops 8",
@@ -157,7 +157,7 @@ describe("buildAgentReadinessSummary", () => {
     expect(formatted).toContain("1. node $ATLAS/cli/src/index.mjs agent-brief [vault]");
     expect(formatted).toContain("2. node $ATLAS/cli/src/index.mjs agent-brief [vault] --graph-db-pack");
     expect(formatted).toContain(
-      "3. node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "3. node $ATLAS/cli/src/index.mjs agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(formatted).toContain("8. node $ATLAS/cli/src/index.mjs maintenance [vault] --limit 20");
     expect(formatted).toContain("11. pnpm dogfood:graph-db # 14 runtime graph DB checks");

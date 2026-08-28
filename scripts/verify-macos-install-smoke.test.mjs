@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   buildInstalledAppVerifyArgs,
+  installedMcpBinaryPath,
   parseVerifyInstallArgs,
   verifyBundleSignature,
 } from "./verify-macos-install-smoke.mjs";
@@ -43,6 +44,13 @@ test("installed app verification reuses the LaunchServices app content gate", ()
       "--min-window-size=1040x720",
       "--require-accessibility-text=Ontology Atlas",
     ],
+  );
+});
+
+test("installed app verification targets the MCP sidecar inside the copied bundle", () => {
+  assert.equal(
+    installedMcpBinaryPath("/tmp/install/Ontology Atlas.app"),
+    "/tmp/install/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
   );
 });
 

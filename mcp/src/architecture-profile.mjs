@@ -4,6 +4,8 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
 const MATCHED_FILE_SAMPLE_LIMIT = 20;
 const VIOLATION_SAMPLE_LIMIT = 50;
+const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'];
+const OBSERVED_IMPORT_USAGE_VALUES = [...DEPENDENCY_USAGE_VALUES, 'unknown'];
 
 function nonBlank(value, name) {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -68,6 +70,23 @@ function parsePatterns(value) {
   });
 }
 
+function parseDependencyUsages(value) {
+  if (value === undefined) return [...DEPENDENCY_USAGE_VALUES];
+  const usages = stringArray(value, 'dependency_usages');
+  const unsupported = usages.find((usage) => !DEPENDENCY_USAGE_VALUES.includes(usage));
+  if (unsupported) {
+    throw new Error(
+      `dependency_usages contains unsupported usage: ${unsupported}. ` +
+        `Expected one of ${DEPENDENCY_USAGE_VALUES.join(', ')}.`,
+    );
+  }
+  return usages;
+}
+
+const GIT_REVISION_RE = /^[0-9a-f]{40}$/;
+const FOLDER_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
+const MEASURED_GIT_SHORT_SHA_LENGTH = 12;
+
 export function parseArchitectureProfile(frontmatter) {
   if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
     throw new Error('architecture profile frontmatter must be an object.');
@@ -79,6 +98,20 @@ export function parseArchitectureProfile(frontmatter) {
   const projectUid = nonBlank(frontmatter.project_uid, 'project_uid');
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
+
+  /*
+   * ⚠️ **The retired key is refused by name, not aliased and not ignored.** Two councils
+   * independently cured the same false red — 18 type-only edges an eslint config already permitted
+   * — one with `type_only_dependencies: ruled|free` and one with `dependency_usages`, and the
+   * 2026-08-29 reconciliation kept the shipped encoding. An alias would carry two spellings of one
+   * policy through two parsers forever, for a key no profile ever wrote; ignoring it would flip
+   * that profile's verdict without a word, which is the silent change this ledger forbids.
+   */
+  if (frontmatter.type_only_dependencies !== undefined) {
+    throw new Error(
+      'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
+    );
+  }
 
   /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
      prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
@@ -119,12 +152,6 @@ export function parseArchitectureProfile(frontmatter) {
   if (!['explicit', 'lower-only'].includes(dependencyPolicy)) {
     throw new Error('dependency_policy must be explicit or lower-only.');
   }
-  const typeOnlyDependencies = frontmatter.type_only_dependencies === undefined
-    ? 'free'
-    : frontmatter.type_only_dependencies;
-  if (!['ruled', 'free'].includes(typeOnlyDependencies)) {
-    throw new Error('type_only_dependencies must be ruled or free.');
-  }
   const allows = new Map();
   for (const roleId of roleOrder) {
     const key = `allow_${roleId}`;
@@ -153,7 +180,7 @@ export function parseArchitectureProfile(frontmatter) {
         : { id, paths: rolePaths.get(id), summary };
     }),
     dependencyPolicy,
-    typeOnlyDependencies,
+    dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
     allows,
     evidence: stringArray(frontmatter.evidence, 'evidence'),
   };
@@ -240,6 +267,12 @@ function ruleFor(profile, fromRole, toRole) {
   };
 }
 
+function importUsageOf(edge) {
+  return OBSERVED_IMPORT_USAGE_VALUES.includes(edge?.importUsage)
+    ? edge.importUsage
+    : 'unknown';
+}
+
 export function evaluateArchitectureConformance(profile, importResult) {
   const edges = Array.isArray(importResult?.edges) ? importResult.edges : [];
   const filesByRole = new Map(profile.roles.map((role) => [role.id, new Set()]));
@@ -247,18 +280,8 @@ export function evaluateArchitectureConformance(profile, importResult) {
   const violations = [];
   let unmappedEdges = 0;
   let unruledEdges = 0;
-  let typeOnlyEdgeCount = 0;
-  // Whole-scan usage discrimination receipt. `missing` counts edges the scanner
-  // emitted without any importUsage field; the record writer's mechanical gate
-  // reads these counts to refuse minting a receipt from a scan that cannot
-  // tell a type-only import from a value import.
-  const importUsageCounts = { value: 0, type_only: 0, unknown: 0, missing: 0 };
-  for (const edge of edges) {
-    if (edge.importUsage === undefined) importUsageCounts.missing += 1;
-    else if (Object.hasOwn(importUsageCounts, edge.importUsage)) {
-      importUsageCounts[edge.importUsage] += 1;
-    } else importUsageCounts.unknown += 1;
-  }
+  let unknownImportUsages = 0;
+  let excludedByUsage = 0;
 
   for (const edge of edges) {
     // Architecture rules govern dependencies *originating* in the selected
@@ -273,18 +296,9 @@ export function evaluateArchitectureConformance(profile, importResult) {
       unmappedEdges += 1;
       continue;
     }
-    // Type-only edges have a profile-declared ruling (2026-08-27 decision):
-    // under 'free' (the default) a cited compile-time-only import is neither a
-    // violation nor an allowed edge -- it leaves the violated/allowed
-    // accounting entirely and is reported as its own named class. Under
-    // 'ruled' it is evaluated exactly like a value edge. Edges without usage
-    // information ('unknown' or absent) keep the existing fail-closed path.
-    if (edge.importUsage === 'type_only') {
-      typeOnlyEdgeCount += 1;
-      if (profile.typeOnlyDependencies !== 'ruled') continue;
-    }
     const [fromRole] = fromRoles;
     const [toRole] = toRoles;
+    const importUsage = importUsageOf(edge);
     filesByRole.get(fromRole).add(normalizePath(edge.from));
     filesByRole.get(toRole).add(normalizePath(edge.to));
     const key = `${fromRole}\u0000${toRole}`;
@@ -292,13 +306,31 @@ export function evaluateArchitectureConformance(profile, importResult) {
       fromRole,
       toRole,
       count: 0,
+      importUsageCounts: Object.fromEntries(
+        OBSERVED_IMPORT_USAGE_VALUES.map((usage) => [usage, 0]),
+      ),
       evidence: [],
     };
     row.count += 1;
+    row.importUsageCounts[importUsage] += 1;
     if (row.evidence.length < 3) {
-      row.evidence.push({ from: normalizePath(edge.from), to: normalizePath(edge.to), kind: edge.kind ?? 'unknown' });
+      row.evidence.push({
+        from: normalizePath(edge.from),
+        to: normalizePath(edge.to),
+        kind: edge.kind ?? 'unknown',
+        importUsage,
+      });
     }
     observed.set(key, row);
+
+    if (importUsage === 'unknown') {
+      unknownImportUsages += 1;
+      continue;
+    }
+    if (!profile.dependencyUsages.includes(importUsage)) {
+      excludedByUsage += 1;
+      continue;
+    }
 
     const decision = ruleFor(profile, fromRole, toRole);
     if (decision.allowed === null) {
@@ -310,7 +342,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
         from: normalizePath(edge.from),
         to: normalizePath(edge.to),
         kind: edge.kind ?? 'unknown',
-        importUsage: edge.importUsage ?? 'unknown',
+        importUsage,
         rule: decision.rule,
       });
     }
@@ -321,10 +353,6 @@ export function evaluateArchitectureConformance(profile, importResult) {
     return {
       id: role.id,
       paths: role.paths,
-      /* The reviewed sentence rides with the role, so an agent reading the brief is handed the
-         role's purpose instead of inferring it from `src/widgets/**` — the exact inference the
-         2026-08-26 decision forbids for pattern names. Absent where none was written. */
-      ...(role.summary === undefined ? {} : { summary: role.summary }),
       matchedFileCount: matched.length,
       matchedFiles: matched.slice(0, MATCHED_FILE_SAMPLE_LIMIT),
       matchedFilesLimited: matched.length > MATCHED_FILE_SAMPLE_LIMIT,
@@ -332,7 +360,8 @@ export function evaluateArchitectureConformance(profile, importResult) {
   });
   const emptyRoles = roles.filter((role) => role.matchedFiles.length === 0).map((role) => role.id);
   const coverageIncomplete = importResult?.coverage?.allDetectedLanguagesSupported !== true;
-  const hasUnknown = coverageIncomplete || unmappedEdges > 0 || unruledEdges > 0 || emptyRoles.length > 0;
+  const hasUnknown = coverageIncomplete || unmappedEdges > 0 || unruledEdges > 0 ||
+    unknownImportUsages > 0 || emptyRoles.length > 0;
   const status = violations.length > 0 ? 'violated' : hasUnknown ? 'unknown' : 'conforms';
 
   return {
@@ -342,14 +371,15 @@ export function evaluateArchitectureConformance(profile, importResult) {
     observedRoleEdges: [...observed.values()].sort((a, b) =>
       `${a.fromRole}:${a.toRole}`.localeCompare(`${b.fromRole}:${b.toRole}`, 'en'),
     ),
+    excludedByUsage,
     violationCount: violations.length,
     violations: violations.slice(0, VIOLATION_SAMPLE_LIMIT),
     violationsLimited: violations.length > VIOLATION_SAMPLE_LIMIT,
-    typeOnlyEdgeCount,
     unknown: {
       coverageIncomplete,
       unmappedEdges,
       unruledEdges,
+      unknownImportUsages,
       emptyRoles,
     },
     source: {
@@ -358,23 +388,62 @@ export function evaluateArchitectureConformance(profile, importResult) {
       supportedLanguages: Array.isArray(importResult?.coverage?.supportedLanguages)
         ? importResult.coverage.supportedLanguages
         : [],
-      importUsageCounts,
     },
   };
 }
 
-const GIT_REVISION_RE = /^[0-9a-f]{40}$/;
-const FOLDER_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
-const MEASURED_GIT_SHORT_SHA_LENGTH = 12;
+export function buildArchitectureBrief(profile, importResult, { measured } = {}) {
+  const conformance = evaluateArchitectureConformance(profile, importResult);
+  const nextActions = [];
+  if (conformance.violations.length > 0) {
+    nextActions.push({ id: 'inspect_violations', count: conformance.violations.length });
+  }
+  if (conformance.status === 'unknown') {
+    nextActions.push({ id: 'close_measurement_gaps', unknown: conformance.unknown });
+  }
+  nextActions.push({ id: 'plan_within_architecture', profileSlug: profile.slug });
+  return {
+    contract: BRIEF_CONTRACT,
+    sideEffect: 0,
+    profile: {
+      uid: profile.uid,
+      slug: profile.slug,
+      projectUid: profile.projectUid,
+      title: profile.title,
+      patterns: profile.patterns,
+      scopePaths: profile.scopePaths,
+      excludePaths: profile.excludePaths,
+      roles: profile.roles.map((role) => ({
+        id: role.id,
+        paths: role.paths,
+        allowedDependencies: profile.dependencyPolicy === 'lower-only'
+          ? profile.roles
+              .slice(profile.roles.findIndex((row) => row.id === role.id) + 1)
+              .map((row) => row.id)
+          : profile.allows.get(role.id) ?? null,
+      })),
+      dependencyPolicy: profile.dependencyPolicy,
+      dependencyUsages: profile.dependencyUsages,
+      evidence: profile.evidence,
+    },
+    conformance,
+    agentPlanContract: {
+      contract: 'architectureChangePlan:v1',
+      requiredFields: [
+        'touchedRoles',
+        'plannedPaths',
+        'expectedNewDependencies',
+        'crossedBoundaries',
+        'preservedInterfaces',
+        'verificationCommands',
+        'unknowns',
+      ],
+    },
+    nextActions,
+    ...(measured !== undefined ? { measured } : {}),
+  };
+}
 
-/**
- * Dated measurement stamp for an architectureBrief:v1 (2026-08-27 decision,
- * point 2). The stamp says when the scan ran, which tool produced it, and the
- * exact source state it saw: a real commit short-sha plus dirty flag for git
- * sources, a `sha256:` inventory fingerprint for plain folders. The two are
- * never conflated: a git stamp carries no fingerprint and a folder stamp
- * carries no sha.
- */
 export function buildArchitectureMeasuredStamp(inspection, { at, toolName, toolVersion } = {}) {
   const measuredAt = at ?? new Date().toISOString();
   if (typeof measuredAt !== 'string' || Number.isNaN(Date.parse(measuredAt))) {
@@ -412,57 +481,4 @@ export function buildArchitectureMeasuredStamp(inspection, { at, toolName, toolV
     };
   }
   throw new Error('measured stamp requires a git or folder source inspection.');
-}
-
-export function buildArchitectureBrief(profile, importResult, { measured } = {}) {
-  const conformance = evaluateArchitectureConformance(profile, importResult);
-  const nextActions = [];
-  if (conformance.violations.length > 0) {
-    nextActions.push({ id: 'inspect_violations', count: conformance.violations.length });
-  }
-  if (conformance.status === 'unknown') {
-    nextActions.push({ id: 'close_measurement_gaps', unknown: conformance.unknown });
-  }
-  nextActions.push({ id: 'plan_within_architecture', profileSlug: profile.slug });
-  return {
-    contract: BRIEF_CONTRACT,
-    sideEffect: 0,
-    profile: {
-      uid: profile.uid,
-      slug: profile.slug,
-      projectUid: profile.projectUid,
-      title: profile.title,
-      patterns: profile.patterns,
-      scopePaths: profile.scopePaths,
-      excludePaths: profile.excludePaths,
-      roles: profile.roles.map((role) => ({
-        id: role.id,
-        paths: role.paths,
-        ...(role.summary === undefined ? {} : { summary: role.summary }),
-        allowedDependencies: profile.dependencyPolicy === 'lower-only'
-          ? profile.roles
-              .slice(profile.roles.findIndex((row) => row.id === role.id) + 1)
-              .map((row) => row.id)
-          : profile.allows.get(role.id) ?? null,
-      })),
-      dependencyPolicy: profile.dependencyPolicy,
-      typeOnlyDependencies: profile.typeOnlyDependencies,
-      evidence: profile.evidence,
-    },
-    ...(measured !== undefined ? { measured } : {}),
-    conformance,
-    agentPlanContract: {
-      contract: 'architectureChangePlan:v1',
-      requiredFields: [
-        'touchedRoles',
-        'plannedPaths',
-        'expectedNewDependencies',
-        'crossedBoundaries',
-        'preservedInterfaces',
-        'verificationCommands',
-        'unknowns',
-      ],
-    },
-    nextActions,
-  };
 }

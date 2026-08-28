@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import {
+  evaluateAgentSetupGate,
+  evaluateDesktopReleasePreflight,
+} from "./lib/release-script-contract.mjs";
 
 const root = process.cwd();
 
@@ -281,10 +285,16 @@ if (firebaseDependencyMatches.length === 0) {
   );
 }
 
-if (pkg.scripts?.["cli:mcp-verify"] && pkg.scripts?.["dogfood:agent-setup-gate"]) {
-  pass("CLI/MCP setup gate is available for desktop handoff verification");
+const agentSetupGateContract = evaluateAgentSetupGate(
+  pkg.scripts?.["dogfood:agent-setup-gate"],
+);
+if (pkg.scripts?.["cli:mcp-verify"] && agentSetupGateContract.ok) {
+  pass("CLI/MCP setup gate executes fallbacks while keeping advisory readiness in JSON");
 } else {
-  fail("package.json must expose cli:mcp-verify and dogfood:agent-setup-gate for desktop handoff verification");
+  fail(
+    "package.json must expose cli:mcp-verify and an automation-safe dogfood:agent-setup-gate: " +
+      agentSetupGateContract.errors.join("; "),
+  );
 }
 
 if (
@@ -445,12 +455,14 @@ if (
   verifyInstallScript.includes('"--require-window"') &&
   verifyInstallScript.includes('"--require-owner-name=Ontology Atlas"') &&
   verifyInstallScript.includes('"--require-accessibility-text=Ontology Atlas"') &&
-  verifyInstallScript.includes('"--kill-existing"')
+  verifyInstallScript.includes('"--kill-existing"') &&
+  verifyInstallScript.includes("installedMcpBinaryPath") &&
+  verifyInstallScript.includes("verifyMcpBinary")
 ) {
-  pass("desktop install smoke reuses the LaunchServices app content verifier for copied DMG apps");
+  pass("desktop install smoke proves the copied DMG app and its installed MCP sidecar both run");
 } else {
   fail(
-    "desktop install smoke must verify copied DMG apps through scripts/verify-macos-app-launch.mjs with stale-process cleanup, LaunchServices window checks, and Accessibility text markers",
+    "desktop install smoke must verify copied DMG apps through scripts/verify-macos-app-launch.mjs and execute Contents/MacOS/ontology-atlas-mcp through verifyMcpBinary before removing the temporary install",
   );
 }
 
@@ -481,11 +493,23 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/watch-macos-release-run.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/generate-download-release-facts.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-checksum.test.mjs") &&
-  pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs")
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/release-script-contract.test.mjs")
 ) {
   pass("desktop checker tests cover the GitHub release operator, source, run-watch, checksum filename, and completion gates");
 } else {
   fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, scripts/generate-download-release-facts.test.mjs, scripts/lib/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum filename, completion, and app-vs-asset naming gates stay covered");
+}
+
+// This suite owns 52 loopback-server call sites. Node 24 otherwise uses all 12
+// available cores on this machine, and the resulting subprocess connection burst
+// was observed failing as EADDRNOTAVAIL across unrelated server-backed tests.
+// Four workers completed the same 387-test suite in 35.4 seconds without losing
+// coverage, so keep the resource bound in the command the release preflight runs.
+if (pkg.scripts?.["test:desktop:check"]?.startsWith("node --test --test-concurrency=4 ")) {
+  pass("desktop checker tests bound loopback-heavy Node test concurrency to 4");
+} else {
+  fail("package.json test:desktop:check must run node --test with --test-concurrency=4 so loopback-heavy release tests do not exhaust local connections");
 }
 
 if (
@@ -680,14 +704,15 @@ if (
   );
 }
 
-if (
-  pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm notice:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 90000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:perf -- --require-app && pnpm desktop:verify-app -- --kill-existing --open-app --require-window --require-owner-name=\"Ontology Atlas\" --min-window-size=1040x720 --require-accessibility-text=\"Ontology Atlas\" --reset-window-state && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
-) {
-  pass("desktop local release preflight runs readiness, third-party notice currency, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, performance budget, LaunchServices app content proof, DMG, and install smoke");
+const desktopPreflightContract = evaluateDesktopReleasePreflight(
+  pkg.scripts?.["desktop:release-preflight"],
+);
+if (desktopPreflightContract.ok) {
+  pass("desktop local release preflight validates shipped vault data, builds the MCP sidecar before bridge tests, and proves app, DMG, and install artifacts without source dogfood state");
 } else {
   fail(
-    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including notice:check, cli:mcp-verify, dogfood:agent-setup-gate, and LaunchServices app content proof against docs/ontology before release artifact checks",
+    "desktop:release-preflight contract failed: " +
+      desktopPreflightContract.errors.join("; "),
   );
 }
 

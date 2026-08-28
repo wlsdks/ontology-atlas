@@ -92,7 +92,7 @@ function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
     `${ATLAS_CLI} agent-brief ${target} --prompt`,
     `${ATLAS_CLI} agent-brief ${target} --graph-db-pack`,
     `${ATLAS_CLI} agent-brief ${target} --verify-fallbacks`,
-    `${ATLAS_CLI} agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `${ATLAS_CLI} agent-brief ${target} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     `${ATLAS_CLI} hubs ${target} --plan --limit 10 --types depends_on,relates`,
     `${ATLAS_CLI} hubs ${target} --limit 10 --types depends_on,relates`,
     `${ATLAS_CLI} mcp-verify ${target} --timeout-ms 15000`,
@@ -107,7 +107,7 @@ const AGENT_VERIFY_CLI_PREVIEW = [
   'agent-brief . --prompt',
   'agent-brief . --graph-db-pack',
   'agent-brief . --verify-fallbacks',
-  'agent-brief . --verify-fallbacks --json',
+  'agent-brief . --verify-fallbacks --json --exit-zero',
 ];
 
 const AGENT_MODE_PACKET_LINES = [
@@ -129,7 +129,7 @@ const AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES = [
   'First-contact proof contract:',
   '- Config state: agent-setup --json reports root-specific Claude Code / Cursor and Codex config readiness before repair.',
   '- MCP verify: mcp-verify can boot the local MCP server, list the tools including finalize_project_meaning, and read the target vault.',
-  '- JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk before the agent edits.',
+  '- JSON setup gate: agent-brief --verify-fallbacks --json --exit-zero returns ok/performanceOk before the agent edits.',
   '- Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault before writes.',
 ];
 
@@ -181,7 +181,7 @@ function buildAgentFirstContactProofPacket(
     `2. If setup state reports missing configs: ${buildAgentSetupCliCommand(vaultName, 'write', vaultPath)}`,
     `3. Restart Claude Code / Cursor / Codex from the codebase root after repair.`,
     `4. ${ATLAS_CLI} mcp-verify ${vaultPathArg} --timeout-ms 15000`,
-    `5. ${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `5. ${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Read-first graph proof:',
     ...AGENT_MCP_CONNECTED_PROOF_LINES,
@@ -234,7 +234,7 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     `2. Repair only if state reports missing configs: ${setupRepairCommand}`,
     '3. Restart Claude Code / Cursor / Codex from the agent root.',
     `4. Verify MCP tools: ${ATLAS_CLI} mcp-verify ${vaultPathArg} --timeout-ms 15000`,
-    `5. Gate fallback performance: ${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `5. Gate fallback performance: ${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     `6. Read the graph: ${ATLAS_CLI} workspace-brief ${vaultPathArg} && ${ATLAS_CLI} agent-brief ${vaultPathArg} --prompt`,
     '',
     'Preferred existing-vault repair command from a codebase root:',
@@ -259,7 +259,7 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     AGENT_VERIFY_CLI_COMMAND,
     '',
     'Machine-readable setup gate for automation from the codebase root:',
-    `${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `${ATLAS_CLI} agent-brief ${vaultPathArg} --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Machine-readable setup gate when the vault folder is the current directory:',
     ONTOLOGY_STARTER_JSON_GATE_COMMAND,

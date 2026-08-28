@@ -175,7 +175,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("node $ATLAS/cli/src/index.mjs cycles . --max-hops 8");
     expect(readme).toContain("node $ATLAS/cli/src/index.mjs growth . --limit 20");
     expect(readme).toContain("node $ATLAS/cli/src/index.mjs maintenance . --limit 20");
-    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(readme).toContain("node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
     expect(readme).toContain("node $ATLAS/cli/src/index.mjs mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);
   });

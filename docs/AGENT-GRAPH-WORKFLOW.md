@@ -287,7 +287,7 @@ CLI-only checks:
   - `returned: 8`
   - `limited: true`
   - `followUp.focusSlug: "capabilities/cli-developer-entry"`
-- `node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
+- `node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
   - `operation: "agent_fallback_check"`
   - `ok: true`
   - `performanceOk: true`
@@ -357,6 +357,6 @@ For a non-developer or a first-time AI-agent session:
 For a developer terminal session:
 
 1. Run `ontology-atlas validate <vault>`.
-2. Run `ontology-atlas agent-brief <vault> --verify-fallbacks --json`.
+2. Run `ontology-atlas agent-brief <vault> --verify-fallbacks --json --exit-zero`.
 3. Run `ontology-atlas agent-brief <vault> --graph-db-pack`.
 4. Use follow-up commands before treating graph scans as evidence.

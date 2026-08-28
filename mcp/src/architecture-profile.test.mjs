@@ -26,6 +26,7 @@ test('feature-sliced profile accepts lower dependencies and rejects an upward ed
         from: 'src/shared/lib/date.test.ts',
         to: 'src/entities/project/model/project.ts',
         kind: 'static',
+        importUsage: 'type_only',
       },
     ],
     filesScanned: 12,
@@ -47,84 +48,47 @@ test('feature-sliced profile accepts lower dependencies and rejects an upward ed
     from: FSD_FORBIDDEN_EDGE.from,
     to: FSD_FORBIDDEN_EDGE.to,
     kind: 'static',
-    importUsage: 'unknown',
+    importUsage: 'value',
     rule: 'lower-only',
   });
 });
 
-test('type_only_dependencies parses with a free default and rejects other values', () => {
-  assert.equal(parseArchitectureProfile(FSD_PROFILE_FRONTMATTER).typeOnlyDependencies, 'free');
-  assert.equal(
-    parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER).typeOnlyDependencies,
-    'free',
-  );
-  assert.equal(
-    parseArchitectureProfile({ ...FSD_PROFILE_FRONTMATTER, type_only_dependencies: 'ruled' })
-      .typeOnlyDependencies,
-    'ruled',
-  );
-  assert.throws(
-    () => parseArchitectureProfile({ ...FSD_PROFILE_FRONTMATTER, type_only_dependencies: 'loose' }),
-    (error) => error.message === 'type_only_dependencies must be ruled or free.',
-  );
-});
+test('profile-declared usages exclude type-only verdicts while unknown stays fail-closed', () => {
+  const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+  assert.deepEqual(profile.dependencyUsages, ['value']);
 
-test('a type-only edge across a forbidden pair is free by default and ruled on request', () => {
-  // The 2026-08-27 measured fact: every dogfood "violation" was an
-  // `import type` edge a cited authority explicitly allows. A type-only edge
-  // must never become a violation unless the profile declares that ruling.
-  const typeOnlyForbiddenEdge = {
-    from: 'src/payments/domain/payment.ts',
-    to: 'src/payments/adapters/postgres.ts',
-    kind: 'static',
-    importUsage: 'type_only',
-  };
-  const importResult = {
+  const typeOnly = evaluateArchitectureConformance(profile, {
     edges: [
-      ...HEXAGONAL_ALLOWED_EDGES.map((edge) => ({ ...edge, importUsage: 'value' })),
-      typeOnlyForbiddenEdge,
+      ...FSD_ALLOWED_EDGES,
+      { ...FSD_FORBIDDEN_EDGE, importUsage: 'type_only' },
     ],
-    filesScanned: 8,
+    filesScanned: 12,
     coverage: { allDetectedLanguagesSupported: true, supportedLanguages: ['typescript'] },
-  };
-
-  const free = evaluateArchitectureConformance(
-    parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER),
-    importResult,
+  });
+  assert.equal(typeOnly.status, 'conforms');
+  assert.equal(typeOnly.violationCount, 0);
+  assert.equal(typeOnly.excludedByUsage, 1);
+  const sharedToEntities = typeOnly.observedRoleEdges.find(
+    (edge) => edge.fromRole === 'shared' && edge.toRole === 'entities',
   );
-  assert.equal(free.status, 'conforms');
-  assert.equal(free.violationCount, 0);
-  assert.equal(free.typeOnlyEdgeCount, 1);
-  assert.deepEqual(free.source.importUsageCounts, {
-    value: 2,
+  assert.deepEqual(sharedToEntities?.importUsageCounts, {
+    value: 0,
     type_only: 1,
     unknown: 0,
-    missing: 0,
   });
-  // Out of the violated/allowed accounting entirely: no observed role edge
-  // for the type-only pair either.
-  assert.ok(
-    free.observedRoleEdges.every(
-      (edge) => !(edge.fromRole === 'domain' && edge.toRole === 'adapter'),
-    ),
-  );
+  assert.equal(sharedToEntities?.evidence[0]?.importUsage, 'type_only');
 
-  const ruled = evaluateArchitectureConformance(
-    parseArchitectureProfile({ ...HEXAGONAL_PROFILE_FRONTMATTER, type_only_dependencies: 'ruled' }),
-    importResult,
-  );
-  assert.equal(ruled.status, 'violated');
-  assert.equal(ruled.violationCount, 1);
-  assert.equal(ruled.typeOnlyEdgeCount, 1);
-  assert.deepEqual(ruled.violations[0], {
-    fromRole: 'domain',
-    toRole: 'adapter',
-    from: typeOnlyForbiddenEdge.from,
-    to: typeOnlyForbiddenEdge.to,
-    kind: 'static',
-    importUsage: 'type_only',
-    rule: 'allow-domain',
+  const unknown = evaluateArchitectureConformance(profile, {
+    edges: [
+      ...FSD_ALLOWED_EDGES,
+      { ...FSD_FORBIDDEN_EDGE, importUsage: 'unknown' },
+    ],
+    filesScanned: 12,
+    coverage: { allDetectedLanguagesSupported: true, supportedLanguages: ['typescript'] },
   });
+  assert.equal(unknown.status, 'unknown');
+  assert.equal(unknown.violationCount, 0);
+  assert.equal(unknown.unknown.unknownImportUsages, 1);
 });
 
 test('hexagonal profile keeps pattern axes independent and catches domain to adapter', () => {
@@ -146,7 +110,7 @@ test('hexagonal profile keeps pattern axes independent and catches domain to ada
 test('unmapped source or unsupported language stays unknown instead of green', () => {
   const profile = parseArchitectureProfile(AMBIGUOUS_PROFILE_FRONTMATTER);
   const result = evaluateArchitectureConformance(profile, {
-    edges: [{ from: 'src/misc/a.py', to: 'src/core/b.py', kind: 'static' }],
+    edges: [{ from: 'src/misc/a.py', to: 'src/core/b.py', kind: 'static', importUsage: 'value' }],
     filesScanned: 2,
     coverage: { allDetectedLanguagesSupported: false, supportedLanguages: ['python'] },
   });
@@ -166,6 +130,7 @@ test('architecture brief gives an agent scope, rules, evidence, and a plan contr
   assert.equal(brief.contract, 'architectureBrief:v1');
   assert.equal(brief.sideEffect, 0);
   assert.equal(brief.profile.slug, 'atlas-web');
+  assert.deepEqual(brief.profile.dependencyUsages, ['value']);
   assert.deepEqual(brief.agentPlanContract.requiredFields, [
     'touchedRoles',
     'plannedPaths',

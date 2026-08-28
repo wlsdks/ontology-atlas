@@ -519,6 +519,47 @@ test('repository proposal rejects epistemic unknowns encoded as product exclusio
   );
 });
 
+test('repository proposal rejects bounded-evidence omissions as exclusions without blocking sourced boundaries', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const invalid = completeTypedRepositoryProposal();
+  assert.ok(invalid.capabilities.length > 0, 'the quantifier probe must exercise a real capability row');
+  invalid.capabilities[0].excludes = [
+    'Operations not named in the bounded semantic excerpt.',
+    'Requests not listed in this bounded evidence.',
+    'Behaviors not mentioned in the bounded scan.',
+    'Cases not included in this bounded packet.',
+    'Inventory reconciliation remains owned by the inventory capability.',
+  ];
+
+  const rejected = validateMeaningProposalAgainstAnalysis(analysis, invalid);
+
+  assert.equal(rejected.status, 'fail');
+  assert.equal(rejected.canWrite, false);
+  assert.equal(rejected.writePlan, undefined);
+  assert.deepEqual(
+    rejected.findings
+      .filter((row) => row.code === 'epistemic-exclusion-boundary')
+      .map((row) => row.path),
+    [
+      'concepts[2].excludes[0]',
+      'concepts[2].excludes[1]',
+      'concepts[2].excludes[2]',
+      'concepts[2].excludes[3]',
+    ],
+  );
+
+  const valid = completeTypedRepositoryProposal();
+  valid.capabilities[0].excludes = [
+    'Inventory reconciliation remains owned by the inventory capability.',
+  ];
+  const accepted = validateMeaningProposalAgainstAnalysis(analysis, valid);
+  assert.equal(
+    accepted.findings.some((row) => row.code === 'epistemic-exclusion-boundary'),
+    false,
+    'a sourced neighboring responsibility is a legitimate capability exclusion',
+  );
+});
+
 /*
  * The 2026-08-26 field trial handed a source-hidden reader a project exclusion
  * that nothing in the subject supported, and the reader repeated it as fact. The

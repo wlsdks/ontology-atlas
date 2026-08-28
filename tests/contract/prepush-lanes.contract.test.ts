@@ -72,7 +72,7 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
   /**
    * Timing ratios cannot be measured on a machine this hook is deliberately
    * saturating. `duplicate-pairs.perf.test.ts` compares a fast path against a naive
-   * one and reads the clock; under eight parallel lanes (~900% CPU measured) it went
+   * one and reads the clock; under parallel lanes (~900% CPU measured) it went
    * red on a push whose diff could not have touched it, and passed on a rerun. CI
    * runs the same three files on a quiet runner, where the number means something.
    *
@@ -92,6 +92,30 @@ describe("pre-push 훅 — 빠른 CI 거울", () => {
     expect(ci, "CI 가 성능 시험을 제외한다 — 그러면 아무도 안 재는 것이 된다").not.toContain(
       "perf.test",
     );
+  });
+
+  it("정확성 시험은 바쁜 로컬 훅에서 worker를 나누고 넉넉한 timeout을 쓴다", () => {
+    // Four workers in each correctness lane still starved two ordinary React
+    // state-transition tests past five seconds when eleven lanes ran together
+    // (2026-08-28). Two is the measured local saturation boundary; CI keeps its
+    // normal pool on a quiet runner below.
+    const correctnessLanes = ["unit", "contract"].map((name) =>
+      executable.split("\n").find((line) => new RegExp(`lane ${name} `).test(line)) ?? "",
+    );
+
+    for (const lane of correctnessLanes) {
+      expect(lane, "unit/contract 레인을 못 찾았다 — 이 시험이 헛돈다").not.toBe("");
+      expect(lane, "병렬 레인이 Vitest worker를 무제한으로 늘려 다른 정확성 시험을 굶긴다").toContain(
+        "--maxWorkers=2",
+      );
+      expect(lane, "병렬 부하에서 기본 timeout이 정확성 시험을 오탐한다").toContain(
+        "--testTimeout=30000",
+      );
+    }
+
+    // CI stays authoritative and keeps the normal timeout on its quiet runner.
+    const ci = readFileSync(path.join(ROOT, ".github/workflows/checks.yml"), "utf8");
+    expect(ci).not.toContain("--testTimeout");
   });
 
   it("실패한 레인만 출력한다 — 여덟 개가 동시에 떠들면 아무도 안 읽는다", () => {

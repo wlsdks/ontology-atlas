@@ -34,7 +34,7 @@ export interface AgentReadinessCliCommand {
 }
 
 export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
-  `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
+  `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
 export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
 export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 14;
 
@@ -113,7 +113,7 @@ const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
   {
     key: "setup_gate",
     command:
-      `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+      `${ATLAS_CLI} agent-brief [vault] --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
   },
   { key: "workspace_brief", command: `${ATLAS_CLI} workspace-brief [vault]` },
   { key: "health", command: `${ATLAS_CLI} health [vault]` },

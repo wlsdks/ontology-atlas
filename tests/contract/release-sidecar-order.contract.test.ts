@@ -22,6 +22,7 @@ import { describe, expect, it } from "vitest";
 
 const WORKFLOW_PATH = join(process.cwd(), ".github/workflows/release-macos.yml");
 const TAURI_CONF_PATH = join(process.cwd(), "src-tauri/tauri.conf.json");
+const PACKAGE_PATH = join(process.cwd(), "package.json");
 
 /**
  * The **executed lines** that run cargo, directly or through a pnpm script.
@@ -37,6 +38,9 @@ const SIDECAR_STEP = "pnpm mcp:build-binary";
 
 describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => {
   const workflow = readFileSync(WORKFLOW_PATH, "utf8");
+  const pkg = JSON.parse(readFileSync(PACKAGE_PATH, "utf8")) as {
+    scripts?: Record<string, string>;
+  };
 
   it("tauri.conf.json 이 여전히 externalBin 으로 사이드카를 선언한다", () => {
     const conf = JSON.parse(readFileSync(TAURI_CONF_PATH, "utf8")) as {
@@ -96,5 +100,37 @@ describe("release workflow — 사이드카 순서 (v1.0.0-rc.2 회귀)", () => 
         ).toBeGreaterThan(sidecarAt);
       }
     }
+  });
+
+  it("로컬 release preflight도 bridge cargo 호출 전에 사이드카를 굽는다", () => {
+    const commands = pkg.scripts?.["desktop:release-preflight"]?.split(" && ") ?? [];
+    const sidecarAt = commands.indexOf("pnpm mcp:build-binary");
+    const bridgeAt = commands.indexOf("pnpm test:desktop:bridge");
+
+    expect(commands.length, "desktop:release-preflight가 비어 있다").toBeGreaterThan(0);
+    expect(bridgeAt, "desktop:release-preflight가 native bridge tests를 실행하지 않는다").toBeGreaterThan(-1);
+    expect(
+      sidecarAt,
+      "desktop:release-preflight가 externalBin sidecar를 만들지 않는다 — 깨끗한 체크아웃에서 cargo가 resource path 오류로 죽는다",
+    ).toBeGreaterThan(-1);
+    expect(
+      sidecarAt,
+      "desktop:release-preflight가 bridge cargo 호출 뒤에 sidecar를 만든다",
+    ).toBeLessThan(bridgeAt);
+  });
+
+  it("desktop preflight는 출하 불변식만 막고 source dogfood는 별도 gate로 둔다", () => {
+    const desktopCommands = pkg.scripts?.["desktop:release-preflight"]?.split(" && ") ?? [];
+    const dogfoodCommands = pkg.scripts?.["dogfood:release-gate"]?.split(" && ") ?? [];
+
+    expect(desktopCommands.length, "desktop:release-preflight가 비어 있다").toBeGreaterThan(0);
+    expect(dogfoodCommands.length, "dogfood:release-gate가 비어 있다").toBeGreaterThan(0);
+    expect(desktopCommands).toContain("pnpm vault:validate");
+    expect(desktopCommands).not.toContain("pnpm cli:mcp-verify docs/ontology --timeout-ms 90000");
+    expect(desktopCommands.some((command) => command.startsWith("pnpm dogfood:"))).toBe(false);
+    expect(dogfoodCommands).toContain("pnpm dogfood:verify");
+    expect(dogfoodCommands).toContain("OATLAS_DOGFOOD_TIMEOUT_MS=90000 pnpm dogfood:walk");
+    expect(dogfoodCommands).toContain("pnpm dogfood:agent-setup-gate");
+    expect(dogfoodCommands).toContain("pnpm test:mcp:dogfood");
   });
 });

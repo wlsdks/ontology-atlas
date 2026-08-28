@@ -197,7 +197,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('확인 명령')).toBeInTheDocument();
     expect(
-      screen.getByText('agent-brief --verify-fallbacks --json 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.'),
+      screen.getByText('agent-brief --verify-fallbacks --json --exit-zero 이 고치기 전에 「되나」와 「빠른가」를 알려줘요.'),
     ).toBeInTheDocument();
     expect(screen.getByText('폴더 요약')).toBeInTheDocument();
     expect(
@@ -474,7 +474,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('agent_brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
+      expect.stringContaining('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
@@ -566,7 +566,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('list the tools including finalize_project_meaning'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
+      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json --exit-zero returns ok/performanceOk'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
@@ -624,7 +624,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "5. Gate fallback performance: node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "5. Gate fallback performance: node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -666,7 +666,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -676,7 +676,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -872,7 +872,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+        'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -889,7 +889,7 @@ describe('VaultAgentSetupPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --graph-db-pack')).toBeInTheDocument();
     expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks')).toBeInTheDocument();
-    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json')).toBeInTheDocument();
+    expect(screen.getByText('node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: '터미널 명령 모음 복사됨' }),
     ).toBeInTheDocument();
@@ -975,7 +975,7 @@ describe('VaultAgentSetupPanel', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -1024,7 +1024,7 @@ describe('VaultAgentSetupPanel', () => {
       expect.stringContaining('list the tools including finalize_project_meaning'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
+      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json --exit-zero returns ok/performanceOk'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
@@ -1102,12 +1102,12 @@ describe('VaultAgentSetupPanel', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(screen.getByText('상태 확인')).toBeInTheDocument();
     expect(
       screen.getByText(
-        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+        "node $ATLAS/cli/src/index.mjs agent-brief '/Users/dana/Team Vault/docs/ontology' --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     ).toBeInTheDocument();
     expect(

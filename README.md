@@ -75,6 +75,11 @@ Source code shows how a system works. It rarely preserves which product
 capability the code serves, why its boundaries exist, or what a change could
 affect. Atlas keeps those answers beside the code in a folder of Markdown files.
 
+Use Atlas before a change so a person and an AI agent start from the same
+answer: what the code is for, where to begin, what else it touches, and what to
+verify. That answer stays bounded — a list of observed capabilities is not
+treated as exhaustive, and unsupported scope remains visible uncertainty.
+
 Each file's frontmatter declares what it is (`project`, `domain`, `capability`,
 `element`, or a linked `document`) and what it points at. That folder is the
 whole database.
@@ -90,9 +95,10 @@ and every write the agent makes lands as a line in a Markdown file you can diff.
 
 Architecture is a separate contract, not another ontology layer. A reviewed
 `architecture-profile/v1` document declares implementation roles, scoped paths,
-and allowed dependency direction; `inspect_architecture` and the `architecture`
-CLI compare that intent with current source imports and return
-`conforms`, `violated`, or `unknown`. Unknown coverage is never shown as green.
+allowed dependency direction, and which known import usages those rules govern;
+`inspect_architecture` and the `architecture` CLI compare that intent with
+usage-qualified current source imports and return `conforms`, `violated`, or
+`unknown`. Unknown coverage or import usage is never shown as green.
 
 The exact five-kind discriminator, relation support matrix, direct `is_a` test,
 and standards/inference boundary live in the

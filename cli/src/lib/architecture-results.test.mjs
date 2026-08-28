@@ -1,57 +1,53 @@
-import test from 'node:test';
 import assert from 'node:assert/strict';
+import test from 'node:test';
 
+import {
+  FSD_ALLOWED_EDGES,
+  FSD_PROFILE_FRONTMATTER,
+} from '../../../tests/fixtures/architecture-profile-cases.mjs';
+import {
+  buildArchitectureBrief,
+  parseArchitectureProfile,
+} from '../../../mcp/src/architecture-profile.mjs';
 import { assertArchitectureBriefResult } from './architecture-results.mjs';
 
 function validBrief() {
-  return {
-    contract: 'architectureBrief:v1',
-    sideEffect: 0,
-    profile: { slug: 'atlas-web', roles: [] },
-    measured: {
-      at: '2026-08-27T00:00:00.000Z',
-      tool: { name: 'ontology-atlas', version: '0.13.0' },
-      source: { kind: 'git', revision: 'abcdef123456', dirty: true },
-    },
-    conformance: {
-      status: 'unknown',
-      violations: [],
-      typeOnlyEdgeCount: 0,
-    },
-    agentPlanContract: {},
-    nextActions: [],
-  };
+  return buildArchitectureBrief(parseArchitectureProfile(FSD_PROFILE_FRONTMATTER), {
+    rootPath: '/repo',
+    edges: FSD_ALLOWED_EDGES,
+    filesScanned: 12,
+    coverage: { allDetectedLanguagesSupported: true, supportedLanguages: ['typescript'] },
+  });
 }
 
-test('accepts a stamped brief with git and folder sources', () => {
-  assert.doesNotThrow(() => assertArchitectureBriefResult(validBrief()));
-  const folder = validBrief();
-  folder.measured.source = { kind: 'folder', fingerprint: `sha256:${'0f'.repeat(32)}` };
-  assert.doesNotThrow(() => assertArchitectureBriefResult(folder));
-});
-
-test('rejects a brief without a measured stamp', () => {
+test('architecture result validator accepts the usage-qualified public contract', () => {
   const brief = validBrief();
-  delete brief.measured;
-  assert.throws(() => assertArchitectureBriefResult(brief), /measured/);
+  assert.equal(assertArchitectureBriefResult(brief), brief);
 });
 
-test('rejects conflated git/folder stamps', () => {
-  const gitWithFingerprint = validBrief();
-  gitWithFingerprint.measured.source.fingerprint = `sha256:${'0f'.repeat(32)}`;
-  assert.throws(() => assertArchitectureBriefResult(gitWithFingerprint), /must not mix/);
+test('architecture result validator rejects missing or duplicate governed usages', () => {
+  const missing = structuredClone(validBrief());
+  delete missing.profile.dependencyUsages;
+  assert.throws(() => assertArchitectureBriefResult(missing), /dependencyUsages must be an array/);
 
-  const folderWithRevision = validBrief();
-  folderWithRevision.measured.source = {
-    kind: 'folder',
-    fingerprint: `sha256:${'0f'.repeat(32)}`,
-    revision: 'abcdef123456',
-  };
-  assert.throws(() => assertArchitectureBriefResult(folderWithRevision), /must not mix/);
+  const duplicate = structuredClone(validBrief());
+  duplicate.profile.dependencyUsages = ['value', 'value'];
+  assert.throws(
+    () => assertArchitectureBriefResult(duplicate),
+    /dependencyUsages must contain value and\/or type_only/,
+  );
 });
 
-test('rejects a brief without the type-only edge count', () => {
-  const brief = validBrief();
-  delete brief.conformance.typeOnlyEdgeCount;
-  assert.throws(() => assertArchitectureBriefResult(brief), /typeOnlyEdgeCount/);
+test('architecture result validator rejects usage receipt and aggregate drift', () => {
+  const badReceipt = structuredClone(validBrief());
+  badReceipt.conformance.observedRoleEdges[0].evidence[0].importUsage = 'mystery';
+  assert.throws(() => assertArchitectureBriefResult(badReceipt), /importUsage must be value/);
+
+  const badCount = structuredClone(validBrief());
+  badCount.conformance.observedRoleEdges[0].importUsageCounts.value += 1;
+  assert.throws(() => assertArchitectureBriefResult(badCount), /must total count/);
+
+  const missingUnknown = structuredClone(validBrief());
+  delete missingUnknown.conformance.unknown.unknownImportUsages;
+  assert.throws(() => assertArchitectureBriefResult(missingUnknown), /must be a non-negative integer/);
 });

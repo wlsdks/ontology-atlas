@@ -109,13 +109,16 @@ file, and write tools save confirmed changes back into the markdown.
 Architecture intent uses a parallel, non-ontology record. A Markdown file with
 `architecture_schema: architecture-profile/v1` has no `kind:` and therefore
 never becomes a Map node. It declares pattern axes, scoped implementation roles,
-path mappings, an optional one-sentence `summary_<role id>` per role, allowed
-dependency direction, and reviewed evidence. MCP
-`inspect_architecture` and CLI `architecture` derive the observed import model
-from the connected source and compare it with that declaration. Their
+path mappings, allowed dependency direction, and reviewed evidence. MCP
+`inspect_architecture` and CLI `architecture` derive the usage-qualified
+observed import model from the connected source and compare it with that
+declaration. Optional `dependency_usages` says which known import usages the
+dependency rules govern; missing v1 fields preserve value plus type-only
+behaviour, while unclassified usage can never be declared away. Their
 `architectureConformance:v1` result is `conforms`, `violated`, or `unknown`;
-unsupported languages, incomplete scans, unmapped edges, unruled edges, and
-empty roles prevent a false green result. The `/architecture` Living Blueprint
+unsupported languages, incomplete scans, unknown usages, unmapped edges,
+unruled edges, and empty roles prevent a false green result. The
+`/architecture` Living Blueprint
 renders the declared model and copies the typed pre/post agent plan, while source
 analysis remains in MCP/CLI rather than being duplicated into Markdown.
 
@@ -249,7 +252,10 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    `project_scope`, `blast_radius`, `cycles`, `maintenance_plan`,
    `workspace_brief`, and `health`. `agent_brief` accepts an explicit project
    in multi-project vaults and derives a fresh categorical `meaningAssessment`
-   for that project; it does not reuse a saved score.
+   for that project; it does not reuse a saved score. First-contact diagnosis
+   keeps the full nested validator receipt, including summary freshness. The
+   history loader batches immutable revision bodies and reuses them only under
+   the same Git HEAD; current Markdown is still read and validated per call.
 5. Write tools change the markdown only when someone explicitly calls
    add/patch/relation/rename/merge/delete. Analysis tools such as
    `analyze_repo_structure` and `infer_imports` only propose candidates; they
@@ -408,8 +414,6 @@ to an agent.
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
-| `stage` | `/architecture` | which stage of the workflow the right panel answers | `understand` \| `plan` \| `verify`; absent means understand, and an unknown value falls back to it |
-| `role` | `/architecture` | the chosen role, so a link opens on it | a role id from the profile in view; one the profile lacks is not honoured, and the address is left as sent |
 | `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
 
 ### One place builds node ids, one place reads them

@@ -28,7 +28,7 @@ function gitRecord(overrides: {
         status: 'violated',
         violationCount: 3,
         violations: [],
-        typeOnlyEdgeCount: 18,
+        excludedByUsage: 18,
         unknown: { coverageIncomplete: false, unmappedEdges: 2, unruledEdges: 0, emptyRoles: [] },
         ...overrides.conformance,
       },
@@ -42,17 +42,17 @@ describe('parseArchitectureRecord', () => {
     const record = parseArchitectureRecord(value);
     expect(record).toBe(value);
     expect(record.brief.measured.source).toEqual({ kind: 'git', revision: 'a8df66d', dirty: false });
-    expect(record.brief.conformance.typeOnlyEdgeCount).toBe(18);
+    expect(record.brief.conformance.excludedByUsage).toBe(18);
   });
 
-  it('accepts a folder-source receipt with a sha256 fingerprint, and no typeOnlyEdgeCount', () => {
+  it('accepts a folder-source receipt with a sha256 fingerprint, and no excludedByUsage', () => {
     const value = gitRecord({
       source: { kind: 'folder', fingerprint: `sha256:${HEX_64}` },
-      conformance: { status: 'conforms', violationCount: 0, typeOnlyEdgeCount: undefined },
+      conformance: { status: 'conforms', violationCount: 0, excludedByUsage: undefined },
     });
     const record = parseArchitectureRecord(value);
     expect(record.brief.measured.source.kind).toBe('folder');
-    expect(record.brief.conformance.typeOnlyEdgeCount).toBeUndefined();
+    expect(record.brief.conformance.excludedByUsage).toBeUndefined();
   });
 
   /*
@@ -187,7 +187,7 @@ describe('parseArchitectureRecord — observed role traffic', () => {
   });
 });
 
-describe('parseArchitectureProfile — type_only_dependencies', () => {
+describe('parseArchitectureProfile — which import usages the rules govern', () => {
   const base = {
     architecture_schema: 'architecture-profile/v1',
     profile_uid: 'e9f5fe88-3711-4b3c-9f77-3b6f809db82c',
@@ -201,19 +201,28 @@ describe('parseArchitectureProfile — type_only_dependencies', () => {
     evidence: ['docs/ARCHITECTURE.md#fsd-layers'],
   };
 
-  it('defaults to free when the key is absent', () => {
-    expect(parseArchitectureProfile(base).typeOnlyDependencies).toBe('free');
+  /*
+   * ⚠️ Rewritten at the 2026-08-29 merge, not deleted. The branch encoded this as
+   * `type_only_dependencies: ruled|free` with `free` as the default; `main` had shipped
+   * `dependency_usages` with both usages governed by default, and the reconciliation kept the
+   * shipped encoding. The property being asserted is the same one: what a profile that says
+   * nothing governs, and what it governs once it speaks.
+   */
+  it('governs both usages when the key is absent', () => {
+    expect(parseArchitectureProfile(base).dependencyUsages).toEqual(['value', 'type_only']);
   });
 
-  it('parses ruled', () => {
+  it('governs only value imports when the profile says so', () => {
     expect(
-      parseArchitectureProfile({ ...base, type_only_dependencies: 'ruled' }).typeOnlyDependencies,
-    ).toBe('ruled');
+      parseArchitectureProfile({ ...base, dependency_usages: ['value'] }).dependencyUsages,
+    ).toEqual(['value']);
   });
 
-  it('refuses any other value with the exact contract message', () => {
-    expect(() => parseArchitectureProfile({ ...base, type_only_dependencies: 'strict' })).toThrow(
-      'type_only_dependencies must be ruled or free.',
+  it('refuses the retired key by name, and says what to write instead', () => {
+    /* Not an alias and not silently ignored: a profile written against the branch's key gets one
+       parse error carrying its own migration. */
+    expect(() => parseArchitectureProfile({ ...base, type_only_dependencies: 'free' })).toThrow(
+      'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
     );
   });
 });

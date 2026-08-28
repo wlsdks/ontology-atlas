@@ -48,12 +48,12 @@ function buildRecord({
   source = { kind: 'git', revision: 'a8df66d', dirty: false },
   status = 'violated',
   violationCount = 3,
-  typeOnlyEdgeCount = 18 as number | undefined,
+  excludedByUsage = 18 as number | undefined,
 }: {
   source?: ArchitectureRecordSource;
   status?: 'conforms' | 'violated' | 'unknown';
   violationCount?: number;
-  typeOnlyEdgeCount?: number | undefined;
+  excludedByUsage?: number | undefined;
 } = {}) {
   return parseArchitectureRecord({
     contract: 'architectureRecord:v1',
@@ -74,7 +74,7 @@ function buildRecord({
         status,
         violationCount,
         violations: [],
-        ...(typeOnlyEdgeCount === undefined ? {} : { typeOnlyEdgeCount }),
+        ...(excludedByUsage === undefined ? {} : { excludedByUsage }),
         unknown: { coverageIncomplete: false, unmappedEdges: 2, unruledEdges: 0, emptyRoles: [] },
       },
     },
@@ -189,6 +189,11 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Rules apply to value imports; type-only imports stay visible without counting as violations.',
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByTestId('architecture-bottom-tab-reserve')).toHaveClass(
       'h-[var(--topology-mobile-bottom-tab-reserve)]',
       'lg:hidden',
@@ -487,7 +492,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
         source: { kind: 'folder', fingerprint: `sha256:${'cd'.repeat(32)}` },
         status: 'conforms',
         violationCount: 0,
-        typeOnlyEdgeCount: undefined,
+        excludedByUsage: undefined,
       }),
     );
     const stamp = screen.getByTestId('architecture-record-stamp');

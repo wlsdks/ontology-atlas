@@ -24,6 +24,7 @@ summary_features: One thing a person does (open a folder, write a relation, copy
 summary_entities: A thing the product talks about, with its shape and the rules for reading and writing it.
 summary_shared: Primitives everything may use: design tokens, UI parts, pure helpers, and types. It depends on nothing here.
 dependency_policy: lower-only
+dependency_usages: [value]
 evidence: [docs/ARCHITECTURE.md#fsd-layers, eslint.config.mjs]
 ---
 

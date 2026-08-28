@@ -740,7 +740,13 @@ function isEpistemicExclusionBoundary(value) {
   const normalized = String(value).replace(/\s+/g, ' ').trim().toLowerCase();
   return (
     /\bnot\s+(?:established|asserted|proven|verified|measured|observed|known|confirmed)\b/.test(normalized) ||
-    /\bremain(?:s|ed)?\s+outside\s+(?:this|the)\s+(?:bounded\s+)?(?:scan|evidence)\b/.test(normalized)
+    /\bremain(?:s|ed)?\s+outside\s+(?:this|the)\s+(?:bounded\s+)?(?:scan|evidence)\b/.test(normalized) ||
+    // A 2026-08-28 field trial encoded “operations not named in the bounded
+    // semantic excerpt” as product scope. A source-hidden reader then upgraded
+    // four observed examples to the only operations the capability covers,
+    // while the source documented more. Missing from selected evidence is an
+    // uncertainty, never a negative product fact.
+    /\bnot\s+(?:named|listed|mentioned|included|covered|present)\s+in\s+(?:this|the)\s+(?:bounded\s+)?(?:semantic\s+)?(?:excerpt|evidence|scan|packet)\b/.test(normalized)
   );
 }
 

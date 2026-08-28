@@ -72,7 +72,13 @@ describe('architectureRecord:v1 cross-surface contract', () => {
     expect(() => assertArchitectureRecord(stored)).not.toThrow();
     const parsed = parseArchitectureRecord(stored);
     expect(parsed).toEqual(record);
-    expect(parsed.brief.conformance.typeOnlyEdgeCount).toBe(1);
+    /*
+     * ⚠️ Was `typeOnlyEdgeCount` on the branch. The 2026-08-29 reconciliation kept the fact and
+     * dropped the name: `excludedByUsage` counts what a profile's own declaration removed from the
+     * verdict, whatever the usage, which is the same receipt under a name that stays true if a
+     * third usage is ever classified.
+     */
+    expect(parsed.brief.conformance.excludedByUsage).toBe(1);
     expect(parsed.brief.measured.source).toEqual({
       kind: 'folder',
       fingerprint: MEASURED_STAMP_INPUT.fingerprint,

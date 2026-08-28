@@ -7,6 +7,65 @@
 
 ---
 
+## 2026-08-28 · Bounded capability lists stay bounded through agent handoff
+
+- `analyze_repo_structure` now rejects an evidence limit such as “operations
+  not named in the bounded semantic excerpt” when it is proposed as
+  `Excludes`. Unlisted behavior belongs in `Uncertainty` or a competency gap;
+  sourced neighboring responsibilities remain valid exclusions.
+- `agent_brief`, the bootstrap skill, and the source-hidden field-trial handoff
+  rule treat `Definition` / `Includes` lists as representative unless an exact
+  cited source establishes completeness. Agents are told not to introduce
+  `only`, `all`, `every`, or `exactly` from list membership alone.
+- README keeps its existing hero and now states the concrete use moment: before
+  a change, people and agents share where to start, what else is touched, what
+  to verify, and which scope remains uncertain.
+- A fresh unfamiliar-repository field trial preserved 21/21 full bodies,
+  resolved 140/140 path-claim occurrences, and verified 36/36 persisted-handoff
+  claims. The source-hidden reader introduced none of the four exhaustive
+  quantifiers and did not repeat the prior 14/15 scope-promotion failure; all
+  six answers remained explicitly partial where product authority or typed
+  dependency impact was still missing.
+
+## 2026-08-28 · First ontology answers batch and reuse summary history
+
+- `health`, `workspace_brief`, and `agent_brief` preserve their complete nested
+  validation receipt, including Git-backed `summaryFreshness`; explicit
+  `validate_vault`, the matching maintenance action, and the installed-app
+  verdict keep the same fail-closed result too.
+- The history reader now uses one bounded union log plus one `git cat-file
+  --batch` object read instead of a log per summary node and a process per
+  revision. Immutable revisions are reused only for the same Git HEAD, vault,
+  slug set, and history bound; a new HEAD invalidates them. If the union bound
+  hides a quiet node, that node falls back to its own bounded log rather than
+  looking complete.
+- On the 88-node dogfood vault, local seven-run medians moved source MCP
+  `workspace_brief` from 1,102.8ms to 130.0ms, the repeated call from 1,067.7ms
+  to 38.7ms, initialize-through-first-brief from 1,217.3ms to 249.6ms, and the
+  CLI round trip from 1,294.5ms to 297.8ms. The rebuilt app-bundled MCP measured
+  117.8ms for the brief and 186.6ms from process start through the first brief.
+  These are development-machine measurements, not cross-device latency promises.
+  With the project source bound and 3,152 source files rechecked, the source MCP
+  stayed at 267.2ms cold / 171.2ms repeated and 383.9ms through the first brief.
+  The existing 32-command, concurrency-4 fallback gate moved from 9.187s to
+  1.976s wall time; its `workspace-brief` / `health` rows moved from
+  4.574s / 4.771s to 330ms / 328ms under the same settings.
+
+## 2026-08-28 · Architecture distinguishes value and type-only imports
+
+- `architecture-profile/v1` can now declare `dependency_usages`, the known import
+  usages its dependency direction rules govern. Existing profiles keep their
+  value-plus-type-only behavior when the field is absent; unclassified usage is
+  never declarable and keeps conformance `unknown`.
+- MCP `inspect_architecture` and CLI `architecture` preserve usage counts and
+  exact receipt usage, include usage on each violation, and report how many
+  mapped edges were excluded by the reviewed policy.
+- The Atlas web profile governs value imports. Its 18 `shared → entities` rows
+  were explicit type-only imports allowed by the cited ESLint policy, not real
+  FSD violations. They remain visible as observations but no longer produce a
+  false remediation action; the existing unmapped edges keep the overall result
+  honestly `unknown`.
+
 ## 2026-08-26 · The Architecture tab draws a shape, and its empty state does something
 
 - The role diagram was a list with decoration attached, through four rewrites: cards with an arrow

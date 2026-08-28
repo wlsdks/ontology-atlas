@@ -2413,6 +2413,18 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
     assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
     assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
+    assert.ok(
+      result.writePolicy.some((line) =>
+        line.includes('Includes')
+        && line.includes('exhaustive')
+        && line.includes('only/all/every/exactly')),
+      'agent_brief must stop bounded Includes lists from becoming exhaustive handoff claims',
+    );
+    assert.match(
+      result.handoffPrompt,
+      /Includes.*exhaustive.*only\/all\/every\/exactly/s,
+      'the copyable handoff prompt must carry the same quantifier boundary',
+    );
   });
 
   it('targets an explicitly requested project in agent_brief instead of silently choosing the first root', () => {

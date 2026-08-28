@@ -126,7 +126,6 @@ import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import {
   buildArchitectureBrief,
-  buildArchitectureMeasuredStamp,
   findArchitectureProfiles,
 } from './architecture-profile.mjs';
 import {
@@ -4553,7 +4552,7 @@ const TOOLS = [
   {
     name: 'inspect_architecture',
     description:
-      'Read one reviewed architecture-profile/v1 document from the active vault, scan the connected repository with the existing bounded static import analyzer, and return an architectureBrief:v1 for humans and coding agents. The profile declares scoped roles and intended dependency rules; source imports are observed evidence. The result distinguishes conforms, violated, and unknown, and never treats unsupported languages, empty role mappings, or unmapped edges as compliance. Pattern labels are human/document declarations, not folder-name inference. The brief carries a `measured` stamp (ISO time, tool version, and the exact source state: git short sha + dirty flag, or a sha256: folder fingerprint, never conflated). Type-only imports follow the profile\'s optional `type_only_dependencies` ruling: under the default `free` they are reported as `typeOnlyEdgeCount` and never counted as violations; under `ruled` they are evaluated like value edges. side effect 0.',
+      'Read one reviewed architecture-profile/v1 document from the active vault, scan the connected repository with the existing bounded static import analyzer, and return an architectureBrief:v1 for humans and coding agents. The profile declares scoped roles, intended dependency rules, and which known import usages those rules govern; source imports remain observed evidence with usage-qualified receipts. The result distinguishes conforms, violated, and unknown, and never treats unsupported languages, unclassified import usage, empty role mappings, or unmapped edges as compliance. Pattern labels are human/document declarations, not folder-name inference. side effect 0.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -4618,7 +4617,12 @@ const TOOLS = [
               },
             },
             dependencyPolicy: { type: 'string', enum: ['explicit', 'lower-only'] },
-            typeOnlyDependencies: { type: 'string', enum: ['ruled', 'free'] },
+            dependencyUsages: {
+              type: 'array',
+              minItems: 1,
+              uniqueItems: true,
+              items: { type: 'string', enum: ['value', 'type_only'] },
+            },
             evidence: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
           },
           required: [
@@ -4631,49 +4635,9 @@ const TOOLS = [
             'excludePaths',
             'roles',
             'dependencyPolicy',
-            'typeOnlyDependencies',
+            'dependencyUsages',
             'evidence',
           ],
-          additionalProperties: false,
-        },
-        measured: {
-          type: 'object',
-          properties: {
-            at: { ...NON_BLANK_STRING_SCHEMA },
-            tool: {
-              type: 'object',
-              properties: {
-                name: { ...NON_BLANK_STRING_SCHEMA },
-                version: { ...NON_BLANK_STRING_SCHEMA },
-              },
-              required: ['name', 'version'],
-              additionalProperties: false,
-            },
-            source: {
-              oneOf: [
-                {
-                  type: 'object',
-                  properties: {
-                    kind: { type: 'string', enum: ['git'] },
-                    revision: { ...NON_BLANK_STRING_SCHEMA },
-                    dirty: { type: 'boolean' },
-                  },
-                  required: ['kind', 'revision', 'dirty'],
-                  additionalProperties: false,
-                },
-                {
-                  type: 'object',
-                  properties: {
-                    kind: { type: 'string', enum: ['folder'] },
-                    fingerprint: { ...NON_BLANK_STRING_SCHEMA },
-                  },
-                  required: ['kind', 'fingerprint'],
-                  additionalProperties: false,
-                },
-              ],
-            },
-          },
-          required: ['at', 'tool', 'source'],
           additionalProperties: false,
         },
         conformance: {
@@ -4704,6 +4668,16 @@ const TOOLS = [
                   fromRole: { ...NON_BLANK_STRING_SCHEMA },
                   toRole: { ...NON_BLANK_STRING_SCHEMA },
                   count: { type: 'integer', minimum: 0 },
+                  importUsageCounts: {
+                    type: 'object',
+                    properties: {
+                      value: { type: 'integer', minimum: 0 },
+                      type_only: { type: 'integer', minimum: 0 },
+                      unknown: { type: 'integer', minimum: 0 },
+                    },
+                    required: ['value', 'type_only', 'unknown'],
+                    additionalProperties: false,
+                  },
                   evidence: {
                     type: 'array',
                     items: {
@@ -4712,16 +4686,21 @@ const TOOLS = [
                         from: { ...NON_BLANK_STRING_SCHEMA },
                         to: { ...NON_BLANK_STRING_SCHEMA },
                         kind: { ...NON_BLANK_STRING_SCHEMA },
+                        importUsage: {
+                          type: 'string',
+                          enum: ['value', 'type_only', 'unknown'],
+                        },
                       },
-                      required: ['from', 'to', 'kind'],
+                      required: ['from', 'to', 'kind', 'importUsage'],
                       additionalProperties: false,
                     },
                   },
                 },
-                required: ['fromRole', 'toRole', 'count', 'evidence'],
+                required: ['fromRole', 'toRole', 'count', 'importUsageCounts', 'evidence'],
                 additionalProperties: false,
               },
             },
+            excludedByUsage: { type: 'integer', minimum: 0 },
             violationCount: { type: 'integer', minimum: 0 },
             violations: {
               type: 'array',
@@ -4733,7 +4712,7 @@ const TOOLS = [
                   from: { ...NON_BLANK_STRING_SCHEMA },
                   to: { ...NON_BLANK_STRING_SCHEMA },
                   kind: { ...NON_BLANK_STRING_SCHEMA },
-                  importUsage: { type: 'string', enum: ['value', 'type_only', 'unknown'] },
+                  importUsage: { type: 'string', enum: ['value', 'type_only'] },
                   rule: { ...NON_BLANK_STRING_SCHEMA },
                 },
                 required: ['fromRole', 'toRole', 'from', 'to', 'kind', 'importUsage', 'rule'],
@@ -4741,16 +4720,22 @@ const TOOLS = [
               },
             },
             violationsLimited: { type: 'boolean' },
-            typeOnlyEdgeCount: { type: 'integer', minimum: 0 },
             unknown: {
               type: 'object',
               properties: {
                 coverageIncomplete: { type: 'boolean' },
                 unmappedEdges: { type: 'integer', minimum: 0 },
                 unruledEdges: { type: 'integer', minimum: 0 },
+                unknownImportUsages: { type: 'integer', minimum: 0 },
                 emptyRoles: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
               },
-              required: ['coverageIncomplete', 'unmappedEdges', 'unruledEdges', 'emptyRoles'],
+              required: [
+                'coverageIncomplete',
+                'unmappedEdges',
+                'unruledEdges',
+                'unknownImportUsages',
+                'emptyRoles',
+              ],
               additionalProperties: false,
             },
             source: {
@@ -4759,19 +4744,8 @@ const TOOLS = [
                 rootPath: { type: ['string', 'null'] },
                 filesScanned: { type: 'integer', minimum: 0 },
                 supportedLanguages: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
-                importUsageCounts: {
-                  type: 'object',
-                  properties: {
-                    value: { type: 'integer', minimum: 0 },
-                    type_only: { type: 'integer', minimum: 0 },
-                    unknown: { type: 'integer', minimum: 0 },
-                    missing: { type: 'integer', minimum: 0 },
-                  },
-                  required: ['value', 'type_only', 'unknown', 'missing'],
-                  additionalProperties: false,
-                },
               },
-              required: ['rootPath', 'filesScanned', 'supportedLanguages', 'importUsageCounts'],
+              required: ['rootPath', 'filesScanned', 'supportedLanguages'],
               additionalProperties: false,
             },
           },
@@ -4780,10 +4754,10 @@ const TOOLS = [
             'status',
             'roles',
             'observedRoleEdges',
+            'excludedByUsage',
             'violationCount',
             'violations',
             'violationsLimited',
-            'typeOnlyEdgeCount',
             'unknown',
             'source',
           ],
@@ -4835,9 +4809,16 @@ const TOOLS = [
                       coverageIncomplete: { type: 'boolean' },
                       unmappedEdges: { type: 'integer', minimum: 0 },
                       unruledEdges: { type: 'integer', minimum: 0 },
+                      unknownImportUsages: { type: 'integer', minimum: 0 },
                       emptyRoles: { type: 'array', items: { ...NON_BLANK_STRING_SCHEMA } },
                     },
-                    required: ['coverageIncomplete', 'unmappedEdges', 'unruledEdges', 'emptyRoles'],
+                    required: [
+                      'coverageIncomplete',
+                      'unmappedEdges',
+                      'unruledEdges',
+                      'unknownImportUsages',
+                      'emptyRoles',
+                    ],
                     additionalProperties: false,
                   },
                 },
@@ -4857,7 +4838,7 @@ const TOOLS = [
           },
         },
       },
-      required: ['contract', 'sideEffect', 'profile', 'measured', 'conformance', 'agentPlanContract', 'nextActions'],
+      required: ['contract', 'sideEffect', 'profile', 'conformance', 'agentPlanContract', 'nextActions'],
       additionalProperties: false,
     },
   },
@@ -10115,21 +10096,10 @@ function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {
     throw error;
   }
   const imports = inferImports(target, { maxFiles });
-  // Measured stamp (2026-08-27 decision, point 2): when the scan ran, which
-  // tool version measured, and the exact source state it saw. Reading the
-  // source inspection is still side effect 0.
-  const measured = buildArchitectureMeasuredStamp(inspectProjectSource(target), {
-    toolName: 'ontology-atlas',
-    toolVersion: SERVER_VERSION,
+  return buildArchitectureBrief(profile, {
+    ...imports,
+    rootPath: target,
   });
-  return buildArchitectureBrief(
-    profile,
-    {
-      ...imports,
-      rootPath: target,
-    },
-    { measured },
-  );
 }
 
 // Thin wrapper over infer_imports. Zero side effects. The resulting moduleEdges

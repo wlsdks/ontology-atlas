@@ -31,6 +31,24 @@ describe('architecture-profile/v1 cross-surface contract', () => {
     });
   });
 
+  it('keeps dependency usage declarations explicit, compatible, and closed', () => {
+    expect(parseWebProfile(FSD_PROFILE_FRONTMATTER).dependencyUsages).toEqual(['value']);
+    expect(parseMcpProfile(FSD_PROFILE_FRONTMATTER).dependencyUsages).toEqual(['value']);
+
+    const { dependency_usages: _removed, ...legacy } = FSD_PROFILE_FRONTMATTER;
+    expect(parseWebProfile(legacy).dependencyUsages).toEqual(['value', 'type_only']);
+    expect(parseMcpProfile(legacy).dependencyUsages).toEqual(['value', 'type_only']);
+
+    for (const dependency_usages of [[], ['unknown'], ['value', 'value']]) {
+      expect(() => parseWebProfile({ ...FSD_PROFILE_FRONTMATTER, dependency_usages })).toThrow(
+        /dependency_usages/,
+      );
+      expect(() => parseMcpProfile({ ...FSD_PROFILE_FRONTMATTER, dependency_usages })).toThrow(
+        /dependency_usages/,
+      );
+    }
+  });
+
   /*
    * A role's sentence is part of the contract, not a screen decoration: the same `summary_<id>`
    * has to reach the blueprint and the agent brief identically, and a profile that describes only

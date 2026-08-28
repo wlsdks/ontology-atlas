@@ -50,7 +50,12 @@ interface ArchitectureRecordConformance {
    */
   observedRoleEdges?: ArchitectureRoleEdge[];
   /** Type-only edges left outside the violation count as their own named class. */
-  typeOnlyEdgeCount?: number;
+  /**
+   * ⚠️ Renamed from `typeOnlyEdgeCount` at the 2026-08-29 reconciliation. It counts what a
+   * profile's own `dependency_usages` declaration removed from the verdict, whatever the usage —
+   * the same receipt under a name that stays true if a third usage is ever classified.
+   */
+  excludedByUsage?: number;
   unknown?: {
     coverageIncomplete?: boolean;
     unmappedEdges?: number;
@@ -156,8 +161,8 @@ function parseConformance(value: unknown): ArchitectureRecordConformance {
   countOf(conformance.violationCount, 'brief.conformance.violationCount');
   if (!Array.isArray(conformance.violations)) fail('brief.conformance.violations must be an array.');
   assertRoleEdges(conformance.observedRoleEdges, 'brief.conformance.observedRoleEdges');
-  if (conformance.typeOnlyEdgeCount !== undefined) {
-    countOf(conformance.typeOnlyEdgeCount, 'brief.conformance.typeOnlyEdgeCount');
+  if (conformance.excludedByUsage !== undefined) {
+    countOf(conformance.excludedByUsage, 'brief.conformance.excludedByUsage');
   }
   if (conformance.unknown !== undefined) {
     const unknown = asObject(conformance.unknown, 'brief.conformance.unknown');

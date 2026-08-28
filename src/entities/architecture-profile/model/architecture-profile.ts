@@ -4,6 +4,7 @@ const ARCHITECTURE_PROFILE_CONTRACT = 'architecture-profile/v1' as const;
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
+const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'] as const;
 
 interface ArchitecturePattern {
   axis: string;
@@ -37,13 +38,7 @@ export interface ArchitectureProfile {
   excludePaths: string[];
   roles: ArchitectureRole[];
   dependencyPolicy: 'explicit' | 'lower-only';
-  /**
-   * Whether `import type`-only edges are governed by the same allow rules (`ruled`) or stay
-   * outside the violation count as their own named unknown class (`free`, the default).
-   * 2026-08-27 council: the dogfood repo's 18 "violations" were all type-only edges a cited
-   * authority permits; counting them as violations stamped a false red.
-   */
-  typeOnlyDependencies: 'ruled' | 'free';
+  dependencyUsages: Array<(typeof DEPENDENCY_USAGE_VALUES)[number]>;
   allows: Record<string, string[]>;
   evidence: string[];
   documentSlug?: string | null;
@@ -84,6 +79,25 @@ function parsePatterns(value: unknown): ArchitecturePattern[] {
   });
 }
 
+function parseDependencyUsages(
+  value: unknown,
+): Array<(typeof DEPENDENCY_USAGE_VALUES)[number]> {
+  if (value === undefined) return [...DEPENDENCY_USAGE_VALUES];
+  const usages = stringArray(value, 'dependency_usages');
+  const unsupported = usages.find(
+    (usage) => !DEPENDENCY_USAGE_VALUES.includes(
+      usage as (typeof DEPENDENCY_USAGE_VALUES)[number],
+    ),
+  );
+  if (unsupported) {
+    throw new Error(
+      `dependency_usages contains unsupported usage: ${unsupported}. ` +
+        `Expected one of ${DEPENDENCY_USAGE_VALUES.join(', ')}.`,
+    );
+  }
+  return usages as Array<(typeof DEPENDENCY_USAGE_VALUES)[number]>;
+}
+
 export function parseArchitectureProfile(frontmatter: Record<string, unknown>): ArchitectureProfile {
   if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
     throw new Error('architecture profile frontmatter must be an object.');
@@ -95,6 +109,20 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   const projectUid = nonBlank(frontmatter.project_uid, 'project_uid');
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
+
+  /*
+   * ⚠️ **The retired key is refused by name, not aliased and not ignored.** Two councils
+   * independently cured the same false red — 18 type-only edges an eslint config already permitted
+   * — one with `type_only_dependencies: ruled|free` and one with `dependency_usages`, and the
+   * 2026-08-29 reconciliation kept the shipped encoding. An alias would carry two spellings of one
+   * policy through two parsers forever, for a key no profile ever wrote; ignoring it would flip
+   * that profile's verdict without a word, which is the silent change this ledger forbids.
+   */
+  if (frontmatter.type_only_dependencies !== undefined) {
+    throw new Error(
+      'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
+    );
+  }
 
   const rolePaths = new Map<string, string[]>();
   /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
@@ -120,6 +148,7 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   if (roleOrder.length !== rolePaths.size || roleOrder.some((id) => !rolePaths.has(id))) {
     throw new Error('role_order must name every role exactly once.');
   }
+  /* Mirrors the MCP parser: a summary for a role nobody declared is a typo, not a comment. */
   for (const summaryId of roleSummaries.keys()) {
     if (!rolePaths.has(summaryId)) {
       throw new Error(`summary_${summaryId} describes a role that does not exist.`);
@@ -131,12 +160,6 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
     : nonBlank(frontmatter.dependency_policy, 'dependency_policy');
   if (rawPolicy !== 'explicit' && rawPolicy !== 'lower-only') {
     throw new Error('dependency_policy must be explicit or lower-only.');
-  }
-  const rawTypeOnly = frontmatter.type_only_dependencies === undefined
-    ? 'free'
-    : frontmatter.type_only_dependencies;
-  if (rawTypeOnly !== 'ruled' && rawTypeOnly !== 'free') {
-    throw new Error('type_only_dependencies must be ruled or free.');
   }
   const allows: Record<string, string[]> = {};
   for (const roleId of roleOrder) {
@@ -166,7 +189,7 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
         : { id, paths: rolePaths.get(id)!, summary };
     }),
     dependencyPolicy: rawPolicy,
-    typeOnlyDependencies: rawTypeOnly,
+    dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
     allows,
     evidence: stringArray(frontmatter.evidence, 'evidence'),
   };
@@ -240,6 +263,7 @@ export function buildArchitectureAgentPrompt(
     cliFallback,
     'This UI does not embed a current conformance receipt; the first inspection is the source of truth for this run.',
     'Report the selected scope, declared pattern axes, role mappings, observed dependency coverage, violations, and unknowns.',
+    `Apply dependency rules only to the profile's declared import usages: ${profile.dependencyUsages.join(', ')}.`,
     'Do not treat unknown as compliant, and do not infer a named pattern from folder names.',
     'Before editing, return an architectureChangePlan:v1 with touchedRoles, plannedPaths, expectedNewDependencies, crossedBoundaries, preservedInterfaces, verificationCommands, and unknowns.',
     'After editing, call inspect_architecture again and compare the actual conformance result with the plan.',
@@ -257,13 +281,11 @@ export function buildArchitectureAgentPrompt(
  *
  * ⚠️ **What this sentence must refuse to ask for, and why each refusal was measured.**
  *
- * - **It may not ask for `allow_*` or `dependency_policy`.** Deriving rules from observed imports
- *   makes the status quo the rule. Measured on this repository: `atlas architecture` reports 18
- *   real Feature-Sliced Design violations, `shared → entities` among them. A rule derived from
- *   those same imports would have emitted `allow_shared: [entities]` and rendered the repository
- *   `conforms` — reaching the standing record's own falsifier, *"if an unsupported scan ever
- *   renders green"*, by design rather than by bug. Omitting both keys leaves every edge unruled,
- *   which the evaluator reports as `unknown` — and unknown is never compliant.
+ * - **It may not ask for `allow_*`, `dependency_policy`, or `dependency_usages`.** Deriving rules
+ *   from observed imports makes the status quo the rule. The source can prove that an edge exists
+ *   and whether it is value or type-only usage; it cannot decide whether the reviewed policy
+ *   permits that usage or direction. Omitting all three keys leaves every edge unruled, which the
+ *   evaluator reports as `unknown` — and unknown is never compliant.
  * - **It may not ask the agent to name the pattern, or to name the roles.** The record's clause is
  *   "a pattern label is never inferred from folders". A role id is that claim in miniature:
  *   emitting `role_entities` or `role_adapters` from folder names is inferring Feature-Sliced
@@ -300,7 +322,7 @@ export function buildArchitectureDraftPrompt(
     '   `profile_uid`, the `project_uid` of the project node this describes, the names I gave you,',
     '   the path groups as `role_<id>` globs, and `created_by: agent:<your tool name>`.',
     '   Write no `kind:` and no `uid:` — this record is deliberately not a node in the map.',
-    '   Write no `allow_*` keys and no `dependency_policy`: the rules are mine to state, and',
+    '   Write no `allow_*` keys, no `dependency_policy`, and no `dependency_usages`: the rules are mine to state, and',
     '   deriving them from what the code happens to do today would turn existing violations into',
     '   permissions. Leaving them out reports every edge as unknown, which is the honest start.',
     '   Put the human authorities that already govern the boundary in `evidence` — a lint config,',

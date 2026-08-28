@@ -484,8 +484,8 @@ export function ArchitectureWorkbench({
           violations: conformance.violationCount,
           unmapped: (conformance.unknown?.unmappedEdges ?? 0) + (conformance.unknown?.unruledEdges ?? 0),
         }),
-        ...(conformance.typeOnlyEdgeCount !== undefined
-          ? [t('recordTypeOnly', { count: conformance.typeOnlyEdgeCount })]
+        ...(conformance.excludedByUsage !== undefined
+          ? [t('recordTypeOnly', { count: conformance.excludedByUsage })]
           : []),
       ].join(' · ')
     : null;
@@ -737,9 +737,17 @@ export function ArchitectureWorkbench({
                 {/* The axis name is not repeated here: the sentence below already opens with it,
                     and naming it twice in two lines reads as a stutter rather than an emphasis. */}
                 <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
-                  {selected.dependencyPolicy === 'lower-only'
-                    ? t('dependencyLowerOnly')
-                    : t('dependencyExplicit')}{' '}
+                  <span className="block">
+                    {selected.dependencyPolicy === 'lower-only'
+                      ? t('dependencyLowerOnly')
+                      : t('dependencyExplicit')}
+                  </span>
+                  <span className="mt-1 block">
+                    {selected.dependencyUsages.length === 1 &&
+                    selected.dependencyUsages[0] === 'value'
+                      ? t('dependencyUsagesValue')
+                      : t('dependencyUsagesAll')}
+                  </span>
                   {/*
                     The scanner's first rule is `if (fromRole === toRole) return { allowed: true,
                     rule: 'same-role' }` — unconditional, under both policies. The screen never
@@ -747,8 +755,14 @@ export function ArchitectureWorkbench({
                     "whether a file may import from another module in its own role" was the one
                     question left open on both samples. It is not an open question in the
                     contract, only on the screen, so the screen says it.
+
+                    ⚠️ Both sides of the merge added a sentence here and neither replaced the
+                    other: main said which import usages the rules govern, the branch said that a
+                    role may always reference itself. A reader needs both, and main's one-span-per
+                    -sentence shape is what keeps them from running together — which the branch had
+                    been fixing by rewriting the clauses instead.
                   */}
-                  {t('dependencySameRole')}
+                  <span className="mt-1 block">{t('dependencySameRole')}</span>
                 </p>
               </div>
               {record && conformance && measured ? (

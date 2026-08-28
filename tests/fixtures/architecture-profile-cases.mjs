@@ -18,6 +18,7 @@ export const FSD_PROFILE_FRONTMATTER = Object.freeze({
   summary_routing: 'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
   summary_views: 'One module per route-level screen, assembled from the layers beneath it.',
   dependency_policy: 'lower-only',
+  dependency_usages: ['value'],
   evidence: ['docs/ARCHITECTURE.md#fsd-layers'],
 });
 
@@ -38,7 +39,7 @@ export const HEXAGONAL_PROFILE_FRONTMATTER = Object.freeze({
   allow_port: ['domain'],
   allow_adapter: ['application', 'port', 'domain'],
   summary_domain: 'The rules the business would still have on paper. Depends on nothing.',
-  type_only_dependencies: 'free',
+  dependency_usages: ['value'],
   evidence: ['docs/architecture/payments.md'],
 });
 
@@ -89,29 +90,31 @@ export const AMBIGUOUS_PROFILE_FRONTMATTER = Object.freeze({
 });
 
 export const FSD_ALLOWED_EDGES = Object.freeze([
-  { from: 'app/[locale]/topology/page.tsx', to: 'src/views/home/index.ts', kind: 'static' },
-  { from: 'src/app/providers/AppShell.tsx', to: 'src/views/home/index.ts', kind: 'static' },
-  { from: 'src/views/home/ui/HomePage.tsx', to: 'src/widgets/app-nav-rail/index.ts', kind: 'static' },
-  { from: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx', to: 'src/shared/lib/nav-destination.ts', kind: 'static' },
-  { from: 'src/features/project-edit/model/use-project-edit.ts', to: 'src/entities/project/index.ts', kind: 'static' },
-  { from: 'src/entities/project/model/project.ts', to: 'src/shared/lib/date.ts', kind: 'static' },
+  { from: 'app/[locale]/topology/page.tsx', to: 'src/views/home/index.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/app/providers/AppShell.tsx', to: 'src/views/home/index.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/views/home/ui/HomePage.tsx', to: 'src/widgets/app-nav-rail/index.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx', to: 'src/shared/lib/nav-destination.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/features/project-edit/model/use-project-edit.ts', to: 'src/entities/project/index.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/entities/project/model/project.ts', to: 'src/shared/lib/date.ts', kind: 'static', importUsage: 'value' },
 ]);
 
 export const FSD_FORBIDDEN_EDGE = Object.freeze({
   from: 'src/shared/lib/date.ts',
   to: 'src/entities/project/model/project.ts',
   kind: 'static',
+  importUsage: 'value',
 });
 
 export const HEXAGONAL_ALLOWED_EDGES = Object.freeze([
-  { from: 'src/payments/adapters/http.ts', to: 'src/payments/ports/charge.ts', kind: 'static' },
-  { from: 'src/payments/application/charge.ts', to: 'src/payments/domain/payment.ts', kind: 'static' },
+  { from: 'src/payments/adapters/http.ts', to: 'src/payments/ports/charge.ts', kind: 'static', importUsage: 'value' },
+  { from: 'src/payments/application/charge.ts', to: 'src/payments/domain/payment.ts', kind: 'static', importUsage: 'value' },
 ]);
 
 export const HEXAGONAL_FORBIDDEN_EDGE = Object.freeze({
   from: 'src/payments/domain/payment.ts',
   to: 'src/payments/adapters/postgres.ts',
   kind: 'static',
+  importUsage: 'value',
 });
 
 /**

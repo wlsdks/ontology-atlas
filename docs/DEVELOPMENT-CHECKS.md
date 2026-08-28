@@ -28,6 +28,13 @@ nothing to run by hand). Three hooks live there:
 | `commit-msg` | a commit message containing Hangul, kana or Han; merge, revert and fixup subjects are exempt because Git generates them (`.claude/rules/git.md`, "Commit messages") |
 | `pre-push` | path lanes that CI would fail, run in parallel with e2e left to CI — decision (96), which overturns (95) |
 
+The parallel pre-push hook can saturate a local machine, so its unit and contract
+Vitest lanes alone use two workers and a 30-second per-test timeout. Four workers
+per lane still starved ordinary React state-transition tests when eleven lanes
+ran together; two divides the local CPU budget without changing coverage. Focused runs
+and CI keep the normal worker pool and timeout; the hook changes local scheduling
+and waiting tolerance, not assertions or coverage.
+
 The `pre-commit` rationale below is the oldest of the three.
 
 It exists because the same failure landed three times in two days (#826 · #828 ·
@@ -61,6 +68,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Agent instruction files | `pnpm agents:check` | the harness contracts under `tests/contract/` named below |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
+| Capability quantifier integrity | `node scripts/run-focused-node-test.mjs --test-name-pattern "bounded-evidence omissions" mcp/src/meaning-evaluation.test.mjs` | `pnpm test:mcp:unit`, source/bundle MCP parity, then the four-phase source-hidden field trial |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
 | Business meaning corpus | `pnpm test:meaning-corpus` | source-hidden field trial and fixture-specific review |
@@ -422,6 +430,12 @@ symlink target stay covered before install smoke.
 Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
+The broader `pnpm test:desktop:check` suite caps Node's file concurrency at four:
+its loopback-heavy release fixtures otherwise create a connection burst that can
+fail unrelated tests with `EADDRNOTAVAIL` on a 12-core machine.
+Its release-script contract checks required commands, ordering, flags, positive
+bounds, and the source-dogfood exclusion semantically; harmless extra checks or
+flag reordering do not invalidate the gate.
 `pnpm desktop:doctor` reports local Tauri / Cargo /
 rustc / Xcode command-line-tool readiness plus the dogfood vault, CLI/MCP
 handoff gate, offline desktop docs, and the current local `.app` signing state
@@ -493,13 +507,16 @@ renders the host: without it, screen wording alone could pass;
 `pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary
 install folder, verifies that copied app through the LaunchServices app content
-proof gate with stale-process cleanup, and removes the temp install;
+proof gate with stale-process cleanup, executes the copied bundle's
+`Contents/MacOS/ontology-atlas-mcp` against `docs/ontology`, and only then
+removes the temp install;
 `pnpm desktop:release-preflight` is the local pre-tag operator shortcut that
-runs desktop readiness, docs-vault freshness, desktop checker tests, runtime
-split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
-`docs/ontology`, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
-static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
-mount/checksum smoke, and temporary install launch smoke;
+runs desktop readiness, docs-vault freshness and vault validation, desktop
+checker tests, runtime split tests, builds the bundled MCP sidecar before native
+bridge tests, then runs the runtime doctor, static build, packaged-route smoke,
+app/DMG build, app launch smoke, DMG mount/checksum smoke, and temporary install
+launch smoke. Source-checkout MCP walking, fallback execution, and semantic
+readiness remain in the separate `dogfood:release-gate` lane;
 `pnpm desktop:release-artifact` is the credentialed direct-download artifact
 path: it requires Developer ID/notary secrets, rebuilds the static app, route
 smokes the packaged output, builds the `.app`, signs it, packages the DMG,
@@ -719,8 +736,8 @@ committing or publishing changes.
 | `pnpm desktop:stage-hosted-updater` | Copy and validate the newest non-draft GitHub Release `latest.json` (including RC builds) into the Pages artifact at `out/update/latest.json` |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes and require the packaged WebView DOM to report loaded `tauri://` Ontology Atlas content, then terminate it; locks per app path before stale-process cleanup; supports `--kill-existing --open-app --require-window --require-capturable-window --require-accessibility-window --require-accessibility-text=...` for LaunchServices dogfood checks with CoreGraphics metadata, local screenshot capture, Accessibility-window assertions, and app-content text proof before separate Computer Use observation |
 | `pnpm desktop:verify-ai-settings:ko` | Installed-app proof for the keyless connect-by-address LLM branch: opens the settings sheet, walks into AI connection, types the base URL, presses the connection check, requires a live model list and a chosen model, and then requires a matching fresh `provider: "local"` verify line in the fixture vault's `.ontology-atlas/llm-audit.jsonl`; fails with the on-screen failure sentence when no local runner answers |
-| `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), then clean it up |
-| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, LaunchServices app content proof (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), unsigned DMG, and install smoke |
+| `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, verify that copied app through the LaunchServices app content proof gate (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), execute its bundled MCP sidecar against `docs/ontology`, then clean it up |
+| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault freshness and vault validation, checker tests, runtime split tests, bundled MCP sidecar build before bridge tests, runtime doctor, build, route smoke, LaunchServices app content proof (`--open-app --require-window --require-owner-name="Ontology Atlas" --min-window-size=1040x720 --require-accessibility-text="Ontology Atlas"`), unsigned DMG, and install smoke. Source dogfood/readiness stays in `dogfood:release-gate` |
 | `pnpm desktop:release-artifact` | Credential-isolating direct-download orchestrator: each of 11 build/sign/package/notarize/verify steps receives only its explicit secret allowlist |
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, and GitHub Release / download blockers, writing default `.tmp/desktop-goal-status` evidence with `local_preflight=ok` only after the native app and DMG install proof have passed locally |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
@@ -738,7 +755,7 @@ committing or publishing changes.
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that treats notarization as requiring strict app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA plus AI-agent MCP/CLI access step, rejecting stale browser-vault CTAs and `/releases/latest` |
-| `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
+| `pnpm test:desktop:check` | Desktop readiness checker contract, with Node file concurrency capped at four for loopback-heavy release fixtures; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |
 | `pnpm test:claude:hooks` | Claude Code/Codex hook wiring and npm publish guard |
@@ -771,11 +788,11 @@ committing or publishing changes.
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
-| `pnpm test:architecture` | Architecture profile parser/conformance, web↔MCP parity, Living Blueprint interaction, focused `inspect_architecture`, and CLI `architecture --json` contracts. The changed-path advisor also adds the rendered mobile reachability E2E. Probed by changing the shared fixture contract to `architecture-profile/v0`: the gate failed 10 tests, then returned green after restoration. |
+| `pnpm test:architecture` | Architecture profile parser/conformance, web↔MCP parity, Living Blueprint interaction, focused `inspect_architecture`, and CLI `architecture --json` contracts. Import-usage probes require declared type-only exclusions to stay non-violating, upward value imports to remain violations, and unclassified usage to remain unknown. The changed-path advisor also adds the rendered mobile reachability E2E. Probed by changing the shared fixture contract to `architecture-profile/v0`: the gate failed 10 tests, then returned green after restoration. |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` / `.codex/config.toml` registration templates |
 | `pnpm test:mcp:unit` | Every `mcp/src/*.test.mjs` except the integration suite — discovered by glob, not a hand-kept list, so a new test file cannot be silently excluded. Runs in CI (`Checks` → `MCP unit tests`). Use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one |
-| `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed |
+| `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed. Its first-answer Git trace proves `health` / `workspace_brief` / `agent_brief` preserve the stale-summary receipt while sharing one bounded union log and one object batch; the explicit `validate_vault` control proves the same verdict stays live in a fresh process. |
 | `pnpm integration:mcp:surface` | MCP JSON-RPC `tools/list`, `initialize`, and `tools/call` surface contracts |
 | `pnpm integration:mcp:repo-analysis` | MCP `index_project` / `analyze_repo_structure` / `infer_imports` / `inspect_architecture` code-to-vault contracts; advisor routes those implementation files here before broader read/query gates |
 | `pnpm integration:mcp:graph` | MCP `compile_ontology` / `query_ontology` graph artifact/query contracts |
@@ -943,7 +960,13 @@ the combined `pnpm test:dogfood:script-refs` gate.
 queue without running the full status preflight. `pnpm dogfood:agent-setup-gate`
 prints the machine-readable agent setup gate for docs/ontology with `ok` and
 `performanceOk`, so connector-less automation can separate broken setup from
-slow local fallback latency without parsing the larger graph DB pack.
+slow local fallback latency without parsing the larger graph DB pack. It passes
+`--exit-zero` so advisory ontology readiness stays visible in the JSON
+`status`/`readiness` fields while the process exit code is reserved for fallback
+commands that actually failed to execute.
+`pnpm dogfood:release-gate` keeps source MCP verification, the deterministic
+dogfood walk, that fallback-execution gate, and MCP dogfood contracts together;
+it is deliberately separate from desktop artifact preflight.
 `pnpm dogfood:graph-db` is the runtime gate for the same graph DB-style promise
 shown in `/ontology/insights`: it runs the connector-less setup self-check,
 facets, `health --json`, planned `match-nodes`, planned `match-edges`,
