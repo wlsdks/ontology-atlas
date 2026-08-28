@@ -252,7 +252,10 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    `project_scope`, `blast_radius`, `cycles`, `maintenance_plan`,
    `workspace_brief`, and `health`. `agent_brief` accepts an explicit project
    in multi-project vaults and derives a fresh categorical `meaningAssessment`
-   for that project; it does not reuse a saved score.
+   for that project; it does not reuse a saved score. First-contact diagnosis
+   keeps the full nested validator receipt, including summary freshness. The
+   history loader batches immutable revision bodies and reuses them only under
+   the same Git HEAD; current Markdown is still read and validated per call.
 5. Write tools change the markdown only when someone explicitly calls
    add/patch/relation/rename/merge/delete. Analysis tools such as
    `analyze_repo_structure` and `infer_imports` only propose candidates; they

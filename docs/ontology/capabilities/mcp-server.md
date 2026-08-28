@@ -29,6 +29,10 @@ It provides a stdio JSON-RPC interface so that an AI coding agent can read and s
 - A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
 - `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
 
+## First-Answer Performance Boundary
+
+`health`, `workspace_brief`, and `agent_brief` keep their complete nested validation receipt, including Git-backed summary freshness, because an agent must not receive a fast false-green handoff. The history reader uses one bounded union log and one `git cat-file --batch` read, then reuses cloned immutable revisions only for the same Git HEAD, vault, slug set, and history bound. Current Markdown, source-path drift, and project meaning/source currentness are still read per call; a new HEAD invalidates the history cache.
+
 ## Identity Boundaries
 
 - `uid` is the permanent machine identity that persists across renames, while `slug` is the human-readable and editable current address. All node responses return both.

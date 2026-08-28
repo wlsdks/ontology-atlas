@@ -7,6 +7,30 @@
 
 ---
 
+## 2026-08-28 · First ontology answers batch and reuse summary history
+
+- `health`, `workspace_brief`, and `agent_brief` preserve their complete nested
+  validation receipt, including Git-backed `summaryFreshness`; explicit
+  `validate_vault`, the matching maintenance action, and the installed-app
+  verdict keep the same fail-closed result too.
+- The history reader now uses one bounded union log plus one `git cat-file
+  --batch` object read instead of a log per summary node and a process per
+  revision. Immutable revisions are reused only for the same Git HEAD, vault,
+  slug set, and history bound; a new HEAD invalidates them. If the union bound
+  hides a quiet node, that node falls back to its own bounded log rather than
+  looking complete.
+- On the 88-node dogfood vault, local seven-run medians moved source MCP
+  `workspace_brief` from 1,102.8ms to 130.0ms, the repeated call from 1,067.7ms
+  to 38.7ms, initialize-through-first-brief from 1,217.3ms to 249.6ms, and the
+  CLI round trip from 1,294.5ms to 297.8ms. The rebuilt app-bundled MCP measured
+  117.8ms for the brief and 186.6ms from process start through the first brief.
+  These are development-machine measurements, not cross-device latency promises.
+  With the project source bound and 3,152 source files rechecked, the source MCP
+  stayed at 267.2ms cold / 171.2ms repeated and 383.9ms through the first brief.
+  The existing 32-command, concurrency-4 fallback gate moved from 9.187s to
+  1.976s wall time; its `workspace-brief` / `health` rows moved from
+  4.574s / 4.771s to 330ms / 328ms under the same settings.
+
 ## 2026-08-28 · Architecture distinguishes value and type-only imports
 
 - `architecture-profile/v1` can now declare `dependency_usages`, the known import

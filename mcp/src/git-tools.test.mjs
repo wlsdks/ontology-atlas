@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import {
+  collectNodeRevisions,
   discoverGitRepositoryRoot,
   inspectVaultGit,
   inspectVaultGitHistory,
@@ -14,6 +15,31 @@ import {
 
 function git(root, ...args) {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
+}
+
+function referenceNodeRevisions(root, filePath, maxRevisions = 40) {
+  const log = execFileSync(
+    'git',
+    ['-C', root, 'log', `--max-count=${maxRevisions}`, '--format=%H%x1f%aI', '--no-renames', '--', filePath],
+    { encoding: 'utf8' },
+  );
+  return log.split('\n').filter(Boolean).map((line) => {
+    const [sha, changedAt] = line.split('\x1f');
+    const source = execFileSync('git', ['-C', root, 'show', `${sha}:${filePath}`], { encoding: 'utf8' });
+    const match = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(source);
+    const frontmatter = match ? match[1] : '';
+    const body = match ? source.slice(match[0].length) : source;
+    const children = [];
+    for (const key of ['contains', 'capabilities', 'elements', 'domains']) {
+      const inline = new RegExp(`^${key}:[ \\t]*\\[(.*?)\\]`, 'm').exec(frontmatter);
+      if (!inline) continue;
+      for (const ref of inline[1].split(',')) {
+        const cleaned = ref.trim().replace(/^["']|["']$/g, '');
+        if (cleaned) children.push(cleaned);
+      }
+    }
+    return { changedAt, body, children: [...new Set(children)] };
+  });
 }
 
 function makeRepo() {
@@ -123,6 +149,151 @@ test('inspectVaultGitHistory applies a bounded limit and reports non-repository 
   } finally {
     rmSync(root, { recursive: true, force: true });
     rmSync(outside, { recursive: true, force: true });
+  }
+});
+
+test('collectNodeRevisions batches immutable history, returns clones, and invalidates on HEAD', () => {
+  const { root, vault } = makeRepo();
+  try {
+    writeFileSync(
+      join(vault, 'project.md'),
+      '---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\nProject meaning.\n',
+    );
+    mkdirSync(join(vault, 'domains'));
+    writeFileSync(
+      join(vault, 'domains/core.md'),
+      '---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\nCore meaning.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'add core summary');
+
+    writeFileSync(
+      join(vault, 'domains/core.md'),
+      '---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run, capabilities/review]\n---\nCore meaning.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'expand core membership');
+
+    const first = collectNodeRevisions({
+      repoRoot: root,
+      vaultRoot: vault,
+      slugs: ['project', 'domains/core'],
+    });
+    assert.equal(first.ok, true);
+    assert.equal(first.revisionsBySlug.get('project').length, 2);
+    assert.equal(first.revisionsBySlug.get('domains/core').length, 2);
+    assert.deepEqual(first.revisionsBySlug.get('domains/core')[0].children, [
+      'capabilities/run',
+      'capabilities/review',
+    ]);
+
+    first.revisionsBySlug.get('domains/core')[0].children.push('cache-poison');
+    const cached = collectNodeRevisions({
+      repoRoot: root,
+      vaultRoot: vault,
+      slugs: ['project', 'domains/core'],
+    });
+    assert.equal(cached.revisionsBySlug.get('domains/core')[0].children.includes('cache-poison'), false);
+
+    writeFileSync(
+      join(vault, 'project.md'),
+      '---\nkind: project\ntitle: Project\ndomains: [domains/core, domains/next]\n---\nProject meaning.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'expand project membership');
+    const afterHeadChange = collectNodeRevisions({
+      repoRoot: root,
+      vaultRoot: vault,
+      slugs: ['project', 'domains/core'],
+    });
+    assert.equal(afterHeadChange.revisionsBySlug.get('project').length, 3);
+    assert.deepEqual(afterHeadChange.revisionsBySlug.get('project')[0].children, [
+      'domains/core',
+      'domains/next',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectNodeRevisions falls back for a quiet path hidden behind the union bound', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(vault, 'domains'));
+    writeFileSync(
+      join(vault, 'domains/quiet.md'),
+      '---\nkind: domain\ntitle: Quiet\ncapabilities: [capabilities/quiet]\n---\nQuiet meaning.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'add quiet summary');
+    for (let revision = 1; revision <= 5; revision += 1) {
+      writeFileSync(
+        join(vault, 'project.md'),
+        `---\nkind: project\ntitle: Project\ncontains: [capabilities/run-${revision}]\n---\nProject meaning.\n`,
+      );
+      git(root, 'add', '.');
+      git(root, 'commit', '-m', `project revision ${revision}`);
+    }
+
+    const result = collectNodeRevisions({
+      repoRoot: root,
+      vaultRoot: vault,
+      slugs: ['project', 'domains/quiet'],
+      maxRevisions: 2,
+    });
+    assert.equal(result.revisionsBySlug.get('project').length, 2);
+    assert.equal(result.revisionsBySlug.get('domains/quiet').length, 1);
+    assert.deepEqual(result.revisionsBySlug.get('domains/quiet')[0].children, [
+      'capabilities/quiet',
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('collectNodeRevisions matches the former per-file result across a merge', () => {
+  const { root, vault } = makeRepo();
+  try {
+    mkdirSync(join(vault, 'domains'));
+    writeFileSync(
+      join(vault, 'domains/core.md'),
+      '---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\nCore v1.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'add core');
+
+    git(root, 'switch', '-c', 'feature-summary');
+    writeFileSync(
+      join(vault, 'project.md'),
+      '---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\nProject on feature.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'feature project summary');
+
+    git(root, 'switch', 'main');
+    writeFileSync(
+      join(vault, 'domains/core.md'),
+      '---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run, capabilities/review]\n---\nCore v1.\n',
+    );
+    git(root, 'add', '.');
+    git(root, 'commit', '-m', 'main core membership');
+    git(root, 'merge', '--no-ff', 'feature-summary', '-m', 'merge feature summary');
+
+    const result = collectNodeRevisions({
+      repoRoot: root,
+      vaultRoot: vault,
+      slugs: ['project', 'domains/core'],
+    });
+    assert.deepEqual(
+      result.revisionsBySlug.get('project'),
+      referenceNodeRevisions(root, 'vault/project.md'),
+    );
+    assert.deepEqual(
+      result.revisionsBySlug.get('domains/core'),
+      referenceNodeRevisions(root, 'vault/domains/core.md'),
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
   }
 });
 
