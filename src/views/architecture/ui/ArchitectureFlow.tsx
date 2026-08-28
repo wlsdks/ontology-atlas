@@ -434,10 +434,17 @@ function ArchitectureBand({
           ))}
         </div>
       ) : (
-        <div className="flex items-center gap-5 p-3.5">
-          {/* 208px held a name and a glob; a sentence needs a measure. At 256px the module grid
-              beside it still resolves to the same two columns it did before. */}
-          <div className="flex w-64 shrink-0 flex-col gap-2">
+        /*
+          ⚠️ **The band reads down, not across.** It used to be a fixed label column beside the
+          cards, and the sentence had nowhere to go: at 256px an eighty-character description of a
+          role wrapped to three lines and made every band taller than its own contents. Widening
+          the column only bought a line and starved the cards. The shape that works is the one the
+          compact row already uses — identity, then purpose, then address, then contents, each
+          taking the full width it needs. The cards gain that width too: at 764px the grid resolves
+          to three columns where the 512px column resolved to two.
+        */
+        <div className="flex flex-col gap-2.5 p-3.5">
+          <div className="flex min-w-0 flex-col gap-3">
             {rung.map((id) => (
               <div key={id} className="min-w-0" data-testid={`architecture-rung-${id}`}>
                 <RowButton
@@ -569,39 +576,17 @@ function ArchitectureBand({
                 >
                   {(pathsOf.get(id) ?? []).join('  ·  ')}
                 </p>
-                {(() => {
-                  const roleModules = modules?.[id] ?? [];
-                  const isExpanded = expandedRoles.has(id);
-                  const hidden = roleModules.length - modulePreview;
-                  if (hidden <= 0 && !isExpanded) return null;
-                  return (
-                    <div className="mt-1.5 px-2">
-                      <Chip
-                        size="sm"
-                        aria-expanded={isExpanded}
-                        data-testid={`architecture-modules-toggle-${id}`}
-                        onClick={() => {
-                          /* Height can only be measured before the DOM changes. */
-                          captureSwapHeight();
-                          onToggleExpanded(id);
-                        }}
-                      >
-                        {isExpanded ? showFewerLabel : moreLabel(hidden)}
-                      </Chip>
-                    </div>
-                  );
-                })()}
               </div>
             ))}
           </div>
 
           {/*
-            The band's middle: the source modules the role's globs actually contain, from a
-            read-only directory walk of the bound project source — name and repo-relative path,
-            the way the reference draws components inside a layer. No edges between cards are
-            invented, and no import is ever read here.
+            The source modules the role's globs actually contain, from a read-only directory walk
+            of the bound project source — name and repo-relative path, the way the reference draws
+            components inside a layer. No edges between cards are invented, and no import is ever
+            read here.
           */}
-          <div ref={setModuleGridNode} className="flex min-w-0 flex-1 flex-col gap-2.5">
+          <div ref={setModuleGridNode} className="flex min-w-0 flex-col gap-2.5">
             {rung.map((id) => {
               const roleModules = modules?.[id] ?? [];
               if (roleModules.length === 0) return null;
@@ -650,6 +635,29 @@ function ArchitectureBand({
                       </div>
                     ))}
                   </StaggeredFadeIn>
+                  {/* The chip sits under the cards it reveals. In the old two-column band it lived
+                      in the label column beside them; stacked, "show 10 more" above the row it
+                      grows would point at nothing. */}
+                  {(() => {
+                    const hidden = roleModules.length - modulePreview;
+                    if (hidden <= 0 && !isExpanded) return null;
+                    return (
+                      <div className="mt-2">
+                        <Chip
+                          size="sm"
+                          aria-expanded={isExpanded}
+                          data-testid={`architecture-modules-toggle-${id}`}
+                          onClick={() => {
+                            /* Height can only be measured before the DOM changes. */
+                            captureSwapHeight();
+                            onToggleExpanded(id);
+                          }}
+                        >
+                          {isExpanded ? showFewerLabel : moreLabel(hidden)}
+                        </Chip>
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
