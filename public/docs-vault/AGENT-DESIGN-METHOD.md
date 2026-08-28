@@ -130,6 +130,14 @@ Done here on 2026-08-28, on the two counts the architecture canvas prints:
 |---|---|---|
 | source modules per role | `ls` of each role's glob base, minus dot-prefixed entries | six roles matched; one was over by one |
 | reviewed concepts per role | the vault's own frontmatter `path` fields, matched against the same globs | all seven matched |
+| measured import edges | the persisted record's own array, minus the same-role entries a stroke cannot be drawn for | 26 − 7 = 19, exactly the sentences drawn |
+
+Chasing one of these produced nothing, which is also worth writing down. The verify stage warns
+about unclassified dependencies and the badge counts 77 of them, so the record was opened expecting
+to find a list the screen was dropping — the mirror of a fact only the drawing carries. There is no
+list: the record holds a bare count. A check whose answer is "the screen shows everything its
+source has" is a result, not a wasted pass, and reporting it as one is the difference between an
+audit and a search for something to fix.
 
 The one mismatch was real: a role listed `.gitkeep` as its first module and counted it. The point
 is not the placeholder — it is that the defect was invisible to every other method. It survived
