@@ -86,3 +86,36 @@ test('the agent packet says it is longer than its box, before anything is scroll
     'none',
   );
 });
+
+test('the canvas says when the drawing runs past its right edge', async ({ page }) => {
+  /*
+   * ⚠️ The drawing keeps its true size and the canvas is a viewport, so a profile wider than the
+   * window is simply cut at the panel edge — and macOS keeps its overlay scrollbar invisible until
+   * something moves. Found in the installed app (2026-08-28), where the seventh role sat half off
+   * the edge with nothing on screen distinguishing "there is more" from "it ends here". Same defect
+   * as the agent packet one panel over, on the other axis, so it reuses that judgment.
+   *
+   * Both directions are asserted: an affordance that is always on is not an affordance.
+   */
+  await page.setViewportSize({ width: 1512, height: 950 });
+  await page.goto('/ko/architecture/');
+  const scroller = page.locator('[data-testid="architecture-graph"]').locator('..');
+  await expect(scroller).toBeVisible();
+
+  const wide = await scroller.evaluate((element) => ({
+    hidden: element.scrollWidth - element.clientWidth,
+    mask: getComputedStyle(element).maskImage,
+  }));
+  expect(wide.hidden, 'this profile is meant to fit at the workbench width').toBeLessThanOrEqual(1);
+  expect(wide.mask, 'nothing is covered, so nothing should claim to be').toBe('none');
+
+  await page.setViewportSize({ width: 700, height: 950 });
+  const narrow = await scroller.evaluate((element) => ({
+    hidden: element.scrollWidth - element.clientWidth,
+    mask: getComputedStyle(element).maskImage,
+  }));
+  expect(narrow.hidden, 'the drawing keeps its size, so this width must cut it').toBeGreaterThan(1);
+  expect(narrow.mask, 'a cut edge with no affordance reads as the end of the drawing').not.toBe(
+    'none',
+  );
+});

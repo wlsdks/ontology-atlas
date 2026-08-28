@@ -1,6 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+
+import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
@@ -79,6 +81,65 @@ export function ArchitectureSketch({
    */
   const [running, setRunning] = useState(false);
   const pending = useRef(0);
+
+  /*
+   * ⚠️ **A canvas that scrolls has to say so.** Seven roles do not fit the workbench width, so the
+   * last box is simply cut off at the panel edge — and macOS keeps its overlay scrollbar invisible
+   * until something moves, so nothing on screen distinguishes "there is more to the right" from
+   * "the drawing ends here" (installed app, 2026-08-28). This is the same defect the agent packet
+   * had one panel over, on the other axis.
+   *
+   * The judgment is the repository's existing one rather than a second opinion: those helpers are
+   * plain arithmetic over a scroll offset, a client extent and a scroll extent, so the horizontal
+   * case passes width where the listbox passes height. The reading is attached to the node itself
+   * because an effect fires while the ref is still null -- the mistake this file's sibling panel
+   * made twice before a callback ref settled it.
+   */
+  const [covered, setCovered] = useState<{ left: boolean; right: boolean }>({
+    left: false,
+    right: false,
+  });
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const readCoveredEdges = useCallback(() => {
+    const element = scrollerRef.current;
+    if (!element) return;
+    const overflowing = element.scrollWidth > element.clientWidth + 1;
+    setCovered({
+      left: listboxTopIsHidden(overflowing, element.scrollLeft),
+      right: listboxBottomIsHidden(
+        overflowing,
+        element.scrollLeft,
+        element.clientWidth,
+        element.scrollWidth,
+      ),
+    });
+  }, []);
+  const attachScroller = useCallback(
+    (element: HTMLDivElement | null) => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      scrollerRef.current = element;
+      if (!element) return;
+      readCoveredEdges();
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(readCoveredEdges);
+      observer.observe(element);
+      observerRef.current = observer;
+    },
+    [readCoveredEdges],
+  );
+  const coveredMask = (() => {
+    /* The fade is as wide as this panel's own inset, so the covered edge and the padded edge
+       agree rather than each picking a number. */
+    const fade = 'var(--card-pad)';
+    if (covered.left && covered.right) {
+      return `linear-gradient(to right, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
+    }
+    if (covered.left) return `linear-gradient(to right, transparent 0, #000 ${fade})`;
+    if (covered.right) return `linear-gradient(to left, transparent 0, #000 ${fade})`;
+    return undefined;
+  })();
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
@@ -175,7 +236,12 @@ export function ArchitectureSketch({
         this for wide content: a diagram scrolls inside its own container and the page body never
         does. That is also what every node editor does — the canvas is a viewport, not a fit.
       */}
-      <div className="overflow-x-auto">
+      <div
+        ref={attachScroller}
+        onScroll={readCoveredEdges}
+        className="overflow-x-auto"
+        style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
+      >
         <svg
           viewBox={`0 0 ${width} ${height}`}
           width={width}
