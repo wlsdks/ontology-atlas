@@ -5,6 +5,7 @@ import { useDogfoodSample } from './sample-source';
 
 test.use({ viewport: { width: 600, height: 900 } });
 
+
 test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 문장 버튼이 남는다', async ({ page }) => {
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
@@ -155,70 +156,6 @@ test('the agent packet stops capping itself inside a panel that already scrolls'
   expect(narrow.mask).not.toBe('none');
 });
 
-test('the canvas says when the drawing runs past its right edge', async ({ page }) => {
-  /*
-   * ⚠️ The drawing keeps its true size and the canvas is a viewport, so a profile wider than the
-   * window is simply cut at the panel edge — and macOS keeps its overlay scrollbar invisible until
-   * something moves. Found in the installed app (2026-08-28), where the seventh role sat half off
-   * the edge with nothing on screen distinguishing "there is more" from "it ends here". Same defect
-   * as the agent packet one panel over, on the other axis, so it reuses that judgment.
-   *
-   * Both directions are asserted: an affordance that is always on is not an affordance.
-   */
-  await page.setViewportSize({ width: 1512, height: 950 });
-  await page.goto('/ko/architecture/');
-  const scroller = page.locator('[data-testid="architecture-graph"]').locator('..');
-  await expect(scroller).toBeVisible();
-
-  const wide = await scroller.evaluate((element) => ({
-    hidden: element.scrollWidth - element.clientWidth,
-    mask: getComputedStyle(element).maskImage,
-  }));
-  expect(wide.hidden, 'this profile is meant to fit at the workbench width').toBeLessThanOrEqual(1);
-  expect(wide.mask, 'nothing is covered, so nothing should claim to be').toBe('none');
-
-  await page.setViewportSize({ width: 700, height: 950 });
-  const narrow = await scroller.evaluate((element) => ({
-    hidden: element.scrollWidth - element.clientWidth,
-    mask: getComputedStyle(element).maskImage,
-  }));
-  expect(narrow.hidden, 'the drawing keeps its size, so this width must cut it').toBeGreaterThan(1);
-  expect(narrow.mask, 'a cut edge with no affordance reads as the end of the drawing').not.toBe(
-    'none',
-  );
-});
-
-test('a cut-off drawing says how much of itself is missing', async ({ page }) => {
-  /*
-   * ⚠️ The fade this replaced was real and measurable and nobody saw it. A fresh-eyes walkthrough
-   * measured 180px hidden at 700 and 490px at 390, zoomed in specifically to check whether the cut
-   * edge carried an intentional mask, and reported "no scrollbar, no fade, no arrow" — because a
-   * fade works by dissolving ink and that edge carries a dot grid and a hairline arrow tail. An
-   * affordance nobody perceives is not an affordance, which is the same standard this screen
-   * already applied to a rule list rendered one pixel wide.
-   *
-   * The count is derived from the boxes' own geometry, so it is asserted as a number rather than
-   * as the presence of a mark. Both directions: nothing hidden must claim nothing.
-   */
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/ko/architecture/');
-  const chip = page.getByTestId('architecture-canvas-hidden-right');
-  const drawing = page.getByTestId('architecture-graph');
-  await expect(drawing).toBeVisible();
-  await expect(chip, 'the whole drawing fits, so nothing should claim otherwise').toHaveCount(0);
-
-  await page.setViewportSize({ width: 700, height: 900 });
-  await expect(chip).toBeVisible();
-  await expect(chip).toContainText('1');
-
-  /* And it must not sit on the drawing: an opaque chip over a node is the overlap the design
-     system forbids, which is how the run control earned its own row. */
-  const [chipBox, drawingBox] = await Promise.all([chip.boundingBox(), drawing.boundingBox()]);
-  expect(chipBox).not.toBeNull();
-  expect(drawingBox).not.toBeNull();
-  expect(chipBox!.y + chipBox!.height).toBeLessThanOrEqual(drawingBox!.y + 1);
-});
-
 test('a shared link opens the stage it names', async ({ page }) => {
   /*
    * ⚠️ A fresh-eyes walkthrough on 2026-08-28 found the plan and verify stages left the address at
@@ -251,80 +188,6 @@ test('a shared link opens the stage it names', async ({ page }) => {
     'aria-checked',
     'true',
   );
-});
-
-test('the canvas can be grabbed and dragged, and a drag is not a click', async ({ page }) => {
-  /*
-   * ⚠️ The drawing keeps its true size, so a wide profile is reachable only by scrolling — and a
-   * fresh-eyes walkthrough on 2026-08-28 found that pressing and dragging left `scrollLeft` at 0.
-   * The only gesture that worked was a horizontal trackpad swipe, which nothing on screen names
-   * and a mouse cannot perform at all.
-   *
-   * Both halves are asserted, because they are in tension: a drag must move the canvas, and a
-   * press that barely moves must still select the node under it. A threshold is the only thing
-   * separating them, and a threshold with no test is a guess.
-   */
-  await page.setViewportSize({ width: 700, height: 900 });
-  await page.goto('/ko/architecture/');
-
-  const scroller = page.locator('[data-testid="architecture-graph"]').locator('..');
-  const canvas = (await scroller.boundingBox())!;
-  const scrollLeft = () => scroller.evaluate((element) => element.scrollLeft);
-  expect(await scrollLeft(), 'this width must cut the drawing for the test to mean anything')
-    .toBe(0);
-  expect(
-    await scroller.evaluate((element) => element.scrollWidth - element.clientWidth),
-  ).toBeGreaterThan(1);
-
-  /* Drag along the empty ground below the boxes, right to left. */
-  const y = canvas.y + canvas.height - 18;
-  await page.mouse.move(canvas.x + canvas.width - 40, y);
-  await page.mouse.down();
-  await page.mouse.move(canvas.x + 60, y, { steps: 12 });
-  await page.mouse.up();
-  expect(await scrollLeft(), 'press and drag must pan the canvas').toBeGreaterThan(0);
-
-  /* And the node that press began on is not selected by it. */
-  const node = page.getByTestId('architecture-graph-box-adapter');
-  await expect(node).toHaveAttribute('aria-pressed', 'false');
-
-  /* A plain click still chooses a role. */
-  await node.click();
-  await expect(node).toHaveAttribute('aria-pressed', 'true');
-});
-
-test('the count follows the pan to whichever side is covered', async ({ page }) => {
-  /*
-   * ⚠️ Panning was built before this count was, so dragging the drawing pushed roles off the left
-   * edge with nothing saying so — the very defect the right-hand count exists to prevent,
-   * reintroduced on the side nobody had looked at yet. Found by dragging the canvas in the
-   * installed app on 2026-08-28.
-   *
-   * Asserted at three positions, because a count that is only ever right is indistinguishable
-   * from a label that happens to say "right".
-   */
-  await page.setViewportSize({ width: 620, height: 900 });
-  await page.goto('/ko/architecture/');
-  const scroller = page.locator('[data-testid="architecture-graph"]').locator('..');
-  const left = page.getByTestId('architecture-canvas-hidden-left');
-  const right = page.getByTestId('architecture-canvas-hidden-right');
-
-  await expect(right).toBeVisible();
-  await expect(left).toHaveCount(0);
-
-  await scroller.evaluate((element) => {
-    element.scrollLeft = element.scrollWidth;
-    element.dispatchEvent(new Event('scroll', { bubbles: true }));
-  });
-  await expect(left).toBeVisible();
-  await expect(right).toHaveCount(0);
-
-  await scroller.evaluate((element) => {
-    element.scrollLeft = Math.round((element.scrollWidth - element.clientWidth) / 2);
-    element.dispatchEvent(new Event('scroll', { bubbles: true }));
-  });
-  await expect(left).toBeVisible();
-  await expect(right).toBeVisible();
 });
 
 test('a link carries the chosen role, and refuses one the profile lacks', async ({ page }) => {
@@ -383,4 +246,59 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
   await page.goto('/ko/architecture/?role=application');
   await expect(page.getByTestId('architecture-role-detail-empty')).toHaveCount(0);
   await expect(notice).toHaveCount(0);
+});
+
+test('the drawing is never cut — it turns, or the page scrolls', async ({ page }) => {
+  /*
+   * ⚠️ **This replaces four gates, and it is stronger than all of them.** They each set up a
+   * drawing cut at one edge and checked that something said so: a fade, a count, a drag that
+   * reached the rest. The chain turns down when it stops fitting across and the canvas row keeps a
+   * `min-content` floor, so a cut is no longer something this screen produces — the drawing shows
+   * in full and the page scrolls if the window cannot hold it.
+   *
+   * Asserting the absence of a cut is worth more than asserting an affordance for one, because it
+   * is the property a reader actually has: nothing of the architecture is ever hidden from them.
+   *
+   * ⚠️ The covered-edge machinery those gates guarded is deliberately still in the file and is not
+   * exercised by anything here. A profile with several roles at one rank is wide even drawn
+   * downward, and neither sample vault has that shape, so removing the code would reintroduce
+   * silent cutting for a shape nobody can currently write a fixture for. That is a known, stated
+   * gap rather than a covered one.
+   */
+  const sizes = [
+    [1920, 1200],
+    [1440, 1000],
+    [1400, 400],
+    [1280, 720],
+    [1100, 900],
+    [900, 600],
+    [820, 300],
+    [700, 900],
+    [390, 844],
+  ] as const;
+
+  await page.goto('/ko/architecture/');
+  for (const [width, height] of sizes) {
+    await page.setViewportSize({ width, height });
+    await expect
+      .poll(
+        () =>
+          page
+            .locator('[data-testid="architecture-graph"]')
+            .locator('..')
+            .evaluate((element) => ({
+              x: element.scrollWidth - element.clientWidth,
+              y: element.scrollHeight - element.clientHeight,
+            })),
+        { message: `the drawing is cut at ${width}x${height}` },
+      )
+      .toEqual({ x: 0, y: 0 });
+
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+      `the page scrolls sideways at ${width}x${height}`,
+    ).toBe(0);
+  }
 });

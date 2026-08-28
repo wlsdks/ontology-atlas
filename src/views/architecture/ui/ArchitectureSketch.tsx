@@ -18,9 +18,30 @@ const COL_GAP = 52;
 const ROW_GAP = 26;
 const PAD_X = 28;
 const PAD_Y = 26;
-/** How far below the row a skip swings, and how much deeper each further column pushes it. */
+/** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
 const SKIP_DROP = 30;
 const SKIP_STEP = 10;
+
+/**
+ * ⚠️ **Which way the chain runs.** The drawing had one axis, so a seven-role profile was always a
+ * 1404px row that no column could hold — which is why the canvas had to be a band, and why the
+ * drawing got a fifth of the window (owner, 2026-08-28: *"it should not always be that
+ * horizontal-scrolling shape — sometimes three things join into one going down, sometimes it
+ * should be tall"*). The same seven roles laid out downward are 148 wide and 616 tall.
+ *
+ * Turning the chain is only useful once the canvas has height to turn into, which is why this
+ * arrives after the frame rather than with it.
+ */
+export type FlowAxis = 'across' | 'down';
+
+/** Rank runs along the axis; lane is the offset across it. */
+function place(axis: FlowAxis, rank: number, lane: number): { x: number; y: number } {
+  const along = rank * (axis === 'across' ? BOX_W + COL_GAP : BOX_H + ROW_GAP);
+  const across = lane * (axis === 'across' ? BOX_H + ROW_GAP : BOX_W + COL_GAP);
+  return axis === 'across'
+    ? { x: PAD_X + along, y: PAD_Y + across }
+    : { x: PAD_X + across, y: PAD_Y + along };
+}
 
 interface Placed {
   id: string;
@@ -60,6 +81,8 @@ export function ArchitectureSketch({
   runLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
+  hiddenAboveLabel,
+  hiddenBelowLabel,
 }: {
   graph: Graph;
   selected: string | null;
@@ -77,6 +100,9 @@ export function ArchitectureSketch({
   hiddenRightLabel: (count: number) => string;
   /** The same for the side a pan pushes roles off. */
   hiddenLeftLabel: (count: number) => string;
+  /** And the same two again for a chain that is cut top and bottom rather than left and right. */
+  hiddenAboveLabel: (count: number) => string;
+  hiddenBelowLabel: (count: number) => string;
 }) {
   const [runSeq, setRunSeq] = useState(0);
   /*
@@ -89,22 +115,35 @@ export function ArchitectureSketch({
   const [running, setRunning] = useState(false);
   const pending = useRef(0);
 
+  /*
+   * ⚠️ **The axis is measured, not configured.** A profile is drawn across while it fits across and
+   * down once it does not. Derived from the measured box rather than stored, so it can never
+   * disagree with the width the drawing is actually given, and so no effect has to correct state
+   * after the fact.
+   */
+  const [boxWidth, setBoxWidth] = useState(0);
+  const ranks = graph.columns;
+  const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
+  const naturalAcross = PAD_X * 2 + ranks * BOX_W + (ranks - 1) * COL_GAP;
+  const axis: FlowAxis = boxWidth > 0 && naturalAcross > boxWidth ? 'down' : 'across';
+
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      map.set(box.id, {
-        id: box.id,
-        x: PAD_X + box.column * (BOX_W + COL_GAP),
-        y: PAD_Y + box.slot * (BOX_H + ROW_GAP),
-        shape: box.shape,
-      });
+      map.set(box.id, { id: box.id, ...place(axis, box.column, box.slot), shape: box.shape });
     }
     return map;
-  }, [graph.boxes]);
+  }, [graph.boxes, axis]);
 
   /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
      longer scaled. Derived, never a ref written during render. */
-  const boxRight = useMemo(() => [...placed.values()].map((at) => at.x + BOX_W), [placed]);
+  const boxEnd = useMemo(
+    () => ({
+      down: [...placed.values()].map((at) => at.y + BOX_H),
+      across: [...placed.values()].map((at) => at.x + BOX_W),
+    }),
+    [placed],
+  );
 
   /*
    * ⚠️ **A canvas that scrolls has to say so.** Seven roles do not fit the workbench width, so the
@@ -124,22 +163,38 @@ export function ArchitectureSketch({
     right: boolean;
     hiddenLeft: number;
     hiddenRight: number;
-  }>({ left: false, right: false, hiddenLeft: 0, hiddenRight: 0 });
+    coveredDown: boolean;
+  }>({ left: false, right: false, hiddenLeft: 0, hiddenRight: 0, coveredDown: false });
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
   const readCoveredEdges = useCallback(() => {
     const element = scrollerRef.current;
     if (!element) return;
-    const overflowing = element.scrollWidth > element.clientWidth + 1;
-    const edge = element.scrollLeft + element.clientWidth;
+    setBoxWidth(element.clientWidth);
+    /*
+     * ⚠️ **Measured along the axis the chain runs.** These readings were written when a drawing
+     * could only be cut on the right; a chain that runs down is cut at the bottom instead, and a
+     * count that only ever looks sideways is the same defect as one that only ever looked right.
+     */
+    /*
+     * ⚠️ **Whichever axis is actually cut, not whichever the chain runs.** A chain drawn across can
+     * still be cut top and bottom in a short window — measured at 1400x400: 87px hidden vertically
+     * while every reading looked sideways and reported nothing (2026-08-29). The chain's own axis
+     * wins when both overflow, because that is the one a reader is following.
+     */
+    const down =
+      axis === 'down' ||
+      (element.scrollWidth <= element.clientWidth + 1 &&
+        element.scrollHeight > element.clientHeight + 1);
+    const extent = down ? element.scrollHeight : element.scrollWidth;
+    const visible = down ? element.clientHeight : element.clientWidth;
+    const offset = down ? element.scrollTop : element.scrollLeft;
+    const alongCovered = down ? boxEnd.down : boxEnd.across;
+    const overflowing = extent > visible + 1;
+    const edge = offset + visible;
     setCovered({
-      left: listboxTopIsHidden(overflowing, element.scrollLeft),
-      right: listboxBottomIsHidden(
-        overflowing,
-        element.scrollLeft,
-        element.clientWidth,
-        element.scrollWidth,
-      ),
+      left: listboxTopIsHidden(overflowing, offset),
+      right: listboxBottomIsHidden(overflowing, offset, visible, extent),
       /*
        * Counted from the boxes themselves, so the chip states a fact rather than an impression.
        * ⚠️ Both directions. Panning was added before this count was, so dragging the drawing left
@@ -147,10 +202,12 @@ export function ArchitectureSketch({
        * count exists to prevent, reintroduced on the side nobody had looked at yet (installed app,
        * 2026-08-28).
        */
-      hiddenLeft: boxRight.filter((right) => right - BOX_W < element.scrollLeft).length,
-      hiddenRight: boxRight.filter((right) => right > edge).length,
+      /* Along the covered axis, which is not always the axis the boxes were laid out on. */
+      coveredDown: down,
+      hiddenLeft: alongCovered.filter((end) => end - (down ? BOX_H : BOX_W) < offset).length,
+      hiddenRight: alongCovered.filter((end) => end > edge).length,
     });
-  }, [boxRight]);
+  }, [boxEnd, axis]);
   const attachScroller = useCallback(
     (element: HTMLDivElement | null) => {
       observerRef.current?.disconnect();
@@ -195,20 +252,31 @@ export function ArchitectureSketch({
     swallowClick.current = false;
     const element = scrollerRef.current;
     if (!element || event.pointerType !== 'mouse' || event.button !== 0) return;
-    if (element.scrollWidth <= element.clientWidth + 1) return;
-    pan.current = { startX: event.clientX, startScroll: element.scrollLeft, moved: false };
+    /* The covered axis, not the chain's — they differ when a chain drawn across is cut by a short
+       window, and a drag that only ever moved sideways would do nothing there. */
+    const down = covered.coveredDown;
+    if (down ? element.scrollHeight <= element.clientHeight + 1 : element.scrollWidth <= element.clientWidth + 1) {
+      return;
+    }
+    pan.current = {
+      startX: down ? event.clientY : event.clientX,
+      startScroll: down ? element.scrollTop : element.scrollLeft,
+      moved: false,
+    };
   };
   const onPanMove = (event: React.PointerEvent<HTMLDivElement>) => {
     const element = scrollerRef.current;
     const state = pan.current;
     if (!element || !state) return;
-    const dx = event.clientX - state.startX;
+    const down = covered.coveredDown;
+    const dx = (down ? event.clientY : event.clientX) - state.startX;
     if (!state.moved && Math.abs(dx) < PAN_THRESHOLD) return;
     if (!state.moved) {
       state.moved = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
-    element.scrollLeft = state.startScroll - dx;
+    if (down) element.scrollTop = state.startScroll - dx;
+    else element.scrollLeft = state.startScroll - dx;
     readCoveredEdges();
   };
   const onPanEnd = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -225,11 +293,12 @@ export function ArchitectureSketch({
     /* The fade is as wide as this panel's own inset, so the covered edge and the padded edge
        agree rather than each picking a number. */
     const fade = 'var(--card-pad)';
+    const [from, to] = covered.coveredDown ? ['bottom', 'top'] : ['right', 'left'];
     if (covered.left && covered.right) {
-      return `linear-gradient(to right, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
+      return `linear-gradient(to ${from}, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
     }
-    if (covered.left) return `linear-gradient(to right, transparent 0, #000 ${fade})`;
-    if (covered.right) return `linear-gradient(to left, transparent 0, #000 ${fade})`;
+    if (covered.left) return `linear-gradient(to ${from}, transparent 0, #000 ${fade})`;
+    if (covered.right) return `linear-gradient(to ${to}, transparent 0, #000 ${fade})`;
     return undefined;
   })();
 
@@ -258,8 +327,6 @@ export function ArchitectureSketch({
     );
   }, [graph.boxes, graph.edges]);
 
-  const slots = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
-  const width = PAD_X * 2 + graph.columns * BOX_W + (graph.columns - 1) * COL_GAP;
   /*
    * ⚠️ Reserve room for the skips that are actually drawn, not for the ones that could be. The
    * first cut always added the deepest possible swing, so at rest — where no skip is drawn at all
@@ -277,7 +344,17 @@ export function ArchitectureSketch({
    */
   const deepestSkip = graph.edges.reduce((most, edge) => Math.max(most, edge.columnSpan), 0);
   const skipRoom = deepestSkip <= 1 ? 0 : SKIP_DROP + deepestSkip * SKIP_STEP;
-  const height = PAD_Y * 2 + slots * BOX_H + (slots - 1) * ROW_GAP + skipRoom;
+  /* Ranks run along the axis and lanes across it; the skip swing widens whichever side it leaves. */
+  const alongExtent =
+    axis === 'across'
+      ? PAD_X * 2 + ranks * BOX_W + (ranks - 1) * COL_GAP
+      : PAD_Y * 2 + ranks * BOX_H + (ranks - 1) * ROW_GAP;
+  const acrossExtent =
+    axis === 'across'
+      ? PAD_Y * 2 + lanes * BOX_H + (lanes - 1) * ROW_GAP + skipRoom
+      : PAD_X * 2 + lanes * BOX_W + (lanes - 1) * COL_GAP + skipRoom;
+  const width = axis === 'across' ? alongExtent : acrossExtent;
+  const height = axis === 'across' ? acrossExtent : alongExtent;
 
   return (
     <div className="architecture-canvas-ground relative flex min-h-0 flex-1 flex-col rounded-panel border border-[color:var(--color-border-soft)]">
@@ -314,7 +391,7 @@ export function ArchitectureSketch({
             })}
             data-testid="architecture-canvas-hidden-left"
           >
-            {hiddenLeftLabel(covered.hiddenLeft)}
+            {(covered.coveredDown ? hiddenAboveLabel : hiddenLeftLabel)(covered.hiddenLeft)}
           </span>
         )}
         {covered.hiddenRight === 0 ? null : (
@@ -326,7 +403,7 @@ export function ArchitectureSketch({
             })}
             data-testid="architecture-canvas-hidden-right"
           >
-            {hiddenRightLabel(covered.hiddenRight)}
+            {(covered.coveredDown ? hiddenBelowLabel : hiddenRightLabel)(covered.hiddenRight)}
           </span>
         )}
           {graph.edges.length === 0 ? null : (
@@ -389,7 +466,8 @@ export function ArchitectureSketch({
          */
         className={cn(
           covered.left || covered.right ? 'cursor-grab active:cursor-grabbing' : undefined,
-          'flex min-h-0 flex-1 items-center overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
+          axis === 'down' ? 'justify-center overflow-y-auto' : 'items-center overflow-x-auto',
+          'flex min-h-0 flex-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
         )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
       >
@@ -439,10 +517,11 @@ export function ArchitectureSketch({
           const a = placed.get(edge.from);
           const b = placed.get(edge.to);
           if (!a || !b) return null;
-          const sx = a.x + BOX_W;
-          const sy = a.y + BOX_H / 2;
-          const tx = b.x;
-          const ty = b.y + BOX_H / 2;
+          /* Leave the trailing face and arrive at the leading one, whichever way the chain runs. */
+          const sx = axis === 'across' ? a.x + BOX_W : a.x + BOX_W / 2;
+          const sy = axis === 'across' ? a.y + BOX_H / 2 : a.y + BOX_H;
+          const tx = axis === 'across' ? b.x : b.x + BOX_W / 2;
+          const ty = axis === 'across' ? b.y + BOX_H / 2 : b.y;
           const receded = selected !== null && selected !== edge.from && selected !== edge.to;
 
           /*
@@ -450,19 +529,38 @@ export function ArchitectureSketch({
            * is a machine's count, so it is drawn exactly and its width carries the number.
            */
           const isDeclared = edge.kind === 'permitted';
-          const drop =
+          /*
+           * A skip leaves the chain and comes back to it: below the row when the chain runs
+           * across, out to the side when it runs down. The arithmetic is the same either way — the
+           * axis only decides which coordinate the swing is measured in.
+           */
+          const swing =
             edge.columnSpan <= 1
               ? 0
-              : SKIP_DROP + (edge.columnSpan - 2) * SKIP_STEP + BOX_H / 2;
-          const midY = Math.max(sy, ty) + drop;
-          const d =
-            edge.columnSpan <= 1
-              ? isDeclared
-                ? sketchConnector(`${edge.from}>${edge.to}`, sx, sy, tx, ty, COL_GAP * 0.6)
-                : `M ${sx} ${sy} C ${sx + COL_GAP * 0.6} ${sy}, ${tx - COL_GAP * 0.6} ${ty}, ${tx} ${ty}`
-              : `M ${sx} ${sy} C ${sx + COL_GAP} ${sy}, ${sx + COL_GAP} ${midY}, ${
-                  (sx + tx) / 2
-                } ${midY} C ${tx - COL_GAP} ${midY}, ${tx - COL_GAP} ${ty}, ${tx} ${ty}`;
+              : SKIP_DROP +
+                (edge.columnSpan - 2) * SKIP_STEP +
+                (axis === 'across' ? BOX_H : BOX_W) / 2;
+          const lead = axis === 'across' ? COL_GAP : ROW_GAP;
+          const d = (() => {
+            if (edge.columnSpan <= 1) {
+              if (isDeclared) {
+                return sketchConnector(`${edge.from}>${edge.to}`, sx, sy, tx, ty, lead * 0.6, axis);
+              }
+              return axis === 'across'
+                ? `M ${sx} ${sy} C ${sx + lead * 0.6} ${sy}, ${tx - lead * 0.6} ${ty}, ${tx} ${ty}`
+                : `M ${sx} ${sy} C ${sx} ${sy + lead * 0.6}, ${tx} ${ty - lead * 0.6}, ${tx} ${ty}`;
+            }
+            if (axis === 'across') {
+              const midY = Math.max(sy, ty) + swing;
+              return `M ${sx} ${sy} C ${sx + COL_GAP} ${sy}, ${sx + COL_GAP} ${midY}, ${
+                (sx + tx) / 2
+              } ${midY} C ${tx - COL_GAP} ${midY}, ${tx - COL_GAP} ${ty}, ${tx} ${ty}`;
+            }
+            const midX = Math.max(sx, tx) + swing;
+            return `M ${sx} ${sy} C ${sx} ${sy + ROW_GAP}, ${midX} ${sy + ROW_GAP}, ${midX} ${
+              (sy + ty) / 2
+            } C ${midX} ${ty - ROW_GAP}, ${tx} ${ty - ROW_GAP}, ${tx} ${ty}`;
+          })();
 
           return (
             <path

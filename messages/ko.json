@@ -364,6 +364,8 @@
     "legendShapeWork": "거쳐 가는 역할",
     "hiddenLeft": "왼쪽에 {count}개 더",
     "hiddenRight": "오른쪽에 {count}개 더",
+    "hiddenAbove": "위에 {count}개 더",
+    "hiddenBelow": "아래에 {count}개 더",
     "legendSkipHint": "역할을 건너뛰는 연결은 그 양끝 중 하나를 고르면 나타납니다.",
     "runFlow": "흐름 실행",
     "legendTraffic": "측정된 import. 굵기가 그 개수입니다",

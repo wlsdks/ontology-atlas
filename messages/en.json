@@ -364,6 +364,8 @@
     "legendShapeWork": "a role in between",
     "hiddenLeft": "{count} more to the left",
     "hiddenRight": "{count} more to the right",
+    "hiddenAbove": "{count} more above",
+    "hiddenBelow": "{count} more below",
     "legendSkipHint": "A crossing that skips a role appears when you choose one of its ends.",
     "runFlow": "Run the flow",
     "legendTraffic": "measured imports; thickness is how many",

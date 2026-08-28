@@ -595,7 +595,7 @@ export function ArchitectureWorkbench({
         data-testid="architecture-layout-scroll"
         data-architecture-scroll-reanchor="mode-end"
         className={cn(
-          'grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-[minmax(0,1fr)_auto] xl:overflow-y-auto',
+          'grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-[minmax(min-content,1fr)_auto] xl:overflow-y-auto',
           stageOpen ? 'xl:grid-cols-[240px_minmax(0,1fr)_340px]' : 'xl:grid-cols-[240px_minmax(0,1fr)]',
         )}
       >
@@ -654,6 +654,8 @@ export function ArchitectureWorkbench({
                 legendSkipHint={t('legendSkipHint')}
                 hiddenRightLabel={(count) => t('hiddenRight', { count })}
                 hiddenLeftLabel={(count) => t('hiddenLeft', { count })}
+                hiddenAboveLabel={(count) => t('hiddenAbove', { count })}
+                hiddenBelowLabel={(count) => t('hiddenBelow', { count })}
                 legendShapeEnd={t('legendShapeEnd')}
                 legendShapeWork={t('legendShapeWork')}
                 runLabel={t('runFlow')}

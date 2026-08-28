@@ -200,16 +200,22 @@ export function sketchConnector(
   bx: number,
   by: number,
   bow: number,
+  /** Which way the connector leaves: sideways for a chain across, downward for one that runs down. */
+  axis: 'across' | 'down' = 'across',
   { amplitude = 1.1 }: SketchOptions = {},
 ): string {
   const next = wobbler(seed);
   const drift = () => next() * amplitude;
   /* The same rule as `sketchSegment`: a longer reach wanders further. */
-  const sag = () => next() * amplitude * (1 + Math.abs(bx - ax) / 70);
+  const reach = axis === 'across' ? Math.abs(bx - ax) : Math.abs(by - ay);
+  const sag = () => next() * amplitude * (1 + reach / 70);
   return (
     `M ${(ax + drift()).toFixed(2)} ${(ay + drift()).toFixed(2)} ` +
-    `C ${(ax + bow).toFixed(2)} ${(ay + sag()).toFixed(2)}, ` +
-    `${(bx - bow).toFixed(2)} ${(by + sag()).toFixed(2)}, ` +
+    (axis === 'across'
+      ? `C ${(ax + bow).toFixed(2)} ${(ay + sag()).toFixed(2)}, ` +
+        `${(bx - bow).toFixed(2)} ${(by + sag()).toFixed(2)}, `
+      : `C ${(ax + sag()).toFixed(2)} ${(ay + bow).toFixed(2)}, ` +
+        `${(bx + sag()).toFixed(2)} ${(by - bow).toFixed(2)}, `) +
     `${(bx + drift()).toFixed(2)} ${(by + drift()).toFixed(2)}`
   );
 }

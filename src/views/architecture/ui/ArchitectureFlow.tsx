@@ -52,6 +52,8 @@ export function ArchitectureFlow({
   runLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
+  hiddenAboveLabel,
+  hiddenBelowLabel,
   permittedEdgeLabel,
   trafficEdgeLabel,
 }: {
@@ -87,6 +89,8 @@ export function ArchitectureFlow({
   runLabel: string;
   hiddenRightLabel: (count: number) => string;
   hiddenLeftLabel: (count: number) => string;
+  hiddenAboveLabel: (count: number) => string;
+  hiddenBelowLabel: (count: number) => string;
   permittedEdgeLabel: (from: string, to: string) => string;
   trafficEdgeLabel: (from: string, to: string, count: number) => string;
 }) {
@@ -144,6 +148,8 @@ export function ArchitectureFlow({
           runLabel={runLabel}
           hiddenRightLabel={hiddenRightLabel}
           hiddenLeftLabel={hiddenLeftLabel}
+          hiddenAboveLabel={hiddenAboveLabel}
+          hiddenBelowLabel={hiddenBelowLabel}
         />
 
         {/*
