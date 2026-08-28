@@ -463,7 +463,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     expect(screen.queryByText('Source check required')).toBeNull();
     // This surface cannot re-probe the source, and must say so instead of claiming currency.
     expect(screen.getByTestId('architecture-record-cannot-confirm')).toHaveTextContent(
-      'This browser cannot confirm the source still matches this record.',
+      'This screen does not re-measure. The record is a receipt from the moment it was taken.',
     );
   });
 
