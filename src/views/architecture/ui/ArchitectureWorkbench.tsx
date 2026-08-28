@@ -580,6 +580,11 @@ export function ArchitectureWorkbench({
                 modules={selectedModules}
                 concepts={conceptsByProfile[selected.slug] ?? {}}
                 roleLabel={roleLabel}
+                /* Measured crossings ride in from the persisted record; undefined without one. */
+                roleTraffic={record?.brief.conformance.observedRoleEdges}
+                trafficCountLabel={(from, to, count) => t('trafficCount', { from, to, count })}
+                trafficSameRoleLabel={(role, count) => t('trafficSameRole', { role, count })}
+                trafficLegend={t('trafficLegend')}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
                 directionLabel={t('ladderDirection')}

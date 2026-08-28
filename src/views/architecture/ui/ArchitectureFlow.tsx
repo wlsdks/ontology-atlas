@@ -29,7 +29,10 @@ import {
 import { useSwapHeight } from '@/shared/lib/use-presence';
 import { Chip, RowButton, StaggeredFadeIn, TopologyV2KindGlyph } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 import { useGridColumns } from '../model/grid-columns';
+import { buildTrafficArcs } from '../model/traffic-layout';
+import { ArchitectureTrafficLayer } from './ArchitectureTrafficLayer';
 import { deriveConceptEdges, type ConceptEdge, type RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 
@@ -883,6 +886,10 @@ export function ArchitectureFlow({
   conceptCountLabel,
   legendDependency,
   legendRelated,
+  roleTraffic,
+  trafficCountLabel,
+  trafficSameRoleLabel,
+  trafficLegend,
 }: {
   profile: ArchitectureProfile;
   /**
@@ -917,6 +924,14 @@ export function ArchitectureFlow({
   /** Legend entries for the two reviewed relation strokes. */
   legendDependency: string;
   legendRelated: string;
+  /**
+   * Measured crossings between roles, from the persisted conformance record. Undefined where no
+   * record exists; the stage then draws no traffic at all rather than guessing at any.
+   */
+  roleTraffic?: readonly ArchitectureRoleEdge[];
+  trafficCountLabel: (from: string, to: string, count: number) => string;
+  trafficSameRoleLabel: (role: string, count: number) => string;
+  trafficLegend: string;
 }) {
   const layout = useMemo(() => buildArchitectureLayout(profile), [profile]);
   const [focus, setFocus] = useState<string | null>(null);
@@ -952,6 +967,15 @@ export function ArchitectureFlow({
   /* Concept sections showing all cards instead of the preview row. */
   const [conceptsMore, setConceptsMore] = useState<ReadonlySet<string>>(new Set());
   const stageRef = useRef<HTMLDivElement | null>(null);
+  /*
+   * The measured traffic, from the persisted record. Empty where no record exists — this surface
+   * never scans, so an arc always has a measurement behind it and the picture without one is
+   * exactly the picture this screen drew before.
+   */
+  const trafficArcs = useMemo(
+    () => buildTrafficArcs(roleTraffic ?? [], layout.rows),
+    [roleTraffic, layout.rows],
+  );
   const conceptEdges = useMemo(() => deriveConceptEdges(concepts), [concepts]);
   const edgeParticipants = useMemo(() => {
     const set = new Set<string>();
@@ -1022,6 +1046,7 @@ export function ArchitectureFlow({
         className="relative flex flex-col gap-2 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <ConceptEdgeLayer edges={conceptEdges} containerRef={stageRef} refreshKey={edgeRefreshKey} />
+        <ArchitectureTrafficLayer arcs={trafficArcs} refreshKey={edgeRefreshKey} />
         {sourceUnavailableBody !== null ? (
           /* Before the bands, so a reader learns why they are bare before wondering. */
           <p className="mb-2" data-testid="architecture-source-unavailable">
@@ -1141,11 +1166,26 @@ export function ArchitectureFlow({
           </span>
           </>
           )}
+          {/* Thickness carries a number, so the number is named. Only where arcs exist. */}
+          {trafficArcs.length === 0 ? null : <span>{trafficLegend}</span>}
         </p>
       </div>
 
-      {/* The drawing is hidden from assistive technology, so the same facts are stated here. */}
+      {/*
+        The drawing is hidden from assistive technology, so the same facts are stated here.
+        ⚠️ The traffic counts are listed for the same reason the reach sentences are: on
+        2026-08-28 a walkthrough found the reach rule living only in this list and never on the
+        screen, and shipping the mirror of that — a number living only in the drawing — would be
+        the same defect pointed the other way.
+      */}
       <ol className="sr-only">
+        {trafficArcs.map((arc) => (
+          <li key={`traffic-${arc.from}-${arc.to}`}>
+            {arc.sameRole
+              ? trafficSameRoleLabel(roleLabel(arc.from), arc.count)
+              : trafficCountLabel(roleLabel(arc.from), roleLabel(arc.to), arc.count)}
+          </li>
+        ))}
         {order.map((id) => {
           const allowed = [...reaches(id)];
           return (

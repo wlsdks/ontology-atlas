@@ -50,11 +50,13 @@ function buildRecord({
   status = 'violated',
   violationCount = 3,
   typeOnlyEdgeCount = 18 as number | undefined,
+  observedRoleEdges,
 }: {
   source?: ArchitectureRecordSource;
   status?: 'conforms' | 'violated' | 'unknown';
   violationCount?: number;
   typeOnlyEdgeCount?: number | undefined;
+  observedRoleEdges?: { fromRole: string; toRole: string; count: number }[];
 } = {}) {
   return parseArchitectureRecord({
     contract: 'architectureRecord:v1',
@@ -76,6 +78,7 @@ function buildRecord({
         violationCount,
         violations: [],
         ...(typeOnlyEdgeCount === undefined ? {} : { typeOnlyEdgeCount }),
+        ...(observedRoleEdges === undefined ? {} : { observedRoleEdges }),
         unknown: { coverageIncomplete: false, unmappedEdges: 2, unruledEdges: 0, emptyRoles: [] },
       },
     },
@@ -90,6 +93,58 @@ function renderWithRecord(record: ReturnType<typeof buildRecord>) {
     </NextIntlClientProvider>,
   );
 }
+
+/*
+ * The measured crossings this repository actually reported on 2026-08-28. `views → views` is in
+ * the list on purpose: it is one of the largest counts and crosses nothing, which is the case
+ * that would break a naive scale.
+ */
+const MEASURED_TRAFFIC = [
+  { fromRole: 'widgets', toRole: 'shared', count: 314 },
+  { fromRole: 'views', toRole: 'shared', count: 260 },
+  { fromRole: 'views', toRole: 'views', count: 223 },
+  { fromRole: 'routing', toRole: 'widgets', count: 1 },
+];
+
+describe('ArchitectureWorkbench — measured traffic', () => {
+  it('draws one stroke per measured crossing, thickest where the traffic is heaviest', () => {
+    renderWithRecord(buildRecord({ observedRoleEdges: MEASURED_TRAFFIC }));
+    const layer = screen.getByTestId('architecture-traffic');
+    const strokeOf = (from: string, to: string) =>
+      parseFloat(
+        layer
+          .querySelector(`path[data-traffic-from="${from}"][data-traffic-to="${to}"]`)
+          ?.getAttribute('stroke-width') ?? '0',
+      );
+
+    expect(strokeOf('widgets', 'shared')).toBeGreaterThan(strokeOf('views', 'shared'));
+    expect(strokeOf('views', 'shared')).toBeGreaterThan(strokeOf('routing', 'widgets'));
+    /* Same-role traffic is the second largest number here and must not out-weigh a crossing. */
+    expect(strokeOf('views', 'views')).toBeLessThan(strokeOf('routing', 'widgets') + 0.001);
+  });
+
+  it('states every drawn crossing in words, and says what thickness means', () => {
+    renderWithRecord(buildRecord({ observedRoleEdges: MEASURED_TRAFFIC }));
+    expect(screen.getByText('Widgets reaches Shared foundation in 314 imports')).toBeInTheDocument();
+    expect(screen.getByText('Views references itself in 223 imports')).toBeInTheDocument();
+    expect(
+      screen.getByText('Line thickness is how many imports cross that boundary.'),
+    ).toBeInTheDocument();
+  });
+
+  it('draws no traffic at all without a record', () => {
+    renderWorkbench();
+    expect(screen.queryByTestId('architecture-traffic')).toBeNull();
+    expect(
+      screen.queryByText('Line thickness is how many imports cross that boundary.'),
+    ).toBeNull();
+  });
+
+  it('draws no traffic when a record carries no crossings', () => {
+    renderWithRecord(buildRecord());
+    expect(screen.queryByTestId('architecture-traffic')).toBeNull();
+  });
+});
 
 /*
  * ⚠️ **The empty state is what a real user actually sees, and it is not reachable from a browser.**
