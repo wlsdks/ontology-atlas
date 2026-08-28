@@ -512,6 +512,7 @@ export function ArchitectureWorkbench({
                 legendPermitted={t('legendPermitted')}
                 legendTraffic={t('legendTraffic')}
                 legendSkipHint={t('legendSkipHint')}
+                hiddenRightLabel={(count) => t('hiddenRight', { count })}
                 legendShapeEnd={t('legendShapeEnd')}
                 legendShapeWork={t('legendShapeWork')}
                 runLabel={t('runFlow')}

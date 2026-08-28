@@ -119,3 +119,34 @@ test('the canvas says when the drawing runs past its right edge', async ({ page 
     'none',
   );
 });
+
+test('a cut-off drawing says how much of itself is missing', async ({ page }) => {
+  /*
+   * ⚠️ The fade this replaced was real and measurable and nobody saw it. A fresh-eyes walkthrough
+   * measured 180px hidden at 700 and 490px at 390, zoomed in specifically to check whether the cut
+   * edge carried an intentional mask, and reported "no scrollbar, no fade, no arrow" — because a
+   * fade works by dissolving ink and that edge carries a dot grid and a hairline arrow tail. An
+   * affordance nobody perceives is not an affordance, which is the same standard this screen
+   * already applied to a rule list rendered one pixel wide.
+   *
+   * The count is derived from the boxes' own geometry, so it is asserted as a number rather than
+   * as the presence of a mark. Both directions: nothing hidden must claim nothing.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/');
+  const chip = page.getByTestId('architecture-canvas-hidden-right');
+  const drawing = page.getByTestId('architecture-graph');
+  await expect(drawing).toBeVisible();
+  await expect(chip, 'the whole drawing fits, so nothing should claim otherwise').toHaveCount(0);
+
+  await page.setViewportSize({ width: 700, height: 900 });
+  await expect(chip).toBeVisible();
+  await expect(chip).toContainText('1');
+
+  /* And it must not sit on the drawing: an opaque chip over a node is the overlap the design
+     system forbids, which is how the run control earned its own row. */
+  const [chipBox, drawingBox] = await Promise.all([chip.boundingBox(), drawing.boundingBox()]);
+  expect(chipBox).not.toBeNull();
+  expect(drawingBox).not.toBeNull();
+  expect(chipBox!.y + chipBox!.height).toBeLessThanOrEqual(drawingBox!.y + 1);
+});

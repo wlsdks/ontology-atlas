@@ -362,6 +362,7 @@
     "legendPermitted": "a reviewed dependency the profile permits",
     "legendShapeEnd": "a role at either end",
     "legendShapeWork": "a role in between",
+    "hiddenRight": "{count} more to the right",
     "legendSkipHint": "A crossing that skips a role appears when you choose one of its ends.",
     "runFlow": "Run the flow",
     "legendTraffic": "measured imports; thickness is how many",

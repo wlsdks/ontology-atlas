@@ -57,6 +57,7 @@ export function ArchitectureSketch({
   moduleCounts,
   conceptCounts,
   runLabel,
+  hiddenRightLabel,
 }: {
   graph: Graph;
   selected: string | null;
@@ -70,6 +71,8 @@ export function ArchitectureSketch({
   moduleCounts: Readonly<Record<string, number>> | null;
   conceptCounts: Readonly<Record<string, number>>;
   runLabel: string;
+  /** "N more to the right" — the count is derived, so the screen never guesses. */
+  hiddenRightLabel: (count: number) => string;
 }) {
   const [runSeq, setRunSeq] = useState(0);
   /*
@@ -81,6 +84,23 @@ export function ArchitectureSketch({
    */
   const [running, setRunning] = useState(false);
   const pending = useRef(0);
+
+  const placed = useMemo(() => {
+    const map = new Map<string, Placed>();
+    for (const box of graph.boxes) {
+      map.set(box.id, {
+        id: box.id,
+        x: PAD_X + box.column * (BOX_W + COL_GAP),
+        y: PAD_Y + box.slot * (BOX_H + ROW_GAP),
+        shape: box.shape,
+      });
+    }
+    return map;
+  }, [graph.boxes]);
+
+  /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
+     longer scaled. Derived, never a ref written during render. */
+  const boxRight = useMemo(() => [...placed.values()].map((at) => at.x + BOX_W), [placed]);
 
   /*
    * ⚠️ **A canvas that scrolls has to say so.** Seven roles do not fit the workbench width, so the
@@ -95,9 +115,10 @@ export function ArchitectureSketch({
    * because an effect fires while the ref is still null -- the mistake this file's sibling panel
    * made twice before a callback ref settled it.
    */
-  const [covered, setCovered] = useState<{ left: boolean; right: boolean }>({
+  const [covered, setCovered] = useState<{ left: boolean; right: boolean; hiddenRight: number }>({
     left: false,
     right: false,
+    hiddenRight: 0,
   });
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
@@ -105,6 +126,7 @@ export function ArchitectureSketch({
     const element = scrollerRef.current;
     if (!element) return;
     const overflowing = element.scrollWidth > element.clientWidth + 1;
+    const edge = element.scrollLeft + element.clientWidth;
     setCovered({
       left: listboxTopIsHidden(overflowing, element.scrollLeft),
       right: listboxBottomIsHidden(
@@ -113,8 +135,10 @@ export function ArchitectureSketch({
         element.clientWidth,
         element.scrollWidth,
       ),
+      /* Counted from the boxes themselves, so the chip states a fact rather than an impression. */
+      hiddenRight: boxRight.filter((right) => right > edge).length,
     });
-  }, []);
+  }, [boxRight]);
   const attachScroller = useCallback(
     (element: HTMLDivElement | null) => {
       observerRef.current?.disconnect();
@@ -140,19 +164,6 @@ export function ArchitectureSketch({
     if (covered.right) return `linear-gradient(to left, transparent 0, #000 ${fade})`;
     return undefined;
   })();
-
-  const placed = useMemo(() => {
-    const map = new Map<string, Placed>();
-    for (const box of graph.boxes) {
-      map.set(box.id, {
-        id: box.id,
-        x: PAD_X + box.column * (BOX_W + COL_GAP),
-        y: PAD_Y + box.slot * (BOX_H + ROW_GAP),
-        shape: box.shape,
-      });
-    }
-    return map;
-  }, [graph.boxes]);
 
   /* At rest the canvas draws the spine. A crossing that skips a column is a fact about one role,
      so it arrives when that role is chosen; the legend says so rather than leaving it a mystery. */
@@ -200,8 +211,32 @@ export function ArchitectureSketch({
         top of a node is the accepted-overlap the design system forbids, and a control alone in an
         empty corner reads as decoration.
       */}
-      {graph.edges.length === 0 ? null : (
-        <div className="flex justify-end px-[var(--card-pad)] pt-2.5">
+      {/*
+        ⚠️ **The count sits in the canvas's control row, not over the drawing.** A fresh-eyes
+        walkthrough measured 180px hidden at 700 and 490px at 390 and reported "no scrollbar, no
+        fade, no arrow" — after zooming in specifically to check whether the cut edge was an
+        intentional mask. The mask is real and measurable; it has nothing to act on, because a fade
+        works by dissolving ink and this edge carries a dot grid and a hairline arrow tail. A
+        scrollbar is no better: on macOS the overlay one stays hidden until something moves, and
+        whether it does at all is the viewer's system setting rather than ours.
+
+        So the screen states a fact it can derive — how many roles end past the visible edge — which
+        is the one thing the walker could not tell: that the drawing continues rather than ends. It
+        shares the run control's row because pinned over the drawing it covered a node outright,
+        which is the accepted overlap this design system forbids and the same mistake that row was
+        created to fix. The mask stays; it still softens a label clipped mid-character.
+      */}
+      {graph.edges.length === 0 && covered.hiddenRight === 0 ? null : (
+        <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
+        {covered.hiddenRight === 0 ? null : (
+          <span
+            className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 py-1 text-caption text-[color:var(--color-text-tertiary)]"
+            data-testid="architecture-canvas-hidden-right"
+          >
+            {hiddenRightLabel(covered.hiddenRight)}
+          </span>
+        )}
+          {graph.edges.length === 0 ? null : (
           <button
             type="button"
             onClick={() => {
@@ -221,6 +256,7 @@ export function ArchitectureSketch({
             </svg>
             {runLabel}
           </button>
+          )}
         </div>
       )}
 
@@ -239,7 +275,22 @@ export function ArchitectureSketch({
       <div
         ref={attachScroller}
         onScroll={readCoveredEdges}
-        className="overflow-x-auto"
+        /*
+         * ⚠️ **A visible scrollbar, because the fade alone was not perceived.** A fresh-eyes
+         * walkthrough measured 180px hidden at 700 and 490px at 390 and reported "no scrollbar, no
+         * fade, no arrow" — having zoomed in specifically to check whether the cut edge was an
+         * intentional mask, and concluded it was not. The mask is there and measurable; it simply
+         * has nothing to act on. A fade works by dissolving ink, and this edge carries a dot grid
+         * and a hairline arrow tail, where a line of text dissolving is unmistakable. An
+         * affordance nobody perceives is not an affordance.
+         *
+         * So the scrollbar itself speaks, which is what the walker looked for first. macOS keeps
+         * the overlay one hidden until something moves; `DocsQuickDrawer` already answers that by
+         * painting a thin persistent one, and this reuses those exact values rather than inventing
+         * a second answer. It also says how much is hidden and can be dragged, which the fade
+         * could never do. The mask stays: where there is ink at the edge, it still softens the cut.
+         */
+        className="overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]"
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
       >
         <svg
@@ -446,7 +497,6 @@ export function ArchitectureSketch({
         })}
         </svg>
       </div>
-
       {/*
         ⚠️ **Painted, not screen-reader-only.** This list held the complete answer to the question
         the screen exists to answer — every rule, all at once — inside an `sr-only` box measured at
