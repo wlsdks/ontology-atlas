@@ -120,6 +120,11 @@ touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:languag
 # The gateway shows one vault file verbatim; the committed copy must match the vault.
 touched '^docs/ontology/' '^scripts/generate-evidence-specimen' '^src/views/download/model/evidence-specimen' && lane specimen 'pnpm gateway:specimen:check'
 touched '^mcp/|^cli/' && lane mcp 'pnpm docs:surface:check'
+# The design system's table of contents is generated from its own headings, and only this file
+# can move it. It was missing here: a section added on 2026-08-28 shipped with a stale contents
+# list through thirteen green lanes, because `docs:check` runs this check and the docs lane
+# above runs three of its five parts.
+touched '^docs/DESIGN-SYSTEM\.md$' && lane design_toc 'pnpm design:toc:check'
 
 # Repo-wide scanners: these read the whole tree, so almost any edit can move them.
 # Cheap enough (~1 min) that filtering would buy noise, not time.

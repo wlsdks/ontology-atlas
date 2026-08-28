@@ -47,6 +47,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Product Surface Hierarchy](#product-surface-hierarchy)
 - [Topology node focus & scale (ego popover)](#topology-node-focus-scale-ego-popover)
 - [Anti-AI Design Criteria](#anti-ai-design-criteria)
+- [Architecture canvas — the flow surface (new, 2026-08-28)](#architecture-canvas-the-flow-surface-new-2026-08-28)
 - [Absolute rules (Don'ts)](#absolute-rules-donts)
 - [Arrows carry information or they don't ship](#arrows-carry-information-or-they-dont-ship)
 - [Dimensional regularity — when content length varies](#dimensional-regularity-when-content-length-varies)
@@ -167,8 +168,8 @@ Rollout order: gateway → docs(`/docs` Source Vault)/ontology hub(`/ontology`) 
 
 | Surface | Do | Don't |
 |---|---|---|
-| Hero (gate) | Place one topology miniature drawing the actual dogfood vault as evidence (live or static capture). Copy follows Korean h1 + English caption pattern. Decorative constellation/grid backgrounds, auroras, animated backgrounds, scroll-linked canvas animations are forbidden |
-| Card grid (projects/hub) | Machined cards + kind glyphs + debossed mono counts. Hover only increases border brightness. Kind-colored card backgrounds, full-height colored rails, scale hover, gradients inside cards are forbidden |
+| Hero (gate) | Place one topology miniature drawing the actual dogfood vault as evidence (live or static capture). Copy follows Korean h1 + English caption pattern. | Decorative constellation/grid backgrounds, auroras, animated backgrounds, scroll-linked canvas animations |
+| Card grid (projects/hub) | Machined cards + kind glyphs + debossed mono counts. Hover only increases border brightness. | Kind-colored card backgrounds, full-height colored rails, scale hover, gradients inside cards |
 | Data table (insights) | hairline divider, mono numbers right-aligned, solid/dashed lines to distinguish relationships, signals as a single indigo dot/bar | zebra stripe tint, cell background coloring, multi-color badge system per status |
 
 | Nav / chrome | `--topology-chrome-*` density inheritance. Desktop uses precision instruments (32–36px controls), scaled up only at touch breakpoints | Touch density (48px+) chrome on desktop, arbitrary control height/radius per page |

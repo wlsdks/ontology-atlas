@@ -492,8 +492,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "One clip · 9 seconds · No cuts · No speed changes · No audio · No loop · Record separately in Korean/English. The implementation of the playback contract is in src/views/download/ui/DemoStage.tsx, and the asset registration section is in src/views/download/model/demo-clips.ts. What has changed: This section used to arg",
-      "wordCount": 3087,
-      "updatedAt": "2026-08-23",
+      "wordCount": 3084,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
@@ -543,7 +543,7 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 38496,
+      "wordCount": 38503,
       "updatedAt": "2026-08-28",
       "linksOut": [
         "design-references/DESIGN-linear",
