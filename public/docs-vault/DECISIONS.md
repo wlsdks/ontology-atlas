@@ -40,6 +40,121 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-28 — Bounded capability evidence never becomes exhaustive scope
+
+**Convened because**: the owner asked both to make README's reason to use Atlas
+explicit and to repair the latest unfamiliar-repository field trial's 14/15
+claim accuracy. README first-contact words and construction/handoff truth are
+hard-to-reverse reputation surfaces, so all five PO seats ran an independent
+round and one rebuttal. Three seats ran concurrently; the later two received the
+same literal evidence brief with no earlier verdicts.
+
+**Prior decisions**: the 2026-08-25 codebase-ontology positioning stands: Atlas
+explains what code builds, why its boundaries matter, and what a change affects;
+it does not replace source search. The 2026-08-16
+`epistemic-exclusion-boundary` decision also stands. Its principle was right,
+but its phrase detector recognized “not proven/measured” and missed “operations
+not named in the bounded semantic excerpt.”
+
+**Observed phenomenon**: a persisted capability named four operations supported
+by bounded README evidence and placed all operations not named in that excerpt
+under `Excludes`. A fresh source-hidden agent read the full body, upgraded the
+list to “covers only,” and used that closed boundary in its ownership answer.
+The source documents additional operations. Phase 4 verified 14 of 15 claims;
+this was the sole failure.
+
+### PO Council Verdict — capability quantifier integrity and README use moment
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify the exact observed defect; keep README copy conditional on blind comprehension evidence | Problem insight 4 · User moment 4 |
+| Craft | Keep the hero; add at most one compact use moment and prove the built handoff wording | Verification 4 |
+| Steward | Make `Includes` representative by default, `Excludes` sourced, and unlisted behavior uncertain | Ontology value 4 · Agent value 4 |
+| Wedge | Treat the regex as hygiene; the compounding wedge is reviewed local meaning that survives source-hidden handoff | Differentiation 4 |
+| Leverage | Two working days; extend the existing gate and guidance, then run one fresh four-phase trial | appetite and slice |
+
+**Rubric total**: 24/24 (fatal zeros: none)
+
+**Decisive disagreement**: the README already explains Atlas well, so another
+sentence could duplicate the hero while the actual measured constraint is
+handoff accuracy. A blind reader of the current README already identified the
+product, its difference from source search, and the pre-change use moment. What
+remained unclear was how its meaning claims stay bounded. The chosen copy does
+not restate the category: it adds that one use moment and says observed lists
+are non-exhaustive while unsupported scope remains uncertainty. A second blind
+reader named that boundary explicitly, so the copy earned its place.
+
+**Decision (accountable: jinan)**:
+
+1. Keep the hero and standing product promise unchanged. Add two sentences only
+   under `In 30 seconds`: use Atlas before a change to share the start, impact,
+   and verification answer; observed capability lists are not exhaustive and
+   unsupported scope stays uncertain.
+2. Extend the existing proposal error, not the schema. `Excludes` phrases such
+   as “not named/listed/mentioned in this bounded excerpt/evidence/scan/packet”
+   are evidence limits and fail as `epistemic-exclusion-boundary` before any
+   `writePlan`. A sourced neighboring responsibility remains valid.
+3. `Includes` is representative unless a same-boundary cited source explicitly
+   proves completeness. Bootstrap guidance must not create `only`, `all`,
+   `every`, `exactly`, `complete`, or `exhaustive` from selected examples;
+   unlisted behavior moves to `Uncertainty` or a competency gap.
+4. `agent_brief.writePolicy`, its copyable handoff prompt, and the field-trial
+   full-body rule must tell a source-hidden reader to say “the vault names/models
+   these items,” not promote list membership to exhaustive source scope.
+
+**Recorded dissent**: an English phrase regex can overfit one failure, reject a
+legitimate closed-set boundary, and create false confidence while equivalent
+wording survives. **Falsifier**: a sourced neighboring responsibility is
+rejected; the exact old phrase reaches `writePlan`; a source-hidden reader still
+introduces an unsupported exhaustive quantifier; or the fresh trial has any
+failed claim. **Revisit**: after three more unfamiliar-repository claim audits,
+or immediately on the first false positive.
+
+**Slice**: IN README two-sentence reinforcement · narrow existing proposal
+error · exact failure and legitimate-boundary controls · agent-brief handoff
+policy · mirrored bootstrap/extraction/field-trial rules · source/bundle parity ·
+one fresh four-phase trial · existing ontology nodes synchronized · appetite two
+working days · OUT new field/schema/tool/UI · generic NLP quantifier policing ·
+exhaustive operation inventory · old-vault backfill · frozen trial repair ·
+broad README rewrite.
+
+**Gate probe and fresh field trial (completed 2026-08-29)**:
+
+- The exact frozen failure phrase first reached a write plan under the old
+  matcher, then failed with `epistemic-exclusion-boundary` after the repair.
+  Four bounded-omission variants fail, while a sourced neighboring
+  responsibility remains accepted. Missing, foreign, source-hidden-uncovered,
+  and truncated candidate rows also lose write eligibility; the unchanged
+  packet preserves every body, array order, digest, revision, and required gap.
+- An unfamiliar dual-licensed Rust/Bash CLI framework took **4,938.794 seconds**
+  from the first analysis call through the last scratch-vault write because
+  three review-only candidate passes removed an unqualified project exclusion
+  and then source-inspected detail the packet itself could not demonstrate.
+  The released slice contains 21 authored nodes (1 project · 4 domains · 8
+  capabilities · 8 elements), 20 reviewed relations, and 36 resolved compiled
+  edges. Validation reports 0 issues, 0 unresolved edges, and 0 orphans.
+- Citation accuracy is **140/140 path-claim occurrences** across 11 unique
+  paths; the independent persisted-answer audit separately resolves **61/61**
+  cited path instances. A physically isolated reader used 21/21 full bodies
+  with 0 truncation and answered all six frozen questions, truthfully marking
+  all six partial because purpose/domain authority and typed Rust impact remain
+  open.
+- Phase 4 verifies **36/36 claims (100%)**, with 0 failures, 0 skipped claims,
+  and 0 introduced `only` / `all` / `every` / `exactly` quantifiers. Local
+  Excludes stayed local, missing relations stayed unmeasured, and the prior
+  14/15 scope-promotion defect did not recur.
+
+**Comparison and limit**: the run holds the recorded 100% citation/claim
+accuracy target and fixes the named failed-claim shape, but it is slower than
+the 5 min 36 s compact baseline and closes none of the six questions fully.
+`BASELINE.md` therefore does not move. This slice proves bounded handoff
+integrity; it does not create Rust dependency evidence, complete product
+authority, or a faster construction loop.
+
+**Status**: valid
+
+---
+
 ## 2026-08-28 — First-contact diagnosis preserves and reuses summary history
 
 **Convened because**: solo PO pass. The changed-path gate classified the edit to

@@ -4499,6 +4499,8 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.match(agentBrief.writePolicy.join("\n"), /Run read tools first/);
     assert.match(agentBrief.writePolicy.join("\n"), /relationDecisionGuide/);
     assert.match(agentBrief.writePolicy.join("\n"), /find_backlinks before rename_concept/);
+    assert.match(agentBrief.writePolicy.join("\n"), /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/);
+    assert.match(agentBrief.handoffPrompt, /Definition\/Includes.*not exhaustive.*only\/all\/every\/exactly/s);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

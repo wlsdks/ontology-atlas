@@ -35,8 +35,16 @@ Avoid:
 
 After writing a definition, add:
 
-- `includes`: representative in-scope behaviors;
-- `excludes`: the nearest tempting misconception or neighboring responsibility.
+- `includes`: representative in-scope behaviors. A finite list is not an
+  exhaustive inventory unless one cited source explicitly establishes the
+  complete set at this concept boundary;
+- `excludes`: the nearest sourced misconception or neighboring responsibility.
+  An item missing from a bounded excerpt/scan is an evidence limit and belongs
+  in uncertainty, not here.
+
+Never introduce `only`, `all`, `every`, `exactly`, `complete`, or `exhaustive`
+from selected examples. Without an explicit completeness witness, write “the
+evidence names …” and leave unlisted behavior unknown.
 
 The exclusion is mandatory for domains because it makes boundaries reviewable.
 

@@ -147,6 +147,17 @@ Rules:
 - In the MCP proposal, `includes` and `excludes` are JSON string arrays, never
   prose scalars. Preserve even a single boundary as a one-item array.
 
+- Treat `includes` as representative positive scope unless a cited source
+  explicitly establishes a complete set at the same concept boundary. Do not
+  write `only`, `all`, `every`, `exactly`, `complete`, or `exhaustive` from a
+  bounded excerpt or selected examples. Without a completeness witness, say
+  which behaviors the evidence names and keep unlisted behavior unknown.
+
+- Put only sourced product/concept counter-boundaries in `excludes`. “Not
+  named/listed/mentioned in this bounded excerpt, evidence, scan, or packet” is
+  an evidence limit, not proof that the behavior is outside the capability;
+  move it to `uncertainty` or the matching competency gap.
+
 - Apply the specification's positive test and counterexample for every selected
   kind; do not substitute this workflow's ordering for the kind contract.
 - Define the project by the outcome it exists to create, then preserve the
