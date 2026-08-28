@@ -1,4 +1,56 @@
 {
+  "AGENT-DESIGN-METHOD": [
+    {
+      "depth": 1,
+      "text": "How an agent designs here",
+      "slug": "how-an-agent-designs-here"
+    },
+    {
+      "depth": 2,
+      "text": "The failure this document exists for",
+      "slug": "the-failure-this-document-exists-for"
+    },
+    {
+      "depth": 2,
+      "text": "The loop",
+      "slug": "the-loop"
+    },
+    {
+      "depth": 2,
+      "text": "Notation before style",
+      "slug": "notation-before-style"
+    },
+    {
+      "depth": 2,
+      "text": "References are for principles, and the licence is part of the check",
+      "slug": "references-are-for-principles-and-the-licence-is-part-of-the-check"
+    },
+    {
+      "depth": 2,
+      "text": "A generated drawing must be deterministic",
+      "slug": "a-generated-drawing-must-be-deterministic"
+    },
+    {
+      "depth": 2,
+      "text": "Say what you drew, and draw what you said",
+      "slug": "say-what-you-drew-and-draw-what-you-said"
+    },
+    {
+      "depth": 2,
+      "text": "What to put in front of the model",
+      "slug": "what-to-put-in-front-of-the-model"
+    },
+    {
+      "depth": 2,
+      "text": "When a rule blocks the work, change the rule, do not route around it",
+      "slug": "when-a-rule-blocks-the-work-change-the-rule-do-not-route-around-it"
+    },
+    {
+      "depth": 2,
+      "text": "Registering what you made",
+      "slug": "registering-what-you-made"
+    }
+  ],
   "AGENT-GRAPH-WORKFLOW": [
     {
       "depth": 1,

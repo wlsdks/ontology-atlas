@@ -1,19 +1,5 @@
 "use client";
 
-import {
-  AppWindow,
-  Boxes,
-  Braces,
-  Component,
-  Landmark,
-
-  LayoutTemplate,
-  Plug,
-  Route,
-  Settings2,
-  Waypoints,
-  type LucideIcon,
-} from 'lucide-react';
 import { useMemo } from 'react';
 
 import {
@@ -25,33 +11,8 @@ import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 import { buildArchitectureGraph } from '../model/graph-layout';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
-import { ArchitectureGraph } from './ArchitectureGraph';
+import { ArchitectureSketch } from './ArchitectureSketch';
 
-/**
- * A glyph per role id, so a reader recognises a layer before reading it. Unknown ids fall back to
- * the generic layers mark rather than inventing one, because a made-up icon is a claim about a
- * role nobody reviewed.
- */
-const ROLE_ICONS: Record<string, LucideIcon> = {
-  routing: Waypoints,
-  route: Route,
-  app: AppWindow,
-  views: LayoutTemplate,
-  view: LayoutTemplate,
-  widgets: Boxes,
-  widget: Boxes,
-  features: Settings2,
-  feature: Settings2,
-  entities: Component,
-  entity: Component,
-  shared: Braces,
-  adapter: Plug,
-  adapters: Plug,
-  application: Settings2,
-  port: Plug,
-  ports: Plug,
-  domain: Landmark,
-};
 
 /**
  * The architecture stage: a horizontal graph of the reviewed roles, and one panel for whichever
@@ -161,12 +122,11 @@ export function ArchitectureFlow({
           </p>
         ) : null}
 
-        <ArchitectureGraph
+        <ArchitectureSketch
           graph={graph}
           selected={selected !== null && order.includes(selected) ? selected : null}
           onSelect={onSelect}
           roleLabel={roleLabel}
-          roleIcons={ROLE_ICONS}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}
           permittedEdgeLabel={permittedEdgeLabel}

@@ -1190,6 +1190,9 @@
   /* The lit top edge of a raised node: one step above `--color-elevated`, which is the smallest
      move that reads as a face catching light rather than as a second border. */
   --architecture-node-lit-edge: #2e2f33;
+  /* The pencil. A drawn outline sits above the node's own face and under its label, so it reads
+     as a line somebody made rather than as a border the layout emitted. */
+  --color-architecture-sketch-ink: #6d7080;
   /* One wave, left to right. 7 columns × 90ms + 520ms lands at 1.06s, which is long enough to
      read as travel and short enough that nobody waits for it. */
   --architecture-run-duration: 520ms;

@@ -3,6 +3,18 @@
   "generatedAt": "2026-08-28",
   "docs": [
     {
+      "slug": "AGENT-DESIGN-METHOD",
+      "path": "docs/AGENT-DESIGN-METHOD.md",
+      "title": "How an agent designs here",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "What a coding agent (Claude Code, Codex, or whatever comes next) has to do differently to produce a drawing somebody wants to look at. Every rule below is something that went wrong in this repository and was measured, not advice collected from a blog. Written 2026-08-28 during the /architecture canvas rebuild; add to i",
+      "wordCount": 1196,
+      "updatedAt": "2026-08-28",
+      "linksOut": []
+    },
+    {
       "slug": "AGENT-GRAPH-WORKFLOW",
       "path": "docs/AGENT-GRAPH-WORKFLOW.md",
       "title": "Agent Graph Workflow",
@@ -5892,6 +5904,13 @@
             ]
           }
         ]
+      },
+      {
+        "name": "AGENT-DESIGN-METHOD",
+        "path": "AGENT-DESIGN-METHOD",
+        "type": "doc",
+        "slug": "AGENT-DESIGN-METHOD",
+        "title": "How an agent designs here"
       },
       {
         "name": "AGENT-GRAPH-WORKFLOW",
