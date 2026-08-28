@@ -2881,6 +2881,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-28 · First ontology answers stop paying for discarded Git history",
+      "slug": "2026-08-28-first-ontology-answers-stop-paying-for-discarded-git-history"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-28 · Architecture distinguishes value and type-only imports",
       "slug": "2026-08-28-architecture-distinguishes-value-and-type-only-imports"
     },
@@ -12972,6 +12977,11 @@
       "depth": 2,
       "text": "Active Tool Inventory Contract",
       "slug": "active-tool-inventory-contract"
+    },
+    {
+      "depth": 2,
+      "text": "First-Answer Performance Boundary",
+      "slug": "first-answer-performance-boundary"
     },
     {
       "depth": 2,

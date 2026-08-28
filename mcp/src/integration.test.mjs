@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
@@ -110,6 +110,32 @@ function makeVault(seed = []) {
     writeFileSync(fullPath, seededContent, "utf-8");
   }
   return root;
+}
+
+function makeGitTraceWrapper() {
+  if (process.platform === "win32") return null;
+  const root = mkdtempSync(join(tmpdir(), "ontology-atlas-git-trace-"));
+  const tracePath = join(root, "calls.log");
+  const wrapperPath = join(root, "git");
+  writeFileSync(
+    wrapperPath,
+    [
+      "#!/bin/sh",
+      'printf \'%s\\n\' "$*" >> "$OATLAS_GIT_TRACE"',
+      'exec "$OATLAS_REAL_GIT" "$@"',
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+  chmodSync(wrapperPath, 0o755);
+  writeFileSync(tracePath, "", "utf8");
+  return { root, tracePath };
+}
+
+function gitHistoryCalls(tracePath) {
+  return readFileSync(tracePath, "utf8")
+    .split("\n")
+    .filter((line) => /(?:^| )(?:log|show)(?: |$)/.test(line));
 }
 
 /**
@@ -4475,6 +4501,96 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.match(agentBrief.writePolicy.join("\n"), /find_backlinks before rename_concept/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("query_ontology health/workspace_brief/agent_brief — first-answer validation skips unused Git history", async () => {
+  if (process.platform === "win32") return;
+  const root = makeVault([
+    {
+      slug: "project",
+      content: "---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n\n# Project\n",
+    },
+    {
+      slug: "domains/core",
+      content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n\n# Core\n\nStable meaning.\n",
+    },
+    {
+      slug: "capabilities/run",
+      content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\n---\n\n# Run\n",
+    },
+  ]);
+  const wrapper = makeGitTraceWrapper();
+  const realGit = realpathSync("/usr/bin/git");
+  try {
+    execFileSync(realGit, ["-C", root, "init", "--quiet"]);
+    execFileSync(realGit, ["-C", root, "config", "user.email", "atlas@example.invalid"]);
+    execFileSync(realGit, ["-C", root, "config", "user.name", "Ontology Atlas"]);
+    execFileSync(realGit, ["-C", root, "add", "."]);
+    execFileSync(realGit, ["-C", root, "commit", "--quiet", "-m", "initial ontology"], {
+      env: {
+        ...process.env,
+        GIT_AUTHOR_DATE: "2026-01-01T00:00:00Z",
+        GIT_COMMITTER_DATE: "2026-01-01T00:00:00Z",
+      },
+    });
+    writeFileSync(
+      join(root, "domains/core.md"),
+      "---\nuid: 00000000-0000-4000-8000-000000000002\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run, capabilities/review]\n---\n\n# Core\n\nStable meaning.\n",
+      "utf8",
+    );
+    writeFileSync(
+      join(root, "capabilities/review.md"),
+      "---\nuid: 00000000-0000-4000-8000-000000000004\nkind: capability\ntitle: Review\ndomain: domains/core\n---\n\n# Review\n",
+      "utf8",
+    );
+    execFileSync(realGit, ["-C", root, "add", "."]);
+    execFileSync(realGit, ["-C", root, "commit", "--quiet", "-m", "expand core membership"], {
+      env: {
+        ...process.env,
+        GIT_AUTHOR_DATE: "2026-01-02T00:00:00Z",
+        GIT_COMMITTER_DATE: "2026-01-02T00:00:00Z",
+      },
+    });
+
+    const tracedEnv = {
+      OATLAS_GIT_TRACE: wrapper.tracePath,
+      OATLAS_REAL_GIT: realGit,
+      PATH: `${wrapper.root}:${process.env.PATH}`,
+    };
+    const firstAnswer = await rpcForRepo(root, root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "health" }),
+      callTool(3, "query_ontology", { operation: "workspace_brief" }),
+      callTool(4, "query_ontology", { operation: "agent_brief", project: "project" }),
+    ], 1_500, tracedEnv);
+    assert.equal(getCallParsed(firstAnswer.responses, 2).operation, "health");
+    assert.equal(getCallParsed(firstAnswer.responses, 3).operation, "workspace_brief");
+    assert.equal(getCallParsed(firstAnswer.responses, 4).operation, "agent_brief");
+    assert.deepEqual(
+      gitHistoryCalls(wrapper.tracePath),
+      [],
+      "first-answer operations must not compute summary history they do not return",
+    );
+
+    writeFileSync(wrapper.tracePath, "", "utf8");
+    const fullValidation = await rpcForRepo(root, root, [
+      ...INIT_REQUESTS,
+      callTool(2, "validate_vault"),
+    ], 1_500, tracedEnv);
+    const validation = getCallParsed(fullValidation.responses, 2);
+    assert.equal(validation.summaryFreshness.checked, true);
+    assert.ok(
+      validation.summaryFreshness.stale.some((row) => row.slug === "domains/core"),
+      "validate_vault must keep the stale-summary verdict",
+    );
+    assert.ok(
+      gitHistoryCalls(wrapper.tracePath).length > 0,
+      "validate_vault must keep reading Git history for summary freshness",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+    if (wrapper) rmSync(wrapper.root, { recursive: true, force: true });
   }
 });
 

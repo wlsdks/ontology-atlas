@@ -69,7 +69,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 3985,
+      "wordCount": 4009,
       "updatedAt": "2026-08-28",
       "linksOut": [
         "../AGENTS",
@@ -425,8 +425,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. architectur",
-      "wordCount": 79715,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. health, wor",
+      "wordCount": 79878,
       "updatedAt": "2026-08-28",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -560,7 +560,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 12170,
+      "wordCount": 12195,
       "updatedAt": "2026-08-28",
       "linksOut": []
     },
@@ -1390,8 +1390,8 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 2598,
-      "updatedAt": "2026-08-25",
+      "wordCount": 2659,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
@@ -1563,8 +1563,8 @@
       },
       "headings": [],
       "excerpt": "Reports a domain or project whose containment list changed after its body prose was last re-written, so its description may no longer cover what it holds. Advisory only: nothing is blocked, no model is called, and no rewrite is proposed, because a summary body is a human judgement that someone accepted. mcp/src/stale-p",
-      "wordCount": 265,
-      "updatedAt": "2026-08-25",
+      "wordCount": 302,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {

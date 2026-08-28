@@ -531,7 +531,12 @@ augments the handoff and does not replace `agent_brief.readiness`.
 validation. A validator warning/failure inserts an actionable
 `vault_validation` next action; when validation alone downgrades readiness,
 `agent_brief.readiness.score` is lowered too, avoiding a contradictory
-`needs_attention` status with a perfect score.
+`needs_attention` status with a perfect score. That attached projection checks
+schema, graph references, and source-path drift, but deliberately does not read
+Git history for `summaryFreshness`, which none of those three responses return.
+The full `validate_vault` response and `maintenance_plan` keep the Git-backed
+summary verdict; first-contact speed never turns an unmeasured verdict into a
+clean one.
 
 `agent_brief.meaningAssessment` is the selected project's categorical meaning
 contract: `verified_current`, `review_required`, `needs_evidence`, or `invalid`,

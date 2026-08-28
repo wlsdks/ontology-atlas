@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-08-28 · First ontology answers stop paying for discarded Git history
+
+- `health`, `workspace_brief`, and `agent_brief` still attach whole-vault
+  schema, graph-reference, and source-path validation, but no longer compute
+  Git-backed summary freshness that those responses do not return.
+- `validate_vault.summaryFreshness`, the matching maintenance action, and the
+  installed-app verdict still read history and keep their existing fail-closed
+  behavior. A planted two-commit stale-summary fixture proves that the signal
+  remains live.
+- On the 88-node dogfood vault, a local seven-run median moved the source MCP
+  `workspace_brief` call from 1,102.8ms to 37.0ms, the repeated call from
+  1,067.7ms to 19.0ms, and the CLI round trip from 1,294.5ms to 212.6ms. These
+  are development-machine measurements, not a cross-device latency promise.
+  After rebuilding, the app-bundled MCP measured 23.8ms for the brief and
+  99.4ms from process start through the first brief.
+  The existing 32-command, concurrency-4 fallback gate moved from 9.187s to
+  1.899s wall time; its `workspace-brief` / `health` rows moved from
+  4.574s / 4.771s to 221ms / 217ms under the same settings.
+
 ## 2026-08-28 · Architecture distinguishes value and type-only imports
 
 - `architecture-profile/v1` can now declare `dependency_usages`, the known import

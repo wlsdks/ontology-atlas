@@ -29,6 +29,10 @@ It provides a stdio JSON-RPC interface so that an AI coding agent can read and s
 - A read-only server advertises neither write tools nor exposes them in its initial announcement. In both full mode and read-only mode, the header count and the set of read/write names must exactly match those in `tools/list`.
 - `mcp-verify` independently compares the live `tools/list` with the counts, classifications, and name sets in the initialize announcement. Documents and configuration screens reference `tools/list` and `mcp-verify`, avoiding promises to users about mutable fixed counts.
 
+## First-Answer Performance Boundary
+
+`health`, `workspace_brief`, and `agent_brief` attach whole-vault schema, graph-reference, and source-path validation because an agent must not receive a fast false-green handoff. They do not calculate Git-backed summary freshness, which those responses do not return. `validate_vault.summaryFreshness` and `maintenance_plan` remain the explicit history-reading surfaces, so first-contact latency is reduced without converting an unmeasured meaning verdict into a clean one.
+
 ## Identity Boundaries
 
 - `uid` is the permanent machine identity that persists across renames, while `slug` is the human-readable and editable current address. All node responses return both.
