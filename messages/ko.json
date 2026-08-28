@@ -341,7 +341,8 @@
     "railRoles": "역할 {count}개",
     "statModules": "소스 모듈",
     "statEvidence": "근거 파일",
-    "sourceListingUnavailable": "소스 모듈은 소스 폴더가 연결된 설치 앱에서 표시됩니다. 브라우저는 소스 폴더를 읽을 수 없습니다.",
+    "sourceListingUnavailable": "소스 모듈은 소스 폴더가 연결돼야 표시됩니다. 브라우저는 소스 폴더를 읽을 수 없어 여기서는 비어 있습니다.",
+    "sourceListingUnbound": "아직 연결된 소스 폴더가 없습니다. 이 프로필이 설명하는 폴더를 열면 각 밴드가 글롭이 실제로 담고 있는 모듈로 채워집니다.",
     "draftFromCode": "코드에서 초안 만들기",
     "draftNoAgentBody": "지금은 연결된 에이전트가 없어 이 화면에서 바로 시작할 수 없습니다. 아래 문장을 복사해 쓰시는 코딩 에이전트에 붙여 넣으세요."
   },

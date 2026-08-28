@@ -1,10 +1,11 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Boxes, CircleHelp, FileCode2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
+import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import {
   buildArchitectureAgentPrompt,
@@ -51,6 +52,7 @@ export function ArchitectureWorkbench({
   handoffContexts = {},
   sourceModulesByProfile = {},
   sourceListingCapable = false,
+  sourceUnavailableReason = 'browser',
   recordsByProfile = {},
   conceptsByProfile = {},
 }: {
@@ -60,6 +62,8 @@ export function ArchitectureWorkbench({
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   /** Whether this surface can list a source folder at all — false in a browser, by nature. */
   sourceListingCapable?: boolean;
+  /* Which absence the stage should name when it cannot list source modules. */
+  sourceUnavailableReason?: 'browser' | 'unbound' | null;
   /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
   /** Per profile slug, the reviewed concepts joined into each role (the click-open detail). */
@@ -133,6 +137,44 @@ export function ArchitectureWorkbench({
     });
     return () => observer.disconnect();
   }, [mode]);
+
+  const handoff = selected
+    ? buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null)
+    : '';
+  /*
+   * Which edge of the packet preview is covered. `listboxTopIsHidden`/`listboxBottomIsHidden` are
+   * the repository's one answer to "is something hidden past this edge"; reusing them keeps the
+   * judgment identical to the select listbox and the composer.
+   */
+  const handoffRef = useRef<HTMLPreElement | null>(null);
+  const [handoffEdges, setHandoffEdges] = useState<{ top: boolean; bottom: boolean }>({
+    top: false,
+    bottom: false,
+  });
+  const readHandoffEdges = useCallback(() => {
+    const element = handoffRef.current;
+    if (!element) return;
+    const overflowing = element.scrollHeight > element.clientHeight + 1;
+    setHandoffEdges({
+      top: listboxTopIsHidden(overflowing, element.scrollTop),
+      bottom: listboxBottomIsHidden(
+        overflowing,
+        element.scrollTop,
+        element.clientHeight,
+        element.scrollHeight,
+      ),
+    });
+  }, []);
+  useLayoutEffect(readHandoffEdges, [readHandoffEdges, handoff, mode]);
+  const handoffMask = (() => {
+    const fade = 'var(--leading-body)';
+    if (handoffEdges.top && handoffEdges.bottom) {
+      return `linear-gradient(to bottom, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
+    }
+    if (handoffEdges.top) return `linear-gradient(to bottom, transparent 0, #000 ${fade})`;
+    if (handoffEdges.bottom) return `linear-gradient(to top, transparent 0, #000 ${fade})`;
+    return undefined;
+  })();
 
   if (!selected) {
     return (
@@ -243,7 +285,6 @@ export function ArchitectureWorkbench({
     );
   }
 
-  const handoff = buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null);
   const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
   /*
    * ⚠️ **The receipt is rendered as what it is: a dated machine measurement, not a live claim**
@@ -487,7 +528,15 @@ export function ArchitectureWorkbench({
                 moduleCountLabel={(count) => t('moduleCount', { count })}
                 moreLabel={(count) => t('moreOccupants', { count })}
                 showFewerLabel={t('fewerOccupants')}
-                sourceUnavailableBody={sourceListingCapable ? null : t('sourceListingUnavailable')}
+                sourceUnavailableBody={
+                  sourceListingCapable || !sourceUnavailableReason
+                    ? null
+                    : t(
+                        sourceUnavailableReason === 'unbound'
+                          ? 'sourceListingUnbound'
+                          : 'sourceListingUnavailable',
+                      )
+                }
                 reachInlineLabel={(targets) => t('reachInline', { targets })}
                 layerConceptsLabel={t('layerConcepts')}
                 conceptCountLabel={(count) => t('conceptCount', { count })}
@@ -561,8 +610,18 @@ export function ArchitectureWorkbench({
             <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('planBody')}
             </p>
+            {/*
+              The box scrolls, but macOS hides its overlay scrollbar until something moves — so a
+              packet longer than 12rem simply stopped mid-sentence and read as truncated text
+              (2026-08-28 inspection, installed app: "…does not embed a current conformance").
+              The covered edge gets the same fade the select listbox uses, on the same helpers, so
+              two surfaces solving one problem do not answer it differently.
+            */}
             <pre
+              ref={handoffRef}
+              onScroll={readHandoffEdges}
               className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)]"
+              style={handoffMask ? { maskImage: handoffMask, WebkitMaskImage: handoffMask } : undefined}
               aria-label={t('handoffPreview')}
               tabIndex={0}
             >

@@ -341,7 +341,8 @@
     "railRoles": "{count, plural, one {# role} other {# roles}}",
     "statModules": "Source modules",
     "statEvidence": "Evidence files",
-    "sourceListingUnavailable": "Source modules appear in the installed app once a project source is connected. A browser cannot read a source folder.",
+    "sourceListingUnavailable": "Source modules appear once a project source folder is connected. A browser cannot read a source folder, so this stays empty here.",
+    "sourceListingUnbound": "No source folder is connected yet. Open the folder this profile describes and the bands fill with the modules its globs actually contain.",
     "draftFromCode": "Draft from this codebase",
     "draftNoAgentBody": "No agent is connected, so this cannot start here. Copy the sentence below and paste it into the coding agent you use."
   },

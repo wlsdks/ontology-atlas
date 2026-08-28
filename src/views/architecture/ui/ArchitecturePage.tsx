@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
   deriveArchitectureProfiles,
@@ -13,6 +13,7 @@ import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
 import {
   getTauriVaultRootPath,
+  isTauriVaultRuntime,
   listTauriVaultEntries,
   readTauriVaultText,
 } from '@/shared/lib/tauri-vault-fs';
@@ -24,6 +25,13 @@ import {
 } from '../model/source-modules';
 import { useArchitectureRecords } from '../model/use-architecture-record';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
+
+/* The runtime never changes inside a session, so the store is a constant read. Same shape as
+   `DocsVaultPage`; two surfaces answering "am I the installed app?" differently would be a
+   question the next reader has to resolve twice. */
+const subscribeDesktopRuntime = () => () => undefined;
+const readDesktopRuntime = () => isTauriVaultRuntime();
+const readServerDesktopRuntime = () => false;
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
 const EMPTY_DOCS: VaultDoc[] = [];
@@ -80,6 +88,23 @@ export function ArchitecturePage() {
   /* A browser cannot list a source folder; only the installed app's bridge can. */
   const sourceListingCapable =
     mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
+  /*
+   * Why the surface must say *which* thing is missing (2026-08-28 inspection). The installed app
+   * opens on a sample with no folder bound, and there the old single sentence told the reader
+   * "source modules appear in the installed app" while being the installed app. Two different
+   * absences were wearing one message. The runtime answers which one this is: a browser can never
+   * list a folder, and an app without a bound folder is one open away.
+   */
+  const desktopRuntime = useSyncExternalStore(
+    subscribeDesktopRuntime,
+    readDesktopRuntime,
+    readServerDesktopRuntime,
+  );
+  const sourceUnavailableReason = sourceListingCapable
+    ? null
+    : desktopRuntime
+      ? ('unbound' as const)
+      : ('browser' as const);
   /*
    * Persisted conformance receipts live in the vault sidecar, so both surfaces read them through
    * the same handle. Static/demo mode carries no sidecar and therefore never a record.
@@ -144,6 +169,7 @@ export function ArchitecturePage() {
       handoffContexts={handoffContexts}
       sourceModulesByProfile={sourceModulesByProfile}
       sourceListingCapable={sourceListingCapable}
+      sourceUnavailableReason={sourceUnavailableReason}
       recordsByProfile={recordsByProfile}
       conceptsByProfile={conceptsByProfile}
     />

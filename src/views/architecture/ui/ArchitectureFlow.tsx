@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   AppWindow,
   ChevronDown,
@@ -29,6 +29,7 @@ import {
 import { useSwapHeight } from '@/shared/lib/use-presence';
 import { Chip, RowButton, StaggeredFadeIn, TopologyV2KindGlyph } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { useGridColumns } from '../model/grid-columns';
 import { deriveConceptEdges, type ConceptEdge, type RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 
@@ -98,7 +99,15 @@ const ROLE_ICONS: Record<string, LucideIcon> = {
  * is one full card row at the widest stage; the "+N" control lives in the label column so the
  * card region holds only cards and the control never wraps into a lonely row of its own.
  */
-const CARD_PREVIEW = 3;
+/* The occupant grids' track floor and gap — `minmax(200px, 1fr)` with `gap-2.5`. The preview row
+   is derived from these, so the two numbers live once and the class strings quote them. */
+const OCCUPANT_CARD_MIN = 200;
+const OCCUPANT_CARD_GAP = 10;
+/* `px-3.5` on both sides of a concept section. */
+const CONCEPT_SECTION_INSET = 28;
+/* What the preview shows before any layout can be measured — the count this grid carried before
+   it was derived, so an unmeasurable surface loses nothing. */
+const OCCUPANT_PREVIEW_FALLBACK = 3;
 
 interface BandProps {
   rung: string[];
@@ -198,6 +207,29 @@ function ArchitectureBand({
     )
     .join('');
   const { hostRef: swapHostRef, capture: captureSwapHeight } = useSwapHeight(expandKey);
+  /*
+   * Both occupant grids preview exactly one full row. The module grid fills its own flex column,
+   * so it is measured directly; the concept sections sit inside the band host behind `px-3.5`,
+   * which `CONCEPT_SECTION_INSET` subtracts — change that class and the constant moves with it.
+   */
+  const [setModuleGridNode, modulePreview] = useGridColumns(
+    OCCUPANT_CARD_MIN,
+    OCCUPANT_CARD_GAP,
+    { fallback: OCCUPANT_PREVIEW_FALLBACK },
+  );
+  const [setBandHostNode, conceptPreview] = useGridColumns(OCCUPANT_CARD_MIN, OCCUPANT_CARD_GAP, {
+    inset: CONCEPT_SECTION_INSET,
+    fallback: OCCUPANT_PREVIEW_FALLBACK,
+  });
+  /* The band host carries two readers: `useSwapHeight` animates it, and the concept grid takes
+     its width from it. One callback ref feeds both so neither has to know about the other. */
+  const bandHostRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      swapHostRef.current = node;
+      setBandHostNode(node);
+    },
+    [swapHostRef, setBandHostNode],
+  );
 
   return (
     /*
@@ -265,7 +297,7 @@ function ArchitectureBand({
         opens into the reference's diagram region: label column leading, module cards filling the
         rest, height animating on expand/collapse (`useSwapHeight`).
       */}
-      <div ref={swapHostRef} className="overflow-hidden">
+      <div ref={bandHostRef} className="overflow-hidden">
       {modules === null ? (
         <div className="flex items-center gap-3 px-3.5 py-2">
           {rung.map((id) => (
@@ -489,7 +521,7 @@ function ArchitectureBand({
                 {(() => {
                   const roleModules = modules?.[id] ?? [];
                   const isExpanded = expandedRoles.has(id);
-                  const hidden = roleModules.length - CARD_PREVIEW;
+                  const hidden = roleModules.length - modulePreview;
                   if (hidden <= 0 && !isExpanded) return null;
                   return (
                     <div className="mt-1.5 px-2">
@@ -518,12 +550,12 @@ function ArchitectureBand({
             the way the reference draws components inside a layer. No edges between cards are
             invented, and no import is ever read here.
           */}
-          <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+          <div ref={setModuleGridNode} className="flex min-w-0 flex-1 flex-col gap-2.5">
             {rung.map((id) => {
               const roleModules = modules?.[id] ?? [];
               if (roleModules.length === 0) return null;
               const isExpanded = expandedRoles.has(id);
-              const visible = isExpanded ? roleModules : roleModules.slice(0, CARD_PREVIEW);
+              const visible = isExpanded ? roleModules : roleModules.slice(0, modulePreview);
               return (
                 <div key={id} className="min-w-0" data-testid={`architecture-modules-${id}`}>
                   {rung.length > 1 ? (
@@ -595,7 +627,7 @@ function ArchitectureBand({
                 Number(edgeParticipants.has(b.slug)) - Number(edgeParticipants.has(a.slug)),
             )
           : roleConcepts;
-        const visibleConcepts = showAll ? ordered : ordered.slice(0, CARD_PREVIEW);
+        const visibleConcepts = showAll ? ordered : ordered.slice(0, conceptPreview);
         const hiddenConcepts = roleConcepts.length - visibleConcepts.length;
         return (
           <div
@@ -835,15 +867,22 @@ export function ArchitectureFlow({
    * The detail sections open by default — the resting state is the full diagram, the click
    * collapses or re-focuses (owner direction, 2026-08-27: the first impression must be the
    * living picture, not a list of rows waiting to be asked).
+   *
+   * A role holding nothing rests closed (2026-08-28 inspection). Opening it draws a labelled
+   * strip with "0 concepts" under it, and on the installed app's own first screen — a sample
+   * whose globs match nothing yet — that was every band on the stage: four empty strips where
+   * the redesign promised occupants. An empty region instead of a compact row is the exact
+   * thing the source-modules record refused, so the rest state refuses it too. The click still
+   * opens the empty band and still answers "0"; it is only the resting picture that stops
+   * claiming there is something to see.
    */
+  const restOpenRoles = () =>
+    new Set(profile.roles.filter((role) => (concepts[role.id] ?? []).length > 0).map((role) => role.id));
   const [openState, setOpenState] = useState<{ key: string; roles: ReadonlySet<string> }>(() => ({
     key: profile.slug,
-    roles: new Set(profile.roles.map((role) => role.id)),
+    roles: restOpenRoles(),
   }));
-  const openRoles =
-    openState.key === profile.slug
-      ? openState.roles
-      : new Set(profile.roles.map((role) => role.id));
+  const openRoles = openState.key === profile.slug ? openState.roles : restOpenRoles();
   const setOpenRoles = (updater: (current: ReadonlySet<string>) => ReadonlySet<string>) =>
     setOpenState(() => ({ key: profile.slug, roles: updater(openRoles) }));
   /* Concept sections showing all cards instead of the preview row. */
@@ -999,6 +1038,14 @@ export function ArchitectureFlow({
         */}
         <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-caption text-[color:var(--color-text-quaternary)]">
           <span>{directionLabel}</span>
+          {/*
+            A legend for a mark nobody drew is noise: on a profile whose roles hold no reviewed
+            concepts there is no stroke on the stage, and the two stroke rows described nothing
+            (2026-08-28 inspection, installed app's default sample). The arrow sentence stays —
+            the spine arrows are always drawn.
+          */}
+          {conceptEdges.length === 0 ? null : (
+          <>
           <span className="flex items-center gap-1.5">
             <svg width={18} height={6} aria-hidden>
               <line x1={0} y1={3} x2={18} y2={3} stroke="var(--color-indigo-a60)" strokeWidth={1.5} />
@@ -1019,6 +1066,8 @@ export function ArchitectureFlow({
             </svg>
             {legendRelated}
           </span>
+          </>
+          )}
         </p>
       </div>
 
