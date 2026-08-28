@@ -90,9 +90,10 @@ and every write the agent makes lands as a line in a Markdown file you can diff.
 
 Architecture is a separate contract, not another ontology layer. A reviewed
 `architecture-profile/v1` document declares implementation roles, scoped paths,
-and allowed dependency direction; `inspect_architecture` and the `architecture`
-CLI compare that intent with current source imports and return
-`conforms`, `violated`, or `unknown`. Unknown coverage is never shown as green.
+allowed dependency direction, and which known import usages those rules govern;
+`inspect_architecture` and the `architecture` CLI compare that intent with
+usage-qualified current source imports and return `conforms`, `violated`, or
+`unknown`. Unknown coverage or import usage is never shown as green.
 
 The exact five-kind discriminator, relation support matrix, direct `is_a` test,
 and standards/inference boundary live in the

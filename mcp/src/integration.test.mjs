@@ -928,6 +928,34 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.match(inferImports?.description ?? "", /resolved to internal files/);
     assert.match(inferImports?.description ?? "", /alias-not-found/);
     assert.doesNotMatch(inferImports?.description ?? "", /aliases \(@\/\) → external \(not resolved\)/);
+    const inspectArchitecture = findTool("inspect_architecture");
+    const architectureProfileSchema = inspectArchitecture?.outputSchema?.properties?.profile;
+    const architectureConformanceSchema = inspectArchitecture?.outputSchema?.properties?.conformance;
+    assert.deepEqual(
+      architectureProfileSchema?.properties?.dependencyUsages?.items?.enum,
+      ["value", "type_only"],
+    );
+    assert.ok(architectureProfileSchema?.required?.includes("dependencyUsages"));
+    assert.ok(architectureConformanceSchema?.required?.includes("excludedByUsage"));
+    assert.deepEqual(
+      architectureConformanceSchema?.properties?.observedRoleEdges?.items?.properties?.importUsageCounts?.required,
+      ["value", "type_only", "unknown"],
+    );
+    assert.deepEqual(
+      architectureConformanceSchema?.properties?.observedRoleEdges?.items?.properties?.evidence?.items?.properties?.importUsage?.enum,
+      ["value", "type_only", "unknown"],
+    );
+    assert.deepEqual(
+      architectureConformanceSchema?.properties?.violations?.items?.properties?.importUsage?.enum,
+      ["value", "type_only"],
+    );
+    assert.ok(
+      architectureConformanceSchema?.properties?.unknown?.required?.includes("unknownImportUsages"),
+    );
+    assert.match(
+      inspectArchitecture?.description ?? "",
+      /which known import usages those rules govern[\s\S]*usage-qualified receipts[\s\S]*unclassified import usage/i,
+    );
     const listKinds = findTool("list_kinds");
     assert.match(
       listKinds?.description ?? "",
@@ -2965,6 +2993,7 @@ await test("inspect_architecture — profile intent and observed imports produce
     assert.equal(result.contract, "architectureBrief:v1");
     assert.equal(result.sideEffect, 0);
     assert.equal(result.profile.slug, "payments-core");
+    assert.deepEqual(result.profile.dependencyUsages, ["value", "type_only"]);
     assert.equal(result.conformance.status, "violated");
     assert.deepEqual(result.conformance.violations[0], {
       fromRole: "domain",
@@ -2972,8 +3001,10 @@ await test("inspect_architecture — profile intent and observed imports produce
       from: "src/payments/domain/payment.ts",
       to: "src/payments/adapters/postgres.ts",
       kind: "static",
+      importUsage: "value",
       rule: "allow-domain",
     });
+    assert.equal(result.conformance.unknown.unknownImportUsages, 0);
     assert.equal(result.agentPlanContract.contract, "architectureChangePlan:v1");
   } finally {
     rmSync(vaultRoot, { recursive: true, force: true });

@@ -7,6 +7,21 @@
 
 ---
 
+## 2026-08-28 · Architecture distinguishes value and type-only imports
+
+- `architecture-profile/v1` can now declare `dependency_usages`, the known import
+  usages its dependency direction rules govern. Existing profiles keep their
+  value-plus-type-only behavior when the field is absent; unclassified usage is
+  never declarable and keeps conformance `unknown`.
+- MCP `inspect_architecture` and CLI `architecture` preserve usage counts and
+  exact receipt usage, include usage on each violation, and report how many
+  mapped edges were excluded by the reviewed policy.
+- The Atlas web profile governs value imports. Its 18 `shared → entities` rows
+  were explicit type-only imports allowed by the cited ESLint policy, not real
+  FSD violations. They remain visible as observations but no longer produce a
+  false remediation action; the existing unmapped edges keep the overall result
+  honestly `unknown`.
+
 ## 2026-08-26 · The Architecture tab draws a shape, and its empty state does something
 
 - The role diagram was a list with decoration attached, through four rewrites: cards with an arrow

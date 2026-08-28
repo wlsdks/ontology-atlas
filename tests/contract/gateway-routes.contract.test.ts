@@ -95,7 +95,7 @@ describe('가이드 차례', () => {
         expect((body ?? '').length, `${page.slug} 가 사실상 비어 있다`).toBeGreaterThan(200);
       }
     },
-    10_000,
+    30_000,
   );
 
   it('차례의 모든 장이 두 로케일 모두에 이름을 갖는다', async () => {

@@ -4,6 +4,7 @@ const ARCHITECTURE_PROFILE_CONTRACT = 'architecture-profile/v1' as const;
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
+const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'] as const;
 
 interface ArchitecturePattern {
   axis: string;
@@ -26,6 +27,7 @@ export interface ArchitectureProfile {
   excludePaths: string[];
   roles: ArchitectureRole[];
   dependencyPolicy: 'explicit' | 'lower-only';
+  dependencyUsages: Array<(typeof DEPENDENCY_USAGE_VALUES)[number]>;
   allows: Record<string, string[]>;
   evidence: string[];
   documentSlug?: string | null;
@@ -64,6 +66,25 @@ function parsePatterns(value: unknown): ArchitecturePattern[] {
       name: nonBlank(row.slice(separator + 1), `patterns[${index}].name`),
     };
   });
+}
+
+function parseDependencyUsages(
+  value: unknown,
+): Array<(typeof DEPENDENCY_USAGE_VALUES)[number]> {
+  if (value === undefined) return [...DEPENDENCY_USAGE_VALUES];
+  const usages = stringArray(value, 'dependency_usages');
+  const unsupported = usages.find(
+    (usage) => !DEPENDENCY_USAGE_VALUES.includes(
+      usage as (typeof DEPENDENCY_USAGE_VALUES)[number],
+    ),
+  );
+  if (unsupported) {
+    throw new Error(
+      `dependency_usages contains unsupported usage: ${unsupported}. ` +
+        `Expected one of ${DEPENDENCY_USAGE_VALUES.join(', ')}.`,
+    );
+  }
+  return usages as Array<(typeof DEPENDENCY_USAGE_VALUES)[number]>;
 }
 
 export function parseArchitectureProfile(frontmatter: Record<string, unknown>): ArchitectureProfile {
@@ -122,6 +143,7 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id)! })),
     dependencyPolicy: rawPolicy,
+    dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
     allows,
     evidence: stringArray(frontmatter.evidence, 'evidence'),
   };
@@ -195,6 +217,7 @@ export function buildArchitectureAgentPrompt(
     cliFallback,
     'This UI does not embed a current conformance receipt; the first inspection is the source of truth for this run.',
     'Report the selected scope, declared pattern axes, role mappings, observed dependency coverage, violations, and unknowns.',
+    `Apply dependency rules only to the profile's declared import usages: ${profile.dependencyUsages.join(', ')}.`,
     'Do not treat unknown as compliant, and do not infer a named pattern from folder names.',
     'Before editing, return an architectureChangePlan:v1 with touchedRoles, plannedPaths, expectedNewDependencies, crossedBoundaries, preservedInterfaces, verificationCommands, and unknowns.',
     'After editing, call inspect_architecture again and compare the actual conformance result with the plan.',
@@ -212,13 +235,11 @@ export function buildArchitectureAgentPrompt(
  *
  * ⚠️ **What this sentence must refuse to ask for, and why each refusal was measured.**
  *
- * - **It may not ask for `allow_*` or `dependency_policy`.** Deriving rules from observed imports
- *   makes the status quo the rule. Measured on this repository: `atlas architecture` reports 18
- *   real Feature-Sliced Design violations, `shared → entities` among them. A rule derived from
- *   those same imports would have emitted `allow_shared: [entities]` and rendered the repository
- *   `conforms` — reaching the standing record's own falsifier, *"if an unsupported scan ever
- *   renders green"*, by design rather than by bug. Omitting both keys leaves every edge unruled,
- *   which the evaluator reports as `unknown` — and unknown is never compliant.
+ * - **It may not ask for `allow_*`, `dependency_policy`, or `dependency_usages`.** Deriving rules
+ *   from observed imports makes the status quo the rule. The source can prove that an edge exists
+ *   and whether it is value or type-only usage; it cannot decide whether the reviewed policy
+ *   permits that usage or direction. Omitting all three keys leaves every edge unruled, which the
+ *   evaluator reports as `unknown` — and unknown is never compliant.
  * - **It may not ask the agent to name the pattern, or to name the roles.** The record's clause is
  *   "a pattern label is never inferred from folders". A role id is that claim in miniature:
  *   emitting `role_entities` or `role_adapters` from folder names is inferring Feature-Sliced
@@ -255,7 +276,7 @@ export function buildArchitectureDraftPrompt(
     '   `profile_uid`, the `project_uid` of the project node this describes, the names I gave you,',
     '   the path groups as `role_<id>` globs, and `created_by: agent:<your tool name>`.',
     '   Write no `kind:` and no `uid:` — this record is deliberately not a node in the map.',
-    '   Write no `allow_*` keys and no `dependency_policy`: the rules are mine to state, and',
+    '   Write no `allow_*` keys, no `dependency_policy`, and no `dependency_usages`: the rules are mine to state, and',
     '   deriving them from what the code happens to do today would turn existing violations into',
     '   permissions. Leaving them out reports every edge as unknown, which is the honest start.',
     '   Put the human authorities that already govern the boundary in `evidence` — a lint config,',

@@ -8014,8 +8014,11 @@ await test('architecture --json — returns the same fail-closed agent brief as 
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.contract, 'architectureBrief:v1');
     assert.equal(payload.sideEffect, 0);
+    assert.deepEqual(payload.profile.dependencyUsages, ['value', 'type_only']);
     assert.equal(payload.conformance.status, 'violated');
     assert.equal(payload.conformance.violations[0].fromRole, 'domain');
+    assert.equal(payload.conformance.violations[0].importUsage, 'value');
+    assert.equal(payload.conformance.unknown.unknownImportUsages, 0);
     assert.equal(payload.agentPlanContract.contract, 'architectureChangePlan:v1');
   } finally {
     rmSync(vault, { recursive: true, force: true });

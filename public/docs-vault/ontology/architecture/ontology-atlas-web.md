@@ -17,6 +17,7 @@ role_features: [src/features/**]
 role_entities: [src/entities/**]
 role_shared: [src/shared/**]
 dependency_policy: lower-only
+dependency_usages: [value]
 evidence: [docs/ARCHITECTURE.md#fsd-layers, eslint.config.mjs]
 ---
 

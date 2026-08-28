@@ -29,8 +29,9 @@ nothing to run by hand). Three hooks live there:
 | `pre-push` | path lanes that CI would fail, run in parallel with e2e left to CI — decision (96), which overturns (95) |
 
 The parallel pre-push hook can saturate a local machine, so its unit and contract
-Vitest lanes alone use a 30-second per-test timeout. Focused runs and CI keep the
-normal timeout; the hook changes waiting tolerance, not assertions or coverage.
+Vitest lanes alone use four workers and a 30-second per-test timeout. Focused runs
+and CI keep the normal worker pool and timeout; the hook changes local scheduling
+and waiting tolerance, not assertions or coverage.
 
 The `pre-commit` rationale below is the oldest of the three.
 
@@ -781,7 +782,7 @@ committing or publishing changes.
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
-| `pnpm test:architecture` | Architecture profile parser/conformance, web↔MCP parity, Living Blueprint interaction, focused `inspect_architecture`, and CLI `architecture --json` contracts. The changed-path advisor also adds the rendered mobile reachability E2E. Probed by changing the shared fixture contract to `architecture-profile/v0`: the gate failed 10 tests, then returned green after restoration. |
+| `pnpm test:architecture` | Architecture profile parser/conformance, web↔MCP parity, Living Blueprint interaction, focused `inspect_architecture`, and CLI `architecture --json` contracts. Import-usage probes require declared type-only exclusions to stay non-violating, upward value imports to remain violations, and unclassified usage to remain unknown. The changed-path advisor also adds the rendered mobile reachability E2E. Probed by changing the shared fixture contract to `architecture-profile/v0`: the gate failed 10 tests, then returned green after restoration. |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` / `.codex/config.toml` registration templates |
 | `pnpm test:mcp:unit` | Every `mcp/src/*.test.mjs` except the integration suite — discovered by glob, not a hand-kept list, so a new test file cannot be silently excluded. Runs in CI (`Checks` → `MCP unit tests`). Use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one |

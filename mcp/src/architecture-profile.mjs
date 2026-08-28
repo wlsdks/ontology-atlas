@@ -4,6 +4,8 @@ const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
 const MATCHED_FILE_SAMPLE_LIMIT = 20;
 const VIOLATION_SAMPLE_LIMIT = 50;
+const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'];
+const OBSERVED_IMPORT_USAGE_VALUES = [...DEPENDENCY_USAGE_VALUES, 'unknown'];
 
 function nonBlank(value, name) {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -68,6 +70,19 @@ function parsePatterns(value) {
   });
 }
 
+function parseDependencyUsages(value) {
+  if (value === undefined) return [...DEPENDENCY_USAGE_VALUES];
+  const usages = stringArray(value, 'dependency_usages');
+  const unsupported = usages.find((usage) => !DEPENDENCY_USAGE_VALUES.includes(usage));
+  if (unsupported) {
+    throw new Error(
+      `dependency_usages contains unsupported usage: ${unsupported}. ` +
+        `Expected one of ${DEPENDENCY_USAGE_VALUES.join(', ')}.`,
+    );
+  }
+  return usages;
+}
+
 export function parseArchitectureProfile(frontmatter) {
   if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
     throw new Error('architecture profile frontmatter must be an object.');
@@ -125,6 +140,7 @@ export function parseArchitectureProfile(frontmatter) {
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id) })),
     dependencyPolicy,
+    dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
     allows,
     evidence: stringArray(frontmatter.evidence, 'evidence'),
   };
@@ -211,6 +227,12 @@ function ruleFor(profile, fromRole, toRole) {
   };
 }
 
+function importUsageOf(edge) {
+  return OBSERVED_IMPORT_USAGE_VALUES.includes(edge?.importUsage)
+    ? edge.importUsage
+    : 'unknown';
+}
+
 export function evaluateArchitectureConformance(profile, importResult) {
   const edges = Array.isArray(importResult?.edges) ? importResult.edges : [];
   const filesByRole = new Map(profile.roles.map((role) => [role.id, new Set()]));
@@ -218,6 +240,8 @@ export function evaluateArchitectureConformance(profile, importResult) {
   const violations = [];
   let unmappedEdges = 0;
   let unruledEdges = 0;
+  let unknownImportUsages = 0;
+  let excludedByUsage = 0;
 
   for (const edge of edges) {
     // Architecture rules govern dependencies *originating* in the selected
@@ -234,6 +258,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
     }
     const [fromRole] = fromRoles;
     const [toRole] = toRoles;
+    const importUsage = importUsageOf(edge);
     filesByRole.get(fromRole).add(normalizePath(edge.from));
     filesByRole.get(toRole).add(normalizePath(edge.to));
     const key = `${fromRole}\u0000${toRole}`;
@@ -241,13 +266,31 @@ export function evaluateArchitectureConformance(profile, importResult) {
       fromRole,
       toRole,
       count: 0,
+      importUsageCounts: Object.fromEntries(
+        OBSERVED_IMPORT_USAGE_VALUES.map((usage) => [usage, 0]),
+      ),
       evidence: [],
     };
     row.count += 1;
+    row.importUsageCounts[importUsage] += 1;
     if (row.evidence.length < 3) {
-      row.evidence.push({ from: normalizePath(edge.from), to: normalizePath(edge.to), kind: edge.kind ?? 'unknown' });
+      row.evidence.push({
+        from: normalizePath(edge.from),
+        to: normalizePath(edge.to),
+        kind: edge.kind ?? 'unknown',
+        importUsage,
+      });
     }
     observed.set(key, row);
+
+    if (importUsage === 'unknown') {
+      unknownImportUsages += 1;
+      continue;
+    }
+    if (!profile.dependencyUsages.includes(importUsage)) {
+      excludedByUsage += 1;
+      continue;
+    }
 
     const decision = ruleFor(profile, fromRole, toRole);
     if (decision.allowed === null) {
@@ -259,6 +302,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
         from: normalizePath(edge.from),
         to: normalizePath(edge.to),
         kind: edge.kind ?? 'unknown',
+        importUsage,
         rule: decision.rule,
       });
     }
@@ -276,7 +320,8 @@ export function evaluateArchitectureConformance(profile, importResult) {
   });
   const emptyRoles = roles.filter((role) => role.matchedFiles.length === 0).map((role) => role.id);
   const coverageIncomplete = importResult?.coverage?.allDetectedLanguagesSupported !== true;
-  const hasUnknown = coverageIncomplete || unmappedEdges > 0 || unruledEdges > 0 || emptyRoles.length > 0;
+  const hasUnknown = coverageIncomplete || unmappedEdges > 0 || unruledEdges > 0 ||
+    unknownImportUsages > 0 || emptyRoles.length > 0;
   const status = violations.length > 0 ? 'violated' : hasUnknown ? 'unknown' : 'conforms';
 
   return {
@@ -286,6 +331,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
     observedRoleEdges: [...observed.values()].sort((a, b) =>
       `${a.fromRole}:${a.toRole}`.localeCompare(`${b.fromRole}:${b.toRole}`, 'en'),
     ),
+    excludedByUsage,
     violationCount: violations.length,
     violations: violations.slice(0, VIOLATION_SAMPLE_LIMIT),
     violationsLimited: violations.length > VIOLATION_SAMPLE_LIMIT,
@@ -293,6 +339,7 @@ export function evaluateArchitectureConformance(profile, importResult) {
       coverageIncomplete,
       unmappedEdges,
       unruledEdges,
+      unknownImportUsages,
       emptyRoles,
     },
     source: {
@@ -336,6 +383,7 @@ export function buildArchitectureBrief(profile, importResult) {
           : profile.allows.get(role.id) ?? null,
       })),
       dependencyPolicy: profile.dependencyPolicy,
+      dependencyUsages: profile.dependencyUsages,
       evidence: profile.evidence,
     },
     conformance,

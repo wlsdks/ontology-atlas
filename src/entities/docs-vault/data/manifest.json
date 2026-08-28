@@ -69,8 +69,8 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 3955,
-      "updatedAt": "2026-08-26",
+      "wordCount": 3985,
+      "updatedAt": "2026-08-28",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -425,9 +425,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The role di",
-      "wordCount": 79590,
-      "updatedAt": "2026-08-26",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. architectur",
+      "wordCount": 79715,
+      "updatedAt": "2026-08-28",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "domains/catalog",
@@ -466,8 +466,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 183866,
-      "updatedAt": "2026-08-26",
+      "wordCount": 184698,
+      "updatedAt": "2026-08-28",
       "linksOut": [
         "slug"
       ]
@@ -560,7 +560,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 12140,
+      "wordCount": 12170,
       "updatedAt": "2026-08-28",
       "linksOut": []
     },
@@ -572,7 +572,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-26 (added the separate Architecture contract/workbench, source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility red",
-      "wordCount": 23052,
+      "wordCount": 23083,
       "updatedAt": "2026-08-28",
       "linksOut": [
         "slug",
@@ -943,6 +943,9 @@
           "src/shared/**"
         ],
         "dependency_policy": "lower-only",
+        "dependency_usages": [
+          "value"
+        ],
         "evidence": [
           "docs/ARCHITECTURE.md#fsd-layers",
           "eslint.config.mjs"
@@ -951,7 +954,7 @@
       "headings": [],
       "excerpt": "This profile records the reviewed source-organization contract for the Next.js workbench. It is not an ontology node. The Ontology Map continues to describe what the codebase builds and why; this profile describes which implementation roles may depend on which lower roles. The root app/ directory owns locale-prefixed r",
       "wordCount": 94,
-      "updatedAt": "2026-08-26",
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
@@ -1055,9 +1058,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The ability for a developer and coding agent to start from a reviewed architecture profile, understand the intended implementation roles, produce an explicit change plan, and verify the resulting source dependencies against the same contract. Unlike the MCP transport, visual design handoff, or ontology map, this capabi",
-      "wordCount": 207,
-      "updatedAt": "2026-08-26",
+      "excerpt": "The ability for a developer and coding agent to start from a reviewed architecture profile, understand the intended implementation roles and governed import usages, produce an explicit change plan, and verify current source dependencies against the same contract. Unlike the MCP transport, visual design handoff, or onto",
+      "wordCount": 252,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
@@ -2082,9 +2085,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The machine-readable architecture-profile/v1 contract and conformance evaluator that keeps declared pattern axes, scoped roles, dependency rules, observed imports, violations, and unknowns in one fail-closed result. It differs from the workbench element because it produces typed facts for MCP and CLI consumers rather t",
-      "wordCount": 118,
-      "updatedAt": "2026-08-26",
+      "excerpt": "The machine-readable architecture-profile/v1 contract and conformance evaluator that keeps declared pattern axes, scoped roles, dependency rules, governed import usages, observed imports, violations, and unknowns in one fail-closed result. It differs from the workbench element because it produces usage-qualified typed ",
+      "wordCount": 164,
+      "updatedAt": "2026-08-28",
       "linksOut": []
     },
     {
