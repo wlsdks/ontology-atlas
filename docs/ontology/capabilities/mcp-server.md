@@ -31,7 +31,7 @@ It provides a stdio JSON-RPC interface so that an AI coding agent can read and s
 
 ## First-Answer Performance Boundary
 
-`health`, `workspace_brief`, and `agent_brief` attach whole-vault schema, graph-reference, and source-path validation because an agent must not receive a fast false-green handoff. They do not calculate Git-backed summary freshness, which those responses do not return. `validate_vault.summaryFreshness` and `maintenance_plan` remain the explicit history-reading surfaces, so first-contact latency is reduced without converting an unmeasured meaning verdict into a clean one.
+`health`, `workspace_brief`, and `agent_brief` keep their complete nested validation receipt, including Git-backed summary freshness, because an agent must not receive a fast false-green handoff. The history reader uses one bounded union log and one `git cat-file --batch` read, then reuses cloned immutable revisions only for the same Git HEAD, vault, slug set, and history bound. Current Markdown, source-path drift, and project meaning/source currentness are still read per call; a new HEAD invalidates the history cache.
 
 ## Identity Boundaries
 

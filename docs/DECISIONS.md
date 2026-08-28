@@ -40,69 +40,88 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
-## 2026-08-28 — First-contact diagnosis does not compute history it discards
+## 2026-08-28 — First-contact diagnosis preserves and reuses summary history
 
-**Convened because**: solo PO pass. The changed-path gate classified any edit to
+**Convened because**: solo PO pass. The changed-path gate classified the edit to
 `mcp/src/index.js` as a possible public MCP contract change and required a ledger
-record. That trigger is intentionally broad; this slice changes an internal
-calculation path, not a tool name, input/output schema, status, or verdict.
+record. That broad trigger proved useful: review found that `summaryFreshness`
+was already nested inside the validation receipt of `health`, `workspace_brief`,
+and `agent_brief`, even though the first performance draft treated it as discarded.
 
 **Prior decisions**: 2026-08-25 (114) remains standing. Summary freshness still
 compares a summary body's last meaningful change with its containment history,
-never rewrites prose, and remains visible through
-`validate_vault.summaryFreshness`, `maintenance_plan`, and the installed-app row.
-Its falsifier was not observed: a two-commit fixture whose membership changed
-without a body rewrite still reports the summary stale.
+never rewrites prose, and remains visible through all existing MCP diagnosis,
+validation, maintenance, and installed-app surfaces. Its falsifier was not
+observed: a two-commit fixture whose membership changed without a body rewrite
+still reports the summary stale.
 
 **Observed phenomenon**: on the 88-node dogfood vault, the graph engine answered
-`overview`, `components`, and `growth_plan` in 4–8ms, while both cold and repeated
-`workspace_brief` calls took about 1.1s. The first-answer attachment called the
-full validator, calculated Git-backed summary history once per project/domain,
-then discarded `summaryFreshness` because `health`, `workspace_brief`, and
-`agent_brief` do not return it. The existing concurrency-4 fallback gate made the
-same cost visible as 4.574s for `workspace-brief` and 4.771s for `health`.
+`overview`, `components`, and `growth_plan` in 4–8ms, while cold and repeated
+`workspace_brief` calls both took about 1.1s. The history reader started one
+`git log` process per project/domain and one `git show` process per revision: 75
+Git processes for nine summary nodes and 66 revision bodies on this vault. The
+existing concurrency-4 fallback gate made the same cost visible as 4.574s for
+`workspace-brief` and 4.771s for `health`.
 
 **User problem**: a coding agent beginning or resuming work cannot receive the
 trusted health-plus-next-action handoff at interactive speed, making raw source
 search the faster substitute at the moment Atlas should explain why the code
-matters. Removing the measured history work removes the delay; the second
-observable is repeated calls paying it again, and the problem remains true under
-any implementation that preserves the same typed handoff.
+matters. The second observable is repeated calls paying immutable-history cost
+again; the problem remains true under any solution that preserves the same typed
+handoff.
 
-**Decision**: `attachVaultValidation` asks the existing validator for only the
-schema, graph-reference, and source-path facts it returns. Public
-`validate_vault` and `maintenance_plan` still perform Git-backed summary
-freshness, and project meaning/source currentness remains fail-closed. No cache,
-new tool, CLI flag, response field, route, or UI is added.
+**Rejected first slice**: omit summary history from the attached validator. It
+produced the largest speedup, but the new integration probe immediately showed
+`health.validation.summaryFreshness` had disappeared. That was a public evidence
+regression, not an optimization, so it was rejected before merge and the response
+was restored.
+
+**Decision**: preserve every response field and verdict. Read the union history
+through one bounded `git log`, read all immutable revision bodies through one
+`git cat-file --batch` process, and reuse cloned revision records only when Git
+root, vault path, HEAD, requested slug order, and revision bound all match. A new
+HEAD invalidates the cache. If the union limit is reached before a quieter node's
+history is complete, that node falls back to its own bounded log. Current vault
+Markdown, schema/reference checks, source-path drift, and project source/meaning
+currentness are still re-read on every call. No tool, CLI flag, response field,
+route, UI, or vault schema changes.
 
 **PO pass**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
 value 3 · Agent value 4 · Verification 4 = **23/24** (fatal zeros: none).
-Escalation was not required because the public MCP/CLI/vault contract and product
-positioning are unchanged. Verdict: **Build and verify**.
+Escalation is not required for the final slice because the public MCP/CLI/vault
+contract and product positioning are unchanged. Verdict: **Build and verify**.
 
-**Verification**: a Git-tracing integration probe first failed with ten
-`git log`/`git show` calls across `health` and `workspace_brief`, then passed with
-zero across all three first-answer operations. Its explicit `validate_vault`
-control still reads history and reports the planted stale domain. Seven-run local
-medians moved source `workspace_brief` from 1,102.8ms to 37.0ms, its repeated call
-from 1,067.7ms to 19.0ms, and CLI from 1,294.5ms to 212.6ms. The rebuilt app
-binary measured 23.8ms for the brief and 99.4ms from process start through the
-first brief. A 3,152-file bound-source control remained `verified_current` and
-measured 184.0ms cold / 161.2ms repeated, proving source-currentness was not
-silently removed.
+**Verification**: the Git-tracing probe is RED for both unsafe shortcuts and the
+old process fan-out. It requires the planted stale domain in all three nested
+first-answer receipts, one union log and one object batch across the three calls,
+zero per-revision `git show` processes, and the same live verdict from a fresh
+`validate_vault` process. Unit probes require cached results to be cloned, a HEAD
+change to invalidate them, and a quiet path hidden behind the union bound to fall
+back rather than disappear. Seven-run local medians moved source
+`workspace_brief` from 1,102.8ms to 130.0ms, repeated from 1,067.7ms to 38.7ms,
+initialize-through-first-brief from 1,217.3ms to 249.6ms, and CLI from 1,294.5ms
+to 297.8ms. The rebuilt app binary measured 117.8ms for the brief and 186.6ms
+from process start through the first brief. A live response deep-comparison against
+the `origin/main` server was exactly equal, including the nested current
+`summaryFreshness` receipt. The 32-command concurrency-4 fallback
+gate moved from 9.187s to 1.976s wall time while keeping all 32 commands green. A
+3,152-file source-bound control remained `verified_current`, measured 267.2ms
+cold / 171.2ms repeated, and reached its first brief in 383.9ms.
 
-**Recorded dissent**: separating the attached projection from full validation
-could let the two paths drift, or teach a caller to treat absence of summary
-freshness as a clean bill. The response never carried that field before, the
-documentation names the explicit history-reading surfaces, and the paired trace
-test requires both zero first-answer history calls and one live stale-summary
-verdict.
+**Recorded dissent**: an in-process history cache can outlive an unusual Git
+history mutation that leaves HEAD unchanged, and a union-path log must not change
+per-file history semantics around deep or merge-heavy history. The cache is
+bounded to eight exact keys and stores only immutable committed blobs; returned
+maps are cloned. The extra-commit union sentinel and per-file fallback preserve
+quiet histories, while the public stale fixture and explicit HEAD-invalidation
+probe guard the ordinary contract.
 
-**Falsifier**: any first-answer response loses a validator warning, source-path
-drift, meaning/source-currentness downgrade, or output parity; the public stale
-fixture stops firing; or a representative bound-source vault remains above
-500ms on repeated `workspace_brief` after graph work is excluded. Any observation
-reopens the boundary instead of weakening validation further.
+**Falsifier**: any nested validation field or stale verdict changes; a merge-heavy
+fixture differs from the former per-file result; same-HEAD history expansion is
+observed returning a stale cache; the union fallback omits an older quiet node;
+or a representative bound-source vault remains above 500ms on repeated
+`workspace_brief`. Any observation reopens or removes the cache instead of
+weakening validation.
 
 **Status**: valid
 

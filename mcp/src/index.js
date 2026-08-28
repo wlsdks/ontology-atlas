@@ -9345,13 +9345,7 @@ function finalizeProjectMeaningTool({ projectSlug, expected_mtime } = {}) {
 }
 
 function attachVaultValidation(result, args = {}) {
-  // `health`, `workspace_brief`, and `agent_brief` expose the validator's
-  // schema/reference/path verdict, but not `summaryFreshness`. Computing that
-  // omitted field walks Git history once per domain/project and made the
-  // first-answer path spend ~1.1s on a result it then discarded. Keep the
-  // public validate_vault contract complete; this internal projection asks only
-  // for the evidence it actually returns.
-  const validation = validateVaultTool({}, { includeSummaryFreshness: false });
+  const validation = validateVaultTool({});
   const pathsChecked = validation.pathDrift?.checked !== false;
   const driftCount = validation.pathDrift?.drifts?.length ?? 0;
   const errorCount = validation.summary.errorFiles;
@@ -9687,10 +9681,7 @@ function buildSummaryFreshness(docs) {
   };
 }
 
-function validateVaultTool(
-  { repoRoot } = {},
-  { includeSummaryFreshness = true } = {},
-) {
+function validateVaultTool({ repoRoot } = {}) {
   requireOptionalNonBlankString(repoRoot, 'repoRoot');
   const docs = loadVaultDocs(VAULT_ROOT);
   const docIssues = new Map();
@@ -9767,13 +9758,12 @@ function validateVaultTool(
   // healthy vault into `needs_attention`. Not looking is not zero — it is *not
   // looked at* — so it reports `checked: false` and how to make it look.
   const driftGrounded = Boolean(repoRoot) || REPO_ROOT_IS_GROUNDED;
-  const summaryFreshness = includeSummaryFreshness ? buildSummaryFreshness(docs) : null;
   if (!driftGrounded) {
     return {
       scanned: docs.length,
       problems,
       summary: { problemFiles: problems.length, errorFiles, warningFiles, byCode },
-      ...(summaryFreshness ? { summaryFreshness } : {}),
+      summaryFreshness: buildSummaryFreshness(docs),
       pathDrift: {
         repoRoot: driftRoot,
         checked: false,
@@ -9816,7 +9806,7 @@ function validateVaultTool(
       warningFiles,
       byCode,
     },
-    ...(summaryFreshness ? { summaryFreshness } : {}),
+    summaryFreshness: buildSummaryFreshness(docs),
     pathDrift: {
       repoRoot: drift.repoRoot,
       checked: true,

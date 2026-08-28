@@ -3,6 +3,9 @@ import { relative, resolve, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 
 const MAX_GIT_OUTPUT = 4 * 1024 * 1024;
+const MAX_GIT_BATCH_OUTPUT = 64 * 1024 * 1024;
+const NODE_REVISION_CACHE_LIMIT = 8;
+const nodeRevisionCache = new Map();
 
 export function discoverGitRepositoryRoot(startPath) {
   const absoluteStart = resolve(startPath);
@@ -241,6 +244,81 @@ function git(cwd, args, { allowFailure = false } = {}) {
   throw new Error(`git ${args[0]} failed: ${(result.stderr || result.stdout || `exit ${result.status}`).trim()}`);
 }
 
+/**
+ * Reads many historical blobs through one long-lived Git process.
+ *
+ * `collectNodeRevisions` used to spawn `git show` once per revision. The dogfood
+ * vault has 66 revisions across nine summary nodes, so one first-contact health
+ * call started 75 Git processes before returning the graph answer. `cat-file
+ * --batch` preserves the exact blob bytes while collapsing those 66 processes
+ * into one. A malformed/oversized batch returns null and the caller falls back
+ * to the previous per-object read, keeping correctness ahead of speed.
+ */
+function gitBatchBlobs(cwd, objectSpecs) {
+  if (objectSpecs.length === 0) return [];
+  if (objectSpecs.some((spec) => /[\r\n]/.test(spec))) return null;
+  const result = spawnSync('git', ['-C', cwd, 'cat-file', '--batch'], {
+    encoding: null,
+    input: Buffer.from(`${objectSpecs.join('\n')}\n`, 'utf8'),
+    maxBuffer: MAX_GIT_BATCH_OUTPUT,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  if (result.status !== 0 || !Buffer.isBuffer(result.stdout)) return null;
+
+  const blobs = [];
+  let offset = 0;
+  for (let index = 0; index < objectSpecs.length; index += 1) {
+    const headerEnd = result.stdout.indexOf(0x0a, offset);
+    if (headerEnd < 0) return null;
+    const header = result.stdout.subarray(offset, headerEnd).toString('utf8');
+    offset = headerEnd + 1;
+    if (header.endsWith(' missing')) {
+      blobs.push(null);
+      continue;
+    }
+    const parts = header.split(' ');
+    const type = parts.at(-2);
+    const size = Number(parts.at(-1));
+    if (type !== 'blob' || !Number.isSafeInteger(size) || size < 0) return null;
+    const contentEnd = offset + size;
+    if (contentEnd > result.stdout.length) return null;
+    blobs.push(result.stdout.subarray(offset, contentEnd).toString('utf8'));
+    offset = contentEnd;
+    if (result.stdout[offset] === 0x0a) offset += 1;
+  }
+  return blobs;
+}
+
+function cloneNodeRevisionResult(result) {
+  return {
+    ...result,
+    revisionsBySlug: new Map(
+      [...result.revisionsBySlug].map(([slug, revisions]) => [
+        slug,
+        revisions.map((revision) => ({
+          ...revision,
+          children: [...revision.children],
+        })),
+      ]),
+    ),
+  };
+}
+
+function readNodeRevisionCache(key) {
+  const cached = nodeRevisionCache.get(key);
+  if (!cached) return null;
+  nodeRevisionCache.delete(key);
+  nodeRevisionCache.set(key, cached);
+  return cloneNodeRevisionResult(cached);
+}
+
+function writeNodeRevisionCache(key, result) {
+  nodeRevisionCache.set(key, cloneNodeRevisionResult(result));
+  while (nodeRevisionCache.size > NODE_REVISION_CACHE_LIMIT) {
+    nodeRevisionCache.delete(nodeRevisionCache.keys().next().value);
+  }
+}
+
 function parsePorcelain(text) {
   const records = String(text).split('\0');
   const rows = [];
@@ -320,9 +398,10 @@ function semanticSubject(files) {
  *
  * That check compares two clocks living in one file — the body, which is the
  * judgement, and the containment arrays, which are the membership — so it needs
- * content per revision, not just a timestamp. Only summary nodes are asked for
- * (8 of 83 in the dogfood vault), and the walk stops at `maxRevisions`, so the cost
- * is bounded well below a full-history scan.
+ * content per revision, not just a timestamp. Only summary nodes are asked for,
+ * the union walk stops at `maxRevisions * node count`, and any path hidden by
+ * that bound gets its own `maxRevisions` fallback. Revision bodies are one
+ * object batch and immutable results are reused only under the same HEAD.
  *
  * Each entry is `{ changedAt, body, children }`. `body` is everything after the
  * frontmatter block; `children` is the union of the containment arrays. Parsing is
@@ -334,39 +413,141 @@ function semanticSubject(files) {
  * the vault is not inside a repository, so a vault kept outside Git degrades to no
  * advisory instead of an error.
  */
+function parseRevisionHeader(value) {
+  const separator = value.indexOf('\x1f');
+  if (separator < 1) return null;
+  const sha = value.slice(0, separator).trim();
+  const changedAt = value.slice(separator + 1).trim();
+  if (!/^[a-f0-9]{40}$/i.test(sha) || !changedAt) return null;
+  return { sha, changedAt };
+}
+
+function perFileRevisionRequests(gitRoot, filePath, slug, maxRevisions) {
+  const log = git(
+    gitRoot,
+    ['log', `--max-count=${maxRevisions}`, '--format=%H%x1f%aI', '--no-renames', '--', filePath],
+    { allowFailure: true },
+  );
+  if (!log.ok) return [];
+  const requests = [];
+  for (const line of String(log.stdout).split('\n')) {
+    const parsed = parseRevisionHeader(line.trim());
+    if (!parsed) continue;
+    requests.push({ slug, filePath, ...parsed, objectSpec: `${parsed.sha}:${filePath}` });
+  }
+  return requests;
+}
+
+/**
+ * Reads the union history once, then falls back only for a path whose oldest
+ * relevant revision was hidden by the union bound. Requesting one extra commit
+ * distinguishes complete history from truncation; a dominant file can therefore
+ * never make a quieter summary node look complete by accident.
+ */
+function unionRevisionRequests(gitRoot, entries, maxRevisions) {
+  if (entries.length === 0) return new Map();
+  const unionLimit = Math.max(1, maxRevisions * entries.length);
+  const log = git(
+    gitRoot,
+    [
+      'log',
+      '-z',
+      `--max-count=${unionLimit + 1}`,
+      '--format=%x1e%H%x1f%aI',
+      '--name-only',
+      '--no-renames',
+      '--',
+      ...entries.map((entry) => entry.filePath),
+    ],
+    { allowFailure: true },
+  );
+  if (!log.ok) return null;
+
+  const byPath = new Map(entries.map((entry) => [entry.filePath, []]));
+  const entryByPath = new Map(entries.map((entry) => [entry.filePath, entry]));
+  const records = String(log.stdout).split('\x1e').filter(Boolean);
+  for (const record of records.slice(0, unionLimit)) {
+    const [header, ...rawPaths] = record.split('\0');
+    const parsed = parseRevisionHeader(header);
+    if (!parsed) return null;
+    for (const rawPath of rawPaths) {
+      const filePath = rawPath.startsWith('\n') ? rawPath.slice(1) : rawPath;
+      const requests = byPath.get(filePath);
+      if (!requests || requests.length >= maxRevisions) continue;
+      const entry = entryByPath.get(filePath);
+      requests.push({
+        slug: entry.slug,
+        filePath,
+        ...parsed,
+        objectSpec: `${parsed.sha}:${filePath}`,
+      });
+    }
+  }
+
+  if (records.length > unionLimit) {
+    for (const entry of entries) {
+      if ((byPath.get(entry.filePath)?.length ?? 0) >= maxRevisions) continue;
+      byPath.set(
+        entry.filePath,
+        perFileRevisionRequests(gitRoot, entry.filePath, entry.slug, maxRevisions),
+      );
+    }
+  }
+  return byPath;
+}
+
 export function collectNodeRevisions({ repoRoot, vaultRoot, slugs, maxRevisions = 40 }) {
   const scope = resolveVaultGitScope({ repoRoot, vaultRoot, operation: 'node_revisions' });
   if (!scope.ok) return scope;
   const { gitRoot, vaultRelative } = scope;
   const prefix = vaultRelative === '.' ? '' : `${vaultRelative}/`;
+  const requestedSlugs = [...(slugs ?? [])];
+  const head = git(gitRoot, ['rev-parse', 'HEAD'], { allowFailure: true });
+  const cacheKey = head.ok
+    ? JSON.stringify([gitRoot, vaultRelative, head.stdout.trim(), maxRevisions, requestedSlugs])
+    : null;
+  if (cacheKey) {
+    const cached = readNodeRevisionCache(cacheKey);
+    if (cached) return cached;
+  }
+
   const revisionsBySlug = new Map();
+  const requestsBySlug = new Map();
+  const entries = requestedSlugs.map((slug) => ({ slug, filePath: `${prefix}${slug}.md` }));
+  const unionRequests = unionRevisionRequests(gitRoot, entries, maxRevisions);
+  for (const entry of entries) {
+    const requests = unionRequests?.get(entry.filePath)
+      ?? perFileRevisionRequests(gitRoot, entry.filePath, entry.slug, maxRevisions);
+    requestsBySlug.set(entry.slug, requests);
+  }
+  const revisionRequests = requestedSlugs.flatMap((slug) => requestsBySlug.get(slug) ?? []);
 
-  for (const slug of slugs ?? []) {
-    const filePath = `${prefix}${slug}.md`;
-    const log = git(
-      gitRoot,
-      ['log', `--max-count=${maxRevisions}`, '--format=%H %aI', '--no-renames', '--', filePath],
-      { allowFailure: true },
-    );
-    if (!log.ok) continue;
+  const batchBlobs = gitBatchBlobs(
+    gitRoot,
+    revisionRequests.map((request) => request.objectSpec),
+  );
+  const blobBySpec = new Map(
+    revisionRequests.map((request, index) => [request.objectSpec, batchBlobs?.[index] ?? null]),
+  );
 
+  for (const slug of requestedSlugs) {
     const revisions = [];
-    for (const line of String(log.stdout).split('\n')) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      const spaceIndex = trimmed.indexOf(' ');
-      if (spaceIndex < 0) continue;
-      const sha = trimmed.slice(0, spaceIndex);
-      const changedAt = trimmed.slice(spaceIndex + 1).trim();
-      const show = git(gitRoot, ['show', `${sha}:${filePath}`], { allowFailure: true });
-      if (!show.ok) continue;
-      const { body, children } = splitNodeRevision(show.stdout);
-      revisions.push({ changedAt, body, children });
+    for (const request of requestsBySlug.get(slug) ?? []) {
+      let raw = blobBySpec.get(request.objectSpec);
+      if (typeof raw !== 'string') {
+        const show = git(gitRoot, ['show', request.objectSpec], { allowFailure: true });
+        if (!show.ok) continue;
+        raw = show.stdout;
+      }
+      const { body, children } = splitNodeRevision(raw);
+      revisions.push({ changedAt: request.changedAt, body, children });
     }
     if (revisions.length) revisionsBySlug.set(slug, revisions);
   }
 
-  return { operation: 'node_revisions', ok: true, repoRoot: gitRoot, revisionsBySlug };
+  const result = { operation: 'node_revisions', ok: true, repoRoot: gitRoot, revisionsBySlug };
+  if (cacheKey) writeNodeRevisionCache(cacheKey, result);
+  return cloneNodeRevisionResult(result);
 }
 
 /** Containment keys, mirrored from `stale-parent.mjs` so this module stays free of a cycle. */

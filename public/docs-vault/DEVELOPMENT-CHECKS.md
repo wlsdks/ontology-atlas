@@ -788,7 +788,7 @@ committing or publishing changes.
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` / `.codex/config.toml` registration templates |
 | `pnpm test:mcp:unit` | Every `mcp/src/*.test.mjs` except the integration suite — discovered by glob, not a hand-kept list, so a new test file cannot be silently excluded. Runs in CI (`Checks` → `MCP unit tests`). Use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one |
-| `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed. Its first-answer Git trace proves `health` / `workspace_brief` / `agent_brief` do not read discarded summary history, while a two-commit stale-summary control proves `validate_vault` still does. |
+| `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed. Its first-answer Git trace proves `health` / `workspace_brief` / `agent_brief` preserve the stale-summary receipt while sharing one bounded union log and one object batch; the explicit `validate_vault` control proves the same verdict stays live in a fresh process. |
 | `pnpm integration:mcp:surface` | MCP JSON-RPC `tools/list`, `initialize`, and `tools/call` surface contracts |
 | `pnpm integration:mcp:repo-analysis` | MCP `index_project` / `analyze_repo_structure` / `infer_imports` / `inspect_architecture` code-to-vault contracts; advisor routes those implementation files here before broader read/query gates |
 | `pnpm integration:mcp:graph` | MCP `compile_ontology` / `query_ontology` graph artifact/query contracts |

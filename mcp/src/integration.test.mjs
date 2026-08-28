@@ -132,10 +132,10 @@ function makeGitTraceWrapper() {
   return { root, tracePath };
 }
 
-function gitHistoryCalls(tracePath) {
+function gitCalls(tracePath, command) {
   return readFileSync(tracePath, "utf8")
     .split("\n")
-    .filter((line) => /(?:^| )(?:log|show)(?: |$)/.test(line));
+    .filter((line) => new RegExp(`(?:^| )${command}(?: |$)`).test(line));
 }
 
 /**
@@ -4504,7 +4504,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
   }
 });
 
-await test("query_ontology health/workspace_brief/agent_brief — first-answer validation skips unused Git history", async () => {
+await test("query_ontology health/workspace_brief/agent_brief — summary history is batched and reused", async () => {
   if (process.platform === "win32") return;
   const root = makeVault([
     {
@@ -4564,13 +4564,37 @@ await test("query_ontology health/workspace_brief/agent_brief — first-answer v
       callTool(3, "query_ontology", { operation: "workspace_brief" }),
       callTool(4, "query_ontology", { operation: "agent_brief", project: "project" }),
     ], 1_500, tracedEnv);
-    assert.equal(getCallParsed(firstAnswer.responses, 2).operation, "health");
-    assert.equal(getCallParsed(firstAnswer.responses, 3).operation, "workspace_brief");
-    assert.equal(getCallParsed(firstAnswer.responses, 4).operation, "agent_brief");
-    assert.deepEqual(
-      gitHistoryCalls(wrapper.tracePath),
-      [],
-      "first-answer operations must not compute summary history they do not return",
+    const health = getCallParsed(firstAnswer.responses, 2);
+    const brief = getCallParsed(firstAnswer.responses, 3);
+    const agentBrief = getCallParsed(firstAnswer.responses, 4);
+    assert.equal(health.operation, "health");
+    assert.equal(brief.operation, "workspace_brief");
+    assert.equal(agentBrief.operation, "agent_brief");
+    for (const [label, validation] of [
+      ["health", health.validation],
+      ["workspace_brief", brief.health?.validation],
+      ["agent_brief", agentBrief.health?.validation],
+    ]) {
+      assert.equal(validation?.summaryFreshness?.checked, true, `${label} keeps summaryFreshness`);
+      assert.ok(
+        validation.summaryFreshness.stale.some((row) => row.slug === "domains/core"),
+        `${label} keeps the stale-summary verdict`,
+      );
+    }
+    assert.equal(
+      gitCalls(wrapper.tracePath, "log").length,
+      1,
+      "one union history log is shared across all three first-answer operations",
+    );
+    assert.equal(
+      gitCalls(wrapper.tracePath, "show").length,
+      0,
+      "per-revision git show processes must stay collapsed into one object batch",
+    );
+    assert.equal(
+      gitCalls(wrapper.tracePath, "cat-file").length,
+      1,
+      "all revision bodies are read through one git cat-file batch",
     );
 
     writeFileSync(wrapper.tracePath, "", "utf8");
@@ -4585,7 +4609,9 @@ await test("query_ontology health/workspace_brief/agent_brief — first-answer v
       "validate_vault must keep the stale-summary verdict",
     );
     assert.ok(
-      gitHistoryCalls(wrapper.tracePath).length > 0,
+      gitCalls(wrapper.tracePath, "log").length === 1
+        && gitCalls(wrapper.tracePath, "show").length === 0
+        && gitCalls(wrapper.tracePath, "cat-file").length === 1,
       "validate_vault must keep reading Git history for summary freshness",
     );
   } finally {

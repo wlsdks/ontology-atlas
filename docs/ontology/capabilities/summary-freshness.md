@@ -21,7 +21,7 @@ Reports a `domain` or `project` whose containment list changed after its body pr
 ## Inclusion / Exclusion
 - Included: `validate_vault.summaryFreshness`, the `rejudge_summary_membership` maintenance action, and the node-popover row in the installed app
 - Excluded: rewriting or regenerating a summary body, and any judgement about whether a child node's own content is current, which path drift already owns
-- Excluded from the attached validator projection in `health`, `workspace_brief`, and `agent_brief`: those responses do not return summary freshness. Explicit `validate_vault` and `maintenance_plan` calls remain the history-reading surfaces, so omission is not reported as a clean verdict.
+- Included in the nested validation receipt of `health`, `workspace_brief`, and `agent_brief`, as well as explicit `validate_vault` and `maintenance_plan`. Immutable revision bodies are batched and reused under the same Git HEAD; a bounded union-log fallback prevents a quiet summary node from disappearing behind a busy one.
 
 ## Why the comparison is prose against membership
 Two earlier rules were built and measured against the dogfood vault before this one. Comparing a parent's file timestamp against its children's flagged 6 of 7 domains, and inspection showed every flag wrong: a domain description is written at a level of abstraction that survives its children being revised. Comparing against child creation can never fire at all, because containment is declared in the parent's own frontmatter, so adding a child always touches the parent in the same commit.
