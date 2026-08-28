@@ -10,6 +10,7 @@ import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
+  buildArchitectureLayout,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
@@ -19,6 +20,10 @@ import type { RoleSourceModule } from '../model/source-modules';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
+import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
+
+/** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
+const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 import { Button, EmptyState, RowButton, Surface, buttonVariants } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { useDraftHandoffRoute } from '../model/use-draft-handoff-route';
@@ -75,6 +80,10 @@ export function ArchitectureWorkbench({
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
   const [mode, setMode] = useState<Mode>('understand');
+  /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
+     it sit in different rows of the page grid: the drawing takes the full width, the answer is
+     column content. */
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const layoutScrollRef = useRef<HTMLDivElement>(null);
   const stagePanelRef = useRef<HTMLElement>(null);
@@ -175,6 +184,31 @@ export function ArchitectureWorkbench({
     if (handoffEdges.bottom) return `linear-gradient(to top, transparent 0, #000 ${fade})`;
     return undefined;
   })();
+
+  /*
+   * What the detail panel needs about the chosen role, derived from the same layout the canvas
+   * draws so the two can never disagree about a role's reach or its order.
+   */
+  /* `selected` is null on the zero-profile screen, which is a real state: this surface renders
+     an empty stage rather than refusing to mount, so the derived maps must survive it. */
+  const roleLayout = useMemo(
+    () => (selected ? buildArchitectureLayout(selected) : null),
+    [selected],
+  );
+  const roleOrder = roleLayout?.rows.flat() ?? [];
+  const roleIndexOf = new Map(roleOrder.map((id, index) => [id, index + 1]));
+  const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
+  const roleSummaryOf = new Map(
+    (selected?.roles ?? [])
+      .filter((role) => role.summary)
+      .map((role) => [role.id, role.summary as string]),
+  );
+  const roleReachOf = useMemo(() => {
+    const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
+    for (const edge of roleLayout?.edges ?? []) map.get(edge.from)?.push(edge.to);
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
+  }, [roleLayout]);
 
   if (!selected) {
     return (
@@ -402,8 +436,54 @@ export function ArchitectureWorkbench({
         ref={layoutScrollRef}
         data-testid="architecture-layout-scroll"
         data-architecture-scroll-reanchor="mode-end"
-        className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_340px] xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden"
+        className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_340px] xl:grid-rows-[auto_minmax(0,1fr)] xl:overflow-hidden"
       >
+        {/*
+          ⚠️ **The canvas takes the width; the columns sit under it.** Measured on the installed
+          app 2026-08-28: inside the middle column the graph had about 806px and a seven-role
+          profile needs roughly 1170px, so four boxes were on screen and three were behind a
+          horizontal scroll nobody asked for. Node editors this shape borrows from do the
+          opposite, giving the canvas the full width and opening the inspector over or beside it
+          rather than standing a column permanently in its way.
+        */}
+        <div
+          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-span-2 xl:col-span-3"
+          data-testid="architecture-flow-panel"
+          data-architecture-mode={mode}
+        >
+              {/* The policy sentence is the section description above; do not print it twice. */}
+              <ArchitectureFlow
+                profile={selected}
+                modules={selectedModules}
+                concepts={conceptsByProfile[selected.slug] ?? {}}
+                roleLabel={roleLabel}
+                /* Measured crossings ride in from the persisted record; undefined without one.
+                   Under lower-only these are the only strokes there are, so losing this prop
+                   loses the entire drawing (measured on the installed app, 2026-08-28). */
+                roleTraffic={record?.brief.conformance.observedRoleEdges}
+                selected={selectedRole}
+                onSelect={(id) => setSelectedRole((current) => (current === id ? null : id))}
+                reachLabel={(role, targets) => t('reachAria', { role, targets })}
+                sinkLabel={t('reachNone')}
+                directionLabel={t('ladderDirection')}
+                moduleCountLabel={(count) => t('moduleCount', { count })}
+                sourceUnavailableBody={
+                  sourceListingCapable || !sourceUnavailableReason
+                    ? null
+                    : t(
+                        sourceUnavailableReason === 'unbound'
+                          ? 'sourceListingUnbound'
+                          : 'sourceListingUnavailable',
+                      )
+                }
+                conceptCountLabel={(count) => t('conceptCount', { count })}
+                legendPermitted={t('legendPermitted')}
+                legendTraffic={t('legendTraffic')}
+                permittedEdgeLabel={(from, to) => t('permittedEdge', { from, to })}
+                trafficEdgeLabel={(from, to, count) => t('trafficEdge', { from, to, count })}
+              />
+        </div>
+
         <aside className="border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:min-h-0 xl:overflow-y-auto">
           <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
             {t('profileList')}
@@ -563,6 +643,42 @@ export function ArchitectureWorkbench({
             ) : null}
 
             {/*
+              The answer to the canvas's selection. It is column content rather than part of the
+              drawing: the graph says what the shape is, this says what is actually in the layer a
+              reader chose, and the density the removed bands were good at survives here.
+            */}
+            <div className="mt-5">
+              {selectedRole === null ? (
+                <p
+                  className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3 text-body text-[color:var(--color-text-tertiary)]"
+                  data-testid="architecture-role-detail-empty"
+                >
+                  {t('selectRoleHint')}
+                </p>
+              ) : (
+                <ArchitectureRoleDetail
+                  roleId={selectedRole}
+                  index={roleIndexOf.get(selectedRole) ?? 1}
+                  label={roleLabel(selectedRole)}
+                  summary={roleSummaryOf.get(selectedRole) ?? null}
+                  paths={rolePathsOf.get(selectedRole) ?? []}
+                  reach={roleReachOf.get(selectedRole) ?? []}
+                  modules={selectedModules === null ? null : selectedModules[selectedRole] ?? []}
+                  concepts={(conceptsByProfile[selected.slug] ?? {})[selectedRole] ?? []}
+                  edgeParticipants={EMPTY_EDGE_PARTICIPANTS}
+                  roleLabel={roleLabel}
+                  sinkLabel={t('reachNone')}
+                  reachInlineLabel={(targets) => t('reachInline', { targets })}
+                  moduleCountLabel={(count) => t('moduleCount', { count })}
+                  moreLabel={(count) => t('moreOccupants', { count })}
+                  showFewerLabel={t('fewerOccupants')}
+                  layerConceptsLabel={t('layerConcepts')}
+                  conceptCountLabel={(count) => t('conceptCount', { count })}
+                />
+              )}
+            </div>
+
+            {/*
               ⚠️ **One artifact, not a picture and then a list of the same thing.** This was two
               blocks -- a diagram of four boxes, then four cards repeating the same roles -- and the
               owner's reaction to the installed build was that it neither looked good nor read as a
@@ -573,38 +689,6 @@ export function ArchitectureWorkbench({
               `data-architecture-mode` stays here because the scroll-reanchor test uses it to tell
               which stage is mounted; it moved with the block it was attached to.
             */}
-            <div className="mt-3" data-testid="architecture-flow-panel" data-architecture-mode={mode}>
-              {/* The policy sentence is the section description above; do not print it twice. */}
-              <ArchitectureFlow
-                profile={selected}
-                modules={selectedModules}
-                concepts={conceptsByProfile[selected.slug] ?? {}}
-                roleLabel={roleLabel}
-                reachLabel={(role, targets) => t('reachAria', { role, targets })}
-                sinkLabel={t('reachNone')}
-                directionLabel={t('ladderDirection')}
-                moduleCountLabel={(count) => t('moduleCount', { count })}
-                moreLabel={(count) => t('moreOccupants', { count })}
-                showFewerLabel={t('fewerOccupants')}
-                sourceUnavailableBody={
-                  sourceListingCapable || !sourceUnavailableReason
-                    ? null
-                    : t(
-                        sourceUnavailableReason === 'unbound'
-                          ? 'sourceListingUnbound'
-                          : 'sourceListingUnavailable',
-                      )
-                }
-                reachInlineLabel={(targets) => t('reachInline', { targets })}
-                layerConceptsLabel={t('layerConcepts')}
-                conceptCountLabel={(count) => t('conceptCount', { count })}
-                legendPermitted={t('legendPermitted')}
-                legendTraffic={t('legendTraffic')}
-                permittedEdgeLabel={(from, to) => t('permittedEdge', { from, to })}
-                trafficEdgeLabel={(from, to, count) => t('trafficEdge', { from, to, count })}
-                selectRoleHint={t('selectRoleHint')}
-              />
-            </div>
           </div>
         </section>
 

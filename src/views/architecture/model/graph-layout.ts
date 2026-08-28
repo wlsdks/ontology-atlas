@@ -2,7 +2,7 @@ import type { ArchitectureLayout } from '@/entities/architecture-profile';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 
 /** One role, placed. `column` is its rank left to right; `slot` is its position within it. */
-export interface GraphBox {
+interface GraphBox {
   id: string;
   column: number;
   slot: number;

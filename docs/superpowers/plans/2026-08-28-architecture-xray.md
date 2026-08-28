@@ -76,9 +76,9 @@ This is first, not last. The band stage was direction B of an owner-chosen four,
 
 **Falsifier:** a fresh-eyes walkthrough, same protocol as 2026-08-28, asked to name which boundary carries the most traffic and whether what they are looking at is a rule or a measurement. If the reader cannot answer, or answers "a rule", the drawing has failed the way the arcs did.
 
-- [ ] **Step 1: Write the record in `docs/DECISIONS.md`, in English, appended above the most recent entry**
-- [ ] **Step 2: Run `pnpm decisions:check` and `pnpm docs:language`**
-- [ ] **Step 3: Commit**
+- [x] **Step 1: Write the record in `docs/DECISIONS.md`, in English, appended above the most recent entry**
+- [x] **Step 2: Run `pnpm decisions:check` and `pnpm docs:language`**
+- [x] **Step 3: Commit**
 
 ```bash
 pnpm docs-vault:build

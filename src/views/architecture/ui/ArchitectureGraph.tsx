@@ -8,8 +8,21 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { ArchitectureGraph as Graph, GraphEdge } from '../model/graph-layout';
 
-/** Gap between one column's boxes and the next, and the room an edge has to travel. */
-const COLUMN_GAP = 56;
+/**
+ * Gap between one column and the next, and the room an edge has to travel.
+ *
+ * Measured on the installed app, 2026-08-28: the stage gives the graph about 807px, so seven
+ * columns at 160px with 56px gaps needed 1456px and only four boxes were on screen. These are the
+ * widest values that keep a seven-role profile inside roughly 1030px, which is what the stage has
+ * at the widest window this product opens.
+ */
+const COLUMN_GAP = 36;
+/** Column width. Narrow enough for seven, wide enough for a role name and two counts. */
+const COLUMN_WIDTH = 136;
+/** How far below the row a two-column skip swings. */
+const SKIP_CLEARANCE = 18;
+/** Each further column crossed adds this much depth, so the longest reach is the deepest arc. */
+const SKIP_STEP = 9;
 /** A permitted edge is a rule, so it has no magnitude and one width. */
 const PERMITTED_STROKE = 1.5;
 
@@ -102,12 +115,36 @@ export function ArchitectureGraph({
         const sy = a.y + a.h / 2;
         const tx = b.x;
         const ty = b.y + b.h / 2;
-        const bend = Math.max(COLUMN_GAP / 2, (tx - sx) / 2);
+        const strokeWidth =
+          edge.kind === 'permitted' ? PERMITTED_STROKE : 1 + (edge.weight ?? 0) * 3;
+
+        if (edge.columnSpan <= 1) {
+          const bend = Math.max(COLUMN_GAP / 2, (tx - sx) / 2);
+          next.push({
+            ...edge,
+            strokeWidth,
+            d: `M ${sx} ${sy} C ${sx + bend} ${sy}, ${tx - bend} ${ty}, ${tx} ${ty}`,
+          });
+          continue;
+        }
+
+        /*
+         * ⚠️ **A skip has to go around, not through.** With every role in one row, an edge from
+         * the first column to the last runs straight along the row's centre line and disappears
+         * behind every box between them: measured on the installed app 2026-08-28, where the
+         * declared skips were simply invisible. Routing below the row makes a skip legible *as* a
+         * skip, and the further it reaches the deeper it swings, so the longest reach is also the
+         * most obvious one.
+         */
+        const bottom = Math.max(a.y + a.h, b.y + b.h);
+        const swing = bottom + SKIP_CLEARANCE + (edge.columnSpan - 2) * SKIP_STEP;
         next.push({
           ...edge,
-          strokeWidth:
-            edge.kind === 'permitted' ? PERMITTED_STROKE : 1 + (edge.weight ?? 0) * 3,
-          d: `M ${sx} ${sy} C ${sx + bend} ${sy}, ${tx - bend} ${ty}, ${tx} ${ty}`,
+          strokeWidth,
+          d:
+            `M ${sx} ${sy} C ${sx + COLUMN_GAP} ${sy}, ${sx + COLUMN_GAP} ${swing}, ` +
+            `${(sx + tx) / 2} ${swing} C ${tx - COLUMN_GAP} ${swing}, ` +
+            `${tx - COLUMN_GAP} ${ty}, ${tx} ${ty}`,
         });
       }
       setDrawn(next);
@@ -172,7 +209,7 @@ export function ArchitectureGraph({
       <div
         className="relative grid w-max items-center"
         style={{
-          gridTemplateColumns: `repeat(${graph.columns}, 160px)`,
+          gridTemplateColumns: `repeat(${graph.columns}, ${COLUMN_WIDTH}px)`,
           gridTemplateRows: `repeat(${slotsPerColumn}, minmax(64px, auto))`,
           columnGap: COLUMN_GAP,
           rowGap: 16,

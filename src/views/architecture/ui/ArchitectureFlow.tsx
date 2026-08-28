@@ -14,7 +14,7 @@ import {
   Waypoints,
   type LucideIcon,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import {
   buildArchitectureLayout,
@@ -26,7 +26,6 @@ import { buildArchitectureGraph } from '../model/graph-layout';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 import { ArchitectureGraph } from './ArchitectureGraph';
-import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 
 /**
  * A glyph per role id, so a reader recognises a layer before reading it. Unknown ids fall back to
@@ -75,22 +74,19 @@ export function ArchitectureFlow({
   modules,
   concepts,
   roleTraffic,
+  selected,
+  onSelect,
   roleLabel,
   reachLabel,
   sinkLabel,
   directionLabel,
   moduleCountLabel,
-  moreLabel,
-  showFewerLabel,
   sourceUnavailableBody,
-  reachInlineLabel,
-  layerConceptsLabel,
   conceptCountLabel,
   legendPermitted,
   legendTraffic,
   permittedEdgeLabel,
   trafficEdgeLabel,
-  selectRoleHint,
 }: {
   profile: ArchitectureProfile;
   /**
@@ -105,23 +101,21 @@ export function ArchitectureFlow({
    * record exists; the stage then draws no traffic at all rather than guessing at any.
    */
   roleTraffic?: readonly ArchitectureRoleEdge[];
+  /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
+  selected: string | null;
+  onSelect: (id: string) => void;
   roleLabel: (id: string) => string;
   reachLabel: (role: string, targets: string) => string;
   sinkLabel: string;
   directionLabel: string;
   moduleCountLabel: (count: number) => string;
-  moreLabel: (count: number) => string;
-  showFewerLabel: string;
   /** One sentence naming why no source listing exists here, or `null` when one does. */
   sourceUnavailableBody: string | null;
-  reachInlineLabel: (targets: string) => string;
-  layerConceptsLabel: string;
   conceptCountLabel: (count: number) => string;
   legendPermitted: string;
   legendTraffic: string;
   permittedEdgeLabel: (from: string, to: string) => string;
   trafficEdgeLabel: (from: string, to: string, count: number) => string;
-  selectRoleHint: string;
 }) {
   const layout = useMemo(() => buildArchitectureLayout(profile), [profile]);
   const graph = useMemo(
@@ -130,24 +124,7 @@ export function ArchitectureFlow({
   );
 
   const order = layout.rows.flat();
-  const [selected, setSelected] = useState<string | null>(null);
-  /* A profile change invalidates a selection made against the previous one. Derived rather than
-     reset in an effect, so the first render after the change is already correct. */
-  const activeRole = selected !== null && order.includes(selected) ? selected : null;
 
-  const pathsOf = useMemo(
-    () => new Map(profile.roles.map((role) => [role.id, role.paths])),
-    [profile],
-  );
-  const summaryOf = useMemo(
-    () =>
-      new Map(
-        profile.roles
-          .filter((role) => role.summary)
-          .map((role) => [role.id, role.summary as string]),
-      ),
-    [profile],
-  );
   const allows = useMemo(() => {
     const map = new Map<string, Set<string>>(order.map((id) => [id, new Set<string>()]));
     for (const edge of layout.edges) map.get(edge.from)?.add(edge.to);
@@ -167,7 +144,6 @@ export function ArchitectureFlow({
     [concepts, layout],
   );
 
-  const indexOf = new Map(order.map((id, index) => [id, index + 1]));
 
   return (
     <div className="flex w-full flex-col gap-3" data-testid="architecture-flow">
@@ -183,8 +159,8 @@ export function ArchitectureFlow({
 
         <ArchitectureGraph
           graph={graph}
-          selected={activeRole}
-          onSelect={(id) => setSelected((current) => (current === id ? null : id))}
+          selected={selected !== null && order.includes(selected) ? selected : null}
+          onSelect={onSelect}
           roleLabel={roleLabel}
           roleIcons={ROLE_ICONS}
           moduleCountLabel={moduleCountLabel}
@@ -235,38 +211,6 @@ export function ArchitectureFlow({
           </p>
         )}
       </div>
-
-      {activeRole === null ? (
-        <p
-          className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3 text-body text-[color:var(--color-text-tertiary)]"
-          data-testid="architecture-role-detail-empty"
-        >
-          {selectRoleHint}
-        </p>
-      ) : (
-        <div className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
-          <ArchitectureRoleDetail
-            roleId={activeRole}
-            index={indexOf.get(activeRole) ?? 1}
-            label={roleLabel(activeRole)}
-            summary={summaryOf.get(activeRole) ?? null}
-            paths={pathsOf.get(activeRole) ?? []}
-            reach={[...reaches(activeRole)]}
-            modules={modules === null ? null : modules[activeRole] ?? []}
-            concepts={concepts[activeRole] ?? []}
-            edgeParticipants={new Set<string>()}
-            icon={ROLE_ICONS[activeRole]}
-            roleLabel={roleLabel}
-            sinkLabel={sinkLabel}
-            reachInlineLabel={reachInlineLabel}
-            moduleCountLabel={moduleCountLabel}
-            moreLabel={moreLabel}
-            showFewerLabel={showFewerLabel}
-            layerConceptsLabel={layerConceptsLabel}
-            conceptCountLabel={conceptCountLabel}
-          />
-        </div>
-      )}
 
       {/* The drawing is hidden from assistive technology, so the policy is stated in words here. */}
       <ol className="sr-only">
