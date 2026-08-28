@@ -48,8 +48,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // opacity states say the same direction without any time axis, so collapsing this
   // run under reduced motion loses zero information; giving it a "short equivalent"
   // would just re-introduce the very movement being declined.
-  "architecture-flow-run":
-    "One-shot flow run on focus; the static arrowheads and focus states already state the direction, so reduced motion rightly stops the run itself.",
+  "architecture-flow-running":
+    "One-shot run on a deliberate press, a dash travelling the strokes left to right. The arrowheads and the column order already state the direction with no time axis, so collapsing the run loses nothing; a short equivalent would re-introduce the exact movement being declined.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
   // Gateway landing (2026-08-18 remake). An endless caret blink is the same family

@@ -1190,6 +1190,12 @@
   /* The lit top edge of a raised node: one step above `--color-elevated`, which is the smallest
      move that reads as a face catching light rather than as a second border. */
   --architecture-node-lit-edge: #2e2f33;
+  /* One wave, left to right. 7 columns × 90ms + 520ms lands at 1.06s, which is long enough to
+     read as travel and short enough that nobody waits for it. */
+  --architecture-run-duration: 520ms;
+  --architecture-run-stagger: 90ms;
+  --architecture-run-dash: 10px 14px;
+  --architecture-run-dash-travel: 48px;
 }
 
 /*
@@ -1221,6 +1227,37 @@
 
 .architecture-canvas-node {
   box-shadow: inset 0 1px 0 var(--architecture-node-lit-edge);
+}
+
+/*
+ * ## Running the flow (2026-08-28)
+ *
+ * A dash travelling along a stroke is the one motion that says "this is the direction the thing
+ * actually moves", which is why every node editor with an execute view uses it. It runs on a
+ * deliberate press and stops on its own: an ambient loop would be a claim that something is
+ * happening in the source right now, and nothing is.
+ *
+ * Stagger by column, so the run reads left to right as one wave rather than every stroke firing
+ * at once. The step index arrives as a unitless custom property, so no raw time value rides an
+ * inline style.
+ *
+ * Reduced motion collapses it, and nothing is lost: the arrowheads and the column order state the
+ * same direction with no time axis at all. Roster: reduced-motion-equivalent.contract.test.ts.
+ */
+@keyframes architectureFlowRun {
+  from {
+    stroke-dashoffset: var(--architecture-run-dash-travel);
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.architecture-flow-running {
+  stroke-dasharray: var(--architecture-run-dash);
+  animation: architectureFlowRun var(--architecture-run-duration) var(--motion-ease) both;
+  animation-delay: calc(var(--architecture-run-stagger) * var(--architecture-run-step, 0));
 }
 
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.

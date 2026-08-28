@@ -10260,6 +10260,46 @@
     },
     {
       "depth": 2,
+      "text": "Architecture canvas — the flow surface (new, 2026-08-28)",
+      "slug": "architecture-canvas-the-flow-surface-new-2026-08-28"
+    },
+    {
+      "depth": 3,
+      "text": "Why this exists as its own language",
+      "slug": "why-this-exists-as-its-own-language"
+    },
+    {
+      "depth": 3,
+      "text": "Shape carries meaning, and the meaning is ISO 5807's",
+      "slug": "shape-carries-meaning-and-the-meaning-is-iso-5807s"
+    },
+    {
+      "depth": 3,
+      "text": "A stroke must carry something the columns cannot",
+      "slug": "a-stroke-must-carry-something-the-columns-cannot"
+    },
+    {
+      "depth": 3,
+      "text": "Depth is face lightness, not shadow",
+      "slug": "depth-is-face-lightness-not-shadow"
+    },
+    {
+      "depth": 3,
+      "text": "Ports",
+      "slug": "ports"
+    },
+    {
+      "depth": 3,
+      "text": "Running the flow",
+      "slug": "running-the-flow"
+    },
+    {
+      "depth": 3,
+      "text": "What this surface still does not have",
+      "slug": "what-this-surface-still-does-not-have"
+    },
+    {
+      "depth": 2,
       "text": "Absolute rules (Don'ts)",
       "slug": "absolute-rules-donts"
     },

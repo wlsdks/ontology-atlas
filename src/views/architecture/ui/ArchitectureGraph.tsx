@@ -1,8 +1,9 @@
 "use client";
 
-import { Layers } from 'lucide-react';
+import { Layers, Play } from 'lucide-react';
 import { useLayoutEffect, useRef, useState, type ComponentType } from 'react';
 
+import { Chip } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
@@ -62,6 +63,7 @@ export function ArchitectureGraph({
   trafficEdgeLabel,
   moduleCounts,
   conceptCounts,
+  runLabel,
 }: {
   graph: Graph;
   selected: string | null;
@@ -75,9 +77,12 @@ export function ArchitectureGraph({
   /** `null` where this surface cannot list source at all, so the box says nothing rather than 0. */
   moduleCounts: Readonly<Record<string, number>> | null;
   conceptCounts: Readonly<Record<string, number>>;
+  runLabel: string;
 }) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [drawn, setDrawn] = useState<DrawnEdge[]>([]);
+  /* `runSeq` keys the strokes so a second press replays instead of doing nothing. */
+  const [runSeq, setRunSeq] = useState(0);
   const edgeKey = graph.edges.map((edge) => `${edge.kind}:${edge.from}>${edge.to}`).join('|');
 
   useLayoutEffect(() => {
@@ -170,6 +175,7 @@ export function ArchitectureGraph({
   }, [edgeKey, graph.edges, selected]);
 
   const slotsPerColumn = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
+  const columnOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
 
   return (
     <div
@@ -177,6 +183,19 @@ export function ArchitectureGraph({
       data-testid="architecture-graph"
       data-edge-source={graph.edgeSource}
     >
+      {graph.edges.length === 0 ? null : (
+        <div className="mb-3 flex justify-end">
+          <Chip
+            size="sm"
+            onClick={() => setRunSeq((seq) => seq + 1)}
+            data-testid="architecture-graph-run"
+          >
+            <Play size={ICON_SIZE.sm} aria-hidden />
+            {runLabel}
+          </Chip>
+        </div>
+      )}
+
       <svg
         ref={svgRef}
         aria-hidden
@@ -212,7 +231,13 @@ export function ArchitectureGraph({
         </defs>
         {drawn.map((edge) => (
           <path
-            key={`${edge.kind}-${edge.from}-${edge.to}`}
+            key={`${edge.kind}-${edge.from}-${edge.to}-${runSeq}`}
+            className={runSeq === 0 ? undefined : 'architecture-flow-running'}
+            style={
+              runSeq === 0
+                ? undefined
+                : ({ '--architecture-run-step': columnOf.get(edge.from) ?? 0 } as React.CSSProperties)
+            }
             d={edge.d}
             fill="none"
             stroke={
@@ -273,7 +298,17 @@ export function ArchitectureGraph({
                 shape: 'card',
                 hoverSurface: 'lift',
                 active: isSelected,
+                /*
+                 * ISO 5807 shapes. A terminator is the start or the end of a process and takes
+                 * rounded ends; a unit of work is a rectangle. Which one a role gets is derived
+                 * from the declared dependency graph in `buildArchitectureGraph`, never from its
+                 * name. The standard's diamond and parallelogram are absent because this drawing
+                 * has no branch and no input step, and a shape that means something else is worse
+                 * than no shape at all.
+                 */
                 className: `architecture-canvas-node relative min-w-0 flex-col items-stretch gap-0 overflow-hidden p-0 text-left transition-opacity duration-[var(--motion-fast)] ${
+                  box.shape === 'terminator' ? 'rounded-full' : 'rounded-card'
+                } ${
                   isSelected
                     ? 'border-[color:var(--color-indigo-a60)]'
                     : 'border-[color:var(--color-border-soft)]'
@@ -302,7 +337,9 @@ export function ArchitectureGraph({
 
               {/* Identity on its own ground, facts beneath a hairline. One box, two registers. */}
               <span
-                className={`flex min-w-0 items-center gap-2 px-3 py-2 ${
+                className={`flex min-w-0 items-center gap-2 py-2 ${
+                  box.shape === 'terminator' ? 'px-5' : 'px-3'
+                } ${
                   isSelected ? 'bg-[color:var(--color-indigo-a08)]' : 'bg-[color:var(--color-overlay-1)]'
                 }`}
               >
@@ -313,7 +350,11 @@ export function ArchitectureGraph({
                   {roleLabel(box.id)}
                 </span>
               </span>
-              <span className="block truncate border-t border-[color:var(--color-divider)] px-3 py-1.5 text-caption tabular-nums text-[color:var(--color-text-tertiary)]">
+              <span
+                className={`block truncate border-t border-[color:var(--color-divider)] py-1.5 text-caption tabular-nums text-[color:var(--color-text-tertiary)] ${
+                  box.shape === 'terminator' ? 'px-5' : 'px-3'
+                }`}
+              >
                 {moduleCounts === null
                   ? conceptCountLabel(conceptCounts[box.id] ?? 0)
                   : `${moduleCountLabel(moduleCounts[box.id] ?? 0)} · ${conceptCountLabel(

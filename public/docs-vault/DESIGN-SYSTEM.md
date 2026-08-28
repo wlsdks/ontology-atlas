@@ -1315,6 +1315,113 @@ Reference anchors:
 - ColorBrewer scheme types: https://colorbrewer2.org/learnmore/schemes_full.html
 - Linear, "Why is quality so rare?": https://linear.app/now/why-is-quality-so-rare
 
+## Architecture canvas — the flow surface (new, 2026-08-28)
+
+> A surface the rest of this document had no vocabulary for. It was designed first and registered
+> second, on the owner's instruction: deriving it from what already existed produced a document
+> with wires stapled to it, twice. Everything below is new here, and everything below is
+> enforceable.
+
+### Why this exists as its own language
+
+`/architecture` draws a flow, and a flow is not a list, a card grid, or a map. Two attempts to
+make an existing shape carry it failed on measurement, both recorded in `docs/DECISIONS.md`
+(2026-08-28 and its sequel): edges drawn onto full-width bands collapsed into an unreadable
+bundle because a 250px-tall block gives a stroke nowhere to attach, and the same drawing inside
+the middle column had 806px for something needing 1170px. The canvas takes the full width and the
+boxes are small enough that an edge has a side to leave from. Left to right, because that is the
+convention the reader already has from every workflow editor.
+
+### Shape carries meaning, and the meaning is ISO 5807's
+
+The international flowchart standard (ISO 5807, 1985, revised 2019) already assigns these:
+
+| Shape | Standard's meaning | Used here for |
+|---|---|---|
+| Terminator, rounded ends | the start or the end of a process | a role at either end of the declared chain |
+| Rectangle | one unit of work | every role with something on both sides |
+| Diamond | a branch | **not used** — this drawing has no decision |
+| Parallelogram | input or output | **not used** — this drawing has no IO step |
+
+**A shape a reader already knows, or no shape.** The two unused symbols stay unused rather than
+being repurposed: a diamond that does not mean a branch is worse than a rectangle.
+
+**Assignment is derived, never named.** A role is a terminator when the *declared* dependency
+graph makes it an end — nothing reaches it, or it reaches nothing. That comes from `allow_*` and
+`dependency_policy`. Reading it from the role's id would be the folder-name inference decision
+(2026-08-26) in another costume, and a profile may call its entry layer anything at all. Note
+this reads the **declared** graph and not the drawn strokes: under `lower-only` nothing is drawn,
+and asking the drawn set would make every box a terminator.
+Gate: `src/views/architecture/model/graph-layout.test.ts`.
+
+### A stroke must carry something the columns cannot
+
+| | Derivable from the column order? | Drawn |
+|---|---|---|
+| Rank | — | as column position, never as a stroke |
+| Permitted edges, `lower-only` | **yes** — the rule is "everything to my right" | never |
+| Permitted edges, `explicit` | no | all of them |
+| Measured traffic | never | wherever a record supplies it |
+
+Measured on this repository: a seven-role `lower-only` profile has **21** permitted edges and a
+four-role `explicit` one has **6**. Drawing the 21 restates the column order twenty-one times.
+The same screen therefore draws different strokes for different profiles, and `edgeSource` reports
+which case it is so the legend states it rather than assuming.
+
+At rest the canvas draws adjacent crossings only; a crossing that skips a column appears when one
+of its ends is chosen, and the legend says so. A drawing that quietly withholds a fact is the same
+defect as one that quietly invents it.
+
+### Depth is face lightness, not shadow
+
+A cast shadow barely reads on a near-black ground. What reads is what light does: a lighter face
+is a higher face. Two devices, both a single flat line of colour, both already licensed by the
+shadow ramp's "an inset hairline is material" clause:
+
+| Token | Value | Role |
+|---|---|---|
+| `--architecture-canvas-dot` | `#2a2b30` | the ground's dot field; one step under the soft border, so it reads as a field and loses to every mark on it |
+| `--architecture-canvas-pitch` | `22px` | dot spacing |
+| `--architecture-node-lit-edge` | `#2e2f33` | a node's lit top face, one step above `--color-elevated` |
+
+The ground carries `inset 0 1px 0 var(--color-shadow-a35)` — the shadow a wall casts into a
+recess, which is what says things sit *in* here rather than *on* another card. `#1b1c1f` was tried
+for the dot first and measured invisible at 1px on a 22px pitch; a field nobody perceives is not a
+field.
+
+### Ports
+
+A small indigo dot on the edge a stroke actually attaches to, drawn **only** on the side that has
+one. It is the single clearest signal a node editor gives, and its absence is why the first
+attempt stayed unreadable even after the routing was corrected. A port on a side with no
+connection would be a promise of a line that is not coming.
+
+### Running the flow
+
+| Token | Value |
+|---|---|
+| `--architecture-run-duration` | `520ms` |
+| `--architecture-run-stagger` | `90ms` |
+| `--architecture-run-dash` | `10px 14px` |
+| `--architecture-run-dash-travel` | `48px` |
+
+A dash travelling the strokes, staggered by column so seven columns read as one wave and finish
+inside 1.06s. **On a deliberate press, once.** An ambient loop would claim something is happening
+in the source right now, and nothing is. Reduced motion collapses it entirely: the arrowheads and
+the column order state the same direction with no time axis, so a "short equivalent" would
+re-introduce exactly the movement being declined. Roster:
+`tests/contract/reduced-motion-equivalent.contract.test.ts`.
+
+### What this surface still does not have
+
+3D. Nothing measured here needs a third axis — the data is rank on one axis and a count on the
+other — and the software-visualisation literature is consistent that on a flat screen the third
+axis buys occlusion and unreadable labels. CodeCity's measured win (24% more correct, 12% faster)
+came from its *metaphor*, not from the extra axis, and the follow-up work naming navigation,
+occlusion, selection and text readability as open problems is why that win has not generalised.
+The metaphor this surface already has is the owner's own: a building X-ray, which is drawn in 2D
+for the same reason architectural drawings are.
+
 ## Absolute rules (Don'ts)
 
 > **This list is the single source of truth** (2026-08-05). The same list existed in three places, and **none of them matched**: `.claude/rules/forbidden.md` had 9 of the union's 15 items, `.claude/rules/design.md` had only 8, and each contained one item the other lacked. There was no gate to reconcile the three copies.

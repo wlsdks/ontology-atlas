@@ -1,11 +1,28 @@
 import type { ArchitectureLayout } from '@/entities/architecture-profile';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 
+/**
+ * What a box is in the drawing's vocabulary.
+ *
+ * ⚠️ **The shapes are ISO 5807's, and the assignment is derived, never named.** The international
+ * flowchart standard gives a terminator (rounded ends) to the start or end of a process and a
+ * rectangle to a unit of work. This drawing has no branch and no input/output step, so the
+ * standard's diamond and parallelogram are simply not used rather than repurposed into something
+ * they do not mean.
+ *
+ * A role is a terminator when the declared dependency graph makes it an end of the chain: nothing
+ * reaches it, or it reaches nothing. That comes from `allow_*` and `dependency_policy`, never from
+ * the role's name — reading intent out of a name is exactly what decision (2026-08-26) forbids,
+ * and a profile may call its entry layer anything at all.
+ */
+export type GraphBoxShape = 'terminator' | 'process';
+
 /** One role, placed. `column` is its rank left to right; `slot` is its position within it. */
 interface GraphBox {
   id: string;
   column: number;
   slot: number;
+  shape: GraphBoxShape;
 }
 
 export interface GraphEdge {
@@ -101,8 +118,17 @@ export function buildArchitectureGraph(
           ? 'traffic'
           : 'none';
 
+  /*
+   * Shape comes from the *declared* graph, not from the strokes on screen. Under `lower-only` no
+   * permitted edge is drawn at all, so asking the drawn set would make every box a terminator.
+   */
+  const declaredIn = new Set(layout.edges.map((edge) => edge.to));
+  const declaredOut = new Set(layout.edges.map((edge) => edge.from));
+
   return {
-    boxes: assignSlots(layout.rows, [...permitted, ...measured]),
+    boxes: assignSlots(layout.rows, [...permitted, ...measured], (id) =>
+      declaredIn.has(id) && declaredOut.has(id) ? 'process' : 'terminator',
+    ),
     edges: [...permitted, ...measured].sort(
       (a, b) =>
         b.columnSpan - a.columnSpan ||
@@ -127,6 +153,7 @@ export function buildArchitectureGraph(
 function assignSlots(
   rows: readonly (readonly string[])[],
   edges: readonly GraphEdge[],
+  shapeOf: (id: string) => GraphBoxShape,
 ): GraphBox[] {
   const boxes: GraphBox[] = [];
   const slotOf = new Map<string, number>();
@@ -150,7 +177,7 @@ function assignSlots(
 
     ordered.forEach((entry, slot) => {
       slotOf.set(entry.id, slot);
-      boxes.push({ id: entry.id, column, slot });
+      boxes.push({ id: entry.id, column, slot, shape: shapeOf(entry.id) });
     });
   });
 

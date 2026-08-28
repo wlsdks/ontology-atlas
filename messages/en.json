@@ -361,6 +361,7 @@
     "dependencySameRole": "Inside one role, modules may always reference each other.",
     "legendPermitted": "a reviewed dependency the profile permits",
     "legendSkipHint": "A crossing that skips a layer appears when you choose one of its ends.",
+    "runFlow": "Run the flow",
     "legendTraffic": "measured imports; thickness is how many",
     "permittedEdge": "{from} may depend on {to}",
     "trafficEdge": "{from} reaches {to} in {count, plural, one {# import} other {# imports}}",

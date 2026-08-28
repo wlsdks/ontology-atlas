@@ -86,6 +86,7 @@ export function ArchitectureFlow({
   legendPermitted,
   legendTraffic,
   legendSkipHint,
+  runLabel,
   permittedEdgeLabel,
   trafficEdgeLabel,
 }: {
@@ -116,6 +117,7 @@ export function ArchitectureFlow({
   legendPermitted: string;
   legendTraffic: string;
   legendSkipHint: string;
+  runLabel: string;
   permittedEdgeLabel: (from: string, to: string) => string;
   trafficEdgeLabel: (from: string, to: string, count: number) => string;
 }) {
@@ -171,6 +173,7 @@ export function ArchitectureFlow({
           trafficEdgeLabel={trafficEdgeLabel}
           moduleCounts={moduleCounts}
           conceptCounts={conceptCounts}
+          runLabel={runLabel}
         />
 
         {/*

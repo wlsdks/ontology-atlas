@@ -100,6 +100,27 @@ describe('buildArchitectureGraph', () => {
     }
   });
 
+  it("gives the chain's two ends the standard's terminator shape, and the rest a process", () => {
+    /*
+     * ISO 5807: a terminator is the start or the end of a process, a rectangle is a unit of work.
+     * Derived from the declared graph, so a profile that names its entry layer anything at all
+     * still gets the right shape.
+     */
+    const shapeOf = new Map(buildArchitectureGraph(fsd(), []).boxes.map((b) => [b.id, b.shape]));
+    expect(shapeOf.get('routing')).toBe('terminator');
+    expect(shapeOf.get('shared')).toBe('terminator');
+    expect(shapeOf.get('views')).toBe('process');
+    expect(shapeOf.get('widgets')).toBe('process');
+  });
+
+  it('reads the shape from the declared graph, not from the strokes it happens to draw', () => {
+    /* Under lower-only no permitted edge is drawn; asking the drawn set would make every box a
+       terminator, which is the bug this test exists to keep out. */
+    const drawn = buildArchitectureGraph(fsd(), []);
+    expect(drawn.edges).toEqual([]);
+    expect(drawn.boxes.filter((box) => box.shape === 'process')).toHaveLength(5);
+  });
+
   it('is deterministic', () => {
     expect(buildArchitectureGraph(hex(), [])).toEqual(buildArchitectureGraph(hex(), []));
     const traffic = [{ fromRole: 'views', toRole: 'shared', count: 260 }];
