@@ -174,7 +174,39 @@ export function ArchitectureWorkbench({
       ),
     });
   }, []);
+
+  /*
+   * ⚠️ **A callback ref, because an effect fires before this element exists.** Measured on the
+   * built export (2026-08-28): entering plan mode gave `clientHeight 190, scrollHeight 444` and
+   * `mask-image: none` — 254px hidden with nothing on screen saying so, which a fresh-eyes walker
+   * read as a sentence truncated mid-word. Any scroll fixed it, and that is the tell: the reading
+   * ran once, when the block was not yet mounted, and nothing re-measured. Adding a
+   * `ResizeObserver` inside an effect did not help, because that effect saw the same null ref.
+   *
+   * Attaching to the node itself removes the timing question: it runs when the element arrives,
+   * however late that is. The observer then covers the box settling afterwards, and `fonts.ready`
+   * covers text growing inside a box that never changes — the late-web-font case `select.tsx`
+   * already names in the comment beside the very helpers this reuses.
+   */
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const attachHandoff = useCallback(
+    (element: HTMLPreElement | null) => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      handoffRef.current = element;
+      if (!element) return;
+      readHandoffEdges();
+      void document.fonts?.ready.then(readHandoffEdges);
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(readHandoffEdges);
+      observer.observe(element);
+      observerRef.current = observer;
+    },
+    [readHandoffEdges],
+  );
+  /* The text itself can change while the element stays put, so the content is a trigger too. */
   useLayoutEffect(readHandoffEdges, [readHandoffEdges, handoff, mode]);
+
   const handoffMask = (() => {
     const fade = 'var(--leading-body)';
     if (handoffEdges.top && handoffEdges.bottom) {
@@ -775,7 +807,7 @@ export function ArchitectureWorkbench({
               two surfaces solving one problem do not answer it differently.
             */}
             <pre
-              ref={handoffRef}
+              ref={attachHandoff}
               onScroll={readHandoffEdges}
               className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)]"
               style={handoffMask ? { maskImage: handoffMask, WebkitMaskImage: handoffMask } : undefined}
