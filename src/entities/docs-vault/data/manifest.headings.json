@@ -47,6 +47,31 @@
     },
     {
       "depth": 2,
+      "text": "Drawing depth: the techniques, and where each comes from",
+      "slug": "drawing-depth-the-techniques-and-where-each-comes-from"
+    },
+    {
+      "depth": 3,
+      "text": "Depth without a 3D engine",
+      "slug": "depth-without-a-3d-engine"
+    },
+    {
+      "depth": 3,
+      "text": "Two illustration conventions worth knowing by name",
+      "slug": "two-illustration-conventions-worth-knowing-by-name"
+    },
+    {
+      "depth": 3,
+      "text": "Depth cues, in the order they work",
+      "slug": "depth-cues-in-the-order-they-work"
+    },
+    {
+      "depth": 3,
+      "text": "The constraint that makes any of this safe here",
+      "slug": "the-constraint-that-makes-any-of-this-safe-here"
+    },
+    {
+      "depth": 2,
       "text": "Registering what you made",
       "slug": "registering-what-you-made"
     }

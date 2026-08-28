@@ -118,6 +118,69 @@ before citing a ban:
   Tailwind's `from-purple-* … to-pink-*` and nothing else; a CSS `radial-gradient` painting a dot
   field was never blocked. Read the selector before you decide you are stuck.
 
+## Drawing depth: the techniques, and where each comes from
+
+Everything above is a rule this repository paid for. This section is not — it is a **reference
+shelf**, collected because the owner asked for the drawing techniques themselves rather than for a
+verdict on whether depth is allowed. Nothing here has been used on a screen yet, and nothing here
+is permission to use it. Kept separate on purpose, so a later reader cannot mistake a technique for
+a measured rule.
+
+### Depth without a 3D engine
+
+An agent asked to draw something "in 3D" reaches for a renderer, and that is usually the wrong
+first move: it costs a dependency, it cannot be diffed, and it cannot be asserted on. Every
+technique below is a **parallel projection** — an affine transform of 2D coordinates — so it stays
+plain SVG, stays deterministic, and stays testable the way the sketch strokes here already are.
+
+**ISO 5456-3:1996**, *Technical drawings — Projection methods — Part 3: Axonometric
+representations* (reviewed and confirmed 2025) is the standard for exactly this. It defines
+parallel projection from an infinitely distant point onto one plane, and recommends three:
+
+| Method | What it does | Where it fits |
+|---|---|---|
+| **Isometric** | Three axes at 120°, one scale on all three | Equal emphasis on all faces; the shape everyone recognises as "isometric" |
+| **Dimetric** | Two scales — one axis foreshortened | One face is the subject and the other two are context |
+| **Oblique** | The front face keeps its true shape, depth runs off at an angle | A face that must stay readable — a label, a diagram, a screen inside the drawing |
+
+Oblique is the one that matters most for a drawing whose faces carry text, because it is the only
+one that leaves a face undistorted. Cabinet oblique halves the depth axis; cavalier draws it full
+length and looks stretched.
+
+### Two illustration conventions worth knowing by name
+
+- **Exploded view** — parts displaced along a shared axis so an assembly's order is visible without
+  taking it apart. The convention that answers "what is inside this, and in what order".
+- **Cutaway or ghosted view** — a surface removed or made transparent to show what it contains. The
+  X-ray. This is the one the owner named for this product, and it is a drawing convention with a
+  long technical-illustration history rather than a UI effect.
+
+### Depth cues, in the order they work
+
+Ranked by how strongly each carries depth on its own. The first is nearly absolute and the last is
+nearly free to lose:
+
+1. **Occlusion** — what covers what. The strongest, and the only one that survives every other
+   choice.
+2. **Relative size** — the same object drawn smaller reads as further away.
+3. **Elevation on the surface** — how high in the frame something sits.
+4. **Aerial perspective** — contrast and saturation falling off with distance. On a dark ground
+   this is the cheapest and least destructive of the four.
+
+Shadow deserves its own line, because on a dark ground it barely works: there is not enough range
+below the background for a shadow to carry. **Material's dark-theme model uses the inverse** — a
+surface at a higher elevation receives a semi-transparent light overlay, so **higher reads as
+lighter**, with the alpha computed from the elevation. That is a published, directly usable rule
+for a dark product, and it is what this repository's own elevated surfaces already do.
+
+### The constraint that makes any of this safe here
+
+This product's palette is neutrals plus one indigo, dark only, with no gradients, glow, or glass.
+That rules out most of the ways depth is usually faked, and leaves the ones above — which is
+convenient, because the ones above are the ones that survive being printed in one colour. If a
+drawing needs a gradient to read as deep, it was relying on the weakest cue.
+
+
 ## Registering what you made
 
 New visual language goes into `docs/DESIGN-SYSTEM.md` as its own section, with values as tokens
