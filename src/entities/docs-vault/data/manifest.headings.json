@@ -14636,6 +14636,98 @@
       "slug": "updating-documentation"
     }
   ],
+  "superpowers/plans/2026-08-28-architecture-xray": [
+    {
+      "depth": 1,
+      "text": "Architecture X-ray Implementation Plan",
+      "slug": "architecture-x-ray-implementation-plan"
+    },
+    {
+      "depth": 2,
+      "text": "Global Constraints",
+      "slug": "global-constraints"
+    },
+    {
+      "depth": 2,
+      "text": "File Structure",
+      "slug": "file-structure"
+    },
+    {
+      "depth": 2,
+      "text": "Phase 1 — The traffic is drawn",
+      "slug": "phase-1-the-traffic-is-drawn"
+    },
+    {
+      "depth": 3,
+      "text": "Task 1: The record type admits the traffic it already carries",
+      "slug": "task-1-the-record-type-admits-the-traffic-it-already-carries"
+    },
+    {
+      "depth": 3,
+      "text": "Task 2: The arcs are arithmetic, not a drawing",
+      "slug": "task-2-the-arcs-are-arithmetic-not-a-drawing"
+    },
+    {
+      "depth": 3,
+      "text": "Task 3: The overlay draws the arcs from the rendered bands",
+      "slug": "task-3-the-overlay-draws-the-arcs-from-the-rendered-bands"
+    },
+    {
+      "depth": 3,
+      "text": "Task 4: The numbers are stated, not only drawn",
+      "slug": "task-4-the-numbers-are-stated-not-only-drawn"
+    },
+    {
+      "depth": 3,
+      "text": "Task 5: Prove it on the installed app, and record the decision",
+      "slug": "task-5-prove-it-on-the-installed-app-and-record-the-decision"
+    },
+    {
+      "depth": 3,
+      "text": "Task 6: Walk it again with fresh eyes",
+      "slug": "task-6-walk-it-again-with-fresh-eyes"
+    },
+    {
+      "depth": 2,
+      "text": "Phase 2 — A note can be pinned to a place",
+      "slug": "phase-2-a-note-can-be-pinned-to-a-place"
+    },
+    {
+      "depth": 3,
+      "text": "Task 7: A role carries a note, and the note is authored data",
+      "slug": "task-7-a-role-carries-a-note-and-the-note-is-authored-data"
+    },
+    {
+      "depth": 3,
+      "text": "Task 8: The note is visible where it points, and says it is a note",
+      "slug": "task-8-the-note-is-visible-where-it-points-and-says-it-is-a-note"
+    },
+    {
+      "depth": 3,
+      "text": "Task 9: Writing a note is a diff a person reviews",
+      "slug": "task-9-writing-a-note-is-a-diff-a-person-reviews"
+    },
+    {
+      "depth": 2,
+      "text": "Phase 3 — A role can be inserted between two roles",
+      "slug": "phase-3-a-role-can-be-inserted-between-two-roles"
+    },
+    {
+      "depth": 3,
+      "text": "Task 10: Inserting a role is one reviewed edit, dry-run first",
+      "slug": "task-10-inserting-a-role-is-one-reviewed-edit-dry-run-first"
+    },
+    {
+      "depth": 3,
+      "text": "Task 11: The stage offers the insertion where the gap is",
+      "slug": "task-11-the-stage-offers-the-insertion-where-the-gap-is"
+    },
+    {
+      "depth": 2,
+      "text": "Self-review notes",
+      "slug": "self-review-notes"
+    }
+  ],
   "TECH-STACK": [
     {
       "depth": 1,

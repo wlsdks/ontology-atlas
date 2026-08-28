@@ -3219,6 +3219,18 @@
       "linksOut": []
     },
     {
+      "slug": "superpowers/plans/2026-08-28-architecture-xray",
+      "path": "docs/superpowers/plans/2026-08-28-architecture-xray.md",
+      "title": "Architecture X-ray Implementation Plan",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "For agentic workers: REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking. Goal: Turn /architecture from a list of layers into an X-ray of the building: the traffic between layers ",
+      "wordCount": 4497,
+      "updatedAt": "2026-08-28",
+      "linksOut": []
+    },
+    {
       "slug": "TECH-STACK",
       "path": "docs/TECH-STACK.md",
       "title": "TECH STACK — Technology Stack Decision Record",
@@ -5857,6 +5869,27 @@
             "type": "doc",
             "slug": "prototypes/visual-richness-review",
             "title": "시각 리치니스 라운드 — 디자인 리뷰 + 파라미터 스펙 (2026-07)"
+          }
+        ]
+      },
+      {
+        "name": "superpowers",
+        "path": "superpowers",
+        "type": "dir",
+        "children": [
+          {
+            "name": "plans",
+            "path": "superpowers/plans",
+            "type": "dir",
+            "children": [
+              {
+                "name": "2026-08-28-architecture-xray",
+                "path": "superpowers/plans/2026-08-28-architecture-xray",
+                "type": "doc",
+                "slug": "superpowers/plans/2026-08-28-architecture-xray",
+                "title": "Architecture X-ray Implementation Plan"
+              }
+            ]
           }
         ]
       },
