@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 
 import { cn } from '@/shared/lib/cn';
+import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
@@ -230,7 +231,11 @@ export function ArchitectureSketch({
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
         {covered.hiddenRight === 0 ? null : (
           <span
-            className="rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2 py-1 text-caption text-[color:var(--color-text-tertiary)]"
+            className={badgeClass({
+              shape: 'pill',
+              className:
+                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
+            })}
             data-testid="architecture-canvas-hidden-right"
           >
             {hiddenRightLabel(covered.hiddenRight)}
