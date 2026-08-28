@@ -223,6 +223,36 @@ convenient, because the ones above are the ones that survive being printed in on
 drawing needs a gradient to read as deep, it was relying on the weakest cue.
 
 
+## What the public practice agrees on, as of August 2026
+
+Everything above was paid for here. This section is what other people have written down, checked
+against what this session arrived at independently — kept separate, like the depth shelf, so a
+borrowed idea is never mistaken for a measured one.
+
+Four points recur across the current writing on driving a coding agent to produce design, and this
+session reached all four from failures without having read them first. That agreement is the
+interesting part; a technique two routes arrive at is worth more than one somebody asserts.
+
+| Practice | Where it is written down | What it looked like here |
+|---|---|---|
+| Capture a screenshot after every iteration, and read it back | Tweag's *Agentic Coding Handbook*, "Visual Feedback Loop" | the loop at the top of this document, and the corner defect only a crop revealed |
+| Give the agent a deterministic harness and a deep link straight to a state | *Give Your Coding Agent Eyes: Screenshot-Driven SwiftUI Iteration* | `?stage=` and `?role=` on this screen, which exist because a walker could not send a link |
+| Separate the maker from the checker | recurring in the loop-engineering writing | the fresh-eyes walkthroughs, given the profile and the URL and nothing else |
+| Start from a design system in code, and check every pass against it | Atomic Object, *Start with a Design System for Better Coding Agent Results* | the control and badge ratchets, which caught two hand-written controls in this work |
+
+One piece of the same puzzle is now a standard rather than a practice. The **Design Tokens
+Community Group specification reached its first stable version (2025.10)**, giving design tokens a
+JSON interchange format that Figma, Penpot, Style Dictionary and others read. It is a Community
+Group specification and not a W3C Recommendation — stable and widely implemented, but not on the
+standards track — and worth knowing precisely because the thing an agent most needs from a design
+system is a machine-readable contract rather than prose. This repository's contract is CSS
+variables plus lint, which is the same idea in a different notation.
+
+Where this session parts company with the writing: most of it treats the screenshot as the agent's
+input. Here it is also the *judgment*, and the harder lesson was that a screenshot cannot check a
+number — which is why the counting section above exists.
+
+
 ## Registering what you made
 
 New visual language goes into `docs/DESIGN-SYSTEM.md` as its own section, with values as tokens

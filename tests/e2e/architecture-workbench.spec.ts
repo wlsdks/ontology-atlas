@@ -258,3 +258,42 @@ test('the count follows the pan to whichever side is covered', async ({ page }) 
   await expect(left).toBeVisible();
   await expect(right).toBeVisible();
 });
+
+test('a link carries the chosen role, and refuses one the profile lacks', async ({ page }) => {
+  /*
+   * ⚠️ Selecting a role left the address unchanged and a reload dropped it — the same defect the
+   * stage had, on the half a person is likelier to send: "look at what widgets may depend on" is a
+   * link, not an instruction to go and click something. It is also the technique the public
+   * writing on driving coding agents keeps naming: a deep link straight to the exact state rather
+   * than the clicks that reproduce it.
+   *
+   * The second half matters more than the first. Before the honoured role was derived,
+   * `?role=not-a-real-role` did not render an empty card — it rendered one titled with the string
+   * and asserting that it depends on no role at all. A screen stating a dependency rule for a role
+   * that does not exist is saying something false, and a crafted or stale link is enough to do it.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/');
+
+  await page.getByTestId('architecture-graph-box-application').click();
+  expect(new URL(page.url()).searchParams.get('role')).toBe('application');
+
+  await page.getByTestId('architecture-mode-plan').click();
+  const both = new URL(page.url()).searchParams;
+  expect(both.get('stage')).toBe('plan');
+  expect(both.get('role')).toBe('application');
+
+  await page.reload();
+  await expect(page.getByTestId('architecture-graph-box-application')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByTestId('architecture-mode-plan')).toHaveAttribute('aria-checked', 'true');
+
+  /* Deselecting takes it back out, so the bare address keeps meaning "nothing chosen". */
+  await page.getByTestId('architecture-graph-box-application').click();
+  expect(new URL(page.url()).searchParams.get('role')).toBeNull();
+
+  await page.goto('/ko/architecture/?role=not-a-real-role');
+  await expect(page.locator('[data-testid^="architecture-concepts-"]')).toHaveCount(0);
+});

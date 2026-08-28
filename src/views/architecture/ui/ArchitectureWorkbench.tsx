@@ -44,9 +44,26 @@ function parseArchitectureStage(raw: string | null): Mode {
   return MODES.find((mode) => mode === raw) ?? 'understand';
 }
 
-/** The same document with a different query view; understand is the default and stays bare. */
-function buildArchitectureStageHref(stage: Mode, pathname: string): string {
-  return stage === 'understand' ? pathname : `${pathname}?stage=${stage}`;
+/**
+ * The same document with a different query view. Defaults stay bare, so a plain address still
+ * means "this screen, nothing chosen" and a link carries only what somebody actually picked.
+ */
+function buildArchitectureHref(
+  view: { stage: Mode; role: string | null },
+  pathname: string,
+): string {
+  const query = new URLSearchParams();
+  if (view.stage !== 'understand') query.set('stage', view.stage);
+  if (view.role) query.set('role', view.role);
+  const search = query.toString();
+  return search ? `${pathname}?${search}` : pathname;
+}
+
+/** Whichever of the two the address carries, trusting neither. */
+function readArchitectureAddress(): { stage: Mode; role: string | null } {
+  if (typeof window === 'undefined') return { stage: 'understand', role: null };
+  const params = new URL(window.location.href).searchParams;
+  return { stage: parseArchitectureStage(params.get('stage')), role: params.get('role') };
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 
@@ -104,26 +121,35 @@ export function ArchitectureWorkbench({
    * `useSearchParams` would also pull this page under a Suspense boundary it does not otherwise
    * need under static export.
    */
-  const [mode, setMode] = useState<Mode>(() =>
-    parseArchitectureStage(
-      typeof window === 'undefined'
-        ? null
-        : new URL(window.location.href).searchParams.get('stage'),
-    ),
-  );
-  /* Back and forward move the stage, because the address is now part of the screen's state. */
-  useEffect(() => {
-    const syncStageFromHistory = () => {
-      setMode(parseArchitectureStage(new URL(window.location.href).searchParams.get('stage')));
-    };
-    window.addEventListener('popstate', syncStageFromHistory);
-    return () => window.removeEventListener('popstate', syncStageFromHistory);
-  }, []);
+  const [mode, setMode] = useState<Mode>(() => readArchitectureAddress().stage);
 
   /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
      it sit in different rows of the page grid: the drawing takes the full width, the answer is
      column content. */
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  /*
+   * ⚠️ **The chosen role is in the address, for the same reason the stage is.** Selecting one left
+   * `/ko/architecture/` unchanged and a reload dropped it (measured on the built export,
+   * 2026-08-28) — and this is the half a person is likelier to send: "look at what widgets may
+   * depend on" is a link, not an instruction to go and click something.
+   *
+   * It is also the technique the public writing on driving coding agents keeps naming: hand the
+   * agent a deep link straight to the exact state instead of a sequence of clicks that reproduces
+   * it. `docs/AGENT-DESIGN-METHOD.md` records where that came from.
+   */
+  const [selectedRole, setSelectedRole] = useState<string | null>(
+    () => readArchitectureAddress().role,
+  );
+
+  /* Back and forward move both, because the address is part of the screen's state now. */
+  useEffect(() => {
+    const syncFromHistory = () => {
+      const address = readArchitectureAddress();
+      setMode(address.stage);
+      setSelectedRole(address.role);
+    };
+    window.addEventListener('popstate', syncFromHistory);
+    return () => window.removeEventListener('popstate', syncFromHistory);
+  }, []);
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const layoutScrollRef = useRef<HTMLDivElement>(null);
   const stagePanelRef = useRef<HTMLElement>(null);
@@ -268,6 +294,20 @@ export function ArchitectureWorkbench({
     [selected],
   );
   const roleOrder = roleLayout?.rows.flat() ?? [];
+
+  /*
+   * ⚠️ **A role the profile does not have is not honoured.** The address is screen state now, so
+   * it can carry a role from somebody else's vault or one the profile has since dropped — and
+   * `?role=not-a-real-role` did not render an empty card, it rendered a card titled with the
+   * string and asserting "depends on no role at all" (measured on the built export,
+   * 2026-08-28). A screen that states a dependency rule for a role that does not exist is
+   * saying something false, which is worse than saying nothing.
+   *
+   * Derived, not corrected. Storing the address's value and clearing it from an effect was the
+   * first attempt, and the lint refused it: setting state inside an effect to fix state is a
+   * cascade. The address stays as the sender wrote it; only the screen declines to honour it.
+   */
+  const activeRole = selectedRole && roleOrder.includes(selectedRole) ? selectedRole : null;
   const roleIndexOf = new Map(roleOrder.map((id, index) => [id, index + 1]));
   const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
   const roleSummaryOf = new Map(
@@ -484,7 +524,7 @@ export function ArchitectureWorkbench({
     window.history.replaceState(
       window.history.state,
       '',
-      buildArchitectureStageHref(nextMode, window.location.pathname),
+      buildArchitectureHref({ stage: nextMode, role: selectedRole }, window.location.pathname),
     );
   }
 
@@ -556,7 +596,15 @@ export function ArchitectureWorkbench({
                    loses the entire drawing (measured on the installed app, 2026-08-28). */
                 roleTraffic={record?.brief.conformance.observedRoleEdges}
                 selected={selectedRole}
-                onSelect={(id) => setSelectedRole((current) => (current === id ? null : id))}
+                onSelect={(id) => {
+                  const next = selectedRole === id ? null : id;
+                  setSelectedRole(next);
+                  window.history.replaceState(
+                    window.history.state,
+                    '',
+                    buildArchitectureHref({ stage: mode, role: next }, window.location.pathname),
+                  );
+                }}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
                 directionLabel={t('ladderDirection')}
@@ -756,7 +804,7 @@ export function ArchitectureWorkbench({
               reader chose, and the density the removed bands were good at survives here.
             */}
             <div className="mt-5">
-              {selectedRole === null ? (
+              {activeRole === null ? (
                 <p
                   className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3 text-body text-[color:var(--color-text-tertiary)]"
                   data-testid="architecture-role-detail-empty"
@@ -765,14 +813,14 @@ export function ArchitectureWorkbench({
                 </p>
               ) : (
                 <ArchitectureRoleDetail
-                  roleId={selectedRole}
-                  index={roleIndexOf.get(selectedRole) ?? 1}
-                  label={roleLabel(selectedRole)}
-                  summary={roleSummaryOf.get(selectedRole) ?? null}
-                  paths={rolePathsOf.get(selectedRole) ?? []}
-                  reach={roleReachOf.get(selectedRole) ?? []}
-                  modules={selectedModules === null ? null : selectedModules[selectedRole] ?? []}
-                  concepts={(conceptsByProfile[selected.slug] ?? {})[selectedRole] ?? []}
+                  roleId={activeRole}
+                  index={roleIndexOf.get(activeRole) ?? 1}
+                  label={roleLabel(activeRole)}
+                  summary={roleSummaryOf.get(activeRole) ?? null}
+                  paths={rolePathsOf.get(activeRole) ?? []}
+                  reach={roleReachOf.get(activeRole) ?? []}
+                  modules={selectedModules === null ? null : selectedModules[activeRole] ?? []}
+                  concepts={(conceptsByProfile[selected.slug] ?? {})[activeRole] ?? []}
                   edgeParticipants={EMPTY_EDGE_PARTICIPANTS}
                   roleLabel={roleLabel}
                   sinkLabel={t('reachNone')}

@@ -97,6 +97,12 @@ function renderWithRecord(record: ReturnType<typeof buildRecord>) {
  * It was inert on the installed rc.15: the button navigated to the map and carried nothing, while
  * the sentence above it promised an agent would read the folder and the imports and draft this.
  */
+/* The chosen role and stage live in the address, and jsdom shares one window across a file — so a
+   case that selects a role would otherwise hand the next one a pre-selected screen. */
+beforeEach(() => {
+  window.history.replaceState({}, '', '/ko/architecture/');
+});
+
 describe('ArchitectureWorkbench — nothing recorded yet', () => {
   function renderEmpty() {
     return render(

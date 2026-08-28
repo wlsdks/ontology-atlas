@@ -409,6 +409,7 @@ to an agent.
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
 | `stage` | `/architecture` | which stage of the workflow the right panel answers | `understand` \| `plan` \| `verify`; absent means understand, and an unknown value falls back to it |
+| `role` | `/architecture` | the chosen role, so a link opens on it | a role id from the profile in view; one the profile lacks is not honoured, and the address is left as sent |
 | `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
 
 ### One place builds node ids, one place reads them
