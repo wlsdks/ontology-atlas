@@ -408,6 +408,7 @@ to an agent.
 | `node` | `/ontology` (redirect) | node to focus after redirect → `?p=` | node id (translated by `translateOntologyDeeplinkToTopologyParam`) |
 | `node` · `mode` · `edit` | `/ontology/edit`, `/ontology/studio` | legacy write deep link translated to `p/workbench/edit` | canonical and plural-folder node forms tolerated; `mode=create` → `workbench=create` |
 | `slug` | `/docs` | vault file to open | vault file path (`ontology/capabilities/foo`), not a node id — file paths are the docs vault's own address space |
+| `stage` | `/architecture` | which stage of the workflow the right panel answers | `understand` \| `plan` \| `verify`; absent means understand, and an unknown value falls back to it |
 | `tab` | `/ontology/insights` | active maintenance question | `do-next` \| `composition` \| `connections` \| `boundaries` \| `freshness` |
 
 ### One place builds node ids, one place reads them

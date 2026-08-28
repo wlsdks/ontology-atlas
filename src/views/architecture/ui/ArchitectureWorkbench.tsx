@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Boxes, CircleHelp, FileCode2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -30,6 +30,24 @@ import { useDraftHandoffRoute } from '../model/use-draft-handoff-route';
 import { ArchitectureFlow } from './ArchitectureFlow';
 
 type Mode = 'understand' | 'plan' | 'verify';
+
+const MODES: readonly Mode[] = ['understand', 'plan', 'verify'];
+
+/**
+ * ⚠️ **The stage lives in the URL, so a link carries it.** A fresh-eyes walkthrough on 2026-08-28
+ * found that switching to the plan or verify stage left the address at `/ko/architecture/`: a
+ * colleague opening a shared link always landed on understand, and a refresh discarded the stage.
+ * An unknown or absent value reads as understand rather than as an error, because a URL a person
+ * typed or a stale link should still open the screen.
+ */
+function parseArchitectureStage(raw: string | null): Mode {
+  return MODES.find((mode) => mode === raw) ?? 'understand';
+}
+
+/** The same document with a different query view; understand is the default and stays bare. */
+function buildArchitectureStageHref(stage: Mode, pathname: string): string {
+  return stage === 'understand' ? pathname : `${pathname}?stage=${stage}`;
+}
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 
 /*
@@ -79,7 +97,29 @@ export function ArchitectureWorkbench({
   const draftRoute = draftHandoff.route;
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
-  const [mode, setMode] = useState<Mode>('understand');
+  /*
+   * Read through native history, not `useSearchParams`. The write side already goes through
+   * `history.replaceState` — a Next navigation would move focus to the document root inside the
+   * WebView — and one component should not read its address one way and write it another.
+   * `useSearchParams` would also pull this page under a Suspense boundary it does not otherwise
+   * need under static export.
+   */
+  const [mode, setMode] = useState<Mode>(() =>
+    parseArchitectureStage(
+      typeof window === 'undefined'
+        ? null
+        : new URL(window.location.href).searchParams.get('stage'),
+    ),
+  );
+  /* Back and forward move the stage, because the address is now part of the screen's state. */
+  useEffect(() => {
+    const syncStageFromHistory = () => {
+      setMode(parseArchitectureStage(new URL(window.location.href).searchParams.get('stage')));
+    };
+    window.addEventListener('popstate', syncStageFromHistory);
+    return () => window.removeEventListener('popstate', syncStageFromHistory);
+  }, []);
+
   /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
      it sit in different rows of the page grid: the drawing takes the full width, the answer is
      column content. */
@@ -424,6 +464,17 @@ export function ArchitectureWorkbench({
     if (nextMode !== mode) setCopyState('idle');
     modeChangedRef.current = true;
     setMode(nextMode);
+    /*
+     * The same document, a different query view. A Next router navigation would move focus to the
+     * document root inside the WebView, so the address is updated through native history the way
+     * `OntologyInsightsPage` already does — screen state and URL change in one event, which keeps
+     * the segmented control's roving focus intact.
+     */
+    window.history.replaceState(
+      window.history.state,
+      '',
+      buildArchitectureStageHref(nextMode, window.location.pathname),
+    );
   }
 
   return (

@@ -150,3 +150,37 @@ test('a cut-off drawing says how much of itself is missing', async ({ page }) =>
   expect(drawingBox).not.toBeNull();
   expect(chipBox!.y + chipBox!.height).toBeLessThanOrEqual(drawingBox!.y + 1);
 });
+
+test('a shared link opens the stage it names', async ({ page }) => {
+  /*
+   * ⚠️ A fresh-eyes walkthrough on 2026-08-28 found the plan and verify stages left the address at
+   * `/ko/architecture/`: a colleague opening a shared link always landed on understand, and a
+   * refresh discarded the stage. The stage is screen state a person would want to send, so it
+   * belongs in the URL — the same argument, and the same native-history mechanism, as the insights
+   * tabs.
+   *
+   * An unknown value falls back rather than erroring, because a stale link or a typed URL should
+   * still open the screen.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/');
+  await expect(page.getByTestId('architecture-mode-understand')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+
+  await page.getByTestId('architecture-mode-plan').click();
+  expect(new URL(page.url()).searchParams.get('stage')).toBe('plan');
+
+  await page.reload();
+  await expect(page.getByTestId('architecture-mode-plan')).toHaveAttribute('aria-checked', 'true');
+
+  await page.goto('/ko/architecture/?stage=verify');
+  await expect(page.getByTestId('architecture-mode-verify')).toHaveAttribute('aria-checked', 'true');
+
+  await page.goto('/ko/architecture/?stage=nonsense');
+  await expect(page.getByTestId('architecture-mode-understand')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+});

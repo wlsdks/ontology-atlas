@@ -199,8 +199,17 @@ export function ArchitectureSketch({
    * — the canvas ended in 180px of empty dot field (installed app, 2026-08-28). The drawing grows
    * when a selection reveals a skip and shrinks back when it is let go.
    */
-  const drawnSkip = visibleEdges.reduce((most, edge) => Math.max(most, edge.columnSpan), 0);
-  const skipRoom = drawnSkip <= 1 ? 0 : SKIP_DROP + drawnSkip * SKIP_STEP;
+  /*
+   * ⚠️ **The room depends on the profile, not on the selection.** Reading it off the *visible*
+   * edges made the canvas grow the moment a role was chosen, and the second fresh-eyes
+   * walkthrough measured what that costs: everything below shifted down, and the right column's
+   * readable height fell from 456px to 406px, cutting a closing sentence that had fit a moment
+   * earlier. A page that moves under a click is a worse defect than a canvas with space in it —
+   * and on a dotted ground that space reads as canvas rather than as a gap, which is the whole
+   * reason node editors draw one.
+   */
+  const deepestSkip = graph.edges.reduce((most, edge) => Math.max(most, edge.columnSpan), 0);
+  const skipRoom = deepestSkip <= 1 ? 0 : SKIP_DROP + deepestSkip * SKIP_STEP;
   const height = PAD_Y * 2 + slots * BOX_H + (slots - 1) * ROW_GAP + skipRoom;
 
   return (
