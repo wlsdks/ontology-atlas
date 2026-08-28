@@ -23,7 +23,11 @@ corner is one grey pixel. The agent had shipped three rounds past it.
    alignment, and stroke joins.
 4. **Write the defects as a numbered list with a verdict per row.** Not prose, not "looks a bit
    off". The list is what stops an agent from talking itself past something.
-5. **Fix, and pin whatever can be pinned as a test.** The closing-outline defect was not a matter
+5. **Confirm each row before you act on it.** Half of these come from reading a downscaled image,
+   and an eye that catches a real defect at page scale invents one just as easily. Crop, or read
+   the value out of the DOM, or open the file that owns the string — then keep the row or strike
+   it. Say which ones you struck: a list that only ever grows is a list nobody checked.
+6. **Fix, and pin whatever can be pinned as a test.** The closing-outline defect was not a matter
    of taste: "the last point equals the first point" is a string comparison. Anything checkable
    without eyes belongs in a test, because the next agent will not zoom in either.
 
@@ -33,7 +37,23 @@ corner is one grey pixel. The agent had shipped three rounds past it.
 | Read the screenshot back | describing intent instead of output |
 | Zoom to one element | shipping past a defect the page scale hides |
 | Numbered defect list | eyeballing, then rationalising |
+| Confirm each row | fixing something that was never wrong |
 | Test what is testable | the same defect returning in a month |
+
+**Three of these were mine in one session, and each was caught by the same move — comparing the
+suspicion against a second source before believing it.**
+
+| Suspicion | What it actually was |
+|---|---|
+| twenty documents with a column carrying no information | a scanner that replaced inline code with a placeholder, so every column of token names looked identical |
+| a vault node pointing at a path that did not exist | `lstrip('./')` strips a *set of characters*, not a prefix, so `.claude/…` became `claude/…` |
+| two lists labelling the same control differently | one message key, read off a downscaled screenshot; the zoom that confirmed a real defect on the same panel retracted this one |
+
+The pattern is not carelessness about the screen. It is that the throwaway script or the quick
+glance used to *check* something is exactly as unreviewed as the thing it checks, and it carries
+the authority of a measurement while having none of the scrutiny. Reporting a defect that is not
+there costs more than missing one: somebody changes working code, and the next reader trusts the
+list less.
 
 ## Notation before style
 
