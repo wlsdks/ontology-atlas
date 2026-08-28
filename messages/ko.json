@@ -362,6 +362,7 @@
     "legendPermitted": "프로필이 허용한 리뷰된 의존",
     "legendShapeEnd": "양 끝의 역할",
     "legendShapeWork": "거쳐 가는 역할",
+    "hiddenLeft": "왼쪽에 {count}개 더",
     "hiddenRight": "오른쪽에 {count}개 더",
     "legendSkipHint": "역할을 건너뛰는 연결은 그 양끝 중 하나를 고르면 나타납니다.",
     "runFlow": "흐름 실행",

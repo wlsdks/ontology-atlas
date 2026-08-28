@@ -224,3 +224,37 @@ test('the canvas can be grabbed and dragged, and a drag is not a click', async (
   await node.click();
   await expect(node).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('the count follows the pan to whichever side is covered', async ({ page }) => {
+  /*
+   * ⚠️ Panning was built before this count was, so dragging the drawing pushed roles off the left
+   * edge with nothing saying so — the very defect the right-hand count exists to prevent,
+   * reintroduced on the side nobody had looked at yet. Found by dragging the canvas in the
+   * installed app on 2026-08-28.
+   *
+   * Asserted at three positions, because a count that is only ever right is indistinguishable
+   * from a label that happens to say "right".
+   */
+  await page.setViewportSize({ width: 620, height: 900 });
+  await page.goto('/ko/architecture/');
+  const scroller = page.locator('[data-testid="architecture-graph"]').locator('..');
+  const left = page.getByTestId('architecture-canvas-hidden-left');
+  const right = page.getByTestId('architecture-canvas-hidden-right');
+
+  await expect(right).toBeVisible();
+  await expect(left).toHaveCount(0);
+
+  await scroller.evaluate((element) => {
+    element.scrollLeft = element.scrollWidth;
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect(left).toBeVisible();
+  await expect(right).toHaveCount(0);
+
+  await scroller.evaluate((element) => {
+    element.scrollLeft = Math.round((element.scrollWidth - element.clientWidth) / 2);
+    element.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  await expect(left).toBeVisible();
+  await expect(right).toBeVisible();
+});

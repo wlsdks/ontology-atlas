@@ -51,6 +51,7 @@ export function ArchitectureFlow({
   legendShapeWork,
   runLabel,
   hiddenRightLabel,
+  hiddenLeftLabel,
   permittedEdgeLabel,
   trafficEdgeLabel,
 }: {
@@ -85,6 +86,7 @@ export function ArchitectureFlow({
   legendShapeWork: string;
   runLabel: string;
   hiddenRightLabel: (count: number) => string;
+  hiddenLeftLabel: (count: number) => string;
   permittedEdgeLabel: (from: string, to: string) => string;
   trafficEdgeLabel: (from: string, to: string, count: number) => string;
 }) {
@@ -141,6 +143,7 @@ export function ArchitectureFlow({
           conceptCounts={conceptCounts}
           runLabel={runLabel}
           hiddenRightLabel={hiddenRightLabel}
+          hiddenLeftLabel={hiddenLeftLabel}
         />
 
         {/*

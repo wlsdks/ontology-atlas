@@ -25,6 +25,7 @@ function draw() {
       conceptCounts={{}}
       runLabel="Run the flow"
       hiddenRightLabel={(count) => `${count} more to the right`}
+      hiddenLeftLabel={(count) => `${count} more to the left`}
     />,
   );
 }

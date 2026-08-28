@@ -59,6 +59,7 @@ export function ArchitectureSketch({
   conceptCounts,
   runLabel,
   hiddenRightLabel,
+  hiddenLeftLabel,
 }: {
   graph: Graph;
   selected: string | null;
@@ -74,6 +75,8 @@ export function ArchitectureSketch({
   runLabel: string;
   /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
+  /** The same for the side a pan pushes roles off. */
+  hiddenLeftLabel: (count: number) => string;
 }) {
   const [runSeq, setRunSeq] = useState(0);
   /*
@@ -116,11 +119,12 @@ export function ArchitectureSketch({
    * because an effect fires while the ref is still null -- the mistake this file's sibling panel
    * made twice before a callback ref settled it.
    */
-  const [covered, setCovered] = useState<{ left: boolean; right: boolean; hiddenRight: number }>({
-    left: false,
-    right: false,
-    hiddenRight: 0,
-  });
+  const [covered, setCovered] = useState<{
+    left: boolean;
+    right: boolean;
+    hiddenLeft: number;
+    hiddenRight: number;
+  }>({ left: false, right: false, hiddenLeft: 0, hiddenRight: 0 });
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<ResizeObserver | null>(null);
   const readCoveredEdges = useCallback(() => {
@@ -136,7 +140,14 @@ export function ArchitectureSketch({
         element.clientWidth,
         element.scrollWidth,
       ),
-      /* Counted from the boxes themselves, so the chip states a fact rather than an impression. */
+      /*
+       * Counted from the boxes themselves, so the chip states a fact rather than an impression.
+       * ⚠️ Both directions. Panning was added before this count was, so dragging the drawing left
+       * pushed roles off the left edge with nothing saying so — the very defect the right-hand
+       * count exists to prevent, reintroduced on the side nobody had looked at yet (installed app,
+       * 2026-08-28).
+       */
+      hiddenLeft: boxRight.filter((right) => right - BOX_W < element.scrollLeft).length,
       hiddenRight: boxRight.filter((right) => right > edge).length,
     });
   }, [boxRight]);
@@ -294,6 +305,18 @@ export function ArchitectureSketch({
       */}
       {graph.edges.length === 0 && covered.hiddenRight === 0 ? null : (
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
+        {covered.hiddenLeft === 0 ? null : (
+          <span
+            className={badgeClass({
+              shape: 'pill',
+              className:
+                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
+            })}
+            data-testid="architecture-canvas-hidden-left"
+          >
+            {hiddenLeftLabel(covered.hiddenLeft)}
+          </span>
+        )}
         {covered.hiddenRight === 0 ? null : (
           <span
             className={badgeClass({
