@@ -62,6 +62,17 @@ Use direct or triangulated evidence for domains and capabilities. Structural
 evidence alone can establish elements, not business meaning. Do not write
 speculative concepts.
 
+Keep attribution exact. A packet path proves that an implementation anchor
+exists; it does not prove every internal behavior of that file. Source-inspected
+detail must cite the exact source that demonstrated it and remain partial in a
+source-hidden review until source-aware citation checking verifies the unchanged
+claim. Never credit a bounded README excerpt with detail learned elsewhere.
+Keep scope exact too: a named use case is not evidence for a broader audience or
+scenario. “Not measured by this analyzer/packet” describes a measurement
+boundary, not absence from source. Preserve the qualifier and any relevant
+positive observation; otherwise move the sentence to a narrower gap before
+review.
+
 When sources disagree:
 
 1. quote or summarize both positions;

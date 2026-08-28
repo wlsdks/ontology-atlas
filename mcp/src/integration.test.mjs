@@ -699,11 +699,51 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*construction lifecycle[\s\S]*reviewPlan[\s\S]*constructionQualification:v1[\s\S]*writePlan[\s\S]*bootstrap the ontology/i,
       "analyze_repo_structure description documents bootstrap safety workflow",
     );
+    assert.match(
+      analyzeRepo?.description ?? "",
+      /unqualified-project-exclusion[\s\S]*exact human-acceptance gap[\s\S]*source-aware citation verification/i,
+      "analyze_repo_structure description separates approvable scope gaps from source-aware truth checks",
+    );
+    assert.match(
+      analyzeRepo?.description ?? "",
+      /freeze claim id, statement, and proposalRefs[\s\S]*isolated source-hidden[\s\S]*source-aware lanes run in parallel[\s\S]*before human acceptance/i,
+      "analyze_repo_structure description keeps parallel qualification sealed and pre-acceptance",
+    );
+    assert.match(
+      analyzeRepo?.description ?? "",
+      /mandatory non-gap warning blocks the first review before qualification/i,
+      "analyze_repo_structure description rejects mandatory warnings before candidate release",
+    );
+    assert.match(
+      analyzeRepo?.description ?? "",
+      /separately audit material Definition, Includes, Excludes, and Uncertainty assertions[\s\S]*several claims share one proposal ref/i,
+      "analyze_repo_structure description requires body-assertion rather than ref-only qualification",
+    );
     const initializeInstructions = responses.find((response) => response.id === 1)?.result?.instructions ?? "";
     assert.match(
       initializeInstructions,
       /Ontology construction lifecycle[\s\S]*reviewPlan[\s\S]*sourceDigest[\s\S]*separately identified evaluator[\s\S]*declared human provenance[\s\S]*writeEligibility:"executable"[\s\S]*finalize_project_meaning/,
       "initialize instructions expose the non-bypassable review, evaluation, approval, write, and post-write lifecycle",
+    );
+    assert.match(
+      initializeInstructions,
+      /unqualified-project-exclusion[\s\S]*exact required gap[\s\S]*Raw source absence[\s\S]*source-aware citation check/,
+      "initialize instructions keep human-review warnings and source-hidden uncertainty in their proper phases",
+    );
+    assert.match(
+      initializeInstructions,
+      /Seal one exact claim manifest before qualification forks: claim id, statement, and proposalRefs cannot change\.[\s\S]{0,900}Run the source-hidden evaluation and source-aware citation audit in parallel isolation; the lanes must not exchange results\.[\s\S]{0,300}Record human acceptance only after the sealed outputs join without mismatch\./,
+      "initialize instructions seal parallel qualification lanes before human acceptance",
+    );
+    assert.match(
+      initializeInstructions,
+      /Proposal-ref coverage alone is insufficient:[\s\S]*Definition assertion[\s\S]*Includes\/Excludes bullet[\s\S]*Uncertainty assertion[\s\S]*several claims to share one concept ref/,
+      "initialize instructions require source-aware coverage of each material body assertion",
+    );
+    assert.match(
+      initializeInstructions,
+      /mandatory warning that is not gap-eligible[\s\S]*writeEligibility:"blocked"[\s\S]*do not count that response as a candidate release/i,
+      "initialize instructions keep mandatory warnings out of the qualification lanes",
     );
     assert.match(
       analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",

@@ -44,6 +44,10 @@ It provides a stdio JSON-RPC interface so that an AI coding agent can read and s
 
 The complete proposal from `analyze_repo_structure` is not immediate write permission. The first call returns only the exact `reviewPlan`, plan/source digest, eight-stage status, remaining gap IDs, and maintains `canWrite:false`. An evaluator separated from the maker executes human owner CQ, current claim/citation, seven quality axes, full source-hidden tasks, cold-start, or previous CQ regression. The user must then approve this exact plan and gaps. Only upon resubmitting the same proposal and digest-bound `constructionQualification:v1` packet will the identical `writePlan` be revealed for rows seen initially. Source/plan drift, maker-only status, `not_measured`, red mandatory axis, regression failure, or unapproved gaps result in a fail-closed state. The `admission` within the same response classifies shadow-only states as `self_qualified`, `partial_visible_gap`, `human_review_required`, and `hard_block`. `self_qualified` is merely a signal of an automatic reflection candidate where all independent evidence passed; actual writes do not bypass existing human approval or digest-bound `writePlan` gates. Measured feature gaps appear in partial state, while policy/ownership/domain boundaries/conflicts remain for human review, and stale/unsupported/non-independent evaluations/source-hidden/regression failures remain hard blocks. Each qualification claim must include `proposalRefs` pointing to the exact `concept:`, `relation:`, `competency:`, and `impact:` rows of the current `reviewPlan`, with lifecycle `proposalCoverage` classifying missing/external proposal/source-hidden unverified rows as fail-closed. This is a receipt ensuring target matching for evaluator handoff, not a score or semantic judgment automatically approving the business truth of the claim.
 
+A proposal is candidate-releasable only when its first lifecycle is `reviewable`. Mandatory warnings that cannot become exact human gaps return `writeEligibility: blocked` before qualification starts; pass-shaped analyzer output with those diagnostics is a rejected draft. Gap-eligible warnings remain visible as exact required gap ids.
+
+The source-checkout bootstrap skill seals immutable claims before isolated evaluation. Proposal-ref coverage does not substitute for body truth: material Definition, Includes, Excludes, and Uncertainty assertions are separate claims, and several claims may share one ref. Its mirrored `qualification-handoff.mjs` helper packages canonical scratch receipts, evidence-pending joins, exact human acceptance, and released writer-call data; it never invokes MCP or writes the vault.
+
 Approval is declared provenance, not identity verification or a truth certificate. Project Markdown persists existing competency answers/witnesses/visible gaps; the finalizer receipt persists its body and current graph/source combination. Detailed CQ revision, axes, exact gap acceptance, and pre-write regression are execution evidence in MCP responses/agent transcripts and do not claim automatic restoration after restart. No new tools, kinds, sidecars, or writer tokens are created.
 
 ## Source Connection
@@ -116,6 +120,9 @@ Rust repositories also do not report empty import graph as "no dependencies." `i
 - `mcp/src/construction-qualification.mjs` · `mcp/src/construction-lifecycle.mjs`:
   Maker-independent categorical qualification, exact plan/source/approval binding, step-by-step
   write eligibility.
+- `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs` ·
+  `.claude/skills/ontology-bootstrap/scripts/qualification-handoff.mjs`:
+  Mirrored read-only scratch receipt packaging for sealed qualification handoffs.
 - `mcp/src/project-source-inspection.mjs` · `mcp/src/project-source-receipt.mjs`:
   Re-verification of bounded source currentness for installed apps and public receipt boundary.
 - `mcp/src/meaning-repair.mjs` · `mcp/src/project-meaning-inventory.mjs`: Current declarations,

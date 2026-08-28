@@ -158,6 +158,19 @@ Rules:
   an evidence limit, not proof that the behavior is outside the capability;
   move it to `uncertainty` or the matching competency gap.
 
+- A source-backed project exclusion under a `partial` / `visible-gap` scope may
+  remain only as an `unqualified-project-exclusion` review gap. The
+  source-hidden evaluator keeps it partial, the source-aware citation check
+  verifies it, and the human must accept that exact gap id. Evidence-limit
+  wording remains an error rather than an approvable boundary.
+
+- Attribute every positive detail to the source that actually demonstrated it.
+  A path in the packet proves an implementation anchor, not the file's internal
+  mechanics. If a detail came from opening source that the portable packet does
+  not reproduce, cite the exact path and keep the source-hidden answer partial
+  until source-aware citation review; never credit a shorter README excerpt or
+  delete accurate source-backed detail merely because raw source is hidden.
+
 - Apply the specification's positive test and counterexample for every selected
   kind; do not substitute this workflow's ordering for the kind contract.
 - Define the project by the outcome it exists to create, then preserve the
@@ -226,6 +239,10 @@ confidence:
 Use the specification's relation matrix for storage name, direction, endpoint
 kinds, inverse behavior, and current MCP support. Use containment for
 ownership/scope and dependency for prerequisite or impact.
+An element with `domain: D` plus a reviewed `elements` / `contains` parent
+already has domain membership and ownership. Do not add a redundant
+`D --elements--> element` row merely to silence health; an element with no
+containment parent still needs an explicit reviewed owner.
 Do not infer dependency merely because two folders import one another; import
 edges are implementation evidence and may justify element-level `depends_on`.
 For an exact file endpoint selected from the import packet, propose
@@ -286,6 +303,15 @@ Call `analyze_repo_structure` with the complete `proposal` object and omit
   `planRevision`, `sourceDigest`, eight lifecycle phases, and
   `requiredGapIds`.
 
+Every warning intended for human judgment must appear as one exact
+`requiredGapId`. A source-backed `unqualified-project-exclusion` is neither
+silently accepted nor converted into a late hard block: it proceeds only
+through independent verification and exact human gap acceptance.
+Any other mandatory warning is not a released candidate: lifecycle must expose
+it as `writeEligibility: blocked` on this first call. Repair every
+`proposal-warning-not-gap-eligible:*` diagnostic before starting either
+qualification lane. Analyzer `status: pass` alone is insufficient.
+
 If validation fails, resolve every error and repeat. Do not treat `canWrite`
 being false at this stage as a failure: it proves that proposal validation
 cannot bypass qualification and approval.
@@ -309,6 +335,82 @@ same tool's `qualification` input schema and must report:
   results, all seven quality axes, classified diagnostics, and resource use;
 - a complete source-hidden task run by that evaluator;
 - a cold-start `not_applicable` regression or an exact rerun of every prior CQ.
+
+The source-hidden task judges what the portable plan can safely hand off. Raw
+source absence makes source-body detail partial; it does not by itself prove the
+unchanged candidate false. The source-aware citation check must then verify that
+claim against current source before the mandatory evidence axis can pass.
+
+#### Seal once, then qualify in isolated parallel lanes
+
+When this checkout provides
+`scripts/qualification-handoff.mjs`, use its `seal`, `hidden`, `audit`, `join`,
+`accept`, and `release` stages instead of recreating canonical JSON, digests,
+CQ witness projection, or lifecycle comparison code in scratch. Read its
+machine contract with the `schema` stage. The builder, hidden evaluator, and
+auditor still author the proposal, claims, witnesses, answers, axes, and source
+judgments; the helper only validates and packages those decisions, invokes no
+MCP tool, and writes no vault file.
+Use `seal`'s compact analysis/proposal path form so the exact analyzer response
+becomes the candidate without copying or normalizing review-plan bodies. On a
+true cold start, `hidden` derives the reserved regression witness from the exact
+CQ set; the evaluator still owns the maintainability-axis judgment.
+
+Stop after `join` and show its generated exact acceptance request. Run `accept` only
+after the person explicitly accepts that exact request, then resubmit the
+unchanged proposal and accepted qualification to `analyze_repo_structure`.
+Run `release` only on that current executable response; it emits bounded writer
+call data but does not execute it. If the helper is absent or rejects an input,
+use the manual protocol below without weakening any gate.
+
+After the first valid candidate is serialized and round-trip checked, freeze an
+external claim manifest before either qualification lane starts. Each row has
+one final claim `id`, `statement`, and exact `proposalRefs`; canonicalize and
+digest the complete ordered manifest. This is a scratch orchestration receipt,
+not a new MCP field or permission token.
+
+Proposal-ref coverage is not body-assertion coverage. For each concept, give
+every material `Definition` assertion, `Includes` / `Excludes` bullet, and
+`Uncertainty` assertion its own manifest claim; multiple claims may cite the
+same concept ref. Preserve a source's exact use context instead of widening it
+to a broader audience or scenario. An uncertainty such as “not measured by the
+static import packet” must keep that measurement qualifier and any observed
+positive evidence; it cannot become an absolute source-absence claim. The
+source-aware lane fails any body assertion contradicted or narrowed by current
+source even when another claim already covers the same proposal row.
+
+Start both read-only lanes from that same sealed packet and manifest:
+
+- The source-hidden evaluator receives the candidate, fixed questions, and
+  manifest, but no source clone, shared vault, source-audit output, or builder
+  transcript. It writes and digests its CQ answers, target results, axes, and
+  complete `sourceHiddenTask` coverage before seeing any audit receipt.
+- A differently identified source-aware auditor receives the candidate,
+  manifest, and current source, but no hidden answers. It returns a pass/fail
+  citation receipt for every manifest row and may not rewrite a claim.
+
+The builder, hidden evaluator, and source-aware auditor must have different
+identities and the lanes must not exchange results. Record each start/end time
+so overlap is evidence rather than an assertion. After both outputs are sealed,
+the hidden evaluator may join the source-aware receipt into the qualification
+packet without changing its earlier answers or any manifest `id`, `statement`,
+order, or `proposalRefs`. Compare the final `claims` array byte-for-byte with the
+manifest before resubmission. Actor collision, source-hidden access to source or
+audit output, missing/extra rows, digest drift, citation mismatch, or claim
+mutation blocks the join and withholds human acceptance.
+
+Classify the seven axes by what actually failed. An unnamed persona, meaning
+owner, or still-partial action question belongs in the matching CQ and
+functional/pragmatic gap when the proposed definitions and boundaries remain
+coherent with their bounded evidence. Mark `semantic` red only when the meaning
+or boundary itself is unsupported, contradictory, circular, or conflated with
+implementation structure. Semantic, structural, evidence-provenance,
+maintainability, and interoperability are mandatory; a real red result on one
+of them blocks the join rather than becoming a human-accepted gap.
+
+Only show gaps and record human acceptance after that clean join. If isolated
+parallel execution is unavailable, keep the same fail-closed lifecycle in
+serial; do not weaken independence to claim a faster first pass.
 
 The builder cannot evaluate its own construction. If an independent evaluator
 cannot run, stop without writes and ask the user for an independent evaluation
@@ -375,6 +477,12 @@ compile_ontology({ "summary": true })
 connect_project_source({ "projectSlug": "<project>", "rootPath": "<repository root>", "confirm": true })
 finalize_project_meaning({ "projectSlug": "<project>", "expected_mtime": <fresh project mtime> })
 ```
+
+Then read `health`. Accepted competency gaps may keep the overall status at
+`needs_attention`, but the released plan must not create new structural repair
+work. An owned element's domain membership must not produce a redundant direct
+domain relation recommendation; a genuinely unowned element remains a review
+item.
 
 Verify at least one path from project to domain to capability to element.
 Report the census change, validation issues, graph issues, final meaning
