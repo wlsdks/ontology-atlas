@@ -38,7 +38,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Why this direction](#why-this-direction)
 - [v2 — "Circuit × Constellation" (B2+) Visual Language](#v2-circuit-constellation-b2-visual-language)
 - [Node Spec (Node Spec, 2026-08-01)](#node-spec-node-spec-2026-08-01)
-- [Brand identity — pixel mascot (confirmed 2026-08-28)](#brand-identity--pixel-mascot-confirmed-2026-08-28)
+- [Brand identity — pixel mascot (confirmed 2026-08-28)](#brand-identity-pixel-mascot-confirmed-2026-08-28)
 - [Cited lineage — where these rules come from](#cited-lineage-where-these-rules-come-from)
 - [Top-tier Quality Bar](#top-tier-quality-bar)
 - [Layers the agent consumes — who reads this document (2026-08-01)](#layers-the-agent-consumes-who-reads-this-document-2026-08-01)
