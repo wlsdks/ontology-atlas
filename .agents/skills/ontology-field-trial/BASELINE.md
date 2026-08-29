@@ -9,6 +9,87 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-29 — clean exact-plan performance rerun
+
+**Subject**: the same unfamiliar MIT-licensed Go schema-transformation library
+and pinned revision as the immediately preceding scratch run. The six human-
+approved questions were byte-identical, so this is a like-for-like clean timing
+comparison rather than new cross-repository generalization evidence.
+
+### Phase 1 — cost and qualification
+
+| measurement | clean run | prior same-subject run |
+|---|---:|---:|
+| first MCP → first reviewable candidate | **257.384 s** | 302 s |
+| first MCP → sealed candidate | **757.016 s** | not isolated |
+| first MCP → successful finalizer | **2,594.799 s** | 5,028.832 s |
+| exact-plan trigger | **FAIL by 194.799 s** against 2,400 s | FAIL |
+
+The gross finalizer time improved by **2,434.033 s (48.4%)**, while the
+reviewable candidate improved by **44.616 s (14.8%)**. The 40-minute trigger
+still fails. About 419 seconds elapsed between the joined request artifact and
+the human decision; subtracting that wait gives an informational active-path
+estimate of 2,175.799 seconds, but the gross user-visible clock remains the
+authoritative result. Human acceptance is not a performance defect to bypass.
+
+The clean candidate had 9 concepts, 10 relations, 95 immutable claims, and 7
+source witnesses. The source-hidden and source-aware branches overlapped for
+501.137 seconds. Independent qualification verified **95/95 claims** and
+**161/161 citations** before exact acceptance of the plan and all ten named
+gaps. The first proposal draft remains recorded RED with six errors; one
+reviewable candidate was released.
+
+The source audit exposed a separate AI-efficiency defect: 772 source-fragment
+object occurrences represented only 16 unique fragments. The minified audit
+input was 128,875 bytes. A catalog-plus-reference encoding of the same input is
+33,474 bytes, a **74.0% reduction**, while expanding to the byte-identical
+legacy helper output. The qualification helper now accepts that deduplicated
+input and fails closed on mixed modes, duplicate fragment bodies, foreign refs,
+and unused rows; no public MCP/CLI/vault contract or write authority changed.
+
+### Phase 2 — citation accuracy
+
+- Candidate source audit: **7/7 witness source paths** resolved.
+- Persisted vault validation: **3/3 canonical frontmatter paths** resolved.
+- Final graph: 10 nodes including the reserved reader, 16/16 resolved edges,
+  zero validation problems, zero drift, zero cycles, zero relation
+  recommendations, zero orphans, and zero remaining maintenance actions.
+
+### Phase 3 — persisted-vault handoff
+
+A fresh source-hidden reader fetched all **9/9 authored full bodies** in one
+untruncated call. It answered q3 fully and q1, q2, q4, q5, and q6 partially,
+with **0 unknown and 0 unanswered**. The partial labels preserve the named
+purpose-owner, responsibility-breadth, package-entrypoint, impact, and
+project-scope evidence limits instead of turning them into negative facts.
+
+### Phase 4 — hallucination check
+
+| | |
+|---|---:|
+| atomic claims verified | **45 / 45** |
+| path-shaped claim occurrences | **6 / 6** |
+| unique source paths | **3 / 3** |
+| unsupported scope/impact promotion | **0** |
+| unsupported status inflation | **0** |
+| introduced exhaustive quantifiers | **0** |
+
+This is the product reason to use the vault: after the source was removed, a
+new agent answered every frozen onboarding question, and a different auditor
+could verify every one of its 45 claims against the pinned source. The five
+partial answers are visible evidence boundaries, not silent guesses.
+
+### Honest execution notes
+
+One generic preview assertion was incompatible with the source connector's
+existing `nextCall` preview shape; it failed before mutation, then the exact
+preview/confirm contract succeeded. Also, final validation/compile/health ran
+after the successful finalizer rather than in the bootstrap skill's prescribed
+pre-connect order. They required no repair and prove the persisted result, but
+this run is not evidence that the prescribed verification order was followed.
+
+---
+
 ## 2026-08-26 (second subject) — the exclusion gate fires on an unfamiliar repository
 
 **Subject**: an unfamiliar Apache-2.0 Python network-infrastructure source of truth, 85 MB shallow clone. Run the same day as the entry below, against the

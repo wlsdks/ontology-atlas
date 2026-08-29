@@ -1411,7 +1411,7 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 2973,
+      "wordCount": 3001,
       "updatedAt": "2026-08-29",
       "linksOut": []
     },

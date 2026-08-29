@@ -90,7 +90,11 @@ the construction lifecycle, run this separate gate before Phase 3:
 7. Start the source-hidden answer lane and source-aware citation lane together
    from that same manifest. Hide source, shared vault, and audit output from the
    first; hide source-hidden answers from the second. Record branch start/end
-   timestamps and require actual overlap.
+   timestamps and require actual overlap. When source fragments repeat across
+   citations, store each unique fragment once and reference it by id; do not
+   copy the complete fragment catalog into every claim. Record fragment
+   occurrences, unique fragments, and serialized audit-input bytes so repeated
+   evidence cannot masquerade as useful qualification work.
 8. Seal the hidden answers before the citation receipt is revealed. Join without
    changing any claim row or earlier answer, then compare the final
    qualification claims byte-for-byte with the manifest before acceptance.
