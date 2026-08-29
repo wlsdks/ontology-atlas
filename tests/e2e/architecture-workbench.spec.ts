@@ -298,5 +298,30 @@ test('a chain is never cut — it turns, or the page scrolls', async ({ page }) 
       ),
       `the page scrolls sideways at ${width}x${height}`,
     ).toBe(0);
+
+    /*
+     * ⚠️ **The slack is shared, not dumped on one side.** The drawing keeps one width whatever the
+     * window does, so a wide screen has real slack — and all of it was landing on the right, the
+     * default of a row flex container. Measured on the built export 2026-08-29: left gap 0 with
+     * 544px spare at 1512, 952px at 1920, 1586px at 2560. A drawing pinned to one edge of an
+     * otherwise empty stage reads as a screen that has not finished loading.
+     *
+     * The tolerance is 2px for the odd-pixel split, and the assertion is skipped where there is no
+     * slack to share — the check above already proves nothing is cut there.
+     */
+    const gaps = await page
+      .locator('[data-testid="architecture-graph"]')
+      .evaluate((svg) => {
+        const scroller = svg.parentElement as HTMLElement;
+        const s = scroller.getBoundingClientRect();
+        const v = svg.getBoundingClientRect();
+        return { left: v.left - s.left, right: s.right - v.right };
+      });
+    if (gaps.left + gaps.right > 4) {
+      expect(
+        Math.abs(gaps.left - gaps.right),
+        `the drawing hugs one edge at ${width}x${height} (left ${Math.round(gaps.left)}, right ${Math.round(gaps.right)})`,
+      ).toBeLessThanOrEqual(2);
+    }
   }
 });

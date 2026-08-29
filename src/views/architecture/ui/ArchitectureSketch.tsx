@@ -466,7 +466,20 @@ export function ArchitectureSketch({
          */
         className={cn(
           covered.left || covered.right ? 'cursor-grab active:cursor-grabbing' : undefined,
-          axis === 'down' ? 'justify-center overflow-y-auto' : 'items-center overflow-x-auto',
+          /*
+           * ⚠️ **`safe center`, not `center`.** The drawing keeps one width whatever the window
+           * does — the boxes are a fixed size because scaling an SVG scales the text inside it off
+           * the type ramp, which this file already refused once. So on a wide screen the slack is
+           * real, and it was all landing on the right: measured 2026-08-29 on the built export, the
+           * drawing sat at left gap 0 with 544px spare at 1512, 952px at 1920 and 1586px at 2560,
+           * because a row flex container defaults to `flex-start`. Plain `center` would fix that and
+           * break the other end — a chain wider than its scroller would have its left edge pushed
+           * out of reach, which is the overflow trap `safe` exists for: centre while it fits, start
+           * as soon as it does not. Where the keyword is unsupported the declaration is dropped and
+           * the layout falls back to today's left edge, so the failure mode is the old behaviour.
+           */
+          '[justify-content:safe_center]',
+          axis === 'down' ? 'overflow-y-auto' : 'items-center overflow-x-auto',
           'flex min-h-0 flex-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
         )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
