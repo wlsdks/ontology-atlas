@@ -37,6 +37,7 @@ export function ArchitectureRules({
   legendShapeEnd,
   legendShapeWork,
   directionLabel,
+  hiddenAtWorkbench = false,
 }: {
   graph: ArchitectureGraph;
   /** `from>to` for each crossing the receipt counted as a violation. */
@@ -51,6 +52,8 @@ export function ArchitectureRules({
   legendShapeEnd: string;
   legendShapeWork: string;
   directionLabel: string;
+  /** True while the dock is answering a role: the rules are one button away, not stacked under it. */
+  hiddenAtWorkbench?: boolean;
 }) {
   /*
    * ⚠️ **Reading order is not drawing order.** `buildArchitectureGraph` sorts by column span
@@ -74,7 +77,12 @@ export function ArchitectureRules({
   if (graph.edges.length === 0) return null;
 
   return (
-    <div className="flex shrink-0 flex-col gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2">
+    <div
+      className={cn(
+        'flex shrink-0 flex-col gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2',
+        hiddenAtWorkbench ? 'xl:hidden' : undefined,
+      )}
+    >
       <ol
         className="flex flex-col gap-1 text-caption text-[color:var(--color-text-tertiary)]"
         data-testid="architecture-edge-sentences"

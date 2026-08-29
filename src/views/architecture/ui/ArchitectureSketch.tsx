@@ -57,6 +57,8 @@ const BOX_H = 62;
  */
 const BOX_H_LEDGER = 74;
 const ROW_GAP_LEDGER = 18;
+/** How far apart two crossings of the same span sit, so a bundle reads as separate strokes. */
+const SKIP_LANE_STEP = 14;
 
 /**
  * ⚠️ **Shapes, not colour.** This design system runs on neutrals plus one indigo, and status
@@ -395,11 +397,40 @@ export function ArchitectureSketch({
 
   /* At rest the canvas draws the spine. A crossing that skips a column is a fact about one role,
      so it arrives when that role is chosen; the legend says so rather than leaving it a mystery. */
+  /**
+   * Which lane each skip takes, counted inside its own span so the offsets stay small.
+   *
+   * Deterministic by construction: the graph's edge order is stable, so the same profile always
+   * draws the same bundle in the same order.
+   */
+  /*
+   * ⚠️ **The drawing answers the pointer before it is clicked.** A reference the owner pointed at
+   * (Understand-Anything, MIT — read for its principles only) makes its graph feel alive by
+   * lighting the hovered node and everything it touches, and this canvas already had the machinery
+   * for it: choosing a role recedes the rest and reveals its crossings. Hover borrows the same
+   * focus, without touching the selection, so moving across the chain reads its shape without a
+   * single click.
+   */
+  const [hovered, setHovered] = useState<string | null>(null);
+  const focus = selected ?? hovered;
+
+  const skipLane = useMemo(() => {
+    const lanes = new Map<string, number>();
+    const used = new Map<number, number>();
+    for (const edge of graph.edges) {
+      if (edge.columnSpan <= 1) continue;
+      const taken = used.get(edge.columnSpan) ?? 0;
+      lanes.set(`${edge.from}>${edge.to}`, taken);
+      used.set(edge.columnSpan, taken + 1);
+    }
+    return lanes;
+  }, [graph.edges]);
+
   const visibleEdges = graph.edges.filter(
     (edge) =>
       edge.columnSpan <= 1 ||
-      selected === edge.from ||
-      selected === edge.to ||
+      focus === edge.from ||
+      focus === edge.to ||
       violatedPairs.has(`${edge.from}>${edge.to}`),
   );
 
@@ -612,7 +643,7 @@ export function ArchitectureSketch({
           const sy = axis === 'across' ? a.y + boxH / 2 : a.y + boxH;
           const tx = axis === 'across' ? b.x : b.x + boxW / 2;
           const ty = axis === 'across' ? b.y + boxH / 2 : b.y;
-          const receded = selected !== null && selected !== edge.from && selected !== edge.to;
+          const receded = focus !== null && focus !== edge.from && focus !== edge.to;
 
           /*
            * A permitted edge is a person's declared rule, so it is drawn by hand. Measured traffic
@@ -625,11 +656,19 @@ export function ArchitectureSketch({
            * across, out to the side when it runs down. The arithmetic is the same either way — the
            * axis only decides which coordinate the swing is measured in.
            */
+          /*
+           * ⚠️ **Two skips of the same span used to share one curve.** The swing was read off the
+           * span alone, so `features → shared` and `widgets → shared` left the chain at the same
+           * offset and came back overlapping — a bundle nobody could follow, which is what the
+           * owner asked to be able to tell apart (2026-08-30). A small per-edge step spreads them.
+           */
+          const sameSpanOffset = skipLane.get(`${edge.from}>${edge.to}`) ?? 0;
           const swing =
             edge.columnSpan <= 1
               ? 0
               : SKIP_DROP +
                 (edge.columnSpan - 2) * SKIP_STEP +
+                sameSpanOffset * SKIP_LANE_STEP +
                 (axis === 'across' ? boxH : boxW) / 2;
           const lead = axis === 'across' ? COL_GAP : rowGap;
           const d = (() => {
@@ -694,21 +733,83 @@ export function ArchitectureSketch({
           );
         })}
 
+        {/*
+          ⚠️ **A stroke that crosses three roles has to say which crossing it is.** The owner
+          followed a bundle of skips on the installed app and could not tell them apart
+          (2026-08-30): same tone, same shape, and the only number anywhere was the width. Every
+          skip now carries its measured count where it is furthest from the chain, which is the one
+          point on the curve that belongs to it alone. Adjacent strokes are left unlabelled — they
+          run between two neighbours and are never in doubt.
+        */}
+        {visibleEdges.map((edge) => {
+          const a = placed.get(edge.from);
+          const b = placed.get(edge.to);
+          if (!a || !b) return null;
+          if (edge.columnSpan <= 1 || edge.kind !== 'traffic' || edge.count === undefined) {
+            return null;
+          }
+          const sameSpanOffset = skipLane.get(`${edge.from}>${edge.to}`) ?? 0;
+          const swing =
+            SKIP_DROP +
+            (edge.columnSpan - 2) * SKIP_STEP +
+            sameSpanOffset * SKIP_LANE_STEP +
+            (axis === 'across' ? boxH : boxW) / 2;
+          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2;
+          const sy = axis === 'across' ? a.y + boxH / 2 : a.y + boxH;
+          const tx = axis === 'across' ? b.x : b.x + boxW / 2;
+          const ty = axis === 'across' ? b.y + boxH / 2 : b.y;
+          const at =
+            axis === 'across'
+              ? { x: (sx + tx) / 2, y: Math.max(sy, ty) + swing }
+              : { x: Math.max(sx, tx) + swing, y: (sy + ty) / 2 };
+          const receded = focus !== null && focus !== edge.from && focus !== edge.to;
+          const text = String(edge.count);
+          const width = 12 + text.length * 5;
+          return (
+            <g
+              key={`count-${edge.from}-${edge.to}`}
+              opacity={receded ? 0.18 : 1}
+              data-testid={`architecture-edge-count-${edge.from}-${edge.to}`}
+            >
+              {/* The chip is opaque, because a number sitting on a stroke is the accepted overlap
+                  this design system refuses; the stroke passes behind it instead. */}
+              <rect
+                x={at.x - width / 2}
+                y={at.y - 7}
+                width={width}
+                height={14}
+                rx={7}
+                fill="var(--color-panel)"
+                stroke="var(--color-border-soft)"
+                strokeWidth={1}
+              />
+              <text
+                x={at.x}
+                y={at.y + 3}
+                textAnchor="middle"
+                className="fill-[color:var(--color-text-tertiary)] text-caption tabular-nums"
+              >
+                {text}
+              </text>
+            </g>
+          );
+        })}
+
         {graph.boxes.map((box) => {
           const at = placed.get(box.id);
           if (!at) return null;
           const isSelected = selected === box.id;
           const receded =
-            selected !== null &&
-            !isSelected &&
+            focus !== null &&
+            focus !== box.id &&
             !graph.edges.some(
               (edge) =>
-                (edge.from === selected && edge.to === box.id) ||
-                (edge.to === selected && edge.from === box.id),
+                (edge.from === focus && edge.to === box.id) ||
+                (edge.to === focus && edge.from === box.id),
             );
           const passes =
             box.shape === 'terminator'
-              ? sketchStadium(box.id, at.x, at.y, boxW, boxH)
+              ? sketchStadium(box.id, at.x, at.y, boxW, boxH, { passes: 1 })
               : sketchRect(box.id, at.x, at.y, boxW, boxH);
           const counts =
             moduleCounts === null
@@ -738,6 +839,10 @@ export function ArchitectureSketch({
                   : `${roleLabel(box.id)} · ${counts}`
               }
               data-graph-box={box.id}
+              /* The drawn size, stated: the box is one filled path now, so nothing else on it
+                 carries a height a test or a probe can read. */
+              data-box-height={boxH}
+              data-box-width={boxW}
               data-testid={`architecture-graph-box-${box.id}`}
               onClick={() => {
                 if (swallowClick.current) {
@@ -746,6 +851,10 @@ export function ArchitectureSketch({
                 }
                 onSelect(box.id);
               }}
+              onPointerEnter={() => setHovered(box.id)}
+              onPointerLeave={() => setHovered((at) => (at === box.id ? null : at))}
+              onFocus={() => setHovered(box.id)}
+              onBlur={() => setHovered((at) => (at === box.id ? null : at))}
               onKeyDown={(event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
@@ -755,8 +864,17 @@ export function ArchitectureSketch({
               opacity={receded ? 0.35 : 1}
               className="cursor-pointer outline-none [&:focus-visible>path]:stroke-[color:var(--color-indigo-a60)]"
             >
-              {/* The fill is a separate flat shape: the sketch passes are the outline, and giving
-                  them a fill would double-paint the wobble into a smudge. */}
+              {/*
+                The fill is a separate flat shape: the sketch passes are an outline built from
+                joined segments — several subpaths, which fill as slivers rather than as a box —
+                and giving them a fill would also double-paint the wobble into a smudge.
+
+                ⚠️ **The ghost the owner saw was the second pass, not the fill** (2026-08-30). On a
+                rectangle a repeated stroke reads as one hand-drawn line; on a stadium, whose two
+                caps are wide arcs, the echo lands several pixels outside and reads as a second box
+                behind the first. The terminators are drawn once for that reason; the boxes in
+                between keep both passes.
+              */}
               {box.shape === 'terminator' ? (
                 <rect
                   x={at.x}
@@ -764,9 +882,7 @@ export function ArchitectureSketch({
                   width={boxW}
                   height={boxH}
                   rx={boxH / 2}
-                  fill={
-                    isSelected ? 'var(--color-indigo-a08)' : 'var(--color-elevated)'
-                  }
+                  fill={isSelected ? 'var(--color-indigo-a08)' : 'var(--color-elevated)'}
                 />
               ) : (
                 <rect

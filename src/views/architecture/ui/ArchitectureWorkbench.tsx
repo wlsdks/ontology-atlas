@@ -175,7 +175,7 @@ export function ArchitectureWorkbench({
    * opens beside it when a role is clicked or the button is pressed. Below `xl` the screen stays
    * the stacked document it was, because a phone has no room for a dock beside anything.
    */
-  const [inspectorOpen, setInspectorOpen] = useState(() => {
+  const [inspector, setInspector] = useState<'role' | 'rules' | null>(() => {
     /*
      * A link that names a role is a link to that role's answer, so it arrives open — unless the
      * same link also names a stage, because the two docks are exclusive (a 380px panel beside a
@@ -183,8 +183,9 @@ export function ArchitectureWorkbench({
      * answered with the stage, which is the step somebody was in the middle of.
      */
     const address = readArchitectureAddress();
-    return address.role !== null && !address.stageOpen;
+    return address.role !== null && !address.stageOpen ? 'role' : null;
   });
+  const inspectorOpen = inspector !== null;
 
   /**
    * ⚠️ **Closing the panel closes the address with it.** `inspectorOpen` initialises from
@@ -199,7 +200,7 @@ export function ArchitectureWorkbench({
        chosen role: the canvas keeps showing what was picked, and the button reopens the answer. */
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      setInspectorOpen(false);
+      setInspector(null);
       writeArchitectureAddress({ stage: mode, role: null, stageOpen });
     };
     window.addEventListener('keydown', onKey);
@@ -234,8 +235,14 @@ export function ArchitectureWorkbench({
     window.addEventListener('popstate', syncFromHistory);
     return () => window.removeEventListener('popstate', syncFromHistory);
   }, []);
-  function openInspector() {
-    setInspectorOpen(true);
+  /*
+   * ⚠️ **A click on a role answers about that role, and nothing else.** The dock first carried the
+   * role's answer *and* the whole profile's rules, sentences, legend and scope list underneath —
+   * so every box opened the same long tail and the owner asked for the tail to be its own button
+   * (2026-08-30). One dock, two contents, never both.
+   */
+  function openInspector(kind: 'role' | 'rules') {
+    setInspector(kind);
     if (!stageOpen) return;
     /*
      * ⚠️ **One dock at a time.** Measured 2026-08-30 at 1512: the inspector is 380px and the stage
@@ -255,7 +262,7 @@ export function ArchitectureWorkbench({
    * and the button reopens its answer — but the link stops promising a panel nobody wants.
    */
   function closeInspector() {
-    setInspectorOpen(false);
+    setInspector(null);
     writeArchitectureAddress({ stage: mode, role: null, stageOpen });
   }
 
@@ -664,7 +671,7 @@ export function ArchitectureWorkbench({
      * two answer different questions (what is this role · what do I do next), so the one being
      * asked wins and the other steps aside rather than splitting the screen three ways.
      */
-    if (nextOpen) setInspectorOpen(false);
+    if (nextOpen) setInspector(null);
     /*
      * The same document, a different query view. A Next router navigation would move focus to the
      * document root inside the WebView, so the address is updated through native history the way
@@ -729,7 +736,7 @@ export function ArchitectureWorkbench({
               label,
               testId: `architecture-mode-${value}`,
             }))}
-            size="md"
+            size="lg"
           />
         </div>
       </header>
@@ -843,7 +850,7 @@ export function ArchitectureWorkbench({
               variant="outline"
               size="sm"
               className="ml-auto hidden shrink-0 xl:inline-flex"
-              onClick={() => (inspectorOpen ? closeInspector() : openInspector())}
+              onClick={() => (inspector === 'rules' ? closeInspector() : openInspector('rules'))}
               aria-expanded={inspectorOpen}
               data-testid="architecture-inspector-toggle"
             >
@@ -884,8 +891,8 @@ export function ArchitectureWorkbench({
                   setSelectedRole(next);
                   /* Choosing a role is the question the dock answers, so it opens with the
                      choice; clicking the same role again clears both. */
-                  if (next === null) setInspectorOpen(false);
-                  else openInspector();
+                  if (next === null) setInspector(null);
+                  else openInspector('role');
                   window.history.replaceState(
                     window.history.state,
                     '',
@@ -916,6 +923,7 @@ export function ArchitectureWorkbench({
         <div
           data-testid="architecture-inspector"
           data-architecture-inspector-open={inspectorOpen ? 'true' : 'false'}
+          data-architecture-inspector={inspector ?? 'none'}
           className={cn(
             'contents',
             inspectorOpen
@@ -934,7 +942,7 @@ export function ArchitectureWorkbench({
         >
           <div className="hidden shrink-0 items-center justify-between gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 xl:flex">
             <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-              {t('inspectorTitle')}
+              {inspector === 'role' && activeRole !== null ? roleLabel(activeRole) : t('inspectorTitle')}
             </h2>
             <Button
               variant="ghost"
@@ -952,7 +960,12 @@ export function ArchitectureWorkbench({
             drawing: the graph says what the shape is, this says what is actually in the layer a
             reader chose, and the density the removed bands were good at survives here.
           */}
-          <div className="mt-5 lg:col-span-2 xl:mt-0 xl:shrink-0 xl:px-4 xl:py-3">
+          <div
+            className={cn(
+              'mt-5 lg:col-span-2 xl:mt-0 xl:shrink-0 xl:px-4 xl:py-3',
+              inspector === 'role' ? undefined : 'xl:hidden',
+            )}
+          >
             {activeRole === null ? (
               <div
                 className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] text-body text-[color:var(--color-text-tertiary)]"
@@ -1011,7 +1024,11 @@ export function ArchitectureWorkbench({
           */}
           {sourceListingCapable || !sourceUnavailableReason ? null : (
             <p
-              className="break-keep border-b border-[color:var(--color-border-soft)] px-4 py-3 text-caption text-[color:var(--color-text-quaternary)] lg:col-span-2 xl:shrink-0"
+              className={cn(
+                'break-keep border-b border-[color:var(--color-border-soft)] px-4 py-3 text-caption text-[color:var(--color-text-quaternary)] lg:col-span-2 xl:shrink-0',
+                /* Why a module count is missing belongs with the role whose modules are missing. */
+                inspector === 'role' ? undefined : 'xl:hidden',
+              )}
               data-testid="architecture-source-unavailable"
             >
               {t(
@@ -1030,7 +1047,10 @@ export function ArchitectureWorkbench({
             below its own content, and the prose then paints straight through the list beneath it
             (measured 2026-08-30 at 1512 — "Source organization says which folder…" ran across the
             edge sentences). The dock scrolls; its sections keep their natural height. */}
-        <section className="min-w-0 p-5 md:p-8 lg:col-span-2 xl:shrink-0 xl:px-4 xl:py-3" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
+        <section className={cn(
+          'min-w-0 p-5 md:p-8 lg:col-span-2 xl:shrink-0 xl:px-4 xl:py-3',
+          inspector === 'rules' ? undefined : 'xl:hidden',
+        )} aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
           <div className="mx-auto flex w-full max-w-5xl flex-col xl:max-w-none">
             {/*
               ⚠️ **`ml-auto` on the status block, because `justify-between` stops applying the
@@ -1137,10 +1157,14 @@ export function ArchitectureWorkbench({
             legendShapeEnd={t('legendShapeEnd')}
             legendShapeWork={t('legendShapeWork')}
             directionLabel={t('ladderDirection')}
+            hiddenAtWorkbench={inspector !== 'rules'}
           />
           )}
 
-        <aside className="border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:shrink-0 xl:border-b-0 xl:border-r-0">
+        <aside className={cn(
+          'border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:shrink-0 xl:border-b-0 xl:border-r-0',
+          inspector === 'rules' ? undefined : 'xl:hidden',
+        )}>
           <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
             {t('profileList')}
           </h2>

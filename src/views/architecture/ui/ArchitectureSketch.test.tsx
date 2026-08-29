@@ -123,8 +123,8 @@ describe('the role ledger', () => {
   it('draws no ledger line and keeps the short box when no record was measured', () => {
     const { container } = draw();
     expect(container.querySelector('[data-testid^="architecture-role-ledger-"]')).toBeNull();
-    const box = container.querySelector('[data-testid="architecture-graph-box-domain"] rect');
-    expect(box?.getAttribute('height')).toBe('62');
+    const box = container.querySelector('[data-testid="architecture-graph-box-domain"]');
+    expect(box?.getAttribute('data-box-height')).toBe('62');
   });
 
   it('grows every box in lockstep once any role carries a ledger', () => {
@@ -132,8 +132,8 @@ describe('the role ledger', () => {
        the same thing, so the height is decided by the profile, not by the role. */
     const { container } = draw({ domain: ledger() });
     const heights = [
-      ...container.querySelectorAll('[data-testid^="architecture-graph-box-"] rect'),
-    ].map((rect) => rect.getAttribute('height'));
+      ...container.querySelectorAll('[data-testid^="architecture-graph-box-"]'),
+    ].map((box) => box.getAttribute('data-box-height'));
     expect(new Set(heights)).toEqual(new Set(['74']));
   });
 

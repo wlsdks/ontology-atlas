@@ -140,9 +140,8 @@ test('a measured profile states each role’s receipt inside its box, whole chai
 
       const measured = await page.evaluate(() => {
         const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')];
-        const rect = boxes[0]?.querySelector('rect');
         return {
-          boxWidth: Number(rect?.getAttribute('width') ?? 0),
+          boxWidth: Number(boxes[0]?.getAttribute('data-box-width') ?? 0),
           /*
            * How far the lowest box falls below the fold — the measurement that catches a chain
            * running off the screen. Neither the scroller's `scrollHeight` nor the box's position

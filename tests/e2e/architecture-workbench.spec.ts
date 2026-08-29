@@ -248,17 +248,22 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
    */
   await page.goto('/ko/architecture/');
   await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
-    'data-architecture-inspector-open',
-    'false',
+    'data-architecture-inspector',
+    'none',
   );
-  await page.getByTestId('architecture-inspector-toggle').click();
-  await expect(page.getByTestId('architecture-role-detail-empty')).toBeVisible();
   await expect(notice).toHaveCount(0);
+  /* The button opens the profile's rules, never a role's answer: nothing has been chosen. */
+  await page.getByTestId('architecture-inspector-toggle').click();
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'rules',
+  );
+  await expect(page.getByTestId('architecture-edge-sentences')).toBeVisible();
 
   await page.goto('/ko/architecture/?role=application');
   await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
-    'data-architecture-inspector-open',
-    'true',
+    'data-architecture-inspector',
+    'role',
   );
   await expect(page.getByTestId('architecture-role-detail-empty')).toHaveCount(0);
   await expect(notice).toHaveCount(0);
