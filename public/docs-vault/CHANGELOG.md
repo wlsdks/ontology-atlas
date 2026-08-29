@@ -9,6 +9,35 @@
 
 ## 2026-08-29 · One reviewed construction ends without hidden repair
 
+- The next fresh construction now passes its first persisted audit without body
+  repair: 50/50 claims, 8/8 path occurrences, 5/5 unique paths, 9/9 full bodies,
+  and zero exhaustive quantifiers. Qualification verified 53/53 sealed claims
+  and 70/70 citations; the final graph has 10 nodes, 17 resolved edges, and zero
+  issues, cycles, recommendations, or plan-caused maintenance.
+- Project-source receipt derivation now retains safe explicit repository-root
+  directory paths such as `transform` alongside file paths. App and MCP logic
+  remain byte-behavior aligned, absolute/parent-escaping paths stay rejected,
+  and the unchanged field-trial body finalized with 14/14 current witnesses.
+- The same run took 5,028.832 seconds including approval waits and in-run gate
+  repairs. Candidate creation passed the 15-minute trigger at 302 seconds, but
+  the 40-minute qualified-write trigger failed; no performance completion or
+  cross-machine promise is claimed.
+- Qualification handoff now blocks a failed CQ before join instead of turning a
+  witness-kind or evidence defect into a human-acceptable functional gap. CQ
+  required kinds must match the sealed witnesses used by the answer; honest
+  incompleteness remains partial/unknown. The helper suite now has 28 tests.
+- Bootstrap and field-trial guidance now distinguish a bounded direct element
+  source dependency from broader impact. Exact production/value imports can
+  verify `depends_on` only with reviewed element roles, resolving paths, and the
+  observed direction; runtime, reverse, transitive, capability/business, and
+  complete impact stay partial without separate meaning evidence. The public
+  MCP validator and relation schema are unchanged.
+- The qualification handoff helper no longer lets a source-hidden evaluator
+  supply its own human CQ authority. One exact human-owned purpose/question set
+  must predate evaluation, remain distinct from all construction actors, and be
+  accepted by that same owner after join. The acceptance request now binds the
+  full question projection; 27 helper tests include owner, timing, actor, and
+  acceptor RED probes. No public MCP or vault schema changed.
 - A source-backed project exclusion under partial scope now reaches the human
   as an exact `unqualified-project-exclusion` gap. Leaving that gap unaccepted
   still blocks the write; evidence-limit exclusions remain hard errors.

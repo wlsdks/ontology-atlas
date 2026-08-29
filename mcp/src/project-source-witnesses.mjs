@@ -29,7 +29,19 @@ export function looksLikeCodePath(title) {
 }
 
 function looksLikeSourceWitnessPath(value) {
-  return looksLikeCodePath(value) || /^[^/\\\s]+\.[A-Za-z0-9]+$/.test(value);
+  if (
+    typeof value !== 'string'
+    || !value
+    || value.trim() !== value
+    || value.startsWith('/')
+    || /^[A-Za-z]:[\\/]/.test(value)
+    || value.includes('\\')
+    || /[\u0000-\u001f\u007f]/u.test(value)
+  ) return false;
+  const normalized = normalizeWitnessPath(value);
+  return normalized.length > 0
+    && normalized.length <= 500
+    && normalized.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..');
 }
 
 export function normalizeWitnessPath(value) {
@@ -59,12 +71,13 @@ export function deriveProjectSourceWitnessesFromDocs(input) {
   const candidates = [];
   const seenClaims = new Set();
   const add = (candidate) => {
+    if (!looksLikeSourceWitnessPath(candidate.path)) return;
     const path = normalizeWitnessPath(candidate.path);
     // One implementation path may legitimately witness different ontology
     // roles (for example a capability entrypoint and its concrete element).
     // Deduplicate only the same node's repeated claim, never the path globally.
     const claim = `${candidate.nodeSlug}\0${path}`;
-    if (!looksLikeSourceWitnessPath(path) || seenClaims.has(claim)) return;
+    if (seenClaims.has(claim)) return;
     seenClaims.add(claim);
     candidates.push({ ...candidate, path });
   };

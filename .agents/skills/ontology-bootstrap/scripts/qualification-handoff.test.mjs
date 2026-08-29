@@ -25,7 +25,8 @@ import { constructionPlanDigest, proposalCoverageRefs } from '../../../../mcp/sr
 
 const execFileAsync = promisify(execFile);
 const SCRIPT = new URL('./qualification-handoff.mjs', import.meta.url).pathname;
-const ISO = '2026-01-02T03:04:05.000Z';
+const QUESTION_APPROVED_ISO = '2026-01-02T02:55:00.000Z';
+const HUMAN_ID = 'human:reviewer';
 const clone = structuredClone;
 
 async function writeJson(path, value) {
@@ -202,8 +203,8 @@ function qualificationCore() {
     scenarioId: `scenario:${audience}`,
     audience,
     question: `What is the bounded ${audience} answer?`,
-    owner: { id: `owner:${audience}`, authority: 'human' },
-    revision: { version: 1, approvedBy: `owner:${audience}`, approvedAt: ISO },
+    owner: { id: HUMAN_ID, authority: 'human' },
+    revision: { version: 1, approvedBy: HUMAN_ID, approvedAt: QUESTION_APPROVED_ISO },
     expectedAnswer: { shape: 'one-row', quantifier: 'one', targets: [`target:${audience}`] },
     requiredWitnessKinds: ['source_span'],
     unknownPolicy: { allowed: true, response: 'State that the fictitious evidence is unknown.' },
@@ -225,7 +226,7 @@ function qualificationCore() {
       decisions: ['Choose a bounded route.'],
       scope: 'Paper Kite candidate meaning.',
       nonGoals: ['Claim complete aviation coverage.'],
-      owners: [{ id: 'owner:paper-kite', authority: 'human' }],
+      owners: [{ id: HUMAN_ID, authority: 'human' }],
       sourceRefs: ['docs/paper-kite.md'],
     },
     scenarios,
@@ -365,6 +366,7 @@ describe('qualification handoff happy path', () => {
     assert.deepEqual(Object.keys(HANDOFF_SCHEMA.commands), ['seal', 'hidden', 'audit', 'join', 'accept', 'release']);
     assert.match(HANDOFF_SCHEMA.io.atomicity, /staged/);
     assert.match(HANDOFF_SCHEMA.quantifiers.rule, /source_bounded/);
+    assert.match(HANDOFF_SCHEMA.commands.hidden.qualificationCore, /predates source-hidden evaluation/);
     assert.deepEqual(Object.keys(HANDOFF_SCHEMA.exits).map(Number), [0, 2, 64, 65, 70, 74]);
   });
 
@@ -834,6 +836,48 @@ describe('hidden and audit RED probes', () => {
     assert.throws(() => buildHiddenPacket(incomplete), /do not cover every manifest claim/);
   });
 
+  test('hidden rejects invented, inconsistent, and late human CQ approval provenance', () => {
+    const sealed = sealedFixture();
+    const base = {
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: qualificationCore(sealed.manifest),
+      answers: compactAnswers(sealed.manifest),
+    };
+    const inconsistent = clone(base);
+    inconsistent.qualificationCore.competencyQuestions[0].owner.id = 'human:invented';
+    inconsistent.qualificationCore.competencyQuestions[0].revision.approvedBy = 'human:invented';
+    assert.throws(() => buildHiddenPacket(inconsistent), /single purpose owner/);
+    const late = clone(base);
+    late.qualificationCore.competencyQuestions.forEach((question) => {
+      question.revision.approvedAt = late.access.startedAt;
+    });
+    assert.throws(() => buildHiddenPacket(late), /before source-hidden evaluation starts/);
+    const evaluatorAsOwner = clone(base);
+    evaluatorAsOwner.qualificationCore.purposeAuthority.owners[0].id = evaluatorAsOwner.access.actorId;
+    evaluatorAsOwner.qualificationCore.competencyQuestions.forEach((question) => {
+      question.owner.id = evaluatorAsOwner.access.actorId;
+      question.revision.approvedBy = evaluatorAsOwner.access.actorId;
+    });
+    assert.throws(() => buildHiddenPacket(evaluatorAsOwner), /collides with a construction actor/);
+  });
+
+  test('hidden blocks a failed CQ instead of laundering it into human gap acceptance', () => {
+    const sealed = sealedFixture();
+    const core = qualificationCore(sealed.manifest);
+    core.competencyQuestions[0].requiredWitnessKinds = ['missing-witness-kind'];
+    assert.throws(() => buildHiddenPacket({
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: core,
+      answers: compactAnswers(sealed.manifest, core),
+    }), (error) => (
+      error.exitCode === EXIT.GATE_BLOCKED
+      && /failed competency questions/.test(error.message)
+      && error.details[0].id === core.competencyQuestions[0].id
+    ));
+  });
+
   test('hidden rejects authored cqResults/evidence axis and incomplete compact target coverage', () => {
     const sealed = sealedFixture();
     const authoredResults = qualificationCore(sealed.manifest);
@@ -952,6 +996,8 @@ describe('join RED probes', () => {
     assert.throws(() => joinQualification({ ...sealed, ...collision }), /must be distinct/);
     const serial = branches(sealed, { nonOverlap: true });
     assert.throws(() => joinQualification({ ...sealed, ...serial }), /did not overlap/);
+    const ownerAsAuditor = branches(sealed, { auditActor: HUMAN_ID });
+    assert.throws(() => joinQualification({ ...sealed, ...ownerAsAuditor }), /CQ owner identity collides/);
   });
 });
 
@@ -983,6 +1029,9 @@ describe('accept and release RED probes', () => {
     const actorCollision = clone(human);
     actorCollision.id = joined.receipt.actors.hiddenEvaluatorId;
     assert.throws(() => acceptQualification({ ...sealed, join: joined, human: actorCollision }), /collides/);
+    const cqOwnerMismatch = clone(human);
+    cqOwnerMismatch.id = 'human:different-reviewer';
+    assert.throws(() => acceptQualification({ ...sealed, join: joined, human: cqOwnerMismatch }), /preapproved CQ owner/);
   });
 
   test('release rejects a non-executable result and source/plan drift', () => {
