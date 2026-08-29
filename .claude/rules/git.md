@@ -77,13 +77,8 @@ the first failure.
   requests it. Never force-push `main`.
 - Never hand-resolve conflicts in generated JSON. Files under
   `src/entities/docs-vault/data/*` and `public/docs-vault/**` come from
-  `pnpm docs-vault:build`. Conflict markers once survived a manual repair and
-  broke type checking. Pick either side and regenerate:
-
-  ```bash
-  git checkout --ours src/entities/docs-vault/data public/docs-vault
-  pnpm docs-vault:build
-  ```
-
-  The output is deterministic; see `docs/DEVELOPMENT-CHECKS.md` under
-  “Generated manifest determinism.”
+  `pnpm docs-vault:build`. If only those paths plus `docs/CHANGELOG.md` /
+  `docs/DECISIONS.md` conflict, run `pnpm docs-vault:resolve-conflicts --
+  --dry-run`, then the write command. It accepts only prepended dated records on
+  byte-identical history, regenerates/stages outputs, and refuses anything else.
+  Details: `docs/DEVELOPMENT-CHECKS.md`.
