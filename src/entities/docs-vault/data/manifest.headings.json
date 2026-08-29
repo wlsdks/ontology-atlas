@@ -5964,6 +5964,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-29 — The spine names itself at every altitude; the domain watermark is retired",
+      "slug": "2026-08-29-the-spine-names-itself-at-every-altitude-the-domain-watermark-is-retired"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-29 — First persisted handoff is 50/50; clean-run performance remains open",
       "slug": "2026-08-29-first-persisted-handoff-is-5050-clean-run-performance-remains-open"
     },
