@@ -181,6 +181,8 @@ pnpm test:vault:validate         # focused validator CLI argument contract
 pnpm docs-vault:check            # static dogfood manifest freshness
 pnpm test:docs-vault             # focused docs-vault build/check helper contract
 pnpm docs-vault:build            # refresh static dogfood manifest and public md
+pnpm docs-vault:resolve-conflicts -- --dry-run # inspect a ledger/generated-only conflict
+pnpm docs-vault:resolve-conflicts # merge append-only records, rebuild, and stage outputs
 pnpm gateway:specimen:check      # /download shows one vault file verbatim: is the copy current?
 pnpm gateway:specimen            # regenerate it from the vault
 pnpm vault:audit                 # dogfood path drift guard
@@ -213,8 +215,39 @@ deterministic: **same source in, same bytes out.**
   attributes the whole tree to it and every doc collapses to one date (measured:
   247 paths → 1 distinct date). The same contract test guards the pairing.
 - **Never hand-edit a merge conflict inside these files** — conflict markers left
-  in JSON have broken `tsc`. Take either side and regenerate:
-  `git checkout --ours src/entities/docs-vault/data public/docs-vault && pnpm docs-vault:build`.
+  in JSON have broken `tsc`. If the complete conflict set is limited to the two
+  append-only ledgers and generated docs-vault artifacts, use
+  `pnpm docs-vault:resolve-conflicts`; otherwise resolve the authored source
+  conflict explicitly.
+
+### Concurrent ledger conflict recovery
+
+`docs/CHANGELOG.md` and `docs/DECISIONS.md` are intentionally newest-first,
+append-only ledgers. Two worktrees that both add the next dated record therefore
+edit the same hunk, and every deterministic mirror repeats that collision. Git's
+`union` merge driver is not used: it keeps both sides but does not guarantee their
+order, while an `ours` driver can silently discard the other worktree's record.
+
+The resolver reads Git stages 1/2/3 and accepts only a narrow shape:
+
+- both sides preserve every base record byte-for-byte and in the same order;
+- each side may prepend complete `## YYYY-MM-DD ...` records;
+- the ledger preamble is unchanged on at least one side;
+- every other unmerged path is produced by `docs-vault:build`;
+- no untracked or unstaged Markdown can leak into regeneration.
+
+It deterministically combines the new records, runs the canonical generator,
+stages both ledgers and all generated artifacts, verifies that no unmerged path
+remains, and runs `docs-vault:check`. It never runs `git rebase --continue` or
+`git merge --continue`; the person or agent keeps that final boundary. A modified
+historical record or any unrelated source conflict is a refusal, not a guessed
+merge.
+
+`pnpm test:docs-vault` creates a temporary Git repository with two concurrent
+worktree-style branches and proves the original conflict turns into one staged
+result containing both records. The same suite probes historical rewrites,
+divergent preambles, nested decision headings, duplicate records, and unsupported
+source paths.
 
 `health --json`, `agent-brief --json`, and `workspace-brief --json` are fail-closed machine outputs:
 malformed diagnosis payloads are command failures, not clean vaults.

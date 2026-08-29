@@ -15,8 +15,10 @@ const RULES = [
   },
   {
     command: 'pnpm test:docs-vault',
-    reason: 'docs-vault build/check helper changed',
-    matches: [/^scripts\/build-docs-vault\.(?:mjs|test\.mjs)$/],
+    reason: 'docs-vault build/check or conflict-recovery helper changed',
+    matches: [
+      /^scripts\/(?:build-docs-vault|resolve-docs-vault-conflicts)\.(?:mjs|test\.mjs)$/,
+    ],
   },
   {
     command: 'pnpm docs:language',
@@ -976,6 +978,8 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/audit-vault-paths.test.mjs', 'scripts/audit-vault-paths.test.mjs'],
   ['scripts/build-docs-vault.mjs', 'scripts/build-docs-vault.test.mjs'],
   ['scripts/build-docs-vault.test.mjs', 'scripts/build-docs-vault.test.mjs'],
+  ['scripts/resolve-docs-vault-conflicts.mjs', 'scripts/resolve-docs-vault-conflicts.test.mjs'],
+  ['scripts/resolve-docs-vault-conflicts.test.mjs', 'scripts/resolve-docs-vault-conflicts.test.mjs'],
   ['scripts/check-desktop-readiness.mjs', 'scripts/check-desktop-readiness.test.mjs'],
   ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
   ['scripts/check-ontology-design-surface.mjs', 'scripts/check-ontology-design-surface.test.mjs'],
