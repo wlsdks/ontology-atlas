@@ -16,6 +16,10 @@ allow_domain: []
 allow_application: [domain, port]
 allow_port: [domain]
 allow_adapter: [application, port, domain]
+summary_domain: The rules the business would still have on paper: prices, stock, refunds. It depends on nothing.
+summary_application: The steps that carry out one request, calling the domain and going out through ports.
+summary_port: The interfaces the inside declares so it can talk outward without knowing who answers.
+summary_adapter: The outside edge: HTTP, queues, databases. It is replaceable, and nothing inside depends on it.
 evidence: [storefront.md]
 ---
 

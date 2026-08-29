@@ -126,6 +126,7 @@ import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import {
   buildArchitectureBrief,
+  buildArchitectureMeasuredStamp,
   findArchitectureProfiles,
 } from './architecture-profile.mjs';
 import {
@@ -10104,10 +10105,20 @@ function inspectArchitectureTool({ rootPath, profileSlug, maxFiles } = {}) {
     throw error;
   }
   const imports = inferImports(target, { maxFiles });
-  return buildArchitectureBrief(profile, {
-    ...imports,
-    rootPath: target,
+  // Measured stamp (2026-08-27 decision, point 2): when the scan ran, which tool version measured,
+  // and the exact source state it saw. Reading the source inspection is still side effect 0.
+  const measured = buildArchitectureMeasuredStamp(inspectProjectSource(target), {
+    toolName: 'ontology-atlas',
+    toolVersion: SERVER_VERSION,
   });
+  return buildArchitectureBrief(
+    profile,
+    {
+      ...imports,
+      rootPath: target,
+    },
+    { measured },
+  );
 }
 
 // Thin wrapper over infer_imports. Zero side effects. The resulting moduleEdges

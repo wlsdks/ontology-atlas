@@ -85,10 +85,10 @@ If the audience doesn't walk away with this sentence, the scenario is wrong. It 
 
 The "remaining image" of each beat is its purpose. If no image remains, that beat can be omitted. The text in parentheses indicates the actual control name (`data-testid`).
 
-| Seconds | What to do | Remaining Image |
-|---|---|---|
-| 0–6 | **Do nothing.** The Bolt is already open, showing a 2D map. Wait without touching it | The folder has already become an image |
-| 6–20 | **Click one node.** Only neighbors remain; others recede. Facts about that concept appear beside it | "What is this and what is it connected to?" |
+| Seconds | What to do |
+|---|---|
+| 0–6 | **Do nothing.** The Bolt is already open, showing a 2D map. Wait without touching it — The folder has already become an image |
+| 6–20 | **Click one node.** Only neighbors remain; others recede. Facts about that concept appear beside it — "What is this and what is it connected to?" |
 | 20–32 | **Tap one more neighbor in that fact.** The map shifts toward it. Click is movement. |
 | 32–46 | **Search in INDEX** (`topology-concept-search`). Type the name, tap a result, and the map moves there. Speed of finding one among 82 items. |
 | 46–58 | **Tap auto-arrange** (`topology-auto-arrange`). Scattered nodes gather back into place. You can undo this anytime. |

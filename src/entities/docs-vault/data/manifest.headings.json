@@ -1,4 +1,91 @@
 {
+  "AGENT-DESIGN-METHOD": [
+    {
+      "depth": 1,
+      "text": "How an agent designs here",
+      "slug": "how-an-agent-designs-here"
+    },
+    {
+      "depth": 2,
+      "text": "The failure this document exists for",
+      "slug": "the-failure-this-document-exists-for"
+    },
+    {
+      "depth": 2,
+      "text": "The loop",
+      "slug": "the-loop"
+    },
+    {
+      "depth": 2,
+      "text": "Notation before style",
+      "slug": "notation-before-style"
+    },
+    {
+      "depth": 2,
+      "text": "References are for principles, and the licence is part of the check",
+      "slug": "references-are-for-principles-and-the-licence-is-part-of-the-check"
+    },
+    {
+      "depth": 2,
+      "text": "A generated drawing must be deterministic",
+      "slug": "a-generated-drawing-must-be-deterministic"
+    },
+    {
+      "depth": 2,
+      "text": "Say what you drew, and draw what you said",
+      "slug": "say-what-you-drew-and-draw-what-you-said"
+    },
+    {
+      "depth": 2,
+      "text": "What to put in front of the model",
+      "slug": "what-to-put-in-front-of-the-model"
+    },
+    {
+      "depth": 2,
+      "text": "When a rule blocks the work, change the rule, do not route around it",
+      "slug": "when-a-rule-blocks-the-work-change-the-rule-do-not-route-around-it"
+    },
+    {
+      "depth": 2,
+      "text": "A screen that claims a number has to be checked against its source",
+      "slug": "a-screen-that-claims-a-number-has-to-be-checked-against-its-source"
+    },
+    {
+      "depth": 2,
+      "text": "Drawing depth: the techniques, and where each comes from",
+      "slug": "drawing-depth-the-techniques-and-where-each-comes-from"
+    },
+    {
+      "depth": 3,
+      "text": "Depth without a 3D engine",
+      "slug": "depth-without-a-3d-engine"
+    },
+    {
+      "depth": 3,
+      "text": "Two illustration conventions worth knowing by name",
+      "slug": "two-illustration-conventions-worth-knowing-by-name"
+    },
+    {
+      "depth": 3,
+      "text": "Depth cues, in the order they work",
+      "slug": "depth-cues-in-the-order-they-work"
+    },
+    {
+      "depth": 3,
+      "text": "The constraint that makes any of this safe here",
+      "slug": "the-constraint-that-makes-any-of-this-safe-here"
+    },
+    {
+      "depth": 2,
+      "text": "What the public practice agrees on, as of August 2026",
+      "slug": "what-the-public-practice-agrees-on-as-of-august-2026"
+    },
+    {
+      "depth": 2,
+      "text": "Registering what you made",
+      "slug": "registering-what-you-made"
+    }
+  ],
   "AGENT-GRAPH-WORKFLOW": [
     {
       "depth": 1,
@@ -5937,6 +6024,46 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-28 (3) — The diagram leaves the document: a horizontal graph, and only edges that carry something the columns cannot",
+      "slug": "2026-08-28-3-the-diagram-leaves-the-document-a-horizontal-graph-and-only-edges-that-carry-something-the-columns-cannot"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-28 (2) — A rule the screen does not print is a rule the reader does not have",
+      "slug": "2026-08-28-2-a-rule-the-screen-does-not-print-is-a-rule-the-reader-does-not-have"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-28 — A role may say what it is for, and the pattern axis is the stage's subject",
+      "slug": "2026-08-28-a-role-may-say-what-it-is-for-and-the-pattern-axis-is-the-stages-subject"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-27 — The blueprint's rest state is the full diagram, and its only edges are reviewed relations",
+      "slug": "2026-08-27-the-blueprints-rest-state-is-the-full-diagram-and-its-only-edges-are-reviewed-relations"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-27 — A layer opens in place: the click's answer is the labeled meaning layer",
+      "slug": "2026-08-27-a-layer-opens-in-place-the-clicks-answer-is-the-labeled-meaning-layer"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-27 — Conformance records are dated machine receipts; the measurement must be true before it is durable",
+      "slug": "2026-08-27-conformance-records-are-dated-machine-receipts-the-measurement-must-be-true-before-it-is-durable"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-27 — Architecture bands hold source modules, not ontology concepts",
+      "slug": "2026-08-27-architecture-bands-hold-source-modules-not-ontology-concepts"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-27 — Role bands carry their occupants: the blueprint joins role globs to vault paths",
+      "slug": "2026-08-27-role-bands-carry-their-occupants-the-blueprint-joins-role-globs-to-vault-paths"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-26 — The first architecture draft is proposed by an agent and named by a person",
       "slug": "2026-08-26-the-first-architecture-draft-is-proposed-by-an-agent-and-named-by-a-person"
     },
@@ -10272,6 +10399,46 @@
       "depth": 2,
       "text": "Anti-AI Design Criteria",
       "slug": "anti-ai-design-criteria"
+    },
+    {
+      "depth": 2,
+      "text": "Architecture canvas — the flow surface (new, 2026-08-28)",
+      "slug": "architecture-canvas-the-flow-surface-new-2026-08-28"
+    },
+    {
+      "depth": 3,
+      "text": "Why this exists as its own language",
+      "slug": "why-this-exists-as-its-own-language"
+    },
+    {
+      "depth": 3,
+      "text": "Shape carries meaning, and the meaning is ISO 5807's",
+      "slug": "shape-carries-meaning-and-the-meaning-is-iso-5807s"
+    },
+    {
+      "depth": 3,
+      "text": "A stroke must carry something the columns cannot",
+      "slug": "a-stroke-must-carry-something-the-columns-cannot"
+    },
+    {
+      "depth": 3,
+      "text": "Depth is face lightness, not shadow",
+      "slug": "depth-is-face-lightness-not-shadow"
+    },
+    {
+      "depth": 3,
+      "text": "Ports",
+      "slug": "ports"
+    },
+    {
+      "depth": 3,
+      "text": "Running the flow",
+      "slug": "running-the-flow"
+    },
+    {
+      "depth": 3,
+      "text": "What this surface still does not have",
+      "slug": "what-this-surface-still-does-not-have"
     },
     {
       "depth": 2,
@@ -14666,41 +14833,108 @@
       "slug": "updating-documentation"
     }
   ],
+  "superpowers/plans/2026-08-28-architecture-xray": [
+    {
+      "depth": 1,
+      "text": "Architecture X-ray Implementation Plan",
+      "slug": "architecture-x-ray-implementation-plan"
+    },
+    {
+      "depth": 2,
+      "text": "The rule that decides every edge",
+      "slug": "the-rule-that-decides-every-edge"
+    },
+    {
+      "depth": 2,
+      "text": "Global Constraints",
+      "slug": "global-constraints"
+    },
+    {
+      "depth": 2,
+      "text": "File Structure",
+      "slug": "file-structure"
+    },
+    {
+      "depth": 2,
+      "text": "Task 0: Record the change of shape before writing any of it",
+      "slug": "task-0-record-the-change-of-shape-before-writing-any-of-it"
+    },
+    {
+      "depth": 2,
+      "text": "Task 1: The layout is arithmetic",
+      "slug": "task-1-the-layout-is-arithmetic"
+    },
+    {
+      "depth": 2,
+      "text": "Task 2: The drawing",
+      "slug": "task-2-the-drawing"
+    },
+    {
+      "depth": 2,
+      "text": "Task 3: The detail panel takes what the band was carrying",
+      "slug": "task-3-the-detail-panel-takes-what-the-band-was-carrying"
+    },
+    {
+      "depth": 2,
+      "text": "Task 4: Prove it on the installed app",
+      "slug": "task-4-prove-it-on-the-installed-app"
+    },
+    {
+      "depth": 2,
+      "text": "Task 5: Walk it with fresh eyes, and let the answer decide",
+      "slug": "task-5-walk-it-with-fresh-eyes-and-let-the-answer-decide"
+    },
+    {
+      "depth": 2,
+      "text": "Phase 2 and 3, unchanged in intent, blocked on Task 5",
+      "slug": "phase-2-and-3-unchanged-in-intent-blocked-on-task-5"
+    },
+    {
+      "depth": 2,
+      "text": "Self-review notes",
+      "slug": "self-review-notes"
+    }
+  ],
   "TECH-STACK": [
     {
       "depth": 1,
-      "text": "TECH STACK — Technology Stack Decision Record",
-      "slug": "tech-stack-technology-stack-decision-record"
+      "text": "Technology stack",
+      "slug": "technology-stack"
     },
     {
       "depth": 2,
-      "text": "Web Front-end",
+      "text": "What would have to happen to change each decision",
+      "slug": "what-would-have-to-happen-to-change-each-decision"
+    },
+    {
+      "depth": 3,
+      "text": "Web front end",
       "slug": "web-front-end"
     },
     {
-      "depth": 2,
+      "depth": 3,
       "text": "Desktop",
       "slug": "desktop"
     },
     {
-      "depth": 2,
-      "text": "CLI · MCP · Testing",
-      "slug": "cli-mcp-testing"
+      "depth": 3,
+      "text": "CLI, MCP, and testing",
+      "slug": "cli-mcp-and-testing"
     },
     {
       "depth": 2,
-      "text": "LLM · Layer 2 (Deferred decision — implement when relevant gate triggers)",
-      "slug": "llm-layer-2-deferred-decision-implement-when-relevant-gate-triggers"
+      "text": "Layer 2 and LLM connections, decided but not built",
+      "slug": "layer-2-and-llm-connections-decided-but-not-built"
     },
     {
       "depth": 2,
-      "text": "What We Decided Against (Rejection Log)",
-      "slug": "what-we-decided-against-rejection-log"
+      "text": "Rejected, and why",
+      "slug": "rejected-and-why"
     },
     {
       "depth": 2,
-      "text": "Immediate Actions (This Cycle — historical, superseded)",
-      "slug": "immediate-actions-this-cycle-historical-superseded"
+      "text": "The 2026-07-17 action list, kept as history",
+      "slug": "the-2026-07-17-action-list-kept-as-history"
     }
   ],
   "TOPOLOGY-FOCUS-AND-SCALE": [

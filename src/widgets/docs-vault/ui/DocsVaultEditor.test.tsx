@@ -106,10 +106,10 @@ describe('DocsVaultEditor', () => {
     expect(screen.getByText('로컬 백업 준비 중')).toBeInTheDocument();
     expect(screen.getByText('디스크 저장 아님 · 저장 버튼 또는 ⌘S 필요')).toBeInTheDocument();
     expect(await screen.findByText('임시저장됨')).toBeInTheDocument();
-    expect(screen.getByText('브라우저에 보관 · 최종 저장 필요')).toBeInTheDocument();
-    expect(screen.getByText('브라우저에 초안 보관')).toBeInTheDocument();
+    expect(screen.getByText('임시 보관 중 · 최종 저장 필요')).toBeInTheDocument();
+    expect(screen.getByText('초안을 임시 보관합니다')).toBeInTheDocument();
     expect(screen.getByText('저장 전: 검증은 아직 디스크 기준')).toBeInTheDocument();
-    expect(screen.getByText('취소 시 브라우저 초안 제거')).toBeInTheDocument();
+    expect(screen.getByText('취소하면 임시 초안이 지워집니다')).toBeInTheDocument();
     expect(window.localStorage.getItem(draftKey)).toContain('unsaved draft');
 
     fireEvent.change(editor, { target: { value: 'initial' } });
@@ -141,7 +141,7 @@ describe('DocsVaultEditor', () => {
 
     expect(await screen.findByDisplayValue('restored browser draft')).toBeInTheDocument();
     expect(screen.getByText('임시저장됨')).toBeInTheDocument();
-    expect(screen.getByText('브라우저에 보관 · 최종 저장 필요')).toBeInTheDocument();
+    expect(screen.getByText('임시 보관 중 · 최종 저장 필요')).toBeInTheDocument();
   });
 
   // Atlas A#5(a) — data-loss guard. A background poll rebuilds the vault

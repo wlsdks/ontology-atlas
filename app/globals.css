@@ -1212,6 +1212,106 @@
     animation: agentPendingPulse 2.4s ease-in-out infinite;
   }
 
+  /*
+ * ## Architecture canvas — the surface a graph is drawn on (2026-08-28)
+ *
+ * A node graph needs its ground to read as ground. Every editor in this shape draws one: n8n,
+ * ComfyUI and Figma all put a faint dot field behind the nodes, and without it a set of boxes on a
+ * flat panel reads as a row of cards rather than as a canvas somebody laid things out on. This
+ * product already draws the same thing on the map, in canvas 2D, through
+ * `--topology-v2-grid-minor`; those values belong to a WebGL-free 2D renderer and are consumed by
+ * `getComputedStyle`, so a DOM surface needs its own pair rather than borrowing them.
+ *
+ * **Ink, not decoration.** The background always loses to the data (Tufte, the same rule
+ * `--canvas-bg-ink-max` states for the map). The dot is one step above the panel it sits on and
+ * nothing more: at 1px on a 22px pitch it is perceptible as a field and illegible as a mark, which
+ * is exactly what a coordinate ground should be.
+ *
+ * No image, no gradient background, no aurora. `radial-gradient` here paints one flat dot per tile
+ * and carries no colour transition at all; it is the tiling primitive, not a gradient effect.
+ */
+:root {
+  /* Measured 2026-08-28: #1b1c1f on the canvas ground was invisible at 1px on a 22px pitch — a
+     field nobody perceives is not a field. This is one step under the soft border, which reads as
+     ground and still loses to every mark drawn on it. */
+  --architecture-canvas-dot: #2a2b30;
+  --architecture-canvas-pitch: 22px;
+  /* The lit top edge of a raised node: one step above `--color-elevated`, which is the smallest
+     move that reads as a face catching light rather than as a second border. */
+  --architecture-node-lit-edge: #2e2f33;
+  /* The pencil. A drawn outline sits above the node's own face and under its label, so it reads
+     as a line somebody made rather than as a border the layout emitted. */
+  --color-architecture-sketch-ink: #6d7080;
+  /* One wave, left to right. 7 columns × 90ms + 520ms lands at 1.06s, which is long enough to
+     read as travel and short enough that nobody waits for it. */
+  --architecture-run-duration: 520ms;
+  --architecture-run-stagger: 90ms;
+  --architecture-run-dash: 10px 14px;
+  --architecture-run-dash-travel: 48px;
+}
+
+/*
+ * ## Depth on a dark surface is made of face lightness, not shadow (2026-08-28)
+ *
+ * The usual elevation trick fails here: a cast shadow barely reads on a near-black ground. What
+ * reads on dark is the thing light actually does — **a lighter face is a higher face**, because a
+ * surface nearer the viewer catches more of it. This product's surface ramp is already that
+ * statement (canvas #08090a → panel #0f1011 → elevated #191a1b), so the canvas needs no new
+ * colour: it needs the ramp used as a height ladder rather than as three interchangeable greys.
+ *
+ * Two faces, stated with two devices the design system already licenses:
+ *
+ * - **The ground is a well.** An inset hairline along its top edge is the shadow the wall casts
+ *   into a recess, which is what says "things sit *in* here" rather than "this is another card".
+ * - **A node is a raised slab.** A one-pixel lighter line along its top edge is the lit top face.
+ *   The shadow ramp's comment names exactly this: an inset hairline is material, and material is
+ *   allowed where a hand-written elevation shadow is not.
+ *
+ * No gradient, no glow, no blur. Both devices are a single flat line of colour.
+ */
+.architecture-canvas-ground {
+  background-color: var(--color-canvas);
+  background-image: radial-gradient(var(--architecture-canvas-dot) 1px, transparent 1px);
+  background-size: var(--architecture-canvas-pitch) var(--architecture-canvas-pitch);
+  background-position: center center;
+  box-shadow: inset 0 1px 0 var(--color-shadow-a35);
+}
+
+.architecture-canvas-node {
+  box-shadow: inset 0 1px 0 var(--architecture-node-lit-edge);
+}
+
+/*
+ * ## Running the flow (2026-08-28)
+ *
+ * A dash travelling along a stroke is the one motion that says "this is the direction the thing
+ * actually moves", which is why every node editor with an execute view uses it. It runs on a
+ * deliberate press and stops on its own: an ambient loop would be a claim that something is
+ * happening in the source right now, and nothing is.
+ *
+ * Stagger by column, so the run reads left to right as one wave rather than every stroke firing
+ * at once. The step index arrives as a unitless custom property, so no raw time value rides an
+ * inline style.
+ *
+ * Reduced motion collapses it, and nothing is lost: the arrowheads and the column order state the
+ * same direction with no time axis at all. Roster: reduced-motion-equivalent.contract.test.ts.
+ */
+@keyframes architectureFlowRun {
+  from {
+    stroke-dashoffset: var(--architecture-run-dash-travel);
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.architecture-flow-running {
+  stroke-dasharray: var(--architecture-run-dash);
+  animation: architectureFlowRun var(--architecture-run-duration) var(--motion-ease) both;
+  animation-delay: calc(var(--architecture-run-stagger) * var(--architecture-run-step, 0));
+}
+
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.
      Rendering immediately causes subtitles to flash on every normal entry, which is worse
      than the blank screen we aimed to fix.

@@ -1,7 +1,7 @@
 {
   "name": "ontology-atlas-mcp",
   "version": "0.13.0",
-  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 36 tools (20 read + 16 write).",
+  "description": "MCP server \u2014 humans and AI agents read/write the same codebase ontology vault. Current surface: 36 tools (20 read + 16 write).",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -44,6 +44,7 @@
     "src/capability-evidence.mjs",
     "src/infer-imports.mjs",
     "src/architecture-profile.mjs",
+    "src/architecture-record.mjs",
     "src/rust-feature-evidence.mjs",
     "src/reconcile-imports.mjs",
     "src/detect-drift.mjs",
@@ -86,7 +87,7 @@
     "node": ">=24 <25"
   },
   "pnpm": {
-    "//": "npm 은 최상위 `overrides` 를, pnpm 은 `pnpm.overrides` 를 읽는다. 지금은 override 가 없다 — v2 SDK 의 의존은 core·server·zod 셋뿐이라 핀으로 묶을 전이 의존이 없기 때문이다. 다시 생기면 **두 곳 다** 적는다. 한쪽만 적으면 #543 이 고정한 버전이 배포본에서만 조용히 풀린다."
+    "//": "npm \uc740 \ucd5c\uc0c1\uc704 `overrides` \ub97c, pnpm \uc740 `pnpm.overrides` \ub97c \uc77d\ub294\ub2e4. \uc9c0\uae08\uc740 override \uac00 \uc5c6\ub2e4 \u2014 v2 SDK \uc758 \uc758\uc874\uc740 core\u00b7server\u00b7zod \uc14b\ubfd0\uc774\ub77c \ud540\uc73c\ub85c \ubb36\uc744 \uc804\uc774 \uc758\uc874\uc774 \uc5c6\uae30 \ub54c\ubb38\uc774\ub2e4. \ub2e4\uc2dc \uc0dd\uae30\uba74 **\ub450 \uacf3 \ub2e4** \uc801\ub294\ub2e4. \ud55c\ucabd\ub9cc \uc801\uc73c\uba74 #543 \uc774 \uace0\uc815\ud55c \ubc84\uc804\uc774 \ubc30\ud3ec\ubcf8\uc5d0\uc11c\ub9cc \uc870\uc6a9\ud788 \ud480\ub9b0\ub2e4."
   },
   "repository": {
     "type": "git",

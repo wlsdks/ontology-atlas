@@ -7,6 +7,8 @@ display_ko: 홈 화면
 domain: domains/onboarding-and-shell
 path: src/views/home
 created_by: "agent:unknown"
+dependencies: [elements/knowledge-graph]
+relation_notes: { elements/knowledge-graph: "The topology view renders the graph model that knowledge-graph builds from vault frontmatter; src/views/home imports @/entities/knowledge-graph." }
 ---
 
 / Home entry page.

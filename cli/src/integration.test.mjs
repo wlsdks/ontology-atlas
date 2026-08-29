@@ -8026,6 +8026,230 @@ await test('architecture --json — returns the same fail-closed agent brief as 
   }
 });
 
+// ── architecture --record: opt-in dated machine receipt ─────────────────
+//
+// 2026-08-27 decision: the record is a JSON envelope wrapping the stamped
+// brief at .ontology-atlas/architecture/<profile-slug>.json, written only by
+// this CLI flag, refused mechanically when the scan cannot discriminate
+// import usage.
+
+const RECORD_PROFILE_DOC = {
+  slug: 'architecture/payments',
+  content: [
+    '---',
+    'architecture_schema: architecture-profile/v1',
+    'profile_uid: 22c86542-7512-4b6e-8c73-77be4730c772',
+    'profile_slug: payments-core',
+    'project_uid: e91d8a44-a95b-4faf-840d-e71c8b2d935c',
+    'title: Payments Core',
+    'patterns: [dependency:hexagonal]',
+    'scope_paths: [src/payments/**]',
+    'role_domain: [src/payments/domain/**]',
+    'role_adapter: [src/payments/adapters/**]',
+    'allow_domain: []',
+    'allow_adapter: [domain]',
+    // Reconciled 2026-08-29: the branch relied on a tool default that left type-only edges out of
+    // the verdict. Under the encoding that shipped, that exclusion is a reviewed declaration.
+    'dependency_usages: [value]',
+    'evidence: [ARCHITECTURE.md]',
+    '---',
+    '',
+    '# Payments architecture',
+    '',
+  ].join('\n'),
+};
+
+function makePaymentsRepo() {
+  const repo = mkdtempSync(join(tmpdir(), 'cli-architecture-record-'));
+  mkdirSync(join(repo, 'src', 'payments', 'domain'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'payments', 'adapters'), { recursive: true });
+  writeFileSync(
+    join(repo, 'src', 'payments', 'domain', 'payment.ts'),
+    'import type { Save } from "../adapters/postgres";\nexport const payment: Save | null = null;\n',
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'payments', 'adapters', 'postgres.ts'),
+    'import { payment } from "../domain/payment";\nexport type Save = boolean;\nexport const use = payment;\n',
+    'utf-8',
+  );
+  return repo;
+}
+
+function hasKeyDeep(value, key) {
+  if (Array.isArray(value)) return value.some((item) => hasKeyDeep(item, key));
+  if (value && typeof value === 'object') {
+    return Object.keys(value).some((k) => k === key || hasKeyDeep(value[k], key));
+  }
+  return false;
+}
+
+await test('architecture --record — persists a stamped record and strips machine paths', async () => {
+  const vault = withVault([RECORD_PROFILE_DOC]);
+  const repo = makePaymentsRepo();
+  try {
+    const result = await run([
+      'architecture', repo, '--vault', vault, '--profile', 'payments-core', '--record',
+    ]);
+    assert.equal(result.code, 0, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
+    assert.match(
+      stripAnsi(result.stdout),
+      /record\s+\.ontology-atlas\/architecture\/payments-core\.json/,
+    );
+
+    const recordPath = join(vault, '.ontology-atlas', 'architecture', 'payments-core.json');
+    const record = JSON.parse(readFileSync(recordPath, 'utf-8'));
+    assert.equal(record.contract, 'architectureRecord:v1');
+    assert.equal(record.profile.uid, '22c86542-7512-4b6e-8c73-77be4730c772');
+    assert.equal(record.profile.slug, 'payments-core');
+
+    // The content hash is the sha256 of the profile document's file bytes.
+    const { createHash } = await import('node:crypto');
+    const profileBytes = readFileSync(join(vault, 'architecture', 'payments.md'));
+    assert.equal(
+      record.profile.contentHash,
+      `sha256:${createHash('sha256').update(profileBytes).digest('hex')}`,
+    );
+
+    // The stamped brief: folder fingerprint (tmp repo is not a git checkout),
+    // type-only ruling applied, and no machine path anywhere in the receipt.
+    assert.equal(record.brief.contract, 'architectureBrief:v1');
+    assert.equal(record.brief.measured.source.kind, 'folder');
+    assert.match(record.brief.measured.source.fingerprint, /^sha256:[0-9a-f]{64}$/);
+    assert.equal(record.brief.conformance.status, 'conforms');
+    assert.equal(record.brief.conformance.violationCount, 0);
+    assert.equal(record.brief.conformance.excludedByUsage, 1);
+    assert.equal(hasKeyDeep(record, 'rootPath'), false);
+
+    // One activity.jsonl line records the write.
+    const activity = readFileSync(join(vault, '.ontology-atlas', 'activity.jsonl'), 'utf-8')
+      .split('\n').filter(Boolean).map((line) => JSON.parse(line));
+    assert.equal(activity.length, 1);
+    assert.equal(activity[0].tool, 'architecture_record');
+    assert.equal(activity[0].target, '.ontology-atlas/architecture/payments-core.json');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('architecture without --record — stays side effect 0 (no sidecar record)', async () => {
+  const vault = withVault([RECORD_PROFILE_DOC]);
+  const repo = makePaymentsRepo();
+  try {
+    const result = await run([
+      'architecture', repo, '--vault', vault, '--profile', 'payments-core',
+    ]);
+    assert.equal(result.code, 0, result.stderr);
+    assert.equal(existsSync(join(vault, '.ontology-atlas', 'architecture')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('architecture --record — refuses a scan with no import-usage discrimination', async () => {
+  const vault = withVault([RECORD_PROFILE_DOC]);
+  const repo = makePaymentsRepo();
+  // A brief that is valid in every way except that the scanner classified no
+  // edge usage: everything landed in `unknown`. The writer must refuse.
+  const undiscriminatedBrief = {
+    contract: 'architectureBrief:v1',
+    sideEffect: 0,
+    profile: {
+      uid: '22c86542-7512-4b6e-8c73-77be4730c772',
+      slug: 'payments-core',
+      projectUid: 'e91d8a44-a95b-4faf-840d-e71c8b2d935c',
+      title: 'Payments Core',
+      patterns: [{ axis: 'dependency', name: 'hexagonal' }],
+      scopePaths: ['src/payments/**'],
+      excludePaths: [],
+      roles: [
+        { id: 'domain', paths: ['src/payments/domain/**'], allowedDependencies: [] },
+        { id: 'adapter', paths: ['src/payments/adapters/**'], allowedDependencies: ['domain'] },
+      ],
+      dependencyPolicy: 'explicit',
+      dependencyUsages: ['value'],
+      evidence: ['ARCHITECTURE.md'],
+    },
+    measured: {
+      at: '2026-08-27T00:00:00.000Z',
+      tool: { name: 'ontology-atlas', version: '0.0.0-test' },
+      source: { kind: 'folder', fingerprint: `sha256:${'0f'.repeat(32)}` },
+    },
+    conformance: {
+      contract: 'architectureConformance:v1',
+      status: 'unknown',
+      roles: [],
+      observedRoleEdges: [],
+      /*
+       * ⚠️ No violations, on purpose. Reconciled 2026-08-29: an edge whose usage the scanner could
+       * not classify is routed to `unknown`, never to `violations`, so a violation always carries a
+       * usage — which is why the result validator rejects one that does not. The fixture used to
+       * carry `importUsage: 'unknown'` on a violation, a shape the evaluator cannot produce, and it
+       * made this test fail for the wrong reason: the validator refused the payload before the
+       * record gate could refuse the receipt. The point of the case is the gate, so the scan is
+       * shaped the way an undiscriminated scan actually arrives.
+       */
+      violationCount: 0,
+      violations: [],
+      violationsLimited: false,
+      excludedByUsage: 0,
+      unknown: {
+        coverageIncomplete: false, unmappedEdges: 0, unruledEdges: 2,
+        unknownImportUsages: 2, emptyRoles: [],
+      },
+      source: {
+        rootPath: null,
+        filesScanned: 2,
+        supportedLanguages: ['typescript'],
+        importUsageCounts: { value: 0, type_only: 0, unknown: 2, missing: 0 },
+      },
+    },
+    agentPlanContract: { contract: 'architectureChangePlan:v1', requiredFields: [] },
+    nextActions: [],
+  };
+  const fakeMcp = join(repo, 'fake-mcp-undiscriminated-architecture.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      `const payload = ${JSON.stringify(undiscriminatedBrief)};`,
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'inspect_architecture') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const result = await run(
+      ['architecture', repo, '--vault', vault, '--profile', 'payments-core', '--record'],
+      { env: { OATLAS_MCP_PATH: fakeMcp } },
+    );
+    // Refusal is nonzero-free: the honest report already printed.
+    assert.equal(result.code, 0, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
+    assert.match(stripAnsi(result.stderr), /record refused/);
+    assert.match(stripAnsi(result.stderr), /no import-usage discrimination/);
+    /* An undiscriminated scan reports `unknown`, not `violated`: an edge whose usage the
+       scanner could not classify never becomes a violation. The report still has to say
+       what it found before the record gate refuses to mint a receipt from it. */
+    assert.match(stripAnsi(result.stdout), /unknown/);
+    assert.equal(existsSync(join(vault, '.ontology-atlas', 'architecture')), false);
+    assert.equal(existsSync(join(vault, '.ontology-atlas', 'activity.jsonl')), false);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('init — fresh starter vault compiles clean (no ambiguous alias / compile issue) [cold-start]', async () => {
   // A freshly scaffolded vault must be CLEAN so the SessionStart hook stays
   // silent on first contact (AGENTS.md: "a clean vault stays silent (no

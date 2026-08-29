@@ -810,6 +810,34 @@ export const arbitrarySizeSelectors = [
     message:
       'framer transition ease 리터럴 금지 — `MOTION_EASE`(= --motion-ease 의 값 복사)를 쓴다. 램프 duration 을 받는 원소는 이징도 같은 패밀리로 간다.',
   },
+  // 2026-08-27 inline style time literals — **the third syntax of the duration rule.**
+  // The class rules above see className strings and the framer rule sees `transition={{...}}`,
+  // but a JSX `style` object was outside every detector: /motion-verify measured a raw
+  // '--architecture-flow-delay': '100ms' shipping inside a style expression with zero lint
+  // signal (finding F). The value has since moved to the stagger-token pattern
+  // (--architecture-flow-stagger in globals.css × a unitless step custom property), so the
+  // pre-enable census is 0 — enabling cost 0, lint total unchanged.
+  //
+  // Two shapes: whole-value times on timing properties and on `--*` custom-property keys
+  // (the exact F escape), and times embedded in animation/transition shorthand strings.
+  // Descendant `Literal` (not `> Literal`) covers ternary branches from day one
+  // (design-gates: direct-child selectors miss conditional branches). The `--*` key's own
+  // Literal cannot match the time regex, so the descendant form is safe there.
+  // Unitless step values (`'--x-step': depth - row`) are numbers, not time strings — clean.
+  // Template-literal times (`${i * 30}ms`) are runtime-computed, a different detector's job;
+  // see design-gates.md before widening.
+  {
+    selector:
+      'JSXAttribute[name.name="style"] Property:matches([key.name=/^(animation|transition)(Delay|Duration)$/], [key.value=/^--/]) Literal[value=/^[0-9.]+m?s$/]',
+    message:
+      '모션 시간 하드코딩 금지 — JSX style 객체 안의 리터럴 시간값(딜레이·지속시간·커스텀 프로퍼티)도 램프를 탄다. --motion-fast/base/settle 을 var() 로 참조하고, 스태거는 단위 없는 스텝 커스텀 프로퍼티에 숫자만 싣고 시간은 CSS 쪽 calc(var(--*-stagger) * step) 이 만든다.',
+  },
+  {
+    selector:
+      'JSXAttribute[name.name="style"] Property[key.name=/^(animation|transition)$/] Literal[value=/(^|[^-\\w(])[0-9.]+m?s([^-\\w]|$)/]',
+    message:
+      '모션 시간 하드코딩 금지 — JSX style 의 animation/transition 단축 문법 안에 박힌 리터럴 시간도 램프를 탄다. --motion-fast/base/settle 과 --motion-ease 를 var() 로 참조한다.',
+  },
 ];
 
 /*

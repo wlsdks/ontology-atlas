@@ -127,6 +127,36 @@ files are scoped out because their Satori canvas cannot consume CSS variables.
 Exemptions have direction: preserving a valid use must not preserve an invalid
 use that happens to share its file or value.
 
+## Inline style time values are the duration rule's third syntax
+
+The motion duration gate grew detector by detector: utility classes, animation
+shorthand in brackets, bracketed times, framer `transition={{ duration }}`
+literals. A JSX `style` object was outside all of them: on 2026-08-27
+/motion-verify measured a raw `'--architecture-flow-delay': '100ms'` shipping
+inside a style expression with zero lint signal (finding F). Class rules see
+strings and the framer rule sees one attribute name; none looked at `style`.
+
+Two selectors now live with the motion selectors in `arbitrarySizeSelectors`:
+whole-value time literals on animation/transition delay/duration properties and
+on `--*` custom-property keys (the exact escape), and times embedded in
+`animation`/`transition` shorthand strings. Descendant `Literal` covers ternary
+branches from day one; a `--*` key's own Literal cannot match the time regex,
+so the descendant form stays safe there. The pre-enable census was zero — the
+escape had already moved to the stagger-token pattern
+(`--architecture-flow-stagger` in `globals.css` multiplied by a unitless step
+custom property), which is what the message prescribes.
+
+The exemption is by shape, not by file: unitless step values
+(`'--x-step': depth - row`) are numbers, not time strings, and pass untouched.
+Template-literal times (`` `${i * 30}ms` ``) are runtime-computed and remain
+uncovered — two live today (an InsightsBar `transitionDelay` and
+StaggeredFadeIn's `cloneElement` props object, which is not even a JSX `style`
+attribute). Widening to templates needs its own census and those migrations
+first. Probe both directions: the literal shapes RED including both ternary
+branches, the tokenized `var(--motion-settle)` and unitless-step forms GREEN,
+and count the selector through `--print-config` in every block that spreads the
+array (five today).
+
 ## Hex is not globally forbidden
 
 The 2026-07-26 inventory found 127 hex appearances but zero product violations in

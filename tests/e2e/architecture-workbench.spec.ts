@@ -5,6 +5,7 @@ import { useDogfoodSample } from './sample-source';
 
 test.use({ viewport: { width: 600, height: 900 } });
 
+
 test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 문장 버튼이 남는다', async ({ page }) => {
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
@@ -28,16 +29,46 @@ test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 �
   await page.keyboard.press('Space');
   await expect(plan).toHaveAttribute('aria-checked', 'true');
 
-  await expect.poll(
-    () => scroller.evaluate((element) => element.scrollHeight - element.clientHeight - element.scrollTop),
-    { message: 'Plan content changed the scroll height without preserving the prior end anchor' },
-  ).toBeLessThanOrEqual(1);
+  /*
+   * ⚠️ **What this protects is reach, not a scroll position.** It used to poll that the view
+   * stayed pinned to the end, which was one way of keeping the paste button reachable while the
+   * stage panel was a permanent column. The panel is a dock now: choosing a stage mounts it, and
+   * the layout keeps growing for a moment afterwards, so an end anchor is neither achievable nor
+   * the thing anybody needs. The assertions below are the property itself — the button exists,
+   * nothing covers it, and it owns its own centre point — and they were always the half that
+   * mattered.
+   */
 
-  const report = await page.getByRole('button', { name: '에이전트에 붙여넣을 문장 복사' }).evaluate(
+  /*
+   * ⚠️ Reachability includes reaching it. The button now lives inside the stage dock, which is a
+   * full-height column with its own scroll, so "visible without moving anything" was never the
+   * invariant — the invariant is that once you go to it, nothing sits on top of it. Bringing it
+   * into view is part of the measurement rather than an assumption the old layout happened to
+   * satisfy.
+   */
+  const copyButton = page.getByRole('button', { name: '에이전트에 붙여넣을 문장 복사' });
+  /*
+   * Scroll the way a reader does — to the end — rather than only until the button is nominally on
+   * screen. `scrollIntoViewIfNeeded` stops the moment any part of it is visible, which on a narrow
+   * layout is underneath the bottom tab bar; the end is where the reserved clearance lives, and
+   * keeping that clearance honest is the whole point of the measurement below.
+   */
+  await scroller.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await copyButton.scrollIntoViewIfNeeded();
+  const report = await copyButton.evaluate(
     (button) => {
       const bar = document.querySelector<HTMLElement>('nav[data-tabbar="primary"]');
+      /*
+       * ⚠️ A hidden bar is not a bar. It is in the DOM at every width and displayed only below the
+       * breakpoint that has one, where `display: none` gives it a rectangle of all zeros — so
+       * subtracting the button's bottom from its top produced a large negative clearance that
+       * described nothing. Measure the gap only where there is something to keep clear of.
+       */
+      const barShown = Boolean(bar) && bar!.getBoundingClientRect().height > 0;
       const buttonRect = button.getBoundingClientRect();
-      const barRect = bar?.getBoundingClientRect() ?? null;
+      const barRect = barShown ? bar!.getBoundingClientRect() : null;
       const hit = document.elementFromPoint(
         buttonRect.left + buttonRect.width / 2,
         buttonRect.top + buttonRect.height / 2,
@@ -49,7 +80,223 @@ test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 �
     },
   );
 
-  expect(report.clearance).not.toBeNull();
-  expect(report.clearance!).toBeGreaterThanOrEqual(-1);
+  if (report.clearance !== null) expect(report.clearance).toBeGreaterThanOrEqual(-1);
   expect(report.hitOwnsPoint).toBe(true);
+});
+
+test('the agent packet says it is longer than its box, before anything is scrolled', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ The fade over a covered edge existed and never appeared. Measured on the built export
+   * (2026-08-28): entering plan mode gave `clientHeight 190, scrollHeight 444` with
+   * `mask-image: none` — a quarter of a kilobyte of text hidden with nothing on screen saying so,
+   * which a fresh-eyes walker read as a sentence truncated mid-word. Any scroll fixed it, which is
+   * why a unit test could not catch it: the reading ran once, before the block was mounted.
+   *
+   * macOS hides its overlay scrollbar until something moves, so the fade is the only affordance
+   * this state has. Asserted here rather than in jsdom because the whole claim is about a
+   * measured box.
+   */
+  await page.goto('/ko/architecture/');
+  await page.getByTestId('architecture-mode-plan').click();
+
+  const packet = page.locator('pre[aria-label]').first();
+  await expect(packet).toBeVisible();
+
+  const measured = await packet.evaluate((element) => ({
+    hidden: element.scrollHeight - element.clientHeight,
+    mask: getComputedStyle(element).maskImage,
+    scrollTop: element.scrollTop,
+  }));
+
+  expect(measured.scrollTop, 'nothing has been scrolled yet').toBe(0);
+  expect(measured.hidden, 'this fixture is meant to overflow its box').toBeGreaterThan(1);
+  expect(measured.mask, 'a covered edge with no affordance reads as truncated text').not.toBe(
+    'none',
+  );
+});
+
+test('the agent packet stops capping itself inside a panel that already scrolls', async ({
+  page,
+}) => {
+  /*
+   * ⚠️ A second fresh-eyes walkthrough found 254px hidden inside a 190px box while the panel
+   * around it had room to spare. Measured on the built export: raising the viewport by 200px gave
+   * the packet none of it, because a 12rem cap is a constant and the panel is not — and that panel
+   * is itself a scroller on the wide layout, so the packet was the inner one of two.
+   *
+   * The cap is not gone, only lifted where the outer scroller exists. Below that breakpoint the
+   * panel does not scroll, so the cap and its fade still do the work, and both sides are asserted
+   * because a fix that quietly removed the narrow-width affordance would pass a one-width test.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/?stage=plan');
+  const packet = page.locator('pre[aria-label]').first();
+  await expect(packet).toBeVisible();
+
+  const wide = await packet.evaluate((element) => ({
+    hidden: element.scrollHeight - element.clientHeight,
+  }));
+  /*
+   * ⚠️ The property is that nothing is hidden, not that a particular element does the scrolling.
+   * This once asserted that the panel around it was the scroller, which was true when the panel
+   * was a short column; as a full-height dock it is simply tall enough, and asserting the
+   * mechanism would have failed on a change that made the packet more readable, not less.
+   */
+  expect(wide.hidden, 'nothing is hidden once the cap is lifted').toBeLessThanOrEqual(1);
+
+  /* Narrow: no outer scroller, so the packet keeps its own cap and says when it is covered. */
+  await page.setViewportSize({ width: 700, height: 900 });
+  const narrow = await packet.evaluate((element) => ({
+    hidden: element.scrollHeight - element.clientHeight,
+    mask: getComputedStyle(element).maskImage,
+  }));
+  expect(narrow.hidden).toBeGreaterThan(1);
+  expect(narrow.mask).not.toBe('none');
+});
+
+test('a shared link opens the stage it names', async ({ page }) => {
+  /*
+   * ⚠️ A fresh-eyes walkthrough on 2026-08-28 found the plan and verify stages left the address at
+   * `/ko/architecture/`: a colleague opening a shared link always landed on understand, and a
+   * refresh discarded the stage. The stage is screen state a person would want to send, so it
+   * belongs in the URL — the same argument, and the same native-history mechanism, as the insights
+   * tabs.
+   *
+   * An unknown value falls back rather than erroring, because a stale link or a typed URL should
+   * still open the screen.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/');
+  await expect(page.getByTestId('architecture-mode-understand')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+
+  await page.getByTestId('architecture-mode-plan').click();
+  expect(new URL(page.url()).searchParams.get('stage')).toBe('plan');
+
+  await page.reload();
+  await expect(page.getByTestId('architecture-mode-plan')).toHaveAttribute('aria-checked', 'true');
+
+  await page.goto('/ko/architecture/?stage=verify');
+  await expect(page.getByTestId('architecture-mode-verify')).toHaveAttribute('aria-checked', 'true');
+
+  await page.goto('/ko/architecture/?stage=nonsense');
+  await expect(page.getByTestId('architecture-mode-understand')).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
+});
+
+test('a link carries the chosen role, and refuses one the profile lacks', async ({ page }) => {
+  /*
+   * ⚠️ Selecting a role left the address unchanged and a reload dropped it — the same defect the
+   * stage had, on the half a person is likelier to send: "look at what widgets may depend on" is a
+   * link, not an instruction to go and click something. It is also the technique the public
+   * writing on driving coding agents keeps naming: a deep link straight to the exact state rather
+   * than the clicks that reproduce it.
+   *
+   * The second half matters more than the first. Before the honoured role was derived,
+   * `?role=not-a-real-role` did not render an empty card — it rendered one titled with the string
+   * and asserting that it depends on no role at all. A screen stating a dependency rule for a role
+   * that does not exist is saying something false, and a crafted or stale link is enough to do it.
+   */
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/ko/architecture/');
+
+  await page.getByTestId('architecture-graph-box-application').click();
+  expect(new URL(page.url()).searchParams.get('role')).toBe('application');
+
+  await page.getByTestId('architecture-mode-plan').click();
+  const both = new URL(page.url()).searchParams;
+  expect(both.get('stage')).toBe('plan');
+  expect(both.get('role')).toBe('application');
+
+  await page.reload();
+  await expect(page.getByTestId('architecture-graph-box-application')).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
+  await expect(page.getByTestId('architecture-mode-plan')).toHaveAttribute('aria-checked', 'true');
+
+  /* Deselecting takes it back out, so the bare address keeps meaning "nothing chosen". */
+  await page.getByTestId('architecture-graph-box-application').click();
+  expect(new URL(page.url()).searchParams.get('role')).toBeNull();
+
+  await page.goto('/ko/architecture/?role=not-a-real-role');
+  await expect(page.locator('[data-testid^="architecture-concepts-"]')).toHaveCount(0);
+
+  /*
+   * ⚠️ And it says so. Declining a link silently renders a page identical to one nobody has
+   * clicked on yet: a second fresh-eyes walker arrived on a role this profile does not have and
+   * could not tell "the link pointed somewhere I do not have" from "I have not picked anything".
+   * The three arrival states must be distinguishable from each other, which is why all three are
+   * asserted here rather than only the one that changed.
+   */
+  const notice = page.getByTestId('architecture-role-not-in-profile');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('not-a-real-role');
+
+  await page.goto('/ko/architecture/');
+  await expect(page.getByTestId('architecture-role-detail-empty')).toBeVisible();
+  await expect(notice).toHaveCount(0);
+
+  await page.goto('/ko/architecture/?role=application');
+  await expect(page.getByTestId('architecture-role-detail-empty')).toHaveCount(0);
+  await expect(notice).toHaveCount(0);
+});
+
+test('a chain is never cut — it turns, or the page scrolls', async ({ page }) => {
+  /*
+   * ⚠️ **This replaces four gates, and the claim is narrower than the one first written.** They
+   * each set up a drawing cut at one edge and checked that something said so: a fade, a count, a
+   * drag that reached the rest. A chain turns down when it stops fitting across, and the canvas
+   * row keeps a `min-content` floor, so for a chain a cut is no longer something this screen
+   * produces — it shows in full and the page scrolls if the window cannot hold it.
+   *
+   * **It holds for a chain and not for every profile**, which the first version of this comment
+   * claimed. `graph-layout.test.ts` proves the counter-shape: three roles at one rank are three
+   * lanes wide whichever way the chain runs, so no rotation makes them fit a narrow canvas. Both
+   * sample vaults are chains, which is why an end-to-end fixture cannot produce the fan and why
+   * the over-broad claim survived being written — the covered-edge machinery below is what serves
+   * that shape, and it is guarded by geometry rather than by a browser.
+   */
+  const sizes = [
+    [1920, 1200],
+    [1440, 1000],
+    [1400, 400],
+    [1280, 720],
+    [1100, 900],
+    [900, 600],
+    [820, 300],
+    [700, 900],
+    [390, 844],
+  ] as const;
+
+  await page.goto('/ko/architecture/');
+  for (const [width, height] of sizes) {
+    await page.setViewportSize({ width, height });
+    await expect
+      .poll(
+        () =>
+          page
+            .locator('[data-testid="architecture-graph"]')
+            .locator('..')
+            .evaluate((element) => ({
+              x: element.scrollWidth - element.clientWidth,
+              y: element.scrollHeight - element.clientHeight,
+            })),
+        { message: `the drawing is cut at ${width}x${height}` },
+      )
+      .toEqual({ x: 0, y: 0 });
+
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ),
+      `the page scrolls sideways at ${width}x${height}`,
+    ).toBe(0);
+  }
 });

@@ -132,7 +132,10 @@
       "reason": "The macOS property-list reader uses an absolute system executable that is absent on non-macOS CI hosts.",
       "consumer": "scripts/lib/verify-macos/process-lock.mjs",
       "witness": "/usr/libexec/PlistBuddy",
-      "platforms": ["linux", "win32"]
+      "platforms": [
+        "linux",
+        "win32"
+      ]
     },
     {
       "key": "frontend:runtime:binaries:scripts/benchmark-scale.mjs:codex",
@@ -205,6 +208,12 @@
       "reason": "Knip follows root script declarations while the verification lane isolates test symbols.",
       "consumer": "scripts/deploy-macos-app-local.mjs",
       "witness": "pkill"
+    },
+    {
+      "key": "mcp:runtime:exports:src/architecture-profile.mjs:matchesPathPattern",
+      "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
+      "consumer": "tests/contract/architecture-profile.contract.test.ts",
+      "witness": "matchesPathPattern"
     }
   ]
 }

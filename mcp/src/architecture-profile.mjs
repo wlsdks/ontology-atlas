@@ -27,7 +27,7 @@ function normalizePath(value) {
   return String(value || '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/+$/, '');
 }
 
-function matchesPathPattern(path, pattern) {
+export function matchesPathPattern(path, pattern) {
   const candidate = normalizePath(path);
   const normalized = normalizePath(pattern);
   if (!normalized) return false;
@@ -83,6 +83,10 @@ function parseDependencyUsages(value) {
   return usages;
 }
 
+const GIT_REVISION_RE = /^[0-9a-f]{40}$/;
+const FOLDER_FINGERPRINT_RE = /^sha256:[0-9a-f]{64}$/;
+const MEASURED_GIT_SHORT_SHA_LENGTH = 12;
+
 export function parseArchitectureProfile(frontmatter) {
   if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
     throw new Error('architecture profile frontmatter must be an object.');
@@ -95,6 +99,32 @@ export function parseArchitectureProfile(frontmatter) {
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
+  /*
+   * ⚠️ **The retired key is refused by name, not aliased and not ignored.** Two councils
+   * independently cured the same false red — 18 type-only edges an eslint config already permitted
+   * — one with `type_only_dependencies: ruled|free` and one with `dependency_usages`, and the
+   * 2026-08-29 reconciliation kept the shipped encoding. An alias would carry two spellings of one
+   * policy through two parsers forever, for a key no profile ever wrote; ignoring it would flip
+   * that profile's verdict without a word, which is the silent change this ledger forbids.
+   */
+  if (frontmatter.type_only_dependencies !== undefined) {
+    throw new Error(
+      'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
+    );
+  }
+
+  /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
+     prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
+     shape `allow_<id>` already uses. Mirrors the web parser under the cross-surface contract. */
+  const roleSummaries = new Map(
+    Object.entries(frontmatter)
+      .filter(([key]) => key.startsWith('summary_'))
+      .map(([key, value]) => {
+        const id = key.slice('summary_'.length);
+        if (!ROLE_ID.test(id)) throw new Error(`Invalid architecture role id: ${id}.`);
+        return [id, nonBlank(value, key)];
+      }),
+  );
   const roleEntries = Object.entries(frontmatter)
     .filter(([key]) => key.startsWith('role_') && key !== 'role_order')
     .map(([key, value]) => {
@@ -109,6 +139,11 @@ export function parseArchitectureProfile(frontmatter) {
     : stringArray(frontmatter.role_order, 'role_order');
   if (roleOrder.length !== rolePaths.size || roleOrder.some((id) => !rolePaths.has(id))) {
     throw new Error('role_order must name every role exactly once.');
+  }
+  for (const summaryId of roleSummaries.keys()) {
+    if (!rolePaths.has(summaryId)) {
+      throw new Error(`summary_${summaryId} describes a role that does not exist.`);
+    }
   }
 
   const dependencyPolicy = frontmatter.dependency_policy === undefined
@@ -138,7 +173,12 @@ export function parseArchitectureProfile(frontmatter) {
     excludePaths: frontmatter.exclude_paths === undefined
       ? []
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
-    roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id) })),
+    roles: roleOrder.map((id) => {
+      const summary = roleSummaries.get(id);
+      return summary === undefined
+        ? { id, paths: rolePaths.get(id) }
+        : { id, paths: rolePaths.get(id), summary };
+    }),
     dependencyPolicy,
     dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
     allows,
@@ -242,6 +282,13 @@ export function evaluateArchitectureConformance(profile, importResult) {
   let unruledEdges = 0;
   let unknownImportUsages = 0;
   let excludedByUsage = 0;
+  const importUsageTally = { value: 0, type_only: 0, unknown: 0, missing: 0 };
+  for (const edge of edges) {
+    if (edge?.importUsage === undefined) importUsageTally.missing += 1;
+    else if (Object.hasOwn(importUsageTally, edge.importUsage)) {
+      importUsageTally[edge.importUsage] += 1;
+    } else importUsageTally.unknown += 1;
+  }
 
   for (const edge of edges) {
     // Architecture rules govern dependencies *originating* in the selected
@@ -348,11 +395,20 @@ export function evaluateArchitectureConformance(profile, importResult) {
       supportedLanguages: Array.isArray(importResult?.coverage?.supportedLanguages)
         ? importResult.coverage.supportedLanguages
         : [],
+      /*
+       * ⚠️ **A whole-scan usage receipt.** `missing` counts edges the scanner emitted with no
+       * `importUsage` at all, which is a different fact from an edge whose usage it could not
+       * classify. The record writer's refusal gate reads these: a scan that cannot tell a
+       * type-only import from a value one must not mint a durable receipt, and without this tally
+       * it cannot tell that it cannot tell. Restored at the 2026-08-29 reconciliation, where
+       * taking one side of the merge wholesale had left the gate reading a field nothing produced.
+       */
+      importUsageCounts: importUsageTally,
     },
   };
 }
 
-export function buildArchitectureBrief(profile, importResult) {
+export function buildArchitectureBrief(profile, importResult, { measured } = {}) {
   const conformance = evaluateArchitectureConformance(profile, importResult);
   const nextActions = [];
   if (conformance.violations.length > 0) {
@@ -400,5 +456,45 @@ export function buildArchitectureBrief(profile, importResult) {
       ],
     },
     nextActions,
+    ...(measured !== undefined ? { measured } : {}),
   };
+}
+
+export function buildArchitectureMeasuredStamp(inspection, { at, toolName, toolVersion } = {}) {
+  const measuredAt = at ?? new Date().toISOString();
+  if (typeof measuredAt !== 'string' || Number.isNaN(Date.parse(measuredAt))) {
+    throw new Error('measured stamp requires an ISO-8601 time.');
+  }
+  const tool = {
+    name: nonBlank(toolName, 'measured stamp tool name'),
+    version: nonBlank(toolVersion, 'measured stamp tool version'),
+  };
+  if (inspection?.kind === 'git') {
+    if (typeof inspection.revision !== 'string' || !GIT_REVISION_RE.test(inspection.revision)) {
+      throw new Error('measured stamp requires a full git commit sha from the source inspection.');
+    }
+    if (typeof inspection.dirty !== 'boolean') {
+      throw new Error('measured stamp requires a boolean git dirty flag.');
+    }
+    return {
+      at: measuredAt,
+      tool,
+      source: {
+        kind: 'git',
+        revision: inspection.revision.slice(0, MEASURED_GIT_SHORT_SHA_LENGTH),
+        dirty: inspection.dirty,
+      },
+    };
+  }
+  if (inspection?.kind === 'folder') {
+    if (typeof inspection.fingerprint !== 'string' || !FOLDER_FINGERPRINT_RE.test(inspection.fingerprint)) {
+      throw new Error('measured stamp requires a sha256: folder fingerprint from the source inspection.');
+    }
+    return {
+      at: measuredAt,
+      tool,
+      source: { kind: 'folder', fingerprint: inspection.fingerprint },
+    };
+  }
+  throw new Error('measured stamp requires a git or folder source inspection.');
 }
