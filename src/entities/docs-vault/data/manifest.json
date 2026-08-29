@@ -11,7 +11,7 @@
       "headings": [],
       "excerpt": "What a coding agent (Claude Code, Codex, or whatever comes next) has to do differently to produce a drawing somebody wants to look at. Every rule below is something that went wrong in this repository and was measured, not advice collected from a blog. Written 2026-08-28 during the /architecture canvas rebuild; add to i",
       "wordCount": 3025,
-      "updatedAt": "2026-08-28",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -426,7 +426,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The meaning, source contract, and usage rules for the pixel mascot identity. The 2026-08-28 record in DECISIONS.md owns the replacement decision; the committed PNG masters own the pixels. The pixel mascot is the primary and only shipping brand mark. It replaces the nested-hex compatibility mark in browser, PWA, Open Gr",
-      "wordCount": 959,
+      "wordCount": 975,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "DECISIONS"
@@ -440,7 +440,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Replaced th",
-      "wordCount": 80833,
+      "wordCount": 80897,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -495,7 +495,7 @@
       "headings": [],
       "excerpt": "One clip · 9 seconds · No cuts · No speed changes · No audio · No loop · Record separately in Korean/English. The implementation of the playback contract is in src/views/download/ui/DemoStage.tsx, and the asset registration section is in src/views/download/model/demo-clips.ts. What has changed: This section used to arg",
       "wordCount": 3084,
-      "updatedAt": "2026-08-28",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -975,7 +975,7 @@
       "headings": [],
       "excerpt": "This profile records the reviewed source-organization contract for the Next.js workbench. It is not an ontology node. The Ontology Map continues to describe what the codebase builds and why; this profile describes which implementation roles may depend on which lower roles. The root app/ directory owns locale-prefixed r",
       "wordCount": 94,
-      "updatedAt": "2026-08-28",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2132,7 +2132,7 @@
       "headings": [],
       "excerpt": "The human-readable Living Blueprint surface at /architecture: it keeps implementation roles primary, lets a developer move through Understand, Plan, and Verify, and produces a copyable agent handoff grounded in the reviewed profile. Each role band is a boxed layer container that lists its occupants: the source modules ",
       "wordCount": 307,
-      "updatedAt": "2026-08-27",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2284,7 +2284,7 @@
       "headings": [],
       "excerpt": "/docs page. Implementation evidence for capabilities/docs-vault-local.",
       "wordCount": 6,
-      "updatedAt": "2026-08-27",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2345,9 +2345,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. macOS and Windows x64 betas are separated into distinct platform sections within one plate, and the Windows unsigned file warning is displayed before the executable CTA.",
-      "wordCount": 32,
-      "updatedAt": "2026-08-23",
+      "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. The pre-install hero pairs the real graph object with the static raised-hand pixel mascot, while the shared gateway chrome carries the compact mark; both are state-free brand continuity and do not claim agent work. macOS and Windows x64",
+      "wordCount": 59,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2408,9 +2408,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Persistent chrome widget for gateway (uninstalled web visitors).",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Persistent chrome widget for uninstalled web visitors across the root, download, guide, and changelog surfaces. Its home link carries the compact pixel mascot and product name; this gateway identity is separate from the installed workbench rail, which intentionally begins with destinations and carries no repeated logo.",
+      "wordCount": 46,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2521,7 +2521,7 @@
       "headings": [],
       "excerpt": "/ Home entry page.",
       "wordCount": 4,
-      "updatedAt": "2026-08-27",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -3072,7 +3072,7 @@
       "headings": [],
       "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\".",
       "wordCount": 18,
-      "updatedAt": "2026-08-27",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -3286,7 +3286,7 @@
       "headings": [],
       "excerpt": "For agentic workers: REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (- [ ]) syntax for tracking. Goal: Separate the diagram from the document. /architecture becomes a horizontal layered graph of compact",
       "wordCount": 3081,
-      "updatedAt": "2026-08-28",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -3298,7 +3298,7 @@
       "headings": [],
       "excerpt": "Decisions recorded 2026-07-17. Package and runtime facts refreshed from the repository 2026-08-23. Next full review January 2027, or sooner if one of the branch conditions below actually fires. The default is to keep a stack that has been verified working. It is the same reasoning that rejected a full rewrite: a replac",
       "wordCount": 1260,
-      "updatedAt": "2026-08-28",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {

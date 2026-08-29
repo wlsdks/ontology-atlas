@@ -1,7 +1,5 @@
 'use client';
 
-import { Orbit } from 'lucide-react';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link, usePathname } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
@@ -11,6 +9,7 @@ import { stripLocalePrefix } from '@/shared/lib/nav-destination';
 import { xProfileUrl } from '@/shared/config/social-links';
 import { XMark } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
+import { BrandMark } from '@/shared/ui/brand-mark';
 
 /**
  * The top chrome shared by the gateway surfaces.
@@ -70,9 +69,15 @@ export function GatewayNav() {
           href="/"
           className={controlClass({ hoverInk: 'strong', shape: "link", className: "touch-hit-expand gap-2" })}
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-indigo-accent)]">
-            <Orbit size={ICON_SIZE.sm} />
-          </span>
+          <BrandMark
+            detail="compact"
+            size={32}
+            alt=""
+            aria-hidden="true"
+            loading="eager"
+            data-testid="gateway-brand-mark"
+            className="size-8 shrink-0"
+          />
           <span className="text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             Ontology Atlas
           </span>
