@@ -4,6 +4,8 @@
 
 Ontology Atlas captures that **layer of meaning** in a single folder of Markdown files. The file frontmatter serves as nodes and relationships. No separate database, login, or server required.
 
+A useful analogy is an **IDE for codebase meaning**. Atlas brings construction, inspection, validation, review, and maintenance of the codebase ontology into one workbench; it does not edit, build, run, or debug source code.
+
 ## Two types of readers
 
 - **Humans**: Read the map to make decisions. Planners, marketers, decision-makers, and developers all see the same picture.

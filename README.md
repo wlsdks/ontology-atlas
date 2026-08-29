@@ -586,6 +586,10 @@ own dogfood vault in [`docs/ontology/`](docs/ontology/); run
   business concept belongs when it explains what that codebase builds, why an
   implementation boundary exists, or what a change can affect. Unrelated
   knowledge management belongs in a more general tool.
+- **Not a source-code IDE.** A useful analogy is an **IDE for codebase meaning**:
+  Atlas brings construction, inspection, validation, review, and maintenance of
+  the codebase ontology into one workbench. The analogy stops there; Atlas does
+  not edit, build, run, or debug the code.
 - **Not a wiki, and not agent memory.** A wiki only people write rots the week
   it is written; a store only agents write drifts with nobody left to judge it.
   Atlas is one layer both audiences read and write, and the arbiter is a git
