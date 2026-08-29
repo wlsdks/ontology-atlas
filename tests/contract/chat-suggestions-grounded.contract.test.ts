@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { resolveStaticVaultSource } from '@/entities/docs-vault';
-import { computeVaultHealth } from '@/entities/knowledge-graph/lib/vault-health';
+import {
+  capabilitiesWithoutImplementationEvidence,
+  computeVaultHealth,
+} from '@/entities/knowledge-graph/lib/vault-health';
 import { chatSuggestions } from '@/features/acp-session/model/chat-suggestions';
 
 /**
@@ -30,15 +33,7 @@ const manifest = resolveStaticVaultSource('dogfood').manifest;
 
 function suggestionsForRealVault() {
   const health = computeVaultHealth(manifest.docs);
-  const unevidenced = manifest.docs
-    .filter((doc) => {
-      const fm = doc.frontmatter as Record<string, unknown> | undefined;
-      if (fm?.kind !== 'capability') return false;
-      const path = fm.path;
-      return !(typeof path === 'string' && path.trim().length > 0);
-    })
-    .map((doc) => doc.slug)
-    .sort();
+  const unevidenced = capabilitiesWithoutImplementationEvidence(manifest.docs);
   return { health, unevidenced, out: chatSuggestions({
     nodeCount: health.summary.nodes,
     islands: health.islands,

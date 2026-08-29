@@ -146,6 +146,54 @@ const WORK_MARKDOWN = [
 const SLASH_MENU_LIMIT = 8;
 const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
 
+interface SuggestionRowsProps {
+  heading: string;
+  testId: string;
+  centered: boolean;
+  items: readonly ChatSuggestion[];
+  labelFor: (suggestion: ChatSuggestion) => string;
+  onSelect: (suggestion: ChatSuggestion) => void;
+}
+
+/** One shared visual/keyboard grammar for empty-chat and post-turn actions. */
+function SuggestionRows({
+  heading,
+  testId,
+  centered,
+  items,
+  labelFor,
+  onSelect,
+}: SuggestionRowsProps) {
+  return (
+    <div className="grid gap-1.5" data-testid={testId}>
+      <p
+        className={cn(
+          'text-caption leading-caption text-[color:var(--color-text-quaternary)]',
+          centered && 'text-center',
+        )}
+      >
+        {heading}
+      </p>
+      {items.map((suggestion) => (
+        <RowButton
+          key={suggestion.kind}
+          size="md"
+          tone="secondary"
+          hoverInk="strong"
+          hoverSurface="lift"
+          className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
+          data-testid={`acp-chat-suggestion-${suggestion.kind}`}
+          onClick={() => onSelect(suggestion)}
+        >
+          <span className="min-w-0 break-keep">
+            {labelFor(suggestion)}
+          </span>
+        </RowButton>
+      ))}
+    </div>
+  );
+}
+
 /** A single ACP relation proposal that can be drawn on the map. Home resolves the vault slug into a real node id. */
 export interface AcpOntologyRelationPreview {
   sourceSlug: string;
@@ -482,10 +530,22 @@ export function AcpChatPanel({
     setSlashDismissed(true);
     inputRef.current?.focus();
   };
+  const chooseSuggestion = (suggestion: ChatSuggestion, allowAppAction: boolean) => {
+    if (allowAppAction && onSuggestionAction?.(suggestion)) return;
+    setDraft(t(`suggest.${suggestion.kind}.prompt`, suggestion.params));
+    inputRef.current?.focus();
+  };
   const [historyOpen, setHistoryOpen] = useState(false);
   /** Is the hand in the composer? The shortcut hint appears only then. */
   const [composerFocused, setComposerFocused] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
+  /** Whether new transcript content should keep following the tail. Updated before content grows. */
+  const transcriptPinnedToBottomRef = useRef(true);
+  const postTurnSuggestionRef = useCallback((node: HTMLElement | null) => {
+    if (!node || !transcriptPinnedToBottomRef.current) return;
+    const list = listRef.current;
+    if (list) list.scrollTop = list.scrollHeight;
+  }, []);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   /**
    * An **off-screen mirror** for measuring growth. The common trick of resetting the
@@ -574,14 +634,44 @@ export function AcpChatPanel({
     return () => window.removeEventListener('keydown', onKey, true);
   }, [historyOpen]);
 
-  // Follow new messages down. It does not interrupt a user who has scrolled up to
-  // read — it only follows while near the bottom.
-  useEffect(() => {
+  const lastUserEventIndex = events.reduce(
+    (last, event, index) => (event.kind === 'user' ? index : last),
+    -1,
+  );
+  const postTurnSuggestions = suggestions.filter(
+    (suggestion) => suggestion.kind !== 'connectSource',
+  );
+  const hasCompletedAgentAnswer = events.some(
+    (event, index) =>
+      index > lastUserEventIndex
+      && event.kind === 'agent'
+      && event.text.trim().length > 0,
+  );
+  const showPostTurnSuggestions =
+    lastUserEventIndex >= 0
+    && hasCompletedAgentAnswer
+    && status === 'ready'
+    && pending === null
+    && error === null
+    && draft.length === 0
+    && postTurnSuggestions.length > 0;
+  const postTurnSuggestionKey = showPostTurnSuggestions
+    ? JSON.stringify(postTurnSuggestions)
+    : null;
+  const postTurnSuggestionsHeld =
+    useHeldValue(
+      showPostTurnSuggestions ? postTurnSuggestions : null,
+      postTurnSuggestionKey,
+    ) ?? [];
+
+  // Follow new messages down only when the person was already following the tail.
+  // Measuring "near bottom" after a large chunk arrives mistakes the new height for
+  // a deliberate scroll-up, so `onScroll` records intent before the DOM grows.
+  useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const nearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 120;
-    if (nearBottom) list.scrollTop = list.scrollHeight;
-  }, [events, pending]);
+    if (transcriptPinnedToBottomRef.current) list.scrollTop = list.scrollHeight;
+  }, [events, pending, postTurnSuggestionKey, showPostTurnSuggestions]);
 
   /**
    * The composer **grows with the text** (owner instruction 2026-08-16: *"It should also lengthen like this after
@@ -759,7 +849,6 @@ export function AcpChatPanel({
   const lastWorkGroupId = [...transcriptItems]
     .reverse()
     .find((item) => item.kind === 'workGroup')?.id;
-
   return (
     <section
       ref={panelRef}
@@ -882,6 +971,11 @@ export function AcpChatPanel({
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
+        onScroll={(event) => {
+          const list = event.currentTarget;
+          transcriptPinnedToBottomRef.current =
+            list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+        }}
         /*
          * The transcript's spacing is **one step larger** (whitespace audit,
          * 2026-08-16). The reading text went from 12.5 to 14px while the gap stayed at
@@ -962,45 +1056,16 @@ export function AcpChatPanel({
               `chat-suggestions.ts`.
             */}
             {suggestions.length > 0 ? (
-              <div className="grid gap-1.5" data-testid="acp-chat-suggestions">
-                <p className="text-center text-caption leading-caption text-[color:var(--color-text-quaternary)]">
-                  {t('suggest.heading')}
-                </p>
-                {suggestions.map((s) => (
-                  /*
-                    A whole row being pressable is `RowButton` (2026-08-17, fixed after
-                    opening the installed app). At first `Chip` got
-                    `w-full justify-start text-left` by hand, which copies values the
-                    `row` shape already has — exactly where `design-build` warns that
-                    «passing shape through className makes the primitive pointless».
-
-                    It showed on screen too: it became a bordered full-width box and
-                    read as the same shape as the composer right below — like another
-                    input field rather than something to press.
-                  */
-                  <RowButton
-                    key={s.kind}
-                    size="md"
-                    tone="secondary"
-                    hoverInk="strong"
-                    hoverSurface="lift"
-                    /* It gets a surface at rest too. A border makes it the same shape as
-                       the composer right below (measured), and nothing at all makes it
-                       read as plain text — both confirmed on the real thing. It reuses
-                       the `overlay-1` that list rows use: zero new values. */
-                    className="rounded-chip bg-[color:var(--color-overlay-1)] px-2.5 py-1.5"
-                    data-testid={`acp-chat-suggestion-${s.kind}`}
-                    onClick={() => {
-                      if (onSuggestionAction?.(s)) return;
-                      setDraft(t(`suggest.${s.kind}.prompt`, s.params));
-                    }}
-                  >
-                    <span className="min-w-0 break-keep">
-                      {t(`suggest.${s.kind}.label`, s.params)}
-                    </span>
-                  </RowButton>
-                ))}
-              </div>
+              <SuggestionRows
+                heading={t('suggest.heading')}
+                testId="acp-chat-suggestions"
+                centered
+                items={suggestions}
+                labelFor={(suggestion) =>
+                  t(`suggest.${suggestion.kind}.label`, suggestion.params)
+                }
+                onSelect={(suggestion) => chooseSuggestion(suggestion, true)}
+              />
             ) : null}
           </div>
         ) : null}
@@ -1053,6 +1118,27 @@ export function AcpChatPanel({
             </div>
           );
         })}
+        <Surface
+          ref={postTurnSuggestionRef}
+          as="section"
+          open={showPostTurnSuggestions}
+          origin="top center"
+          role="group"
+          aria-label={t('suggest.followUpHeading')}
+          data-testid="acp-chat-post-turn-suggestions"
+          className="mt-1 border-t border-[color:var(--color-divider)] pt-3"
+        >
+          <SuggestionRows
+            heading={t('suggest.followUpHeading')}
+            testId="acp-chat-post-turn-suggestion-rows"
+            centered={false}
+            items={postTurnSuggestionsHeld}
+            labelFor={(suggestion) =>
+              t(`suggest.${suggestion.kind}.label`, suggestion.params)
+            }
+            onSelect={(suggestion) => chooseSuggestion(suggestion, false)}
+          />
+        </Surface>
       </div>
 
       {/*
@@ -1219,8 +1305,9 @@ export function AcpChatPanel({
         className="relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
       >
         {/*
-          The shortcut hint appears **only while empty** — it disappears once text
-          arrives (avoiding overlap).
+          The shortcut hint appears **only while focused and empty**. In that exact
+          state the placeholder yields too; two guidance sentences cannot own the
+          same first line.
         */}
         {composerFocused && draft.length === 0 ? (
           <span
@@ -1288,7 +1375,7 @@ export function AcpChatPanel({
           <Textarea
             ref={inputRef}
             aria-label={t('composerLabel')}
-            placeholder={t('composerPlaceholder')}
+            placeholder={composerFocused && draft.length === 0 ? '' : t('composerPlaceholder')}
             frame="bare"
             className="w-full"
             rows={COMPOSER_MIN_ROWS}

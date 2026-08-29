@@ -46,7 +46,24 @@
 - It compares the whole file rather than the version. A re-cut release keeps its
   tag while its sizes and checksums move, and a published checksum that no
   longer matches the file behind it is worse than an old version number.
+## 2026-08-29 · Completed agent turns lead into grounded next steps
 
+- The in-app ACP conversation now places up to three current-vault next steps
+  directly after a completed answer instead of hiding every recommendation once
+  the first turn begins.
+- The continuation yields while the agent is working, permission or error needs
+  attention, or the person is drafting. Choosing a row fills the composer for
+  review and editing; it never auto-sends or writes.
+- A long streamed answer now follows through to its continuation when the reader
+  was already at the transcript tail. Scrolling up deliberately still suspends
+  that follow behavior.
+- Implementation-evidence recommendations now use the same boundary as the MCP
+  maintenance plan: either a canonical `path:` or a resolved `elements:`
+  relation is sufficient. The UI says a capability is not yet linked to code
+  instead of claiming that no code exists.
+- Existing adapter-provided slash commands remain unchanged. No helper persona,
+  generic prompt catalog, Atlas-owned command, route, or persistence surface was
+  added.
 ## 2026-08-29 · Gateway identity completes the mascot rollout
 
 - Replaced the gateway chrome's remaining generic orbit mark with the compact

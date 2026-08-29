@@ -169,7 +169,14 @@ const BASELINE_HARD_CUTS = 0;
  * cannot join that file's list recorded there (the same path the permission card took
  * on 2026-08-16).
  */
-const BASELINE_APPEARING_SURFACES = 30;
+/*
+ * 30 → 31 (2026-08-29): the ACP chat's **post-turn next-step group**. It appears
+ * only after a desktop ACP session completes its latest user turn with a nonblank
+ * agent answer, and it was born as `<Surface>` with a named `role="group"`.
+ * Browser OPENERS cannot create that desktop-runtime state; widget tests cover its
+ * state/keyboard contract and installed-app evidence covers the real turn.
+ */
+const BASELINE_APPEARING_SURFACES = 31;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

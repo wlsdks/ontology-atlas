@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { VAULT_HEALTH_CASES } from '../fixtures/vault-health-cases.mjs';
-import { computeVaultHealth } from '@/entities/knowledge-graph/lib/vault-health';
+import {
+  capabilitiesWithoutImplementationEvidence,
+  computeVaultHealth,
+} from '@/entities/knowledge-graph/lib/vault-health';
 import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';
 import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';
 
@@ -85,4 +88,67 @@ describe('vault-health contract — src lib mirrors the MCP engine health verdic
       expect(checkMap(app.checks)).toEqual(checkMap(mcp.checks));
     });
   }
+
+  it('uses the maintenance-plan evidence boundary for capability suggestions', () => {
+    const docs = withUids([
+      {
+        slug: 'capabilities/no-pointer',
+        frontmatter: { kind: 'capability', title: 'No pointer' },
+      },
+      {
+        slug: 'capabilities/canonical-path',
+        frontmatter: {
+          kind: 'capability',
+          title: 'Canonical path',
+          path: 'src/canonical.ts',
+        },
+      },
+      {
+        slug: 'capabilities/resolved-element',
+        frontmatter: {
+          kind: 'capability',
+          title: 'Resolved element',
+          elements: ['elements/worker'],
+        },
+      },
+      {
+        slug: 'capabilities/raw-elements-path',
+        frontmatter: {
+          kind: 'capability',
+          title: 'Raw elements path',
+          elements: ['src/raw.ts'],
+        },
+      },
+      {
+        slug: 'capabilities/dangling-element',
+        frontmatter: {
+          kind: 'capability',
+          title: 'Dangling element',
+          elements: ['elements/missing'],
+        },
+      },
+      {
+        slug: 'elements/worker',
+        frontmatter: { kind: 'element', title: 'Worker', path: 'src/worker.ts' },
+      },
+    ]);
+    const artifact = compileOntology(
+      docs.map((doc, index) => ({ ...doc, body: '', mtime: index + 1 })),
+      { includeIndexes: true },
+    );
+    const maintenance = queryCompiledOntology(artifact, {
+      operation: 'maintenance_plan',
+      kinds: ['capability_without_evidence'],
+      limit: 20,
+    }) as { actions: Array<{ node: { slug: string } }> };
+
+    expect(capabilitiesWithoutImplementationEvidence(docs)).toEqual(
+      maintenance.actions.map((action) => action.node.slug),
+    );
+    expect(capabilitiesWithoutImplementationEvidence(docs)).toEqual([
+      'capabilities/dangling-element',
+      'capabilities/no-pointer',
+      'capabilities/raw-elements-path',
+    ]);
+  });
 });

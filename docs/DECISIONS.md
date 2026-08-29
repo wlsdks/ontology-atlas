@@ -112,6 +112,134 @@ post-write recommendation. **Revisit**: immediately after that clean run.
 
 ---
 
+## 2026-08-29 — A completed ACP answer leads to grounded next actions, never an automatic run
+
+**Convened because**: the owner asked to make the ACP conversation help a person
+who does not know what to do after creating the first ontology, then selected
+direction B: place current-vault continuations directly after the completed
+answer. This adds a user-facing surface, so both PO Council and Design Council
+were required.
+
+**Prior decisions**: 2026-08-17 (21), which allows a recommendation only when its
+fact is observed in the current vault, and (29), which gives those actions the
+existing quiet `RowButton` grammar, remain valid. Their falsifiers have not been
+observed. This record extends the same actions beyond the empty conversation; it
+does not create a second recommendation system.
+
+### PO pass
+
+**Observed phenomenon**: the existing recommendation block rendered only while
+the transcript had no events. After the first ontology-building or explanation
+turn, a ready ACP session therefore ended at an empty composer. The owner named
+that exact moment: “What do I do after creating the first ontology?”
+
+**User problem**: a coding-agent developer at the first completed ontology turn
+must invent the next prompt or remember an MCP procedure before they can inspect,
+repair, or deepen the graph. The durable ontology-to-agent loop breaks at the
+moment it should become useful.
+
+**Phenomenon/problem tests**: difference pass — removing the blank composer still
+leaves the blocked next-decision and handoff · second observation — the same
+question was already observed before the first turn in decision (21), while this
+request observes it immediately after that turn · solution independence pass —
+the problem remains under a helper, slash command, one action, or several actions.
+
+**Audience and moment**: a coding-agent developer whose connected ACP session has
+just completed a real user turn and is ready for the next instruction. **Current
+alternative**: remember Atlas tools, ask a generic “what next?”, or leave chat to
+inspect Insights, source, or raw Markdown. **Ontology value**: applicable islands,
+containment gaps, and implementation-evidence update paths remain visible after
+the answer. **Agent value**: the selected action becomes an editable,
+evidence-bound MCP request. **Simplification**: reuse the existing suggestion
+model, rows, and composer; add no persona, Atlas-owned slash catalog, route,
+persistence, ranking system, automatic send, or automatic write.
+
+**Verification**: state and keyboard tests, browser/MCP predicate parity, gate
+probe, native installed-app turn, minimum desktop window, motion measurement, and
+final current-build deployment. **Score at decision time**: Problem insight 4 ·
+User moment 4 · Differentiation 4 · Ontology value 4 · Agent value 4 ·
+Verification 3 = **23/24** (fatal zeros: none). Verification remains 3 until the
+corrected catalog is read in the current installed build.
+
+### PO Council
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify | Problem insight 4 · User moment 4 |
+| Craft | Build and verify | Verification 3, promoted only by current installed-build proof |
+| Steward | Build and verify | Ontology value 4 · Agent value 4 |
+| Wedge | Build and verify | Differentiation 4 |
+| Leverage | Build and verify | appetite: one developer day, then resume the source-hidden field trial |
+
+**Decisive disagreement**: the rows themselves are easy to copy and the bounded
+taxonomy does not prove the most important action. The approving case is narrower:
+the content comes from the local Git-backed ontology, shares an MCP maintenance
+predicate, and returns control to a reviewable draft. Nobody may call these “the
+most important next steps.”
+
+### Design Council
+
+The selected seats were Lead, System, Interaction, Motion, Workbench, and Agent
+Handoff. After one independent round and one cross-critique, all six approved:
+
+- Lead kept the answer → next action → composer hierarchy and withdrew a 390px
+  requirement because ACP is intentionally desktop-only.
+- System rejected a new quiet-row token axis for one pre-existing row treatment;
+  that requires a separate cross-product inventory and probe.
+- Interaction required a real latest user turn, excluded the app-only
+  `connectSource` action, and returned keyboard focus to the composer.
+- Motion kept one non-staggered shared `Surface`; measured entrance was about
+  200ms and exit about 133ms with no active-window stall.
+- Workbench approved the real 1040×720 minimum window with ACP at its 320px
+  minimum; rows, header, and composer stayed inside the panel.
+- Handoff required the UI evidence predicate to equal
+  `maintenance_plan(capability_without_evidence)` and the draft to preserve
+  review-before-write.
+
+**Design guardian decision**: approve direction B with existing primitives and
+values. The completed answer keeps visual priority; the recommendations are one
+quiet transcript endcap; the focused composer wins after selection. A supplied
+screenshot also proved that focused-empty placeholder copy and the keyboard hint
+occupied the same line. In that state the placeholder now yields; blur restores
+it. No mobile ACP surface is invented.
+
+### Accountable decision (owner: jinan)
+
+1. After a non-empty answer completes for the latest real user turn, show at most
+   three applicable current-vault actions immediately after that answer.
+2. Hide them while the agent works, a permission or error needs attention, or the
+   person has started a draft. An exiting group is inert.
+3. Choosing a row only fills and focuses the composer. It never sends, calls an
+   app navigation action, or writes. `connectSource` remains an empty-state app
+   action and is excluded post-turn.
+4. The implementation-evidence action uses the same rule as MCP maintenance:
+   either a canonical `path:` or a resolved `elements:` relation is sufficient.
+   Human copy says only that the capability is not yet linked to implementation
+   code; it never claims code is absent. The agent draft names the exact MCP query
+   and pauses before writing.
+5. Existing adapter-provided slash commands remain unchanged. No helper persona,
+   generic prompt library, ranking/personalization, persistence, route, schema, or
+   public MCP/CLI contract is added.
+
+**Recorded dissent**: on a large vault, the first available maintenance suggestion
+may remain unchanged and become a treadmill. One installed success does not prove
+that people choose it or that it is the best action. **Falsifier**: in five
+unfamiliar-repository sessions, three or more people ignore/delete the action and
+still type a generic “what next?”, or an approved repair leaves the same first
+suggestion unchanged without explanation. **Revisit**: measure suggestion quality
+in the next source-hidden field trial. If falsified, test a smaller single typed
+maintenance action or a grounded ordering change; do not add more helper UI.
+
+**Slice**: IN completed-turn endcap, state priority, prefill/focus, evidence
+predicate parity, copy, docs, ontology sync, and installed-app proof · OUT persona,
+new slash surface, automatic execution, ranking, persistence, mobile ACP, and
+release-pipeline work · appetite one developer day.
+
+**Status**: valid — merge remains gated on current-tree installed-app proof and
+the normal changed/full checks.
+
+---
+
 ## 2026-08-29 — A failed competency question cannot become a human gap
 
 **Convened because**: the calibrated source-hidden lane covered 53/53 claims

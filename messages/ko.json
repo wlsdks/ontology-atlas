@@ -3701,6 +3701,7 @@
     },
     "suggest": {
       "heading": "이 폴더에서 지금 할 만한 것",
+      "followUpHeading": "다음으로 이어서 할 만한 것",
       "connectSource": {
         "label": "먼저 코드 폴더 연결하기",
         "prompt": "이 프로젝트가 실제로 구현된 코드 폴더를 먼저 연결해 줘. 연결되기 전에는 온톨로지 파일을 소스 코드로 분석하지 마."
@@ -3718,8 +3719,8 @@
         "prompt": "「{slug}」 는 「{domain}」 에 속한다고 적혀 있는데 「{domain}」 쪽에는 그 노드가 없어요. 맞는지 확인하고, 맞으면 이어 줘."
       },
       "evidence": {
-        "label": "코드 근거가 없는 역량 {count}개",
-        "prompt": "「{first}」 를 포함해 코드 근거가 없는 역량이 {count}개 있어요. 각각이 실제로 어느 파일에 구현돼 있는지 찾아서 적어 줘. 못 찾으면 못 찾았다고 말해 줘."
+        "label": "구현 코드와 아직 연결되지 않은 역량 {count}개",
+        "prompt": "query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}')를 실행하고, 먼저 「{first}」 를 확인해 줘. 이 {count}개 역량에는 온톨로지 기준으로 정본 path도, 해소된 elements 관계도 없어요. 구현 근거를 찾아 가장 작은 path 또는 element 수정안을 제안해 줘. 내가 검토하기 전에는 쓰지 말고, 근거를 못 찾으면 못 찾았다고 말해 줘."
       },
       "explain": {
         "label": "지도만 보고 이 폴더 설명해 줘",
