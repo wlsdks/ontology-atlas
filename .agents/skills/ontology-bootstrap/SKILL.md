@@ -46,6 +46,21 @@ connection_info({})
 list_kinds({})
 ```
 
+Compare both roots returned by `connection_info` with the intended absolute
+vault and repository before calling `list_kinds` or reading project evidence.
+On any mismatch, stop that process immediately; do not send a harmless-looking
+read to learn whether the wrong server might still work. A source checkout that
+already exposes its own dogfood MCP is especially easy to mistake for the new
+vault.
+
+For an in-session scratch run that cannot restart in the target folder, prepare
+`scripts/rooted-mcp-read.mjs` before the first measured call. Its input names
+the absolute source-checkout JavaScript `serverPath`, absolute `vaultRoot` / `repoRoot`,
+and an ordered read request list. It runs and verifies `connection_info` first,
+exposes only read/analysis operations, and writes one transcript only after
+every read succeeds. It is not a write path; accepted plans still use the
+normal MCP writer tools after the human gate.
+
 Continue when the vault is empty, contains only starter/example nodes, or the
 user explicitly requests a rebuild. If it has 20+ curated nodes, use
 `ontology-sync` unless the user explicitly asks for re-bootstrap. This only
@@ -379,6 +394,13 @@ answered target must carry all of its required kinds. The helper blocks a
 `failed` CQ before join; express an honestly incomplete answer as `partial` or
 `unknown` with its exact gap instead of asking the person to accept a packet
 error.
+Every CQ also carries the exact object
+`unknownPolicy: { allowed: <boolean>, response: <nonblank string> }`.
+`allowed: true` permits an explicit partial/unknown/refusal gap; it never turns
+missing evidence into an answered CQ. The response states the bounded refusal
+or unknown behavior the evaluator must return when evidence cannot close the
+question. Read this shape from the helper `schema` stage instead of discovering
+it through repeated hidden-stage failures.
 
 Stop after `join` and show its generated exact acceptance request. Run `accept` only
 after the preapproved CQ owner explicitly accepts that exact request, including

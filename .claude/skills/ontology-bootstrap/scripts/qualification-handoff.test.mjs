@@ -406,6 +406,11 @@ describe('qualification handoff happy path', () => {
     assert.match(HANDOFF_SCHEMA.io.atomicity, /staged/);
     assert.match(HANDOFF_SCHEMA.quantifiers.rule, /source_bounded/);
     assert.match(HANDOFF_SCHEMA.commands.hidden.qualificationCore, /predates source-hidden evaluation/);
+    assert.deepEqual(HANDOFF_SCHEMA.commands.hidden.unknownPolicy, {
+      required: ['allowed', 'response'],
+      allowed: 'boolean; true permits an explicit partial/unknown/refusal gap, false does not',
+      response: 'nonblank refusal or bounded unknown behavior returned when evidence cannot close the CQ',
+    });
     assert.match(HANDOFF_SCHEMA.commands.audit.claimResults, /deduplicated sourceFragmentCatalog/);
     assert.deepEqual(Object.keys(HANDOFF_SCHEMA.exits).map(Number), [0, 2, 64, 65, 70, 74]);
   });

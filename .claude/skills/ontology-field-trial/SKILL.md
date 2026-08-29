@@ -41,6 +41,16 @@ mkdir vault handoff
 node <atlas>/cli/src/index.mjs init vault     # starter nodes only
 ```
 
+Before starting the clock or a fresh agent, prepare that agent's exact MCP
+binding. A session opened in the Atlas checkout may inherit the dogfood server
+even when the scratch vault has its own config. For source-checkout scratch
+runs, use the bootstrap skill's
+[rooted MCP reader](../ontology-bootstrap/scripts/rooted-mcp-read.mjs) with
+absolute server/vault/repository paths. Its automatic `connection_info` must
+match both roots before the first census or source read. A mismatch is a setup
+failure: stop the process, record the elapsed recovery cost, and never call
+`list_kinds`, `index_project`, or a semantic reader on that wrong server.
+
 ## Phase 1 — build (measures: cost)
 
 Give a **real agent session** the vault and the repo, with Atlas MCP connected,
@@ -52,6 +62,8 @@ Record:
 - **wall-clock time** from first tool call to last write
 - **nodes and relations** at the end (`node cli/src/index.mjs overview <vault>`)
 - which skill the agent used (`/ontology-bootstrap`, or none)
+- wrong-root setup attempts and recovery time, separately from valid rooted
+  calls; do not silently reset the product clock after fixing a connection
 
 A fast build is not a passing grade. It is the denominator for everything below.
 

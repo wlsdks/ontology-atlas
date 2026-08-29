@@ -87,7 +87,7 @@
     "vault:validate": "node scripts/validate-vault.mjs",
     "decisions:check": "node scripts/check-decision-record.mjs",
     "agents:check": "node cli/src/index.mjs agent-files --english-only && pnpm test:agent-skills",
-    "test:agent-skills": "node --test .agents/skills/ontology-bootstrap/scripts/qualification-handoff.test.mjs",
+    "test:agent-skills": "node --test .agents/skills/ontology-bootstrap/scripts/*.test.mjs",
     "test:vault:validate": "node --test scripts/validate-vault-script.test.mjs",
     "vault:migrate": "node scripts/migrate-vault.mjs",
     "test:vault:migrate": "node --test scripts/migrate-vault.test.mjs scripts/migrate-node-uids.test.mjs scripts/migrations/*.test.mjs",
