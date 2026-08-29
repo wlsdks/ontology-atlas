@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-26 (added the separate Architecture contract/workbench,
+> Last updated: 2026-08-29 (replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -24,6 +24,12 @@
 > **Current framing**: a local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. Product meaning stays linked to implementation evidence; people judge plain Markdown and Git diffs, and AI agents use the same typed graph.
 > **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (desktop app · CLI · MCP · Website)** — daily heavy-lift ontology work happens in the installed app / CLI / MCP; on the hosted website, `/` is the gateway until a vault is loaded, then routes to the topology map, while `/topology` remains the explicit map address and `/download` carries the current release path.
 > **Brand split**: **Ontology Atlas** is the user-facing desktop app / website brand and release asset identity. `ontology-atlas` remains the repo, CLI binary, and MCP package name.
+> **Brand identity**: one pixel mascot spans favicon, OS icons, PWA/OG, README,
+> rail, and loading. Its in-app WALK → READ → SUCCESS motion appears only from
+> verified Agent Work Visibility state; it never replaces topology kind marks.
+> The macOS app also carries a static menu-bar template with localized Open/Quit
+> actions for the existing window. It does not claim background work, and no
+> Windows notification-area surface ships from macOS-only evidence.
 
 The product is not a general-purpose ontology editor or a code index. It is a
 codebase ontology workbench. Its core user-visible loop is `init -> bootstrap ->

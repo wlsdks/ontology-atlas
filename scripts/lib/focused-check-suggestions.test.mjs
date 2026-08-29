@@ -163,6 +163,15 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('wires the concurrent-ledger resolver to its runtime test and docs-vault suite', () => {
+    const result = suggestFocusedChecks(['scripts/resolve-docs-vault-conflicts.mjs']);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test scripts/resolve-docs-vault-conflicts.test.mjs',
+      'pnpm test:docs-vault',
+    ]);
+  });
+
   it('suggests the desktop static budget measurement when bundled vault data changes', () => {
     const result = suggestFocusedChecks([
       'src/entities/docs-vault/data/gateway-content.json',

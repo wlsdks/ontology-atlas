@@ -88,8 +88,6 @@
     "frontend:runtime:exports:src/shared/lib/use-row-disclosure.ts:readDisclosureExitMs",
     "frontend:runtime:exports:src/shared/lib/validate-vault-document.ts:KNOWN_VAULT_KINDS",
     "frontend:runtime:exports:src/shared/lib/vault-shape-events.ts:BRIDGE_MIN_CHILDREN",
-    "frontend:runtime:exports:src/shared/ui/brand-mark.tsx:BRAND_DASH_ARRAY",
-    "frontend:runtime:exports:src/shared/ui/brand-mark.tsx:BRAND_MARK_VIEWBOX",
     "frontend:runtime:exports:src/shared/ui/route-focus-manager.tsx:normalizeRouteSurfacePath",
     "frontend:runtime:exports:src/shared/ui/tooltip.tsx:TooltipContent",
     "frontend:runtime:exports:src/views/docs-vault/lib/agent-files.ts:AGENT_FILE_RULES",

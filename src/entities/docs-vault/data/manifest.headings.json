@@ -2784,87 +2784,37 @@
     },
     {
       "depth": 2,
-      "text": "Current Mark — Compatibility Asset, Not the New Identity",
-      "slug": "current-mark-compatibility-asset-not-the-new-identity"
-    },
-    {
-      "depth": 3,
-      "text": "Central Hexagon — Core Concept",
-      "slug": "central-hexagon-core-concept"
-    },
-    {
-      "depth": 3,
-      "text": "Three Circular Nodes — Core Concepts and Intersections",
-      "slug": "three-circular-nodes-core-concepts-and-intersections"
-    },
-    {
-      "depth": 3,
-      "text": "Lines Connecting Nodes — Typed Relationships",
-      "slug": "lines-connecting-nodes-typed-relationships"
-    },
-    {
-      "depth": 3,
-      "text": "Nested Hexagons — Hierarchy of Knowledge",
-      "slug": "nested-hexagons-hierarchy-of-knowledge"
-    },
-    {
-      "depth": 3,
-      "text": "Dashed Layer — The Invisible Map",
-      "slug": "dashed-layer-the-invisible-map"
-    },
-    {
-      "depth": 3,
-      "text": "Outer Hexagon — Boundary of the Codebase",
-      "slug": "outer-hexagon-boundary-of-the-codebase"
-    },
-    {
-      "depth": 3,
-      "text": "The Hexagonal Form — Structure and Scalability",
-      "slug": "the-hexagonal-form-structure-and-scalability"
+      "text": "Character",
+      "slug": "character"
     },
     {
       "depth": 2,
-      "text": "Colors",
-      "slug": "colors"
+      "text": "Canonical Pixel Grids",
+      "slug": "canonical-pixel-grids"
     },
     {
       "depth": 2,
-      "text": "Size Ladder — Layering at Smaller Sizes",
-      "slug": "size-ladder-layering-at-smaller-sizes"
+      "text": "Palette Boundary",
+      "slug": "palette-boundary"
     },
     {
       "depth": 2,
-      "text": "Asset List — What and When to Use",
-      "slug": "asset-list-what-and-when-to-use"
-    },
-    {
-      "depth": 3,
-      "text": "Mark only",
-      "slug": "mark-only"
-    },
-    {
-      "depth": 3,
-      "text": "Horizontal lockup",
-      "slug": "horizontal-lockup"
-    },
-    {
-      "depth": 3,
-      "text": "App/OS",
-      "slug": "appos"
-    },
-    {
-      "depth": 3,
-      "text": "SVG vs PNG",
-      "slug": "svg-vs-png"
+      "text": "Truthful Motion",
+      "slug": "truthful-motion"
     },
     {
       "depth": 2,
-      "text": "How to build — three steps, run once by a human",
-      "slug": "how-to-build-three-steps-run-once-by-a-human"
+      "text": "Generated Assets",
+      "slug": "generated-assets"
     },
     {
       "depth": 2,
-      "text": "Do not",
+      "text": "Build Pipeline",
+      "slug": "build-pipeline"
+    },
+    {
+      "depth": 2,
+      "text": "Do Not",
       "slug": "do-not"
     },
     {
@@ -2878,6 +2828,11 @@
       "depth": 1,
       "text": "CHANGELOG",
       "slug": "changelog"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 · Pixel mascot replaces the compatibility identity",
+      "slug": "2026-08-29-pixel-mascot-replaces-the-compatibility-identity"
     },
     {
       "depth": 2,
@@ -5924,6 +5879,31 @@
       "depth": 2,
       "text": "2026-08-29 — Qualification questions are human-owned before source-hidden work",
       "slug": "2026-08-29-qualification-questions-are-human-owned-before-source-hidden-work"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — Navigation begins with the map; mascot motion yields to graph ink",
+      "slug": "2026-08-29-navigation-begins-with-the-map-mascot-motion-yields-to-graph-ink"
+    },
+    {
+      "depth": 2,
+      "text": "Design Council Verdict — pixel identity, truthful motion, and native tray",
+      "slug": "design-council-verdict-pixel-identity-truthful-motion-and-native-tray"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — The mascot may enter the macOS menu bar only as a captured, removable prototype",
+      "slug": "2026-08-29-the-mascot-may-enter-the-macos-menu-bar-only-as-a-captured-removable-prototype"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-28 — Pixel mascot replaces the compatibility mark as one raster-first identity",
+      "slug": "2026-08-28-pixel-mascot-replaces-the-compatibility-mark-as-one-raster-first-identity"
+    },
+    {
+      "depth": 2,
+      "text": "PO Council Verdict — pixel mascot identity and truthful motion",
+      "slug": "po-council-verdict-pixel-mascot-identity-and-truthful-motion"
     },
     {
       "depth": 2,
@@ -10135,8 +10115,8 @@
     },
     {
       "depth": 2,
-      "text": "Brand mark — \"Hex Constellation\" (candidate A, confirmed 2026-07-18)",
-      "slug": "brand-mark-hex-constellation-candidate-a-confirmed-2026-07-18"
+      "text": "Brand identity — pixel mascot (confirmed 2026-08-28)",
+      "slug": "brand-identity-pixel-mascot-confirmed-2026-08-28"
     },
     {
       "depth": 2,
@@ -10816,6 +10796,11 @@
       "depth": 3,
       "text": "Generated manifest determinism",
       "slug": "generated-manifest-determinism"
+    },
+    {
+      "depth": 3,
+      "text": "Concurrent ledger conflict recovery",
+      "slug": "concurrent-ledger-conflict-recovery"
     },
     {
       "depth": 2,

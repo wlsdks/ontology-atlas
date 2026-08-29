@@ -7,6 +7,32 @@
 
 ---
 
+## 2026-08-29 · Pixel mascot replaces the compatibility identity
+
+- Replaced the rejected nested-hex compatibility mark with one raster-first
+  pixel mascot family across the favicon, README lockups, Open Graph card, PWA,
+  Apple Touch, macOS `.icns`, Windows `.ico`, Tauri desktop/mobile icon trees,
+  loading state, and evidence-bound workbench presence.
+- Full, compact, and micro forms are separately authored at 64, 32, and 16px;
+  the asset baker keeps nearest-neighbour character pixels while applying the
+  platform mask at each exact physical size.
+- Added one finite WALK → READ → SUCCESS sequence driven only by verified Agent
+  Work Visibility state. The same mapping supplies the visual pose, typed
+  `data-state`, and localized accessible status. No verified state means no
+  claimed work; reduced motion keeps a static equivalent. Six poses now share
+  five synchronized 120ms travel/frame ticks, state boundaries reuse identical
+  pixels, and the 64px stage uses a measured clear lane at the map's right edge.
+- The mascot's chartreuse stays inside brand rasters. The application accent and
+  topology data palette are unchanged, and project hexagons remain data marks.
+- Added a static macOS menu-bar template built from a dedicated black/clear micro
+  mask. Its localized menu only opens the existing window or quits; it adds no
+  activity badge, animation, background-service promise, or webview tray
+  permission. Windows notification-area parity remains unshipped pending a real
+  Windows need and capture.
+- Removed the permanent rail identity after direct owner inspection of both the
+  old 16px helmet/`Atlas` caption and an enlarged compact mascot. The rail now
+  begins with destinations; platform icons and truthful runtime poses carry the
+  identity without competing with navigation.
 ## 2026-08-29 · One reviewed construction ends without hidden repair
 
 - The next fresh construction now passes its first persisted audit without body

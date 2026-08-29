@@ -81,5 +81,5 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
       },
       "implPath": "mcp/src"
     },
-    "vaultNodeCount": 88
+    "vaultNodeCount": 90
   } as const;

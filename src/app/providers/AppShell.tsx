@@ -25,6 +25,7 @@ import { useLocalVault } from "@/features/docs-vault-local";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
 import { useInstallNotice } from "@/features/acp-doctor/model/use-install-notice";
+import { AgentMascotPresence } from "@/features/agent-activity";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";
 
@@ -185,6 +186,12 @@ function ShellColumn({ children }: { children: ReactNode }) {
           hook does nothing on its own, so there is no branch here — a condition in two
           places lets one drift. */}
       <AppUpdateSurface />
+
+      {/* One persistent, non-interactive mascot journey. It reads the same verified
+          Agent Work Visibility projection as the activity surface; silence never
+          becomes invented work. AppShell owns it so route changes cannot restart the
+          sequence or remount a second copy. */}
+      <AgentMascotPresence />
     </div>
   );
 }

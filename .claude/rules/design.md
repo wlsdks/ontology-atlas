@@ -35,8 +35,8 @@ panels. These values are fixed; divergence is a defect, not taste.
 
 - Chrome pills and tiles are **36px** through `--chrome-tile-size`; chrome labels
   use **`text-label` (11px)**.
-- Rail icons are one **20px** step through `--app-nav-rail-icon-size`; only the
-  logo is 26px.
+- Rail icons are one **20px** step through `--app-nav-rail-icon-size`. The rail
+  starts with destinations and carries no separate brand mark or wordmark.
 - Do not scale at widths of 1920px or above. At 2400px and above, 1.1× is allowed;
   fractional text scaling below that blurs rasterization.
 - Body type is self-hosted **Pretendard Variable**. Inter was removed after its
@@ -73,13 +73,19 @@ ramp.”
 
 - Use an achromatic palette plus one indigo family. This restraint prevents the
   generic AI-generated SaaS look.
+- The pixel mascot is the one bounded identity exception: its committed raster
+  pixels may contain near-black, ivory, chartreuse `#C6F000`, and one gray.
+  Chartreuse never becomes a CSS token, control/status/data colour, or a second
+  application palette. See `docs/BRAND.md` and the 2026-08-28 decision.
 - Signal tones are warning amber, error red, and success emerald, each with one
   solid dot and three translucent surface/edge/text steps. Success means a real
   successful state such as connected, confirmed, or complete—not decoration.
 - Hub nodes and Layer 0 containers may use hub amber `#d4b478`; a spine view may
   show one hub ring and one Layer 0 container. Documented, mode-bounded exceptions
   are the single agent-focus ring and recent-change spotlight.
-- Amber has four distinct roles: hub, rail logo, kind data, and footprint trail.
+- Amber has three distinct roles: hub, kind data, and footprint trail. The rail
+  begins with destinations and carries no brand mark; chartreuse mascot pixels
+  therefore do not spend the rail or data-colour budget.
   Footprints use `--color-footprint-trail` (`#e8c47a`), never the hub value, and
   appear only while the trail popover is open. The footprint trail may use yellow
   or indigo, not an arbitrary colour picker. Gate:
