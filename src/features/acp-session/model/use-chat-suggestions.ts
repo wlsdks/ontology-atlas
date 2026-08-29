@@ -6,7 +6,7 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { useVaultHealth } from '@/features/vault-ontology/model/use-vault-health';
-import type { VaultManifest } from '@/entities/docs-vault';
+import { capabilitiesWithoutImplementationEvidence } from '@/entities/knowledge-graph/lib/vault-health';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
 
@@ -18,26 +18,6 @@ import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
  * `useVaultConceptFacts`, and `useVaultDocFreshnessIndex` already use — not a new copy but the same
  * source, `useStaticVaultSource`.
  */
-
-/**
- * Capabilities with no code evidence. `path:` is the one line saying "where is this capability
- * implemented", and when empty that node exists only on the map and not in the code.
- *
- * Only capabilities are examined — a domain has no code location by nature (it is a business area),
- * and an element's location is its whole reason to exist, so it is almost never empty.
- */
-function unevidencedCapabilities(manifest: VaultManifest | null): string[] {
-  if (!manifest) return [];
-  const out: string[] = [];
-  for (const doc of manifest.docs) {
-    const fm = doc.frontmatter as Record<string, unknown> | undefined;
-    if (fm?.kind !== 'capability') continue;
-    const path = fm.path;
-    if (typeof path === 'string' && path.trim().length > 0) continue;
-    out.push(doc.slug);
-  }
-  return out.sort();
-}
 
 export function useChatSuggestions(
   sourceState: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects' = 'bound',
@@ -58,7 +38,9 @@ export function useChatSuggestions(
         nodeCount: health.summary.nodes,
         islands: health.islands,
         missingContainment: health.missingContainment,
-        unevidenced: unevidencedCapabilities(manifest),
+        unevidenced: manifest
+          ? capabilitiesWithoutImplementationEvidence(manifest.docs)
+          : [],
         sourceState,
       }),
     [health, manifest, sourceState],

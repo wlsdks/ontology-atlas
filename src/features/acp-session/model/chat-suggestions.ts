@@ -31,7 +31,7 @@ export type SuggestionKind =
   | 'island'
   /** A node points at a domain but the domain does not point back */
   | 'containment'
-  /** There is a capability with no code evidence (`path:`) */
+  /** A capability has neither canonical `path:` nor a resolved `elements:` implementation relation */
   | 'evidence'
   /** The one that is always there — have it explain this folder from the map alone */
   | 'explain';
@@ -47,7 +47,7 @@ export interface SuggestionInput {
   /** Groups that fell outside the main cluster (`VaultHealthResult.islands`) */
   islands: readonly (readonly string[])[];
   missingContainment: readonly { slug: string; domain: string }[];
-  /** Capability slugs with an empty `path:` */
+  /** Capability slugs matching maintenance_plan's capability_without_evidence predicate */
   unevidenced: readonly string[];
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
 }

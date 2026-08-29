@@ -1100,9 +1100,14 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
 
     // No hand there yet → absent.
     expect(screen.queryByTestId('acp-chat-hint')).toBeNull();
+    expect(box).toHaveAttribute('placeholder', 'composerPlaceholder');
 
     fireEvent.focus(box);
     expect(screen.getByTestId('acp-chat-hint')).toBeInTheDocument();
+    expect(
+      box,
+      '빈 작성 칸에서 placeholder 와 단축키 안내가 같은 줄을 차지한다',
+    ).toHaveAttribute('placeholder', '');
 
     // One character makes it disappear — no chance to overlap.
     fireEvent.change(box, { target: { value: '가' } });
@@ -1117,6 +1122,7 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
 
     fireEvent.blur(box);
     expect(screen.queryByTestId('acp-chat-hint')).toBeNull();
+    expect(box).toHaveAttribute('placeholder', 'composerPlaceholder');
   });
 
   it('머리의 아이콘 버튼은 이름을 갖고, 작지 않다', async () => {
@@ -1622,6 +1628,195 @@ describe('빈 대화의 추천 — 이 폴더에 대한 것만 그린다', () =>
       params: { count: 1 },
     });
     expect(screen.getByRole('textbox')).toHaveValue('');
+  });
+});
+
+describe('완료된 대화의 추천 — 답변에서 다음 행동으로 잇는다', () => {
+  async function completeTurn() {
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '첫 온톨로지를 만들어 줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByText('첫 온톨로지를 만들어 줘')).toBeInTheDocument());
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: '첫 온톨로지가 준비됐어요.' },
+        },
+      },
+    });
+    await waitFor(() => expect(screen.getByText('첫 온톨로지가 준비됐어요.')).toBeInTheDocument());
+  }
+
+  it('답변이 끝난 뒤에만 추천을 붙이고, 눌러도 자동 전송하지 않는다', async () => {
+    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await completeTurn();
+
+    expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+
+    const endcap = await screen.findByTestId('acp-chat-post-turn-suggestions');
+    const answer = screen.getByText('첫 온톨로지가 준비됐어요.');
+    expect(
+      Boolean(answer.compareDocumentPosition(endcap) & Node.DOCUMENT_POSITION_FOLLOWING),
+      '다음 행동이 최신 답변보다 앞에 그려졌다',
+    ).toBe(true);
+    expect(endcap).toHaveTextContent('suggest.followUpHeading');
+
+    const promptsBeforeChoice = bridge.sent.filter((message) => message.method === 'session/prompt').length;
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-explain'));
+    expect(screen.getByRole('textbox')).toHaveValue('suggest.explain.prompt:{"count":12}');
+    expect(screen.getByRole('textbox')).toHaveFocus();
+    expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(
+      promptsBeforeChoice,
+    );
+  });
+
+  it('답변 전 바닥에 있으면 긴 답변과 추천 끝까지 따라가되, 직접 위로 올리면 멈춘다', async () => {
+    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '긴 답변을 줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByText('긴 답변을 줘')).toBeInTheDocument());
+
+    const transcript = screen.getByTestId('acp-chat-transcript');
+    let contentHeight = 400;
+    Object.defineProperties(transcript, {
+      clientHeight: { configurable: true, get: () => 200 },
+      scrollHeight: {
+        configurable: true,
+        get: () =>
+          contentHeight
+          + (screen.queryByTestId('acp-chat-post-turn-suggestions') ? 120 : 0),
+      },
+      scrollTop: { configurable: true, writable: true, value: 200 },
+    });
+    fireEvent.scroll(transcript);
+
+    contentHeight = 1_000;
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: '아주 긴 첫 조각' },
+        },
+      },
+    });
+    await screen.findByText('아주 긴 첫 조각');
+    await waitFor(() => expect(transcript.scrollTop).toBe(1_000));
+
+    contentHeight = 1_200;
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+    await waitFor(() => expect(transcript.scrollTop).toBe(1_320));
+
+    transcript.scrollTop = 300;
+    fireEvent.scroll(transcript);
+    contentHeight = 1_400;
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: ' 위로 읽는 동안 온 둘째 조각' },
+        },
+      },
+    });
+    await screen.findByText('아주 긴 첫 조각 위로 읽는 동안 온 둘째 조각');
+    expect(transcript.scrollTop).toBe(300);
+  });
+
+  it('사용자가 쓰거나 권한을 검토하는 동안은 추천이 물러난다', async () => {
+    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '내가 직접 쓸 말' } });
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull());
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '' } });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+
+    emit(permissionRequest('/somewhere/else/notes.md', 91));
+    await screen.findByTestId('acp-permission-card');
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull());
+  });
+
+  it('이전 답변을 새 무응답 turn의 다음 행동처럼 붙이지 않는다', async () => {
+    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '두 번째 질문' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByText('두 번째 질문')).toBeInTheDocument());
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+
+    await waitFor(() => expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull());
+  });
+
+  it('새 turn이 실패하면 이전 추천보다 오류와 복구 경로를 우선한다', async () => {
+    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '두 번째 질문' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    const call = [...bridge.sent].reverse().find((message) => message.method === 'session/prompt');
+    emit({ jsonrpc: '2.0', id: call?.id, error: { code: -1, message: 'adapter died' } });
+
+    await screen.findByTestId('acp-chat-error');
+    const exiting = screen.getByTestId('acp-chat-post-turn-suggestions');
+    expect(exiting).toHaveAttribute('data-surface-state', 'exiting');
+    expect(exiting).toHaveAttribute('inert');
+    await waitFor(() =>
+      expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull(),
+    );
+  });
+
+  it('사용자 질문 없이 온 에이전트 문장을 완료 turn으로 꾸미지 않는다', async () => {
+    await bootSession({ suggestions: [{ kind: 'explain', params: { count: 12 } }] });
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'agent_message_chunk',
+          content: { text: '먼저 온 에이전트 문장' },
+        },
+      },
+    });
+    await waitFor(() => expect(screen.getByText('먼저 온 에이전트 문장')).toBeInTheDocument());
+    expect(screen.queryByTestId('acp-chat-post-turn-suggestions')).toBeNull();
+  });
+
+  it('앱 이동 행동은 post-turn에서 빼고 프롬프트 선택은 앱 callback 없이 작성칸으로 보낸다', async () => {
+    const onSuggestionAction = vi.fn((suggestion: { kind: string }) => suggestion.kind === 'connectSource');
+    await bootSession({
+      suggestions: [
+        { kind: 'connectSource', params: { count: 1 } },
+        { kind: 'explain', params: { count: 12 } },
+      ],
+      onSuggestionAction,
+    });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+
+    await screen.findByTestId('acp-chat-post-turn-suggestions');
+    expect(screen.queryByTestId('acp-chat-suggestion-connectSource')).toBeNull();
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-explain'));
+    expect(onSuggestionAction).not.toHaveBeenCalled();
+    expect(screen.getByRole('textbox')).toHaveValue('suggest.explain.prompt:{"count":12}');
+    expect(screen.getByRole('textbox')).toHaveFocus();
   });
 });
 

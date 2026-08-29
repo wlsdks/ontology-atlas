@@ -146,8 +146,15 @@ const MIN_RULES_PASSED = 15;
  * keyboard handling, review step, and pre-write pause are carried by
  * `MeaningEditorPanel.test.tsx`, the creation swap by `CreateNodeForm.test.tsx`, and
  * the installed-app verification opens the real surfaces.
+ *
+ * 30 → 31 (2026-08-29): the ACP chat's post-turn next-step group. It cannot fit
+ * this static browser OPENERS grammar: the surface needs the desktop ACP bridge,
+ * an established session, and a completed latest turn with a nonblank agent
+ * answer. `AcpChatPanel.test.tsx` covers its named group, keyboard-reachable rows,
+ * state suppression, and prefill-without-send contract; the installed app carries
+ * the actual 1512px turn and screenshot proof.
  */
-const APPEARING_SURFACES_IN_SOURCE = 30;
+const APPEARING_SURFACES_IN_SOURCE = 31;
 
 interface Opener {
   readonly name: string;

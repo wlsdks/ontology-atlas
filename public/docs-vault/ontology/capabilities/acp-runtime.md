@@ -10,7 +10,7 @@ elements: []
 path: src-tauri/src/acp.rs
 created_by: human
 dependencies: [capabilities/mcp-server]
-relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, obtaining the vault tool (src/features/acp-session/model/vault-mcp-server.ts). Thus, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
 relates: [capabilities/reviewed-ontology-writing]
 ---
 
@@ -21,7 +21,7 @@ The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors alre
 
 ## Behaviour Contract
 
-Ten things this capability actually does:
+Eleven things this capability actually does:
 
 1. **Detection.** The executor status of this device is divided into five categories: `ready`, `cli-missing`, `node-missing`, `uvx-missing`, and `binary-missing`. The reason for not collapsing the status into just "installed/not installed" is that the user's required actions differ for each state.
 2. **The list comes from a committed snapshot.** The ACP registry is fetched once at build time and saved to `src-tauri/src/acp-registry.json`; icons are also bundled into `public/acp-icons/`. The committed registry and icons require no runtime network lookup. Starting a selected coding agent is a separate boundary: that agent may communicate with its own provider.
@@ -34,6 +34,7 @@ Ten things this capability actually does:
 8. **Map synchronization.** Compares the typed input of actually called Atlas `get_concept` and `find_path` in the current user turn against the current vault's slug table, then moves to the same HomePage node focus or exact shortest path lens. Natural language answers or non-existent slugs are not used as map movement grounds. The actual order in which the Claude adapter completes streamed input with status-less `tool_call_update.rawInput` after a pending `tool_call` is merged into the same tool action before determining intent.
 9. **Inset conversation surface.** Maintains the outer flex dock that actually yields map width, but displays the ACP/API-key conversation surface visible to the user within the top/bottom/right spacing ramp. It shares INDEX/node inspector's existing panel radius, border, surface, and shadow so it doesn't look like a black wall covering the window height without boundaries. The map control rail on the left of the panel is also pulled to 12px on the opposite side of the seam, limiting the gap between them to 24px, and moves with the same clock/curve as dock reflow.
 10. **First frame connection state.** Separates conversation scaffold from session booting; header, empty guidance, vault-derived suggestions, and composer are drawn from the first frame the dock opens. After the remaining 240ms landing of the camera live spring after width reflow, ACP start is allowed; in the meantime, only the spinner and `connecting` text of the same status badge change. For large panels, overlay fade is used without overlapping scale/translate chrome motion so that layout reflow becomes the primary action.
+11. **Grounded post-turn continuation.** After a non-empty agent answer completes for the latest real user turn, the same maximum-three current-vault suggestions return directly beneath that answer. If the reader was already following the transcript tail, large streamed chunks continue through the endcap; deliberately scrolling up suspends that follow behavior. They yield while the agent is working, a permission or error needs attention, or the person is drafting. Choosing a prompt suggestion only fills and focuses the composer for review; it never sends or writes, and the app-only source-connection action is excluded. The implementation-evidence suggestion follows the same boundary as `maintenance_plan`: either a canonical `path:` or a resolved `elements:` relation is sufficient, so a missing vault link is never described as absent code.
 
 ## Boundaries
 - **The "Agents" destination (`/agents/`) and the conversation panel on the right of the home map are the current user surface.** Selecting a measured runtime for isolation gates opens `HomePage` which passes the current vault as working folder and MCP server to `AcpChatPanel`. "Open chat with this tool" at the destination puts the selected runtime id into a one-shot queue in sessionStorage, moves to the map, and is consumed only when HomePage confirms the same runtime's readiness. Paths that only send window events without subscribers in `/agents` are not used.

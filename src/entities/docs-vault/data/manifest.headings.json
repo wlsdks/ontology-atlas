@@ -2928,6 +2928,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-29 · Completed agent turns lead into grounded next steps",
+      "slug": "2026-08-29-completed-agent-turns-lead-into-grounded-next-steps"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-29 · Gateway identity completes the mascot rollout",
       "slug": "2026-08-29-gateway-identity-completes-the-mascot-rollout"
     },
@@ -5964,6 +5969,31 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-29 — A completed ACP answer leads to grounded next actions, never an automatic run",
+      "slug": "2026-08-29-a-completed-acp-answer-leads-to-grounded-next-actions-never-an-automatic-run"
+    },
+    {
+      "depth": 3,
+      "text": "PO pass",
+      "slug": "po-pass"
+    },
+    {
+      "depth": 3,
+      "text": "PO Council",
+      "slug": "po-council"
+    },
+    {
+      "depth": 3,
+      "text": "Design Council",
+      "slug": "design-council"
+    },
+    {
+      "depth": 3,
+      "text": "Accountable decision (owner: jinan)",
+      "slug": "accountable-decision-owner-jinan"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-29 — A failed competency question cannot become a human gap",
       "slug": "2026-08-29-a-failed-competency-question-cannot-become-a-human-gap"
     },
@@ -6355,7 +6385,7 @@
     {
       "depth": 3,
       "text": "PO Pass",
-      "slug": "po-pass"
+      "slug": "po-pass-2"
     },
     {
       "depth": 2,

@@ -116,6 +116,7 @@ interface CompiledNode {
   slug: string;
   kind: string | undefined;
   domain: unknown;
+  path: unknown;
 }
 
 // mcp/src/ontology-compiler.mjs isPathLikeGraphRef
@@ -250,6 +251,7 @@ function compile(input: readonly VaultHealthDoc[]): CompiledGraph {
     slug: doc.slug,
     kind: typeof doc.frontmatter?.kind === 'string' ? (doc.frontmatter.kind as string) : undefined,
     domain: doc.frontmatter?.domain,
+    path: doc.frontmatter?.path,
   }));
 
   const outgoing = new Map<string, CompiledEdge[]>();
@@ -458,6 +460,33 @@ function dependencyCycleCount(graph: CompiledGraph): number {
     dfs(slug, slug, [slug], new Set([slug]), backDist);
   }
   return cycleKeys.size;
+}
+
+/**
+ * Capability slugs whose vault record cannot lead an agent to implementation.
+ * This is the browser-side twin of `maintenance_plan`'s
+ * `capability_without_evidence` predicate: either one canonical `path:` or one
+ * resolved `elements:` relation is sufficient. A dangling element ref or a raw
+ * source path placed inside `elements:` is not.
+ */
+export function capabilitiesWithoutImplementationEvidence(
+  docs: readonly VaultHealthDoc[],
+): string[] {
+  const graph = compile(docs);
+  const withResolvedElement = new Set(
+    graph.edges
+      .filter((edge) => edge.via === 'elements' && edge.resolved)
+      .map((edge) => edge.from),
+  );
+
+  return graph.nodes
+    .filter((node) => node.kind === 'capability')
+    .filter((node) => {
+      const hasPath = typeof node.path === 'string' && node.path.trim().length > 0;
+      return !hasPath && !withResolvedElement.has(node.slug);
+    })
+    .map((node) => node.slug)
+    .sort();
 }
 
 /**

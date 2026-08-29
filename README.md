@@ -263,6 +263,10 @@ folder.
 - **Then prove the connection from the agent's folder.** The final step gives
   the exact `mcp-verify` check; that check starts the bundled MCP server, reads
   the active vault, and reports the real result or failure.
+- **The conversation does not stop at the first map.** After a completed turn,
+  up to three next steps derived from the current vault appear directly below
+  the answer. Choosing one fills the composer for review and editing; it never
+  sends or writes automatically.
 - **Nothing stays running.** The server speaks stdio; your agent starts it when
   it needs it and it exits afterwards. The MCP server opens no port and makes no
   network request; the coding agent itself may use its provider when you ask it to.
