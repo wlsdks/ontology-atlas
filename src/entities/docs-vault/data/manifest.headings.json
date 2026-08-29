@@ -2918,6 +2918,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-29 · The architecture screen is a drawing, and the drawing is measured",
+      "slug": "2026-08-29-the-architecture-screen-is-a-drawing-and-the-drawing-is-measured"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 · A release cannot start while the download page names an older build",
+      "slug": "2026-08-29-a-release-cannot-start-while-the-download-page-names-an-older-build"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-29 · Gateway identity completes the mascot rollout",
       "slug": "2026-08-29-gateway-identity-completes-the-mascot-rollout"
     },
