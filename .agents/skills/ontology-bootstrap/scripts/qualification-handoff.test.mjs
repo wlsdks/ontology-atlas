@@ -287,6 +287,45 @@ function auditRows(manifest) {
   }));
 }
 
+function sharedFragmentAuditRows(manifest) {
+  const fragment = {
+    sourceRef: 'src/route.js',
+    startLine: 1,
+    endLine: 2,
+    digest: digestJson({ sourceRef: 'src/route.js', lines: [1, 2] }),
+  };
+  return manifest.map((claim) => ({
+    claimId: claim.id,
+    status: 'verified',
+    citations: claim.witnessRefs.map((witnessRef) => ({
+      witnessRef,
+      status: 'verified',
+      sourceFragments: [fragment],
+    })),
+  }));
+}
+
+function catalogAuditRows(manifest) {
+  return {
+    sourceFragmentCatalog: [{
+      id: 'fragment:route-lines-1-2',
+      sourceRef: 'src/route.js',
+      startLine: 1,
+      endLine: 2,
+      digest: digestJson({ sourceRef: 'src/route.js', lines: [1, 2] }),
+    }],
+    claimResults: manifest.map((claim) => ({
+      claimId: claim.id,
+      status: 'verified',
+      citations: claim.witnessRefs.map((witnessRef) => ({
+        witnessRef,
+        status: 'verified',
+        sourceFragmentRefs: ['fragment:route-lines-1-2'],
+      })),
+    })),
+  };
+}
+
 function sealedFixture(plan = reviewPlan()) {
   const rawCandidate = candidate(plan);
   const rawManifest = manifestFor(plan);
@@ -367,6 +406,7 @@ describe('qualification handoff happy path', () => {
     assert.match(HANDOFF_SCHEMA.io.atomicity, /staged/);
     assert.match(HANDOFF_SCHEMA.quantifiers.rule, /source_bounded/);
     assert.match(HANDOFF_SCHEMA.commands.hidden.qualificationCore, /predates source-hidden evaluation/);
+    assert.match(HANDOFF_SCHEMA.commands.audit.claimResults, /deduplicated sourceFragmentCatalog/);
     assert.deepEqual(Object.keys(HANDOFF_SCHEMA.exits).map(Number), [0, 2, 64, 65, 70, 74]);
   });
 
@@ -508,6 +548,26 @@ describe('qualification handoff happy path', () => {
       concepts: plan.concepts.length,
       relations: plan.relations.length,
     });
+  });
+
+  test('audit fragment catalog deduplicates input while preserving the legacy output exactly', () => {
+    const sealed = sealedFixture();
+    const base = {
+      ...sealed,
+      access: access('source_aware_auditor', 'agent:audit', '2026-01-02T03:05:00.000Z', '2026-01-02T03:15:00.000Z'),
+      quantifierClassifications: sealed.quantifierClassifications,
+      sourceDigest: sealed.candidate.sourceDigest,
+    };
+    const legacyRows = sharedFragmentAuditRows(sealed.manifest);
+    const catalog = catalogAuditRows(sealed.manifest);
+    const legacy = buildAuditFragment({ ...base, claimResults: legacyRows });
+    const deduplicated = buildAuditFragment({ ...base, ...catalog });
+
+    assert.deepEqual(deduplicated, legacy);
+    assert.ok(
+      Buffer.byteLength(canonicalJson(catalog)) < Buffer.byteLength(canonicalJson({ claimResults: legacyRows })),
+      'catalog input should be smaller than repeated fragment objects',
+    );
   });
 
   test('derived seal paths reproduce the direct candidate without copying analyzer output', async () => {
@@ -956,6 +1016,45 @@ describe('hidden and audit RED probes', () => {
     });
     assert.equal(audit.receipt.verdict, 'failed');
     assert.ok(audit.receipt.failures.length >= 2);
+  });
+
+  test('audit fragment catalog rejects missing, foreign, duplicate, mixed, and unused evidence refs', () => {
+    const sealed = sealedFixture();
+    const catalog = catalogAuditRows(sealed.manifest);
+    const base = {
+      ...sealed,
+      access: access('source_aware_auditor', 'agent:audit', '2026-01-02T03:05:00.000Z', '2026-01-02T03:15:00.000Z'),
+      quantifierClassifications: sealed.quantifierClassifications,
+      sourceDigest: sealed.candidate.sourceDigest,
+    };
+
+    assert.throws(
+      () => buildAuditFragment({ ...base, claimResults: catalog.claimResults }),
+      /sourceFragmentCatalog/,
+    );
+
+    const foreign = clone(catalog);
+    foreign.claimResults[0].citations[0].sourceFragmentRefs[0] = 'fragment:foreign';
+    assert.throws(() => buildAuditFragment({ ...base, ...foreign }), /unknown source fragment ref/);
+
+    const duplicate = clone(catalog);
+    duplicate.sourceFragmentCatalog.push({ ...duplicate.sourceFragmentCatalog[0], id: 'fragment:duplicate' });
+    assert.throws(() => buildAuditFragment({ ...base, ...duplicate }), /duplicate source fragment/);
+
+    const mixed = clone(catalog);
+    mixed.claimResults[0].citations[0].sourceFragments = [{
+      sourceRef: 'src/route.js',
+      digest: digestJson({ mixed: true }),
+    }];
+    assert.throws(() => buildAuditFragment({ ...base, ...mixed }), /exactly one of sourceFragments or sourceFragmentRefs/);
+
+    const unused = clone(catalog);
+    unused.sourceFragmentCatalog.push({
+      id: 'fragment:unused',
+      sourceRef: 'src/unused.js',
+      digest: digestJson({ unused: true }),
+    });
+    assert.throws(() => buildAuditFragment({ ...base, ...unused }), /unreferenced source fragment/);
   });
 });
 
