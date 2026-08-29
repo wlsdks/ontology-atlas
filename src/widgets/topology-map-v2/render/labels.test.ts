@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 
+import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 import {
-  computeDomainWatermarkAlpha,
   computeLabelAlpha,
-  DOMAIN_LABEL_HANDOFF,
   measureLabelVerticalMetrics,
   resolveLabelBaselineY,
   resolveFlippedLabelBaselineY,
@@ -23,9 +22,9 @@ import {
  * existed as an ultra-low-contrast far-field watermark; ego-revealed
  * children (capability/element) drew as unlabeled dark circles; the
  * selected/hovered node's own name never got a contrast floor. New contract:
- * - `project`/`domain`: readable at EVERY zoom band (not gated by farT at
- *   all here — the domain far-field spaced-caps watermark is a SEPARATE
- *   decorative effect drawn in `draw()`, not part of this alpha function).
+ * - `project`/`domain`: readable at EVERY zoom band, farT included. The
+ *   domain's far-field fade and the tracked-caps watermark it handed to were
+ *   retired on 2026-08-29 (`docs/DECISIONS.md`).
  * - `capability`/`element`: eligibility ramps with the node's own
  *   `revealAlpha` (tier alpha, or the ego-reveal ramp when exempted) — 「If you can click it, you can read it」 (if you can click it, you can read it).
  * - `egoState === "center"` (selected) or `isHovered`: ALWAYS 1, any kind,
@@ -33,38 +32,73 @@ import {
  * - `egoState === "dim"`: always 0, regardless of anything else.
  */
 describe("computeLabelAlpha", () => {
-  const base = { farT: 0, egoState: "normal" as const, isHovered: false, revealAlpha: 1 };
+  const base = { egoState: "normal" as const, isHovered: false, revealAlpha: 1 };
 
-  it("project is always fully visible, at any farT/revealAlpha", () => {
-    expect(computeLabelAlpha({ ...base, kind: "project", farT: 0 })).toBe(1);
-    expect(computeLabelAlpha({ ...base, kind: "project", farT: 1 })).toBe(1);
+  it("project is always fully visible, at any revealAlpha", () => {
+    expect(computeLabelAlpha({ ...base, kind: "project" })).toBe(1);
     expect(computeLabelAlpha({ ...base, kind: "project", revealAlpha: 0 })).toBe(1);
   });
 
-  it("domain reads at circuit (farT=0) and hands the anchor over at DOMAIN_LABEL_HANDOFF", () => {
-    expect(computeLabelAlpha({ ...base, kind: "domain", farT: 0 })).toBe(1);
-    expect(computeLabelAlpha({ ...base, kind: "domain", farT: DOMAIN_LABEL_HANDOFF / 2 })).toBeCloseTo(0.5, 6);
-    expect(computeLabelAlpha({ ...base, kind: "domain", farT: DOMAIN_LABEL_HANDOFF })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "domain", farT: 1 })).toBe(0);
+  /*
+   * ⚠️ **The spine names itself at every altitude** (2026-08-29). The domain
+   * label used to fade to 0 by farT 0.5, handing its anchor to a tracked-caps
+   * watermark. Measured on the installed app, the storefront vault's resting
+   * camera painted ~90 circles and passively named exactly one, the project —
+   * the altitude a person meets first was the altitude with no names on it.
+   * Both the fade and its partner are gone; a domain reads wherever it is
+   * drawn. Rationale, cost, and falsifier: `docs/DECISIONS.md`, 2026-08-29.
+   */
+  it("domain reads at every altitude — the formula no longer takes camera distance", () => {
+    expect(computeLabelAlpha({ ...base, kind: "domain" })).toBe(1);
+    expect(computeLabelAlpha({ ...base, kind: "domain", revealAlpha: 0 })).toBe(1);
+    // `farT` left `LabelAlphaInput` with the fade: a label that reads the same at
+    // every distance must not keep asking how far away it is.
+    expect("farT" in ({ ...base } as Record<string, unknown>)).toBe(false);
   });
 
-  it("capability/element are ineligible below the hittable reveal threshold (0.5) — matches HITTABLE_MIN_TIER_ALPHA", () => {
+  /*
+   * ⚠️ The defect the owner found by hovering, 2026-08-29. `isHovered` floors a
+   * label to 1 for any kind — but the retired watermark kept its own alpha,
+   * which `egoState` alone never silenced, because hover is not an ego state.
+   * Pointing at a domain therefore painted its name twice at one baseline:
+   * `I N M E N T O R Y` over `Inventory`, and
+   * `FULFRuLlMfEiNlTm&e nDt E&L IDVeElRivYe r y`. A capability under the same
+   * hover drew one clean label. With one form left there is nothing to
+   * superimpose, and this pins that a hovered domain resolves to exactly one
+   * full-contrast label.
+   */
+  it("a hovered domain resolves to one full label", () => {
+    expect(computeLabelAlpha({ ...base, kind: "domain", isHovered: true })).toBe(1);
+    expect(computeLabelAlpha({ ...base, kind: "domain", isHovered: true, revealAlpha: 0 })).toBe(1);
+  });
+
+  /*
+   * ⚠️ **The floor is the hit floor, and the hit floor is the paint floor**
+   * (2026-08-29). This pinned 0.5 while the draw pass skipped marks at 0.02, so
+   * the first half of every reveal band painted circles that could not be named
+   * or clicked. Reading this constant from `tier-visibility` rather than
+   * repeating the number is the point: a future change that moves one and not
+   * the other has to fail here.
+   */
+  it("a child is nameable exactly where it becomes hittable — one shared floor", () => {
+    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.02);
     expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0 })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.3 })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 0.4 })).toBe(0);
+    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: HITTABLE_MIN_TIER_ALPHA })).toBe(0);
+    expect(
+      computeLabelAlpha({ ...base, kind: "element", revealAlpha: HITTABLE_MIN_TIER_ALPHA + 0.05 }),
+    ).toBeGreaterThan(0);
   });
 
-  it("capability/element ramp in once revealAlpha crosses 0.5, reaching full by ~0.85 — the 'ego-revealed child gets a label' fix", () => {
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.5 })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.7 })).toBeGreaterThan(0);
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.7 })).toBeLessThan(1);
+  it("capability/element ramp to full readability by ~0.85 — the 'ego-revealed child gets a label' fix", () => {
+    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.5 })).toBeGreaterThan(0);
+    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.5 })).toBeLessThan(1);
     expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 0.85 })).toBeCloseTo(1, 6);
     expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 1 })).toBe(1);
   });
 
   it("is 0 whenever the node is dim, regardless of kind/farT/revealAlpha/hover", () => {
     expect(computeLabelAlpha({ ...base, kind: "project", egoState: "dim" })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim", farT: 0 })).toBe(0);
+    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "dim" })).toBe(0);
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim", revealAlpha: 1 })).toBe(0);
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "dim", isHovered: true })).toBe(0);
   });
@@ -72,7 +106,7 @@ describe("computeLabelAlpha", () => {
   it("the SELECTED (center) node is always fully readable, any kind/farT/revealAlpha (never just an unlabeled circle)", () => {
     expect(computeLabelAlpha({ ...base, kind: "capability", egoState: "center", revealAlpha: 0 })).toBe(1);
     expect(computeLabelAlpha({ ...base, kind: "element", egoState: "center", revealAlpha: 0 })).toBe(1);
-    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "center", farT: 1 })).toBe(1);
+    expect(computeLabelAlpha({ ...base, kind: "domain", egoState: "center" })).toBe(1);
   });
 
   it("the HOVERED node is always fully readable while hovered, same as selected", () => {
@@ -88,72 +122,6 @@ describe("computeLabelAlpha", () => {
   it.todo(
     "light-mode label color contrast (labelDomain/labelCapability/labelElement tokens) — design doc §2.2 explicitly defers exact light values to a P3 Design Guardian pass",
   );
-});
-
-/**
- * Live regression caught during label-clarity verification: at farT=1 (pure
- * constellation), `computeLabelAlpha`'s compact-domain-label formula is 0 —
- * correct on its own, but `ui/topology-frame-draw.ts`'s label-candidate
- * ELIGIBILITY gate used to check ONLY that value, so it skipped building a
- * candidate at all once it hit 0 — silently deleting the watermark
- * (`computeDomainWatermarkAlpha`) along with it. The far-field constellation
- * went completely nameless instead of keeping its atmosphere layer. The gate
- * now takes `Math.max(compactAlpha, watermarkAlpha)`; this locks down that
- * `computeDomainWatermarkAlpha` stays independently meaningful right where
- * the compact label goes to 0.
- */
-describe("computeDomainWatermarkAlpha", () => {
-  it("stays silent until the handoff, then ramps to full at the far-field constellation", () => {
-    expect(computeDomainWatermarkAlpha(0, "normal")).toBe(0);
-    expect(computeDomainWatermarkAlpha(DOMAIN_LABEL_HANDOFF, "normal")).toBe(0);
-    expect(computeDomainWatermarkAlpha(1, "normal")).toBe(1);
-  });
-
-  /**
-   * **Two effects must never share one anchor.** Measured on the dome
-   * 2026-08-19: the name rendered as `AΛIAGENT linkage`. The old formulas were a
-   * crossfade summing to 1, so both were alive in the middle band, and the 3D
-   * dome parks the camera in exactly that band, leaving the name illegible on
-   * screen. This test forbids the overlap: across all of farT, **one of the two
-   * alphas is always 0**.
-   */
-  it("never shares a frame with the compact label — one of the two is always 0", () => {
-    for (let farT = 0; farT <= 1.0001; farT += 0.05) {
-      const compact = computeLabelAlpha({ kind: "domain", farT, egoState: "normal", isHovered: false, revealAlpha: 1 });
-      const watermark = computeDomainWatermarkAlpha(farT, "normal");
-      expect(Math.min(compact, watermark), `farT=${farT.toFixed(2)} 에서 둘 다 보인다`).toBe(0);
-    }
-  });
-
-  it("is 0 while dim, regardless of farT", () => {
-    expect(computeDomainWatermarkAlpha(1, "dim")).toBe(0);
-  });
-
-  /**
-   * Dive-zoom fix (owner symptom: the tracked-caps far-field watermark
-   * overlapping the now-visible compact label — "V I E Views (Topo…" — during
-   * a focus dive). `egoState` is `"normal"` ONLY when no focus is active at
-   * all (`model/focus-state.ts#resolveNodeEgoState`); once ANY node is
-   * focused, every domain's egoState resolves to `"center"`, `"neighbor"`, or
-   * `"dim"` — never `"normal"` again. So gating the watermark to `egoState ===
-   * "normal"` is exactly "alpha 0 whenever focusedNodeId != null", restoring
-   * the instant focus clears (back to `"normal"`) — no separate focus param
-   * needed.
-   */
-  it("is 0 while centered (focused) or neighbor — any focus active — regardless of farT", () => {
-    expect(computeDomainWatermarkAlpha(1, "center")).toBe(0);
-    expect(computeDomainWatermarkAlpha(1, "neighbor")).toBe(0);
-    expect(computeDomainWatermarkAlpha(0.5, "center")).toBe(0);
-    expect(computeDomainWatermarkAlpha(0.5, "neighbor")).toBe(0);
-  });
-
-  it("stays meaningful at farT=1 even though computeLabelAlpha's compact-label alpha is 0 there (the eligibility-gate regression)", () => {
-    const compactAlpha = computeLabelAlpha({ kind: "domain", farT: 1, egoState: "normal", isHovered: false, revealAlpha: 1 });
-    const watermarkAlpha = computeDomainWatermarkAlpha(1, "normal");
-    expect(compactAlpha).toBe(0);
-    expect(watermarkAlpha).toBe(1);
-    expect(Math.max(compactAlpha, watermarkAlpha)).toBeGreaterThan(0.02);
-  });
 });
 
 describe("resolveLabelBaselineY — 라벨이 자기 도형선에 닿지 않는다 (진입 검수 E-4)", () => {

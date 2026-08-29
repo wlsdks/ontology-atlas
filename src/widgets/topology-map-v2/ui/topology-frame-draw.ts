@@ -40,7 +40,7 @@ import {
 } from "../model/dome-view";
 import { draw as domeRingsDraw } from "../render/dome-rings";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
-import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, HITTABLE_MIN_TIER_ALPHA, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
   LABEL_TOP_K,
   isEgoNeighborLabelExempt,
@@ -52,7 +52,6 @@ import { DEPTH_DOT_LAYERS, draw as gridDraw, lerpColorHex, type CanvasBackground
 import {
   ACTIVITY_MARK_GAP,
   ACTIVITY_MARK_RADIUS,
-  computeDomainWatermarkAlpha,
   computeLabelAlpha,
   draw as labelsDraw,
   drawInstrumentCaption,
@@ -1764,7 +1763,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // a chip and not drawn.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
-    if (tierAlpha <= 0.02) continue;
+    // The same constant the hit test and the label ramp floor on — a node that
+    // survives this line is grabbable and nameable by construction.
+    if (tierAlpha <= HITTABLE_MIN_TIER_ALPHA) continue;
     const egoState = previewTarget
       ? "neighbor"
       : egoAllNormal
@@ -2504,8 +2505,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const labelBboxById = new Map<string, { minX: number; minY: number; maxX: number; maxY: number }>();
   // perf 2026-08-19 — when the early exit for on-demand 3D labels is valid: on a
   // frame where a keep (hover, ego, trail) is impossible because there is no focus,
-  // pair, or lens, an assembly ramp a ≥ 0.98 gives 1 - a ≤ 0.02, and both the
-  // compact and watermark alphas are ≤ 1, so the product is ≤ 0.02 — **the same
+  // pair, or lens, an assembly ramp a ≥ 0.98 gives 1 - a ≤ 0.02, and the label
+  // alpha is ≤ 1, so the product is ≤ 0.02 — **the same
   // conclusion** as the existing `<= 0.02` rejection below. Reaching it before the
   // ego classification, the alpha computation, and the projection stops 2,000 nodes
   // from spinning through the front of the label pipeline every rotating frame.
@@ -2557,7 +2558,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const labelRevealAlpha = revealAlpha * pathLabelSink;
     let compactAlpha = computeLabelAlpha({
       kind: node.kind,
-      farT,
       egoState,
       isHovered,
       revealAlpha: labelRevealAlpha,
@@ -2573,20 +2573,11 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     const labelDome = nodeFrameAt(index);
     const domeLabelGate = domeOn && !domeLabelKeep ? 1 - labelDome.a : 1;
     compactAlpha *= domeLabelGate;
-    // Domain draws TWO effects at once (the always-readable compact label AND
-    // the separate far-field watermark) — a candidate must be built whenever
-    // EITHER is visible, or the watermark silently vanishes once the compact
-    // label alpha hits 0 at farT=1 (label-clarity fix, far-field regression).
-    // The far-field watermark stays silent under the lens. Visited nodes remain
-    // `"normal"` and the watermark only lights in that state, so leaving it on
-    // would revive decorative ink on a trajectory-reading screen — the same grain
-    // as the existing rule that switches watermarks off under focus.
-    const watermarkAlpha =
-      (node.kind === "domain" && !trailLensActive && !pathLensActive
-        ? computeDomainWatermarkAlpha(farT, egoState)
-        : 0) *
-      domeLabelGate;
-    if (Math.max(compactAlpha, watermarkAlpha) <= 0.02) continue;
+    // One label form per node since the domain watermark was retired
+    // (2026-08-29, `render/labels.ts` header), so one alpha decides eligibility.
+    // The `Math.max` that used to guard the watermark's separate visibility is
+    // gone with it.
+    if (compactAlpha <= 0.02) continue;
 
     // Labels take the same depth parallax offset as the node disc so they travel
     // with it; likewise the 3D offset, so a label follows a disc that moved onto a
@@ -2794,7 +2785,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenY: payload.screenY,
         screenRadius: payload.screenRadius,
         baselineY: payload.baselineY,
-        farT,
         egoState: payload.egoState,
         isHovered: payload.isHovered,
         revealAlpha: payload.revealAlpha,

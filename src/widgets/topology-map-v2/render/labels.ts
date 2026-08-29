@@ -10,17 +10,18 @@
  * found. Ego-revealed children (capability/element, C1 A2's tier exemption)
  * drew as unlabeled dark circles. New per-kind contract:
  * - `project`: always visible, plain text, no letter-tracking (unchanged).
- * - `domain`: a COMPACT plain-case label (`computeLabelAlpha`) reads at
- *   EVERY zoom band — full at circuit (`farT=0`), fading out only as the
- *   camera pulls back toward the constellation altitude. The original
- *   tracked-caps "sky-chart" watermark is now a SEPARATE decorative
- *   atmosphere layer (`computeDomainWatermarkAlpha`) drawn at the SAME
- *   anchor — it's the far-field flourish, not the label system, so it keeps
- *   its own low-contrast spaced-caps identity while the compact label
- *   carries readability. **The two never share a frame**: they hand the
- *   anchor over at `DOMAIN_LABEL_HANDOFF` instead of crossfading (see that
- *   constant — a crossfade painted the same name twice, tracked over
- *   untracked, and the 3D dome parks the camera right in that band).
+ * - `domain`: a COMPACT plain-case label that reads at EVERY zoom band,
+ *   including the constellation altitude. It used to fade out toward the far
+ *   field and hand its anchor to a tracked-caps "sky-chart" watermark; both the
+ *   fade and the watermark were retired on 2026-08-29 (`docs/DECISIONS.md`).
+ *   The watermark failed twice as a naming device: the label-clarity personas
+ *   never found it, and under hover it destroyed the name it was standing in
+ *   for — `computeLabelAlpha` floors a hovered label to 1 while the watermark
+ *   kept its own alpha, so the two painted the same characters at one baseline
+ *   (`I N M E N T O R Y` over `Inventory`, measured on the installed app). A
+ *   name that cannot survive being pointed at is not a name. The domain now
+ *   carries one form at every altitude, and the resting map says what its
+ *   regions are called instead of showing anonymous circles.
  * - `capability`/`element`: eligibility now ramps with the node's own
  *   `revealAlpha` (its effective/tier alpha this frame — the SAME signal
  *   `model/tier-visibility.ts#effectiveNodeAlpha` computes and
@@ -41,34 +42,8 @@
  */
 
 import { smoothstep } from "../model/altitude";
+import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 
-/**
- * The farT at which the two effects drawing a domain's name **hand over** to
- * each other (2026-08-19).
- *
- * A domain draws two things at one anchor: the **compact label** meant to be
- * read, and the **wide-tracked watermark** that appears only from far away. The
- * old formulas were `1 - farT` and `farT` — not disjoint bands but a crossfade
- * summing to 1, so in the middle (farT ≈ 0.5) **both are alive**. The same
- * characters get painted over each other with different tracking, and the name
- * turns to mush.
- *
- * The old comment called the overlap window short, which assumed **the camera
- * passes through that band**. The 3D dome **parks** the camera there. Measured
- * 2026-08-19 (installed build, `docs/ontology`, dome): the footprint trail's
- * "AI agent integration" sat on screen as `AΛIagent integration`.
- *
- * So the crossfade becomes a **handoff**: compact reaches 0 here and the
- * watermark starts rising here. Both effects keep their identity; they just
- * never occupy the same frame. Both being exactly 0 at the crossing point is
- * the handoff, not a defect — it lasts only while passing that single farT, and
- * it beats an illegible name.
- */
-export const DOMAIN_LABEL_HANDOFF = 0.5;
-
-function clamp01(value: number): number {
-  return value < 0 ? 0 : value > 1 ? 1 : value;
-}
 
 export interface LabelDrawState {
   kind: "project" | "domain" | "capability" | "element";
@@ -77,7 +52,6 @@ export interface LabelDrawState {
   screenY: number;
   /** World-space node radius × camera.scale (used to offset label below the node). */
   screenRadius: number;
-  farT: number;
   egoState: "center" | "neighbor" | "dim" | "normal";
   /** Whether this node is the currently-hovered node (no focus active). Floors its label to full contrast, same as `egoState === "center"`. */
   isHovered: boolean;
@@ -164,7 +138,11 @@ export function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): st
   return `${LABEL_FONT_WEIGHT[kind]} ${scaledLabelFontSize(kind, scale)}px ${LABEL_FONT_FAMILY}`;
 }
 
-/** Manual letter-tracking added to domain labels (they're uppercased + tracked, see `drawTrackedText`). */
+/**
+ * Manual letter-tracking for the instrument caption's tracked caps
+ * (`drawInstrumentCaption`). It was the domain watermark's tracking first; the
+ * watermark is retired and the caption kept the grammar.
+ */
 const DOMAIN_TRACKING = 1.6;
 
 // Per-frame render-loop profile (perf sweep, 2026-07 —
@@ -189,14 +167,10 @@ function measureLabelWidthUncached(
   scale: number,
 ): number {
   ctx.font = scaledLabelFont(kind, scale);
-  if (kind === "domain") {
-    const upper = text.toUpperCase();
-    let total = 0;
-    for (let i = 0; i < upper.length; i += 1) {
-      total += ctx.measureText(upper[i]).width + (i < upper.length - 1 ? DOMAIN_TRACKING : 0);
-    }
-    return total;
-  }
+  // Every kind now measures the string it paints. A domain used to be measured
+  // as uppercase-plus-tracking because that was the watermark's form, so its
+  // suppression box described a label that is no longer drawn — wider than the
+  // compact label it was reserving space for.
   return ctx.measureText(text).width;
 }
 
@@ -223,8 +197,13 @@ export function measureLabelWidth(
   return width;
 }
 
-/** capability/element label eligibility ramp, in `revealAlpha` units — matches `model/tier-visibility.ts#HITTABLE_MIN_TIER_ALPHA` (0.5) as the floor, full readability by 0.85. */
-const CHILD_LABEL_REVEAL_MIN = 0.5;
+/**
+ * capability/element label eligibility ramp, in `revealAlpha` units. The floor
+ * is `model/tier-visibility.ts#HITTABLE_MIN_TIER_ALPHA` **by import, not by
+ * coincidence** — a child is nameable exactly when it is clickable, and the two
+ * cannot drift apart in a later edit. Full readability arrives by 0.85.
+ */
+const CHILD_LABEL_REVEAL_MIN = HITTABLE_MIN_TIER_ALPHA;
 const CHILD_LABEL_REVEAL_FULL = 0.85;
 
 /**
@@ -304,7 +283,6 @@ export function measureLabelVerticalMetrics(
 
 export interface LabelAlphaInput {
   kind: LabelDrawState["kind"];
-  farT: number;
   egoState: LabelDrawState["egoState"];
   isHovered: boolean;
   revealAlpha: number;
@@ -315,47 +293,27 @@ export interface LabelAlphaInput {
  * `"dim"` (ego focus owns visibility there); `1` unconditionally for the
  * SELECTED node or the currently-hovered node, any kind (no more
  * unlabeled-circle selections/hovers); otherwise the per-kind formula:
- * project always 1, domain reads at every zoom band (fading only toward the
- * far-field handoff — see the file header for the separate watermark),
- * capability/element ramp with the node's own `revealAlpha`.
+ * project and domain always 1, capability/element ramp with the node's own
+ * `revealAlpha`.
+ *
+ * ⚠️ **The domain's far-field fade was removed on 2026-08-29.** It expressed a
+ * handoff to the tracked-caps watermark, and the watermark is gone (file
+ * header). Keeping the fade without its partner would leave the spine
+ * nameless at exactly the altitude a person meets first: measured on the
+ * installed app, the storefront vault's resting camera painted about ninety
+ * circles and passively named one of them, the project. Nine domain names is
+ * the whole of what this restores — the children stay anonymous until their
+ * own tier arrives, which is a separate question owned by the label budget.
  */
 export function computeLabelAlpha(input: LabelAlphaInput): number {
-  const { kind, farT, egoState, isHovered, revealAlpha } = input;
+  const { kind, egoState, isHovered, revealAlpha } = input;
   if (egoState === "dim") return 0;
   if (egoState === "center" || isHovered) return 1;
 
-  if (kind === "project") return 1;
-  if (kind === "domain") return clamp01((DOMAIN_LABEL_HANDOFF - farT) / DOMAIN_LABEL_HANDOFF);
+  if (kind === "project" || kind === "domain") return 1;
   return smoothstep(CHILD_LABEL_REVEAL_MIN, CHILD_LABEL_REVEAL_FULL, revealAlpha);
 }
 
-/**
- * The domain far-field "sky-chart" watermark — a SEPARATE decorative
- * atmosphere layer (tracked-caps, low contrast by design at mid-altitude),
- * ramping 1:1 with `farT` while NO focus is active. Deliberately independent
- * of `computeLabelAlpha` above so this effect never fights the always-readable
- * compact label it complements (label-clarity).
- *
- * Exported so `ui/topology-frame-draw.ts`'s label-candidate ELIGIBILITY gate
- * can factor it in too — `computeLabelAlpha` alone hits 0 for domain at
- * farT=1 (the compact label has fully handed off), and a gate keyed only to
- * that alpha would skip building the candidate entirely, silently deleting
- * the watermark along with it (the far-field constellation would go BLANK,
- * not just lose the compact label — the opposite of "stays as-is").
- *
- * Dive-zoom fix (owner symptom: the watermark colliding with the now-visible
- * compact label — "V I E Views (Topo…" — during a focus dive): a dive can land
- * at a scale where farT hasn't fully reached 0 yet, but C1 A2's ego exemption
- * already makes the compact label visible there — the two effects overlapped.
- * The watermark now silences to 0 whenever ANY focus is active (`egoState !==
- * "normal"` — that's `"center"`/`"neighbor"` for the ego set, `"dim"` for
- * everyone else), restoring the instant focus clears. Only the truly
- * unfocused far-field view (`"normal"`) still gets the flourish.
- */
-export function computeDomainWatermarkAlpha(farT: number, egoState: LabelDrawState["egoState"]): number {
-  if (egoState !== "normal") return 0;
-  return clamp01((farT - DOMAIN_LABEL_HANDOFF) / (1 - DOMAIN_LABEL_HANDOFF));
-}
 
 /**
  * W6 agent visibility — activity-mark dot radius + gap past the label
@@ -502,48 +460,30 @@ export function drawInstrumentCaption(
 }
 
 /**
- * Draws one node's label. Domain draws up to TWO things at the same anchor —
- * the always-readable compact label (`computeLabelAlpha`) and the separate
- * far-field spaced-caps watermark (`computeDomainWatermarkAlpha`) — since
- * they occupy complementary farT ranges the visible overlap window is brief.
- * Every other kind draws nothing when its single alpha resolves to <=0.02.
+ * Draws one node's label — **one form per node, at one anchor**.
+ *
+ * A domain used to draw two, a compact label and a tracked-caps watermark, kept
+ * apart by a farT handoff. Hover was never party to that handoff: it floors the
+ * compact label to 1 while the watermark keeps its own alpha, so pointing at a
+ * domain painted its name twice, superimposed. The watermark is retired
+ * (2026-08-29); nothing here can collide with itself any more.
  */
 export function draw(ctx: CanvasRenderingContext2D, state: LabelDrawState, tokens: LabelTokens): void {
-  const { kind, text, screenX: x, screenY: y, screenRadius: r, farT, egoState, isHovered, revealAlpha, agentFocus } = state;
+  const { kind, text, screenX: x, screenY: y, screenRadius: r, egoState, isHovered, revealAlpha, agentFocus } = state;
   const fontScale = state.fontScale ?? 1;
   // LOD presence (default 1) multiplies linearly into the final label alpha.
   const presenceAlpha = Math.min(1, Math.max(0, state.presenceAlpha ?? 1));
   const ty = state.baselineY ?? resolveLabelBaselineY(kind, y, r, fontScale);
 
-  if (kind === "domain") {
-    const watermarkAlpha = computeDomainWatermarkAlpha(farT, egoState) * presenceAlpha;
-    if (watermarkAlpha > 0.02) {
-      ctx.font = scaledLabelFont("domain", fontScale);
-      drawTrackedText(ctx, text.toUpperCase(), x, ty, tokens.labelDomain, DOMAIN_TRACKING, watermarkAlpha);
-    }
-    const compactAlpha = computeLabelAlpha({ kind, farT, egoState, isHovered, revealAlpha }) * presenceAlpha;
-    if (compactAlpha > 0.02) {
-      ctx.font = scaledLabelFont("domain", fontScale);
-      ctx.textAlign = "center";
-      ctx.textBaseline = "alphabetic";
-      ctx.fillStyle = tokens.labelDomain;
-      ctx.globalAlpha = compactAlpha;
-      ctx.fillText(text, x, ty);
-      ctx.globalAlpha = 1;
-      if (agentFocus) {
-        const width = measureLabelWidth(ctx, "domain", text, fontScale);
-        drawActivityMark(ctx, x + width / 2 + ACTIVITY_MARK_GAP, ty - LABEL_FONT_SIZE.domain * 0.35, tokens.amberHub, compactAlpha);
-      }
-    }
-    return;
-  }
-
-  const alpha = computeLabelAlpha({ kind, farT, egoState, isHovered, revealAlpha }) * presenceAlpha;
+  const alpha = computeLabelAlpha({ kind, egoState, isHovered, revealAlpha }) * presenceAlpha;
   if (alpha <= 0.02) return;
 
   if (kind === "project") {
     ctx.font = scaledLabelFont("project", fontScale);
     ctx.fillStyle = tokens.labelProject; // §2.2 --topology-v2-label-project (was a prototype literal)
+  } else if (kind === "domain") {
+    ctx.font = scaledLabelFont("domain", fontScale);
+    ctx.fillStyle = tokens.labelDomain;
   } else if (kind === "capability") {
     ctx.font = scaledLabelFont("capability", fontScale);
     ctx.fillStyle = tokens.labelCapability;

@@ -40,6 +40,156 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-29 — Nothing is painted before it can be named and clicked
+
+**Convened because**: the same session that found the domain label defect also
+found the map answering the pointer inconsistently. Measured on the installed
+app, storefront sample, camera fully out: a click on one painted circle selected
+it, a click on another did nothing at all, and a third selected an **edge**
+(`Campaign Planning leans on Category Management`) rather than the circle under
+the pointer.
+
+**What it actually was**: not a precedence bug. `topology-pointer-handlers.ts`
+runs its edge hit-test only when `commitClick.nodeId === null`, so a node that
+answers the pointer already beats an edge at the same pixel. The third click
+reached the edge test **because the node under it was not hittable** — the same
+seam as the second click, wearing a different symptom.
+
+**The seam, in numbers**: `nodeTierAlpha` ramps a child in with
+`smoothstep(enter, full, ratio)`, the draw pass paints anything above 0.02, and
+the hit test and label ramp both floored at 0.5. With bands at
+capability `{1.5, 2.0}` and element `{2.3, 2.85}`, that put **exactly the first
+half of every reveal band** in a state where a circle is drawn at up to 50%
+alpha and cannot be named, hovered, clicked, or dragged — ratio 1.5→1.75 and
+2.3→2.575.
+
+**This file already said the rule twice.** `isNodeHittable`'s own comments read
+"if it isn't painted this frame, it isn't hittable" and "if it is drawn, it is
+grabbable". The first was enforced; the second was not.
+
+**Decision**: the bands begin where the floor was — capability `{1.75, 2.0}`,
+element `{2.575, 2.85}` — and the floor becomes the draw pass's own paint skip.
+Nothing is painted before it can be named and clicked. Note what does *not*
+change: hittability still begins at ratio 1.75 and 2.575, exactly where it began
+before. No interaction timing moves; the paint simply stops arriving early.
+
+**Structure, not just values**: the draw pass and the label ramp now read
+`HITTABLE_MIN_TIER_ALPHA` instead of repeating `0.02` and `0.5` in their own
+files. A second constant beside it was tried first and the dead-code gate
+rejected the pair as a duplicate export — the right answer, and the reason the
+result is one exported fact rather than three numbers agreeing by luck.
+
+**Overturned**: `tests/contract/draw-hit-lockstep.contract.test.ts`'s pinned case
+*"the floor is 0.5 — do not switch to the draw pass's 0.02"*, and the comment in
+`isNodeHittable` saying the same. The contract is not deleted, it is
+strengthened: its title always claimed draw/hit lockstep, and the file now
+asserts the plain form — if it is drawn, it is hittable — instead of carrying an
+exception to itself. The old wording read: *"The floor is 0.5 — do not swap in
+the draw pass's 0.02. The band 0.02..0.5 is deliberately drawn but
+not grabbable (making a near-transparent mark clickable produces mis-clicks)."*
+That argument was never measured. What was measured is its other side, above.
+The mis-click concern is answered differently: the band is removed rather than
+made clickable, so no near-transparent mark is ever a click target.
+
+**Gates**: a sweep over every ratio a camera can reach, both child tiers, asserts
+painted ⇒ hittable — expressed over the constants, so moving a band or a floor
+without the other fails. Probed by planting the old `enterRatio: 1.5`: red, with
+the ratio and alpha in the message. Restored: green. A second case pins the two
+floors equal, and a third pins that each band opens at the old hit ratio.
+
+**Recorded dissent** (2026-08-08, still standing): *"if the owner or a visitor
+says 'not many nodes, huh', the gap is bigger than judged."* This removes the
+faint half of each reveal band from the resting frame and walks straight toward
+that falsifier. Accepted, because a circle nobody can click or name is not
+density, it is noise that looks like density.
+
+**Side effect, named rather than discovered later**: `isSpineOnlyZoom` keys off
+`capability.enterRatio`, so the pan clamp now uses spine bounds up to 1.75
+instead of 1.5. That shrinks the legal-but-empty region a flick can strand in,
+which is the direction that clamp exists to protect.
+
+**Falsifier**: someone zooms past the band hunting for children "that weren't
+there", or `/motion-verify` measures the steeper fade (half the ratio width)
+reading as a pop at normal wheel velocity.
+
+**Review**: with the label-budget measurement that owns passive capability
+naming — a reader who can now click everything they see may still not be able
+to read what it is called.
+
+**Status**: standing.
+
+---
+
+## 2026-08-29 — The spine names itself at every altitude; the domain watermark is retired
+
+**Convened because**: the owner, looking at the installed app rather than at the
+code, asked why the map says nothing. Measured on the storefront sample vault
+(126 documents, 9 domains), window 1512×982, camera scrolled fully out: about
+ninety nodes painted, and exactly one of them passively named, the project. Then
+hovering a domain produced this, twice:
+
+- Inventory → `I N M E N T O R Y` over `Inventory`
+- Fulfillment & Delivery → `FULFRuLlMfEiNlTm&e nDt E&L IDVeElRivYe r y`
+
+A capability under the same hover drew one clean label. Both reproduce in the
+web build at the same camera, so this is the renderer, not the shell.
+
+**The falsifier of (86) has fired.** That record — 2026-08-19, the crossfade
+becoming a handoff — wrote its own falsifier as: *if someone says no names are
+visible at the constellation altitude, lower the handoff point*. That is the
+observation, verbatim, and by this ledger's second contract the losing side won.
+
+**What we do instead of the prescribed remedy.** (86) assumed the watermark
+could carry naming once the compact label had handed over. Two measurements say
+it cannot. The label-clarity personas never found it — that is why the compact
+label was introduced in the first place. And it does not survive being pointed
+at: `computeLabelAlpha` floors any hovered label to 1, while
+`computeDomainWatermarkAlpha` was silenced only by `egoState`, and hover is not
+an ego state. So the two forms painted the same characters at one baseline. The
+handoff (86) built was disjoint in `farT` and never in hover; the invariant test
+it added loops over `farT` with `isHovered: false`, which is why nothing went
+red for ten days.
+
+**Decision**: the domain's far-field fade is removed and the watermark layer is
+retired. A domain reads at every altitude, in one form, in the case a person
+reads. Same trigger as (86), opposite remedy, on evidence (86) did not have.
+
+**What this restores, exactly**: nine domain names plus the project at the
+resting camera. It does not name capabilities or elements — at the observed
+camera their label alpha is already fully eligible and zero draw passively,
+which is downstream of this formula and belongs to the label budget of (105).
+That remains open and unmeasured; this record does not claim it.
+
+**Gates**: `labels.test.ts` pins that a domain resolves to 1 at every `farT`,
+and that a hovered domain resolves to exactly one full-contrast label. The
+retired layer's own tests are deleted with it rather than left asserting a
+function that no longer exists. Verified on screen at one camera, before and
+after, by the same hover: `I N M E N T O R Y` → `Inventory`. The far-field frame
+also stopped truncating (`MARKETING &…` → `Marketing & Promotions`), because a
+domain's suppression box now measures the string it paints instead of the
+watermark's wider uppercase-plus-tracking form.
+
+**Recorded dissent** (systems): *the constellation altitude loses its
+abstraction. Nine labels of ink land in the calmest frame the product has, and
+the far-field flourish that made the overview feel like a sky chart is gone for
+good.* True, and the cost is accepted: a calm frame that cannot tell you what
+you are looking at is not calm, it is mute. (2)'s charter says level 0 is the
+spine; a named spine is what that sentence was for.
+
+**Falsifier**: at the fully-out camera on any vault, two domain labels overlap
+each other or a spoke — the wall-of-names failure (105) exists to prevent. One
+frame, checked by looking. If it fires, the label budget governs domains too
+rather than the fade coming back.
+
+**Review**: when the (105) label-budget measurement for passive capability
+naming is run, since that answer may change how many names a resting frame
+should carry.
+
+**Status**: standing. Overturns the remedy clause of (86), 2026-08-19; that
+record's diagnosis of the crossfade stands and its handoff is what this replaces.
+
+---
+
 ## 2026-08-29 — First persisted handoff is 50/50; clean-run performance remains open
 
 **Convened because**: the next unfamiliar-repository construction completed its
@@ -4049,7 +4199,11 @@ linux-x64. 그 밖에서는 이 기능이 아예 없고 화면은 종전대로 �
 
 **재검토**: 원거리 뷰 감사 때.
 
-**상태**: 유효
+**상태**: OVERTURNED (→ 2026-08-29, "The spine names itself at every
+altitude"). This record's own falsifier was observed: no names at the
+constellation altitude, and hover superimposing the watermark on the name it
+stood for. The crossfade diagnosis and the handoff construction stand; only the
+remedy clause — lower the handoff point — is overturned.
 
 ---
 

@@ -54,8 +54,8 @@ export interface TierRevealConfig {
  * (`--topology-v2-camera-scale-max`).
  */
 export const DEFAULT_TIER_REVEAL: TierRevealConfig = {
-  capability: { enterRatio: 1.5, fullRatio: 2.0 },
-  element: { enterRatio: 2.3, fullRatio: 2.85 },
+  capability: { enterRatio: 1.75, fullRatio: 2.0 },
+  element: { enterRatio: 2.575, fullRatio: 2.85 },
 };
 
 /** Plain (non-developer) lens — pushes the element tier into an unreachable band
@@ -117,12 +117,36 @@ export function effectiveNodeAlpha(tierAlpha: number, isEgoMember: boolean, egoR
   return isEgoMember ? Math.max(tierAlpha, egoRamp) : tierAlpha;
 }
 
-/** Minimum tier/effective alpha for a node to be grabbable/hoverable/clickable
- * — hidden (semantic-zoom-gated) nodes must not be hit. Shared by the pointer
- * hit-test (`ui/topology-pointer-handlers.ts#hitVisibleNode` via
- * `isNodeHittable` below) and the label-eligibility ramp
- * (`render/labels.ts#computeLabelAlpha`) — "if you can click it, you can read it", the label-clarity persona fix. */
-export const HITTABLE_MIN_TIER_ALPHA = 0.5;
+/**
+ * The one floor: below it a node is not painted, not grabbable, and not
+ * nameable — above it, all three.
+ *
+ * It is a single exported constant on purpose. The draw pass skipped at a bare
+ * `0.02` repeated per call site, the hit test used this name at 0.5, and the
+ * label ramp repeated 0.5 again; three numbers in three files, agreeing or
+ * disagreeing by luck. A second name for the same value was tried here and the
+ * dead-code gate rejected it as a duplicate export, which was the right answer:
+ * one fact, one name.
+ *
+ * Minimum tier/effective alpha for a node to be grabbable/hoverable/clickable,
+ * and the floor of the label-eligibility ramp
+ * (`render/labels.ts#computeLabelAlpha`). Shared by the pointer hit-test
+ * (`ui/topology-pointer-handlers.ts#hitVisibleNode` via `isNodeHittable`) so
+ * "if you can click it, you can read it" holds by construction.
+ *
+ * ⚠️ **It is the draw pass's own paint floor** (2026-08-29). It was 0.5, on the
+ * argument that a near-transparent mark should not intercept a click — but the
+ * bands started at 0, so the first half of every reveal band painted circles
+ * that could not be named, hovered, clicked, or grabbed. Measured on the
+ * storefront sample at the fully-out camera: about ninety painted nodes, one of
+ * them clickable by luck of tier, and a click aimed at a dead disc fell through
+ * to an edge crossing the same pixels (`Campaign Planning leans on Category
+ * Management` selected under a pointer on a circle). The bands now start where
+ * the old floor was, so paint, hit and label begin together, and this file's own
+ * two statements — "if it isn't painted this frame, it isn't hittable" and "if
+ * it is drawn, it is grabbable" — are true in both directions.
+ */
+export const HITTABLE_MIN_TIER_ALPHA = 0.02;
 
 /** Minimal node shape `isNodeHittable` needs — structurally compatible with `WorldNode`. */
 export interface HittableNodeInput {
@@ -198,11 +222,14 @@ export function isNodeHittable(
   if (clusteredIds?.has(node.id)) return false;
   const drawn = effectiveAlphaById?.get(node.id);
   if (drawn !== undefined) {
-    // ⚠️ **The floor is 0.5** — do not swap in the draw pass's 0.02. The band
-    // 0.02..0.5 is deliberately "drawn but not grabbable" (making a near-
-    // transparent mark clickable produces mis-clicks), and it pairs with
-    // `computeLabelAlpha`'s rule that if you can click it, you can read it. The
-    // contract's exact wording: grabbable once more than half revealed.
+    // ⚠️ **The floor is the draw pass's own paint skip** (2026-08-29, overturning
+    // "the floor is 0.5 — do not swap in the draw pass's 0.02"). That comment
+    // defended a band deliberately "drawn but not grabbable" against mis-clicks,
+    // an argument never measured; what was measured is the other side of it —
+    // about ninety painted circles at the storefront vault's resting camera, a
+    // click on one of them doing nothing, and another falling through to an edge
+    // crossing the same pixels. The bands now begin where this floor is, so the
+    // band no longer exists rather than being made clickable.
     return drawn >= HITTABLE_MIN_TIER_ALPHA;
   }
   const tierKind = tierKindById?.get(node.id) ?? node.kind;
