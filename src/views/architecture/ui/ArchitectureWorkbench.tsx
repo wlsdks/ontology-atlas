@@ -1,7 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, CircleHelp, FileCode2, PanelRight, ShieldAlert, ShieldCheck, X } from 'lucide-react';
+import {
+  Bot,
+  Boxes,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  FileCode2,
+  Footprints,
+  PanelRight,
+  ShieldAlert,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
@@ -187,25 +199,6 @@ export function ArchitectureWorkbench({
   });
   const inspectorOpen = inspector !== null;
 
-  /**
-   * ⚠️ **Closing the panel closes the address with it.** `inspectorOpen` initialises from
-   * `?role=`, so a screen somebody deliberately closed came back open on a reload or a share
-   * (judged 2026-08-30). The chosen role stays in memory — the canvas still shows what was picked
-   * and the button reopens its answer — but the link stops promising a panel nobody wants.
-   */
-
-  useEffect(() => {
-    if (!inspectorOpen) return undefined;
-    /* Escape closes the dock, the way it closes every other panel in this app. It never clears the
-       chosen role: the canvas keeps showing what was picked, and the button reopens the answer. */
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      setInspector(null);
-      writeArchitectureAddress({ stage: mode, role: null, stageOpen });
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [inspectorOpen, mode, stageOpen]);
 
   /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
      it sit in different rows of the page grid: the drawing takes the full width, the answer is
@@ -241,6 +234,7 @@ export function ArchitectureWorkbench({
    * so every box opened the same long tail and the owner asked for the tail to be its own button
    * (2026-08-30). One dock, two contents, never both.
    */
+
   function openInspector(kind: 'role' | 'rules') {
     setInspector(kind);
     if (!stageOpen) return;
@@ -263,6 +257,7 @@ export function ArchitectureWorkbench({
    */
   function closeInspector() {
     setInspector(null);
+    setWalking(false);
     writeArchitectureAddress({ stage: mode, role: null, stageOpen });
   }
 
@@ -298,6 +293,78 @@ export function ArchitectureWorkbench({
     () => (selected ? buildArchitectureGraph(buildArchitectureLayout(selected), roleTraffic ?? []) : null),
     [selected, roleTraffic],
   );
+  /**
+   * Reading the chain one role at a time.
+   *
+   * ⚠️ **A walk, not a camera** (2026-08-30). The reference the owner pointed at drives a guided
+   * tour by flying the viewport to each step, and this canvas cannot: its scale is a contract, and
+   * scaling the drawing scales the text off the ramp. So the walk moves the *selection* instead —
+   * the dock already answers whichever role is chosen — and only brings the box into view where
+   * the canvas is too short to hold the whole chain. The order is the drawing's own column order;
+   * nothing is authored and nothing new is stored.
+   */
+  const walkOrder = useMemo(
+    () => (rulesGraph ? [...rulesGraph.boxes].sort((a, b) => a.column - b.column).map((box) => box.id) : []),
+    [rulesGraph],
+  );
+  const [walking, setWalking] = useState(false);
+  const walkAt = selectedRole === null ? -1 : walkOrder.indexOf(selectedRole);
+
+  /**
+   * `delta` steps from wherever the walk is; `to` jumps to an absolute place in the chain.
+   *
+   * ⚠️ **Starting a walk starts it at the top.** Continuing from whatever was last clicked reads
+   * as a random entry point — "walk the chain" promises the chain, from its first role.
+   */
+  const stepWalk = useCallback((delta: number, to?: number) => {
+    if (walkOrder.length === 0) return;
+    const target = to ?? walkAt + delta;
+    const next = walkOrder[Math.min(walkOrder.length - 1, Math.max(0, target))];
+    if (next === undefined) return;
+    setWalking(true);
+    setSelectedRole(next);
+    setInspector('role');
+    writeArchitectureAddress({ stage: mode, role: next, stageOpen: false });
+    if (stageOpen) setStageOpen(false);
+    /* Only where the canvas cannot hold the whole chain does anything move. */
+    window.requestAnimationFrame(() => {
+      const box = document.querySelector(`[data-testid="architecture-graph-box-${next}"]`);
+      const scroller = box?.closest('[data-testid="architecture-graph"]')?.parentElement;
+      if (!box || !scroller) return;
+      if (scroller.scrollHeight <= scroller.clientHeight + 1) return;
+      box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    });
+  }, [mode, stageOpen, walkAt, walkOrder]);
+
+  /**
+   * ⚠️ **Closing the panel closes the address with it.** `inspectorOpen` initialises from
+   * `?role=`, so a screen somebody deliberately closed came back open on a reload or a share
+   * (judged 2026-08-30). The chosen role stays in memory — the canvas still shows what was picked
+   * and the button reopens its answer — but the link stops promising a panel nobody wants.
+   */
+
+
+  useEffect(() => {
+    if (!inspectorOpen) return undefined;
+    /* Escape closes the dock, the way it closes every other panel in this app. It never clears the
+       chosen role: the canvas keeps showing what was picked, and the button reopens the answer. */
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && walking) {
+        event.preventDefault();
+        stepWalk(event.key === 'ArrowRight' ? 1 : -1);
+        return;
+      }
+      if (event.key !== 'Escape') return;
+      setInspector(null);
+      setWalking(false);
+      writeArchitectureAddress({ stage: mode, role: null, stageOpen });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inspectorOpen, mode, stageOpen, stepWalk, walking]);
+
+
+
 
 
   useLayoutEffect(() => {
@@ -846,17 +913,34 @@ export function ArchitectureWorkbench({
               </p>
             </div>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="ml-auto hidden shrink-0 xl:inline-flex"
-              onClick={() => (inspector === 'rules' ? closeInspector() : openInspector('rules'))}
-              aria-expanded={inspectorOpen}
-              data-testid="architecture-inspector-toggle"
-            >
-              <PanelRight size={ICON_SIZE.sm} aria-hidden />
-              {t('inspectorTitle')}
-            </Button>
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {/*
+                ⚠️ **A walk, not a tour with a camera.** The reference flies its viewport from step
+                to step; this canvas holds one scale by contract, so the walk moves the selection
+                and lets the panel do the talking — and only scrolls where the chain does not fit.
+              */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden shrink-0 xl:inline-flex"
+                onClick={() => (walking ? closeInspector() : stepWalk(0, 0))}
+                data-testid="architecture-walk"
+              >
+                <Footprints size={ICON_SIZE.sm} aria-hidden />
+                {walking ? t('walkStop') : t('walkChain')}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden shrink-0 xl:inline-flex"
+                onClick={() => (inspector === 'rules' ? closeInspector() : openInspector('rules'))}
+                aria-expanded={inspector === 'rules'}
+                data-testid="architecture-inspector-toggle"
+              >
+                <PanelRight size={ICON_SIZE.sm} aria-hidden />
+                {t('inspectorTitle')}
+              </Button>
+            </div>
           </div>
               {/* The policy sentence is the section description above; do not print it twice. */}
               <ArchitectureFlow
@@ -942,18 +1026,54 @@ export function ArchitectureWorkbench({
           )}
         >
           <div className="hidden shrink-0 items-center justify-between gap-2 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 xl:flex">
-            <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+            <h2 className="min-w-0 truncate text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
               {inspector === 'role' && activeRole !== null ? roleLabel(activeRole) : t('inspectorTitle')}
             </h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={closeInspector}
-              aria-label={t('inspectorClose')}
-              data-testid="architecture-inspector-close"
-            >
-              <X size={ICON_SIZE.sm} aria-hidden />
-            </Button>
+            <div className="flex shrink-0 items-center gap-1">
+              {walking && walkAt >= 0 ? (
+                <>
+                  <span
+                    className="mr-1 text-caption tabular-nums text-[color:var(--color-text-quaternary)]"
+                    data-testid="architecture-walk-step"
+                  >
+                    {t('walkStep', { index: walkAt + 1, total: walkOrder.length })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => stepWalk(-1)}
+                    disabled={walkAt <= 0}
+                    aria-label={t('walkPrev')}
+                    data-testid="architecture-walk-prev"
+                  >
+                    <ChevronLeft size={ICON_SIZE.sm} aria-hidden />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => stepWalk(1)}
+                    disabled={walkAt >= walkOrder.length - 1}
+                    aria-label={t('walkNext')}
+                    data-testid="architecture-walk-next"
+                  >
+                    <ChevronRight size={ICON_SIZE.sm} aria-hidden />
+                  </Button>
+                </>
+              ) : null}
+              {/* The escape hatch says itself, the way the reference's breadcrumb does. */}
+              <span className="text-caption text-[color:var(--color-text-quaternary)]">
+                {t('inspectorEscHint')}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeInspector}
+                aria-label={t('inspectorClose')}
+                data-testid="architecture-inspector-close"
+              >
+                <X size={ICON_SIZE.sm} aria-hidden />
+              </Button>
+            </div>
           </div>
 
           {/*

@@ -266,5 +266,20 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     expect(withStage.canvas, `${where} the stage squeezed the canvas`).toBeGreaterThan(700);
     expect(withStage.travel, where).toBeLessThanOrEqual(1);
     await page.getByTestId('architecture-mode-understand').click();
+
+    /*
+     * ⚠️ **The walk moves the selection, never the camera.** The reference this borrows from flies
+     * its viewport to each step; this canvas holds one scale by contract, so what advances is the
+     * chosen role and the panel that answers it. The order is the drawing's own.
+     */
+    await page.getByTestId('architecture-walk').click();
+    await expect(page.getByTestId('architecture-walk-step'), where).toHaveText('1 of 7');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('architecture-walk-step'), where).toHaveText('3 of 7');
+    expect(new URL(page.url()).searchParams.get('role'), where).toBe('views');
+    await page.keyboard.press('Escape');
+    await expect(dock, where).toHaveAttribute('data-architecture-inspector', 'none');
+    expect(new URL(page.url()).searchParams.get('role'), where).toBeNull();
   }
 });
