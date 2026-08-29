@@ -3075,7 +3075,11 @@ await test("inspect_architecture — profile intent and observed imports produce
     // The measured stamp (2026-08-27): a dated receipt of the exact source
     // state. The tmp repository is not a git checkout, so the stamp must be a
     // folder fingerprint and must not carry anything sha-shaped.
-    assert.equal(result.profile.typeOnlyDependencies, "free");
+    // Reconciled 2026-08-29, and the default flipped with the encoding. This fixture declares
+    // neither key: on the branch that meant type-only edges were free, and under the encoding that
+    // shipped it means both usages are governed until a profile says otherwise. Excluding them is
+    // a reviewed declaration now, never a tool default.
+    assert.deepEqual(result.profile.dependencyUsages, ["value", "type_only"]);
     assert.ok(!Number.isNaN(Date.parse(result.measured.at)));
     assert.equal(result.measured.tool.name, "ontology-atlas");
     assert.equal(typeof result.measured.tool.version, "string");

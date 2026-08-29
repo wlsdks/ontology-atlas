@@ -282,6 +282,13 @@ export function evaluateArchitectureConformance(profile, importResult) {
   let unruledEdges = 0;
   let unknownImportUsages = 0;
   let excludedByUsage = 0;
+  const importUsageTally = { value: 0, type_only: 0, unknown: 0, missing: 0 };
+  for (const edge of edges) {
+    if (edge?.importUsage === undefined) importUsageTally.missing += 1;
+    else if (Object.hasOwn(importUsageTally, edge.importUsage)) {
+      importUsageTally[edge.importUsage] += 1;
+    } else importUsageTally.unknown += 1;
+  }
 
   for (const edge of edges) {
     // Architecture rules govern dependencies *originating* in the selected
@@ -388,6 +395,15 @@ export function evaluateArchitectureConformance(profile, importResult) {
       supportedLanguages: Array.isArray(importResult?.coverage?.supportedLanguages)
         ? importResult.coverage.supportedLanguages
         : [],
+      /*
+       * ⚠️ **A whole-scan usage receipt.** `missing` counts edges the scanner emitted with no
+       * `importUsage` at all, which is a different fact from an edge whose usage it could not
+       * classify. The record writer's refusal gate reads these: a scan that cannot tell a
+       * type-only import from a value one must not mint a durable receipt, and without this tally
+       * it cannot tell that it cannot tell. Restored at the 2026-08-29 reconciliation, where
+       * taking one side of the merge wholesale had left the gate reading a field nothing produced.
+       */
+      importUsageCounts: importUsageTally,
     },
   };
 }

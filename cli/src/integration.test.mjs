@@ -8048,6 +8048,9 @@ const RECORD_PROFILE_DOC = {
     'role_adapter: [src/payments/adapters/**]',
     'allow_domain: []',
     'allow_adapter: [domain]',
+    // Reconciled 2026-08-29: the branch relied on a tool default that left type-only edges out of
+    // the verdict. Under the encoding that shipped, that exclusion is a reviewed declaration.
+    'dependency_usages: [value]',
     'evidence: [ARCHITECTURE.md]',
     '---',
     '',
@@ -8166,7 +8169,7 @@ await test('architecture --record — refuses a scan with no import-usage discri
         { id: 'adapter', paths: ['src/payments/adapters/**'], allowedDependencies: ['domain'] },
       ],
       dependencyPolicy: 'explicit',
-      typeOnlyDependencies: 'free',
+      dependencyUsages: ['value'],
       evidence: ['ARCHITECTURE.md'],
     },
     measured: {
@@ -8176,18 +8179,26 @@ await test('architecture --record — refuses a scan with no import-usage discri
     },
     conformance: {
       contract: 'architectureConformance:v1',
-      status: 'violated',
+      status: 'unknown',
       roles: [],
       observedRoleEdges: [],
-      violationCount: 1,
-      violations: [{
-        fromRole: 'domain', toRole: 'adapter',
-        from: 'src/payments/domain/payment.ts', to: 'src/payments/adapters/postgres.ts',
-        kind: 'static', importUsage: 'unknown', rule: 'allow-domain',
-      }],
+      /*
+       * ⚠️ No violations, on purpose. Reconciled 2026-08-29: an edge whose usage the scanner could
+       * not classify is routed to `unknown`, never to `violations`, so a violation always carries a
+       * usage — which is why the result validator rejects one that does not. The fixture used to
+       * carry `importUsage: 'unknown'` on a violation, a shape the evaluator cannot produce, and it
+       * made this test fail for the wrong reason: the validator refused the payload before the
+       * record gate could refuse the receipt. The point of the case is the gate, so the scan is
+       * shaped the way an undiscriminated scan actually arrives.
+       */
+      violationCount: 0,
+      violations: [],
       violationsLimited: false,
       excludedByUsage: 0,
-      unknown: { coverageIncomplete: false, unmappedEdges: 0, unruledEdges: 0, emptyRoles: [] },
+      unknown: {
+        coverageIncomplete: false, unmappedEdges: 0, unruledEdges: 2,
+        unknownImportUsages: 2, emptyRoles: [],
+      },
       source: {
         rootPath: null,
         filesScanned: 2,
@@ -8227,7 +8238,10 @@ await test('architecture --record — refuses a scan with no import-usage discri
     assert.equal(result.code, 0, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
     assert.match(stripAnsi(result.stderr), /record refused/);
     assert.match(stripAnsi(result.stderr), /no import-usage discrimination/);
-    assert.match(stripAnsi(result.stdout), /violated/);
+    /* An undiscriminated scan reports `unknown`, not `violated`: an edge whose usage the
+       scanner could not classify never becomes a violation. The report still has to say
+       what it found before the record gate refuses to mint a receipt from it. */
+    assert.match(stripAnsi(result.stdout), /unknown/);
     assert.equal(existsSync(join(vault, '.ontology-atlas', 'architecture')), false);
     assert.equal(existsSync(join(vault, '.ontology-atlas', 'activity.jsonl')), false);
   } finally {

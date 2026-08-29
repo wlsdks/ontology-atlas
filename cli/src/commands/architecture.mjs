@@ -74,7 +74,7 @@ export async function runArchitecture(args) {
       `  ${COLORS.bold}source${COLORS.reset}    ${result.conformance.source.filesScanned} files · ` +
       `${result.conformance.source.supportedLanguages.join(', ') || 'coverage unknown'}\n` +
       `  ${COLORS.bold}excluded${COLORS.reset}  ${result.conformance.excludedByUsage} edge(s) by declaration · ` +
-      `${result.profile.typeOnlyDependencies === 'ruled' ? 'ruled like value imports' : 'free (not violations)'}\n` +
+      `governs ${result.profile.dependencyUsages.join(', ')}\n` +
       `  ${COLORS.bold}measured${COLORS.reset}  ${result.measured.at} · ` +
       `${result.measured.source.kind === 'git'
         ? `commit ${result.measured.source.revision}${result.measured.source.dirty ? ' (uncommitted edits)' : ''}`
