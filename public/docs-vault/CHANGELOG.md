@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-08-29 · The map says the names it draws, and answers everything it paints
+
+- Pointing at a domain used to paint its name twice at one baseline, the compact
+  label over the far-field watermark: `Inventory` came out as `I N M E N T O R Y`
+  and `Fulfillment & Delivery` as unreadable mush. The two forms were kept apart
+  by camera distance and hover was never part of that arrangement. The far-field
+  form is retired, so a domain reads in one form at every altitude, and long
+  names stopped being truncated because the space reserved for a name is now
+  measured on the name that gets painted.
+- Zooming used to paint a band of circles that could not be named, hovered,
+  clicked or dragged. A click on one did nothing, and a click near one selected
+  a passing relation instead. Nothing is painted now before it can be named and
+  clicked, so every mark on the map answers the pointer.
+- The architecture drawing sat against the left edge of its stage with all the
+  spare width on the right: at 2560 it used a third of the canvas and the rest
+  was dot grid. It shares the slack evenly now, and still starts at the left
+  when the chain is wider than the window so its first role stays reachable.
+
 ## 2026-08-29 · The architecture screen is a drawing, and the drawing is measured
 
 - The Living Blueprint's centre was a ladder of dots holding nothing. Each
