@@ -114,6 +114,11 @@ export const HANDOFF_SCHEMA = Object.freeze({
       compactInput: ['handoffDir', 'access', 'qualificationCore', 'answers'],
       answers: 'Compact rows {cqId,status,claimIds,targets:[{target,claimIds}],answer?,gap?}; witness refs and cqResults are derived. Partial/unknown/refused require gap and may leave explicit targets empty; answered targets require claims.',
       qualificationCore: 'Omits cqResults and the evidence_provenance axis; the helper injects an audit-pending diagnostic and axis. Exactly one named human owns purpose and every CQ revision, every revision approval predates source-hidden evaluation, and that owner must later accept the exact request. Required witness kinds must match the sealed witness kinds used by each answer; a failed CQ blocks instead of becoming a human gap. Maintainability remains the evaluator judgment supplied here and is never auto-promoted.',
+      unknownPolicy: {
+        required: ['allowed', 'response'],
+        allowed: 'boolean; true permits an explicit partial/unknown/refusal gap, false does not',
+        response: 'nonblank refusal or bounded unknown behavior returned when evidence cannot close the CQ',
+      },
       output: ['qualification-pending.json', 'hidden-access.json', 'hidden-receipt.json', 'hidden-answers.json'],
     },
     audit: {

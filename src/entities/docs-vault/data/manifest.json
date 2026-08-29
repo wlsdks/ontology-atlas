@@ -574,7 +574,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13066,
+      "wordCount": 13088,
       "updatedAt": "2026-08-29",
       "linksOut": []
     },
@@ -1411,7 +1411,7 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3001,
+      "wordCount": 3076,
       "updatedAt": "2026-08-29",
       "linksOut": []
     },

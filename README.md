@@ -681,6 +681,10 @@ test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments
 from regressing while preserving typed Korean locale data and runtime strings.
 
+Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
+step proves that scratch readers stop on a wrong vault/repository binding before
+semantic reads and that qualification keeps explicit unknown/refusal behavior.
+
 The rest of the gate reference lives in
 [development checks](docs/DEVELOPMENT-CHECKS.md), which is where a contributor
 already looks: `pnpm knip` for dead files, exports and types across every scope,
