@@ -28,9 +28,9 @@
 <p align="center">
   <sub>The installed macOS app reading the example vault in
   <a href="samples/storefront"><code>samples/storefront</code></a> — an online
-  store, written as nothing but Markdown files in a folder. The interface moves
-  quickly; the live demo and <a href="docs/FEATURES.md">feature inventory</a>
-  are the current behavior contract.</sub>
+  store, written as nothing but Markdown files in a folder. The live demo and
+  <a href="docs/FEATURES.md">feature inventory</a> are the current behavior
+  contract.</sub>
 </p>
 
 <p align="center">
@@ -95,12 +95,9 @@ disconnected, what is stale.*
 Your agent asks those questions over MCP. You read the same answers as a map,
 and every write the agent makes lands as a line in a Markdown file you can diff.
 
-Architecture is a separate contract, not another ontology layer. A reviewed
-`architecture-profile/v1` document declares implementation roles, scoped paths,
-allowed dependency direction, and which known import usages those rules govern;
-`inspect_architecture` and the `architecture` CLI compare that intent with
-usage-qualified current source imports and return `conforms`, `violated`, or
-`unknown`. Unknown coverage or import usage is never shown as green.
+Architecture is a separate reviewed contract rather than another ontology layer,
+and unknown coverage is never shown as green. [Step 4](#4-plan-against-reviewed-architecture)
+walks it.
 
 The exact five-kind discriminator, relation support matrix, direct `is_a` test,
 and standards/inference boundary live in the
@@ -269,7 +266,8 @@ folder.
   sends or writes automatically.
 - **Nothing stays running.** The server speaks stdio; your agent starts it when
   it needs it and it exits afterwards. The MCP server opens no port and makes no
-  network request; the coding agent itself may use its provider when you ask it to.
+  network request ([Security](SECURITY.md)); the coding agent itself may use its
+  provider when you ask it to.
 
 Claude Code, Codex, Cursor, and Antigravity get a direct setup path — one
 button each, writing that client's own config file. Any other MCP client can use
@@ -343,10 +341,11 @@ confirmed in step 5: two frontmatter lines, still unsaved, waiting for a person
 to look at them.
 
 A command writes the same two lines, and it says what it would do to the graph
-before touching a file — and refuses a dependency nobody explained:
+before touching a file — and refuses a dependency nobody explained. `$ATLAS` is
+the CLI entrypoint set in [Running from source](#running-from-source):
 
 ```console
-$ node $ATLAS/cli/src/index.mjs relate capabilities/order-cancel capabilities/refund dependencies ./storefront --dry-run \
+$ node $ATLAS relate capabilities/order-cancel capabilities/refund dependencies ./storefront --dry-run \
     --why "Cancelling a paid order has to give the money back, so cancellation cannot finish without refund processing."
 
 capabilities/order-cancel --dependencies--> capabilities/refund
@@ -406,7 +405,7 @@ Ask *what breaks if I change this?* and Atlas follows only approved dependency
 declarations. It does not turn folder structure into causal confidence:
 
 ```console
-$ node $ATLAS/cli/src/index.mjs blast-radius capabilities/mcp-server docs/ontology --depth 2
+$ node $ATLAS blast-radius capabilities/mcp-server docs/ontology --depth 2
 capabilities/mcp-server — blast radius (depth 2, incoming)
   risk unknown · 1 node · 1 relation · 0 cross-domain
 
@@ -473,7 +472,7 @@ Issues access and refresh tokens for authenticated users.
 
 That distinction is the one thing worth learning up front: **a path points at
 code, a slug points at a node.** Mixing them is the most common first mistake,
-and `node $ATLAS/cli/src/index.mjs validate` reports it as a dangling reference.
+and `node $ATLAS validate` reports it as a dangling reference.
 
 The usual business-to-code reading spine is deliberately small:
 
@@ -652,13 +651,9 @@ vault contract.
 > `init` refuses to overwrite it — your agent would silently answer from
 > *our* ontology instead of yours.
 
-The committed `.mcp.json` also declares `chrome-devtools`
-(`chrome-devtools-mcp`, pinned, run with `--isolated
---no-usage-statistics --redact-network-headers`). The design and craft review
-seats in `.claude/agents/` measure rendered geometry and computed styles through
-it, so without it the design gate cannot run. It starts a Chrome instance only
-when a seat asks for one; `pnpm agents:check` fails if a seat ever names a server
-this file does not declare.
+The committed `.mcp.json` also declares a review-only `chrome-devtools` server,
+which the design seats measure rendered geometry through and which starts a
+browser only when one of them asks. [AGENTS.md](AGENTS.md) owns that contract.
 
 Continue with the [CLI reference](cli/README.md), [MCP setup](mcp/README.md), or
 run the desktop shell with `pnpm desktop:dev`.
@@ -682,49 +677,11 @@ test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments
 from regressing while preserving typed Korean locale data and runtime strings.
 
-Concurrent worktrees can both prepend valid records to `docs/CHANGELOG.md` or
-`docs/DECISIONS.md`, which also conflicts their committed docs-vault mirrors. If
-those ledgers and generated outputs are the **only** unmerged paths, use the
-semantic recovery command instead of editing JSON or choosing one side:
-
-```bash
-pnpm docs-vault:resolve-conflicts -- --dry-run
-pnpm docs-vault:resolve-conflicts
-```
-
-It preserves every byte of prior history, combines only complete new dated
-records, regenerates the derived files, and refuses any unrelated conflict.
-
-Pixel-brand or mascot-motion changes also run the focused palette/continuity
-contracts and the rendered motion sweep:
-
-```bash
-pnpm exec vitest run tests/contract/mascot-palette-boundary.contract.test.ts tests/contract/mascot-motion.contract.test.ts
-pnpm exec playwright test tests/e2e/agent-mascot-presence.spec.ts
-```
-
-Run `pnpm knip` to evaluate JavaScript/TypeScript dead files, exports, and types
-across the frontend, scripts, CLI, and MCP scopes. It is a repository-wide
-diagnostic with an
-explicit exception ledger and a shrink-only export/type ratchet. Configuration
-hints and empty subject lanes fail closed as setup errors; file, dependency, and
-cycle findings block. It never rewrites code.
-
-### Refreshing the agent runtime catalog
-
-The list of coding agents the desktop app can launch is a committed snapshot of
-the [ACP registry](https://agentclientprotocol.com/get-started/registry), not a
-runtime fetch — the app stays usable offline and never opens a connection the
-person did not ask for.
-
-```bash
-pnpm acp:registry          # refresh src-tauri/src/acp-registry.json
-pnpm acp:registry:check    # fail if the committed snapshot is stale
-```
-
-Refresh it deliberately and read the diff: a new entry means the app will offer
-to launch a program it has never run here. Only the runtimes this repository has
-actually measured are marked `verified`.
+The rest of the gate reference lives in
+[development checks](docs/DEVELOPMENT-CHECKS.md), which is where a contributor
+already looks: `pnpm knip` for dead files, exports and types across every scope,
+the brand and motion contracts, the semantic recovery command for concurrently
+edited ledgers, and the agent-runtime snapshot a release refuses to ship stale.
 
 ## Documentation
 
