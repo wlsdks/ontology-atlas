@@ -81,8 +81,8 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4021,
-      "updatedAt": "2026-08-28",
+      "wordCount": 4052,
+      "updatedAt": "2026-08-29",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -425,10 +425,12 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "The meaning of the mark and the usage rules for assets. The source of truth for coordinates is src/shared/ui/brand-mark.tsx, and this document defines what it says and where to use it. The verbal identity below is current as of 2026-08-25. The nested-hex mark is still the shipping compatibility asset, but the owner has",
-      "wordCount": 1550,
-      "updatedAt": "2026-08-25",
-      "linksOut": []
+      "excerpt": "The meaning, source contract, and usage rules for the pixel mascot identity. The 2026-08-28 record in DECISIONS.md owns the replacement decision; the committed PNG masters own the pixels. The pixel mascot is the primary and only shipping brand mark. It replaces the nested-hex compatibility mark in browser, PWA, Open Gr",
+      "wordCount": 959,
+      "updatedAt": "2026-08-29",
+      "linksOut": [
+        "DECISIONS"
+      ]
     },
     {
       "slug": "CHANGELOG",
@@ -437,8 +439,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. A source-ba",
-      "wordCount": 80571,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Replaced th",
+      "wordCount": 80833,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -478,7 +480,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 195118,
+      "wordCount": 197028,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "slug"
@@ -543,8 +545,8 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 38503,
-      "updatedAt": "2026-08-28",
+      "wordCount": 38378,
+      "updatedAt": "2026-08-29",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -572,7 +574,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 12368,
+      "wordCount": 12392,
       "updatedAt": "2026-08-29",
       "linksOut": []
     },
@@ -583,8 +585,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-26 (added the separate Architecture contract/workbench, source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments, and project meaning receipts — /ontology is a compatibility red",
-      "wordCount": 23320,
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-29 (replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench, source-derived conformance, a",
+      "wordCount": 23413,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "slug",
@@ -1030,8 +1032,8 @@
       },
       "headings": [],
       "excerpt": "The ability for humans to read in one flow the AI agent's product name, verified current stage, work goals and targets, and next actions from the map. Only when there is a fresh heartbeat does it speak of plan/edit/verify/approval waits in present tense; if only write logs are recent, it does not infer \"in progress\" bu",
-      "wordCount": 642,
-      "updatedAt": "2026-08-24",
+      "wordCount": 786,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -1159,8 +1161,8 @@
       },
       "headings": [],
       "excerpt": "A component layer that prevents screen creators from manually writing className. Values are provided by controlClass()/fieldClass() (cva), and behavior (default type · forced access names · error wiring · keyboard contracts) is handled by the components. Controls with the same meaning do not appear in different sizes/c",
-      "wordCount": 272,
-      "updatedAt": "2026-08-23",
+      "wordCount": 270,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -1917,6 +1919,7 @@
           "elements/gateway-chrome",
           "elements/gateway-doc",
           "elements/home",
+          "elements/native-tray-control",
           "elements/public-quick-actions",
           "elements/root-entry"
         ],
@@ -1925,7 +1928,7 @@
       "headings": [],
       "excerpt": "The first five-minute path from shared link → installed app → connection (download decision, initial run tour, locale, automatic updates) and the always-available navigation shell surrounding it. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.",
       "wordCount": 105,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2540,6 +2543,26 @@
       "excerpt": "File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.",
       "wordCount": 11,
       "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/native-tray-control",
+      "path": "docs/ontology/elements/native-tray-control.md",
+      "title": "Native Tray Control",
+      "tags": [],
+      "frontmatter": {
+        "uid": "63a6692a-a9b0-4a93-973e-0b5c9abef6bd",
+        "slug": "elements/native-tray-control",
+        "kind": "element",
+        "title": "Native Tray Control",
+        "domain": "domains/onboarding-and-shell",
+        "path": "src-tauri/src/lib.rs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "A macOS menu-bar control that uses the mascot micro template to reopen the existing Atlas workbench or quit the app. It is static and state-free: no activity badge, background-service promise, close-to-tray behavior, new window, or webview tray permission.",
+      "wordCount": 38,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -3361,6 +3384,13 @@
         "linkText": "`CHANGELOG.md`"
       }
     ],
+    "DECISIONS": [
+      {
+        "fromSlug": "BRAND",
+        "context": "tology Atlas > The meaning, source contract, and usage rules for the pixel mascot identity. > The 2026-08-28 record in **[`DECISIONS.md`]** owns the replacement > decision; the committed PNG masters own the pixels. ## Identity Status The pixel mascot is the",
+        "linkText": "`DECISIONS.md`"
+      }
+    ],
     "audits/CASE-STUDY-AGENTS-MD-DRIFT": [
       {
         "fromSlug": "CHANGELOG",
@@ -3708,6 +3738,11 @@
       },
       {
         "fromSlug": "ontology/elements/home",
+        "context": "frontmatter · **[domains/onboarding-and-shell]**",
+        "linkText": "domains/onboarding-and-shell"
+      },
+      {
+        "fromSlug": "ontology/elements/native-tray-control",
         "context": "frontmatter · **[domains/onboarding-and-shell]**",
         "linkText": "domains/onboarding-and-shell"
       },
@@ -4630,6 +4665,13 @@
         "fromSlug": "ontology/domains/onboarding-and-shell",
         "context": "frontmatter · **[elements/home]**",
         "linkText": "elements/home"
+      }
+    ],
+    "ontology/elements/native-tray-control": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/native-tray-control]**",
+        "linkText": "elements/native-tray-control"
       }
     ],
     "ontology/elements/public-quick-actions": [
@@ -5644,6 +5686,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/local-fs-handle",
                 "title": "Local Fs Handle"
+              },
+              {
+                "name": "native-tray-control",
+                "path": "ontology/elements/native-tray-control",
+                "type": "doc",
+                "slug": "ontology/elements/native-tray-control",
+                "title": "Native Tray Control"
               },
               {
                 "name": "native-vault-filesystem-bridge",

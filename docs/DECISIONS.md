@@ -40,6 +40,213 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-29 — Navigation begins with the map; mascot motion yields to graph ink
+
+**Convened because**: Design Council after the complete pixel-identity build and
+direct owner inspection · **Selected seats**: Lead, System, Motion, Information
+Visualization, Workbench, Responsive, Interaction. The runtime limited Round 1
+to three concurrent reviewers at a time; positions remained independent because
+no seat received another position until the single cross-critique round.
+
+**Selected direction**: one raster-first identity on platform/brand surfaces,
+one finite evidence-bound WALK → READ → SUCCESS presence, and one removable
+macOS menu-bar prototype. Rejected alternatives were the old helmet plus `Atlas`
+rail lockup, an enlarged/cropped rail mascot, ambient motion, and Windows tray
+parity. After seeing both rail sizes in the installed app, the owner made the
+final call that no rail icon would be better. The rail therefore begins with
+destinations and carries no logo or wordmark.
+
+## Design Council Verdict — pixel identity, truthful motion, and native tray
+
+| Seat | Verdict | Prescription / evidence |
+|---|---|---|
+| Lead | Conditional → approve after correction | Map hub remains the attention winner; remove the repeated rail mark and unused mascot runway |
+| System | Conditional → approve after correction | Keep chartreuse raster-only; one five-transition clock; enforce palette and frame boundaries |
+| Motion | Conditional → approve after correction | Synchronize travel/art, join state-boundary pixels, preserve travel on early completion |
+| Information Visualization | Conditional → approve after correction | Project hex remains data; mascot ink must not cover dense-map node ink |
+| Workbench | Conditional → approve prototype | Installed 1512/1920/2560 proof; fresh READ/no-logo capture required |
+| Responsive | Approve, then revised by new canvas evidence | Preserve the 1024 boundary and mobile reserve; reduce the desktop stage to 64×64 |
+| Interaction | Approve prototype / conditional for release claim | Tray is a pointer-secondary path; Dock, Cmd-Tab, and app menu remain keyboard-primary |
+
+**Primary moment**: reading the selected ontology and its connections in the
+installed app. **Attention winner**: the selected topology hub, not identity art.
+
+**Decisive disagreement**: Responsive initially measured zero DOM/chrome
+intersections and prescribed the 128×64 stage unchanged. Infoviz then measured
+opaque sprite pixels against live synthetic-3000 node radii and reproduced a
+covered node. That stronger fact overturned the parent-rectangle result. Motion
+separately found travel `steps(6)` and art `steps(5)` producing 11 interleaved
+change pulses; shrinking the stage could not solve that clock defect.
+
+**Decision (design-guardian)**: keep the rail completely brand-free. Remove the
+unused 64px transparent runway and use one 64×64 right-edge stage in a measured
+clear lane. Six poses share five 120ms travel/frame ticks. WALK's terminal frame
+is byte-identical to READ's first frame; READ's terminal frame is byte-identical
+to SUCCESS's first. An early completion changes the truthful pose immediately
+without cancelling the in-flight travel or later regressing SUCCESS to READ.
+Reduced motion keeps the static pose and localized status. Chartreuse remains
+illegal in application CSS/TypeScript. The macOS status item remains static,
+state-free, and pointer-secondary; no keyboard-accessibility claim, hidden
+service implication, or Windows parity is added.
+
+**Applied rule**: smallest correction · charter first · no union · removal
+required. **Remove/dim/collapse/align**: remove rail identity; collapse 128×64 →
+64×64; align five travel/art ticks and boundary pixels; keep the mascot hidden
+below 1024px and absent without verified work.
+
+**Recorded dissent**: any fixed overlay may drift into graph ink as layouts
+change, and a permanent status item may remain unused because Dock/Cmd-Tab
+already return to the app. **Falsifier**: any opaque-pixel/node overlap in the
+three-sample dense-map gate; a person notices the mascot before the affected
+concept; a state boundary teleports; Open creates a second window; Quit leaves a
+process/icon; or the owner naturally ignores the status item across three normal
+dogfood sessions. The first four block the build; repeated non-use removes the
+tray prototype.
+
+**Proof after application**: palette, motion continuity, reduced-motion, early
+completion, responsive, and dense-map opaque-overlap gates; production build;
+installed-app window/WebView capture; real macOS 30fps phase strip; Finder icon;
+native menu Open/Quit lifecycle. Browser proof does not substitute for the
+installed captures, and the tray has no release-ready keyboard claim.
+
+**Status**: valid for the identity and motion slice; macOS tray remains a
+reversible prototype, not a Windows or accessibility-parity commitment
+
+## 2026-08-29 — The mascot may enter the macOS menu bar only as a captured, removable prototype
+
+**Convened because**: PO Council. The owner explicitly requested the selected
+mascot in the Mac menu bar, supplied a 133×27 placement crop, asked whether
+Windows should receive the equivalent notification-area icon, and required
+direct captures after implementation. This adds a native user-facing surface.
+
+**Prior decision**: the 2026-08-24 removal of unused webview `core:tray`
+permission remains standing. This prototype is owned entirely by Rust and does
+not reopen JavaScript tray, image, menu, or window permissions.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a reversible macOS prototype; no independent return-route evidence | Problem insight 2 · User moment 4 |
+| Craft | Shape only after a real black/clear template and installed OS captures exist | Verification 0 |
+| Steward | Shape macOS only; no ontology or agent value exemption | Ontology value 0 · Agent value 0 |
+| Wedge | Investigate first; a static launcher is generic and Windows parity has no product basis | Differentiation 1 |
+| Leverage | Do not build before closing the existing brand replacement | appetite and order |
+
+**Rubric total**: 7/24 (fatal zeros: Ontology value · Agent value · Verification)
+
+**Decision (accountable: owner)**: the direct owner request overrides the low
+score for one disposable macOS-only prototype after the existing brand assets,
+motion, map performance, and installed workbench capture are green. Generate a
+dedicated black-and-clear 16px template from the micro mascot plus an exact 2×
+representation; do not mark the colour mascot itself as a macOS template. A
+primary click opens the native menu; its Open item shows, unminimizes, and
+focuses the existing main window. The menu contains localized Open Ontology
+Atlas, a separator, and Quit Ontology Atlas. The icon is static and state-free.
+
+**OUT**: Windows notification-area parity, Linux, badges, activity state,
+animation, autostart, close-to-tray, hidden background-service semantics, a new
+window, changed quit behavior, and restored webview tray permissions. Windows
+has a notification area, but Microsoft owns visibility and overflow; branding
+alone does not earn permanent occupancy, and no real Windows capture is
+available in this slice.
+
+**Applied rule**: owner-directed reversible prototype · charter before parity ·
+no union · remove the prototype if its direct evidence fails
+
+**Recorded dissent**: Dock and Cmd-Tab already return to the app; the menu-bar
+item has no observed workflow damage to repair, no ontology or agent value, and
+may imply Atlas keeps working invisibly in the background.
+
+**Falsifier**: the complete mascot is not identifiable in original-pixel menu-bar
+captures; the template fills the face into a block; Open fails to restore and
+focus the existing window; Quit leaves a zombie icon/process; the icon changes
+close behavior; or the owner does not naturally use or prefer it during three
+ordinary dogfood sessions. Any one removes the surface rather than expanding it.
+
+**Verification before status can become valid**: packaged and installed app;
+idle, clicked, and open-menu captures; light/dark menu-bar contexts where
+available; focus restoration from another application; minimized restoration;
+localized labels; Quit removal; and unchanged single-instance/close behavior.
+
+**Status**: prototype pending direct evidence
+
+## 2026-08-28 — Pixel mascot replaces the compatibility mark as one raster-first identity
+
+**Convened because**: PO Council. The owner selected the two 2026-08-28 pixel
+mascot boards, explicitly required the nested-hex mark to be removed from every
+brand surface, and asked for the character to move inside the product. This is a
+hard-to-reverse first-impression decision rather than a mechanical asset swap.
+
+**Prior decision**: the 2026-07-29 nested-hex record is overturned for brand
+identity. Its own revisit condition was met: `docs/BRAND.md` records that the
+owner rejected it as the final direction, and the owner has now selected its
+replacement. Project hexagons remain topology kind marks; this decision does not
+change their data meaning or geometry.
+
+**Observed phenomenon**: the rejected compatibility mark still ships through
+the app rail and loading surface plus the favicon, README, Open Graph card, PWA
+icon, macOS/Windows icon families, and generated lockups. The selected mascot is
+available only inside two flattened RGB presentation boards with no alpha,
+canonical pixel grid, animation frames, timing, or accessibility contract.
+
+## PO Council Verdict — pixel mascot identity and truthful motion
+
+**Convened because**: complete brand replacement plus a moving workbench character
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a slice; owner intent and asset drift are observed, independent recognition evidence is not | Problem insight 2 · User moment 4 |
+| Craft | Shape a slice; no replacement runtime exists yet, so installed-app proof remains a build gate | Verification 0 |
+| Steward | Shape a slice; motion earns meaning only from verified Agent Work Visibility state | Ontology value 2 · Agent value 2 |
+| Wedge | Shape a slice; mascot craft is copyable, truthful local work state is the Atlas-specific part | Differentiation 2 |
+| Leverage | Shape a bounded pre-public replacement now; stop before expanding into a mascot platform | appetite and slice |
+
+**Rubric total**: 12/24 (fatal zero: Verification before the replacement build)
+
+**Decisive disagreement**: whether the full illustrated pose catalogue should
+ship immediately. The owner asked for motion, but the boards contain poses rather
+than consistent animation frames, and decorative activity would falsely imply
+that an agent is working.
+
+**Decision (accountable: owner)**: first author one canonical raised-hand full
+master and one separately drawn mini master, then prove the identity at
+1024/128/64/32/16px before fan-out. After that proof, replace every existing
+brand-only consumer in one coherent pass; mixed old/new branding is not an
+acceptable stopping point. The selected black/ivory/chartreuse palette is fixed
+inside mascot raster assets only and does not create a second application colour
+system or retheme the indigo UI.
+
+Motion is one finite, truthful work sequence owned by the existing Agent Work
+Visibility projection: a verified read activity may walk into a reading pose,
+and a verified terminal completion may resolve to success. The visual state,
+typed `data-state`, and accessible status text share one mapping. No fresh state
+means no claimed work. Reduced motion keeps the same information as a static
+pose. There is no ambient loop, random map traversal, new assistant surface,
+global mascot event bus, mascot ontology node, or replacement of topology data
+glyphs. Copy and slogans shown inside the concept boards are not adopted.
+
+**Applied rule**: smallest integrated proof first · charter before spectacle ·
+one identity, not a union · remove the brand-only `HexMark` echoes rather than
+repainting them with another decoration
+
+**Recorded dissent**: owner preference and internal consistency do not prove
+that strangers recognize the mascot or understand its poses better than the old
+mark. A moving mascot may also outrank the ontology work and make Atlas look like
+a generic AI wrapper.
+
+**Falsifier**: the full/mini forms fail to remain identifiable at 32/16px; the
+installed Dock, browser tab, or rail reads as blurred or unrelated; people notice
+the moving mascot before the affected concept; or READ/SUCCESS cannot be decoded
+without a caption. Any one failure stops pose expansion. State confusion removes
+runtime motion while preserving the static identity; size failure stops asset
+fan-out and reopens the master grid.
+
+**Revisit**: after the built identity has been inspected in the installed app at
+1512×900, Dock/Finder light and dark contexts, browser favicon, and 390px layout,
+with normal and reduced motion recorded. Verification must be rescored before a
+release may carry the replacement.
+
+**Status**: valid
+
 ## 2026-08-29 — First-pass performance is staged, and body assertions are the audit unit
 
 **Convened because**: the final fresh trial completed safely but falsified the

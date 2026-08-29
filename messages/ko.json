@@ -3480,6 +3480,11 @@
       "blocked": "승인 기다림",
       "complete": "완료"
     },
+    "mascot": {
+      "detected": "확인된 에이전트 읽기 작업을 감지했어요.",
+      "reading": "에이전트가 온톨로지를 읽고 있어요.",
+      "success": "확인된 에이전트 작업이 완료됐어요."
+    },
     "quietUnknown": "조용함",
     "recentWrite": "변경 감지 {age}",
     "recentWriteAgent": "{agent} · 변경 감지 {age}",

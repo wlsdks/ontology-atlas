@@ -50,7 +50,6 @@ const ATLAS_BOUND: ReadonlyArray<readonly [file: string, why: string]> = [
   ["locale-redirect.tsx", "로케일 라우팅 폴백"],
   ["locale-html-lang.tsx", "로케일 html lang 동기화"],
   ["brand-mark.tsx", "Atlas 브랜드 자산"],
-  ["hex-mark.tsx", "Atlas 브랜드 자산"],
   ["github-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],
   ["x-mark.tsx", "외부 서비스 마크 — 이 앱의 링크 자산"],
   ["topology-v2-kind-glyph.tsx", "온톨로지 kind 데이터 마크"],

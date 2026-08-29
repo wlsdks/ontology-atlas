@@ -53,8 +53,6 @@ export {
 export { TabBar } from './tab-bar';
 export { ChromeTile } from './chrome-tile';
 export { ChromeChip, CHROME_STATUS_CHIP_CLASS } from './chrome-chip';
-export { BrandMark } from './brand-mark';
-export { HexMark } from './hex-mark';
 export { GithubMark } from './github-mark';
 export { XMark } from './x-mark';
 export { CompactCopyButton } from './compact-copy-button';

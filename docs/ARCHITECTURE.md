@@ -130,6 +130,9 @@ Decided 2026-07-27 (`docs/DECISIONS.md`); the working rule agents load is
 **One codebase, one build.** The macOS app is not a port. Tauri loads the very
 same static export into a WebView (`src-tauri/tauri.conf.json` →
 `frontendDist: "../out"`). Nothing is forked, and nothing should be.
+The macOS shell also owns one Rust-native, state-free menu-bar item that opens
+the existing main window or quits. It creates no second window, background
+service, webview tray permission, or web equivalent.
 
 **What each surface is for.** The app is where the vault lives day to day: the
 place a person reads the map, judges it, and connects their AI agents. The web

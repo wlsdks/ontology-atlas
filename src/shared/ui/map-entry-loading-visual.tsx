@@ -44,9 +44,9 @@ export function MapEntryLoadingVisual({
             className="absolute inset-1 rounded-full border border-transparent border-r-[color:var(--color-indigo-a46)] border-t-[color:var(--color-indigo-accent)] motion-safe:animate-spin motion-reduce:animate-none"
           />
           <BrandMark
-            size={24}
+            size={32}
             detail="compact"
-            className="size-6 text-[color:var(--color-indigo-accent)]"
+            className="size-8"
           />
         </div>
         <p className="mt-5 text-title font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">

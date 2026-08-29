@@ -31,7 +31,6 @@ import {
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
-import { BrandMark } from "@/shared/ui";
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
@@ -266,35 +265,6 @@ export function AppNavRail({
         className,
       )}
     >
-      <Link
-        href={buildRouteFocusHref("/topology/")}
-        onClick={(event) => rememberRailRouteFocus(event, "/topology/")}
-        title="Ontology Atlas"
-        aria-label="Ontology Atlas"
-        translate="no"
-        className="group mb-3.5 flex shrink-0 flex-col items-center gap-1"
-      >
-        <span className="flex h-[var(--app-nav-rail-logo-size)] w-[var(--app-nav-rail-logo-size)] items-center justify-center text-[color:var(--color-indigo-accent)] transition-colors group-hover:text-[color:var(--color-indigo-hover)]">
-          <BrandMark
-            size={20}
-            detail="compact"
-            className="h-[var(--app-nav-rail-logo-icon-size)] w-[var(--app-nav-rail-logo-icon-size)]"
-          />
-        </span>
-        {/* H6 — the permanent wordmark. Ultra-small "Atlas" text under the hexagon puts
-            a brand signature on the globally shared rail. The caption ramp step paired
-            with a quaternary tone and tracking-caption (the code's discipline).
-            aria-hidden — avoids being read twice alongside the Link's aria-label
-            "Ontology Atlas". */}
-        <span
-          aria-hidden="true"
-          translate="no"
-          className="text-caption font-[var(--font-weight-signature)] tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]"
-        >
-          Atlas
-        </span>
-      </Link>
-
       {/*
         The rail's ownership is the same however the destination count, window height
         or UI scale changes. Only the destinations pane scrolls (without `min-h-0` a

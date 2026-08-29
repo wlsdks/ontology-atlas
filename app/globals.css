@@ -1145,6 +1145,55 @@
     }
   }
 
+  /*
+   * Pixel mascot — one truthful finite sequence, never an ambient loop.
+   *
+   * The art owns a 6×64px frame row. Five frame transitions therefore end at
+   * -320px rather than -384px, which would expose an empty seventh cell after a
+   * finite animation. Six poses contain five transitions: the 60px walk therefore
+   * divides into five exact 12px steps, and art plus travel share one clock. The
+   * local 600ms sequence is five existing 120ms fast steps, not a new app-wide
+   * duration token.
+   */
+  @keyframes atlasMascotSprite6 {
+    from {
+      background-position-x: 0;
+    }
+
+    to {
+      background-position-x: -320px;
+    }
+  }
+
+  @keyframes atlasMascotWalkIn {
+    from {
+      opacity: 0;
+      transform: translateX(var(--atlas-mascot-travel));
+    }
+
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .atlas-mascot-presence {
+    --atlas-mascot-travel: 60px;
+    --atlas-mascot-sequence-duration: calc(var(--motion-fast) * 5);
+  }
+
+  .atlas-mascot-presence--walking {
+    animation: atlasMascotWalkIn var(--atlas-mascot-sequence-duration) steps(5, end) both;
+  }
+
+  .atlas-mascot-sprite {
+    background-position: 0 0;
+    background-repeat: no-repeat;
+    background-size: 384px 64px;
+    image-rendering: pixelated;
+    animation: atlasMascotSprite6 var(--atlas-mascot-sequence-duration) steps(5, end) both;
+  }
+
   /* Agent panel waiting dot — reuses same heartbeat syntax (slow low-contrast cycle).
      Only opacity moves, not glow, and this is **not fake progress**:
      turns on only while actual round-trip runs, and the fact of progress is told by the tool row below. prefers-reduced-motion automatically stops it via base layer global rule below — dot remains visible and "thinking · N sec" text beside it continues telling same fact, so information does not decrease at all. */
@@ -2000,8 +2049,6 @@
      * ratio, resolving the defect where the left rail appeared relatively smaller.
      */
     --app-nav-rail-width: calc(64px * var(--topology-ui-scale-factor));
-    --app-nav-rail-logo-size: calc(38px * var(--topology-ui-scale-factor));
-    --app-nav-rail-logo-icon-size: calc(26px * var(--topology-ui-scale-factor));
     /* 24 → 20 (Owner 2026-07-23: "Icon sizes must be uniform" — per VS Code Activity Bar convention, destination/utilities use a single 20px ladder; hierarchy is handled by labels/positioning). */
     --app-nav-rail-icon-size: calc(20px * var(--topology-ui-scale-factor));
     /*

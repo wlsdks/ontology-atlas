@@ -41,6 +41,10 @@ const CSS = readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
  * **red**.
  */
 const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
+  "atlas-mascot-presence--walking":
+    "The travel axis is decorative. Reduced motion places the verified state immediately; the role=status text still carries the same fact.",
+  "atlas-mascot-sprite":
+    "The stepped character frames stop. The final static READ or SUCCESS pose plus the same accessible status preserves the information.",
   "agent-pending-dot": "끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
   // Architecture spine flow (2026-08-27). A one-shot directional run down the gaps
   // between a focused layer and its reach — decorative direction emphasis, not the
