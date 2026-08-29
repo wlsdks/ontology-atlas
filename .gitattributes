@@ -12,15 +12,18 @@
 # for them to be absent from the default review view — eliminating the problem of 400KB JSON diffs
 # obscuring actual changes.
 #
-# Merge drivers are intentionally unspecified: `merge=ours`-like strategies can silently discard
-# document bodies (`content.json`) actually added by the other side. If conflicts arise, either side
-# can be taken — **regenerating is the correct answer**:
+# Merge drivers remain intentionally unspecified: `merge=ours`-like strategies can silently discard
+# document bodies (`content.json`) actually added by the other side, while Git's built-in `union`
+# driver does not preserve deterministic ledger order. If a merge or rebase conflicts only in
+# `docs/CHANGELOG.md`, `docs/DECISIONS.md`, and the generated paths below, use the fail-closed
+# semantic resolver:
 #
-#     git checkout --ours src/entities/docs-vault/data public/docs-vault
-#     pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
+#     pnpm docs-vault:resolve-conflicts -- --dry-run
+#     pnpm docs-vault:resolve-conflicts
 #
-# Never manually edit JSON conflicts — there have been precedents where conflict markers remained,
-# breaking tsc.
+# It accepts prepend-only dated records while requiring every existing record to remain byte-identical,
+# then regenerates and stages every derived output. It refuses unrelated conflicts or historical edits.
+# Never manually edit JSON conflicts — conflict markers have previously survived and broken tsc.
 
 src/entities/docs-vault/data/manifest.json           linguist-generated=true
 src/entities/docs-vault/data/content.json            linguist-generated=true

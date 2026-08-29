@@ -81,6 +81,11 @@ full picture and for how to report a vulnerability.
 - Commits: conventional English prefix and English body. Explain the *why* —
   the diff explains the *what*. Do not invent custom prefixes.
 - Don't bypass git hooks (`--no-verify`).
+- When concurrent branches conflict only in the append-only CHANGELOG/DECISIONS
+  ledgers and generated docs-vault files, run
+  `pnpm docs-vault:resolve-conflicts -- --dry-run` and then
+  `pnpm docs-vault:resolve-conflicts`. It refuses every unrelated conflict and
+  every historical record edit; never choose one generated JSON side by hand.
 
 ### Verification before PR
 

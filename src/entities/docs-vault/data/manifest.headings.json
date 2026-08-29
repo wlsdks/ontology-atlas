@@ -10940,6 +10940,11 @@
       "slug": "generated-manifest-determinism"
     },
     {
+      "depth": 3,
+      "text": "Concurrent ledger conflict recovery",
+      "slug": "concurrent-ledger-conflict-recovery"
+    },
+    {
       "depth": 2,
       "text": "Docs Checks",
       "slug": "docs-checks"

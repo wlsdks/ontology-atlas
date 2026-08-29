@@ -574,7 +574,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 12392,
+      "wordCount": 12653,
       "updatedAt": "2026-08-29",
       "linksOut": []
     },
@@ -1743,6 +1743,7 @@
         ],
         "elements": [
           "elements/agents-destination",
+          "elements/concurrent-ledger-conflict-resolver",
           "elements/vault-agent-panel"
         ],
         "created_by": "human",
@@ -1754,7 +1755,7 @@
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2195,6 +2196,26 @@
       "excerpt": "Kind/category classification data entity. Implementation evidence for capabilities/taxonomy.",
       "wordCount": 8,
       "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/concurrent-ledger-conflict-resolver",
+      "path": "docs/ontology/elements/concurrent-ledger-conflict-resolver.md",
+      "title": "Concurrent Ledger Conflict Resolver",
+      "tags": [],
+      "frontmatter": {
+        "uid": "26de5f55-1ec1-4eb2-9ae0-7dac6993580d",
+        "slug": "elements/concurrent-ledger-conflict-resolver",
+        "kind": "element",
+        "title": "Concurrent Ledger Conflict Resolver",
+        "domain": "domains/agent-integration",
+        "path": "scripts/resolve-docs-vault-conflicts.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "A fail-closed repository helper for concurrent worktrees. It semantically merges only complete dated records prepended to the append-only CHANGELOG and DECISIONS ledgers, refuses historical or unrelated conflicts, rebuilds deterministic docs-vault artifacts, and stages the verified result without continuing the Git ope",
+      "wordCount": 41,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -3660,6 +3681,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/elements/concurrent-ledger-conflict-resolver",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/elements/vault-agent-panel",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4490,6 +4516,13 @@
         "fromSlug": "ontology/domains/agent-integration",
         "context": "frontmatter · **[capabilities/vault-agent]**",
         "linkText": "capabilities/vault-agent"
+      }
+    ],
+    "ontology/elements/concurrent-ledger-conflict-resolver": [
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[elements/concurrent-ledger-conflict-resolver]**",
+        "linkText": "elements/concurrent-ledger-conflict-resolver"
       }
     ],
     "ontology/capabilities/architecture-guided-development": [
@@ -5574,6 +5607,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/category",
                 "title": "Category"
+              },
+              {
+                "name": "concurrent-ledger-conflict-resolver",
+                "path": "ontology/elements/concurrent-ledger-conflict-resolver",
+                "type": "doc",
+                "slug": "ontology/elements/concurrent-ledger-conflict-resolver",
+                "title": "Concurrent Ledger Conflict Resolver"
               },
               {
                 "name": "docs-quick-drawer",

@@ -604,6 +604,19 @@ test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments
 from regressing while preserving typed Korean locale data and runtime strings.
 
+Concurrent worktrees can both prepend valid records to `docs/CHANGELOG.md` or
+`docs/DECISIONS.md`, which also conflicts their committed docs-vault mirrors. If
+those ledgers and generated outputs are the **only** unmerged paths, use the
+semantic recovery command instead of editing JSON or choosing one side:
+
+```bash
+pnpm docs-vault:resolve-conflicts -- --dry-run
+pnpm docs-vault:resolve-conflicts
+```
+
+It preserves every byte of prior history, combines only complete new dated
+records, regenerates the derived files, and refuses any unrelated conflict.
+
 Pixel-brand or mascot-motion changes also run the focused palette/continuity
 contracts and the rendered motion sweep:
 
