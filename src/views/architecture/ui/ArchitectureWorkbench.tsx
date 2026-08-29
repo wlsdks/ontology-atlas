@@ -760,7 +760,7 @@ export function ArchitectureWorkbench({
           rather than standing a column permanently in its way.
         */}
         <div
-          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-span-2 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3"
+          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3"
           data-testid="architecture-flow-panel"
           data-architecture-mode={mode}
         >
@@ -1179,10 +1179,26 @@ export function ArchitectureWorkbench({
 
         {!stageOpen ? null : (
         <aside ref={stagePanelRef} className={cn(
-          'border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-span-2 xl:row-start-1 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto',
-          /* The stage sits outside the inspector, so which column it lands in depends on whether
-             the inspector is there to sit beside. */
-          inspectorOpen ? 'xl:col-start-3' : 'xl:col-start-2',
+          /*
+           * ⚠️ **Longhand placement, because a span shorthand cannot be overridden by one.**
+           * `lg:col-span-2` emits `grid-column: span 2 / span 2`, and an `xl:col-end-*` longhand
+           * lost to it in the cascade: the stage went on spanning two tracks at `xl`, the grid
+           * invented a third for it, and the canvas was squeezed to a 218px strip with the stage
+           * sprawling beside it (measured on the installed app and reproduced at 1512,
+           * 2026-08-30). Both ends are stated at both breakpoints now.
+           */
+          'border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-start-1 lg:col-end-3 xl:row-start-1 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto',
+          /*
+           * The stage sits outside the inspector, so which column it lands in depends on whether
+           * the inspector is there to sit beside.
+           *
+           * ⚠️ **Both ends, always.** `lg:col-span-2` still applies at `xl`, so a start with no end
+           * made this aside span two tracks — and where only two exist the grid invented a third,
+           * squeezing the canvas to a 220px strip with the stage sprawling beside it (measured on
+           * the installed app, 2026-08-30). An explicit end is what the old placement had, and
+           * removing it was the regression.
+           */
+          inspectorOpen ? 'xl:col-start-3 xl:col-end-4' : 'xl:col-start-2 xl:col-end-3',
         )}>
           <div className="grid">
           <Surface open={mode === 'understand'} as="section" data-architecture-stage="understand" className="col-start-1 row-start-1 min-w-0">

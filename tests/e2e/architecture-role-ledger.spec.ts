@@ -241,5 +241,31 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     await page.getByTestId('architecture-inspector-toggle').click();
     await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'true');
     await expect(page.getByTestId('architecture-edge-sentences'), where).toBeVisible();
+
+    /*
+     * ⚠️ **The stage takes one column, not two.** `lg:col-span-2` emits a `grid-column` shorthand
+     * that an `xl:col-end-*` longhand loses to, so the stage went on spanning two tracks at
+     * workbench width, the grid invented a third for it, and the canvas collapsed to a 218px strip
+     * with the panel sprawling across the rest (the owner met this on the installed app,
+     * 2026-08-30). Opening the stage also closes this dock: 380 plus 340 leaves the canvas too
+     * narrow for the drawing.
+     */
+    await page.getByTestId('architecture-mode-plan').click();
+    await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'false');
+    const withStage = await page.evaluate(() => {
+      const flow = document.querySelector('[data-testid="architecture-flow-panel"]') as HTMLElement;
+      const scroller = document.querySelector(
+        '[data-testid="architecture-layout-scroll"]',
+      ) as HTMLElement;
+      return {
+        canvas: Math.round(flow.getBoundingClientRect().width),
+        tracks: getComputedStyle(scroller).gridTemplateColumns.split(' ').length,
+        travel: scroller.scrollHeight - scroller.clientHeight,
+      };
+    });
+    expect(withStage.tracks, `${where} the stage invented a column`).toBe(2);
+    expect(withStage.canvas, `${where} the stage squeezed the canvas`).toBeGreaterThan(700);
+    expect(withStage.travel, where).toBeLessThanOrEqual(1);
+    await page.getByTestId('architecture-mode-understand').click();
   }
 });
