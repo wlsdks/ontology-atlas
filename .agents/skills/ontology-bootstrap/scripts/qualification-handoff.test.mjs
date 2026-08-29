@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
+import { link, mkdir, mkdtemp, readFile, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { promisify } from 'node:util';
@@ -20,7 +20,10 @@ import {
   prepareRelease,
   sealCandidate,
 } from './qualification-handoff.mjs';
-import { evaluateConstructionQualification } from '../../../../mcp/src/construction-qualification.mjs';
+import {
+  CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+  evaluateConstructionQualification,
+} from '../../../../mcp/src/construction-qualification.mjs';
 import { constructionPlanDigest, proposalCoverageRefs } from '../../../../mcp/src/construction-lifecycle.mjs';
 
 const execFileAsync = promisify(execFile);
@@ -35,6 +38,87 @@ async function writeJson(path, value) {
 
 function artifactDigest(value) {
   return `sha256:${createHash('sha256').update(canonicalJson(value, { pretty: true })).digest('hex')}`;
+}
+
+function compileSchema(schema) {
+  const allowed = new Set([
+    'type', 'description', 'properties', 'required', 'additionalProperties',
+    'items', 'minItems', 'maxItems', 'uniqueItems', 'minLength', 'maxLength',
+    'pattern', 'format', 'enum', 'const', 'anyOf', 'allOf', 'if', 'then', 'not',
+    'contains', 'minimum', 'maximum', 'examples',
+  ]);
+  const visit = (row, path = '$') => {
+    assert.equal(row !== null && typeof row === 'object' && !Array.isArray(row), true, `${path} must be a schema object`);
+    for (const key of Object.keys(row)) assert.equal(allowed.has(key), true, `${path} has unsupported schema keyword ${key}`);
+    for (const [key, child] of Object.entries(row.properties ?? {})) visit(child, `${path}.properties.${key}`);
+    if (row.items) visit(row.items, `${path}.items`);
+    for (const [key, rows] of [['anyOf', row.anyOf], ['allOf', row.allOf]]) {
+      rows?.forEach((child, index) => visit(child, `${path}.${key}[${index}]`));
+    }
+    for (const key of ['if', 'then', 'not', 'contains']) if (row[key]) visit(row[key], `${path}.${key}`);
+    if (row.additionalProperties && typeof row.additionalProperties === 'object') {
+      visit(row.additionalProperties, `${path}.additionalProperties`);
+    }
+  };
+  visit(schema);
+  return (value) => validateSchemaValue(schema, value);
+}
+
+function validateSchemaValue(schema, value, path = '$') {
+  const errors = [];
+  const validate = (row, subject, currentPath) => {
+    if (row.anyOf && !row.anyOf.some((child) => validateSchemaValue(child, subject, currentPath).length === 0)) {
+      errors.push(`${currentPath} did not match anyOf`);
+    }
+    for (const child of row.allOf ?? []) validate(child, subject, currentPath);
+    if (row.if && validateSchemaValue(row.if, subject, currentPath).length === 0 && row.then) validate(row.then, subject, currentPath);
+    if (row.not && validateSchemaValue(row.not, subject, currentPath).length === 0) errors.push(`${currentPath} matched forbidden schema`);
+    if (Object.hasOwn(row, 'const') && canonicalJson(subject) !== canonicalJson(row.const)) errors.push(`${currentPath} const mismatch`);
+    if (row.enum && !row.enum.some((item) => canonicalJson(item) === canonicalJson(subject))) errors.push(`${currentPath} enum mismatch`);
+
+    const typeMatches = row.type === undefined
+      || (row.type === 'null' && subject === null)
+      || (row.type === 'array' && Array.isArray(subject))
+      || (row.type === 'object' && subject !== null && typeof subject === 'object' && !Array.isArray(subject))
+      || (row.type === 'integer' && Number.isInteger(subject))
+      || (row.type === 'number' && typeof subject === 'number' && Number.isFinite(subject))
+      || (row.type === 'string' && typeof subject === 'string')
+      || (row.type === 'boolean' && typeof subject === 'boolean');
+    if (!typeMatches) {
+      errors.push(`${currentPath} type mismatch`);
+      return;
+    }
+    if (typeof subject === 'string') {
+      if (row.minLength !== undefined && subject.length < row.minLength) errors.push(`${currentPath} below minLength`);
+      if (row.maxLength !== undefined && subject.length > row.maxLength) errors.push(`${currentPath} above maxLength`);
+      if (row.pattern && !new RegExp(row.pattern).test(subject)) errors.push(`${currentPath} pattern mismatch`);
+      if (row.format === 'date-time' && !Number.isFinite(Date.parse(subject))) errors.push(`${currentPath} date-time mismatch`);
+    }
+    if (typeof subject === 'number') {
+      if (row.minimum !== undefined && subject < row.minimum) errors.push(`${currentPath} below minimum`);
+      if (row.maximum !== undefined && subject > row.maximum) errors.push(`${currentPath} above maximum`);
+    }
+    if (Array.isArray(subject)) {
+      if (row.minItems !== undefined && subject.length < row.minItems) errors.push(`${currentPath} below minItems`);
+      if (row.maxItems !== undefined && subject.length > row.maxItems) errors.push(`${currentPath} above maxItems`);
+      if (row.uniqueItems && new Set(subject.map((item) => canonicalJson(item))).size !== subject.length) errors.push(`${currentPath} duplicate items`);
+      subject.forEach((item, index) => { if (row.items) validate(row.items, item, `${currentPath}[${index}]`); });
+      if (row.contains && !subject.some((item, index) => validateSchemaValue(row.contains, item, `${currentPath}[${index}]`).length === 0)) {
+        errors.push(`${currentPath} missing contained item`);
+      }
+    }
+    if (subject !== null && typeof subject === 'object' && !Array.isArray(subject)) {
+      for (const key of row.required ?? []) if (!Object.hasOwn(subject, key)) errors.push(`${currentPath}.${key} required`);
+      for (const [key, child] of Object.entries(row.properties ?? {})) {
+        if (Object.hasOwn(subject, key)) validate(child, subject[key], `${currentPath}.${key}`);
+      }
+      if (row.additionalProperties === false) {
+        for (const key of Object.keys(subject)) if (!Object.hasOwn(row.properties ?? {}, key)) errors.push(`${currentPath}.${key} additional`);
+      }
+    }
+  };
+  validate(schema, value, path);
+  return errors;
 }
 
 function reviewPlan(conceptCount = 4) {
@@ -411,6 +495,114 @@ describe('qualification handoff happy path', () => {
       allowed: 'boolean; true permits an explicit partial/unknown/refusal gap, false does not',
       response: 'nonblank refusal or bounded unknown behavior returned when evidence cannot close the CQ',
     });
+    assert.deepEqual(HANDOFF_SCHEMA.commands.hidden.qualificationCoreShape, {
+      required: [
+        'qualificationId',
+        'purposeAuthority',
+        'scenarios',
+        'competencyQuestions',
+        'axisResults',
+        'diagnostics',
+        'regression',
+        'resourceUse',
+      ],
+      forbidden: [
+        'contract',
+        'subject',
+        'actors',
+        'witnesses',
+        'claims',
+        'citationChecks',
+        'sourceHiddenTask',
+        'acceptance',
+        'cqResults',
+        'canWrite',
+        'writePlan',
+      ],
+      additionalProperties: false,
+    });
+    assert.equal(HANDOFF_SCHEMA.access.contract, 'qualificationHandoffAccess:v1');
+    assert.deepEqual(HANDOFF_SCHEMA.access.roles, {
+      hidden: 'source_hidden_evaluator',
+      audit: 'source_aware_auditor',
+    });
+    const hiddenSchemas = HANDOFF_SCHEMA.commands.hidden.jsonSchemas;
+    assert.deepEqual(hiddenSchemas.qualificationCore.required, HANDOFF_SCHEMA.commands.hidden.qualificationCoreShape.required);
+    assert.equal(hiddenSchemas.qualificationCore.additionalProperties, false);
+    assert.equal(hiddenSchemas.qualificationCore.properties.qualificationId.maxLength, 300);
+    for (const key of hiddenSchemas.qualificationCore.required) {
+      assert.ok(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.properties[key], `public qualification schema is missing ${key}`);
+      assert.equal(hiddenSchemas.qualificationCore.properties[key].type, CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.properties[key].type);
+    }
+    assert.equal(
+      hiddenSchemas.qualificationCore.properties.competencyQuestions.items.properties.purpose,
+      undefined,
+    );
+    assert.deepEqual(
+      hiddenSchemas.qualificationCore.properties.competencyQuestions.items.properties.revision.properties.approvedAt,
+      {
+        type: 'string',
+        format: 'date-time',
+        pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$',
+        examples: ['2026-01-02T03:00:00.000Z'],
+      },
+    );
+    assert.equal(
+      hiddenSchemas.qualificationCore.properties.axisResults.items.properties.axis.enum.includes('evidence_provenance'),
+      false,
+    );
+    assert.equal(hiddenSchemas.qualificationCore.properties.axisResults.minItems, 6);
+    assert.equal(hiddenSchemas.qualificationCore.properties.axisResults.maxItems, 6);
+    assert.deepEqual(
+      hiddenSchemas.qualificationCore.properties.axisResults.allOf.map((row) => row.contains.properties.axis.const),
+      ['semantic', 'structural', 'functional', 'pragmatic', 'maintainability', 'interoperability'],
+    );
+    assert.equal(
+      hiddenSchemas.qualificationCore.properties.diagnostics.items.properties.axis.enum.includes('evidence_provenance'),
+      false,
+    );
+    assert.deepEqual(
+      hiddenSchemas.qualificationCore.properties.diagnostics.items.properties.id.not,
+      { const: 'qualification-handoff:audit-pending' },
+    );
+    assert.equal(hiddenSchemas.qualificationCore.properties.purposeAuthority.properties.owners.minItems, 1);
+    assert.equal(hiddenSchemas.qualificationCore.properties.purposeAuthority.properties.owners.maxItems, 1);
+    assert.equal(hiddenSchemas.access.properties.contract.const, 'qualificationHandoffAccess:v1');
+    assert.equal(hiddenSchemas.access.properties.role.const, 'source_hidden_evaluator');
+    assert.equal(hiddenSchemas.access.properties.boundaries.properties.hiddenArtifactsAccessed.const, false);
+    assert.deepEqual(hiddenSchemas.answers.items.required, ['cqId', 'status', 'claimIds', 'targets']);
+    assert.deepEqual(hiddenSchemas.answers.items.properties.status.enum, ['answered', 'partial', 'unknown', 'refused']);
+    assert.equal(hiddenSchemas.answers.items.allOf.length, 2);
+    assert.deepEqual(HANDOFF_SCHEMA.commands.hidden.siblingPathInput, [
+      'handoffDir', 'access', 'qualificationCorePath', 'answersPath',
+    ]);
+    assert.match(HANDOFF_SCHEMA.commands.hidden.siblingPathRule, /plain sibling \.json filenames/);
+    assert.match(HANDOFF_SCHEMA.commands.hidden.siblingFileRule, /exactly one filesystem link/);
+    const validateCore = compileSchema(hiddenSchemas.qualificationCore);
+    const validateAccessSchema = compileSchema(hiddenSchemas.access);
+    const validateAnswersSchema = compileSchema(hiddenSchemas.answers);
+    const acceptedCore = qualificationCore();
+    const acceptedAccess = access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z');
+    const acceptedAnswers = compactAnswers(manifestFor(reviewPlan()), acceptedCore);
+    assert.deepEqual(validateCore(acceptedCore), []);
+    assert.deepEqual(validateAccessSchema(acceptedAccess), []);
+    assert.deepEqual(validateAnswersSchema(acceptedAnswers), []);
+    const duplicateAxis = clone(acceptedCore);
+    duplicateAxis.axisResults.at(-1).axis = duplicateAxis.axisResults[0].axis;
+    assert.ok(validateCore(duplicateAxis).length > 0);
+    const whitespaceAccess = clone(acceptedAccess);
+    whitespaceAccess.actorId = '   ';
+    assert.ok(validateAccessSchema(whitespaceAccess).length > 0);
+    const whitespaceAnswer = clone(acceptedAnswers);
+    whitespaceAnswer[0].answer = '   ';
+    assert.ok(validateAnswersSchema(whitespaceAnswer).length > 0);
+    const longGap = clone(acceptedAnswers);
+    longGap[0].status = 'partial';
+    longGap[0].gap = 'x'.repeat(1001);
+    assert.ok(validateAnswersSchema(longGap).length > 0);
+    const longQualificationId = clone(acceptedCore);
+    longQualificationId.qualificationId = 'q'.repeat(301);
+    assert.ok(validateCore(longQualificationId).length > 0);
     assert.match(HANDOFF_SCHEMA.commands.audit.claimResults, /deduplicated sourceFragmentCatalog/);
     assert.deepEqual(Object.keys(HANDOFF_SCHEMA.exits).map(Number), [0, 2, 64, 65, 70, 74]);
   });
@@ -553,6 +745,74 @@ describe('qualification handoff happy path', () => {
       concepts: plan.concepts.length,
       relations: plan.relations.length,
     });
+  });
+
+  test('CLI sibling hidden inputs reproduce every embedded output byte-for-byte', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-hidden-paths-'));
+    const sealed = sealedFixture();
+    const core = qualificationCore();
+    const answers = compactAnswers(sealed.manifest, core);
+    const hiddenAccess = access(
+      'source_hidden_evaluator',
+      'agent:hidden',
+      '2026-01-02T03:00:00.000Z',
+      '2026-01-02T03:10:00.000Z',
+    );
+    await mkdir(join(root, 'handoff'));
+    await Promise.all([
+      ...Object.entries(sealed.files).map(([name, value]) => writeJson(join(root, 'handoff', name), value)),
+      writeJson(join(root, 'qualification-core.json'), core),
+      writeJson(join(root, 'hidden-answers.json'), answers),
+    ]);
+    const inlineInput = {
+      handoffDir: 'handoff',
+      access: hiddenAccess,
+      qualificationCore: core,
+      answers,
+    };
+    const pathInput = {
+      handoffDir: 'handoff',
+      access: hiddenAccess,
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+    };
+    await Promise.all([
+      writeJson(join(root, 'inline-input.json'), inlineInput),
+      writeJson(join(root, 'path-input.json'), pathInput),
+    ]);
+    await execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(root, 'inline-input.json'), '--output', join(root, 'inline-output')]);
+    await execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(root, 'path-input.json'), '--output', join(root, 'path-output')]);
+
+    assert.equal(HANDOFF_SCHEMA.commands.hidden.output.length, 4, 'hidden byte-parity gate must measure all outputs');
+    for (const name of HANDOFF_SCHEMA.commands.hidden.output) {
+      const [inline, hydrated] = await Promise.all([
+        readFile(join(root, 'inline-output', name), 'utf8'),
+        readFile(join(root, 'path-output', name), 'utf8'),
+      ]);
+      assert.equal(hydrated, inline, `${name} drifted through sibling-file hydration`);
+    }
+    assert.ok(
+      Buffer.byteLength(canonicalJson(pathInput)) < Buffer.byteLength(canonicalJson(inlineInput)),
+      'sibling paths must reduce the wrapper an evaluator assembles',
+    );
+  });
+
+  test('hidden canonicalizes its derived pending-acceptance timestamp without mutating access evidence', () => {
+    const sealed = sealedFixture();
+    const hiddenAccess = access(
+      'source_hidden_evaluator',
+      'agent:hidden',
+      '2026-01-02T03:00:00Z',
+      '2026-01-02T03:10:00Z',
+    );
+    const hidden = buildHiddenPacket({
+      ...sealed,
+      access: hiddenAccess,
+      qualificationCore: qualificationCore(),
+      answers: compactAnswers(sealed.manifest),
+    });
+    assert.equal(hidden.access.endedAt, hiddenAccess.endedAt);
+    assert.equal(hidden.qualification.acceptance.decidedAt, '2026-01-02T03:10:00.000Z');
   });
 
   test('audit fragment catalog deduplicates input while preserving the legacy output exactly', () => {
@@ -815,6 +1075,220 @@ describe('seal RED probes', () => {
 });
 
 describe('hidden and audit RED probes', () => {
+  test('hidden sibling paths reject incomplete, mixed, absolute, nested, and parent-traversal inputs before reading', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-hidden-path-red-'));
+    const cases = [
+      {
+        name: 'incomplete',
+        input: { handoffDir: 'missing-handoff', qualificationCorePath: 'qualification-core.json', access: {} },
+        diagnostic: /qualificationCorePath and answersPath together/,
+      },
+      {
+        name: 'mixed',
+        input: {
+          handoffDir: 'missing-handoff',
+          qualificationCorePath: 'qualification-core.json',
+          answersPath: 'hidden-answers.json',
+          qualificationCore: {},
+          answers: [],
+          access: {},
+        },
+        diagnostic: /cannot mix sibling paths with embedded qualificationCore or answers/,
+      },
+      {
+        name: 'sealed-mixed',
+        input: {
+          handoffDir: 'missing-handoff',
+          qualificationCorePath: 'qualification-core.json',
+          answersPath: 'hidden-answers.json',
+          candidate: { invalid: true },
+          manifest: [],
+          witnesses: [],
+          seal: { invalid: true },
+          access: {},
+        },
+        diagnostic: /cannot mix sibling paths with embedded candidate, manifest, witnesses, or seal/,
+      },
+      {
+        name: 'absolute',
+        input: {
+          handoffDir: 'missing-handoff',
+          qualificationCorePath: '/tmp/qualification-core.json',
+          answersPath: 'hidden-answers.json',
+          access: {},
+        },
+        diagnostic: /plain sibling JSON filename/,
+      },
+      {
+        name: 'nested',
+        input: {
+          handoffDir: 'missing-handoff',
+          qualificationCorePath: 'nested/qualification-core.json',
+          answersPath: 'hidden-answers.json',
+          access: {},
+        },
+        diagnostic: /plain sibling JSON filename/,
+      },
+      {
+        name: 'parent',
+        input: {
+          handoffDir: 'missing-handoff',
+          qualificationCorePath: '../qualification-core.json',
+          answersPath: 'hidden-answers.json',
+          access: {},
+        },
+        diagnostic: /plain sibling JSON filename/,
+      },
+    ];
+
+    for (const probe of cases) {
+      const inputPath = join(root, `${probe.name}.json`);
+      const outputPath = join(root, `${probe.name}-output`);
+      await writeJson(inputPath, probe.input);
+      await assert.rejects(
+        execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', inputPath, '--output', outputPath]),
+        (error) => error.code === EXIT.DATA && probe.diagnostic.test(error.stderr),
+      );
+      await assert.rejects(stat(outputPath), (error) => error.code === 'ENOENT');
+    }
+  });
+
+  test('hidden sibling reads reject symlinks, hard links, symlinked parents, and non-regular files without producing output', async () => {
+    async function fixtureRoot(prefix) {
+      const root = await mkdtemp(join(tmpdir(), prefix));
+      const sealed = sealedFixture();
+      await mkdir(join(root, 'handoff'));
+      await Promise.all([
+        ...Object.entries(sealed.files).map(([name, value]) => writeJson(join(root, 'handoff', name), value)),
+        writeJson(join(root, 'hidden-answers.json'), compactAnswers(sealed.manifest)),
+      ]);
+      return root;
+    }
+
+    const outside = await mkdtemp(join(tmpdir(), 'qualification-handoff-hidden-outside-'));
+    await writeJson(join(outside, 'qualification-core.json'), qualificationCore());
+    const symlinkRoot = await fixtureRoot('qualification-handoff-hidden-symlink-');
+    await symlink(join(outside, 'qualification-core.json'), join(symlinkRoot, 'qualification-core.json'));
+    const symlinkInput = join(symlinkRoot, 'input.json');
+    await writeJson(symlinkInput, {
+      handoffDir: 'handoff',
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+    });
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', symlinkInput, '--output', join(symlinkRoot, 'output')]),
+      (error) => error.code === EXIT.DATA && /symbolic links are not allowed/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(symlinkRoot, 'output')), (error) => error.code === 'ENOENT');
+
+    const hardLinkRoot = await fixtureRoot('qualification-handoff-hidden-hardlink-');
+    await link(join(outside, 'qualification-core.json'), join(hardLinkRoot, 'qualification-core.json'));
+    const hardLinkInput = join(hardLinkRoot, 'input.json');
+    await writeJson(hardLinkInput, {
+      handoffDir: 'handoff',
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+    });
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', hardLinkInput, '--output', join(hardLinkRoot, 'output')]),
+      (error) => error.code === EXIT.DATA && /exactly one filesystem link/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(hardLinkRoot, 'output')), (error) => error.code === 'ENOENT');
+
+    const realRoot = await fixtureRoot('qualification-handoff-hidden-real-parent-');
+    await writeJson(join(realRoot, 'qualification-core.json'), qualificationCore());
+    const aliasRoot = await mkdtemp(join(tmpdir(), 'qualification-handoff-hidden-alias-parent-'));
+    await symlink(realRoot, join(aliasRoot, 'linked-root'), 'dir');
+    const parentInput = join(realRoot, 'input.json');
+    await writeJson(parentInput, {
+      handoffDir: 'handoff',
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+    });
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(aliasRoot, 'linked-root', 'input.json'), '--output', join(aliasRoot, 'parent-output')]),
+      (error) => error.code === EXIT.DATA && /canonical input directory/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(aliasRoot, 'parent-output')), (error) => error.code === 'ENOENT');
+
+    const nestedRealRoot = await fixtureRoot('qualification-handoff-hidden-nested-real-');
+    await mkdir(join(nestedRealRoot, 'nested'));
+    await Promise.all([
+      writeJson(join(nestedRealRoot, 'nested', 'qualification-core.json'), qualificationCore()),
+      writeJson(join(nestedRealRoot, 'nested', 'hidden-answers.json'), compactAnswers(sealedFixture().manifest)),
+    ]);
+    const nestedAliasRoot = await mkdtemp(join(tmpdir(), 'qualification-handoff-hidden-nested-alias-'));
+    await symlink(nestedRealRoot, join(nestedAliasRoot, 'linked-root'), 'dir');
+    const nestedInput = join(nestedRealRoot, 'nested', 'input.json');
+    await writeJson(nestedInput, {
+      handoffDir: '../handoff',
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+    });
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(nestedAliasRoot, 'linked-root', 'nested', 'input.json'), '--output', join(nestedAliasRoot, 'nested-output')]),
+      (error) => error.code === EXIT.DATA && /symlinked ancestors/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(nestedAliasRoot, 'nested-output')), (error) => error.code === 'ENOENT');
+
+    const fifoRoot = await fixtureRoot('qualification-handoff-hidden-fifo-');
+    await execFileAsync('mkfifo', [join(fifoRoot, 'qualification-core.json')]);
+    const fifoInput = join(fifoRoot, 'input.json');
+    await writeJson(fifoInput, {
+      handoffDir: 'handoff',
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+    });
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', fifoInput, '--output', join(fifoRoot, 'output')]),
+      (error) => error.code === EXIT.DATA && /regular file/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(fifoRoot, 'output')), (error) => error.code === 'ENOENT');
+  });
+
+  test('hidden sibling reads fail closed for missing, malformed, and swapped semantic files', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-hidden-file-red-'));
+    const sealed = sealedFixture();
+    await mkdir(join(root, 'handoff'));
+    await Promise.all(Object.entries(sealed.files).map(([name, value]) => writeJson(join(root, 'handoff', name), value)));
+    const base = {
+      handoffDir: 'handoff',
+      qualificationCorePath: 'qualification-core.json',
+      answersPath: 'hidden-answers.json',
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+    };
+
+    await writeJson(join(root, 'hidden-answers.json'), compactAnswers(sealed.manifest));
+    await writeJson(join(root, 'missing-input.json'), base);
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(root, 'missing-input.json'), '--output', join(root, 'missing-output')]),
+      (error) => error.code === EXIT.IO,
+    );
+    await assert.rejects(stat(join(root, 'missing-output')), (error) => error.code === 'ENOENT');
+
+    await writeFile(join(root, 'qualification-core.json'), '{');
+    await writeJson(join(root, 'malformed-input.json'), base);
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(root, 'malformed-input.json'), '--output', join(root, 'malformed-output')]),
+      (error) => error.code === EXIT.DATA,
+    );
+    await assert.rejects(stat(join(root, 'malformed-output')), (error) => error.code === 'ENOENT');
+
+    await writeJson(join(root, 'qualification-core.json'), compactAnswers(sealed.manifest));
+    await writeJson(join(root, 'hidden-answers.json'), qualificationCore());
+    await writeJson(join(root, 'swapped-input.json'), base);
+    await assert.rejects(
+      execFileAsync(process.execPath, [SCRIPT, 'hidden', '--input', join(root, 'swapped-input.json'), '--output', join(root, 'swapped-output')]),
+      (error) => error.code === EXIT.DATA,
+    );
+    await assert.rejects(stat(join(root, 'swapped-output')), (error) => error.code === 'ENOENT');
+  });
+
   test('hidden rejects the reserved cold-start witness collision and unsealed non-cold-start evidence', () => {
     const plan = reviewPlan();
     const manifest = manifestFor(plan);
@@ -892,6 +1366,18 @@ describe('hidden and audit RED probes', () => {
     leaked.access.actorId = 'agent:hidden';
     leaked.access.boundaries.subjectSourceAccessed = true;
     assert.throws(() => buildHiddenPacket(leaked), /accessed subject source/);
+    const priorHidden = clone(base);
+    priorHidden.access.actorId = 'agent:hidden';
+    priorHidden.access.boundaries.hiddenArtifactsAccessed = true;
+    assert.throws(() => buildHiddenPacket(priorHidden), /accessed prior hidden artifacts/);
+    const extraAccess = clone(base);
+    extraAccess.access.actorId = 'agent:hidden';
+    extraAccess.access.unexpected = true;
+    assert.throws(() => buildHiddenPacket(extraAccess), /Access manifest contains an unknown field/);
+    const extraBoundary = clone(base);
+    extraBoundary.access.actorId = 'agent:hidden';
+    extraBoundary.access.boundaries.unexpected = false;
+    assert.throws(() => buildHiddenPacket(extraBoundary), /Access boundaries contain an unknown field/);
     const incomplete = clone(base);
     incomplete.access.actorId = 'agent:hidden';
     const omitted = sealed.manifest.at(-1).id;
@@ -977,6 +1463,39 @@ describe('hidden and audit RED probes', () => {
       qualificationCore: qualificationCore(sealed.manifest),
       answers: missingGap,
     }), /partial CQ .* needs a nonblank gap/);
+    const blankAnsweredGap = compactAnswers(sealed.manifest);
+    blankAnsweredGap[0].gap = '';
+    assert.throws(() => buildHiddenPacket({
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: qualificationCore(sealed.manifest),
+      answers: blankAnsweredGap,
+    }), /Answered CQ .* cannot carry a gap/);
+    const numericAnswer = compactAnswers(sealed.manifest);
+    numericAnswer[0].answer = 42;
+    assert.throws(() => buildHiddenPacket({
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: qualificationCore(sealed.manifest),
+      answers: numericAnswer,
+    }), /answer must be a nonblank string/);
+    const longGap = compactAnswers(sealed.manifest);
+    longGap[0].status = 'partial';
+    longGap[0].gap = 'x'.repeat(1001);
+    assert.throws(() => buildHiddenPacket({
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: qualificationCore(sealed.manifest),
+      answers: longGap,
+    }), /partial CQ .* needs a nonblank gap/);
+    const longQualificationCore = qualificationCore(sealed.manifest);
+    longQualificationCore.qualificationId = 'q'.repeat(301);
+    assert.throws(() => buildHiddenPacket({
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: longQualificationCore,
+      answers: compactAnswers(sealed.manifest, longQualificationCore),
+    }), (error) => error.details?.some(({ code }) => code === 'invalid-qualification-id'));
     const authoredWitnesses = compactAnswers(sealed.manifest);
     authoredWitnesses[0].witnessRefs = ['w-source'];
     assert.throws(() => buildHiddenPacket({

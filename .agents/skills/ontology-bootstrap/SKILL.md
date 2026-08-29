@@ -369,7 +369,9 @@ When this checkout provides
 `scripts/qualification-handoff.mjs`, use its `seal`, `hidden`, `audit`, `join`,
 `accept`, and `release` stages instead of recreating canonical JSON, digests,
 CQ witness projection, or lifecycle comparison code in scratch. Read its
-machine contract with the `schema` stage. The builder, hidden evaluator, and
+machine contract with the `schema` stage, then author access, core, and answers
+from `commands.hidden.jsonSchemas` without opening helper implementation source.
+The builder, hidden evaluator, and
 auditor still author the proposal, claims, witnesses, answers, axes, and source
 judgments; the helper only validates and packages those decisions, invokes no
 MCP tool, and writes no vault file.
@@ -377,6 +379,16 @@ Use `seal`'s compact analysis/proposal path form so the exact analyzer response
 becomes the candidate without copying or normalizing review-plan bodies. On a
 true cold start, `hidden` derives the reserved regression witness from the exact
 CQ set; the evaluator still owns the maintainability-axis judgment.
+For `hidden`, keep the access manifest inline, write the evaluator-authored
+`qualificationCore` and `answers` as two sibling JSON files beside the command
+input, and use `qualificationCorePath` plus `answersPath`. The helper accepts
+only plain sibling `.json` filenames, hydrates the exact values, and preserves
+all four legacy outputs byte-for-byte; it does not derive or repair their
+semantic judgments. Use a stable scratch directory with no symlinked ancestors;
+the helper also rejects symlinks, hard links, and non-regular sibling inputs.
+The older embedded form remains valid. A parseable access
+end is preserved in the access artifact while the helper canonicalizes only its
+derived pending-acceptance timestamp for the qualification contract.
 
 Before either lane starts, show the exact purpose, scenarios, and competency
 questions to one named human meaning owner and record that owner's id plus the

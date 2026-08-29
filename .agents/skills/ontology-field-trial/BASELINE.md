@@ -9,6 +9,56 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-30 — schema-only qualification transport replay
+
+**Subject**: the same unfamiliar Apache-2.0 Rust library and pinned candidate
+used by the immediately preceding clean transport measurement. This is a frozen
+candidate qualification replay, not a new repository-construction or persisted-
+vault baseline.
+
+### Candidate qualification cost
+
+| measurement | final path form | prior embedded run |
+|---|---:|---:|
+| source-hidden lane, total | **419 s** | 1,302 s |
+| source-aware lane, total | **367.675 s** | 494 s |
+| helper runtime | **0.07 s** | sub-second |
+| hidden helper attempts | **1** | repeated shape repair |
+| hidden wrapper bytes | **1,519** | 24,105 |
+| parallel overlap | **321.465 s** | 494 s |
+
+The hidden lane is **883 seconds faster (67.8%)** than the recorded formal
+hidden lane and passed the ten-minute stage budget. Wrapper bytes fell 93.7%,
+but the separately authored qualification core and answers remain explicit;
+this is not a claim that semantic evaluation became 93.7% faster.
+
+### Qualification truth and boundaries
+
+- Hidden: 29/29 ordered claims, six CQs, three answered / three partial / zero
+  failed, schema errors zero.
+- Audit: 29/29 claims and 46/46 citations verified against current source.
+- Join: 321.465 seconds of proven overlap, pending exact human acceptance,
+  `writePlan` absent.
+- Writes: zero. Persisted-vault phases were deliberately not rerun.
+
+### Preserved REDs
+
+Before the final pass, independent attempts failed on a non-canonical derived
+timestamp, undisclosed access literals, an undisclosed protected core field, and
+an undisclosed nested owner shape. Security/schema reviews also found symlink,
+hard-link, symlink-ancestor, duplicate-axis, and reverse schema/runtime drift.
+All are retained as failures rather than recast as successful attempts; focused
+probes now reject them without output.
+
+### Scope of the result
+
+This row advances only the named qualification-transport measurement. It does
+not move the whole-build or persisted-handoff baseline and does not prove the
+40-minute clean-construction trigger. The next field run must measure the entire
+first-MCP-to-finalizer path on current main.
+
+---
+
 ## 2026-08-29 — clean exact-plan performance rerun
 
 **Subject**: the same unfamiliar MIT-licensed Go schema-transformation library
