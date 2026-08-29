@@ -350,8 +350,16 @@ describe('ArchitectureWorkbench', () => {
       </NextIntlClientProvider>,
     );
 
-    /* The count is on the box, so a reader sees where the weight is without choosing anything. */
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent('2 modules');
+    /*
+     * ⚠️ **The box says what the role is; the counts wait in the panel** (2026-08-30). The count
+     * line used to sit here so a reader could see where the weight was without choosing anything,
+     * and on a browser-opened vault every one of those lines read `0 modules · 0 concepts` — a row
+     * of zeros where a sentence could be. A role that declared a summary prints it instead, and
+     * `widgets`, which declares none, keeps its counts.
+     */
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent(
+      'One module per route-level screen',
+    );
     expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveTextContent('0 modules');
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
@@ -387,7 +395,10 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent('1 concept');
+    /* The count moved into the panel with the modules; the box carries the role's sentence. */
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent(
+      'One module per route-level screen',
+    );
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');

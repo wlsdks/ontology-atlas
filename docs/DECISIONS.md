@@ -40,6 +40,55 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — A role box states what the role is; its counts wait in the panel
+
+**Convened because**: the owner pointed at an open-source project (Understand-
+Anything, MIT) and said that was the feel they wanted. Its code was read for
+principles only — no code, wording or asset was copied, as this repository's
+reference rule requires.
+
+**What actually carries that feel** (design lead, reading the reference's
+dashboard source): every node states what it *is* in a sentence before anything
+is clicked. Nodes carry an eyebrow, a name, and a two-line summary; edges are
+aggregated into one stroke per pair and always carry their count; selection
+fades everything unrelated. The warmth of its skin — a second palette, glass,
+glow — carries some of it too, and all of that is forbidden here and stays
+refused.
+
+**Decision**: a role box prints the profile's own one-line summary for that role
+in the line the counts had. Nothing is inferred: the sentence is the reviewed
+`summary_<role>` the profile already declares, and a role that declares none
+keeps its counts. The module and concept counts move into the role panel, which
+already lists both.
+
+**Why the counts lost that line**: on a browser-opened vault every box read
+`0 modules · 0 concepts` — a row of zeros where a sentence could be — and this
+file already refuses to print a zero module count for the same reason.
+
+**Also adopted, in our form**: every traffic stroke touching the focused role now
+states its measured count, not only the crossings that overlap; width is a
+comparison and never a figure.
+
+**Refused**: the second palette, the glow highlight, the minimap, per-layer
+drill-in and search. Seven roles need no search, the whole profile is already on
+one screen, and a per-role canvas would be a new surface rather than a change to
+this one.
+
+**Applied rule**: smallest slice — one line of text from data the profile already
+carries.
+**Signed**: stark
+
+**Recorded dissent**: the count line was put on the box so a reader could see
+where the weight is without choosing anything; that is now a click away.
+**Falsifier**: measure both sample profiles — if more than half the drawn boxes
+either declare no summary (the line renders empty and the height is spent for
+nothing) or truncate before the clause carries meaning, the sentence added height
+without meaning and the counts should come back.
+**Revisit**: at the first outside walkthrough of this screen, or when a profile
+without role summaries is measured.
+
+**Status**: standing
+
 ## 2026-08-30 — The architecture screen is a canvas with docks, and a violation is drawn
 
 **Convened because**: the owner opened the installed app on the new role ledger

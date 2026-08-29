@@ -59,6 +59,8 @@ const BOX_H_LEDGER = 74;
 const ROW_GAP_LEDGER = 18;
 /** How far apart two crossings of the same span sit, so a bundle reads as separate strokes. */
 const SKIP_LANE_STEP = 14;
+/** How much of a role's sentence fits on one caption line inside the box. */
+const SUMMARY_BUDGET = 34;
 
 /**
  * ⚠️ **Shapes, not colour.** This design system runs on neutrals plus one indigo, and status
@@ -141,6 +143,7 @@ export function ArchitectureSketch({
   moduleCounts,
   conceptCounts,
   ledgers,
+  roleSummary,
   violatedPairs,
   ledgerStatusLabel,
   ledgerImportsLabel,
@@ -164,6 +167,17 @@ export function ArchitectureSketch({
    * honest state, not a zero row: a box with nothing measured behind it says nothing.
    */
   ledgers: Readonly<Record<string, RoleLedger>>;
+  /**
+   * The profile's own one-line sentence for a role, or null where it declared none.
+   *
+   * ⚠️ **A box says what a role *is* before anybody clicks it** (2026-08-30, after studying an
+   * MIT-licensed reference the owner pointed at: every node there carries a summary, and that is
+   * what makes its graph read like prose instead of a wiring diagram). The sentence is the
+   * reviewed profile's own — nothing is inferred — and it takes the line the counts had, because a
+   * count of zero is the loudest thing a quiet box can say and this file already refuses to print
+   * one for modules.
+   */
+  roleSummary: (id: string) => string | null;
   /**
    * `from>to` for every crossing the receipt counted as a violation.
    *
@@ -745,9 +759,14 @@ export function ArchitectureSketch({
           const a = placed.get(edge.from);
           const b = placed.get(edge.to);
           if (!a || !b) return null;
-          if (edge.columnSpan <= 1 || edge.kind !== 'traffic' || edge.count === undefined) {
-            return null;
-          }
+          if (edge.kind !== 'traffic' || edge.count === undefined) return null;
+          /*
+           * At rest only the crossings that overlap need a number. Once a role is chosen or
+           * hovered, every stroke it touches states its count too — width alone is a comparison,
+           * never a figure, and the figure is what a reader is actually after.
+           */
+          const touchesFocus = focus === edge.from || focus === edge.to;
+          if (edge.columnSpan <= 1 && !touchesFocus) return null;
           const sameSpanOffset = skipLane.get(`${edge.from}>${edge.to}`) ?? 0;
           const swing =
             SKIP_DROP +
@@ -819,6 +838,18 @@ export function ArchitectureSketch({
                 )}`;
           const ledger = ledgers[box.id];
           /*
+           * Budgeted by characters rather than by CSS, because an SVG text node does not wrap or
+           * ellipsize on its own: at the caption step a 180px box holds about 34 characters, and
+           * the cut lands on a word boundary where one is near.
+           */
+          const summary = roleSummary(box.id);
+          const summaryLine =
+            summary === null
+              ? null
+              : summary.length <= SUMMARY_BUDGET
+                ? summary
+                : `${summary.slice(0, summary.lastIndexOf(' ', SUMMARY_BUDGET) > SUMMARY_BUDGET - 10 ? summary.lastIndexOf(' ', SUMMARY_BUDGET) : SUMMARY_BUDGET).trimEnd()}…`;
+          /*
            * ⚠️ **The name and counts stop being centred once a ledger joins them.** Vertical
            * centring is right for two lines and wrong for three: the ruled separator has to land
            * between what the profile declares and what the scanner counted, and a centred block
@@ -833,11 +864,15 @@ export function ArchitectureSketch({
               role="button"
               tabIndex={0}
               aria-pressed={isSelected}
-              aria-label={
-                ledger
-                  ? `${roleLabel(box.id)} · ${counts} · ${ledgerStatusLabel(ledger)} · ${ledgerImportsLabel(ledger.importsOut)}`
-                  : `${roleLabel(box.id)} · ${counts}`
-              }
+              aria-label={[
+                roleLabel(box.id),
+                summary,
+                counts,
+                ledger ? ledgerStatusLabel(ledger) : null,
+                ledger ? ledgerImportsLabel(ledger.importsOut) : null,
+              ]
+                .filter((part): part is string => part !== null)
+                .join(' · ')}
               data-graph-box={box.id}
               /* The drawn size, stated: the box is one filled path now, so nothing else on it
                  carries a height a test or a probe can read. */
@@ -920,9 +955,15 @@ export function ArchitectureSketch({
                 x={at.x + boxW / 2}
                 y={countsY}
                 textAnchor="middle"
-                className="fill-[color:var(--color-text-tertiary)] text-caption tabular-nums"
+                className={cn(
+                  'text-caption',
+                  summaryLine === null
+                    ? 'fill-[color:var(--color-text-tertiary)] tabular-nums'
+                    : 'fill-[color:var(--color-text-tertiary)]',
+                )}
+                data-testid={`architecture-box-line-${box.id}`}
               >
-                {counts}
+                {summaryLine ?? counts}
               </text>
               {ledger ? (
                 <>

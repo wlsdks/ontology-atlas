@@ -16,6 +16,7 @@ function draw(ledgers: Record<string, RoleLedger> = {}, violatedPairs = new Set<
     <ArchitectureSketch
       graph={graph}
       ledgers={ledgers}
+      roleSummary={() => null}
       violatedPairs={violatedPairs}
       ledgerStatusLabel={(ledger) =>
         ledger.state === 'clean' ? 'no violations out' : `${ledger.violated} violated`

@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-30 · A role box says what the role is
+
+- Each box now prints the reviewed profile's own one-line summary for that role,
+  in the line the module and concept counts used to hold. On a vault opened in a
+  browser those counts read `0 modules · 0 concepts` on every box; the sentence
+  says something instead, and the counts moved into the role panel, which lists
+  both anyway. A role whose profile declares no summary keeps its counts.
+- Hovering a role now lights it and everything it touches, and every traffic
+  stroke touching it states its measured count. A stroke's width is a comparison
+  and never a figure.
+- The panel answers one question at a time: a role's own answer, or the profile's
+  rules behind their own button.
+
 ## 2026-08-30 · The architecture screen became a canvas with panels, and violations are drawn
 
 - The lower half of `/architecture` used to be two panels squeezed into 64px each

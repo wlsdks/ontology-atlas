@@ -37,6 +37,7 @@ export function ArchitectureFlow({
   concepts,
   roleTraffic,
   record,
+  roleSummary,
   ledgerStatusLabel,
   ledgerImportsLabel,
   violatedPairs,
@@ -71,6 +72,8 @@ export function ArchitectureFlow({
    * here; the whole-profile verdict stays where it already is, in the stage chip.
    */
   record?: ArchitectureRecord | null;
+  /** The profile's own sentence for a role, or null; the box prints it in place of counts. */
+  roleSummary: (id: string) => string | null;
   ledgerStatusLabel: (ledger: RoleLedger) => string;
   /** `from>to` for each crossing the receipt counted as a violation; drawn apart from the rest. */
   violatedPairs: ReadonlySet<string>;
@@ -131,6 +134,7 @@ export function ArchitectureFlow({
           onSelect={onSelect}
           roleLabel={roleLabel}
           ledgers={ledgers}
+          roleSummary={roleSummary}
           violatedPairs={violatedPairs}
           ledgerStatusLabel={ledgerStatusLabel}
           ledgerImportsLabel={ledgerImportsLabel}

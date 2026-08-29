@@ -869,6 +869,7 @@ export function ArchitectureWorkbench({
                    loses the entire drawing (measured on the installed app, 2026-08-28). */
                 roleTraffic={roleTraffic}
                 violatedPairs={violatedPairs}
+                roleSummary={(id) => roleSummaryOf.get(id) ?? null}
                 /* The same receipt, grouped per role. Without it a box shows no ledger at all
                    rather than a row of zeros — an unmeasured role must not read as a clean one. */
                 record={record}
