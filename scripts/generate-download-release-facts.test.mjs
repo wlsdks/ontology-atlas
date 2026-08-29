@@ -37,7 +37,10 @@ function fakeReleaseRoot(
   };
   const fakeGh = `#!/usr/bin/env node
 const request = process.argv.slice(2).join(' ');
-if (request.includes('/releases/tags/')) {
+if (request.includes('select(.draft')) {
+  // The newest published release, which is what --check compares against.
+  process.stdout.write('v1.2.3\\n');
+} else if (request.includes('/releases/tags/')) {
   process.stdout.write(${JSON.stringify(JSON.stringify(release))});
 } else if (request.includes('/assets/101')) {
   process.stdout.write(${'`'}${'a'.repeat(64)}  ${dmgName}\\n${'`'});
@@ -53,13 +56,15 @@ if (request.includes('/releases/tags/')) {
   return { root, bin };
 }
 
-function runGenerator(root, bin) {
-  return spawnSync(process.execPath, [SCRIPT, '--tag=v1.2.3'], {
+function runGenerator(root, bin, args = ['--tag=v1.2.3']) {
+  return spawnSync(process.execPath, [SCRIPT, ...args], {
     cwd: root,
     env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH ?? ''}` },
     encoding: 'utf8',
   });
 }
+
+const GENERATED = 'src/views/download/model/macos-release.generated.ts';
 
 test('rejects a Windows checksum that names a different installer', () => {
   const { root, bin } = fakeReleaseRoot('unrelated.exe');
@@ -124,6 +129,52 @@ test('serializes release URLs as inert TypeScript string literals', () => {
     );
     assert.ok(generated.includes(`downloadUrl: ${JSON.stringify(hostileUrl)}`));
     assert.ok(generated.includes(`releaseUrl: ${JSON.stringify(hostileUrl)}`));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+/*
+ * ⚠️ `--check` is the half that noticed nothing for two releases.
+ *
+ * The write half works and always did; what failed was the handoff after it, because the release
+ * token cannot push to protected main and nobody compared the committed file with the release it
+ * claims to describe. These two cases pin both directions of that comparison, so the gate cannot
+ * quietly become a no-op — the failure mode it exists to prevent.
+ */
+test('--check passes when the committed facts match the newest published release', () => {
+  const { root, bin } = fakeReleaseRoot(WINDOWS_NAME);
+  try {
+    assert.equal(runGenerator(root, bin).status, 0, 'could not write the facts to compare against');
+
+    // No --tag: the check has to find the newest published release by itself.
+    const result = runGenerator(root, bin, ['--check']);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /matches the published v1\.2\.3/);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('--check fails, names both tags, and writes nothing when the committed facts are stale', () => {
+  const { root, bin } = fakeReleaseRoot(WINDOWS_NAME);
+  try {
+    assert.equal(runGenerator(root, bin).status, 0, 'could not write the facts to compare against');
+    const generatedPath = path.join(root, GENERATED);
+    const current = fs.readFileSync(generatedPath, 'utf8');
+    // The exact drift the owner found: an older release still named on the page.
+    const stale = current.replace(/tag: "v1\.2\.3"/g, 'tag: "v1.2.2"');
+    assert.notEqual(stale, current, 'the fixture no longer contains a tag to age');
+    fs.writeFileSync(generatedPath, stale);
+
+    const result = runGenerator(root, bin, ['--check']);
+
+    assert.notEqual(result.status, 0, 'the check accepted facts for a release nobody published');
+    assert.match(result.stderr, /committed: v1\.2\.2/);
+    assert.match(result.stderr, /published: v1\.2\.3/);
+    assert.match(result.stderr, /pnpm download:release-facts -- --tag=v1\.2\.3/);
+    assert.equal(fs.readFileSync(generatedPath, 'utf8'), stale, '--check wrote to the file');
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }
