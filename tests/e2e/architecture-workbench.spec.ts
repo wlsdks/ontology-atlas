@@ -248,22 +248,20 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
   await expect(notice).toHaveCount(0);
 });
 
-test('the drawing is never cut — it turns, or the page scrolls', async ({ page }) => {
+test('a chain is never cut — it turns, or the page scrolls', async ({ page }) => {
   /*
-   * ⚠️ **This replaces four gates, and it is stronger than all of them.** They each set up a
-   * drawing cut at one edge and checked that something said so: a fade, a count, a drag that
-   * reached the rest. The chain turns down when it stops fitting across and the canvas row keeps a
-   * `min-content` floor, so a cut is no longer something this screen produces — the drawing shows
-   * in full and the page scrolls if the window cannot hold it.
+   * ⚠️ **This replaces four gates, and the claim is narrower than the one first written.** They
+   * each set up a drawing cut at one edge and checked that something said so: a fade, a count, a
+   * drag that reached the rest. A chain turns down when it stops fitting across, and the canvas
+   * row keeps a `min-content` floor, so for a chain a cut is no longer something this screen
+   * produces — it shows in full and the page scrolls if the window cannot hold it.
    *
-   * Asserting the absence of a cut is worth more than asserting an affordance for one, because it
-   * is the property a reader actually has: nothing of the architecture is ever hidden from them.
-   *
-   * ⚠️ The covered-edge machinery those gates guarded is deliberately still in the file and is not
-   * exercised by anything here. A profile with several roles at one rank is wide even drawn
-   * downward, and neither sample vault has that shape, so removing the code would reintroduce
-   * silent cutting for a shape nobody can currently write a fixture for. That is a known, stated
-   * gap rather than a covered one.
+   * **It holds for a chain and not for every profile**, which the first version of this comment
+   * claimed. `graph-layout.test.ts` proves the counter-shape: three roles at one rank are three
+   * lanes wide whichever way the chain runs, so no rotation makes them fit a narrow canvas. Both
+   * sample vaults are chains, which is why an end-to-end fixture cannot produce the fan and why
+   * the over-broad claim survived being written — the covered-edge machinery below is what serves
+   * that shape, and it is guarded by geometry rather than by a browser.
    */
   const sizes = [
     [1920, 1200],

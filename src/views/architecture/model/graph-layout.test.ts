@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildArchitectureLayout, parseArchitectureProfile } from '@/entities/architecture-profile';
 import {
+  FAN_PROFILE_FRONTMATTER,
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
@@ -127,5 +128,39 @@ describe('buildArchitectureGraph', () => {
     expect(buildArchitectureGraph(fsd(), traffic)).toEqual(
       buildArchitectureGraph(fsd(), [...traffic]),
     );
+  });
+});
+
+describe('a fan cannot be saved by turning', () => {
+  it('is as wide drawn down as drawn across, so the covered-edge affordances stay necessary', () => {
+    /*
+     * ⚠️ **This is the shape that keeps `the drawing is never cut` from being a general claim.**
+     * A chain is one role per rank, so laying it out downward trades a long axis for a short one
+     * and it always fits. A fan does not: three roles at one rank are three lanes wide whichever
+     * way the chain runs, and no rotation makes 604px fit a 314px canvas.
+     *
+     * The geometry is asserted here rather than in the browser because neither sample vault has
+     * this shape, so no end-to-end fixture can produce it — which is exactly why the claim was
+     * written too broadly in the first place.
+     */
+    const graph = buildArchitectureGraph(
+      buildArchitectureLayout(parseArchitectureProfile(FAN_PROFILE_FRONTMATTER as never)),
+      [],
+    );
+
+    const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
+    expect(lanes, 'the fixture must actually fan for this to mean anything').toBeGreaterThan(1);
+
+    /* Box and gap sizes come from the drawing; the point is the ratio, not the pixels. */
+    const BOX_W = 148;
+    const BOX_H = 62;
+    const COL_GAP = 52;
+    const ROW_GAP = 26;
+    const across = 28 * 2 + graph.columns * BOX_W + (graph.columns - 1) * COL_GAP;
+    const down = 28 * 2 + lanes * BOX_W + (lanes - 1) * COL_GAP;
+    const downHeight = 26 * 2 + graph.columns * BOX_H + (graph.columns - 1) * ROW_GAP;
+
+    expect(down, 'turning it does not narrow it').toBeGreaterThanOrEqual(across * 0.9);
+    expect(downHeight, 'and the height it saves is not the axis that was short').toBeLessThan(down);
   });
 });
