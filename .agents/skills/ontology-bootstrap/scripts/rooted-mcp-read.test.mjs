@@ -24,14 +24,40 @@ async function roots(prefix = 'rooted-mcp-read-') {
   return { root, vaultRoot, repoRoot };
 }
 
-function inputFor({ vaultRoot, repoRoot, requests } = {}) {
+function inputFor({ serverPath = SCRIPT, vaultRoot, repoRoot, requests } = {}) {
   return {
     actorId: 'agent:rooted-reader',
-    serverPath: join(process.cwd(), 'mcp', 'src', 'index.js'),
+    serverPath,
     vaultRoot,
     repoRoot,
     requests: requests ?? [{ id: 'read-1', name: 'list_kinds', args: {} }],
   };
+}
+
+async function writeFixtureServer(root) {
+  const serverPath = join(root, 'fixture-mcp.mjs');
+  await writeFile(serverPath, `
+import readline from 'node:readline';
+const lines = readline.createInterface({ input: process.stdin });
+for await (const line of lines) {
+  const message = JSON.parse(line);
+  if (message.method === 'notifications/initialized') continue;
+  if (message.method === 'initialize') {
+    process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: {
+      protocolVersion: '2024-11-05', capabilities: {}, serverInfo: { name: 'fixture', version: '1' },
+    } }) + '\\n');
+    continue;
+  }
+  const name = message.params?.name;
+  const structuredContent = name === 'connection_info'
+    ? { vaultRoot: process.env.OATLAS_VAULT, repoRoot: process.env.OATLAS_REPO_ROOT }
+    : { total: 0, byKind: {}, referencedOnlyTotal: 0, conceptsIncludingReferenced: 0 };
+  process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id: message.id, result: {
+    content: [{ type: 'text', text: JSON.stringify(structuredContent) }], structuredContent,
+  } }) + '\\n');
+}
+`);
+  return serverPath;
 }
 
 describe('rooted MCP read runner', () => {
@@ -110,11 +136,12 @@ describe('rooted MCP read runner', () => {
     assert.deepEqual(calls, ['connection_info']);
   });
 
-  test('CLI proves actual source-checkout roots and writes one complete transcript', async () => {
+  test('CLI proves explicit roots against a dependency-free stdio fixture and writes one complete transcript', async () => {
     const { root, vaultRoot, repoRoot } = await roots('rooted-mcp-read-live-');
+    const serverPath = await writeFixtureServer(root);
     const inputPath = join(root, 'input.json');
     const outputPath = join(root, 'output.json');
-    await writeFile(inputPath, `${JSON.stringify(inputFor({ vaultRoot, repoRoot }), null, 2)}\n`);
+    await writeFile(inputPath, `${JSON.stringify(inputFor({ serverPath, vaultRoot, repoRoot }), null, 2)}\n`);
     await execFileAsync(process.execPath, [SCRIPT, '--input', inputPath, '--output', outputPath]);
     const output = JSON.parse(await readFile(outputPath, 'utf8'));
     assert.equal((await stat(outputPath)).isFile(), true);
