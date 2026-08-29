@@ -596,6 +596,14 @@ never writes a vault. Proposal meaning, claims, witnesses, CQ answers, axes, and
 source verdicts remain agent-authored; a person still supplies the acceptance
 request digest, plan revision, and exact gap set before any executable response
 can be turned into bounded writer-call data.
+The helper does not let the evaluator author its own human authority: one named
+person must own and approve the exact purpose/CQ set before source-hidden work,
+remain distinct from all construction actors, and later accept the joined
+request that carries the full question projection. This is declared provenance,
+not identity authentication, and does not change the public MCP contract.
+It also rejects any failed CQ before join: required witness kinds must match the
+sealed witnesses used by that answer, while an honest partial/unknown result can
+still reach exact human gap review.
 
 One proposal ref may carry several immutable qualification claims. Ref coverage
 alone is not enough: material `Definition`, `Includes`, `Excludes`, and
@@ -603,6 +611,20 @@ alone is not enough: material `Definition`, `Includes`, `Excludes`, and
 widened, and a measurement limit such as “not measured by this import packet”
 must retain that qualifier instead of becoming an absolute source-absence
 claim.
+
+Import evidence has one intentionally narrow positive use. An exact
+production/value import may support a reviewed direct element-to-element source
+dependency when both endpoint bodies state distinct roles, both paths resolve,
+the direction matches, and the rationale remains at the source/code boundary.
+That still does not establish runtime execution, reverse or transitive impact,
+capability/business dependency, or complete change impact; qualification keeps
+the impact answer partial unless separate current meaning evidence supports it.
+
+Source receipts also retain safe explicit repository-root directory paths from
+frontmatter and persisted competency Evidence/Paths rows. A path need not have a
+slash or file extension to be a real source witness; absolute, parent-escaping,
+malformed, and relation-slug lookalikes remain excluded. The app and MCP derive
+the same witness set before finalization.
 
 Source currentness and competency provenance have different repair actions.
 When the source receipt itself is stale, the gap remains

@@ -248,6 +248,13 @@ edges are implementation evidence and may justify element-level `depends_on`.
 For an exact file endpoint selected from the import packet, propose
 `depends_on` only in the observed file-edge direction. A plausible reverse
 impact is not an observed dependency and must remain a question or gap.
+An exact production/value import may justify only a bounded direct **source
+dependency** between two reviewed element roles. Require both element bodies to
+state distinct roles, both paths to resolve, the proposed direction to match the
+observed import, and the rationale to stay at that source/code boundary. This
+does not establish runtime execution, reverse or transitive impact, a
+capability/business dependency, or complete change impact. Keep the impact CQ
+partial unless separate current meaning evidence supports the stronger claim.
 
 ### 6. Answer the competency questions
 
@@ -356,8 +363,26 @@ becomes the candidate without copying or normalizing review-plan bodies. On a
 true cold start, `hidden` derives the reserved regression witness from the exact
 CQ set; the evaluator still owns the maintainability-axis judgment.
 
+Before either lane starts, show the exact purpose, scenarios, and competency
+questions to one named human meaning owner and record that owner's id plus the
+approval timestamp. Every CQ `owner`, `revision.approvedBy`, and purpose owner
+must be that same person, and every `revision.approvedAt` must strictly predate
+the source-hidden access window. The owner cannot be the builder, hidden
+evaluator, or source-aware auditor and must be the same person who later accepts
+the joined plan. The owner id and approval time come from that person's exact
+question-set decision, not from an evaluator-authored stand-in. If the exact
+question set has not been approved, stop before the lanes and ask; no vault
+write is available.
+Choose every CQ `requiredWitnessKinds` from the actual `kind` values in the
+sealed witnesses used by its answer; do not copy a fixture or example kind. An
+answered target must carry all of its required kinds. The helper blocks a
+`failed` CQ before join; express an honestly incomplete answer as `partial` or
+`unknown` with its exact gap instead of asking the person to accept a packet
+error.
+
 Stop after `join` and show its generated exact acceptance request. Run `accept` only
-after the person explicitly accepts that exact request, then resubmit the
+after the preapproved CQ owner explicitly accepts that exact request, including
+its full question-approval projection, then resubmit the
 unchanged proposal and accepted qualification to `analyze_repo_structure`.
 Run `release` only on that current executable response; it emits bounded writer
 call data but does not execute it. If the helper is absent or rejects an input,
@@ -378,6 +403,12 @@ static import packet” must keep that measurement qualifier and any observed
 positive evidence; it cannot become an absolute source-absence claim. The
 source-aware lane fails any body assertion contradicted or narrowed by current
 source even when another claim already covers the same proposal row.
+It must not fail a reviewed direct element-level `depends_on` merely because its
+witness is an exact production/value import: verify the bounded source
+dependency against both element roles, paths, and observed direction. Fail it
+when either endpoint is only a path label, the direction is absent/reversed, the
+relation is promoted above element level, or the answer claims runtime,
+transitive, reverse, or complete impact without separate evidence.
 
 Start both read-only lanes from that same sealed packet and manifest:
 

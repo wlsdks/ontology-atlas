@@ -57,4 +57,33 @@ describe("deriveProjectSourceWitnesses", () => {
       { id: "music:path", nodeSlug: "music", role: "entrypoint", path: "README.md" },
     ]);
   });
+
+  it("keeps explicit repository-root directory paths", () => {
+    const witnesses = deriveProjectSourceWitnesses({
+      projectSlug: "music",
+      nodes: [
+        { id: "project:music", kind: "project", title: "Music", projectIds: [], agentSlug: "music" },
+        { id: "capability:play", kind: "capability", title: "Play", projectIds: ["music"], agentSlug: "capabilities/play" },
+        { id: "capability:escape", kind: "capability", title: "Escape", projectIds: ["music"], agentSlug: "capabilities/escape" },
+        { id: "capability:absolute", kind: "capability", title: "Absolute", projectIds: ["music"], agentSlug: "capabilities/absolute" },
+      ],
+      docs: [
+        {
+          slug: "music",
+          frontmatter: { slug: "music", kind: "project" },
+          meaningEvidencePaths: ["generate", "jsonschema", "transform"],
+        },
+        { slug: "capabilities/play", frontmatter: { kind: "capability", path: "transform" } },
+        { slug: "capabilities/escape", frontmatter: { kind: "capability", path: "../secret" } },
+        { slug: "capabilities/absolute", frontmatter: { kind: "capability", path: "/tmp/secret" } },
+      ],
+    });
+
+    expect(witnesses.map(({ nodeSlug, path }) => ({ nodeSlug, path }))).toEqual([
+      { nodeSlug: "capabilities/play", path: "transform" },
+      { nodeSlug: "music", path: "generate" },
+      { nodeSlug: "music", path: "jsonschema" },
+      { nodeSlug: "music", path: "transform" },
+    ]);
+  });
 });

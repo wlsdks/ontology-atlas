@@ -178,6 +178,31 @@ describe('witnesses', () => {
     const witnesses = deriveProjectSourceWitnessesFromDocs({ projectSlug: 'music-streaming', docs });
     assert.equal(witnesses.some((witness) => witness.path === 'elements/not-a-path'), false);
   });
+
+  it('keeps explicit repository-root directory paths as source witnesses', () => {
+    const witnesses = deriveProjectSourceWitnessesFromDocs({
+      projectSlug: 'music-streaming',
+      docs: [
+        {
+          slug: 'music-streaming',
+          frontmatter: { kind: 'project', slug: 'music-streaming' },
+          body: '## Competency answers\n\n- Evidence: `generate`\n- Paths: `transform`, `jsonschema`\n',
+        },
+        { slug: 'capabilities/play', frontmatter: { kind: 'capability', path: 'transform' } },
+        { slug: 'capabilities/escape', frontmatter: { kind: 'capability', path: '../secret' } },
+        { slug: 'capabilities/absolute', frontmatter: { kind: 'capability', path: '/tmp/secret' } },
+      ],
+    });
+    assert.deepEqual(
+      witnesses.map(({ nodeSlug, path }) => ({ nodeSlug, path })),
+      [
+        { nodeSlug: 'capabilities/play', path: 'transform' },
+        { nodeSlug: 'music-streaming', path: 'generate' },
+        { nodeSlug: 'music-streaming', path: 'jsonschema' },
+        { nodeSlug: 'music-streaming', path: 'transform' },
+      ],
+    );
+  });
 });
 
 describe('receipt minting', () => {

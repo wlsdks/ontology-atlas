@@ -77,14 +77,24 @@ the construction lifecycle, run this separate gate before Phase 3:
 5. Before either evaluator starts, freeze and digest one ordered claim manifest
    with exact `id`, `statement`, and `proposalRefs` rows. The builder,
    source-hidden evaluator, and source-aware auditor must have different ids.
-6. Start the source-hidden answer lane and source-aware citation lane together
+6. Show the exact fixed question/CQ set to one named human meaning owner before
+   either lane starts. Freeze that owner's id and approval timestamp into every
+   CQ revision and purpose-owner row. The timestamp must predate the hidden
+   access window; the owner must differ from all three construction actors and
+   later be the exact plan acceptor. The evaluator cannot author that human
+   provenance on the owner's behalf.
+   Derive each CQ's required witness kinds from the sealed witnesses actually
+   used by that answer, never from a test fixture. A failed CQ is a packet or
+   evidence defect and blocks join; only an honestly measured partial/unknown
+   answer can become an exact human gap.
+7. Start the source-hidden answer lane and source-aware citation lane together
    from that same manifest. Hide source, shared vault, and audit output from the
    first; hide source-hidden answers from the second. Record branch start/end
    timestamps and require actual overlap.
-7. Seal the hidden answers before the citation receipt is revealed. Join without
+8. Seal the hidden answers before the citation receipt is revealed. Join without
    changing any claim row or earlier answer, then compare the final
    qualification claims byte-for-byte with the manifest before acceptance.
-8. Exercise same-actor, source-hidden-access, missing/foreign row, claim
+9. Exercise same-actor, source-hidden-access, missing/foreign row, claim
    statement/ref mutation, audit mismatch, and pre-join acceptance probes. Each
    must withhold executable lifecycle status and every write.
 
@@ -98,6 +108,15 @@ Keep measurement qualifiers verbatim in candidate and persisted answers:
 named source use case must not be widened to a broader audience/scenario. Audit
 Definition, Includes, Excludes, and Uncertainty claims separately even when they
 share one proposal ref.
+Keep direct source dependency distinct from runtime or business impact. An exact
+production/value import may verify a reviewed element-to-element `depends_on`
+when both endpoint bodies name distinct implementation roles, both paths
+resolve, the direction matches, and the relation/answer stays explicitly
+bounded to source/code dependency. Do not fail that claim merely because the
+witness is an import. Do fail a bare-path endpoint, absent/reversed direction,
+higher-level promotion, or runtime/transitive/reverse/complete impact claim that
+lacks separate current evidence. Record the impact answer as partial whenever
+only the bounded source dependency is measured.
 Record candidate releases separately from analyzer calls so an early rejected
 draft cannot masquerade as an approval round.
 A `status: pass` analyzer response is still not a candidate release when its

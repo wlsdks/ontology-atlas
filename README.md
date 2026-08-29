@@ -443,6 +443,16 @@ right proof. Curated, not exhaustive.
 - **External field trials stay isolated.** Generalized measurements may improve
   Atlas, but a trial repository's ontology is never merged into the product's
   dogfood graph.
+- **Qualification authority is not evaluator-authored.** One person approves
+  the exact CQ set before source-hidden work, stays distinct from construction
+  actors, and accepts the joined plan. A failed CQ blocks before that request;
+  declared provenance is still not identity authentication.
+- **Imports prove source structure, not complete impact.** An exact reviewed
+  element import can support one direct source dependency; runtime, reverse,
+  transitive, and business impact remain unknown without separate evidence.
+- **Repository-root directories are valid explicit paths.** A reviewed `path:`
+  such as `src` or `generate` participates in source receipts and finalization;
+  an arbitrary relation slug still does not become file evidence.
 
 The authority and verification path for each rule lives in the
 [Ontology Quality Authority Map](docs/ONTOLOGY-QUALITY.md). The practical node

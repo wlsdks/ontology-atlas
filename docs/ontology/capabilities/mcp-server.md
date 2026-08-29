@@ -46,6 +46,10 @@ The complete proposal from `analyze_repo_structure` is not immediate write permi
 
 A proposal is candidate-releasable only when its first lifecycle is `reviewable`. Mandatory warnings that cannot become exact human gaps return `writeEligibility: blocked` before qualification starts; pass-shaped analyzer output with those diagnostics is a rejected draft. Gap-eligible warnings remain visible as exact required gap ids.
 
+The scratch qualification handoff requires one named human to own every CQ revision before source-hidden work, keeps that owner distinct from construction actors, and binds the same person to final plan acceptance. A CQ whose sealed witness kinds or current evidence evaluate as `failed` blocks before join; only measured partial or unknown results can become exact human gaps.
+
+An exact production/value import may verify a bounded direct source dependency between reviewed element roles when both paths resolve and the direction matches. It does not prove runtime, reverse, transitive, capability/business, or complete impact; those remain partial without separate current meaning evidence.
+
 The source-checkout bootstrap skill seals immutable claims before isolated evaluation. Proposal-ref coverage does not substitute for body truth: material Definition, Includes, Excludes, and Uncertainty assertions are separate claims, and several claims may share one ref. Its mirrored `qualification-handoff.mjs` helper packages canonical scratch receipts, evidence-pending joins, exact human acceptance, and released writer-call data; it never invokes MCP or writes the vault.
 
 Approval is declared provenance, not identity verification or a truth certificate. Project Markdown persists existing competency answers/witnesses/visible gaps; the finalizer receipt persists its body and current graph/source combination. Detailed CQ revision, axes, exact gap acceptance, and pre-write regression are execution evidence in MCP responses/agent transcripts and do not claim automatic restoration after restart. No new tools, kinds, sidecars, or writer tokens are created.
@@ -53,6 +57,8 @@ Approval is declared provenance, not identity verification or a truth certificat
 ## Source Connection
 
 `connect_project_source` / `disconnect_project_source` bind and unbind project nodes to/from the local code folder they describe. Previously, `agent_brief` would output `connect_source` as the next action without a tool to execute it; the only path was the macOS app's folder picker. Both tools write nothing before `confirm: true`, leaving the absolute root only in gitignored `.ontology-atlas/project-sources.json`.
+
+Source receipts retain safe explicit repository-root directory paths from frontmatter and persisted competency Evidence/Paths rows, including single-segment paths such as `generate`. App and MCP derive the same witness set; absolute, parent-escaping, malformed, and relation-slug lookalikes remain excluded.
 
 ## Core Flow
 
