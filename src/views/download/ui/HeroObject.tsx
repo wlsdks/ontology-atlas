@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { mountHeroObject, type HeroGraphData } from '../lib/hero-object-engine';
 import type { StageGraph } from '../lib/stage-graph';
 import { cn } from '@/shared/lib/cn';
+import { BrandMark } from '@/shared/ui/brand-mark';
 
 /**
  * The hero object — the column opposite the type.
@@ -59,6 +60,18 @@ export function HeroObject({ graph }: { graph: StageGraph }) {
       className={cn('gateway-hero-stage aspect-[1/0.62] w-full max-h-[24rem]', mounted && 'is-in')}
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
+      {/* A static brand companion, not a work-state claim. The graph remains the
+          hero's product object; this simply closes the identity gap between the
+          gateway, the downloaded app icon, and the evidence-bound in-app mascot. */}
+      <BrandMark
+        detail="full"
+        size={128}
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        data-testid="gateway-hero-mascot"
+        className="pointer-events-none absolute bottom-0 right-0 z-[1] size-16 select-none md:size-32"
+      />
     </div>
   );
 }

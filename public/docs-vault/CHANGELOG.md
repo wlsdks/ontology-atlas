@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-08-29 · Gateway identity completes the mascot rollout
+
+- Replaced the gateway chrome's remaining generic orbit mark with the compact
+  pixel mascot across the root, download, guide, and changelog surfaces.
+- Added the static raised-hand mascot beside the download hero's real graph
+  object, connecting the pre-install page to the app icon and in-app identity
+  without claiming agent activity or adding ambient mascot motion.
+
 ## 2026-08-29 · Pixel mascot replaces the compatibility identity
 
 - Replaced the rejected nested-hex compatibility mark with one raster-first

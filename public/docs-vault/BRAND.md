@@ -91,6 +91,7 @@ so a truthful state change does not teleport the character.
 | Surface | Asset |
 |---|---|
 | In-app mark | `public/brand/mascot-{full,compact,micro}.png` through `<BrandMark>` |
+| Gateway chrome and download hero | compact and full `<BrandMark>` tiers; static and state-free |
 | Browser favicon | `app/icon.png` |
 | Apple Touch | `app/apple-icon.png` |
 | PWA | `public/brand-icon-512.png` |

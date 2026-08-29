@@ -426,7 +426,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The meaning, source contract, and usage rules for the pixel mascot identity. The 2026-08-28 record in DECISIONS.md owns the replacement decision; the committed PNG masters own the pixels. The pixel mascot is the primary and only shipping brand mark. It replaces the nested-hex compatibility mark in browser, PWA, Open Gr",
-      "wordCount": 959,
+      "wordCount": 975,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "DECISIONS"
@@ -440,7 +440,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Replaced th",
-      "wordCount": 81130,
+      "wordCount": 81194,
       "updatedAt": "2026-08-29",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -2345,9 +2345,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. macOS and Windows x64 betas are separated into distinct platform sections within one plate, and the Windows unsigned file warning is displayed before the executable CTA.",
-      "wordCount": 32,
-      "updatedAt": "2026-08-23",
+      "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. The pre-install hero pairs the real graph object with the static raised-hand pixel mascot, while the shared gateway chrome carries the compact mark; both are state-free brand continuity and do not claim agent work. macOS and Windows x64",
+      "wordCount": 59,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -2408,9 +2408,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Persistent chrome widget for gateway (uninstalled web visitors).",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Persistent chrome widget for uninstalled web visitors across the root, download, guide, and changelog surfaces. Its home link carries the compact pixel mascot and product name; this gateway identity is separate from the installed workbench rail, which intentionally begins with destinations and carries no repeated logo.",
+      "wordCount": 46,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
