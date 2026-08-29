@@ -67,6 +67,27 @@ jobs:
       - name: Verify requested release version
         run: pnpm desktop:release-tag -- --tag="$RELEASE_TAG"
 
+      # The *previous* release's facts must already be on main before this one starts.
+      #
+      # This workflow generates `macos-release.generated.ts` after publishing, but its token
+      # cannot push to protected main, so it uploads the file as an artifact for a person to
+      # apply in an ordinary pull request. On 2026-08-29 the owner found the download page still
+      # naming v1.0.0-rc.14 while rc.15 was published and the repository was on rc.16: the handoff
+      # had been forgotten twice and nothing went red, so visitors were being handed an older
+      # build with a straight face.
+      #
+      # **Why here**: at admit time the newest published release is the last one, which is exactly
+      # what the committed facts must describe. Checking after publication would compare against
+      # the release this run is about to create and fail for the one reason that is not a mistake.
+      #
+      # **When blocked**: apply the `ontology-atlas-release-facts-*` artifact from the previous
+      # release run, or regenerate with `pnpm download:release-facts -- --tag=<previous>`, then
+      # dispatch again.
+      - name: Verify the download page names the newest published release
+        run: pnpm download:release-facts:check
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       # Prevents stale upstream ACP registry snapshots from going out (2026-08-20).
       #
       # `pnpm acp:registry:check` **existed but was never called** —

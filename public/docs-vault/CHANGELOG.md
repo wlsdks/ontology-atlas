@@ -7,6 +7,46 @@
 
 ---
 
+## 2026-08-29 · The architecture screen is a drawing, and the drawing is measured
+
+- The Living Blueprint's centre was a ladder of dots holding nothing. Each
+  reviewed role is now a shape on a canvas carrying the modules and concepts it
+  actually holds, and the lines between them are the imports the scanner
+  counted: thicker where the traffic is heavier, and listed in words beneath the
+  drawing for anyone who cannot compare thicknesses.
+- Clicking a role opens it in place, showing the reviewed concepts inside it and
+  the scope rules it obeys, said out loud instead of left to inference. A link
+  can carry a role, and refuses one the profile does not declare rather than
+  looking untouched.
+- The chain runs across the page and turns down it when it stops fitting, so a
+  wide architecture is never cut in half and never demands a sideways scroll.
+- A declared rule is drawn with an unsteady hand; a measurement is drawn with a
+  ruled line. The reader can tell an intention from an observation without
+  consulting the legend. The unsteadiness is derived from each shape's own name,
+  so the same architecture always draws the same picture and yesterday's
+  screenshot still compares.
+- Verify measures the current source instead of replaying a stored answer,
+  stamps what it measured and at which commit, and can mint a receipt. Coverage
+  it could not establish stays unknown. It is never drawn as green.
+
+## 2026-08-29 · A release cannot start while the download page names an older build
+
+- The page advertised v1.0.0-rc.14, with rc.14's real checksums beneath it,
+  while rc.15 was published and the repository had already moved to rc.16.
+- This was the second time. On 2026-08-26 it advertised rc.10 while rc.11 and
+  rc.12 had shipped, and the repair then was for the release to open a pull
+  request with the regenerated facts. Repository policy does not let the release
+  token open pull requests, so the workflow leaves that file as an artifact for
+  a person to apply. A person forgot, twice, with nothing anywhere going red.
+- `pnpm download:release-facts:check` now compares the committed facts with the
+  newest published release and fails when they differ. It runs before a local
+  release build and as the release workflow's first job, where the newest
+  published release is still the previous one, so a release cannot start while
+  the page is describing an older build.
+- It compares the whole file rather than the version. A re-cut release keeps its
+  tag while its sizes and checksums move, and a published checksum that no
+  longer matches the file behind it is worse than an old version number.
+
 ## 2026-08-29 · Gateway identity completes the mascot rollout
 
 - Replaced the gateway chrome's remaining generic orbit mark with the compact

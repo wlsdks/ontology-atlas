@@ -13,6 +13,18 @@
  *   pnpm download:release-facts -- --tag=v1.0.0
  *   pnpm download:release-facts -- --unpublished  # reset to the pre-release state
  *   pnpm download:release-facts -- --tag=v1.0.0-rc.4 --allow-missing-windows
+ *   pnpm download:release-facts:check           # committed facts vs the newest published release
+ *
+ * ⚠️ **`--check` exists because the write half is not enough.** The release
+ * workflow generates this module but cannot commit it: the release token may
+ * not push to protected `main`, so it uploads the file as an artifact for a
+ * person to apply in an ordinary pull request. On 2026-08-29 the owner found
+ * the download page still naming `v1.0.0-rc.14` while `v1.0.0-rc.15` had been
+ * published and the repository was already on `rc.16` — the handoff had simply
+ * been forgotten, twice, and nothing anywhere went red. `--check` regenerates
+ * the module for the newest published release and compares it with the
+ * committed one, so the forgotten handoff fails the release gate instead of
+ * quietly telling visitors to download an older build.
  *
  * Requires the `gh` CLI to be authenticated for a private/unpublished draft;
  * a public release needs no auth.
@@ -48,11 +60,15 @@ function parseArgs(argv) {
   let allowPrerelease = false;
   let allowDraft = false;
   let allowMissingWindows = false;
+  let check = false;
   for (const arg of argv) {
     if (arg === "--") continue;
     if (arg === "--help" || arg === "-h") {
       console.log(
-        `Usage: pnpm download:release-facts [-- --tag=vX.Y.Z] [--unpublished] [--allow-draft] [--allow-prerelease] [--allow-missing-windows]\n`,
+        `Usage: pnpm download:release-facts [-- --tag=vX.Y.Z] [--unpublished] [--allow-draft] [--allow-prerelease] [--allow-missing-windows] [--check]\n\n` +
+          `--check writes nothing. It regenerates the module for the newest published\n` +
+          `release (or --tag) and fails when the committed file differs, so a release\n` +
+          `whose facts were never applied cannot ship quietly.\n`,
       );
       process.exit(0);
     }
@@ -72,18 +88,45 @@ function parseArgs(argv) {
       allowMissingWindows = true;
       continue;
     }
+    if (arg === "--check") {
+      check = true;
+      continue;
+    }
     if (arg.startsWith("--tag=")) {
       tag = arg.slice("--tag=".length).trim();
       continue;
     }
     fail(`unknown argument: ${arg}`);
   }
-  return { tag, unpublished, allowDraft, allowPrerelease, allowMissingWindows };
+  return { tag, unpublished, allowDraft, allowPrerelease, allowMissingWindows, check };
 }
 
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
   return `v${pkg.version}`;
+}
+
+/**
+ * The newest release a visitor can actually download.
+ *
+ * `--check` cannot default to the package version the way writing does: between
+ * the version bump and the release that follows it, the repository is ahead of
+ * every published build, and comparing against a tag nobody has published yet
+ * would fail for the one reason that is not a mistake. What the page owes its
+ * reader is the newest **published** release, draft or not-yet-run releases
+ * excluded, so that is what the check regenerates from.
+ */
+function latestPublishedTag() {
+  const tagName = gh([
+    "api",
+    `repos/${REPOSITORY}/releases`,
+    "--jq",
+    "[.[] | select(.draft == false)] | first | .tag_name // \"\"",
+  ]).trim();
+  if (!tagName) {
+    fail(`${REPOSITORY} has no published (non-draft) release to compare against.`);
+  }
+  return tagName;
 }
 
 function gh(args) {
@@ -232,6 +275,42 @@ export const WINDOWS_RELEASE: WindowsRelease = {
 `;
 }
 
+/** The tag the committed module currently advertises, for a message worth reading. */
+function committedTag() {
+  if (!fs.existsSync(OUTPUT_PATH)) return "nothing committed";
+  const text = fs.readFileSync(OUTPUT_PATH, "utf8");
+  const match = text.match(/MACOS_RELEASE[\s\S]*?tag:\s*"([^"]+)"/);
+  return match ? match[1] : "unreadable";
+}
+
+/**
+ * `--check`: regenerate into memory and compare, never write.
+ *
+ * Byte comparison rather than a tag comparison, because a re-cut release keeps
+ * its tag while its assets, sizes, and checksums change — and a page publishing
+ * a checksum that no longer matches the file behind it is worse than one naming
+ * an old version.
+ */
+function compareModule(release) {
+  const expected = renderModule(release);
+  const actual = fs.existsSync(OUTPUT_PATH) ? fs.readFileSync(OUTPUT_PATH, "utf8") : "";
+  const relative = path.relative(ROOT, OUTPUT_PATH);
+  if (actual === expected) {
+    console.log(
+      `[download-release-facts] ${relative} matches the published ${release.tag} — ${release.assets.length} DMG asset(s), ${release.windowsAssets.length} Windows asset(s)`,
+    );
+    return;
+  }
+  fail(
+    `${relative} does not describe the newest published release.\n` +
+      `  committed: ${committedTag()}\n` +
+      `  published: ${release.tag}\n` +
+      `The release workflow uploads this file as an artifact because its token cannot push to main.\n` +
+      `Apply it, or regenerate locally:\n` +
+      `  pnpm download:release-facts -- --tag=${release.tag}${release.prerelease ? " --allow-prerelease" : ""}`,
+  );
+}
+
 function writeModule(release) {
   fs.writeFileSync(OUTPUT_PATH, renderModule(release), "utf8");
   const relative = path.relative(ROOT, OUTPUT_PATH);
@@ -254,16 +333,32 @@ function writeModule(release) {
   }
 }
 
-const { tag: tagArg, unpublished, allowDraft, allowPrerelease, allowMissingWindows } =
+const { tag: tagArg, unpublished, allowDraft, allowPrerelease, allowMissingWindows, check } =
   parseArgs(process.argv.slice(2));
-const tag = tagArg || defaultTag();
+
+if (check && unpublished) {
+  fail("--check and --unpublished ask for opposite things: one compares, the other rewrites.");
+}
+
+const tag = tagArg || (check ? latestPublishedTag() : defaultTag());
+
+/**
+ * `--check` does not re-litigate the prerelease decision.
+ *
+ * Blocking a prerelease is an editorial guard on the *write* — nobody should
+ * advertise an RC by accident. Whether this page features one has already been
+ * decided by whoever ran the write with `--allow-prerelease`; the check's only
+ * question is whether the committed facts still describe what is published.
+ */
+const emit = check ? compareModule : writeModule;
+const prereleaseAllowed = allowPrerelease || check;
 
 if (!/^v/.test(tag)) {
   fail(`release tag must be v-prefixed, got ${tag}.`);
 }
 
 if (unpublished) {
-  writeModule({
+  emit({
     published: false,
     prerelease: false,
     tag,
@@ -302,7 +397,7 @@ if (release.draft && !allowDraft) {
  * Blocked, but with a door: deliberately featuring an RC has to be said with a
  * flag.
  */
-if (release.prerelease && !allowPrerelease) {
+if (release.prerelease && !prereleaseAllowed) {
   fail(
     `release ${tag} is a prerelease — the download page advertises the stable build.\n` +
       `프리릴리스를 일부러 걸려면 --allow-prerelease 를 붙여라. 정식 릴리스를 기다리는 중이면 --unpublished 로 두라.`,
@@ -370,7 +465,7 @@ if (windowsAssets.length !== 1 && !(allowMissingWindows && windowsAssets.length 
   fail(`release ${tag} must have exactly one ontology-atlas_<version>_windows_x64-setup.exe asset, found ${windowsAssets.length}.`);
 }
 
-writeModule({
+emit({
   published: true,
   prerelease: release.prerelease === true,
   tag,

@@ -644,6 +644,27 @@ app/WebView proof. Do not use that local build as a release artifact:
 running the updater-disabled app build, ad-hoc signing the complete bundle, and
 then packaging the DMG. The ad-hoc signature supplies bundle integrity only; it
 does not claim a Developer ID identity or replace the credentialed release path.
+### The download page's facts are a handoff, so a gate watches it
+
+`src/views/download/model/macos-release.generated.ts` is written by
+`pnpm download:release-facts` from the real GitHub Release, and the release
+workflow generates it — but the release token cannot push to protected `main`,
+so the workflow uploads the file as an artifact and a person applies it in an
+ordinary pull request. That handoff is the weak joint. On 2026-08-29 the owner
+found the download page still naming `v1.0.0-rc.14` while `v1.0.0-rc.15` had
+been published and the repository was already on `rc.16`: the artifact had been
+forgotten twice, and because nothing compared the two, the page kept handing
+visitors an older build with real checksums beside it.
+
+`pnpm download:release-facts:check` closes it. It resolves the newest **published
+(non-draft)** release, regenerates the module into memory, and compares bytes —
+not tags, because a re-cut release keeps its tag while its sizes and checksums
+change, and a published checksum that no longer matches the file is worse than
+an old version number. It runs in `pnpm desktop:release-preflight` and as the
+release workflow's *admit* step, where the newest published release is still the
+previous one; checking after publication would compare against the release that
+run is about to create and fail for the one reason that is not a mistake.
+
 Before a release is made public, the protected dispatched workflow runs
 `pnpm desktop:verify-download -- --allow-draft` against the draft GitHub Release
 assets with `github.token`; after publishing, run `pnpm desktop:verify-download`
@@ -790,6 +811,7 @@ committing or publishing changes.
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG through a local keychain profile or App Store Connect API key path; password argv is rejected |
 | `pnpm desktop:verify-dmg` | Mount and named-checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that treats notarization as requiring strict app code signing, stapled notarization, and Gatekeeper assessment |
+| `pnpm download:release-facts:check` | Regenerate the download page's release facts for the newest published (non-draft) release and fail when the committed `src/views/download/model/macos-release.generated.ts` differs, so a release whose facts were never applied cannot ship quietly. Runs in `desktop:release-preflight` and in the release workflow's admit job |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `ontology-atlas_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA plus AI-agent MCP/CLI access step, rejecting stale browser-vault CTAs and `/releases/latest` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract, with Node file concurrency capped at four for loopback-heavy release fixtures; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
