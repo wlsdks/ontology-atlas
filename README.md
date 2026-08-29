@@ -23,7 +23,7 @@
   warn about an unknown publisher, and managed work PCs may block it.</sub>
 </p>
 
-![The current Ontology Atlas macOS app showing the Storefront example as a project hub, its domains and relations, with the INDEX listing each domain beside its capability and element counts](docs/assets/readme/topology-overview.png)
+![The current Ontology Atlas macOS app with the Online Store project selected: the domains it contains named around it, everything unrelated receding, and the right inspector showing the project record, its code-evidence state, and the offer to connect a code folder](docs/assets/readme/topology-overview.png)
 
 <p align="center">
   <sub>The installed macOS app reading the example vault in
@@ -73,7 +73,9 @@
 
 Source code shows how a system works. It rarely preserves which product
 capability the code serves, why its boundaries exist, or what a change could
-affect. Atlas keeps those answers beside the code in a folder of Markdown files.
+affect. Atlas keeps those answers beside the code, in an `atlas/` folder of
+Markdown files inside the repository itself — so the meaning is cloned,
+branched, reviewed, and shared with the code rather than alongside it.
 
 Use Atlas before a change so a person and an AI agent start from the same
 answer: what the code is for, where to begin, what else it touches, and what to
@@ -141,7 +143,9 @@ roadmap promise. It summarizes current product behavior documented in the
 ### Working today
 
 - **A Markdown folder is the whole database.** Point the app at one and it reads
-  and writes in place — no import step, no index to build, no account.
+  and writes in place — no import step, no index to build, no account. Starting
+  from code creates that folder as `atlas/` inside the project, so the map
+  travels with the repository instead of living on one laptop.
 - **The macOS app**, Developer ID signed and notarized, with the compiled MCP
   server inside its own bundle.
 - **Agent setup starts with one button and ends with a real proof.** The app
@@ -197,14 +201,50 @@ The app's first question is a folder. Point it at a vault — a directory of
 Markdown — and it reads it in place. No import step, no index to build, no
 account.
 
-The vault in every screenshot below is
-[`samples/storefront`](samples/storefront): an online store described as
-products, inventory, orders, payments, delivery, members, marketing and support —
-each with the capabilities inside it and the things those capabilities work with.
-Run `node cli/src/index.mjs overview samples/storefront` for the current census;
-no document here writes the number, because it changes whenever anyone adds a node.
+**Where that folder belongs is the part worth knowing.** When you ask Atlas to
+start from your code, it creates exactly one folder inside the project you
+picked, and everything the ontology knows lives there:
 
-![The current Docs workspace in the installed macOS app, with the vault tree, one capability document, its frontmatter summary, source date, backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
+```text
+your-repo/
+├── src/
+├── package.json
+└── atlas/                 ← the whole ontology, and nothing else
+    ├── project.md         one project document
+    ├── domains/           what the product is made of
+    ├── capabilities/      what each area can do
+    ├── elements/          the implementation pieces they work with
+    └── architecture/      reviewed role and dependency profiles, when you have one
+```
+
+The exact path is shown before anything is written, and an `atlas/` folder that
+is already there is reused and reported rather than overwritten. If you point
+the app at the project root out of habit, it opens the map inside and says that
+it did — it never silently swaps your folder for a different one.
+
+That location is a decision, not a default. A map kept outside the repository
+travels on one laptop: a colleague clones the code and gets no meaning, and a
+change to the code lands in a pull request while the change to its meaning does
+not. Inside the repository the two move together and are read in the same diff.
+So **the folder is the product's whole portable surface — commit `atlas/`, push
+it, attach it to a pull request, or copy it to another machine, and the map goes
+with it.** The app, the MCP server, and the CLI all read that folder directly;
+none of them keeps a second copy anywhere else.
+
+The name is ordinary on purpose: `docs/` is a crowded folder people reorganise,
+and a map swept away in a docs tidy-up is worse than one nobody found — while a
+dot-folder would be hidden, when the whole argument here is that a person opens
+these files.
+
+The vault in every screenshot below is
+[`samples/storefront`](samples/storefront), a standalone example folder in this
+repository: an online store described as products, inventory, orders, payments,
+delivery, members, marketing and support — each with the capabilities inside it
+and the things those capabilities work with. Run
+`node cli/src/index.mjs overview samples/storefront` for the current census; no
+document here writes the number, because it changes whenever anyone adds a node.
+
+![The current Docs workspace in the installed macOS app, with the vault tree open on the capabilities folder, the Checkout document beside it, its expanded frontmatter, word count and source date, its backlinks, and a link back to the same node on the map](docs/assets/readme/docs-workspace.png)
 
 Docs is the same folder without the canvas: preview or edit Markdown, inspect the
 frontmatter that becomes the graph, follow backlinks, and jump back to the same
@@ -212,7 +252,7 @@ concept on the map. There is no imported copy to synchronize.
 
 ### 2. Connect your agent
 
-![The current Agents screen in the installed macOS app, showing detected coding agents, conversation and connection checks, and the three-step MCP connection flow for the selected folder](docs/assets/readme/agent-connect.png)
+![The current Agents screen in the installed macOS app, listing the coding tools found on this computer with their readiness, the option to show the rest, and the three-step MCP connection flow for the selected folder](docs/assets/readme/agent-connect.png)
 
 Atlas finds the coding agents already installed on this computer, lets you open
 the supported ones beside the map, and keeps MCP setup scoped to the selected
@@ -235,7 +275,7 @@ contract, and `mcp-verify` proves the live inventory.
 
 ### 3. Read the map
 
-![The current map with Cart Session selected: unrelated concepts recede, typed parent relations remain visible, and the right inspector offers Ask agent, Edit, More, evidence, and full detail](docs/assets/readme/topology-focus.png)
+![The current map with the Orders domain selected: unrelated concepts recede, the concepts it contains are named on the canvas, and the right inspector lists contains, used by, leans on, and belongs to beside Ask the agent, Edit, and full detail](docs/assets/readme/topology-focus.png)
 
 Selecting a node dims everything unrelated and opens its record without hiding
 the node behind the inspector. The same fact serves two readers at once: a
@@ -246,7 +286,7 @@ Recent changes can narrow the map while preserving project and domain context;
 Footprints record the order in which you opened concepts. Both are views over
 local file and session evidence, not hosted activity guesses.
 
-![The current 3D picker in the installed macOS app, offering Flat for the normal map, Dome for containment structure, and Cloud for relation-driven proximity](docs/assets/readme/three-dimensional-views.png)
+![The current 3D picker in the installed macOS app, offering Flat for the ordinary 2D map, Dome for tiers stacked the way things are contained, and Cloud for clustering by what relates to what](docs/assets/readme/three-dimensional-views.png)
 
 Three spatial readings are explicit rather than mixed together: **Flat** is the
 normal 2D map, **Dome** places containment tiers in depth, and **Cloud** lets
@@ -254,11 +294,22 @@ relations determine all three axes. Changing the view never changes the graph.
 
 ### 4. Plan against reviewed architecture
 
+![The current Architecture screen in the installed macOS app, showing the seven reviewed roles of this repository drawn as one hand-sketched chain from Routes down to Shared foundation, each with its module and concept count, the measured import traffic between them listed underneath, and a legend for the marks](docs/assets/readme/architecture-flow.png)
+
+<p align="center">
+  <sub>This one screen reads Atlas's own repository rather than the storefront
+  example, because measured import traffic needs a connected code folder. The
+  drawing is derived from the reviewed profile and the counted imports; the
+  hand-drawn line is notation — a declared rule looks drawn, a measurement looks
+  ruled — and the same profile always draws the same picture.</sub>
+</p>
+
 Architecture stays separate from the Ontology Map. The Living Blueprint keeps
 the same role order while you move through **Understand → Plan → Verify**. Plan
 copies an `architectureChangePlan:v1` handoff; the connected agent runs
-`inspect_architecture` before and after editing. In a source checkout the exact
-fallback is:
+`inspect_architecture` before and after editing. The chain turns down the page
+or runs across it depending on the width it is given, so a wide profile is never
+cut in half. In a source checkout the exact fallback is:
 
 ```console
 node cli/src/index.mjs architecture . --vault docs/ontology --profile atlas-web --json
@@ -270,7 +321,7 @@ it does not infer a fashionable label from folder names.
 
 ### 5. Review a relation beside its node
 
-![The current relation review beside the map, showing the source, relation type, target, reason, and the exact dependencies and relation notes fields that will change before the write is confirmed](docs/assets/readme/relation-review.png)
+![The current relation review beside the map, showing the source, relation type, target, the reason typed for it, and the exact dependencies and relation_notes frontmatter that will change, above Keep editing and Confirm and write](docs/assets/readme/relation-review.png)
 
 Edit one relation from the selected node. Atlas shows a directional preview on
 the map, then a compact review of the source, type, target, reason, and exact
@@ -279,7 +330,7 @@ Markdown file; returning to edit or cancelling changes nothing.
 
 ### 6. Review the change, then record it
 
-![The current History screen in the installed macOS app, showing one uncommitted concept change, the exact Markdown diff, localized commit times, and the explicit commit action](docs/assets/readme/history-review.png)
+![The current History screen in the installed macOS app, showing one unsaved concept change, the exact Markdown diff of the dependencies and relation_notes lines, the current branch, earlier vault commits, and the explicit save action](docs/assets/readme/history-review.png)
 
 Whatever wrote — you, the map editor, the CLI, or an agent over MCP — lands here
 first as a diff you read before it becomes history. The change above was written
@@ -314,7 +365,7 @@ touched, and the screen says so.
 
 ### 7. Keep it healthy
 
-![The current Insights composition screen in the installed macOS app, with concept and relation census, kind distribution, graph health, and aligned domain capability-to-element bars derived from the selected folder](docs/assets/readme/graph-insights.png)
+![The current Insights screen in the installed macOS app, with its Do next, Inventory, Connections, Boundaries, Recent changes and Flow tabs, three review priorities, an agent-readiness bar, a repair queue, and the fixes that need no code](docs/assets/readme/graph-insights.png)
 
 Insights turns graph health into a work queue: what is disconnected, stale, or
 missing evidence, and which repair to make next. Composition shows whether the
@@ -323,7 +374,7 @@ by implementation elements. Every number branches from the same compiled graph.
 
 ### 8. See the shape of the whole project
 
-![The current Projects screen in the installed macOS app, showing the Storefront project, its derived totals, nine aligned domain composition rows, recent activity, and routes back to details and the map](docs/assets/readme/projects-coverage.png)
+![The current Projects screen in the installed macOS app, showing the Online Store project, its derived capability, element, domain, document and relation totals, nine aligned domain composition rows, and routes back to details and the map](docs/assets/readme/projects-coverage.png)
 
 Nothing on this screen is maintained by hand. Frontmatter has no `project:` key
 — the runtime walks the containment graph from each `project` root and derives
@@ -490,7 +541,8 @@ own dogfood vault in [`docs/ontology/`](docs/ontology/); run
 ## Local-first, by construction
 
 - **Your disk is the database.** Frontmatter is the graph; confirmed writes go
-  back to the folder you picked. There is no other store.
+  back to the folder you picked — normally `atlas/` inside the repository the
+  map describes. There is no other store, and no copy anywhere else.
 - **Git is the history.** Diffs stay human-readable; history and snapshots are
   scoped to the vault.
 - **No Atlas backend, account, or telemetry.** The web app is a static export.
@@ -554,19 +606,20 @@ ATLAS=~/tools/ontology-atlas/cli/src/index.mjs
 cd /path/to/your/repo
 
 # Scaffold a vault in your repo and generate its agent config.
-node $ATLAS init ./ontology
+# `atlas` is the folder the desktop app creates too; `init` takes any name.
+node $ATLAS init ./atlas
 
 # Analyze without writing; --apply is the explicit write boundary.
-node $ATLAS index . --vault ./ontology
-node $ATLAS index . --vault ./ontology --apply
+node $ATLAS index . --vault ./atlas
+node $ATLAS index . --vault ./atlas --apply
 
 # Give a person or coding agent a compact starting packet.
-node $ATLAS agent-brief ./ontology
+node $ATLAS agent-brief ./atlas
 ```
 
 Both install commands are required: `mcp/` owns a separate lockfile, so rerun
 `pnpm --dir mcp install` after each pull. Restart your agent in your repository,
-then use `node $ATLAS mcp-verify ./ontology` to prove the real server process and
+then use `node $ATLAS mcp-verify ./atlas` to prove the real server process and
 vault contract.
 
 > Run `init` in your own repository, not inside the Atlas clone. This clone

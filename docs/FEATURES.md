@@ -183,6 +183,21 @@ seeds + agent configs + the agent guide pair + 3 procedure skills) / browse the
 built-in demo vault — plus a local-first trust line. No download CTA inside the
 installed app.
 
+**Project-local vault (2026-08-24, supersedes the "just start" location above)**:
+the map now lives **inside the project it describes**, at `<project>/atlas`. One
+name — `PROJECT_VAULT_DIR`, `src/shared/lib/project-vault-dir.ts` — is shared by
+the door that creates the folder
+(`src/features/first-run-starter/model/use-build-from-code.ts`) and the open path
+that finds it (`src/features/docs-vault-local/model/resolve-picked-vault-folder.ts`).
+Choosing a project only computes and describes: the screen must render the exact
+path before `confirm` creates anything, an existing `atlas/` is reused and
+reported rather than overwritten, and picking the `atlas` folder itself is named
+as the mistake it is instead of proposing `…/atlas/atlas`. Opening a project root
+that carries an `atlas/` holding Markdown redirects into it **and says so** —
+measured 2026-08-25, the silent alternative read the whole source tree as a vault
+and put `.ontology-atlas/` records beside the source. Rationale, including why
+the name is neither `docs/` nor a dot-folder: `docs/DECISIONS.md` (2026-08-24).
+
 **Vault-carried agent skills (2026-08-17)**: every scaffolded vault — CLI `init`
 and the in-app/web starter alike — ships `.claude/skills/atlas-{review,grow,absorb}/SKILL.md`.
 The app launches the coding agent with the vault as its working folder, so these
