@@ -1,15 +1,17 @@
 # Brand — Ontology Atlas
 
-> The **meaning** of the mark and the **usage rules** for assets. The source of truth for coordinates is
-> [`src/shared/ui/brand-mark.tsx`](../src/shared/ui/brand-mark.tsx), and this document defines what it says and where to use it.
+> The meaning, source contract, and usage rules for the pixel mascot identity.
+> The 2026-08-28 record in [`DECISIONS.md`](./DECISIONS.md) owns the replacement
+> decision; the committed PNG masters own the pixels.
 
 ## Identity Status
 
-The verbal identity below is current as of 2026-08-25. The nested-hex mark is
-still the shipping compatibility asset, but the owner has rejected it as the
-final brand direction. No replacement mark has been approved. Its geometry must
-not constrain the next identity exploration, and replacing it requires a
-separate recorded design decision and asset-pipeline run.
+The pixel mascot is the primary and only shipping brand mark. It replaces the
+nested-hex compatibility mark in browser, PWA, Open Graph, README, macOS,
+Windows, mobile packaging trees, loading, and evidence-bound mascot presence.
+The app rail intentionally starts with destinations and repeats no mark or
+wordmark. Hexagons remain valid topology data marks for project kinds; they are
+no longer brand marks.
 
 ## One Sentence
 
@@ -19,171 +21,122 @@ separate recorded design decision and asset-pipeline run.
 Category — **A local-first codebase ontology workbench.**
 
 Asset shorthand — **Understand your codebase.** Localized product copy belongs
-in the message catalogs rather than this authored English document.
+in the message catalogs rather than raster assets.
 
-The codebase is the boundary and entry point. Product strategy, policy,
-ownership, and business concepts remain first-class when they explain what the
-code implements, why an implementation boundary exists, or what a change can
-affect. Atlas is not a general-purpose ontology editor, a structural code index,
-or an agent conversation-memory store.
+## Character
 
----
+The mascot is quiet, curious, reliable, precise, and collaborative. Its warm
+ivory face sits inside a compact near-black work suit. One chartreuse antenna
+pixel and one chest pixel make the identity recognizable without turning the UI
+into a second colour system. The raised-hand full mark carries one small graph
+node; the compact and micro marks remove that detail before it becomes noise.
 
-## Current Mark — Compatibility Asset, Not the New Identity
+This is a character, not an ontology kind, an assistant persona, or a claim that
+work is happening. Static brand surfaces are state-free.
 
-The following sections preserve the reading and production contract of the mark
-that still ships. They explain existing coordinates and small-size reductions;
-they are not a brief for the replacement. The current mark is a drawing of the
-product's former map/data-model framing, with layers matching `element →
-capability → domain → project`.
+## Canonical Pixel Grids
 
-### Central Hexagon — Core Concept
+The source masters live under `assets/brand/mascot/`.
 
-The smallest unit of knowledge for understanding a project. It represents a single concept recorded in the ontology, such as a domain, feature, component,
-or implementation element.
-
-This is why it has the **thickest line** (`core: 19`) in this mark — the rest is
-the context surrounding it.
-
-### Three Circular Nodes — Core Concepts and Intersections
-
-Nodes representing the domain, function, and implementation elements that make up the codebase. Arranged in three directions, this illustrates that **a single concept can connect to and expand across multiple areas**.
-
-The three nodes are **anchored at the vertices of the central hexagon**. If they were floating dots, it would become a common molecular icon, losing the meaning of "interconnected layers."
-
-### Lines Connecting Nodes — Typed Relationships
-
-Not simple connections, but relationships with **defined semantics** like `contains`, `depends_on`, `implements`, and `relates`. These lines convey that Atlas is not just a note-taking tool, but a **computable and queryable graph**.
-
-### Nested Hexagons — Hierarchy of Knowledge
-
-The structure expanding from inside to outside is the hierarchy itself.
-
-```
-element  →  capability  →  domain  →  project
-  Core          Middle         Node/Spoke    Outer
-```
-
-A flow starting from small implementation evidence to grasp the structure of the entire project.
-
-### Dashed Layer — The Invisible Map
-
-It represents not only the currently documented structure but also **inferable connections, missing relationships, and explorable paths**. The key point is that it is dashed, not solid — a knowledge map that is **continuously discovered and updated**, rather than having a finished boundary.
-
-### Outer Hexagon — Boundary of the Codebase
-
-A boundary enclosing the entire repository/project. It signifies local-first ownership: the canonical model remains in user-owned Markdown and codebases, with no Atlas cloud store. Connected coding agents may still send prompts and context to their own providers.
-
-### The Hexagonal Form — Structure and Scalability
-
-Hexagons interlock seamlessly, depicting how independent concepts come together to form a larger system. Simultaneously, it evokes the technical impression of map cells, modules, and graph nodes.
-
----
-
-## Colors
-
-| Name | Value | Usage |
+| Tier | Source | Native use |
 |---|---|---|
-| Brand Ember | `#C14A24` | Solid mark, tagline, global app accent |
-| Gradient Start | `#E46238` | Top-left of brand asset mark |
-| Gradient End | `#A83E1D` | Bottom-right of brand asset mark |
-| Plate | `#15182C` → `#06081A` | App icon background |
+| Full | `mascot-full-64.png` | 64px and larger; raised hand and graph-node spark |
+| Compact | `mascot-compact-32.png` | 20–48px; resting arms and readable body |
+| Micro | `mascot-micro-16.png` | 16–18px; helmet, face, eyes, and antenna only |
+| macOS template | `mascot-tray-template-{16,32}.png` | black/clear menu-bar mask at 1×/2× |
 
-**The gradient's range is outside the app DOM.** It is used only for OS icons, favicons, og images, and banners; the mark drawn inside the app (`<BrandMark>`) is a single color via `currentColor`. This is not a preference but a charter — a strict boundary defined in the "Moving Gradient Background" section of `.claude/rules/forbidden.md`. New hues or multi-color gradients are also prohibited in brand assets.
+Each tier is authored separately. Do not downscale the full body to make a
+favicon. Scale a tier only by whole-number nearest-neighbour steps; fractional
+scaling makes individual pixel widths inconsistent.
 
----
+## Palette Boundary
 
-## Size Ladder — Layering at Smaller Sizes
+| Role | Value |
+|---|---|
+| Suit / outline | `#0B0B0D` family |
+| Face | `#F7F5E6` |
+| Identity signal | `#C6F000` |
+| Suit highlight | `#5B5B66` |
 
-| Stage | Size | Layers Retained |
+These colours are licensed only inside committed mascot raster pixels and their
+brand compositions. `#C6F000` is not an application token, status colour, data
+colour, control fill, or replacement for the indigo accent. Product UI continues
+to use the existing neutral-plus-indigo system.
+
+## Truthful Motion
+
+Three six-frame rows live beside the masters:
+
+| State | Source | Meaning |
 |---|---|---|
-| `full` | ≥64px | Outer · Dashed · Middle · Core · 3 Spokes · 3 Nodes |
-| `compact` | 20~48px | Outer · Middle · 3 Nodes |
-| `micro` | ≤18px | Outer · Filled Core |
+| Walk | `mascot-walk-row-64.png` | finite entrance after verified read activity appears |
+| Read | `mascot-read-row-64.png` | verified current Atlas read-like operation |
+| Success | `mascot-success-row-64.png` | terminal completion of that observed read sequence |
 
-**Simply removing layers is insufficient.** The stroke width of the retained layers must also be redefined for that size — if strokes drop below 1 device px, anti-aliasing turns them into gray mush, and if ink spacing falls below 1px, layers merge into one blob. Empirical evidence and floor values are enforced by `tests/contract/brand-asset-parity.contract.test.ts`.
+`src/features/agent-activity/model/mascot-state.ts` is the state boundary.
+Planning text alone cannot claim READ; an exact read-like tool must be present.
+SUCCESS requires a timestamped terminal projection. Visual state,
+`data-mascot-state`, and localized `role=status` text share that source.
 
-**The mark's size is defined by the ink, not the viewBox.** Within the 512 viewBox, the ink occupies only 418 pixels vertically, so when scaled to the viewBox, the actually visible mark is much smaller.
+Motion is finite. There is no idle loop, random map traversal, inferred work,
+particle cloud, glow, or separate mascot event bus. Under reduced motion, travel
+and frame stepping stop while the static pose and status text preserve the fact.
+At desktop widths the 64×64 stage stays in a measured clear lane at the map's
+right edge. Six poses share five 120ms frame/travel transitions; WALK's terminal
+frame equals READ's first frame, and READ's terminal frame equals SUCCESS's first,
+so a truthful state change does not teleport the character.
 
----
+## Generated Assets
 
-## Asset List — What and When to Use
-
-All located under `public/brand/`. **Do not create them manually** — the pipeline below generates them.
-
-### Mark only
-
-| File | Use case |
+| Surface | Asset |
 |---|---|
-| `mark.svg` | Gradient mark. Documentation, banners, presentations |
-| `mark-mono.svg` | `currentColor` — **only when inserting as inline SVG**. If placed via `<img>`, it won't inherit color and will appear black |
-| `icon-mono-light.svg` / `.png` | White background + black mark. Light backgrounds, print |
-| `icon-mono-dark.svg` / `.png` | Black background + white mark. Dark backgrounds, watermarks |
+| In-app mark | `public/brand/mascot-{full,compact,micro}.png` through `<BrandMark>` |
+| Browser favicon | `app/icon.png` |
+| Apple Touch | `app/apple-icon.png` |
+| PWA | `public/brand-icon-512.png` |
+| Open Graph | `public/og-image.png` (1200×630) |
+| README / presentations | `public/brand/lockup*.png` |
+| macOS / Windows / mobile package trees | `src-tauri/icons/**` |
+| macOS menu bar | `src-tauri/icons/tray-template.png` (static template image) |
 
-### Horizontal lockup
+The OS plate is a neutral dark squircle. The character remains native pixel art
+inside that smoothly masked platform shape.
 
-| File | Use case |
-|---|---|
-| `lockup.svg` · `lockup.png` · `lockup@2x.png` | Default. Dark backgrounds |
-| `lockup-light.svg` · `lockup-light@2x.png` | Light background (solid black) |
-| `lockup-dark.svg` · `lockup-dark@2x.png` | Dark background (solid white) |
-| `lockup-compact.svg` | No tagline. **Use this if height is less than 48px** |
-
-**Minimum size**: Lockups with taglines must not be used below **48px height**. Below that, the tagline becomes unreadable; illegible text is just ink smudge. For smaller sizes, use `lockup-compact`; below 24px, use the mark only.
-
-**Padding**: The lockup SVG's viewBox fits **exactly to the ink** (optical padding is 0). Surrounding padding is provided by the consumer — minimum padding is **0.4x the mark height**.
-
-### App/OS
-
-| File | Use case |
-|---|---|
-| `app/icon.svg` | Favicon (micro, solid color) |
-| `app/apple-icon.png` | Apple Touch Icon 180 |
-| `src-tauri/icons/*` | macOS `.icns` · Windows `.ico` · Tile |
-| `public/og-image.png` | Link preview card **1200×630** — must match the size declared in `app/layout.tsx` |
-| `public/brand-icon-512.png` | PWA manifest |
-| `public/logo.png` | Large logo within the app |
-
-### SVG vs PNG
-
-Lockup SVGs contain **live text**, so they open and edit everywhere, but in environments without Pretendard, they fall back to system sans-serif, changing character widths. **Use PNG where pixel accuracy is critical** (README images, presentations, external distribution) — PNG renders exactly as the browser bakes with the real font.
-
-We do not outline the glyphs because it requires a font parser dependency (`forbidden.md` — new dependencies must be justified). We deemed the cost of adding one for this single asset unacceptable, so we provide both.
-
----
-
-## How to build — three steps, run once by a human
+## Build Pipeline
 
 ```bash
-node scripts/build-brand-assets.mjs     # coordinates → SVG
-node scripts/build-brand-raster.mjs     # → open http://127.0.0.1:8231/ in browser
-node scripts/install-brand-icons.mjs    # install PNG/icns/ico to 27 destinations
+node scripts/build-brand-assets.mjs
+node scripts/build-brand-raster.mjs
+# Open the printed loopback URL once so the browser canvas bakes the PNG family.
+node scripts/install-brand-icons.mjs
 ```
 
-This is not automated. A human runs it once when icons change, and the results are committed; product builds do not depend on these scripts.
+`build-brand-assets.mjs` validates dimensions and alpha for the three masters and
+motion rows. `build-brand-raster.mjs` disables canvas image smoothing and creates
+every physical output. `install-brand-icons.mjs` owns all committed destinations,
+including `.icns` and `.ico` assembly. No build-time server or image service is
+required by the product.
 
-The rasterization uses a browser to avoid adding new image dependencies (sharp·resvg) to the repository. Also, the lockup **relies on the browser to embed Pretendard and measure the ink** to get the viewBox right — hardcoding values measured without fonts will silently break.
+## Do Not
 
----
-
-## Do not
-
-- **Do not treat the current geometry as the next identity brief.** It remains a
-  compatibility asset until a replacement is selected and verified.
-- **Do not redraw the mark.** If coordinates need changing, update `brand-mark.tsx` and rerun the pipeline. Hand-made assets will inevitably fall out of sync — in fact, `logo.png` and `og-image.png` carried the deprecated "A" logo until 2026-07-30, and og images were served **every time they were shared**.
-- **Do not uniformize stroke weight.** The core > outer > middle hierarchy is this mark's identity.
-- **Do not rotate, italicize, or distort the mark.** Maintain the fixed aspect ratio of the tall hexagon.
-- **Do not place text over the mark.** Lockups are horizontal only.
-- **Do not add new colors.** Indigo single hue only.
-- Do not use the gradient mark inside app screens — `<BrandMark>` uses `currentColor`.
-
----
+- Do not restore the nested-hex drawing as a logo or brand echo.
+- Do not remove project hexagons from topology data visualization.
+- Do not recolour the mascot through CSS or turn chartreuse into a UI palette.
+- Do not use the full master at 16px or fractional-scale a native grid.
+- Do not crop presentation boards into production assets.
+- Do not animate without verified state or add ambient looping travel.
+- Do not bake slogans, progress values, or English-only product copy into the art.
+- Do not infer Windows notification-area approval from a macOS capture; Windows
+  owns tray visibility and overflow and requires its own observed need and proof.
 
 ## Gates
 
-| Spec | Where it's enforced |
+| Property | Gate |
 |---|---|
-| Component ↔ asset script coordinate match | `tests/contract/brand-asset-parity.contract.test.ts` (**output** comparison) |
-| Stroke/gap floor at small sizes | Same file |
-| All asset files exist and use the latest mark | `tests/contract/brand-assets-present.contract.test.ts` |
-| Gradient only outside app DOM | `.claude/rules/forbidden.md` + `BrandMark` tests |
+| Source masters and motion rows are exact RGBA grids | `brand-asset-parity.contract.test.ts` |
+| Runtime detail ladder matches source tiers | same contract plus `brand-mark.test.tsx` |
+| Every generated/public/platform output is planned | `brand-assets-present.contract.test.ts` |
+| Reduced motion preserves static state and text | `reduced-motion-equivalent.contract.test.ts` |
+| Motion claims only verified work | `mascot-state.test.ts` and `AgentMascotPresence.test.tsx` |
+| Palette stays raster-only; motion clocks, safe corner, and pose boundaries stay aligned | `mascot-palette-boundary.contract.test.ts` and `mascot-motion.contract.test.ts` |
+| macOS tray template is exact RGBA 1×/2× art | brand parity/presence contracts plus native Rust test |

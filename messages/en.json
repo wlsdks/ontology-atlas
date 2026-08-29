@@ -3426,6 +3426,11 @@
       "blocked": "Waiting for approval",
       "complete": "Complete"
     },
+    "mascot": {
+      "detected": "Verified agent reading detected.",
+      "reading": "The agent is reading the ontology.",
+      "success": "The verified agent work completed."
+    },
     "quietUnknown": "Quiet",
     "recentWrite": "Change detected {age}",
     "recentWriteAgent": "{agent} · change detected {age}",

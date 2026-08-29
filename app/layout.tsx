@@ -81,7 +81,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   // The favicon and Apple touch icon are picked up automatically by the Next.js file convention
-  // (app/icon.svg, app/apple-icon.png) — declaring them again here produced a duplicate
+  // (app/icon.png, app/apple-icon.png) — declaring them again here produced a duplicate
   // <link rel="icon">, so it was removed.
 };
 

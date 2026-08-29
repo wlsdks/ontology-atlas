@@ -22,6 +22,7 @@ The ability for humans to read in one flow the AI agent's product name, verified
 - Dock space first opens with existing `--agent-panel-reflow-duration` and camera follows new width with live spring of the same clock. ACP sessions start after a 240ms landing window post-transition so process startup doesn't break map layout/camera motion. While agents are open, automatic INDEX degradation realigns camera meaning but does not steal directly panned/zoomed points.
 - Thoughts and tool calls for one user turn are grouped as one collapsed `Work Process · N steps`. Agent answers remain in separate body text; expanding details shows original work order and actual target. Thought Markdown renders as bold/code/lists, not original markers.
 - Notifications are not poured out per tool call but aggregated by work start/end and structural change units. Current work reading opens from the status bar below the top-right toolbar; past notifications open from the far-right independent bell and wide inbox. Both surfaces share one feed but do not mix content. The status bar inherits neither the short width of the top-right toolbar nor natural content width (upper limit 520px) to preserve agent name and last work time.
+- The pixel mascot is another projection of this same truth, not a separate activity source. It appears only after an exact read-like tool is present in verified live work, walks once into READ, and may resolve to SUCCESS only from a timestamped terminal projection in the same observed sequence. Its 64px stage uses a measured clear right-edge lane, while travel and art share five synchronized transitions with identical pixels at state boundaries. The raster pose, `data-mascot-state`, and localized `role=status` text share one mapping. No fresh state means no mascot work claim; reduced motion retains the static pose and text.
 - In-app ontology writing allow/reject and terminal status remain as bounded snapshots in `.ontology-atlas/acp-work.jsonl` and are read as work receipts from notification popovers. Full conversations/thoughts/tool outputs/absolute paths/body values are not kept, nor mixed with `activity.jsonl` which records execution facts.
 - `created_by: human` is provenance only, not a review-needed state. The reserved reader kind `vault-readme` stays in Docs and is excluded from the map, relation editing, and concept census.
 
@@ -38,6 +39,9 @@ The ability for humans to read in one flow the AI agent's product name, verified
 - src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx: Collapsed work process, Markdown details, stage count and in-progress status
 - src/views/home/ui/HomePage.tsx: Spatial priority transitions and mutual exclusivity of INDEX/map/ACP docks
 - src/shared/lib/agent-display-name.ts: Boundary between audit original IDs and human display names
+- src/features/agent-activity/model/mascot-state.ts: Fail-closed mapping from exact verified read tools and terminal projections to READ/SUCCESS
+- src/features/agent-activity/ui/AgentMascotPresence.tsx: Finite WALK → READ → SUCCESS projection with the same visual, typed, and accessible state
+- assets/brand/mascot/mascot-{walk,read,success}-row-64.png: Three six-frame native pixel rows; no ambient catalogue or inferred work
 
 ## Confidence
-high (0.95): Verified through pure derivation, component and ACP integration contracts, 360~2560 overflow sweeps, and round-trip testing of the installed app's Codex Computer Use with 30/120fps motion capture.
+high (0.95): Verified through pure derivation, component and ACP integration contracts, 360~2560 overflow sweeps, installed-app Computer Use, a real macOS recording normalized to 30fps, and deterministic frame sampling.

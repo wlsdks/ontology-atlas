@@ -1107,7 +1107,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-08-19: deleting the install section removed 7 anchors from the gateway
 // (the panel's primary CTA · Intel · GitHub exit · web exit · release notes ·
 // Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 11 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 11 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1211,16 +1211,6 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다 — 버튼 쪽 같은 줄과 함께 내려온다.',
   },
   {
-    file: 'src/widgets/app-nav-rail/ui/AppNavRail.tsx',
-    count: 1,
-    claim: 'chrome-token',
-    proof: '--app-nav-rail-tile-height',
-    why:
-      '레일 하단 「앱 받기」 타일. 높이가 calc(32px * --topology-ui-scale-factor) 이고 coarse ' +
-      '포인터에서 max() 로 재정의된다 — 램프는 스케일 계수도 포인터 승격도 못 낸다.',
-    conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다. 누름 방언(active:translate-y-px)은 별개 부채다.',
-  },
-  {
     file: 'src/views/home/ui/TopologyReviewLink.tsx',
     count: 1,
     claim: 'chrome-token',
@@ -1306,9 +1296,9 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
 // 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
 // before registering a shape the value layer cannot make.**
-const BASELINE_ANCHOR_REGISTERED = 29;
+const BASELINE_ANCHOR_REGISTERED = 28;
 
-/** **Only this number may fall.** The current anchor total (29) minus registered (29). */
+/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

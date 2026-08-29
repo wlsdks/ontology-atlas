@@ -1,16 +1,11 @@
 /**
- * Installs the rasterised PNGs into their **eight consumers** — the last cell of
- * the pipeline.
+ * Installs the raster-first mascot family into every committed identity consumer.
  *
- * The two preceding scripts build the SVGs (`build-brand-assets.mjs`) and
- * rasterise them (`build-brand-raster.mjs`), but placing the results into
- * `src-tauri/icons/` and the rest was done **by hand** the first time. So the
- * pipeline claimed "everything derives from one set of coordinates" while its
- * last cell was not reproducible — and that is exactly where assets fall behind
- * the next time somebody edits the icon.
+ * `build-brand-assets.mjs` validates the authored 64/32/16 PNG masters and
+ * `build-brand-raster.mjs` bakes every physical size. This file is the final,
+ * explicit fan-out so an old logo cannot survive in one platform tree.
  *
- * Usage: `node scripts/build-brand-assets.mjs && node scripts/build-brand-raster.mjs`
- *        (open the result in a browser), then `node scripts/install-brand-icons.mjs`
+ * Usage: run the source validator, open the raster baker once, then run this file.
  *
  * **icns goes through iconutil; ico is written by hand.** On macOS `iconutil` is
  * the standard tool, so filling the `.iconset` directory correctly is enough.
@@ -25,6 +20,7 @@
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname } from 'node:path';
+import { MASCOT_MOTION_ROWS, MASCOT_TRAY_TEMPLATES } from './build-brand-assets.mjs';
 
 const PNG = '.qa-scratch/brand/png';
 const ICONSET = '.qa-scratch/brand/AtlasIcon.iconset';
@@ -78,18 +74,53 @@ const COPY_PLAN = [
   ['src-tauri/icons/Square30x30Logo.png', 'tile-30'],
   ['src-tauri/icons/StoreLogo.png', 'tile-50'],
   ['app/apple-icon.png', 'apple-180'],
-  // These three are where **the old logo (the "A" node drawing) was still alive**.
-  // The og card is the only image a link preview draws, so every share shipped the
-  // retired brand.
+  ['app/icon.png', 'icon-32'],
   ['public/og-image.png', 'og-image'],
   ['public/brand-icon-512.png', 'icon-512'],
   ['public/logo.png', 'icon-1024'],
-  ['public/brand/icon-mono-light.png', 'icon-mono-light'],
-  ['public/brand/icon-mono-dark.png', 'icon-mono-dark'],
+  ['public/brand/icon-light.png', 'icon-light'],
+  ['public/brand/icon-dark.png', 'icon-dark'],
+  ['public/brand/mascot-full.png', 'mark-full'],
+  ['public/brand/mascot-compact.png', 'mark-compact'],
+  ['public/brand/mascot-micro.png', 'mark-micro'],
   ['public/brand/lockup.png', 'lockup'],
   ['public/brand/lockup@2x.png', 'lockup@2x'],
   ['public/brand/lockup-light@2x.png', 'lockup-light@2x'],
   ['public/brand/lockup-dark@2x.png', 'lockup-dark@2x'],
+  ['public/brand/lockup-compact.png', 'lockup-compact'],
+  ['src-tauri/icons/ios/AppIcon-20x20@1x.png', 'mobile-20'],
+  ['src-tauri/icons/ios/AppIcon-20x20@2x-1.png', 'mobile-40'],
+  ['src-tauri/icons/ios/AppIcon-20x20@2x.png', 'mobile-40'],
+  ['src-tauri/icons/ios/AppIcon-20x20@3x.png', 'mobile-60'],
+  ['src-tauri/icons/ios/AppIcon-29x29@1x.png', 'mobile-29'],
+  ['src-tauri/icons/ios/AppIcon-29x29@2x-1.png', 'mobile-58'],
+  ['src-tauri/icons/ios/AppIcon-29x29@2x.png', 'mobile-58'],
+  ['src-tauri/icons/ios/AppIcon-29x29@3x.png', 'mobile-87'],
+  ['src-tauri/icons/ios/AppIcon-40x40@1x.png', 'mobile-40'],
+  ['src-tauri/icons/ios/AppIcon-40x40@2x-1.png', 'mobile-80'],
+  ['src-tauri/icons/ios/AppIcon-40x40@2x.png', 'mobile-80'],
+  ['src-tauri/icons/ios/AppIcon-40x40@3x.png', 'mobile-120'],
+  ['src-tauri/icons/ios/AppIcon-60x60@2x.png', 'mobile-120'],
+  ['src-tauri/icons/ios/AppIcon-60x60@3x.png', 'mobile-180'],
+  ['src-tauri/icons/ios/AppIcon-76x76@1x.png', 'mobile-76'],
+  ['src-tauri/icons/ios/AppIcon-76x76@2x.png', 'mobile-152'],
+  ['src-tauri/icons/ios/AppIcon-83.5x83.5@2x.png', 'mobile-167'],
+  ['src-tauri/icons/ios/AppIcon-512@2x.png', 'icon-1024'],
+  ['src-tauri/icons/android/mipmap-mdpi/ic_launcher.png', 'icon-48'],
+  ['src-tauri/icons/android/mipmap-mdpi/ic_launcher_round.png', 'icon-48'],
+  ['src-tauri/icons/android/mipmap-mdpi/ic_launcher_foreground.png', 'foreground-108'],
+  ['src-tauri/icons/android/mipmap-hdpi/ic_launcher.png', 'mobile-72'],
+  ['src-tauri/icons/android/mipmap-hdpi/ic_launcher_round.png', 'mobile-72'],
+  ['src-tauri/icons/android/mipmap-hdpi/ic_launcher_foreground.png', 'foreground-162'],
+  ['src-tauri/icons/android/mipmap-xhdpi/ic_launcher.png', 'mobile-96'],
+  ['src-tauri/icons/android/mipmap-xhdpi/ic_launcher_round.png', 'mobile-96'],
+  ['src-tauri/icons/android/mipmap-xhdpi/ic_launcher_foreground.png', 'foreground-216'],
+  ['src-tauri/icons/android/mipmap-xxhdpi/ic_launcher.png', 'mobile-144'],
+  ['src-tauri/icons/android/mipmap-xxhdpi/ic_launcher_round.png', 'mobile-144'],
+  ['src-tauri/icons/android/mipmap-xxhdpi/ic_launcher_foreground.png', 'foreground-324'],
+  ['src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher.png', 'mobile-192'],
+  ['src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher_round.png', 'mobile-192'],
+  ['src-tauri/icons/android/mipmap-xxxhdpi/ic_launcher_foreground.png', 'foreground-432'],
 ];
 
 /**
@@ -127,10 +158,11 @@ written.push('src-tauri/icons/icon.icns');
 
 written.push(put('src-tauri/icons/icon.ico', buildIco(ICO_PLAN.map(([s, n]) => [s, read(n)]))));
 for (const [path, src] of COPY_PLAN) written.push(put(path, read(src)));
+for (const [state, spec] of Object.entries(MASCOT_MOTION_ROWS)) {
+  written.push(put(`public/brand/mascot-${state}-row.png`, readFileSync(spec.path)));
+}
+written.push(
+  put('src-tauri/icons/tray-template.png', readFileSync(MASCOT_TRAY_TEMPLATES.twoX.path)),
+);
 
-// `build-brand-assets.mjs` already writes the favicon and master SVG to
-// `app/icon.svg` and `public/brand-mark.svg`. The plated SVG is **not** copied
-// into public again here — an asset with no consumer is misinformation, not a
-// spec.
-
-console.log(`[brand-install] ${written.length}개 설치\n${written.map((p) => `  ${p}`).join('\n')}`);
+console.log(`[brand-install] installed ${written.length} assets\n${written.map((p) => `  ${p}`).join('\n')}`);

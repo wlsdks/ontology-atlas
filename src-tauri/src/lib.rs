@@ -9,6 +9,8 @@ use std::path::{Component, Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, UNIX_EPOCH};
+#[cfg(target_os = "macos")]
+use tauri::tray::TrayIconBuilder;
 use tauri::{AppHandle, Emitter, Manager, RunEvent, State};
 
 /// ACP harness — finds coding agents already installed by the user and invokes them within the app.
@@ -43,6 +45,12 @@ const WEBVIEW_VERIFY_APP_UPDATE_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_APP_UPDATE";
 /// It is meaningful only when launched in an environment with no tools (`env -i HOME=<empty>`).
 const WEBVIEW_VERIFY_ACP_INSTALL_ENV: &str = "ONTOLOGY_ATLAS_VERIFY_ACP_INSTALL";
 const MAIN_WINDOW_LABEL: &str = "main";
+#[cfg(target_os = "macos")]
+const NATIVE_TRAY_ID: &str = "ontology-atlas-tray";
+#[cfg(target_os = "macos")]
+const NATIVE_TRAY_OPEN_ID: &str = "ontology-atlas-tray-open";
+#[cfg(target_os = "macos")]
+const NATIVE_TRAY_QUIT_ID: &str = "ontology-atlas-tray-quit";
 /// One rotation of the app log, kept small on purpose: this file exists so a bug report can carry
 /// evidence, not so the app accumulates a history of the owner's machine.
 const APP_LOG_MAX_FILE_BYTES: u128 = 5 * 1024 * 1024;
@@ -2577,6 +2585,84 @@ fn show_main_window(app: &AppHandle) {
     }
 }
 
+#[cfg(target_os = "macos")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct NativeTrayLabels {
+    open: &'static str,
+    quit: &'static str,
+}
+
+#[cfg(target_os = "macos")]
+fn native_tray_labels(language_hint: &str) -> NativeTrayLabels {
+    let hint = language_hint.to_ascii_lowercase();
+    if hint.contains("ko") || hint.contains("korean") {
+        NativeTrayLabels {
+            open: "Ontology Atlas 열기",
+            quit: "Ontology Atlas 종료",
+        }
+    } else {
+        NativeTrayLabels {
+            open: "Open Ontology Atlas",
+            quit: "Quit Ontology Atlas",
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_language_hint() -> String {
+    let mut hint = ["LANG", "LC_ALL", "LC_MESSAGES"]
+        .iter()
+        .filter_map(|key| std::env::var(key).ok())
+        .collect::<Vec<_>>()
+        .join(" ");
+    if let Ok(output) = Command::new("defaults")
+        .args(["read", "-g", "AppleLanguages"])
+        .output()
+    {
+        hint.push(' ');
+        hint.push_str(&String::from_utf8_lossy(&output.stdout));
+    }
+    hint
+}
+
+/// Installs one static, state-free macOS status item. It restores the existing
+/// window; it never creates a second window, keeps the app alive after quit, or
+/// exposes Tauri tray/menu permissions to the webview.
+#[cfg(target_os = "macos")]
+fn install_native_tray(app: &mut tauri::App) -> tauri::Result<()> {
+    let labels = native_tray_labels(&macos_language_hint());
+    let open = tauri::menu::MenuItem::with_id(
+        app,
+        NATIVE_TRAY_OPEN_ID,
+        labels.open,
+        true,
+        None::<&str>,
+    )?;
+    let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
+    let quit = tauri::menu::MenuItem::with_id(
+        app,
+        NATIVE_TRAY_QUIT_ID,
+        labels.quit,
+        true,
+        None::<&str>,
+    )?;
+    let menu = tauri::menu::Menu::with_items(app, &[&open, &separator, &quit])?;
+
+    TrayIconBuilder::with_id(NATIVE_TRAY_ID)
+        .icon(tauri::include_image!("icons/tray-template.png"))
+        .icon_as_template(true)
+        .tooltip("Ontology Atlas")
+        .menu(&menu)
+        .show_menu_on_left_click(true)
+        .on_menu_event(|app, event| match event.id().0.as_str() {
+            NATIVE_TRAY_OPEN_ID => show_main_window(app),
+            NATIVE_TRAY_QUIT_ID => app.exit(0),
+            _ => {}
+        })
+        .build(app)?;
+    Ok(())
+}
+
 /// The subset of `tauri-plugin-window-state`'s file this app reads back itself.
 ///
 /// The plugin writes **physical** pixels, which is the whole reason the geometry cannot be trusted
@@ -2971,6 +3057,9 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
+            #[cfg(target_os = "macos")]
+            install_native_tray(app)?;
+
             // The first line of every log file: without a version, a bug report's log cannot be
             // matched to the build that produced it.
             log::info!(
@@ -3200,6 +3289,25 @@ pub fn run() {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn native_tray_labels_follow_the_system_language_hint() {
+        assert_eq!(
+            crate::native_tray_labels("(\n    \"ko-KR\",\n    \"en-US\"\n)"),
+            crate::NativeTrayLabels {
+                open: "Ontology Atlas 열기",
+                quit: "Ontology Atlas 종료",
+            }
+        );
+        assert_eq!(
+            crate::native_tray_labels("en_US.UTF-8"),
+            crate::NativeTrayLabels {
+                open: "Open Ontology Atlas",
+                quit: "Quit Ontology Atlas",
+            }
+        );
+    }
+
     /// **It is an allowlist, not a denylist** — denylists are quietly bypassed whenever new schemes appear. This location passes the address given by the screen directly to the OS,
     /// so if bypassed, a single link could open arbitrary things.
     #[test]

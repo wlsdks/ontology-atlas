@@ -2,8 +2,8 @@
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark.svg" />
-    <img src="public/brand/lockup-light.svg" alt="Ontology Atlas — Understand your codebase." width="360" />
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/lockup-dark@2x.png" />
+    <img src="public/brand/lockup-light@2x.png" alt="Ontology Atlas — Understand your codebase." width="360" />
   </picture>
 </p>
 
@@ -603,6 +603,14 @@ For Markdown changes, that selector includes `pnpm docs:language`. For source,
 test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments
 from regressing while preserving typed Korean locale data and runtime strings.
+
+Pixel-brand or mascot-motion changes also run the focused palette/continuity
+contracts and the rendered motion sweep:
+
+```bash
+pnpm exec vitest run tests/contract/mascot-palette-boundary.contract.test.ts tests/contract/mascot-motion.contract.test.ts
+pnpm exec playwright test tests/e2e/agent-mascot-presence.spec.ts
+```
 
 Run `pnpm knip` to evaluate JavaScript/TypeScript dead files, exports, and types
 across the frontend, scripts, CLI, and MCP scopes. It is a repository-wide

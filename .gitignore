@@ -74,6 +74,9 @@ references/
 !public/og-image.png
 !public/brand-icon-512.png
 !app/apple-icon.png
+!app/icon.png
+!assets/brand/mascot/*.png
+!public/brand/*.png
 !src-tauri/icons/
 !src-tauri/icons/**
 !docs/prototypes/shots/

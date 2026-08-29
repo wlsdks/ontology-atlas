@@ -38,7 +38,7 @@ The criterion for separation is not the topic, but **"when it is read."** All fo
 - [Why this direction](#why-this-direction)
 - [v2 — "Circuit × Constellation" (B2+) Visual Language](#v2-circuit-constellation-b2-visual-language)
 - [Node Spec (Node Spec, 2026-08-01)](#node-spec-node-spec-2026-08-01)
-- [Brand mark — "Hex Constellation" (candidate A, confirmed 2026-07-18)](#brand-mark-hex-constellation-candidate-a-confirmed-2026-07-18)
+- [Brand identity — pixel mascot (confirmed 2026-08-28)](#brand-identity--pixel-mascot-confirmed-2026-08-28)
 - [Cited lineage — where these rules come from](#cited-lineage-where-these-rules-come-from)
 - [Top-tier Quality Bar](#top-tier-quality-bar)
 - [Layers the agent consumes — who reads this document (2026-08-01)](#layers-the-agent-consumes-who-reads-this-document-2026-08-01)
@@ -330,58 +330,59 @@ The data side is currently specifying **bridge nodes** (first-class representati
 - A fifth row may be needed in the shape mapping table (§1) — whether bridge is a new `kind` or an additional marker on existing kinds (e.g., new emphasis on the edge itself) follows data-side decisions.
 - **Once values are finalized, they will be incorporated into the §1–§4 body, not this section** — do not isolate it as a "bridge-only section." Isolation invites future audits asking "why is bridge treated separately?"
 - Gate follows the **`node-kind-shape-parity` pattern** (simultaneous update of canvas gateway + DOM gateway + parity test expansion) — fixing only one side splits the map, INDEX/workshop/popovers.
-- If color is added (pending design-informatics approval), it adds a **fifth** branch to the already split amber discipline (`.claude/rules/design.md` "amber has four branches" section — hub · brand mark · kind tone · footprint trail). Update that section and the "Three ambers, three rules" table below (§2026-08-01 currently 3 rows — footprint trail not yet in this table, listed as separate tech debt) in the same PR.
+- If colour is added (pending design-informatics approval), it adds another data branch to the split amber discipline (hub · kind tone · footprint trail). The mascot's chartreuse pixels are fixed identity art, never a bridge/data colour.
 
-## Brand mark — "Hex Constellation" (candidate A, confirmed 2026-07-18)
+## Brand identity — pixel mascot (confirmed 2026-08-28)
 
-> Source: `docs/prototypes/app-icon-concepts.html` (candidate A, 48px master + 20px thumbnail). Implementation: `src/shared/ui/brand-mark.tsx` (`BrandMark`).
+> Source contract: `docs/BRAND.md`. Pixel authority:
+> `assets/brand/mascot/`. Runtime: `src/shared/ui/brand-mark.tsx`.
 
-The mark reuses the same shape vocabulary as the v2 kind glyph above instead of
-inventing a new one: a **hexagon** (= project shape, §2.3 "kind = shape, not
-color") with **six vertex nodes** (graph nodes) and **spokes** converging on a
-**center hub** — the hub is stroked amber, the same single-exception amber
-tone as the v2 hub ring (§2.3.6, `--color-status-warning` family /
-`#d4b478`). Large it reads as a constellation graph; small it collapses to
-the hexagon — the mark is never a separate pictogram bolted onto the product,
-it's the same shape language shrunk to a badge.
+The pixel mascot is the one shipping identity across OS, web, README, Open
+Graph, loading, and evidence-bound workbench presence. The app rail deliberately
+starts with destinations and repeats no mark. The mascot does **not** replace
+project hexagons: those remain topology kind marks carrying typed data.
 
-**Two detail levels** (`BrandMarkProps.detail`):
+**Three separately authored grids**:
 
-- `"full"` (default) — spokes + six vertices + hexagon + amber hub. Use at
-  ≥32px — nav rail avatars, in-app headers, marketing surfaces.
-- `"compact"` — hexagon outline + amber hub only, spokes/vertices dropped.
-  Use at ≤24px (favicon, macOS Dock at small sizes, dense chrome) where thin
-  spokes would just be noise.
+| Detail | Native grid | Retained form |
+|---|---:|---|
+| `full` | 64×64 | raised hand, graph-node spark, body, antenna |
+| `compact` | 32×32 | resting body, face, antenna, chest signal |
+| `micro` | 16×16 | helmet, face, eyes, antenna only |
 
-**Color contract**: lines and vertices use `currentColor` so a caller can tone
-the mark via CSS `color` (e.g. dim it inside a disabled state) — this is the
-one shared-UI SVG allowed to do that, because it is a monochrome brand glyph,
-not a data mark. The amber hub is a fixed constant
-(`BRAND_MARK_AMBER = '#d4b478'`) exported alongside the component, because it
-carries fixed brand meaning (hub node) independent of surrounding text color.
-Static, non-React SVG/PNG exports (`app/icon.svg`, macOS `.icns`/`.ico`) can't
-inherit CSS `currentColor`, so those bake the same indigo (`#8b97ff`) +
-`#d4b478` amber as literal fixed values — this is the one place hardcoded hex
-is correct instead of a token reference, because the file has no DOM to read
-tokens from.
+Never derive the miniatures by downscaling the full master. Whole-number
+nearest-neighbour scaling is allowed; fractional scaling is a defect because it
+gives nominally equal source pixels unequal device widths.
 
-**Where it ships**:
+**Palette boundary**: near-black `#0B0B0D`, ivory `#F7F5E6`, chartreuse
+`#C6F000`, and suit highlight `#5B5B66` are licensed only inside committed
+mascot rasters and brand compositions. Chartreuse is not an application token,
+status colour, control fill, or data colour; UI remains neutral plus indigo.
 
-| Surface | Asset | Detail |
-|---|---|---|
-| In-app avatars/headers | `<BrandMark />` (`src/shared/ui/brand-mark.tsx`) | full/compact via prop |
-| Browser favicon | `app/icon.svg` | compact, transparent background |
-| iOS/PWA home-screen icon | `app/apple-icon.png` (180×180) | full, dark squircle ground |
-| PWA manifest icon | `public/brand-icon-512.png` | full, dark squircle ground |
-| macOS `.app` bundle icon | `src-tauri/icons/{32x32,64x64,128x128,128x128@2x,icon}.png` + `icon.icns` + `icon.ico` | compact ≤64px, full ≥128px — same dark squircle ground as the PWA/apple icon (app-icon special case, §"Absolute rules" exception: app icons allow vertical gradient backgrounds) |
+**Truthful motion**: WALK, READ, and SUCCESS are six-frame 64px rows. The
+persistent app-shell presence runs one finite path only when
+`Agent Work Visibility` provides verified read-like tool state and a terminal
+completion. Visual pose, `data-mascot-state`, and localized `role=status` text
+share that mapping. No idle loop, inferred work, random map travel, or glow.
+Reduced motion keeps the static pose and text while removing travel/frame steps.
+At desktop widths its 64×64 stage uses a measured clear lane at the map's right
+edge. Six poses use five synchronized 120ms transitions;
+the last WALK pixels equal the first READ pixels and the terminal READ pixels
+equal the first SUCCESS pixels.
 
+**Shipping assets**:
 
-Generation pipeline for the raster/macOS set: render the HTML composition
-(squircle + inline mark SVG) at each exact pixel size with a headless
-browser, then `iconutil`/hand-rolled ICO packer assemble `.icns`/`.ico` from
-the renders — no separate rasterizer script; the browser is the renderer of
-record so every size stays crisp instead of being scaled down from one master
-raster.
+| Surface | Asset |
+|---|---|
+| In-app mark | `<BrandMark detail="full|compact|micro" />` and `public/brand/mascot-*.png` |
+| Browser | `app/icon.png` |
+| Apple/PWA | `app/apple-icon.png` · `public/brand-icon-512.png` |
+| Open Graph / README | `public/og-image.png` · `public/brand/lockup*.png` |
+| Platform bundles | `src-tauri/icons/**`, including `.icns` and `.ico` |
+
+The raster-first generator validates the RGBA grids, draws a neutral platform
+plate with browser canvas smoothing disabled, bakes every exact physical size,
+then installs all committed destinations from one explicit plan.
 
 ## Cited lineage — where these rules come from
 
@@ -490,7 +491,7 @@ After four consecutive prescriptions for the size series (zoom removal → field
 
 | Chrome label | **11px** (`text-label`) | ChromeChip/status chip |
 
-| Rail icon | **20px single** (logo only 26) | `--app-nav-rail-icon-size` |
+| Rail icon | **20px single** | `--app-nav-rail-icon-size` |
 
 | ≥1920 scale | **1:1 (no zoom)**, 1.1 only for 2400+ | `.topology-ui-scale` |
 
@@ -620,8 +621,7 @@ a defect if it names the right one:
 
 | Family | Value | Rule |
 | --- | --- | --- |
-| **Hub amber** | `--topology-v2-amber-hub` / `BRAND_MARK_AMBER` `#d4b478` | One hub ring + one Layer-0 container, plus two written exceptions (agent focus ring, `?recent=` spotlight). A third on screen is a defect. |
-| **Brand mark** | the same `#d4b478` in the nav-rail logo | Not an expansion — it is the product's mark, one instance per route, never data. Written down here so audits stop re-filing it. |
+| **Hub amber** | `--topology-v2-amber-hub` `#d4b478` | One hub ring + one Layer-0 container, plus two written exceptions (agent focus ring, `?recent=` spotlight). A third on screen is a defect. |
 | **Kind tone** | `capability` `rgba(211,159,73,.94)` (amber) · `element` `rgba(124,166,141,.94)` (eucalyptus) | A **data mark**. Allowed only where colour is the sole identity channel — the kind-census strip, map dots, tree chips. Composition bars whose segments are already identified by order + adjacent numerals use the app bar grammar (indigo primary + neutral + 1px seam) instead. Never a surface, rail, or callout. |
 | **Footprint trail** | `--color-footprint-trail` `#e8c47a` (2026-07-29, added) | Deliberately a DIFFERENT value from hub amber, not an extension of it — same family, split value, so "center" (hub) and "walked" (trail) never collapse into one meaning. Opt-in, default 0, `shadowBlur` capped 6px, single consumer (`shared/lib/footprint-glyph.ts`). Gate: `tests/contract/footprint-bloom-exception.contract.test.ts`. See `.claude/rules/design.md` "amber has four branches" for the full four-way rule. |
 
@@ -645,7 +645,7 @@ numerals were already carrying identity three times over; the colour was
 duplicate ink.
 
 Verified live 2026-07-26 after the change (`/ko/projects`, 1512 dark): chromatic
-faces 13 → **1** (the nav-rail brand mark), chroma area 32,987px² → 36px². The
+faces 13 → **1** (the now-retired amber nav-rail mark), chroma area 32,987px² → 36px². The current mascot's chartreuse is fixed identity raster, outside the bar/data palette measured here. The
 insights configuration tab keeps 4 kind-tone faces, all inside the kind census card where
 the unlabelled stack strip has no other channel. `/ko/project/[slug]` renders
 zero. None of these is `--color-status-success`; a green **status dot** would be,
@@ -1737,7 +1737,7 @@ The size vocabulary for **content icon glyphs** (lucide) sitting next to body te
 
 **Steps were chosen based on observed frequency + type pairing.** New value 0 — all are dominant values in today's screens, so adding them moves zero pixels. The source of the type-pairing principle is Carbon (verified 2026-08-04, [Icons usage](https://carbondesignsystem.com/elements/icons/usage/)): *"16px and 20px icons are optimized to feel balanced when paired with 14px and 16px IBM Plex"* — icon steps stand not as independent scales but **paired with type sizes**, and *"Be sure icon size is consistent throughout your product."* The lower bound source is Fluent 2 (verified, [Iconography](https://fluent2.microsoft.design/iconography)): *"Smaller icons can give information or reinforce an idea, but should not be used for interaction"* (12px is the lower bound for informational use). Material 3 · Apple HIG (SF Symbols) · Polaris · Primer have body text intended only for JS rendering, making source verification impossible — per precedent #0 in "Rules for Expanding the System" (M3/Spectrum 2026-08-03), no sentences citing these four as grounds are included.
 
-**Scope — content icons only.** Chrome and rail icons remain owned by their respective surface contracts: `--topology-chrome-icon-size` (12) · `--chrome-icon` (16) · `--app-nav-rail-icon-size` (20, logo only 26 — fixed scale contract). Overlapping values represent the same answer for the same type pair, but Chrome density decisions must move independently, so they are not bundled.
+**Scope — content icons only.** Chrome and rail icons remain owned by their respective surface contracts: `--topology-chrome-icon-size` (12) · `--chrome-icon` (16) · `--app-nav-rail-icon-size` (20). Overlapping values represent the same answer for the same type pair, but Chrome density decisions must move independently, so they are not bundled.
 
 **The gate is a ratchet, not lint** (`tests/contract/icon-size-ramp.contract.test.ts`): ① CSS ↔ JS mirror consistency ② Per-file ledger for sizes outside the ramp (`size={N}` prop + `size-N`/`h-N w-N` classes) — **new files start at 0 on day one**, existing debt of 64 cases/17 files can only decrease ③ Ratchet for unspecified (default 24px render): 3 cases/2 files ④ Composite probe + dead-code prevention denominator. The reason it's not lint: replacing the 64-case debt implies ±1–2px render changes, requiring design judgment at each site (the founding judgment of the ratchet), and an icon-specific exception block would replace ramp selectors for those files due to flat config multi-block pitfalls.
 
@@ -1992,7 +1992,7 @@ The "machined tile" syntax shared by Topology chrome (brand pill, top HUD lane, 
 
 Owner of `docs/prototypes/chrome-rail-combined.html` — a permanent 64px vertical rail on the left of the terrain map. Located in `src/widgets/app-nav-rail`. Handles global destinations (map, vault, workshop, insights, projects) + bottom agent status/settings, absorbing the brand pill's book/network utility tiles and the right vertical rail's settings gear.
 
-- Logo (`<BrandMark size={20} detail="compact" />`, see "Brand mark" section above — brand pill pips use the same component at 15px, so both surfaces share the mark) + 5 destinations (18px icon + Korean label 9.5px) + bottom agent status (Activity icon + amber dot when active) + settings (gear). Only the trigger is migrated — popovers invert anchor direction via `popoverAlign="left"` + `popoverSide="top"` — because opening downwards from the rail bottom would overflow the screen (discovered in 1920px live).
+- No logo or wordmark in the rail; it starts directly with 7 destinations (18px icon + Korean label 9.5px), then settings (gear). App identity lives in the platform icon, window title, and truthful mascot surfaces instead of repeating above navigation. Only the trigger is migrated — popovers invert anchor direction via `popoverAlign="left"` + `popoverSide="top"` — because opening downwards from the rail bottom would overflow the screen (discovered in 1920px live).
 - Active item = indigo tint tile + 1px inset ring + left 2px bar + `aria-current`. The reason for the left bar (unlike tabs/chips): in a vertical stack, "here and now" signals are harder to scan with just tile color (transposing the horizontal tab underline convention vertically).
 - Mounted as flex siblings outside the canvas — existing `absolute left-*` coordinates for map/INDEX/brand pills etc. remain valid but shift 64px relative to the new container (no coordinate recalculation needed). The canvas 2D engine's safe-inset tokens are remeasured against this relative container, not the viewport, so no separate correction is needed — verified no overlap in live screens.
 - [Done, feat/rail-rollout] This slice (#375) limited mounting scope to the terrain map (HomePage), deferring rollout for `/docs`, `/ontology/*`, `/projects`, `/project/*`, `/download` and relationship clarification with `OperationsNav`/`OntologySubNav` to separate slices — `feat/rail-rollout` is that slice, making the rail resident on all pages and fully deleting `OperationsNav`/`OntologySubNav`. The display breakpoint was also raised from `md` to `lg` to clarify boundaries with `BottomTabBar`. `AppSettingsMenu` (formerly `OperationsNav` settings gear) and `LiveActivityIndicator`, which don't fit in the rail, are separated into distinct widgets mounted individually on necessary page headers (0 feature loss principle, see `docs/ARCHITECTURE.md`).
@@ -2588,12 +2588,13 @@ reads it via ref mirror every frame, **reflecting from the next frame onward**.
 
 ## Changelog
 
+- 2026-08-29: Replaced the rejected nested-hex compatibility identity with the pixel mascot across raster masters, favicon, README/OG/PWA, macOS/Windows/mobile packaging assets, loading, and one finite verified agent-work motion sequence. Direct owner inspection removed the repeated rail mark, so navigation begins with destinations. Project hexagons remain data marks.
 - 2026-08-01: New "Node Specs" section (document shape, radius, size scale, engraved number as symbol names, reserve bridge node space) + new "Layers consumed by agents" section (what already existed vs. newly filled vs. deemed unnecessary as of 2026-07-31 web research). Gate: new `tests/contract/node-kind-shape-parity.contract.test.ts` (parity between canvas and DOM kind-glyph gates; previously coincidental, now a contract). Fixed `--topology-v2-radius-magnitude-k` comment (log → √, correcting drift that diverged from implementation). Added 4th row (footprint trail) to "Three ambers" table. Corrected 1 line number reference in the "Fan" section to symbol name.
 - 2026-07-25: Design overhaul Phase 5 (Personalization) — 3 canvas backgrounds (dot/constellation/contour, `--canvas-bg-*` + ink cap `--canvas-bg-ink-max`) and 2 node icon sets (geometric/line, immutable kind→silhouette · single gateway). Settings [Screen] live preview picker + localStorage persistence. See "Personalization" section.
 - 2026-07-25: Design overhaul Phase 1 — canonical `Select` (dark Listbox, #4) · `EmptyState` skeleton/icon slot expansion (#16) · control height tokens `--control-h-sm/md/lg` (#13) · dialog width scale `--dialog-w-sm/md/lg` new. Workshop create domain + topology "concept add" kind select migrated to canonical Select; insight depends/hub empty areas migrated to EmptyState. See "Control Inventory" section.
 - 2026-07-21: Geometry & Type Codex (R5) — converged `text-[Npx]` (29 types, 1,184 instances) into 7-step type ramp (`--text-caption`…`--text-hero` + `--tracking-*` pairs), arbitrary radii (18 types) into 3 steps (`--radius-chip/card/panel`). Box-specific spec table + explicit exceptions listed. ESLint `no-restricted-syntax` blocks new arbitrary instances (migration complete directory error / R6 concurrent work dir warn). Visuals maintained at ±1px snap level (not a redesign); see "Geometry & Type Codex" section.
 - 2026-07-18: Chrome system (feat/chrome-system) — `--chrome-*` tokens + ChromeTile/ChromeChip components new; converged to 24px alignment rail for brand fill / INDEX panel / analysis panel left inset; INDEX panel v2.1 (header "INDEX · N" + collapse, tree row grid + Lucide chevron + inset capacity meter, footer moved agent sync); see `docs/prototypes/index-panel-v2-full.html`.
-- 2026-07-18: Brand mark replaced — "Hex Constellation" (candidate A) across favicon, macOS app icon, and `BrandMark` shared component; see "Brand mark" section above.
+- 2026-07-18: Historical: "Hex Constellation" became the compatibility mark. Retired by the 2026-08-29 pixel mascot identity.
 - 2026-07-18: v2 — Elevated B2+ "Circuit × Constellation" language to page rollout norm (6-axis language · token tier catalog · surface class do/don't · v2 prohibitions added · rollout guard · token drift debt audit); see [`TOPOLOGY-V2-DESIGN.md`](./TOPOLOGY-V2-DESIGN.md).
 - 2026-06-08: Added topology node-focus & scale pattern (ego popover, overview-first, plain-language counts, LOD perf path); see [`TOPOLOGY-FOCUS-AND-SCALE.md`](./TOPOLOGY-FOCUS-AND-SCALE.md).
 - 2026-04-13: Removed the consulting category.

@@ -30,7 +30,6 @@ describe('brand raster save boundary', () => {
     return {
       root,
       pngOut: path.join(root, 'png'),
-      brandOut: path.join(root, 'brand'),
     };
   }
 
@@ -38,9 +37,6 @@ describe('brand raster save boundary', () => {
     const pngBytes = Buffer.from('89504e470d0a1a0a', 'hex').toString('base64');
     return {
       png: Object.fromEntries(RASTER_OUTPUT_NAMES.png.map((name) => [name, pngBytes])),
-      svgs: Object.fromEntries(
-        RASTER_OUTPUT_NAMES.svg.map((name) => [name, '<svg viewBox="0 0 1 1"></svg>']),
-      ),
     };
   }
 
@@ -52,10 +48,6 @@ describe('brand raster save boundary', () => {
       readFileSync(path.join(paths.pngOut, `${RASTER_OUTPUT_NAMES.png[0]}.png`)).subarray(0, 8).toString('hex'),
       '89504e470d0a1a0a',
     );
-    assert.match(
-      readFileSync(path.join(paths.brandOut, `${RASTER_OUTPUT_NAMES.svg[0]}.svg`), 'utf-8'),
-      /^<svg/,
-    );
   });
 
   it('rejects path-like output names before writing any file', () => {
@@ -66,7 +58,6 @@ describe('brand raster save boundary', () => {
     assert.throws(() => saveRasterPayload(payload, paths), /unexpected PNG output name/i);
     assert.equal(existsSync(path.join(paths.root, 'outside.png')), false);
     assert.equal(existsSync(paths.pngOut), false);
-    assert.equal(existsSync(paths.brandOut), false);
   });
 
   it('rejects loopback save requests that do not carry this run token', async () => {
@@ -74,7 +65,6 @@ describe('brand raster save boundary', () => {
     const server = createBrandRasterServer({
       saveToken: 'expected-token',
       pngOut: paths.pngOut,
-      brandOut: paths.brandOut,
     });
     server.listen(0, '127.0.0.1');
     try {
@@ -84,7 +74,6 @@ describe('brand raster save boundary', () => {
       const response = await postJson(address.port, '/save', '{}');
       assert.equal(response.statusCode, 403);
       assert.equal(existsSync(paths.pngOut), false);
-      assert.equal(existsSync(paths.brandOut), false);
     } finally {
       await new Promise((resolve) => server.close(resolve));
     }
