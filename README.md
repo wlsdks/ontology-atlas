@@ -267,8 +267,9 @@ folder.
   it needs it and it exits afterwards. The MCP server opens no port and makes no
   network request; the coding agent itself may use its provider when you ask it to.
 
-Claude Code, Cursor, Codex, and other supported clients get a direct setup path.
-Any other MCP client can use the generated snippet.
+Claude Code, Codex, Cursor, and Antigravity get a direct setup path — one
+button each, writing that client's own config file. Any other MCP client can use
+the generated snippet.
 The bundled server advertises its current read/write surface through
 `tools/list`; the [agent guide](mcp/README.md) documents every tool and its
 contract, and `mcp-verify` proves the live inventory.
@@ -333,28 +334,35 @@ Markdown file; returning to edit or cancelling changes nothing.
 ![The current History screen in the installed macOS app, showing one unsaved concept change, the exact Markdown diff of the dependencies and relation_notes lines, the current branch, earlier vault commits, and the explicit save action](docs/assets/readme/history-review.png)
 
 Whatever wrote — you, the map editor, the CLI, or an agent over MCP — lands here
-first as a diff you read before it becomes history. The change above was written
-by a command, not by hand, and the command said what it would do to the graph
-before touching a file:
+first as a diff you read before it becomes history. The change above is the one
+confirmed in step 5: two frontmatter lines, still unsaved, waiting for a person
+to look at them.
+
+A command writes the same two lines, and it says what it would do to the graph
+before touching a file — and refuses a dependency nobody explained:
 
 ```console
-$ node $ATLAS/cli/src/index.mjs relate capabilities/return-request capabilities/refund dependencies ./storefront --dry-run
+$ node $ATLAS/cli/src/index.mjs relate capabilities/order-cancel capabilities/refund dependencies ./storefront --dry-run \
+    --why "Cancelling a paid order has to give the money back, so cancellation cannot finish without refund processing."
 
-capabilities/return-request --dependencies--> capabilities/refund
+capabilities/order-cancel --dependencies--> capabilities/refund
   verdict matches_existing_schema · exists no
   schema  capability --dependencies--> capability
-  pattern count 51 · resolved 51 · external 0 · unresolved 0
+  pattern count 53 · resolved 53 · external 0 · unresolved 0
   recommendation safe_to_add · No exact or inverse edge found; capability --dependencies--> capability is an existing schema pattern.
 
 nearby schema patterns
-  3 · capability --dependencies--> capability (count 51)
+  3 · capability --dependencies--> capability (count 53)
   2 · capability --relates--> capability (count 12)
+  1 · capability --domain--> domain (count 54)
   1 · capability --elements--> element (count 54)
-  1 · capability --domain--> domain (count 49)
-  1 · domain --capabilities--> capability (count 49)
+  1 · domain --capabilities--> capability (count 54)
 
-dry-run would write dependencies on capabilities/return-request → capabilities/refund (no file changed)
+dry-run would write dependencies on capabilities/order-cancel → capabilities/refund (no file changed)
 ```
+
+Drop the `--why` and the command stops rather than guessing one: *why is
+required and must be nonblank for a new depends_on relation.*
 
 An edge that would introduce a shape the vault has never used comes back as
 `new_schema_pattern · review_new_schema` instead, so a drifting agent is visible
@@ -367,10 +375,13 @@ touched, and the screen says so.
 
 ![The current Insights screen in the installed macOS app, with its Do next, Inventory, Connections, Boundaries, Recent changes and Flow tabs, three review priorities, an agent-readiness bar, a repair queue, and the fixes that need no code](docs/assets/readme/graph-insights.png)
 
-Insights turns graph health into a work queue: what is disconnected, stale, or
-missing evidence, and which repair to make next. Composition shows whether the
-folder is balanced across kinds and whether each domain has capabilities backed
-by implementation elements. Every number branches from the same compiled graph.
+Insights opens on **Do next**, which is a work queue rather than a dashboard:
+the few things worth reviewing today, how much of the folder an agent can
+actually rely on, the repair queue behind that number, and the fixes that need
+no code at all — two names that may mean the same thing, a concept with no home.
+The other tabs answer the standing questions: Inventory for what the folder is
+made of, Connections and Boundaries for how it hangs together, Recent changes
+and Flow for what moved. Every number branches from the same compiled graph.
 
 ### 8. See the shape of the whole project
 
