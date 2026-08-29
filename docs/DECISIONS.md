@@ -40,6 +40,80 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — Qualification transport is machine-readable before hidden work
+
+**Convened**: solo PO pass · **Trigger**: the clean unfamiliar-repository run
+spent 1,302 seconds in its formal hidden lane even though the helper itself ran
+in about 70 milliseconds. Late work was strict packet assembly and repeated
+shape discovery, not MCP execution or semantic source analysis.
+**Rubric**: 24/24 (fatal zero: none).
+
+**Prior decision**: “Deterministic scratch receipts replace per-run
+qualification code” remains authoritative. Its isolation, immutable-claim,
+human-acceptance, and no-write boundaries stand. The new observation fires its
+performance falsifier but does not justify another envelope, public tool, or
+helper-authored judgment.
+
+**Observed replay**:
+
+- On unchanged main, a fresh source-hidden evaluator took 533 seconds and three
+  invocations. The first failed because a parseable access time became a
+  non-canonical qualification timestamp. A later fresh evaluator assembled the
+  semantics in 465 seconds but failed because `schema` omitted the exact access
+  contract and role; the next exposed top-level core fields but omitted nested
+  owner shape. These REDs remain part of the result.
+- The completed schema-only lane took **419 seconds total**, with one hidden
+  invocation in 0.07 seconds. It preserved 29/29 ordered claims, returned three
+  answered and three partial CQs with zero failed CQs, and kept `canWrite:false`,
+  pending acceptance, and no `writePlan`.
+- The independent source-aware lane took **367.675 seconds**, verified 29/29
+  claims and 46/46 citations, and overlapped the hidden lane for **321.465
+  seconds**. `join` reached only `awaiting_human_acceptance`; it did not accept,
+  release, or write.
+- The hidden wrapper fell from 24,105 bytes to 1,519 bytes while separately
+  authored core and answer files remained explicit. The four generated hidden
+  artifacts stayed byte-identical to embedded input on the frozen replay.
+- Deliberate probes first exposed and then blocked absolute/nested/parent paths,
+  compact/embedded mixing, symlinks, hard links, FIFOs, symlinked ancestors,
+  malformed/swapped files, duplicate axes, schema/runtime drift, and access
+  leakage. Every RED produced no output directory.
+
+**Decision**:
+
+1. Extend only the existing mirrored scratch helper. `hidden` may hydrate exact
+   evaluator-authored `qualificationCore` and `answers` from plain sibling JSON
+   files while keeping access inline. Embedded input remains supported.
+2. Derive the helper's machine-readable qualification-core schema from the
+   existing public construction schema, refining only helper-owned exclusions,
+   six-axis cardinality, one-owner provenance, and canonical approval time.
+   Access and compact-answer schemas must match runtime exactly.
+3. The helper still authors no purpose, question, answer, target, axis,
+   diagnostic, citation, identity, acceptance, or write. It invokes no MCP tool
+   and writes no vault.
+4. Sibling reads are a local scratch transport, not a sandbox. Under a stable
+   input directory they are descriptor-read regular files with one link and no
+   lexical, symlink, or special-file redirection. Actor/source isolation remains
+   an independently measured procedure.
+5. This proves the formal hidden lane below ten minutes on one frozen candidate;
+   it does **not** prove the whole cold-start loop below 40 minutes. The next
+   performance task is a clean end-to-end construction at the current main.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: removing a 22 KiB wrapper copy does not remove the
+irreducible work of reading 29 claims and answering six questions. The 419-second
+result may be evaluator variance rather than transport leverage.
+**Falsifier**: a fresh schema-only evaluator needs implementation source or a
+transport retry, any safe path form changes one output byte, a redirected input
+is read, an existing mutation becomes accepted, or the next comparable clean
+construction still exceeds the staged budget for the same qualification cause.
+**Revisit**: immediately on the first falsifier; otherwise after the next clean
+end-to-end field run.
+
+**Status**: valid
+
+---
+
 ## 2026-08-29 — Nothing is painted before it can be named and clicked
 
 **Convened because**: the same session that found the domain label defect also

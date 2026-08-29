@@ -4,8 +4,11 @@ import { createHash } from 'node:crypto';
 import {
   access,
   constants,
+  lstat,
   mkdtemp,
+  open,
   readFile,
+  realpath,
   rename,
   rm,
   stat,
@@ -16,6 +19,7 @@ import { pathToFileURL } from 'node:url';
 
 import {
   CONSTRUCTION_QUALIFICATION_CONTRACT,
+  CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
   CONSTRUCTION_QUALITY_AXES,
   evaluateConstructionQualification,
 } from '../../../../mcp/src/construction-qualification.mjs';
@@ -63,6 +67,15 @@ const MANDATORY_AXES = Object.freeze([
 ]);
 const EVIDENCE_PENDING_ID = 'qualification-handoff:audit-pending';
 const COLD_START_REGRESSION_WITNESS_ID = 'qualification-handoff:cold-start-regression';
+const HANDOFF_SCHEMA_ACCESS_BOUNDARIES = Object.freeze([
+  'subjectSourceAccessed',
+  'hiddenArtifactsAccessed',
+  'auditorArtifactsAccessed',
+  'builderPrivateArtifactsAccessed',
+  'vaultAccessed',
+  'networkUsed',
+  'otherAgentContacted',
+]);
 const EVIDENCE_PENDING_DIAGNOSTIC = Object.freeze({
   id: EVIDENCE_PENDING_ID,
   axis: 'evidence_provenance',
@@ -83,6 +96,170 @@ const PROTECTED_HIDDEN_FIELDS = Object.freeze([
   'canWrite',
   'writePlan',
 ]);
+const QUALIFICATION_CORE_FIELDS = Object.freeze([
+  'qualificationId',
+  'purposeAuthority',
+  'scenarios',
+  'competencyQuestions',
+  'axisResults',
+  'diagnostics',
+  'regression',
+  'resourceUse',
+]);
+const TRIMMED_NONBLANK_PATTERN = '^\\S(?:[\\s\\S]*\\S)?$';
+const HANDOFF_ID_SCHEMA = Object.freeze({
+  type: 'string',
+  minLength: 1,
+  maxLength: 500,
+  pattern: TRIMMED_NONBLANK_PATTERN,
+});
+const HANDOFF_STRING_SCHEMA = Object.freeze({
+  type: 'string',
+  minLength: 1,
+  maxLength: 2000,
+  pattern: TRIMMED_NONBLANK_PATTERN,
+});
+const HANDOFF_STRING_ARRAY_SCHEMA = Object.freeze({
+  type: 'array',
+  uniqueItems: true,
+  items: HANDOFF_ID_SCHEMA,
+});
+
+function qualificationCoreJsonSchema() {
+  const properties = Object.fromEntries(QUALIFICATION_CORE_FIELDS.map((key) => [
+    key,
+    tightenQualificationSchema(CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA.properties[key]),
+  ]));
+  properties.qualificationId.maxLength = 300;
+  properties.competencyQuestions.items.properties.revision.properties.approvedAt = {
+    type: 'string',
+    format: 'date-time',
+    pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$',
+    examples: ['2026-01-02T03:00:00.000Z'],
+  };
+  properties.axisResults.items.properties.axis.enum = CONSTRUCTION_QUALITY_AXES.filter(
+    (axis) => axis !== 'evidence_provenance',
+  );
+  properties.axisResults.minItems = CONSTRUCTION_QUALITY_AXES.length - 1;
+  properties.axisResults.maxItems = CONSTRUCTION_QUALITY_AXES.length - 1;
+  properties.axisResults.allOf = CONSTRUCTION_QUALITY_AXES
+    .filter((axis) => axis !== 'evidence_provenance')
+    .map((axis) => ({
+      contains: {
+        type: 'object',
+        properties: { axis: { const: axis } },
+        required: ['axis'],
+      },
+    }));
+  properties.diagnostics.items.properties.axis.enum = CONSTRUCTION_QUALITY_AXES.filter(
+    (axis) => axis !== 'evidence_provenance',
+  );
+  properties.diagnostics.items.properties.id.not = { const: EVIDENCE_PENDING_ID };
+  properties.purposeAuthority.properties.owners.minItems = 1;
+  properties.purposeAuthority.properties.owners.maxItems = 1;
+  return {
+    type: 'object',
+    properties,
+    required: [...QUALIFICATION_CORE_FIELDS],
+    additionalProperties: false,
+  };
+}
+
+function tightenQualificationSchema(value) {
+  if (Array.isArray(value)) return value.map(tightenQualificationSchema);
+  if (!isRecord(value)) return value;
+  const tightened = Object.fromEntries(Object.entries(value).map(([key, child]) => [
+    key,
+    tightenQualificationSchema(child),
+  ]));
+  if (tightened.type === 'string' && Number.isInteger(tightened.minLength) && tightened.minLength >= 1) {
+    tightened.pattern = TRIMMED_NONBLANK_PATTERN;
+    if (Number.isInteger(tightened.maxLength) && tightened.maxLength > 1000) tightened.maxLength = 1000;
+  }
+  return tightened;
+}
+
+function hiddenAccessJsonSchema() {
+  const boundaryProperties = Object.fromEntries(HANDOFF_SCHEMA_ACCESS_BOUNDARIES.map((key) => [
+    key,
+    { type: 'boolean', const: false },
+  ]));
+  return {
+    type: 'object',
+    properties: {
+      contract: { type: 'string', const: CONTRACTS.access },
+      actorId: HANDOFF_ID_SCHEMA,
+      role: { type: 'string', const: ROLES.HIDDEN },
+      startedAt: { type: 'string', format: 'date-time' },
+      endedAt: { type: 'string', format: 'date-time' },
+      readScopes: HANDOFF_STRING_ARRAY_SCHEMA,
+      writeScopes: HANDOFF_STRING_ARRAY_SCHEMA,
+      boundaries: {
+        type: 'object',
+        properties: boundaryProperties,
+        required: [...HANDOFF_SCHEMA_ACCESS_BOUNDARIES],
+        additionalProperties: false,
+      },
+    },
+    required: ['contract', 'actorId', 'role', 'startedAt', 'endedAt', 'readScopes', 'writeScopes', 'boundaries'],
+    additionalProperties: false,
+  };
+}
+
+function hiddenAnswersJsonSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    items: {
+      type: 'object',
+      properties: {
+        cqId: HANDOFF_ID_SCHEMA,
+        status: { type: 'string', enum: ['answered', 'partial', 'unknown', 'refused'] },
+        answer: HANDOFF_STRING_SCHEMA,
+        gap: { ...HANDOFF_STRING_SCHEMA, maxLength: 1000 },
+        claimIds: HANDOFF_STRING_ARRAY_SCHEMA,
+        targets: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              target: HANDOFF_ID_SCHEMA,
+              claimIds: HANDOFF_STRING_ARRAY_SCHEMA,
+            },
+            required: ['target', 'claimIds'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['cqId', 'status', 'claimIds', 'targets'],
+      additionalProperties: false,
+      allOf: [
+        {
+          if: { properties: { status: { const: 'answered' } }, required: ['status'] },
+          then: {
+            not: { required: ['gap'] },
+            properties: {
+              targets: {
+                items: {
+                  properties: {
+                    claimIds: { ...HANDOFF_STRING_ARRAY_SCHEMA, minItems: 1 },
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          if: {
+            properties: { status: { enum: ['partial', 'unknown', 'refused'] } },
+            required: ['status'],
+          },
+          then: { required: ['gap'] },
+        },
+      ],
+    },
+  };
+}
 
 export const HANDOFF_SCHEMA = Object.freeze({
   contract: 'qualificationHandoffCli:v1',
@@ -112,8 +289,21 @@ export const HANDOFF_SCHEMA = Object.freeze({
     hidden: {
       input: ['candidate', 'seal', 'manifest', 'witnesses', 'access', 'qualificationCore', 'answers'],
       compactInput: ['handoffDir', 'access', 'qualificationCore', 'answers'],
+      siblingPathInput: ['handoffDir', 'access', 'qualificationCorePath', 'answersPath'],
+      siblingPathRule: 'qualificationCorePath and answersPath must both be plain sibling .json filenames beside the CLI input. Absolute, nested, parent-traversal, and inline/path mixed inputs are rejected before any file is read.',
+      siblingFileRule: 'The stable input directory may not contain symlinked ancestors. Both sibling inputs must be regular, non-symlink files with exactly one filesystem link; special files and redirected inodes fail closed.',
       answers: 'Compact rows {cqId,status,claimIds,targets:[{target,claimIds}],answer?,gap?}; witness refs and cqResults are derived. Partial/unknown/refused require gap and may leave explicit targets empty; answered targets require claims.',
       qualificationCore: 'Omits cqResults and the evidence_provenance axis; the helper injects an audit-pending diagnostic and axis. Exactly one named human owns purpose and every CQ revision, every revision approval predates source-hidden evaluation, and that owner must later accept the exact request. Required witness kinds must match the sealed witness kinds used by each answer; a failed CQ blocks instead of becoming a human gap. Maintainability remains the evaluator judgment supplied here and is never auto-promoted.',
+      qualificationCoreShape: {
+        required: [...QUALIFICATION_CORE_FIELDS],
+        forbidden: [...PROTECTED_HIDDEN_FIELDS],
+        additionalProperties: false,
+      },
+      jsonSchemas: {
+        access: hiddenAccessJsonSchema(),
+        qualificationCore: qualificationCoreJsonSchema(),
+        answers: hiddenAnswersJsonSchema(),
+      },
       unknownPolicy: {
         required: ['allowed', 'response'],
         allowed: 'boolean; true permits an explicit partial/unknown/refusal gap, false does not',
@@ -147,16 +337,13 @@ export const HANDOFF_SCHEMA = Object.freeze({
     },
   },
   access: {
+    contract: CONTRACTS.access,
+    roles: {
+      hidden: ROLES.HIDDEN,
+      audit: ROLES.AUDITOR,
+    },
     required: ['contract', 'actorId', 'role', 'startedAt', 'endedAt', 'readScopes', 'writeScopes', 'boundaries'],
-    boundaries: [
-      'subjectSourceAccessed',
-      'hiddenArtifactsAccessed',
-      'auditorArtifactsAccessed',
-      'builderPrivateArtifactsAccessed',
-      'vaultAccessed',
-      'networkUsed',
-      'otherAgentContacted',
-    ],
+    boundaries: [...HANDOFF_SCHEMA_ACCESS_BOUNDARIES],
   },
   quantifiers: {
     lexicalTerms: [...new Set('all always any each every exactly never none only solely'.split(' '))],
@@ -448,13 +635,29 @@ export function sealCandidate({ candidate, manifest, witnesses, quantifierClassi
 }
 
 function validateAccess(accessRow, role) {
+  assert(
+    isRecord(accessRow)
+      && Object.keys(accessRow).every((key) => (
+        ['contract', 'actorId', 'role', 'startedAt', 'endedAt', 'readScopes', 'writeScopes', 'boundaries'].includes(key)
+      )),
+    'Access manifest contains an unknown field.',
+  );
   assert(accessRow?.contract === CONTRACTS.access, 'Unknown access manifest contract.');
-  assert(nonBlank(accessRow.actorId), 'Access manifest needs actorId.');
+  assert(nonBlank(accessRow.actorId) && accessRow.actorId.length <= 500, 'Access manifest needs actorId.');
   assert(accessRow.role === role, `Access role must be ${role}.`);
   assert(validTimestamp(accessRow.startedAt) && validTimestamp(accessRow.endedAt), 'Access window needs timestamps.');
   assert(Date.parse(accessRow.endedAt) >= Date.parse(accessRow.startedAt), 'Access window ends before it starts.');
-  assert(uniqueStrings(accessRow.readScopes) && uniqueStrings(accessRow.writeScopes), 'Access scopes must be unique strings.');
+  assert(
+    uniqueStrings(accessRow.readScopes)
+      && uniqueStrings(accessRow.writeScopes)
+      && [...accessRow.readScopes, ...accessRow.writeScopes].every((value) => value.length <= 500),
+    'Access scopes must be unique strings.',
+  );
   assert(isRecord(accessRow.boundaries), 'Access boundaries are required.');
+  assert(
+    Object.keys(accessRow.boundaries).every((key) => HANDOFF_SCHEMA.access.boundaries.includes(key)),
+    'Access boundaries contain an unknown field.',
+  );
   for (const key of HANDOFF_SCHEMA.access.boundaries) {
     assert(typeof accessRow.boundaries[key] === 'boolean', `Access boundary ${key} must be explicit.`);
   }
@@ -464,6 +667,7 @@ function validateAccess(accessRow, role) {
   assert(accessRow.boundaries.builderPrivateArtifactsAccessed === false, 'Builder-private artifacts are outside the handoff.');
   if (role === ROLES.HIDDEN) {
     assert(accessRow.boundaries.subjectSourceAccessed === false, 'Source-hidden evaluator accessed subject source.');
+    assert(accessRow.boundaries.hiddenArtifactsAccessed === false, 'Source-hidden evaluator accessed prior hidden artifacts.');
     assert(accessRow.boundaries.auditorArtifactsAccessed === false, 'Source-hidden evaluator accessed auditor artifacts.');
   } else {
     assert(accessRow.boundaries.subjectSourceAccessed === true, 'Source-aware auditor did not access subject source.');
@@ -526,11 +730,21 @@ function deriveCqResults(qualificationCore, answers, manifest) {
   const results = answers.map((answer, index) => {
     const question = questions[index];
     assert(!Object.hasOwn(answer, 'witnessRefs') && !Object.hasOwn(answer, 'targetResults'), `Answer ${answer.cqId} cannot author derived witnessRefs or targetResults.`);
+    assert(
+      Object.keys(answer).every((key) => ['cqId', 'status', 'answer', 'gap', 'claimIds', 'targets'].includes(key)),
+      `Answer ${answer.cqId ?? '(unknown)'} contains an unknown field.`,
+    );
     assert(['answered', 'partial', 'unknown', 'refused'].includes(answer.status), `Answer ${answer.cqId} has an invalid status.`);
     if (answer.status === 'answered') {
-      assert(!nonBlank(answer.gap), `Answered CQ ${answer.cqId} cannot carry a gap.`);
+      assert(!Object.hasOwn(answer, 'gap'), `Answered CQ ${answer.cqId} cannot carry a gap.`);
     } else {
-      assert(nonBlank(answer.gap), `${answer.status} CQ ${answer.cqId} needs a nonblank gap.`);
+      assert(nonBlank(answer.gap) && answer.gap.length <= 1000, `${answer.status} CQ ${answer.cqId} needs a nonblank gap.`);
+    }
+    if (Object.hasOwn(answer, 'answer')) {
+      assert(
+        nonBlank(answer.answer) && answer.answer.length <= 2000,
+        `Answer ${answer.cqId} answer must be a nonblank string.`,
+      );
     }
     assert(uniqueStrings(answer.claimIds), `Answer ${answer.cqId} needs unique claimIds.`);
     assert(answer.claimIds.every((id) => manifestById.has(id)), `Answer ${answer.cqId} references an unknown claim.`);
@@ -539,6 +753,10 @@ function deriveCqResults(qualificationCore, answers, manifest) {
     assert(same(answer.targets.map(({ target }) => target), question.expectedAnswer?.targets ?? []), `Answer ${answer.cqId} target coverage is incomplete, foreign, or reordered.`);
     const answerClaimSet = new Set(answer.claimIds);
     const targetResults = answer.targets.map((target) => {
+      assert(
+        Object.keys(target).every((key) => ['target', 'claimIds'].includes(key)),
+        `Answer ${answer.cqId} target contains an unknown field.`,
+      );
       assert(!Object.hasOwn(target, 'witnessRefs'), `Answer ${answer.cqId} target ${target.target} cannot author derived witnessRefs.`);
       assert(uniqueStrings(target.claimIds), `Answer ${answer.cqId} target ${target.target} needs explicit claimIds.`);
       if (answer.status === 'answered') {
@@ -705,6 +923,15 @@ export function buildHiddenPacket({
   for (const key of PROTECTED_HIDDEN_FIELDS) {
     assert(!Object.hasOwn(qualificationCore, key), `qualificationCore cannot set protected field ${key}.`);
   }
+  const qualificationCoreKeys = Object.keys(qualificationCore);
+  assert(
+    QUALIFICATION_CORE_FIELDS.every((key) => Object.hasOwn(qualificationCore, key)),
+    `qualificationCore requires exactly ${QUALIFICATION_CORE_FIELDS.join(', ')}.`,
+  );
+  assert(
+    qualificationCoreKeys.every((key) => QUALIFICATION_CORE_FIELDS.includes(key)),
+    'qualificationCore contains an unknown field.',
+  );
   const questionApproval = validatePreapprovedQuestions(qualificationCore, candidate, accessRow);
   const cqResults = deriveCqResults(qualificationCore, answers, manifest);
   const axisResults = validateCoreAxes(qualificationCore);
@@ -737,7 +964,7 @@ export function buildHiddenPacket({
       decision: 'pending',
       decidedBy: 'pending',
       authority: 'human',
-      decidedAt: accessRow.endedAt,
+      decidedAt: new Date(Date.parse(accessRow.endedAt)).toISOString(),
       planDigest: candidate.planDigest,
       planRevision: candidate.planRevision,
       acceptedGapIds: [],
@@ -1296,6 +1523,66 @@ async function loadHandoff(inputDirectory, handoffDir) {
   });
 }
 
+function validateSiblingJsonPath(pathValue, label) {
+  assert(
+    nonBlank(pathValue)
+      && basename(pathValue) === pathValue
+      && pathValue.endsWith('.json')
+      && !pathValue.includes('..'),
+    `${label} must be a plain sibling JSON filename without absolute, nested, or parent-traversal segments.`,
+  );
+}
+
+function platformCanonicalAlias(pathValue) {
+  if (process.platform !== 'darwin') return pathValue;
+  for (const prefix of ['/tmp', '/var', '/etc']) {
+    if (pathValue === prefix || pathValue.startsWith(`${prefix}/`)) return `/private${pathValue}`;
+  }
+  return pathValue;
+}
+
+async function readSiblingJson(inputDirectory, pathValue, label) {
+  validateSiblingJsonPath(pathValue, label);
+  assert(
+    Number.isInteger(constants.O_NOFOLLOW) && Number.isInteger(constants.O_NONBLOCK),
+    'This runtime cannot enforce no-follow sibling reads.',
+    { exitCode: EXIT.SOFTWARE },
+  );
+  const resolvedPath = resolve(inputDirectory, pathValue);
+  let handle;
+  try {
+    const inputDirectoryStat = await lstat(inputDirectory);
+    assert(
+      inputDirectoryStat.isDirectory() && !inputDirectoryStat.isSymbolicLink(),
+      'Sibling paths require a canonical input directory, not a symbolic link.',
+      { exitCode: EXIT.DATA },
+    );
+    const resolvedInputDirectory = resolve(inputDirectory);
+    const realInputDirectory = await realpath(resolvedInputDirectory);
+    assert(
+      realInputDirectory === platformCanonicalAlias(resolvedInputDirectory),
+      'Sibling paths require an input directory without symlinked ancestors.',
+      { exitCode: EXIT.DATA },
+    );
+    handle = await open(
+      resolvedPath,
+      constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+    );
+    const opened = await handle.stat();
+    assert(opened.isFile(), `${label} must be a regular file.`, { exitCode: EXIT.DATA });
+    assert(opened.nlink === 1, `${label} must have exactly one filesystem link.`, { exitCode: EXIT.DATA });
+    return JSON.parse(await handle.readFile('utf8'));
+  } catch (error) {
+    if (error instanceof HandoffError) throw error;
+    const symlink = error?.code === 'ELOOP' || error?.code === 'EMLINK';
+    const exitCode = symlink || error instanceof SyntaxError ? EXIT.DATA : EXIT.IO;
+    const reason = symlink ? 'symbolic links are not allowed' : error.message;
+    throw new HandoffError(`Cannot hydrate ${label} from ${resolvedPath}: ${reason}.`, { exitCode });
+  } finally {
+    await handle?.close().catch(() => {});
+  }
+}
+
 function analyzeCallFrom(analysis) {
   const candidates = [
     ...(Array.isArray(analysis.calls) ? analysis.calls : []),
@@ -1389,6 +1676,29 @@ async function hydrateCommandInput(command, input, inputDirectory) {
       readHydratedJson(inputDirectory, input.witnessesPath, 'witnesses'),
     ]);
     return { ...input, candidate, manifest, witnesses };
+  }
+  if (command === 'hidden' && compactRequested(input, ['qualificationCorePath', 'answersPath'])) {
+    assert(
+      nonBlank(input.qualificationCorePath) && nonBlank(input.answersPath),
+      'hidden sibling paths require qualificationCorePath and answersPath together.',
+    );
+    assert(
+      !Object.hasOwn(input, 'qualificationCore') && !Object.hasOwn(input, 'answers'),
+      'hidden cannot mix sibling paths with embedded qualificationCore or answers.',
+    );
+    assert(
+      ['candidate', 'manifest', 'witnesses', 'seal'].every((key) => !Object.hasOwn(input, key)),
+      'hidden cannot mix sibling paths with embedded candidate, manifest, witnesses, or seal.',
+    );
+    assert(nonBlank(input.handoffDir), 'hidden sibling paths require handoffDir.');
+    validateSiblingJsonPath(input.qualificationCorePath, 'qualificationCorePath');
+    validateSiblingJsonPath(input.answersPath, 'answersPath');
+    const [handoff, qualificationCore, answers] = await Promise.all([
+      loadHandoff(inputDirectory, input.handoffDir),
+      readSiblingJson(inputDirectory, input.qualificationCorePath, 'qualificationCore'),
+      readSiblingJson(inputDirectory, input.answersPath, 'answers'),
+    ]);
+    return { ...input, ...handoff, qualificationCore, answers };
   }
   if (['hidden', 'audit'].includes(command) && compactRequested(input, ['handoffDir'])) {
     validateCompactChoice(input, ['handoffDir'], ['candidate', 'manifest', 'witnesses', 'seal'], command);

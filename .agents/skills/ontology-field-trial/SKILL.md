@@ -148,6 +148,12 @@ When the bootstrap skill's qualification helper is available, record each
 helper stage separately and require the `join` receipt to prove parallel overlap;
 helper runtime does not replace actor isolation, source hiding, or the four
 field-trial measurements.
+Use the helper's sibling-path `hidden` form so `qualificationCore` and `answers`
+remain separately authored artifacts instead of being copied into one large
+wrapper. Record embedded-versus-path wrapper bytes, helper attempts, and exact
+four-output byte parity. A smaller wrapper is transport evidence only; the
+source-hidden evaluator still owns every answer, target, axis, diagnostic, and
+resource judgment.
 
 This is a measurement boundary, not a new MCP/CLI schema or a write path. If the
 packet is already lossless, do not implement another envelope. Move to the
