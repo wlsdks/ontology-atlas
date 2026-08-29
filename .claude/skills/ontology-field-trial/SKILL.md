@@ -74,6 +74,45 @@ the construction lifecycle, run this separate gate before Phase 3:
 4. Ask the same fixed questions from the candidate packet alone. Record candidate
    answers separately from persisted-vault answers. A starter-vault `0/6` is a
    handoff setup failure, not analyzer semantic evidence.
+5. Before either evaluator starts, freeze and digest one ordered claim manifest
+   with exact `id`, `statement`, and `proposalRefs` rows. The builder,
+   source-hidden evaluator, and source-aware auditor must have different ids.
+6. Start the source-hidden answer lane and source-aware citation lane together
+   from that same manifest. Hide source, shared vault, and audit output from the
+   first; hide source-hidden answers from the second. Record branch start/end
+   timestamps and require actual overlap.
+7. Seal the hidden answers before the citation receipt is revealed. Join without
+   changing any claim row or earlier answer, then compare the final
+   qualification claims byte-for-byte with the manifest before acceptance.
+8. Exercise same-actor, source-hidden-access, missing/foreign row, claim
+   statement/ref mutation, audit mismatch, and pre-join acceptance probes. Each
+   must withhold executable lifecycle status and every write.
+
+Raw source is deliberately absent from this evaluator. Treat an exact
+source-path claim it cannot verify as partial pending the source-aware citation
+audit, not as automatically false and not as a reason to rewrite an unchanged
+source-backed claim. A missing path, wrong attribution, unsupported statement,
+or source-aware mismatch is a construction failure and does require revision.
+Keep measurement qualifiers verbatim in candidate and persisted answers:
+“unmeasured by the static packet” must not become “unmeasured” or “absent.” A
+named source use case must not be widened to a broader audience/scenario. Audit
+Definition, Includes, Excludes, and Uncertainty claims separately even when they
+share one proposal ref.
+Record candidate releases separately from analyzer calls so an early rejected
+draft cannot masquerade as an approval round.
+A `status: pass` analyzer response is still not a candidate release when its
+construction lifecycle is `blocked` by a mandatory non-gap warning. Count a
+release only when the exact review plan is `reviewable`; count the blocked
+response as a rejected draft and repair it before the evaluation lanes start.
+
+The parallel receipts are scratch measurement evidence, not a new public MCP
+schema or an authenticated identity proof. If the two lanes cannot be isolated,
+run them serially and report that timing honestly; never count overlapping work
+that shared source or answers as a source-hidden pass.
+When the bootstrap skill's qualification helper is available, record each
+helper stage separately and require the `join` receipt to prove parallel overlap;
+helper runtime does not replace actor isolation, source hiding, or the four
+field-trial measurements.
 
 This is a measurement boundary, not a new MCP/CLI schema or a write path. If the
 packet is already lossless, do not implement another envelope. Move to the

@@ -117,6 +117,46 @@ test('every visible proposal warning becomes an exact acceptance gap', () => {
   assert.equal(accepted.writeEligibility, 'executable');
 });
 
+test('an unfinished-scope project exclusion remains an exact human acceptance gap', () => {
+  const warning = {
+    code: 'unqualified-project-exclusion',
+    severity: 'warning',
+    path: 'project.excludes',
+    message: 'Project exclusions inherit the partial scope answer.',
+  };
+  const preview = evaluateConstructionLifecycle({
+    reviewPlan,
+    sourceDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    proposalFindings: [warning],
+  });
+  assert.deepEqual(preview.requiredGapIds, [
+    'proposal:unqualified-project-exclusion:project.excludes',
+  ]);
+
+  const unaccepted = evaluateConstructionLifecycle({
+    reviewPlan,
+    sourceDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    qualification: qualification(),
+    proposalFindings: [warning],
+  });
+  assert.equal(unaccepted.writeEligibility, 'blocked');
+  assert.equal(unaccepted.writePlan, undefined);
+
+  const packet = qualification();
+  packet.acceptance.acceptedGapIds = preview.requiredGapIds;
+  const accepted = evaluateConstructionLifecycle({
+    reviewPlan,
+    sourceDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    qualification: packet,
+    proposalFindings: [warning],
+  });
+  assert.equal(accepted.writeEligibility, 'executable');
+  assert.equal(accepted.admission.tier, 'partial_visible_gap');
+  assert.ok(!accepted.diagnostics.some(({ code }) => (
+    code.startsWith('proposal-warning-not-gap-eligible:unqualified-project-exclusion')
+  )));
+});
+
 test('mandatory proposal warnings cannot be laundered through human gap acceptance', () => {
   const warning = {
     code: 'risky-competency-evidence',
@@ -141,6 +181,30 @@ test('mandatory proposal warnings cannot be laundered through human gap acceptan
   assert.ok(result.diagnostics.some(({ code, phase: phaseId }) => (
     code.startsWith('proposal-warning-not-gap-eligible:') && phaseId === 'evidence_reuse'
   )));
+});
+
+test('mandatory proposal warnings block the first review before qualification work starts', () => {
+  const warning = {
+    code: 'risky-citation',
+    severity: 'warning',
+    path: 'concepts[0]',
+    message: 'The cited source is not independently trusted.',
+  };
+  const preview = evaluateConstructionLifecycle({
+    reviewPlan,
+    sourceDigest: 'sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+    proposalFindings: [warning],
+  });
+
+  assert.equal(preview.writeEligibility, 'blocked');
+  assert.deepEqual(preview.requiredGapIds, []);
+  assert.deepEqual(preview.reviewPlan, reviewPlan);
+  assert.equal('writePlan' in preview, false);
+  assert.ok(preview.diagnostics.some(({ code, phase: phaseId }) => (
+    code === 'proposal-warning-not-gap-eligible:risky-citation:concepts[0]'
+      && phaseId === 'evidence_reuse'
+  )));
+  assert.match(preview.nextAction, /Repair mandatory proposal warnings before qualification/);
 });
 
 test('a digest-bound qualified packet releases exactly the reviewed rows', () => {

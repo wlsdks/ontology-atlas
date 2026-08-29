@@ -2427,6 +2427,38 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('does not recommend a redundant domain edge for an element already owned by a capability', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/auth', {
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+          elements: ['elements/token'],
+        }),
+        doc('elements/token', {
+          kind: 'element',
+          title: 'Token',
+          domain: 'domains/auth',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, {
+      operation: 'recommend_relations',
+    });
+
+    assert.equal(graph.nodes.filter(({ kind }) => kind === 'element').length, 1);
+    assert.equal(result.totalRecommendations, 0);
+    assert.deepEqual(result.recommendations, []);
+  });
+
   it('targets an explicitly requested project in agent_brief instead of silently choosing the first root', () => {
     const graph = compileOntology([
       doc('project-a', { kind: 'project', title: 'Project A', domains: ['domain-a'] }),

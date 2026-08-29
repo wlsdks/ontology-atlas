@@ -2968,6 +2968,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-29 · One reviewed construction ends without hidden repair",
+      "slug": "2026-08-29-one-reviewed-construction-ends-without-hidden-repair"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-28 · Bounded capability lists stay bounded through agent handoff",
       "slug": "2026-08-28-bounded-capability-lists-stay-bounded-through-agent-handoff"
     },
@@ -5981,6 +5986,36 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — First-pass performance is staged, and body assertions are the audit unit",
+      "slug": "2026-08-29-first-pass-performance-is-staged-and-body-assertions-are-the-audit-unit"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — Mandatory warnings fail the candidate before qualification",
+      "slug": "2026-08-29-mandatory-warnings-fail-the-candidate-before-qualification"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — Deterministic scratch receipts replace per-run qualification code",
+      "slug": "2026-08-29-deterministic-scratch-receipts-replace-per-run-qualification-code"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — Qualification claims are sealed before parallel review",
+      "slug": "2026-08-29-qualification-claims-are-sealed-before-parallel-review"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — One reviewed construction ends without hidden repair",
+      "slug": "2026-08-29-one-reviewed-construction-ends-without-hidden-repair"
+    },
+    {
+      "depth": 3,
+      "text": "PO Council Verdict — first-pass construction completion",
+      "slug": "po-council-verdict-first-pass-construction-completion"
     },
     {
       "depth": 2,

@@ -33,7 +33,9 @@ separate approval tool or writer token.
 1. Call \`analyze_repo_structure\` with the complete proposal and no
    \`qualification\`. A valid proposal returns a non-writing \`reviewPlan\`,
    \`planDigest\`, \`planRevision\`, \`sourceDigest\`, and exact
-   \`requiredGapIds\`. \`canWrite\` remains false and \`writePlan\` is absent.
+   \`requiredGapIds\`. \`canWrite\` remains false and \`writePlan\` is absent. A
+   mandatory proposal warning that cannot become a human gap blocks this first
+   review and must be repaired before qualification starts.
 2. A separately identified evaluator must run the approved competency questions,
    verify current portable witnesses and citations, execute the complete
    source-hidden task, report every quality axis, and run the prior-CQ regression.
@@ -71,6 +73,7 @@ const MANDATORY_AXES = Object.freeze([
 const GAP_ELIGIBLE_PROPOSAL_WARNING_CODES = new Set([
   'partial-competency-answer',
   'visible-competency-gap',
+  'unqualified-project-exclusion',
 ]);
 
 function canonical(value) {
@@ -323,6 +326,7 @@ function deriveAdmissionDisposition({
     || id.startsWith('cq:')
     || id.startsWith('proposal:partial-competency-answer:')
     || id.startsWith('proposal:visible-competency-gap:')
+    || id.startsWith('proposal:unqualified-project-exclusion:')
   ));
   const onlyVisibleGaps = requiredGaps.length > 0
     && visibleGapIds.length === requiredGaps.length;
@@ -418,28 +422,55 @@ export function evaluateConstructionLifecycle({
   }
   if (qualification == null) {
     const requiredGaps = proposalGapIds(proposalFindings);
+    const nonApprovableWarnings = blockedProposalWarnings(proposalFindings);
+    const warningDiagnostics = nonApprovableWarnings.map((warning) => ({
+      code: `proposal-warning-not-gap-eligible:${warning.code}:${warning.path}`,
+      phase: warning.code.includes('evidence') || warning.code.includes('citation')
+        ? 'evidence_reuse'
+        : 'semantic_structural_tests',
+      message: `Proposal warning ${warning.code} must be resolved before qualification; human gap acceptance cannot override it.`,
+    }));
+    const blockedBeforeQualification = warningDiagnostics.length > 0;
+    const phaseRows = phasesWithoutQualification().map((row) => ({
+      ...row,
+      diagnosticCodes: [
+        ...row.diagnosticCodes,
+        ...warningDiagnostics
+          .filter(({ phase: phaseId }) => phaseId === row.id)
+          .map(({ code }) => code),
+      ].sort(),
+    }));
     return {
       contract: CONSTRUCTION_LIFECYCLE_CONTRACT,
       qualificationStatus: 'not_qualified',
-      writeEligibility: 'reviewable',
+      writeEligibility: blockedBeforeQualification ? 'blocked' : 'reviewable',
       planDigest,
       sourceDigest: sourceDigest ?? null,
       planRevision,
       firstBlockingPhase: 'purpose_authority',
-      phases: phasesWithoutQualification(),
-      diagnostics: [{
-        code: 'missing-qualification',
-        phase: 'purpose_authority',
-        message: 'Complete the digest-bound construction qualification before any write.',
-      }],
+      phases: phaseRows,
+      diagnostics: [
+        {
+          code: 'missing-qualification',
+          phase: 'purpose_authority',
+          message: 'Complete the digest-bound construction qualification before any write.',
+        },
+        ...warningDiagnostics,
+      ],
       requiredGapIds: requiredGaps,
       proposalCoverage: proposalCoverage(reviewPlan, null),
       admission: admissionDisposition('human_review_required', {
-        reviewItems: ['missing-qualification'],
-        diagnosticCodes: ['missing-qualification'],
+        reviewItems: [
+          'missing-qualification',
+          ...requiredGaps,
+          ...nonApprovableWarnings.map(({ code, path }) => `proposal:${code}:${path}`),
+        ],
+        diagnosticCodes: ['missing-qualification', ...warningDiagnostics.map(({ code }) => code)],
       }),
       reviewPlan: clone(reviewPlan),
-      nextAction: 'Complete the constructionQualification:v1 packet for this exact review plan.',
+      nextAction: blockedBeforeQualification
+        ? 'Repair mandatory proposal warnings before qualification, then submit the corrected proposal for a new review plan.'
+        : 'Complete the constructionQualification:v1 packet for this exact review plan.',
     };
   }
 

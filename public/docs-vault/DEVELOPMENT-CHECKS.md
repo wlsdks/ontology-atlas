@@ -69,6 +69,8 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | Capability quantifier integrity | `node scripts/run-focused-node-test.mjs --test-name-pattern "bounded-evidence omissions" mcp/src/meaning-evaluation.test.mjs` | `pnpm test:mcp:unit`, source/bundle MCP parity, then the four-phase source-hidden field trial |
+| First-pass construction completion | `node scripts/run-focused-node-test.mjs --test-name-pattern "unfinished-scope project exclusion|redundant domain edge" mcp/src/construction-lifecycle.test.mjs mcp/src/ontology-engine.test.mjs` | frozen candidate/health replay, source/bundled behavior parity, sealed-claim actor/access/mutation probes, then one fresh four-phase field trial |
+| Qualification handoff helper | `node --test .agents/skills/ontology-bootstrap/scripts/qualification-handoff.test.mjs` | `pnpm agents:check`, then a fresh timed parallel field trial; the helper never substitutes for source hiding or MCP write verification |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
 | Business meaning corpus | `pnpm test:meaning-corpus` | source-hidden field trial and fixture-specific review |
