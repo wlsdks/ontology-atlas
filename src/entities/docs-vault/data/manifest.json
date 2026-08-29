@@ -1900,6 +1900,7 @@
           "elements/gateway-chrome",
           "elements/gateway-doc",
           "elements/home",
+          "elements/native-tray-control",
           "elements/public-quick-actions",
           "elements/root-entry"
         ],
@@ -1908,7 +1909,7 @@
       "headings": [],
       "excerpt": "The first five-minute path from shared link → installed app → connection (download decision, initial run tour, locale, automatic updates) and the always-available navigation shell surrounding it. README.md: \"One download installs both surfaces. The macOS app carries a compiled MCP server inside its own bundle.\" AGENTS.",
       "wordCount": 105,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
@@ -4600,6 +4601,13 @@
         "fromSlug": "ontology/domains/onboarding-and-shell",
         "context": "frontmatter · **[elements/home]**",
         "linkText": "elements/home"
+      }
+    ],
+    "ontology/elements/native-tray-control": [
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/native-tray-control]**",
+        "linkText": "elements/native-tray-control"
       }
     ],
     "ontology/elements/public-quick-actions": [

@@ -6,7 +6,7 @@ title: "Onboarding, Distribution & App Shell"
 display_ko: 온보딩·배포·앱 셸
 display_en: "Onboarding, Distribution & App Shell"
 capabilities: [capabilities/app-update, capabilities/desktop-download-decision, capabilities/first-run-starter, capabilities/guided-tour, capabilities/locale-switch]
-elements: [elements/app-nav-rail, elements/app-settings-menu, elements/bottom-tab-bar, elements/docs-quick-drawer, elements/download, elements/first-run, elements/gateway-chrome, elements/gateway-doc, elements/home, elements/public-quick-actions, elements/root-entry]
+elements: [elements/app-nav-rail, elements/app-settings-menu, elements/bottom-tab-bar, elements/docs-quick-drawer, elements/download, elements/first-run, elements/gateway-chrome, elements/gateway-doc, elements/home, elements/native-tray-control, elements/public-quick-actions, elements/root-entry]
 created_by: human
 ---
 
