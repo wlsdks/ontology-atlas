@@ -622,6 +622,22 @@ export function ArchitectureWorkbench({
                    Under lower-only these are the only strokes there are, so losing this prop
                    loses the entire drawing (measured on the installed app, 2026-08-28). */
                 roleTraffic={record?.brief.conformance.observedRoleEdges}
+                /* The same receipt, grouped per role. Without it a box shows no ledger at all
+                   rather than a row of zeros — an unmeasured role must not read as a clean one. */
+                record={record}
+                ledgerStatusLabel={(ledger) =>
+                  ledger.state === 'no-source'
+                    ? t('roleLedgerNoSource')
+                    : ledger.state === 'clean'
+                      ? t('roleLedgerClean', { count: ledger.outgoing })
+                      : ledger.sampleLimited
+                        ? t('roleLedgerViolatedAtLeast', { count: ledger.violated })
+                        : t('roleLedgerViolated', {
+                            count: ledger.violated,
+                            total: ledger.outgoing,
+                          })
+                }
+                ledgerImportsLabel={(count) => t('roleLedgerImports', { count })}
                 selected={selectedRole}
                 onSelect={(id) => {
                   const next = selectedRole === id ? null : id;

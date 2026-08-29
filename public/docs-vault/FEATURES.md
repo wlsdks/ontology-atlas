@@ -481,6 +481,17 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   receipts. Unsupported languages, unknown import usage, unmapped edges,
   unruled edges, and empty roles fail closed; absence of evidence is never a
   green result.
+- **Each role box carries its own ledger** when a persisted receipt exists
+  (2026-08-30). One line under a ruled separator states what that role's own
+  outgoing edges did and how many imports leave it — `✓ no violations out · 411
+  imports`, `⊘ 2/5 edges violated · 38 imports`, `at least N violated` when the
+  receipt's violation sample was truncated, `○ no source matched` for a role the
+  receipt lists as empty. It is never a per-role verdict: `conforms` /
+  `violated` / `unknown` stays profile-wide on the stage chip, and no box ever
+  says "unmeasured", because unmapped and unruled edges carry no role. Without a
+  receipt there is no ledger at all rather than a row of zeros — in a browser,
+  which cannot read a source folder, that is the ordinary case. Status is a
+  glyph, never a colour.
 - Plan copies a state-bound `architectureChangePlan:v1` request. In the installed
   app, an exact CLI fallback is included only when the project source binding,
   vault path, and Atlas CLI entry are all verified absolute paths; otherwise the

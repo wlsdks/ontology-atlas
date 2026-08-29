@@ -9,13 +9,50 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import { controlClass } from '@/shared/ui/control-class';
 
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
+import type { RoleLedger } from '../model/role-ledger';
 import { sketchConnector, sketchRect, sketchStadium } from '../model/sketch-stroke';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
 const BOX_W = 148;
+/*
+ * ⚠️ **The ledger widens the box as well as deepening it.** Measured 2026-08-30 at 1512 and 1920:
+ * the receipt line renders 144–156px against 132px of usable width inside a 148px box, so the
+ * sentence crossed both outlines. Widening to 180 clears the longest measured line in both
+ * locales, and keeps the seven-role chain horizontal at 1920 — 1628px of drawing against 1756px of
+ * canvas — which is what stops it from falling back to the vertical axis a short panel would clip.
+ */
+const BOX_W_LEDGER = 180;
+/**
+ * ⚠️ **Two heights, because a box only grows when it has something more to say.** A role that
+ * carries a measured ledger line needs the room; one with no receipt behind it must stay the size
+ * it was, or a browser — where source cannot be listed at all — pays 20px per role for a blank
+ * row. Direction B, 2026-08-29.
+ */
 const BOX_H = 62;
+/*
+ * ⚠️ **A ledger box is one line taller, not two** (measured 2026-08-30, 1512×945 installed
+ * viewport). The first attempt gave the receipt two lines and an 82px box; seven of those plus the
+ * 26px arrow gaps ran 778px against roughly 718px of canvas, and the last role — Shared
+ * foundation, the one every arrow points at — was cut in half below the fold. Reading the whole
+ * chain at once is what this screen is for, so the receipt states itself on one line and the rows
+ * close up to match.
+ */
+const BOX_H_LEDGER = 74;
+const ROW_GAP_LEDGER = 22;
+
+/**
+ * ⚠️ **Shapes, not colour.** This design system runs on neutrals plus one indigo, and status
+ * colour would be a second colour system — a rule change to request, never one to assume. The
+ * glyphs are the achromatic ones already legible at the caption step: a tick for clean, a slashed
+ * circle where a role's own edges break its rules, a hollow circle where no source matched it.
+ */
+const LEDGER_GLYPH: Record<RoleLedger['state'], string> = {
+  clean: '✓',
+  violated: '⊘',
+  'no-source': '○',
+};
 const COL_GAP = 52;
-const ROW_GAP = 26;
+const ROW_GAP_PLAIN = 26;
 const PAD_X = 28;
 const PAD_Y = 26;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
@@ -35,9 +72,16 @@ const SKIP_STEP = 10;
 export type FlowAxis = 'across' | 'down';
 
 /** Rank runs along the axis; lane is the offset across it. */
-function place(axis: FlowAxis, rank: number, lane: number): { x: number; y: number } {
-  const along = rank * (axis === 'across' ? BOX_W + COL_GAP : BOX_H + ROW_GAP);
-  const across = lane * (axis === 'across' ? BOX_H + ROW_GAP : BOX_W + COL_GAP);
+function place(
+  axis: FlowAxis,
+  rank: number,
+  lane: number,
+  boxH: number,
+  boxW: number,
+  rowGap: number,
+): { x: number; y: number } {
+  const along = rank * (axis === 'across' ? boxW + COL_GAP : boxH + rowGap);
+  const across = lane * (axis === 'across' ? boxH + rowGap : boxW + COL_GAP);
   return axis === 'across'
     ? { x: PAD_X + along, y: PAD_Y + across }
     : { x: PAD_X + across, y: PAD_Y + along };
@@ -78,6 +122,9 @@ export function ArchitectureSketch({
   trafficEdgeLabel,
   moduleCounts,
   conceptCounts,
+  ledgers,
+  ledgerStatusLabel,
+  ledgerImportsLabel,
   runLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
@@ -95,6 +142,14 @@ export function ArchitectureSketch({
   /** `null` where this surface cannot list source at all, so a box says nothing rather than 0. */
   moduleCounts: Readonly<Record<string, number>> | null;
   conceptCounts: Readonly<Record<string, number>>;
+  /**
+   * What each role's own outgoing edges did, or `{}` where no measurement exists. Empty is the
+   * honest state, not a zero row: a box with nothing measured behind it says nothing.
+   */
+  ledgers: Readonly<Record<string, RoleLedger>>;
+  /** The ledger's first half, already worded by the locale — never assembled here. */
+  ledgerStatusLabel: (ledger: RoleLedger) => string;
+  ledgerImportsLabel: (count: number) => string;
   runLabel: string;
   /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
@@ -122,27 +177,38 @@ export function ArchitectureSketch({
    * after the fact.
    */
   const [boxWidth, setBoxWidth] = useState(0);
+  /*
+   * ⚠️ **One height for every box, not one per box.** A ledger exists per role, but a chain whose
+   * boxes are two different heights reads as two kinds of thing rather than as one row of roles —
+   * and the lane arithmetic below assumes a single box height everywhere. So the drawing grows when
+   * the profile has a measurement at all, and every role grows with it; a role with no receipt
+   * simply leaves its third line empty rather than shrinking out of the row.
+   */
+  const hasLedger = graph.boxes.some((box) => ledgers[box.id] !== undefined);
+  const boxH = hasLedger ? BOX_H_LEDGER : BOX_H;
+  const rowGap = hasLedger ? ROW_GAP_LEDGER : ROW_GAP_PLAIN;
+  const boxW = hasLedger ? BOX_W_LEDGER : BOX_W;
   const ranks = graph.columns;
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
-  const naturalAcross = PAD_X * 2 + ranks * BOX_W + (ranks - 1) * COL_GAP;
+  const naturalAcross = PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP;
   const axis: FlowAxis = boxWidth > 0 && naturalAcross > boxWidth ? 'down' : 'across';
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      map.set(box.id, { id: box.id, ...place(axis, box.column, box.slot), shape: box.shape });
+      map.set(box.id, { id: box.id, ...place(axis, box.column, box.slot, boxH, boxW, rowGap), shape: box.shape });
     }
     return map;
-  }, [graph.boxes, axis]);
+  }, [graph.boxes, axis, boxH, boxW, rowGap]);
 
   /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
      longer scaled. Derived, never a ref written during render. */
   const boxEnd = useMemo(
     () => ({
-      down: [...placed.values()].map((at) => at.y + BOX_H),
-      across: [...placed.values()].map((at) => at.x + BOX_W),
+      down: [...placed.values()].map((at) => at.y + boxH),
+      across: [...placed.values()].map((at) => at.x + boxW),
     }),
-    [placed],
+    [placed, boxH, boxW],
   );
 
   /*
@@ -204,10 +270,10 @@ export function ArchitectureSketch({
        */
       /* Along the covered axis, which is not always the axis the boxes were laid out on. */
       coveredDown: down,
-      hiddenLeft: alongCovered.filter((end) => end - (down ? BOX_H : BOX_W) < offset).length,
+      hiddenLeft: alongCovered.filter((end) => end - (down ? boxH : boxW) < offset).length,
       hiddenRight: alongCovered.filter((end) => end > edge).length,
     });
-  }, [boxEnd, axis]);
+  }, [boxEnd, axis, boxH, boxW]);
   const attachScroller = useCallback(
     (element: HTMLDivElement | null) => {
       observerRef.current?.disconnect();
@@ -347,12 +413,12 @@ export function ArchitectureSketch({
   /* Ranks run along the axis and lanes across it; the skip swing widens whichever side it leaves. */
   const alongExtent =
     axis === 'across'
-      ? PAD_X * 2 + ranks * BOX_W + (ranks - 1) * COL_GAP
-      : PAD_Y * 2 + ranks * BOX_H + (ranks - 1) * ROW_GAP;
+      ? PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP
+      : PAD_Y * 2 + ranks * boxH + (ranks - 1) * rowGap;
   const acrossExtent =
     axis === 'across'
-      ? PAD_Y * 2 + lanes * BOX_H + (lanes - 1) * ROW_GAP + skipRoom
-      : PAD_X * 2 + lanes * BOX_W + (lanes - 1) * COL_GAP + skipRoom;
+      ? PAD_Y * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom
+      : PAD_X * 2 + lanes * boxW + (lanes - 1) * COL_GAP + skipRoom;
   const width = axis === 'across' ? alongExtent : acrossExtent;
   const height = axis === 'across' ? acrossExtent : alongExtent;
 
@@ -531,10 +597,10 @@ export function ArchitectureSketch({
           const b = placed.get(edge.to);
           if (!a || !b) return null;
           /* Leave the trailing face and arrive at the leading one, whichever way the chain runs. */
-          const sx = axis === 'across' ? a.x + BOX_W : a.x + BOX_W / 2;
-          const sy = axis === 'across' ? a.y + BOX_H / 2 : a.y + BOX_H;
-          const tx = axis === 'across' ? b.x : b.x + BOX_W / 2;
-          const ty = axis === 'across' ? b.y + BOX_H / 2 : b.y;
+          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2;
+          const sy = axis === 'across' ? a.y + boxH / 2 : a.y + boxH;
+          const tx = axis === 'across' ? b.x : b.x + boxW / 2;
+          const ty = axis === 'across' ? b.y + boxH / 2 : b.y;
           const receded = selected !== null && selected !== edge.from && selected !== edge.to;
 
           /*
@@ -552,8 +618,8 @@ export function ArchitectureSketch({
               ? 0
               : SKIP_DROP +
                 (edge.columnSpan - 2) * SKIP_STEP +
-                (axis === 'across' ? BOX_H : BOX_W) / 2;
-          const lead = axis === 'across' ? COL_GAP : ROW_GAP;
+                (axis === 'across' ? boxH : boxW) / 2;
+          const lead = axis === 'across' ? COL_GAP : rowGap;
           const d = (() => {
             if (edge.columnSpan <= 1) {
               if (isDeclared) {
@@ -570,9 +636,9 @@ export function ArchitectureSketch({
               } ${midY} C ${tx - COL_GAP} ${midY}, ${tx - COL_GAP} ${ty}, ${tx} ${ty}`;
             }
             const midX = Math.max(sx, tx) + swing;
-            return `M ${sx} ${sy} C ${sx} ${sy + ROW_GAP}, ${midX} ${sy + ROW_GAP}, ${midX} ${
+            return `M ${sx} ${sy} C ${sx} ${sy + rowGap}, ${midX} ${sy + rowGap}, ${midX} ${
               (sy + ty) / 2
-            } C ${midX} ${ty - ROW_GAP}, ${tx} ${ty - ROW_GAP}, ${tx} ${ty}`;
+            } C ${midX} ${ty - rowGap}, ${tx} ${ty - rowGap}, ${tx} ${ty}`;
           })();
 
           return (
@@ -629,14 +695,23 @@ export function ArchitectureSketch({
             );
           const passes =
             box.shape === 'terminator'
-              ? sketchStadium(box.id, at.x, at.y, BOX_W, BOX_H)
-              : sketchRect(box.id, at.x, at.y, BOX_W, BOX_H);
+              ? sketchStadium(box.id, at.x, at.y, boxW, boxH)
+              : sketchRect(box.id, at.x, at.y, boxW, boxH);
           const counts =
             moduleCounts === null
               ? conceptCountLabel(conceptCounts[box.id] ?? 0)
               : `${moduleCountLabel(moduleCounts[box.id] ?? 0)} · ${conceptCountLabel(
                   conceptCounts[box.id] ?? 0,
                 )}`;
+          const ledger = ledgers[box.id];
+          /*
+           * ⚠️ **The name and counts stop being centred once a ledger joins them.** Vertical
+           * centring is right for two lines and wrong for three: the ruled separator has to land
+           * between what the profile declares and what the scanner counted, and a centred block
+           * would put it wherever the text happened to end.
+           */
+          const nameY = ledger ? at.y + 22 : at.y + boxH / 2 - 4;
+          const countsY = ledger ? at.y + 38 : at.y + boxH / 2 + 13;
 
           return (
             <g
@@ -644,7 +719,11 @@ export function ArchitectureSketch({
               role="button"
               tabIndex={0}
               aria-pressed={isSelected}
-              aria-label={`${roleLabel(box.id)} · ${counts}`}
+              aria-label={
+                ledger
+                  ? `${roleLabel(box.id)} · ${counts} · ${ledgerStatusLabel(ledger)} · ${ledgerImportsLabel(ledger.importsOut)}`
+                  : `${roleLabel(box.id)} · ${counts}`
+              }
               data-graph-box={box.id}
               data-testid={`architecture-graph-box-${box.id}`}
               onClick={() => {
@@ -669,9 +748,9 @@ export function ArchitectureSketch({
                 <rect
                   x={at.x}
                   y={at.y}
-                  width={BOX_W}
-                  height={BOX_H}
-                  rx={BOX_H / 2}
+                  width={boxW}
+                  height={boxH}
+                  rx={boxH / 2}
                   fill={
                     isSelected ? 'var(--color-indigo-a08)' : 'var(--color-elevated)'
                   }
@@ -680,8 +759,8 @@ export function ArchitectureSketch({
                 <rect
                   x={at.x}
                   y={at.y}
-                  width={BOX_W}
-                  height={BOX_H}
+                  width={boxW}
+                  height={boxH}
                   fill={isSelected ? 'var(--color-indigo-a08)' : 'var(--color-elevated)'}
                 />
               )}
@@ -701,21 +780,57 @@ export function ArchitectureSketch({
                 />
               ))}
               <text
-                x={at.x + BOX_W / 2}
-                y={at.y + BOX_H / 2 - 4}
+                x={at.x + boxW / 2}
+                y={nameY}
                 textAnchor="middle"
                 className="fill-[color:var(--color-text-primary)] text-body font-[var(--font-weight-strong)]"
               >
                 {roleLabel(box.id)}
               </text>
               <text
-                x={at.x + BOX_W / 2}
-                y={at.y + BOX_H / 2 + 13}
+                x={at.x + boxW / 2}
+                y={countsY}
                 textAnchor="middle"
                 className="fill-[color:var(--color-text-tertiary)] text-caption tabular-nums"
               >
                 {counts}
               </text>
+              {ledger ? (
+                <>
+                  {/*
+                    ⚠️ **Ruled, and straight.** Everything above this line is what a person
+                    declared, drawn by the unsteady hand this surface uses for declarations;
+                    everything below it is what the scanner counted. The separator is a machine
+                    line for the same reason the traffic strokes are: geometry carries the
+                    rule/measurement distinction alongside ink (2026-08-28).
+                  */}
+                  <line
+                    x1={at.x + 12}
+                    x2={at.x + boxW - 12}
+                    y1={at.y + 46}
+                    y2={at.y + 46}
+                    stroke="var(--color-divider)"
+                    strokeWidth={1}
+                  />
+                  <text
+                    x={at.x + boxW / 2}
+                    y={at.y + 60}
+                    textAnchor="middle"
+                    className={cn(
+                      'text-caption tabular-nums',
+                      ledger.state === 'violated'
+                        ? 'fill-[color:var(--color-text-secondary)]'
+                        : 'fill-[color:var(--color-text-quaternary)]',
+                    )}
+                    data-testid={`architecture-role-ledger-${box.id}`}
+                    data-ledger-state={ledger.state}
+                  >
+                    {`${LEDGER_GLYPH[ledger.state]} ${ledgerStatusLabel(ledger)} · ${ledgerImportsLabel(
+                      ledger.importsOut,
+                    )}`}
+                  </text>
+                </>
+              ) : null}
             </g>
           );
         })}

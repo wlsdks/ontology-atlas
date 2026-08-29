@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-08-30 · Every role on the architecture canvas carries its own receipt
+
+- A role box used to say only its name and how many reviewed concepts sit inside
+  it, while the measured traffic the vault already holds was drawn as stroke
+  width and nowhere else. Where a conformance receipt exists, each box now
+  states, on one line under a ruled separator, what its own outgoing edges did
+  and how many imports leave it: `✓ no violations out · 411 imports`, or
+  `⊘ 2/5 edges violated`, or `○ no source matched` for a role the receipt lists
+  as empty.
+- It is deliberately not a per-role verdict. `conforms` / `violated` / `unknown`
+  is a fact about the whole profile and stays on the stage chip beside the
+  canvas; a box with no receipt behind it shows no ledger at all rather than a
+  row of zeros, which is what a browser sees, unable as it is to read a source
+  folder.
+- The boxes grew to fit it and no further: 74px tall and 180px wide, measured so
+  that a seven-role chain still reads in one screen at 1512 and stays horizontal
+  at 1920.
+
 ## 2026-08-29 · The map says the names it draws, and answers everything it paints
 
 - Pointing at a domain used to paint its name twice at one baseline, the compact

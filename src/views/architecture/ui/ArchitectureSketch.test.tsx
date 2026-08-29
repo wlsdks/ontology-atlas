@@ -4,9 +4,10 @@ import { describe, expect, it } from 'vitest';
 import { buildArchitectureLayout, parseArchitectureProfile } from '@/entities/architecture-profile';
 import { HEXAGONAL_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { buildArchitectureGraph } from '../model/graph-layout';
+import type { RoleLedger } from '../model/role-ledger';
 import { ArchitectureSketch } from './ArchitectureSketch';
 
-function draw() {
+function draw(ledgers: Record<string, RoleLedger> = {}) {
   const graph = buildArchitectureGraph(
     buildArchitectureLayout(parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER as never)),
     [],
@@ -14,6 +15,11 @@ function draw() {
   return render(
     <ArchitectureSketch
       graph={graph}
+      ledgers={ledgers}
+      ledgerStatusLabel={(ledger) =>
+        ledger.state === 'clean' ? 'no violations out' : `${ledger.violated} violated`
+      }
+      ledgerImportsLabel={(count) => `${count} imports out`}
       selected={null}
       onSelect={() => {}}
       roleLabel={(id) => id}
@@ -128,5 +134,59 @@ describe('the rule sentences', () => {
       const last = froms.lastIndexOf(role);
       expect(froms.slice(start, last + 1).every((f) => f === role)).toBe(true);
     }
+  });
+});
+
+describe('the role ledger', () => {
+  const ledger = (over: Partial<RoleLedger> = {}): RoleLedger => ({
+    state: 'clean',
+    violated: 0,
+    outgoing: 2,
+    sampleLimited: false,
+    importsOut: 314,
+    ...over,
+  });
+
+  /*
+   * ⚠️ **Without a receipt the box says nothing, and stays the size it was.** A ledger line of
+   * zeros would read as "no violations" — a claim about source nobody listed. This is the normal
+   * case in a browser, where source cannot be listed at all.
+   */
+  it('draws no ledger line and keeps the short box when no record was measured', () => {
+    const { container } = draw();
+    expect(container.querySelector('[data-testid^="architecture-role-ledger-"]')).toBeNull();
+    const box = container.querySelector('[data-testid="architecture-graph-box-domain"] rect');
+    expect(box?.getAttribute('height')).toBe('62');
+  });
+
+  it('grows every box in lockstep once any role carries a ledger', () => {
+    /* One tall box beside six short ones is a row of different things; the boxes are one row of
+       the same thing, so the height is decided by the profile, not by the role. */
+    const { container } = draw({ domain: ledger() });
+    const heights = [
+      ...container.querySelectorAll('[data-testid^="architecture-graph-box-"] rect'),
+    ].map((rect) => rect.getAttribute('height'));
+    expect(new Set(heights)).toEqual(new Set(['74']));
+  });
+
+  it('states what the role’s own outgoing edges did, and the imports behind the stroke', () => {
+    const { container } = draw({ domain: ledger({ state: 'violated', violated: 3 }) });
+    const line = container.querySelector('[data-testid="architecture-role-ledger-domain"]');
+    expect(line?.getAttribute('data-ledger-state')).toBe('violated');
+    expect(line?.textContent).toContain('3 violated');
+    /* One line, not two: the receipt and the traffic behind the stroke read as one sentence so a
+       seven-role chain still fits a laptop canvas without scrolling. */
+    expect(line?.textContent).toContain('314 imports out');
+  });
+
+  /*
+   * ⚠️ Status is a shape here, never a colour. The design system is neutrals plus one indigo, and
+   * a red/green ledger would be a second colour system — a rule change to request, not to assume.
+   */
+  it('marks state with an achromatic glyph rather than a status colour', () => {
+    const { container } = draw({ domain: ledger({ state: 'violated', violated: 1 }) });
+    const line = container.querySelector('[data-testid="architecture-role-ledger-domain"]');
+    expect(line?.textContent?.startsWith('⊘')).toBe(true);
+    expect(line?.getAttribute('class') ?? '').not.toMatch(/red|green|amber|emerald/);
   });
 });

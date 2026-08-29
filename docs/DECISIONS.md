@@ -40,6 +40,71 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — A role box states what its own outgoing edges did, never a verdict
+
+**Convened because**: the owner pointed at a GitHub Actions workflow graph and
+said the architecture screen should read like that. `/design-directions` put four
+shapes up; the owner chose **B — every role box carries a small ledger of its own
+measured traffic**, so the canvas stops being a row of names and starts being a
+row of things with receipts.
+
+**The reference's shape does not transfer whole.** A workflow node can wear a
+status because every node had a *run*. Atlas has no per-role run: the only
+verdict this product owns — `conforms` / `violated` / `unknown` — is per profile,
+which is exactly as global as the stage chip that already shows it. So a box
+never claims a per-role verdict. It states what its **own outgoing edges** did,
+which is a grouping of facts the receipt already carries, and the wording stays
+edge-shaped so the two can never be read as the same claim.
+
+**Three limits of the receipt, each one a sentence the screen must not say**:
+
+1. The violation list is a sample — `mcp/src/architecture-profile.mjs` keeps the
+   first 50 and sets `violationsLimited`. A truncated count is stated as "at
+   least N", never as a total.
+2. `unmappedEdges` and `unruledEdges` are profile-wide with no role attached, so
+   **no box ever says "unmeasured"**. That sentence stays on the stage chip.
+3. `unknown.emptyRoles` is the one absence the receipt attributes to a role, so
+   it is the one absence a box states — "no source matched".
+
+**Two deliberate deviations from the chosen spec**: the reviewed-meaning fraction
+(`4/12` concepts) was dropped, because it needs a module↔concept containment rule
+that does not exist and inventing one is what this surface exists to refuse; and
+"unmeasured" is never printed per role, for the reason above.
+
+**Without a receipt there is no ledger at all** — not a row of zeros. A zero
+would read as "no violations", a claim about source nobody listed, and in a
+browser (where source cannot be listed) that is the normal case rather than an
+edge one.
+
+**Status is a shape, never a colour**: `✓` / `⊘` / `○` at the caption step. A
+red/green ledger would be a second colour system beside indigo — a rule change to
+request, not one to assume.
+
+**Applied rule**: smallest slice — read-only grouping of a record that already
+exists on disk; no schema change, no new route, no new write.
+**Signed**: stark
+
+**Recorded dissent**: a per-role verdict would be easier to read at a glance than
+an edge sentence, and the fraction of reviewed meaning is the number that would
+make the box worth looking at twice.
+**Falsifier**: a reader looks at a role box, states a conclusion about that role's
+conformance that the profile-wide record does not support, and is not corrected
+by the stage chip beside it. If that is observed, the edge-shaped wording failed
+and a per-role verdict (with an honest source for it) is the right answer.
+**Revisit**: when a receipt first carries per-role status of its own, or when the
+first outside reader reads a box aloud.
+
+**Geometry is part of the decision** (measured 2026-08-30, dogfood vault through
+the picker stub, 1512×945 and 1920×1080): a two-line receipt made boxes 82px tall
+and cut *Shared foundation* — the role every arrow points at — in half below the
+fold; the one-line receipt then rendered 144–156px wide inside a 148px box and
+crossed both outlines. The shipped values are 74px tall, 180px wide, one line,
+and `tests/e2e/architecture-role-ledger.spec.ts` fails at 90px tall (60px below
+the fold) and at 148px wide. Both failures were reproduced before the gate was
+kept.
+
+**Status**: standing
+
 ## 2026-08-29 — Nothing is painted before it can be named and clicked
 
 **Convened because**: the same session that found the domain label defect also

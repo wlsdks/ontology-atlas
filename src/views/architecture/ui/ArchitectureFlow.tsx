@@ -6,9 +6,10 @@ import {
   buildArchitectureLayout,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
+import type { ArchitectureRecord, ArchitectureRoleEdge } from '@/entities/architecture-record';
 
 import { buildArchitectureGraph } from '../model/graph-layout';
+import { buildRoleLedgers, type RoleLedger } from '../model/role-ledger';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
 import { ArchitectureSketch } from './ArchitectureSketch';
@@ -35,6 +36,9 @@ export function ArchitectureFlow({
   modules,
   concepts,
   roleTraffic,
+  record,
+  ledgerStatusLabel,
+  ledgerImportsLabel,
   selected,
   onSelect,
   roleLabel,
@@ -70,6 +74,13 @@ export function ArchitectureFlow({
    * record exists; the stage then draws no traffic at all rather than guessing at any.
    */
   roleTraffic?: readonly ArchitectureRoleEdge[];
+  /**
+   * The persisted receipt, or null. Only what each role's own outgoing edges did is read from it
+   * here; the whole-profile verdict stays where it already is, in the stage chip.
+   */
+  record?: ArchitectureRecord | null;
+  ledgerStatusLabel: (ledger: RoleLedger) => string;
+  ledgerImportsLabel: (count: number) => string;
   /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
   selected: string | null;
   onSelect: (id: string) => void;
@@ -115,6 +126,11 @@ export function ArchitectureFlow({
     return Object.fromEntries(order.map((id) => [id, (modules[id] ?? []).length]));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- order is derived from layout
   }, [modules, layout]);
+  const ledgers = useMemo(
+    () => buildRoleLedgers(order, record ?? null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- order is derived from layout
+    [record, layout],
+  );
   const conceptCounts = useMemo(
     () => Object.fromEntries(order.map((id) => [id, (concepts[id] ?? []).length])),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- order is derived from layout
@@ -139,6 +155,9 @@ export function ArchitectureFlow({
           selected={selected !== null && order.includes(selected) ? selected : null}
           onSelect={onSelect}
           roleLabel={roleLabel}
+          ledgers={ledgers}
+          ledgerStatusLabel={ledgerStatusLabel}
+          ledgerImportsLabel={ledgerImportsLabel}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}
           permittedEdgeLabel={permittedEdgeLabel}
