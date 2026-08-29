@@ -1,0 +1,160 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Ontology Atlas brand baker</title>
+<body style="background:#111;color:#aaa;font:13px system-ui">
+  <p id="status">Baking pixel mascot assets…</p>
+  <script type="module">
+    const data = await (await fetch('/data')).json();
+    const saveToken = __SAVE_TOKEN__;
+
+    const font = new FontFace(
+      'Pretendard Variable',
+      'url(data:font/woff2;base64,' + data.font + ') format("woff2")',
+      { weight: '45 920' },
+    );
+    await font.load();
+    document.fonts.add(font);
+    await document.fonts.ready;
+
+    const loadPng = (base64) =>
+      new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = 'data:image/png;base64,' + base64;
+      });
+
+    const masters = {};
+    for (const [detail, spec] of Object.entries(data.masters)) {
+      masters[detail] = await loadPng(spec.base64);
+    }
+
+    const canvas = (width, height) => {
+      const element = document.createElement('canvas');
+      element.width = width;
+      element.height = height;
+      return element;
+    };
+
+    const png = (element) => element.toDataURL('image/png').split(',')[1];
+
+    const drawMascot = (context, detail, box) => {
+      const image = masters[detail];
+      const scale = Math.max(
+        1,
+        Math.floor(Math.min(box.width / image.width, box.height / image.height)),
+      );
+      const width = image.width * scale;
+      const height = image.height * scale;
+      const x = Math.round(box.x + (box.width - width) / 2);
+      const y = Math.round(box.y + (box.height - height) / 2);
+      context.save();
+      context.imageSmoothingEnabled = false;
+      context.drawImage(image, x, y, width, height);
+      context.restore();
+    };
+
+    const platePath = (context, size, treatment) => {
+      const radius = treatment === 'full-bleed' ? 0 : Math.round(size * 0.22);
+      context.beginPath();
+      context.roundRect(0, 0, size, size, radius);
+    };
+
+    const drawIcon = (detail, size, treatment, tone = 'brand') => {
+      const element = canvas(size, size);
+      const context = element.getContext('2d');
+      platePath(context, size, treatment);
+      if (tone === 'light') {
+        context.fillStyle = '#F7F5E6';
+      } else {
+        const gradient = context.createLinearGradient(0, 0, 0, size);
+        gradient.addColorStop(0, '#1B1E23');
+        gradient.addColorStop(1, '#070809');
+        context.fillStyle = gradient;
+      }
+      context.fill();
+      drawMascot(context, detail, { x: 0, y: 0, width: size, height: size });
+      return element;
+    };
+
+    const drawMark = (detail, size) => {
+      const element = canvas(size, size);
+      drawMascot(element.getContext('2d'), detail, {
+        x: 0,
+        y: 0,
+        width: size,
+        height: size,
+      });
+      return element;
+    };
+
+    const drawLockup = (width, height, tone, withTagline) => {
+      const element = canvas(width, height);
+      const context = element.getContext('2d');
+      const markBox = Math.min(height, Math.round(width * 0.22));
+      drawMascot(context, 'full', { x: 0, y: 0, width: markBox, height });
+      const gap = Math.round(height * 0.18);
+      const textX = markBox + gap;
+      const wordSize = Math.round(height * 0.34);
+      const taglineSize = Math.round(height * 0.16);
+      const darkInk = '#0B0B0D';
+      const lightInk = '#F7F5E6';
+      const wordInk = tone === 'light' ? darkInk : lightInk;
+      const signalInk = tone === 'light' ? '#657A00' : data.palette.signal;
+
+      context.textBaseline = 'alphabetic';
+      context.fillStyle = wordInk;
+      context.font = '600 ' + wordSize + 'px "Pretendard Variable"';
+      context.fillText(data.name, textX, withTagline ? height * 0.5 : height * 0.66);
+      if (withTagline) {
+        context.fillStyle = signalInk;
+        context.font = '510 ' + taglineSize + 'px "Pretendard Variable"';
+        context.fillText(data.tagline, textX, height * 0.76);
+      }
+      return element;
+    };
+
+    const drawOg = () => {
+      const width = 1200;
+      const height = 630;
+      const element = canvas(width, height);
+      const context = element.getContext('2d');
+      const gradient = context.createLinearGradient(0, 0, width, height);
+      gradient.addColorStop(0, '#111318');
+      gradient.addColorStop(1, '#060708');
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, width, height);
+      drawMascot(context, 'full', { x: 88, y: 91, width: 420, height: 448 });
+      context.textBaseline = 'alphabetic';
+      context.fillStyle = '#F7F5E6';
+      context.font = '650 84px "Pretendard Variable"';
+      context.fillText(data.name, 500, 290);
+      context.fillStyle = data.palette.signal;
+      context.font = '510 34px "Pretendard Variable"';
+      context.fillText(data.tagline, 504, 354);
+      return element;
+    };
+
+    const outputs = {};
+    for (const [name, detail, size, treatment] of data.iconPlan) {
+      outputs[name] = png(drawIcon(detail, size, treatment));
+    }
+    for (const [name, detail, size] of data.markPlan) {
+      outputs[name] = png(drawMark(detail, size));
+    }
+    for (const [name, width, height, tone, withTagline] of data.lockupPlan) {
+      outputs[name] = png(drawLockup(width, height, tone, withTagline));
+    }
+    outputs['icon-light'] = png(drawIcon('full', 512, 'squircle', 'light'));
+    outputs['icon-dark'] = png(drawIcon('full', 512, 'squircle', 'dark'));
+    outputs['og-image'] = png(drawOg());
+
+    const response = await fetch('/save?token=' + encodeURIComponent(saveToken), {
+      method: 'POST',
+      body: JSON.stringify({ png: outputs }),
+    });
+    if (!response.ok) throw new Error('brand save failed: ' + response.status);
+    document.getElementById('status').textContent =
+      'Complete — ' + Object.keys(outputs).length + ' PNG assets baked.';
+  </script>
+</body>

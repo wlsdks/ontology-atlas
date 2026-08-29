@@ -31,13 +31,12 @@
 - Animated gradient backgrounds and auroras. <!--dont:animated-gradient-bg-->
   - One written exception (2026-08-18): the gateway current field, constrained
     by `gateway-fx-exception.contract.test.ts` and the canonical Don'ts.
-  - This ban governs what the app renders. OS icons, favicons, Open Graph images,
-    and other brand assets may use one indigo brightness ramp from `#787EF6` to
-    `#3E4BDF`; they may not introduce or mix another hue. In-app `BrandMark` stays
-    monochrome through `currentColor`. `src/shared/ui/brand-mark.tsx` alone owns
-    brand geometry and colour.
+  - The mascot's fixed palette is allowed only in committed rasters/generated
+    brand assets; no mascot colour becomes CSS, data, status, or control colour.
+    Boundary: `docs/BRAND.md` and the 2026-08-28 decision.
 - Scale-based hover (`hover:scale-*`). <!--dont:scale-hover-->
-- More than one colour system; do not add another brand colour beside indigo.
+- More than one application colour system; raster mascot art does not license a
+  second CSS palette beside indigo.
   <!--dont:multi-color-system-->
 - Decorative trailing arrows such as `Open →` or a trailing
   `ArrowRight`/`ArrowUpRight`. Arrows conveying path, order, causality, or an

@@ -37,7 +37,7 @@ facts:
 - `EvidenceOnlyBadge`: Draws the kind boundary between authoring nodes and evidence-only derived concepts.
 - `MtimeConflictBadge`: Optimistic concurrency contract for `patch_concept`'s `expected_mtime`.
 - `NodeExplanationEdit`: "The node's body is its own explanation."
-- `TopologyV2KindGlyph` · `BrandMark` · `HexMark` · `ChromeTile` · `ChromeChip` ·
+- `TopologyV2KindGlyph` · `BrandMark` · `ChromeTile` · `ChromeChip` ·
   `SimilarNodeWarning` · `RouteLoadingFallback`
 
 Additionally, the source 8 files are tightly coupled to `next-intl` / `@/i18n` / `sonner`, so moving them as-is will break in other projects (the portability slice on 2026-08-15 decouples this).

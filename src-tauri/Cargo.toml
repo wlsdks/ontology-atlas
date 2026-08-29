@@ -14,7 +14,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon"] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
 # serde_json · sha2 · chrono are transitive deps already pulled by tauri — declaring

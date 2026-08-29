@@ -85,6 +85,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Drawing-surface type (canvas `ctx.font`, inline SVG attrs) | `pnpm exec vitest run tests/contract/drawing-surface-type.contract.test.ts` | `pnpm test:contracts` |
 | Focus ring presence (value layer emits it) | `pnpm exec vitest run tests/contract/focus-ring-presence.contract.test.ts` | `pnpm test:contracts` |
 | Raw colour literals (now `src/` + `app/` + `.css`) | `pnpm check:tokens` | `pnpm test:check:tokens` |
+| Pixel identity palette, frame continuity, and safe map lane | `pnpm exec vitest run tests/contract/mascot-palette-boundary.contract.test.ts tests/contract/mascot-motion.contract.test.ts` | `pnpm exec playwright test tests/e2e/agent-mascot-presence.spec.ts` |
 | Demo clip declaration vs shipped asset | `pnpm exec vitest run tests/contract/demo-clip-assets.contract.test.ts` | `pnpm test:contracts` |
 | Demo clip locale (played source vs poster) | `pnpm exec playwright test tests/e2e/demo-clip-locale.spec.ts` | `pnpm exec playwright test` |
 | CI preparation step infinite wait | `pnpm exec vitest run tests/contract/ci-bounded-network.contract.test.ts` | `pnpm test:desktop:check` (unit test of the retry runner itself) |

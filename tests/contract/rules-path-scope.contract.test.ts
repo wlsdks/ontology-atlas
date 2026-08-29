@@ -251,7 +251,7 @@ describe("`.claude/rules` path scoping contract", () => {
    * this ratchets in one direction only: a commit that saves bytes must record
    * the saving, which is what makes the saving permanent.
    */
-  const RESIDENT_CONTEXT_BYTES = 27_678;
+  const RESIDENT_CONTEXT_BYTES = 27_571;
 
   it("ratchets the whole resident context downward, never up", () => {
     const files = ["AGENTS.md", "CLAUDE.md", ...ALWAYS_LOADED.map((f) => join(".claude/rules", f))];
