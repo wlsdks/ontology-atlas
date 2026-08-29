@@ -5944,6 +5944,31 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-29 — First persisted handoff is 50/50; clean-run performance remains open",
+      "slug": "2026-08-29-first-persisted-handoff-is-5050-clean-run-performance-remains-open"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — A failed competency question cannot become a human gap",
+      "slug": "2026-08-29-a-failed-competency-question-cannot-become-a-human-gap"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — Exact element imports remain source dependencies, not runtime impact",
+      "slug": "2026-08-29-exact-element-imports-remain-source-dependencies-not-runtime-impact"
+    },
+    {
+      "depth": 3,
+      "text": "PO Council Verdict — import-backed direct dependency",
+      "slug": "po-council-verdict-import-backed-direct-dependency"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-29 — Qualification questions are human-owned before source-hidden work",
+      "slug": "2026-08-29-qualification-questions-are-human-owned-before-source-hidden-work"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-29 — Navigation begins with the map; mascot motion yields to graph ink",
       "slug": "2026-08-29-navigation-begins-with-the-map-mascot-motion-yields-to-graph-ink"
     },

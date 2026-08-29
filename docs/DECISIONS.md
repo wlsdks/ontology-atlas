@@ -40,6 +40,231 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-29 — First persisted handoff is 50/50; clean-run performance remains open
+
+**Convened because**: the next unfamiliar-repository construction completed its
+first persisted source-hidden handoff without changing the accepted body, but
+the run also exposed two qualification-provenance defects and one source-receipt
+path defect before it could finalize. The accuracy objective and performance
+objective therefore have different verdicts.
+
+**Observed fresh trial**:
+
+- The builder reached one reviewable candidate in **302 seconds** after one
+  rejected proposal draft. The unchanged plan contained 9 authored concepts,
+  10 relations, 53 immutable qualification claims, and 4 proposal gaps.
+- Human-owned CQ approval preceded the final isolated lanes. They overlapped for
+  **89.113 seconds**, covered 27/27 proposal refs, verified 53/53 claims and
+  70/70 citations, and had zero failed CQs after the helper began blocking
+  invalid witness-kind packets.
+- Exact release wrote 9/9 concepts and 10/10 relations. The final graph has 10
+  nodes including the vault README, 17/17 resolved edges, 0 compile issues, 0
+  path drift across 7 frontmatter paths, 0 actionable orphans/components, 0
+  dependency cycles, 0 relation recommendations, and 0 plan-caused
+  maintenance.
+- The first finalizer attempt failed because explicit repository-root directory
+  paths (`transform`, `jsonschema`, `generate`) were accepted by validation but
+  omitted from the app/MCP source-witness derivation. The fix accepts safe
+  explicit single-segment relative paths while still rejecting absolute and
+  parent-escaping paths and leaving relation slugs/title heuristics unchanged.
+  A fresh source receipt resolved **14/14 witnesses**, and finalization then
+  succeeded without changing project Markdown, mtime, or graph rows.
+- The persisted-vault reader used 9/9 authored full bodies in one batch with 0
+  truncation, answered all six fixed questions as bounded partial answers, and
+  emitted 50 ordered atomic claims including 8 path-shaped claims. Independent
+  Phase 4 verified **50/50 claims**, 8/8 path occurrences, and 5/5 unique paths,
+  with 0 failures/skips and 0 introduced `only` / `all` / `every` / `exactly`.
+- First MCP call to successful finalizer took **5,028.832 seconds** (83 minutes
+  48.832 seconds), including human waits and in-run gate repairs. The candidate
+  trigger passed; the 40-minute independently qualified write trigger failed.
+
+**Decision (accountable: jinan)**:
+
+1. The next-fresh-construction requirement for 100% first persisted claim
+   verification is satisfied. Preserve the earlier 45/48 and this run's
+   intermediate 47/53 audit/finalizer REDs; none is rewritten as a pass.
+2. The run does not prove performance completion. Keep the 15-minute candidate
+   and 40-minute independently qualified write triggers. The next measurement
+   is one clean run with these fixes present before the first tool call.
+3. Land only the bounded correctness fixes: human-owned CQ timing/actor binding,
+   failed-CQ hard block, direct source-dependency audit calibration, and safe
+   single-segment source-witness parity. Add no MCP tool, field, relation, vault
+   schema, automatic approval, or body-repair path.
+4. `needs_evidence` after finalization is correct for accepted partial scope,
+   domain, evidence, and impact gaps. It is not a failed build and must not be
+   promoted to `verified_current` meaning completeness.
+5. `BASELINE.md` does not move: first-persisted accuracy improved, but this run
+   did not beat the global build-cost or unanswered-question baseline.
+
+**Gate probes**: the original human-owner packet now exits 65 before hidden;
+the failed-witness-kind packet exits 2 before join; three single-directory
+source-witness tests were RED before the parity fix and GREEN afterward. The
+actual source receipt moved from 5/5 selected file witnesses to 14/14 complete
+file/directory role witnesses, and the unchanged body finalized successfully.
+
+**Recorded dissent**: repeated qualification retries and an 83-minute wall make
+the product reason harder to feel even with perfect final accuracy.
+**Falsifier**: the next clean small-repository run exceeds 40 minutes, changes a
+sealed claim or persisted body, fails any first persisted claim, or needs a
+post-write recommendation. **Revisit**: immediately after that clean run.
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — A failed competency question cannot become a human gap
+
+**Convened because**: the calibrated source-hidden lane covered 53/53 claims
+and answered the ability question, but copied a fixture-only witness kind. The
+qualification evaluator therefore marked that CQ `failed`; join still produced
+an acceptance request by treating the resulting functional-axis failure like an
+ordinary measured gap. That is packet invalidity, not honest incompleteness.
+
+**PO pass**: 24/24, Build and verify. A person may accept an independently
+measured partial or unknown answer, but must not be asked to approve a broken
+witness contract.
+
+**Decision (accountable: jinan)**:
+
+1. The qualification helper blocks before join when any evaluated CQ status is
+   `failed`. Human acceptance cannot release it.
+2. CQ `requiredWitnessKinds` must use the actual kind values of sealed witnesses
+   cited by the answer. Test-fixture vocabulary is not project evidence.
+3. Honest missing knowledge remains `partial` or `unknown` with an exact gap;
+   source-hidden task failure and mandatory-axis rules remain unchanged.
+4. This changes only the mirrored read-only helper and skills. No public MCP,
+   CLI, vault schema, writer, or approval bypass changes.
+
+**Gate probe**: the exact bad packet now exits 2 with the failed CQ id and
+creates no output. The 28-test suite restores GREEN and includes a non-existent
+witness-kind mutation that must fail before join.
+
+**Recorded dissent**: functional failures were already visible in the exact gap
+set, so a person could knowingly accept them. **Falsifier**: a real partial CQ
+is blocked despite valid sealed witness kinds, or a failed CQ still reaches an
+acceptance request. **Revisit**: immediately on either observation.
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — Exact element imports remain source dependencies, not runtime impact
+
+**Convened because**: a fresh approved source-aware lane verified 70/70
+citations and 134/134 path occurrences but marked six of 53 claims as mismatches
+because two direct element `depends_on` relations used static-import evidence.
+That 47/53 result raised a public `analyze_repo_structure` validation question,
+so all five PO seats ran one independent round and one rebuttal round.
+
+### PO Council Verdict — import-backed direct dependency
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify, but stop if the distinction needs wording heuristics or a new field | Problem insight 4 · User moment 4 |
+| Craft | Build and verify only a deterministic distinction that preserves bounded source dependency | Verification 4 |
+| Steward | Protect relation/evidence/impact provenance; retain exact source dependencies | Ontology value 4 · Agent value 4 |
+| Wedge | Preserve the compounding trusted-relation asset, not a generic import graph | Differentiation 4 |
+| Leverage | One-day ceiling; use the partial-impact fallback if existing fields cannot distinguish safely | appetite and slice |
+
+**Rubric total**: 24/24 (fatal zeros: none)
+
+**Decisive disagreement**: Round 1 framed the audit as a candidate-stage
+false-green and favored an early validator error. Every rebuttal then conceded
+the standing counterexample: an exact production/value import may justify a
+bounded direct element source dependency while runtime and transitive impact
+remain unknown. The frozen candidate satisfies that structured counterexample:
+both endpoints are reviewed elements with distinct roles and resolving paths,
+the direction is observed, and the impact CQ remains partial. Existing fields
+therefore show no semantic promotion for a deterministic validator to reject.
+
+**Decision (accountable: jinan)**:
+
+1. Do not change the public MCP validator, relation enum, schema, or existing
+   Go/Python positive tests. A phrase matcher for “semantic rationale” would
+   make false authority look stricter without making it more truthful.
+2. During construction and source-aware audit, an exact production/value import
+   may verify a direct element-to-element `depends_on` only when both endpoint
+   bodies name distinct implementation roles, both paths resolve, the direction
+   matches, and the rationale stays bounded to source/code dependency.
+3. That proof never establishes runtime execution, reverse or transitive
+   impact, capability/business dependency, or complete change impact. The
+   impact competency answer remains partial unless separate current meaning
+   evidence supports the stronger claim.
+4. The original 47/53 stays recorded as RED for an ambiguous audit rubric. The
+   candidate and its 53 immutable claims do not change. A fresh source-aware
+   evaluator must apply this clarified boundary and independently decide every
+   claim before join.
+5. Human CQ ownership, exact post-join plan acceptance, source hiding, and zero
+   pre-approval writes remain unchanged.
+
+**Recorded dissent**: a pass-shaped candidate with import-backed relations can
+still be misread as causal runtime impact, and an early validator would remove
+that ambiguity sooner. **Falsifier**: the fresh calibrated audit still cannot
+verify the two direct relations, a persisted handoff promotes either relation
+to runtime/transitive/business impact, or one of the structured endpoint/path/
+direction conditions is absent while the audit passes. **Revisit**: immediately
+on any observation; otherwise after the first persisted Phase 4 audit.
+
+**Slice**: IN bootstrap extraction and field-trial audit clarification · fresh
+independent audit of the unchanged candidate · OUT public MCP/CLI/schema changes
+· relation deletion · wording heuristics · generic entailment · appetite one
+working day
+
+**Status**: valid
+
+---
+
+## 2026-08-29 — Qualification questions are human-owned before source-hidden work
+
+**Convened because**: the next fresh first-pass trial produced a source-hidden
+packet whose scope gap correctly said that no shared meaning owner was known,
+while the same evaluator minted an unidentified id, marked it as human, and
+recorded every CQ revision as approved at the instant evaluation began. The
+source-aware lane verified 53/53 claims and 70/70 citations, and join still
+accepted the contradictory authority provenance. This is a real false-green in
+the existing scratch helper, not a source-meaning or MCP-schema defect.
+
+**PO pass**: 24/24, Build and verify. The user moment is the first ontology
+handoff before any meaning becomes shared. An evaluator cannot be allowed to
+manufacture the human authority that makes its own questions admissible.
+
+**Decision (accountable: jinan)**:
+
+1. The qualification helper requires exactly one named human owner across
+   `purposeAuthority.owners`, every CQ `owner`, and every
+   `revision.approvedBy` row. The exact question set must be approved before the
+   source-hidden access window begins.
+2. That owner is distinct from the builder, hidden evaluator, and source-aware
+   auditor. The joined acceptance request carries the full purpose/question
+   projection and its digest, and only that same owner may accept the plan.
+3. This remains declared provenance rather than authentication. The helper can
+   prove actor separation, timestamp ordering, projection equality, and request
+   binding; it cannot prove a person's legal identity or the truth of a claim.
+4. No public MCP field, tool, CLI command, vault schema, writer, or automatic
+   approval is added. The stricter rule belongs to the mirrored read-only
+   bootstrap helper and skill workflow.
+5. The observed packet remains RED. It is not repaired retroactively. The trial
+   lanes restart only after the person approves the exact frozen questions; the
+   later plan still needs its separate post-join acceptance.
+
+**Gate probe**: the pre-change trial packet joined despite contradictory owner
+provenance. Against the new helper, that same hidden input exits 65 with
+`Every CQ revision must be human-approved before source-hidden evaluation
+starts.` and creates no output. The 27-test helper suite restores GREEN with a
+preapproved owner and probes inconsistent owner, late approval, actor collision,
+and different plan acceptor failures.
+
+**Recorded dissent**: one owner is narrower than the public qualification model
+and adds a human round trip before parallel work. **Falsifier**: a real bootstrap
+requires independently approved CQs from several human owners, or the next
+three clean trials add this step without preventing a provenance or meaning
+failure. **Revisit**: immediately on either observation; otherwise after three
+clean first-persisted audits.
+
+**Status**: valid
+
+---
+
 ## 2026-08-29 — Navigation begins with the map; mascot motion yields to graph ink
 
 **Convened because**: Design Council after the complete pixel-identity build and

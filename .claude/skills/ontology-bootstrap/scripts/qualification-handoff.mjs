@@ -113,7 +113,7 @@ export const HANDOFF_SCHEMA = Object.freeze({
       input: ['candidate', 'seal', 'manifest', 'witnesses', 'access', 'qualificationCore', 'answers'],
       compactInput: ['handoffDir', 'access', 'qualificationCore', 'answers'],
       answers: 'Compact rows {cqId,status,claimIds,targets:[{target,claimIds}],answer?,gap?}; witness refs and cqResults are derived. Partial/unknown/refused require gap and may leave explicit targets empty; answered targets require claims.',
-      qualificationCore: 'Omits cqResults and the evidence_provenance axis; the helper injects an audit-pending diagnostic and axis. Maintainability remains the evaluator judgment supplied here and is never auto-promoted.',
+      qualificationCore: 'Omits cqResults and the evidence_provenance axis; the helper injects an audit-pending diagnostic and axis. Exactly one named human owns purpose and every CQ revision, every revision approval predates source-hidden evaluation, and that owner must later accept the exact request. Required witness kinds must match the sealed witness kinds used by each answer; a failed CQ blocks instead of becoming a human gap. Maintainability remains the evaluator judgment supplied here and is never auto-promoted.',
       output: ['qualification-pending.json', 'hidden-access.json', 'hidden-receipt.json', 'hidden-answers.json'],
     },
     audit: {
@@ -129,7 +129,7 @@ export const HANDOFF_SCHEMA = Object.freeze({
     accept: {
       input: ['candidate', 'seal', 'manifest', 'witnesses', 'join', 'human'],
       compactInput: ['handoffDir', 'joinedDir', 'human'],
-      human: ['id', 'authority=human', 'decidedAt', 'decision=accepted', 'requestDigest', 'planDigest', 'planRevision', 'acceptedGapIds'],
+      human: ['id=preapproved CQ owner', 'authority=human', 'decidedAt', 'decision=accepted', 'requestDigest', 'planDigest', 'planRevision', 'acceptedGapIds'],
       output: ['qualification-accepted.json', 'qualification-evaluation.json', 'lifecycle-release-preview.json', 'acceptance-receipt.json'],
     },
     release: {
@@ -465,6 +465,47 @@ function validateAccess(accessRow, role) {
   }
 }
 
+function questionApprovalProjection(qualification) {
+  const purpose = qualification?.purposeAuthority;
+  assert(isRecord(purpose) && Array.isArray(purpose.owners), 'Qualification purpose owners are required.');
+  assert(purpose.owners.length === 1, 'Qualification handoff requires exactly one named human CQ owner.');
+  const [owner] = purpose.owners;
+  assert(isRecord(owner) && nonBlank(owner.id) && owner.authority === 'human', 'Qualification CQ owner must be a named human.');
+  const questions = qualification?.competencyQuestions;
+  assert(Array.isArray(questions) && questions.length > 0, 'Qualification competency questions are required.');
+  for (const question of questions) {
+    assert(
+      question?.owner?.id === owner.id && question.owner.authority === 'human',
+      `CQ ${question?.id ?? '(unknown)'} owner must match the single purpose owner.`,
+    );
+    assert(
+      question?.revision?.approvedBy === owner.id && validTimestamp(question.revision.approvedAt),
+      `CQ ${question?.id ?? '(unknown)'} needs approval by the single purpose owner.`,
+    );
+  }
+  const approvedAt = questions.map(({ revision }) => Date.parse(revision.approvedAt));
+  return {
+    ownerId: owner.id,
+    latestApprovedAt: new Date(Math.max(...approvedAt)).toISOString(),
+    purposeAuthority: structuredClone(purpose),
+    competencyQuestions: structuredClone(questions),
+    questionSetDigest: artifactDigest({ purposeAuthority: purpose, competencyQuestions: questions }),
+  };
+}
+
+function validatePreapprovedQuestions(qualification, candidate, accessRow) {
+  const review = questionApprovalProjection(qualification);
+  assert(
+    review.ownerId !== candidate.builderId && review.ownerId !== accessRow.actorId,
+    'Human CQ owner identity collides with a construction actor.',
+  );
+  assert(
+    Date.parse(review.latestApprovedAt) < Date.parse(accessRow.startedAt),
+    'Every CQ revision must be human-approved before source-hidden evaluation starts.',
+  );
+  return review;
+}
+
 function claimWitnessRefs(claimIds, manifestById) {
   return [...new Set(claimIds.flatMap((id) => manifestById.get(id)?.witnessRefs ?? []))];
 }
@@ -629,6 +670,11 @@ function evaluateHiddenShape(qualification, manifest) {
   const result = evaluateConstructionQualification(qualification);
   const errors = result.findings.filter(({ severity }) => severity === 'error');
   assert(errors.length === 0, 'Hidden qualification has invalid schema or incomplete claim/target rows.', { details: errors });
+  const failedCqs = result.competencyQuestions.filter(({ status }) => status === 'failed');
+  assert(failedCqs.length === 0, 'Source-hidden qualification has failed competency questions; repair witness kinds or evidence before join.', {
+    exitCode: EXIT.GATE_BLOCKED,
+    details: failedCqs,
+  });
   assert(qualification.sourceHiddenTask.status === 'passed', 'Source-hidden task must pass before join.', { exitCode: EXIT.GATE_BLOCKED });
   assert(same(qualification.sourceHiddenTask.claimIds, manifest.map(({ id }) => id)), 'Source-hidden claim coverage is incomplete or reordered.');
   const evidenceAxis = qualification.axisResults.find(({ axis }) => axis === 'evidence_provenance');
@@ -653,6 +699,7 @@ export function buildHiddenPacket({
   for (const key of PROTECTED_HIDDEN_FIELDS) {
     assert(!Object.hasOwn(qualificationCore, key), `qualificationCore cannot set protected field ${key}.`);
   }
+  const questionApproval = validatePreapprovedQuestions(qualificationCore, candidate, accessRow);
   const cqResults = deriveCqResults(qualificationCore, answers, manifest);
   const axisResults = validateCoreAxes(qualificationCore);
   const regressionState = prepareRegression(qualificationCore, witnesses);
@@ -701,6 +748,7 @@ export function buildHiddenPacket({
     witnessesDigest: artifactDigest(witnesses),
     accessDigest: artifactDigest(accessRow),
     qualificationDigest: artifactDigest(pending),
+    questionApprovalDigest: artifactDigest(questionApproval),
     claimCount: manifest.length,
     sourceHiddenStatus: pending.sourceHiddenTask.status,
     evidenceProvenance: 'audit_pending',
@@ -827,6 +875,8 @@ function verifyHidden(candidate, seal, manifest, witnesses, hidden) {
   assert(receipt.witnessesDigest === artifactDigest(witnesses), 'Hidden witness digest drifted.');
   assert(receipt.accessDigest === artifactDigest(hidden.access), 'Hidden access digest drifted.');
   assert(receipt.qualificationDigest === artifactDigest(q), 'Hidden qualification digest drifted.');
+  const questionApproval = validatePreapprovedQuestions(q, candidate, hidden.access);
+  assert(receipt.questionApprovalDigest === artifactDigest(questionApproval), 'Hidden CQ approval digest drifted.');
   assert(q.actors?.builder?.id === candidate.builderId && q.actors?.evaluator?.id === hidden.access.actorId, 'Hidden qualification actor mismatch.');
   assert(q.acceptance?.decision === 'pending' && q.acceptance.decidedBy === 'pending', 'Qualification was accepted before the join.');
   assert(q.citationChecks.every(({ status }) => status === 'missing'), 'Source-hidden evaluator pre-verified a citation.');
@@ -861,6 +911,8 @@ export function joinQualification({ candidate, seal, manifest, witnesses, hidden
   verifyAudit(candidate, seal, manifest, witnesses, audit);
   const actors = [candidate.builderId, hidden.access.actorId, audit.access.actorId];
   assert(new Set(actors).size === actors.length, 'Builder, hidden evaluator, and source auditor must be distinct.');
+  const questionApproval = validatePreapprovedQuestions(hidden.qualification, candidate, hidden.access);
+  assert(!actors.includes(questionApproval.ownerId), 'Human CQ owner identity collides with a construction actor.');
   const overlapStart = Math.max(Date.parse(hidden.access.startedAt), Date.parse(audit.access.startedAt));
   const overlapEnd = Math.min(Date.parse(hidden.access.endedAt), Date.parse(audit.access.endedAt));
   assert(overlapEnd > overlapStart, 'Hidden and source-aware branches did not overlap in time.');
@@ -903,6 +955,7 @@ export function joinQualification({ candidate, seal, manifest, witnesses, hidden
       hiddenEvaluatorId: hidden.access.actorId,
       sourceAuditorId: audit.access.actorId,
     },
+    questionApproval,
     joinedQualificationDigest: artifactDigest(joined),
   };
   const receipt = {
@@ -964,6 +1017,7 @@ function verifyJoin(candidate, seal, manifest, joinRow) {
   assert(receipt.inputDigests.seal === artifactDigest(seal), 'Join seal digest drifted.');
   assert(receipt.inputDigests.manifest === artifactDigest(manifest), 'Join manifest digest drifted.');
   assert(same(qualification.claims, manifestProjection(manifest)), 'Joined claim projection drifted.');
+  assert(same(request.questionApproval, questionApprovalProjection(qualification)), 'Acceptance request CQ approval drifted.');
   assert(same(request.requiredGapIds, receipt.requiredGapIds), 'Acceptance request gap set drifted.');
 }
 
@@ -975,6 +1029,8 @@ export function acceptQualification({ candidate, seal, manifest, witnesses, join
   assert(human.authority === 'human', 'Acceptance authority must be exactly human.');
   assert(nonBlank(human.id) && validTimestamp(human.decidedAt), 'Human acceptance needs id and decidedAt.');
   assert(!Object.values(joinRow.receipt.actors).includes(human.id), 'Human acceptance identity collides with a construction actor.');
+  assert(human.id === joinRow.request.questionApproval.ownerId, 'Plan acceptor must match the preapproved CQ owner.');
+  assert(Date.parse(human.decidedAt) >= Date.parse(joinRow.request.questionApproval.latestApprovedAt), 'Plan acceptance predates CQ approval.');
   assert(human.requestDigest === joinRow.receipt.acceptanceRequestDigest, 'Human acceptance request digest mismatch.');
   assert(human.planDigest === joinRow.request.planDigest, 'Acceptance request plan digest mismatch.');
   assert(human.planRevision === joinRow.request.planRevision, 'Acceptance request plan revision mismatch.');
@@ -1008,6 +1064,7 @@ export function acceptQualification({ candidate, seal, manifest, witnesses, join
     authority: human.authority,
     decidedAt: human.decidedAt,
     requestDigest: human.requestDigest,
+    questionSetDigest: joinRow.request.questionApproval.questionSetDigest,
     actors: structuredClone(joinRow.receipt.actors),
     acceptedGapIds: [...human.acceptedGapIds],
     planDigest: candidate.planDigest,

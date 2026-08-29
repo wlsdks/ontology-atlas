@@ -13,7 +13,18 @@ function normalizedPath(value: string): string {
 }
 
 function looksLikeSourceWitnessPath(value: string): boolean {
-  return looksLikeCodePath(value) || /^[^/\\\s]+\.[A-Za-z0-9]+$/.test(value);
+  if (
+    !value
+    || value.trim() !== value
+    || value.startsWith("/")
+    || /^[A-Za-z]:[\\/]/.test(value)
+    || value.includes("\\")
+    || /[\u0000-\u001f\u007f]/u.test(value)
+  ) return false;
+  const normalized = normalizedPath(value);
+  return normalized.length > 0
+    && normalized.length <= 500
+    && normalized.split("/").every((segment) => segment !== "" && segment !== "." && segment !== "..");
 }
 
 function roleForKind(kind: unknown): string {
@@ -47,6 +58,7 @@ export function deriveProjectSourceWitnesses(input: {
   const candidates: ProjectSourceWitnessInput[] = [];
   const seenClaims = new Set<string>();
   const add = (candidate: ProjectSourceWitnessInput) => {
+    if (!looksLikeSourceWitnessPath(candidate.path)) return;
     const path = normalizedPath(candidate.path);
     // The same path can support more than one ontology role. Keep each node's
     // claim while collapsing duplicate declarations on that same node.
@@ -54,7 +66,7 @@ export function deriveProjectSourceWitnesses(input: {
     // An explicit frontmatter `path:` can legitimately be a repository-root
     // artifact such as README.md or package.json. It is still checked against
     // the inspected source inventory before becoming supported evidence.
-    if (!looksLikeSourceWitnessPath(path) || seenClaims.has(claim)) return;
+    if (seenClaims.has(claim)) return;
     seenClaims.add(claim);
     candidates.push({ ...candidate, path });
   };

@@ -93,6 +93,16 @@ Accept an edge only when all four answers exist:
 3. What evidence supports that predicate?
 4. What reasoning or future impact depends on the edge?
 
+For `depends_on`, keep direct source dependency separate from broader impact.
+An exact production/value import can support a direct element-to-element source
+dependency when both endpoints have reviewed implementation roles and paths and
+the direction matches the observed import. Its rationale must remain bounded to
+that source/code dependency. The import does not prove runtime execution,
+reverse or transitive impact, a capability/business dependency, or complete
+change impact; those remain partial/unknown without separate current meaning
+evidence. A source-aware audit verifies this bounded relation from the two roles,
+paths, and direction instead of rejecting it solely for using import evidence.
+
 ## Counterexample checks
 
 Before approval, try to falsify each proposal:
