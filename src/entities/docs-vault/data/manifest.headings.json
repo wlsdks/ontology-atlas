@@ -10985,6 +10985,11 @@
       "slug": "mcp-and-cli-checks"
     },
     {
+      "depth": 3,
+      "text": "The download page's facts are a handoff, so a gate watches it",
+      "slug": "the-download-pages-facts-are-a-handoff-so-a-gate-watches-it"
+    },
+    {
       "depth": 2,
       "text": "Skill Integrity (discovery instrument, not a gate)",
       "slug": "skill-integrity-discovery-instrument-not-a-gate"
