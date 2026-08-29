@@ -103,6 +103,49 @@ describe("witness derivation parity", () => {
         .map((witness) => witness.nodeSlug),
     ).toEqual(["capabilities/play", "music-streaming", "elements/engine"]);
   });
+
+  it("keeps single-segment directory claims byte-identical across app and MCP", () => {
+    const docs = [
+      {
+        slug: "music-streaming",
+        frontmatter: { kind: "project", slug: "music-streaming", title: "Music" },
+        body: [
+          "## Competency answers",
+          "",
+          "### scope — answered",
+          "",
+          "Question",
+          "",
+          "Answer",
+          "",
+          "- Evidence: `generate`",
+          "- Paths: `jsonschema`, `transform`",
+        ].join("\n"),
+        meaningEvidencePaths: ["generate", "jsonschema", "transform"],
+      },
+      { slug: "capabilities/play", frontmatter: { kind: "capability", path: "transform" } },
+    ];
+    const nodes = [
+      { id: "project:music-streaming", kind: "project", title: "Music", projectIds: [], agentSlug: "music-streaming" },
+      { id: "capability:play", kind: "capability", title: "Play", projectIds: ["music-streaming"], agentSlug: "capabilities/play" },
+    ];
+    const fromGraph = deriveProjectSourceWitnesses({
+      projectSlug: "music-streaming",
+      nodes: nodes as never,
+      docs: docs as never,
+    });
+    const fromDocs = deriveProjectSourceWitnessesFromDocs({
+      projectSlug: "music-streaming",
+      docs,
+    });
+    expect(fromDocs).toEqual(fromGraph);
+    expect(fromDocs.map((witness) => witness.path)).toEqual([
+      "transform",
+      "generate",
+      "jsonschema",
+      "transform",
+    ]);
+  });
 });
 
 describe("persisted competency evidence parity", () => {

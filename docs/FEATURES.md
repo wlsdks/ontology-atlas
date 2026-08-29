@@ -1032,11 +1032,29 @@ scratch helper for those receipt stages. Agents still decide every meaning,
 answer, evidence mapping, and citation verdict; the helper only removes repeated
 JSON/digest/witness projection and emits non-executing writer-call data after an
 exact executable release.
+The helper requires one human-owned purpose/CQ set whose approval predates the
+source-hidden lane, keeps that owner distinct from all construction actors, and
+binds the full question projection into the post-join acceptance request. The
+same owner must accept the plan; this is declared provenance, not identity
+authentication, and it adds no MCP or vault field.
+The helper also blocks a failed CQ before join. Required witness kinds come from
+the sealed witnesses actually cited by that answer; only measured
+partial/unknown results can become exact human gaps.
 Several qualification claims may share a concept ref so its material
 Definition, Includes, Excludes, and Uncertainty assertions are checked
 independently. Source-use wording and analyzer/packet measurement qualifiers
 remain exact; neither may be widened into a broader product claim or absolute
 absence.
+An exact production/value import may verify a reviewed direct
+element-to-element source dependency when both roles and paths resolve and the
+direction matches. It does not prove runtime, reverse, transitive,
+capability/business, or complete impact; the impact competency answer remains
+partial without separate current meaning evidence.
+Project-source receipts preserve safe explicit repository-root directory paths
+from frontmatter and persisted competency Evidence/Paths rows, not only paths
+with a slash or extension. App and MCP derivation stay aligned; absolute,
+parent-escaping, malformed, and relation-slug lookalikes do not become source
+witnesses.
 
 For `agent_brief`, structural readiness is not meaning confidence. A fresh call
 for an explicit project derives `meaningAssessment:v1` from three independent

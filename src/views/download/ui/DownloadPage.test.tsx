@@ -704,6 +704,28 @@ describe('DownloadPage', () => {
    * are locked by meaning rather than by value.
    */
   describe('두 주소에 사는 한 화면', () => {
+    it('carries the pixel identity in both the gateway chrome and hero', () => {
+      mocks.pathname = '/download';
+      renderDownloadPage();
+
+      expect(screen.getByTestId('gateway-brand-mark')).toHaveAttribute(
+        'src',
+        '/brand/mascot-compact.png',
+      );
+      expect(screen.getByTestId('gateway-brand-mark')).toHaveAttribute(
+        'data-brand-detail',
+        'compact',
+      );
+      expect(screen.getByTestId('gateway-hero-mascot')).toHaveAttribute(
+        'src',
+        '/brand/mascot-full.png',
+      );
+      expect(screen.getByTestId('gateway-hero-mascot')).toHaveAttribute(
+        'data-brand-detail',
+        'full',
+      );
+    });
+
     it('/download 에서는 빵부스러기가 여기가 어디인지 말한다', () => {
       mocks.pathname = '/download';
       renderDownloadPage();

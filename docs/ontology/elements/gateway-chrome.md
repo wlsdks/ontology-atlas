@@ -9,4 +9,4 @@ path: src/widgets/gateway-chrome
 created_by: "agent:unknown"
 ---
 
-Persistent chrome widget for gateway (uninstalled web visitors).
+Persistent chrome widget for uninstalled web visitors across the root, download, guide, and changelog surfaces. Its home link carries the compact pixel mascot and product name; this gateway identity is separate from the installed workbench rail, which intentionally begins with destinations and carries no repeated logo.
