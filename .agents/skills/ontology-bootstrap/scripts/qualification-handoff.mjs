@@ -117,8 +117,9 @@ export const HANDOFF_SCHEMA = Object.freeze({
       output: ['qualification-pending.json', 'hidden-access.json', 'hidden-receipt.json', 'hidden-answers.json'],
     },
     audit: {
-      input: ['candidate', 'seal', 'manifest', 'witnesses', 'access', 'claimResults', 'quantifierClassifications'],
-      compactInput: ['handoffDir', 'access', 'claimResults', 'quantifierClassifications', 'sourceDigest'],
+      input: ['candidate', 'seal', 'manifest', 'witnesses', 'access', 'claimResults', 'sourceFragmentCatalog?', 'quantifierClassifications'],
+      compactInput: ['handoffDir', 'access', 'claimResults', 'sourceFragmentCatalog?', 'quantifierClassifications', 'sourceDigest'],
+      claimResults: 'Each citation uses either legacy inline sourceFragments or sourceFragmentRefs into one deduplicated sourceFragmentCatalog. Catalog mode expands to the exact legacy output shape and rejects mixed, duplicate, foreign, or unused evidence.',
       output: ['qualification-source-fragment.json', 'auditor-access.json', 'audit-receipt.json'],
     },
     join: {
@@ -773,6 +774,73 @@ function citationKey(claimId, witnessRef) {
   return `${claimId}\u0000${witnessRef}`;
 }
 
+function validateSourceFragment(fragment) {
+  assert(isRecord(fragment), 'Source fragments must be objects.');
+  assert(nonBlank(fragment.sourceRef) && validDigest(fragment.digest), 'Source fragments need sourceRef and digest.');
+  if (fragment.startLine !== undefined || fragment.endLine !== undefined) {
+    assert(Number.isInteger(fragment.startLine) && fragment.startLine > 0, 'Source fragment startLine must be positive.');
+    assert(Number.isInteger(fragment.endLine) && fragment.endLine >= fragment.startLine, 'Source fragment endLine is invalid.');
+  }
+}
+
+function expandAuditSourceFragments(claimResults, sourceFragmentCatalog) {
+  assert(Array.isArray(claimResults), 'claimResults must be an array.');
+  const citations = claimResults.flatMap((result) => (
+    Array.isArray(result.citations) ? result.citations : []
+  ));
+  const modes = new Set();
+  for (const citation of citations) {
+    const inline = Object.hasOwn(citation, 'sourceFragments');
+    const referenced = Object.hasOwn(citation, 'sourceFragmentRefs');
+    assert(inline !== referenced, `Citation ${citation.witnessRef ?? '(unknown)'} needs exactly one of sourceFragments or sourceFragmentRefs.`);
+    modes.add(inline ? 'inline' : 'catalog');
+  }
+  assert(modes.size <= 1, 'Audit citations cannot mix inline sourceFragments with sourceFragmentRefs catalog mode.');
+
+  if (!modes.has('catalog')) {
+    assert(sourceFragmentCatalog === undefined, 'sourceFragmentCatalog is only valid with sourceFragmentRefs.');
+    return structuredClone(claimResults);
+  }
+
+  assert(Array.isArray(sourceFragmentCatalog) && sourceFragmentCatalog.length > 0, 'sourceFragmentRefs require a non-empty sourceFragmentCatalog.');
+  uniqueRows(sourceFragmentCatalog, 'id', 'sourceFragmentCatalog');
+  const catalog = new Map();
+  const bodies = new Set();
+  const allowedKeys = new Set(['id', 'sourceRef', 'digest', 'startLine', 'endLine']);
+  for (const row of sourceFragmentCatalog) {
+    assert(Object.keys(row).every((key) => allowedKeys.has(key)), `Source fragment ${row.id ?? '(unknown)'} has unknown fields.`);
+    const { id, ...fragment } = row;
+    assert(nonBlank(id), 'Source fragment catalog ids must be nonblank.');
+    validateSourceFragment(fragment);
+    const body = canonicalJson(fragment);
+    assert(!bodies.has(body), 'sourceFragmentCatalog contains a duplicate source fragment body.');
+    bodies.add(body);
+    catalog.set(id, fragment);
+  }
+
+  const used = new Set();
+  const expanded = structuredClone(claimResults);
+  for (const result of expanded) {
+    for (const citation of result.citations ?? []) {
+      assert(
+        Array.isArray(citation.sourceFragmentRefs)
+          && citation.sourceFragmentRefs.length > 0
+          && uniqueStrings(citation.sourceFragmentRefs),
+        `Citation ${citationKey(result.claimId, citation.witnessRef)} needs unique nonblank sourceFragmentRefs.`,
+      );
+      citation.sourceFragments = citation.sourceFragmentRefs.map((ref) => {
+        assert(catalog.has(ref), `Citation ${citationKey(result.claimId, citation.witnessRef)} has unknown source fragment ref ${ref}.`);
+        used.add(ref);
+        return structuredClone(catalog.get(ref));
+      });
+      delete citation.sourceFragmentRefs;
+    }
+  }
+  const unused = [...catalog.keys()].filter((id) => !used.has(id));
+  assert(unused.length === 0, `sourceFragmentCatalog has unreferenced source fragment ids: ${unused.join(', ')}.`);
+  return expanded;
+}
+
 function validateSourceFragmentRows(manifest, claimResults) {
   uniqueRows(claimResults, 'claimId', 'claimResults');
   assert(same(claimResults.map(({ claimId }) => claimId), manifest.map(({ id }) => id)), 'Source audit claim coverage is incomplete or reordered.');
@@ -786,11 +854,7 @@ function validateSourceFragmentRows(manifest, claimResults) {
       assert(['verified', 'mismatch'].includes(citation.status), `Citation ${citationKey(claim.id, citation.witnessRef)} needs a status.`);
       assert(Array.isArray(citation.sourceFragments) && citation.sourceFragments.length > 0, `Citation ${citationKey(claim.id, citation.witnessRef)} needs a source fragment.`);
       for (const fragment of citation.sourceFragments) {
-        assert(nonBlank(fragment.sourceRef) && validDigest(fragment.digest), 'Source fragments need sourceRef and digest.');
-        if (fragment.startLine !== undefined || fragment.endLine !== undefined) {
-          assert(Number.isInteger(fragment.startLine) && fragment.startLine > 0, 'Source fragment startLine must be positive.');
-          assert(Number.isInteger(fragment.endLine) && fragment.endLine >= fragment.startLine, 'Source fragment endLine is invalid.');
-        }
+        validateSourceFragment(fragment);
       }
       citationChecks.push({
         claimId: claim.id,
@@ -809,6 +873,7 @@ export function buildAuditFragment({
   witnesses,
   access: accessRow,
   claimResults,
+  sourceFragmentCatalog,
   quantifierClassifications = [],
   sourceDigest,
 } = {}) {
@@ -818,9 +883,10 @@ export function buildAuditFragment({
   assert(sourceDigest === candidate.sourceDigest, 'Source-aware audit source digest mismatches the sealed source.');
   const quantifiers = validateQuantifiers(manifest, quantifierClassifications);
   assert(same(quantifiers.classifications, seal.quantifiers.classifications), 'Source audit quantifier classifications drifted from the seal.');
-  const citationChecks = validateSourceFragmentRows(manifest, claimResults);
+  const expandedClaimResults = expandAuditSourceFragments(claimResults, sourceFragmentCatalog);
+  const citationChecks = validateSourceFragmentRows(manifest, expandedClaimResults);
   const failures = [
-    ...claimResults.filter(({ status }) => status !== 'verified').map(({ claimId }) => `claim:${claimId}`),
+    ...expandedClaimResults.filter(({ status }) => status !== 'verified').map(({ claimId }) => `claim:${claimId}`),
     ...citationChecks.filter(({ status }) => status !== 'verified').map(({ claimId, witnessRef }) => `citation:${citationKey(claimId, witnessRef)}`),
   ];
   const fragment = {
@@ -829,7 +895,7 @@ export function buildAuditFragment({
     builderId: candidate.builderId,
     sourceDigest,
     manifestProjection: manifestProjection(manifest),
-    claimResults: structuredClone(claimResults),
+    claimResults: structuredClone(expandedClaimResults),
     citationChecks,
     quantifierClassifications: quantifiers.classifications,
   };
@@ -845,9 +911,9 @@ export function buildAuditFragment({
     verdict: failures.length === 0 ? 'verified' : 'failed',
     failures,
     counts: {
-      claims: claimResults.length,
+      claims: expandedClaimResults.length,
       citations: citationChecks.length,
-      verifiedClaims: claimResults.filter(({ status }) => status === 'verified').length,
+      verifiedClaims: expandedClaimResults.filter(({ status }) => status === 'verified').length,
       verifiedCitations: citationChecks.filter(({ status }) => status === 'verified').length,
     },
   };

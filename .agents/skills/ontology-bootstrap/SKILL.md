@@ -420,6 +420,14 @@ Start both read-only lanes from that same sealed packet and manifest:
   manifest, and current source, but no hidden answers. It returns a pass/fail
   citation receipt for every manifest row and may not rewrite a claim.
 
+When citations reuse the same source span, put each unique fragment once in the
+audit input's `sourceFragmentCatalog` and reference its id through each
+citation's `sourceFragmentRefs`. Do not copy a whole source-fragment catalog
+into every citation. Use only the minimal fragments that verify that
+claim/witness pair. The helper expands catalog input to the unchanged legacy
+`sourceFragments` output and rejects mixed inline/catalog mode, duplicate
+fragment bodies, foreign refs, and unused rows.
+
 The builder, hidden evaluator, and source-aware auditor must have different
 identities and the lanes must not exchange results. Record each start/end time
 so overlap is evidence rather than an assertion. After both outputs are sealed,
