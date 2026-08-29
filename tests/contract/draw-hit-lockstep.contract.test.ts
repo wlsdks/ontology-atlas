@@ -21,9 +21,17 @@ import {
  * again the next time a channel is added** (which is how this defect arose). If
  * hit reads the alpha map draw already builds, they cannot drift structurally.
  *
- * ⚠️ The contract's exact wording is not "if it is drawn it is hittable" but
- * **"if it is at least half revealed it is hittable"** — 0.02–0.5 is the intended
- * "visible but not hittable" band.
+ * ⚠️ **The wording changed on 2026-08-29, and the contract got stronger.** It
+ * used to be "if it is at least half revealed it is hittable", with 0.02–0.5 an
+ * intended "visible but not hittable" band. Measured on the installed app, that
+ * band is where about ninety painted circles at the storefront vault's resting
+ * camera sat: a click on one did nothing, and a click on another fell through to
+ * an edge crossing the same pixels, because a node the hit test rejects lets the
+ * click reach the edge test behind it. The reveal bands were narrowed to start at
+ * the old floor, so the band no longer exists rather than being made clickable,
+ * and the contract is now the plain one this file's title always implied: **if it
+ * is drawn, it is hittable.** Rationale and dissent: `docs/DECISIONS.md`,
+ * 2026-08-29.
  */
 
 const node = (id: string, kind: HittableNodeInput["kind"] = "element"): HittableNodeInput => ({
@@ -49,18 +57,34 @@ describe("draw/hit lockstep contract", () => {
     }
   });
 
-  it("**바닥은 0.5** — 드로우의 0.02 로 갈아타지 않는다", () => {
-    // 0.02–0.5 is the intended "drawn but not hittable" band. Making
-    // near-transparent marks hittable produces misclicks and contradicts
-    // `computeLabelAlpha`'s rule that anything hittable must be readable.
+  it("드로우가 칠한 알파면 어느 값이든 잡힌다 — 그려진 것은 잡힌다", () => {
+    // What used to be the "drawn but not hittable" band. Every value in it is
+    // now hittable, because a node is no longer painted at these alphas unless
+    // something deliberately revealed it — and a deliberate reveal is exactly
+    // the case that must answer the pointer.
     for (const alpha of [0.03, 0.2, 0.49]) {
       const drawn = new Map([["n", alpha]]);
       expect(
         isNodeHittable(node("n"), OVERVIEW_ZOOM, null, undefined, undefined, undefined, null, drawn),
         `alpha=${alpha}`,
-      ).toBe(false);
+      ).toBe(true);
     }
-    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.5);
+  });
+
+  it("바닥은 드로우가 아무것도 칠하지 않는 값과 같다 — 두 숫자가 아니라 하나다", () => {
+    // The draw pass skips at `alpha <= HITTABLE_MIN_TIER_ALPHA`, so the first
+    // alpha that paints is the first alpha that answers the pointer. A future
+    // edit that raises this floor without narrowing the reveal bands re-opens the
+    // band and fails the sweep in `model/tier-visibility.test.ts`.
+    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.02);
+    const atFloor = new Map([["n", HITTABLE_MIN_TIER_ALPHA]]);
+    expect(
+      isNodeHittable(node("n"), OVERVIEW_ZOOM, null, undefined, undefined, undefined, null, atFloor),
+    ).toBe(true);
+    const belowFloor = new Map([["n", HITTABLE_MIN_TIER_ALPHA / 2]]);
+    expect(
+      isNodeHittable(node("n"), OVERVIEW_ZOOM, null, undefined, undefined, undefined, null, belowFloor),
+    ).toBe(false);
   });
 
   it("접힌 노드는 알파와 무관하게 안 잡힌다 — 안 그려지는 것은 안 잡힌다", () => {

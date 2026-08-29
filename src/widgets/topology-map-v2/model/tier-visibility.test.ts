@@ -34,6 +34,65 @@ describe("computeZoomRatio", () => {
   });
 });
 
+/*
+ * ⚠️ **The seam this file used to contain, now pinned shut** (2026-08-29).
+ *
+ * The reveal bands started at 0 while the hit floor sat at 0.5, so the first
+ * half of every band painted circles that could not be named, hovered, clicked
+ * or dragged. Measured on the installed app, storefront sample, resting camera:
+ * about ninety painted nodes; one click on such a circle did nothing and
+ * another fell through to an edge crossing the same pixels, because a node the
+ * hit test rejects lets the click reach the edge test behind it.
+ *
+ * The bands now begin at the floor, so this sweep — every ratio a camera can
+ * reach, both child tiers — is what forbids the band from coming back. It is
+ * deliberately expressed as an implication over the *constants*, not a pair of
+ * numbers: moving a band or a floor without moving the other fails here.
+ */
+describe("paint, hit and label begin together — no drawn-but-dead band", () => {
+  const KINDS = ["capability", "element"] as const;
+
+  it("every painted node is hittable, at every ratio", () => {
+    for (let ratio = 0; ratio <= 5; ratio = Number((ratio + 0.005).toFixed(3))) {
+      for (const kind of KINDS) {
+        const alpha = nodeTierAlpha(kind, false, ratio, DEFAULT_TIER_REVEAL);
+        const painted = alpha > HITTABLE_MIN_TIER_ALPHA;
+        if (!painted) continue;
+        expect(
+          isNodeHittable({ id: kind, kind, isHub: false }, ratio, null, undefined, DEFAULT_TIER_REVEAL),
+          `${kind} painted at ratio ${ratio} (alpha ${alpha.toFixed(3)}) but not hittable`,
+        ).toBe(true);
+      }
+    }
+  });
+
+  it("the floor is the draw pass's own skip value, not a second number beside it", () => {
+    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.02);
+  });
+
+  it("each band opens where the old hit floor sat, so clicking begins when it always did", () => {
+    // smoothstep reaches 0.5 at the midpoint; the old bands' midpoints were
+    // 1.75 and 2.575, and those are the new opening ratios.
+    expect(DEFAULT_TIER_REVEAL.capability.enterRatio).toBe(1.75);
+    expect(DEFAULT_TIER_REVEAL.element.enterRatio).toBe(2.575);
+    for (const [kind, enter] of [["capability", 1.75], ["element", 2.575]] as const) {
+      expect(nodeTierAlpha(kind, false, enter, DEFAULT_TIER_REVEAL)).toBe(0);
+      expect(nodeTierAlpha(kind, false, enter + 0.02, DEFAULT_TIER_REVEAL)).toBeGreaterThan(0);
+    }
+  });
+
+  it("the plain lens keeps the same property with the element tier out of reach", () => {
+    for (let ratio = 0; ratio <= 5; ratio = Number((ratio + 0.01).toFixed(3))) {
+      const alpha = nodeTierAlpha("element", false, ratio, PLAIN_TIER_REVEAL);
+      if (alpha > HITTABLE_MIN_TIER_ALPHA) {
+        expect(
+          isNodeHittable({ id: "e", kind: "element", isHub: false }, ratio, null, undefined, PLAIN_TIER_REVEAL),
+        ).toBe(true);
+      }
+    }
+  });
+});
+
 describe("nodeTierAlpha", () => {
   it("keeps project and domain fully visible at every zoom ratio (level-0 spine)", () => {
     for (const ratio of [0.4, 1, 1.5, 2.5, 4]) {

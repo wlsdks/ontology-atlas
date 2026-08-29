@@ -40,6 +40,86 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-29 — Nothing is painted before it can be named and clicked
+
+**Convened because**: the same session that found the domain label defect also
+found the map answering the pointer inconsistently. Measured on the installed
+app, storefront sample, camera fully out: a click on one painted circle selected
+it, a click on another did nothing at all, and a third selected an **edge**
+(`Campaign Planning leans on Category Management`) rather than the circle under
+the pointer.
+
+**What it actually was**: not a precedence bug. `topology-pointer-handlers.ts`
+runs its edge hit-test only when `commitClick.nodeId === null`, so a node that
+answers the pointer already beats an edge at the same pixel. The third click
+reached the edge test **because the node under it was not hittable** — the same
+seam as the second click, wearing a different symptom.
+
+**The seam, in numbers**: `nodeTierAlpha` ramps a child in with
+`smoothstep(enter, full, ratio)`, the draw pass paints anything above 0.02, and
+the hit test and label ramp both floored at 0.5. With bands at
+capability `{1.5, 2.0}` and element `{2.3, 2.85}`, that put **exactly the first
+half of every reveal band** in a state where a circle is drawn at up to 50%
+alpha and cannot be named, hovered, clicked, or dragged — ratio 1.5→1.75 and
+2.3→2.575.
+
+**This file already said the rule twice.** `isNodeHittable`'s own comments read
+"if it isn't painted this frame, it isn't hittable" and "if it is drawn, it is
+grabbable". The first was enforced; the second was not.
+
+**Decision**: the bands begin where the floor was — capability `{1.75, 2.0}`,
+element `{2.575, 2.85}` — and the floor becomes the draw pass's own paint skip.
+Nothing is painted before it can be named and clicked. Note what does *not*
+change: hittability still begins at ratio 1.75 and 2.575, exactly where it began
+before. No interaction timing moves; the paint simply stops arriving early.
+
+**Structure, not just values**: the draw pass and the label ramp now read
+`HITTABLE_MIN_TIER_ALPHA` instead of repeating `0.02` and `0.5` in their own
+files. A second constant beside it was tried first and the dead-code gate
+rejected the pair as a duplicate export — the right answer, and the reason the
+result is one exported fact rather than three numbers agreeing by luck.
+
+**Overturned**: `tests/contract/draw-hit-lockstep.contract.test.ts`'s pinned case
+*"the floor is 0.5 — do not switch to the draw pass's 0.02"*, and the comment in
+`isNodeHittable` saying the same. The contract is not deleted, it is
+strengthened: its title always claimed draw/hit lockstep, and the file now
+asserts the plain form — if it is drawn, it is hittable — instead of carrying an
+exception to itself. The old wording read: *"The floor is 0.5 — do not swap in
+the draw pass's 0.02. The band 0.02..0.5 is deliberately drawn but
+not grabbable (making a near-transparent mark clickable produces mis-clicks)."*
+That argument was never measured. What was measured is its other side, above.
+The mis-click concern is answered differently: the band is removed rather than
+made clickable, so no near-transparent mark is ever a click target.
+
+**Gates**: a sweep over every ratio a camera can reach, both child tiers, asserts
+painted ⇒ hittable — expressed over the constants, so moving a band or a floor
+without the other fails. Probed by planting the old `enterRatio: 1.5`: red, with
+the ratio and alpha in the message. Restored: green. A second case pins the two
+floors equal, and a third pins that each band opens at the old hit ratio.
+
+**Recorded dissent** (2026-08-08, still standing): *"if the owner or a visitor
+says 'not many nodes, huh', the gap is bigger than judged."* This removes the
+faint half of each reveal band from the resting frame and walks straight toward
+that falsifier. Accepted, because a circle nobody can click or name is not
+density, it is noise that looks like density.
+
+**Side effect, named rather than discovered later**: `isSpineOnlyZoom` keys off
+`capability.enterRatio`, so the pan clamp now uses spine bounds up to 1.75
+instead of 1.5. That shrinks the legal-but-empty region a flick can strand in,
+which is the direction that clamp exists to protect.
+
+**Falsifier**: someone zooms past the band hunting for children "that weren't
+there", or `/motion-verify` measures the steeper fade (half the ratio width)
+reading as a pop at normal wheel velocity.
+
+**Review**: with the label-budget measurement that owns passive capability
+naming — a reader who can now click everything they see may still not be able
+to read what it is called.
+
+**Status**: standing.
+
+---
+
 ## 2026-08-29 — The spine names itself at every altitude; the domain watermark is retired
 
 **Convened because**: the owner, looking at the installed app rather than at the

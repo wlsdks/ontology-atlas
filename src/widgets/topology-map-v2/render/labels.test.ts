@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 import {
   computeLabelAlpha,
   measureLabelVerticalMetrics,
@@ -71,16 +72,26 @@ describe("computeLabelAlpha", () => {
     expect(computeLabelAlpha({ ...base, kind: "domain", isHovered: true, revealAlpha: 0 })).toBe(1);
   });
 
-  it("capability/element are ineligible below the hittable reveal threshold (0.5) — matches HITTABLE_MIN_TIER_ALPHA", () => {
+  /*
+   * ⚠️ **The floor is the hit floor, and the hit floor is the paint floor**
+   * (2026-08-29). This pinned 0.5 while the draw pass skipped marks at 0.02, so
+   * the first half of every reveal band painted circles that could not be named
+   * or clicked. Reading this constant from `tier-visibility` rather than
+   * repeating the number is the point: a future change that moves one and not
+   * the other has to fail here.
+   */
+  it("a child is nameable exactly where it becomes hittable — one shared floor", () => {
+    expect(HITTABLE_MIN_TIER_ALPHA).toBe(0.02);
     expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0 })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.3 })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 0.4 })).toBe(0);
+    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: HITTABLE_MIN_TIER_ALPHA })).toBe(0);
+    expect(
+      computeLabelAlpha({ ...base, kind: "element", revealAlpha: HITTABLE_MIN_TIER_ALPHA + 0.05 }),
+    ).toBeGreaterThan(0);
   });
 
-  it("capability/element ramp in once revealAlpha crosses 0.5, reaching full by ~0.85 — the 'ego-revealed child gets a label' fix", () => {
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.5 })).toBe(0);
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.7 })).toBeGreaterThan(0);
-    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.7 })).toBeLessThan(1);
+  it("capability/element ramp to full readability by ~0.85 — the 'ego-revealed child gets a label' fix", () => {
+    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.5 })).toBeGreaterThan(0);
+    expect(computeLabelAlpha({ ...base, kind: "capability", revealAlpha: 0.5 })).toBeLessThan(1);
     expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 0.85 })).toBeCloseTo(1, 6);
     expect(computeLabelAlpha({ ...base, kind: "element", revealAlpha: 1 })).toBe(1);
   });

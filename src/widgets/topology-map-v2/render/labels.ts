@@ -42,6 +42,7 @@
  */
 
 import { smoothstep } from "../model/altitude";
+import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 
 
 export interface LabelDrawState {
@@ -196,8 +197,13 @@ export function measureLabelWidth(
   return width;
 }
 
-/** capability/element label eligibility ramp, in `revealAlpha` units — matches `model/tier-visibility.ts#HITTABLE_MIN_TIER_ALPHA` (0.5) as the floor, full readability by 0.85. */
-const CHILD_LABEL_REVEAL_MIN = 0.5;
+/**
+ * capability/element label eligibility ramp, in `revealAlpha` units. The floor
+ * is `model/tier-visibility.ts#HITTABLE_MIN_TIER_ALPHA` **by import, not by
+ * coincidence** — a child is nameable exactly when it is clickable, and the two
+ * cannot drift apart in a later edit. Full readability arrives by 0.85.
+ */
+const CHILD_LABEL_REVEAL_MIN = HITTABLE_MIN_TIER_ALPHA;
 const CHILD_LABEL_REVEAL_FULL = 0.85;
 
 /**

@@ -40,7 +40,7 @@ import {
 } from "../model/dome-view";
 import { draw as domeRingsDraw } from "../render/dome-rings";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
-import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
+import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, HITTABLE_MIN_TIER_ALPHA, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
   LABEL_TOP_K,
   isEgoNeighborLabelExempt,
@@ -1763,7 +1763,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // a chip and not drawn.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
     const tierAlpha = effectiveAlphaById.get(node.id) ?? 1;
-    if (tierAlpha <= 0.02) continue;
+    // The same constant the hit test and the label ramp floor on — a node that
+    // survives this line is grabbable and nameable by construction.
+    if (tierAlpha <= HITTABLE_MIN_TIER_ALPHA) continue;
     const egoState = previewTarget
       ? "neighbor"
       : egoAllNormal
