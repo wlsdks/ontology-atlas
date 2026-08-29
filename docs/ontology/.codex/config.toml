@@ -1,0 +1,7 @@
+[mcp_servers.ontology-atlas]
+command = "node"
+args = ["/Users/jinan/side-project/ontology-atlas/mcp/src/index.js"]
+
+[mcp_servers.ontology-atlas.env]
+OATLAS_VAULT = "."
+OATLAS_REPO_ROOT = "../.."

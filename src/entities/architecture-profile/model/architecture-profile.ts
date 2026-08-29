@@ -14,6 +14,17 @@ interface ArchitecturePattern {
 interface ArchitectureRole {
   id: string;
   paths: string[];
+  /**
+   * One sentence saying what this role is for, written by the person who reviewed the profile.
+   *
+   * **Why the contract carries it instead of the screen.** A role id is a folder name, and a folder
+   * name is exactly what decision (2026-08-26) forbids reading intent from: `role_widgets` does not
+   * say what a widget is any more than the directory does. Without this field the blueprint could
+   * only ever show `widgets · src/widgets/**`, which asks the reader to already know the answer —
+   * and the agent handoff packet passed the same bare id along. Optional, because a profile written
+   * before this field existed stays valid and simply says nothing.
+   */
+  summary?: string;
 }
 
 export interface ArchitectureProfile {
@@ -99,8 +110,32 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   if (!UUID_V4.test(uid)) throw new Error('profile_uid must be a lowercase UUIDv4.');
   if (!UUID_V4.test(projectUid)) throw new Error('project_uid must be a lowercase UUIDv4.');
 
+  /*
+   * ⚠️ **The retired key is refused by name, not aliased and not ignored.** Two councils
+   * independently cured the same false red — 18 type-only edges an eslint config already permitted
+   * — one with `type_only_dependencies: ruled|free` and one with `dependency_usages`, and the
+   * 2026-08-29 reconciliation kept the shipped encoding. An alias would carry two spellings of one
+   * policy through two parsers forever, for a key no profile ever wrote; ignoring it would flip
+   * that profile's verdict without a word, which is the silent change this ledger forbids.
+   */
+  if (frontmatter.type_only_dependencies !== undefined) {
+    throw new Error(
+      'type_only_dependencies was replaced by dependency_usages: write dependency_usages: [value] for the old free, or omit the key for the old ruled.',
+    );
+  }
+
   const rolePaths = new Map<string, string[]>();
+  /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
+     prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
+     shape `allow_<id>` already uses. */
+  const roleSummaries = new Map<string, string>();
   for (const [key, value] of Object.entries(frontmatter)) {
+    if (key.startsWith('summary_')) {
+      const summaryId = key.slice('summary_'.length);
+      if (!ROLE_ID.test(summaryId)) throw new Error(`Invalid architecture role id: ${summaryId}.`);
+      roleSummaries.set(summaryId, nonBlank(value, key));
+      continue;
+    }
     if (!key.startsWith('role_') || key === 'role_order') continue;
     const id = key.slice('role_'.length);
     if (!ROLE_ID.test(id)) throw new Error(`Invalid architecture role id: ${id}.`);
@@ -112,6 +147,12 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
     : stringArray(frontmatter.role_order, 'role_order');
   if (roleOrder.length !== rolePaths.size || roleOrder.some((id) => !rolePaths.has(id))) {
     throw new Error('role_order must name every role exactly once.');
+  }
+  /* Mirrors the MCP parser: a summary for a role nobody declared is a typo, not a comment. */
+  for (const summaryId of roleSummaries.keys()) {
+    if (!rolePaths.has(summaryId)) {
+      throw new Error(`summary_${summaryId} describes a role that does not exist.`);
+    }
   }
 
   const rawPolicy = frontmatter.dependency_policy === undefined
@@ -141,7 +182,12 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
     excludePaths: frontmatter.exclude_paths === undefined
       ? []
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
-    roles: roleOrder.map((id) => ({ id, paths: rolePaths.get(id)! })),
+    roles: roleOrder.map((id) => {
+      const summary = roleSummaries.get(id);
+      return summary === undefined
+        ? { id, paths: rolePaths.get(id)! }
+        : { id, paths: rolePaths.get(id)!, summary };
+    }),
     dependencyPolicy: rawPolicy,
     dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
     allows,

@@ -68,16 +68,27 @@ function sameIdentity(left, right) {
   return Boolean(left && right && left.dev === right.dev && left.ino === right.ino);
 }
 
-function assertFilename(filename) {
+function assertOneBasename(value, message) {
   if (
-    typeof filename !== 'string'
-    || filename.length === 0
-    || filename === '.'
-    || filename === '..'
-    || basename(filename) !== filename
+    typeof value !== 'string'
+    || value.length === 0
+    || value === '.'
+    || value === '..'
+    || basename(value) !== value
   ) {
-    throw unsafe('Sidecar filename must be one basename directly below .ontology-atlas.');
+    throw unsafe(message);
   }
+}
+
+function assertFilename(filename) {
+  assertOneBasename(filename, 'Sidecar filename must be one basename directly below .ontology-atlas.');
+}
+
+function assertSubdirectoryName(subdirectory) {
+  assertOneBasename(
+    subdirectory,
+    'Sidecar subdirectory must be one basename directly below .ontology-atlas.',
+  );
 }
 
 function assertSidecarDirectory(root, sidecarPath, expectedIdentity = null) {
@@ -100,7 +111,7 @@ function assertSidecarDirectory(root, sidecarPath, expectedIdentity = null) {
   return metadata;
 }
 
-function sidecarContext(vaultRoot, { create = false } = {}) {
+function sidecarContext(vaultRoot, { create = false, subdirectory = undefined } = {}) {
   let root;
   try {
     root = realpathSync(vaultRoot);
@@ -124,7 +135,37 @@ function sidecarContext(vaultRoot, { create = false } = {}) {
     sidecarMetadata = lstatOrNull(sidecarPath);
   }
   const verified = assertSidecarDirectory(root, sidecarPath);
-  return { root, sidecarPath, sidecarIdentity: revisionOf(verified ?? sidecarMetadata) };
+  if (subdirectory === undefined) {
+    return { root, sidecarPath, sidecarIdentity: revisionOf(verified ?? sidecarMetadata) };
+  }
+
+  // One named level below .ontology-atlas, held to the same discipline as the
+  // sidecar itself: a real directory, no symlink, resolving under the verified
+  // sidecar. The returned context re-checks that chain before every operation.
+  assertSubdirectoryName(subdirectory);
+  let sidecarReal;
+  try {
+    sidecarReal = realpathSync(sidecarPath);
+  } catch (error) {
+    throw unsafe('The .ontology-atlas directory cannot be resolved safely.', error);
+  }
+  const subdirectoryPath = join(sidecarPath, subdirectory);
+  let subdirectoryMetadata = lstatOrNull(subdirectoryPath);
+  if (!subdirectoryMetadata && !create) return null;
+  if (!subdirectoryMetadata) {
+    try {
+      mkdirSync(subdirectoryPath, { recursive: false, mode: 0o700 });
+    } catch (error) {
+      if (error?.code !== 'EEXIST') throw error;
+    }
+    subdirectoryMetadata = lstatOrNull(subdirectoryPath);
+  }
+  const verifiedSubdirectory = assertSidecarDirectory(sidecarReal, subdirectoryPath);
+  return {
+    root: sidecarReal,
+    sidecarPath: subdirectoryPath,
+    sidecarIdentity: revisionOf(verifiedSubdirectory ?? subdirectoryMetadata),
+  };
 }
 
 function assertContext(context) {
@@ -187,9 +228,9 @@ function unlinkOwnedTemporary(filePath, identity) {
   }
 }
 
-export function readVaultSidecarText(vaultRoot, filename) {
+export function readVaultSidecarText(vaultRoot, filename, { subdirectory = undefined } = {}) {
   assertFilename(filename);
-  const context = sidecarContext(vaultRoot);
+  const context = sidecarContext(vaultRoot, { subdirectory });
   if (!context) return null;
   const metadata = safeFileMetadata(context, filename);
   if (!metadata) return null;
@@ -248,10 +289,10 @@ export function replaceVaultSidecarText(
   vaultRoot,
   filename,
   text,
-  { expectedRevision = undefined, temporaryName = undefined } = {},
+  { expectedRevision = undefined, temporaryName = undefined, subdirectory = undefined } = {},
 ) {
   assertFilename(filename);
-  const context = sidecarContext(vaultRoot, { create: true });
+  const context = sidecarContext(vaultRoot, { create: true, subdirectory });
   const filePath = sidecarFile(context, filename);
   const initial = safeFileMetadata(context, filename);
   const initialRevision = revisionOf(initial);

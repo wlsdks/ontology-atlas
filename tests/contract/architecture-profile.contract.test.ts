@@ -4,14 +4,17 @@ import {
   AMBIGUOUS_PROFILE_FRONTMATTER,
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
+  PATH_MATCH_CASES,
 } from '../fixtures/architecture-profile-cases.mjs';
 import {
   parseArchitectureProfile as parseWebProfile,
   deriveArchitectureProfiles as deriveWebProfiles,
+  matchesArchitecturePath as matchesWebPath,
 } from '@/entities/architecture-profile';
 import {
   parseArchitectureProfile as parseMcpProfile,
   findArchitectureProfiles as findMcpProfiles,
+  matchesPathPattern as matchesMcpPath,
 } from '../../mcp/src/architecture-profile.mjs';
 
 describe('architecture-profile/v1 cross-surface contract', () => {
@@ -44,6 +47,35 @@ describe('architecture-profile/v1 cross-surface contract', () => {
         /dependency_usages/,
       );
     }
+  });
+
+  /*
+   * A role's sentence is part of the contract, not a screen decoration: the same `summary_<id>`
+   * has to reach the blueprint and the agent brief identically, and a profile that describes only
+   * some of its roles must stay valid — the field arrived after profiles existed.
+   */
+  it.each([
+    ['web', parseWebProfile],
+    ['mcp', parseMcpProfile],
+  ])('%s reads role summaries, and silence where none was written', (_surface, parse) => {
+    const profile = parse(FSD_PROFILE_FRONTMATTER);
+    const byId = new Map(profile.roles.map((role) => [role.id, role.summary]));
+    expect(byId.get('routing')).toBe(
+      'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
+    );
+    expect(byId.get('views')).toBe(
+      'One module per route-level screen, assembled from the layers beneath it.',
+    );
+    expect(byId.get('shared')).toBeUndefined();
+  });
+
+  it.each([
+    ['web', parseWebProfile],
+    ['mcp', parseMcpProfile],
+  ])('%s refuses a summary for a role that does not exist', (_surface, parse) => {
+    expect(() =>
+      parse({ ...FSD_PROFILE_FRONTMATTER, summary_nowhere: 'describes nothing' }),
+    ).toThrow(/summary_nowhere/);
   });
 
   /*
@@ -85,4 +117,17 @@ describe('architecture-profile/v1 cross-surface contract', () => {
     expect(call).toThrow(/architecture\/atlas-web/);
     expect(call).toThrow(/architecture\/other/);
   });
+
+  /*
+   * One glob dialect. The web occupant join (role bands on /architecture) and the MCP conformance
+   * scan must place the same path in the same role; a divergence would let the screen show a
+   * concept inside a role that an agent's brief says it is outside of.
+   */
+  it.each(PATH_MATCH_CASES.map((c) => [c.path, c.pattern, c.matches] as const))(
+    'path %s vs pattern %s matches identically in web and MCP (%s)',
+    (path, pattern, matches) => {
+      expect(matchesWebPath(path, pattern)).toBe(matches);
+      expect(matchesMcpPath(path, pattern)).toBe(matches);
+    },
+  );
 });

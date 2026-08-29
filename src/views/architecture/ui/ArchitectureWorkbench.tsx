@@ -1,61 +1,216 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, CircleHelp, FileCode2, ShieldCheck } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Bot, Boxes, CircleHelp, FileCode2, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
+import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
+  buildArchitectureLayout,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
+import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
+import type { RoleConcept } from '../model/role-concepts';
+import type { RoleSourceModule } from '../model/source-modules';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { badgeClass } from '@/shared/ui/badge-class';
+import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
+
+/** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
+const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 import { Button, EmptyState, RowButton, Surface, buttonVariants } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { useDraftHandoffRoute } from '../model/use-draft-handoff-route';
 import { ArchitectureFlow } from './ArchitectureFlow';
 
 type Mode = 'understand' | 'plan' | 'verify';
+
+const MODES: readonly Mode[] = ['understand', 'plan', 'verify'];
+
+/**
+ * ⚠️ **The stage lives in the URL, so a link carries it.** A fresh-eyes walkthrough on 2026-08-28
+ * found that switching to the plan or verify stage left the address at `/ko/architecture/`: a
+ * colleague opening a shared link always landed on understand, and a refresh discarded the stage.
+ * An unknown or absent value reads as understand rather than as an error, because a URL a person
+ * typed or a stale link should still open the screen.
+ */
+function parseArchitectureStage(raw: string | null): Mode {
+  return MODES.find((mode) => mode === raw) ?? 'understand';
+}
+
+/**
+ * The same document with a different query view. Defaults stay bare, so a plain address still
+ * means "this screen, nothing chosen" and a link carries only what somebody actually picked.
+ */
+function buildArchitectureHref(
+  view: { stage: Mode; role: string | null; stageOpen: boolean },
+  pathname: string,
+): string {
+  const query = new URLSearchParams();
+  /*
+   * ⚠️ The stage parameter says the panel is open, not merely which stage is selected. A bare
+   * address means the drawing has the frame to itself, which is the state this screen opens in.
+   */
+  if (view.stageOpen) query.set('stage', view.stage);
+  if (view.role) query.set('role', view.role);
+  const search = query.toString();
+  return search ? `${pathname}?${search}` : pathname;
+}
+
+/** Whichever of the two the address carries, trusting neither. */
+function readArchitectureAddress(): { stage: Mode; role: string | null; stageOpen: boolean } {
+  if (typeof window === 'undefined') return { stage: 'understand', role: null, stageOpen: false };
+  const params = new URL(window.location.href).searchParams;
+  return {
+    stage: parseArchitectureStage(params.get('stage')),
+    role: params.get('role'),
+    stageOpen: params.get('stage') !== null,
+  };
+}
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
+
+/*
+ * Receipt-status ink (2026-08-27 council, point 5): the three verdicts wear the existing signal
+ * families — success emerald, error red, amber for unknown — and nothing else. The counts always
+ * ride beside the verdict; a bare status word is a lie by omission.
+ */
+const RECORD_TONE_CLASS: Record<ArchitectureRecordStatus, string> = {
+  conforms:
+    'border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]',
+  violated:
+    'border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a12)] text-[color:var(--color-danger-text)]',
+  unknown:
+    'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
+};
+
+const RECORD_STATUS_ICON: Record<ArchitectureRecordStatus, typeof ShieldCheck> = {
+  conforms: ShieldCheck,
+  violated: ShieldAlert,
+  unknown: CircleHelp,
+};
 
 export function ArchitectureWorkbench({
   profiles,
   handoffContexts = {},
+  sourceModulesByProfile = {},
+  sourceListingCapable = false,
+  sourceUnavailableReason = 'browser',
+  recordsByProfile = {},
+  conceptsByProfile = {},
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
+  /** Per profile slug, the read-only source-directory walk the page performed (installed app). */
+  sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
+  /** Whether this surface can list a source folder at all — false in a browser, by nature. */
+  sourceListingCapable?: boolean;
+  /* Which absence the stage should name when it cannot list source modules. */
+  sourceUnavailableReason?: 'browser' | 'unbound' | null;
+  /** Per profile slug, the persisted conformance receipt read from the vault sidecar. */
+  recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
+  /** Per profile slug, the reviewed concepts joined into each role (the click-open detail). */
+  conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
 }) {
   const t = useTranslations('architecture');
   const draftHandoff = useDraftHandoffRoute();
   const draftRoute = draftHandoff.route;
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
-  const [mode, setMode] = useState<Mode>('understand');
+  /*
+   * Read through native history, not `useSearchParams`. The write side already goes through
+   * `history.replaceState` — a Next navigation would move focus to the document root inside the
+   * WebView — and one component should not read its address one way and write it another.
+   * `useSearchParams` would also pull this page under a Suspense boundary it does not otherwise
+   * need under static export.
+   */
+  const [mode, setMode] = useState<Mode>(() => readArchitectureAddress().stage);
+  /*
+   * ⚠️ **The stage panel is a dock, not a column.** It owned a third of the width and, because its
+   * row was sized by its own content, most of the height too: the drawing got 174px of a 1000px
+   * window while a 444px agent packet sat below it. The map already answers this — its agent panel
+   * opens on demand and reserves width only while open, and nothing else permanently owns the
+   * space beside the canvas. Choosing a stage opens it; choosing the open one again closes it.
+   */
+  const [stageOpen, setStageOpen] = useState(() => readArchitectureAddress().stageOpen);
+
+  /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
+     it sit in different rows of the page grid: the drawing takes the full width, the answer is
+     column content. */
+  /*
+   * ⚠️ **The chosen role is in the address, for the same reason the stage is.** Selecting one left
+   * `/ko/architecture/` unchanged and a reload dropped it (measured on the built export,
+   * 2026-08-28) — and this is the half a person is likelier to send: "look at what widgets may
+   * depend on" is a link, not an instruction to go and click something.
+   *
+   * It is also the technique the public writing on driving coding agents keeps naming: hand the
+   * agent a deep link straight to the exact state instead of a sequence of clicks that reproduces
+   * it. `docs/AGENT-DESIGN-METHOD.md` records where that came from.
+   */
+  const [selectedRole, setSelectedRole] = useState<string | null>(
+    () => readArchitectureAddress().role,
+  );
+
+  /* Back and forward move both, because the address is part of the screen's state now. */
+  useEffect(() => {
+    const syncFromHistory = () => {
+      const address = readArchitectureAddress();
+      setMode(address.stage);
+      setSelectedRole(address.role);
+      setStageOpen(address.stageOpen);
+    };
+    window.addEventListener('popstate', syncFromHistory);
+    return () => window.removeEventListener('popstate', syncFromHistory);
+  }, []);
   const [copyState, setCopyState] = useState<CopyState>('idle');
   const layoutScrollRef = useRef<HTMLDivElement>(null);
   const stagePanelRef = useRef<HTMLElement>(null);
   const reanchorScrollEndRef = useRef(false);
+  const modeChangedRef = useRef(false);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
     [profiles, selectedSlug],
   );
 
   useLayoutEffect(() => {
-    if (!reanchorScrollEndRef.current) return;
+    /*
+     * Below xl the stage panel stacks under the blueprint, so a mode press up in the header can
+     * change content the person cannot see (measured 2026-08-27: at 1040 and 390 the panel top
+     * sat at 701/902 in shorter viewports and nothing visibly happened). When the press was not
+     * the scroll-end case below, bring the newly entered stage into view. `modeChangedRef` keeps
+     * the initial mount from scrolling a fresh page.
+     */
+    if (!reanchorScrollEndRef.current) {
+      if (
+        modeChangedRef.current &&
+        typeof window !== 'undefined' &&
+        !window.matchMedia('(min-width: 1280px)').matches
+      ) {
+        const active = stagePanelRef.current?.querySelector<HTMLElement>(
+          `[data-architecture-stage="${mode}"]`,
+        );
+        if (typeof active?.scrollIntoView === 'function') {
+          active.scrollIntoView({ block: 'nearest' });
+        }
+      }
+      return;
+    }
     const scroller = layoutScrollRef.current;
-    const panel = stagePanelRef.current;
-    if (!scroller || !panel) {
+    if (!scroller) {
       reanchorScrollEndRef.current = false;
       return;
     }
+    /* The stage panel is a dock, so at the moment a stage is chosen it does not exist yet. This
+       effect exists to wait for something unmounted, so it waits for the dock too. */
+    const root = stagePanelRef.current ?? scroller;
 
     const alignWhenActiveStageMounts = () => {
-      const active = panel.querySelector(
+      const active = root.querySelector(
         `[data-architecture-stage="${mode}"][data-surface-state="entered"]`,
       );
       if (!active) return false;
@@ -68,7 +223,7 @@ export function ArchitectureWorkbench({
     const observer = new MutationObserver(() => {
       if (alignWhenActiveStageMounts()) observer.disconnect();
     });
-    observer.observe(panel, {
+    observer.observe(root, {
       attributes: true,
       attributeFilter: ['data-surface-state'],
       childList: true,
@@ -76,6 +231,126 @@ export function ArchitectureWorkbench({
     });
     return () => observer.disconnect();
   }, [mode]);
+
+  const handoff = selected
+    ? buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null)
+    : '';
+  /*
+   * Which edge of the packet preview is covered. `listboxTopIsHidden`/`listboxBottomIsHidden` are
+   * the repository's one answer to "is something hidden past this edge"; reusing them keeps the
+   * judgment identical to the select listbox and the composer.
+   */
+  const handoffRef = useRef<HTMLPreElement | null>(null);
+  const [handoffEdges, setHandoffEdges] = useState<{ top: boolean; bottom: boolean }>({
+    top: false,
+    bottom: false,
+  });
+  const readHandoffEdges = useCallback(() => {
+    const element = handoffRef.current;
+    if (!element) return;
+    const overflowing = element.scrollHeight > element.clientHeight + 1;
+    setHandoffEdges({
+      top: listboxTopIsHidden(overflowing, element.scrollTop),
+      bottom: listboxBottomIsHidden(
+        overflowing,
+        element.scrollTop,
+        element.clientHeight,
+        element.scrollHeight,
+      ),
+    });
+  }, []);
+
+  /*
+   * ⚠️ **A callback ref, because an effect fires before this element exists.** Measured on the
+   * built export (2026-08-28): entering plan mode gave `clientHeight 190, scrollHeight 444` and
+   * `mask-image: none` — 254px hidden with nothing on screen saying so, which a fresh-eyes walker
+   * read as a sentence truncated mid-word. Any scroll fixed it, and that is the tell: the reading
+   * ran once, when the block was not yet mounted, and nothing re-measured. Adding a
+   * `ResizeObserver` inside an effect did not help, because that effect saw the same null ref.
+   *
+   * Attaching to the node itself removes the timing question: it runs when the element arrives,
+   * however late that is. The observer then covers the box settling afterwards, and `fonts.ready`
+   * covers text growing inside a box that never changes — the late-web-font case `select.tsx`
+   * already names in the comment beside the very helpers this reuses.
+   */
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const attachHandoff = useCallback(
+    (element: HTMLPreElement | null) => {
+      observerRef.current?.disconnect();
+      observerRef.current = null;
+      handoffRef.current = element;
+      if (!element) return;
+      readHandoffEdges();
+      void document.fonts?.ready.then(readHandoffEdges);
+      if (typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(readHandoffEdges);
+      observer.observe(element);
+      observerRef.current = observer;
+    },
+    [readHandoffEdges],
+  );
+  /* The text itself can change while the element stays put, so the content is a trigger too. */
+  useLayoutEffect(readHandoffEdges, [readHandoffEdges, handoff, mode]);
+
+  const handoffMask = (() => {
+    const fade = 'var(--leading-body)';
+    if (handoffEdges.top && handoffEdges.bottom) {
+      return `linear-gradient(to bottom, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
+    }
+    if (handoffEdges.top) return `linear-gradient(to bottom, transparent 0, #000 ${fade})`;
+    if (handoffEdges.bottom) return `linear-gradient(to top, transparent 0, #000 ${fade})`;
+    return undefined;
+  })();
+
+  /*
+   * What the detail panel needs about the chosen role, derived from the same layout the canvas
+   * draws so the two can never disagree about a role's reach or its order.
+   */
+  /* `selected` is null on the zero-profile screen, which is a real state: this surface renders
+     an empty stage rather than refusing to mount, so the derived maps must survive it. */
+  const roleLayout = useMemo(
+    () => (selected ? buildArchitectureLayout(selected) : null),
+    [selected],
+  );
+  const roleOrder = roleLayout?.rows.flat() ?? [];
+
+  /*
+   * ⚠️ **A role the profile does not have is not honoured.** The address is screen state now, so
+   * it can carry a role from somebody else's vault or one the profile has since dropped — and
+   * `?role=not-a-real-role` did not render an empty card, it rendered a card titled with the
+   * string and asserting "depends on no role at all" (measured on the built export,
+   * 2026-08-28). A screen that states a dependency rule for a role that does not exist is
+   * saying something false, which is worse than saying nothing.
+   *
+   * Derived, not corrected. Storing the address's value and clearing it from an effect was the
+   * first attempt, and the lint refused it: setting state inside an effect to fix state is a
+   * cascade. The address stays as the sender wrote it; only the screen declines to honour it.
+   */
+  const activeRole = selectedRole && roleOrder.includes(selectedRole) ? selectedRole : null;
+  const roleIndexOf = new Map(roleOrder.map((id, index) => [id, index + 1]));
+  const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
+  const roleSummaryOf = new Map(
+    (selected?.roles ?? [])
+      .filter((role) => role.summary)
+      .map((role) => [role.id, role.summary as string]),
+  );
+  const roleReachOf = useMemo(() => {
+    const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
+    for (const edge of roleLayout?.edges ?? []) map.get(edge.from)?.push(edge.to);
+    /*
+     * ⚠️ **In the screen's own order, not the file's.** These arrive in the order the profile
+     * happens to list them, while the sentences under the canvas read down the chain — so one
+     * role's targets appeared as "port, domain" beside the drawing and "domain · port" in its
+     * card. A fresh-eyes walkthrough on 2026-08-28 caught it as "same fact, three orderings", and
+     * a reader comparing the two should not have to re-sort one of them in their head.
+     */
+    const rank = new Map(roleOrder.map((id, index) => [id, index]));
+    for (const targets of map.values()) {
+      targets.sort((a, b) => (rank.get(a) ?? 0) - (rank.get(b) ?? 0));
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
+  }, [roleLayout]);
 
   if (!selected) {
     return (
@@ -186,9 +461,55 @@ export function ArchitectureWorkbench({
     );
   }
 
-  const handoff = buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null);
+  const selectedModules = sourceModulesByProfile[selected.slug] ?? null;
+  /*
+   * ⚠️ **The receipt is rendered as what it is: a dated machine measurement, not a live claim**
+   * (2026-08-27 council, point 5). Three states: no record keeps the amber "Source check
+   * required" — not measured on this computer, never a defect. A record renders its stamp —
+   * date plus commit short sha for git sources, the fingerprint sentence (never a sha) for
+   * folder sources, "with uncommitted edits" when dirty — and the verdict always carries the
+   * counts beside it: violations and unknown-edge accounting, type-only edges labelled when the
+   * scanner reported them. This surface cannot re-probe the source (a browser cannot, and no
+   * re-verification bridge exists yet), so it says exactly that instead of claiming the stamp
+   * is current.
+   */
+  const record = recordsByProfile[selected.slug] ?? null;
+  const conformance = record?.brief.conformance ?? null;
+  const measured = record?.brief.measured ?? null;
+  const recordDate = measured ? measured.at.slice(0, 10) : '';
+  const recordDirty = measured?.source.kind === 'git' && measured.source.dirty;
+  const recordCounts = conformance
+    ? [
+        t('recordCounts', {
+          violations: conformance.violationCount,
+          unmapped: (conformance.unknown?.unmappedEdges ?? 0) + (conformance.unknown?.unruledEdges ?? 0),
+        }),
+        ...(conformance.excludedByUsage !== undefined
+          ? [t('recordTypeOnly', { count: conformance.excludedByUsage })]
+          : []),
+      ].join(' · ')
+    : null;
+  const RecordStatusIcon = conformance ? RECORD_STATUS_ICON[conformance.status] : CircleHelp;
+  /* Unique placements: one module two globs both reach is one module, not two. */
+  const moduleTotal = selectedModules
+    ? new Set(Object.values(selectedModules).flat().map((module) => module.path)).size
+    : null;
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
+  /* An axis is free text in the contract, so a profile may declare one nobody has translated.
+     Saying nothing is then the honest answer: inventing a friendly explanation for an axis we do
+     not recognise would be the folder-name inference decision (2026-08-26) in another costume. */
+  const axisBody = (axis: string) =>
+    t.has(`patternAxes.${axis}.body`) ? t(`patternAxes.${axis}.body`) : '';
+  /* Every number is derived from the reviewed profile or the source walk. The module
+     tile drops out where no source folder can be read, which is what makes the count
+     odd — the grid below handles that rather than the list pretending otherwise. */
+  const statTiles: readonly (readonly [number, string])[] = [
+    [selected.roles.length, t('statRoles')],
+    ...(moduleTotal !== null ? ([[moduleTotal, t('statModules')]] as const) : []),
+    [selected.patterns.length, t('patterns')],
+    [selected.evidence.length, t('statEvidence')],
+  ];
   const roleLabel = (id: string) =>
     t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
 
@@ -211,7 +532,24 @@ export function ArchitectureWorkbench({
       scroller && maxScrollTop > 0 && maxScrollTop - scroller.scrollTop <= 1,
     );
     if (nextMode !== mode) setCopyState('idle');
+    modeChangedRef.current = true;
+    const nextOpen = !(stageOpen && nextMode === mode);
     setMode(nextMode);
+    setStageOpen(nextOpen);
+    /*
+     * The same document, a different query view. A Next router navigation would move focus to the
+     * document root inside the WebView, so the address is updated through native history the way
+     * `OntologyInsightsPage` already does — screen state and URL change in one event, which keeps
+     * the segmented control's roving focus intact.
+     */
+    window.history.replaceState(
+      window.history.state,
+      '',
+      buildArchitectureHref(
+        { stage: nextMode, role: selectedRole, stageOpen: nextOpen },
+        window.location.pathname,
+      ),
+    );
   }
 
   return (
@@ -256,9 +594,77 @@ export function ArchitectureWorkbench({
         ref={layoutScrollRef}
         data-testid="architecture-layout-scroll"
         data-architecture-scroll-reanchor="mode-end"
-        className="grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_340px] xl:grid-rows-[minmax(0,1fr)] xl:overflow-hidden"
+        className={cn(
+          'grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-[minmax(min-content,1fr)_auto] xl:overflow-y-auto',
+          stageOpen ? 'xl:grid-cols-[240px_minmax(0,1fr)_340px]' : 'xl:grid-cols-[240px_minmax(0,1fr)]',
+        )}
       >
-        <aside className="border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:min-h-0 xl:overflow-y-auto">
+        {/*
+          ⚠️ **The canvas takes the width; the columns sit under it.** Measured on the installed
+          app 2026-08-28: inside the middle column the graph had about 806px and a seven-role
+          profile needs roughly 1170px, so four boxes were on screen and three were behind a
+          horizontal scroll nobody asked for. Node editors this shape borrows from do the
+          opposite, giving the canvas the full width and opening the inspector over or beside it
+          rather than standing a column permanently in its way.
+        */}
+        <div
+          className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-span-2 xl:col-start-1 xl:col-end-3 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col"
+          data-testid="architecture-flow-panel"
+          data-architecture-mode={mode}
+        >
+              {/* The policy sentence is the section description above; do not print it twice. */}
+              <ArchitectureFlow
+                profile={selected}
+                modules={selectedModules}
+                concepts={conceptsByProfile[selected.slug] ?? {}}
+                roleLabel={roleLabel}
+                /* Measured crossings ride in from the persisted record; undefined without one.
+                   Under lower-only these are the only strokes there are, so losing this prop
+                   loses the entire drawing (measured on the installed app, 2026-08-28). */
+                roleTraffic={record?.brief.conformance.observedRoleEdges}
+                selected={selectedRole}
+                onSelect={(id) => {
+                  const next = selectedRole === id ? null : id;
+                  setSelectedRole(next);
+                  window.history.replaceState(
+                    window.history.state,
+                    '',
+                    buildArchitectureHref(
+                      { stage: mode, role: next, stageOpen },
+                      window.location.pathname,
+                    ),
+                  );
+                }}
+                reachLabel={(role, targets) => t('reachAria', { role, targets })}
+                sinkLabel={t('reachNone')}
+                directionLabel={t('ladderDirection')}
+                moduleCountLabel={(count) => t('moduleCount', { count })}
+                sourceUnavailableBody={
+                  sourceListingCapable || !sourceUnavailableReason
+                    ? null
+                    : t(
+                        sourceUnavailableReason === 'unbound'
+                          ? 'sourceListingUnbound'
+                          : 'sourceListingUnavailable',
+                      )
+                }
+                conceptCountLabel={(count) => t('conceptCount', { count })}
+                legendPermitted={t('legendPermitted')}
+                legendTraffic={t('legendTraffic')}
+                legendSkipHint={t('legendSkipHint')}
+                hiddenRightLabel={(count) => t('hiddenRight', { count })}
+                hiddenLeftLabel={(count) => t('hiddenLeft', { count })}
+                hiddenAboveLabel={(count) => t('hiddenAbove', { count })}
+                hiddenBelowLabel={(count) => t('hiddenBelow', { count })}
+                legendShapeEnd={t('legendShapeEnd')}
+                legendShapeWork={t('legendShapeWork')}
+                runLabel={t('runFlow')}
+                permittedEdgeLabel={(from, to) => t('permittedEdge', { from, to })}
+                trafficEdgeLabel={(from, to, count) => t('trafficEdge', { from, to, count })}
+              />
+        </div>
+
+        <aside className="border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-4 lg:border-b-0 lg:border-r xl:min-h-0 xl:overflow-y-auto xl:col-start-1 xl:row-start-2">
           <h2 className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
             {t('profileList')}
           </h2>
@@ -279,20 +685,58 @@ export function ArchitectureWorkbench({
                   <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {profile.scopePaths.join(' · ')}
                   </span>
+                  {/* Tertiary, not quaternary: this row is clickable, so its selected state
+                      composites overlay-2 where quaternary measures 4.36:1 — below AA. The
+                      design system's surface license already prescribes tertiary from rows
+                      that can be clicked (`docs/DESIGN-SYSTEM.md`, quaternary ink). */}
+                  <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
+                    {t('railRoles', { count: profile.roles.length })}
+                    {profile.patterns[0] ? ` · ${patternLabel(profile.patterns[0].name)}` : ''}
+                  </span>
                 </span>
               </RowButton>
             ))}
           </div>
         </aside>
 
-        <section className="min-w-0 p-5 md:p-8 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
-          <div className="mx-auto flex w-full max-w-4xl flex-col">
+        <section className="min-w-0 p-5 md:p-8 xl:col-start-2 xl:row-start-2 xl:min-h-0 xl:overflow-y-auto" aria-labelledby="architecture-blueprint-title" data-testid="architecture-blueprint" tabIndex={0}>
+          <div className="mx-auto flex w-full max-w-5xl flex-col">
+            {/*
+              ⚠️ **`ml-auto` on the status block, because `justify-between` stops applying the
+              moment the row wraps.** Measured on the built export at 1512 (2026-08-28): the
+              block reported `x=336`, the heading's own x — it had dropped to its own line, and a
+              `text-right` box 400px wide then sat in the left half of an 804px column as
+              right-aligned prose with a ragged left edge. `ml-auto` holds it at the right edge on
+              both the shared row and its own.
+            */}
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 id="architecture-blueprint-title" className="text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {/*
+                ⚠️ **The kind of drawing is the subject, not a tag.** The pattern rode in a 9.5px
+                chip below the heading while the heading said "roles and dependency direction" —
+                a sentence true of every architecture diagram ever drawn. So the screen never told
+                a first reader which of the two questions it was answering, and the owner asked
+                the honest one back: *is this really architecture?* The data always knew: the axis
+                is literally `source-organization` on this profile and `dependency` on the
+                storefront sample. It now leads, with the axis naming the question and the pattern
+                naming the answer. C4's review checklist calls this "clarify the diagram type and
+                scope" — the first thing it asks of any architecture drawing.
+              */}
+              <div className="min-w-0">
+                <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
                   {t('roles')}
+                </p>
+                <h2
+                  id="architecture-blueprint-title"
+                  className="mt-1 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
+                  data-testid="architecture-pattern-heading"
+                >
+                  {selected.patterns.length > 0
+                    ? selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · ')
+                    : t('patternsUndeclared')}
                 </h2>
-                <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
+                {/* The axis name is not repeated here: the sentence below already opens with it,
+                    and naming it twice in two lines reads as a stutter rather than an emphasis. */}
+                <p className="mt-1 break-keep text-body text-[color:var(--color-text-tertiary)]">
                   <span className="block">
                     {selected.dependencyPolicy === 'lower-only'
                       ? t('dependencyLowerOnly')
@@ -304,29 +748,156 @@ export function ArchitectureWorkbench({
                       ? t('dependencyUsagesValue')
                       : t('dependencyUsagesAll')}
                   </span>
+                  {/*
+                    The scanner's first rule is `if (fromRole === toRole) return { allowed: true,
+                    rule: 'same-role' }` — unconditional, under both policies. The screen never
+                    said it, and the 2026-08-28 walkthrough asked exactly this and found nothing:
+                    "whether a file may import from another module in its own role" was the one
+                    question left open on both samples. It is not an open question in the
+                    contract, only on the screen, so the screen says it.
+
+                    ⚠️ Both sides of the merge added a sentence here and neither replaced the
+                    other: main said which import usages the rules govern, the branch said that a
+                    role may always reference itself. A reader needs both, and main's one-span-per
+                    -sentence shape is what keeps them from running together — which the branch had
+                    been fixing by rewriting the clauses instead.
+                  */}
+                  <span className="mt-1 block">{t('dependencySameRole')}</span>
                 </p>
               </div>
-              <span className={badgeClass({
-                shape: 'pill',
-                className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-              })}>
-                <CircleHelp size={ICON_SIZE.sm} aria-hidden />
-                {t('sourceCheckRequired')}
-              </span>
+              {record && conformance && measured ? (
+                <div
+                  className="ml-auto flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
+                  data-testid="architecture-record-status"
+                  data-architecture-record-status={conformance.status}
+                >
+                  <span
+                    className={badgeClass({
+                      shape: 'pill',
+                      className: RECORD_TONE_CLASS[conformance.status],
+                    })}
+                    data-testid="architecture-record-pill"
+                  >
+                    <RecordStatusIcon size={ICON_SIZE.sm} aria-hidden />
+                    {t(`recordStatus.${conformance.status}`)} · {recordCounts}
+                  </span>
+                  <p
+                    className="text-caption text-[color:var(--color-text-tertiary)]"
+                    data-testid="architecture-record-stamp"
+                  >
+                    {measured.source.kind === 'git'
+                      ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
+                      : t('recordCheckedFolder', { date: recordDate })}
+                    {recordDirty ? ` ${t('recordDirty')}` : ''}
+                  </p>
+                  <p
+                    className="text-caption text-[color:var(--color-text-quaternary)]"
+                    data-testid="architecture-record-cannot-confirm"
+                  >
+                    {t('recordCannotConfirm')}
+                  </p>
+                </div>
+              ) : (
+                /*
+                 * ⚠️ **A warning with no next step is a dead end** (fresh-eyes walkthrough,
+                 * 2026-08-28: *"`Source check required` is a dead-end warning. Non-interactive
+                 * span, no tooltip, no next step."*). The pill named an absence and stopped
+                 * there, while the only sentence explaining it sat far below in the Understand
+                 * stage. The line beneath the pill now names the one command that writes the
+                 * missing record and the stage that hands the same job to an agent.
+                 *
+                 * Deliberately not a button: this screen never measures anything — conformance
+                 * comes only from `inspect_architecture` or `atlas architecture` — and a control
+                 * that looked like it could scan would be a worse lie than the silence it
+                 * replaced.
+                 */
+                <div
+                  className="ml-auto flex min-w-0 max-w-[400px] flex-col items-end gap-1 text-right"
+                  data-testid="architecture-source-check"
+                >
+                  <span className={badgeClass({
+                    shape: 'pill',
+                    className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
+                  })}>
+                    <CircleHelp size={ICON_SIZE.sm} aria-hidden />
+                    {t('sourceCheckRequired')}
+                  </span>
+                  <p
+                    className="break-keep text-caption text-[color:var(--color-text-tertiary)]"
+                    data-testid="architecture-source-check-next"
+                  >
+                    {t('sourceCheckNext')}
+                  </p>
+                </div>
+              )}
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-2">
-              {selected.patterns.map((pattern) => (
-                <span
-                  key={`${pattern.axis}:${pattern.name}`}
-                  className={badgeClass({
-                    shape: 'tag',
-                    className: 'border border-[color:var(--color-indigo-a30)] bg-[color:var(--color-indigo-a08)] text-[color:var(--color-indigo-text-soft)]',
-                  })}
+            {/* The chips are gone: the pattern is the heading now, and repeating it beneath
+                would be the same name twice with nothing added. What the chips carried that the
+                heading cannot — what the axis actually means — is one sentence instead. */}
+            {selected.patterns.length > 0 ? (
+              <p
+                className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-quaternary)]"
+                data-testid="architecture-axis-explainer"
+              >
+                {selected.patterns.map((pattern) => axisBody(pattern.axis)).join(' ')}
+              </p>
+            ) : null}
+
+            {/*
+              The answer to the canvas's selection. It is column content rather than part of the
+              drawing: the graph says what the shape is, this says what is actually in the layer a
+              reader chose, and the density the removed bands were good at survives here.
+            */}
+            <div className="mt-5">
+              {activeRole === null ? (
+                <div
+                  className="break-keep rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] text-body text-[color:var(--color-text-tertiary)]"
+                  data-testid="architecture-role-detail-empty"
                 >
-                  {pattern.axis} · {patternLabel(pattern.name)}
-                </span>
-              ))}
+                  {/*
+                    ⚠️ **Declining a link silently looks exactly like not having clicked yet.** The
+                    address can name a role this profile does not have — a link from another
+                    profile, or one kept after the profile changed — and the screen used to render
+                    the invitation below and nothing else. A fresh-eyes walker arriving on
+                    `?role=widgets` measured the page as pixel-identical to an untouched one, and
+                    so could not tell "the link pointed somewhere I do not have" from "I have not
+                    picked anything". The refusal was already correct; it was simply not stated.
+
+                    The address is still left as the sender wrote it. That is coherent now rather
+                    than silent: the URL says what was asked for, and the screen says why it cannot
+                    serve it.
+                  */}
+                  {selectedRole === null ? null : (
+                    <p
+                      className="mb-2 text-[color:var(--color-text-secondary)]"
+                      data-testid="architecture-role-not-in-profile"
+                    >
+                      {t('roleNotInProfile', { role: selectedRole })}
+                    </p>
+                  )}
+                  <p className="m-0">{t('selectRoleHint')}</p>
+                </div>
+              ) : (
+                <ArchitectureRoleDetail
+                  roleId={activeRole}
+                  index={roleIndexOf.get(activeRole) ?? 1}
+                  label={roleLabel(activeRole)}
+                  summary={roleSummaryOf.get(activeRole) ?? null}
+                  paths={rolePathsOf.get(activeRole) ?? []}
+                  reach={roleReachOf.get(activeRole) ?? []}
+                  modules={selectedModules === null ? null : selectedModules[activeRole] ?? []}
+                  concepts={(conceptsByProfile[selected.slug] ?? {})[activeRole] ?? []}
+                  edgeParticipants={EMPTY_EDGE_PARTICIPANTS}
+                  roleLabel={roleLabel}
+                  sinkLabel={t('reachNone')}
+                  reachInlineLabel={(targets) => t('reachInline', { targets })}
+                  moduleCountLabel={(count) => t('moduleCount', { count })}
+                  moreLabel={(count) => t('moreOccupants', { count })}
+                  showFewerLabel={t('fewerOccupants')}
+                  layerConceptsLabel={(count) => t('layerConcepts', { count })}
+                />
+              )}
             </div>
 
             {/*
@@ -340,32 +911,48 @@ export function ArchitectureWorkbench({
               `data-architecture-mode` stays here because the scroll-reanchor test uses it to tell
               which stage is mounted; it moved with the block it was attached to.
             */}
-            <div className="mt-6" data-testid="architecture-flow-panel" data-architecture-mode={mode}>
-              {/* The policy sentence is the section description above; do not print it twice. */}
-              <ArchitectureFlow
-                profile={selected}
-                roleLabel={roleLabel}
-                reachLabel={(role, targets) => t('reachAria', { role, targets })}
-                sinkLabel={t('reachNone')}
-                directionLabel={t('ladderDirection')}
-                legend={{
-                  allowed: t('legendAllowed'),
-                  self: t('legendSelf'),
-                  columns: t('legendColumns'),
-                }}
-              />
-            </div>
           </div>
         </section>
 
-        <aside ref={stagePanelRef} className="border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-span-2 xl:col-span-1 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto">
+        {!stageOpen ? null : (
+        <aside ref={stagePanelRef} className="border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-span-2 xl:col-start-3 xl:col-end-4 xl:row-start-1 xl:row-end-3 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto">
           <div className="grid">
           <Surface open={mode === 'understand'} as="section" data-architecture-stage="understand" className="col-start-1 row-start-1 min-w-0">
             <FileCode2 size={ICON_SIZE.lg} className="text-[color:var(--color-indigo-text-soft)]" aria-hidden />
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('understandTitle')}
             </h2>
-            <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+            {/* Numbers before prose: the derived facts win the first glance, the explanation
+                follows for whoever wants it. Every number here comes from the reviewed profile
+                and the source walk — the reference mockup's stat cards carried an uptime nobody
+                measures, and that is the part that did not survive translation.
+
+                Position carries that priority, not size: the numeral sits at the title step,
+                because the display step is the page title's own size and nothing outside an h1
+                may match it. `text-title` is also where the app's other derived numerals live
+                (DomainCapacityBar, the insights overview).
+
+                An odd tile count would otherwise leave a half-width hole in the second column —
+                visible whenever no source folder can be read and the module tile drops out,
+                which is every browser. The last tile takes the whole row instead. */}
+            <dl className="mt-4 grid grid-cols-2 gap-2" data-testid="architecture-stats">
+              {statTiles.map(([value, label], index) => (
+                <div
+                  key={label}
+                  className={`rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] ${
+                    statTiles.length % 2 === 1 && index === statTiles.length - 1 ? 'col-span-2' : ''
+                  }`}
+                >
+                  <dd className="m-0 text-title font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-text-primary)]">
+                    {value}
+                  </dd>
+                  <dt className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
+                    {label}
+                  </dt>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-4 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]">
               {t('understandBody')}
             </p>
             <h3 className="mt-6 text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
@@ -378,7 +965,7 @@ export function ArchitectureWorkbench({
                 </li>
               ))}
             </ul>
-            <p className="mt-5 text-body text-[color:var(--color-text-tertiary)]">
+            <p className="mt-5 break-keep text-body text-[color:var(--color-text-tertiary)]">
               {t('sourceCheckBody')}
             </p>
           </Surface>
@@ -388,11 +975,28 @@ export function ArchitectureWorkbench({
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('planTitle')}
             </h2>
-            <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('planBody')}
             </p>
+            {/*
+              The box scrolls, but macOS hides its overlay scrollbar until something moves — so a
+              packet longer than 12rem simply stopped mid-sentence and read as truncated text
+              (2026-08-28 inspection, installed app: "…does not embed a current conformance").
+              The covered edge gets the same fade the select listbox uses, on the same helpers, so
+              two surfaces solving one problem do not answer it differently.
+
+              ⚠️ **On the wide layout the cap is lifted, because the panel around it is already a
+              scroller.** A second walkthrough measured 254px hidden inside a 190px box while 237px
+              of that panel sat unused below it — and raising the viewport 200px gave the packet
+              none of it, because 12rem is a constant and the panel is not. Two nested scrollers
+              was the defect; one is the fix, and it needs no new number. Below `xl` the panel does
+              not scroll, so the cap and its fade stay exactly as they were.
+            */}
             <pre
-              className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)]"
+              ref={attachHandoff}
+              onScroll={readHandoffEdges}
+              className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)] xl:max-h-none xl:overflow-visible"
+              style={handoffMask ? { maskImage: handoffMask, WebkitMaskImage: handoffMask } : undefined}
               aria-label={t('handoffPreview')}
               tabIndex={0}
             >
@@ -428,7 +1032,7 @@ export function ArchitectureWorkbench({
             <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
               {t('verifyTitle')}
             </h2>
-            <p className="mt-2 text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
+            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
               {t('verifyBody')}
             </p>
             <p className="mt-4 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-3 py-3 text-body text-[color:var(--color-amber-source-a90)]">
@@ -440,6 +1044,7 @@ export function ArchitectureWorkbench({
           </Surface>
           </div>
         </aside>
+        )}
         <div
           aria-hidden
           data-testid="architecture-bottom-tab-reserve"

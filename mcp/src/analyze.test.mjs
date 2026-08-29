@@ -8,9 +8,19 @@ import {
   rmSync,
   symlinkSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { analyzeRepoStructure, buildProposalAssessment } from './analyze.mjs';
+
+// The meaning corpus lives at the repo root (tests/fixtures/meaning-corpus).
+// Resolve it from this file, not process.cwd(), so the suite passes whether it
+// runs from the repo root (root test:mcp:unit) or from mcp/ (mcp test:all).
+// Same pattern as analyze-golden-corpus.test.mjs.
+const meaningCorpusRoot = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../tests/fixtures/meaning-corpus',
+);
 
 function withRepo(setup) {
   const root = mkdtempSync(join(tmpdir(), 'ontology-atlas-analyze-'));
@@ -3743,10 +3753,7 @@ test('Meaning gate asks for policy-evidence review without calling risk a confli
 });
 
 test('semantic evidence triangulates workspace responsibilities into business capabilities', () => {
-  const root = join(
-    process.cwd(),
-    'tests/fixtures/meaning-corpus/collaboration-monorepo',
-  );
+  const root = join(meaningCorpusRoot, 'collaboration-monorepo');
   const result = analyzeRepoStructure(root);
 
   assert.deepEqual(
@@ -3770,14 +3777,10 @@ test('semantic evidence triangulates workspace responsibilities into business ca
 });
 
 test('semantic business clues suppress implementation-shaped feature and service folders', () => {
-  const commerce = analyzeRepoStructure(join(
-    process.cwd(),
-    'tests/fixtures/meaning-corpus/commerce-fsd',
-  ));
-  const documentService = analyzeRepoStructure(join(
-    process.cwd(),
-    'tests/fixtures/meaning-corpus/document-processing-service',
-  ));
+  const commerce = analyzeRepoStructure(join(meaningCorpusRoot, 'commerce-fsd'));
+  const documentService = analyzeRepoStructure(
+    join(meaningCorpusRoot, 'document-processing-service'),
+  );
 
   assert.deepEqual(
     commerce.meaningGate.proposedBusinessOntology.capabilities.map((row) => row.slug).sort(),

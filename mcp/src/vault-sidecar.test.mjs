@@ -178,4 +178,45 @@ describe('vault sidecar path boundary', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('replaces and reads inside one named subdirectory below .ontology-atlas', () => {
+    const { root, vault } = sandbox();
+    try {
+      replaceVaultSidecarText(vault, 'atlas-web.json', '{"a":1}\n', { subdirectory: 'architecture' });
+      assert.equal(
+        readFileSync(join(vault, '.ontology-atlas', 'architecture', 'atlas-web.json'), 'utf8'),
+        '{"a":1}\n',
+      );
+      assert.equal(
+        readVaultSidecarText(vault, 'atlas-web.json', { subdirectory: 'architecture' })?.text,
+        '{"a":1}\n',
+      );
+      // Absent subdirectory reads as null instead of creating anything.
+      assert.equal(readVaultSidecarText(vault, 'other.json', { subdirectory: 'missing' }), null);
+      assert.equal(existsSync(join(vault, '.ontology-atlas', 'missing')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects an unsafe subdirectory name and a symlinked subdirectory', () => {
+    const { root, vault } = sandbox();
+    const sidecar = join(vault, '.ontology-atlas');
+    const outside = join(root, 'outside-dir');
+    mkdirSync(sidecar);
+    mkdirSync(outside);
+    symlinkSync(outside, join(sidecar, 'architecture'), process.platform === 'win32' ? 'junction' : 'dir');
+    try {
+      for (const unsafe of ['', '.', '..', 'a/b']) {
+        assertUnsafe(() => replaceVaultSidecarText(vault, 'x.json', '{}', { subdirectory: unsafe }));
+      }
+      assertUnsafe(() =>
+        replaceVaultSidecarText(vault, 'x.json', '{}', { subdirectory: 'architecture' }));
+      assertUnsafe(() =>
+        readVaultSidecarText(vault, 'x.json', { subdirectory: 'architecture' }));
+      assert.equal(existsSync(join(outside, 'x.json')), false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

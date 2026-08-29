@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
   deriveArchitectureProfiles,
@@ -13,10 +13,25 @@ import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
 import {
   getTauriVaultRootPath,
+  isTauriVaultRuntime,
   listTauriVaultEntries,
   readTauriVaultText,
 } from '@/shared/lib/tauri-vault-fs';
+import { deriveRoleConcepts, type RoleConcept } from '../model/role-concepts';
+import {
+  deriveRoleSourceModules,
+  type RoleSourceModule,
+  type SourceDirEntry,
+} from '../model/source-modules';
+import { useArchitectureRecords } from '../model/use-architecture-record';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
+
+/* The runtime never changes inside a session, so the store is a constant read. Same shape as
+   `DocsVaultPage`; two surfaces answering "am I the installed app?" differently would be a
+   question the next reader has to resolve twice. */
+const subscribeDesktopRuntime = () => () => undefined;
+const readDesktopRuntime = () => isTauriVaultRuntime();
+const readServerDesktopRuntime = () => false;
 
 type VaultDoc = { slug: string; frontmatter: Record<string, unknown> };
 const EMPTY_DOCS: VaultDoc[] = [];
@@ -52,17 +67,52 @@ export function ArchitecturePage() {
     [localVault.manifest, mode, staticManifest.docs],
   );
   const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
+  /* The click-open meaning layer: reviewed concepts joined into roles, real on every surface. */
+  const conceptsByProfile = useMemo(() => {
+    const out: Record<string, Record<string, RoleConcept[]>> = {};
+    for (const profile of profiles) out[profile.slug] = deriveRoleConcepts(profile, docs);
+    return out;
+  }, [docs, profiles]);
   const profileKey = profiles.map((profile) => profile.slug).join('\0');
   const [loadedHandoffContexts, setLoadedHandoffContexts] = useState<{
     handle: FileSystemDirectoryHandle | null;
     profileKey: string;
     contexts: Record<string, ArchitectureHandoffContext>;
-  }>({ handle: null, profileKey: '', contexts: EMPTY_HANDOFF_CONTEXTS });
-  const handoffContexts = mode === 'local'
+    modules: Record<string, Record<string, RoleSourceModule[]>>;
+  }>({ handle: null, profileKey: '', contexts: EMPTY_HANDOFF_CONTEXTS, modules: {} });
+  const loaded = mode === 'local'
     && loadedHandoffContexts.handle === localVault.handle
-    && loadedHandoffContexts.profileKey === profileKey
-    ? loadedHandoffContexts.contexts
-    : EMPTY_HANDOFF_CONTEXTS;
+    && loadedHandoffContexts.profileKey === profileKey;
+  const handoffContexts = loaded ? loadedHandoffContexts.contexts : EMPTY_HANDOFF_CONTEXTS;
+  const sourceModulesByProfile = loaded ? loadedHandoffContexts.modules : undefined;
+  /* A browser cannot list a source folder; only the installed app's bridge can. */
+  const sourceListingCapable =
+    mode === 'local' && !!localVault.handle && getTauriVaultRootPath(localVault.handle) != null;
+  /*
+   * Why the surface must say *which* thing is missing (2026-08-28 inspection). The installed app
+   * opens on a sample with no folder bound, and there the old single sentence told the reader
+   * "source modules appear in the installed app" while being the installed app. Two different
+   * absences were wearing one message. The runtime answers which one this is: a browser can never
+   * list a folder, and an app without a bound folder is one open away.
+   */
+  const desktopRuntime = useSyncExternalStore(
+    subscribeDesktopRuntime,
+    readDesktopRuntime,
+    readServerDesktopRuntime,
+  );
+  const sourceUnavailableReason = sourceListingCapable
+    ? null
+    : desktopRuntime
+      ? ('unbound' as const)
+      : ('browser' as const);
+  /*
+   * Persisted conformance receipts live in the vault sidecar, so both surfaces read them through
+   * the same handle. Static/demo mode carries no sidecar and therefore never a record.
+   */
+  const recordsByProfile = useArchitectureRecords(
+    mode === 'local' && localVault.status === 'loaded' ? localVault.handle : null,
+    profiles.map((profile) => profile.slug),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -75,6 +125,7 @@ export function ArchitecturePage() {
     const store = createVaultFileProjectSourceStore(handle);
     void (async () => {
       const next: Record<string, ArchitectureHandoffContext> = {};
+      const nextModules: Record<string, Record<string, RoleSourceModule[]>> = {};
       for (const profile of profiles) {
         const projectSlug = projectSlugForProfile(profile, docs);
         if (!projectSlug) continue;
@@ -86,12 +137,41 @@ export function ArchitecturePage() {
           vaultRoot,
           cliEntry: await verifiedAtlasCliEntry(sourceRoot),
         };
+        /*
+         * A read-only directory walk fills the blueprint's bands with the source modules each
+         * role glob actually contains. Listing only — no file is opened, no import is read;
+         * conformance stays with the MCP and CLI.
+         */
+        const listDir = async (relativePath: string): Promise<SourceDirEntry[] | null> => {
+          try {
+            const entries = await listTauriVaultEntries(sourceRoot, relativePath);
+            return entries.map((entry) => ({
+              name: entry.name,
+              kind: entry.kind === 'directory' ? 'dir' : 'file',
+            }));
+          } catch {
+            return null;
+          }
+        };
+        nextModules[profile.slug] = await deriveRoleSourceModules(profile, listDir);
       }
-      if (!cancelled) setLoadedHandoffContexts({ handle, profileKey, contexts: next });
+      if (!cancelled) {
+        setLoadedHandoffContexts({ handle, profileKey, contexts: next, modules: nextModules });
+      }
     })();
 
     return () => { cancelled = true; };
   }, [docs, localVault.handle, localVault.status, mode, profileKey, profiles]);
 
-  return <ArchitectureWorkbench profiles={profiles} handoffContexts={handoffContexts} />;
+  return (
+    <ArchitectureWorkbench
+      profiles={profiles}
+      handoffContexts={handoffContexts}
+      sourceModulesByProfile={sourceModulesByProfile}
+      sourceListingCapable={sourceListingCapable}
+      sourceUnavailableReason={sourceUnavailableReason}
+      recordsByProfile={recordsByProfile}
+      conceptsByProfile={conceptsByProfile}
+    />
+  );
 }

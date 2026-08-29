@@ -15,6 +15,8 @@ export const FSD_PROFILE_FRONTMATTER = Object.freeze({
   role_features: ['src/features/**'],
   role_entities: ['src/entities/**'],
   role_shared: ['src/shared/**'],
+  summary_routing: 'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
+  summary_views: 'One module per route-level screen, assembled from the layers beneath it.',
   dependency_policy: 'lower-only',
   dependency_usages: ['value'],
   evidence: ['docs/ARCHITECTURE.md#fsd-layers'],
@@ -36,7 +38,40 @@ export const HEXAGONAL_PROFILE_FRONTMATTER = Object.freeze({
   allow_application: ['domain', 'port'],
   allow_port: ['domain'],
   allow_adapter: ['application', 'port', 'domain'],
+  summary_domain: 'The rules the business would still have on paper. Depends on nothing.',
+  dependency_usages: ['value'],
   evidence: ['docs/architecture/payments.md'],
+});
+
+/**
+ * ⚠️ **Several roles at one rank.** Every other fixture is a chain — one role per rank — and a
+ * chain can always be made to fit by turning it, which is why the drawing turns down when it stops
+ * fitting across. A fan cannot: three siblings between a shell and a core are three lanes wide
+ * whichever way the chain runs, so this is the shape that keeps the covered-edge affordances
+ * necessary. It exists because a claim about "the drawing is never cut" was true of the chains on
+ * hand and not of every profile someone can write.
+ */
+export const FAN_PROFILE_FRONTMATTER = Object.freeze({
+  architecture_schema: 'architecture-profile/v1',
+  profile_uid: 'b1d4f0c2-9e77-4a51-9f3b-2c6a8e5d7f10',
+  profile_slug: 'storefront-fan',
+  project_uid: 'e91d8a44-a95b-4faf-840d-e71c8b2d935c',
+  title: 'Storefront Fan',
+  patterns: ['dependency:layered'],
+  scope_paths: ['src/**'],
+  role_shell: ['src/shell/**'],
+  role_billing: ['src/billing/**'],
+  role_catalog: ['src/catalog/**'],
+  role_shipping: ['src/shipping/**'],
+  role_core: ['src/core/**'],
+  allow_shell: ['billing', 'catalog', 'shipping'],
+  allow_billing: ['core'],
+  allow_catalog: ['core'],
+  allow_shipping: ['core'],
+  allow_core: [],
+  summary_shell: 'The one way in, which hands the request to whichever area owns it.',
+  summary_core: 'What every area depends on and which depends on none of them.',
+  evidence: ['docs/architecture/fan.md'],
 });
 
 export const AMBIGUOUS_PROFILE_FRONTMATTER = Object.freeze({
@@ -81,3 +116,23 @@ export const HEXAGONAL_FORBIDDEN_EDGE = Object.freeze({
   kind: 'static',
   importUsage: 'value',
 });
+
+/**
+ * Path-pattern semantics shared by the web occupant join and the MCP conformance scan.
+ * One dialect: a profile must place a path identically in the app and in an agent's brief.
+ */
+export const PATH_MATCH_CASES = Object.freeze([
+  { path: 'src/views/home/ui/HomePage.tsx', pattern: 'src/views/**', matches: true },
+  { path: 'src/views', pattern: 'src/views/**', matches: false },
+  { path: 'src/views/home', pattern: 'src/*/home', matches: true },
+  { path: 'src/views/home', pattern: 'src/*', matches: false },
+  { path: 'src/views/home', pattern: 'src/*/*', matches: true },
+  { path: 'services/checkout/domain/order.ts', pattern: 'services/*/domain/**', matches: true },
+  { path: 'services/checkout/nested/domain/order.ts', pattern: 'services/*/domain/**', matches: false },
+  { path: 'src/shared/lib/date.ts', pattern: '**/*.test.ts', matches: false },
+  { path: 'src/shared/lib/date.test.ts', pattern: '**/*.test.ts', matches: true },
+  { path: './src/entities/project/', pattern: 'src/entities/**', matches: true },
+  { path: 'src\\entities\\project', pattern: 'src/entities/**', matches: true },
+  { path: 'app/[locale]/topology/page.tsx', pattern: 'app/**', matches: true },
+  { path: 'src/views/home', pattern: '', matches: false },
+]);

@@ -1170,6 +1170,574 @@ truncated, digest, gap, and source-hidden-claim mutations before approval.
 **Status**: valid
 
 ---
+## 2026-08-28 (3) — The diagram leaves the document: a horizontal graph, and only edges that carry something the columns cannot
+
+**Convened**: solo, on a failed build the owner rejected on sight ·
+**Trigger**: the owner asked for the architecture surface to be a building X-ray
+with a workflow's shape, notes pinned to places, and the ability to insert
+between, then looked at the first attempt and asked whether anyone could read it.
+
+**Prior decisions**: (2026-08-26) stands, including its rejection of a free-layout
+diagram generator; nothing here is hand-placed and every position is computed.
+(2026-08-27) selected the occupied-band stage from four directions, and **this
+record replaces that shape**. It is one day old, which is why this is a record and
+not a slice.
+
+**Observed**: two measurements, one from a build and one from the data.
+
+The build. Traffic arcs drawn onto the existing full-width bands were unreadable.
+Every arc left and arrived at the same x, because a band is a full-width block, so
+the whole set collapsed into a bundle of near-parallel wires against the right
+edge with detached dashed fragments beside it. The cause is structural: a block
+250px tall and 764px wide gives an edge nothing to attach to, so no thinning,
+dimming or reordering would have rescued it. Reverted in `4553e13c8`.
+
+The data. Counting the permitted edges of both sample profiles:
+
+| profile | policy | permitted edges | measured traffic |
+|---|---|---:|---:|
+| Atlas Web Workbench, 7 roles | `lower-only` | 21 | 26 rows with counts |
+| Storefront Services, 4 roles | `explicit` | 6 | none recorded |
+
+Under `lower-only` every one of the 21 means "everything below me", so the whole
+set is derivable from the order. Under `explicit` the set is the information and
+cannot be read off the order at all.
+
+**Decision**: three parts.
+
+1. **The diagram and the document separate.** The centre becomes a horizontal
+   layered graph of compact role boxes, one column per rank, reusing the ranks
+   `buildArchitectureLayout` already computes. Everything a band carried inside
+   itself — the role sentence, the reach, the globs, the source modules, the
+   reviewed concepts — moves to a detail panel beside the drawing, filled by
+   selecting a box.
+2. **A stroke must carry something the columns cannot.** Permitted edges are
+   drawn only under `explicit`. Measured traffic is drawn wherever a record
+   exists, under either policy. Under `lower-only` the permitted set is drawn as
+   nothing at all, because the columns already say it. The same screen therefore
+   draws different strokes for different profiles, and that is the rule rather
+   than an inconsistency.
+3. **Horizontal, and no layout library.** Left to right is the convention the
+   reader already has: n8n's editor is left-to-right by construction, with nodes
+   taking input on the left and emitting on the right, and React Flow treats graph
+   direction as a first-class setting on both layouts it recommends. Seven nodes
+   with ranks already computed do not need Dagre or ELK, and adopting either would
+   need its own record under the renderer rule in `AGENTS.md`.
+
+**Applied rule**: replace, do not accumulate. The band shape is removed rather
+than kept beside the graph as a second mode; two representations of one truth
+leave the reader deciding which to trust, and the 2026-08-27 dot-matrix removal
+was already this lesson once.
+
+**Rejected alternatives**: keeping the bands and tuning the arcs, rejected because
+the failure is structural rather than visual; a mode toggle between document and
+diagram, rejected because it multiplies the existing three-mode axis and the owner
+has refused mode proliferation before; drawing all 21 permitted edges once the
+picture was horizontal, rejected because turning a restatement sideways does not
+make it informative.
+
+**Preserved dissent**: the band stage is dense and scannable, and someone reading
+88 source modules is better served by a list than by any graph. This record's
+answer is that the graph and the list are different jobs and the detail panel is
+where the list survives. If in use the panel turns out to be where everyone
+actually lives and the graph is glanced at once and ignored, the graph is
+decoration and this record was wrong.
+
+**Falsifier**: a fresh-eyes walkthrough under the 2026-08-28 protocol, asked which
+boundary carries the most traffic, which the least, and whether what they are
+looking at is a rule or a measurement. Cannot answer, or answers "a rule", and the
+strokes come out the way the arcs did.
+
+**Review**: after that walkthrough, and again if a real profile passes roughly
+fifteen roles, at which point the no-layout-library decision is the one to reopen.
+
+**Status**: standing. **Accountable**: owner (asked for the shape, rejected the
+first attempt, and approved the rewritten plan).
+
+## 2026-08-28 (2) — A rule the screen does not print is a rule the reader does not have
+
+**Convened**: solo, on the falsifier of the record below · **Trigger**: that
+record shipped with a falsifier — if a reader who does not know the pattern still
+cannot say which roles a change may cross, the naming was never the problem. A
+`/user-walkthrough` was run to settle it, walked by a fresh agent held to a
+declared knowledge state (never heard of Feature-Sliced Design, hexagonal, ports
+and adapters) and forbidden from reading any file in this repository, so the
+rendered page was its only source.
+
+**Observed**: the falsifier fired, and named a cause neither option predicted.
+Given the explicit-policy sample the walker answered both halves of the question
+in one glance without clicking, quoting the row verbatim (rendered in English as
+*"may depend on Application · Port · Domain"*). Given the lower-only sample it
+placed the file correctly and
+then could not say what that role may depend on at all. The naming worked in both.
+What differed was that only the explicit profile printed the reach.
+
+The sentence the walker needed was rendered on the lower-only profile too — inside
+the assistive `<ol class="sr-only">`, measured at **1px wide by 24px tall**. The
+walker found it only by dumping `document.body.innerText`, and recorded that on
+the screen itself the sentence does not exist.
+
+**Prior reasoning overturned**: the band deliberately wrote no per-role reach
+under `lower-only`, on the grounds that the stage subtitle plus the ordering state
+the whole rule and a caption would only repeat it. That is true of the rule and
+false of the reader: it asks a first-time reader to hold seven numbered rows in
+mind and compute the allowed set. A component test asserted the absence; the
+assertion is now reversed and carries this measurement in its comment.
+
+**Decision**: both policies print the reach in role names, in both band shapes.
+The cost is real and accepted: the top row of a seven-role profile now lists six
+names. Inferring them cost the reader the answer, which is more.
+
+**Not decided**: the drawn-policy graph stays unbuilt. The walkthrough is evidence
+against it, not for it — the failure was a suppressed sentence, not a missing
+picture, and the reader who had the sentence needed nothing else.
+
+**Still open, from the same walkthrough and not addressed here**: neither profile
+says whether a role may import from another module in its own role; the role row
+is a `<button>` whose click collapses its concepts with no disclosure marker,
+which the walker read as content disappearing; the amber "source check required"
+pill is non-interactive with no next step; and role descriptions render in
+English under localized chrome.
+
+**Falsifier**: if a later walkthrough finds the six-name list on the top row is
+itself unreadable — skipped, or misread as a path — then the list is the wrong
+form and the rule needs a shape rather than a sentence, which is the graph's case
+made properly.
+
+**Status**: standing. **Accountable**: owner (asked for the best available
+direction for the reader).
+
+## 2026-08-28 — A role may say what it is for, and the pattern axis is the stage's subject
+
+**Convened**: solo PO pass (`/po-pass`) followed by `/design-directions` ·
+**Trigger**: the owner read the installed build and asked two things back — *"how
+would someone who does not know this tell what these are?"* and *"is this really
+architecture?"* The first is an observation about the screen. The second is an
+observation about the data, and the data agreed: this profile's declared axis is
+literally `source-organization`, and its own body calls itself a
+source-organization contract.
+
+**Prior decisions**: (2026-08-26) stands — Architecture explains implementation
+roles, scoped paths, and allowed dependency direction, and a pattern label is
+never inferred from folder names. This record extends that refusal one level
+down: a role id is a folder name too. (2026-08-27) records stand untouched; the
+rest state, the click-open meaning layer, and the reviewed-relation edges are not
+changed here.
+
+**Observed phenomenon**: measured against C4's published diagram review
+checklist, the blueprint failed all six readability items — no descriptive
+names (the labels are folder names), no element descriptions, no acronym
+definitions, no statement of the diagram's type or scope, no arrow intent
+labels, no key for its marks. The only thing naming the kind of drawing was a
+9.5px chip. And the contract had nowhere to put a description even if the screen
+had wanted one.
+
+**Rubric**: 22/24, no fatal zero. Problem insight 4 · User moment 4 ·
+Differentiation 3 · Ontology value 3 · Agent value 4 · Verification 4.
+
+**Decision**: two changes, both inside the standing shape.
+
+1. `architecture-profile/v1` gains an optional `summary_<role id>`: one reviewed
+   sentence per role. Both parsers read it under the cross-surface contract, it
+   travels in `architectureBrief:v1` and `architectureChangePlan:v1`, and it is
+   absent rather than empty where nobody wrote one. Profiles written before the
+   field stay valid. The key is `summary_<id>` and not `role_summary_<id>`
+   because every `role_*` key is a path group.
+2. The declared pattern axis becomes the stage's subject: the pattern name is the
+   heading, one sentence beneath says what that axis governs, and the former
+   heading keeps its words as an eyebrow. An axis nobody has translated prints
+   its raw string and no invented explanation, for the same reason (2026-08-26)
+   forbids inferring a pattern from folder names.
+
+**Applied rule**: smallest slice. No new route, no new mode, no new surface.
+
+**Rejected alternatives**: the status quo (nothing changes, and the reader is
+assumed to know FSD); a pattern-axis tab bar making the axis a second mode
+dimension, rejected because the owner has already refused mode proliferation and
+because a profile declaring one axis would carry a one-tab tab bar forever; and
+the drawn-policy graph below.
+
+**Preserved dissent**: the strongest losing argument is one the code already
+carries. A graph drawing one arrow per permitted pair was considered and rejected
+when the blueprint was built, on the grounds that ordering rows by longest-path
+reach depth makes every real dependency point down, so one stroke per gap states
+the whole rule without 21 strokes on a seven-role profile. The proposal to draw
+the declared policy as a derived graph — the band list demoted to an index rail
+beside it, the way `/topology` already splits — is that rejected shape returning,
+and it was the recommendation of the directions pass. It is not taken here
+because taking it needs an explicit overturn of that reasoning, not a slice.
+
+**Falsifier**: if this ships and a reader who does not know the pattern still
+cannot say which roles a change may cross — observable as a `/user-walkthrough`
+with a declared "does not know FSD" knowledge state failing that same question —
+then the naming was never the problem and the drawn-policy graph was right. The
+opposite observation is the second falsifier: if role summaries stay unwritten
+across profiles, the field is a place nobody fills and the screen is back where
+it started carrying more schema.
+
+**Review**: after a profile is authored by someone other than this repository's
+maintainer, or 2026-11-28, whichever comes first.
+
+**Status**: standing. **Accountable**: owner (asked for the work, and was shown
+the directions before it began).
+
+## 2026-08-27 — The blueprint's rest state is the full diagram, and its only edges are reviewed relations
+
+**Convened**: owner direction ("still lacking"), same continued pass ·
+**Trigger**: with the click-open detail shipped, the resting screen was still
+seven thin rows — the reference's first impression is a complete diagram — and
+nothing connected the cards.
+
+**Decision**: two changes, one licensing rule. (1) The concept sections open
+by default: the rest state shows every layer's preview cards, and the click
+now collapses or re-focuses; the preview orders **connected concepts first**,
+so the strokes exist at rest instead of hiding behind "+N more". (2) Between
+cards the blueprint draws **reviewed vault relations only** — `dependencies`
+solid with an arrowhead, `relates` dashed, both in the one indigo family,
+measured from the rendered cards so an edge exists exactly when both endpoints
+are on screen. The licensing rule: every stroke is a frontmatter fact somebody
+reviewed; inferred imports stay with the MCP/CLI and the future record
+overlay, and the standing no-invented-edges line is unchanged — these are not
+invented. Three true relations were added to the dogfood vault in the same
+pass (map view → knowledge graph, docs view → docs entity, canvas renderer →
+knowledge graph), each with its rationale in `relation_notes` — the honest way
+to make the diagram richer is to record more true relations, not to draw
+untyped lines.
+
+**Falsifier**: if edge counts grow past legibility (≈30 visible) without a
+focus filter, add edge dimming outside the focused layer's reach before adding
+any other control; if readers mistake concept strokes for import facts in a
+walkthrough, the legend labels move onto the strokes themselves.
+
+**Status**: standing. **Accountable**: owner (direction); this session's
+builder for the applied slice.
+
+## 2026-08-27 — A layer opens in place: the click's answer is the labeled meaning layer
+
+**Convened**: owner direction during the continued design pass · **Trigger**:
+looking at the browser surface, the owner pressed a layer and nothing detailed
+happened ("no detail effect on click... it should expand right here and show
+some structure — is it because there is no data?"). It was because there was no
+data: the same-day source-modules record had removed the ontology-concept join,
+and a browser cannot list source, so bands had nothing to open.
+
+**Decision**: the source-modules record's own falsifier fired ("if real use
+shows people needing 'which concepts live in this layer' on this screen —
+bring the meaning layer back as an explicit secondary mark, as a decision"),
+and this is that decision. Clicking a layer now pins its focus and opens an
+in-place detail section titled as the meaning layer ("Reviewed concepts in
+this layer · N"), listing the reviewed concepts whose `path` frontmatter sits
+inside the role's globs — derived in the view model (`deriveRoleConcepts`)
+with the same contract-tested glob dialect, real on every surface including
+the vault-less demo. The two layers stay named and separate: source modules
+(folder/file marks, installed app) remain the band's primary content; concepts
+(kind glyphs) appear only in the click-open section under their own label. The
+open animates through the band's existing height swap with a staggered card
+reveal; the row carries a rotating chevron and a concept-count invite;
+`aria-expanded` states the openness.
+
+**Recorded dissent (from the fired record, still standing)**: mixing meaning
+and source in one band was the confusion the source-modules record removed;
+the labels and the distinct icon families are the guard, and if a walkthrough
+shows readers conflating the two layers again, the concepts section moves out
+of the band (to the rail or the map) rather than gaining more markers.
+
+**Falsifier**: reopen if the concepts section is measured as the thing people
+read INSTEAD of the map for concept detail (the map remains the ontology
+reading surface — this section is a placement index, not a node view); or if
+the click-open detail keeps under 2 opens per session in real use (then the
+click should return to focus-only).
+
+**Status**: standing. **Accountable**: owner (direction); this session's
+builder for the applied slice.
+
+## 2026-08-27 — Conformance records are dated machine receipts; the measurement must be true before it is durable
+
+**Convened**: /po-council, all five seats, one independent round and one rebuttal
+round · **Trigger**: persisting `architectureBrief:v1` as a vault-local record and
+rendering it on `/architecture` changes a public MCP/CLI contract and adds a
+stored artifact; both 2026-08-27 records scheduled this council as their revisit
+point.
+
+**Prior decisions**: 2026-08-26 "Architecture is a separate reviewed contract"
+items 3-6 stand (side effect 0, unknown fails closed, no fabricated green, no
+pattern inference). Both 2026-08-27 records stand; this record answers the
+occupied-bands revisit clause: **the record does not subsume the directory walk**
+(`matchedFiles` is a 20-item sample under `MATCHED_FILE_SAMPLE_LIMIT` against 193
+real files in `views`; a sample rendered as contents is the same under-reporting
+that killed the concept join). The 2026-08-26 "no new MCP tool" ruling is read as
+drafting-specific (its stated risk was role-name invention) and is not silently
+extended; no new MCP tool ships in this slice anyway.
+
+**Convened because**: public MCP/CLI contract change plus a stored artifact.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Investigate first: fix the measurement before persisting it | Problem insight 2 · User moment 2 |
+| Craft | Shape a slice: stamp semantics as prescribed, overlay deferred | Verification 2 |
+| Steward | Shape a slice: reuse receipt + sidecar machinery | Ontology value 3 · Agent value 4 |
+| Wedge | Build smaller: CLI-flag writer, anti-suppression semantics | Differentiation 3 |
+| Leverage | Shape a slice: two-session ceiling | appetite and slice |
+
+**Rubric total**: 16/24 (fatal zeros: none). The two low pairs are why the slice
+is reordered rather than why it is refused.
+
+**Decisive disagreement**: persist now (four seats) versus fix the measurement
+first (evidence). Evidence's measured fact decides the ordering: all 18 current
+dogfood violations are `import type` edges from `src/shared/lib/ontology-tree/*`
+into `@/entities/knowledge-graph`, which `eslint.config.mjs:1012-1040` (cited in
+the profile's own `evidence:`) explicitly allows in every direction. The scanner
+carries no type-only concept (every edge is `kind: 'static'`). Persisting today
+would stamp a false red with date-and-commit authority: the standing "unsupported
+scan renders green" falsifier with the opposite sign, and worse, because a record
+outlives its session.
+
+**Applied rule**: Charter first (fail-closed truthfulness outranks shipping the
+container) and Smallest slice (the ordering absorbs the Investigate-first hold
+into one build plan instead of a separate trial).
+
+**Decision (accountable: owner)** — build in this order, each point a contract:
+
+1. **Measure truly first.** Import inference carries type-only vs value through
+   to the edge kind. Without a profile-declared ruling for type-only edges,
+   they leave the violation count and land in the `unknown` block as their own
+   named class — never silently dropped, never counted as violations a cited
+   authority permits. Unknown remains never compliant. No record of any kind is
+   written before this lands and a human confirms the re-measured dogfood
+   verdict.
+2. **The brief gains a stamp** (additive on `architectureBrief:v1`): measured-at
+   ISO time, source revision — a real commit short-sha for git sources, a
+   `sha256:` fingerprint for folder sources, never conflated — dirty flag, and
+   tool version. `inspect_architecture` and `atlas architecture` keep side
+   effect 0. This point is shippable alone if appetite runs out.
+3. **The record is `architectureRecord:v1`**: a JSON envelope wrapping the
+   stamped brief, minus `source.rootPath` (no absolute machine path leaves the
+   sidecar), plus the profile's uid/slug and content hash — never the profile
+   body. Home: `<vault>/.ontology-atlas/architecture/<profile-slug>.json`,
+   overwritten per slug through the existing `vault-sidecar` atomic replacement,
+   with one appended `activity.jsonl` line. No `expected_mtime` dance: this is a
+   single-writer machine receipt, not authored Markdown. Not an ontology kind,
+   not in-vault Markdown, never committed (`.ontology-atlas/.gitignore` is `*`).
+4. **Writer: `atlas architecture --record`, opt-in, CLI only.** No `record:`
+   flag on `inspect_architecture` (a read tool that sometimes writes breaks the
+   standing side-effect-0 clause), and no new MCP tool in this slice. The writer
+   refuses mechanically when every observed edge carries one identical kind —
+   a scanner that cannot discriminate must not mint receipts.
+5. **Surface renders three states, receipt vocabulary, honest degradation.**
+   No record → today's amber "Source check required", unchanged, reading as
+   "not measured on this computer", never as a defect. Record whose revision or
+   fingerprint the installed app re-verifies → dated status: "checked {date} at
+   commit {sha}" (plus "with uncommitted edits" when dirty; folder sources get
+   the fingerprint sentence, no sha). Mismatch → `source_changed`, amber
+   semantics, the old status never rendered as current. The browser reads the
+   sidecar (the existing `use-local-vault` path) but cannot re-probe, so it says
+   the stamp and that this browser cannot confirm the source still matches. The
+   status line always carries the unknown counts beside the verdict ("N
+   violations · M edges unmapped"); a bare status word is a lie by omission.
+   Copy fix rides along: "green result" becomes "pass" in both catalogs.
+6. **Cut from this slice**: violations drawn on the blueprint (needs
+   `/design-directions`; if ever drawn they go on the spine as counter-direction
+   error-ink marks, never inside bands); band occupant replacement (the walk
+   stays; the record may add the authoritative per-role file count, labelled as
+   files, never rendered beside the module count as a second unlabelled number,
+   and the 20-file sample never renders as cards); any MCP write; any staleness
+   trend or history UI; anti-suppression is permanent: a record never mutes a
+   violation the way dependency-cruiser/ArchUnit baselines do.
+
+**Named next decision (not in this slice)**: the disposition path — what a
+person does with a real violation (fix, or accept as a reviewed exception with
+cited authority). Until it exists, records persist unactioned red; that is
+accepted knowingly and bounded by the amber-forward rendering.
+
+**Slice**: IN — points 1-5, dogfood re-measurement, cross-package contract
+test, record-rejects-profile parser gate, docs. OUT — point 6's list.
+**Appetite** — two build sessions, ceiling: session 1 = type-only measurement +
+stamp + record contract + `--record` + tests; session 2 = surface states +
+strings + docs. If it threatens the ceiling, cut session 2 and ship the stamp
+plus writer.
+
+**Verification demanded (craft's gate set)**: dirty-tree stamp RED-first;
+non-git folder status matches no sha regex; planted violation → record →
+rendered state → removal → re-record, screenshots both states; source-changed
+asserted on rendered DOM text; deployed-web degradation at 1512 and 390 (no
+date anywhere when no record); one fixture through CLI output and web parser;
+parser-rejection gate both ways (profile parser rejects record fields, record
+parser rejects rule fields).
+
+**Recorded dissent**:
+- *Evidence*: the whole build should wait for a verified measurement and one
+  real usage cycle; zero observed workflow damage today (activity log has no
+  architecture-surface usage, one authored profile, zero agent-drafted
+  profiles). Falsifier: if the type-only fix still leaves the dogfood repo
+  `violated` and a human agrees the remainder is real, the hold was pure cost.
+- *Steward*: a confirm-gated MCP recording tool should ship now; CLI-only fails
+  the minimum agent path (an MCP-restricted agent cannot record). Falsifier: an
+  observed agent session that needs to record and cannot reach the CLI — build
+  the tool then, as a decision.
+- *Craft*: the record should be committed beside the profile so teammates judge
+  the dated status through diffs; a gitignored receipt makes a
+  project-level-looking claim from per-machine state. Falsifier: a teammate or
+  PR reviewer asks for the last measured status, or the per-machine record is
+  mistaken for project truth — reopen a committed or exportable record as an
+  explicit decision.
+- *Leverage*: `record: true` on `inspect_architecture` with a declared side
+  effect 1 (rejected on the standing side-effect-0 clause); the textual
+  violations list may be cut with session 2.
+- *Wedge*: the record's presence might subsume the walk (rejected on the
+  20-item sample measurement). Falsifier, adopted for the whole loop: if
+  records are regenerated fresh every session and never read back in three
+  consecutive sessions, persistence was ceremony — feed the pill live instead
+  and retire the file.
+
+**Falsifiers (live)**: any surface renders `conforms` from a record it could
+not revision-verify; a profile file ever gains a field sourced from a record;
+records' revisions never match HEAD in normal use; the wedge ceremony falsifier
+above.
+
+**Revisit**: at the disposition-path decision; or after the first three real
+recorded checks on a non-dogfood repository; or on any falsifier observation.
+
+**Human signature**: stark (owner) — approved in-session, 2026-08-27.
+**Status**: standing.
+
+## 2026-08-27 — Architecture bands hold source modules, not ontology concepts
+
+**Convened**: owner correction during the same day's occupied-bands build ·
+**Trigger**: reviewing the shipped bands, the owner drew the line the product
+had blurred: "the ontology is the meaning-based map; architecture is literally
+about the project source — it has no relation to the [ontology] nodes." The
+bands were filled by joining role globs to ontology concept `path` frontmatter,
+which made the blueprint show only what the meaning layer happened to record
+and made concepts read as if they were source.
+
+**Decision**: the bands now list **source modules** — a read-only directory
+walk of the bound project source (installed app), one directory level per glob
+segment, `exclude_paths` filtered with the MCP's own glob dialect. No file is
+opened and no import is read, so the standing falsifier (the profile must not
+become a second source of observed imports) holds. A browser cannot list a
+source folder; the stage states that impossibility once instead of rendering
+bands that look empty. The ontology-concept join (`deriveRoleOccupants`) was
+removed the same day it shipped; `matchesArchitecturePath` survives as the
+shared glob dialect, still contract-tested against the MCP. Expanding a band
+now animates its height through the in-house `useSwapHeight`, and the band
+markup moved into one `ArchitectureBand` component (less parent complexity, a
+per-band host for the motion).
+
+**Recorded dissent (the removed join's case)**: the concept join was the only
+occupant source a browser could compute, and it tied roles to reviewed meaning
+(the same-day PO pass scored its ontology value 4). It lost because it answered
+"which meaning mentions this layer" while the surface's question is "what does
+this layer contain" — and a listing that silently shows only vault-recorded
+concepts under-reports the source by construction.
+
+**Falsifier**: if real use shows people needing "which concepts live in this
+layer" on this screen (repeated map round-trips from a band), bring the meaning
+layer back as an explicit secondary mark on module cards — as a decision, not a
+quiet revert. Revisit at the conformance-record council, where role-matched
+files from `inspect_architecture` may subsume the walk entirely.
+
+**Status**: standing. **Accountable**: owner (model correction); this
+session's builder for the applied slice.
+
+## 2026-08-27 — Role bands carry their occupants: the blueprint joins role globs to vault paths
+
+**Convened**: solo PO pass (22/24, no fatal zeros) + `/design-directions` with
+`chief` authoring four structural options · **Trigger**: the owner asked for the
+architecture visualization to become substantially better and supplied a
+reference mockup (multi-hue layered diagram with per-component edges, stat
+cards, and an activity feed). The screen showed reviewed roles as glob strings
+with zero occupants, three modes rendered a byte-identical center, and content
+filled ~35% of a 1512×944 viewport.
+
+**Decision**: direction **B — Occupied bands**, chosen by the owner from four.
+Each dependency-ladder rung becomes a boxed layer container — the reference
+mockup's boxes-holding-parts mental model on the charter's neutral surfaces —
+whose label column keeps a role icon, index, role name, globs, and a derived
+occupant count; the body lists equal-height occupant cards
+(kind glyph tile, canonical title, implementation path) derived solely from the
+profile-glob × vault-`path` join (`deriveRoleOccupants`), with a bounded
+preview (`CARD_PREVIEW`) and a "+N more" expansion; focus-and-recede dims a
+band as one unit. The ordered spine is drawn where the reference draws it — one
+downward connector in each gap between adjacent layer boxes, all carrying the
+single legend meaning. This evolves the earlier one-gutter-stroke rendering
+without reopening the rejected arrow-per-permitted-pair: rows are ordered by
+reach depth, so every real dependency points down and one stroke per gap states
+exactly that. Role icons come from a fixed id→icon map in one neutral ink
+(unknown ids fall back to a generic layer mark); they decorate the reviewed
+name and never substitute for it. The owner interjected twice during the build
+— first that the chip-styled cut read as a table, then that the boxed cut was
+still flat next to the reference — and the band-as-container direction was
+unchanged while the rendering moved to elevated boxed containers, icon-led
+headers, cards, and in-gap connectors. The glob dialect is the MCP's verbatim —
+`matchesArchitecturePath` mirrors `matchesPathPattern` and the cross-surface
+contract test runs one fixture table through both. Occupant cards link to
+their concept on the map (a real action on a typed fact; still no edges
+between cards), and focusing a layer sends a one-shot staggered pulse down the
+spine gaps between it and its deepest reach — the owner asked to see the flow
+as motion; the run is on-request, transform-and-opacity only, `--motion-settle`
+per gap, registered in the reduced-motion roster as deliberately stopped
+because the static arrowheads state the same direction without a time axis.
+
+**Mockup translation, refused parts**: multi-hue layer tints (one indigo
+charter), a four-type colored edge legend (only intent exists on this surface),
+per-component edges (false topology — no observed data here), uptime/SLA and
+Share (underivable in a local-first static app), Recent Activity (deferred, not
+refused). Conformance overlay stays off this surface until the
+`architectureBrief:v1` record loop lands; that loop changes a public contract
+and requires `/po-council` before work starts.
+
+**Rejected directions**: A status quo (its winning condition — real vaults
+matching ~0 occupants — was disproved: the dogfood vault joins 67 concept
+placements across 7 roles); C spine-plus-roster (re-opens the recorded
+two-blocks-of-the-same-thing failure); D mode-lens bands (defensible later
+layer on top of B, exceeds this slice).
+
+**Falsifier observed, then knowingly traded**: unbounded occupants pushed the
+seventh matrix row 181px below the fold on the dogfood vault — exactly B's
+stated falsifier — and a compressed geometry briefly put it back at 936px in a
+941px viewport. The owner then rejected the compressed look twice ("still not
+good — do not try to preserve the current one; make it refined; rebuild if
+needed") and chose generous scale: a framed stage panel, diagram-region bands (label column
+leading, occupant cards filling the rest), in-gap connectors, and derived stat
+tiles in the Understand rail. That scale
+puts the last matrix row at 1207px in a 941px viewport, so on a 7-role profile
+the full policy needs one short scroll. This is an owner-decided trade
+of chief's fold falsifier for refinement, recorded rather than hidden; the
+card preview cap still bounds each band to one row, and an all-empty vault
+still fits entirely.
+
+**Partial overturn of 2026-08-26 (the on-screen dot matrix)**: the owner asked,
+mid-build, whether the dot matrix could go ("can't this just be removed?"), and
+it went. The overturning argument: under `lower-only` the matrix is a second
+notation for a rule the subtitle sentence, the band order, and the connectors
+already state completely, so seven aligned dot rows were repetition dressed as
+rigor; under `explicit`, where the rule really is a graph, each role's label now
+writes its reach in role names ("may depend on Application · Ports · Domain"),
+which needs no decoding. The losing dissent, preserved: the matrix was chosen
+over five rejected rounds on Ghoniem/Fekete/Castagliola's measurement that a
+matrix beats node-link past ~20 vertices, and it alone made "there are no
+exceptions" a visible triangle rather than an absence — written reach lists
+state permissions but make a *hole* in the policy harder to spot at a glance.
+The assistive reach list and the cross-surface conformance tools keep the full
+policy machine-checkable. **Falsifier for the overturn**: if an explicit-policy
+profile with 6+ roles ships and users or agents misread an allowed pair, or a
+policy hole survives review that the triangle would have shown, reopen the
+matrix (or a per-band reach visualization) as a decision, not a quiet revert.
+
+**Recorded dissent (direction cost)**: variable band heights loosen the old
+constant-pitch ladder silhouette (chief, direction B's stated cost); an
+all-empty vault keeps constant pitch, so the loss applies only where occupancy
+pays for it.
+
+**Falsifier**: reopen if the occupant join ever grows an import reader (the
+profile must not become a second source of observed imports); if a three-band
+vault reads worse than the pre-band ladder in a walkthrough; or if the "+N
+more" expansion is measured as the primary way people read a band (the preview
+hid the content instead of bounding it).
+
+**Revisit**: at the conformance-record council, or on the first falsifier
+observation. **Accountable**: owner (direction selection); this session's
+builder for the applied slice. **Status**: standing.
 
 ## 2026-08-26 — The first architecture draft is proposed by an agent and named by a person
 

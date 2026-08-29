@@ -1,71 +1,102 @@
-# TECH STACK — Technology Stack Decision Record
+# Technology stack
 
-> Decisions were recorded on 2026-07-17; package/runtime facts were refreshed
-> from the repository on 2026-08-23.
-> Decision principle: **Maintaining verified stacks is the default** (same logic as rejecting full rewrites — replacement is only allowed when measured benefits clearly exceed migration costs). Next full review: January 2027 or when branch conditions trigger.
-> Some investigations relied on session search budget exhaustion for training data + official documentation fetches — items marked `⚠` require re-verification before execution.
+> Decisions recorded 2026-07-17. Package and runtime facts refreshed from the repository
+> 2026-08-23. Next full review January 2027, or sooner if one of the branch conditions below
+> actually fires.
 
-## Web Front-end
+The default is to keep a stack that has been verified working. It is the same reasoning that
+rejected a full rewrite: a replacement has to show a measured benefit larger than its migration
+cost, and "newer" is not a measurement.
 
-| Layer | Current | Verdict | Rationale |
-|---|---|---|---|
-| Next.js | 16.2.12 static export | **KEEP** | Static export is mature. Switching to Astro/React Router costs more in local-first redesign than it gains |
-| React | 19.2.8 | **KEEP** | React Compiler activation to be decided after performance measurement in Slice 2 (topology-map-v2) |
-| TypeScript | `typescript` → `@typescript/typescript6` 6.0.2; `@typescript/native` → 7.0.2 | **CURRENT PACKAGE CONTRACT** | The manifest keeps the Next/eslint-compatible 6.0 alias alongside the native 7.0 package; re-evaluate only when those consumers support the native API directly |
-| Tailwind | 4.3.3 | **KEEP** | @theme CSS token stability, design system consistency |
-| ESLint | 9 flat | **KEEP (confirmed)** | Biome 2.5 does not support eslint-plugin-boundaries (FSD gate) — with architecture enforcement required, ESLint is the only choice |
-| pnpm | 10.x | **KEEP** | Bun's roadmap is unpublished post-Anthropic acquisition + Next static export compatibility is immature — watch only |
-| next-intl | 4.13.4 | **KEEP** | Maintain App Router i18n standard |
+A `⚠` marks a claim that came from a model's training data and a documentation fetch rather than
+from something run here. Re-verify those before acting on them; they are the ones most likely to
+have gone stale.
 
-## Desktop
+## What would have to happen to change each decision
 
-| Layer | Current | Verdict | Rationale |
-|---|---|---|---|
-| Tauri | v2.11.x | **KEEP (short-term)** | Stuttering cause is React orchestration, not WebView — pre-confirmed. Electron switch rejected due to 4–6 weeks + 3x bundle size |
-| Low-alpha synthesis bug | Owner machine reproduction | **Isolate + upstream report** | No public reports on Wry/Tauri issue tracker — write repro case (`rgba` dim test) and report. Product defense: maintain existing invariants: dim = hidden or opaque token, low-alpha prohibited (enforced via unit tests) |
-| Branch point (Q4 2026) | — | **Conditions specified** | The former Sigma gate is superseded: the current map is the custom canvas-2D `topology-map-v2` renderer with Graphology + ForceAtlas2. Re-evaluate Tauri/Electron/PWA only against this renderer's measured runtime behavior |
+The interesting column of a decision record is not the decision. Every row here says keep, so
+saying it fourteen times carries nothing — what the next reader needs is the observation that
+would overturn it.
 
-## CLI · MCP · Testing
+### Web front end
 
-| Layer | Current | Verdict | Rationale |
-|---|---|---|---|
-| Module format | Plain .mjs ESM | **KEEP + JSDoc enhancement** | TS conversion costs more in build pipeline than it gains. Path: JSDoc → (optional) deploy `.d.ts` via `tsc --emit-declaration-only` |
-| Node engines | `>=24 <25` | **CURRENT** | Root, CLI, and MCP package manifests share the Node 24 contract |
-| arg parsing | Manual (cli-args.mjs) | **KEEP** | Sufficient for the current flat 54-command registry and low-complexity flags. Adopting citty etc. rejected as benefits don't justify --help automation level |
-| MCP SDK | `@modelcontextprotocol/core` / `server` 2.0.0 | **KEEP + watch** | Stdio transport; verify registry/tool-schema changes when a contract changes |
-| Vitest / Playwright | 4.1.10 / 1.62.0 | **KEEP** | Stable. Major upgrades opportunistic after release note review |
-| npm publish prep (N1) | **RETIRED (2026-07-27)** | npm publishing is not a delivery channel; the source checkout and installed macOS app carry the CLI/MCP |
+| Layer | Version | What would overturn "keep" |
+|---|---|---|
+| Next.js | 16.2.12, static export | Static export stops covering a case this product needs. Astro or React Router would cost more in local-first redesign than they return |
+| React | 19.2.8 | A performance measurement on the map renderer that the React Compiler would fix; that measurement is the gate for turning it on |
+| TypeScript | `typescript` aliased to `@typescript/typescript6` 6.0.2, plus `@typescript/native` 7.0.2 | Next and ESLint supporting the native 7.0 API directly. Until then the manifest carries both, and the 6.0 alias exists for those two consumers |
+| Tailwind | 4.3.3 | Losing `@theme` token stability, which the whole design system is built on |
+| ESLint | 9, flat config | An alternative that supports `eslint-plugin-boundaries`. Biome 2.5 does not, and that plugin is the gate enforcing FSD import direction — so today there is no alternative, not merely a preferred one |
+| pnpm | 10.x | Bun publishing a roadmap after the Anthropic acquisition, and its Next static-export support maturing. Watching only |
+| next-intl | 4.13.4 | Leaving the App Router i18n standard |
 
-## LLM · Layer 2 (Deferred decision — implement when relevant gate triggers)
+### Desktop
 
-| Use case | Decision | Timing | Rationale |
-|---|---|---|---|
-| In-app Q&A SDK | **Vercel AI SDK 5** (provider-agnostic BYOK) | Upon passing Slice 3 gate | Compatible with static export, free provider switching — aligns with no-credit-bundle principle |
-| Local models | Ollama·LM Studio **direct localhost connection** | Slice 3 | OpenAI-compat, no CORS issues |
-| Cloud CORS | **Tauri sidecar proxy** | Slice 3 | Anthropic/OpenAI API browser direct connection assumed impossible ⚠ — keys stored in OS keychain (Tauri v2 API name to be re-verified ⚠) |
-| Coordinate server | **Cloudflare Workers + Durable Objects** (primary candidate) | N3 (Sync demand gate) | Minimal solo operation, auditable. Self-built binaries (Rust/Go) are subsequent migration options |
-| E2E encryption | **age** (rage/Typage) | Sync step 2 | git-native·multi-recipient·post-quantum hybrid. Prerequisite: Trust Charter #6 (implementation open) |
-| Payments | **None (owner decided 2026-07-17)** | — | Not for sales — pure open source, local execution (self-hosted) model. Donations only via optional GitHub Sponsors. Even if Team Sync is created, it remains self-hostable open source |
+| Layer | Version | What would overturn "keep" |
+|---|---|---|
+| Tauri | 2.11.x | Evidence that the WebView causes the stutter. It does not: the cause was traced to React orchestration. Electron was rejected at four to six weeks of work and three times the bundle |
+| Renderer branch point | reopens Q4 2026 | The old branch point was written against Sigma and no longer applies. `topology-map-v2` — a custom canvas-2D engine over Graphology and ForceAtlas2 — is what any Tauri, Electron or PWA comparison now has to be measured against |
 
-## What We Decided Against (Rejection Log)
+One desktop item is not a keep. **The low-alpha compositing bug** reproduces on the owner's
+machine and has no public report on the Wry or Tauri trackers, so the work is to isolate an `rgba`
+dim case and file it upstream. Until then the product defends itself rather than waiting: dim
+means hidden or an opaque token, low alpha is prohibited, and unit tests enforce it.
 
-- Switch to Biome/oxlint (lost FSD boundary gate) · Switch to Electron (cost > benefit, misdiagnosed cause) · Replatform Astro/React Router · Introduce CLI framework · Switch to TS (cli/mcp) · Adopt Bun (roadmap unpublished) · Replace D3/Cosmograph/G6 visualizations.
-- **[Updated, 2026-07-18]** Since the above visualization decision point, `refactor/retire-sigma-topology`
-  (#344) has been merged; `/topology`'s Sigma renderer was replaced by the custom
-  canvas-2D engine (`topology-map-v2`, using Graphology + ForceAtlas2 physics).
-- **[Updated, 2026-07-24]** With the removal of the `/docs` folder topology minimap,
-  Sigma.js and `@sigma/*` dependencies have completely disappeared from the codebase. Current
-  rendering is owned by `topology-map-v2`, graph data structures/physics by Graphology +
-  ForceAtlas2. The Sigma review record below reflects the rationale at that time, not the current
-  implementation contract.
+### CLI, MCP, and testing
 
-## Immediate Actions (This Cycle — historical, superseded)
+| Layer | Version | What would overturn "keep" |
+|---|---|---|
+| Module format | plain `.mjs` ESM, documented with JSDoc | A TypeScript conversion paying for the build pipeline it adds. If types are ever needed downstream, the cheaper path is `tsc --emit-declaration-only` |
+| Node | `>=24 <25` | Nothing pending. Root, CLI and MCP manifests share this one contract |
+| Argument parsing | hand-written, `cli-args.mjs` | The flat registry of 54 commands growing flags complex enough to need a framework. `citty` and its peers were rejected because `--help` automation alone did not pay for them |
+| MCP SDK | `@modelcontextprotocol/core` and `server` 2.0.0 | Stdio transport is settled. Re-check the registry and tool schemas whenever a published contract changes |
+| Vitest, Playwright | 4.1.10, 1.62.0 | Nothing pending. Take major upgrades opportunistically, after reading the release notes |
 
-These were the 2026-07-17 action list. They are retained as history, not
-current instructions: Node 24 and the current renderer are already the package
-and runtime contract, and npm publishing is retired.
+**npm publish preparation was retired on 2026-07-27.** npm is not a delivery channel for this
+product: the source checkout and the installed macOS app carry the CLI and the MCP server, and
+nothing else needs to.
 
-1. Update `package.json` engines `>=22` (cli·mcp·root) — 30 min.
-2. Write Wry low-alpha reproduction case → report upstream issue — before Slice 2.
-3. Draft N1 npm publish checklist as a GitHub Actions workflow — at N1 milestone.
-4. TS 6.0 upgrade ticket — after passing Slice 1.
+## Layer 2 and LLM connections, decided but not built
+
+None of this is implemented. Each row is a decision waiting on the gate beside it, recorded so the
+choice is not made hastily on the day the gate opens.
+
+| Use case | Decision | Waits on |
+|---|---|---|
+| In-app question answering | Vercel AI SDK 5, provider-agnostic, bring your own key | The Q&A slice's gate. It works under static export and lets a person switch providers freely, which is what the no-bundled-credits promise requires |
+| Local models | Ollama and LM Studio over plain localhost | The same gate. Both speak the OpenAI-compatible shape and neither raises a CORS problem |
+| Cloud provider CORS | A Tauri sidecar proxy | The same gate. Calling Anthropic or OpenAI directly from a browser is assumed impossible `⚠`, and keys belong in the OS keychain (the Tauri v2 API name still needs checking `⚠`) |
+| Coordination server | Cloudflare Workers with Durable Objects, as the leading candidate | Real demand for team sync. Chosen for minimal solo operation and auditability; a self-built Rust or Go binary is the later migration if it ever earns one |
+| End-to-end encryption | `age`, through rage or Typage | The second step of sync. Git-native, multi-recipient, and post-quantum hybrid. Trust promise six — a public, auditable implementation — is a precondition, not a nice-to-have |
+| Payments | None. Owner decision, 2026-07-17 | Nothing. This is not for sale: open source, running on the person's own machine. Donations only, through GitHub Sponsors, optionally. Team sync, if it is ever built, stays self-hostable open source |
+
+## Rejected, and why
+
+- **Biome or oxlint** instead of ESLint — would lose the FSD boundary gate.
+- **Electron** instead of Tauri — the cost exceeded the benefit, and the diagnosis it rested on
+  was wrong.
+- **Astro or React Router** instead of Next.js — a replatform with no measured return.
+- **A CLI framework** instead of hand-written argument parsing.
+- **TypeScript** for `cli/` and `mcp/`.
+- **Bun** instead of pnpm — roadmap unpublished.
+- **D3, Cosmograph, or G6** for the graph.
+
+That last one has since been settled by events rather than by argument. `refactor/retire-sigma-topology`
+(#344) replaced the Sigma renderer on `/topology` with the custom canvas-2D engine on 2026-07-18,
+and removing the `/docs` folder minimap on 2026-07-24 took Sigma.js and every `@sigma/*` package
+out of the codebase entirely. Rendering belongs to `topology-map-v2`; graph structure and physics
+belong to Graphology and ForceAtlas2. Any Sigma reasoning preserved above is a record of what was
+true then, not a description of the code today.
+
+## The 2026-07-17 action list, kept as history
+
+These four items are here because a decision record should show what it expected to happen next,
+not because any of them is an instruction. Two are already contradicted by the tables above.
+
+1. Move the `engines` field to `>=22` across root, CLI and MCP. **Superseded** — the contract is
+   `>=24 <25`.
+2. Write a Wry low-alpha reproduction case and report it upstream. Still open, and still the one
+   real desktop task.
+3. Draft an npm publish checklist as a GitHub Actions workflow. **Superseded** — npm publishing
+   was retired.
+4. Open a TypeScript 6.0 upgrade ticket. Done; the manifest carries the 6.0 alias today.
