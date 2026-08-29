@@ -184,8 +184,15 @@ describe('ArchitectureWorkbench', () => {
     renderWorkbench();
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeInTheDocument();
     expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
-    // Twice on purpose: the stage's pattern chip, and the scope rail's profile caption.
-    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(2);
+    /*
+     * Three on purpose, and the header is the one that matters: the dock is closed by default now,
+     * so the pattern heading and the scope rail's caption are both behind a click. The drawing has
+     * to name what kind of drawing it is without one (2026-08-30).
+     */
+    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(3);
+    expect(screen.getByTestId('architecture-header-pattern')).toHaveTextContent(
+      'Feature-Sliced Design',
+    );
     expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
@@ -411,10 +418,9 @@ describe('ArchitectureWorkbench', () => {
     Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 200 });
     Object.defineProperty(scroller, 'scrollHeight', {
       configurable: true,
-      get: () => screen.getByTestId('architecture-blueprint').parentElement
-        ?.querySelector('[data-architecture-mode="plan"]')
-        ? 600
-        : 500,
+      /* Asked of the scroller itself: the panels moved into a dock, so the blueprint's parent is
+         no longer the grid that holds the canvas. */
+      get: () => (scroller.querySelector('[data-architecture-mode="plan"]') ? 600 : 500),
     });
     scroller.scrollTop = 300;
 

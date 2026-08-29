@@ -481,6 +481,18 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   receipts. Unsupported languages, unknown import usage, unmapped edges,
   unruled edges, and empty roles fail closed; absence of evidence is never a
   green result.
+- **At workbench width the screen is a canvas with docks, and it does not scroll**
+  (2026-08-30). The canvas holds the full height; the role's own answer, the rule
+  sentences, the mark legend, the applied scopes and the dependency-direction prose
+  open in a 380px panel beside it — by clicking a role, by the "Roles and rules"
+  button, or by a link naming a role — and Escape closes it. The roles panel and
+  the stage panel are exclusive, because both at once leave a laptop canvas too
+  narrow for the drawing. The receipt's verdict and stamp, and the name of the
+  pattern being drawn, stay on the canvas at every width. Below workbench width the
+  screen remains the stacked, scrolling document it was.
+- **A violated crossing is drawn as one** (2026-08-30): always visible even when it
+  skips a role, in the same tone as the `Violated` pill, dashed so it reads without
+  colour, with its own legend row and the same mark on its sentence.
 - **Each role box carries its own ledger** when a persisted receipt exists
   (2026-08-30). One line under a ruled separator states what that role's own
   outgoing edges did and how many imports leave it — `✓ no violations out · 411

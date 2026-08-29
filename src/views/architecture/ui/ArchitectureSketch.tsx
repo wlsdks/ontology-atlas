@@ -13,6 +13,24 @@ import type { RoleLedger } from '../model/role-ledger';
 import { sketchConnector, sketchRect, sketchStadium } from '../model/sketch-stroke';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
+/**
+ * ⚠️ **One value for every stroke, named once.** Measured at 1512 on the installed app,
+ * `--color-indigo-a38` at a hairline was invisible against the canvas ground, so the measured-
+ * traffic branch was raised to a60 — through a ternary whose two arms then held the same value,
+ * while the legend swatch went on drawing the a38 the canvas no longer paints. A legend row must
+ * name a mark that is on the screen (`docs/AGENT-DESIGN-METHOD.md`), so both sides read this.
+ */
+export const EDGE_STROKE = 'var(--color-indigo-a60)';
+/**
+ * ⚠️ **A violation is the one thing on this canvas that is not indigo.** The design system runs on
+ * neutrals plus one indigo and a violated edge would normally be a shape, not a colour — but the
+ * receipt's own verdict already owns a signal tone on this screen (`RECORD_TONE_CLASS.violated`),
+ * and the pill saying "Violated · 2" while the drawing paints those two edges exactly like every
+ * conforming one is the contradiction fable measured on 2026-08-30. Same tone as the pill, plus a
+ * dash, so it survives without colour too.
+ */
+export const VIOLATED_STROKE = 'var(--color-danger-text)';
+
 const BOX_W = 148;
 /*
  * ⚠️ **The ledger widens the box as well as deepening it.** Measured 2026-08-30 at 1512 and 1920:
@@ -38,7 +56,7 @@ const BOX_H = 62;
  * close up to match.
  */
 const BOX_H_LEDGER = 74;
-const ROW_GAP_LEDGER = 22;
+const ROW_GAP_LEDGER = 18;
 
 /**
  * ⚠️ **Shapes, not colour.** This design system runs on neutrals plus one indigo, and status
@@ -118,11 +136,10 @@ export function ArchitectureSketch({
   roleLabel,
   moduleCountLabel,
   conceptCountLabel,
-  permittedEdgeLabel,
-  trafficEdgeLabel,
   moduleCounts,
   conceptCounts,
   ledgers,
+  violatedPairs,
   ledgerStatusLabel,
   ledgerImportsLabel,
   runLabel,
@@ -137,8 +154,6 @@ export function ArchitectureSketch({
   roleLabel: (id: string) => string;
   moduleCountLabel: (count: number) => string;
   conceptCountLabel: (count: number) => string;
-  permittedEdgeLabel: (from: string, to: string) => string;
-  trafficEdgeLabel: (from: string, to: string, count: number) => string;
   /** `null` where this surface cannot list source at all, so a box says nothing rather than 0. */
   moduleCounts: Readonly<Record<string, number>> | null;
   conceptCounts: Readonly<Record<string, number>>;
@@ -147,6 +162,16 @@ export function ArchitectureSketch({
    * honest state, not a zero row: a box with nothing measured behind it says nothing.
    */
   ledgers: Readonly<Record<string, RoleLedger>>;
+  /**
+   * `from>to` for every crossing the receipt counted as a violation.
+   *
+   * ⚠️ **The pill said "Violated · 2" and the drawing showed no violation at all** (judged
+   * 2026-08-30). Both violating edges were skips, which the canvas holds back until a role is
+   * chosen, and even then they were painted in the same indigo as every conforming stroke. A
+   * violation is the one fact this drawing exists to surface, so it is never held back and never
+   * wears the conforming stroke.
+   */
+  violatedPairs: ReadonlySet<string>;
   /** The ledger's first half, already worded by the locale — never assembled here. */
   ledgerStatusLabel: (ledger: RoleLedger) => string;
   ledgerImportsLabel: (count: number) => string;
@@ -371,27 +396,13 @@ export function ArchitectureSketch({
   /* At rest the canvas draws the spine. A crossing that skips a column is a fact about one role,
      so it arrives when that role is chosen; the legend says so rather than leaving it a mystery. */
   const visibleEdges = graph.edges.filter(
-    (edge) => edge.columnSpan <= 1 || selected === edge.from || selected === edge.to,
+    (edge) =>
+      edge.columnSpan <= 1 ||
+      selected === edge.from ||
+      selected === edge.to ||
+      violatedPairs.has(`${edge.from}>${edge.to}`),
   );
 
-  /*
-   * ⚠️ **Reading order is not drawing order.** `buildArchitectureGraph` sorts by column span
-   * descending so the longest skip is painted first and short strokes land on top of it. Read as
-   * sentences that order scatters: the storefront profile listed adapter, adapter, application,
-   * adapter, application, port. Grouped by where the rule starts, the same six read down the
-   * chain, so the list is sorted here instead of changing what the canvas paints.
-   */
-  const sentenceOrder = useMemo(() => {
-    const columnOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
-    const at = (id: string) => columnOf.get(id) ?? 0;
-    return [...graph.edges].sort(
-      (a, b) =>
-        at(a.from) - at(b.from) ||
-        at(a.to) - at(b.to) ||
-        a.from.localeCompare(b.from) ||
-        a.to.localeCompare(b.to),
-    );
-  }, [graph.boxes, graph.edges]);
 
   /*
    * ⚠️ Reserve room for the skips that are actually drawn, not for the ones that could be. The
@@ -460,7 +471,7 @@ export function ArchitectureSketch({
             {(covered.coveredDown ? hiddenAboveLabel : hiddenLeftLabel)(covered.hiddenLeft)}
           </span>
         )}
-        {covered.hiddenRight === 0 ? null : (
+        {covered.hiddenRight === 0 || covered.coveredDown ? null : (
           <span
             className={badgeClass({
               shape: 'pill',
@@ -469,7 +480,7 @@ export function ArchitectureSketch({
             })}
             data-testid="architecture-canvas-hidden-right"
           >
-            {(covered.coveredDown ? hiddenBelowLabel : hiddenRightLabel)(covered.hiddenRight)}
+            {hiddenRightLabel(covered.hiddenRight)}
           </span>
         )}
           {graph.edges.length === 0 ? null : (
@@ -608,6 +619,7 @@ export function ArchitectureSketch({
            * is a machine's count, so it is drawn exactly and its width carries the number.
            */
           const isDeclared = edge.kind === 'permitted';
+          const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
           /*
            * A skip leaves the chain and comes back to it: below the row when the chain runs
            * across, out to the side when it runs down. The arithmetic is the same either way — the
@@ -646,11 +658,11 @@ export function ArchitectureSketch({
               key={`${edge.kind}-${edge.from}-${edge.to}-${runSeq}`}
               d={d}
               fill="none"
-              /* Measured at 1512 on the installed app: `--color-indigo-a38` at a hairline was not
-                 visible against the canvas ground at all. A stroke nobody can see is a fact the
-                 drawing did not state. */
-              stroke={isDeclared ? 'var(--color-indigo-a60)' : 'var(--color-indigo-a60)'}
+              stroke={violated ? VIOLATED_STROKE : EDGE_STROKE}
               strokeWidth={isDeclared ? 1.4 : 1.4 + (edge.weight ?? 0) * 3}
+              /* Dashed as well as toned, so the violation survives a colour-blind reading and a
+                 greyscale print — the tone is the alarm, the dash is the fact. */
+              strokeDasharray={violated ? '5 3' : undefined}
               strokeLinecap="round"
               markerEnd="url(#architecture-sketch-arrow)"
               opacity={receded ? 0.18 : 1}
@@ -674,6 +686,7 @@ export function ArchitectureSketch({
                   : undefined
               }
               data-edge-kind={edge.kind}
+              data-edge-violated={violated ? 'true' : undefined}
               data-edge-from={edge.from}
               data-edge-to={edge.to}
               data-edge-count={edge.count}
@@ -837,31 +850,25 @@ export function ArchitectureSketch({
         </svg>
       </div>
       {/*
-        ⚠️ **Painted, not screen-reader-only.** This list held the complete answer to the question
-        the screen exists to answer — every rule, all at once — inside an `sr-only` box measured at
-        one pixel wide, so a fresh-eyes walker could reach it only through the DOM (walkthrough,
-        2026-08-28). `docs/AGENT-DESIGN-METHOD.md` names this exact failure: a fact only the
-        accessibility tree carries is a fact on no screen at all.
-
-        It also fixes the drawing's own limit. At rest the canvas draws the spine and holds skips
-        back until a role is chosen, so a profile with six declared rules shows three strokes. The
-        sentences carry all six, and a measured count carries a number that a stroke width can only
-        approximate.
+        ⚠️ **The count of what is below belongs at the bottom.** It shared the run control's row at
+        the top, roughly 500px away from the cut it describes, and the box it hides is the
+        terminator every arrow points at (judged 2026-08-30). The row exists only while something
+        is actually hidden, so it costs the drawing nothing the rest of the time.
       */}
-      {graph.edges.length === 0 ? null : (
-        <ol
-          className="flex flex-wrap gap-x-4 gap-y-1 rounded-b-panel border-t border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-[var(--card-pad)] py-2.5 text-caption text-[color:var(--color-text-tertiary)]"
-          data-testid="architecture-edge-sentences"
-        >
-          {sentenceOrder.map((edge) => (
-            <li key={`${edge.kind}-${edge.from}-${edge.to}`} className="break-keep">
-              {edge.kind === 'permitted'
-                ? permittedEdgeLabel(roleLabel(edge.from), roleLabel(edge.to))
-                : trafficEdgeLabel(roleLabel(edge.from), roleLabel(edge.to), edge.count ?? 0)}
-            </li>
-          ))}
-        </ol>
-      )}
+      {covered.coveredDown && covered.hiddenRight > 0 ? (
+        <div className="flex items-center justify-center px-[var(--card-pad)] pb-1 pt-1.5">
+          <span
+            className={badgeClass({
+              shape: 'pill',
+              className:
+                'border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] text-[color:var(--color-text-tertiary)]',
+            })}
+            data-testid="architecture-canvas-hidden-below"
+          >
+            {hiddenBelowLabel(covered.hiddenRight)}
+          </span>
+        </div>
+      ) : null}
     </div>
   );
 }

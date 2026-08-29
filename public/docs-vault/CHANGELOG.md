@@ -7,6 +7,25 @@
 
 ---
 
+## 2026-08-30 · The architecture screen became a canvas with panels, and violations are drawn
+
+- The lower half of `/architecture` used to be two panels squeezed into 64px each
+  at the end of a page scroll that had already run out: the applied scopes, the
+  rules, the receipt and the chosen role were not merely long, they could not be
+  reached. On a workbench-width window the screen no longer scrolls at all. The
+  canvas holds the height, and everything else opens beside it: click a role, press
+  "Roles and rules", or follow a link that names a role. Escape closes it.
+- What stays on the canvas is what may not wait for a click: the receipt's verdict
+  and stamp, and the name of the pattern being drawn.
+- A crossing the receipt counted as a violation is now drawn: always visible even
+  when it skips a role, in the same tone as the "Violated" pill, dashed so it reads
+  without colour, with its own legend row and the same mark on its sentence. Before
+  this the pill could say "Violated · 2" over a drawing that showed nothing of the
+  kind.
+- The two side panels are exclusive: opening the roles panel closes the stage
+  panel, because both at once leave a laptop canvas too narrow for the drawing.
+- Below workbench width the screen is the stacked, scrolling document it was.
+
 ## 2026-08-30 · Every role on the architecture canvas carries its own receipt
 
 - A role box used to say only its name and how many reviewed concepts sit inside

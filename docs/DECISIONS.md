@@ -40,6 +40,67 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The architecture screen is a canvas with docks, and a violation is drawn
+
+**Convened because**: the owner opened the installed app on the new role ledger
+and found the lower half of the screen unreachable, and said the fix in one sentence:
+structurally there must be no scroll below the canvas at all — a canvas, and
+panels that open on a click and carry the explanations.
+
+**What was actually broken, in numbers** (installed app and browser, 1512×945):
+the screen was a two-row grid, and row 1 took every pixel the canvas asked for —
+967px. Row 2 got **64px per panel**, each with its own inner scroller holding 66px
+and 219px of content, at the end of a page scroller with 187px of travel that was
+already exhausted. The applied scopes, the rules, the receipt and the chosen role
+were not long. They were unreachable.
+
+**Decision**: at `xl` and above the workbench is one non-scrolling row. The canvas
+holds the height; everything else opens as a **dock** beside it — by clicking a
+role, by the button on the canvas, or by a link that names a role. Below `xl` the
+stacked, scrolling document is unchanged, because a phone cannot put anything
+beside anything.
+
+**What the canvas keeps**, because a verdict nobody opened is a verdict nobody
+reads: the receipt's status pill and stamp, and the name of the pattern being
+drawn. What moved into the dock: the rule sentences and the mark legend, the
+role's own answer, the applied scopes, and the dependency-direction prose.
+
+**One dock at a time.** The inspector is 380px and the stage 340px; both open
+leave a 1512 canvas 628px for an 804px drawing, which is the horizontal scroll the
+canvas took the full width to remove. Opening one closes the other, and a link
+naming both is answered with the stage.
+
+**And the drawing states the verdict it carries.** The pill said "Violated · 2"
+while the canvas painted nothing to match: both violating edges were skips, which
+the drawing holds back until a role is chosen, and even then they wore the same
+indigo as every conforming stroke. A violated crossing is now always drawn, in the
+danger tone the receipt pill already owns, dashed so it survives without colour,
+with its own legend row and the same mark on its sentence.
+
+**Applied rule**: charter first — no new data, no new route, no new write; the
+receipt and the profile already carried every fact this rearranges.
+**Signed**: stark
+
+**Recorded dissent** (design lead, judged this change before merge): a canvas whose
+rest state shows one stroke reads as a spaced list rather than a graph, and the
+reference the owner pointed at reads as a graph because every node is connected.
+Drawing only violations at rest does not answer that; drawing all measured traffic
+at rest would, at the cost of the clutter the skip-hiding rule exists to prevent.
+**Falsifier**: a reader looks at the rest state of a measured profile and cannot
+say which roles actually import which — while the dock's sentence list, one click
+away, answers it immediately. If that is observed, hiding skips at rest was the
+wrong default for measured edges and the rule should invert.
+**Revisit**: when a profile with more than one violated crossing is measured on a
+real vault, or at the first outside walkthrough of this screen.
+
+**Also recorded**: the rule sentences moved into a panel that is closed by default.
+The 2026-08-28 record required them **painted rather than `sr-only`**, and that
+still holds — a panel a reader opens is on a screen, a one-pixel box is not — but
+if a walkthrough finds a reader who never opens the dock and therefore never learns
+what the strokes mean, this is the record that was wrong, not that one.
+
+**Status**: standing
+
 ## 2026-08-30 — A role box states what its own outgoing edges did, never a verdict
 
 **Convened because**: the owner pointed at a GitHub Actions workflow graph and

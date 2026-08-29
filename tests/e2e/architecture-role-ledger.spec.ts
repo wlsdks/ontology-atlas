@@ -89,10 +89,8 @@ function seedRecord(seed: Record<string, string>): void {
 /** The inner width a box gives its sentence: the box, less the padding either side. */
 const BOX_SIDE_PAD = 12;
 
-test('a measured profile states each role’s receipt inside its box, whole chain on screen', async ({
-  page,
-}) => {
-  test.setTimeout(180_000);
+/** Opens the seeded vault the only way a browser can: through the picker the stub replaces. */
+async function openSeededVault(page: import('@playwright/test').Page) {
   await page.setViewportSize({ width: 1512, height: 945 });
   await seedFirstRunSeen(page);
   const seed = collectVault(VAULT_ROOT);
@@ -109,6 +107,13 @@ test('a measured profile states each role’s receipt inside its box, whole chai
       timeout: 60_000,
     })
     .toBe(true);
+}
+
+test('a measured profile states each role’s receipt inside its box, whole chain on screen', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await openSeededVault(page);
 
   for (const locale of ['en', 'ko']) {
     await page.goto(`/${locale}/architecture/?e2e=1&guides=off`, { waitUntil: 'domcontentloaded' });
@@ -163,5 +168,78 @@ test('a measured profile states each role’s receipt inside its box, whole chai
       /* And no role box sits below the fold: the whole chain is one screen. */
       expect(measured.belowFold, where).toBeLessThanOrEqual(1);
     }
+  }
+});
+
+/**
+ * The workbench is a canvas with docks, not a page that scrolls.
+ *
+ * ⚠️ **What this replaces, in numbers** (installed app and browser, 1512×945, 2026-08-30). The
+ * screen was a two-row grid: the canvas took 967px of an 844px viewport row and the second row —
+ * the applied scopes, the rules, the receipt, the chosen role — got 64px each, with 66px and 219px
+ * of their own hidden content. The page scroller had 187px of travel and was already at its end,
+ * so the lower half was not long, it was unreachable. The owner's instruction for the fix is the
+ * subject of this gate: structurally there is to be no scroll below the canvas at all — a canvas,
+ * and panels that open on a click.
+ */
+test('the workbench holds one screen: no page scroll, and the panels open on a click', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  await openSeededVault(page);
+
+  for (const size of [
+    { width: 1512, height: 945 },
+    { width: 1920, height: 1080 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
+    await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, {
+      timeout: 30_000,
+    });
+    const where = `@ ${size.width}`;
+
+    /* Nothing below the fold, because there is no below: the layout does not scroll. */
+    const travel = () =>
+      page.evaluate(() => {
+        const scroller = document.querySelector(
+          '[data-testid="architecture-layout-scroll"]',
+        ) as HTMLElement;
+        return scroller.scrollHeight - scroller.clientHeight;
+      });
+    expect(await travel(), where).toBeLessThanOrEqual(1);
+
+    /* The dock is closed, and what the receipt says is on the canvas anyway. */
+    const dock = page.getByTestId('architecture-inspector');
+    await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'false');
+    await expect(page.getByTestId('architecture-record-status'), where).toBeVisible();
+
+    /* Clicking a role opens the dock, and the dock leads with that role's own answer. */
+    await page.locator('[data-testid="architecture-graph-box-widgets"]').click();
+    await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'true');
+    const detail = page.getByTestId('architecture-role-detail');
+    await expect(detail, where).toBeVisible();
+    expect(await travel(), where).toBeLessThanOrEqual(1);
+
+    /* Opening a dock never costs the drawing: the chain still ends above the fold. */
+    const belowFold = await page.evaluate(() =>
+      Math.max(
+        0,
+        ...[...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')].map(
+          (box) => box.getBoundingClientRect().bottom - window.innerHeight,
+        ),
+      ),
+    );
+    expect(belowFold, where).toBeLessThanOrEqual(1);
+
+    /* Escape closes the dock and keeps the choice — the canvas still shows what was picked. */
+    await page.keyboard.press('Escape');
+    await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'false');
+
+    /* And the button opens it again without any role being chosen. */
+    await page.getByTestId('architecture-inspector-toggle').click();
+    await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'true');
+    await expect(page.getByTestId('architecture-edge-sentences'), where).toBeVisible();
   }
 });
