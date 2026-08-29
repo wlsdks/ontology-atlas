@@ -773,8 +773,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Code remains, but context disappears. Why was it built this way? If you touch this part, what else will break? That knowledge usually lives in people's heads and past conversations. grep finds code, but not why. Ontology Atlas captures that layer of meaning in a single folder of Markdown files. The file frontmatter ser",
-      "wordCount": 282,
-      "updatedAt": "2026-08-23",
+      "wordCount": 316,
+      "updatedAt": "2026-08-29",
       "linksOut": []
     },
     {
