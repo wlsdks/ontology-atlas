@@ -52,7 +52,7 @@ export interface AnimatedBackgroundTokens {
   particleRgb: string;
 }
 
-export interface AnimatedBackgroundStepArgs {
+interface AnimatedBackgroundStepArgs {
   width: number;
   height: number;
   dpr: number;
@@ -80,7 +80,7 @@ interface Seed {
  * Cursor proximity [0,1] — 0 outside the radius, 1 at the centre, quadratic in
  * between.
  */
-export function cursorFalloff(
+function cursorFalloff(
   x: number,
   y: number,
   px: number | null,
@@ -95,7 +95,7 @@ export function cursorFalloff(
 }
 
 /** Population proportional to area — at least 1, capped to protect both low-end and ultra-wide screens. */
-export function populationFor(width: number, height: number, areaPer: number, cap: number): number {
+function populationFor(width: number, height: number, areaPer: number, cap: number): number {
   if (width <= 0 || height <= 0 || areaPer <= 0) return 0;
   return Math.max(1, Math.min(cap, Math.round((width * height) / areaPer)));
 }

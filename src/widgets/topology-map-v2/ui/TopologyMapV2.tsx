@@ -81,7 +81,7 @@ export interface TopologyV2Edge {
   declaredBySlug: string | null;
 }
 
-export interface TopologyV2Focus {
+interface TopologyV2Focus {
   /**
    * The only focus field the v2 canvas loop actually consumes. The old
    * depthLimit/searchQuery/activeCategory/hubsOnly were dead fields the renderer
@@ -91,7 +91,7 @@ export interface TopologyV2Focus {
   selectedSlug: string | null;
 }
 
-export interface TopologyV2PreviewEdge {
+interface TopologyV2PreviewEdge {
   sourceId: string;
   targetId: string;
   relationType: string;

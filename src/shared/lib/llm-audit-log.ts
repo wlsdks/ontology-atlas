@@ -28,9 +28,9 @@
  * `tests/fixtures/llm-audit-log.sample.jsonl`.
  */
 
-export type LlmAuditOutcome = 'ok' | 'denied' | 'error' | 'unknown';
+type LlmAuditOutcome = 'ok' | 'denied' | 'error' | 'unknown';
 
-export interface LlmAuditScope {
+interface LlmAuditScope {
   /** Slugs of the nodes whose excerpts were sent; empty for a connection check. */
   nodes: string[];
   promptChars: number;
@@ -38,7 +38,7 @@ export interface LlmAuditScope {
 }
 
 /** Tool calls carried by one round trip — name and target only; full arguments are never recorded. */
-export interface LlmAuditToolRef {
+interface LlmAuditToolRef {
   name: string;
   target: string;
 }

@@ -1,7 +1,6 @@
 'use client';
 
-import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
-import { useAgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
+import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
@@ -12,7 +11,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from '@/shared/lib/tauri-acp';
-import { isGuardedRuntime } from '@/features/acp-session/model/runtime-gate';
+import { isGuardedRuntime } from '@/features/acp-session';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
 
 import { DETAIL_TOGGLE_CHIP, SettingsGroup, SettingsRow } from './settings-primitives';

@@ -1,2 +1,2 @@
-export type { Status, StatusDotColor } from './model';
+export type { Status } from './model';
 export { DEFAULT_STATUSES } from './model';

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useDogfoodInsight } from '@/features/vault-ontology';
 import { TopologyMapV2, clearTopologyV2TokensCache } from '@/widgets/topology-map-v2';
-import type { TierRevealConfig } from '@/widgets/topology-map-v2/model/tier-visibility';
+import type { TierRevealConfig } from '@/widgets/topology-map-v2';
 import { buildStageGraph, type StageGraph } from '../lib/stage-graph';
 
 /**

@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeDomainCensusRows } from "@/shared/lib/ontology-tree";
+import { computeDomainCensusRows } from "@/entities/knowledge-graph";
 
 export interface DomainCompositionRow {
   domainId: string;

@@ -15,7 +15,8 @@ relation_notes: { elements/native-vault-filesystem-bridge: The local folder moun
 The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under `<project>/atlas`, that child is persisted and built as the canonical vault; direct standalone vault folders remain valid. A new manifest replaces the old source atomically rather than combining roots or falling back to a bundled sample.
 
 ## Evidence
-- src/features/docs-vault-local (implementation evidence)
+- src/features/docs-vault-local (entry UI: open/create/guide/starter actions)
+- src/entities/vault-session/model/use-local-vault.ts and LocalVaultProvider.tsx (the mounted vault's session state; moved out of the feature on 2026-08-30 because every vault-reading feature depends on it)
 
 ## Confidence
 high (0.9): Consistent with local-first principle documentation

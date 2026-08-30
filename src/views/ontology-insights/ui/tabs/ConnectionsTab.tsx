@@ -6,7 +6,7 @@ import {
   TopologyV2KindGlyph,
   TopologyV2TraceMark,
 } from "@/shared/ui";
-import { isContainmentRelation } from "@/shared/lib/ontology-tree";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
 import type { ImpactRanking } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";
@@ -46,7 +46,7 @@ export interface ConnectionsTabLabels {
   evidenceBadgeHint: string;
 }
 
-export interface ConnectionsTabHubLink {
+interface ConnectionsTabHubLink {
   /** Clicking a hub row deeplinks to that node on the map (`buildOntologyNodeHref`). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;

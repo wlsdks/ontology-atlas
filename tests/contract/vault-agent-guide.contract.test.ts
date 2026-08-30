@@ -9,7 +9,7 @@ import {
   VAULT_CLAUDE_BRIDGE_PATH,
   vaultAgentGuideForLocale,
   vaultClaudeBridgeForLocale,
-} from "@/features/docs-vault-local/lib/ontology-starter";
+} from "@/entities/vault-session/lib/ontology-starter";
 import { analyzeAgentFiles } from "../../cli/src/lib/agent-files.mjs";
 import { runCliJson } from "../helpers/run-cli-json";
 

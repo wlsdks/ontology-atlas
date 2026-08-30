@@ -15,7 +15,7 @@
  */
 import { readGuideAutoStart } from '@/shared/lib/guide-auto-start';
 
-export const VAULT_GUIDE_AUTO_OPENED_KEY = 'vault-open-guide:auto:v1';
+const VAULT_GUIDE_AUTO_OPENED_KEY = 'vault-open-guide:auto:v1';
 
 export function readVaultGuideAutoOpened(
   key: string = VAULT_GUIDE_AUTO_OPENED_KEY,

@@ -18,7 +18,7 @@
  * checkout**. Those two are all of it; there is no third.
  */
 
-export type McpServerLaunchKind = "app-bundled" | "source-checkout";
+type McpServerLaunchKind = "app-bundled" | "source-checkout";
 
 /**
  * The launch contract, written verbatim into the client config.

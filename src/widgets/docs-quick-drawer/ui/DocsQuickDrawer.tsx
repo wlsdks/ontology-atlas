@@ -29,9 +29,9 @@ import {
   type VaultManifest,
   type VaultTreeNode,
 } from "@/entities/docs-vault";
-import { useStaticVaultSource } from "@/features/vault-sample-source";
-import { useDataSourceMode } from "@/features/data-source-mode";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { useStaticVaultSource } from "@/entities/vault-session";
+import { useDataSourceMode } from "@/entities/vault-session";
+import { useLocalVault } from "@/entities/vault-session";
 import {
   filterTree,
   firstDocSlug,

@@ -162,7 +162,7 @@ export interface ClusterBarLabels {
  * Last-resort fallback when the caller passes no labels. Seeing it on screen
  * means the wiring is broken; a contract test guards that wiring separately.
  */
-export const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
+const FALLBACK_CLUSTER_BAR_LABELS: ClusterBarLabels = {
   expandAll: "Expand all",
   expandCount: "Expand {count}",
   collapse: "Collapse",
@@ -235,7 +235,7 @@ export function clusterBarRect(
   return { x: parentScreenX - w / 2, y: bottom - h, w, h };
 }
 
-export interface ClusterBarDrawInput {
+interface ClusterBarDrawInput {
   parentScreenX: number;
   parentScreenY: number;
   nodeScreenRadius: number;
@@ -256,7 +256,7 @@ export interface ClusterBarDrawInput {
  * numerals bleed between the letters. What it covers comes back on collapse; a
  * button you cannot read does not.
  */
-export function drawClusterBar(
+function drawClusterBar(
   ctx: CanvasRenderingContext2D,
   input: ClusterBarDrawInput,
   colors: ClusterChipColors,
@@ -381,9 +381,9 @@ const BADGE_NODE_CLEARANCE = 10;
  * separates it from bumping one value until "this screen" happens to be clear.
  */
 /** Distance pushing the orbit button outside the node radius (screen px). */
-export const ORBIT_BUTTON_CLEARANCE = 14;
+const ORBIT_BUTTON_CLEARANCE = 14;
 /** Orbit button diameter (px) — the DOM side's `h-7 w-7`. The contract test measures from this. */
-export const ORBIT_BUTTON_SIZE = 28;
+const ORBIT_BUTTON_SIZE = 28;
 
 /**
  * The rectangle the orbit button occupies this frame — single source sharing the
@@ -498,7 +498,7 @@ export function clusterChipTravelPoint(input: {
   };
 }
 
-export interface ClusterBadgeDrawInput {
+interface ClusterBadgeDrawInput {
   parentScreenX: number;
   parentScreenY: number;
   /** Parent's base screen radius (`radiusForKind × magnitudeScale × cameraScale`). */
@@ -522,7 +522,7 @@ export interface ClusterBadgeDrawInput {
  * visible and the badge is only a collapse affordance. The caller has already
  * set `ctx.globalAlpha` to the parent's tier alpha.
  */
-export function drawClusterBadge(
+function drawClusterBadge(
   ctx: CanvasRenderingContext2D,
   input: ClusterBadgeDrawInput,
   colors: ClusterChipColors,

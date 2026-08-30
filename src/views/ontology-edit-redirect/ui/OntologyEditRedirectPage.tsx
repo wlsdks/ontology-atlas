@@ -28,7 +28,7 @@ export function OntologyEditRedirectPage() {
   return null;
 }
 
-export function buildTopologyWorkbenchRedirect(searchParams: URLSearchParams): string {
+function buildTopologyWorkbenchRedirect(searchParams: URLSearchParams): string {
   if (
     searchParams.get("mode") === "create" ||
     searchParams.get("workbench") === "create"

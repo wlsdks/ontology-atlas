@@ -1,4 +1,4 @@
-export type BusinessOntologyLensStep = "outcome" | "domain" | "capability" | "element";
+type BusinessOntologyLensStep = "outcome" | "domain" | "capability" | "element";
 
 export interface BusinessOntologyLens {
   policy: "business-first";

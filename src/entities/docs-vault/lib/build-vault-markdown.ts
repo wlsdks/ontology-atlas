@@ -48,10 +48,10 @@ function quoteYamlScalar(v: string): string {
  * copies drifting apart. The only values are `human` and `agent:<name>`, and
  * **absence is unknown, not a defect** — no path fills it in as a person.
  */
-export const VAULT_CREATED_BY_KEY = "created_by";
+const VAULT_CREATED_BY_KEY = "created_by";
 export const VAULT_CREATED_BY_HUMAN = "human";
 const VAULT_CREATED_BY_AGENT_PREFIX = "agent:";
-export const VAULT_CREATED_BY_AGENT_UNKNOWN = `${VAULT_CREATED_BY_AGENT_PREFIX}unknown`;
+const VAULT_CREATED_BY_AGENT_UNKNOWN = `${VAULT_CREATED_BY_AGENT_PREFIX}unknown`;
 
 /** Agent name → `agent:<name>`. An unknown name becomes `agent:unknown` — still not a person. */
 export function vaultAgentCreatedBy(agentName: string | null | undefined): string {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { type VaultDoc } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import {
   buildBodyEntry,
   docBodyCacheKey,

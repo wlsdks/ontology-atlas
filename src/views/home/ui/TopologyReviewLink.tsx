@@ -1,6 +1,6 @@
 import { GitCompare } from "lucide-react";
 import { Link } from "@/i18n/navigation";
-import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import type { OntologyChangeset } from "@/entities/knowledge-graph";
 
 /**
  * The re-entry hook: "what changed while you were away".

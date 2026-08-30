@@ -3,7 +3,7 @@ import { render as rtlRender, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import koMessages from "../../../../messages/ko.json";
 import { TopologyReviewLink } from "./TopologyReviewLink";
-import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import type { OntologyChangeset } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, children, ...props }: React.ComponentProps<"a">) => (

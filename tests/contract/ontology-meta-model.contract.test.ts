@@ -9,8 +9,12 @@ import {
   VAULT_KINDS as MCP_VAULT_KINDS,
   defaultBody as mcpDefaultBody,
 } from "../../mcp/src/schema.mjs";
+/*
+ * ⚠️ Only the names the CLI runtime re-exports; `cli/src/lib/schema.mjs` executes
+ * `mcp/src/schema.mjs` since 2026-08-30, so the CLI arm proves the authoring
+ * channel really reaches the canon rather than that two files happen to match.
+ */
 import {
-  ONTOLOGY_META_MODEL_REFERENCE as CLI_META_MODEL_REFERENCE,
   VAULT_KINDS as CLI_VAULT_KINDS,
   defaultBody as cliDefaultBody,
 } from "../../cli/src/lib/schema.mjs";
@@ -28,7 +32,6 @@ const LOCAL_SPEC_POINTER = `${SPEC_PATH}${SPEC_ANCHOR}`;
 
 describe("Atlas meta-model — one public canon reaches every authoring channel", () => {
   it("schema mirrors expose one public reference and five authorable kinds", () => {
-    expect(CLI_META_MODEL_REFERENCE).toBe(MCP_META_MODEL_REFERENCE);
     expect(MCP_META_MODEL_REFERENCE).toContain(LOCAL_SPEC_POINTER);
     expect(CLI_VAULT_KINDS).toEqual(MCP_VAULT_KINDS);
     expect(MCP_VAULT_KINDS).toEqual([

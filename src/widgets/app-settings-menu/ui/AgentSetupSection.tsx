@@ -7,7 +7,8 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { Check, Copy } from 'lucide-react';
 
-import { OpenVaultCta, useAgentServer, useLocalVault } from '@/features/docs-vault-local';
+import { useAgentServer, useLocalVault } from '@/entities/vault-session';
+import { OpenVaultCta } from '@/features/docs-vault-local';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';

@@ -14,7 +14,7 @@ import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { searchProjects } from '../model/fuzzy-search';
 import { fieldClass } from '@/shared/ui/control-class';
 import { transientSurface } from "@/shared/ui/transient-surface";

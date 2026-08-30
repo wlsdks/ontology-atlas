@@ -188,7 +188,7 @@ function isAccent(value: string | null): value is Accent {
   return value !== null && (ACCENTS as readonly string[]).includes(value);
 }
 
-export function readAccent(): Accent {
+function readAccent(): Accent {
   if (typeof window === "undefined") return DEFAULT_ACCENT;
   try {
     const saved = window.localStorage.getItem(ACCENT_KEY);
@@ -203,7 +203,7 @@ export function readAccent(): Accent {
  * make "on the default" and "explicitly chose this" indistinguishable in the DOM,
  * so a later change of default would find the old default frozen into markup.
  */
-export function applyAccentAttribute(value: Accent): void {
+function applyAccentAttribute(value: Accent): void {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   if (value === DEFAULT_ACCENT) root.removeAttribute(ACCENT_ATTRIBUTE);
@@ -247,9 +247,9 @@ export function useAccent(): Accent {
  */
 const FRAME_METER_KEY = "atlas.appearance.frameMeter";
 
-export const DEFAULT_FRAME_METER = false;
+const DEFAULT_FRAME_METER = false;
 
-export function readFrameMeter(): boolean {
+function readFrameMeter(): boolean {
   if (typeof window === "undefined") return DEFAULT_FRAME_METER;
   try {
     return window.localStorage.getItem(FRAME_METER_KEY) === "on";
@@ -295,9 +295,9 @@ export function useFrameMeter(): boolean {
  */
 const VIEW_3D_KEY = "atlas.appearance.view3d";
 
-export const DEFAULT_VIEW_3D = false;
+const DEFAULT_VIEW_3D = false;
 
-export function readView3d(): boolean {
+function readView3d(): boolean {
   return readOnOff(VIEW_3D_KEY, DEFAULT_VIEW_3D);
 }
 
@@ -344,7 +344,7 @@ function isMapArrangement(value: string | null): value is MapArrangement {
   return value !== null && (MAP_ARRANGEMENTS as readonly string[]).includes(value);
 }
 
-export function readMapArrangement(): MapArrangement {
+function readMapArrangement(): MapArrangement {
   if (typeof window === "undefined") return DEFAULT_MAP_ARRANGEMENT;
   try {
     const saved = window.localStorage.getItem(MAP_ARRANGEMENT_KEY);
@@ -386,8 +386,8 @@ const AGENT_STATUS_KEY = "atlas.agentActivity.status";
 const AGENT_NOTIFICATIONS_KEY = "atlas.agentActivity.notifications";
 const AGENT_NOTIFICATION_KINDS_KEY = "atlas.agentActivity.kinds";
 
-export const DEFAULT_AGENT_ACTIVITY_STATUS = true;
-export const DEFAULT_AGENT_NOTIFICATIONS = true;
+const DEFAULT_AGENT_ACTIVITY_STATUS = true;
+const DEFAULT_AGENT_NOTIFICATIONS = true;
 
 /** Writes "off" explicitly so "never set" and "turned off" stay distinguishable. */
 function readOnOff(key: string, fallback: boolean): boolean {
@@ -412,7 +412,7 @@ function writeOnOff(key: string, value: boolean): void {
   notifyPreferenceChange();
 }
 
-export function readAgentActivityStatus(): boolean {
+function readAgentActivityStatus(): boolean {
   return readOnOff(AGENT_STATUS_KEY, DEFAULT_AGENT_ACTIVITY_STATUS);
 }
 
@@ -426,7 +426,7 @@ export function useAgentActivityStatusEnabled(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
-export function readAgentNotificationsEnabled(): boolean {
+function readAgentNotificationsEnabled(): boolean {
   return readOnOff(AGENT_NOTIFICATIONS_KEY, DEFAULT_AGENT_NOTIFICATIONS);
 }
 
@@ -447,7 +447,7 @@ export function useAgentNotificationsEnabled(): boolean {
  */
 const EMPTY_MUTED: ReadonlySet<string> = new Set();
 
-export function readMutedAgentNotificationKinds(): ReadonlySet<string> {
+function readMutedAgentNotificationKinds(): ReadonlySet<string> {
   if (typeof window === "undefined") return EMPTY_MUTED;
   try {
     const saved = window.localStorage.getItem(AGENT_NOTIFICATION_KINDS_KEY);
@@ -505,7 +505,7 @@ export function useMutedAgentNotificationKinds(): ReadonlySet<string> {
  *   without covering the edge.
  * - `both` — alternating either side of the edge, closest to a real gait.
  */
-export type FootprintPlacement = "right" | "both";
+type FootprintPlacement = "right" | "both";
 
 /**
  * Two tones, not a colour picker. Yellow already means something on this map —
@@ -514,7 +514,7 @@ export type FootprintPlacement = "right" | "both";
  * colour. Yellow is still used, but at a different value in the same family
  * (`--color-footprint-trail`).
  */
-export type FootprintTone = "amber" | "indigo";
+type FootprintTone = "amber" | "indigo";
 
 /**
  * Density, not a numeric slider. The count is decoration — an even division of
@@ -655,7 +655,7 @@ export function applyFootprintPreset(
   return resolveFootprint({ ...current, ...FOOTPRINT_PRESETS[preset] });
 }
 
-export function readFootprint(): FootprintPreference {
+function readFootprint(): FootprintPreference {
   if (typeof window === "undefined") return DEFAULT_FOOTPRINT;
   try {
     const saved = window.localStorage.getItem(FOOTPRINT_KEY);
@@ -817,7 +817,7 @@ export function resolveExpand(raw: unknown): ExpandPreference {
   };
 }
 
-export function readExpand(): ExpandPreference {
+function readExpand(): ExpandPreference {
   if (typeof window === "undefined") return DEFAULT_EXPAND;
   try {
     const saved = window.localStorage.getItem(EXPAND_KEY);

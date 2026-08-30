@@ -21,7 +21,7 @@
  *
  * R+ full-detail A1: the base connection derivation (`buildConnections`/
  * `groupConnectionsByDirection` + structural types) moved to
- * `shared/lib/ontology-tree/connections.ts` so the NEW `full-detail-a1` widget
+ * `entities/knowledge-graph/lib/ontology-tree/connections.ts` so the NEW `full-detail-a1` widget
  * (topology "Full Detail" / `/ontology` full-detail surface) can reuse
  * FSD forbids widget→widget imports, so shared derivation lives one layer
  * down. Re-exported here under the SAME `V2`-prefixed names so this file's
@@ -32,9 +32,9 @@ export {
   buildConnections as buildV2Connections,
   groupConnectionsByDirection as groupV2ConnectionsByDirection,
   type DatasheetConnection as V2DatasheetConnection,
-} from "@/shared/lib/ontology-tree/connections";
-import { groupConnectionsByRole } from "@/shared/lib/ontology-tree/connections";
-import type { DatasheetConnection as V2DatasheetConnection } from "@/shared/lib/ontology-tree/connections";
+} from "@/entities/knowledge-graph";
+import { groupConnectionsByRole } from "@/entities/knowledge-graph";
+import type { DatasheetConnection as V2DatasheetConnection } from "@/entities/knowledge-graph";
 
 /**
  * S2 part 3 — when the "Contains" (what this contains) list is long (>15), show an
@@ -188,7 +188,7 @@ export interface V2ConnectionGroupsView {
 }
 
 /** Default rows shown per group before the typed "+N" overflow. */
-export const V2_CONNECTION_ROW_CAP = 6;
+const V2_CONNECTION_ROW_CAP = 6;
 
 /**
  * Group the full connection set by relation ROLE (contains / usedBy /

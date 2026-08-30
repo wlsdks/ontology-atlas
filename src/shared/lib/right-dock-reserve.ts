@@ -25,7 +25,7 @@
 export const RIGHT_DOCK_WIDTH_VAR = '--app-right-dock-width';
 
 /** Width the dock occupies, in px. 0 on the server and where unsupported. */
-export function rightDockWidth(): number {
+function rightDockWidth(): number {
   if (typeof window === 'undefined' || typeof document === 'undefined') return 0;
   const raw = window
     .getComputedStyle(document.documentElement)

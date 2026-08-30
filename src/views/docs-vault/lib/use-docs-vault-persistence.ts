@@ -9,7 +9,6 @@ import {
   useState,
 } from 'react';
 import {
-  pushRecentDoc as _pushRecentDoc,
   readPinnedDocs,
   readRecentDocs,
   togglePinnedDoc,
@@ -112,6 +111,3 @@ export function useDocsVaultPersistence({
     togglePin,
   };
 }
-
-// `pushRecentDoc` is a module-level helper, so the view can call it directly.
-export const pushRecentDoc = _pushRecentDoc;

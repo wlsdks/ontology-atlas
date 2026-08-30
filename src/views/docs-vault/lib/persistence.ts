@@ -13,7 +13,7 @@
  * and lives only for the session.
  */
 
-import { VaultConflictError } from "@/features/docs-vault-local";
+import { VaultConflictError } from "@/entities/vault-session";
 
 export type DocsVaultSource = "server" | "local";
 // The folder-topology mini map was removed: it was a third graph vocabulary competing with

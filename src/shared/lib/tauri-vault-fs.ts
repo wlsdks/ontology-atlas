@@ -297,7 +297,7 @@ export function createTauriVaultHandle(rootPath: string): FileSystemDirectoryHan
  * A **code** rather than a sentence: composing human-readable copy inside Rust traps
  * the translation there. The screen reads the code and picks its own language.
  */
-export const VAULT_ROOT_REJECTED_PREFIX = 'vault-root-rejected:';
+const VAULT_ROOT_REJECTED_PREFIX = 'vault-root-rejected:';
 
 /** Returns the reason code when this error is a rejected-location refusal, else null. */
 export function vaultRootRejectionReason(error: unknown): string | null {

@@ -44,7 +44,6 @@
 import { smoothstep } from "../model/altitude";
 import { HITTABLE_MIN_TIER_ALPHA } from "../model/tier-visibility";
 
-
 export interface LabelDrawState {
   kind: "project" | "domain" | "capability" | "element";
   text: string;
@@ -134,7 +133,7 @@ export function scaledLabelFontSize(kind: LabelDrawState["kind"], scale: number)
 }
 
 /** Scaled font string. */
-export function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): string {
+function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): string {
   return `${LABEL_FONT_WEIGHT[kind]} ${scaledLabelFontSize(kind, scale)}px ${LABEL_FONT_FAMILY}`;
 }
 
@@ -314,7 +313,6 @@ export function computeLabelAlpha(input: LabelAlphaInput): number {
   return smoothstep(CHILD_LABEL_REVEAL_MIN, CHILD_LABEL_REVEAL_FULL, revealAlpha);
 }
 
-
 /**
  * W6 agent visibility — activity-mark dot radius + gap past the label
  * text's own measured width. Exported so `ui/topology-frame-draw.ts`'s
@@ -332,7 +330,7 @@ export const ACTIVITY_MARK_GAP = 5;
  * no glow/shadow (design.md) — positioned by the caller just past the
  * label's own measured text width so it never overlaps the glyphs.
  */
-export function drawActivityMark(
+function drawActivityMark(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,

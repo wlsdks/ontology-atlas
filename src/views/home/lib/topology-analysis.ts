@@ -24,7 +24,7 @@ export interface TopologyAnalysisSummaryInput {
   promotionCount: number;
 }
 
-export interface TopologyRelationProvenanceBreakdown {
+interface TopologyRelationProvenanceBreakdown {
   sourceBacked: number;
   authored: number;
   needsReview: number;
@@ -449,7 +449,7 @@ export function formatTopologyPathMcpCheck(from: string, to: string): string {
   });
 }
 
-export interface TopologyPathStep {
+interface TopologyPathStep {
   edgeId: string;
   relationType: string;
   /** The actual direction declared by frontmatter. */

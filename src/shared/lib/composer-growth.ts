@@ -54,7 +54,7 @@ export const COMPOSER_MAX_ROWS = 6;
  * conversation out entirely. Hence a ratio, resolved against the height actually
  * available.
  */
-export const COMPOSER_MAX_SHARE = 0.4;
+const COMPOSER_MAX_SHARE = 0.4;
 
 /** Absolute growth ceiling. Larger than this is an editor, not an input. */
 export const COMPOSER_CEILING_ROWS = 16;

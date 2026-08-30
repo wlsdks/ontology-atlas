@@ -13,7 +13,7 @@ export interface ParsedFrontmatter {
   diagnostics?: FrontmatterDiagnostic[];
 }
 
-export interface FrontmatterDiagnostic {
+interface FrontmatterDiagnostic {
   code: "malformed-frontmatter-line";
   line: number;
   message: string;

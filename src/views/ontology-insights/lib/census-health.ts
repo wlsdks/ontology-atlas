@@ -3,11 +3,9 @@ import {
   buildContainmentParents,
   computeKindDistribution,
   nearestDomainId,
-} from "@/shared/lib/ontology-tree";
-import {
   computeCanonicalCensus,
   type CanonicalCensus,
-} from "@/shared/lib/ontology-tree/canonical-census";
+} from "@/entities/knowledge-graph";
 
 /** The overview tab's hero "health" gauge — all four stats derived from real data. */
 export interface CensusHealthSummary {

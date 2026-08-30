@@ -10,7 +10,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { AgentClientButtons } from "./AgentClientButtons";
-import { AGENT_CLIENTS } from "../lib/agent-clients";
+import { AGENT_CLIENTS } from "@/entities/vault-session";
 import ko from "../../../../messages/ko.json";
 
 const CLIENT_TESTID: Record<string, string> = {

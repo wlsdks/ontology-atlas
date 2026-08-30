@@ -18,13 +18,6 @@ import {
 } from "./shape-validators-primitives.mjs";
 import { growthCandidateRowFailure } from "./shape-validators-growth.mjs";
 
-export {
-  hasOptionalNonNegativeInteger,
-  isNonBlankString,
-  matchRowsFailure,
-  numericSummaryFailure,
-} from "./shape-validators-primitives.mjs";
-
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
 const NEXT_ACTION_SEVERITIES = new Set(["info", "warn", "fail"]);
 
@@ -325,7 +318,7 @@ export function blockingNextActions(actions) {
     .map(nextActionDiagnosticLabel);
 }
 
-export function nextActionDiagnosticLabel(action) {
+function nextActionDiagnosticLabel(action) {
   const label = nextActionLabel(action);
   const severity = action?.severity || "unknown";
   const count = Number.isInteger(action?.count) ? `:${action.count}` : "";

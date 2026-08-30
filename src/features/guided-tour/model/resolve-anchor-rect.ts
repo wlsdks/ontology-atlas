@@ -46,7 +46,7 @@ export function resolveAnchorRect(
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };
 }
 
-export type CardPlacementSide = "center" | "below" | "above" | "right" | "left";
+type CardPlacementSide = "center" | "below" | "above" | "right" | "left";
 
 export interface CardPlacementInput {
   /** The target rect — `null` gives a centred card with no cutout (step 1, welcome). */

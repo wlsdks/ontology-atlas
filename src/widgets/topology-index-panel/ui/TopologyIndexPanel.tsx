@@ -17,7 +17,7 @@ import {
   filterTreeByQuery,
   type DomainCensusRow,
   type OntologyTreeBuildResult,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import {
@@ -49,7 +49,7 @@ export type IndexLens = "all" | "recent";
  */
 const UNBUILT_MAP_CONCEPT_CEILING = 8;
 
-export interface TopologyIndexPanelLabels {
+interface TopologyIndexPanelLabels {
   label: string;
   fold: string;
   foldAria: string;
@@ -210,7 +210,7 @@ export interface TopologyIndexPanelProps {
  * The header places only "INDEX · N" (N=total nodes) + a collapse square button.
    The grid/caret/meter styles of the tree rows themselves are owned by `TopologyIndexTreeRow`.
  *
- * Search reuses `filterTreeByQuery` (`@/shared/lib/ontology-tree`) — the
+ * Search reuses `filterTreeByQuery` (`@/entities/knowledge-graph/lib/ontology-tree`) — the
  * SAME pure filter the old `/ontology` tree used — instead of a bespoke
  * matcher, so "search narrows the tree, keeping ancestor chains" behavior
  * can't drift between surfaces.

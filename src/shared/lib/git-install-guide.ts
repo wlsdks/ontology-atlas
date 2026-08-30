@@ -28,7 +28,7 @@
 
 export type GitHostPlatform = 'macos' | 'windows' | 'linux';
 
-export interface GitInstallOption {
+interface GitInstallOption {
   /** The command to paste; `null` means this option is a link only. */
   command: string | null;
   /** i18n key under `atlasGit.install.*`. */

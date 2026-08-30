@@ -15,7 +15,7 @@ import {
 export const PROJECT_MEANING_RECEIPT_VERSION = 1;
 export const PROJECT_MEANING_STATE_RELATIVE_PATH = '.ontology-atlas/project-meaning.json';
 const PROJECT_MEANING_STATE_FILENAME = 'project-meaning.json';
-export const PROJECT_COMPETENCY_MARKDOWN_CONTRACT = 'projectCompetencyMarkdown:v1';
+const PROJECT_COMPETENCY_MARKDOWN_CONTRACT = 'projectCompetencyMarkdown:v1';
 
 const QUESTION_STATUSES = new Set(['answered', 'partial', 'visible-gap']);
 const WITNESS_KEYS = Object.freeze(['concepts', 'relations', 'evidence', 'paths']);

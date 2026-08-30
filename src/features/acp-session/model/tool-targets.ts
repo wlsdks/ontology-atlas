@@ -40,7 +40,7 @@ const SLUG_ARG_KEYS = [
  * The per-row ceiling. A tool row is the conversation's background, not its subject — grown long, it
  * gets noisier than the answer that actually needs reading.
  */
-export const TOOL_TARGET_LIMIT = 3;
+const TOOL_TARGET_LIMIT = 3;
 
 export function readToolTargets(
   rawInput: unknown,

@@ -41,7 +41,7 @@ export interface NodeNameSource {
  * (current locale and all locales). Duplicates and empties removed; the
  * canonical title is always first.
  */
-export function nodeNameCandidates(node: NodeNameSource): string[] {
+function nodeNameCandidates(node: NodeNameSource): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   const push = (value: string | undefined) => {

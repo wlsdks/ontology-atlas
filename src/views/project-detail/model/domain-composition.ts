@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeDegreeCentrality, computeDomainCensusRows } from "@/shared/lib/ontology-tree";
+import { computeDegreeCentrality, computeDomainCensusRows } from "@/entities/knowledge-graph";
 
 /**
  * One **row** of data for the project detail's "domain composition".

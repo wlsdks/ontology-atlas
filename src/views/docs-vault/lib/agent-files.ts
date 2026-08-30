@@ -13,14 +13,14 @@ import type { VaultDoc } from '@/entities/docs-vault';
  * single source of truth).
  */
 
-export const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
+const CODEX_PROJECT_DOC_CAP_BYTES = 32 * 1024;
 
 const CLAUDE_SKILLS_PREFIX = '.claude/skills/';
 const AGENTS_SKILLS_PREFIX = '.agents/skills/';
 const CLAUDE_AGENTS_PREFIX = '.claude/agents/';
 const AGENTS_AGENTS_PREFIX = '.agents/agents/';
 
-export type AgentFileKind =
+type AgentFileKind =
   | 'instructions'
   | 'rules'
   | 'skill'
@@ -36,7 +36,7 @@ export type AgentTool =
   | 'gemini-cli'
   | 'copilot';
 
-export type AgentDriftCheckStatus = 'ok' | 'drift' | 'not-applicable';
+type AgentDriftCheckStatus = 'ok' | 'drift' | 'not-applicable';
 
 /** Tool ids → human labels (proper nouns: not translated). */
 /**
@@ -80,7 +80,7 @@ const TOML_MCP_SECTION_RE =
 const NON_ENGLISH_SCRIPT_RE =
   /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
 
-export const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
+const AGENT_FILE_RULES: readonly AgentFileRule[] = Object.freeze([
   { id: 'claude-md', kind: 'instructions', tools: ['claude-code'], pattern: /^CLAUDE\.md$/ },
   { id: 'agents-md', kind: 'instructions', tools: ['codex', 'cursor', 'antigravity', 'gemini-cli', 'copilot'], pattern: /^AGENTS\.md$/ },
   { id: 'gemini-md', kind: 'instructions', tools: ['antigravity', 'gemini-cli'], pattern: /^GEMINI\.md$/ },
@@ -111,7 +111,7 @@ export interface AgentFileEntry {
   bytes?: number;
 }
 
-export interface AgentFileRecord {
+interface AgentFileRecord {
   path: string;
   ruleId: string;
   kind: AgentFileKind;
@@ -120,7 +120,7 @@ export interface AgentFileRecord {
   drift: string[];
 }
 
-export interface AgentDriftFinding {
+interface AgentDriftFinding {
   check: string;
   code: string;
   path: string;
@@ -185,7 +185,7 @@ export interface AgentFilesAnalysis {
   };
 }
 
-export function classifyAgentFilePath(
+function classifyAgentFilePath(
   path: string,
 ): { ruleId: string; kind: AgentFileKind; tools: AgentTool[] } | null {
   for (const rule of AGENT_FILE_RULES) {
@@ -205,7 +205,7 @@ const AT_REF_EXTENSIONS = Object.freeze([
 const AT_REF_RE = /(?:^|[\s(`"'])@([A-Za-z0-9._/-]+)/gm;
 
 /** See the CLI twin for the boundary rules (no emails / npm scopes / css at-rules). */
-export function extractAtRefs(content: string | null | undefined): Array<{ ref: string; line: number }> {
+function extractAtRefs(content: string | null | undefined): Array<{ ref: string; line: number }> {
   const out: Array<{ ref: string; line: number }> = [];
   const seen = new Set<string>();
   const lines = String(content ?? '').split('\n');
@@ -843,7 +843,7 @@ export const WEB_SCAN_ANALYZE_OPTIONS = Object.freeze({
   verifiableExtensions: Object.freeze(['.md']) as unknown as string[],
 });
 
-export interface AgentFilesUiRecord {
+interface AgentFilesUiRecord {
   slug: string;
   path: string;
   kind: AgentFileKind;

@@ -34,7 +34,7 @@ export function resolveDesktopShell(signals: DesktopShellSignals): boolean {
 }
 
 /** The localStorage key holding the dev-only override. */
-export const DESKTOP_SHELL_DEV_OVERRIDE_KEY = 'dev:desktop-shell';
+const DESKTOP_SHELL_DEV_OVERRIDE_KEY = 'dev:desktop-shell';
 
 function readDevOverride(): string | null {
   try {

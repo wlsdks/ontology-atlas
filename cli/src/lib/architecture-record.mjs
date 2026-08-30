@@ -1,17 +1,9 @@
-import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { loadMcpModule } from './mcp-module.mjs';
 
-// The MCP package owns the architectureRecord:v1 boundary. The CLI keeps only
-// this resolver so source checkouts and the two-package install use the same
-// build/validate/write code (the same pattern as vault-sidecar.mjs).
-const here = dirname(fileURLToPath(import.meta.url));
-const sourceCheckout = resolve(here, '../../../mcp/src/architecture-record.mjs');
-const modulePath = existsSync(sourceCheckout)
-  ? sourceCheckout
-  : createRequire(import.meta.url).resolve('ontology-atlas-mcp/src/architecture-record.mjs');
-const record = await import(pathToFileURL(modulePath).href);
+// The MCP package owns the architectureRecord:v1 boundary, so source checkouts
+// and the two-package install share one build/validate/write implementation
+// (the same pattern as vault-sidecar.mjs).
+const record = await loadMcpModule('architecture-record.mjs');
 
 /* Only what the CLI actually consumes; the MCP module keeps the full surface. */
 export const buildArchitectureRecord = record.buildArchitectureRecord;

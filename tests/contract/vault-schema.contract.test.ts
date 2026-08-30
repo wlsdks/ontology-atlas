@@ -18,17 +18,20 @@ import {
   VAULT_KINDS,
   VAULT_KIND_SCHEMA,
 } from "../../mcp/src/schema.mjs";
+/*
+ * ⚠️ Only the names the CLI runtime actually re-exports are imported here. Since
+ * 2026-08-30 `cli/src/lib/schema.mjs` re-exports `mcp/src/schema.mjs` rather than
+ * copying it, so a "cli === mcp" assertion over a name the CLI never uses would
+ * compare an object with itself. Names the CLI does not consume are read from the
+ * canonical module directly above; `schema-copy-sync.contract.test.ts` is what
+ * keeps the re-export from growing a body again.
+ */
 import {
   buildFrontmatter as buildCli,
   missingExpectedFields as missingCli,
   folderForKind as folderCli,
-  normalizeLocaleLabels as localeCli,
-  NODE_ELIGIBILITY_GATE as gateCli,
   flatSlugIssue as flatSlugCli,
-  generateNodeUid as generateUidCli,
   nodeUidIssue as uidIssueCli,
-  mergeNodeIdentityHistory as mergeIdentityCli,
-  VAULT_KIND_SCHEMA as VAULT_KIND_SCHEMA_CLI,
 } from "../../cli/src/lib/schema.mjs";
 import { KIND_EXPECTED_EXTRAS } from "@/shared/lib/validate-vault-document";
 import { PRODUCT_DISCIPLINE } from "@/features/vault-agent/model/system-prompt";
@@ -54,13 +57,15 @@ import { KNOWN_VAULT_KINDS } from "../../mcp/src/validate.mjs";
 
 describe("vault kind schema contract — mcp & cli agree", () => {
   describe("node UID — immutable identity format", () => {
-    it("두 생성문이 lowercase UUIDv4를 로컬 발급한다", () => {
-      const mcpUid = generateUidMcp();
-      const cliUid = generateUidCli();
+    it("생성문이 매 호출 새 lowercase UUIDv4를 로컬 발급한다", () => {
+      const first = generateUidMcp();
+      const second = generateUidMcp();
 
-      expect(uidIssueMcp(mcpUid)).toBeNull();
-      expect(uidIssueCli(cliUid)).toBeNull();
-      expect(mcpUid).not.toBe(cliUid);
+      expect(uidIssueMcp(first)).toBeNull();
+      // The CLI write path judges identity through its own import of this rule.
+      expect(uidIssueCli(second)).toBeNull();
+      // Minted locally per call — never one shared constant.
+      expect(first).not.toBe(second);
     });
 
     it.each([
@@ -95,21 +100,12 @@ describe("vault kind schema contract — mcp & cli agree", () => {
         merged_uids: [from.uid, ...from.merged_uids, ...into.merged_uids].sort(),
       };
       expect(mergeIdentityMcp(from, into)).toEqual(expected);
-      expect(mergeIdentityCli(from, into)).toEqual(expected);
     });
   });
 
   it("capability path 는 양쪽 쓰기 경로의 정본 구현 근거다", () => {
     expect(VAULT_KIND_SCHEMA.capability.optional.length).toBeGreaterThan(0);
-    expect(VAULT_KIND_SCHEMA_CLI.capability.optional.length).toBeGreaterThan(0);
     expect(VAULT_KIND_SCHEMA.capability.optional).toContain("path");
-    expect(VAULT_KIND_SCHEMA_CLI.capability.optional).toContain("path");
-    expect(VAULT_KIND_SCHEMA_CLI.capability.optional).toEqual(
-      VAULT_KIND_SCHEMA.capability.optional,
-    );
-    expect(VAULT_KIND_SCHEMA_CLI.capability.preferredOrder).toEqual(
-      VAULT_KIND_SCHEMA.capability.preferredOrder,
-    );
     expect(VAULT_KIND_SCHEMA.capability.preferredOrder.indexOf("path")).toBeGreaterThan(
       VAULT_KIND_SCHEMA.capability.preferredOrder.indexOf("elements"),
     );
@@ -194,16 +190,6 @@ describe("vault kind schema contract — mcp & cli agree", () => {
 // CLI (developers) must normalise identically or the vault ends up with different
 // keys. Fixing only one side breaks here.
 describe("display_<locale> 정규화 2-way contract", () => {
-  const cases = [
-    { ko: "결제", en: "Payments" },
-    { ko: "  결제  ", en: "" },
-    { kor: "무시", en: "Payments" },
-    {},
-  ];
-  it.each(cases)("normalizeLocaleLabels matches across packages (%o)", (input) => {
-    expect(localeMcp(input)).toEqual(localeCli(input));
-  });
-
   it("emits display_<locale> in both builders identically", () => {
     const args = {
       uid: "31890f3e-7b5d-4c0a-8f14-123456789abc",
@@ -223,15 +209,11 @@ describe("display_<locale> 정규화 2-way contract", () => {
  *
  * The spec is split three ways — values, logic, text — and this is the value gate.
  * The logic lives in `commitDoc` (`mcp/src/vault.mjs`) and the text in
- * `mcp/src/construction-rules.mjs`. The two packages share 0 cross-imports, so even
- * constants can only exist as literal copies, and two copies with no gate means
- * drift is the default.
+ * `mcp/src/construction-rules.mjs`. The CLI reached these thresholds through a
+ * literal copy until 2026-08-30; it now imports the same module, so what remains
+ * to pin is the value itself rather than the agreement between two files.
  */
-describe("노드 자격 게이트 상수 — mcp & cli 값 정본이 같다", () => {
-  it("두 패키지가 같은 임계값을 들고 있다", () => {
-    expect(gateMcp).toEqual(gateCli);
-  });
-
+describe("노드 자격 게이트 상수 — 값 정본", () => {
   it("잠긴 값들", () => {
     // Unresolved references are reported from the first one — an unresolved item is not
     // a "small child" but a different category (evidence), so there is no tolerable count.

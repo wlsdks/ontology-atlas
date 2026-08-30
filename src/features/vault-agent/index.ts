@@ -34,3 +34,5 @@ export type {
   ToolCallRecord,
 } from './model/types';
 export { buildBusinessFlowRequest } from "./model/business-flow-request";
+export { applyProposal, proposalToClipboardPacket, summarizeChangeVolume } from './model/proposal-applier';
+export { buildProposal } from './model/proposal-builder';

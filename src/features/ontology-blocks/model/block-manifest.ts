@@ -10,7 +10,7 @@ import { nodeUrn } from '@/shared/lib/interop-format';
 export const BLOCK_MANIFEST_FILENAME = 'block-manifest.json';
 export const BLOCK_MANIFEST_SCHEMA_VERSION = 2;
 
-export interface BlockManifestNode {
+interface BlockManifestNode {
   uid: string;
   urn: string;
   slug: string;

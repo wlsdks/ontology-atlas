@@ -1,8 +1,8 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeDomainCouplingMatrix } from "@/shared/lib/ontology-tree";
+import { computeDomainCouplingMatrix } from "@/entities/knowledge-graph";
 
 /** One real edge between a pair of domains — used by the click-to-inspect example list. */
-export interface DomainCouplingExampleRow {
+interface DomainCouplingExampleRow {
   id: string;
   fromId: string;
   fromTitle: string;
@@ -33,7 +33,7 @@ export interface DomainCouplingBoundaryRow {
 }
 
 /** A domain on one axis of the heat grid. `index` is its row/column number in `cells`. */
-export interface DomainCouplingGridDomain {
+interface DomainCouplingGridDomain {
   id: string;
   title: string;
 }
@@ -107,7 +107,7 @@ export interface DomainCouplingSummary {
  * involving the truncated domains are counted separately as `hiddenCrossEdgeCount` so the screen
  * does not quietly reduce anything.
  */
-export const DOMAIN_GRID_LIMIT = 6;
+const DOMAIN_GRID_LIMIT = 6;
 
 export function buildDomainCouplingSummary(
   nodes: readonly KnowledgeGraphNode[],

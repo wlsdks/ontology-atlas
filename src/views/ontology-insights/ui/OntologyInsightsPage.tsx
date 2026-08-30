@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { useTranslations } from "next-intl";
@@ -20,6 +20,10 @@ import {
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
   type MeaningGapKind,
+  buildOntologyTree,
+  computeEdgeTypeDistribution,
+  rankAllByDegree,
+  buildBusinessFlowHref,
 } from "@/entities/knowledge-graph";
 import {
   useOntologyInsight,
@@ -29,15 +33,10 @@ import {
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
-import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/features/data-source-mode";
-import { OpenVaultCta, useLocalVault } from "@/features/docs-vault-local";
+import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
+import { OpenVaultCta } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import {
-  buildOntologyTree,
-  computeEdgeTypeDistribution,
-  rankAllByDegree,
-} from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
@@ -81,8 +80,6 @@ import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { FlowTab } from "./tabs/FlowTab";
 import { buildBusinessFlowRequest } from "@/features/vault-agent";
-import { buildBusinessFlowHref } from "@/entities/knowledge-graph";
-import { useRouter } from "@/i18n/navigation";
 import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
 import { controlClass } from '@/shared/ui/control-class';
@@ -195,7 +192,7 @@ const INSIGHTS_TAB_BADGE: Record<
  * meant scrolling past two unrelated screens.
  *
  * Every number derives from the data sources this page already used
- * (`useOntologyInsight`, `shared/lib/ontology-tree`); the census formula (total
+ * (`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`); the census formula (total
  * nodes, edges, domains) is identical to the topology chrome's.
  */
 export function OntologyInsightsPage() {

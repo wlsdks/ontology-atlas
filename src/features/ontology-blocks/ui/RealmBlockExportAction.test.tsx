@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildOntologyTree } from '@/shared/lib/ontology-tree';
+import { buildOntologyTree } from '@/entities/knowledge-graph/lib/ontology-tree';
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import { RealmBlockExportAction } from './RealmBlockExportAction';
 
@@ -17,7 +17,8 @@ const tauriMocks = vi.hoisted(() => ({
   pickTauriVaultDirectory: vi.fn(),
 }));
 
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 

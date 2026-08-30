@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/entities/vault-session';
 import {
   AGENT_TOOLS,
   buildSystemPrompt,
@@ -17,9 +17,10 @@ import {
   type ScreenContextSnapshot,
   type VaultReadDoc,
   type VaultReadPort,
+  applyProposal,
+  proposalToClipboardPacket,
+  buildProposal,
 } from '@/features/vault-agent';
-import { applyProposal, proposalToClipboardPacket } from '@/features/vault-agent/model/proposal-applier';
-import { buildProposal } from '@/features/vault-agent/model/proposal-builder';
 import { llmChat, llmChatErrorMessage } from '@/shared/lib/tauri-llm';
 import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
 
@@ -45,7 +46,7 @@ export interface AgentSessionSummary {
   relations: number;
 }
 
-export interface VaultAgentNotices {
+interface VaultAgentNotices {
   roundCap: string;
   /** A turn that stopped without calling a tool once — the line symmetric with hitting the cap. */
   noToolCall: (args: { round: number; cap: number }) => string;

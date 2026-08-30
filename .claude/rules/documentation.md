@@ -23,8 +23,8 @@ That rule covers the strings a program prints, not only Markdown. `source:langua
 reads comments and cannot see a string literal, which is how the CLI came to print
 Korean on 140 lines while that gate stayed green;
 `tests/contract/cli-output-language.contract.test.ts` now holds `cli/src/**` at zero.
-Its one allowlisted path, `cli/src/lib/absorb.mjs`, is Korean *matcher data* for the
-user's own document, which is the `display_ko` exception rather than a new one.
+Its Korean *matcher data* for the user's own document lives in `mcp/src/absorb.mjs`
+(the CLI executes that module), which is the `display_ko` exception rather than a new one.
 
 ## Priority
 

@@ -34,7 +34,7 @@ import {
   type Project,
 } from "@/entities/project";
 import { useProjects, useProjectMutations, useProjectBody } from "@/features/project-data-source";
-import { VaultConflictError } from "@/features/docs-vault-local";
+import { VaultConflictError } from "@/entities/vault-session";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";

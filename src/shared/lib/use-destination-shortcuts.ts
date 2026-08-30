@@ -88,7 +88,7 @@ function blockingSurfaceOpen(): boolean {
  * Either one alone loses the other case: `code` alone makes AZERTY users press
  * `A` to produce `KeyQ`, and `key` alone does nothing under Hangul.
  */
-export function matchesLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: string): boolean {
+function matchesLetter(event: Pick<KeyboardEvent, 'key' | 'code'>, letter: string): boolean {
   if (event.key.toLowerCase() === letter) return true;
   return event.code === `Key${letter.toUpperCase()}`;
 }

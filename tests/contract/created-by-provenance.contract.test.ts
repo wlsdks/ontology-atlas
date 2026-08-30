@@ -10,14 +10,17 @@ import {
   VAULT_KINDS as KINDS_MCP,
   VAULT_KIND_SCHEMA as SCHEMA_MCP,
 } from "../../mcp/src/schema.mjs";
+/*
+ * ⚠️ Only the names the CLI runtime re-exports. `cli/src/lib/schema.mjs` executes
+ * `mcp/src/schema.mjs` since 2026-08-30, so a "cli === mcp" assertion over a name
+ * the CLI never imports would compare an object with itself.
+ */
 import {
   buildFrontmatter as buildCli,
   missingExpectedFields as missingCli,
   agentCreatedBy as agentCli,
   CREATED_BY_KEY as KEY_CLI,
   CREATED_BY_HUMAN as HUMAN_CLI,
-  CREATED_BY_AGENT_UNKNOWN as UNKNOWN_CLI,
-  VAULT_KIND_SCHEMA as SCHEMA_CLI,
 } from "../../cli/src/lib/schema.mjs";
 import { parseFilter } from "../../mcp/src/query.mjs";
 import { buildNewNodeDoc } from "@/entities/docs-vault";
@@ -71,7 +74,7 @@ describe("created_by 값 규약 — 세 패키지가 같은 상수를 쓴다", (
     // route that falls back to human.
     for (const noName of [null, undefined, "", "   "]) {
       expect(agentMcp(noName)).toBe(UNKNOWN_MCP);
-      expect(agentCli(noName)).toBe(UNKNOWN_CLI);
+      expect(agentCli(noName)).toBe(UNKNOWN_MCP);
     }
     expect(UNKNOWN_MCP).toBe("agent:unknown");
     expect(UNKNOWN_MCP.startsWith("agent:")).toBe(true);
@@ -80,10 +83,9 @@ describe("created_by 값 규약 — 세 패키지가 같은 상수를 쓴다", (
 });
 
 describe("스키마 — 선택 필드로 등록되고 왕복 보존된다", () => {
-  it("모든 kind 가 created_by 를 optional 로 인정한다 (mcp · cli 동일)", () => {
+  it("모든 kind 가 created_by 를 optional 로 인정한다", () => {
     for (const kind of KINDS_MCP as string[]) {
       expect(schemaFor(SCHEMA_MCP, kind).optional).toContain(KEY_MCP);
-      expect(schemaFor(SCHEMA_CLI, kind).optional).toEqual(schemaFor(SCHEMA_MCP, kind).optional);
     }
   });
 

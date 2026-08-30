@@ -15,7 +15,7 @@
  * the bell in one vault marked another vault's unseen items as read.** A notification's only job is to
  * say "what you have not seen yet", and that verdict became false because of someone else's folder.
  */
-export const READ_AT_KEY_PREFIX = 'atlas.agentActivity.readAt:';
+const READ_AT_KEY_PREFIX = 'atlas.agentActivity.readAt:';
 
 /**
  * The global key from before vaults were scoped. **It is never read back** — there is no way to know

@@ -32,7 +32,7 @@
 import { smoothstep } from "./altitude";
 import type { LayoutNodeKind } from "./layout";
 
-export interface TierRevealBand {
+interface TierRevealBand {
   /** zoomRatio at/below which the tier is fully hidden (overview / zoomed out). */
   enterRatio: number;
   /** zoomRatio at/above which the tier is fully shown (zoomed in). */

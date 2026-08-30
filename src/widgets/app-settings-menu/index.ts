@@ -1,5 +1,4 @@
 export { AppSettingsMenu } from './ui/AppSettingsMenu';
-export type { AppSettingsMenuProps, AppSettingsScreenControls } from './ui/AppSettingsMenu';
 
 /**
  * The 「Agents」 (agents) destination reuses this pane as is (2026-08-20, ledger 90).

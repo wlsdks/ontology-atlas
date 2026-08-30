@@ -17,7 +17,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { Chip, controlClass, IconButton } from "@/shared/ui";
 import { buildDocsVaultHref, findRelatedDocs } from "@/entities/docs-vault";
-import { useStaticVaultSource } from "@/features/vault-sample-source";
+import { useStaticVaultSource } from "@/entities/vault-session";
 import { formatDate } from "@/shared/lib/format-date";
 import {
   formatProjectIntegrityIssue,

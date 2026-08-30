@@ -60,7 +60,7 @@ describe('summary freshness bridge', () => {
   });
 
   it('keeps the client calling the command by the name Rust exports', () => {
-    const hook = read('src/features/docs-vault-local/model/use-summary-freshness.ts');
+    const hook = read('src/entities/vault-session/model/use-summary-freshness.ts');
     expect(hook, 'the invoke name drifted from the Rust command name').toContain(
       '"vault_node_revisions"',
     );
@@ -71,7 +71,7 @@ describe('summary freshness bridge', () => {
   });
 
   it('keeps the judgement in the shared module rather than a second copy', () => {
-    const hook = read('src/features/docs-vault-local/model/use-summary-freshness.ts');
+    const hook = read('src/entities/vault-session/model/use-summary-freshness.ts');
     expect(
       hook,
       'the hook stopped delegating to the entity module; the rule now exists in a third place',

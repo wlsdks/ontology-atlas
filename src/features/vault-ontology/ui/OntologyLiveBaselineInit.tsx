@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useDataSourceMode } from "@/features/data-source-mode";
+import { useDataSourceMode, useVaultIdentityScope } from "@/entities/vault-session";
 import {
   getChangeBaseline,
   markChangeBaseline,
   restorePersistedBaseline,
   setChangeBaselineScope,
   shouldAutoMarkBaseline,
-} from "@/shared/lib/ontology-tree";
-import { useVaultIdentityScope } from "@/features/vault-scope";
+} from "@/entities/knowledge-graph";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 
 /**

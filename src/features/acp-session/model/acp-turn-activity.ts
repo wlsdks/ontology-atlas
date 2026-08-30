@@ -5,7 +5,7 @@ import type {
   PendingPermission,
 } from './use-acp-session';
 
-export type AcpTurnActivityState = 'planning' | 'editing' | 'verifying' | 'blocked';
+type AcpTurnActivityState = 'planning' | 'editing' | 'verifying' | 'blocked';
 
 export interface AcpTurnActivity {
   state: AcpTurnActivityState;

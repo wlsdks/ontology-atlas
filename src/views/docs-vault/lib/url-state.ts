@@ -19,7 +19,7 @@ import {
   serializeDocsTreeSort,
   type DocsTreeGroup,
   type DocsTreeSort,
-} from '@/widgets/docs-vault/lib/tree-order';
+} from '@/widgets/docs-vault';
 
 // folder-topology was removed. Only 'doc' remains, but the caller contract (`view?:`) is kept.
 export type DocsVaultView = 'doc';

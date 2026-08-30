@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { buildOntologyTree } from "@/shared/lib/ontology-tree";
+import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree";
 import {
   collectRealmMemberIds,
   computeRealmBoundary,

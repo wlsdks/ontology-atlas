@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentActivityStatus } from "@/features/docs-vault-local";
+import type { AgentActivityStatus } from "@/entities/vault-session";
 import { hasDocMtimeConflict, resolveDocLastEditSubject } from "./resolve-doc-edit-subject";
 
 function emptyStatus(): AgentActivityStatus {

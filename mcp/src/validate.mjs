@@ -83,6 +83,10 @@ const GRAPH_ARRAY_KEYS = [
   'relates',
   'contains',
   'describes',
+  // `broader` (is_a / SKOS) was missing from this list when it was introduced
+  // (audit 2026-07-25). This one list drives **both** the canonical-sort check and
+  // the dangling-reference check, so the omission meant CI stayed green while an
+  // agent wrote a typo slug into `broader`. The contract fixture pins it.
   'broader',
 ];
 
@@ -96,7 +100,7 @@ export function validateVaultDocument(raw) {
       code: 'unclosed-frontmatter',
       severity: 'error',
       message:
-        'frontmatter 시작 `---` 만 있고 끝 `---` 가 없습니다: 노드로 인식되지 않습니다.',
+        'frontmatter opens with `---` but never closes: this file is not read as a node.',
     });
     return { ok: false, issues };
   }
@@ -114,7 +118,7 @@ export function validateVaultDocument(raw) {
       code: 'parse-zero-keys',
       severity: 'warning',
       message:
-        'frontmatter 블록은 있지만 key 가 하나도 추출되지 않았습니다: 들여쓰기 또는 콜론 누락 의심.',
+        'a frontmatter block is present but no key could be read: suspect indentation or a missing colon.',
     });
     return { ok: !issues.some((issue) => issue.severity === 'error'), issues };
   }
@@ -129,20 +133,20 @@ export function validateVaultDocument(raw) {
         code: 'missing-kind',
         severity: 'warning',
         message:
-          'frontmatter 에 `kind:` 가 없습니다: graph 노드가 되려면 kind 가 필요합니다.',
+          'frontmatter has no `kind:`: a file needs one to become a graph node.',
       });
     }
   } else if (typeof rawKind !== 'string' || rawKind.trim() === '') {
     issues.push({
       code: 'empty-kind',
       severity: 'error',
-      message: '`kind:` 값이 비어있습니다: graph 노드로 인식되지 않습니다.',
+      message: '`kind:` is empty: this file is not read as a graph node.',
     });
   } else if (!KNOWN_VAULT_KINDS.includes(rawKind.trim())) {
     issues.push({
       code: 'unknown-kind',
       severity: 'warning',
-      message: `\`kind: ${rawKind.trim()}\` 는 인식되지 않는 값입니다.`,
+      message: `\`kind: ${rawKind.trim()}\` is not a recognised value.`,
     });
   } else {
     // Advisory for a kind's expected field being absent (a capability's or
@@ -153,7 +157,7 @@ export function validateVaultDocument(raw) {
       issues.push({
         code: 'missing-expected-field',
         severity: 'warning',
-        message: `\`${key}:\` 가 비어있습니다: kind=${trimmedKind} 노드는 ${key} 가 있어야 트리에서 부모를 찾을 수 있습니다.`,
+        message: `\`${key}:\` is empty: a kind=${trimmedKind} node needs it to find its parent in the tree.`,
       });
     }
   }
@@ -279,7 +283,7 @@ function pushUidIssues(frontmatter, issues) {
     issues.push({
       code: 'missing-uid',
       severity: 'error',
-      message: '`uid:`가 없습니다: 모든 ontology 노드는 생성 후 바뀌지 않는 lowercase UUIDv4 영구 식별자를 가져야 합니다.',
+      message: '`uid:` is missing: every ontology node carries a permanent lowercase UUIDv4 that never changes after it is minted.',
     });
     return;
   }
@@ -295,7 +299,7 @@ function pushUidIssues(frontmatter, issues) {
     issues.push({
       code: 'non-canonical-merged-uids',
       severity: 'warning',
-      message: '`merged_uids:`는 중복 없이 오름차순으로 정렬된 UUIDv4 set이어야 합니다.',
+      message: '`merged_uids:` must be an ascending, duplicate-free set of UUIDv4 values.',
     });
   }
 }
@@ -317,7 +321,7 @@ function pushNonCanonicalGraphArrayIssues(frontmatter, issues) {
       issues.push({
         code: 'non-canonical-graph-array',
         severity: 'warning',
-        message: `\`${key}:\` graph 배열이 정렬/중복제거된 canonical set 이 아닙니다: add_relation 또는 patch_concept 로 다시 저장하면 정리됩니다.`,
+        message: `\`${key}:\` is not a canonical set -- sorted and deduplicated. Writing it again through add_relation or patch_concept normalises it.`,
       });
     }
   }

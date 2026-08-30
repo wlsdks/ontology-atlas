@@ -33,7 +33,7 @@ export interface UnboundProjectSource {
   count: number;
 }
 
-export type ProjectSourceReadinessState =
+type ProjectSourceReadinessState =
   | "loading"
   | "unbound"
   | "bound"

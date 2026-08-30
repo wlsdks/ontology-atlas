@@ -73,7 +73,7 @@ export function computeWheelZoomFactor(pixelDeltaY: number, sensitivity: number 
  * - Everything else, tiny deltas only, is ignored. The threshold is a device-input
  *   fact, so it has no design token (the `WHEEL_LINE_HEIGHT_PX` precedent).
  */
-export const WHEEL_GLIDE_IGNORE_THRESHOLD_PX = 4;
+const WHEEL_GLIDE_IGNORE_THRESHOLD_PX = 4;
 
 /** True for tiny glide noise — the caller then skips the zoom (pinch excepted). */
 export function shouldIgnoreWheelGlide(pixelDeltaY: number, ctrlKey: boolean): boolean {

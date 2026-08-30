@@ -1,4 +1,4 @@
-import type { AgentActivityStatus } from "@/features/docs-vault-local";
+import type { AgentActivityStatus } from "@/entities/vault-session";
 import { pickLastEditSubject, type LastEditSubjectFact } from "@/shared/lib/last-edit-subject";
 import { hasUnaccountedMtimeChange } from "@/shared/lib/mtime-conflict";
 

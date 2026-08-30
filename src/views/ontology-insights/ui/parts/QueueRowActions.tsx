@@ -53,14 +53,14 @@ export interface QueueRowAbilities {
   agentObserved: boolean;
 }
 
-export function resolveBuilderLabel(
+function resolveBuilderLabel(
   labels: QueueRowActionLabels,
   abilities: QueueRowAbilities,
 ): string {
   return abilities.canWriteVault ? labels.openBuilder : labels.openBuilderReadOnly;
 }
 
-export function resolveHandoffLabel(
+function resolveHandoffLabel(
   labels: QueueRowActionLabels,
   abilities: QueueRowAbilities,
 ): string {

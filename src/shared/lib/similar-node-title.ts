@@ -64,7 +64,7 @@ function normalizeTitle(text: string): string {
  * "similar name" suggestion reuses the same formula instead of growing a second
  * one.
  */
-export function titleSimilarity(a: string, b: string): number {
+function titleSimilarity(a: string, b: string): number {
   const normA = normalizeTitle(a);
   const normB = normalizeTitle(b);
   if (!normA || !normB) return 0;

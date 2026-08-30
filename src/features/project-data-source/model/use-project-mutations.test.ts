@@ -15,13 +15,15 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/features/data-source-mode", () => ({
+vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
   useDataSourceMode: () => mocks.mode,
 }));
-
-vi.mock("@/features/docs-vault-local", () => ({
+vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
   useLocalVault: () => mocks.vault,
 }));
+
 
 function makeManifest(
   docSlug: string,

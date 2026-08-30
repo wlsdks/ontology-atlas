@@ -23,3 +23,7 @@ export {
   clearTopologyV2TokensCache,
   refreshIndexDependentTokens,
 } from './tokens/read-topology-v2-tokens';
+export { ambientSleepFactor, isAmbientAsleep } from './model/ambient-sleep';
+export { PLAIN_TIER_REVEAL } from './model/tier-visibility';
+export type { TierRevealConfig } from './model/tier-visibility';
+export { TopologyV2EdgePanel } from './ui/TopologyV2EdgePanel';

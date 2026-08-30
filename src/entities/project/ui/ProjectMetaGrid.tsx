@@ -1,6 +1,6 @@
 import { cn } from "@/shared/lib/cn";
 
-export interface ProjectMetaGridItem {
+interface ProjectMetaGridItem {
   label: string;
   value: string;
   description?: string;

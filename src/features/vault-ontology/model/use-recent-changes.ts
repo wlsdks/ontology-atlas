@@ -6,7 +6,7 @@ import {
   computeRecentChanges,
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   type AdaptiveRecentChangesResult,
-} from '@/shared/lib/ontology-tree';
+} from '@/entities/knowledge-graph';
 import { useOntologyInsight } from './use-ontology-insight';
 import { useVaultDocFreshnessIndex } from './use-vault-doc-freshness';
 
@@ -14,7 +14,7 @@ import { useVaultDocFreshnessIndex } from './use-vault-doc-freshness';
  * The mode-aware adapter for the "recent changes" lens. It passes
  * `useVaultDocFreshnessIndex()` (slug → real updatedAt) and `useOntologyInsight()` (the
  * current graph nodes) straight into the pure `computeAdaptiveRecentChanges`
- * (`@/shared/lib/ontology-tree`) — the mode branch and the time arithmetic are already
+ * (`@/entities/knowledge-graph/lib/ontology-tree`) — the mode branch and the time arithmetic are already
  * owned by those two hooks and that pure function, so nothing new is built here (the same
  * thin composition pattern as `use-ontology-insight.ts` / `use-vault-doc-freshness.ts`).
  *

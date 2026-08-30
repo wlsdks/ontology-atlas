@@ -1,6 +1,6 @@
 import { bundledServerLaunch, type McpServerLaunch } from '@/shared/config';
 
-import { buildCodexConfigToml, buildMcpConfigJson } from './ontology-starter';
+import { buildCodexConfigToml, buildMcpConfigJson } from '@/entities/vault-session';
 
 export { bundledServerLaunch };
 

@@ -116,7 +116,6 @@ export async function installManagedNode(runtimeId: string): Promise<AcpCheck[]>
   return invoke<AcpCheck[]>('acp_install_node', { runtimeId });
 }
 
-
 /**
  * How far the install has got — 1:1 with Rust's `AcpInstallProgress`.
  *
@@ -235,7 +234,7 @@ export async function lastInstallProgress(
 }
 
 /** Stages that no longer change — "finished" and "failed". */
-export const TERMINAL_INSTALL_STAGES = ['done', 'failed'] as const;
+const TERMINAL_INSTALL_STAGES = ['done', 'failed'] as const;
 
 export function isTerminalInstallStage(stage: AcpInstallProgress['stage']): boolean {
   return (TERMINAL_INSTALL_STAGES as readonly string[]).includes(stage);

@@ -92,7 +92,6 @@ export function trimToRecentSections(markdown: string, limit: number): TrimmedDo
   };
 }
 
-
 export interface DocEntry {
   /** Anchor id — shared by the sidebar link and the body heading. */
   id: string;
@@ -163,7 +162,7 @@ export function normalizeHeadingKey(heading: string): string {
 }
 
 /** Markdown heading → anchor id. Korean is not stripped — stripping it makes most headings an empty string. */
-export function slugifyHeading(heading: string): string {
+function slugifyHeading(heading: string): string {
   return (
     heading
       .toLowerCase()

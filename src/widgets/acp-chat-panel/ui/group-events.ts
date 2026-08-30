@@ -1,6 +1,6 @@
-import type { AcpEvent } from '@/features/acp-session/model/use-acp-session';
+import type { AcpEvent } from '@/features/acp-session';
 
-export type AcpWorkEvent = Extract<AcpEvent, { kind: 'thought' | 'tool' }>;
+type AcpWorkEvent = Extract<AcpEvent, { kind: 'thought' | 'tool' }>;
 
 export type TranscriptItem =
   | { kind: 'event'; event: Exclude<AcpEvent, AcpWorkEvent> }

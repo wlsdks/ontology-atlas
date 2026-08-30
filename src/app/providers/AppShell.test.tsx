@@ -30,15 +30,22 @@ vi.mock("next-intl", () => ({
   useLocale: () => "ko",
 }));
 
-vi.mock("@/features/docs-vault-local", () => ({
-  // The bundled MCP server is visible only in the installed app — jsdom is the same as a web session.
+vi.mock("@/entities/vault-session/model/use-agent-server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-agent-server")>()),
   useAgentServer: () => ({
     kind: "unavailable",
     launch: null,
     binaryPath: null,
     reason: "The bundled MCP server is only available in the installed app.",
   }),
+}));
+vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
   useLocalVault: () => shellMocks.vault,
+}));
+vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
+  useDataSourceMode: () => "static",
 }));
 
 vi.mock("@/shared/lib/desktop-shell", () => ({
@@ -49,9 +56,6 @@ vi.mock("@/features/vault-ontology", () => ({
   useOntologyInsight: () => ({ insight: null }),
 }));
 
-vi.mock("@/features/data-source-mode", () => ({
-  useDataSourceMode: () => "static",
-}));
 
 vi.mock("@/i18n/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: shellMocks.replace }),

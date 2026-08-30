@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { VaultConflictError } from "@/features/docs-vault-local";
+import { VaultConflictError } from "@/entities/vault-session";
 import {
   DOCS_VAULT_LIST_COLLAPSED_KEY,
   DOCS_VAULT_SOURCE_KEY,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { ONTOLOGY_STARTER_FILES } from './ontology-starter';
+import { ONTOLOGY_STARTER_FILES } from '@/entities/vault-session';
 import { STARTER_CONCEPT_COUNT } from './starter-counts';
 
 describe('스타터 개수 의미 (#70)', () => {

@@ -30,14 +30,14 @@
  * phantom nodes for dangling/external refs.
  */
 
-export const INTEROP_URN_BASE = 'urn:uuid';
+const INTEROP_URN_BASE = 'urn:uuid';
 export const INTEROP_SCHEMA_VERSION = 2;
 
 const OATLAS_NS = 'https://wlsdks.github.io/ontology-atlas/ns#';
 const GRAPHML_GRAPH_ID = 'atlas';
 const NODE_UID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
-export interface InteropNode {
+interface InteropNode {
   uid: string;
   slug: string;
   kind: string;
@@ -45,7 +45,7 @@ export interface InteropNode {
   domain?: string;
 }
 
-export interface InteropEdge {
+interface InteropEdge {
   from: string;
   to: string;
   via: string;

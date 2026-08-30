@@ -3,8 +3,8 @@ import {
   buildOntologyHealthSignals,
   isEvidenceOnlyConcept,
   resolveNodeAgentTarget,
+  rankAllByDegree,
 } from "@/entities/knowledge-graph";
-import { rankAllByDegree } from "@/shared/lib/ontology-tree";
 
 /**
  * The "to do" tab — insights moving from listing inventory to "so what should I do?". It combines
@@ -14,7 +14,7 @@ import { rankAllByDegree } from "@/shared/lib/ontology-tree";
  * per-row agent handoff.
  */
 
-export type DoNextRowKind = "neglected-hub" | "orphan" | "promotion";
+type DoNextRowKind = "neglected-hub" | "orphan" | "promotion";
 
 export interface DoNextRow {
   /** The row's unique id — `${kind}:${nodeId}`. */

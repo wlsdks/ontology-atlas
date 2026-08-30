@@ -1,5 +1,5 @@
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useDataSourceMode } from '@/features/data-source-mode';
+import { useLocalVault } from '@/entities/vault-session';
+import { useDataSourceMode } from '@/entities/vault-session';
 
 /**
  * "We are in static (sample) mode and the vault restore attempt has already

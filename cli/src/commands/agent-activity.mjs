@@ -9,6 +9,7 @@ import {
   parseVaultFlag,
   resolveExclusiveVaultArg,
 } from '../lib/cli-args.mjs';
+import { loadMcpModule } from '../lib/mcp-module.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import {
@@ -617,24 +618,12 @@ function printUsage(stream = process.stderr) {
 
 /**
  * Tails the local audit log (`.ontology-atlas/activity.jsonl`). The reader reuses
- * the activity-log module from the ontology-atlas-mcp package, resolved via
- * require.resolve from either a published install or a source checkout — the same
- * pattern as mcp-call.mjs.
+ * the activity-log module from the ontology-atlas-mcp package through
+ * `loadMcpModule`, the one resolution rule the CLI applies to every MCP module:
+ * monorepo source checkout first, installed package second.
  */
 async function showActivityLog({ vaultRoot, json, limit }) {
-  const { createRequire } = await import('node:module');
-  const { existsSync: fileExists } = await import('node:fs');
-  const { resolve: resolvePath, dirname: dirnamePath } = await import('node:path');
-  const { fileURLToPath } = await import('node:url');
-  // Two-stage resolution, as in mcp-call.mjs: monorepo source checkout, then installed package.
-  const here = dirnamePath(fileURLToPath(import.meta.url));
-  const monoDev = resolvePath(here, '../../../mcp/src/activity-log.mjs');
-  let modPath = monoDev;
-  if (!fileExists(monoDev)) {
-    const require_ = createRequire(import.meta.url);
-    modPath = require_.resolve('ontology-atlas-mcp/src/activity-log.mjs');
-  }
-  const { readActivityEntries } = await import(`file://${modPath}`);
+  const { readActivityEntries } = await loadMcpModule('activity-log.mjs');
   const entries = readActivityEntries(vaultRoot, { limit });
   if (json) {
     process.stdout.write(`${JSON.stringify({ entries, total: entries.length }, null, 2)}\n`);

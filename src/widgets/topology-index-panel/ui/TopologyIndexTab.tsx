@@ -3,7 +3,7 @@
 import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
-export interface TopologyIndexTabLabels {
+interface TopologyIndexTabLabels {
   expandAria: string;
   agentSyncTitle: string;
 }

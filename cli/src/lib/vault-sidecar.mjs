@@ -1,16 +1,8 @@
-import { existsSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { loadMcpModule } from './mcp-module.mjs';
 
-// The MCP package owns the sidecar boundary. The CLI keeps only this resolver
+// The MCP package owns the sidecar boundary. The CLI keeps only this re-export
 // so source checkouts and the published two-package install use the same code.
-const here = dirname(fileURLToPath(import.meta.url));
-const sourceCheckout = resolve(here, '../../../mcp/src/vault-sidecar.mjs');
-const modulePath = existsSync(sourceCheckout)
-  ? sourceCheckout
-  : createRequire(import.meta.url).resolve('ontology-atlas-mcp/src/vault-sidecar.mjs');
-const sidecar = await import(pathToFileURL(modulePath).href);
+const sidecar = await loadMcpModule('vault-sidecar.mjs');
 
 export const SidecarPathError = sidecar.SidecarPathError;
 export const appendVaultSidecarLine = sidecar.appendVaultSidecarLine;

@@ -21,7 +21,7 @@
 // Nesting is still rejected.
 
 /** Is the value a clean string — leading/trailing whitespace, empty strings, and NULs are rejected. */
-export function isCleanNonBlankString(value) {
+function isCleanNonBlankString(value) {
   return (
     typeof value === 'string'
     && value.length > 0

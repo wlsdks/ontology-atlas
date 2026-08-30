@@ -236,7 +236,7 @@ function maintenanceCursorFailure(cursor) {
   return null;
 }
 
-export function maintenanceActionFailure(action, index) {
+function maintenanceActionFailure(action, index) {
   if (!action || typeof action !== "object" || Array.isArray(action)) {
     return `maintenance_plan malformed action at index ${index}`;
   }
@@ -267,7 +267,7 @@ export function maintenanceActionFailure(action, index) {
   return null;
 }
 
-export function maintenanceProposedActionFailure(action) {
+function maintenanceProposedActionFailure(action) {
   const { tool, args } = action.proposedAction;
   if (action.kind === "add_missing_relation") {
     if (tool !== "add_relation") {

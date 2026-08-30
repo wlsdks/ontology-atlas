@@ -10,7 +10,7 @@ import {
 import type { VaultDoc, VaultManifest } from '@/entities/docs-vault';
 import { deriveOntologyFromVault } from '@/entities/docs-vault';
 import { derivationToInsight } from '@/features/vault-ontology/model/use-ontology-insight';
-import { computeOntologyDependents } from '@/shared/lib/ontology-tree';
+import { computeOntologyDependents } from '@/entities/knowledge-graph/lib/ontology-tree';
 import { buildImpactRanking } from '@/views/ontology-insights/lib/impact-ranking';
 import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';
 import { RELATION_TYPE_VALUES, queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';

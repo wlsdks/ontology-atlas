@@ -15,7 +15,7 @@ type ToastTone = 'success' | 'info' | 'error';
  * It is optional for the same reason — missing it must cost the user nothing.
  * Anything that hurts to miss belongs on a persistent surface.
  */
-export interface ToastAction {
+interface ToastAction {
   label: string;
   onClick: () => void;
 }

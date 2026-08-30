@@ -25,7 +25,7 @@ import { currentFloatingRightBound } from "@/shared/lib/right-dock-reserve";
  * tier plus `onClose`, see `topology-esc-ladder.ts`) — this component only
  * reports outside-clicks, it doesn't decide close priority itself.
  */
-export interface TopologyV2ContextMenuLabels {
+interface TopologyV2ContextMenuLabels {
   actionDocument: string;
   /**
    * The label used instead of `actionDocument` for a node with no `.md` of its

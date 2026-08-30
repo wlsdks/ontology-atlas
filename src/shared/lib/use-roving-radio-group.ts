@@ -69,7 +69,7 @@ export interface RovingRadioGroupOptions<T> {
   busy?: boolean;
 }
 
-export interface RovingRadioItemProps {
+interface RovingRadioItemProps {
   ref: (el: HTMLButtonElement | null) => void;
   role: "radio";
   "aria-checked": boolean;

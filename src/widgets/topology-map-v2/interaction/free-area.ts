@@ -59,7 +59,7 @@ export interface Rect {
 export const SIDE_PANEL_HEIGHT_RATIO = 0.6;
 
 /** Is that rectangle a **top bar** — at least this ratio of the canvas width. */
-export const TOP_BAR_WIDTH_RATIO = 0.6;
+const TOP_BAR_WIDTH_RATIO = 0.6;
 
 const right = (r: Rect) => r.x + r.width;
 const bottom = (r: Rect) => r.y + r.height;

@@ -14,7 +14,7 @@ export interface ProjectSourceMedium {
   write(text: string): Promise<void>;
 }
 
-export type ProjectSourceReplaceResult =
+type ProjectSourceReplaceResult =
   | {
       status: "replaced";
       binding: ProjectSourceBinding;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildOntologyTree } from '@/shared/lib/ontology-tree';
+import { buildOntologyTree } from '@/entities/knowledge-graph/lib/ontology-tree';
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from '@/entities/knowledge-graph';
 import type { VaultDoc } from '@/entities/docs-vault';
 import { collectSubtreeNodeIds, selectRealmBlockDocs } from './collect-realm-block';

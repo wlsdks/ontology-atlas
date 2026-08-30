@@ -24,13 +24,13 @@ interface ChromeTileBaseProps {
   className?: string;
 }
 
-export interface ChromeTileButtonProps
+interface ChromeTileButtonProps
   extends ChromeTileBaseProps,
     Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'title' | 'className'> {
   href?: undefined;
 }
 
-export interface ChromeTileLinkProps
+interface ChromeTileLinkProps
   extends ChromeTileBaseProps,
     Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'title' | 'className' | 'href'> {
   href: string;

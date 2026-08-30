@@ -1,10 +1,10 @@
-import { flattenTree, type OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import { flattenTree, type OntologyTreeNode } from "@/entities/knowledge-graph";
 
 /**
  * INDEX tree domain rows show a "Capability N · Element M" subcount + a proportional
  * capacity meter (docs/prototypes/hub-b3-immersive.html). Both derive from
  * the SAME `buildOntologyTree` result the rest of the app already trusts
- * (`@/shared/lib/ontology-tree`) — no bespoke recount, so these numbers can
+ * (`@/entities/knowledge-graph/lib/ontology-tree`) — no bespoke recount, so these numbers can
  * never drift from the tree the row itself renders.
  */
 export interface DomainSubcounts {

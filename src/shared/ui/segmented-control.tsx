@@ -90,7 +90,7 @@ type SegmentedName =
   | { ariaLabel: string; labelledBy?: never }
   | { ariaLabel?: never; labelledBy: string };
 
-export interface SegmentedOption<T extends string | number | boolean> {
+interface SegmentedOption<T extends string | number | boolean> {
   value: T;
   label: ReactNode;
   /** Full name for screen readers when the visible label is an abbreviation (EN, KO). */

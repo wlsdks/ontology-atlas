@@ -5,7 +5,7 @@ import { useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { BarChart3, Blocks, BookOpen, Download, FolderKanban, Map as MapIcon } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/entities/vault-session';
 import { resolveActiveNavDestination, type AppNavDestinationId } from '@/shared/lib/nav-destination';
 import {
   DESTINATION_HREF,

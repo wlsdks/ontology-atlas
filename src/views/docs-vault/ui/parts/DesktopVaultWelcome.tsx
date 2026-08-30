@@ -2,7 +2,7 @@ import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Termin
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
-import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
+import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/entities/knowledge-graph";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Chip, StaggeredFadeIn } from "@/shared/ui";
 import { DOGFOOD_VAULT_PATH } from "../../lib/dogfood-vault-path";

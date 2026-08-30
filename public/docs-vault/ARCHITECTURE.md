@@ -48,7 +48,7 @@ tags: [architecture, infra, overview]
 │ Data sources (mode-aware)                               │
 │ ├─ vault           Tauri native bridge → user disk      │
 │ │                  (source browser dev can use FSA)     │
-│ │                  (`src/features/docs-vault-local/`)  │
+│ │                  (`src/entities/vault-session/`)     │
 │ └─ static          build-time dogfood manifest         │
 │                    (`docs/ontology/` → JSON import)    │
 └────────────────────────────────────────────────────────┘

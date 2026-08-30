@@ -31,9 +31,9 @@
 
 import { exceedsHysteresisThreshold } from "../engine/hysteresis";
 
-export type PointerPhase = "idle" | "pressed" | "dragging";
+type PointerPhase = "idle" | "pressed" | "dragging";
 
-export interface PointerPoint {
+interface PointerPoint {
   x: number;
   y: number;
 }

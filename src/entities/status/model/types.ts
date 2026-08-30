@@ -4,7 +4,7 @@
  * and the form.
  */
 
-export type StatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
+type StatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 
 export interface Status {
   /** Stable ID: lowercase, digits, hyphens — e.g. 'live'. */

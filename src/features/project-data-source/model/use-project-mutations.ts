@@ -1,8 +1,8 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import {
   buildProjectMarkdown,
   buildStarterDisplaySync,

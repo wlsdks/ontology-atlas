@@ -69,7 +69,7 @@ import { radiusForKind, type TopologyWorld, type WorldEdge } from "./topology-wo
  * 20-frame top-up at 60Hz. The release settle budget is the
  * `--topology-v2-node-release-settle-ms` token (900).
  */
-export const NODE_DRAG_HEAT_MS = 350;
+const NODE_DRAG_HEAT_MS = 350;
 
 /** Active node-drag: which node is pinned + the world-space grab offset (respects where inside the node it was grabbed). */
 export interface NodeDragState {
@@ -603,7 +603,6 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
     canvasRectRef.current = snapshot;
     return snapshot;
   };
-
 
   /**
    * The candidate cache — **the same input is never rebuilt** (code review fix,

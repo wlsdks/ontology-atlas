@@ -28,7 +28,7 @@ function getInvoke(): TauriInvoke | null {
 }
 
 /** Tool calls carried by this round trip — only the name and target are recorded. */
-export interface LlmToolRef {
+interface LlmToolRef {
   name: string;
   target: string;
 }

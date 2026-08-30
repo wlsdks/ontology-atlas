@@ -4,8 +4,8 @@ import { useState } from "react";
 import { PackagePlus } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
-import { useLocalVault } from "@/features/docs-vault-local";
-import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import { useLocalVault } from "@/entities/vault-session";
+import type { OntologyTreeNode } from "@/entities/knowledge-graph";
 import { isPickerAbort } from "@/shared/lib/picker-abort";
 import {
   isTauriVaultRuntime,

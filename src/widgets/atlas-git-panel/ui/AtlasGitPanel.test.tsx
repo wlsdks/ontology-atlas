@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { NextIntlClientProvider } from "next-intl";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import koMessages from "../../../../messages/ko.json";
-import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import type { OntologyChangeset } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { AtlasGitPanel } from "./AtlasGitPanel";
 
 const tauriApiMock = vi.hoisted(() => ({

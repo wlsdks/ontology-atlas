@@ -24,15 +24,21 @@ import { describe, expect, it } from 'vitest';
 const CLI_SOURCE_ROOT = join(process.cwd(), 'cli', 'src');
 
 /**
- * ⚠️ The one file that must keep Hangul, and why the exception is a path rather than a count.
+ * ⚠️ Files under `cli/src` that must keep Hangul, as a path rather than a count.
  *
- * `cli/src/lib/absorb.mjs` holds regexes that **match the user's own Korean document**: an
- * alternation of the Korean words for rule, policy and guide is how it recognises a policy heading
- * in a Korean CLAUDE.md. That is typed data in the same sense as `display_ko`, not prose the CLI
- * writes. Translating it would silently stop `absorb` reading Korean documents at all, which is the
- * opposite of what this gate is for.
+ * **The set is empty, and that is the finding, not an omission.** It used to hold
+ * `lib/absorb.mjs`, which carried regexes that **match the user's own Korean document**: an
+ * alternation of the Korean words for rule, policy and guide is how `absorb` recognises a policy
+ * heading in a Korean CLAUDE.md. That is typed data in the same sense as `display_ko`, not prose
+ * the CLI writes. On 2026-08-30 that file stopped being a copy and became a re-export of
+ * `mcp/src/absorb.mjs`, so the matcher data left `cli/src` with it. The second test below follows
+ * it there, because an exception that simply disappears is indistinguishable from an exception
+ * that was never needed.
  */
-const KOREAN_MATCHER_DATA = new Set(['lib/absorb.mjs']);
+const KOREAN_MATCHER_DATA = new Set<string>([]);
+
+/** Where the Korean matcher data lives now that the CLI re-exports it. */
+const KOREAN_MATCHER_MODULE = join(process.cwd(), 'mcp', 'src', 'absorb.mjs');
 
 /** Test names in this repository are Korean by convention; this gate is about printed output. */
 const isScannedSource = (name: string) => name.endsWith('.mjs') && !name.endsWith('.test.mjs');
@@ -82,6 +88,20 @@ describe('CLI가 찍는 말은 한 언어로 쓴다', () => {
       for (const line of hangulLines) {
         expect(line).toMatch(/\/\(|\[\^|replace\(/);
       }
+    }
+  });
+
+  it('한국어 문서를 읽는 매처는 사라진 게 아니라 mcp 로 옮겨갔다', () => {
+    // ⚠️ The test above now loops over an empty set and would pass on its own forever.
+    // `absorb` must still be able to read a Korean CLAUDE.md, so the data it needs is
+    // located where the CLI re-exports it from — deleting it there is a real regression
+    // that the CLI-only scan can no longer see.
+    const hangulLines = readFileSync(KOREAN_MATCHER_MODULE, 'utf-8')
+      .split('\n')
+      .filter((line) => HANGUL.test(line));
+    expect(hangulLines.length).toBeGreaterThan(0);
+    for (const line of hangulLines) {
+      expect(line).toMatch(/\/\(|\[\^|replace\(/);
     }
   });
 });

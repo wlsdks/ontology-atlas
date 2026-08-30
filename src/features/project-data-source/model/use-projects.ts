@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { deriveProjectsFromVault } from '@/entities/docs-vault';
 import type { Project } from '@/entities/project';
 

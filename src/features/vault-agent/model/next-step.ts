@@ -17,7 +17,7 @@
  */
 
 /** The marker the model uses for the next step. It is never shown on screen. */
-export const NEXT_STEP_MARKER = 'NEXT:';
+const NEXT_STEP_MARKER = 'NEXT:';
 
 /** How much fits on one chip line. Anything longer is trimmed — a chip is not a paragraph. */
 export const NEXT_STEP_MAX_CHARS = 140;

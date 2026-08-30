@@ -8,7 +8,7 @@
  * ONE BFS to the max depth, then per-depth counts are derived from its
  * `layers` (cumulative sum of `distance <= depth`), not re-run per step.
  * Domain ownership per reachable node reuses `nearestDomainId` +
- * `buildContainmentParents` (shared/lib/ontology-tree/insights.ts) — the
+ * `buildContainmentParents` (entities/knowledge-graph/lib/ontology-tree/insights.ts) — the
  * same containment-tree walk `computeDomainCouplingMatrix` already uses, so
  * a node's "owning domain" can't drift between the two features.
  */
@@ -17,7 +17,7 @@ import {
   buildContainmentParents,
   buildOntologyReachability,
   nearestDomainId,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 
 export type FullDetailReachDepth = 1 | 2 | 3;
 

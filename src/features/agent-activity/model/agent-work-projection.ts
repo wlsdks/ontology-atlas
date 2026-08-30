@@ -1,8 +1,8 @@
-import type { AgentActivityState, AgentActivityStatus } from '@/features/docs-vault-local';
+import type { AgentActivityState, AgentActivityStatus } from '@/entities/vault-session';
 import type { AgentWorkSession } from '@/shared/lib/agent-work-session';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
 
-export type AgentWorkMode = 'idle' | 'live' | 'recent-write' | 'completed';
+type AgentWorkMode = 'idle' | 'live' | 'recent-write' | 'completed';
 
 export interface AgentWorkProjection {
   mode: AgentWorkMode;

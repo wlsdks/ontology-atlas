@@ -28,7 +28,7 @@ interface AgentHeartbeatStatus {
  * (2026-08-21, decision ledger 90): the sheet is gone, the question "is one
  * attached right now" is not.
  */
-export type AgentConnectState =
+type AgentConnectState =
   | { kind: "connected" }
   | { kind: "stale" }
   | { kind: "none" };

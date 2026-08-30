@@ -82,7 +82,7 @@
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
       "wordCount": 4174,
-      "updatedAt": "2026-08-30",
+      "updatedAt": "2026-08-31",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -252,6 +252,18 @@
         "../mcp/README",
         "../AGENTS"
       ]
+    },
+    {
+      "slug": "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+      "path": "docs/audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29.md",
+      "title": "Design QA — Pixel Mascot Identity",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Owner references: the owner-provided Downloads PNG generated at 23:22:15 on 2026-08-28 the owner-provided Downloads PNG generated at 23:07:54 on 2026-08-28 macOS menu-bar placement crop supplied on 2026-08-29 rail-size crops supplied at 01:13 and 01:40 on 2026-08-29 Selected: one raster-first pixel identity, platform i",
+      "wordCount": 493,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
     },
     {
       "slug": "audits/ONTOLOGY-RIGOR-AUDIT-2026-07",
@@ -480,7 +492,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 219635,
+      "wordCount": 220498,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "slug"
@@ -574,7 +586,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13287,
+      "wordCount": 13325,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -898,7 +910,7 @@
       "headings": [],
       "excerpt": "This document is not the place to create new ontology rules. It is an authoritative map that lets you find, in one place, where the canonical answer for any question lies and what is machine-enforced, what is a review signal, and what requires human judgment. If values or public tool contracts below differ from those i",
       "wordCount": 779,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -1180,13 +1192,13 @@
         "display_ko": "데이터 출처 모드 분기",
         "domain": "domains/local-vault-management",
         "elements": [],
-        "path": "src/features/data-source-mode",
+        "path": "src/entities/vault-session/model/use-data-source-mode.ts",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "The ability to keep one authoritative data source across the shared web/app bundle. A vault-less web visitor may use an explicit bundled sample; a mounted web vault and the installed app use one local manifest. The installed app remains neutral during restore, folder switches, and the pre-paint turn of an LNB route cha",
-      "wordCount": 99,
-      "updatedAt": "2026-08-30",
+      "wordCount": 115,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -1310,8 +1322,8 @@
       },
       "headings": [],
       "excerpt": "The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under <project/atlas, that child is persisted and built as the canonical vault; direct standalon",
-      "wordCount": 88,
-      "updatedAt": "2026-08-30",
+      "wordCount": 113,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -1676,7 +1688,7 @@
       "headings": [],
       "excerpt": "The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs",
       "wordCount": 570,
-      "updatedAt": "2026-08-25",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -1718,13 +1730,13 @@
         "display_ko": "예시 볼트 출처",
         "domain": "domains/local-vault-management",
         "elements": [],
-        "path": "src/features/vault-sample-source",
+        "path": "src/entities/vault-session/model/use-sample-source.ts",
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Source for a bundled example vault that lets a vault-less web visitor explore without installing or choosing a folder. This source is web-only: the installed app exposes no sample entrance, switch, command, or fallback manifest. src/features/vault-sample-source (implementation evidence) src/app/providers/AppShell.tsx (",
-      "wordCount": 52,
-      "updatedAt": "2026-08-30",
+      "excerpt": "Source for a bundled example vault that lets a vault-less web visitor explore without installing or choosing a folder. This source is web-only: the installed app exposes no sample entrance, switch, command, or fallback manifest. src/entities/vault-session/model/use-sample-source.ts and use-static-vault-source.ts (moved",
+      "wordCount": 68,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -3175,7 +3187,7 @@
       "headings": [],
       "excerpt": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. It links product domains and capabilities to implementation evidence, dependencies, and impact in a computable Markdown graph that people and AI agents maintain together. README.m",
       "wordCount": 742,
-      "updatedAt": "2026-08-26",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -3399,7 +3411,7 @@
       "headings": [],
       "excerpt": "Common issues users hit when starting with ontology-atlas. If your case isn't here, open an issue: https://github.com/wlsdks/ontology-atlas/issues There are two ways to run Ontology Atlas, and only two: 1. The installed macOS app. It carries the MCP server inside its own bundle. Open a vault folder and press the connec",
       "wordCount": 1249,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     }
   ],
@@ -5063,6 +5075,13 @@
             "type": "doc",
             "slug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
             "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift"
+          },
+          {
+            "name": "DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+            "path": "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+            "type": "doc",
+            "slug": "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+            "title": "Design QA — Pixel Mascot Identity"
           },
           {
             "name": "ONTOLOGY-RIGOR-AUDIT-2026-07",

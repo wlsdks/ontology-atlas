@@ -30,14 +30,12 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/features/docs-vault-local", async () => {
-  const actual = await vi.importActual<typeof import("@/features/docs-vault-local")>(
-    "@/features/docs-vault-local",
-  );
-  return { ...actual, useLocalVault: () => mocks.vault };
-});
-
-vi.mock("@/features/data-source-mode", () => ({
+vi.mock("@/entities/vault-session/model/LocalVaultProvider", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/LocalVaultProvider")>()),
+  useLocalVault: () => mocks.vault,
+}));
+vi.mock("@/entities/vault-session/model/use-data-source-mode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-data-source-mode")>()),
   useDataSourceMode: () => "static",
 }));
 

@@ -125,7 +125,7 @@ export interface VaultShapeDiff {
 }
 
 /** Minimum children for a bridge — one is a changed parent, not a new layer. */
-export const BRIDGE_MIN_CHILDREN = 2;
+const BRIDGE_MIN_CHILDREN = 2;
 
 export function diffVaultShape(
   prev: VaultShapeSnapshot,

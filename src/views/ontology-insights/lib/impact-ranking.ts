@@ -1,10 +1,10 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { isEvidenceOnlyConcept } from "@/entities/knowledge-graph";
 import {
+  isEvidenceOnlyConcept,
   IMPACT_RELATION_TYPES,
   buildOntologyReachability,
   buildReachabilityIndex,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 
 export interface ImpactRankingRow {
   id: string;

@@ -1,6 +1,4 @@
-import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { OntologyHealthActionTarget } from "@/entities/knowledge-graph/lib/ontology-health-signals";
-import type { VaultHealthResult } from "@/entities/knowledge-graph/lib/vault-health";
+import type { KnowledgeGraphNode, OntologyHealthActionTarget, VaultHealthResult } from "@/entities/knowledge-graph";
 
 /**
  * Adapts the CLI-parity `computeVaultHealth` verdict into the shape of the insights repair queue.

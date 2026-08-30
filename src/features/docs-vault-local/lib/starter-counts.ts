@@ -1,4 +1,4 @@
-import { ONTOLOGY_STARTER_FILES } from './ontology-starter';
+import { ONTOLOGY_STARTER_FILES } from '@/entities/vault-session';
 
 /**
  * **What the starter creates, counted by meaning.**

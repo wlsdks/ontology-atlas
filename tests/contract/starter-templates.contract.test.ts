@@ -12,7 +12,7 @@ import {
   vaultClaudeBridgeForLocale,
   vaultSkillFilesForLocale,
   vaultSkillPath,
-} from "@/features/docs-vault-local/lib/ontology-starter";
+} from "@/entities/vault-session/lib/ontology-starter";
 import { runCliJson } from "../helpers/run-cli-json";
 
 /**

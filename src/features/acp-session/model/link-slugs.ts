@@ -21,11 +21,11 @@
  * `a/b-c` into `a/b` + `-c`.
  */
 
-export interface PlainSegment {
+interface PlainSegment {
   text: string;
 }
 
-export interface SlugSegment {
+interface SlugSegment {
   text: string;
   slug: string;
 }

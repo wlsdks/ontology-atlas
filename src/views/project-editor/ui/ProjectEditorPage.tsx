@@ -13,7 +13,8 @@ import {
   useProjects,
   useProjectMutations,
 } from "@/features/project-data-source";
-import { OpenVaultCta, VaultConflictError } from "@/features/docs-vault-local";
+import { VaultConflictError } from "@/entities/vault-session";
+import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
   getProjectEditHref,
   getProjectRuntimeDetailHref,

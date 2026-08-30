@@ -199,8 +199,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "setChangeBaselineScope",
-    file: "src/shared/lib/ontology-tree/change-baseline-store.ts",
-    provenBy: "src/shared/lib/ontology-tree/change-baseline-store.test.ts",
+    file: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.ts",
+    provenBy: "src/entities/knowledge-graph/lib/ontology-tree/change-baseline-store.test.ts",
     note: "변경 baseline — 볼트별 그래프 스냅숏",
   },
   {

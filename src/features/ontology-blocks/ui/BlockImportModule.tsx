@@ -15,7 +15,7 @@ import {
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
 import { controlClass } from "@/shared/ui/control-class";
 import { IconButton } from "@/shared/ui/controls";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { useLocalVault } from "@/entities/vault-session";
 import { parseBlockManifest, type BlockManifest } from "../model/block-manifest";
 import { readBlockDirectory, type BlockDirectoryHandleLike } from "../model/block-fsa";
 import {

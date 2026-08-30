@@ -95,7 +95,7 @@ function isRootReadme(slug: string): boolean {
  * a `SKILL.md` a user wrote in their own vault is still read by the runtime if it has this shape, so
  * the same judgement is correct there.
  */
-export function isRuntimeOwnedSkill(slug: string, fm: Record<string, unknown>): boolean {
+function isRuntimeOwnedSkill(slug: string, fm: Record<string, unknown>): boolean {
   const fileName = slug.split('/').pop() ?? '';
   if (fileName.toLowerCase() !== 'skill') return false;
   const hasName = typeof fm.name === 'string' && fm.name.trim() !== '';

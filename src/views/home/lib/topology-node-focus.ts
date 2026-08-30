@@ -9,7 +9,7 @@ import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
 /**
  * One connection row in the compact node popover — a single direct neighbour.
  */
-export interface TopologyNodeFocusConnection {
+interface TopologyNodeFocusConnection {
   id: string;
   title: string;
   kind: string;

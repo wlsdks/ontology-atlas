@@ -101,7 +101,7 @@ export interface TraceDrawState {
   relationType: "contains" | "depends";
   /**
    * Whether this relation **has a direction**
-   * (`shared/lib/ontology-tree/relations#isDirectionalRelation`).
+   * (`entities/knowledge-graph/lib/ontology-tree/relations#isDirectionalRelation`).
    * `relationType === "depends"` is a two-way split that holds **everything**
    * that is not containment, so symmetric relations (`related_to`) sit inside
    * it too. The directional taper (thick at source → thin at target) is drawn

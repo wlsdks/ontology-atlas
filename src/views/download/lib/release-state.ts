@@ -30,10 +30,6 @@ export type DesktopArch = MacosReleaseAsset['arch'];
 /** Apple Silicon first — it is the majority of Macs bought since 2020. */
 export const ARCH_ORDER: readonly DesktopArch[] = ['aarch64', 'x64'];
 
-export const WINDOWS_STATUS = {
-  trackingUrl: 'https://github.com/wlsdks/ontology-atlas/issues',
-} as const;
-
 export function isMacosReleasePublished(): boolean {
   return MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;
 }
@@ -53,7 +49,7 @@ export function macosAssetFor(arch: DesktopArch): MacosReleaseAsset | null {
   return MACOS_RELEASE.assets.find((asset) => asset.arch === arch) ?? null;
 }
 
-export function isWindowsReleasePublished(): boolean {
+function isWindowsReleasePublished(): boolean {
   return WINDOWS_RELEASE.published && WINDOWS_RELEASE.assets.length === 1;
 }
 
@@ -82,5 +78,5 @@ export function formatAssetSize(sizeBytes: number): string {
   return `${(sizeBytes / 1_000_000).toFixed(1)} MB`;
 }
 
-export { MACOS_RELEASE, WINDOWS_RELEASE };
+export { MACOS_RELEASE };
 export type { MacosReleaseAsset, WindowsReleaseAsset };

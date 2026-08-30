@@ -25,7 +25,7 @@ export type SampleSource = 'dogfood' | 'storefront';
 
 const SAMPLE_SOURCE_KEY = 'demo:sample-source:v1';
 
-export function readSampleSourcePreference(): SampleSource {
+function readSampleSourcePreference(): SampleSource {
   if (typeof window === 'undefined') return 'storefront';
   try {
     const raw = window.localStorage.getItem(SAMPLE_SOURCE_KEY);

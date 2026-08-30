@@ -1,4 +1,4 @@
-import { isContainmentRelation } from "@/shared/lib/ontology-tree";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
@@ -13,7 +13,7 @@ import type {
  * - `hidden`: non-landmark capabilities, most elements, documents — present in
  *   the graph but not part of the entry skeleton (revealed on demand).
  */
-export type SkeletonLevel = "anchor" | "landmark" | "hidden";
+type SkeletonLevel = "anchor" | "landmark" | "hidden";
 
 export interface OntologySkeleton {
   /** anchors ∪ landmarks — the entry node set. */

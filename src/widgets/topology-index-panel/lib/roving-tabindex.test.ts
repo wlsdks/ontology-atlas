@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import type { OntologyTreeNode } from "@/entities/knowledge-graph/lib/ontology-tree";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
   flattenVisibleRowIds,

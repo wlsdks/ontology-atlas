@@ -3,8 +3,9 @@ import {
   resolveNodeDocument,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
+  buildContainmentParents,
+  nearestDomainId,
 } from "@/entities/knowledge-graph";
-import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
 
 /**
  * The computation behind the "similar names — are these the same thing?" card.
@@ -133,7 +134,7 @@ export interface DuplicatePairs {
  * as contract documents using one prefix), so this is the floor of the range worth a person's
  * confirmation.
  */
-export const DUPLICATE_SUSPECT_MIN_SCORE = 0.6;
+const DUPLICATE_SUSPECT_MIN_SCORE = 0.6;
 
 /**
  * A pair sharing no name words at all has slug and title signals of 0, capping it at 0.3 — it

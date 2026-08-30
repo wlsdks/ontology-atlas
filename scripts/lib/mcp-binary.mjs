@@ -12,7 +12,7 @@
  */
 
 /** The binary name used inside the bundle and in config files. */
-export const MCP_BINARY_NAME = 'ontology-atlas-mcp';
+const MCP_BINARY_NAME = 'ontology-atlas-mcp';
 
 /** Where compile output lands (gitignored — build output). */
 export const MCP_BINARY_OUTPUT_DIR = 'src-tauri/binaries';

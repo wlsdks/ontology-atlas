@@ -34,7 +34,7 @@
     "skills:audit": "node scripts/audit-claude-skills.mjs",
     "test:skills:audit": "node --test scripts/audit-claude-skills.test.mjs",
     "test:desktop:runtime": "pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts src/views/root-entry/ui/RootEntryPage.test.tsx src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx",
-    "test:desktop:bridge": "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/features/docs-vault-local/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml",
+    "test:desktop:bridge": "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml",
     "desktop:release-secrets": "node scripts/check-macos-release-secrets.mjs",
     "desktop:release-source": "node scripts/check-macos-release-source.mjs",
     "desktop:release-tag": "node scripts/check-macos-release-tag.mjs",

@@ -7,7 +7,7 @@ import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
-import { useLocalVault } from "../model/LocalVaultProvider";
+import { useLocalVault } from "@/entities/vault-session";
 
 /**
  * The way to open the folder **from the very place that mentions it**.

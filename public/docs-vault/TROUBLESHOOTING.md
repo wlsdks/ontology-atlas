@@ -174,7 +174,7 @@ from any AI agent.
 
 ### `pnpm exec tsc --noEmit` fails after a vault change
 
-Vault is `.md` only — TypeScript shouldn't care. If it errors, you probably changed `src/features/docs-vault-local/lib/ontology-starter.ts` (the in-app scaffold mirror). Make sure the strings match `cli/templates/vault/`.
+Vault is `.md` only — TypeScript shouldn't care. If it errors, you probably changed `src/entities/vault-session/lib/ontology-starter.ts` (the in-app scaffold mirror). Make sure the strings match `cli/templates/vault/`.
 
 ### `pnpm lint` complains about FSD boundaries
 

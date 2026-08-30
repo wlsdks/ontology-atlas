@@ -56,9 +56,9 @@ export function describeChangePath(
   return { name: name || trimmed, place };
 }
 
-export type AtlasGitDiffLineKind = "added" | "removed" | "context" | "skip";
+type AtlasGitDiffLineKind = "added" | "removed" | "context" | "skip";
 
-export interface AtlasGitDiffLine {
+interface AtlasGitDiffLine {
   kind: AtlasGitDiffLineKind;
   text: string;
 }

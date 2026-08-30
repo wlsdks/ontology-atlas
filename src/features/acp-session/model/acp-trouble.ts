@@ -21,7 +21,7 @@
  * repository counts that as a defect.
  */
 
-export type AcpTroubleKind = 'auth' | 'install' | 'timeout' | 'launch' | 'network' | 'unknown';
+type AcpTroubleKind = 'auth' | 'install' | 'timeout' | 'launch' | 'network' | 'unknown';
 
 export interface AcpTrouble {
   kind: AcpTroubleKind;

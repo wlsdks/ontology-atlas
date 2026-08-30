@@ -19,7 +19,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { CONTROL_DISABLED_CLASS } from "@/shared/ui/control-class";
+import { CONTROL_DISABLED_CLASS, fieldClass } from "@/shared/ui/control-class";
 import { badgeClass } from "@/shared/ui/badge-class";
 import { Link } from "@/i18n/navigation";
 import {
@@ -52,15 +52,13 @@ import {
   type GitSnapshotResult,
   type GitStatusResult,
 } from "@/shared/lib/tauri-git";
-import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import type { OntologyChangeset, KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { Checkbox, controlClass } from "@/shared/ui";
-import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildConceptEgo, matchNodeId, type ConceptEgo } from "../model/build-concept-ego";
 import { CommitDetail } from "./CommitDetail";
 import { cn } from "@/shared/lib/cn";
-import { fieldClass } from '@/shared/ui/control-class';
 
 /**
  * Atlas Git — the body of the history destination.

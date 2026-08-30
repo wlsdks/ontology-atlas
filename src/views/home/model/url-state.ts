@@ -18,7 +18,7 @@ import {
   type IndexPanelState,
 } from "@/widgets/topology-index-panel";
 
-export type HomePulseMode = "all" | "7d" | "30d";
+type HomePulseMode = "all" | "7d" | "30d";
 export type TopologyAnalysisMode =
   | "overview"
   | "focus"
@@ -128,7 +128,7 @@ export interface HomeRouteState {
 }
 
 /** Spotlight window — "auto" (adaptive) or an explicit day preset. */
-export type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
+type RecentSpotlightWindow = "auto" | 1 | 7 | 30;
 
 /**
  * The map's address vocabulary — **this object is the registry's source of
@@ -274,7 +274,7 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
  * else, or absence, is null (off). A bad value is demoted to off rather than
  * polluting state with something no legend can explain.
  */
-export function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | null {
+function parseRecentWindowParam(raw: string | null): RecentSpotlightWindow | null {
   if (raw === "auto") return "auto";
   if (raw === "1") return 1;
   if (raw === "7") return 7;
@@ -283,7 +283,7 @@ export function parseRecentWindowParam(raw: string | null): RecentSpotlightWindo
 }
 
 /** Spotlight window → URL value (null removes the parameter). */
-export function serializeRecentWindowParam(window: RecentSpotlightWindow | null): string | null {
+function serializeRecentWindowParam(window: RecentSpotlightWindow | null): string | null {
   if (window === null) return null;
   return window === "auto" ? "auto" : String(window);
 }

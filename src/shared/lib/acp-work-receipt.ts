@@ -5,7 +5,7 @@
  * paths. The vault already owns execution facts in activity.jsonl; this record closes
  * the missing human-decision boundary: request -> reviewed shape -> allow/reject -> result.
  */
-export const ACP_WORK_RECEIPT_DIR = '.ontology-atlas';
+const ACP_WORK_RECEIPT_DIR = '.ontology-atlas';
 export const ACP_WORK_RECEIPT_FILE = 'acp-work.jsonl';
 const MAX_RECEIPTS = 50;
 const MAX_SNAPSHOTS = 200;
@@ -13,7 +13,7 @@ const MAX_SNAPSHOTS = 200;
 export type AcpWorkDecision = 'allowed' | 'rejected';
 export type AcpWorkResult = 'pending' | 'completed' | 'failed' | 'cancelled' | 'not-run';
 
-export interface AcpWorkReceiptItem {
+interface AcpWorkReceiptItem {
   target: string | null;
   operation: string;
   relation: { from: string; type: string; to: string } | null;

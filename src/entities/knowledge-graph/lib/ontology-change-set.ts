@@ -1,4 +1,4 @@
-export type OntologyChangeOperation =
+type OntologyChangeOperation =
   | 'create'
   | 'update'
   | 'relate'
@@ -7,13 +7,13 @@ export type OntologyChangeOperation =
   | 'merge'
   | 'write';
 
-export interface OntologyChangeField {
+interface OntologyChangeField {
   key: string;
   before?: unknown;
   after: unknown;
 }
 
-export interface OntologyRelationChange {
+interface OntologyRelationChange {
   from: string;
   type: string;
   to: string;

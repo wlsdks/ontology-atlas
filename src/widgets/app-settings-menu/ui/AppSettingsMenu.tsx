@@ -22,7 +22,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/entities/vault-session';
 import { useGuideAutoStart, useGuideReplay, writeGuideAutoStart } from '@/features/guided-tour';
 import {
   getTauriVaultRootPath,
@@ -324,7 +324,7 @@ function consumeSettingsLocaleFocus(
   }
 }
 
-export interface AppSettingsScreenControls {
+interface AppSettingsScreenControls {
   audiencePlain: boolean;
   onAudiencePlainChange: (next: boolean) => void;
   indexCollapsed: boolean;
@@ -353,7 +353,6 @@ export interface AppSettingsMenuProps {
    */
   triggerVariant?: SettingsTriggerVariant;
 }
-
 
 export function AppSettingsMenu({
   mode,

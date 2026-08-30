@@ -2,16 +2,14 @@ import {
   buildOntologyReachability,
   computeOntologyDependents,
   IMPACT_RELATION_TYPES,
-} from "@/shared/lib/ontology-tree";
-import {
-  classifyTopologyRelationQuality,
-  type TopologyRelationQualityBreakdown,
-} from "./topology-analysis";
-import {
   resolveNodeDocument,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
+import {
+  classifyTopologyRelationQuality,
+  type TopologyRelationQualityBreakdown,
+} from "./topology-analysis";
 
 /**
  * The shared "node facts" model behind the compact canvas popover
@@ -33,7 +31,7 @@ export type TopologyRelationProvenance =
   | "authored"
   | "needs_review";
 
-export interface TopologyOntologyDrawerReach {
+interface TopologyOntologyDrawerReach {
   /**
    * Transitive incoming closure — nodes that depend on this one directly or
    * indirectly, i.e. the blast radius of changing it. Same direction semantics

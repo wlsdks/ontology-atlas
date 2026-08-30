@@ -69,7 +69,7 @@ export function serializeDocsTreeGroup(group: DocsTreeGroup): string | null {
 }
 
 /** Tree node path → last modified time (ms). A folder takes the newest of the documents it holds. */
-export type DocsTreeRecencyIndex = ReadonlyMap<string, number>;
+type DocsTreeRecencyIndex = ReadonlyMap<string, number>;
 
 function parseUpdatedAt(value: string | undefined): number {
   if (!value) return 0;

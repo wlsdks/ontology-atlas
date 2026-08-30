@@ -3,7 +3,7 @@ import { slugify } from '@/shared/lib/slugify';
 import type { MeaningEditRelation } from './ontology-node-href';
 import type { OntologyChangeSet } from './ontology-change-set';
 
-export const RELATION_FRONTMATTER_KEY: Record<MeaningEditRelation, string> = {
+const RELATION_FRONTMATTER_KEY: Record<MeaningEditRelation, string> = {
   isA: 'broader',
   dependsOn: 'dependencies',
   contains: 'contains',
@@ -17,7 +17,7 @@ export const RELATION_EDGE_TYPE: Record<MeaningEditRelation, string> = {
   relates: 'related_to',
 };
 
-export type OntologyRelationFrontmatterUpdate =
+type OntologyRelationFrontmatterUpdate =
   | string[]
   | Record<string, string>
   | null;

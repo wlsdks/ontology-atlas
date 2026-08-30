@@ -7,9 +7,9 @@ import {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import { useDataSourceMode, VaultSourceHydrationBoundary } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useDataSourceMode, VaultSourceHydrationBoundary } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
 import {
   getTauriVaultRootPath,

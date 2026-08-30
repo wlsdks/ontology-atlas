@@ -14,11 +14,13 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
-  AgentClientButtons,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
-  buildCursorMcpDeeplink,
   buildMcpConfigJson,
+} from '@/entities/vault-session';
+import {
+  AgentClientButtons,
+  buildCursorMcpDeeplink,
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -26,9 +28,9 @@ import {
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
 import { SETTINGS_SECTION_LABEL } from './settings-primitives';
-import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
+import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
-import type { AgentClientId } from '@/features/docs-vault-local';
+import type { AgentClientId } from '@/entities/vault-session';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';
@@ -273,7 +275,7 @@ function shellQuoteForPacket(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-export interface VaultAgentSetupLocalVault {
+interface VaultAgentSetupLocalVault {
   status:
     | 'idle'
     | 'opening'
@@ -759,7 +761,6 @@ export function VaultAgentSetupPanel({
     vaultRootPath ? shellQuoteForPacket(vaultRootPath) : '.'
   } --timeout-ms 15000`;
   const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
-
 
   /**
    * There is one thing to do now — decided **only from what the app actually knows.**

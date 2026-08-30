@@ -48,7 +48,7 @@ export interface FreshnessTabLabels {
   evidenceBadgeHint: string;
 }
 
-export interface FreshnessTabRecentLink {
+interface FreshnessTabRecentLink {
   /** Clicking a recently-updated row deeplinks to that node on the map (`buildOntologyNodeHref`,
    *  the same source as the relations tab's hub rows). */
   href: (nodeId: string) => string;

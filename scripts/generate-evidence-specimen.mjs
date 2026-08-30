@@ -191,7 +191,7 @@ function render(spec) {
 // Re-run the generator when the specimen file changes; \`pnpm gateway:specimen:check\` fails the
 // build when this file and the vault disagree. Rationale: \`scripts/generate-evidence-specimen.mjs\`.
 
-export interface EvidenceSpecimenName {
+interface EvidenceSpecimenName {
   readonly ko: string;
   readonly en: string;
   /** The map engine's node id (kind:basename) — what focus/emphasis props accept. */

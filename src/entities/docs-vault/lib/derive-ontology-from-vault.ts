@@ -22,7 +22,7 @@ import type { VaultDoc, VaultManifest } from '../model/types';
  * - `broader` (string[]) — is_a (SKOS skos:broader)
  */
 
-export type OntologyStubSource = 'frontmatter';
+type OntologyStubSource = 'frontmatter';
 
 /**
  * Index from a frontmatter reference string to an already-registered document
@@ -44,7 +44,7 @@ export type OntologyStubSource = 'frontmatter';
  */
 type DocAliasIndex = ReadonlyMap<string, string>;
 
-export interface OntologyStubNode {
+interface OntologyStubNode {
   /** `<kind>:<slug>`, or `unknown:<slug>` as a fallback. */
   id: string;
   title: string;
@@ -103,7 +103,7 @@ export interface OntologyStubNode {
   summary?: string;
 }
 
-export interface OntologyStubEdge {
+interface OntologyStubEdge {
   /** `<from>--<type>-->|<to>` */
   id: string;
   from: string;
@@ -638,8 +638,6 @@ function deriveOntologyFromVaultUncached(
       }
     }
   }
-
-
 
   return {
     nodes: Array.from(nodes.values()),

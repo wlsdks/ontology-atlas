@@ -8,7 +8,13 @@ import {
   consumeQueuedAgentChatIntent,
   subscribeAgentChatIntent,
 } from "@/shared/lib/agent-chat-intent";
-import { isGuardedRuntime, runtimeOwnsWriteGate } from "@/features/acp-session/model/runtime-gate";
+import {
+  isGuardedRuntime,
+  runtimeOwnsWriteGate,
+  vaultMcpServers,
+  vaultSelfReadSlot,
+  useChatSuggestions,
+} from "@/features/acp-session";
 import { agentChatDoor } from "../model/agent-chat-door";
 import {
   AcpChatPanel,
@@ -17,10 +23,7 @@ import {
   type AcpMapIntent,
   type AcpOntologyRelationPreview,
 } from "@/widgets/acp-chat-panel";
-import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
-import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
-import type { ChatSuggestion } from "@/features/acp-session/model/chat-suggestions";
-import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
+import type { ChatSuggestion, AcpTurnActivity } from "@/features/acp-session";
 import { cn } from "@/shared/lib/cn";
 import {
   type CSSProperties,
@@ -44,13 +47,16 @@ import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle,
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { VaultSourceHydrationBoundary } from "@/features/data-source-mode";
-import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
+  VaultSourceHydrationBoundary,
   useAgentServer,
   useLocalVault,
-  VaultOpenGuideSheet,
   useSummaryFreshness,
+  useVaultSessionIdentityScope,
+} from "@/entities/vault-session";
+import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import {
+  VaultOpenGuideSheet,
 } from "@/features/docs-vault-local";
 import {
   FirstRunReadout,
@@ -86,10 +92,6 @@ const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
 // below (`../lib/deeplink-miss-notice.ts`) for why this exists.
 const DEEPLINK_MISS_GRACE_MS = 4000;
-// Debounce before writing the past trail, so every step does not hit the user's
-// disk. Kept short on purpose: whatever we wait here is a window in which closing
-// the window loses the last step (a flush on tab hide narrows it further).
-const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
 // The map camera spring pays off the last few pixels even after the dock has made room.
 // Slowing ACP process boot by this amount prevents WebKit main thread occupancy from interrupting its landing.
 const ACP_SESSION_START_AFTER_REFLOW_MS = 240;
@@ -159,12 +161,12 @@ import { GestureHint } from "@/widgets/gesture-hint";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
+import { resolveToastBottomOffsetForStack, resolveToastRightOffset } from "@/shared/ui/toast-position";
 import {
   getProjectRuntimeDetailHref,
   type ProjectImpactMode,
 } from "@/entities/project";
-import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
+import { buildDocsVaultHref, buildNewNodeDoc, daysBehind } from "@/entities/docs-vault";
 import {
   buildOntologyChangeSet,
   buildTopologyMeaningEditorNodeHref,
@@ -181,6 +183,13 @@ import {
   type OntologyChangeSet,
   type MeaningEditRelation,
   useRelationVocabulary,
+  buildOntologyTree,
+  computeDomainCensusRows,
+  computeOntologyChangeset,
+  domainCensusById,
+  filterTreeExcludeKind,
+  useChangeBaseline,
+  computeCanonicalCensus,
 } from "@/entities/knowledge-graph";
 import {
   MeaningEditorPanel,
@@ -189,14 +198,6 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import { copyHandoffWithFeedback } from "../lib/copy-handoff-with-feedback";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
-import {
-  buildOntologyTree,
-  computeDomainCensusRows,
-  computeOntologyChangeset,
-  domainCensusById,
-  filterTreeExcludeKind,
-  useChangeBaseline,
-} from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import { useAgentConnectModel } from "../model/use-agent-connect-model";
@@ -223,7 +224,6 @@ import {
   deriveDeeplinkAncestorExpansion,
   clearVaultScopedRouteState,
 } from "../model/url-state";
-import { useVaultSessionIdentityScope } from "@/features/vault-scope";
 import {
   computeTopologyShortestPath,
   formatTopologyPathAgentPacket,
@@ -247,7 +247,6 @@ import {
   resolveOntologyRelationPreview,
 } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
-import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
 import {
   nodeIntent,
   screenIntentFor,
@@ -259,9 +258,7 @@ import {
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
-import { daysBehind } from "@/entities/docs-vault";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
-import { resolveToastRightOffset } from "@/shared/ui/toast-position";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 
@@ -270,11 +267,9 @@ import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
-import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
-import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import {
+  TopologyV2EdgePanel,
+  PLAIN_TIER_REVEAL,
   TopologyMapV2,
   TopologyV2ContextMenu,
   TopologyV2DetailPanel,
@@ -286,6 +281,8 @@ import {
   formatV2HandoffText,
   refreshIndexDependentTokens,
 } from "@/widgets/topology-map-v2";
+import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
+import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
 import { deriveDustySlugs } from "../lib/topology-dusty";
@@ -311,28 +308,15 @@ import {
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
-import { TopologyTrailChip, type TopologyPastWalkRow } from "./TopologyTrailChip";
-import {
-  appendFootprintVisit,
-  collapseFootprintTrail,
-  formatFootprintTrailAgentPacket,
-  type FootprintTrailEntry,
-} from "../lib/footprint-trail";
-import {
-  describePastTrailDay,
-  newPastWalkId,
-  refinePastWalkEntries,
-  PAST_WALK_MIN_ENTRIES,
-  type PastWalk,
-} from "../lib/past-trail-record";
+import { TopologyTrailChip } from "./TopologyTrailChip";
 import {
   acpHeartbeatAgentName,
   buildAcpTurnHeartbeat,
   createVaultAcpHeartbeatStore,
   type AcpHeartbeatStore,
 } from "../lib/acp-agent-heartbeat";
-import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
-import { verifyHandlePermission } from "@/entities/local-fs-handle";
+import { usePastTrails } from "../model/use-past-trails";
+import { useFootprintTrail } from "../model/use-footprint-trail";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import {
   AgentActivityChip,
@@ -1828,287 +1812,40 @@ function HomePageImpl() {
     }, { replace: true });
   }, [canvasSelectedSlug, topologyV2Graph, setRouteState]);
 
-  // Footprint trail — the path walked so far, appended each time a node takes ego
-  // focus on the map. It is not a mode but a passive record layer over the map: not
-  // in the URL, never in localStorage, cleared on reload. The same ordered array
-  // feeds the map (recency-decayed footprint rings) and the trail chip (mini
-  // timeline + handoff packet).
-  const [footprintTrail, setFootprintTrail] = useState<string[]>([]);
-  // Guards against appending the same node twice in a row (clicking the background
-  // and reselecting). Revisits between two different nodes still append and so
-  // refresh the order.
-  const lastVisitedNodeRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!canvasSelectedSlug) return;
-    if (lastVisitedNodeRef.current === canvasSelectedSlug) return;
-    lastVisitedNodeRef.current = canvasSelectedSlug;
-    setFootprintTrail((trail) => appendFootprintVisit(trail, canvasSelectedSlug));
-  }, [canvasSelectedSlug]);
-  // id → label/kind lookup. The trail is refined against the live graph so a deleted
-  // node cannot linger in it — the trail is a derived display layer, never a source.
-  const footprintNodeLookup = useMemo(
-    () => new Map(topologyV2Graph.nodes.map((n) => [n.id, n])),
-    [topologyV2Graph],
-  );
-  /**
-   * The **collapsed** trail the timeline and the handoff packet read: only the last
-   * visit to each node. The raw `footprintTrail` keeps the steps walked back over,
-   * which is what numbers the map, but handing an agent the same `get_concept` three
-   * times is noise, not information.
-   */
-  const footprintTrailEntries = useMemo<FootprintTrailEntry[]>(() => {
-    const entries: FootprintTrailEntry[] = [];
-    for (const id of collapseFootprintTrail(footprintTrail)) {
-      const node = footprintNodeLookup.get(id);
-      if (!node) continue;
-      // The handoff packet carries the name the vault knows, not the canvas node id.
-      const target = resolveNodeAgentTarget(
-        ontologyInsight?.nodes.find((n) => n.id === id),
-      );
-      entries.push({
-        id,
-        title: node.label,
-        kind: node.kind,
-        agentRef: target.ref,
-        documented: target.documented,
-      });
-    }
-    return entries;
-  }, [footprintTrail, footprintNodeLookup, ontologyInsight]);
-  /**
-   * The visit ids handed to the map: the **raw** order with only deleted nodes
-   * filtered out, never collapsed. Only the map needs the repeated steps — the step
-   * numbers (`buildFootprintSteps`) come from them, and the recency rank collapses on
-   * last appearance anyway. Sending the collapsed list would erase "I came here three
-   * times" from the screen.
-   */
-  const footprintVisitedIds = useMemo(
-    () => footprintTrail.filter((id) => footprintNodeLookup.has(id)),
-    [footprintTrail, footprintNodeLookup],
-  );
-  const [footprintPacketCopied, setFootprintPacketCopied] = useState(false);
-  const copyFootprintPacket = useCallback(async () => {
-    if (footprintTrailEntries.length === 0) return;
-    const ok = await copyText(
-      formatFootprintTrailAgentPacket(
-        footprintTrailEntries,
-        {
-          title: t("footprint.packetTitle"),
-          order: t("footprint.packetOrder"),
-          reviewHint: t("footprint.packetReviewHint"),
-          pathHint: t("footprint.packetPathHint"),
-          dustyHint: t("footprint.packetDustyHint", { count: dustySlugs.size }),
-        },
-        [...dustySlugs],
-      ),
-    );
-    if (!ok) return;
-    setFootprintPacketCopied(true);
-    window.setTimeout(() => setFootprintPacketCopied(false), 1600);
-  }, [footprintTrailEntries, dustySlugs, t]);
-  // ── Past trails ──────────────────────────────────────────────────────
-  // The session trail dies on reload or window close while `?p=` (where you are now)
-  // survives in the URL, so "where" was kept and "how you got there" was the only
-  // thing lost. Past trails hold on to that walk; nothing expires or idles it away.
-  // Clearing does the opposite and **discards without keeping a copy** — for "clear"
-  // to be an honest name it has to remove this session's already-written row too.
-  //
-  // It is stored as a **file inside the vault folder** (`past-trail-store.ts`): the
-  // web and the installed app are different origins, so browser storage cannot carry
-  // one past trail between them, and the only floor they share is the user's folder.
-  //
-  // With no vault open (sample browsing) nothing is written — there is no floor to
-  // write to, and falling back to browser storage would recreate exactly that
-  // web/app split. Sample browsing loses nothing by being volatile.
-  const pastTrailStore = useMemo<PastTrailStore | null>(
-    () =>
-      vault.status === "loaded" && vault.handle
-        ? createVaultFilePastTrailStore(vault.handle)
-        : null,
-    [vault.status, vault.handle],
-  );
-  const [pastWalks, setPastWalks] = useState<PastWalk[]>([]);
-  // Write permission is **queried, never requested**. Confronting someone who came to
-  // explore with "grant permission to keep a record" is friction. Sessions that
-  // already have permission write quietly; the rest write nothing, and the past-trail
-  // list says why.
-  const [pastTrailWritable, setPastTrailWritable] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    const handle = vault.status === "loaded" ? vault.handle : null;
-    void (async () => {
-      const granted = handle
-        ? (await verifyHandlePermission(handle, "readwrite")) === "granted"
-        : false;
-      if (!cancelled) setPastTrailWritable(granted);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [vault.status, vault.handle]);
-  // This session's walk id; every write in this session overwrites that one row (one
-  // session = one row). State rather than a ref because the list render reads it to
-  // exclude the row currently being walked, so it must be readable during render.
-  const [sessionWalkId, setSessionWalkId] = useState<string>(newPastWalkId);
-  // Mirror so event handlers (tab hide) can read the latest values.
-  const pastTrailSaveRef = useRef<{
-    store: PastTrailStore | null;
-    entries: FootprintTrailEntry[];
-  }>({ store: null, entries: [] });
-  useEffect(() => {
-    pastTrailSaveRef.current = {
-      store: pastTrailWritable ? pastTrailStore : null,
-      entries: footprintTrailEntries,
-    };
-  }, [pastTrailStore, pastTrailWritable, footprintTrailEntries]);
-  const flushPastTrail = useCallback(() => {
-    const { store, entries } = pastTrailSaveRef.current;
-    if (!store || entries.length < PAST_WALK_MIN_ENTRIES) return;
-    void store.save(sessionWalkId, entries).then(setPastWalks);
-  }, [sessionWalkId]);
-  // A different vault means a different node-id space: start a new walk and read that
-  // vault's list.
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const walks = pastTrailStore ? await pastTrailStore.list() : [];
-      if (cancelled) return;
-      setSessionWalkId(newPastWalkId());
-      setPastWalks(walks);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [pastTrailStore]);
-  // **Overwrite in place while walking.** A file write is async, so one started as
-  // the page dies never finishes — a design that fails at exactly the moment it must
-  // work. Refreshing the same row on every step (after the debounce) means even a
-  // force-quit leaves the last state already on disk.
-  useEffect(() => {
-    if (footprintTrailEntries.length < PAST_WALK_MIN_ENTRIES) return;
-    const timer = window.setTimeout(flushPastTrail, PAST_TRAIL_SAVE_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [footprintTrailEntries, flushPastTrail]);
-  // At tab-hide the document is still alive and a write can complete, so the last
-  // step still waiting out the debounce is flushed here.
-  useEffect(() => {
-    const onHidden = () => {
-      if (document.visibilityState === "hidden") flushPastTrail();
-    };
-    document.addEventListener("visibilitychange", onHidden);
-    return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [flushPastTrail]);
-  const clearFootprintTrail = useCallback(() => {
-    lastVisitedNodeRef.current = null;
-    setFootprintTrail([]);
-    // Privacy valve: this session's already-written row is removed too.
-    setSessionWalkId(newPastWalkId());
-    const store = pastTrailSaveRef.current.store;
-    if (store) void store.remove(sessionWalkId).then(setPastWalks);
-  }, [sessionWalkId, setFootprintTrail, setSessionWalkId]);
-  const handleDeletePastWalk = useCallback(
-    (walkId: string) => {
-      if (!pastTrailStore) return;
-      void pastTrailStore.remove(walkId).then(setPastWalks);
-    },
-    [pastTrailStore],
-  );
-  const handleClearPastWalks = useCallback(() => {
-    if (!pastTrailStore) return;
-    setSessionWalkId(newPastWalkId());
-    void pastTrailStore.clear().then(setPastWalks);
-  }, [pastTrailStore, setSessionWalkId]);
-  // Stored walks are refined against the live map so the row's text (title, count)
-  // and the steps a replay actually loads are **the same thing**. A row that says 12
-  // places and replays 9 is a quiet lie.
-  const refinedPastWalks = useMemo(() => {
-    const lookup = (id: string) => {
-      const node = footprintNodeLookup.get(id);
-      return node ? { title: node.label, kind: node.kind } : null;
-    };
-    return pastWalks.map((walk) => ({
-      walk,
-      entries: refinePastWalkEntries(walk.entries, lookup),
-    }));
-  }, [pastWalks, footprintNodeLookup]);
-  // Row text is finished here: the chip is pure chrome and holds no i18n or date
-  // knowledge. Dates are **day resolution only** — showing hours and minutes would
-  // make the list read as a behavioural timeline. The row currently being walked is
-  // excluded, because the live trail above already shows it.
-  const pastWalkRows = useMemo<TopologyPastWalkRow[]>(() => {
-    // Reference instant is mount (`mountNowMs`): `Date.now()` during render violates
-    // purity, and day-resolution labels do not go wrong by being pinned for a session
-    // (only a window left open past midnight sees "today" change a day late).
-    const now = mountNowMs;
-    const dayFormat = new Intl.DateTimeFormat(activeLocale, { month: "long", day: "numeric" });
-    const yearFormat = new Intl.DateTimeFormat(activeLocale, {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    return refinedPastWalks
-      .filter(({ walk }) => walk.id !== sessionWalkId)
-      .map(({ walk, entries }) => {
-        const day = describePastTrailDay(walk.endedAt, now);
-        const date =
-          day.kind === "today"
-            ? t("footprint.pastDateToday")
-            : day.kind === "yesterday"
-              ? t("footprint.pastDateYesterday")
-              : day.kind === "sameYear"
-                ? dayFormat.format(day.at)
-                : yearFormat.format(day.at);
-        // Replaying needs enough surviving steps to still read as a walk (the same
-        // threshold the chip uses): replaying a one-place walk makes the chip vanish
-        // and takes the popover with it.
-        const replayable = entries.length >= PAST_WALK_MIN_ENTRIES;
-        // Names come from today's map; only unreplayable walks keep the names they
-        // had, because there is no way to name something the map no longer has.
-        const shown = replayable ? entries : walk.entries;
-        return {
-          id: walk.id,
-          routeLabel: t("footprint.pastRouteLabel", {
-            first: shown[0].title,
-            last: shown[shown.length - 1].title,
-          }),
-          metaLabel: replayable
-            ? t("footprint.pastRowMeta", { date, count: entries.length })
-            : t("footprint.pastDeadRowMeta"),
-          replayable,
-          // An unreplayable walk gets no label at all. Computing "replay 0 places"
-          // when there is no button to attach it to only leaks that string onto some
-          // other surface later.
-          ariaLabel: replayable
-            ? t("footprint.pastReplayAriaLabel", { date, count: entries.length })
-            : null,
-        };
-      });
-  }, [refinedPastWalks, sessionWalkId, activeLocale, mountNowMs, t]);
-  // A read-only vault must not fail silently: the past-trail list says why nothing is
-  // being kept.
-  const pastTrailNotice =
-    vault.status === "loaded" && !pastTrailWritable ? t("footprint.pastReadOnlyNotice") : null;
-  // ── Footprint lens ───────────────────────────────────────────────────
-// A transient state **equivalent to** the popover being open: no new mode, toggle,
-// or URL state. While it is open the map folds away relation reading (the ego
-// highlight edges) and yields to trail reading — only visited nodes keep their
-// values and labels, everything else and every edge falls back to the existing dim
-// values. Those ego edges were the blue lines the owner called *"dizzying"*
-// (dizzying). No trail polyline is drawn (in this product a line means a relation);
-// the field is simply cleared for the moment of reading.
-//
-// The lens flag and the brush are **refs, not state**. As state, every toggle and
-// every row hover re-renders this whole page tree (measured: ~100 ms per switch,
-// 68–109 ms per hover — squarely in "sticky" territory). The canvas loop reads refs
-// every frame anyway, so the same picture costs zero renders.
-  const footprintLensActiveRef = useRef(false);
-  const footprintBrushNodeIdRef = useRef<string | null>(null);
-  const handleFootprintLens = useCallback((active: boolean) => {
-    footprintLensActiveRef.current = active;
-  }, []);
-  const handleFootprintBrush = useCallback((id: string | null) => {
-    footprintBrushNodeIdRef.current = id;
-  }, []);
+  const {
+    setFootprintTrail,
+    lastVisitedNodeRef,
+    footprintNodeLookup,
+    footprintTrailEntries,
+    footprintVisitedIds,
+    footprintPacketCopied,
+    copyFootprintPacket,
+    footprintLensActiveRef,
+    footprintBrushNodeIdRef,
+    handleFootprintLens,
+    handleFootprintBrush,
+  } = useFootprintTrail({
+    canvasSelectedSlug,
+    graphNodes: topologyV2Graph.nodes,
+    insightNodes: ontologyInsight?.nodes,
+    dustySlugs,
+  });
+  const {
+    pastWalkRows,
+    pastTrailNotice,
+    clearFootprintTrail,
+    handleDeletePastWalk,
+    handleClearPastWalks,
+    replayPastWalk,
+  } = usePastTrails({
+    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    vaultLoaded: vault.status === "loaded",
+    footprintTrailEntries,
+    footprintNodeLookup,
+    mountNowMs,
+    setFootprintTrail,
+    lastVisitedNodeRef,
+  });
 
   /*
     The single channel by which **hovering a node name in a side panel** makes the
@@ -3546,35 +3283,14 @@ function HomePageImpl() {
     return true;
   }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
-  /**
-   * **Replays a past trail as the walk in progress.** The order is the contract:
-   *
-   * ① Flush the current walk first, including the last step still waiting out the
-   *    debounce, so replaying costs nothing.
-   * ② Switch to a new walk id. If the route is unchanged, `upsertPastWalk` skips
-   *    re-storing it, so the original row keeps its own date and a new row appears only
-   *    once walking on from here makes the route different.
-   * ③ Load the refined steps as the session trail. The map's footprint rings are
-   *    derived from that trail, so they re-stamp themselves with no render code
-   *    touched.
-   * ④ Ego-focus the last step — "you are here" is the end of that trail.
-   */
+  // Replaying loads the stored steps as the session trail; "you are here" is then
+  // the end of that trail, so the last step is ego-focused.
   const handleReplayPastWalk = useCallback(
     (walkId: string) => {
-      const target = refinedPastWalks.find(({ walk }) => walk.id === walkId);
-      if (!target || target.entries.length < PAST_WALK_MIN_ENTRIES) return;
-      flushPastTrail();
-      setSessionWalkId(newPastWalkId());
-      const ids = target.entries.map((entry) => entry.id);
-      setFootprintTrail(ids);
-      // Mark the last step as visited explicitly, so the visit-detection effect that
-      // `handleSelect` triggers below does not disturb the trail just loaded. (It is
-      // the same node either way, but stating it beats relying on that.)
-      const last = ids[ids.length - 1];
-      lastVisitedNodeRef.current = last;
-      handleSelect(last);
+      const last = replayPastWalk(walkId);
+      if (last) handleSelect(last);
     },
-    [refinedPastWalks, flushPastTrail, handleSelect, setSessionWalkId, setFootprintTrail],
+    [replayPastWalk, handleSelect],
   );
 
   const handleClose = useCallback(() => {
@@ -4112,7 +3828,7 @@ function HomePageImpl() {
   ]);
   // P0c — Official census: since kind:project is already included in insight.nodes,
 // adding renderProjects causes double counting (cause of the mismatch between map 294 and insight 293). The "Concept/Relation" census has a single source for all insight derivations
-// (`shared/lib/ontology-tree/canonical-census.ts`).
+// (`entities/knowledge-graph/lib/ontology-tree/canonical-census.ts`).
   const topologyCanonicalCensus = computeCanonicalCensus(
     ontologyInsight?.nodes ?? [],
     ontologyInsight?.edges ?? [],
@@ -4120,7 +3836,7 @@ function HomePageImpl() {
   const topologyTotalNodes = topologyCanonicalCensus.conceptCount;
   const topologyTotalRelations = topologyCanonicalCensus.relationCount;
   // INDEX tree data — the SAME `buildOntologyTree` the old `/ontology` tree
-  // page used (`@/shared/lib/ontology-tree`), so the census row above and the
+  // page used (`@/entities/knowledge-graph/lib/ontology-tree`), so the census row above and the
   // tree rows below can never drift from the chrome's own `topologyTotalNodes`
   // / `topologyTotalRelations`.
   const indexTreeResult = useMemo(

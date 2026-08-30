@@ -16,7 +16,7 @@ import { cn } from "@/shared/lib/cn";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
   type MeaningfulOntologyKind,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 import { controlClass, HighlightedText } from "@/shared/ui";
 import { isPathLikeTitle, matchOntologyNodes, matchProjects } from "../lib/match";
 

@@ -1,6 +1,7 @@
 ---
 paths:
   - "src/shared/lib/tauri-*.ts"
+  - "src/entities/vault-session/**"
   - "src/features/docs-vault-local/**"
   - "src-tauri/**"
   - "tests/e2e/**"

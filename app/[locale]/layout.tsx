@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { AppShell, MotionProvider } from '@/app-providers/providers';
 import { TaxonomyProvider } from '@/features/taxonomy';
-import { LocalVaultProvider } from '@/features/docs-vault-local';
+import { LocalVaultProvider } from '@/entities/vault-session';
 import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';

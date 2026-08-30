@@ -20,19 +20,19 @@ import {
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
-import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
+import { selectRecentVaultDocs } from "@/entities/knowledge-graph";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { useAdvancedMenu } from "../../lib/use-advanced-menu";
-import { DocsVaultTree } from "@/widgets/docs-vault/ui/DocsVaultTree";
 import {
+  DocsVaultTree,
   DEFAULT_DOCS_TREE_GROUP,
   DEFAULT_DOCS_TREE_SORT,
   DOCS_TREE_GROUPS,
   DOCS_TREE_SORTS,
   type DocsTreeGroup,
   type DocsTreeSort,
-} from "@/widgets/docs-vault/lib/tree-order";
+} from "@/widgets/docs-vault";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
 import { Chip, IconButton, RowButton, Surface, Tooltip, controlClass } from "@/shared/ui";
 import { fieldClass } from '@/shared/ui/control-class';

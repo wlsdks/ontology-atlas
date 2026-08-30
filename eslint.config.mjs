@@ -896,6 +896,14 @@ const codexTestIgnores = ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'];
 // **Reason for shared array**: flat config does not merge options but **replaces** them when redefining the same rule later. If a narrower scope block lists only its own restrictions, this firestore guard quietly disappears from that path. Scope blocks must always spread this array before adding their own items.
 //
 // Details: `@.claude/rules/architecture.md`.
+const sliceEntryPointPatterns = [
+  {
+    group: ['@/views/*/*', '@/widgets/*/*', '@/features/*/*', '@/entities/*/*'],
+    message:
+      'Import a slice through its public API (`@/<layer>/<slice>`), not a file inside it. Add the export to that slice\'s index.ts if it is missing; a slice with no index.ts has no public API yet — create one. Tests may still reach inside.',
+  },
+];
+
 const firestoreApiRestrictedPaths = [
   {
     name: '@/entities/project',
@@ -1075,8 +1083,22 @@ const eslintConfig = defineConfig([
     },
   },
   // Firestore api path guard — list source is `firestoreApiRestrictedPaths`.
+  // Slice public API — a slice is imported through its `index.ts`, never through
+  // `@/<layer>/<slice>/<segment>/…`. Measured 2026-08-30 before the rule: 64 files
+  // reached past a barrel (33 in views, 21 in widgets, 12 in features), and two
+  // features (`acp-session`, `acp-doctor`) had no public API at all because every
+  // consumer read their model files directly. Tests keep deep access (next block).
   {
     files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: firestoreApiRestrictedPaths, patterns: sliceEntryPointPatterns },
+      ],
+    },
+  },
+  {
+    files: ['src/**/*.{test,spec}.{ts,tsx}', 'app/**/*.{test,spec}.{ts,tsx}'],
     rules: {
       'no-restricted-imports': ['error', { paths: firestoreApiRestrictedPaths }],
     },
@@ -1097,6 +1119,7 @@ const eslintConfig = defineConfig([
         {
           paths: firestoreApiRestrictedPaths,
           patterns: [
+            ...sliceEntryPointPatterns,
             {
               group: ['@/entities/ontology-class', '@/entities/ontology-class/**'],
               message:

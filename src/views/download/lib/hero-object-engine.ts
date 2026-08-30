@@ -32,7 +32,7 @@ import { echoCount, echoOrder, preferredParents } from './hero-echo';
 
 const TAU = Math.PI * 2;
 
-export interface HeroGraphNode {
+interface HeroGraphNode {
   /** slug — used only as a stable sort key and jitter seed. */
   s: string;
   k: 'project' | 'domain' | 'capability' | 'element';
@@ -42,7 +42,7 @@ export interface HeroGraphNode {
   pz?: number;
 }
 
-export interface HeroGraphEdge {
+interface HeroGraphEdge {
   a: string;
   b: string;
   y: 'contains' | 'depends';
@@ -139,7 +139,7 @@ interface HeroModel {
 }
 
 /** kind → plane; children fan out beneath their parent's angular slice. */
-export function layoutHeroGraph(data: HeroGraphData): HeroModel {
+function layoutHeroGraph(data: HeroGraphData): HeroModel {
   const nodes = data.nodes;
   const edges = data.edges;
   const byKind: Record<HeroGraphNode['k'], HeroGraphNode[]> = {

@@ -8,7 +8,7 @@
  * contains, incoming containment = belongsTo) while non-containment stays
  * direction-split (usedBy/dependsOn) — see `docs/prototypes/detail-a1-datasheet.html`.
  *
- * Reuses `buildConnections` (shared/lib/ontology-tree) for the full
+ * Reuses `buildConnections` (entities/knowledge-graph/lib/ontology-tree) for the full
  * dir-tagged connection list — no forked BFS/edge-scan.
  */
 import {
@@ -17,8 +17,8 @@ import {
   type ConnectionSourceEdge,
   type ConnectionSourceNode,
   type DatasheetConnection,
-} from "@/shared/lib/ontology-tree/connections";
-import { isContainmentRelation } from "@/shared/lib/ontology-tree/relations";
+  isContainmentRelation,
+} from "@/entities/knowledge-graph";
 
 export interface FullDetailConnectionRow {
   id: string;

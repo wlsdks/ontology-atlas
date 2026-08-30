@@ -1,4 +1,4 @@
-export const ONTOLOGY_READER_INTENTS = [
+const ONTOLOGY_READER_INTENTS = [
   "planning",
   "marketing",
   "leadership",

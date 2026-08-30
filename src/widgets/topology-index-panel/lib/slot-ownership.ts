@@ -5,7 +5,7 @@ import type { IndexPanelState } from "./index-panel-state";
  * value, not by import — FSD forbids `widgets` importing from `views`
  * (`.claude/rules/architecture.md`).
  */
-export type LeftSlotAnalysisMode = "overview" | "focus" | "path" | "health";
+type LeftSlotAnalysisMode = "overview" | "focus" | "path" | "health";
 
 /**
  * Left-slot exclusivity (「The hub is the map」 — the hub is the map;

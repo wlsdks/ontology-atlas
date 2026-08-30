@@ -15,7 +15,7 @@ import { BuildFromCodeDoor } from "./BuildFromCodeDoor";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
-import { useSampleSource } from "@/features/vault-sample-source";
+import { useSampleSource } from "@/entities/vault-session";
 import { VaultOpenGuideSheet } from "@/features/docs-vault-local";
 import { CompactCopyButton, controlClass } from "@/shared/ui";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
