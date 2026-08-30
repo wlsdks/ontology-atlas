@@ -40,6 +40,69 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — Every stroke says its sentence, and the canvas is drawn exactly
+
+**Convened because**: the owner, having said the target was the architecture tab all along,
+asked for the reference feel there and added three sentences: UI finish ranks with function
+(good design is the reason a person chooses to use the tool), it must read as August 2026 rather than as the past,
+and motion matters. `/design-directions` put four shapes up for the canvas (status quo; strokes
+say the dock's sentences; the chain folds into cards; hover stays still and the click is drawn);
+the owner chose **B**. Asked separately whether the hand-drawn stroke should stay, the owner
+chose **precise geometry**.
+
+**What the references actually do, measured** (Understand-Anything and LikeC4, both MIT, run
+live at 1512): both put a sentence on the line, one beside a dashed edge, one as a pill at the
+midpoint; both draw exact geometry; LikeC4 recedes out-of-scope elements to 25%. Neither draws
+by hand. Our canvas put a sentence on nothing and a count only on focus; its sentences lived in
+a dock closed by default; its strokes and boxes wobbled.
+
+**Decision**, three parts:
+
+1. **Every stroke at rest states the sentence the dock printed** (`{from} may depend on
+   {to}`, `{from} reaches {to} in N imports`, `⊘` for a counted violation): the dock's own
+   strings, so a person and an agent read one sentence about one stroke. Down (1512) an
+   adjacent pair's sentence sits in the ground left of the column, right-aligned on its gap; a
+   skip's sits beside its own arc. Across (1920, or a four-role profile at 1512) it sits above
+   the chain on one of two tiers hugging the boxes; a skip's below its arc. The dock's sentence
+   list is removed; its legend and direction sentence stay.
+2. **The room comes from the sentences, and a sentence with no room is held, never cropped.**
+   Each candidate gets a character budget from its ground (the box captions' 4.7px glyph) and
+   a rectangle; one that would touch a box or an earlier sentence is dropped and says why in
+   `data-edge-sentence`. A rule wins over a count for one gap. The e2e gate reads every drawn
+   sentence's rect against every box and every other sentence on both profiles; planted with
+   the model's own check disabled it named the two offenders, restored it is green.
+3. **Precise geometry, and motion by opacity.** The hand-drawn stroke (the 2026-08-28
+   notation: a declared rule drawn by hand, a measurement ruled) is retired: boxes are 1px
+   rectangles with a 6px radius or exact stadiums, strokes are one cubic each, `sketch-stroke.ts`
+   is deleted. A skip stays in the drawing at rest held at zero and fades in with the role that
+   reveals it (`--motion-base` 180ms); a hovered role recedes everything unrelated over
+   `--motion-fast` 120ms instead of the attribute swap it was. Measured: the receded box carries
+   `transition-duration: 0.12s` and settles at 0.35; planted as `transition: none` the gate went
+   red; the reduced-motion base rule zeroes both.
+
+**Measured after the build** (seven-role dogfood profile, receipt seeded; four-role sample):
+9 strokes drawn and 5 held at rest on seven roles, 8 sentences drawn, 0 touching a box or
+another sentence, chain bottom unchanged, no page scroll at 1512 or 1920; four roles: 3
+strokes, 3 sentences on two tiers, 0 overlaps; canvas font Pretendard on every string.
+
+**What did not fit, and stays recorded**: the mono eyebrow line with the role's glob
+(`src/widgets/**`, LikeC4's "technology" line) needs 12px per box that seven boxes do not have
+above the 1512 fold. It is the next candidate, not this slice. The README's architecture
+screenshot still shows the hand-drawn chain and is retaken from the installed app separately.
+
+**Applied rule**: replace, do not accumulate. The dock list and the sketch module are removed
+rather than kept beside the new form.
+**Signed**: stark
+
+**Recorded dissent** (from the directions pass): under `lower-only` six of the sentences say
+`may depend on`, which the column order already says; and fill rises from ~15% to ~30% only
+through text, so the canvas may still read as a labelled column rather than a card field. —
+**falsifier**: a walker with the sentences on screen still opens the dock to learn what a
+stroke means, or reads a `may depend on` sentence as a measured count. — **revisit**: at the
+first outside walkthrough of this screen.
+
+**Status**: standing
+
 ## 2026-08-30 — The map slice is withdrawn: the owner meant the architecture tab
 
 **Convened because**: after the council above, the owner said the Map tab had nothing to

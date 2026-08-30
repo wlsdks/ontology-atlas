@@ -10,7 +10,7 @@ import { controlClass } from '@/shared/ui/control-class';
 
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
-import { sketchConnector, sketchRect, sketchStadium } from '../model/sketch-stroke';
+import { placeEdgeSentences, type SentenceEdge } from '../model/edge-sentences';
 import { captionLineBudgets, splitSummaryLines } from '../model/summary-lines';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
@@ -97,6 +97,16 @@ const PAD_Y_LEDGER = 20;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
 const SKIP_DROP = 30;
 const SKIP_STEP = 10;
+/*
+ * ⚠️ **Every stroke at rest says its sentence** (Direction B, owner, 2026-08-30). The room the
+ * sentences take is measured from the sentences: left of a downward column as wide as the longest
+ * adjacent sentence needs (capped), above an across chain two tiers deep, and past the deepest
+ * arc where skips carry theirs. The same 4.7px glyph the box captions budget with.
+ */
+const SENTENCE_LEAD_MAX = 380;
+const SENTENCE_TOP_ROOM = 44;
+const SENTENCE_TRAIL_ROOM = 260;
+const SENTENCE_CHAR_PX = 4.7;
 
 /**
  * ⚠️ **Which way the chain runs.** The drawing had one axis, so a seven-role profile was always a
@@ -163,6 +173,7 @@ export function ArchitectureSketch({
   ledgers,
   roleSummary,
   violatedPairs,
+  edgeSentence,
   ledgerStatusLabel,
   ledgerImportsLabel,
   runLabel,
@@ -206,6 +217,8 @@ export function ArchitectureSketch({
    * wears the conforming stroke.
    */
   violatedPairs: ReadonlySet<string>;
+  /** The sentence a stroke states, the same string the dock printed: rule, count, or violation. */
+  edgeSentence: (edge: SentenceEdge) => string;
   /** The ledger's first half, already worded by the locale — never assembled here. */
   ledgerStatusLabel: (ledger: RoleLedger) => string;
   ledgerImportsLabel: (count: number) => string;
@@ -253,13 +266,43 @@ export function ArchitectureSketch({
   const naturalAcross = PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP;
   const axis: FlowAxis = boxWidth > 0 && naturalAcross > boxWidth ? 'down' : 'across';
 
+  const toSentenceEdge = useCallback(
+    (edge: Graph['edges'][number]): SentenceEdge => ({
+      from: edge.from,
+      to: edge.to,
+      kind: edge.kind,
+      count: edge.count,
+      columnSpan: edge.columnSpan,
+      violated: violatedPairs.has(`${edge.from}>${edge.to}`),
+    }),
+    [violatedPairs],
+  );
+  const leadRoom = useMemo(() => {
+    if (axis === 'across') return graph.edges.length === 0 ? 0 : SENTENCE_TOP_ROOM;
+    const longest = graph.edges
+      .filter((edge) => edge.columnSpan <= 1)
+      .reduce((most, edge) => Math.max(most, edgeSentence(toSentenceEdge(edge)).length), 0);
+    return longest === 0 ? 0 : Math.min(SENTENCE_LEAD_MAX, Math.ceil(longest * SENTENCE_CHAR_PX) + 32);
+  }, [axis, graph.edges, edgeSentence, toSentenceEdge]);
+  const trailRoom = graph.edges.some((edge) => edge.columnSpan > 1)
+    ? axis === 'across'
+      ? 28
+      : SENTENCE_TRAIL_ROOM
+    : 0;
+
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      map.set(box.id, { id: box.id, ...place(axis, box.column, box.slot, boxH, boxW, rowGap, padY), shape: box.shape });
+      const at = place(axis, box.column, box.slot, boxH, boxW, rowGap, padY);
+      map.set(box.id, {
+        id: box.id,
+        x: at.x + (axis === 'down' ? leadRoom : 0),
+        y: at.y + (axis === 'across' ? leadRoom : 0),
+        shape: box.shape,
+      });
     }
     return map;
-  }, [graph.boxes, axis, boxH, boxW, rowGap, padY]);
+  }, [graph.boxes, axis, boxH, boxW, rowGap, padY, leadRoom]);
 
   /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
      longer scaled. Derived, never a ref written during render. */
@@ -459,6 +502,28 @@ export function ArchitectureSketch({
     return lanes;
   }, [graph.edges]);
 
+  const sentences = useMemo(
+    () =>
+      placeEdgeSentences({
+        axis,
+        edges: graph.edges.map(toSentenceEdge),
+        placed,
+        boxW,
+        boxH,
+        rowGap,
+        colGap: COL_GAP,
+        swingOf: (edge) =>
+          SKIP_DROP +
+          (edge.columnSpan - 2) * SKIP_STEP +
+          (skipLane.get(`${edge.from}>${edge.to}`) ?? 0) * SKIP_LANE_STEP +
+          (axis === 'across' ? boxH : boxW) / 2,
+        leadRoom,
+        trailRoom,
+        sentenceOf: edgeSentence,
+      }),
+    [axis, graph.edges, toSentenceEdge, placed, boxW, boxH, rowGap, skipLane, leadRoom, trailRoom, edgeSentence],
+  );
+
   const visibleEdges = graph.edges.filter(
     (edge) =>
       edge.columnSpan <= 1 ||
@@ -492,8 +557,8 @@ export function ArchitectureSketch({
       : padY * 2 + ranks * boxH + (ranks - 1) * rowGap;
   const acrossExtent =
     axis === 'across'
-      ? padY * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom
-      : PAD_X * 2 + lanes * boxW + (lanes - 1) * COL_GAP + skipRoom;
+      ? padY * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom + leadRoom + trailRoom
+      : PAD_X * 2 + lanes * boxW + (lanes - 1) * COL_GAP + skipRoom + leadRoom + trailRoom;
   const width = axis === 'across' ? alongExtent : acrossExtent;
   const height = axis === 'across' ? acrossExtent : alongExtent;
 
@@ -667,10 +732,13 @@ export function ArchitectureSketch({
           </marker>
         </defs>
 
-        {visibleEdges.map((edge) => {
+        {graph.edges.map((edge) => {
           const a = placed.get(edge.from);
           const b = placed.get(edge.to);
           if (!a || !b) return null;
+          /* A skip stays in the drawing at rest, held at zero, so revealing it on focus is a
+             fade rather than a mount: one input, one event, and the stroke is where it will be. */
+          const drawn = visibleEdges.includes(edge);
           /* Leave the trailing face and arrive at the leading one, whichever way the chain runs. */
           const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2;
           const sy = axis === 'across' ? a.y + boxH / 2 : a.y + boxH;
@@ -706,9 +774,6 @@ export function ArchitectureSketch({
           const lead = axis === 'across' ? COL_GAP : rowGap;
           const d = (() => {
             if (edge.columnSpan <= 1) {
-              if (isDeclared) {
-                return sketchConnector(`${edge.from}>${edge.to}`, sx, sy, tx, ty, lead * 0.6, axis);
-              }
               return axis === 'across'
                 ? `M ${sx} ${sy} C ${sx + lead * 0.6} ${sy}, ${tx - lead * 0.6} ${ty}, ${tx} ${ty}`
                 : `M ${sx} ${sy} C ${sx} ${sy + lead * 0.6}, ${tx} ${ty - lead * 0.6}, ${tx} ${ty}`;
@@ -737,14 +802,17 @@ export function ArchitectureSketch({
               strokeDasharray={violated ? '5 3' : undefined}
               strokeLinecap="round"
               markerEnd="url(#architecture-sketch-arrow)"
-              opacity={receded ? 0.18 : 1}
-              className={running ? 'architecture-flow-running' : undefined}
+              pointerEvents={drawn ? undefined : 'none'}
+              aria-hidden={!drawn}
+              data-edge-drawn={drawn ? 'true' : 'false'}
+              className={cn('architecture-stroke', running && drawn ? 'architecture-flow-running' : undefined)}
               onAnimationEnd={() => {
                 pending.current -= 1;
                 if (pending.current <= 0) setRunning(false);
               }}
-              style={
-                running
+              style={{
+                opacity: !drawn ? 0 : receded ? 0.18 : 1,
+                ...(running
                   ? ({
                       /*
                        * ⚠️ **The column, not the x.** This was fed `placed.get(...).x` — a pixel
@@ -755,8 +823,8 @@ export function ArchitectureSketch({
                        */
                       '--architecture-run-step': graph.boxes.find((b) => b.id === edge.from)?.column ?? 0,
                     } as React.CSSProperties)
-                  : undefined
-              }
+                  : {}),
+              }}
               data-edge-kind={edge.kind}
               data-edge-violated={violated ? 'true' : undefined}
               data-edge-from={edge.from}
@@ -767,69 +835,40 @@ export function ArchitectureSketch({
         })}
 
         {/*
-          ⚠️ **A stroke that crosses three roles has to say which crossing it is.** The owner
-          followed a bundle of skips on the installed app and could not tell them apart
-          (2026-08-30): same tone, same shape, and the only number anywhere was the width. Every
-          skip now carries its measured count where it is furthest from the chain, which is the one
-          point on the curve that belongs to it alone. Adjacent strokes are left unlabelled — they
-          run between two neighbours and are never in doubt.
+          ⚠️ **Every stroke says its sentence, at rest** (Direction B, owner, 2026-08-30). The two
+          references the owner pointed at both put a sentence on the line; ours carried a count on
+          focus and kept its sentences in a dock that was closed by default. The strings are the
+          dock's own (a rule, a measured count, a violation) so a reader and an agent read one
+          sentence about one stroke. A sentence with no room is held, never cropped, and says why
+          in `data-edge-sentence` so the gate can count it.
         */}
-        {visibleEdges.map((edge) => {
-          const a = placed.get(edge.from);
-          const b = placed.get(edge.to);
-          if (!a || !b) return null;
-          if (edge.kind !== 'traffic' || edge.count === undefined) return null;
-          /*
-           * At rest only the crossings that overlap need a number. Once a role is chosen or
-           * hovered, every stroke it touches states its count too — width alone is a comparison,
-           * never a figure, and the figure is what a reader is actually after.
-           */
-          const touchesFocus = focus === edge.from || focus === edge.to;
-          if (edge.columnSpan <= 1 && !touchesFocus) return null;
-          const sameSpanOffset = skipLane.get(`${edge.from}>${edge.to}`) ?? 0;
-          const swing =
-            SKIP_DROP +
-            (edge.columnSpan - 2) * SKIP_STEP +
-            sameSpanOffset * SKIP_LANE_STEP +
-            (axis === 'across' ? boxH : boxW) / 2;
-          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2;
-          const sy = axis === 'across' ? a.y + boxH / 2 : a.y + boxH;
-          const tx = axis === 'across' ? b.x : b.x + boxW / 2;
-          const ty = axis === 'across' ? b.y + boxH / 2 : b.y;
-          const at =
-            axis === 'across'
-              ? { x: (sx + tx) / 2, y: Math.max(sy, ty) + swing }
-              : { x: Math.max(sx, tx) + swing, y: (sy + ty) / 2 };
-          const receded = focus !== null && focus !== edge.from && focus !== edge.to;
-          const text = String(edge.count);
-          const width = 12 + text.length * 5;
+        {sentences.map((sentence) => {
+          const edge = graph.edges.find((e) => e.from === sentence.from && e.to === sentence.to);
+          const drawnStroke = edge !== undefined && visibleEdges.includes(edge);
+          const receded = focus !== null && focus !== sentence.from && focus !== sentence.to;
+          const violated = violatedPairs.has(sentence.key);
+          const shown = sentence.hidden === undefined && drawnStroke;
           return (
-            <g
-              key={`count-${edge.from}-${edge.to}`}
-              opacity={receded ? 0.18 : 1}
-              data-testid={`architecture-edge-count-${edge.from}-${edge.to}`}
+            <text
+              key={`sentence-${sentence.key}`}
+              x={sentence.x}
+              y={sentence.y}
+              textAnchor={sentence.anchor}
+              className={cn(
+                'architecture-stroke text-caption',
+                violated
+                  ? 'fill-[color:var(--color-danger-text)]'
+                  : edge?.kind === 'traffic'
+                    ? 'fill-[color:var(--color-text-secondary)] tabular-nums'
+                    : 'fill-[color:var(--color-text-tertiary)]',
+              )}
+              style={{ opacity: !shown ? 0 : receded ? 0.18 : 1 }}
+              aria-hidden={!shown}
+              data-testid={`architecture-edge-sentence-${sentence.from}-${sentence.to}`}
+              data-edge-sentence={sentence.hidden ?? (drawnStroke ? 'drawn' : 'held')}
             >
-              {/* The chip is opaque, because a number sitting on a stroke is the accepted overlap
-                  this design system refuses; the stroke passes behind it instead. */}
-              <rect
-                x={at.x - width / 2}
-                y={at.y - 7}
-                width={width}
-                height={14}
-                rx={7}
-                fill="var(--color-panel)"
-                stroke="var(--color-border-soft)"
-                strokeWidth={1}
-              />
-              <text
-                x={at.x}
-                y={at.y + 3}
-                textAnchor="middle"
-                className="fill-[color:var(--color-text-tertiary)] text-caption tabular-nums"
-              >
-                {text}
-              </text>
-            </g>
+              {sentence.text}
+            </text>
           );
         })}
 
@@ -845,10 +884,6 @@ export function ArchitectureSketch({
                 (edge.from === focus && edge.to === box.id) ||
                 (edge.to === focus && edge.from === box.id),
             );
-          const passes =
-            box.shape === 'terminator'
-              ? sketchStadium(box.id, at.x, at.y, boxW, boxH, { passes: 1 })
-              : sketchRect(box.id, at.x, at.y, boxW, boxH);
           const counts =
             moduleCounts === null
               ? conceptCountLabel(conceptCounts[box.id] ?? 0)
@@ -932,8 +967,8 @@ export function ArchitectureSketch({
                   onSelect(box.id);
                 }
               }}
-              opacity={receded ? 0.35 : 1}
-              className="cursor-pointer outline-none [&:focus-visible>path]:stroke-[color:var(--color-indigo-a60)]"
+              style={{ opacity: receded ? 0.35 : 1 }}
+              className="architecture-recede cursor-pointer outline-none [&:focus-visible>rect]:stroke-[color:var(--color-indigo-a60)]"
             >
               {/*
                 The fill is a separate flat shape: the sketch passes are an outline built from
@@ -954,6 +989,8 @@ export function ArchitectureSketch({
                   height={boxH}
                   rx={boxH / 2}
                   fill={isSelected ? 'var(--color-indigo-a08)' : 'var(--color-elevated)'}
+                  stroke={isSelected ? 'var(--color-indigo-a60)' : 'var(--color-architecture-sketch-ink)'}
+                  strokeWidth={1}
                 />
               ) : (
                 <rect
@@ -961,24 +998,12 @@ export function ArchitectureSketch({
                   y={at.y}
                   width={boxW}
                   height={boxH}
+                  rx={6}
                   fill={isSelected ? 'var(--color-indigo-a08)' : 'var(--color-elevated)'}
+                  stroke={isSelected ? 'var(--color-indigo-a60)' : 'var(--color-architecture-sketch-ink)'}
+                  strokeWidth={1}
                 />
               )}
-              {passes.map((d, pass) => (
-                <path
-                  key={pass}
-                  d={d}
-                  fill="none"
-                  stroke={
-                    isSelected
-                      ? 'var(--color-indigo-a60)'
-                      : 'var(--color-architecture-sketch-ink)'
-                  }
-                  strokeWidth={1.2}
-                  strokeLinecap="round"
-                  opacity={pass === 0 ? 1 : 0.55}
-                />
-              ))}
               <text
                 x={at.x + boxW / 2}
                 y={nameY}
