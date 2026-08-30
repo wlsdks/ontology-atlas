@@ -11,7 +11,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import { sketchConnector, sketchRect, sketchStadium } from '../model/sketch-stroke';
-import { splitSummaryLines } from '../model/summary-lines';
+import { captionLineBudgets, splitSummaryLines } from '../model/summary-lines';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
 /**
@@ -63,8 +63,11 @@ const BOX_H_LEDGER = 82;
 const ROW_GAP_LEDGER = 12;
 /** How far apart two crossings of the same span sit, so a bundle reads as separate strokes. */
 const SKIP_LANE_STEP = 14;
-/** How much of a role's sentence fits on one caption line inside the box, and how many lines. */
-const SUMMARY_BUDGET = 34;
+/**
+ * How many caption lines a role's sentence may take. How many characters each line holds is not a
+ * constant any more: `captionLineBudgets` reads it off the box, because a stadium's second line
+ * has less room than its first (owner, 2026-08-30: the Adapters pill's caption crossed its caps).
+ */
 const SUMMARY_LINES = 2;
 /** One caption line to the next, in SVG units: the `--leading-caption` pair of `text-caption`. */
 const CAPTION_LEADING = 14;
@@ -859,20 +862,37 @@ export function ArchitectureSketch({
            * the cut lands on a word boundary where one is near.
            */
           const summary = roleSummary(box.id);
-          const summaryLines =
-            summary === null ? null : splitSummaryLines(summary, SUMMARY_BUDGET, SUMMARY_LINES);
           /*
            * ⚠️ **The name and counts stop being centred once a ledger joins them.** Vertical
            * centring is right for a block that ends where its text ends and wrong for one with a
            * ruled separator: the line has to land between what the profile declares and what the
            * scanner counted, so with a ledger every baseline is fixed from the top. Without one
-           * the block is centred, and the block is one line (counts) or two (the sentence).
+           * the block is centred: a one-line block for the counts, a two-line block for the
+           * sentence. A sentence that turns out to need one line keeps the two-line positions,
+           * because its budget was read off those positions and moving it would change the room.
            */
-          const captionLines = summaryLines?.length ?? 1;
           const nameY = ledger
             ? at.y + 21
-            : at.y + boxH / 2 - 4 - ((captionLines - 1) * CAPTION_LEADING) / 2;
+            : summary === null
+              ? at.y + boxH / 2 - 4
+              : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * CAPTION_LEADING) / 2;
           const countsY = nameY + 15;
+          const summaryLines =
+            summary === null
+              ? null
+              : splitSummaryLines(
+                  summary,
+                  captionLineBudgets({
+                    boxW,
+                    boxH,
+                    shape: box.shape,
+                    baselines: Array.from(
+                      { length: SUMMARY_LINES },
+                      (_, line) => countsY - at.y + line * CAPTION_LEADING,
+                    ),
+                  }),
+                  SUMMARY_LINES,
+                );
 
           return (
             <g
