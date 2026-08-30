@@ -407,12 +407,19 @@ function HeroSection({
 
       {/* The split band — lead, CTA, and trust line on the left, the object as the right column.
           `items-center` puts the object's centre of mass on the same axis as the decision block
-          (lead → CTA). */}
+          (lead → CTA).
+
+          ⚠️ **The split waits for a column that can hold the decision** (2026-08-30). It opened at
+          `lg`, where the page column is 624px: the object took its 320px minimum, the decision
+          block got 256px, and the Windows button (304px) ran into the object. From 1024 to 1439
+          all five destinations stood one per row. Now the split opens at `xl` and the decision
+          block never drops below 500px, which is what the widest pair of destinations needs to
+          share a row; below that the object sits under the text with the whole column. */}
       <div
         className={cn(
           PAGE_COLUMN,
-          'grid min-w-0 items-center gap-x-12 gap-y-10 pb-6 pt-7 lg:pb-7',
-          'lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]',
+          'grid min-w-0 items-center gap-x-10 gap-y-10 pb-6 pt-7 xl:pb-7',
+          'xl:grid-cols-[minmax(520px,1fr)_minmax(320px,0.85fr)]',
         )}
       >
         {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"Too much space at the top"* — too much space at the top; measured at 1512, the correction lifted the
