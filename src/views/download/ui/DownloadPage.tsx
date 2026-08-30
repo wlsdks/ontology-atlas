@@ -232,15 +232,11 @@ function SectionIntro({
   eyebrow,
   title,
   sub,
-  inView,
-  still = false,
   centered = false,
 }: {
   eyebrow: string;
   title: string;
   sub?: string;
-  inView?: boolean;
-  still?: boolean;
   /**
    * Centre the head on the same axis as the section's content.
    *
@@ -252,22 +248,17 @@ function SectionIntro({
    */
   centered?: boolean;
 }) {
-  /**
-   * A section head's entrance is **owned by scroll** (2026-08-22).
-   *
-   * Where `gateway-scroll-rise` applies, the `view()` timeline owns progress and `is-in` does
-   * nothing (an animation beats a plain declaration). Where it does not apply, `is-in` carries
-   * the entrance exactly as before — **which is why `useInViewOnce` was not removed.** They are
-   * two paths of one choreography, not two choreographies.
+  /*
+   * A section head is still. Until 2026-08-30 its three lines rose on the scroll timeline and
+   * the stage beneath them rose again, four entrances per section and twelve on the page — every
+   * one of them said "something arrived" and none of them said what. Now one thing per section
+   * moves, the stage (`gateway-scroll-stage`), because it is the one thing with mass; the head
+   * that names it is simply there when the reader gets to it.
    */
-  const rise = (step?: string) =>
-    still ? undefined : cn('gateway-rise', 'gateway-scroll-rise', step, inView && 'is-in');
-
   return (
     <>
       <p
         className={cn(
-          rise(),
           'flex items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
           centered && 'justify-center',
         )}
@@ -278,7 +269,6 @@ function SectionIntro({
       </p>
       <h2
         className={cn(
-          rise('gateway-rise-d2'),
           'mt-4 break-keep text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]',
           centered && 'text-center',
         )}
@@ -288,7 +278,6 @@ function SectionIntro({
       {sub ? (
         <p
           className={cn(
-            rise('gateway-rise-d3'),
             'mt-3 max-w-[40rem] break-keep text-body-lg leading-body-lg text-[color:var(--color-text-tertiary)]',
             centered && 'mx-auto text-center',
           )}
@@ -342,6 +331,11 @@ function HeroSection({
     // choreography starts on the frame after the first paint (the still background).
     const id = requestAnimationFrame(() => setHeroIn(true));
     return () => cancelAnimationFrame(id);
+  }, []);
+  /** The typing echo: what the headline has typed is what the object has lit (`HeroObject`). */
+  const [typing, setTyping] = useState({ typed: 0, total: 0 });
+  const onTyping = useCallback((typed: number, total: number) => {
+    setTyping((prev) => (prev.typed === typed && prev.total === total ? prev : { typed, total }));
   }, []);
 
   /**
@@ -407,7 +401,7 @@ function HeroSection({
           {/* Typed one character at a time (`HeroTypewriter` owns the cadence and the caret).
               The first line is one step down in ink, making the hierarchy — the second line
               (a person's debt) is the sentence's subject — out of brightness. */}
-          <HeroTypewriter start={heroIn} lines={heroLines} />
+          <HeroTypewriter start={heroIn} lines={heroLines} onProgress={onTyping} />
         </h1>
       </div>
 
@@ -546,7 +540,7 @@ function HeroSection({
         </div>
 
         <div className="min-w-0">
-          <HeroObject graph={graph} />
+          <HeroObject graph={graph} typed={typing.typed} total={typing.total} />
         </div>
       </div>
 
@@ -701,12 +695,10 @@ function FactsStrip({
 
 function DemoSection() {
   const t = useTranslations('download');
-  const { ref, inView } = useInViewOnce<HTMLElement>();
 
   return (
     <section
       id="demo"
-      ref={ref}
       data-testid="gateway-demo-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
@@ -715,16 +707,9 @@ function DemoSection() {
           eyebrow="Demo"
           title={t('demoTitle')}
           sub={t('demoSub')}
-          inView={inView}
           centered
         />
-        <div
-          className={cn(
-            'gateway-rise gateway-scroll-stage gateway-rise-d3',
-            inView && 'is-in',
-            'mt-9',
-          )}
-        >
+        <div className="gateway-scroll-stage mt-9">
           <DemoStage />
         </div>
       </div>
@@ -842,7 +827,6 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           eyebrow="Evidence"
           title={t('evidenceTitle')}
           sub={t('evidenceSub')}
-          inView={inView}
         />
 
         {/*
@@ -866,9 +850,7 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
           >
             <StageMap graph={graph} scripted={beat?.focus ?? null} onUserInteract={cancelDemo} />
           </div>
-          <div
-            className={cn('gateway-rise gateway-rise-d3', inView && 'is-in', 'min-w-0 lg:self-center')}
-          >
+          <div className="min-w-0 lg:self-center">
             <EvidenceSpecimen demoKey={beat?.line ?? null} />
           </div>
         </div>
@@ -930,7 +912,6 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
  */
 function AgentSection() {
   const t = useTranslations('download');
-  const { ref, inView } = useInViewOnce<HTMLElement>();
 
   const columns = [
     { title: t('col1Title'), body: t('col1Body'), code: t('col1Code') },
@@ -941,23 +922,18 @@ function AgentSection() {
   return (
     <section
       id="agents"
-      ref={ref}
       data-testid="gateway-agents-section"
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow="Agents" title={t('agentsTitle')} sub={t('agentsSub')} inView={inView} />
+        <SectionIntro eyebrow="Agents" title={t('agentsTitle')} sub={t('agentsSub')} />
 
         {/* The stage width uses the same token as the demo section (`--gateway-stage-max`), so the
             page states "this much is the stage" only once. At ≤1920 it is the previous 48rem; only
             at wider widths does it grow proportionally (rationale in the token doc-block). */}
         <div
           data-testid="gateway-agent-scene"
-          className={cn(
-            'gateway-rise gateway-scroll-stage gateway-rise-d3',
-            inView && 'is-in',
-            'mt-9 max-w-[var(--gateway-stage-max)]',
-          )}
+          className="gateway-scroll-stage mt-9 max-w-[var(--gateway-stage-max)]"
         >
           <AcpChatScene />
         </div>

@@ -140,6 +140,33 @@ describe('HeroTypewriter', () => {
     expect(200 * longStep).toBeLessThanOrEqual(1800);
   });
 
+  /**
+   * The hero object lights a dot per typed character (Direction B, 2026-08-30), so the count it
+   * hears must be the count on screen: reported after the characters paint, never ahead of them,
+   * and complete from the first report under reduced motion.
+   */
+  it('reports every typed count after it is on screen, ending on the total', () => {
+    const heard: [number, number][] = [];
+    render(<HeroTypewriter lines={LINES} start onProgress={(typed, total) => heard.push([typed, total])} />);
+    expect(heard[0]).toEqual([0, TOTAL]);
+    act(() => void vi.advanceTimersByTime(typingStepMs(TOTAL) * 3 + 1));
+    expect(heard.at(-1)).toEqual([3, TOTAL]);
+    expect(typedCount()).toBe(3);
+    act(() => void vi.advanceTimersByTime(5000));
+    expect(heard.at(-1)).toEqual([TOTAL, TOTAL]);
+    for (let i = 1; i < heard.length; i += 1) expect(heard[i][0]).toBeGreaterThan(heard[i - 1][0]);
+  });
+
+  it('under reduced motion the first report is already the whole sentence', () => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+    );
+    const heard: [number, number][] = [];
+    render(<HeroTypewriter lines={LINES} start onProgress={(typed, total) => heard.push([typed, total])} />);
+    expect(heard).toEqual([[TOTAL, TOTAL]]);
+  });
+
   it('heroSentence 는 두 줄을 한 문장으로 잇는다', () => {
     expect(heroSentence(LINES)).toBe('Agents write the code. People accumulate the debt.');
   });

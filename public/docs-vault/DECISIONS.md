@@ -40,6 +40,79 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The hero object is the headline's echo, and the page moves in three places
+
+**Convened because**: the owner asked for the download page the same day the architecture
+canvas was rebuilt, with the same three sentences (UI finish ranks with function, it must read
+as August 2026, motion matters most), and pointed at four reference sites to learn from.
+`/design-directions` put four shapes up for the hero (status quo; the object assembles as the
+headline is typed; the object as a specimen the cursor reads; a still hero with one moving
+number); the owner chose **B, the typing echo**. Solo PO pass; no council, because no route,
+public contract, or first words change.
+
+**What the page did, measured at 1512 before this record**: the headline typed itself in 1.14s
+(KO) / 1.80s (EN) under decision (99); the hero object faded in on its own clock (450ms CSS
+delay, then per-tier 180/380/600ms timers) with no relation to the typing; twelve elements
+below the fold rose on the scroll timeline (three lines per section head plus each stage);
+the object said nothing about any dot a reader pointed at. The references the owner named do
+one thing each and let it carry the page (a keystroke that becomes a sound, one shader that
+fills the viewport); ours did four unrelated things at once and each one said only "something
+arrived".
+
+**Decision**, three parts:
+
+1. **The object is the headline's echo.** `HeroTypewriter` reports each typed count after the
+   character is on screen; `HeroObject` hands it to the engine; the engine lights the dots that
+   count has earned (`hero-echo.ts`: apex first, then each plane clockwise from twelve;
+   proportional, rounded up, so the first character always lights a dot and the last lights the
+   last). Each dot fades in over `--motion-base` from its own moment. The 450ms stage fade and
+   the per-tier timers are gone from the driven path; the engine keeps them only when it is
+   mounted with no driver. The 450ms "type first, object second" rule of the first-three-seconds
+   choreography is not overturned but replaced by causality: the object can no longer arrive
+   before its headline because every dot has a character.
+2. **A pointed-at dot says its edge.** At rest a fine pointer within 14px of a lit dot draws its
+   parent line in full accent and a stroke ring one step outside it (no shadow), and a reserved
+   caption line under the canvas prints one real edge (`{parent} contains {child}` or
+   `{from} depends on {to}`) in the labels the evidence section prints. The line keeps its box
+   empty (a non-breaking space), truncates, and fades over `--motion-fast`; a fact appearing
+   changes ink and never layout.
+3. **Three entrances below the fold, not twelve.** A section head is still; its stage (the demo
+   video, the evidence map, the agent scene) is the one thing per section that rises with
+   scroll. `.gateway-scroll-rise` and `.gateway-rise-d2/-d3` are deleted, not parked.
+
+**Measured after** (KO, 1512x945, the static export on a real display, 30fps frames): the
+headline changes on 34 consecutive frames from first paint (1.13s, the 38ms cadence of (99))
+and the dome changes on every one of the 44 frames from first paint to 1.47s, with no
+zero-change frame; the only two frames below a quarter of the mean change are the first
+keystrokes, when one dot is all there is to fade. The phase strip at 0 / 267 / 533 / 800 /
+1,133 / 1,467ms shows the apex, then the domain ring, then the capability ring, then the
+element dome, and the headline and the dome stop changing on the same frame. DOM samples:
+at 150ms 2 of 30 characters had lit 6 of 90 dots, at 450ms 11 had lit 33, at 800ms 19 had
+lit 57, at 1,200ms all 90. The caption line is 16px before and after a hover, the fact fits
+its line, and its ink fades over the 120ms feedback step. Reduced motion: the headline and
+the object are complete on the first client frame and never partial.
+
+**Recorded dissent** (mine): a proportional echo is not literally one dot per character, and
+in Korean each keystroke lights three dots, so the strictest reading of "the keystroke is the
+dot" is not what ships. **Falsifier**: if an observer reads the assembly as a burst rather than
+as typing (dots arriving in clumps that do not track the caret), the mapping is wrong and one
+dot per character with the remainder held for the last beat should be tried. **Revisit**: next
+gateway pass, or when the 1.14s Korean budget in (99) changes, since the echo inherits it.
+
+**Gates**: `tests/e2e/download-hero-echo.spec.ts` reads the typed count from the headline's
+visible characters and the lit count from the engine's ledger and requires them to agree
+mid-sentence and at the end (probed: an object that ignores typing fails "observed
+mid-assembly"), requires a never-partial headline and object under reduced motion, and
+measures the caption's box before and after a hover. `hero-echo.test.ts` owns the order and
+the count; `HeroTypewriter.test.tsx` owns that progress is reported after paint.
+`reduced-motion-equivalent.contract.test.ts` drops the deleted class from its roster.
+
+**Standing decisions**: (99) typewriter cadence and budget stand and now drive the object;
+(100) demo axis stands; 2026-08-22 scroll-timeline entrance stands for the stage only, its
+section-head part overturned here.
+
+---
+
 ## 2026-08-30 — Every stroke says its sentence, and the canvas is drawn exactly
 
 **Convened because**: the owner, having said the target was the architecture tab all along,

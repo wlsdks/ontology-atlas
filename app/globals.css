@@ -3551,8 +3551,7 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
      * `!important` outside the layer loses to the one inside (measurement in the toast comment above this file). Gate: `tests/contract/gateway-fx-exception.contract.test.ts`.
      */
     .gateway-rise,
-    .gateway-map-after,
-    .gateway-hero-stage {
+    .gateway-map-after {
       opacity: 1 !important;
       transform: none !important;
       transition: none !important;
@@ -3869,14 +3868,6 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   transform: none;
 }
 
-.gateway-rise-d2 {
-  transition-delay: 140ms;
-}
-
-.gateway-rise-d3 {
-  transition-delay: 240ms;
-}
-
 .gateway-t700 {
   transition-delay: 700ms;
 }
@@ -3894,7 +3885,7 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  *
  * ## Why scroll instead of timer
  *
-   The entrance of the three sections below hero (demo·evidence·agent) has until now
+   The entrance of the three section stages below hero (demo·evidence·agent) has until now
    attached `.is-in` at the **moment** `useInViewOnce` exceeds threshold 0.18, and from there
    the 120/240ms transition runs on **its own clock**. So whether scrolling stops or continues or rewinds, choreography flowed identically — fingers and screen were not connected.
  *
@@ -3921,42 +3912,15 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  */
 @media (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
-    /* Three lines at section head — eyebrow → title → subtitle. Delay uses `-d2`/`-d3`
-       names already in use (entrance order must be one set).
-       Since cause (title) moves first, it satisfies design.md's stagger condition. */
-    .gateway-scroll-rise {
-      animation: gatewayScrollRise linear both;
-      animation-timeline: view();
-      animation-range: entry 10% entry 62%;
-    }
-
-    .gateway-scroll-rise.gateway-rise-d2 {
-      animation-range: entry 16% entry 68%;
-    }
-
-    .gateway-scroll-rise.gateway-rise-d3 {
-      animation-range: entry 22% entry 74%;
-    }
-
-    /* Section stage (demo video · evidence map · ACP scene) — heavier than text so comes
-       further in a longer interval. If mass differs, arrival must differ. `scale` is
-       not used — in this repository, zoom means map camera. */
+    /* One entrance per section: the stage (demo video · evidence map · ACP scene), the one
+       thing with mass. The section head above it is still (2026-08-30 — the head's three
+       lines used to rise too, twelve entrances on one page that all said "something arrived").
+       `scale` is not used — in this repository, zoom means map camera. */
     .gateway-scroll-stage {
       animation: gatewayScrollStage linear both;
       animation-timeline: view();
       animation-range: entry 4% entry 78%;
     }
-  }
-}
-
-@keyframes gatewayScrollRise {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -4024,14 +3988,20 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   animation: gatewayCaretBlink 1.06s steps(1) infinite;
 }
 
-/* Hero object stage — type (150ms) comes first, object from 450ms. */
+/* Hero object stage — no entrance of its own: the object assembles as the headline is typed
+ * (the typing echo, drawn on the canvas from `HeroTypewriter`'s progress), so the stage is
+ * present from the first frame and carries only the atmosphere behind the ink. */
 .gateway-hero-stage {
   position: relative;
-  opacity: 0;
-  transition: opacity var(--motion-settle) var(--motion-ease) 450ms;
 }
 
-.gateway-hero-stage.is-in {
+/* The reserved caption line under the hero object — ink arrives, the box never moves. */
+.gateway-hero-caption {
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
+.gateway-hero-caption.is-on {
   opacity: 1;
 }
 

@@ -7,6 +7,19 @@
 
 ---
 
+## 2026-08-30 · The download hero assembles as the headline is typed
+
+- The hero object used to fade in on a clock of its own, 450ms after the page, with no relation
+  to the headline typing beside it. It now assembles as the typing echo: every typed character
+  lights the next dots of the real vault graph, apex first and then each plane clockwise, so the
+  object and the sentence finish on the same beat in Korean and in English.
+- Pointing at a lit dot draws its line to its parent and prints the one edge it is drawn on in a
+  caption line under the canvas (`Ontology Atlas contains Topology map`). The line keeps its
+  height while empty, so nothing beside the object moves, and a long label is cut rather than
+  spilled.
+- Below the fold the page moves in three places instead of twelve: each section's stage still
+  rises with scroll, and the three lines above it are simply there.
+
 ## 2026-08-30 · Every stroke on the architecture canvas says its sentence
 
 - A stroke used to carry nothing at rest, and a count only when a role was chosen; what

@@ -28,6 +28,7 @@
  */
 
 import { registerGatewayFrameClient } from './gateway-frame-loop';
+import { echoCount, echoOrder } from './hero-echo';
 
 const TAU = Math.PI * 2;
 
@@ -63,10 +64,24 @@ export interface HeroEngineOptions {
   fitPx?: number;
   /** Force reduced-motion (for tests). Defaults to matchMedia. */
   forceReduced?: boolean;
+  /**
+   * The typing echo (Direction B, 2026-08-30): when true the object does not assemble on its
+   * own clock — a dot lights only when `setTyping` has earned it (`hero-echo.ts`). Without it
+   * the engine keeps its standalone per-tier assembly, so the object still works with no driver.
+   */
+  echo?: boolean;
+  /** A fine pointer resting on a lit dot, or leaving it. Never fires while dragging. */
+  onHover?: (slug: string | null) => void;
 }
 
 export interface HeroEngineHandle {
   dispose: () => void;
+  /** How far the headline has been typed. Only read when `echo` is on. */
+  setTyping: (typed: number, total: number) => void;
+  /** Dots that have been lit so far — the echo's own count, for gates. */
+  litCount: () => number;
+  /** Where every node sat on the last drawn frame, in canvas CSS px — for gates. */
+  nodesOnScreen: () => { s: string; k: HeroGraphNode['k']; x: number; y: number }[];
 }
 
 /** Deterministic hash → [0,1) — stable per-node jitter. */
@@ -348,6 +363,26 @@ export function mountHeroObject(
   }
   size();
 
+  /**
+   * The echo's ledger: the order dots light, and the engine clock at which each one did. A dot
+   * fades in over `--motion-base` from its own moment, so a keystroke's dots start together and
+   * two keystrokes' dots never share a frame — that is what makes the echo read as typing.
+   */
+  const echo = opts.echo === true;
+  const order = echoOrder(model.nodes);
+  const revealAt = new Map<string, number>();
+  const REVEAL_MS = parseFloat(cssVar(rootEl, '--motion-base', '180ms')) || 180;
+
+  /** The parent line of every node — the one stroke a pointed-at dot lights along with itself. */
+  const parentOf = new Map<string, string>();
+  for (const e of model.edges) if (e.y === 'contains' && !parentOf.has(e.b)) parentOf.set(e.b, e.a);
+
+  let hover: string | null = null;
+  /** A fine pointer within this many CSS px of a dot's centre is resting on it. */
+  const HIT_PX = 14;
+  let lastProjected = new Map<string, Projected>();
+  let lastAlpha = new Map<string, number>();
+
   let userYaw = 0;
   let userVel = 0;
   let dragging = false;
@@ -366,8 +401,31 @@ export function mountHeroObject(
     canvas.setPointerCapture(e.pointerId);
     canvas.style.cursor = 'grabbing';
   };
+  const setHover = (next: string | null): void => {
+    if (next === hover) return;
+    hover = next;
+    opts.onHover?.(hover);
+    if (reduced) drawAt(lastT);
+  };
   const onPointerMove = (e: PointerEvent): void => {
-    if (!dragging) return;
+    if (!dragging) {
+      // At rest the pointer reads, it does not turn: the nearest lit dot within reach lights.
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      let best: string | null = null;
+      let bestD = HIT_PX * HIT_PX;
+      for (const [s, p] of lastProjected) {
+        if ((lastAlpha.get(s) ?? 0) < 0.5) continue;
+        const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+        if (d < bestD) {
+          bestD = d;
+          best = s;
+        }
+      }
+      setHover(best);
+      return;
+    }
     const dx = e.clientX - lastX;
     lastX = e.clientX;
     const d = dx * 0.006;
@@ -380,12 +438,14 @@ export function mountHeroObject(
     dragging = false;
     canvas.style.cursor = 'grab';
   };
+  const onPointerLeave = (): void => setHover(null);
   canvas.style.touchAction = 'pan-y';
   canvas.style.cursor = 'grab';
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointercancel', onPointerUp);
+  canvas.addEventListener('pointerleave', onPointerLeave);
   const onResize = (): void => {
     size();
     drawAt(lastT);
@@ -418,6 +478,17 @@ export function mountHeroObject(
     return 1 - (1 - dt) ** 3;
   }
 
+  /** One node's ink at time t: its own echo moment when driven, its tier's when standalone. */
+  function nodeAlpha(n: HeroGraphNode, t: number): number {
+    if (reduced) return 1;
+    if (!echo) return tierAlpha(n.k, t);
+    const at = revealAt.get(n.s);
+    if (at === undefined) return 0;
+    const dt = (t - at) / REVEAL_MS;
+    if (dt >= 1) return 1;
+    return 1 - (1 - Math.max(0, dt)) ** 3;
+  }
+
   const dependsEdges = model.edges.filter((e) => e.y === 'depends');
   const containsEdges = model.edges.filter((e) => e.y === 'contains');
 
@@ -446,14 +517,22 @@ export function mountHeroObject(
 
     // Project everything first and normalize depth per frame — that makes the fog honest.
     const projected = new Map<string, Projected>();
+    const alphaOf = new Map<string, number>();
+    // A plane's disc is as present as its most present dot — it arrives with the tier's first.
+    const tierMax: Record<HeroGraphNode['k'], number> = { project: 0, domain: 0, capability: 0, element: 0 };
     let zMin = Infinity;
     let zMax = -Infinity;
     for (const n of model.nodes) {
       const p = project(n.px ?? 0, n.py ?? 0, n.pz ?? 0, trig[n.k][0], trig[n.k][1]);
       projected.set(n.s, p);
+      const a = nodeAlpha(n, t);
+      alphaOf.set(n.s, a);
+      if (a > tierMax[n.k]) tierMax[n.k] = a;
       if (p.z < zMin) zMin = p.z;
       if (p.z > zMax) zMax = p.z;
     }
+    lastProjected = projected;
+    lastAlpha = alphaOf;
     const zSpan = Math.max(1, zMax - zMin);
     // Near → 1, far → 0.09 (a squared family) — this contrast is what reads as 3D.
     const fog = (z: number): number => {
@@ -468,7 +547,7 @@ export function mountHeroObject(
     // 1 · plane discs plus a depth-shaded rim — the material of the stack.
     for (const kind of ['element', 'capability', 'domain'] as const) {
       const P = PLANE[kind];
-      const a = tierAlpha(kind, t);
+      const a = tierMax[kind];
       if (a <= 0.01) continue;
       const pts: Projected[] = [];
       for (let i = 0; i <= 48; i += 1) {
@@ -519,7 +598,7 @@ export function mountHeroObject(
     for (const it of eSorted) {
       const ka = model.bySlug.get(it.e.a)!.k;
       const kb = model.bySlug.get(it.e.b)!.k;
-      const a = Math.min(tierAlpha(ka, t), tierAlpha(kb, t));
+      const a = Math.min(alphaOf.get(it.e.a) ?? 0, alphaOf.get(it.e.b) ?? 0);
       if (a <= 0.01) continue;
       const f = fog(it.z);
       const spine = ka === 'project' || kb === 'project';
@@ -539,7 +618,7 @@ export function mountHeroObject(
       const na = model.bySlug.get(e.a);
       const nb = model.bySlug.get(e.b);
       if (!na || !nb) continue;
-      const a = tierAlpha('capability', t);
+      const a = Math.min(alphaOf.get(e.a) ?? 0, alphaOf.get(e.b) ?? 0);
       if (a <= 0.01) continue;
       const mx = ((na.px ?? 0) + (nb.px ?? 0)) / 2;
       const mz = ((na.pz ?? 0) + (nb.pz ?? 0)) / 2;
@@ -579,7 +658,7 @@ export function mountHeroObject(
       .sort((a, b) => projected.get(b.s)!.z - projected.get(a.s)!.z);
     for (const n of nSorted) {
       const p = projected.get(n.s)!;
-      const a = tierAlpha(n.k, t);
+      const a = alphaOf.get(n.s) ?? 0;
       if (a <= 0.01) continue;
       const f = fog(p.z);
       const r = NODE_R[n.k] * p.s * scaleFit * 2.1;
@@ -614,6 +693,31 @@ export function mountHeroObject(
         ctx!.stroke();
       }
     }
+
+    // 5 · the pointed-at dot: its parent line in full accent and a ring one step outside it.
+    //     A stroke ring, not a shadow — the same vocabulary as the map's selection.
+    if (hover !== null) {
+      const p = projected.get(hover);
+      const n = model.bySlug.get(hover);
+      if (p && n) {
+        const parent = parentOf.get(hover);
+        const pp = parent !== undefined ? projected.get(parent) : undefined;
+        if (pp) {
+          ctx!.strokeStyle = `rgba(${accent2[0]},${accent2[1]},${accent2[2]},0.95)`;
+          ctx!.lineWidth = 1.2;
+          ctx!.beginPath();
+          ctx!.moveTo(pp.x, pp.y);
+          ctx!.lineTo(p.x, p.y);
+          ctx!.stroke();
+        }
+        const r = NODE_R[n.k] * p.s * scaleFit * 2.1;
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, Math.max(0.8, r) + 3.5, 0, TAU);
+        ctx!.strokeStyle = `rgba(${accent2[0]},${accent2[1]},${accent2[2]},0.95)`;
+        ctx!.lineWidth = 1.2;
+        ctx!.stroke();
+      }
+    }
   }
 
   if (reduced) {
@@ -645,6 +749,20 @@ export function mountHeroObject(
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
+      canvas.removeEventListener('pointerleave', onPointerLeave);
     },
+    setTyping(typed: number, total: number): void {
+      const n = echoCount(typed, total, order.length);
+      // Dots are only ever added: a re-render that reports a smaller count (a remount of the
+      // headline) does not put out ink the reader has already seen.
+      for (let i = revealAt.size; i < n; i += 1) revealAt.set(order[i], lastT);
+      if (reduced) drawAt(lastT);
+    },
+    litCount: () => revealAt.size,
+    nodesOnScreen: () =>
+      model.nodes.map((n) => {
+        const p = lastProjected.get(n.s);
+        return { s: n.s, k: n.k, x: p?.x ?? 0, y: p?.y ?? 0 };
+      }),
   };
 }

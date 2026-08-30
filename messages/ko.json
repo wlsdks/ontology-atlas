@@ -737,6 +737,8 @@
     "demoPlay": "재생",
     "heroTitleLine1": "에이전트는 코드를 작성하고",
     "heroTitleLine2": "사람의 인지 부채는 쌓여갑니다",
+    "heroFactContains": "{parent} 안의 {child}",
+    "heroFactDepends": "{from} → {to} 의존",
     "heroLead": "그 부채를 갚는 것이 온톨로지입니다. 코드가 무엇을 뜻하는지를 마크다운 폴더 하나에 적어, 사람이 읽고 에이전트가 씁니다.",
     "heroDemoCta": "데모 먼저 보기",
     "factUnpublished": "아직 게시 전",

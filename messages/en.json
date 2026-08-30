@@ -737,6 +737,8 @@
     "demoPlay": "Play",
     "heroTitleLine1": "Agents write the code.",
     "heroTitleLine2": "People accumulate the cognitive debt.",
+    "heroFactContains": "{parent} contains {child}",
+    "heroFactDepends": "{from} depends on {to}",
     "heroLead": "An ontology is how that debt gets repaid: what your code means, written into one markdown folder. People read it; agents write it.",
     "heroDemoCta": "Watch the demo first",
     "factUnpublished": "not published yet",
