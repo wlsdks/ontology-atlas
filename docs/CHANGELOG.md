@@ -7,6 +7,20 @@
 
 ---
 
+## 2026-08-30 · A role box finishes its sentence
+
+- The one-line summary under each role name used to stop mid-clause in every box on
+  the measured profile: `Locale-prefixed Next entry…`, `A composite block a screen
+  drops…`, seven times over. The sentence now takes two lines at the same width,
+  wrapping on words, so the first clause reads whole in all seven boxes. The
+  ellipsis is still there, after the clause instead of inside it.
+- The box grew 8px and the gap between rows gave up 6px, so the seven-role chain
+  still fits one 1512×945 screen with the role panel open, and the 1920 row is
+  unchanged. A profile with no receipt gets the same two lines in a slightly
+  taller box.
+- Nothing else on the canvas moved: the ruled line, the receipt, the strokes and
+  the violated arcs are where they were.
+
 ## 2026-08-30 · The architecture chain is drawn as a chain
 
 - On a measured profile the canvas used to draw no rule strokes at all: seven

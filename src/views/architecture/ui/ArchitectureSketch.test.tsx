@@ -125,7 +125,7 @@ describe('the role ledger', () => {
     const { container } = draw();
     expect(container.querySelector('[data-testid^="architecture-role-ledger-"]')).toBeNull();
     const box = container.querySelector('[data-testid="architecture-graph-box-domain"]');
-    expect(box?.getAttribute('data-box-height')).toBe('62');
+    expect(box?.getAttribute('data-box-height')).toBe('72');
   });
 
   it('grows every box in lockstep once any role carries a ledger', () => {
@@ -135,7 +135,7 @@ describe('the role ledger', () => {
     const heights = [
       ...container.querySelectorAll('[data-testid^="architecture-graph-box-"]'),
     ].map((box) => box.getAttribute('data-box-height'));
-    expect(new Set(heights)).toEqual(new Set(['74']));
+    expect(new Set(heights)).toEqual(new Set(['82']));
   });
 
   it('states what the role’s own outgoing edges did, and the imports behind the stroke', () => {

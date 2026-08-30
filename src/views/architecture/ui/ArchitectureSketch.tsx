@@ -11,6 +11,7 @@ import { controlClass } from '@/shared/ui/control-class';
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import { sketchConnector, sketchRect, sketchStadium } from '../model/sketch-stroke';
+import { splitSummaryLines } from '../model/summary-lines';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
 /**
@@ -46,21 +47,27 @@ const BOX_W_LEDGER = 180;
  * it was, or a browser — where source cannot be listed at all — pays 20px per role for a blank
  * row. Direction B, 2026-08-29.
  */
-const BOX_H = 62;
+const BOX_H = 72;
 /*
- * ⚠️ **A ledger box is one line taller, not two** (measured 2026-08-30, 1512×945 installed
- * viewport). The first attempt gave the receipt two lines and an 82px box; seven of those plus the
- * 26px arrow gaps ran 778px against roughly 718px of canvas, and the last role — Shared
- * foundation, the one every arrow points at — was cut in half below the fold. Reading the whole
- * chain at once is what this screen is for, so the receipt states itself on one line and the rows
- * close up to match.
+ * ⚠️ **The receipt is one line; the sentence is two; the rows close up to pay for it** (Direction
+ * C, 2026-08-30). The first ledger attempt gave the *receipt* two lines and an 82px box, and with
+ * 26px gaps the chain ran 778px against roughly 718px of canvas: Shared foundation, the role every
+ * arrow points at, was cut in half below the fold. The receipt went back to one line and the box
+ * to 74. Then the one-line *sentence* cut all seven of the profile's role summaries before their
+ * first clause carried meaning, which the record that put it there had named as its own falsifier.
+ * So the box is 82 again, but the second line is the sentence's, and the row gap gives up 6px so
+ * seven rows still clear a 1512×945 viewport with the inspector open: 7×82 + 6×12 + 2×20 = 686.
+ * Gate: `tests/e2e/architecture-role-ledger.spec.ts`, which fails at 90px.
  */
-const BOX_H_LEDGER = 74;
-const ROW_GAP_LEDGER = 18;
+const BOX_H_LEDGER = 82;
+const ROW_GAP_LEDGER = 12;
 /** How far apart two crossings of the same span sit, so a bundle reads as separate strokes. */
 const SKIP_LANE_STEP = 14;
-/** How much of a role's sentence fits on one caption line inside the box. */
+/** How much of a role's sentence fits on one caption line inside the box, and how many lines. */
 const SUMMARY_BUDGET = 34;
+const SUMMARY_LINES = 2;
+/** One caption line to the next, in SVG units: the `--leading-caption` pair of `text-caption`. */
+const CAPTION_LEADING = 14;
 
 /**
  * ⚠️ **Shapes, not colour.** This design system runs on neutrals plus one indigo, and status
@@ -852,20 +859,20 @@ export function ArchitectureSketch({
            * the cut lands on a word boundary where one is near.
            */
           const summary = roleSummary(box.id);
-          const summaryLine =
-            summary === null
-              ? null
-              : summary.length <= SUMMARY_BUDGET
-                ? summary
-                : `${summary.slice(0, summary.lastIndexOf(' ', SUMMARY_BUDGET) > SUMMARY_BUDGET - 10 ? summary.lastIndexOf(' ', SUMMARY_BUDGET) : SUMMARY_BUDGET).trimEnd()}…`;
+          const summaryLines =
+            summary === null ? null : splitSummaryLines(summary, SUMMARY_BUDGET, SUMMARY_LINES);
           /*
            * ⚠️ **The name and counts stop being centred once a ledger joins them.** Vertical
-           * centring is right for two lines and wrong for three: the ruled separator has to land
-           * between what the profile declares and what the scanner counted, and a centred block
-           * would put it wherever the text happened to end.
+           * centring is right for a block that ends where its text ends and wrong for one with a
+           * ruled separator: the line has to land between what the profile declares and what the
+           * scanner counted, so with a ledger every baseline is fixed from the top. Without one
+           * the block is centred, and the block is one line (counts) or two (the sentence).
            */
-          const nameY = ledger ? at.y + 22 : at.y + boxH / 2 - 4;
-          const countsY = ledger ? at.y + 38 : at.y + boxH / 2 + 13;
+          const captionLines = summaryLines?.length ?? 1;
+          const nameY = ledger
+            ? at.y + 21
+            : at.y + boxH / 2 - 4 - ((captionLines - 1) * CAPTION_LEADING) / 2;
+          const countsY = nameY + 15;
 
           return (
             <g
@@ -965,14 +972,22 @@ export function ArchitectureSketch({
                 y={countsY}
                 textAnchor="middle"
                 className={cn(
-                  'text-caption',
-                  summaryLine === null
-                    ? 'fill-[color:var(--color-text-tertiary)] tabular-nums'
-                    : 'fill-[color:var(--color-text-tertiary)]',
+                  'text-caption fill-[color:var(--color-text-tertiary)]',
+                  summaryLines === null && 'tabular-nums',
                 )}
                 data-testid={`architecture-box-line-${box.id}`}
               >
-                {summaryLine ?? counts}
+                {summaryLines === null
+                  ? counts
+                  : summaryLines.map((line, index) => (
+                      <tspan
+                        key={index}
+                        x={at.x + boxW / 2}
+                        y={countsY + index * CAPTION_LEADING}
+                      >
+                        {line}
+                      </tspan>
+                    ))}
               </text>
               {ledger ? (
                 <>
@@ -986,14 +1001,14 @@ export function ArchitectureSketch({
                   <line
                     x1={at.x + 12}
                     x2={at.x + boxW - 12}
-                    y1={at.y + 46}
-                    y2={at.y + 46}
+                    y1={at.y + 58}
+                    y2={at.y + 58}
                     stroke="var(--color-divider)"
                     strokeWidth={1}
                   />
                   <text
                     x={at.x + boxW / 2}
-                    y={at.y + 60}
+                    y={at.y + 71}
                     textAnchor="middle"
                     className={cn(
                       'text-caption tabular-nums',
