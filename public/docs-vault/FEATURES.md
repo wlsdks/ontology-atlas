@@ -1056,6 +1056,11 @@ scratch helper for those receipt stages. Agents still decide every meaning,
 answer, evidence mapping, and citation verdict; the helper only removes repeated
 JSON/digest/witness projection and emits non-executing writer-call data after an
 exact executable release.
+The complete qualification contract is read from one file-backed `schema.json`,
+not a potentially truncated display. It publishes exact hidden and audit input
+schemas; coverage refs are derived before material claims, payload witness
+digests are derived during seal without mutating caller input, and recorded
+analyzer responses pass directly without hand-authored wrappers.
 The helper requires one human-owned purpose/CQ set whose approval predates the
 source-hidden lane, keeps that owner distinct from all construction actors, and
 binds the full question projection into the post-join acceptance request. The
@@ -1075,10 +1080,16 @@ direction matches. It does not prove runtime, reverse, transitive,
 capability/business, or complete impact; the impact competency answer remains
 partial without separate current meaning evidence.
 Project-source receipts preserve safe explicit repository-root directory paths
-from frontmatter and persisted competency Evidence/Paths rows, not only paths
-with a slash or extension. App and MCP derivation stay aligned; absolute,
-parent-escaping, malformed, and relation-slug lookalikes do not become source
-witnesses.
+from frontmatter and persisted competency Evidence/Paths rows, including literal
+repository root `.`, not only paths with a slash or extension. The root witness
+proves the bound root rather than a canonical child file. App and MCP derivation
+stay aligned; absolute, parent-escaping, malformed, embedded-dot, and
+relation-slug lookalikes do not become source witnesses or erase valid siblings.
+
+Agent handoff preserves measurement scope at atomic-claim granularity. When a
+body says bounded/static packet, bounded excerpt, or selected evidence, any
+`only`, `one`, `none`, `unmeasured`, or absence claim keeps that qualifier in the
+same sentence instead of widening a packet-local gap into a source-wide fact.
 
 For `agent_brief`, structural readiness is not meaning confidence. A fresh call
 for an explicit project derives `meaningAssessment:v1` from three independent

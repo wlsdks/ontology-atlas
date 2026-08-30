@@ -29,6 +29,110 @@ export const READ_ONLY_TOOLS = Object.freeze([
 ]);
 
 const TOOL_SET = new Set(READ_ONLY_TOOLS);
+const ROOTED_INPUT_FIELDS = Object.freeze(['actorId', 'serverPath', 'vaultRoot', 'repoRoot', 'requests']);
+const ROOTED_REQUEST_FIELDS = Object.freeze(['id', 'name', 'args']);
+const NON_BLANK_PATTERN = '\\S';
+export function absolutePathPattern(platform = process.platform) {
+  return platform === 'win32' ? '^(?:[A-Za-z]:[\\\\/]|[\\\\/])' : '^/';
+}
+const ABSOLUTE_PATH_PATTERN = absolutePathPattern();
+const JAVASCRIPT_ENTRY_PATTERN = '\\.[mM]?[jJ][sS]$';
+
+export const ROOTED_READ_SCHEMA = Object.freeze({
+  contract: 'rootedMcpReadCli:v1',
+  purpose: 'Run an ordered Atlas MCP read packet against explicit source-checkout roots, after verifying connection_info, and write one transcript only when every read succeeds.',
+  discovery: ['rooted-mcp-read.mjs schema', 'rooted-mcp-read.mjs --help'],
+  invocation: 'rooted-mcp-read.mjs --input file --output absent-file',
+  automaticRootCheck: 'The runner calls connection_info first and rejects any canonical vault/repository mismatch before the requested reads.',
+  output: {
+    contract: 'rootedMcpReadTranscript:v1',
+    path: 'One absent JSON file whose parent already exists.',
+    atomicity: 'No transcript is written unless root verification and every requested read succeed.',
+  },
+  exits: {
+    0: 'success',
+    64: 'command-line usage error',
+    65: 'input contract, root mismatch, or MCP data error',
+    70: 'unexpected software error',
+    74: 'server or input/output filesystem error',
+  },
+  runtimeOnlyChecks: [
+    'serverPath exists and is a regular file',
+    'vaultRoot and repoRoot exist and are directories resolved through realpath',
+    'request ids are unique within the packet',
+    'connection_info canonical roots equal the requested canonical roots before any requested read',
+  ],
+  inputJsonSchema: {
+    $schema: 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    additionalProperties: false,
+    required: [...ROOTED_INPUT_FIELDS],
+    properties: {
+      actorId: { type: 'string', minLength: 1, pattern: NON_BLANK_PATTERN },
+      serverPath: {
+        type: 'string',
+        minLength: 1,
+        allOf: [{ pattern: ABSOLUTE_PATH_PATTERN }, { pattern: JAVASCRIPT_ENTRY_PATTERN }],
+        description: 'Existing absolute source-checkout JavaScript MCP entry path; existence and file type are runtime-only checks.',
+      },
+      vaultRoot: {
+        type: 'string',
+        minLength: 1,
+        pattern: ABSOLUTE_PATH_PATTERN,
+        description: 'Existing absolute vault directory; existence and realpath resolution are runtime-only checks.',
+      },
+      repoRoot: {
+        type: 'string',
+        minLength: 1,
+        pattern: ABSOLUTE_PATH_PATTERN,
+        description: 'Existing absolute repository directory; existence and realpath resolution are runtime-only checks.',
+      },
+      requests: {
+        type: 'array',
+        minItems: 1,
+        maxItems: 50,
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: [...ROOTED_REQUEST_FIELDS],
+          properties: {
+            id: { type: 'string', minLength: 1, pattern: NON_BLANK_PATTERN, description: 'Unique within this packet; uniqueness is a runtime-only check.' },
+            name: { type: 'string', enum: [...READ_ONLY_TOOLS] },
+            args: { type: 'object' },
+          },
+        },
+      },
+    },
+  },
+  requestExamples: {
+    list_kinds: { id: 'kinds', name: 'list_kinds', args: {} },
+    index_project: {
+      id: 'index',
+      name: 'index_project',
+      args: { rootPath: '/absolute/repository', maxFiles: 2000 },
+    },
+    infer_imports: {
+      id: 'imports',
+      name: 'infer_imports',
+      args: { rootPath: '/absolute/repository', maxFiles: 2000 },
+    },
+    analyze_repo_structure: {
+      id: 'analyze',
+      name: 'analyze_repo_structure',
+      args: { rootPath: '/absolute/repository', proposal: '<complete proposal object>' },
+    },
+  },
+  example: {
+    actorId: 'agent:cold-start-builder',
+    serverPath: '/absolute/source-checkout/mcp/src/index.js',
+    vaultRoot: '/absolute/vault',
+    repoRoot: '/absolute/repository',
+    requests: [
+      { id: 'kinds', name: 'list_kinds', args: {} },
+      { id: 'index', name: 'index_project', args: { rootPath: '/absolute/repository', maxFiles: 2000 } },
+    ],
+  },
+});
 
 export class RootedReadError extends Error {
   constructor(message, { exitCode = EXIT.DATA, details } = {}) {
@@ -65,7 +169,7 @@ function canonicalRoot(pathValue, label) {
 
 export function validateRootedReadInput(input) {
   assert(isRecord(input), 'Input must be an object.');
-  const allowedInputKeys = new Set(['actorId', 'serverPath', 'vaultRoot', 'repoRoot', 'requests']);
+  const allowedInputKeys = new Set(ROOTED_INPUT_FIELDS);
   assert(Object.keys(input).every((key) => allowedInputKeys.has(key)), 'Input has unknown fields.');
   assert(nonBlank(input.actorId), 'actorId is required.');
   assert(nonBlank(input.serverPath) && isAbsolute(input.serverPath), 'serverPath must be an existing absolute file.');
@@ -81,7 +185,7 @@ export function validateRootedReadInput(input) {
   assert(Array.isArray(input.requests) && input.requests.length > 0, 'requests needs at least one read.');
   assert(input.requests.length <= 50, 'requests supports at most 50 reads.');
   const ids = new Set();
-  const allowedRequestKeys = new Set(['id', 'name', 'args']);
+  const allowedRequestKeys = new Set(ROOTED_REQUEST_FIELDS);
   for (const [index, request] of input.requests.entries()) {
     assert(isRecord(request), `requests[${index}] must be an object.`);
     assert(Object.keys(request).every((key) => allowedRequestKeys.has(key)), `requests[${index}] has unknown fields.`);
@@ -321,6 +425,10 @@ async function atomicWrite(outputPath, value) {
 }
 
 export async function runCli(argv = process.argv.slice(2)) {
+  if (argv.length === 1 && ['schema', '--help'].includes(argv[0])) {
+    process.stdout.write(`${JSON.stringify(ROOTED_READ_SCHEMA, null, 2)}\n`);
+    return EXIT.OK;
+  }
   const { inputPath, outputPath } = parseArgs(argv);
   let input;
   try {

@@ -516,8 +516,9 @@ right proof. Curated, not exhaustive.
   element import can support one direct source dependency; runtime, reverse,
   transitive, and business impact remain unknown without separate evidence.
 - **Repository-root directories are valid explicit paths.** A reviewed `path:`
-  such as `src` or `generate` participates in source receipts and finalization;
-  an arbitrary relation slug still does not become file evidence.
+  such as literal repository root `.`, `src`, or `generate` participates in
+  source receipts and finalization; `.` proves the bound root, not a canonical
+  child file, and an arbitrary relation slug still does not become file evidence.
 
 The authority and verification path for each rule lives in the
 [Ontology Quality Authority Map](docs/ONTOLOGY-QUALITY.md). The practical node
@@ -684,11 +685,26 @@ from regressing while preserving typed Korean locale data and runtime strings.
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before
 semantic reads and that qualification keeps explicit unknown/refusal behavior.
+The rooted read runner publishes its exact JSON input contract, read-only tool
+inventory, bootstrap request examples, automatic root check, and atomic
+transcript behavior before the first
+measured MCP call. Representable constraints live in that schema; file existence,
+realpath resolution, unique request ids, and returned-root equality remain named
+runtime checks. The larger qualification contract is discovered through one
+file-backed `schema --output` call; displayed stdout is not treated as complete.
+That file exposes exact hidden and source-audit input schemas, including the
+deduplicated fragment catalog, rather than leaving actors to infer JSON shapes.
 The same gate proves sibling-file hidden inputs are byte-identical to embedded
 inputs; under a stable scratch directory it rejects lexical escapes, symlinked
 ancestors, symlinks, hard links, and non-regular inputs. It also proves the
 machine schema matches accepted helper inputs and that access timestamps do not
-become a late qualification retry.
+become a late qualification retry. Before claim sealing, the internal coverage
+preflight derives the exact ordered review-row refs without authoring a claim or
+opening a write path. It consumes the recorder's exact analyzer call and direct
+structured response, so a builder does not copy them into a private wrapper.
+Payload-carrying witnesses may omit their derived digest: seal adds the canonical
+binding to a cloned output, still rejects a supplied mismatch, and still requires
+a digest when no payload is present.
 
 The rest of the gate reference lives in
 [development checks](docs/DEVELOPMENT-CHECKS.md), which is where a contributor

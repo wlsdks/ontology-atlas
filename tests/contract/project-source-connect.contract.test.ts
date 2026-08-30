@@ -104,7 +104,7 @@ describe("witness derivation parity", () => {
     ).toEqual(["capabilities/play", "music-streaming", "elements/engine"]);
   });
 
-  it("keeps single-segment directory claims byte-identical across app and MCP", () => {
+  it("keeps repository-root and single-segment directory claims byte-identical across app and MCP", () => {
     const docs = [
       {
         slug: "music-streaming",
@@ -119,9 +119,9 @@ describe("witness derivation parity", () => {
           "Answer",
           "",
           "- Evidence: `generate`",
-          "- Paths: `jsonschema`, `transform`",
+          "- Paths: `.`, `jsonschema`, `transform`",
         ].join("\n"),
-        meaningEvidencePaths: ["generate", "jsonschema", "transform"],
+        meaningEvidencePaths: [".", "generate", "jsonschema", "transform"],
       },
       { slug: "capabilities/play", frontmatter: { kind: "capability", path: "transform" } },
     ];
@@ -141,6 +141,7 @@ describe("witness derivation parity", () => {
     expect(fromDocs).toEqual(fromGraph);
     expect(fromDocs.map((witness) => witness.path)).toEqual([
       "transform",
+      ".",
       "generate",
       "jsonschema",
       "transform",
@@ -164,13 +165,13 @@ describe("persisted competency evidence parity", () => {
       "Answer",
       "",
       "- Evidence: `README.md`, `docs/PRODUCT.md`",
-      "- Paths: `src/review`",
+      "- Paths: `.`, `src/review`",
       "",
       "## Next",
       "",
       "- Evidence: `src/outside.ts`",
     ].join("\n");
-    const expected = ["docs/PRODUCT.md", "README.md", "src/review"];
+    const expected = [".", "docs/PRODUCT.md", "README.md", "src/review"];
     expect(extractMcpMeaningEvidence(body)).toEqual(expected);
     expect(extractAppMeaningEvidence(body)).toEqual(expected);
 

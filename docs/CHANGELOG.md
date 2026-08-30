@@ -86,6 +86,22 @@
 - The boxes grew to fit it and no further: 74px tall and 180px wide, measured so
   that a seven-role chain still reads in one screen at 1512 and stays horizontal
   at 1920.
+## 2026-08-30 · First-ontology handoff keeps its evidence boundaries intact
+
+- Source-checkout construction now publishes one complete file-backed
+  qualification contract before hidden/audit work. Coverage refs, recorded
+  analyzer responses, witness digests, audit fragments, actor isolation, exact
+  human acceptance, and writer release no longer depend on private wrapper or
+  serialization guesses; malformed or drifted inputs still stop without output.
+- Literal repository root `.` now remains a current source witness across the
+  app, MCP receipt, competency inventory, and finalizer. It proves the bound root
+  only (not a canonical child file or complete dependency/runtime coverage), and
+  malformed sibling paths still fail the whole evidence row closed.
+- Vault-only handoff guidance now preserves `bounded packet`, `static packet`,
+  excerpt, and selected-evidence qualifiers in the same atomic claim. A fresh
+  source-hidden reader returned bounded responses for all six trial questions,
+  and a separate verifier checked every final claim; the 40-minute gross
+  performance target remains open.
 
 ## 2026-08-29 · The map says the names it draws, and answers everything it paints
 
