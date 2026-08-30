@@ -3187,7 +3187,7 @@
       "headings": [],
       "excerpt": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. It links product domains and capabilities to implementation evidence, dependencies, and impact in a computable Markdown graph that people and AI agents maintain together. README.m",
       "wordCount": 742,
-      "updatedAt": "2026-08-26",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {

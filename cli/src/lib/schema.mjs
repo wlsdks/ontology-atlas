@@ -16,6 +16,7 @@ export const buildFrontmatter = schema.buildFrontmatter;
 export const defaultBody = schema.defaultBody;
 export const flatSlugIssue = schema.flatSlugIssue;
 export const folderForKind = schema.folderForKind;
+export const generateNodeUid = schema.generateNodeUid;
 export const inspectMergedUids = schema.inspectMergedUids;
 export const missingExpectedFields = schema.missingExpectedFields;
 export const nodeUidIssue = schema.nodeUidIssue;

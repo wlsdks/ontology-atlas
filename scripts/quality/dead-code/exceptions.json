@@ -214,6 +214,12 @@
       "reason": "Path-glob semantics are a cross-surface contract: the web occupant join mirrors this function, and the contract test consumes the export from outside the mcp scope where Knip cannot see it.",
       "consumer": "tests/contract/architecture-profile.contract.test.ts",
       "witness": "matchesPathPattern"
+    },
+    {
+      "key": "cli:runtime:exports:src/lib/schema.mjs:generateNodeUid",
+      "reason": "The UID migration (scripts/migrate-node-uids.mjs inventory) mints node UIDs through the CLI's schema shim; the cli runtime lane cannot see that cross-scope consumer. Dropping the export broke pnpm test:vault:migrate on 2026-08-31.",
+      "consumer": "scripts/migrations/2026-08-02-add-node-uids.mjs",
+      "witness": "generateNodeUid"
     }
   ]
 }
