@@ -86,10 +86,6 @@ const CREATE_NODE_DIALOG_TITLE_ID = "topology-create-node-dialog-title";
 // Bare `?p=` miss grace window — see the deeplinkMissNotifiedRef effect
 // below (`../lib/deeplink-miss-notice.ts`) for why this exists.
 const DEEPLINK_MISS_GRACE_MS = 4000;
-// Debounce before writing the past trail, so every step does not hit the user's
-// disk. Kept short on purpose: whatever we wait here is a window in which closing
-// the window loses the last step (a flush on tab hide narrows it further).
-const PAST_TRAIL_SAVE_DEBOUNCE_MS = 600;
 // The map camera spring pays off the last few pixels even after the dock has made room.
 // Slowing ACP process boot by this amount prevents WebKit main thread occupancy from interrupting its landing.
 const ACP_SESSION_START_AFTER_REFLOW_MS = 240;
@@ -311,7 +307,7 @@ import {
 } from "../lib/topology-node-significance";
 import { TopologyPathChip } from "./TopologyPathChip";
 import { TopologyRealmChip } from "./TopologyRealmChip";
-import { TopologyTrailChip, type TopologyPastWalkRow } from "./TopologyTrailChip";
+import { TopologyTrailChip } from "./TopologyTrailChip";
 import {
   appendFootprintVisit,
   collapseFootprintTrail,
@@ -319,20 +315,12 @@ import {
   type FootprintTrailEntry,
 } from "../lib/footprint-trail";
 import {
-  describePastTrailDay,
-  newPastWalkId,
-  refinePastWalkEntries,
-  PAST_WALK_MIN_ENTRIES,
-  type PastWalk,
-} from "../lib/past-trail-record";
-import {
   acpHeartbeatAgentName,
   buildAcpTurnHeartbeat,
   createVaultAcpHeartbeatStore,
   type AcpHeartbeatStore,
 } from "../lib/acp-agent-heartbeat";
-import { createVaultFilePastTrailStore, type PastTrailStore } from "../lib/past-trail-store";
-import { verifyHandlePermission } from "@/entities/local-fs-handle";
+import { usePastTrails } from "../model/use-past-trails";
 import { TopologyInsightsReturnChip } from "./TopologyInsightsReturnChip";
 import {
   AgentActivityChip,
@@ -1906,188 +1894,22 @@ function HomePageImpl() {
     setFootprintPacketCopied(true);
     window.setTimeout(() => setFootprintPacketCopied(false), 1600);
   }, [footprintTrailEntries, dustySlugs, t]);
-  // ── Past trails ──────────────────────────────────────────────────────
-  // The session trail dies on reload or window close while `?p=` (where you are now)
-  // survives in the URL, so "where" was kept and "how you got there" was the only
-  // thing lost. Past trails hold on to that walk; nothing expires or idles it away.
-  // Clearing does the opposite and **discards without keeping a copy** — for "clear"
-  // to be an honest name it has to remove this session's already-written row too.
-  //
-  // It is stored as a **file inside the vault folder** (`past-trail-store.ts`): the
-  // web and the installed app are different origins, so browser storage cannot carry
-  // one past trail between them, and the only floor they share is the user's folder.
-  //
-  // With no vault open (sample browsing) nothing is written — there is no floor to
-  // write to, and falling back to browser storage would recreate exactly that
-  // web/app split. Sample browsing loses nothing by being volatile.
-  const pastTrailStore = useMemo<PastTrailStore | null>(
-    () =>
-      vault.status === "loaded" && vault.handle
-        ? createVaultFilePastTrailStore(vault.handle)
-        : null,
-    [vault.status, vault.handle],
-  );
-  const [pastWalks, setPastWalks] = useState<PastWalk[]>([]);
-  // Write permission is **queried, never requested**. Confronting someone who came to
-  // explore with "grant permission to keep a record" is friction. Sessions that
-  // already have permission write quietly; the rest write nothing, and the past-trail
-  // list says why.
-  const [pastTrailWritable, setPastTrailWritable] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    const handle = vault.status === "loaded" ? vault.handle : null;
-    void (async () => {
-      const granted = handle
-        ? (await verifyHandlePermission(handle, "readwrite")) === "granted"
-        : false;
-      if (!cancelled) setPastTrailWritable(granted);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [vault.status, vault.handle]);
-  // This session's walk id; every write in this session overwrites that one row (one
-  // session = one row). State rather than a ref because the list render reads it to
-  // exclude the row currently being walked, so it must be readable during render.
-  const [sessionWalkId, setSessionWalkId] = useState<string>(newPastWalkId);
-  // Mirror so event handlers (tab hide) can read the latest values.
-  const pastTrailSaveRef = useRef<{
-    store: PastTrailStore | null;
-    entries: FootprintTrailEntry[];
-  }>({ store: null, entries: [] });
-  useEffect(() => {
-    pastTrailSaveRef.current = {
-      store: pastTrailWritable ? pastTrailStore : null,
-      entries: footprintTrailEntries,
-    };
-  }, [pastTrailStore, pastTrailWritable, footprintTrailEntries]);
-  const flushPastTrail = useCallback(() => {
-    const { store, entries } = pastTrailSaveRef.current;
-    if (!store || entries.length < PAST_WALK_MIN_ENTRIES) return;
-    void store.save(sessionWalkId, entries).then(setPastWalks);
-  }, [sessionWalkId]);
-  // A different vault means a different node-id space: start a new walk and read that
-  // vault's list.
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const walks = pastTrailStore ? await pastTrailStore.list() : [];
-      if (cancelled) return;
-      setSessionWalkId(newPastWalkId());
-      setPastWalks(walks);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [pastTrailStore]);
-  // **Overwrite in place while walking.** A file write is async, so one started as
-  // the page dies never finishes — a design that fails at exactly the moment it must
-  // work. Refreshing the same row on every step (after the debounce) means even a
-  // force-quit leaves the last state already on disk.
-  useEffect(() => {
-    if (footprintTrailEntries.length < PAST_WALK_MIN_ENTRIES) return;
-    const timer = window.setTimeout(flushPastTrail, PAST_TRAIL_SAVE_DEBOUNCE_MS);
-    return () => window.clearTimeout(timer);
-  }, [footprintTrailEntries, flushPastTrail]);
-  // At tab-hide the document is still alive and a write can complete, so the last
-  // step still waiting out the debounce is flushed here.
-  useEffect(() => {
-    const onHidden = () => {
-      if (document.visibilityState === "hidden") flushPastTrail();
-    };
-    document.addEventListener("visibilitychange", onHidden);
-    return () => document.removeEventListener("visibilitychange", onHidden);
-  }, [flushPastTrail]);
-  const clearFootprintTrail = useCallback(() => {
-    lastVisitedNodeRef.current = null;
-    setFootprintTrail([]);
-    // Privacy valve: this session's already-written row is removed too.
-    setSessionWalkId(newPastWalkId());
-    const store = pastTrailSaveRef.current.store;
-    if (store) void store.remove(sessionWalkId).then(setPastWalks);
-  }, [sessionWalkId, setFootprintTrail, setSessionWalkId]);
-  const handleDeletePastWalk = useCallback(
-    (walkId: string) => {
-      if (!pastTrailStore) return;
-      void pastTrailStore.remove(walkId).then(setPastWalks);
-    },
-    [pastTrailStore],
-  );
-  const handleClearPastWalks = useCallback(() => {
-    if (!pastTrailStore) return;
-    setSessionWalkId(newPastWalkId());
-    void pastTrailStore.clear().then(setPastWalks);
-  }, [pastTrailStore, setSessionWalkId]);
-  // Stored walks are refined against the live map so the row's text (title, count)
-  // and the steps a replay actually loads are **the same thing**. A row that says 12
-  // places and replays 9 is a quiet lie.
-  const refinedPastWalks = useMemo(() => {
-    const lookup = (id: string) => {
-      const node = footprintNodeLookup.get(id);
-      return node ? { title: node.label, kind: node.kind } : null;
-    };
-    return pastWalks.map((walk) => ({
-      walk,
-      entries: refinePastWalkEntries(walk.entries, lookup),
-    }));
-  }, [pastWalks, footprintNodeLookup]);
-  // Row text is finished here: the chip is pure chrome and holds no i18n or date
-  // knowledge. Dates are **day resolution only** — showing hours and minutes would
-  // make the list read as a behavioural timeline. The row currently being walked is
-  // excluded, because the live trail above already shows it.
-  const pastWalkRows = useMemo<TopologyPastWalkRow[]>(() => {
-    // Reference instant is mount (`mountNowMs`): `Date.now()` during render violates
-    // purity, and day-resolution labels do not go wrong by being pinned for a session
-    // (only a window left open past midnight sees "today" change a day late).
-    const now = mountNowMs;
-    const dayFormat = new Intl.DateTimeFormat(activeLocale, { month: "long", day: "numeric" });
-    const yearFormat = new Intl.DateTimeFormat(activeLocale, {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    return refinedPastWalks
-      .filter(({ walk }) => walk.id !== sessionWalkId)
-      .map(({ walk, entries }) => {
-        const day = describePastTrailDay(walk.endedAt, now);
-        const date =
-          day.kind === "today"
-            ? t("footprint.pastDateToday")
-            : day.kind === "yesterday"
-              ? t("footprint.pastDateYesterday")
-              : day.kind === "sameYear"
-                ? dayFormat.format(day.at)
-                : yearFormat.format(day.at);
-        // Replaying needs enough surviving steps to still read as a walk (the same
-        // threshold the chip uses): replaying a one-place walk makes the chip vanish
-        // and takes the popover with it.
-        const replayable = entries.length >= PAST_WALK_MIN_ENTRIES;
-        // Names come from today's map; only unreplayable walks keep the names they
-        // had, because there is no way to name something the map no longer has.
-        const shown = replayable ? entries : walk.entries;
-        return {
-          id: walk.id,
-          routeLabel: t("footprint.pastRouteLabel", {
-            first: shown[0].title,
-            last: shown[shown.length - 1].title,
-          }),
-          metaLabel: replayable
-            ? t("footprint.pastRowMeta", { date, count: entries.length })
-            : t("footprint.pastDeadRowMeta"),
-          replayable,
-          // An unreplayable walk gets no label at all. Computing "replay 0 places"
-          // when there is no button to attach it to only leaks that string onto some
-          // other surface later.
-          ariaLabel: replayable
-            ? t("footprint.pastReplayAriaLabel", { date, count: entries.length })
-            : null,
-        };
-      });
-  }, [refinedPastWalks, sessionWalkId, activeLocale, mountNowMs, t]);
-  // A read-only vault must not fail silently: the past-trail list says why nothing is
-  // being kept.
-  const pastTrailNotice =
-    vault.status === "loaded" && !pastTrailWritable ? t("footprint.pastReadOnlyNotice") : null;
+  const {
+    pastWalkRows,
+    pastTrailNotice,
+    clearFootprintTrail,
+    handleDeletePastWalk,
+    handleClearPastWalks,
+    replayPastWalk,
+  } = usePastTrails({
+    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    vaultLoaded: vault.status === "loaded",
+    footprintTrailEntries,
+    footprintNodeLookup,
+    mountNowMs,
+    setFootprintTrail,
+    lastVisitedNodeRef,
+  });
   // ── Footprint lens ───────────────────────────────────────────────────
 // A transient state **equivalent to** the popover being open: no new mode, toggle,
 // or URL state. While it is open the map folds away relation reading (the ego
@@ -3546,35 +3368,14 @@ function HomePageImpl() {
     return true;
   }, [closeVaultAgent, handleSelect, unboundProjectSource]);
 
-  /**
-   * **Replays a past trail as the walk in progress.** The order is the contract:
-   *
-   * ① Flush the current walk first, including the last step still waiting out the
-   *    debounce, so replaying costs nothing.
-   * ② Switch to a new walk id. If the route is unchanged, `upsertPastWalk` skips
-   *    re-storing it, so the original row keeps its own date and a new row appears only
-   *    once walking on from here makes the route different.
-   * ③ Load the refined steps as the session trail. The map's footprint rings are
-   *    derived from that trail, so they re-stamp themselves with no render code
-   *    touched.
-   * ④ Ego-focus the last step — "you are here" is the end of that trail.
-   */
+  // Replaying loads the stored steps as the session trail; "you are here" is then
+  // the end of that trail, so the last step is ego-focused.
   const handleReplayPastWalk = useCallback(
     (walkId: string) => {
-      const target = refinedPastWalks.find(({ walk }) => walk.id === walkId);
-      if (!target || target.entries.length < PAST_WALK_MIN_ENTRIES) return;
-      flushPastTrail();
-      setSessionWalkId(newPastWalkId());
-      const ids = target.entries.map((entry) => entry.id);
-      setFootprintTrail(ids);
-      // Mark the last step as visited explicitly, so the visit-detection effect that
-      // `handleSelect` triggers below does not disturb the trail just loaded. (It is
-      // the same node either way, but stating it beats relying on that.)
-      const last = ids[ids.length - 1];
-      lastVisitedNodeRef.current = last;
-      handleSelect(last);
+      const last = replayPastWalk(walkId);
+      if (last) handleSelect(last);
     },
-    [refinedPastWalks, flushPastTrail, handleSelect, setSessionWalkId, setFootprintTrail],
+    [replayPastWalk, handleSelect],
   );
 
   const handleClose = useCallback(() => {
