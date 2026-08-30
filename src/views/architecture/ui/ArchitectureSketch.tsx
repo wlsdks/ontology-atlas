@@ -95,8 +95,9 @@ const PAD_Y = 26;
  *
  * Measured again 2026-08-30 in the installed app at a 1512x949 window (a 917px WebView, the
  * title bar takes 32): the seven-role chain drew 686px into a 682px canvas and the same bar
- * came back for 4px of dot field. 12px of ground at each end keeps the chain whole down to a
- * 901px WebView, which is every window the 14-inch display can hold with the menu bar shown.
+ * came back for 4px of dot field. 12px of ground at each end makes the drawing 670px, which with
+ * the 235px of chrome above and below the canvas keeps the chain whole down to a 905px WebView,
+ * every window the 14-inch display can hold with the menu bar shown.
  */
 const PAD_Y_LEDGER = 12;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
@@ -271,6 +272,17 @@ export function ArchitectureSketch({
   const naturalAcross = PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP;
   const axis: FlowAxis = boxWidth > 0 && naturalAcross > boxWidth ? 'down' : 'across';
 
+  /*
+   * ⚠️ **The drawing answers the pointer before it is clicked.** A reference the owner pointed at
+   * (Understand-Anything, MIT — read for its principles only) makes its graph feel alive by
+   * lighting the hovered node and everything it touches, and this canvas already had the machinery
+   * for it: choosing a role recedes the rest and reveals its crossings. Hover borrows the same
+   * focus, without touching the selection, so moving across the chain reads its shape without a
+   * single click.
+   */
+  const [hovered, setHovered] = useState<string | null>(null);
+  const focus = selected ?? hovered;
+
   const toSentenceEdge = useCallback(
     (edge: Graph['edges'][number]): SentenceEdge => ({
       from: edge.from,
@@ -279,8 +291,14 @@ export function ArchitectureSketch({
       count: edge.count,
       columnSpan: edge.columnSpan,
       violated: violatedPairs.has(`${edge.from}>${edge.to}`),
+      /* The same rule `visibleEdges` draws by: the spine always, a skip on focus or when violated. */
+      drawn:
+        edge.columnSpan <= 1 ||
+        focus === edge.from ||
+        focus === edge.to ||
+        violatedPairs.has(`${edge.from}>${edge.to}`),
     }),
-    [violatedPairs],
+    [violatedPairs, focus],
   );
   const leadRoom = useMemo(() => {
     if (axis === 'across') return graph.edges.length === 0 ? 0 : SENTENCE_TOP_ROOM;
@@ -467,12 +485,20 @@ export function ArchitectureSketch({
     /* The fade is as wide as this panel's own inset, so the covered edge and the padded edge
        agree rather than each picking a number. */
     const fade = 'var(--card-pad)';
+    /*
+     * ⚠️ **The strip that carries the count is as tall as the count.** The bottom band used to be
+     * one inset like the others, and the count pinned over it stood 28px tall on a 16px fade: a
+     * review on 2026-08-30 measured the badge over the last box's receipt line in a short window,
+     * which is the covered node the badge exists to avoid. Two insets hold the badge and its air,
+     * so nothing under it is still opaque.
+     */
+    const endFade = covered.coveredDown ? 'calc(var(--card-pad) * 2)' : fade;
     const [from, to] = covered.coveredDown ? ['bottom', 'top'] : ['right', 'left'];
     if (covered.left && covered.right) {
-      return `linear-gradient(to ${from}, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
+      return `linear-gradient(to ${from}, transparent 0, #000 ${fade}, #000 calc(100% - ${endFade}), transparent 100%)`;
     }
     if (covered.left) return `linear-gradient(to ${from}, transparent 0, #000 ${fade})`;
-    if (covered.right) return `linear-gradient(to ${to}, transparent 0, #000 ${fade})`;
+    if (covered.right) return `linear-gradient(to ${to}, transparent 0, #000 ${endFade})`;
     return undefined;
   })();
 
@@ -484,16 +510,6 @@ export function ArchitectureSketch({
    * Deterministic by construction: the graph's edge order is stable, so the same profile always
    * draws the same bundle in the same order.
    */
-  /*
-   * ⚠️ **The drawing answers the pointer before it is clicked.** A reference the owner pointed at
-   * (Understand-Anything, MIT — read for its principles only) makes its graph feel alive by
-   * lighting the hovered node and everything it touches, and this canvas already had the machinery
-   * for it: choosing a role recedes the rest and reveals its crossings. Hover borrows the same
-   * focus, without touching the selection, so moving across the chain reads its shape without a
-   * single click.
-   */
-  const [hovered, setHovered] = useState<string | null>(null);
-  const focus = selected ?? hovered;
 
   const skipLane = useMemo(() => {
     const lanes = new Map<string, number>();
@@ -1089,10 +1105,12 @@ export function ArchitectureSketch({
         ⚠️ **Over the fade, not in a row.** It was a flow row under the scroller first, and the
         row was the defect: measured in the installed app 2026-08-30 at a 1512x949 window, the
         chain fit the scroller by 13px, the first mount-time reading came in short, the pill
-        appeared, its row took 32px from the scroller it had just measured, and the reading it
+        appeared, its row took about 30px from the scroller it had just measured, and the reading it
         caused then kept it there — one role reported hidden, and hidden by the report. The count
         cannot be allowed to change the height it counts against, so it sits on the mask's own
         strip at the bottom, where the drawing is already faded and nothing is covered outright.
+        The strip is two insets tall for that reason (`coveredMask` above): the badge is 20px on
+        an 8px offset, and a 16px fade left 12px of it over opaque ink.
       */}
       {covered.coveredDown && covered.hiddenRight > 0 ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center px-[var(--card-pad)]">

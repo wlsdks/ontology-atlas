@@ -108,6 +108,52 @@ describe('placeEdgeSentences', () => {
     expect(out.find((s) => s.hidden === 'collision')?.text).toContain('314');
   });
 
+  it('seats a skip\'s sentence past every drawn arc that runs by it, not only its own', () => {
+    /* Review 2026-08-30 at 1920, Entities hovered: the sentence beside the shorter of two nested
+       arcs sat at its own apex and the longer arc ran through the words. */
+    const inner: SentenceEdge = { from: 'widgets', to: 'entities', kind: 'traffic', count: 20, columnSpan: 2, violated: false };
+    const outer: SentenceEdge = { from: 'views', to: 'shared', kind: 'traffic', count: 260, columnSpan: 4, violated: false };
+    const swing = (e: SentenceEdge) => 30 + (e.columnSpan - 2) * 10 + 41;
+    const across = placeEdgeSentences({
+      axis: 'across', edges: [inner, outer], placed: chainAcross(), ...BOX, swingOf: swing, leadRoom: 60, trailRoom: 300, sentenceOf: sentence,
+    });
+    const innerAcross = across.find((s) => s.key === 'widgets>entities')!;
+    const outerAcross = across.find((s) => s.key === 'views>shared')!;
+    expect(innerAcross.hidden).toBeUndefined();
+    /* The inner sentence is pushed to the outer arc's depth: same baseline as the outer's. */
+    expect(innerAcross.y).toBe(outerAcross.y);
+    const down = placeEdgeSentences({
+      axis: 'down', edges: [inner, outer], placed: chainDown(400), ...BOX, swingOf: swing, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
+    });
+    const innerDown = down.find((s) => s.key === 'widgets>entities')!;
+    const outerDown = down.find((s) => s.key === 'views>shared')!;
+    expect(innerDown.x).toBe(outerDown.x);
+  });
+
+  it('does not push a sentence out for an arc that is not drawn', () => {
+    const inner: SentenceEdge = { from: 'widgets', to: 'entities', kind: 'traffic', count: 20, columnSpan: 2, violated: false, drawn: true };
+    const outer: SentenceEdge = { from: 'views', to: 'shared', kind: 'traffic', count: 260, columnSpan: 4, violated: false, drawn: false };
+    const swing = (e: SentenceEdge) => 30 + (e.columnSpan - 2) * 10 + 41;
+    const out = placeEdgeSentences({
+      axis: 'across', edges: [inner, outer], placed: chainAcross(), ...BOX, swingOf: swing, leadRoom: 60, trailRoom: 300, sentenceOf: sentence,
+    });
+    const innerS = out.find((s) => s.key === 'widgets>entities')!;
+    const outerS = out.find((s) => s.key === 'views>shared')!;
+    expect(innerS.y).toBeLessThan(outerS.y);
+  });
+
+  it('lets an invisible sentence hold no ground against a visible one', () => {
+    /* Two sentences that would share one place: the one whose stroke is not drawn used to be
+       placed first by order and to silence the drawn one with a rectangle nobody could see. */
+    const placed = chainDown(400);
+    const drawn: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false, drawn: true };
+    const ghost: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false, drawn: false };
+    const out = placeEdgeSentences({
+      axis: 'down', edges: [ghost, drawn], placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
+    });
+    expect(out.find((s) => s.text.includes('314'))?.hidden).toBeUndefined();
+  });
+
   it('lets the focused role\'s skip sentence take a place a resting sentence held', () => {
     /* Measured on the seven-role profile, 2026-08-30: two violation sentences drawn at rest sat where
        the views → shared skip's sentence would go, so the profile's largest number (26,000 imports)

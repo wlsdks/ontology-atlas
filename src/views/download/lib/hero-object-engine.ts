@@ -28,7 +28,7 @@
  */
 
 import { registerGatewayFrameClient } from './gateway-frame-loop';
-import { echoCount, echoOrder } from './hero-echo';
+import { echoCount, echoOrder, preferredParents } from './hero-echo';
 
 const TAU = Math.PI * 2;
 
@@ -154,19 +154,9 @@ export function layoutHeroGraph(data: HeroGraphData): HeroModel {
     bySlug.set(n.s, n);
   }
 
-  const parentOf = new Map<string, string>();
-  for (const e of edges) {
-    if (e.y !== 'contains') continue;
-    const parent = bySlug.get(e.a);
-    const child = bySlug.get(e.b);
-    if (!parent || !child) continue;
-    // An element prefers a capability parent (the fan comes out denser).
-    if (child.k === 'element') {
-      const prior = parentOf.get(e.b);
-      if (prior && bySlug.get(prior)?.k === 'capability') continue;
-    }
-    parentOf.set(e.b, e.a);
-  }
+  // An element prefers a capability parent (the fan comes out denser) — the one rule every
+  // consumer of a parent shares (`preferredParents`).
+  const parentOf = preferredParents(nodes, edges);
 
   const doms = byKind.domain.slice().sort((a, b) => (a.s < b.s ? -1 : 1));
   const angle = new Map<string, number>();
@@ -374,8 +364,7 @@ export function mountHeroObject(
   const REVEAL_MS = parseFloat(cssVar(rootEl, '--motion-base', '180ms')) || 180;
 
   /** The parent line of every node — the one stroke a pointed-at dot lights along with itself. */
-  const parentOf = new Map<string, string>();
-  for (const e of model.edges) if (e.y === 'contains' && !parentOf.has(e.b)) parentOf.set(e.b, e.a);
+  const parentOf = preferredParents(model.nodes, model.edges);
 
   let hover: string | null = null;
   /** A fine pointer within this many CSS px of a dot's centre is resting on it. */
@@ -396,6 +385,9 @@ export function mountHeroObject(
 
   const onPointerDown = (e: PointerEvent): void => {
     dragging = true;
+    // A turn is not a read: the ring and the caption leave with the first press, or they would
+    // ride the rotating object pinned to a dot the pointer left behind (review, 2026-08-30).
+    setHover(null);
     lastX = e.clientX;
     userVel = 0;
     canvas.setPointerCapture(e.pointerId);

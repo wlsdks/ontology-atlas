@@ -67,9 +67,46 @@ export interface EchoFact {
   to: string;
 }
 
+/**
+ * The one parent every consumer agrees on. An element is often contained twice, by its domain
+ * and by a capability, and the layout fans elements under the capability because the fan comes
+ * out denser; the hover line and the caption must point at that same parent, or the line drawn
+ * to a dot and the sentence printed for it would name two different things. Measured 2026-08-30
+ * (review): three separate first-match lookups agreed only because the manifest lists
+ * capabilities before domains alphabetically. This is the contract instead of the coincidence.
+ */
+export function preferredParents(
+  nodes: readonly { s: string; k: EchoKind }[],
+  edges: readonly { a: string; b: string; y: 'contains' | 'depends' }[],
+): Map<string, string> {
+  const kindOf = new Map(nodes.map((n) => [n.s, n.k]));
+  const parentOf = new Map<string, string>();
+  for (const e of edges) {
+    if (e.y !== 'contains' || !kindOf.has(e.a) || !kindOf.has(e.b)) continue;
+    const prior = parentOf.get(e.b);
+    if (prior !== undefined) {
+      const keepPrior = kindOf.get(e.b) === 'element' && kindOf.get(prior) === 'capability';
+      const takeThis = kindOf.get(e.b) === 'element' && kindOf.get(e.a) === 'capability';
+      if (keepPrior || !takeThis) continue;
+    }
+    parentOf.set(e.b, e.a);
+  }
+  return parentOf;
+}
+
 export function echoFact(graph: StageGraph, slug: string): EchoFact | null {
   const labelOf = (id: string) => graph.nodes.find((n) => n.id === id)?.label ?? id;
-  const parent = graph.edges.find((e) => e.kind === 'contains' && e.target === slug);
+  const parents = preferredParents(
+    graph.nodes.map((n) => ({ s: n.id, k: n.kind })),
+    graph.edges
+      .filter((e) => e.kind === 'contains' || e.kind === 'depends')
+      .map((e) => ({ a: e.source, b: e.target, y: e.kind })),
+  );
+  const parentId = parents.get(slug);
+  const parent =
+    parentId !== undefined
+      ? graph.edges.find((e) => e.kind === 'contains' && e.source === parentId && e.target === slug)
+      : undefined;
   const own =
     parent ??
     graph.edges.find((e) => (e.kind === 'contains' || e.kind === 'depends') && e.source === slug) ??

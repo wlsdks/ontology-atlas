@@ -7,6 +7,35 @@
 
 ---
 
+## 2026-08-30 · What the review found: the count stays on the fade, sentences clear every arc, and the headline hydrates clean
+
+- The "N more below" count sat 28px tall on a 16px fade, so in a short window it stood on the
+  last box's receipt. The faded strip at the bottom is now two insets tall and the count sits
+  inside it; a gate measures the badge against the strip.
+- A skip's sentence sat beside its own arc and a longer arc that passed the same spot ran
+  through the words (1920, Entities chosen). Sentences now clear the widest drawn arc that
+  runs by them, a stroke that is not drawn holds no ground, and a gate samples points along
+  every drawn arc against every visible sentence.
+- Under reduced motion the download headline's first client render disagreed with the server
+  HTML and React kept the dark classes until the next re-render. The preference is read
+  through a hydration-safe store now, so the headline is complete from the first paint with
+  nothing in the console.
+- On the hero object, pressing to turn it clears the hover ring and caption instead of
+  carrying them round on a dot the pointer left; the dot's parent (line and caption) is
+  resolved by one rule shared with the layout.
+
+## 2026-08-30 · The architecture chain stays whole in the installed app, and the README shows it
+
+- In the installed app at a 1512x949 window the seven-role chain drew 4px taller than its
+  canvas and a scrollbar appeared for empty dot field; the ground above and below the chain
+  gives 8px back, so the chain stays whole down to a 905px WebView.
+- The "N more below" count no longer takes height from the canvas it counts against. It sat
+  in a row under the drawing, so the moment it appeared it shortened the canvas and kept
+  itself true: a chain that fit by 13px reported one role hidden, and hid it. The count now
+  sits over the faded strip at the bottom.
+- The README's architecture screenshot is retaken from the installed app: exact boxes with
+  two-line summaries and receipts, and every stroke stating its rule beside the line.
+
 ## 2026-08-30 · ACP next steps use names a person can read
 
 - A containment repair used to show raw identifiers such as
@@ -22,18 +51,6 @@
 - The composer model/mode grid no longer keeps an intrinsic fixed width that can run under
   the Stop button in a narrow agent panel. It shrinks inside the space left by Stop and Send,
   and a missing current model or mode now shows its field name instead of an empty button.
-
-## 2026-08-30 · The architecture chain stays whole in the installed app, and the README shows it
-
-- In the installed app at a 1512x949 window the seven-role chain drew 4px taller than its
-  canvas and a scrollbar appeared for empty dot field; the ground above and below the chain
-  gives 8px back, so the chain stays whole down to a 901px WebView.
-- The "N more below" count no longer takes height from the canvas it counts against. It sat
-  in a row under the drawing, so the moment it appeared it shortened the canvas and kept
-  itself true: a chain that fit by 13px reported one role hidden, and hid it. The count now
-  sits over the faded strip at the bottom.
-- The README's architecture screenshot is retaken from the installed app: exact boxes with
-  two-line summaries and receipts, and every stroke stating its rule beside the line.
 
 ## 2026-08-30 · The download hero assembles as the headline is typed
 
