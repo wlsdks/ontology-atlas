@@ -43,6 +43,38 @@ function draw(ledgers: Record<string, RoleLedger> = {}, violatedPairs = new Set<
   );
 }
 
+describe('the count of what is below', () => {
+  it('sits over the fade and takes no height from the scroller it counts against', () => {
+    /*
+     * ⚠️ Measured in the installed app 2026-08-30 at a 1512x949 window: the pill lived in a flow
+     * row under the scroller, so the moment it appeared it took 32px from the very height that
+     * decided whether it should appear, and a chain that fit by 13px stayed "1 more below" for
+     * good. jsdom lays nothing out, so the scroller's geometry is stubbed to a cut chain; what is
+     * asserted is where the pill is put, which is the whole fix.
+     */
+    /* A 1200px-wide, 100px-tall scroller holding a 700px drawing: the chain runs down and is cut. */
+    const geometry: Record<string, number> = { clientWidth: 1200, scrollWidth: 1200, clientHeight: 100, scrollHeight: 700 };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [key, Object.getOwnPropertyDescriptor(HTMLElement.prototype, key)]),
+    );
+    for (const [key, value] of Object.entries(geometry))
+      Object.defineProperty(HTMLElement.prototype, key, { configurable: true, get: () => value });
+    try {
+      draw();
+    } finally {
+      for (const [key, descriptor] of Object.entries(originals))
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+    }
+    const pill = screen.getByTestId('architecture-canvas-hidden-below');
+    const wrapper = pill.parentElement as HTMLElement;
+    expect(wrapper.className).toContain('absolute');
+    expect(wrapper.className).toContain('pointer-events-none');
+    const scroller = document.querySelector('[data-testid="architecture-graph"]')?.parentElement as HTMLElement;
+    expect(wrapper.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+});
+
 describe('the run control', () => {
   it('staggers by column, not by pixel', () => {
     /*
