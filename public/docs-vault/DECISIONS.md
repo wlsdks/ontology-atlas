@@ -40,6 +40,31 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The map slice is withdrawn: the owner meant the architecture tab
+
+**Convened because**: after the council above, the owner said the Map tab had nothing to
+touch and that the reference screenshot (cards with a summary, edges with a sentence)
+was about the **architecture tab**, all along. The caller had read the screenshot as the
+Map's domain view because it draws domains joined by edges; that reading was wrong.
+
+**Decision**: the canvas half of the council's slice (its PR 3, "the map says what an
+area is") is withdrawn before any code. The chosen direction B for it is void. The
+plumbing half stands on its own merits, independent of any screen: `relation_notes`
+named in the meta-model, `find_path` and `get_concept` returning the stored rationale,
+the validator's key-side swallow guard, and the repaired dogfood note are defects the
+council measured, not map features.
+
+**What the council still taught, and carries to the architecture tab**: text must never
+cross the outline of the shape it belongs to (now gated per line on the architecture
+canvas); a sentence drawn on a surface must be the same string the agent receives; a
+blank is drawn as nothing, never filled by a generator; and the owner's request may be
+about the feel of dense cards as much as their content.
+
+**Applied rule**: the target screen goes in the first line of every brief from here.
+**Signed**: stark
+
+**Status**: standing
+
 ## PO Council Verdict — the map says what an area is and why two areas are joined
 
 **Convened because**: the owner showed the reference's Domain view (cards with a sentence,
