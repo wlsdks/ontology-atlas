@@ -10,7 +10,7 @@ elements: []
 path: src-tauri/src/acp.rs
 created_by: human
 dependencies: [capabilities/mcp-server]
-relation_notes: { capabilities/mcp-server: The ACP session receives this server as an mcpServer in session/new, ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
+relation_notes: { capabilities/mcp-server: "The ACP session receives this server as an mcpServer in session/new, ACP is not a replacement for MCP servers but a path that sits on top of them.", capabilities/reviewed-ontology-writing: "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once." }
 relates: [capabilities/reviewed-ontology-writing]
 ---
 

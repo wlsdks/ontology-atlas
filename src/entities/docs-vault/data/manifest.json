@@ -998,8 +998,8 @@
           "capabilities/mcp-server"
         ],
         "relation_notes": {
-          "capabilities/mcp-server": "The ACP session receives this server as an mcpServer in session/new",
-          "ACP is not a replacement for MCP servers but a path that sits on top of them. capabilities/reviewed-ontology-writing": "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once."
+          "capabilities/mcp-server": "The ACP session receives this server as an mcpServer in session/new, ACP is not a replacement for MCP servers but a path that sits on top of them.",
+          "capabilities/reviewed-ontology-writing": "ACP permission requests reuse the reviewed ontology writing contract: read tools continue, while write tools pause on the shared typed change review before allow_once or reject_once."
         },
         "relates": [
           "capabilities/reviewed-ontology-writing"
@@ -1008,7 +1008,7 @@
       "headings": [],
       "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those with a verified app-owned permission gate (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription a",
       "wordCount": 1600,
-      "updatedAt": "2026-08-29",
+      "updatedAt": "2026-08-30",
       "linksOut": [
         "ontology/elements/agents-destination"
       ]
