@@ -6591,6 +6591,10 @@ await test('agent-brief --project — selects one project in a multi-project vau
       slug: 'capabilities/beta',
       content: '---\nkind: capability\ntitle: Beta Capability\ndomain: domains/beta\n---\n',
     },
+    {
+      slug: 'capabilities/unassigned',
+      content: '---\nkind: capability\ntitle: Unassigned Capability\n---\n',
+    },
   ]);
   try {
     const r = await run([
@@ -6606,6 +6610,65 @@ await test('agent-brief --project — selects one project in a multi-project vau
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_brief');
     assert.equal(data.projectSlug, 'projects/beta');
+    assert.equal(data.graph.nodes, 3);
+    assert.equal(data.graph.projects, 1);
+    assert.doesNotMatch(JSON.stringify(data), /projects\/alpha|domains\/alpha|capabilities\/alpha/);
+
+    const compactResult = await run([
+      'agent-brief',
+      root,
+      '--project',
+      'projects/beta',
+      '--compact',
+      '--task',
+      'Change the beta capability and identify its evidence and verification boundary.',
+      '--json',
+      '--exit-zero',
+    ]);
+    assert.equal(compactResult.code, 0, `stdout: ${compactResult.stdout}\nstderr: ${compactResult.stderr}`);
+    assert.equal(compactResult.stderr, '');
+    const compact = JSON.parse(compactResult.stdout);
+    assert.equal(compact.contract, 'agentBriefCompact:v1');
+    assert.equal(compact.detail, 'compact');
+    assert.equal(compact.project.slug, 'projects/beta');
+    assert.equal(compact.project.scope.nodes, 3);
+    assert.equal(compact.validation.status, 'warn');
+    assert.equal(compact.validation.warningFiles, 1);
+    assert.doesNotMatch(JSON.stringify(compact), /projects\/alpha|domains\/alpha|capabilities\/alpha/);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), 'utf8') <= 8000);
+
+    const compactHuman = await run([
+      'agent-brief',
+      root,
+      '--project',
+      'projects/beta',
+      '--compact',
+      '--task',
+      'Change the beta capability.',
+      '--exit-zero',
+    ]);
+    assert.equal(compactHuman.code, 0, `stdout: ${compactHuman.stdout}\nstderr: ${compactHuman.stderr}`);
+    const human = stripAnsi(compactHuman.stdout);
+    assert.match(human, /STATUS\s+needs_attention · needs_shape \d+\/100/);
+    assert.match(human, /VALIDATION\s+warn · 0 errors · 1 warnings/);
+    assert.match(human, /SOURCE\s+\S+\/\S+ · gap \S+ · next \S+/);
+    assert.match(human, /MEANING\s+\S+ · gap \S+ · next \S+/);
+    assert.match(human, /MEANING REPAIR\s+\S+.*approval required · automatic write\/finalize off/);
+    assert.match(human, /FULL DETAIL\s+query_ontology/);
+
+    const ambiguous = await run(['agent-brief', root, '--json', '--exit-zero']);
+    assert.equal(ambiguous.code, 2);
+    assert.match(ambiguous.stderr, /project is required when the vault contains multiple project nodes/i);
+
+    const missingTask = await run(['agent-brief', root, '--project', 'projects/beta', '--compact', '--json']);
+    assert.equal(missingTask.code, 1);
+    assert.match(missingTask.stderr, /--compact requires --task TEXT/);
+    const taskWithoutCompact = await run(['agent-brief', root, '--project', 'projects/beta', '--task', 'Beta task', '--json']);
+    assert.equal(taskWithoutCompact.code, 1);
+    assert.match(taskWithoutCompact.stderr, /--task is only valid with --compact/);
+    const compactGraphPack = await run(['agent-brief', root, '--project', 'projects/beta', '--compact', '--task', 'Beta task', '--graph-db-pack']);
+    assert.equal(compactGraphPack.code, 1);
+    assert.match(compactGraphPack.stderr, /--compact cannot be used with --graph-db-pack/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

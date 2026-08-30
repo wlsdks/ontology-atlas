@@ -5132,6 +5132,16 @@ function uniqueCliCommands(calls, cliPrefix) {
   return commands;
 }
 
+export function refreshAgentBriefHandoffPrompt(brief, options = {}) {
+  const cliPrefix = typeof options.cliInvocation === 'string' && options.cliInvocation.trim()
+    ? options.cliInvocation.trim()
+    : defaultCliInvocation();
+  return {
+    ...brief,
+    handoffPrompt: buildAgentBriefHandoffPrompt(brief, cliPrefix),
+  };
+}
+
 function buildAgentBriefHandoffPrompt(brief, cliPrefix) {
   const firstCalls = brief.firstCalls
     .map((call, index) => `${index + 1}. ${formatAgentToolCall(call)}`)

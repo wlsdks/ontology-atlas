@@ -126,6 +126,130 @@ caret. **Revisit**: next gateway pass.
 
 ---
 
+## 2026-08-30 — A coding handoff earns compact-by-default only after it improves the first decision
+
+**Convened because**: the historical coding A/B observed a public MCP handoff
+failure and the proposed repair can change `query_ontology({operation:
+"agent_brief"})` and its CLI wrapper. Five PO seats ran one independent round
+and one rebuttal round. Only three seats could run simultaneously; the second
+wave received the same literal brief and no first-wave verdicts, so full
+simultaneous independence was unavailable without cross-talk.
+
+**Prior decisions**: the 2026-08-03 action-first meaning-repair decision and the
+2026-08-16 fixed-budget `meaningRepair:v2` plus paged-detail split remain
+standing. Their human approval, no-auto-write/finalize, currentness, provenance,
+qualifier, and explicit-unknown rules are not optional payload. The 2026-08-28
+first-contact history optimization also stands: no validation or freshness fact
+is removed from the full response. What has been observed is the 2026-08-03
+dissent's falsifier: a selected-project handoff is again approximately 75 KiB
+and its first action is buried.
+
+**Observed phenomenon**: in the frozen historical trial, the Atlas lane made 17
+MCP reads returning 192,586 characters. Two identical `agent_brief` calls alone
+returned 149,848 characters. It took 1.684 times the wall time and 3.218 times
+the input tokens of source-only control, tied the objective score at 13/13, and
+lost both order-swapped blind preferences. Latest-main reproduction on the same
+11-node vault returned 74,932 bytes, including a 25,429-character handoff prompt
+and 32 CLI fallbacks. Although `project:"source"` was selected, global starter
+nodes appeared in counts and entrypoints. The outer response was
+`needs_attention` at 75 while the copyable prompt still said `ready` at 100,
+because the prompt was generated before final source/meaning adjustment.
+
+**User problem**: before the first implementation read on an unfamiliar change,
+an MCP coding agent cannot obtain one bounded, internally consistent account of
+the selected project's purpose, relevant broad capability, concrete evidence,
+known impact, explicit unknowns, verification boundary, and next read. It spends
+attention on a generic graph manual and then repeats source discovery; raw source
+search is the faster substitute at the moment Atlas should narrow the work.
+
+## PO Council Verdict — selected-project task handoff
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a slice; prove a static projection before changing the public default | Problem insight 4 · User moment 4 |
+| Craft | Shape a slice; one final fact model must generate JSON and prompt without readiness contradiction | Verification 4 |
+| Steward | Shape a slice; compact is a projection of current, approved meaning, never a new truth source | Ontology value 4 · Agent value 4 |
+| Wedge | Shape a slice; compression and project filtering are table stakes, accumulated local meaning is the wedge | Differentiation 4 |
+| Leverage | Shape a slice; gate an integrated retrieval/evidence slice under three working days | appetite and slice |
+
+**Rubric total**: 24/24 (fatal zeros: none).
+
+**Decision (accountable: jinan)**: keep the existing `query_ontology` tool and
+`agent_brief` operation. First fix two correctness defects for an explicitly
+selected project: every count, hub, entrypoint, and copyable readiness statement
+must come from that project's final fact set, so another project's starter nodes
+cannot leak and post-source/post-meaning status cannot disagree with the prompt.
+Add a bounded task statement and an explicit compact detail mode only as a
+request-local, non-persisted projection. The current full response remains the
+default and retains its existing diagnostic fields while the compact mode is
+tested. Compact output keeps source currentness, categorical meaning status,
+`meaningRepair:v2`, human approval/no-auto-write policy, bounded qualifiers,
+explicit unknowns, one broad matched capability, only cited concrete element or
+path anchors, focused verification status, exact next full-body calls, and one
+machine-executable full-detail follow-up. Lexical task match selects evidence;
+it never establishes behavior or semantic approval.
+
+The compact default is a second decision, not an implementation assumption. It
+may be switched in this slice only after a live repeated trial proves a better
+first decision or a material coding-outcome axis with no material regression.
+Byte reduction alone cannot authorize the switch.
+
+**Prototype evidence**: a read-only static projection of the accepted historical
+vault was 3,824 bytes versus 74,932. A fresh source-hidden agent selected the
+recorded `src/writer.rs` anchor as a safe first source read, preserved the exact
+SET/optional symbol and broader impact as unknown, and proposed focused tests
+without inventing a test path. It did not recover a concrete SET symbol or
+source-backed optional behavior. This passes the minimum field/attention test
+and earns an opt-in implementation; it does not yet earn compact-by-default.
+
+**Recorded dissent**: response size may be correlated with, rather than causal
+to, the tied result. A task matcher can become ordinary lexical search or a
+confidence amplifier that hides weak cross-boundary evidence. Combining prompt
+consistency, project scoping, task input, delivery modes, evidence selection,
+and A/B measurement can also become a union of proposals.
+
+**Falsifier**: if the live compact projection exceeds 8,000 UTF-8 JSON bytes,
+pre-edit task-scoped MCP responses exceed 20,000 bytes or five calls, omits or
+widens currentness/meaning/approval/qualifier/unknown facts, includes a node
+outside the selected project, or fails to improve the first source decision or
+one frozen objective outcome without regression, compact does not become the
+default. Preserve the correctness/scoping repair and move the next slice to
+evidence precision. A repeated historical run must also keep cited path/symbol
+accuracy at 100%, hard failures at zero, wall overhead at most 20%, and uncached
+input overhead at most 25% before claiming an efficiency win.
+
+**Slice**: IN — selected-project fact model, final-status prompt parity, bounded
+task match, opt-in compact response, explicit full follow-up, MCP/CLI/source and
+bundled-server parity, byte/field/negative probes, repeated frozen trial. OUT —
+new MCP tool or CLI command, UI, vault schema, stored task/session, backend,
+embedding/vector search, raw-source dump, automatic write/finalize, narrow
+task-named capability, exhaustive symbol graph, or weakening full-body and
+source-hidden qualification gates. Appetite — three working days; ship no
+default flip merely to rescue a missed target.
+
+**Implementation and measured result**: the selected project now compiles to its
+own six-node/nine-edge handoff instead of the 11-node/two-project workspace, and
+the final prompt reports the same `needs_attention 75/100` status as the returned
+facts. The final historical-task compact JSON measured 7,755 bytes and selected
+`capabilities/write-asn1-der` plus current `elements/writer → src/writer.rs`,
+while keeping SET internals, impact, and test paths unknown. A fresh source-hidden
+reader invented zero paths, symbols, dependencies, or behaviors.
+
+The matched coding rerun reduced MCP calls from 17 to 4 and response characters
+from 192,586 to 29,703; both patches passed the hidden oracle and both
+order-swapped blind judges returned a tie instead of preferring control. A second
+behavior probe followed the new shortest path and kept all pre-source MCP
+responses to 12,984 characters, including one 106-character fail-closed retry
+that named the missing project selector. The overall performance gate still
+failed: in the matched rerun Atlas took about 149.3s versus 105.6s (1.41x), and
+uncached input was 77,206 versus 49,335 tokens (1.57x). Source exploration and
+test choices, not MCP delivery alone, remained the dominant variance.
+
+**Status**: valid · compact opt-in and correctness slice authorized; default
+promotion rejected by the measured wall/token falsifier
+
+---
+
 ## 2026-08-30 — The hero object is the headline's echo, and the page moves in three places
 
 **Convened because**: the owner asked for the download page the same day the architecture

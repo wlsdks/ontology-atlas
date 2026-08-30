@@ -152,6 +152,10 @@ import {
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 import {
+  AGENT_BRIEF_TASK_MAX_CHARS,
+  buildCompactAgentBrief,
+} from './agent-brief-compact.mjs';
+import {
   buildNextImportRelationReview,
   reconcileImportEdges,
 } from './reconcile-imports.mjs';
@@ -182,6 +186,7 @@ import {
   RELATION_TYPE_VALUES,
   WRITE_RELATION_TYPE_VALUES,
   queryCompiledOntology,
+  refreshAgentBriefHandoffPrompt,
 } from './ontology-engine.mjs';
 import { loadOntologyAtlasIgnore } from './ontology-atlas-ignore.mjs';
 import { parseFilter } from './query.mjs';
@@ -2403,13 +2408,20 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 
 ## Two starting workflows
 
-### A. Vault already has nodes (typical) — orient first
+### A. A coding task is already known — use the shortest bounded handoff
+
+1. \`connection_info\` — prove the resolved vault and repository roots.
+2. \`query_ontology({operation:'agent_brief',project:'SLUG',detail:'compact',task:'...'})\` — receive currentness, the selected broad capability, cited element/path anchors, explicit unknowns, and one bounded full-body read.
+3. Run only the returned \`nextReads[0]\`, then inspect source from the recorded anchor. Do not call \`workspace_brief\`, \`list_concepts\`, or full \`agent_brief\` first; those are for whole-vault orientation and duplicate this task handoff.
+
+### B. No coding task is known — orient the vault first
 
 1. \`connection_info\` — prove the resolved vault and repository roots before analysis or writes. Root env changes require a server restart.
 2. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
 2. \`list_concepts\` — full node table. Pass \`summary: true\` for prose previews per row (avoid N follow-up \`get_concept\` calls). For a large vault, start at \`offset: 0\` and continue with \`pagination.nextOffset\` while \`hasMore\` is true; never treat one page as the full census. Pass \`since: <prevMaxMtime>\` for incremental sync. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
 3. \`validate_vault({})\` — read-only frontmatter health check. Run this during first-contact before proposing writes; report blocking errors separately from advisory warnings.
 4. \`query_ontology({operation:'agent_brief'})\` — Claude Code/Codex handoff: readiness, structured \`businessOntologyLens\` for the business-first \`outcome\` → \`domain\` → \`capability\` → \`element\` read order, copyable \`handoffPrompt\`, structured \`cliFallbackCommands[]\` for connector-less sessions, graph entrypoints, first MCP calls, \`graphDbQueryPack\` for \`facets\`, \`schema\`, \`match_nodes\`, \`match_edges\`, \`domain_matrix\`, \`centrality\`, \`all_paths\`, \`explain_relation\`, and \`business_questions\` outcome / domain-boundary / capability-claim / implementation-evidence scans, investigation playbooks including \`graph_traversal\` (\`schema\` → \`query_plan(all_paths)\` → \`all_paths\` → \`pattern_walk\` → \`project_map\`) with \`evidence[]\` and \`stopWhen[]\` checklists, \`traversalStrategy\` (\`plan_before_enumeration\` / \`bounded_path_evidence\` / \`containment_cross_check\`) for performance-aware graph traversal, write guardrails (\`preflight_relation\` / \`preflight_rename\` / \`post_change_sync\`), \`relationDecisionGuide\` for \`relation_check\` outcomes (\`skip_existing\` / \`review_inverse\` / \`safe_to_add\` / \`review_new_schema\`), \`resultContracts\` requiring \`all_paths\` callers to report \`limit\`, \`searchBudget\`, \`expandedStates\`, \`exhaustive\`, \`truncatedByBudget\`, \`totalPathsExact\`, \`evidence.status\`, \`evidence.reason\`, and \`evidence.pathsComplete\`, plus \`match_nodes\` / \`match_edges\` callers to report \`totalMatches\`, \`limited\`, and \`followUp\` details before treating scan rows as evidence, embedded health, and read-first write policy in one response.
+   When a coding task becomes known, switch to workflow A above. The compact handoff returns task-selected persisted meaning and exact next reads, not source behavior proof; use the returned \`detail:'full'\` follow-up only when the complete manuals or graph packs are needed.
 5. \`query_ontology({operation:'workspace_brief'})\` — read-only first-contact diagnosis: project shape, health status, and next actions without fetching the full graph. Use \`query_ontology({operation:'health'})\` when you need a deeper integrity dashboard.
 6. \`query_ontology({operation:'overview', limit: 5})\` — cheap graph-query smoke: counts, relation distribution, and hubs without fetching the full compile artifact.
 7. \`query_ontology({operation:'query_plan', targetOperation:'overview'})\` and \`query_ontology({operation:'query_plan', targetOperation:'project_map'})\` — side-effect-free cost/index contracts before heavier graph exploration, including \`execution.shouldRun\`, \`nextStep\`, \`suggestedQuery\`, and narrowed \`saferQuery\` guidance when the planned traversal is too broad. \`targetOperation\` accepts ${QUERY_PLAN_TARGET_OPERATION_UNION}.
@@ -4142,6 +4154,7 @@ const TOOLS = [
     name: 'query_ontology',
     description:
       'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `meaning_repair_review` (provenance-bound, byte-bounded typed evidence pages and literal full-body read calls for the compact meaning repair manifest), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
+      'For `agent_brief`, select `project` explicitly when the vault has more than one project. Omitted `detail` and `detail:"full"` return the complete project-scoped diagnostic contract. For a known coding task, call `detail:"compact"` directly after `connection_info`; do not precede it with `workspace_brief` or a full inventory unless the question needs whole-vault health. Compact mode requires a nonblank request-local `task` (max 2000 characters) and returns at most 8000 UTF-8 JSON bytes: final source/meaning currentness, broad capability selection, only persisted element/path evidence, explicit unknown impact and verification, exact full-body next reads, and a `detail:"full"` follow-up. Task matching selects evidence only; it never proves source behavior, persists task text, approves meaning, or writes the vault. ' +
       'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. A missing `depends_on` preflight is schema-only: `relation_check` returns `proposedAction:null` plus a non-writing `approvalGate` until the agent explains the observable ability and semantic rationale and receives explicit human approval. ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
@@ -4181,6 +4194,18 @@ const TOOLS = [
         project: nonBlankStringSchema(
           'domain_matrix/project_scope/project_map/agent_brief/meaning_repair_review: project root slug or unique alias. Required for meaning_repair_review; optional when exactly one kind: project node exists for the other operations.',
         ),
+        detail: {
+          type: 'string',
+          enum: ['compact', 'full'],
+          description:
+            'agent_brief only: compact returns a task-scoped, selected-project handoff capped at 8000 UTF-8 JSON bytes; full returns the complete legacy diagnostic manuals and graph packs. Omit to keep the current full response while compact is being qualified.',
+        },
+        task: {
+          ...NON_BLANK_STRING_SCHEMA,
+          maxLength: AGENT_BRIEF_TASK_MAX_CHARS,
+          description:
+            'agent_brief detail:"compact" only: request-local coding task used to select persisted capability and element evidence. Never persisted and never treated as behavior proof or semantic approval.',
+        },
         expectedGraphHash: nonBlankStringSchema(
           'meaning_repair_review first page: exact graphHash from meaningRepair:v2 provenance. Later nextCall values are revision-bound and omit it.',
         ),
@@ -8672,6 +8697,115 @@ function compileOntologyTool({
   };
 }
 
+function resolveAgentBriefProject(artifact, requestedProject) {
+  if (typeof requestedProject === 'string' && requestedProject.trim()) {
+    return queryCompiledOntology(artifact, {
+      operation: 'project_scope',
+      project: requestedProject,
+      limit: 1,
+    }).project;
+  }
+  const projects = (Array.isArray(artifact?.nodes) ? artifact.nodes : [])
+    .filter((node) => node?.kind === 'project' && typeof node.slug === 'string')
+    .map((node) => node.slug)
+    .sort((left, right) => left.localeCompare(right));
+  if (projects.length === 1) return projects[0];
+  if (projects.length === 0) return null;
+  throw new Error(
+    `project is required when the vault contains multiple project nodes. Choose one of: ${projects.join(', ')}.`,
+  );
+}
+
+function completeAgentBriefProjectScope(artifact, projectSlug) {
+  const nodes = Array.isArray(artifact?.nodes) ? artifact.nodes : [];
+  const edges = Array.isArray(artifact?.edges) ? artifact.edges : [];
+  const nodeBySlug = new Map(nodes.map((node) => [node.slug, node]));
+  const included = new Set([projectSlug]);
+  const queue = [projectSlug];
+  const downward = new Set(['domains', 'capabilities', 'elements', 'contains']);
+  const childrenByParent = new Map();
+  const appendChild = (parent, child) => {
+    if (!childrenByParent.has(parent)) childrenByParent.set(parent, []);
+    childrenByParent.get(parent).push(child);
+  };
+  for (const edge of edges) {
+    if (edge?.resolved !== true) continue;
+    if (downward.has(edge.via)) appendChild(edge.from, edge.to);
+    if (edge.via === 'domain') appendChild(edge.to, edge.from);
+  }
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index];
+    for (const child of childrenByParent.get(current) ?? []) {
+      if (included.has(child) || !nodeBySlug.has(child)) continue;
+      included.add(child);
+      queue.push(child);
+    }
+  }
+  const rows = [...included]
+    .map((slug) => nodeBySlug.get(slug))
+    .filter(Boolean)
+    .sort((left, right) => left.slug.localeCompare(right.slug));
+  const docs = loadVaultDocs(VAULT_ROOT).filter((doc) => included.has(doc.slug));
+  if (rows.length !== included.size || docs.length !== included.size) {
+    throw new Error(
+      `agent_brief blocked: selected project "${projectSlug}" contains a compiled node without one readable vault document. Run validate_vault and repair the missing document before using the handoff.`,
+    );
+  }
+  const internalEdges = edges.filter((edge) => (
+    edge?.resolved === true && included.has(edge.from) && included.has(edge.to)
+  )).length;
+  return {
+    scope: {
+      operation: 'project_scope',
+      project: projectSlug,
+      nodes: {
+        total: rows.length,
+        limited: false,
+        rows: rows.map((node) => ({
+          uid: node.uid,
+          slug: node.slug,
+          kind: node.kind,
+          title: node.title,
+          domain: node.domain,
+          inDegree: node.inDegree ?? 0,
+          outDegree: node.outDegree ?? 0,
+        })),
+      },
+      summary: { nodes: rows.length, internalEdges },
+    },
+    docs,
+    graphHash: buildProjectSourceGraphHash(projectSlug, docs),
+  };
+}
+
+function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns) {
+  const projectSlug = resolveAgentBriefProject(artifact, args.project);
+  if (projectSlug === null) {
+    if (args.detail === 'compact') {
+      throw new Error('agent_brief detail "compact" requires one selected kind: project node; this vault has none.');
+    }
+    const engineArgs = { ...args };
+    delete engineArgs.detail;
+    delete engineArgs.task;
+    return {
+      projectSlug: null,
+      scope: null,
+      scopedArtifact: artifact,
+      result: queryCompiledOntology(artifact, engineArgs, { ontologyAtlasIgnorePatterns }),
+    };
+  }
+  const scope = completeAgentBriefProjectScope(artifact, projectSlug);
+  const scopedArtifact = compileOntology(scope.docs, { includeIndexes: true });
+  const engineArgs = { ...args, project: projectSlug };
+  delete engineArgs.detail;
+  delete engineArgs.task;
+  const result = queryCompiledOntology(scopedArtifact, engineArgs, {
+    ontologyAtlasIgnorePatterns,
+    sourceDocs: scope.docs,
+  });
+  return { projectSlug, scope, scopedArtifact, result };
+}
+
 function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
@@ -8695,7 +8829,11 @@ function queryOntologyTool(args = {}) {
   // operation so every other query stays a pure snapshot read.
   const maintenanceFreshness =
     args.operation === 'maintenance_plan' ? buildSummaryFreshness(loadVaultDocs(VAULT_ROOT)) : null;
-  const queryResult = queryCompiledOntology(artifact, args, {
+  const agentBriefInput = args.operation === 'agent_brief'
+    ? scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns)
+    : null;
+  const queryArtifact = agentBriefInput?.scopedArtifact ?? artifact;
+  const queryResult = agentBriefInput?.result ?? queryCompiledOntology(artifact, args, {
     ontologyAtlasIgnorePatterns,
     ...(args.operation === 'builder_context' ? { sourceDocs: loadVaultDocs(VAULT_ROOT) } : {}),
     ...(maintenanceFreshness?.checked ? { staleSummaries: maintenanceFreshness.stale } : {}),
@@ -8703,8 +8841,16 @@ function queryOntologyTool(args = {}) {
   const validatedResult = ['health', 'workspace_brief', 'agent_brief'].includes(args.operation)
     ? attachVaultValidation(queryResult, args)
     : queryResult;
+  const meaningContext = args.operation === 'agent_brief'
+    ? projectMeaningContext(
+        artifact,
+        validatedResult.projectSlug,
+        validatedResult.readiness?.status,
+        agentBriefInput?.scope,
+      )
+    : null;
   const attached = args.operation === 'agent_brief'
-    ? attachProjectMeaning(validatedResult, artifact)
+    ? attachProjectMeaning(validatedResult, artifact, meaningContext)
     : ['health', 'workspace_brief'].includes(args.operation)
       ? attachMeaningReadiness(validatedResult, artifact, args)
       : validatedResult;
@@ -8719,20 +8865,32 @@ function queryOntologyTool(args = {}) {
    * forgets again — so count once, at the end, and the whole class disappears.
    * Gate: `cli/src/lib/brief-self-consistency.test.mjs`.
    */
-  const result = Array.isArray(attached.health?.checks) && attached.readiness
+  let result = Array.isArray(attached.health?.checks) && attached.readiness
     ? { ...attached, readiness: { ...attached.readiness, healthChecks: attached.health.checks.length } }
     : attached;
+  if (args.operation === 'agent_brief') {
+    result = refreshAgentBriefHandoffPrompt(result);
+    if (args.detail === 'compact') {
+      result = buildCompactAgentBrief({
+        brief: result,
+        artifact: queryArtifact,
+        docs: agentBriefInput.scope.docs,
+        task: args.task,
+      });
+    }
+  }
+  if (result?.contract === 'agentBriefCompact:v1') return result;
   return {
     ...result,
     compiledSummary: {
-      nodes: artifact.nodeCount,
-      edges: artifact.edgeCount,
-      graphHash: artifact.graphHash,
-      maxMtime: artifact.maxMtime,
-      resolvedEdges: artifact.resolvedEdgeCount,
-      externalEdges: artifact.externalEdgeCount,
-      unresolvedEdges: artifact.unresolvedEdgeCount,
-      issues: artifact.issues.length,
+      nodes: queryArtifact.nodeCount,
+      edges: queryArtifact.edgeCount,
+      graphHash: queryArtifact.graphHash,
+      maxMtime: queryArtifact.maxMtime,
+      resolvedEdges: queryArtifact.resolvedEdgeCount,
+      externalEdges: queryArtifact.externalEdgeCount,
+      unresolvedEdges: queryArtifact.unresolvedEdgeCount,
+      issues: queryArtifact.issues.length,
     },
   };
 }
@@ -8930,8 +9088,8 @@ function projectSourceScope(artifact, projectSlug, allDocs = null) {
   return { scope, docs, graphHash };
 }
 
-function projectMeaningContext(artifact, projectSlug, structureStatus) {
-  const { scope, docs, graphHash } = projectSourceScope(artifact, projectSlug);
+function projectMeaningContext(artifact, projectSlug, structureStatus, scopedProject = null) {
+  const { scope, docs, graphHash } = scopedProject ?? projectSourceScope(artifact, projectSlug);
   const projectSource = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
   const inventoryResult = buildProjectMeaningInventory({
     projectSlug,
@@ -8981,8 +9139,8 @@ function projectMeaningContext(artifact, projectSlug, structureStatus) {
   };
 }
 
-function attachProjectMeaning(agentBrief, artifact) {
-  const context = projectMeaningContext(
+function attachProjectMeaning(agentBrief, artifact, precomputedContext = null) {
+  const context = precomputedContext ?? projectMeaningContext(
     artifact,
     agentBrief.projectSlug,
     agentBrief.readiness?.status,
@@ -9471,6 +9629,7 @@ function validateQueryOntologyArgs(args = {}) {
     'seed',
     'candidateSlug',
     'title',
+    'task',
     'from',
     'project',
     'to',
@@ -9488,6 +9647,19 @@ function validateQueryOntologyArgs(args = {}) {
     'cursor',
   ]) {
     requireOptionalNonBlankString(args[key], key);
+  }
+  requireOptionalEnum(args.detail, 'detail', ['compact', 'full']);
+  if (args.detail !== undefined && args.operation !== 'agent_brief') {
+    throw new Error('detail is only valid for operation "agent_brief".');
+  }
+  if (args.task !== undefined && (args.operation !== 'agent_brief' || args.detail !== 'compact')) {
+    throw new Error('task is only valid for operation "agent_brief" with detail "compact".');
+  }
+  if (args.operation === 'agent_brief' && args.detail === 'compact' && args.task === undefined) {
+    throw new Error('agent_brief detail "compact" requires task.');
+  }
+  if (typeof args.task === 'string' && args.task.length > AGENT_BRIEF_TASK_MAX_CHARS) {
+    throw new Error(`task must contain at most ${AGENT_BRIEF_TASK_MAX_CHARS} characters.`);
   }
   for (const key of [
     'limit',

@@ -2918,6 +2918,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 · Agent handoff starts with one project and one bounded task view",
+      "slug": "2026-08-30-agent-handoff-starts-with-one-project-and-one-bounded-task-view"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · The download hero splits only when the column can hold the decision",
       "slug": "2026-08-30-the-download-hero-splits-only-when-the-column-can-hold-the-decision"
     },
@@ -6051,6 +6056,16 @@
       "depth": 2,
       "text": "2026-08-30 — Looked, and decided: the glob stays in the dock, and the echo stays proportional",
       "slug": "2026-08-30-looked-and-decided-the-glob-stays-in-the-dock-and-the-echo-stays-proportional"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — A coding handoff earns compact-by-default only after it improves the first decision",
+      "slug": "2026-08-30-a-coding-handoff-earns-compact-by-default-only-after-it-improves-the-first-decision"
+    },
+    {
+      "depth": 2,
+      "text": "PO Council Verdict — selected-project task handoff",
+      "slug": "po-council-verdict-selected-project-task-handoff"
     },
     {
       "depth": 2,
@@ -14121,6 +14136,33 @@
       "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
+    }
+  ],
+  "ontology/elements/task-scoped-agent-brief-projection": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
+      "text": "Uncertainty",
+      "slug": "uncertainty"
     }
   ],
   "ontology/ontology-atlas": [
