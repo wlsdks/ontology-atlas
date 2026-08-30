@@ -79,7 +79,16 @@ async function filesContaining(page: import("@playwright/test").Page, needle: st
           await walk(handle as FileSystemDirectoryHandle, `${prefix}${name}/`);
           continue;
         }
-        const body = await (await (handle as FileSystemFileHandle).getFile()).text();
+        let body: string;
+        try {
+          body = await (await (handle as FileSystemFileHandle).getFile()).text();
+        } catch (error) {
+          // The app writes atomically (temp file, then rename), so an entry listed a
+          // moment ago can be gone by the time it is read. A vanished temp file is
+          // not a missing vault file; skip it and keep sweeping.
+          if ((error as DOMException)?.name === "NotFoundError") continue;
+          throw error;
+        }
         if (body.includes(text)) hits.push(prefix + name);
       }
     };

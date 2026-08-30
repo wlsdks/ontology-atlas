@@ -15,7 +15,7 @@ import {
 
 type InsightNode = { id: string } & NonNullable<Parameters<typeof resolveNodeAgentTarget>[0]>;
 
-export interface FootprintGraphNode {
+interface FootprintGraphNode {
   id: string;
   label: string;
   kind: string;
