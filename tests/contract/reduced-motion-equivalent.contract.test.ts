@@ -87,10 +87,8 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // someone moves the declaration outside that media query the reason becomes false
   // at that moment — the test just below actually measures that condition, so moving
   // it turns red.
-  "gateway-scroll-rise":
-    "스크롤이 굴린다(view() 타임라인) — duration 이 없어 감속용 시간을 줄 대상이 없다. 감속에서는 선언 자체가 존재하지 않고 절은 처음부터 전부 보인다.",
   "gateway-scroll-stage":
-    "같은 이유 — 무대(영상·지도·ACP 장면)의 스크롤 연동. 감속에서는 선언이 없고 무대는 처음부터 전부 보인다.",
+    "스크롤이 굴린다(view() 타임라인) — duration 이 없어 감속용 시간을 줄 대상이 없다. 감속에서는 선언 자체가 존재하지 않고 무대(영상·지도·ACP 장면)는 처음부터 전부 보인다.",
 };
 
 /**
@@ -98,7 +96,7 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
  * inside `no-preference`". A reason recorded only in prose gives no signal when the
  * next person moves the declaration out, so the condition is **measured** here.
  */
-const SCROLL_TIMELINE_CLASSES = ["gateway-scroll-rise", "gateway-scroll-stage"] as const;
+const SCROLL_TIMELINE_CLASSES = ["gateway-scroll-stage"] as const;
 
 /**
  * The surfaces that must actually carry an equivalent — **extracted from the

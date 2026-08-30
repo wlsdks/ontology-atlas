@@ -106,11 +106,19 @@ export function HeroTypewriter({
   start,
   className,
   budgetMs = BUDGET_MS,
+  onProgress,
 }: {
   lines: readonly HeroTypewriterLine[];
   /** Typing begins when this turns true — the eyebrow lands first, so the cause precedes it. */
   start: boolean;
   className?: string;
+  /**
+   * Every change of the typed count, as `(typed, total)`, after the characters are on screen.
+   * The hero object listens: a dot lights for a character only once the character is visible,
+   * so the echo never runs ahead of its cause. Reported once as `(total, total)` under reduced
+   * motion, where the sentence is complete from the first frame.
+   */
+  onProgress?: (typed: number, total: number) => void;
   /**
    * Ceiling on the whole run. The hero's 1.8s default suits a two-line headline; a shorter line
    * inside a choreography (the agent scene's tool call) passes its own so the next beat is not
@@ -166,6 +174,10 @@ export function HeroTypewriter({
    * pure function of a preference that is already known while rendering.
    */
   const typed = reduced ? total : typedState;
+
+  useEffect(() => {
+    onProgress?.(typed, total);
+  }, [onProgress, typed, total]);
 
   useEffect(() => {
     if (!start || reduced) return;
