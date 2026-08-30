@@ -40,6 +40,130 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The spine is drawn under lower-only too, so seven boxes are a chain
+
+**Convened because**: the owner asked whether the design lead's recorded dissent
+of earlier the same day — "a canvas whose rest state shows one stroke reads as a
+spaced list rather than a graph" — was actually right. Both screens were measured
+rather than argued about.
+
+**The dissent's premise is false.** Its reason was that the reference the owner
+pointed at (Understand-Anything, MIT) "reads as a graph because every node is
+connected". Measured in its own live demo at 1512×945:
+
+| reference screen | nodes | edges | nodes with no edge |
+|---|---:|---:|---:|
+| project overview (its layer level, the one comparable to ours) | 8 | 5 | **3** |
+| inside one layer (Backend Microservices) | 13 | **0** | 13 |
+
+Three of its eight top-level boxes touch nothing, and they sit in the top row
+where the eye lands first; one level down it draws no edges at all and names
+cross-layer links as text stubs instead (*"API Contracts → 1 connection"*).
+Hovering a node at that level changes nothing: every edge keeps its `inactive`
+class and every node stays at opacity 1. It is less connected than we are, not
+more. The whole project is 393 nodes and 394 edges, and none of that graph is on
+that screen.
+
+**The dissent's conclusion is right anyway, for a reason it did not give.**
+Measured on our own two profiles at the same size:
+
+| profile | policy | boxes | strokes at rest | boxes with no stroke |
+|---|---|---:|---:|---:|
+| Storefront Services, 4 roles | `explicit` | 4 | 3 | **0** |
+| Atlas Web Workbench, 7 roles | `lower-only` | 7 | 3 | **3** |
+
+The measured profile drew seven equal boxes in one column, joined by two red
+dashed violation arcs and one short stroke at the bottom, with Routes,
+Application shell and Features touching nothing. Worse than the shape: five of
+those boxes stated an outgoing import count — `45`, `16`, `26,000`, `314`, `143` —
+while the canvas drew none of those strokes. Views said twenty-six thousand
+imports leave it and had no line leaving it. That is not a comparison to anybody;
+it is one screen's text contradicting its own drawing.
+
+**The cause was not the violation rule.** `buildArchitectureGraph` built permitted
+edges only when `policy === 'explicit'`, so a `lower-only` profile got no spine at
+all; the measured traffic was then almost entirely column skips, which the rest
+state holds back. Three strokes survived out of eight measured edges.
+
+**Decision**: under `lower-only`, draw the adjacent pairs and nothing else. Six
+strokes for seven roles, not twenty-one. The 2026-08-28 (3) argument stands for
+the 15 skips: each of them means "everything to my right", which the column order
+already carries. It does not stand for the 6, because the order says which role
+comes before which and only the stroke says they are a chain rather than a stack.
+
+**Refused**: drawing all measured traffic at rest, which is what the dissent
+proposed. It does not address the cause, and it restores the clutter the
+skip-hiding rule exists to prevent. Also refused, again: the reference's second
+palette, its glass and its `Click to explore →` trailing arrow, which this
+repository's own rules forbid.
+
+**Applied rule**: smallest slice — one filter in one function; no new data, no new
+route, no new mark, no schema change.
+**Signed**: stark
+
+**Recorded dissent**: the original argument was that under `lower-only` a
+permitted stroke cannot answer "why am I here", because the whole set is derivable
+from the order. That is still literally true of the six: a reader who trusts the
+column order can derive them. This record's answer is that deriving is not
+reading, and a drawing whose boxes touch nothing is not asking to be derived from.
+**Falsifier**: a reader looks at a measured profile and reads a spine stroke as a
+measured count — asks how many imports cross `routing → app` and expects the
+drawing to answer. If that is observed, mixing a rule stroke and a count stroke in
+one rest state failed, and the spine needs its own mark or its own state.
+**Revisit**: at the first outside walkthrough of this screen, or when a profile
+with more than one column per rank is measured.
+
+**Status**: standing
+
+## 2026-08-30 — A role box states what the role is; its counts wait in the panel
+
+**Convened because**: the owner pointed at an open-source project (Understand-
+Anything, MIT) and said that was the feel they wanted. Its code was read for
+principles only — no code, wording or asset was copied, as this repository's
+reference rule requires.
+
+**What actually carries that feel** (design lead, reading the reference's
+dashboard source): every node states what it *is* in a sentence before anything
+is clicked. Nodes carry an eyebrow, a name, and a two-line summary; edges are
+aggregated into one stroke per pair and always carry their count; selection
+fades everything unrelated. The warmth of its skin — a second palette, glass,
+glow — carries some of it too, and all of that is forbidden here and stays
+refused.
+
+**Decision**: a role box prints the profile's own one-line summary for that role
+in the line the counts had. Nothing is inferred: the sentence is the reviewed
+`summary_<role>` the profile already declares, and a role that declares none
+keeps its counts. The module and concept counts move into the role panel, which
+already lists both.
+
+**Why the counts lost that line**: on a browser-opened vault every box read
+`0 modules · 0 concepts` — a row of zeros where a sentence could be — and this
+file already refuses to print a zero module count for the same reason.
+
+**Also adopted, in our form**: every traffic stroke touching the focused role now
+states its measured count, not only the crossings that overlap; width is a
+comparison and never a figure.
+
+**Refused**: the second palette, the glow highlight, the minimap, per-layer
+drill-in and search. Seven roles need no search, the whole profile is already on
+one screen, and a per-role canvas would be a new surface rather than a change to
+this one.
+
+**Applied rule**: smallest slice — one line of text from data the profile already
+carries.
+**Signed**: stark
+
+**Recorded dissent**: the count line was put on the box so a reader could see
+where the weight is without choosing anything; that is now a click away.
+**Falsifier**: measure both sample profiles — if more than half the drawn boxes
+either declare no summary (the line renders empty and the height is spent for
+nothing) or truncate before the clause carries meaning, the sentence added height
+without meaning and the counts should come back.
+**Revisit**: at the first outside walkthrough of this screen, or when a profile
+without role summaries is measured.
+
+**Status**: standing
+
 ## 2026-08-30 — Qualification transport is machine-readable before hidden work
 
 **Convened**: solo PO pass · **Trigger**: the clean unfamiliar-repository run
@@ -113,6 +237,132 @@ end-to-end field run.
 **Status**: valid
 
 ---
+
+## 2026-08-30 — The architecture screen is a canvas with docks, and a violation is drawn
+
+**Convened because**: the owner opened the installed app on the new role ledger
+and found the lower half of the screen unreachable, and said the fix in one sentence:
+structurally there must be no scroll below the canvas at all — a canvas, and
+panels that open on a click and carry the explanations.
+
+**What was actually broken, in numbers** (installed app and browser, 1512×945):
+the screen was a two-row grid, and row 1 took every pixel the canvas asked for —
+967px. Row 2 got **64px per panel**, each with its own inner scroller holding 66px
+and 219px of content, at the end of a page scroller with 187px of travel that was
+already exhausted. The applied scopes, the rules, the receipt and the chosen role
+were not long. They were unreachable.
+
+**Decision**: at `xl` and above the workbench is one non-scrolling row. The canvas
+holds the height; everything else opens as a **dock** beside it — by clicking a
+role, by the button on the canvas, or by a link that names a role. Below `xl` the
+stacked, scrolling document is unchanged, because a phone cannot put anything
+beside anything.
+
+**What the canvas keeps**, because a verdict nobody opened is a verdict nobody
+reads: the receipt's status pill and stamp, and the name of the pattern being
+drawn. What moved into the dock: the rule sentences and the mark legend, the
+role's own answer, the applied scopes, and the dependency-direction prose.
+
+**One dock at a time.** The inspector is 380px and the stage 340px; both open
+leave a 1512 canvas 628px for an 804px drawing, which is the horizontal scroll the
+canvas took the full width to remove. Opening one closes the other, and a link
+naming both is answered with the stage.
+
+**And the drawing states the verdict it carries.** The pill said "Violated · 2"
+while the canvas painted nothing to match: both violating edges were skips, which
+the drawing holds back until a role is chosen, and even then they wore the same
+indigo as every conforming stroke. A violated crossing is now always drawn, in the
+danger tone the receipt pill already owns, dashed so it survives without colour,
+with its own legend row and the same mark on its sentence.
+
+**Applied rule**: charter first — no new data, no new route, no new write; the
+receipt and the profile already carried every fact this rearranges.
+**Signed**: stark
+
+**Recorded dissent** (design lead, judged this change before merge): a canvas whose
+rest state shows one stroke reads as a spaced list rather than a graph, and the
+reference the owner pointed at reads as a graph because every node is connected.
+Drawing only violations at rest does not answer that; drawing all measured traffic
+at rest would, at the cost of the clutter the skip-hiding rule exists to prevent.
+**Falsifier**: a reader looks at the rest state of a measured profile and cannot
+say which roles actually import which — while the dock's sentence list, one click
+away, answers it immediately. If that is observed, hiding skips at rest was the
+wrong default for measured edges and the rule should invert.
+**Revisit**: when a profile with more than one violated crossing is measured on a
+real vault, or at the first outside walkthrough of this screen.
+
+**Also recorded**: the rule sentences moved into a panel that is closed by default.
+The 2026-08-28 record required them **painted rather than `sr-only`**, and that
+still holds — a panel a reader opens is on a screen, a one-pixel box is not — but
+if a walkthrough finds a reader who never opens the dock and therefore never learns
+what the strokes mean, this is the record that was wrong, not that one.
+
+**Status**: standing
+
+## 2026-08-30 — A role box states what its own outgoing edges did, never a verdict
+
+**Convened because**: the owner pointed at a GitHub Actions workflow graph and
+said the architecture screen should read like that. `/design-directions` put four
+shapes up; the owner chose **B — every role box carries a small ledger of its own
+measured traffic**, so the canvas stops being a row of names and starts being a
+row of things with receipts.
+
+**The reference's shape does not transfer whole.** A workflow node can wear a
+status because every node had a *run*. Atlas has no per-role run: the only
+verdict this product owns — `conforms` / `violated` / `unknown` — is per profile,
+which is exactly as global as the stage chip that already shows it. So a box
+never claims a per-role verdict. It states what its **own outgoing edges** did,
+which is a grouping of facts the receipt already carries, and the wording stays
+edge-shaped so the two can never be read as the same claim.
+
+**Three limits of the receipt, each one a sentence the screen must not say**:
+
+1. The violation list is a sample — `mcp/src/architecture-profile.mjs` keeps the
+   first 50 and sets `violationsLimited`. A truncated count is stated as "at
+   least N", never as a total.
+2. `unmappedEdges` and `unruledEdges` are profile-wide with no role attached, so
+   **no box ever says "unmeasured"**. That sentence stays on the stage chip.
+3. `unknown.emptyRoles` is the one absence the receipt attributes to a role, so
+   it is the one absence a box states — "no source matched".
+
+**Two deliberate deviations from the chosen spec**: the reviewed-meaning fraction
+(`4/12` concepts) was dropped, because it needs a module↔concept containment rule
+that does not exist and inventing one is what this surface exists to refuse; and
+"unmeasured" is never printed per role, for the reason above.
+
+**Without a receipt there is no ledger at all** — not a row of zeros. A zero
+would read as "no violations", a claim about source nobody listed, and in a
+browser (where source cannot be listed) that is the normal case rather than an
+edge one.
+
+**Status is a shape, never a colour**: `✓` / `⊘` / `○` at the caption step. A
+red/green ledger would be a second colour system beside indigo — a rule change to
+request, not one to assume.
+
+**Applied rule**: smallest slice — read-only grouping of a record that already
+exists on disk; no schema change, no new route, no new write.
+**Signed**: stark
+
+**Recorded dissent**: a per-role verdict would be easier to read at a glance than
+an edge sentence, and the fraction of reviewed meaning is the number that would
+make the box worth looking at twice.
+**Falsifier**: a reader looks at a role box, states a conclusion about that role's
+conformance that the profile-wide record does not support, and is not corrected
+by the stage chip beside it. If that is observed, the edge-shaped wording failed
+and a per-role verdict (with an honest source for it) is the right answer.
+**Revisit**: when a receipt first carries per-role status of its own, or when the
+first outside reader reads a box aloud.
+
+**Geometry is part of the decision** (measured 2026-08-30, dogfood vault through
+the picker stub, 1512×945 and 1920×1080): a two-line receipt made boxes 82px tall
+and cut *Shared foundation* — the role every arrow points at — in half below the
+fold; the one-line receipt then rendered 144–156px wide inside a 148px box and
+crossed both outlines. The shipped values are 74px tall, 180px wide, one line,
+and `tests/e2e/architecture-role-ledger.spec.ts` fails at 90px tall (60px below
+the fold) and at 148px wide. Both failures were reproduced before the gate was
+kept.
+
+**Status**: standing
 
 ## 2026-08-29 — Nothing is painted before it can be named and clicked
 
@@ -1522,6 +1772,7 @@ truncated, digest, gap, and source-hidden-claim mutations before approval.
 **Status**: valid
 
 ---
+
 ## 2026-08-28 (3) — The diagram leaves the document: a horizontal graph, and only edges that carry something the columns cannot
 
 **Convened**: solo, on a failed build the owner rejected on sight ·
@@ -1603,8 +1854,12 @@ strokes come out the way the arcs did.
 **Review**: after that walkthrough, and again if a real profile passes roughly
 fifteen roles, at which point the no-layout-library decision is the one to reopen.
 
-**Status**: standing. **Accountable**: owner (asked for the shape, rejected the
-first attempt, and approved the rewritten plan).
+**Status**: parts 1 and 3 standing. **Part 2 partly overturned on 2026-08-30**
+("The spine is drawn under lower-only too", below): the 15 skips stay undrawn for
+the reason given here, and the 6 adjacent pairs are now drawn, because "the
+columns already say it" turned out to say the order without saying the chain.
+**Accountable**: owner (asked for the shape, rejected the first attempt, and
+approved the rewritten plan).
 
 ## 2026-08-28 (2) — A rule the screen does not print is a rule the reader does not have
 
@@ -2209,7 +2464,6 @@ self-probe stays live.
 
 **Status**: standing
 
-
 ## 2026-08-26 — Architecture is additive; Git remains a primary destination
 
 **Convened**: solo PO pass · **Trigger**: the owner inspected the delivered
@@ -2466,6 +2720,7 @@ and search ownership under identical copy.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 (115) — MCP `instructions` names which question each tool answers, before it lists the tools
 
 **Prior decisions**: none on this surface. (113), 2026-08-24, moved the write
@@ -2702,6 +2957,7 @@ is to move the load-bearing constraint into a lint rule or a hook, where
 compliance is not optional — not to grow the pointer into a copy.
 
 **Status**: active
+
 ## 2026-08-24 (111) — Codex leaves in-app chat until Atlas MCP writes have an app-owned gate
 
 **Prior decisions**: 2026-08-16 (8) treated Codex `read-only` session mode as a
@@ -7220,6 +7476,7 @@ trait object와 두 잠금 계층은 관측되지 않은 위험을 위한 복잡
 **재검토**: ACP 채팅 출하 후 첫 100회 시작 또는 관문 실패 3건 관측 시.
 
 **상태**: 유효 — 2026-08-16 (8) 결정 3의 「실패 후 계속」을 뒤집음.
+
 ## 2026-08-17 (28) — 갓 만든 볼트가 자기가 고장 났다고 말했다
 
 **소집**: 단독 패스 · **트리거**: 밖에서 쓰는 약속 변경(`query_ontology health`
@@ -7317,6 +7574,7 @@ gap id 는 정직해졌지만 상태 칸을 읽는 코드는 아직 「잘못됐
 **재검토**: 위 관측이 나오면.
 
 **상태**: 유효
+
 ## 2026-08-17 (21) — 고칠 수 없는 것 83개를 고치라고 말하던 지도
 
 **소집**: 단독 패스 · **트리거**: 소유자 지시(ACP 를 최고 수준으로) 중 발견 ·
@@ -9611,6 +9869,7 @@ Build and verify였다. 이번에는 동시성 한계 때문에 지렛대 자리
 **상태**: 유효
 
 ---
+
 ## 2026-08-13 — 프로젝트 상세: 방사 도메인 지도를 은퇴시키고 행+비율 막대 한 문법으로 (갈래 B)
 
 **소집**: 갈래 문서(A~D, 실측 포함)를 소유자에게 제시, 소유자가 B를 골랐다:
@@ -9659,6 +9918,7 @@ Build and verify였다. 이번에는 동시성 한계 때문에 지렛대 자리
 **반증 조건**: 소유자가 이 이름을 세 번째로 기각하거나, 첫 방문자가 「스튜디오」를
 보고 무엇을 하는 화면인지 못 알아보는 관측이 나오면 — 그때는 보편명 후보(작업대·편집)
 로 돌아간다.
+
 ## 2026-08-12 — 열 것이 없을 때 **스킬 화면은 무대가 된다**, 그리고 무대 칸을 규격에 올린다
 
 **소집**: 열지 못했다 — 소유자가 이 세션에서 서브에이전트 호출을 쓰지 말라고 지시했다.
@@ -10481,6 +10741,7 @@ trial에서도 exact step·diagnostic·claim support가 계속 손실되거나, 
 선행 항목이 제품 문제를 해결하지 못하고 동일 failure mode를 남길 때.
 
 **상태**: 유효
+
 ## 2026-08-09 — 작대기 정리를 **화면에 그려지는 문서 전체**로 넓힌다 (경계는 「사용자가 읽나」)
 
 **트리거**: 소유자 — *"남은것도 해봐"*.
@@ -12266,6 +12527,7 @@ globals.css 실값으로 라이선스 안/밖을 계산(경계가 실재한다�
 것.
 
 **서명 (accountable)**: design-system 석 (소유자 서명 대기)
+
 ## 2026-08-04 — Rust의 첫 근거는 의존 화살표가 아니라 feature 조건의 정본 provenance다
 
 ### 먼저 — 세 줄
@@ -12655,6 +12917,7 @@ I/O 비용이 커지고, 앱만 소스를 읽는 기존 privacy 경계가 흐려
 같은 파일 상태에서 달라지면 반대가 옳다. 그때 자동 재검증을 철회하고 별도 명시적
 local verification action 또는 공유 native probe로 바꾼다.
 **재검토**: 실제 외부 저장소 field trial에서 위 관측이 생길 때.
+
 ## 2026-08-04 — 값 층 라운드 3: 남은 77을 전수 분류하니 «단일 구멍»이 아니라 «겹친 구멍»이었다 — 축 0개, 방언 판정 1건(404 표준 버튼), 회수 5
 
 **소집**: 디자인 카운슬 「체계」석 단독 (소집 사유: `control-class.ts`·`app/globals.css` 램프 목록 소집 규칙 — 단, 이번 라운드는 그 파일들을 **안 고쳤다**. 고치지 않은 것 자체가 판정이다) · **트리거**: 컨트롤 래칫 113 정체. 값-층-밖 3부류(git 크롬 15 · shared/ui 10 · 공방 절대배치 11 = 36, 병렬 등재 진행)를 뺀 **77의 전수 분류** 지시
@@ -12723,6 +12986,7 @@ local verification action 또는 공유 native probe로 바꾼다.
 
 **기록된 반의견**: 「문서함 헤더는 지도 크롬보다 **밀도가 중요한 표면**이다(문서 목록·탭·pill 이 한 밴드에 몰린다). 2px 은 작아 보이지만 밴드가 44px 이라 여백이 5 → 4 로 20% 준다. 두 값이 맞다면 그것을 등재하면 되지, 수렴이 항상 옳은 것은 아니다.」 — 기각 근거: 밴드 높이가 안 움직였고(실측), 오른쪽 그룹은 이미 38px 원소를 갖고 있어 36 이 그 그룹의 최고 원소도 아니다. 그리고 34 를 등재하려면 **34 를 유도한 근거**가 필요한데, 있는 것은 44px 시대의 문장뿐이다.
 **반증 조건**: 문서함 헤더가 좁은 폭에서 **두 줄로 접히는** 자리가 관측되면(현재 `flex-wrap` 이라 가능하다) 2px 이 원인일 수 있고, 그때는 값이 아니라 그 밴드의 폭 예산을 먼저 본다 — 그래도 안 되면 34 의 재등재가 아니라 **밴드 자체의 규격**을 다시 짠다. 또는 소유자가 실물에서 *"문서함 헤더가 커졌다"* 를 지적하면 그것이 관측이다.
+
 ## 2026-08-03 — 「규격을 바꾸려면 「체계」를 부른다」에 게이트를 단다: 판정은 파일 이름이 아니라 규격 센서스
 
 **소집**: 단독 패스 (규칙 감사 후속 — 소유자 지시 *"완벽하게 디자인 시스템화해줘 문제없게하고"*) · **트리거**: 규칙 감사 실측 — `.claude/rules/design.md` 의 규칙 3(규격 변경 시 「체계」 소집)이 **강제 없는 문서 규칙**이었고, 값 층 램프를 넓힌 최근 커밋 5건 중 자기 원장 기록이 있는 것은 1건뿐이었다. `pnpm decisions:check` 는 라우트 신설/제거와 MCP/CLI 공개 계약만 봐서 디자인 규격은 통과했다.
@@ -12734,6 +12998,7 @@ local verification action 또는 공유 native probe로 바꾼다.
 
 **기록된 반대**: 「`--color-*` 전체를 램프로 봐야 한다 — 색은 design.md 가 명시한 램프 다섯 중 하나다」. 기각 근거: globals.css 의 `--color-*` 는 200개가 넘고 대부분이 **한 표면 전용 알파 사다리**라, 전수를 세면 색 하나 조정마다 원장을 요구하게 되고 그건 이 저장소가 `shadow-[` 통째 금지에서 이미 겪은 소음 실패(lint 144 → 548)로 곧장 간다. 색 헌장은 이미 `forbidden.md` + `accentTintPairingSelectors` lint + `contrast-ratchet` 이 지키고 있고, 여기서 세는 것은 **hue 를 정의하는 뿌리**(바탕 3 · 글자 4 · 인디고 3 · 신호 4)로 좁혔다.
 **반증 조건**: 새 hue 나 새 알파 계열이 **뿌리 토큰을 건드리지 않고** 표면 전용 토큰만으로 들어와 헌장을 우회하는 사례가 관측되면 — 그때는 색 센서스를 계열(prefix) 단위 «집합의 증감»으로 넓힌다(값 변경은 여전히 제외). 반대로, 이 게이트가 켜진 뒤 원장에 «오탐이라 한 줄 남김» 기록이 반복해서 쌓이면 좁힘이 부족한 것이므로 센서스를 더 좁힌다.
+
 ## 2026-08-03 — 값 층의 반복 구멍 셋을 메운다: 마이크로 티어(반경 `micro` + 칩 `xs`) · 기본 보더 다수 정합 · `tone: 'success'` 글자 역할 재지정
 
 **소집**: 디자인 카운슬 「체계」석 단독 (소집 사유: `control-class.ts` · `app/globals.css` 램프 — 목록 소집 규칙) · **트리거**: 컨트롤 정규화가 123에서 멈췄고, 래칫 원장이 「자리가 없어서」를 부류·전수로 누적 보고 + 규칙 감사(PR #890)가 게이트 부재를 실측
@@ -14706,6 +14971,7 @@ timeout 됐다. 같은 설치 앱에서 `qwen3:8b`는 13.920 + 1.414 + 2.653초�
 **재검토**: 활동 로그 표본이 다섯 벌 이상 쌓였을 때 분포 재측정.
 
 **상태**: 유효.
+
 ## 2026-08-01 — 인수인계 시험이 찾아낸 셋: 본문은 opt-in 으로 전부 주고, 안 준 것은 말하고, 증거 없는 능력은 막지 말고 보이게 한다
 
 **소집**: 단독 패스 · **트리거**: 낯선 오픈소스 저장소에 빈 볼트를 붙여 실제 MCP
@@ -14756,6 +15022,7 @@ timeout 됐다. 같은 설치 앱에서 `qwen3:8b`는 13.920 + 1.414 + 2.653초�
 
 **재검토**: 다음 `/ontology-field-trial` 실행 직후 — 기준선은
 `.claude/skills/ontology-field-trial/BASELINE.md`.
+
 ## 2026-08-01 — 웹의 「연결 불가」는 거짓이었다: 브라우저가 모르는 값을 **아는 사람에게 묻는다**
 
 **소집**: 단독 패스 · **트리거**: 소유자 실측 — 배포된 웹에서 「AI 에이전트 연결」을 눌렀더니 「이 화면에서는 연결할 수 없어요」가 뜨고, 유일한 대안 링크가 사람을 `/docs/?slug=AGENT-GRAPH-WORKFLOW` 한가운데로 떨궜다(*"지금은 좀 불편하다"*).
@@ -15111,7 +15378,6 @@ PR1 `vault.mjs` 자격 게이트+경고 배선(patch/add_relation 구멍 포함)
 **상태**: 유효 (승인 — 실행 개시, PR1 부터 순서 고정)
 
 ---
-
 
 ## 2026-07-31 — 드래그 140ms 의 처방: 후보 ② 「제한을 진짜로」 채택 — 단 진범의 78%는 FA2 가 아니라 separation 이었고, Barnes-Hut 은 이미 켜져 있었다
 
@@ -18415,6 +18681,7 @@ PR #904). 이 라운드가 그 셋을 실측으로 재확인했다 — **결함 
 경계 사례(`HomePage:4619` 「Local」 표시 pill)가 그 후보다 — 그때 부류를 가른다.
 
 **서명 (accountable)**: 게이트 라운드 (소유자 서명 대기)
+
 ## 2026-08-04 — 오버레이 반경을 `sheet`(18) 한 단으로 등재하고, 행간 이름 유틸리티를 래칫에 넣는다
 
 **현상** (`/design-audit` PR #906, 1512px 실측): 오버레이 반경이 **여섯 값**
@@ -22790,6 +23057,7 @@ analysis could move in-process and this record's central reasoning expires.
 **Status**: valid
 
 ---
+
 ## 2026-08-24 — The map moves inside the project, into a folder named `atlas`
 
 **Context**: the product shipped two contradictory answers to "where does a map
@@ -22866,6 +23134,7 @@ The second would mean "no source bound" is too broad a reading of "unfinished".
 **Status**: valid
 
 ---
+
 ## 2026-08-24 — Picking a project opens the map inside it, and says so
 
 **Context**: the owner asked, on reading the previous record, *"so now, whether
@@ -22918,6 +23187,7 @@ would mean the redirect needs an escape hatch.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — `init` may only wire the project it was actually run inside
 
 **Observed damage**: running `node cli/src/index.mjs init <somewhere-else>` from
@@ -22959,6 +23229,7 @@ restoring the unconditional write.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — "Just start" leaves the folders macOS protects
 
 **Context**: the previous record left the app's "just start" path unresolved,
@@ -23034,6 +23305,7 @@ list missed a form.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — Two flow defects found by walking the door, not by reading it
 
 **Context**: the owner asked that the flow feel smooth rather than merely
@@ -23071,6 +23343,7 @@ the weight assumed here.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — Pressing the door in the installed app found five defects, one fatal
 
 The owner asked for the button to be pressed rather than reasoned about. It was,
@@ -23137,6 +23410,7 @@ looks for the door and cannot find it.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — An empty vault is the strongest case for the door, and it was the one case that hid it
 
 **Observed on the installed app**, on the round that verified the repository-root
@@ -23165,6 +23439,7 @@ still loading, which would make it flicker on every open.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — `atlas` becomes reachable, without a registry
 
 **Context**: the owner asked whether the product ships a CLI, and if so to make
@@ -23227,6 +23502,7 @@ difference between a documented risk and a defect that shipped.
 **Status**: valid
 
 ---
+
 ## 2026-08-25 — One word per thing, and it may be the accurate one
 
 **Overturns** the standing rule in `.claude/rules/design.md`: *"Use 'ontology'

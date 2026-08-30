@@ -22,15 +22,31 @@ describe('buildArchitectureGraph', () => {
     expect(columnOf.get('shared')).toBe(6);
   });
 
-  it('draws no permitted edges under lower-only, because the columns already say it', () => {
+  it('draws the spine and nothing else under lower-only, so seven boxes are one chain', () => {
     /*
-     * ⚠️ This is the measurement the whole shape rests on. This profile has 21 permitted edges
-     * among 7 roles, and every one of them means "everything to my right". Drawing them restates
-     * the column order twenty-one times and adds nothing a reader did not already have.
+     * ⚠️ **The 21 stayed refused; the 6 came back** (measured 2026-08-30, dogfood profile through
+     * the picker stub at 1512x945). Drawing all 21 restates the column order twenty-one times, and
+     * that is still the reason they are not drawn. Drawing *none* was the overcorrection: the
+     * measured screen put seven equal boxes in one column with three strokes among them, three of
+     * them touching nothing at all, and five boxes stating an outgoing import count whose stroke
+     * the canvas never drew. The adjacent pair is the one permitted edge the order cannot restate,
+     * because it is what makes the order a chain instead of a stack.
      */
     const graph = buildArchitectureGraph(fsd(), []);
-    expect(graph.edges).toEqual([]);
-    expect(graph.edgeSource).toBe('none');
+    expect(graph.edgeSource).toBe('permitted');
+    expect(graph.edges.every((edge) => edge.kind === 'permitted')).toBe(true);
+    expect(graph.edges.every((edge) => edge.columnSpan === 1)).toBe(true);
+    expect(graph.edges.map((edge) => `${edge.from}>${edge.to}`).sort()).toEqual([
+      'app>views',
+      'entities>shared',
+      'features>entities',
+      'routing>app',
+      'views>widgets',
+      'widgets>features',
+    ]);
+    /* Every box the profile declares is on the chain: nothing floats at rest. */
+    const touched = new Set(graph.edges.flatMap((edge) => [edge.from, edge.to]));
+    expect(graph.boxes.filter((box) => !touched.has(box.id))).toEqual([]);
   });
 
   it('draws every permitted edge under explicit, because the order cannot say it', () => {
@@ -51,9 +67,10 @@ describe('buildArchitectureGraph', () => {
       { fromRole: 'widgets', toRole: 'shared', count: 314 },
       { fromRole: 'routing', toRole: 'widgets', count: 1 },
     ]);
-    expect(graph.edgeSource).toBe('traffic');
-    expect(graph.edges.every((edge) => edge.kind === 'traffic')).toBe(true);
-    expect(graph.edges.find((e) => e.from === 'widgets' && e.to === 'shared')?.weight).toBe(1);
+    expect(graph.edgeSource).toBe('both');
+    const traffic = graph.edges.filter((edge) => edge.kind === 'traffic');
+    expect(traffic).toHaveLength(2);
+    expect(traffic.find((e) => e.from === 'widgets' && e.to === 'shared')?.weight).toBe(1);
     expect(
       graph.edges.find((e) => e.from === 'routing' && e.to === 'widgets')?.weight,
     ).toBeLessThan(0.01);
@@ -72,14 +89,14 @@ describe('buildArchitectureGraph', () => {
     const graph = buildArchitectureGraph(fsd(), [
       { fromRole: 'views', toRole: 'views', count: 223 },
     ]);
-    expect(graph.edges).toEqual([]);
-    expect(graph.edgeSource).toBe('none');
+    expect(graph.edges.filter((edge) => edge.kind === 'traffic')).toEqual([]);
+    expect(graph.edgeSource).toBe('permitted');
   });
 
   it('drops traffic naming a role the profile no longer has', () => {
     /* A record is a receipt from a past moment; the profile may have moved on since. */
     const graph = buildArchitectureGraph(fsd(), [{ fromRole: 'views', toRole: 'gone', count: 9 }]);
-    expect(graph.edges).toEqual([]);
+    expect(graph.edges.filter((edge) => edge.kind === 'traffic')).toEqual([]);
   });
 
   it('counts columns crossed, so a long reach is drawn as a long reach', () => {
@@ -115,10 +132,16 @@ describe('buildArchitectureGraph', () => {
   });
 
   it('reads the shape from the declared graph, not from the strokes it happens to draw', () => {
-    /* Under lower-only no permitted edge is drawn; asking the drawn set would make every box a
-       terminator, which is the bug this test exists to keep out. */
-    const drawn = buildArchitectureGraph(fsd(), []);
-    expect(drawn.edges).toEqual([]);
+    /*
+     * Under lower-only the drawn set is the spine, six of the twenty-one the profile declares, so
+     * the strokes on screen are never the whole graph. The discriminator is a measured violation
+     * running back up the chain: it puts an outgoing stroke on `shared`, which the profile declares
+     * as the role nothing may leave. Reading the shape off the strokes would turn that box into a
+     * process, and the sink would stop looking like a sink.
+     */
+    const drawn = buildArchitectureGraph(fsd(), [{ fromRole: 'shared', toRole: 'routing', count: 3 }]);
+    expect(drawn.edges.filter((edge) => edge.kind === 'permitted')).toHaveLength(6);
+    expect(drawn.boxes.find((box) => box.id === 'shared')?.shape).toBe('terminator');
     expect(drawn.boxes.filter((box) => box.shape === 'process')).toHaveLength(5);
   });
 

@@ -184,8 +184,15 @@ describe('ArchitectureWorkbench', () => {
     renderWorkbench();
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeInTheDocument();
     expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
-    // Twice on purpose: the stage's pattern chip, and the scope rail's profile caption.
-    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(2);
+    /*
+     * Three on purpose, and the header is the one that matters: the dock is closed by default now,
+     * so the pattern heading and the scope rail's caption are both behind a click. The drawing has
+     * to name what kind of drawing it is without one (2026-08-30).
+     */
+    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(3);
+    expect(screen.getByTestId('architecture-header-pattern')).toHaveTextContent(
+      'Feature-Sliced Design',
+    );
     expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
@@ -222,14 +229,15 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /*
-   * ⚠️ **The policy is still fully stated, and the columns are how.** Under `lower-only` the
-   * permitted set is "everything to my right", which the column order already says: this profile
-   * has 21 permitted edges among 7 roles and drawing them would restate the order twenty-one
-   * times (`docs/DECISIONS.md`, 2026-08-28 (3)). What must survive that decision, and what this
-   * test pins: the boxes appear in dependency order left to right; no permitted stroke is drawn;
-   * and the assistive list still reads every layer's reach aloud, layer by layer.
+   * ⚠️ **The policy is still fully stated; the columns and the spine share the work.** Under
+   * `lower-only` the permitted set is "everything to my right", and this profile has 21 of them
+   * among 7 roles. Drawing all 21 restates the order twenty-one times and stays refused
+   * (`docs/DECISIONS.md`, 2026-08-28 (3)); drawing none left the measured screen a stack of seven
+   * boxes rather than a chain, which the 2026-08-30 record overturns. What this test pins now:
+   * the boxes appear in dependency order; exactly the six adjacent pairs are drawn and no skip is;
+   * and the assistive list still reads every layer's full reach aloud, layer by layer.
    */
-  it('states the whole policy through the columns, drawing no derivable edge', () => {
+  it('states the whole policy through the columns and the spine, drawing no skip', () => {
     renderWorkbench();
     const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
 
@@ -238,8 +246,18 @@ describe('ArchitectureWorkbench', () => {
       (box) => box.getAttribute('data-graph-box')!,
     );
     expect(boxOrder, 'boxes must appear in dependency order').toEqual(order);
-    expect(graph).toHaveAttribute('data-edge-source', 'none');
-    expect(screen.queryByTestId('architecture-graph-edges')).toBeNull();
+    expect(graph).toHaveAttribute('data-edge-source', 'permitted');
+    const drawn = [...graph.querySelectorAll('path[data-edge-from]')].map(
+      (path) => `${path.getAttribute('data-edge-from')}>${path.getAttribute('data-edge-to')}`,
+    );
+    expect(drawn.sort()).toEqual([
+      'app>views',
+      'entities>shared',
+      'features>entities',
+      'routing>app',
+      'views>widgets',
+      'widgets>features',
+    ]);
 
     // The assistive list keeps stating the same reach in its own words.
     expect(
@@ -343,8 +361,16 @@ describe('ArchitectureWorkbench', () => {
       </NextIntlClientProvider>,
     );
 
-    /* The count is on the box, so a reader sees where the weight is without choosing anything. */
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent('2 modules');
+    /*
+     * ⚠️ **The box says what the role is; the counts wait in the panel** (2026-08-30). The count
+     * line used to sit here so a reader could see where the weight was without choosing anything,
+     * and on a browser-opened vault every one of those lines read `0 modules · 0 concepts` — a row
+     * of zeros where a sentence could be. A role that declared a summary prints it instead, and
+     * `widgets`, which declares none, keeps its counts.
+     */
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent(
+      'One module per route-level screen',
+    );
     expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveTextContent('0 modules');
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
@@ -380,7 +406,10 @@ describe('ArchitectureWorkbench', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent('1 concept');
+    /* The count moved into the panel with the modules; the box carries the role's sentence. */
+    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent(
+      'One module per route-level screen',
+    );
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');
@@ -411,10 +440,9 @@ describe('ArchitectureWorkbench', () => {
     Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 200 });
     Object.defineProperty(scroller, 'scrollHeight', {
       configurable: true,
-      get: () => screen.getByTestId('architecture-blueprint').parentElement
-        ?.querySelector('[data-architecture-mode="plan"]')
-        ? 600
-        : 500,
+      /* Asked of the scroller itself: the panels moved into a dock, so the blueprint's parent is
+         no longer the grid that holds the canvas. */
+      get: () => (scroller.querySelector('[data-architecture-mode="plan"]') ? 600 : 500),
     });
     scroller.scrollTop = 300;
 

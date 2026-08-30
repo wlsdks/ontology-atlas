@@ -7,6 +7,72 @@
 
 ---
 
+## 2026-08-30 · The architecture chain is drawn as a chain
+
+- On a measured profile the canvas used to draw no rule strokes at all: seven
+  role boxes stood in one column joined only by the two violation arcs and one
+  short stroke, and Routes, Application shell and Features touched nothing. Five
+  boxes stated how many imports leave them (45, 16, 26,000, 314, 143) while the
+  drawing showed none of those strokes, so the text and the picture disagreed on
+  the same screen.
+- The chain is now drawn: each role connects to the next one down, six strokes
+  for seven roles. Every box is on the chain, and the canvas still fits one
+  screen at 1512 with nothing below the fold.
+- What is still not drawn: the fifteen crossings that skip a role. Each of those
+  means "everything below me", which the order already says, and they arrive as
+  before when a role is chosen. A profile that declares its rules one by one is
+  unchanged, because its strokes were never derivable from the order.
+
+## 2026-08-30 · A role box says what the role is
+
+- Each box now prints the reviewed profile's own one-line summary for that role,
+  in the line the module and concept counts used to hold. On a vault opened in a
+  browser those counts read `0 modules · 0 concepts` on every box; the sentence
+  says something instead, and the counts moved into the role panel, which lists
+  both anyway. A role whose profile declares no summary keeps its counts.
+- Hovering a role now lights it and everything it touches, and every traffic
+  stroke touching it states its measured count. A stroke's width is a comparison
+  and never a figure.
+- The panel answers one question at a time: a role's own answer, or the profile's
+  rules behind their own button.
+
+## 2026-08-30 · The architecture screen became a canvas with panels, and violations are drawn
+
+- The lower half of `/architecture` used to be two panels squeezed into 64px each
+  at the end of a page scroll that had already run out: the applied scopes, the
+  rules, the receipt and the chosen role were not merely long, they could not be
+  reached. On a workbench-width window the screen no longer scrolls at all. The
+  canvas holds the height, and everything else opens beside it: click a role, press
+  "Roles and rules", or follow a link that names a role. Escape closes it.
+- What stays on the canvas is what may not wait for a click: the receipt's verdict
+  and stamp, and the name of the pattern being drawn.
+- A crossing the receipt counted as a violation is now drawn: always visible even
+  when it skips a role, in the same tone as the "Violated" pill, dashed so it reads
+  without colour, with its own legend row and the same mark on its sentence. Before
+  this the pill could say "Violated · 2" over a drawing that showed nothing of the
+  kind.
+- The two side panels are exclusive: opening the roles panel closes the stage
+  panel, because both at once leave a laptop canvas too narrow for the drawing.
+- Below workbench width the screen is the stacked, scrolling document it was.
+
+## 2026-08-30 · Every role on the architecture canvas carries its own receipt
+
+- A role box used to say only its name and how many reviewed concepts sit inside
+  it, while the measured traffic the vault already holds was drawn as stroke
+  width and nowhere else. Where a conformance receipt exists, each box now
+  states, on one line under a ruled separator, what its own outgoing edges did
+  and how many imports leave it: `✓ no violations out · 411 imports`, or
+  `⊘ 2/5 edges violated`, or `○ no source matched` for a role the receipt lists
+  as empty.
+- It is deliberately not a per-role verdict. `conforms` / `violated` / `unknown`
+  is a fact about the whole profile and stays on the stage chip beside the
+  canvas; a box with no receipt behind it shows no ledger at all rather than a
+  row of zeros, which is what a browser sees, unable as it is to read a source
+  folder.
+- The boxes grew to fit it and no further: 74px tall and 180px wide, measured so
+  that a seven-role chain still reads in one screen at 1512 and stays horizontal
+  at 1920.
+
 ## 2026-08-29 · The map says the names it draws, and answers everything it paints
 
 - Pointing at a domain used to paint its name twice at one baseline, the compact

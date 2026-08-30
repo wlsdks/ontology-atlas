@@ -203,7 +203,9 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
    * and asserting that it depends on no role at all. A screen stating a dependency rule for a role
    * that does not exist is saying something false, and a crafted or stale link is enough to do it.
    */
-  await page.setViewportSize({ width: 1440, height: 900 });
+  /* A window that holds the whole chain: below this the canvas pans, and panning to a box is a
+     different subject than the address this test is about (2026-08-30). */
+  await page.setViewportSize({ width: 1512, height: 945 });
   await page.goto('/ko/architecture/');
 
   await page.getByTestId('architecture-graph-box-application').click();
@@ -239,16 +241,35 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
   await expect(notice).toBeVisible();
   await expect(notice).toContainText('not-a-real-role');
 
+  /*
+   * ⚠️ The three arrival states stay distinguishable, but the panel they live in is closed by
+   * default now (2026-08-30): a bare address is a canvas with no panel at all, a bad role opens
+   * the panel and is refused in it, a real role opens the panel and is answered in it.
+   */
   await page.goto('/ko/architecture/');
-  await expect(page.getByTestId('architecture-role-detail-empty')).toBeVisible();
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'none',
+  );
   await expect(notice).toHaveCount(0);
+  /* The button opens the profile's rules, never a role's answer: nothing has been chosen. */
+  await page.getByTestId('architecture-inspector-toggle').click();
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'rules',
+  );
+  await expect(page.getByTestId('architecture-edge-sentences')).toBeVisible();
 
   await page.goto('/ko/architecture/?role=application');
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'role',
+  );
   await expect(page.getByTestId('architecture-role-detail-empty')).toHaveCount(0);
   await expect(notice).toHaveCount(0);
 });
 
-test('a chain is never cut — it turns, or the page scrolls', async ({ page }) => {
+test('a chain is never cut in silence — it turns, or it says what is hidden', async ({ page }) => {
   /*
    * ⚠️ **This replaces four gates, and the claim is narrower than the one first written.** They
    * each set up a drawing cut at one edge and checked that something said so: a fade, a count, a
@@ -278,19 +299,40 @@ test('a chain is never cut — it turns, or the page scrolls', async ({ page }) 
   await page.goto('/ko/architecture/');
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
-    await expect
-      .poll(
-        () =>
-          page
-            .locator('[data-testid="architecture-graph"]')
-            .locator('..')
-            .evaluate((element) => ({
-              x: element.scrollWidth - element.clientWidth,
-              y: element.scrollHeight - element.clientHeight,
-            })),
-        { message: `the drawing is cut at ${width}x${height}` },
-      )
-      .toEqual({ x: 0, y: 0 });
+    /*
+     * ⚠️ **The claim narrowed on 2026-08-30, and this is the half that survived.** It used to
+     * assert the canvas never overflows at any size, which held only because the *page* scrolled
+     * instead — and that page scroll is what buried the panels below the canvas in 64px slivers
+     * nobody could reach. At workbench width the layout no longer scrolls at all, so a window too
+     * short for the chain leaves the rest behind the canvas's own pan. That is allowed. Doing it
+     * without saying so is not: whatever is out of view is counted on screen and can be reached.
+     */
+    const hidden = await page.evaluate(() => {
+      const svg = document.querySelector('[data-testid="architecture-graph"]');
+      const canvas = svg?.parentElement?.getBoundingClientRect();
+      if (!canvas) return 0;
+      /* A box, not a pixel: a canvas one rounding pixel short of its drawing hides nothing, and a
+         count that says "0 more below" would be noise. What must never be silent is a whole role
+         out of view. */
+      return [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')].filter(
+        (box) => {
+          const at = box.getBoundingClientRect();
+          return at.bottom > canvas.bottom + 4 || at.top < canvas.top - 4 ||
+            at.right > canvas.right + 4 || at.left < canvas.left - 4;
+        },
+      ).length;
+    });
+    if (hidden > 0) {
+      const counted = await page
+        .locator(
+          '[data-testid="architecture-canvas-hidden-below"], [data-testid="architecture-canvas-hidden-right"], [data-testid="architecture-canvas-hidden-left"]',
+        )
+        .count();
+      expect(
+        counted,
+        `${hidden} role(s) are out of view in silence at ${width}x${height}`,
+      ).toBeGreaterThan(0);
+    }
 
     expect(
       await page.evaluate(
@@ -298,6 +340,20 @@ test('a chain is never cut — it turns, or the page scrolls', async ({ page }) 
       ),
       `the page scrolls sideways at ${width}x${height}`,
     ).toBe(0);
+
+    /* And at workbench width the layout itself never scrolls: the canvas holds the height and the
+       panels open beside it (the owner's ask, 2026-08-30). */
+    if (width >= 1280) {
+      expect(
+        await page.evaluate(() => {
+          const scroller = document.querySelector(
+            '[data-testid="architecture-layout-scroll"]',
+          ) as HTMLElement;
+          return scroller.scrollHeight - scroller.clientHeight;
+        }),
+        `the workbench scrolls vertically at ${width}x${height}`,
+      ).toBeLessThanOrEqual(1);
+    }
 
     /*
      * ⚠️ **The slack is shared, not dumped on one side.** The drawing keeps one width whatever the
