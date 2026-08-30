@@ -645,8 +645,12 @@ node $ATLAS init ./atlas
 node $ATLAS index . --vault ./atlas
 node $ATLAS index . --vault ./atlas --apply
 
-# Give a person or coding agent a compact starting packet.
+# Give a person or coding agent the complete diagnostic handoff.
 node $ATLAS agent-brief ./atlas
+
+# Once a coding task is known, request one bounded selected-project handoff.
+# The task is request-local and is not persisted in the vault.
+node $ATLAS agent-brief ./atlas --project project-slug --compact --task "Describe the change"
 ```
 
 Both install commands are required: `mcp/` owns a separate lockfile, so rerun

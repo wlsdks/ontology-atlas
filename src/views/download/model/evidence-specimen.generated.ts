@@ -45,6 +45,7 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
         "kind: capability",
         "title: MCP Server",
         "domain: domains/agent-integration",
+        "elements: [elements/task-scoped-agent-brief-projection]",
         "path: mcp/src",
         "dependencies: [capabilities/vault-ontology]",
         "display_ko: AI 연결 서버"
@@ -53,14 +54,15 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
         "kind: capability",
         "title: MCP Server",
         "domain: domains/agent-integration",
+        "elements: [elements/task-scoped-agent-brief-projection]",
         "path: mcp/src",
         "dependencies: [capabilities/vault-ontology]",
         "display_en: AI Connection Server"
       ]
     },
     "omittedLines": {
-      "ko": 6,
-      "en": 6
+      "ko": 5,
+      "en": 5
     },
     "facts": {
       "name": {
@@ -81,5 +83,5 @@ export const EVIDENCE_SPECIMEN: EvidenceSpecimen = {
       },
       "implPath": "mcp/src"
     },
-    "vaultNodeCount": 91
+    "vaultNodeCount": 92
   } as const;

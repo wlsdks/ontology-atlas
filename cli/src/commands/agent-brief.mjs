@@ -5,7 +5,7 @@ import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertAgentBriefShape, agentBriefExitCode } from '../lib/query-result-contract.mjs';
+import { assertAgentBriefResponseShape, agentBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatUnknownFlagError, parsePositiveIntegerFlag, parseRequiredFlagValue, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
@@ -14,7 +14,7 @@ import { stampMomentIfFirst } from '../lib/telemetry.mjs';
 import { cliInvocation } from '../lib/self-invocation.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--project', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--exit-zero', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--project', '--compact', '--task', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--exit-zero', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
 const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
 const DEFAULT_FALLBACK_SLOW_MS = 5_000;
 const DEFAULT_FALLBACK_CONCURRENCY = 4;
@@ -44,7 +44,7 @@ export async function runAgentBrief(args) {
   let result;
   try {
     result = await callMcpTool(vaultRoot, 'query_ontology', { operation: 'agent_brief', ...options });
-    assertAgentBriefShape(result);
+    assertAgentBriefResponseShape(result);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
@@ -104,7 +104,8 @@ export async function runAgentBrief(args) {
     process.stdout.write(formatGraphDbCliPack(result, vaultRoot).trimEnd() + '\n');
     return readinessExitCode(result, exitZero);
   }
-  render(result);
+  if (result.contract === 'agentBriefCompact:v1') renderCompact(result);
+  else render(result);
   const exitCode = readinessExitCode(result, exitZero);
   /*
    * **Say that exit 1 is not a failure, at the moment it is emitted** (walkthrough
@@ -659,6 +660,58 @@ function splitShellWords(input) {
   return tokens;
 }
 
+function renderCompact(result) {
+  process.stdout.write(`${COLORS.bold}AGENT BRIEF${COLORS.reset} ${COLORS.dim}${result.project.slug} · compact${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.dim}STATUS${COLORS.reset} ${result.status} · ${result.readiness.status} ${result.readiness.score}/100\n`);
+  process.stdout.write(
+    `${COLORS.dim}VALIDATION${COLORS.reset} ${result.validation.status} · `
+    + `${result.validation.errorFiles} errors · ${result.validation.warningFiles} warnings · `
+    + `${result.validation.driftCount} path drifts${result.validation.sourcePathsChecked ? '' : ' · source paths not checked'}\n`,
+  );
+  process.stdout.write(
+    `${COLORS.dim}SOURCE${COLORS.reset} ${result.currentness.source.status}/${result.currentness.source.currentness}`
+    + ` · gap ${compactGapLabel(result.currentness.source.topGap)}`
+    + ` · next ${compactActionLabel(result.currentness.source.nextAction)}\n`,
+  );
+  process.stdout.write(
+    `${COLORS.dim}MEANING${COLORS.reset} ${result.currentness.meaning.status}`
+    + ` · gap ${compactGapLabel(result.currentness.meaning.topGap)}`
+    + ` · next ${compactActionLabel(result.currentness.meaning.nextAction)}\n`,
+  );
+  const repair = result.meaningRepair;
+  process.stdout.write(
+    `${COLORS.dim}MEANING REPAIR${COLORS.reset} ${repair.status}`
+    + `${repair.blockedBy ? ` · blocked ${repair.blockedBy}` : ''}`
+    + `${repair.primaryQuestion ? ` · question ${repair.primaryQuestion}` : ''}`
+    + ` · approval required · automatic write/finalize off\n`,
+  );
+  const repairCall = repair.workflow?.flatMap((step) => step.calls ?? [])[0];
+  if (repairCall) process.stdout.write(`${COLORS.dim}REPAIR READ${COLORS.reset} ${formatToolCall(repairCall)}\n`);
+  process.stdout.write(`${COLORS.dim}PURPOSE${COLORS.reset} ${result.purpose.statement || 'not recorded'}\n`);
+  process.stdout.write(`${COLORS.dim}TASK MATCH${COLORS.reset} ${result.focus.capability?.slug ?? 'not recorded'}\n`);
+  for (const anchor of result.focus.evidenceAnchors) {
+    process.stdout.write(`  ${COLORS.dim}- ${anchor.slug}${anchor.path ? ` · ${anchor.path}` : ''} · ${anchor.sourceStatus}${COLORS.reset}\n`);
+  }
+  process.stdout.write(`${COLORS.dim}IMPACT${COLORS.reset} ${result.focus.impact.status} (${result.focus.impact.completeness})\n`);
+  process.stdout.write(`${COLORS.dim}VERIFY${COLORS.reset} ${result.focus.verification.status} · ${result.focus.verification.nextAction}\n`);
+  if (result.focus.unknowns.length > 0) {
+    process.stdout.write(`${COLORS.dim}UNKNOWNS${COLORS.reset}\n`);
+    for (const unknown of result.focus.unknowns) process.stdout.write(`  ${COLORS.dim}- ${unknown}${COLORS.reset}\n`);
+  }
+  process.stdout.write(`${COLORS.dim}NEXT READ${COLORS.reset} ${formatToolCall(result.nextReads[0])}\n`);
+  process.stdout.write(`${COLORS.dim}FULL DETAIL${COLORS.reset} ${formatToolCall(result.fullDetail)}\n`);
+}
+
+function compactGapLabel(gap) {
+  if (!gap?.id) return 'none';
+  return `${gap.id}${gap.questionId ? `:${gap.questionId}` : ''}${gap.nodeSlug ? `:${gap.nodeSlug}` : ''}`;
+}
+
+function compactActionLabel(action) {
+  if (!action?.id) return 'none';
+  return `${action.id}${action.target ? `:${action.target}` : ''}`;
+}
+
 function render(result) {
   const status = result.status;
   const readiness = result.readiness;
@@ -891,6 +944,7 @@ function parseArgs(args) {
     graphDbPack: false,
     verifyFallbacks: false,
     exitZero: false,
+    compact: false,
     fallbackTimeoutMs: null,
     fallbackTimeoutRaw: null,
     fallbackSlowMs: null,
@@ -914,6 +968,20 @@ function parseArgs(args) {
       const project = parseRequiredFlagValue('--project', a.slice('--project='.length));
       if (project instanceof Error) return { error: project.message };
       options.project = project;
+    }
+    else if (a === '--compact') {
+      flags.compact = true;
+      options.detail = 'compact';
+    }
+    else if (a === '--task') {
+      const task = parseRequiredFlagValue('--task', args[++i]);
+      if (task instanceof Error) return { error: task.message };
+      options.task = task;
+    }
+    else if (a.startsWith('--task=')) {
+      const task = parseRequiredFlagValue('--task', a.slice('--task='.length));
+      if (task instanceof Error) return { error: task.message };
+      options.task = task;
     }
     else if (a === '--json') flags.json = true;
     else if (a === '--prompt') flags.prompt = true;
@@ -964,6 +1032,15 @@ function parseArgs(args) {
   if (flags.verifyFallbacks && (flags.prompt || flags.graphDbPack)) {
     return { error: `--verify-fallbacks cannot be used with ${outputFlags.map(([name]) => name).join(' or ')}` };
   }
+  if (flags.compact && !options.task) {
+    return { error: '--compact requires --task TEXT' };
+  }
+  if (!flags.compact && options.task) {
+    return { error: '--task is only valid with --compact' };
+  }
+  if (flags.compact && (flags.verifyFallbacks || flags.graphDbPack)) {
+    return { error: `--compact cannot be used with ${flags.verifyFallbacks ? '--verify-fallbacks' : '--graph-db-pack'}` };
+  }
   if (flags.fallbackTimeoutMs instanceof Error) {
     return {
       error: `${flags.fallbackTimeoutMs.message}. Received: ${JSON.stringify(String(flags.fallbackTimeoutRaw))}. Set --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N.`,
@@ -988,7 +1065,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  ontology-atlas agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
-      `       [--project SLUG] [--exit-zero]\n` +
+      `       [--project SLUG] [--compact --task TEXT] [--exit-zero]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--fallback-timeout-ms N] [--fallback-slow-ms N] [--fallback-concurrency N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
@@ -996,6 +1073,9 @@ function printUsage(stream = process.stderr) {
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
       `first MCP calls, investigation playbooks, traversal strategy, health coverage, and read-first write policy.\n` +
       `Use --json for repeatable agent handoff snapshots; use --prompt to print only .handoffPrompt.\n` +
+      `Use --compact --task TEXT for the request-local, selected-project handoff capped at 8000 UTF-8 JSON bytes.\n` +
+      `Compact task text is not persisted and selects recorded evidence only; it never proves source behavior.\n` +
+      `The current complete response remains the default while compact mode is qualified.\n` +
       `Use --graph-db-pack to print only executable CLI graph scan commands for connector-less sessions.\n` +
       `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault; combine with --json for a machine-readable timing report.\n` +
       `Use --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N to bound each fallback command.\n` +
