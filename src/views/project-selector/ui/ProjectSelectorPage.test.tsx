@@ -67,6 +67,7 @@ vi.mock("@/features/docs-vault-local", () => ({
 
 vi.mock("@/features/data-source-mode", () => ({
   useDataSourceMode: () => "static",
+  VaultSourceHydrationBoundary: ({ children }: { children: ReactNode }) => children,
 }));
 
 vi.mock("@/widgets/app-settings-menu", () => ({

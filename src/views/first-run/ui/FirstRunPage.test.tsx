@@ -92,12 +92,12 @@ describe('FirstRunPage', () => {
     toastMocks.show.mockClear();
   });
 
-  it('renders the three action cards and the trust line, no download CTA', () => {
+  it('renders only local-vault actions and the trust line, with no demo or download CTA', () => {
     render(<FirstRunPage />);
 
     expect(screen.getByTestId('first-run-open')).toBeInTheDocument();
     expect(screen.getByTestId('first-run-create')).toBeInTheDocument();
-    expect(screen.getByTestId('first-run-demo')).toBeInTheDocument();
+    expect(screen.queryByTestId('first-run-demo')).not.toBeInTheDocument();
     expect(screen.getByText('trustLine')).toBeInTheDocument();
     // There is never a CTA inside the installed app telling you to download it.
     expect(screen.queryByText(/download/i)).not.toBeInTheDocument();
@@ -118,10 +118,8 @@ describe('FirstRunPage', () => {
     // Native button/a elements — focusable, with Enter activation guaranteed by the browser.
     const open = screen.getByTestId('first-run-open');
     const create = screen.getByTestId('first-run-create');
-    const demo = screen.getByTestId('first-run-demo');
     expect(open.tagName).toBe('BUTTON');
     expect(create.tagName).toBe('BUTTON');
-    expect(demo.tagName).toBe('A');
     open.focus();
     expect(open).toHaveFocus();
   });
@@ -167,12 +165,6 @@ describe('FirstRunPage', () => {
       expect(mocks.vault.open).toHaveBeenCalledTimes(1);
     });
     expect(mocks.vault.scaffoldOntology).not.toHaveBeenCalled();
-  });
-
-  it('links the demo card to the built-in vault surface at /docs/', () => {
-    render(<FirstRunPage />);
-
-    expect(screen.getByTestId('first-run-demo')).toHaveAttribute('href', '/docs/');
   });
 
   it('hides "just start" when the Tauri invoke bridge is unavailable (e.g. dev ?shell=desktop override in a plain browser)', () => {

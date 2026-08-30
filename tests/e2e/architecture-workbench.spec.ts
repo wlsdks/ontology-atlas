@@ -297,6 +297,10 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
   ] as const;
 
   await page.goto('/ko/architecture/');
+  // Vault-backed routes prerender the neutral identity boundary now. Wait for hydration to replace
+  // that boundary before measuring the canvas; querying the layout during the fallback measures no
+  // product at all and used to throw on a null scroller.
+  await expect(page.getByTestId('architecture-graph')).toBeVisible();
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
     /*

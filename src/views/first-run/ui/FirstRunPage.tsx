@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
-import { Compass, FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
+import { FolderOpen, Orbit, Sparkles, Zap } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import { useJustStartVault, useLocalVault, useVaultCreateFlow } from "@/features/docs-vault-local";
 import { deniedFolderName } from "@/features/docs-vault-local";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
-import { Link } from "@/i18n/navigation";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { useToast } from "@/shared/ui/toast";
 import { controlClass } from '@/shared/ui/control-class';
@@ -20,7 +19,7 @@ import { controlClass } from '@/shared/ui/control-class';
  * The web `/` has had the map (HomePage) as its first screen since root-first-open (2026-07) and solves
  * a different problem — the branch is the single `isDesktopShell()` in `RootEntryPage`.
  *
- * All four actions reuse existing flows (zero new pipelines):
+ * All actions reuse existing local flows (zero new pipelines):
  * - Open a vault folder → `useLocalVault().open()` (the Tauri or FSA picker)
  * - Create a new vault → the same `open()`, then, if the folder is empty, the existing
  *   `scaffoldOntology()` (the same action as `/docs`'s `OntologyStarterCta`) seeds the starter
@@ -30,8 +29,11 @@ import { controlClass } from '@/shared/ui/control-class';
  *   this design. A dev build can open this page in a browser via the `?shell=desktop` override
  *   (`isDesktopShell()`), so this card renders only when the real Tauri invoke bridge
  *   (`isTauriVaultRuntime()`) exists — otherwise the item is not shown at all.
- * - Browse the demo vault → the bundled dogfood manifest at `/docs/` (the no-vault fallback, already
- *   part of the static build)
+ *
+ * The bundled demo is deliberately web-only. The installed app is the vault's home: showing a
+ * complete sample before a restored project resolves makes that sample look like the person's data,
+ * and a later local render reads as one vault overwriting another. First run therefore asks only for
+ * a real local folder (or creates one); the website remains the no-commit demo entrance.
  *
  * Design: the machined language of DESIGN-SYSTEM v2 — `--color-panel` surfaces with 1px border-soft
  * cards, an engraved mono trust line (`--engraved-numeral-*`, real facts only), a single indigo, and
@@ -227,23 +229,6 @@ export function FirstRunPage() {
             </span>
           </button>
 
-          <Link
-            href="/docs/"
-            data-testid="first-run-demo"
-            className={`${cardBase} border-[color:var(--color-border-soft)] hover:border-[color:var(--color-border-strong)]`}
-          >
-            <span className={`${iconChip} text-[color:var(--color-text-tertiary)]`}>
-              <Compass size={ICON_SIZE.md} aria-hidden />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {t("demoTitle")}
-              </span>
-              <span className="mt-0.5 block break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">
-                {t("demoBody")}
-              </span>
-            </span>
-          </Link>
         </div>
 
         {errorText ? (

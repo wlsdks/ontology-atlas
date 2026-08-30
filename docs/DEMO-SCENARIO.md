@@ -2,7 +2,7 @@
 
 > Current scenario: one localized page clip · **44 seconds** · one take · no speed changes ·
 > no audio · recorded separately in Korean and English. The X export is a separate Korean
-> 21.633-second LNB overview and is not part of the page registry.
+> 23-second LNB overview and is not part of the page registry.
 
 The playback contract lives in `src/views/download/ui/DemoStage.tsx`. Asset registration lives
 in `src/views/download/model/demo-clips.ts`. The accountable decision is the 2026-08-30 record
@@ -64,7 +64,7 @@ The take is valid only when the collapsed work-process receipt contains two `get
 and one `find_path` call. A plausible answer produced from shell search or direct file reads is
 not this product claim and invalidates the take.
 
-## 4. X take — 21.633 seconds
+## 4. X take — 23 seconds
 
 The X clip answers the owner's posting need for a fast product-breadth hook. It starts after the
 public example is open and uses real LNB clicks at natural speed; it does not wait for an agent
@@ -72,13 +72,13 @@ response or alter the page demo:
 
 | Time | Visible beat |
 |---:|---|
-| 0–3.2s | Hold the settled **Map** overview so the product category is readable immediately. |
-| 3.2–6.5s | Open **Architecture** and show the reviewed implementation roles and dependency chain. |
-| 6.5–9.7s | Open **Docs** and show the Markdown ontology source. |
-| 9.7–12.9s | Open **Insights** and show readiness and maintenance work. |
-| 12.9–16.2s | Open **Projects** and show the same public project's domain coverage. |
-| 16.2–19.4s | Open **Agents** and show the privacy-clean ready tools and MCP setup. |
-| 19.4–21.633s | End on **History**, where Git closes the journey as human-owned reviewable meaning. |
+| 0–3.1s | Hold the settled **Map** overview so the product category is readable immediately. |
+| 3.1–6.3s | Open **Architecture** and show the reviewed implementation roles and dependency chain. |
+| 6.3–9.6s | Open **Docs** and show the Markdown ontology source. |
+| 9.6–12.8s | Open **Insights** and show readiness and maintenance work. |
+| 12.8–16.1s | Open **Projects** and show the same public project's domain coverage. |
+| 16.1–19.3s | Open **Agents** and show the privacy-clean ready tools and MCP setup. |
+| 19.3–23s | End on **History**, where Git closes the journey as human-owned reviewable meaning. |
 
 This is a separate real take, not a time-compressed export of the page clip. Settings is not an
 LNB destination and is excluded. It ships as
@@ -95,7 +95,7 @@ video because its sharing badge becomes part of the captured title bar.
 ```bash
 screencapture -v -D1 -V44 -x -C atlas-tour.ko.mov
 screencapture -v -D1 -V44 -x -C atlas-tour.en.mov
-screencapture -v -D1 -V22 -x -C ontology-atlas-x.ko.mov
+screencapture -v -D1 -V24 -x -C ontology-atlas-x.ko.mov
 ```
 
 The Retina display source is 3024×1964 at the display refresh rate. Crop `(0,66) 3024×1898` to
@@ -112,7 +112,8 @@ ffmpeg -i atlas-tour.ko.mov -vf "crop=3024:1898:0:66,scale=1512:949,pad=1512:950
   public/demo/atlas-tour.ko.webm
 ```
 
-Repeat for English. Encode the X take as H.264 MP4 with the same dimensions and frame rate.
+Repeat for English. Encode the X take as H.264 MP4 with the same dimensions and frame rate,
+trimming the post-History hold to an exact 23 seconds.
 Create each page poster from its first settled frame.
 
 ## 6. Activation
@@ -134,10 +135,10 @@ Current attachment, filmed 2026-08-30 from the installed rc.18 app:
 |---|---:|---:|---:|
 | Korean page | 893,587 bytes | 933,481 bytes | 245,523 bytes |
 | English page | 926,124 bytes | 964,093 bytes | 268,205 bytes |
-| Korean X | — | 936,948 bytes | — |
+| Korean X | — | 778,417 bytes | — |
 
 All three MP4 deliveries are 1512×950, 30fps, silent H.264: the page takes are exactly 44
-seconds and the X take is 21.633 seconds. Both page WebM files are silent AV1 at the same
+seconds and the X take is exactly 23 seconds. Both page WebM files are silent AV1 at the same
 dimensions, frame rate, and 44-second duration.
 
 After encoding:
@@ -168,15 +169,18 @@ After encoding:
 - **Hosted proof** — after deployment, verify the public Korean and English pages load the new
   duration and assets. A local static export is not hosted proof.
 
-Recorded proof on 2026-08-30: 110 one-second privacy samples across the three MP4 files exposed
+Recorded proof on 2026-08-30: 111 one-second privacy samples across the three MP4 files exposed
 zero picker, path, notification, desktop, or personal-information frames. Both page takes'
 expanded work receipts named two `mcp.atlas-vault.get_concept` calls and one
 `mcp.atlas-vault.find_path` call, with no write call. Three source-hidden evaluators classified
 the new X cut from its first three seconds and recalled all seven destinations; the old cut was
-recalled as one or two work surfaces. The X take has 649 uniform 30fps frames. Across the six
-active cursor moves, the LNB crop had 21 adjacent comparisons, one non-consecutive low-diff
-ease tail and zero identical frames (`mean=0.281`, `cv=0.88`, `min=0.068`); the six-row phase
-strip shows settled app states on both sides of every transition and no dropped desktop frame.
+recalled as one or two work surfaces. The final X take has 690 uniform 30fps frames. Its six
+route boundaries contain only the prior local screen, 4–14 neutral/loading frames, and the next
+local screen: zero Storefront/other-vault overlap frames. Forty-six two-fps samples plus 72
+high-risk transition frames exposed no picker, path, notification, desktop, or personal data.
+Across the six active cursor moves, the LNB crop had 22 adjacent comparisons, two
+non-consecutive low-diff ease tails and zero identical frames (`mean=0.296`, `cv=0.78`,
+`min=0.034`); the phase strip shows motion completing rather than a dropped frame.
 
 ## 8. Retired scenarios
 

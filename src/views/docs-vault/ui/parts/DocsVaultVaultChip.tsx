@@ -25,6 +25,8 @@ export interface DocsVaultVaultChipProps {
    */
   isSample: boolean;
   onUseSample: () => void;
+  /** False in the installed app: bundled sample vaults belong to the web demo only. */
+  allowSample?: boolean;
   /** A browser without FSA — locked, with the reason "my folder" cannot be chosen. */
   localDisabled?: boolean;
   localDisabledReason?: string;
@@ -54,6 +56,7 @@ export function DocsVaultVaultChip({
   onSwap,
   isSample,
   onUseSample,
+  allowSample = true,
   localDisabled = false,
   localDisabledReason,
   onOpenAudit,
@@ -113,34 +116,38 @@ export function DocsVaultVaultChip({
               {t("header.localBadge")}
             </p>
           ) : null}
-          {/* Two source rows — only one can be chosen on this axis, hence `menuitemradio`.
-              The check column stays reserved on unselected rows so the text does not shift. */}
+          {/* The web offers two source rows on one exclusive axis. The installed app is the
+              local-vault home, so it gets one ordinary "switch folder" action and no bundled
+              sample choice. Keeping the sample row disabled or hidden with CSS would leave the
+              wrong source in the accessibility tree; it is not rendered at all. */}
           <div
-            role="group"
-            aria-label={t("header.sourceAriaLabel")}
+            role={allowSample ? "group" : undefined}
+            aria-label={allowSample ? t("header.sourceAriaLabel") : undefined}
             className="mt-1 border-t border-[color:var(--color-border-soft)] pt-1"
           >
+            {allowSample ? (
+              <RowButton
+                size="sm"
+                role="menuitemradio"
+                aria-checked={isSample}
+                active={isSample}
+                data-testid="vault-chip-use-sample"
+                onClick={onUseSample}
+                className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <Package
+                  size={ICON_SIZE.sm}
+                  aria-hidden
+                  className={`flex-none ${isSample ? "opacity-100" : "opacity-40"}`}
+                />
+                <span className="min-w-0 flex-1 truncate">{t("header.sourcePickSample")}</span>
+              </RowButton>
+            ) : null}
             <RowButton
               size="sm"
-              role="menuitemradio"
-              aria-checked={isSample}
-              active={isSample}
-              data-testid="vault-chip-use-sample"
-              onClick={onUseSample}
-              className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
-            >
-              <Package
-                size={ICON_SIZE.sm}
-                aria-hidden
-                className={`flex-none ${isSample ? "opacity-100" : "opacity-40"}`}
-              />
-              <span className="min-w-0 flex-1 truncate">{t("header.sourcePickSample")}</span>
-            </RowButton>
-            <RowButton
-              size="sm"
-              role="menuitemradio"
-              aria-checked={!isSample}
-              active={!isSample}
+              role={allowSample ? "menuitemradio" : "menuitem"}
+              aria-checked={allowSample ? !isSample : undefined}
+              active={allowSample ? !isSample : false}
               disabled={localDisabled}
               aria-describedby={localDisabled ? "vault-chip-local-blocked" : undefined}
               
@@ -158,7 +165,7 @@ export function DocsVaultVaultChip({
                     action name ("switch folder") instead, it stops reading as an option on the
                     same axis. Only when you are already looking at your own folder does choosing
                     it become switching, so only then is it "switch folder". */}
-                {isSample
+                {allowSample && isSample
                   ? t("header.sourcePickLocal")
                   : t("header.vaultPillSwap")}
               </span>

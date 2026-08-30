@@ -1,4 +1,4 @@
-import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Package, Terminal } from "lucide-react";
+import { Bot, Check, Clipboard, FilePlus, FolderOpen, HardDrive, Network, Terminal } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import type { LocalFsHandleRecord } from "@/entities/local-fs-handle";
@@ -23,7 +23,6 @@ export function DesktopVaultWelcome({
   onOpen,
   onOpenDogfoodPath,
   onOpenRecent,
-  onOpenSample,
   showDogfoodHint,
   t,
 }: {
@@ -32,7 +31,6 @@ export function DesktopVaultWelcome({
   onOpen: () => void;
   onOpenDogfoodPath?: () => void;
   onOpenRecent: (record: LocalFsHandleRecord) => void;
-  onOpenSample: () => void;
   showDogfoodHint: boolean;
   t: ReturnType<typeof useTranslations>;
 }) {
@@ -251,23 +249,6 @@ export function DesktopVaultWelcome({
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={onOpenSample}
-              className={controlClass({ hoverSurface: 'lift', shape: "row", stacked: true, className: "items-start gap-3 border-t border-[color:var(--color-border-soft)] px-4 py-3.5" })}
-            >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
-                <Package size={ICON_SIZE.md} aria-hidden />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-                  {t("desktopWelcome.sampleTitle")}
-                </span>
-                <span className="mt-0.5 block text-label leading-body text-[color:var(--color-text-tertiary)]">
-                  {t("desktopWelcome.sampleBody")}
-                </span>
-              </span>
-            </button>
           </section>
 
           <section className="grid gap-2">

@@ -17,6 +17,14 @@ import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 const tauri = vi.hoisted(() => ({
   isTauriVaultRuntime: vi.fn(() => true),
   tauriVaultPathExists: vi.fn(async () => true),
+  listTauriDirectoryNames: vi.fn<(rootPath: string) => Promise<string[]>>(
+    async () => [],
+  ),
+  createTauriVaultHandle: vi.fn((rootPath: string) => ({
+    kind: 'directory' as const,
+    name: rootPath.split('/').pop() ?? rootPath,
+    rootPath,
+  })),
   getTauriVaultRootPath: vi.fn(
     (h: { rootPath?: string }) => h?.rootPath,
   ),
@@ -66,6 +74,37 @@ function desktopRecord(): LocalFsHandleRecord {
   };
 }
 
+function projectRootRecord(): LocalFsHandleRecord {
+  const rootPath = '/Users/dana/work/project';
+  return {
+    id: 'current',
+    handle: { kind: 'directory', name: 'project', rootPath } as unknown as FileSystemDirectoryHandle,
+    desktopRootPath: rootPath,
+    name: 'project',
+    createdAt: 1,
+    lastAccessedAt: 1,
+  };
+}
+
+function successfulBuild() {
+  return {
+    build: {
+      manifest: {
+        version: '1',
+        generatedAt: '',
+        docs: [],
+        backlinksDetail: {},
+        tags: {},
+        tree: { name: 'root', path: '', type: 'dir' as const },
+      },
+      fileHandles: new Map(),
+      imageHandles: new Map(),
+      fingerprint: 'fp-atlas',
+    },
+    entries: [],
+  };
+}
+
 async function mountHook() {
   const hook = renderHook(() => useLocalVaultInternal());
   // Wait until the mount's IDB restore effect finishes and restoreAttempted turns true.
@@ -76,6 +115,8 @@ async function mountHook() {
 beforeEach(() => {
   tauri.isTauriVaultRuntime.mockReturnValue(true);
   tauri.tauriVaultPathExists.mockResolvedValue(true);
+  tauri.listTauriDirectoryNames.mockResolvedValue([]);
+  store.getLocalFsHandle.mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -83,6 +124,49 @@ afterEach(() => {
 });
 
 describe('useLocalVaultInternal — 데스크톱 최근 vault 재열기', () => {
+  it('최근 프로젝트 루트를 열어도 Markdown 이 있는 atlas 자식 하나만 빌드한다', async () => {
+    tauri.listTauriDirectoryNames.mockImplementation(async (rootPath: string) =>
+      rootPath.endsWith('/atlas') ? ['project.md'] : [],
+    );
+    docsVault.buildLocalManifestWithEntries.mockResolvedValue(successfulBuild());
+    const hook = await mountHook();
+
+    await act(async () => {
+      await hook.result.current.openRecent(projectRootRecord());
+    });
+
+    expect(hook.result.current.status).toBe('loaded');
+    expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledWith(
+      expect.objectContaining({ rootPath: '/Users/dana/work/project/atlas' }),
+    );
+    expect(store.putLocalFsHandle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        desktopRootPath: '/Users/dana/work/project/atlas',
+        name: 'atlas',
+      }),
+    );
+    expect(hook.result.current.openedInsidePickedFolder).toBe('/Users/dana/work/project');
+  });
+
+  it('앱 시작 복원도 예전 프로젝트 루트 기록을 atlas 자식으로 바로잡고 그것만 빌드한다', async () => {
+    store.getLocalFsHandle.mockResolvedValue(projectRootRecord());
+    tauri.listTauriDirectoryNames.mockImplementation(async (rootPath: string) =>
+      rootPath.endsWith('/atlas') ? ['project.md'] : [],
+    );
+    docsVault.buildLocalManifestWithEntries.mockResolvedValue(successfulBuild());
+
+    const hook = renderHook(() => useLocalVaultInternal());
+
+    await waitFor(() => expect(hook.result.current.status).toBe('loaded'));
+    expect(docsVault.buildLocalManifestWithEntries).toHaveBeenCalledWith(
+      expect.objectContaining({ rootPath: '/Users/dana/work/project/atlas' }),
+    );
+    expect(store.putLocalFsHandle).toHaveBeenCalledWith(
+      expect.objectContaining({ desktopRootPath: '/Users/dana/work/project/atlas' }),
+    );
+    expect(hook.result.current.openedInsidePickedFolder).toBe('/Users/dana/work/project');
+  });
+
   it('기존 vault 권한 대기 중 폴더 선택을 취소하면 이전 상태를 그대로 복원한다', async () => {
     store.getLocalFsHandle.mockResolvedValue(desktopRecord());
     store.verifyHandlePermission.mockResolvedValue('prompt');
