@@ -3,6 +3,7 @@ import { loadMcpModule } from './mcp-module.mjs';
 // The MCP package owns the frontmatter parser and writer (`mcp/src/parser.mjs`).
 // The CLI keeps this file name so its own importers do not move, but the code
 // behind it is the canonical module rather than a copy.
+/** @type {typeof import('../../../mcp/src/parser.mjs')} */
 const parser = await loadMcpModule('parser.mjs');
 
 /* Only what the CLI actually consumes; the MCP module keeps the full surface. */
