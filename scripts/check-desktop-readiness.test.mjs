@@ -5,6 +5,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
+
 // The release gates compare a tag against package.json/Tauri/Cargo, so the
 // fixtures have to follow the repo version instead of freezing one.
 const APP_VERSION = JSON.parse(readFileSync("package.json", "utf8")).version;
@@ -86,7 +88,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ Codex Run action builds, launches, and verifies the freshly built macOS app bundle/,
+    /✓ Codex Run action builds without updater signing, launches, and verifies the freshly built macOS app bundle/,
   );
   assert.match(
     result.stdout,
@@ -738,6 +740,29 @@ test("desktop readiness checker normalizes Windows line endings", () => {
   const checker = readFileSync("scripts/check-desktop-readiness.mjs", "utf8");
 
   assert.ok(checker.includes('.replace(/\\r\\n?/g, "\\n")'));
+});
+
+test("Codex Run accepts one exact local build and rejects prefix or release lookalikes", () => {
+  const tail = [
+    "sync_existing_applications_copy",
+    'pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH" \\',
+  ].join("\n");
+  assert.deepEqual(
+    inspectCodexRunContract(`pnpm desktop:build:app:local\n${tail}`),
+    { exactLocalBuild: true, ordered: true },
+  );
+  assert.deepEqual(
+    inspectCodexRunContract(`pnpm desktop:build:app:local-bogus\n${tail}`),
+    { exactLocalBuild: false, ordered: false },
+  );
+  assert.deepEqual(
+    inspectCodexRunContract(`# pnpm desktop:build:app:local\npnpm desktop:build:app\n${tail}`),
+    { exactLocalBuild: false, ordered: false },
+  );
+  assert.deepEqual(
+    inspectCodexRunContract(`pnpm desktop:build:app:local\npnpm desktop:build:app\n${tail}`),
+    { exactLocalBuild: false, ordered: true },
+  );
 });
 
 // 2026-07-25 (review): this gate kept readFileSync-ing the deleted

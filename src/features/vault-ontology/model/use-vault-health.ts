@@ -37,14 +37,19 @@ export function useVaultHealth(): VaultHealthResult {
   const mode = useDataSourceMode();
   const [sampleSource] = useSampleSource();
   const vault = useLocalVault();
+  // A refresh of the same folder keeps its previous manifest until the replacement is ready.
+  // Treating that interval as an empty vault makes ACP recommend bootstrap again immediately after
+  // a successful write. The flag is false while switching folders, so another vault's health can
+  // never leak across the boundary.
+  const localManifestUsable = vault.status === 'loaded' || vault.isReloadingSameVault;
 
   return useMemo(() => {
     if (mode === 'static') {
       return manifestHealth(sampleSource === 'storefront' ? storefrontManifest : staticManifest);
     }
-    if (vault.status === 'loaded' && vault.manifest) {
+    if (localManifestUsable && vault.manifest) {
       return manifestHealth(vault.manifest);
     }
     return computeVaultHealth([]);
-  }, [mode, sampleSource, vault.status, vault.manifest]);
+  }, [mode, sampleSource, localManifestUsable, vault.manifest]);
 }

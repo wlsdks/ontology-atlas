@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import type { AcpWorkReceipt } from "@/shared/lib/acp-work-receipt";
 import {
   createVaultFileProjectSourceStore,
   type ProjectSourceStore,
@@ -44,6 +45,39 @@ export interface ProjectSourceReadiness {
   unbound: UnboundProjectSource | null;
 }
 
+const SOURCE_BINDING_TOOLS = new Set([
+  "connect_project_source",
+  "disconnect_project_source",
+]);
+
+/**
+ * One stable revision for the inputs that can change project-source readiness without changing
+ * ontology Markdown. In particular, ACP source binding writes only a sidecar; without its terminal
+ * receipt in this key the screen can keep recommending an action the agent already completed.
+ */
+export function buildProjectSourceReadinessRefreshToken(input: {
+  projectSlug: string | null;
+  bindingCardinality: number | null;
+  measuredAt: string | null;
+  proposalSettled: boolean;
+  acpWorkReceipts: readonly AcpWorkReceipt[];
+}): string {
+  let sourceBindingRevision = "";
+  for (let index = input.acpWorkReceipts.length - 1; index >= 0; index -= 1) {
+    const receipt = input.acpWorkReceipts[index];
+    if (receipt.result !== "completed" || !SOURCE_BINDING_TOOLS.has(receipt.tool)) continue;
+    sourceBindingRevision = `${receipt.id}:${receipt.result}:${receipt.updatedAt}`;
+    break;
+  }
+  return [
+    input.projectSlug ?? "",
+    input.bindingCardinality ?? "",
+    input.measuredAt ?? "",
+    input.proposalSettled ? "settled" : "pending",
+    sourceBindingRevision,
+  ].join(":");
+}
+
 export function useProjectSourceReadiness(input: {
   vaultHandle: FileSystemDirectoryHandle | null;
   nodes: readonly KnowledgeGraphNode[];
@@ -70,18 +104,22 @@ export function useProjectSourceReadiness(input: {
    * "not read yet" state.
    */
   const [read, setRead] = useState<{
+    handle: FileSystemDirectoryHandle;
     key: string;
+    revision: string | number | null;
     value: ProjectSourceReadiness;
   } | null>(null);
 
   useEffect(() => {
     if (!input.vaultHandle || projects.length === 0) return;
     let cancelled = false;
+    const handle = input.vaultHandle;
     const key = projectKey;
+    const revision = input.refreshToken ?? null;
     const settle = (value: ProjectSourceReadiness) => {
-      if (!cancelled) setRead({ key, value });
+      if (!cancelled) setRead({ handle, key, revision, value });
     };
-    const store = (input.createStore ?? createVaultFileProjectSourceStore)(input.vaultHandle);
+    const store = (input.createStore ?? createVaultFileProjectSourceStore)(handle);
     void store.read().then((result) => {
       /*
        * Unreadable states (`malformed`/`unavailable`) are **passed over
@@ -111,7 +149,10 @@ export function useProjectSourceReadiness(input: {
 
   if (!input.vaultHandle) return { state: "unavailable", unbound: null };
   if (projects.length === 0) return { state: "no-projects", unbound: null };
-  return read && read.key === projectKey
+  return read
+    && read.handle === input.vaultHandle
+    && read.key === projectKey
+    && read.revision === (input.refreshToken ?? null)
     ? read.value
     : { state: "loading", unbound: null };
 }

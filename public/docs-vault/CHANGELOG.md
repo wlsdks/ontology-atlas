@@ -7,6 +7,23 @@
 
 ---
 
+## 2026-08-30 · ACP next steps move on when the vault does
+
+- Re-reading the same vault after a save no longer makes the completed-turn
+  recommendations disappear or briefly judge the graph as empty. The current
+  health and source handle remain visible until the replacement manifest is
+  ready; switching folders still fails closed instead of showing old facts.
+- A completed ACP source connect or disconnect now invalidates the source
+  readiness summary even though that operation changes only a sidecar. The
+  conversation stops recommending the action that just finished and moves to
+  the next grounded prompt.
+- A mounted journey test proves the visible endcap replaces stale rows in the
+  same conversation, retains the completed answer, focuses an editable draft,
+  and never sends automatically.
+- The repository Run action now uses the updater-disabled local app build before
+  replacing `/Applications/Ontology Atlas.app`; installed-app dogfood no longer
+  asks for a release updater private key.
+
 ## 2026-08-30 · A role box finishes its sentence
 
 - The one-line summary under each role name used to stop mid-clause in every box on

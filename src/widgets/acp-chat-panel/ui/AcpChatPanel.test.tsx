@@ -95,12 +95,15 @@ function replyTo(method: string, result: unknown) {
 async function bootSession(
   props: Partial<ComponentProps<typeof AcpChatPanel>> = {},
 ) {
-  render(
+  const baseProps = {
+    runtimeId: 'claude-acp',
+    runtimeLabel: 'Claude Code',
+    vaultRoot: '/vault',
+    mcpServers: [{ name: 'atlas-vault' }],
+  } satisfies ComponentProps<typeof AcpChatPanel>;
+  const view = render(
     <AcpChatPanel
-      runtimeId="claude-acp"
-      runtimeLabel="Claude Code"
-      vaultRoot="/vault"
-      mcpServers={[{ name: 'atlas-vault' }]}
+      {...baseProps}
       {...props}
     />,
   );
@@ -111,6 +114,11 @@ async function bootSession(
   await waitFor(() =>
     expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
   );
+  return {
+    rerenderPanel(nextProps: Partial<ComponentProps<typeof AcpChatPanel>>) {
+      view.rerender(<AcpChatPanel {...baseProps} {...nextProps} />);
+    },
+  };
 }
 
 function permissionRequest(filePath: string, id = 77) {
@@ -1667,6 +1675,39 @@ describe('완료된 대화의 추천 — 답변에서 다음 행동으로 잇는
     const promptsBeforeChoice = bridge.sent.filter((message) => message.method === 'session/prompt').length;
     fireEvent.click(screen.getByTestId('acp-chat-suggestion-explain'));
     expect(screen.getByRole('textbox')).toHaveValue('suggest.explain.prompt:{"count":12}');
+    expect(screen.getByRole('textbox')).toHaveFocus();
+    expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(
+      promptsBeforeChoice,
+    );
+  });
+
+  it('같은 대화에서 볼트 상태가 갱신되면 끝낸 행동을 버리고 최신 다음 행동으로 바꾼다', async () => {
+    const initialSuggestions = [{ kind: 'bootstrap', params: { count: 5 } }] as const;
+    const { rerenderPanel } = await bootSession({ suggestions: initialSuggestions });
+    await completeTurn();
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await screen.findByTestId('acp-chat-suggestion-bootstrap');
+
+    const promptsBeforeChoice = bridge.sent.filter(
+      (message) => message.method === 'session/prompt',
+    ).length;
+    rerenderPanel({
+      suggestions: [
+        { kind: 'evidence', params: { count: 1, first: 'capabilities/payments' } },
+        { kind: 'explain', params: { count: 6 } },
+      ],
+    });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('acp-chat-suggestion-bootstrap')).toBeNull(),
+    );
+    expect(screen.getByTestId('acp-chat-suggestion-evidence')).toBeInTheDocument();
+    expect(screen.getByText('첫 온톨로지가 준비됐어요.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('acp-chat-suggestion-evidence'));
+    expect(screen.getByRole('textbox')).toHaveValue(
+      'suggest.evidence.prompt:{"count":1,"first":"capabilities/payments"}',
+    );
     expect(screen.getByRole('textbox')).toHaveFocus();
     expect(bridge.sent.filter((message) => message.method === 'session/prompt')).toHaveLength(
       promptsBeforeChoice,

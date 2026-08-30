@@ -227,6 +227,19 @@ gate: open the current file, plant a violation and prove the replacement catches
 it, then plant a valid value and prove the replacement stays quiet. Failing any
 step means the gate is unique, not redundant.
 
+## Shell command gates compare commands, not prefixes
+
+The Codex Run readiness check once accepted `pnpm desktop:build:app` because it
+searched for that prefix. The command then built updater artifacts, required a
+release private key, and failed only after compiling the complete app. Replacing
+the check with the longer `desktop:build:app:local` string still admitted
+`desktop:build:app:local-bogus`, and a commented local command could launder a
+real release command.
+
+Parse non-comment shell lines, require one exact local command, forbid the exact
+release command, and establish order from those parsed lines. Probe a valid line,
+a suffix lookalike, and release-plus-comment in both directions.
+
 ## Measure before enabling a rule
 
 Hundreds of new warnings are noise that hides existing signal. The raw shadow
