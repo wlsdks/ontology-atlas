@@ -520,8 +520,9 @@ export function ArchitectureSketch({
         leadRoom,
         trailRoom,
         sentenceOf: edgeSentence,
+        focus,
       }),
-    [axis, graph.edges, toSentenceEdge, placed, boxW, boxH, rowGap, skipLane, leadRoom, trailRoom, edgeSentence],
+    [axis, graph.edges, toSentenceEdge, placed, boxW, boxH, rowGap, skipLane, leadRoom, trailRoom, edgeSentence, focus],
   );
 
   const visibleEdges = graph.edges.filter(

@@ -107,4 +107,20 @@ describe('placeEdgeSentences', () => {
     expect(drawn[0].text).toContain('may depend on');
     expect(out.find((s) => s.hidden === 'collision')?.text).toContain('314');
   });
+
+  it('lets the focused role\'s skip sentence take a place a resting sentence held', () => {
+    /* Measured on the seven-role profile, 2026-08-30: two violation sentences drawn at rest sat where
+       the views → shared skip's sentence would go, so the profile's largest number (26,000 imports)
+       never got a sentence even when Views was hovered. With focus, its strokes place first. */
+    const placed = chainDown(400);
+    const violated: SentenceEdge = { from: 'entities', to: 'views', kind: 'traffic', count: 1, columnSpan: 3, violated: true };
+    const skip: SentenceEdge = { from: 'views', to: 'shared', kind: 'traffic', count: 26_000, columnSpan: 4, violated: false };
+    const swing = () => 30 + 90;
+    const atRest = placeEdgeSentences({ axis: 'down', edges: [violated, skip], placed, ...BOX, swingOf: swing, leadRoom: 400, trailRoom: 300, sentenceOf: sentence });
+    const focused = placeEdgeSentences({ axis: 'down', edges: [violated, skip], placed, ...BOX, swingOf: swing, leadRoom: 400, trailRoom: 300, sentenceOf: sentence, focus: 'views' });
+    const drawn = (out: ReturnType<typeof placeEdgeSentences>, key: string) => out.find((s) => s.key === key)?.hidden === undefined;
+    /* Both sit on the same gap band; at rest the violation wins, with Views focused the skip wins. */
+    expect(drawn(atRest, 'entities>views') || drawn(atRest, 'views>shared')).toBe(true);
+    expect(drawn(focused, 'views>shared')).toBe(true);
+  });
 });

@@ -62,6 +62,11 @@ export interface SentenceLayoutInput {
   /** Ground right of the column (down) or below the chain (across) past the deepest arc. */
   trailRoom: number;
   sentenceOf: (edge: SentenceEdge) => string;
+  /**
+   * The role a reader is pointing at or has chosen. Its strokes' sentences place first, so a
+   * skip revealed by focus is never silenced by a resting sentence that has receded anyway.
+   */
+  focus?: string | null;
 }
 
 /** The same conservative glyph width the box captions budget with. */
@@ -92,16 +97,19 @@ function intersects(
 }
 
 export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacement[] {
-  const { axis, edges, placed, boxW, boxH, rowGap, colGap, swingOf, leadRoom, trailRoom, sentenceOf } =
-    input;
+  const {
+    axis, edges, placed, boxW, boxH, rowGap, colGap, swingOf, leadRoom, trailRoom, sentenceOf, focus = null,
+  } = input;
   const boxes = [...placed.values()].map((p) => ({ x: p.x, y: p.y, width: boxW, height: boxH }));
   const taken: { x: number; y: number; width: number; height: number }[] = [];
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
   /* Rules first, then the busiest traffic: when two sentences compete for one place the one a
      reader needs to see the chain wins. */
+  const touchesFocus = (e: SentenceEdge) => focus !== null && (e.from === focus || e.to === focus);
   const ordered = [...edges].sort(
     (a, b) =>
+      (touchesFocus(a) ? 0 : 1) - (touchesFocus(b) ? 0 : 1) ||
       (a.kind === 'permitted' ? 0 : 1) - (b.kind === 'permitted' ? 0 : 1) ||
       a.columnSpan - b.columnSpan ||
       (b.count ?? 0) - (a.count ?? 0),
