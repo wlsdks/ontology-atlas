@@ -395,6 +395,17 @@ Use `seal`'s compact analysis/proposal path form so the exact analyzer response
 becomes the candidate without copying or normalizing review-plan bodies. On a
 true cold start, `hidden` derives the reserved regression witness from the exact
 CQ set; the evaluator still owns the maintainability-axis judgment.
+Before sealing, read the emitted `qualityAxes` contract and inventory evidence
+for every mandatory axis. A cold-start candidate needs current review/coverage,
+impact-boundary, source-currentness, and round-trip receipts sufficient for an
+independent evaluator to judge maintainability and interoperability; the
+helper-derived cold-start regression witness does not promote either axis. If
+that evidence is absent, stop before the qualification lanes instead of asking
+the evaluator to turn `not_measured` green.
+In `qualificationCore`, every axis and diagnostic `evidenceRefs` entry is a
+sealed witness id, never a claim id, proposal ref, path, or diagnostic id. Every
+axis `findingIds` entry names a diagnostic whose `axis` matches that row; keep a
+passing row's list empty unless a same-axis diagnostic is intentionally retained.
 Immediately after the first reviewable analyzer response and before authoring a
 claim manifest, run `coverage` with that exact analysis/proposal pair. Use its
 ordered proposal-coverage receipt refs as the manifest's first-occurrence coverage
@@ -439,6 +450,11 @@ answered target must carry all of its required kinds. The helper blocks a
 `failed` CQ before join; express an honestly incomplete answer as `partial` or
 `unknown` with its exact gap instead of asking the person to accept a packet
 error.
+Before invoking `hidden`, assign every sealed manifest claim to at least one
+truthfully related CQ answer: the union of all answer `claimIds` must equal the
+sealed manifest id set. If no approved CQ can carry a claim, stop and obtain
+approval for a revised question set; never pad an unrelated answer merely to
+satisfy coverage.
 Every CQ also carries the exact object
 `unknownPolicy: { allowed: <boolean>, response: <nonblank string> }`.
 `allowed: true` permits an explicit partial/unknown/refusal gap; it never turns
