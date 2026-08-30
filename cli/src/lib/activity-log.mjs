@@ -7,33 +7,15 @@
 // already go through the MCP server via callMcpTool, so logWrite records those.)
 //
 // This **reuses** the mcp package's activity-log module, so the schema, the
-// rotation, and the best-effort append stay in one place. Module resolution uses
-// the same two-step lookup as showActivityLog in agent-activity.mjs (monorepo
-// source, then installed package).
+// rotation, and the best-effort append stay in one place. Resolution goes through
+// mcp-module.mjs, the one rule every CLI re-export of an MCP module shares
+// (monorepo source, then installed package), and it caches, so a batch write
+// (`import`) never re-resolves per file.
 
-let cachedModule = null;
+import { loadMcpModule } from './mcp-module.mjs';
 
-/**
- * Resolves and imports mcp's activity-log.mjs (monorepo source checkout first,
- * then the installed ontology-atlas-mcp package). The result is cached so a batch
- * write (`import`) does not re-resolve per file.
- */
-async function loadActivityLogModule() {
-  if (cachedModule) return cachedModule;
-  const { createRequire } = await import('node:module');
-  const { existsSync } = await import('node:fs');
-  const { resolve: resolvePath, dirname: dirnamePath } = await import('node:path');
-  const { fileURLToPath } = await import('node:url');
-  const here = dirnamePath(fileURLToPath(import.meta.url));
-  const monoDev = resolvePath(here, '../../../mcp/src/activity-log.mjs');
-  let modPath = monoDev;
-  if (!existsSync(monoDev)) {
-    const require_ = createRequire(import.meta.url);
-    modPath = require_.resolve('ontology-atlas-mcp/src/activity-log.mjs');
-  }
-  cachedModule = await import(`file://${modPath}`);
-  return cachedModule;
-}
+/** @returns {Promise<Record<string, Function>>} mcp's activity-log module. */
+const loadActivityLogModule = () => loadMcpModule('activity-log.mjs');
 
 /**
  * Reads the agent name from the heartbeat file, best-effort (null when absent).

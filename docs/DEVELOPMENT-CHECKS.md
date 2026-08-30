@@ -94,7 +94,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | CI preparation step infinite wait | `pnpm exec vitest run tests/contract/ci-bounded-network.contract.test.ts` | `pnpm test:desktop:check` (unit test of the retry runner itself) |
 | Integration check list vs screen text | `pnpm exec vitest run tests/contract/agent-doctor-checks.contract.test.ts` | `cargo test`(src-tauri) 's `acp_doctor` test |
 | Guide in-body link targets (markdown source) | `pnpm exec vitest run tests/contract/guide-inbody-links.contract.test.ts` | `pnpm exec playwright test tests/e2e/guide-inbody-links.spec.ts` |
-| CLI/MCP schema copy drift | `pnpm exec vitest run tests/contract/schema-copy-sync.contract.test.ts` | `pnpm test:contracts` |
+| CLI re-exports the MCP schema instead of copying it | `pnpm exec vitest run tests/contract/schema-copy-sync.contract.test.ts` | The CLI's `schema.mjs`, `validate.mjs`, `absorb.mjs`, `suggestions.mjs` and `parse-frontmatter.mjs` must stay thin re-exports of the MCP modules through `loadMcpModule`; a function or class body appearing in any of them means a copy came back (decision 2026-08-30). |
 
 ### Decision-ledger gate (`pnpm decisions:check`)
 

@@ -58,6 +58,13 @@ function regexEscape(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Budget for one `mcp-verify` pass over a starter vault. Measured 2026-08-31 on a
+// source checkout: step 2 (server boot plus the full read/analysis tool probe)
+// takes 4.1-4.4 s here, so the earlier 3 s budget failed on `main` as well. The
+// CLI's own quick-start recovery hint recommends 15 s; the smoke uses the same
+// number so it measures the packaging, not this machine's clock.
+const VERIFY_TIMEOUT_MS = 15_000;
+
 function run(cmd, args, options = {}) {
   const result = runRaw(cmd, args, options);
   assertStatus(result, 0);
@@ -336,12 +343,19 @@ try {
     join(quickStartSuccessDir, 'package.json'),
     JSON.stringify({ name: 'packed-quick-start', description: 'Packed quick start fixture' }),
   );
-  const packedQuickStart = run(cliBin, ['init', 'ontology', '--quick-start'], {
+  // Semantic candidates are review-only: the installed quick start scaffolds the
+  // starter vault, previews candidates, and stops with exit 3 until an
+  // independently qualified write plan is accepted — the same contract
+  // `cli/src/integration.test.mjs` holds for the source checkout.
+  const packedQuickStart = runRaw(cliBin, ['init', 'ontology', '--quick-start'], {
     cwd: quickStartSuccessDir,
-    label: 'installed CLI quick-start success',
+    label: 'installed CLI quick-start review',
   });
+  assertStatus(packedQuickStart, 3);
   const packedQuickStartClean = stripAnsi(packedQuickStart.stdout);
-  assert.match(packedQuickStartClean, /quick start done/);
+  assert.match(packedQuickStartClean, /quick start review ready/);
+  assert.match(packedQuickStartClean, /semantic writes are blocked/);
+  assert.doesNotMatch(packedQuickStartClean, /quick start done/);
   assert.doesNotMatch(packedQuickStartClean, /quick start incomplete/);
   assert.equal((packedQuickStartClean.match(/^\s*\d\.\s/gm) || []).length, 3);
 
@@ -372,11 +386,11 @@ try {
   assert.doesNotMatch(packedQuickStartFailureClean, /MCP already wired/);
   assert.match(stripAnsi(packedQuickStartFailure.stderr), /injected packed MCP failure/);
 
-  const cliMcpVerify = run(cliBin, cliMcpVerifyArgs(['ontology', '--timeout-ms', '3000']), {
+  const cliMcpVerify = run(cliBin, cliMcpVerifyArgs(['ontology', '--timeout-ms', String(VERIFY_TIMEOUT_MS)]), {
     cwd: projectDir,
     label: 'installed CLI mcp-verify primary',
   });
-  assert.match(cliMcpVerify.stdout, /timeout=3000ms/);
+  assert.match(cliMcpVerify.stdout, new RegExp(`timeout=${VERIFY_TIMEOUT_MS}ms`));
   assert.match(cliMcpVerify.stdout, new RegExp(`tools/list ${expectedToolCount}/${expectedToolCount}`));
   assert.match(cliMcpVerify.stdout, /tools\/list inventory names — missing\/extra\/duplicate\/invalid checks passed/);
   assert.match(cliMcpVerify.stdout, expectedToolsListAnnotationRe);
@@ -505,7 +519,7 @@ try {
   writeMaintenanceResumeVault(maintenanceResumeVault);
   const cliMaintenanceResumeMcpVerify = run(
     cliBin,
-    cliMcpVerifyArgs([maintenanceResumeVault, '--timeout-ms', '3000']),
+    cliMcpVerifyArgs([maintenanceResumeVault, '--timeout-ms', String(VERIFY_TIMEOUT_MS)]),
     { cwd: projectDir, label: 'installed CLI mcp-verify maintenance resume' },
   );
   const readyCursor = cliMaintenanceResumeMcpVerify.stdout.match(
@@ -531,7 +545,7 @@ try {
 
   const projectlessVault = join(projectDir, 'projectless-vault');
   writeProjectlessVault(projectlessVault);
-  const cliProjectlessMcpVerify = run(cliBin, cliMcpVerifyArgs([projectlessVault, '--timeout-ms', '3000']), {
+  const cliProjectlessMcpVerify = run(cliBin, cliMcpVerifyArgs([projectlessVault, '--timeout-ms', String(VERIFY_TIMEOUT_MS)]), {
     cwd: projectDir,
     label: 'installed CLI mcp-verify projectless vault',
   });
@@ -543,7 +557,7 @@ try {
 
   const emptyVault = join(projectDir, 'empty-vault');
   mkdirSync(emptyVault, { recursive: true });
-  const cliEmptyMcpVerify = runRaw(cliBin, cliMcpVerifyArgs([emptyVault, '--timeout-ms', '3000']), {
+  const cliEmptyMcpVerify = runRaw(cliBin, cliMcpVerifyArgs([emptyVault, '--timeout-ms', String(VERIFY_TIMEOUT_MS)]), {
     cwd: projectDir,
     label: 'installed CLI mcp-verify empty vault',
   });
@@ -724,10 +738,10 @@ try {
 
   const directMcpVerify = run(
     'npm',
-    mcpVerifyArgs([join(projectDir, 'ontology'), '--timeout-ms', '3000']),
+    mcpVerifyArgs([join(projectDir, 'ontology'), '--timeout-ms', String(VERIFY_TIMEOUT_MS)]),
     { cwd: projectDir, label: 'installed MCP verify positional vault primary' },
   );
-  assert.match(directMcpVerify.stdout, /timeout=3000ms/);
+  assert.match(directMcpVerify.stdout, new RegExp(`timeout=${VERIFY_TIMEOUT_MS}ms`));
   assert.match(directMcpVerify.stdout, /project probe — 1 project node/);
   assert.match(directMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
@@ -750,7 +764,7 @@ try {
 
   const directMcpMaintenanceResumeVerify = run(
     'npm',
-    mcpVerifyArgs([maintenanceResumeVault, '--timeout-ms', '3000']),
+    mcpVerifyArgs([maintenanceResumeVault, '--timeout-ms', String(VERIFY_TIMEOUT_MS)]),
     { cwd: projectDir, label: 'installed MCP verify maintenance resume' },
   );
   const directReadyCursor = directMcpMaintenanceResumeVerify.stdout.match(
@@ -772,14 +786,14 @@ try {
 
   const directMcpVerifyVaultFlag = run(
     'npm',
-    mcpVerifyArgs(['--vault', join(projectDir, 'ontology'), '--timeout-ms=3000']),
+    mcpVerifyArgs(['--vault', join(projectDir, 'ontology'), `--timeout-ms=${VERIFY_TIMEOUT_MS}`]),
     {
       cwd: projectDir,
       env: { OATLAS_VAULT: emptyVault },
       label: 'installed MCP verify explicit vault overrides env',
     },
   );
-  assert.match(directMcpVerifyVaultFlag.stdout, /timeout=3000ms/);
+  assert.match(directMcpVerifyVaultFlag.stdout, new RegExp(`timeout=${VERIFY_TIMEOUT_MS}ms`));
   assert.match(directMcpVerifyVaultFlag.stdout, /vault total 5 nodes/);
   assert.match(directMcpVerifyVaultFlag.stdout, /project probe — 1 project node/);
   assert.match(directMcpVerifyVaultFlag.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);

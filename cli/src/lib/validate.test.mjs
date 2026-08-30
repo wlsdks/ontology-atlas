@@ -2,11 +2,12 @@ import { describe, it } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { validateVaultDocument } from './validate.mjs';
 
-// The CLI validator is a deliberate copy of mcp/src/validate.mjs (no shared
-// package). tests/contract/validate-vault-document.contract.test.ts pins the
-// issue-code set both produce for the shared fixture table; the relation_notes
-// guard has no fixture there because the web fast-path validator does not run
-// it, so its cases live here, mirrored from mcp/src/validate.test.mjs.
+// `cli/src/lib/validate.mjs` re-exports mcp/src/validate.mjs rather than copying
+// it, so these cases are also the proof that the re-export resolves and delegates
+// — including inside the packed two-package install, where `npm test` runs this
+// file against the installed ontology-atlas-mcp package rather than the checkout.
+// tests/contract/validate-vault-document.contract.test.ts still pins the
+// issue-code set the TypeScript twin must agree on.
 const TEST_UID = '00000000-0000-4000-8000-000000000001';
 
 describe('relation_notes guard (swallowed entries and orphaned keys)', () => {

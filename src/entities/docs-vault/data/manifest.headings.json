@@ -6091,6 +6091,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 — Unused type exports leaving shared primitives is not a specification change",
+      "slug": "2026-08-30-unused-type-exports-leaving-shared-primitives-is-not-a-specification-change"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — The CLI executes the MCP modules instead of copying them",
+      "slug": "2026-08-30-the-cli-executes-the-mcp-modules-instead-of-copying-them"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 — The chain does not turn under a click",
       "slug": "2026-08-30-the-chain-does-not-turn-under-a-click"
     },

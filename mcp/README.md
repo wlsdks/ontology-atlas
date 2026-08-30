@@ -1088,9 +1088,13 @@ A vault's **own** folder nesting outside the schema kind folders
 local-first means the user's disk layout is respected; real tail collisions
 there surface as the compiler's `ambiguous-alias` warning.
 
-The same schema is mirrored at `cli/src/lib/schema.mjs`. A contract test
-(`tests/contract/vault-schema.contract.test.ts`) keeps the two in lock-step;
-if you change one, mirror the other.
+`cli/src/lib/schema.mjs` is **not a second copy of this schema** — since
+2026-08-30 it re-exports this module, resolved at runtime from the source
+checkout or from the installed `ontology-atlas-mcp` package. Change it here and
+the CLI has changed with it; there is nothing to mirror.
+`tests/contract/schema-copy-sync.contract.test.ts` blocks a copy from coming
+back, and `tests/contract/vault-schema.contract.test.ts` still holds the UI
+dictionary to the same required fields.
 
 ## Local verification (UX-3)
 

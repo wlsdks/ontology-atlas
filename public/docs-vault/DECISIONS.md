@@ -40,6 +40,98 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — Unused type exports leaving shared primitives is not a specification change
+
+**Observed phenomenon**: `pnpm decisions:check` flagged three "spec value changed" triggers on
+`src/shared/ui/surface.tsx`, `src/shared/ui/segmented-control.tsx` and
+`src/shared/lib/use-roving-radio-group.ts` because the dead-export cleanup of 2026-08-30
+removed `SurfaceMotion`, `SegmentedOption` and `RovingRadioItemProps` from their export lists.
+
+**Decision**: the trigger is a false positive and no council convenes. Each of the three names
+was referenced by no file in the repository — not by runtime code, tests, skills or docs — so
+nothing rendered, measured or documented changes. The types still exist and are still used
+inside their modules; only the `export` keyword left. The design specification (tokens, ramps,
+primitives' props) is untouched.
+
+**Prior decision**: none on this surface; the exports gate exists to catch a primitive's public
+contract changing, which this is not.
+
+**Recorded dissent**: an unused export can be an intended extension point that a future consumer
+expected to import. The counter is that the dead-code ratchet now reports such an export the
+moment it is added, so an intended extension point is declared by a consumer, not by an export
+nobody reads.
+
+**Falsifier**: a consumer outside the module needs one of the three types and has to re-export
+it; that would show the name was a contract after all.
+
+**Gate**: `pnpm knip` (baseline shrank from 395 to 39 in that change) and `pnpm decisions:check`.
+
+**Status**: valid
+
+---
+
+## 2026-08-30 — The CLI executes the MCP modules instead of copying them
+
+**Observed phenomenon**: five files under `cli/src/lib/` — `schema.mjs`, `validate.mjs`,
+`absorb.mjs`, `suggestions.mjs` and `parse-frontmatter.mjs` — were hand-maintained duplicates of
+`mcp/src/schema.mjs`, `validate.mjs`, `absorb.mjs`, `suggestions.mjs` and `parser.mjs`, kept in
+step by contract tests. The duplication had already cost correctness in both directions. The
+CLI's parser copy was missing `pushGraphArrayDiagnostic`, so `atlas validate` read
+`dependencies: capabilities/x` — a graph relation written as a scalar — as an ordinary string and
+reported **zero issues**, while `validate_vault` reported an error on the same file. Meanwhile
+`mcp/src/validate.mjs` still emitted seven Korean issue messages that the CLI copy had translated
+on 2026-08-25, so the same defect was described in two languages depending on which surface asked.
+Three files in the same directory — `vault-sidecar.mjs`, `architecture-record.mjs` and
+`activity-log.mjs` — had been resolving their MCP twin at runtime the whole time.
+
+**Decision**: `cli/src/lib/mcp-module.mjs` states the resolution rule once — source checkout
+first, installed `ontology-atlas-mcp` second — and the five copies become re-exports through it,
+along with the three files that each carried their own spelling of that resolver and the
+`agent-activity` reader that carried a fourth. Each re-export exposes only the names the CLI
+runtime actually calls, so an export added to satisfy a test is dead code and `knip` says so; the
+baseline fell from 39 to 25 entries. MCP is canonical, so the CLI inherits the graph-array
+diagnostic it was missing. Because the CLI must print one language
+(`tests/contract/cli-output-language.contract.test.ts`), canonical did **not** mean adopting the
+Korean strings: the seven messages in `mcp/src/validate.mjs` were translated to the English
+wording the CLI already shipped, which leaves every CLI sentence byte-identical and makes the MCP
+surface agree with `forbidden.md`. `cli/src/lib/relation-types.mjs` was left alone — its
+`RELATION_TYPE_VALUES` matches the canonical list, but the only module that exports it is the
+6,219-line `ontology-engine.mjs`, which no CLI command loads today; paying that import on every
+`atlas add` to de-duplicate nine strings is the wrong trade, and it is recorded here so the next
+reader does not have to re-derive it.
+
+**Prior decision**: the 2026-08-13 hygiene sweep, recorded in
+`tests/contract/schema-copy-sync.contract.test.ts`, held the two schema files byte-identical
+because "neither imports the other … there is no npm publication and therefore no shared package,
+and each must be embedded in its own execution entry point (the spawned MCP server, the directly
+executed CLI)". **That is overturned.** The premise was already false when it was written: the CLI
+declares `ontology-atlas-mcp` as a dependency, `mcp/package.json`'s `files` ships every module
+named above, and three siblings in the same folder were resolving them at runtime. A
+byte-comparison can only report drift after someone writes it; making the second copy impossible
+removes the failure mode instead.
+
+**Recorded dissent**: two entry points that share one module share its failures — a bad
+`mcp/src/parser.mjs` now breaks `atlas list` as well as `list_concepts`, where a copy would have
+kept one of them working, and CLI startup gains a dynamic import it did not have. The losing
+position is that a fixture matrix over two files is a cheap fault isolator worth its maintenance.
+
+**Falsifier**: a released defect that reaches both surfaces at once and would have been contained
+by the copy; or a measured CLI cold-start regression attributable to `loadMcpModule`; or the
+installed two-package path failing to resolve a module the source checkout resolves, which is
+exactly what `pnpm smoke:packed-cli` runs the installed `npm test` to catch.
+
+**Gate**: `tests/contract/schema-copy-sync.contract.test.ts` keeps its path and inverts its
+invariant — every listed file must resolve through `loadMcpModule('<module>')` and declare no
+`function` or `class` body of its own, with `activity-log.mjs`'s two best-effort wrappers named
+explicitly rather than the rule widened. Probed red by pasting a function back into
+`cli/src/lib/schema.mjs`, green again on removal. `cli-output-language.contract.test.ts` follows
+the Korean absorb matcher data to `mcp/src/absorb.mjs` so the exception moves rather than
+disappears.
+
+**Status**: valid
+
+---
+
 ## 2026-08-30 — The chain does not turn under a click
 
 **Convened because**: the owner asked for a last design pass over today's screens. Captured on

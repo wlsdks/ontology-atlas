@@ -8,15 +8,18 @@ import {
 import {
   buildMarkdown as buildCliMarkdown,
   parseFrontmatter as parseCliFrontmatter,
-  serializeFrontmatter as serializeCliFrontmatter,
 } from "../../cli/src/lib/parse-frontmatter.mjs";
 
 /**
  * Writer contract — MCP write tools and CLI add/import write the same markdown.
  *
- * The packages are published separately, so this test is the effective shared
- * contract for serializeFrontmatter/buildMarkdown. Parser parity is covered by
- * parse-frontmatter.contract.test.ts; this file catches write-shape drift.
+ * ⚠️ Since 2026-08-30 `cli/src/lib/parse-frontmatter.mjs` re-exports
+ * `mcp/src/parser.mjs`, so the CLI arm no longer proves that two files agree; it
+ * proves that the CLI's writer really reaches the canonical one. `serializeFrontmatter`
+ * is not imported from the CLI at all, because the CLI runtime never calls it — only
+ * `buildMarkdown`, which uses it internally — and a re-export added to satisfy a test
+ * is dead code. Parser parity is covered by parse-frontmatter.contract.test.ts; this
+ * file catches write-shape drift.
  */
 
 describe("frontmatter writer contract — MCP and CLI agree", () => {
@@ -25,9 +28,11 @@ describe("frontmatter writer contract — MCP and CLI agree", () => {
       expect(buildMcpMarkdown(c.input)).toBe(c.expected);
       expect(buildCliMarkdown(c.input)).toBe(c.expected);
 
-      expect(serializeMcpFrontmatter(c.input.frontmatter)).toBe(
-        serializeCliFrontmatter(c.input.frontmatter),
-      );
+      // The serializer is what buildMarkdown embeds, so the shared frontmatter block
+      // must appear verbatim inside both surfaces' output.
+      const serialized = serializeMcpFrontmatter(c.input.frontmatter);
+      expect(buildMcpMarkdown(c.input)).toContain(serialized);
+      expect(buildCliMarkdown(c.input)).toContain(serialized);
       expect(parseMcpFrontmatter(c.expected)).toEqual(parseCliFrontmatter(c.expected));
     });
   }

@@ -9,14 +9,26 @@ import * as absorbCli from "../../cli/src/lib/absorb.mjs";
 import * as absorbMcp from "../../mcp/src/absorb.mjs";
 
 /**
- * Absorption tool contract — `cli/src/lib/absorb.mjs` (the CLI `absorb`
- * command) and `mcp/src/absorb.mjs` (the `absorb_document` MCP tool) must
- * split sections, classify them, and flag injection-suspects identically.
- * See PRODUCT-PLAN-2026-07.md §7 (trust architecture / injection Tier 1) and
- * §9 (Slice 0). A drift between the two surfaces is a contract failure.
+ * Absorption tool contract — the CLI `absorb` command and the `absorb_document`
+ * MCP tool must split sections, classify them, and flag injection-suspects
+ * identically. See PRODUCT-PLAN-2026-07.md §7 (trust architecture / injection
+ * Tier 1) and §9 (Slice 0).
+ *
+ * ⚠️ Since 2026-08-30 `cli/src/lib/absorb.mjs` re-exports `mcp/src/absorb.mjs`
+ * instead of copying it, so "the two surfaces agree" is now guaranteed by
+ * execution rather than by this matrix. `buildAbsorptionPlan` is still run through
+ * both bindings, because that is what the CLI command actually calls and the run
+ * proves the re-export resolves and delegates. The stages the CLI reaches only
+ * *through* it — splitting, classification, the injection scan — are exercised on
+ * the canonical module alone, because a `cli === mcp` assertion there would now
+ * compare a function with itself.
+ * `schema-copy-sync.contract.test.ts` is what stops the copy coming back.
  */
 
-const IMPLEMENTATIONS = [
+const IMPLEMENTATIONS = [{ label: "mcp", mod: absorbMcp }];
+
+/** Entry points the CLI calls directly, so both bindings are worth running. */
+const PLAN_IMPLEMENTATIONS = [
   { label: "cli", mod: absorbCli },
   { label: "mcp", mod: absorbMcp },
 ];
@@ -67,7 +79,7 @@ describe("absorb contract — cli & mcp agree", () => {
   });
 
   describe("buildAbsorptionPlan", () => {
-    for (const { label, mod } of IMPLEMENTATIONS) {
+    for (const { label, mod } of PLAN_IMPLEMENTATIONS) {
       for (const c of PLAN_CASES) {
         it(`${c.name} (${label})`, () => {
           const existing = new Set(c.existingSlugs || []);
