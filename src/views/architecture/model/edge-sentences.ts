@@ -30,6 +30,12 @@ export interface SentenceEdge {
   count?: number;
   columnSpan: number;
   violated: boolean;
+  /**
+   * Whether the stroke is drawn right now (a skip appears only on focus or when violated).
+   * Defaults to true. A stroke that is not drawn places last and holds no ground, so an
+   * invisible sentence never silences a visible one, and its arc is no obstacle to anyone.
+   */
+  drawn?: boolean;
 }
 
 export interface SentencePlacement {
@@ -105,10 +111,35 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
   /* Rules first, then the busiest traffic: when two sentences compete for one place the one a
-     reader needs to see the chain wins. */
+     reader needs to see the chain wins. What is not drawn goes last and takes nothing. */
   const touchesFocus = (e: SentenceEdge) => focus !== null && (e.from === focus || e.to === focus);
+  const isDrawn = (e: SentenceEdge) => e.drawn !== false;
+  /*
+   * ⚠️ **A skip's sentence sits outside every arc that passes it, not only its own.** Measured
+   * 2026-08-30 (review, 1920, Entities hovered): the sentence beside the shorter of two nested
+   * arcs was placed at its own apex, and the longer arc, swinging further out, ran straight
+   * through the words. The arcs are the one obstacle the rectangle check could not see. So the
+   * swing a sentence keeps clear of is the widest swing of any drawn skip whose run covers the
+   * sentence's own midpoint, and the sentence sits just past it.
+   */
+  const alongOf = (p: { x: number; y: number }) => (axis === 'down' ? p.y : p.x);
+  const alongSize = axis === 'down' ? boxH : boxW;
+  const clearSwing = (edge: SentenceEdge, mid: number): number => {
+    let swing = swingOf(edge);
+    for (const other of edges) {
+      if (other === edge || other.columnSpan <= 1 || !isDrawn(other)) continue;
+      const oa = placed.get(other.from);
+      const ob = placed.get(other.to);
+      if (!oa || !ob) continue;
+      const lo = Math.min(alongOf(oa), alongOf(ob)) + alongSize;
+      const hi = Math.max(alongOf(oa), alongOf(ob));
+      if (mid > lo && mid < hi) swing = Math.max(swing, swingOf(other));
+    }
+    return swing;
+  };
   const ordered = [...edges].sort(
     (a, b) =>
+      (isDrawn(a) ? 0 : 1) - (isDrawn(b) ? 0 : 1) ||
       (touchesFocus(a) ? 0 : 1) - (touchesFocus(b) ? 0 : 1) ||
       (a.kind === 'permitted' ? 0 : 1) - (b.kind === 'permitted' ? 0 : 1) ||
       a.columnSpan - b.columnSpan ||
@@ -138,7 +169,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
         anchor = 'end';
         roomPx = leadRoom - GAP_TO_BOX - 12;
       } else {
-        const swingX = Math.max(a.x, b.x) + boxW / 2 + swingOf(edge);
+        const swingX = Math.max(a.x, b.x) + boxW / 2 + clearSwing(edge, (sy + ty) / 2);
         x = swingX + GAP_TO_ARC;
         y = (sy + ty) / 2 + 4;
         anchor = 'start';
@@ -155,7 +186,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
         anchor = 'middle';
         roomPx = Math.min(2 * pitch - 24, leadRoom > 0 ? 2 * pitch - 24 : 0);
       } else {
-        const midY = Math.max(a.y, b.y) + boxH / 2 + swingOf(edge);
+        const midY = Math.max(a.y, b.y) + boxH / 2 + clearSwing(edge, (sx + tx) / 2);
         x = (sx + tx) / 2;
         y = midY + 16;
         anchor = 'middle';
@@ -180,7 +211,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       out.push({ key, from: edge.from, to: edge.to, text, x, y, anchor, hidden: 'collision' });
       continue;
     }
-    taken.push(rect);
+    if (isDrawn(edge)) taken.push(rect);
     out.push({ key, from: edge.from, to: edge.to, text, x, y, anchor, rect });
   }
   return out;

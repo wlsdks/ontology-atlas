@@ -328,3 +328,89 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     expect(new URL(page.url()).searchParams.get('role'), where).toBeNull();
   }
 });
+
+test('a skip sentence never sits on another arc, sampled along the strokes', async ({ page }) => {
+  /*
+   * ⚠️ Review 2026-08-30 at 1920 with Entities hovered: the sentence beside the shorter of two
+   * nested skips sat on its own apex and the longer arc ran through it. The rectangle gates
+   * compare sentences with boxes and with each other; an arc is a curve, so it is measured as
+   * points along its length against every visible sentence's box, with 2px of air.
+   */
+  test.setTimeout(180_000);
+  await openSeededVault(page);
+  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
+  for (const size of [
+    { width: 1512, height: 945 },
+    { width: 1920, height: 1080 },
+  ]) {
+    await page.setViewportSize(size);
+    await page.waitForTimeout(500);
+    for (const role of ['entities', 'views']) {
+      await page.getByTestId(`architecture-graph-box-${role}`).hover();
+      await page.waitForTimeout(400);
+      const touches = await page.evaluate(() => {
+        const visible = (el: Element) => Number(getComputedStyle(el).opacity) > 0.05;
+        const sentences = [...document.querySelectorAll('[data-edge-sentence]')]
+          .filter(visible)
+          .map((el) => ({ id: el.getAttribute('data-testid') ?? '', r: el.getBoundingClientRect() }));
+        const arcs = [...document.querySelectorAll('path[data-edge-drawn="true"]')].filter(visible) as SVGPathElement[];
+        const out: string[] = [];
+        for (const arc of arcs) {
+          const total = arc.getTotalLength();
+          if (total === 0) continue;
+          const key = `${arc.getAttribute('data-edge-from') ?? ''}>${arc.getAttribute('data-edge-to') ?? ''}`;
+          const ctm = arc.getScreenCTM();
+          if (!ctm) continue;
+          for (let i = 0; i <= 60; i += 1) {
+            const p = arc.getPointAtLength((i / 60) * total).matrixTransform(ctm);
+            for (const s of sentences) {
+              if (s.id.endsWith(key)) continue;
+              if (p.x >= s.r.left - 2 && p.x <= s.r.right + 2 && p.y >= s.r.top - 2 && p.y <= s.r.bottom + 2) {
+                out.push(`${key} through ${s.id}`);
+                break;
+              }
+            }
+          }
+        }
+        return [...new Set(out)];
+      });
+      expect(touches, `${role} hovered at ${size.width}: an arc runs through a sentence`).toEqual([]);
+    }
+    await page.mouse.move(2, 2);
+  }
+});
+
+test('the count of what is below sits inside the faded strip, never on opaque ink', async ({ page }) => {
+  /*
+   * ⚠️ Review 2026-08-30, seven-role profile in a 1512x620 window: the badge stood 28px tall on a
+   * 16px fade, so 12px of it sat on the last visible box's receipt line. The strip is two insets
+   * tall now and the badge must lie within it; the four-role sample never cuts a chain at the
+   * bottom, so only this profile can exercise the count.
+   */
+  test.setTimeout(180_000);
+  await openSeededVault(page);
+  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('architecture-flow-panel')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
+  await page.setViewportSize({ width: 1512, height: 620 });
+  const pill = page.getByTestId('architecture-canvas-hidden-below');
+  await expect(pill).toBeVisible({ timeout: 10_000 });
+  const strip = await page.evaluate(() => {
+    const badge = document.querySelector('[data-testid="architecture-canvas-hidden-below"]')!;
+    const scroller = document.querySelector('[data-testid="architecture-graph"]')!.parentElement!;
+    /* The strip is whatever the mask actually fades, read back from the computed gradient
+       ("linear-gradient(to top, transparent 0px, rgb(0, 0, 0) 32px)"), not a number of our own. */
+    const style = getComputedStyle(scroller);
+    const mask = style.maskImage !== 'none' ? style.maskImage : style.webkitMaskImage;
+    const toTop = /to top,.*\s([\d.]+)px\)/.exec(mask ?? '');
+    const fadePx = toTop ? parseFloat(toTop[1]) : 0;
+    const p = badge.getBoundingClientRect();
+    const c = scroller.getBoundingClientRect();
+    return { mask, fadePx, pillTop: p.top, pillBottom: p.bottom, stripTop: c.bottom - fadePx, bottom: c.bottom };
+  });
+  expect(strip.fadePx, `no bottom fade read from the mask: ${strip.mask}`).toBeGreaterThan(0);
+  expect(strip.pillTop, `the count stands ${strip.stripTop - strip.pillTop}px above the ${strip.fadePx}px fade`).toBeGreaterThanOrEqual(strip.stripTop - 0.5);
+  expect(strip.pillBottom).toBeLessThanOrEqual(strip.bottom + 0.5);
+});

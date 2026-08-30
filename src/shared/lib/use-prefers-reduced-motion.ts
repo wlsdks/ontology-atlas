@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 /**
  * SSR-safe hook exposing `prefers-reduced-motion: reduce` as React state.
@@ -8,31 +8,32 @@ import { useEffect, useState } from "react";
  * decide for itself and jump straight to the final state. This is the single source for that
  * decision.
  *
- * Under static export there is no `matchMedia`, so it starts at false (motion allowed) and
- * reads the real preference synchronously on the client's first render — so JS motion that
- * runs once on mount is gated correctly from its very first frame.
+ * ⚠️ **Read through `useSyncExternalStore`, not a `useState` initializer** (2026-08-30). The
+ * first version read `matchMedia` synchronously in the initializer, so a reduced-motion
+ * visitor's first client render disagreed with the server HTML on every element the preference
+ * touches — measured on the download headline: React reported a hydration failure over 59
+ * character spans, kept the server's classes, and the headline only recovered on the next
+ * unrelated re-render. With a server snapshot of `false` React hydrates against the markup it
+ * was given and then re-renders with the real preference before the first paint completes, so
+ * JS motion that runs once on mount is still gated from its first visible frame, and nothing in
+ * the console says the page disagreed with itself.
  */
-function readReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-    return false;
-  }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const QUERY = "(prefers-reduced-motion: reduce)";
+
+function subscribe(onChange: () => void): () => void {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return () => {};
+  const query = window.matchMedia(QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
 }
 
+function readReducedMotion(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia(QUERY).matches;
+}
+
+const serverSnapshot = (): boolean => false;
+
 export function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(readReducedMotion);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
-      return;
-    }
-    // Initial value already read synchronously in useState; here we only
-    // subscribe to later changes (avoids a redundant setState in the effect body).
-    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const onChange = (event: MediaQueryListEvent) => setReduced(event.matches);
-    query.addEventListener("change", onChange);
-    return () => query.removeEventListener("change", onChange);
-  }, []);
-
-  return reduced;
+  return useSyncExternalStore(subscribe, readReducedMotion, serverSnapshot);
 }

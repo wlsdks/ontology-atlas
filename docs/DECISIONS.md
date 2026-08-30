@@ -1376,14 +1376,12 @@ first outside reader reads a box aloud.
 the picker stub, 1512×945 and 1920×1080): a two-line receipt made boxes 82px tall
 and cut *Shared foundation* — the role every arrow points at — in half below the
 fold; the one-line receipt then rendered 144–156px wide inside a 148px box and
-crossed both outlines. The shipped values were 74px tall, 180px wide, one line,
+crossed both outlines. The shipped values are 74px tall, 180px wide, one line,
 and `tests/e2e/architecture-role-ledger.spec.ts` fails at 90px tall (60px below
 the fold) and at 148px wide. Both failures were reproduced before the gate was
-kept. (Later the same day the box became 82px tall with a 12px row gap so the
-role's sentence could take two lines; the receipt is still one line. See "A role
-box gives its sentence two lines" above.)
+kept.
 
-**Status**: standing
+**Status**: standing for the width and the one-line receipt; the height part was superseded later the same day, when the box became 82px tall with a 12px row gap so the role's sentence could take two lines (see "A role box gives its sentence two lines" above). The body above is left as written; this line carries the change.
 
 ## 2026-08-29 — Nothing is painted before it can be named and clicked
 
