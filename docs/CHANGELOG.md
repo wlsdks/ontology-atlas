@@ -7,6 +7,18 @@
 
 ---
 
+## 2026-08-30 · The architecture chain stays whole in the installed app, and the README shows it
+
+- In the installed app at a 1512x949 window the seven-role chain drew 4px taller than its
+  canvas and a scrollbar appeared for empty dot field; the ground above and below the chain
+  gives 8px back, so the chain stays whole down to a 901px WebView.
+- The "N more below" count no longer takes height from the canvas it counts against. It sat
+  in a row under the drawing, so the moment it appeared it shortened the canvas and kept
+  itself true: a chain that fit by 13px reported one role hidden, and hid it. The count now
+  sits over the faded strip at the bottom.
+- The README's architecture screenshot is retaken from the installed app: exact boxes with
+  two-line summaries and receipts, and every stroke stating its rule beside the line.
+
 ## 2026-08-30 · The download hero assembles as the headline is typed
 
 - The hero object used to fade in on a clock of its own, 450ms after the page, with no relation

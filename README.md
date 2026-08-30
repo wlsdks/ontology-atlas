@@ -299,15 +299,15 @@ relations determine all three axes. Changing the view never changes the graph.
 
 ### 4. Plan against reviewed architecture
 
-![The current Architecture screen in the installed macOS app, showing the seven reviewed roles of this repository drawn as one chain from Routes down to Shared foundation with every stroke stating its rule or its measured imports, each with its module and concept count, the measured import traffic between them listed underneath, and a legend for the marks](docs/assets/readme/architecture-flow.png)
+![The current Architecture screen in the installed macOS app, showing the seven reviewed roles of this repository drawn as one exact chain from Routes down to Shared foundation, each box stating what the role is in two lines and its receipt of violations and imports, and every stroke between them stating its rule as a sentence beside the line, with the receipt strip above naming the commit that was measured](docs/assets/readme/architecture-flow.png)
 
 <p align="center">
   <sub>This one screen reads Atlas's own repository rather than the storefront
   example, because measured import traffic needs a connected code folder. The
   drawing is derived from the reviewed profile and the counted imports; every
   stroke states its own sentence, a declared rule as "may depend on" and a
-  measurement as "reaches … in N imports", and the same profile always draws the
-  same picture.</sub>
+  measured crossing as "reaches … in N imports" once a role is chosen, and the
+  same profile always draws the same picture.</sub>
 </p>
 
 Architecture stays separate from the Ontology Map. The Living Blueprint keeps

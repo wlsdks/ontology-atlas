@@ -92,8 +92,13 @@ const PAD_Y = 26;
  * the drawing's own bottom padding did not, so the canvas scrolled 13px and showed a bar for dot
  * field nobody needs to reach. With a ledger the boxes already carry their own breathing room, so
  * the field around them gives some back.
+ *
+ * Measured again 2026-08-30 in the installed app at a 1512x949 window (a 917px WebView, the
+ * title bar takes 32): the seven-role chain drew 686px into a 682px canvas and the same bar
+ * came back for 4px of dot field. 12px of ground at each end keeps the chain whole down to a
+ * 901px WebView, which is every window the 14-inch display can hold with the menu bar shown.
  */
-const PAD_Y_LEDGER = 20;
+const PAD_Y_LEDGER = 12;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
 const SKIP_DROP = 30;
 const SKIP_STEP = 10;
@@ -1079,11 +1084,18 @@ export function ArchitectureSketch({
       {/*
         ⚠️ **The count of what is below belongs at the bottom.** It shared the run control's row at
         the top, roughly 500px away from the cut it describes, and the box it hides is the
-        terminator every arrow points at (judged 2026-08-30). The row exists only while something
-        is actually hidden, so it costs the drawing nothing the rest of the time.
+        terminator every arrow points at (judged 2026-08-30).
+
+        ⚠️ **Over the fade, not in a row.** It was a flow row under the scroller first, and the
+        row was the defect: measured in the installed app 2026-08-30 at a 1512x949 window, the
+        chain fit the scroller by 13px, the first mount-time reading came in short, the pill
+        appeared, its row took 32px from the scroller it had just measured, and the reading it
+        caused then kept it there — one role reported hidden, and hidden by the report. The count
+        cannot be allowed to change the height it counts against, so it sits on the mask's own
+        strip at the bottom, where the drawing is already faded and nothing is covered outright.
       */}
       {covered.coveredDown && covered.hiddenRight > 0 ? (
-        <div className="flex items-center justify-center px-[var(--card-pad)] pb-1 pt-1.5">
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex items-center justify-center px-[var(--card-pad)]">
           <span
             className={badgeClass({
               shape: 'pill',
