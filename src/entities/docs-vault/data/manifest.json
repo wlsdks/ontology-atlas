@@ -254,6 +254,18 @@
       ]
     },
     {
+      "slug": "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+      "path": "docs/audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29.md",
+      "title": "Design QA — Pixel Mascot Identity",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Owner references: the owner-provided Downloads PNG generated at 23:22:15 on 2026-08-28 the owner-provided Downloads PNG generated at 23:07:54 on 2026-08-28 macOS menu-bar placement crop supplied on 2026-08-29 rail-size crops supplied at 01:13 and 01:40 on 2026-08-29 Selected: one raster-first pixel identity, platform i",
+      "wordCount": 493,
+      "updatedAt": "2026-08-29",
+      "linksOut": []
+    },
+    {
       "slug": "audits/ONTOLOGY-RIGOR-AUDIT-2026-07",
       "path": "docs/audits/ONTOLOGY-RIGOR-AUDIT-2026-07.md",
       "title": "온톨로지 표현적 적정성 감사 — 전문가 8인 (2026-07-24)",
@@ -5063,6 +5075,13 @@
             "type": "doc",
             "slug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
             "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift"
+          },
+          {
+            "name": "DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+            "path": "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+            "type": "doc",
+            "slug": "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29",
+            "title": "Design QA — Pixel Mascot Identity"
           },
           {
             "name": "ONTOLOGY-RIGOR-AUDIT-2026-07",

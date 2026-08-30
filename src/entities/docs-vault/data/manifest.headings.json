@@ -1432,6 +1432,38 @@
       "slug": "the-vault-extends-the-same-pattern-to-facts-that-change"
     }
   ],
+  "audits/DESIGN-QA-PIXEL-MASCOT-2026-08-29": [
+    {
+      "depth": 1,
+      "text": "Design QA — Pixel Mascot Identity",
+      "slug": "design-qa-pixel-mascot-identity"
+    },
+    {
+      "depth": 2,
+      "text": "Sources and selected direction",
+      "slug": "sources-and-selected-direction"
+    },
+    {
+      "depth": 2,
+      "text": "Implementation evidence",
+      "slug": "implementation-evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Measured result",
+      "slug": "measured-result"
+    },
+    {
+      "depth": 2,
+      "text": "Finding history",
+      "slug": "finding-history"
+    },
+    {
+      "depth": 2,
+      "text": "Final result",
+      "slug": "final-result"
+    }
+  ],
   "audits/ONTOLOGY-RIGOR-AUDIT-2026-07": [
     {
       "depth": 1,
