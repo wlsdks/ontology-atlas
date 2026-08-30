@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { readDisplayLocales, resolveLocaleDisplayName } from "./locale-display-name";
+import {
+  hasBrokenTextEncoding,
+  readDisplayLocales,
+  resolveLocaleDisplayName,
+} from "./locale-display-name";
+
+describe("hasBrokenTextEncoding", () => {
+  it("detects decoder controls and replacement characters without rejecting real Korean", () => {
+    expect(hasBrokenTextEncoding("ì\u0095\u0084í\u0082¤í\u0085\u008dì²\u0098")).toBe(true);
+    expect(hasBrokenTextEncoding("broken � name")).toBe(true);
+    expect(hasBrokenTextEncoding("아키텍처 워크벤치")).toBe(false);
+  });
+});
 
 describe("readDisplayLocales", () => {
   it("collects only `display_<2-letter locale>` string values", () => {
@@ -19,6 +31,14 @@ describe("readDisplayLocales", () => {
     expect(readDisplayLocales({ title: "x" })).toBeUndefined();
     expect(readDisplayLocales(null)).toBeUndefined();
     expect(readDisplayLocales({ display_ko: "   " })).toBeUndefined();
+  });
+
+  it("drops a corrupted localized value so rendering falls back to the canonical title", () => {
+    const broken = { title: "Architecture Workbench", display_ko: "ì\u0095\u0084í\u0082¤" };
+    expect(readDisplayLocales(broken)).toBeUndefined();
+    expect(resolveLocaleDisplayName(broken, "ko", "Architecture Workbench")).toBe(
+      "Architecture Workbench",
+    );
   });
 });
 

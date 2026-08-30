@@ -4,7 +4,7 @@ slug: elements/architecture-workbench
 kind: element
 title: Architecture Workbench
 display_en: Architecture Workbench
-display_ko: ìí¤íì² ìí¬ë²¤ì¹
+display_ko: 아키텍처 워크벤치
 domain: domains/codebase-architecture
 path: src/views/architecture
 created_by: "agent:unknown"
