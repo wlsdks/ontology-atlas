@@ -640,6 +640,10 @@ For installed-app dogfood, use `pnpm desktop:deploy:app`. It calls
 required, then replaces `/Applications/Ontology Atlas.app` and runs the local
 app/WebView proof. Do not use that local build as a release artifact:
 `desktop:build:app` remains the release path and keeps updater artifacts enabled.
+The Codex Run action, `./script/build_and_run.sh`, uses that same local app build
+before replacing and verifying the installed copy. `pnpm desktop:check` requires
+the exact `desktop:build:app:local` command so a release-key-dependent Run action
+cannot pass by prefix match.
 `pnpm desktop:build` keeps the local identity-unsigned prototype shortcut by
 running the updater-disabled app build, ad-hoc signing the complete bundle, and
 then packaging the DMG. The ad-hoc signature supplies bundle integrity only; it

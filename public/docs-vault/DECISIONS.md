@@ -40,6 +40,65 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — ACP next actions hold current facts through refresh and advance after source binding
+
+**Convened because**: the standing 2026-08-29 completed-turn decision said that
+recommendations must describe the current vault and recorded a falsifier: an
+approved repair leaves the same first suggestion unchanged without explanation.
+The implementation audit found that exact class of failure in two joined paths.
+
+**Observed phenomenon**: `load()` retains the previous manifest while re-reading
+the same folder, but `useVaultHealth` treated every `loading` state as an empty
+vault and Home withheld the existing handle from source readiness. Separately,
+ACP source binding writes a sidecar and appends a work receipt; an unchanged
+Markdown fingerprint refreshed that sidecar, but the readiness hook's revision
+did not include the receipt. The recommendation could therefore disappear during
+the refresh or remain `connectSource` after that operation completed.
+
+**User problem**: immediately after creating the first ontology or connecting
+its code, the person needs the next evidence-bound decision. A blank endcap or a
+repeated completed action sends them back to inspecting settings or typing a
+generic "what next?", breaking the ontology-to-agent handoff at completion.
+
+**Decision**: preserve current health and the vault handle only while
+`isReloadingSameVault` proves the folder identity is unchanged. Add the latest
+completed `connect_project_source` / `disconnect_project_source` receipt to the
+project-source readiness revision. Pending, failed, unrelated, and cross-folder
+states do not authorize a new readiness fact.
+
+**Applied rule**: fulfill the existing endcap instead of adding a helper,
+persona, slash command, ranking system, route, or automatic run. The visible
+shape and copy remain unchanged; only the current-vault input advances.
+
+**Verification**: the state adapters are RED/GREEN tested for loaded → same-vault
+reload → cross-vault loading and unbound → completed source binding → bound. A
+mounted ACP journey replaces the stale row under the same completed answer and
+proves selection still focuses an editable draft without another prompt call.
+Focused result: 105/105 tests, including same-slug cross-vault and in-flight
+refresh-revision isolation. Installed-app proof rebuilt and replaced the
+`/Applications` copy, completed a real 90-node vault-only agent answer, rendered
+the endcap beneath it, and kept a selected continuation as a focused unsent
+draft. That run exposed a separate local Run defect: it called the release
+updater build and stopped on a missing private key. The Run action now uses the
+updater-disabled build; its strengthened readiness gate was probed RED with the
+old release command and a `:local-bogus` suffix, then GREEN after restoration.
+
+**Score**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 4 · Agent value 4 · Verification 4 = **24/24** (fatal zeros: none).
+**Signed**: jinan.
+
+**Recorded dissent**: keeping the previous recommendation during reload can
+display a fact that became stale milliseconds earlier. The accepted boundary is
+narrow: only the same verified folder, only until the replacement manifest
+arrives, and source-binding completion explicitly invalidates the sidecar read.
+**Falsifier**: a folder switch shows the prior vault's action, a completed source
+bind still leaves `connectSource`, or a same-vault refresh changes the endcap to
+an action unsupported by either the old or new manifest.
+**Revisit**: on the first observed recurrence or the next installed-app ACP
+source-binding walkthrough.
+
+**Status**: standing; narrows and fulfills the 2026-08-29 decision.
+
 ## 2026-08-30 — A role box gives its sentence two lines; the rows close up to pay for it
 
 **Convened because**: the "role box states what the role is" record of this morning wrote its
