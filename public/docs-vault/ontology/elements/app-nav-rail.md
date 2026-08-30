@@ -20,7 +20,7 @@ The persistent desktop workbench navigation rail. It exposes seven primary desti
 - `tests/e2e/destination-shortcuts.spec.ts`: keyboard traversal across all seven destinations
 
 ## Boundary
-The desktop rail owns the complete seven-destination workbench inventory and scrolls when height or UI scale requires it. The mobile bottom bar keeps its measured five persistent destinations; Git and Agents retain their existing narrow-screen entry paths rather than adding new bottom slots.
+The desktop rail owns the complete seven-destination workbench inventory and scrolls when height or UI scale requires it. In the installed app it stays hidden until a real local manifest exists, preventing bundled web destinations from becoming an accidental sandbox. The mobile bottom bar keeps its measured five persistent destinations; Git and Agents retain their existing narrow-screen entry paths rather than adding new bottom slots.
 
 ## Confidence
 high (0.95): registry contracts, browser reachability measurement, and installed-app verification cover the current navigation

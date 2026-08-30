@@ -86,6 +86,7 @@ test("local macOS app deploy builds without release updater signing, installs, a
   assert.equal(options.holdMs, 12000);
   assert.equal(options.minWindowSize, "1360x840");
   assert.equal(options.minWebviewSize, "1400x860");
+  assert.equal(options.fixtureVaultPath, path.join(process.cwd(), "docs", "ontology"));
   assert.equal(options.installPath, "/Applications/Ontology Atlas.app");
   assert.equal(
     options.builtAppPath,
@@ -112,6 +113,7 @@ test("local macOS app deploy builds without release updater signing, installs, a
       "--kill-existing",
       "--hold-ms=12000",
       "--require-webview-route=/en/topology/",
+      `--webview-fixture-vault=${path.join(process.cwd(), "docs", "ontology")}`,
       "--require-window",
       "--require-owner-name=Ontology Atlas",
       "--min-window-size=1360x840",
@@ -129,6 +131,7 @@ test("local macOS app deploy builds without release updater signing, installs, a
       "--kill-existing",
       "--hold-ms=12000",
       "--require-webview-route=/en/topology/",
+      `--webview-fixture-vault=${path.join(process.cwd(), "docs", "ontology")}`,
       "--min-webview-size=1400x860",
       `--webview-evidence=${path.join(process.cwd(), ".tmp", "ontology-atlas-deployed-relief.webview.json")}`,
       "--leave-running",
@@ -175,6 +178,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
     "--min-webview-size=1480x880",
     "--screenshot=/tmp/atlas.png",
     "--webview-evidence=/tmp/atlas-webview.json",
+    "--webview-fixture-vault=/tmp/project/atlas",
     "--install-path=/tmp/Ontology Atlas.app",
     "--built-app=/tmp/build/Ontology Atlas.app",
   ]);
@@ -199,6 +203,7 @@ test("local macOS app deploy can reuse an existing build and customize proof rou
   assert.ok(plan.verify[1].includes("--window-screenshot=/tmp/atlas.png"));
   assert.equal(plan.verify[1].includes("--try-window-screenshot=/tmp/atlas.png"), false);
   assert.ok(plan.verify[1].includes("--webview-evidence=/tmp/atlas-webview.json"));
+  assert.ok(plan.verify[1].includes("--webview-fixture-vault=/tmp/project/atlas"));
   assert.equal(plan.fallbackVerify, null);
 });
 
@@ -216,6 +221,11 @@ test("local macOS app deploy can use deterministic WebView-only verification", (
   assert.ok(plan.verify[1].includes("--min-webview-size=1400x860"));
   assert.equal(plan.verify[1].some((arg) => arg.startsWith("--try-window-screenshot=")), false);
   assert.ok(plan.verify[1].includes("--require-webview-route=/en/topology/"));
+  assert.ok(
+    plan.verify[1].includes(
+      `--webview-fixture-vault=${path.join(process.cwd(), "docs", "ontology")}`,
+    ),
+  );
   assert.equal(plan.fallbackVerify, null);
 });
 

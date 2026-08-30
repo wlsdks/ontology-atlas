@@ -222,8 +222,8 @@
     },
     {
       "depth": 3,
-      "text": "Static mode (no vault picked)",
-      "slug": "static-mode-no-vault-picked"
+      "text": "Static mode (vault-less web only)",
+      "slug": "static-mode-vault-less-web-only"
     },
     {
       "depth": 2,
@@ -2930,6 +2930,11 @@
       "depth": 2,
       "text": "2026-08-30 · The architecture chain stays whole in the installed app, and the README shows it",
       "slug": "2026-08-30-the-architecture-chain-stays-whole-in-the-installed-app-and-the-readme-shows-it"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 · The installed app never paints a sample over a real vault",
+      "slug": "2026-08-30-the-installed-app-never-paints-a-sample-over-a-real-vault"
     },
     {
       "depth": 2,
@@ -6046,6 +6051,11 @@
       "depth": 2,
       "text": "2026-08-30 — The chain does not turn under a click",
       "slug": "2026-08-30-the-chain-does-not-turn-under-a-click"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Bundled samples are web-only; the installed app commits one local vault",
+      "slug": "2026-08-30-bundled-samples-are-web-only-the-installed-app-commits-one-local-vault"
     },
     {
       "depth": 2,
@@ -10076,8 +10086,8 @@
     },
     {
       "depth": 2,
-      "text": "4. X take — 21.633 seconds",
-      "slug": "4-x-take-21633-seconds"
+      "text": "4. X take — 23 seconds",
+      "slug": "4-x-take-23-seconds"
     },
     {
       "depth": 2,

@@ -11,7 +11,7 @@ import {
 } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
-import { useDataSourceMode } from "@/features/data-source-mode";
+import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { formatDate } from "@/shared/lib/format-date";
@@ -113,6 +113,7 @@ export function ProjectSelectorPage() {
   const newProjectHref = `/project/new/?returnTo=${encodeURIComponent("/projects/")}`;
 
   return (
+    <VaultSourceHydrationBoundary>
     <div className="flex min-h-full w-full">
       {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 bg-[color:var(--color-canvas)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]">
@@ -292,6 +293,7 @@ export function ProjectSelectorPage() {
         </div>
       </main>
     </div>
+    </VaultSourceHydrationBoundary>
   );
 }
 

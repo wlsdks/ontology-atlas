@@ -9,4 +9,4 @@ path: src/views/first-run
 created_by: "agent:unknown"
 ---
 
-First run screen. Evidence of implementation for capabilities/first-run-starter.
+Installed-app first run screen. It offers only local create/open paths and reveals the workbench after a real vault exists; bundled sample exploration remains on the web. Evidence of implementation for capabilities/first-run-starter.

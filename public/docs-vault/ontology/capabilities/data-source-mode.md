@@ -11,7 +11,7 @@ created_by: "agent:unknown"
 ---
 
 ## Definition
-The ability to branch app behavior between vault-picked mode and static/sample mode depending on whether a folder is selected.
+The ability to keep one authoritative data source across the shared web/app bundle. A vault-less web visitor may use an explicit bundled sample; a mounted web vault and the installed app use one local manifest. The installed app remains neutral during restore, folder switches, and the pre-paint turn of an LNB route change, so static sample facts are never drawn over a local vault.
 
 ## Evidence
 - src/features/data-source-mode (implementation evidence)

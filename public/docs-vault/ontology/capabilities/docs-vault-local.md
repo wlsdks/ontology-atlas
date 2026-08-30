@@ -12,7 +12,7 @@ relation_notes: { elements/native-vault-filesystem-bridge: The local folder moun
 ---
 
 ## Definition
-The ability to select and mount a local markdown folder via the File System Access API, using it as a real-time data source.
+The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under `<project>/atlas`, that child is persisted and built as the canonical vault; direct standalone vault folders remain valid. A new manifest replaces the old source atomically rather than combining roots or falling back to a bundled sample.
 
 ## Evidence
 - src/features/docs-vault-local (implementation evidence)

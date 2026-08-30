@@ -7,7 +7,7 @@ import {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import { useDataSourceMode } from '@/features/data-source-mode';
+import { useDataSourceMode, VaultSourceHydrationBoundary } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
@@ -164,14 +164,16 @@ export function ArchitecturePage() {
   }, [docs, localVault.handle, localVault.status, mode, profileKey, profiles]);
 
   return (
-    <ArchitectureWorkbench
-      profiles={profiles}
-      handoffContexts={handoffContexts}
-      sourceModulesByProfile={sourceModulesByProfile}
-      sourceListingCapable={sourceListingCapable}
-      sourceUnavailableReason={sourceUnavailableReason}
-      recordsByProfile={recordsByProfile}
-      conceptsByProfile={conceptsByProfile}
-    />
+    <VaultSourceHydrationBoundary>
+      <ArchitectureWorkbench
+        profiles={profiles}
+        handoffContexts={handoffContexts}
+        sourceModulesByProfile={sourceModulesByProfile}
+        sourceListingCapable={sourceListingCapable}
+        sourceUnavailableReason={sourceUnavailableReason}
+        recordsByProfile={recordsByProfile}
+        conceptsByProfile={conceptsByProfile}
+      />
+    </VaultSourceHydrationBoundary>
   );
 }

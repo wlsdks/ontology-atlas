@@ -46,6 +46,19 @@
 - The README's architecture screenshot is retaken from the installed app: exact boxes with
   two-line summaries and receipts, and every stroke stating its rule beside the line.
 
+## 2026-08-30 · The installed app never paints a sample over a real vault
+
+- A restored project could show the bundled Storefront world for one or more frames on the way
+  into Architecture, Docs, Insights, or Projects, then replace it with the real vault. Docs could
+  also carry the sample `domains/order` slug across that boundary and diagnose it as a missing
+  local document. The workbench now holds a neutral route boundary until one local manifest is
+  ready, so a selected vault is committed once instead of being drawn over a sample.
+- Bundled samples are now a web-demo surface only. The installed app's first run offers local
+  create/open paths, its rail stays hidden until a real vault exists, and the Docs source menu has
+  no sample choice or command.
+- Project-root resolution is the same at every ingress. Picker, recent-vault reopening, and cold
+  restore all redirect a project containing Markdown under `atlas/` to that child, persist the
+  corrected root, and build only that manifest; same-vault refreshes keep their current pixels.
 ## 2026-08-30 · ACP next steps use names a person can read
 
 - A containment repair used to show raw identifiers such as
@@ -81,7 +94,7 @@
   English download pages now carry separate 44-second installed-app takes: find one capability,
   read its typed relations and evidence, then watch Codex use Atlas MCP `get_concept` and
   `find_path` to explain the path between two concepts without writing files.
-- A separate 21.633-second Korean X clip now answers the breadth-first posting moment: it moves
+- A separate 23-second Korean X clip now answers the breadth-first posting moment: it moves
   through Map, Architecture, Docs, Insights, Projects, Agents, and Git History on the same public
   example. The page clips keep the deeper Atlas MCP proof. All captures start after the example
   is open; Finder, Settings, absolute paths, terminals, notifications, the desktop, menu bar, and

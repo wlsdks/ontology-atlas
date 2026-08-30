@@ -333,6 +333,38 @@ async function tauriVaultRecordResolves(
   }
 }
 
+interface ResolvedVaultHandle {
+  handle: FileSystemDirectoryHandle;
+  /** The project root the person chose or previously stored, when its `atlas/` child won. */
+  redirectedFrom: string | null;
+}
+
+/**
+ * Applies the project → `atlas/` rule to every desktop ingress, not only the picker.
+ *
+ * The picker adopted this rule first, but recent-vault reopening and cold restore kept loading
+ * their stored project-root handles directly. A project containing `atlas/*.md` could therefore
+ * be read as the project plus every frontmatter-bearing Markdown file around it, while a manual
+ * picker open read only `atlas/`. One stored project must not mean two vaults depending on ingress.
+ */
+async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Promise<ResolvedVaultHandle> {
+  const pickedPath = getTauriVaultRootPath(handle);
+  if (!pickedPath) return { handle, redirectedFrom: null };
+
+  const resolved = await resolvePickedVaultFolder(pickedPath, async (candidate) => {
+    try {
+      return await listTauriDirectoryNames(candidate);
+    } catch {
+      return null;
+    }
+  });
+  if (!resolved.redirected) return { handle, redirectedFrom: null };
+  return {
+    handle: createTauriVaultHandle(resolved.rootPath),
+    redirectedFrom: pickedPath,
+  };
+}
+
 // The frontmatter serialization rules moved down to the entity layer — the path that
 // applies an agent's proposal must write by the same rules, or the git diff carries two
 // formats. Re-exported here so existing import paths keep working.
@@ -835,23 +867,9 @@ export function useLocalVaultInternal() {
        * and buried the map that was right there. See `resolve-picked-vault-folder.ts` for why the
        * rule is narrow and why it is never silent.
        */
-      const pickedPath = getTauriVaultRootPath(handle);
-      let openHandle = handle;
-      let pickedInstead: string | null = null;
-      if (pickedPath) {
-        const resolved = await resolvePickedVaultFolder(pickedPath, async (candidate) => {
-          try {
-            return await listTauriDirectoryNames(candidate);
-          } catch {
-            return null;
-          }
-        });
-        if (resolved.redirected) {
-          openHandle = createTauriVaultHandle(resolved.rootPath);
-          pickedInstead = pickedPath;
-        }
-      }
-      setOpenedInsidePickedFolder(pickedInstead);
+      const resolvedHandle = await resolveVaultHandle(handle);
+      const openHandle = resolvedHandle.handle;
+      setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
       const now = Date.now();
       await putLocalFsHandle({
         id: CURRENT_LOCAL_FS_HANDLE_ID,
@@ -933,15 +951,21 @@ export function useLocalVaultInternal() {
           }));
           return;
         }
+        const resolvedHandle = await resolveVaultHandle(record.handle);
+        setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
+        const resolvedRootPath = getTauriVaultRootPath(resolvedHandle.handle);
         const now = Date.now();
         const nextRecord: LocalFsHandleRecord = {
           ...record,
           id: CURRENT_LOCAL_FS_HANDLE_ID,
+          handle: resolvedHandle.handle,
+          name: resolvedHandle.handle.name,
+          desktopRootPath: resolvedRootPath ?? record.desktopRootPath,
           lastAccessedAt: now,
         };
         await putLocalFsHandle(nextRecord);
         await refreshRecentVaults();
-        await load(nextRecord.handle);
+        await load(resolvedHandle.handle);
       } catch (err) {
         // `toErrorMessage` — a Tauri `invoke` rejects with `Err(String)` as a plain string.
         setState((s) => ({
@@ -1426,9 +1450,9 @@ export function useLocalVaultInternal() {
         return;
       }
       if (cancelled) return;
-      const handle = record.handle;
+      const storedHandle = record.handle;
       void touchLocalFsHandle();
-      const permission = await verifyRead(handle, false);
+      const permission = await verifyRead(storedHandle, false);
       if (cancelled) return;
       if (permission === 'granted') {
         // (Desktop) The common silent failure of auto-restore: the stored vault folder moved or
@@ -1439,7 +1463,7 @@ export function useLocalVaultInternal() {
           if (!cancelled) {
             setState({
               status: 'error',
-              handle,
+              handle: storedHandle,
               manifest: null,
               agentConfigStatus: null,
               agentActivityStatus: emptyAgentActivityStatus(),
@@ -1455,11 +1479,27 @@ export function useLocalVaultInternal() {
           }
           return;
         }
-        await load(handle);
+        const resolvedHandle = await resolveVaultHandle(storedHandle);
+        if (cancelled) return;
+        setOpenedInsidePickedFolder(resolvedHandle.redirectedFrom);
+        if (resolvedHandle.redirectedFrom) {
+          const now = Date.now();
+          await putLocalFsHandle({
+            ...record,
+            id: CURRENT_LOCAL_FS_HANDLE_ID,
+            handle: resolvedHandle.handle,
+            name: resolvedHandle.handle.name,
+            desktopRootPath:
+              getTauriVaultRootPath(resolvedHandle.handle) ?? record.desktopRootPath,
+            lastAccessedAt: now,
+          });
+          await refreshRecentVaults();
+        }
+        await load(resolvedHandle.handle);
       } else {
         setState({
           status: 'permission-needed',
-          handle,
+          handle: storedHandle,
           manifest: null,
           agentConfigStatus: null,
           agentActivityStatus: emptyAgentActivityStatus(),

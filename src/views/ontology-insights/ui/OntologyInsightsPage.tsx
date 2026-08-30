@@ -29,7 +29,7 @@ import {
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
-import { useDataSourceMode } from "@/features/data-source-mode";
+import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/features/data-source-mode";
 import { OpenVaultCta, useLocalVault } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -924,6 +924,7 @@ export function OntologyInsightsPage() {
   };
 
   return (
+    <VaultSourceHydrationBoundary>
     <div className="flex min-h-full w-full">
       {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       {/*
@@ -1232,5 +1233,6 @@ export function OntologyInsightsPage() {
         </main>
       </div>
     </div>
+    </VaultSourceHydrationBoundary>
   );
 }

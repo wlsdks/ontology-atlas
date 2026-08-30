@@ -72,6 +72,81 @@ selection to see the ends, where the turned column showed them at once. **Revisi
 inspector learns to open over the canvas at 1920 instead of beside it.
 ---
 
+## 2026-08-30 — Bundled samples are web-only; the installed app commits one local vault
+
+**Convened because**: while reviewing the new X footage, the owner caught four installed-app
+frames that did not belong to the selected vault: Storefront repair work in Insights, the
+`Online Store` project, the four-role Storefront architecture, and then the seven-role Atlas
+architecture replacing it. Docs also showed `domains/order` as missing after carrying that
+sample slug into the local source. The owner required bundled samples to disappear from the
+installed app and every project open to resolve one non-overlaid `atlas/` vault.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify | Problem insight 4 · User moment 4 |
+| Craft | Build and verify | Verification 4 |
+| Steward | Build and verify | Ontology value 4 · Agent value 4 |
+| Wedge | Build and verify | Differentiation 4 |
+| Leverage | Build and verify | one working day; source integrity only |
+
+**Rubric total**: 24/24 (fatal zeros: none).
+
+**Observed phenomenon**: the static export correctly carries a complete bundled sample for a
+vault-less web visitor. Its first render cannot know the installed app's asynchronously restored
+IndexedDB handle, however, so a newly mounted LNB destination could commit the static sample and
+then re-render from the local provider. Docs had a second source state initialized to `server`,
+allowing the sample selection to write a slug before the local landing decision settled. Picker
+opens already redirected a project root to its Markdown-bearing `atlas/` child, while recent-open
+and cold-restore paths still loaded their stored root directly.
+
+**Decisive disagreement**: Craft initially required a named new pending screen and broader mobile
+proof. Leverage rejected a new loading experience, persistence rewrite, or deletion of the sample
+assets. The smaller decision keeps the existing neutral canvas for the uncommitted route turn,
+uses no new motion or copy, and keeps the bundled data intact for the web. All seats agreed that a
+crossfade would be cosmetic: the canonical root, manifest, selection, and agent-visible vault must
+agree before any ontology fact is painted.
+
+**Decision (accountable: owner)**: the installed app admits only `pending → local`. It never
+renders, offers, or falls back to the bundled Storefront or dogfood samples. Its no-vault first run
+contains only real local create/open actions; its workbench rail and destinations stay unavailable
+until a local manifest exists; Docs removes the desktop sample row and command. The vault-less web
+gateway and fallback workbench retain their explicit sample experience.
+
+A selected local source is committed atomically. On a route change with a loaded vault, the shell
+holds a neutral body for the pre-paint layout turn and mounts the destination against the existing
+local provider. During a genuine folder load or switch it keeps the body neutral until the new
+manifest is ready; a same-vault refresh retains the current manifest. Picker, recent reopen, and
+cold restore all apply the standing project-root rule: if `<project>/atlas` contains Markdown, that
+child is persisted and built; direct standalone vault folders remain valid.
+
+**Recorded dissent**: removing the installed-app sandbox asks a vault-less installer to choose or
+create local files before exploring the workbench and could reduce first-run understanding.
+**Falsifier**: real installers cannot discover or understand the web demo, abandon before choosing a
+folder, or explicitly ask for an in-app sandbox; any 30fps installed-app cold restore or LNB hop
+shows a sample/other-vault pixel, stale sample slug, or project-root decoy; or MCP/CLI resolves a
+different root from the app. **Revisit**: on any falsifier, but restore an explicit isolated sandbox
+rather than an automatic fallback.
+
+**Slice**: IN shell source-identity boundary, no-vault desktop rail guard, removal of installed-app
+sample entrances, shared project→`atlas/` resolution for picker/recent/restore, RED/GREEN browser
+frame regression, installed-app 30fps proof, web-demo control, ontology/docs sync · OUT bundled
+sample deletion, web redesign, persistence rewrite, schema/MCP/CLI change, new loading animation,
+telemetry, and release publication · appetite one working day.
+
+**Verification**: the browser regression first recorded `domains/order` in 32 consecutive local
+Docs frames and the installed-shell prerender trace recorded `Storefront Services` in its first 15
+DOM mutations; both are now zero. The rebuilt installed app produced 448 uniform 30fps frames
+across Map → Architecture → Docs → Insights → Projects. Each transition held 4–5 neutral frames
+(133–167ms) before the local destination; no sample, missing-slug warning, other-vault content, or
+overlap appeared. The Docs accessibility menu exposes only folder switch and audit actions. Static
+export tests preserve all four existing deep-link/source-switch contracts and the 11-case web demo
+smoke. Local deployment verification now mounts a real `docs/ontology` fixture rather than asking a
+vault-less app to fall through to a sample map.
+
+**Status**: valid; browser, static-export, ontology, and rebuilt installed-app proof complete.
+
+---
+
 ## 2026-08-30 — The X cut shows the whole workbench; the page cut keeps the agent proof
 
 **Convened because**: the owner opened the finished 30-second X asset immediately before
@@ -115,8 +190,8 @@ The previous decision is **overturned only for the X clip's single MCP-round-tri
 The Korean and English page takes remain 44 seconds, keep their complete two-`get_concept` plus
 one-`find_path` proof, and do not gain a second tab or a player change.
 
-**Verification**: the accepted X take measures 21.633 seconds, 1512×950, uniform 30fps, silent
-H.264. Twenty-two one-second samples plus the full six-transition phase strip contain only the
+**Verification**: the accepted X take measures 23 seconds, 1512×950, uniform 30fps, silent
+H.264. Twenty-three one-second samples plus the full six-transition phase strip contain only the
 Ontology Atlas window and public example data. Three source-hidden evaluators classified the
 new cut as a codebase-ontology workbench by three seconds and recalled all seven work surfaces;
 they recalled the old cut as one or two surfaces. This is a useful proxy, not human retention
@@ -130,7 +205,7 @@ public project; the page clip loses its agent proof; or any delivered frame expo
 absolute path, account, notification, desktop content, or personal information.
 **Revisit**: on any falsifier or a real X-viewer report that the cuts are too fast to classify.
 
-**Slice**: IN one 21.633-second Korean X MP4, real LNB clicks, seven privacy-clean destinations,
+**Slice**: IN one 23-second Korean X MP4, real LNB clicks, seven privacy-clean destinations,
 truthful X scenario/launch records, 30fps phase and privacy proof · OUT page assets, `DEMO_CLIPS`,
 player/UI/copy, Settings, deep interaction inside a destination, audio, captions, posting to X,
 and product fixes found while filming · appetite 4 hours.

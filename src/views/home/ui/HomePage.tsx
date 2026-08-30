@@ -44,6 +44,7 @@ import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle,
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
+import { VaultSourceHydrationBoundary } from "@/features/data-source-mode";
 import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   useAgentServer,
@@ -4378,6 +4379,7 @@ function HomePageImpl() {
   }, [hubs, preloadProjectAsset, selectedSlug]);
 
   return (
+    <VaultSourceHydrationBoundary>
     <main
       id="main"
       tabIndex={-1}
@@ -6547,6 +6549,7 @@ function HomePageImpl() {
         </div>
       ) : null}
     </main>
+    </VaultSourceHydrationBoundary>
   );
 }
 
