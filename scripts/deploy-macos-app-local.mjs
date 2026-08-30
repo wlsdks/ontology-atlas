@@ -16,6 +16,7 @@ const DEFAULT_WEBVIEW_EVIDENCE = path.join(
 );
 const DEFAULT_MIN_WINDOW_SIZE = "1360x840";
 const DEFAULT_MIN_WEBVIEW_SIZE = "1400x860";
+const DEFAULT_FIXTURE_VAULT = path.join(root, "docs", "ontology");
 const PROCESS_EXIT_TIMEOUT_MS = 6000;
 const PROCESS_POLL_MS = 250;
 const BUNDLE_IDENTIFIER = "dev.jinan.ontology-atlas";
@@ -90,6 +91,7 @@ export function parseDeployMacosAppArgs(argv, defaultRouteOptions = {}) {
     minWebviewSize: option("--min-webview-size=") || DEFAULT_MIN_WEBVIEW_SIZE,
     screenshotPath: option("--screenshot=") || DEFAULT_SCREENSHOT,
     webviewEvidencePath: option("--webview-evidence=") || DEFAULT_WEBVIEW_EVIDENCE,
+    fixtureVaultPath: option("--webview-fixture-vault=") || DEFAULT_FIXTURE_VAULT,
     installPath:
       option("--install-path=") || path.join("/Applications", names.appBundleName),
     builtAppPath:
@@ -105,6 +107,7 @@ export function buildDeployMacosAppPlan(options) {
     "--kill-existing",
     `--hold-ms=${options.holdMs}`,
     `--require-webview-route=${options.route}`,
+    `--webview-fixture-vault=${options.fixtureVaultPath}`,
   ];
   const verifyArgs = [...baseVerifyArgs];
   if (options.visualEvidence || options.requireScreenshot) {

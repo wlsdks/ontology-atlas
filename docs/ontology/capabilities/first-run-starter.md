@@ -18,6 +18,8 @@ The first-run experience that brings a completely new user from scratch to a sta
 The first-run card at the top of the INDEX panel on the left side of the map (`/topology`) is the surface of this capability.
 It appears **only before** choosing a vault. Once the folder opens, the card disappears and the INDEX takes its place. Therefore, what this card must say is simply: "What you see now is someone else's sample; choose your own folder to light up the same map with your data."
 
+This sample-backed card belongs to the vault-less web workbench. The installed app has a separate local-only `FirstRunPage`: create or open a real vault first, then reveal the workbench. It never renders the bundled sample or a sample chooser.
+
 ## Decision
 
 - **Instrumentation is not the point** (2026-08-02, PO Council). We used to draw concept/relation/domain counts in inset instrumentation blocks (19px mono semibold), which were the largest font and highest brightness within the card. Instrumentation belongs when the user's **own** vault unlocks. Having the boldest ink on a screen saying "Sample for now" four times be the sample size itself was self-contradictory. It was demoted to one line of caption below the tab. The source of the numbers remains unchanged (`topologyCanonicalCensus` derived data comes in via props).

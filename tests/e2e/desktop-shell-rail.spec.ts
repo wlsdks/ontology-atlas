@@ -2,31 +2,18 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * **The installed app's `/` has the left rail** (measured and repaired 2026-08-01).
+ * **The rail follows a real vault, not merely the installed-app runtime.**
  *
- * **The regression this spec blocks.** The owner caught it in the installed app —
- * *"Why is there no left nav in the app?"* (why is there no left nav in the app?). The cause was not
- * the rail logic but **the boundary between static prerender and hydration**:
+ * The installed app used to paint its bundled sample before restoring local state, and the
+ * always-visible rail made those sample destinations look like a usable workspace. The first-run
+ * screen now owns `/` until a real vault is mounted, so that state intentionally keeps the
+ * persistent rail hidden. `local-vault-route-identity.spec.ts` holds the positive counterpart:
+ * once a real local vault is mounted, the installed-shell branch exposes the rail and every
+ * transition stays inside that vault.
  *
- * 1. The shell hides the rail via
- *    `isGatewaySurface(pathname, { desktop: isDesktopShell(), … })`.
- * 2. Prerender has no `window`, so `isDesktopShell()` is **always false**. `/` is
- *    therefore judged a gateway and `lg:hidden` is baked into the HTML.
- * 3. **React hydration does not repair attribute mismatches.** Even when the client's
- *    first render produces the right value, the class the server wrote stays in the DOM.
- * 4. The installed app always opens `/` with that HTML, so the rail disappeared
- *    **permanently**.
- *
- * On the web the same judgement happened to be correct (a visitor with no vault is on
- * the gateway), so nobody saw it, and the same address **was fine when entered by
- * client navigation** — a real re-render runs then. That asymmetry is the defect's fingerprint.
- *
- * **Why the desktop is reproduced in a browser.** The app is a WKWebView so its DOM
- * cannot be measured from outside, and it ships **the same static export** as the web
- * (.claude/rules/surfaces.md — the codebase is not forked). So injecting the single
- * signal that changes the judgement (`globalThis.isTauri`) walks the same branch.
- * Desktop capabilities themselves are still proven only by measuring the installed app,
- * but **this defect is a render boundary, not a capability**.
+ * **Why desktop is reproduced in a browser.** The app is a WKWebView and ships the same static
+ * export as the web. Injecting the Tauri runtime signal therefore exercises this render boundary;
+ * native capabilities remain covered by installed-app verification.
  */
 const DESKTOP_INIT = () => {
   (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ = {
@@ -49,23 +36,22 @@ async function railState(page: import("@playwright/test").Page) {
 }
 
 test.describe("데스크톱 셸의 좌측 레일", () => {
-  test("설치 앱의 `/` 는 SSR 진입에서도 레일을 갖는다", async ({ page }) => {
+  test("볼트 없는 설치 앱의 `/` 는 첫 실행만 보이고 레일을 숨긴다", async ({ page }) => {
     await page.addInitScript(DESKTOP_INIT);
     await page.setViewportSize({ width: 1512, height: 949 });
     await seedFirstRunSeen(page);
-    // **Entering via SSR is the point** — entering by client navigation runs a re-render
-    // and hides the defect. Only the path the app actually takes exposes this regression.
     await page.goto("/ko/", { waitUntil: "networkidle" });
     await page.waitForTimeout(1500);
 
+    await expect(page.getByTestId("first-run-open")).toBeVisible();
+    await expect(page.getByText("Storefront Services")).toHaveCount(0);
     const rail = await railState(page);
     expect(rail.present, "레일이 DOM 에 없다").toBe(true);
     expect(
       rail.width,
-      `설치 앱의 첫 화면에 좌측 레일이 없다(폭 ${rail.width}px, data-hidden=${rail.hidden}). `
-        + "프리렌더 값이 하이드레이션 뒤에도 안 고쳐졌는지 확인해라 — `useHydrated()`.",
-    ).toBeGreaterThan(0);
-    expect(rail.hidden).toBe("false");
+      "볼트 없는 첫 실행 화면에 아직 갈 수 없는 워크벤치 목적지가 노출됐다",
+    ).toBe(0);
+    expect(rail.hidden).toBe("true");
   });
 
   test("웹 관문의 `/` 는 여전히 레일을 감춘다 — 고치면서 반대편을 깨지 않았다", async ({

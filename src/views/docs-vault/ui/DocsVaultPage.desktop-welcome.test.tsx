@@ -80,7 +80,6 @@ function renderWelcome(showDogfoodHint: boolean) {
       onOpen={onOpen}
       onOpenDogfoodPath={onOpenDogfoodPath}
       onOpenRecent={vi.fn()}
-      onOpenSample={vi.fn()}
       showDogfoodHint={showDogfoodHint}
       t={t}
     />,
@@ -158,6 +157,7 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
     expect(screen.getByText("문서 속성이 그래프 DB")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /기존 온톨로지 저장소 열기/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /새 온톨로지 저장소 만들기/ })).toBeInTheDocument();
+    expect(screen.queryByText("샘플 문서함 보기")).not.toBeInTheDocument();
     expect(screen.queryByText(/문서함/)).not.toBeInTheDocument();
   });
 
@@ -171,7 +171,6 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         onOpen={onOpen}
         onOpenDogfoodPath={onOpenDogfoodPath}
         onOpenRecent={vi.fn()}
-        onOpenSample={vi.fn()}
         showDogfoodHint
         t={t}
       />,
@@ -193,7 +192,6 @@ describe("DesktopVaultWelcome dogfood handoff", () => {
         onOpen={onOpen}
         onOpenDogfoodPath={onOpenDogfoodPath}
         onOpenRecent={vi.fn()}
-        onOpenSample={vi.fn()}
         showDogfoodHint={false}
         t={t}
       />,

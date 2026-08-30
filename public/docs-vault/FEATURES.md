@@ -103,9 +103,14 @@ the web still does not offer BYOK or MCP registration.
 | Mode | Condition | Behavior |
 |---|---|---|
 | **local** | a vault folder is active — picked in the installed app, or in an FSA-capable browser | vault manifest is the source of truth |
-| **static** | no active vault | build-time dogfood manifest (this project's own ontology) |
+| **static** | no active vault in the web fallback workbench | bundled sample selected by the web visitor |
 
-**Effect**: when a user opens a vault folder in the installed app, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, and `/ontology/insights` all switch to vault data instantly. Mutations (create / edit / connect) are mode-aware: local → show an exact change review, then write to vault `.md`; static → ask for a writable folder instead of presenting a dead editor.
+**Effect**: the installed app never enters static mode. Until its restored or newly selected local
+manifest is ready, the shell commits no destination content; a route change then mounts against
+that one provider before paint. On the web, choosing a folder moves every workbench route from the
+explicit sample to local in the same fail-closed way. Mutations (create / edit / connect) are
+mode-aware: local → show an exact change review, then write to vault `.md`; static web → ask for a
+writable folder instead of presenting a dead editor.
 
 **Bootstrap from existing docs (2026-07-20, Slice 1)**: opening a folder that
 already has markdown but no `kind:` frontmatter used to strand the user on a
@@ -175,8 +180,8 @@ dialog never says "ontology" (map-building framing for non-experts).
 
 **Desktop first-run (2026-07-18)**: in the installed app (Tauri — detected via
 `isDesktopShell()`, `src/shared/lib/desktop-shell.ts`), `/` with no vault
-renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): four
-machined cards — **just start** (2026-07-23, Tauri runtime only — no folder
+renders an Obsidian-style **FirstRunPage** (`src/views/first-run/`): local-only
+actions — **just start** (2026-07-23, Tauri runtime only — no folder
 picker at all: creates `~/Documents/Ontology Atlas/<name>` on real disk
 automatically, numbering `-2`/`-3` on a name clash, connects it, then reuses
 the same `scaffoldOntology()` seed as "create new vault", and the success
@@ -184,9 +189,8 @@ toast names the exact path — real disk, not OPFS, so an AI agent/MCP can
 still read it; hidden when the real Tauri invoke bridge is absent, e.g. a dev
 `?shell=desktop` browser override) / open vault folder / create new vault
 (existing `scaffoldOntology()` when the picked folder is empty — 5 markdown
-seeds + agent configs + the agent guide pair + 3 procedure skills) / browse the
-built-in demo vault — plus a local-first trust line. No download CTA inside the
-installed app.
+seeds + agent configs + the agent guide pair + 3 procedure skills) — plus a local-first trust
+line. Bundled demo vaults are web-only; no demo or download CTA appears inside the installed app.
 
 **Project-local vault (2026-08-24, supersedes the "just start" location above)**:
 the map now lives **inside the project it describes**, at `<project>/atlas`. One
@@ -202,6 +206,8 @@ that carries an `atlas/` holding Markdown redirects into it **and says so** —
 measured 2026-08-25, the silent alternative read the whole source tree as a vault
 and put `.ontology-atlas/` records beside the source. Rationale, including why
 the name is neither `docs/` nor a dot-folder: `docs/DECISIONS.md` (2026-08-24).
+The picker, recent-project list, and app-start restore share that resolver and persist the
+canonical child before building its manifest.
 
 **Vault-carried agent skills (2026-08-17)**: every scaffolded vault — CLI `init`
 and the in-app/web starter alike — ships `.claude/skills/atlas-{review,grow,absorb}/SKILL.md`.
@@ -246,7 +252,7 @@ IndexedDB goes straight to their own workspace, no starter surfaces at all.
 ### `/` — Smart entry
 
 - **Hosted web, no vault** → the **gateway face** — headline, download, and "open it in the browser" — the same view `/download` renders (2026-07-30 — reversed the previous decision to open the map directly from the root). Judged by `isGatewaySurface()`.
-- **Desktop app, no restored vault** → `FirstRunPage` (just start / open / create / browse demo), not the hosted intro
+- **Desktop app, no restored vault** → `FirstRunPage` (just start / open / create), with no bundled sample or workbench rail
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
 - **Vault loaded (web or desktop)** → `HomePage` — the topology hub for that vault (map + INDEX concept panel + node datasheet), the same component `/topology` renders (B3 decision ["Don't keep a separate hub; the map takes its place"] — the old tree/ego hub, `OntologyViewPage`, is retired; `/ontology` now redirects here with INDEX expanded). Restoring a previously-opened vault handle from IndexedDB goes straight here — no starter surfaces, no re-clicking through first-run every visit
 - **Switch vault mid-session**: the topology settings gear (⚙, top-right utility rail) has a "switch vault" row → `/docs/?intent=local`, alongside the `/docs` vault pill's own "swap" control

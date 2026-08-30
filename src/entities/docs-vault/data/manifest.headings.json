@@ -222,8 +222,8 @@
     },
     {
       "depth": 3,
-      "text": "Static mode (no vault picked)",
-      "slug": "static-mode-no-vault-picked"
+      "text": "Static mode (vault-less web only)",
+      "slug": "static-mode-vault-less-web-only"
     },
     {
       "depth": 2,
@@ -2943,6 +2943,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 · The installed app never paints a sample over a real vault",
+      "slug": "2026-08-30-the-installed-app-never-paints-a-sample-over-a-real-vault"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · ACP next steps use names a person can read",
       "slug": "2026-08-30-acp-next-steps-use-names-a-person-can-read"
     },
@@ -2950,6 +2955,11 @@
       "depth": 2,
       "text": "2026-08-30 · The download hero assembles as the headline is typed",
       "slug": "2026-08-30-the-download-hero-assembles-as-the-headline-is-typed"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 · The gateway demo now reaches the agent handoff",
+      "slug": "2026-08-30-the-gateway-demo-now-reaches-the-agent-handoff"
     },
     {
       "depth": 2,
@@ -6054,6 +6064,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 — Bundled samples are web-only; the installed app commits one local vault",
+      "slug": "2026-08-30-bundled-samples-are-web-only-the-installed-app-commits-one-local-vault"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — The X cut shows the whole workbench; the page cut keeps the agent proof",
+      "slug": "2026-08-30-the-x-cut-shows-the-whole-workbench-the-page-cut-keeps-the-agent-proof"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 — Looked, and decided: the glob stays in the dock, and the echo stays proportional",
       "slug": "2026-08-30-looked-and-decided-the-glob-stays-in-the-dock-and-the-echo-stays-proportional"
     },
@@ -6071,6 +6091,11 @@
       "depth": 2,
       "text": "2026-08-30 — The hero object is the headline's echo, and the page moves in three places",
       "slug": "2026-08-30-the-hero-object-is-the-headlines-echo-and-the-page-moves-in-three-places"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Two real-use cuts replace the nine-second neighbourhood loop",
+      "slug": "2026-08-30-two-real-use-cuts-replace-the-nine-second-neighbourhood-loop"
     },
     {
       "depth": 2,
@@ -10061,88 +10086,48 @@
   "DEMO-SCENARIO": [
     {
       "depth": 1,
-      "text": "Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)",
-      "slug": "demo-video-shooting-scenario-atlas-tour-revised-2026-08-22"
+      "text": "Demo Video Shooting Scenario — `atlas-tour`",
+      "slug": "demo-video-shooting-scenario-atlas-tour"
     },
     {
       "depth": 2,
-      "text": "0-1. Revised 2026-08-22 — Abandoning the tour, leaving only one scene",
-      "slug": "0-1-revised-2026-08-22-abandoning-the-tour-leaving-only-one-scene"
-    },
-    {
-      "depth": 3,
-      "text": "(a) Finish prep outside the shoot — it was a privacy flaw",
-      "slug": "a-finish-prep-outside-the-shoot-it-was-a-privacy-flaw"
-    },
-    {
-      "depth": 3,
-      "text": "(a) Preparation Ends Outside the Shoot — A Privacy Defect",
-      "slug": "a-preparation-ends-outside-the-shoot-a-privacy-defect"
-    },
-    {
-      "depth": 3,
-      "text": "(B) Aligning the beat sheet with the current app",
-      "slug": "b-aligning-the-beat-sheet-with-the-current-app"
+      "text": "1. The sentences the footage must prove",
+      "slug": "1-the-sentences-the-footage-must-prove"
     },
     {
       "depth": 2,
-      "text": "1. The One Sentence This Video Must Convey",
-      "slug": "1-the-one-sentence-this-video-must-convey"
+      "text": "2. Privacy and capture contract",
+      "slug": "2-privacy-and-capture-contract"
     },
     {
       "depth": 2,
-      "text": "2. Shooting Specifications",
-      "slug": "2-shooting-specifications"
+      "text": "3. Download-page take — 44 seconds",
+      "slug": "3-download-page-take-44-seconds"
     },
     {
       "depth": 2,
-      "text": "3. Beats — Approx. 155 seconds",
-      "slug": "3-beats-approx-155-seconds"
-    },
-    {
-      "depth": 3,
-      "text": "Download Bit — Decided to Exclude (Measured on 2026-08-19)",
-      "slug": "download-bit-decided-to-exclude-measured-on-2026-08-19"
-    },
-    {
-      "depth": 3,
-      "text": "Rules Between Bits",
-      "slug": "rules-between-bits"
+      "text": "4. X take — 23 seconds",
+      "slug": "4-x-take-23-seconds"
     },
     {
       "depth": 2,
-      "text": "4. Pre-shoot Checklist",
-      "slug": "4-pre-shoot-checklist"
+      "text": "5. Capture and encode",
+      "slug": "5-capture-and-encode"
     },
     {
       "depth": 2,
-      "text": "5. Post-recording — Activation Procedure",
-      "slug": "5-post-recording-activation-procedure"
+      "text": "6. Activation",
+      "slug": "6-activation"
     },
     {
       "depth": 2,
-      "text": "6. Post-activation Gate",
-      "slug": "6-post-activation-gate"
+      "text": "7. Required proof",
+      "slug": "7-required-proof"
     },
     {
       "depth": 2,
-      "text": "7. What is currently attached",
-      "slug": "7-what-is-currently-attached"
-    },
-    {
-      "depth": 3,
-      "text": "*(155-second tour)* Speed was used, but no cuts",
-      "slug": "155-second-tour-speed-was-used-but-no-cuts"
-    },
-    {
-      "depth": 3,
-      "text": "Why the recording failed three times — So the next person doesn't fall into the same trap",
-      "slug": "why-the-recording-failed-three-times-so-the-next-person-doesnt-fall-into-the-same-trap"
-    },
-    {
-      "depth": 3,
-      "text": "The English version was recorded separately on the same day",
-      "slug": "the-english-version-was-recorded-separately-on-the-same-day"
+      "text": "8. Retired scenarios",
+      "slug": "8-retired-scenarios"
     }
   ],
   "DEPLOYMENT": [
@@ -12627,8 +12612,8 @@
   "launch/DEMO-GIF-STORYBOARD": [
     {
       "depth": 1,
-      "text": "30s Demo GIF — storyboard",
-      "slug": "30s-demo-gif-storyboard"
+      "text": "30s Demo GIF — retired storyboard",
+      "slug": "30s-demo-gif-retired-storyboard"
     },
     {
       "depth": 2,

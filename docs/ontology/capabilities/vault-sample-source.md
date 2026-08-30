@@ -11,11 +11,11 @@ created_by: "agent:unknown"
 ---
 
 ## Definition
-Source for a bundled example vault (demo mode) enabling experience without installation.
+Source for a bundled example vault that lets a vault-less web visitor explore without installing or choosing a folder. This source is web-only: the installed app exposes no sample entrance, switch, command, or fallback manifest.
 
 ## Evidence
 - src/features/vault-sample-source (implementation evidence)
-- README.md: "The installed macOS app reading the example vault in files in a folder"
+- src/app/providers/AppShell.tsx (installed-shell exclusion boundary)
 
 ## Confidence
 medium-high (0.8)

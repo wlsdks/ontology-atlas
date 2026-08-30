@@ -44,6 +44,8 @@ import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { cn } from '@/shared/lib/cn';
 import { useDocumentTitle } from '@/shared/lib/use-document-title';
+import { isDesktopShell } from '@/shared/lib/desktop-shell';
+import { useHydrated } from '@/shared/lib/use-hydrated';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
@@ -95,6 +97,7 @@ import {
   type VaultManifest,
 } from '@/entities/docs-vault';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { VaultSourceHydrationBoundary } from '@/features/data-source-mode';
 import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';
@@ -199,6 +202,11 @@ function DocsVaultContent() {
   const querySample =
     searchParams?.get('sample') === 'dogfood' ? 'dogfood' : null;
   const queryDogfood = searchParams?.get('dogfood') ?? null;
+  const localVault = useLocalVault();
+  const hydrated = useHydrated();
+  const installedShell = hydrated && isDesktopShell();
+  const localWinsInitialSource =
+    Boolean(localVault.manifest) && (installedShell || querySource !== 'server');
   // List order — the URL is the source of truth. An unknown value is not an error, it is the default.
   const queryTreeSort = parseDocsTreeSort(searchParams?.get('sort'));
   const queryTreeGroup = parseDocsTreeGroup(searchParams?.get('group'));
@@ -265,7 +273,9 @@ function DocsVaultContent() {
   // `?intent=local` is the entry query of the landing CTA "open my markdown folder".
   // Pinning the initial source to 'local' puts the picker in the right sidebar from the
   // first frame — it used to be buried four steps deep.
-  const [source, setSource] = useState<Source>(querySource ?? 'server');
+  const [source, setSource] = useState<Source>(() =>
+    localWinsInitialSource ? 'local' : querySource ?? 'server',
+  );
   const [staticSampleOverride, setStaticSampleOverride] = useState<
     'dogfood' | null
   >(querySample);
@@ -273,7 +283,7 @@ function DocsVaultContent() {
   // the stored source is still being read. This blocks the race where reopening the app
   // on a local deeplink renders the server manifest first and overwrites the last document.
   const [sourcePreferenceHydrated, setSourcePreferenceHydrated] =
-    useState(false);
+    useState(() => localWinsInitialSource);
   // At lg+ the gear at the bottom of the nav rail opens settings, matching the map,
   // insights, and projects. Below lg the header's chrome tile takes over (the rail is
   // hidden at that width). Both uncontrolled.
@@ -325,7 +335,6 @@ function DocsVaultContent() {
       return next;
     });
   }, []);
-  const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   // Whether the IDB handle restore **has finished being attempted** — unlike status, this
   // separates "not known yet" from "confirmed absent". The only start signal for the
@@ -428,6 +437,20 @@ function DocsVaultContent() {
 
   useEffect(() => {
     migrateLegacyRecentDocs();
+    // A mounted local vault wins on landing for web and app. `?source=server` remains an explicit
+    // web choice, while the installed shell ignores it because bundled samples are web-only.
+    // This branch also handles a restored manifest arriving after mount without replaying the
+    // stored sample preference in an intermediate render.
+    if (localVault.manifest && (installedShell || querySource !== 'server')) {
+      scheduleStateSync(() => {
+        setSource('local');
+        setSourcePreferenceHydrated(true);
+      });
+      return;
+    }
+    // Reading a stored web/sample preference in the installed shell would briefly revive the
+    // very source the desktop boundary excludes.
+    if (installedShell) return;
     if (querySource) {
       scheduleStateSync(() => {
         setSource(querySource);
@@ -448,7 +471,7 @@ function DocsVaultContent() {
       setSource(readStoredSource());
       setSourcePreferenceHydrated(true);
     });
-  }, [isDesktopRuntime, querySource]);
+  }, [installedShell, isDesktopRuntime, localVault.manifest, querySource]);
 
   // When a local vault is live, landing on the docs surface must NOT silently flip to the
   // Sample (`server`) source just because that was the last stored preference. Users read
@@ -473,7 +496,9 @@ function DocsVaultContent() {
   // (use-local-vault sets it once load completes), so the status at this point is final and
   // one decision is enough. It is **state, not a ref**, because a ref produces no re-render
   // when the decision ends in "no switch", leaving every consumer below asleep forever.
-  const [landingSourceResolved, setLandingSourceResolved] = useState(false);
+  const [landingSourceResolved, setLandingSourceResolved] = useState(
+    () => localWinsInitialSource,
+  );
   useEffect(() => {
     if (landingSourceResolved) return;
     if (!sourcePreferenceHydrated || !localVaultRestoreAttempted) return;
@@ -496,10 +521,21 @@ function DocsVaultContent() {
    * Any of the three deciding earlier mistakes the boot-time sample window for reality
    * (2026-08-08 — three consumers using three different predicates lost a deeplink).
    */
+  const localSourceReady =
+    localVaultStatus === 'loaded' || localVault.isReloadingSameVault;
+  const showDesktopWelcome = shouldShowDesktopVaultWelcome({
+    isDesktopRuntime,
+    source,
+    localVaultStatus,
+    hasLocalManifest: Boolean(localVault.manifest),
+  });
   const vaultScopeSettled =
     sourcePreferenceHydrated &&
     landingSourceResolved &&
-    (source === 'server' || localVaultStatus === 'loaded');
+    // A local source with no manifest is also a settled, non-sample state: the folder picker
+    // owns the screen. Requiring a loaded manifest here leaves the web `?intent=local` entry
+    // behind the neutral fallback forever, so the user can never choose that first folder.
+    (source === 'server' || localSourceReady || showDesktopWelcome);
 
   // The docs check modal must not persist its open state: a modal appearing on every load
   // violates modality, so it always starts closed. The toggle is plain component state and
@@ -601,6 +637,9 @@ function DocsVaultContent() {
   }, [source, localVaultStatus, setAdvancedOpen]);
 
   const handleSourceChange = useCallback((next: Source) => {
+    // The installed app is the local vault's home. Its bundled sample entry was removed after a
+    // measured Storefront → local overwrite flash; legacy commands or links cannot reopen it.
+    if (installedShell && next === 'server') return;
     setSource(next);
     setStaticSampleOverride(null);
     storeSource(next);
@@ -622,14 +661,8 @@ function DocsVaultContent() {
       localIntentAutoOpenRef.current = true;
       setAdvancedOpen(false);
     }
-  }, [isDesktopRuntime, replaceUrlState, view, localVault.status, setAdvancedOpen]);
+  }, [installedShell, isDesktopRuntime, replaceUrlState, view, localVault.status, setAdvancedOpen]);
 
-  const showDesktopWelcome = shouldShowDesktopVaultWelcome({
-    isDesktopRuntime,
-    source,
-    localVaultStatus,
-    hasLocalManifest: Boolean(localVault.manifest),
-  });
   const showDogfoodHint = hasDogfoodVaultPath() && shouldShowDogfoodVaultHint({
     dogfood: queryDogfood,
     isDesktopRuntime,
@@ -1715,7 +1748,7 @@ function DocsVaultContent() {
         id: 'source-server',
         label: t('commands.sourceServer'),
         icon: <Package size={ICON_SIZE.sm} aria-hidden />,
-        visible: source !== 'server',
+        visible: !installedShell && source !== 'server',
         onRun: () => handleSourceChange('server'),
       },
       {
@@ -1831,6 +1864,7 @@ function DocsVaultContent() {
   }, [
     view,
     source,
+    installedShell,
     selectedSlug,
     pinnedSet,
     canEditCurrent,
@@ -1946,6 +1980,11 @@ function DocsVaultContent() {
   // re-pick (`openLocalVault`) and the desktop sample→local switch calls the source switch
   // directly. Recent vaults, close, refresh, and permission recovery moved to the settings menu's
   // vault tab.
+
+  // Hold one neutral frame while source preference and the restored local manifest settle. The
+  // static manifest may still be computed for the web fallback, but it is never painted as the
+  // installed app's data and cannot seed tabs or a `domains/order` fallback before local wins.
+  if (!vaultScopeSettled) return <RouteLoadingFallback />;
 
   return (
     <div className="flex h-full w-full">
@@ -2083,6 +2122,7 @@ function DocsVaultContent() {
               handleVaultPillSwap();
             }}
             isSample={source === 'server'}
+            allowSample={!installedShell}
             onUseSample={() => {
               setVaultChipOpen(false);
               handleSourceChange('server');
@@ -2277,7 +2317,6 @@ function DocsVaultContent() {
           // better than explaining what does not.
           onOpenDogfoodPath={isDesktopRuntime ? handleOpenDogfoodVault : undefined}
           onOpenRecent={(record) => void localVault.openRecent(record)}
-          onOpenSample={() => handleSourceChange('server')}
           showDogfoodHint={showDogfoodHint}
           t={t}
         />
@@ -2711,11 +2750,13 @@ export function DocsVaultPage() {
   // Local-first core (`.claude/rules/local-first.md` §1) — reaching the vault picker passes through
   // no auth gate. The user's local disk is the source of truth.
   return (
-    // This inner boundary is closer than the route boundary, so what actually gets baked into the
-    // prerendered HTML is this fallback — null would make the deployed docs surface start as a black
-    // screen with only the rail.
-    <Suspense fallback={<RouteLoadingFallback />}>
-      <DocsVaultContent />
-    </Suspense>
+    <VaultSourceHydrationBoundary>
+      {/* This inner boundary is closer than the route boundary, so what actually gets baked into the
+          prerendered HTML is this fallback — null would make the deployed docs surface start as a black
+          screen with only the rail. */}
+      <Suspense fallback={<RouteLoadingFallback />}>
+        <DocsVaultContent />
+      </Suspense>
+    </VaultSourceHydrationBoundary>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
@@ -169,7 +169,9 @@ function ShellColumn({ children }: { children: ReactNode }) {
           data-testid="app-shell-body-slot"
           className="flex min-w-0 flex-1 flex-col overflow-y-auto [&>*]:shrink-0"
         >
-          {children}
+          <VaultRouteIdentityBoundary pathname={pathname}>
+            {children}
+          </VaultRouteIdentityBoundary>
         </div>
       </div>
 
@@ -194,6 +196,78 @@ function ShellColumn({ children }: { children: ReactNode }) {
       <AgentMascotPresence />
     </div>
   );
+}
+
+/** Is this the locale root that owns the installed app's first-run/restore branch? */
+function isLocaleRoot(pathname: string): boolean {
+  const localPath = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, "") || "/";
+  return localPath === "/";
+}
+
+/**
+ * Keeps one vault identity on screen during route and folder transitions.
+ *
+ * The static export contains a complete bundled sample so a vault-less web visitor has a useful
+ * first paint. In the installed app, however, Next can briefly commit that prerendered destination
+ * while the newly mounted client page is still reading the already-restored local provider. The
+ * owner caught the result at 30fps: Storefront Insights/Projects/Architecture appeared, then the
+ * selected Atlas vault replaced it; Docs also carried the sample `domains/order` slug into local.
+ *
+ * A selected local vault always wins. For a route change, this boundary commits one neutral body
+ * for the layout-effect turn and releases the destination before the browser paints. That makes the
+ * new page mount against the existing local manifest instead of painting its static HTML. A genuine
+ * folder load/switch remains neutral until `load()` atomically publishes the new manifest; a same-
+ * vault refresh keeps its current pixels through `isReloadingSameVault`.
+ */
+function VaultRouteIdentityBoundary({
+  pathname,
+  children,
+}: {
+  pathname: string;
+  children: ReactNode;
+}) {
+  const router = useRouter();
+  const vault = useLocalVault();
+  const hydrated = useHydrated();
+  const desktop = hydrated && isDesktopShell();
+  const workbenchDestination =
+    !isLocaleRoot(pathname) && resolveActiveNavDestination(pathname) !== null;
+  const localReady = vault.status === "loaded" || vault.isReloadingSameVault === true;
+  const localLoadPending =
+    desktop &&
+    (vault.status === "opening" || vault.status === "loading") &&
+    !localReady;
+  const desktopWithoutVault = desktop && workbenchDestination && !vault.manifest;
+  const [releasedPathname, setReleasedPathname] = useState(pathname);
+  const routeCommitPending = localReady && releasedPathname !== pathname;
+
+  useLayoutEffect(() => {
+    if (!routeCommitPending) return;
+    let cancelled = false;
+    window.queueMicrotask(() => {
+      if (!cancelled) setReleasedPathname(pathname);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, routeCommitPending]);
+
+  useEffect(() => {
+    if (!desktopWithoutVault || !vault.restoreAttempted) return;
+    router.replace("/");
+  }, [desktopWithoutVault, router, vault.restoreAttempted]);
+
+  if (routeCommitPending || localLoadPending || desktopWithoutVault) {
+    return (
+      <div
+        data-testid="vault-route-identity-pending"
+        aria-busy="true"
+        className="min-h-full bg-[color:var(--color-canvas)]"
+      />
+    );
+  }
+
+  return children;
 }
 
 /** Is this the project **list** screen? `/project/<slug>` detail and edit are not. */
@@ -227,6 +301,7 @@ function AppNavRailSlot() {
   // address by client navigation worked fine). `useHydrated()` guarantees one re-render
   // after hydration.
   const hydrated = useHydrated();
+  const desktopWithoutVault = hydrated && isDesktopShell() && !vault.manifest;
   const gateway = isGatewaySurface(pathname, {
     hasVault: Boolean(vault.manifest),
     desktop: hydrated && isDesktopShell(),
@@ -298,7 +373,7 @@ function AppNavRailSlot() {
   return (
     <AppNavRail
       settingsSlot={utilityTier}
-      hidden={hidden || gateway}
+      hidden={hidden || gateway || desktopWithoutVault}
       contextHrefs={contextHrefs}
       gitDirtyCount={gitDirtyCount}
       agentsNoticeCount={installNotice.count}

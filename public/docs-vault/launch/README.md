@@ -11,7 +11,8 @@ Collection of drafts for the open-source launch phase. Maintainers will publish 
    - [ ] Verify that the [Connect Agent] button in the installed app actually writes `.mcp.json` / `.codex/config.toml` and shows green for self-verification
    - [ ] Deploy static hosting (GitHub Pages / Vercel / Netlify / Cloudflare Pages, etc.) — `pnpm build` → upload to `out/`. See `docs/DEPLOYMENT.md` for detailed guides.
    - [ ] Reconfirm that the hosted demo URL matches the README + draft text
-   - [ ] Record 30s demo gif and commit as `docs/launch/demo.gif` (storyboard: `docs/launch/DEMO-GIF-STORYBOARD.md`)
+   - [x] Record the 23-second X LNB overview as `docs/launch/ontology-atlas-x-demo.ko.mp4`
+     (current shoot contract: `docs/DEMO-SCENARIO.md`)
    - [x] Enable GitHub Discussions + setup categories (automatically enabled in this PR)
 
 2. **Launch day**

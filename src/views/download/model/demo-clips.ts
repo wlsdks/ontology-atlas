@@ -52,48 +52,43 @@ export interface DemoClip {
  * gate has something to compare against.
  */
 export const DEMO_CLIPS: readonly DemoClip[] = [
-  // `seconds` is measured with ffprobe (2026-08-22 footage: 9.000s).
-  { id: 'atlas-tour', seconds: 9, basename: 'atlas-tour' },
+  // `seconds` is measured with ffprobe (2026-08-30 footage: 44.000s).
+  { id: 'atlas-tour', seconds: 44, basename: 'atlas-tour' },
 ];
 
 /**
  * **The footage actually attached.** When empty, the demo section does not render.
  *
- * To switch it on: place `public/demo/<basename>.{webm,mp4}`, `<basename>-poster.png`, and
- * `<basename>.ko.vtt` / `.en.vtt`, then add that id here. Adding files without editing this array
- * leaves the section off — **both the asset and the declaration must exist**, which is the point
- * of this array (switching on from file existence alone would put a half-uploaded asset straight
- * into the first-impression slot).
+ * To switch it on: place per-locale WebM, MP4, and poster assets in `public/demo/`, then add the
+ * id here. Adding files without editing this array leaves the section off — **both the asset and
+ * the declaration must exist**, which prevents a half-uploaded asset entering the first-impression
+ * slot.
  */
 /*
- * **What is attached now** (filmed 2026-08-22, installed build, vault `docs/ontology` with 82
- * nodes): one 9.000-second take. The path: the app opens on a folder it already knows → the map
- * draws itself and settles → a domain node is clicked → everything that is not its neighbour dims
- * out and the panel names what sits under it (16), above it (1), and which document evidences it.
+ * **What is attached now** (filmed 2026-08-30, installed rc.18, public `docs/ontology` example):
+ * one 44-second take per locale. The path starts on a settled map, finds the localized MCP Server
+ * capability, holds its typed relations and evidence, then has Codex read both endpoint concepts
+ * and their path through Atlas MCP before leaving the one-sentence result on screen.
  *
  * **Why the folder picking is not in frame** (owner, 2026-08-22): the vault is already connected
  * when the take starts. A picker sheet puts a real disk path on screen, and the scene it buys
  * ("choose a folder") is the one thing a viewer already assumes works.
  *
- * **Why it is nine seconds and not the previous 199.** The old take was a full feature tour —
- * dome, cloud, an ACP round trip — filmed when this slot was the page's argument. It is now one
- * scene above the install steps, and a tour asks for three minutes of attention before the viewer
- * has any reason to give it. What replaced it is the single claim the map makes: *click one thing
- * and the graph answers with its neighbourhood.*
+ * **Why it is 44 seconds.** The nine-second predecessor proved only neighbourhood focus and the
+ * owner observed that it was too short. The older 199-second take proved too many unrelated
+ * features. The current bound is the shortest rehearsed path that keeps concept, relation,
+ * evidence, and the real agent lookup in one unsped take.
  *
- * **No cuts and no speed-up** — the whole nine seconds runs at capture speed, so the assembly and
- * the click take exactly as long here as they do on a real machine.
+ * **No cuts and no speed-up** — search, panel movement, MCP calls, and answer streaming take
+ * exactly as long here as they do on the installed app.
  *
- * **Each locale is its own take** (2026-08-22). The Korean and English recordings are separate
- * passes over the same beats, filmed after switching the app's language, so the UI text and the
- * node names inside the frame are in the viewer's language. The layout turned out to be
- * deterministic — the same node measured at 812,797 in Korean and 813,798 in English — so the
- * coordinate path did not have to be re-planned after all.
+ * **Each locale is its own take.** The Korean and English recordings are separate passes over the
+ * same beats, filmed after switching the app's language, so UI, prompt, and answer match the page.
  *
  * ⚠️ **The two assets must not become one again.** For its first two days this registry shipped a
  * single Korean master under both names, and `demoProvisionalNote` carried a clause admitting it.
  * Re-copying one locale over the other would restore that silently: every existing check would
- * stay green, because both files would still exist, still be over 10KB, and still measure 9s.
+ * stay green, because both files would still exist, still be over 10KB, and still measure 44s.
  * `demo-clip-assets.contract` now compares their bytes for exactly this reason.
  *
  * Why the registry is not simply left empty: emptying it removes the demo section from the gateway

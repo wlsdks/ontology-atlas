@@ -1,7 +1,20 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "./AppShell";
+
+const shellMocks = vi.hoisted(() => ({
+  pathname: "/ontology/studio",
+  desktop: false,
+  replace: vi.fn(),
+  vault: {
+    status: "idle",
+    handle: null,
+    manifest: null as object | null,
+    restoreAttempted: true,
+    isReloadingSameVault: false,
+  },
+}));
 
 /**
  * #65 — The bottom rail utility tier (settings) is **the same on all screens.**
@@ -25,7 +38,11 @@ vi.mock("@/features/docs-vault-local", () => ({
     binaryPath: null,
     reason: "The bundled MCP server is only available in the installed app.",
   }),
-  useLocalVault: () => ({ status: "idle", handle: null, manifest: null }),
+  useLocalVault: () => shellMocks.vault,
+}));
+
+vi.mock("@/shared/lib/desktop-shell", () => ({
+  isDesktopShell: () => shellMocks.desktop,
 }));
 
 vi.mock("@/features/vault-ontology", () => ({
@@ -37,10 +54,21 @@ vi.mock("@/features/data-source-mode", () => ({
 }));
 
 vi.mock("@/i18n/navigation", () => ({
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-  usePathname: () => "/ontology/studio",
+  useRouter: () => ({ push: vi.fn(), replace: shellMocks.replace }),
+  usePathname: () => shellMocks.pathname,
   Link: ({ children }: { children?: unknown }) => children,
 }));
+
+beforeEach(() => {
+  shellMocks.pathname = "/ontology/studio";
+  shellMocks.desktop = false;
+  shellMocks.replace.mockClear();
+  shellMocks.vault.status = "idle";
+  shellMocks.vault.handle = null;
+  shellMocks.vault.manifest = null;
+  shellMocks.vault.restoreAttempted = true;
+  shellMocks.vault.isReloadingSameVault = false;
+});
 
 describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
   it("페이지가 슬롯을 주입하지 않아도 설정이 선다", () => {
@@ -75,6 +103,22 @@ describe("AppShell — 레일 하단 유틸 티어 (#65)", () => {
 });
 
 describe("셸 칼럼 — 뷰포트 소유 계약", () => {
+  it("설치 앱은 실제 vault 없이 workbench 레일이나 번들 목적지를 그리지 않는다", () => {
+    shellMocks.desktop = true;
+    shellMocks.pathname = "/ko/projects";
+
+    render(
+      <AppShell>
+        <div>bundled sample destination</div>
+      </AppShell>,
+    );
+
+    expect(screen.getByTestId("app-nav-rail")).toHaveAttribute("data-hidden", "true");
+    expect(screen.queryByText("bundled sample destination")).not.toBeInTheDocument();
+    expect(screen.getByTestId("vault-route-identity-pending")).toBeInTheDocument();
+    expect(shellMocks.replace).toHaveBeenCalledWith("/");
+  });
+
   it("셸이 뷰포트 높이를 잡고 본문만 스크롤한다", () => {
     // Structure a page has to remember — such as `--app-viewport-h` — is exactly what
     // drifts. With the shell owning `h-dvh overflow-hidden`, a page needs only `h-full`.
