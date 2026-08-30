@@ -77,6 +77,13 @@ const COL_GAP = 52;
 const ROW_GAP_PLAIN = 26;
 const PAD_X = 28;
 const PAD_Y = 26;
+/*
+ * ⚠️ **A scrollbar for empty ground is noise.** Measured 2026-08-30 at 1440×900: the chain fit but
+ * the drawing's own bottom padding did not, so the canvas scrolled 13px and showed a bar for dot
+ * field nobody needs to reach. With a ledger the boxes already carry their own breathing room, so
+ * the field around them gives some back.
+ */
+const PAD_Y_LEDGER = 20;
 /** How far past the lane a skip swings, and how much deeper each further rank pushes it. */
 const SKIP_DROP = 30;
 const SKIP_STEP = 10;
@@ -101,12 +108,13 @@ function place(
   boxH: number,
   boxW: number,
   rowGap: number,
+  padY: number,
 ): { x: number; y: number } {
   const along = rank * (axis === 'across' ? boxW + COL_GAP : boxH + rowGap);
   const across = lane * (axis === 'across' ? boxH + rowGap : boxW + COL_GAP);
   return axis === 'across'
-    ? { x: PAD_X + along, y: PAD_Y + across }
-    : { x: PAD_X + across, y: PAD_Y + along };
+    ? { x: PAD_X + along, y: padY + across }
+    : { x: PAD_X + across, y: padY + along };
 }
 
 interface Placed {
@@ -228,6 +236,7 @@ export function ArchitectureSketch({
   const hasLedger = graph.boxes.some((box) => ledgers[box.id] !== undefined);
   const boxH = hasLedger ? BOX_H_LEDGER : BOX_H;
   const rowGap = hasLedger ? ROW_GAP_LEDGER : ROW_GAP_PLAIN;
+  const padY = hasLedger ? PAD_Y_LEDGER : PAD_Y;
   const boxW = hasLedger ? BOX_W_LEDGER : BOX_W;
   const ranks = graph.columns;
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
@@ -237,10 +246,10 @@ export function ArchitectureSketch({
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
     for (const box of graph.boxes) {
-      map.set(box.id, { id: box.id, ...place(axis, box.column, box.slot, boxH, boxW, rowGap), shape: box.shape });
+      map.set(box.id, { id: box.id, ...place(axis, box.column, box.slot, boxH, boxW, rowGap, padY), shape: box.shape });
     }
     return map;
-  }, [graph.boxes, axis, boxH, boxW, rowGap]);
+  }, [graph.boxes, axis, boxH, boxW, rowGap, padY]);
 
   /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
      longer scaled. Derived, never a ref written during render. */
@@ -470,10 +479,10 @@ export function ArchitectureSketch({
   const alongExtent =
     axis === 'across'
       ? PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP
-      : PAD_Y * 2 + ranks * boxH + (ranks - 1) * rowGap;
+      : padY * 2 + ranks * boxH + (ranks - 1) * rowGap;
   const acrossExtent =
     axis === 'across'
-      ? PAD_Y * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom
+      ? padY * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom
       : PAD_X * 2 + lanes * boxW + (lanes - 1) * COL_GAP + skipRoom;
   const width = axis === 'across' ? alongExtent : acrossExtent;
   const height = axis === 'across' ? acrossExtent : alongExtent;
