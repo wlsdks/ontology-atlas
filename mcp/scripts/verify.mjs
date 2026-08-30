@@ -614,7 +614,10 @@ function outgoingEdgesSchemaFailure(schema, label) {
     !sameArray(row.required, ['to', 'via']) ||
     row.additionalProperties !== false ||
     row.properties?.to?.type !== 'string' ||
-    row.properties?.via?.type !== 'string'
+    row.properties?.via?.type !== 'string' ||
+    // Optional stored `relation_notes` sentence; a string when present, never
+    // required, so a vault without notes still validates.
+    row.properties?.rationale?.type !== 'string'
   ) {
     return `${label} outputSchema outgoingEdges drift`;
   }
@@ -1496,7 +1499,7 @@ export function toolsListSchemaFailure(tools) {
   if (findPathEdgesSchema.items?.additionalProperties !== false) {
     return 'find_path outputSchema edge openness drift';
   }
-  for (const propertyName of ['from', 'to', 'via']) {
+  for (const propertyName of ['from', 'to', 'via', 'rationale']) {
     if (findPathEdgesSchema.items?.properties?.[propertyName]?.type !== 'string') {
       return `find_path outputSchema edge ${propertyName} drift`;
     }

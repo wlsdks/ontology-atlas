@@ -146,6 +146,40 @@ describe('findPath — edge metadata (R+)', () => {
     });
   });
 
+  it('edges carry the stored relation_notes sentence as `rationale`, and omit the key without one', () => {
+    writeFileSync(
+      join(pathRoot, 'capabilities', 'auth.md'),
+      '---\nslug: capabilities/auth\nkind: capability\ndomain: identity\nelements: [token]\n' +
+        'relation_notes: { token: "Auth mints the token, so a token format change is an auth change." }\n---\n',
+    );
+    const withNote = findPath(pathRoot, 'capabilities/auth', 'elements/token');
+    assert.deepEqual(withNote.edges, [
+      {
+        from: 'capabilities/auth',
+        to: 'elements/token',
+        via: 'elements',
+        rationale: 'Auth mints the token, so a token format change is an auth change.',
+      },
+    ]);
+    // The note explains the pair, so it rides along whichever way BFS walked it.
+    const reversed = findPath(pathRoot, 'elements/token', 'capabilities/auth');
+    assert.equal(reversed.edges[0].rationale, withNote.edges[0].rationale);
+    // A hop without a note carries no `rationale` key at all — never null.
+    const withoutNote = findPath(pathRoot, 'project', 'capabilities/auth');
+    assert.deepEqual(withoutNote.edges, [{ from: 'project', to: 'capabilities/auth', via: 'capabilities' }]);
+    assert.equal('rationale' in withoutNote.edges[0], false);
+  });
+
+  it('a note keyed by the full slug is found when the array holds the tail alias', () => {
+    writeFileSync(
+      join(pathRoot, 'capabilities', 'auth.md'),
+      '---\nslug: capabilities/auth\nkind: capability\ndomain: identity\nelements: [token]\n' +
+        'relation_notes: { elements/token: "Keyed by the resolved slug." }\n---\n',
+    );
+    const r = findPath(pathRoot, 'capabilities/auth', 'elements/token');
+    assert.equal(r.edges[0].rationale, 'Keyed by the resolved slug.');
+  });
+
   it('maxHops 는 core 에서도 non-negative integer, max 20 으로 검증', () => {
     assert.throws(
       () => findPath(pathRoot, 'project', 'elements/token', -1),

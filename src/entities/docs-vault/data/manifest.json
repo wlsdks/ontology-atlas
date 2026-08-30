@@ -439,8 +439,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The one-lin",
-      "wordCount": 82912,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. relationnot",
+      "wordCount": 83125,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -586,7 +586,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-29 (replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench, source-derived conformance, a",
-      "wordCount": 24118,
+      "wordCount": 24175,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "slug",
@@ -869,8 +869,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
-      "wordCount": 5503,
-      "updatedAt": "2026-08-23",
+      "wordCount": 6084,
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -1411,7 +1411,7 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3115,
+      "wordCount": 3222,
       "updatedAt": "2026-08-30",
       "linksOut": []
     },

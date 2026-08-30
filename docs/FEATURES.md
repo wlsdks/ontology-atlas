@@ -128,7 +128,12 @@ dialog never says "ontology" (map-building framing for non-experts).
 - **Relation rationale (why)** — `relation_notes: {ref: one-line-why}` in
   frontmatter; MCP `add_relation` takes `why` and writes relation + note in
   ONE frontmatter write; `rename_concept` rewrites note keys (collision:
-  existing new-key note wins).
+  existing new-key note wins). The read side returns the same sentence as an
+  optional `rationale` on `find_path().edges[]`, `get_concept().outgoingEdges[]`,
+  and `query_ontology` path/impact rows (omitted when none is stored). The
+  validator flags a value that swallowed the next entry
+  (`swallowed-relation-note`) and a key naming no declared relation
+  (`orphaned-relation-note`).
 - **Agent connect sheet** — INDEX footer agent status opens a sheet:
   heartbeat-file connection state, Claude Code/.mcp.json + Codex + generic
   registration snippets (desktop autofills the path), config-file writer on
@@ -1013,7 +1018,7 @@ file export + the local stdio MCP genuinely can't serve them.
 7. **find_evidence** `{ title }` — partial-match across title / capabilities / elements / body; each match carries `{uid, slug}`, `domain`, `mtime`, and prose excerpt
 8. **find_backlinks** `{ slug }` — every referencing node as `{uid, slug, …}` (frontmatter arrays + wikilinks/markdown)
 9. **find_neighbors** `{ slug, direction?, types?, includeNodes?, limit? }` — one-hop local graph around a node, with canonical incoming/outgoing `edges[]` and `{uid, slug}` neighbor summaries (`includeNodes` defaults true, `limit` defaults 100/max 500); public relation type aliases like `depends_on` are normalized to stored graph keys
-10. **find_path** `{ from, to, maxHops? }` — shortest undirected BFS across graph frontmatter, including `domains` / `domain` containment (default 5 hops, includes aligned `{uid, slug}` `nodes[]` summaries plus `edges[via]`)
+10. **find_path** `{ from, to, maxHops? }` — shortest undirected BFS across graph frontmatter, including `domains` / `domain` containment (default 5 hops, includes aligned `{uid, slug}` `nodes[]` summaries plus `edges[]` of `{from, to, via, rationale?}`, the rationale being the stored `relation_notes` sentence when one exists)
 11. **list_kinds** — vault kind census `{ total, byKind: { capability: N, … } }`
 12. **find_orphans** `{ kind?, excludeKinds? }` — isolated `{uid, slug}` nodes across graph frontmatter, including `domains` / `domain` containment (defaults exclude `project` and `vault-readme`; pass `excludeKinds: []` to include every kind)
 13. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`; match rows carry `{uid, slug}`

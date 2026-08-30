@@ -23,6 +23,14 @@ import { randomUUID } from 'node:crypto';
  *   - `arrayDefaults`: keys that should be present as an empty array if not
  *     supplied. Always emitted so AI agents and humans can read/edit them.
  *   - `optional`: keys that may appear but are not auto-emitted.
+ *     `relation_notes` is one of them on every kind: an object map
+ *     `{ <relation target ref>: "one sentence" }` on the SOURCE document, keyed
+ *     by the ref exactly as its relation array spells it. `add_relation(why)`
+ *     writes it in the same frontmatter write as the edge and requires it for
+ *     every new `depends_on`; the compiler promotes it to `edge.rationale`;
+ *     `find_path`, `get_concept`, and `query_ontology` return it; rename and
+ *     remove preserve it. A key that names no declared relation is an error
+ *     (`orphaned-relation-note`, validate.mjs).
  *
  * `requiredExtras` is the *expected* set beyond `slug/kind/title`. Missing
  * extras are surfaced as validator warnings (not hard errors) — they are
@@ -258,7 +266,7 @@ export const VAULT_KIND_SCHEMA = {
     // Without it the renderer derives one from the part of `title` before " ("
     // (`deriveDisplayTitle`, `src/shared/lib/derive-display-title.ts`), so most
     // titles never need this key. Search and matching keep using the full title.
-    optional: ['dependencies', 'relates', 'description', 'status', 'display', CREATED_BY_KEY],
+    optional: ['dependencies', 'relates', 'relation_notes', 'description', 'status', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     // Recommended key order, for a human reading the file. buildFrontmatter sorts
     // by this order and appends undefined keys (an external import's custom_field,
@@ -290,7 +298,7 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
+    optional: ['depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     preferredOrder: [
       'uid',
@@ -313,7 +321,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY],
     // `domain` is the parent in the tree hierarchy — left empty, the capability
     // floats as an orphan and adds distribution noise to the user's insights. The
     // validator warns.
@@ -343,7 +351,7 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'description', 'display', CREATED_BY_KEY],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY],
     // An element is the unit some capability inside some domain uses — with
     // `domain` missing it floats as a sink in the tree.
     requiredExtras: ['domain'],
@@ -369,7 +377,7 @@ export const VAULT_KIND_SCHEMA = {
   document: {
     folder: '',
     arrayDefaults: [],
-    optional: ['describes', 'relates', 'display', CREATED_BY_KEY],
+    optional: ['describes', 'relates', 'relation_notes', 'display', CREATED_BY_KEY],
     requiredExtras: [],
     preferredOrder: ['uid', 'merged_uids', 'slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY],
     bodyTemplate: (title) =>

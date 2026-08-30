@@ -5535,6 +5535,61 @@ await test("find_path — structuredContent 로 shortest path 계약을 노출",
   }
 });
 
+await test("find_path / get_concept — edges carry the stored relation_notes rationale, and omit the key without one", async () => {
+  // The same pair the dogfood vault carries: capabilities/cli-developer-entry
+  // depends on capabilities/mcp-server with a one-sentence why. An agent that
+  // wrote it through add_relation(why) must read it back through the read tools.
+  const why =
+    "The terminal command surface delegates ontology reads, writes, and verification to the same MCP contracts.";
+  const root = makeVault([
+    {
+      slug: "capabilities/cli-developer-entry",
+      content:
+        "---\nkind: capability\ntitle: CLI Developer Entry\ndomain: domains/agent-integration\n" +
+        "dependencies: [capabilities/mcp-server]\nrelates: [capabilities/vault-ontology]\n" +
+        `relation_notes: { capabilities/mcp-server: "${why}" }\n---\n`,
+    },
+    {
+      slug: "capabilities/mcp-server",
+      content: "---\nkind: capability\ntitle: MCP Server\ndomain: domains/agent-integration\n---\n",
+    },
+    {
+      slug: "capabilities/vault-ontology",
+      content: "---\nkind: capability\ntitle: Vault Ontology\ndomain: domains/agent-integration\n---\n",
+    },
+    { slug: "domains/agent-integration", content: "---\nkind: domain\ntitle: Agent Integration\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "find_path", { from: "capabilities/cli-developer-entry", to: "capabilities/mcp-server" }),
+      callTool(3, "find_path", { from: "capabilities/cli-developer-entry", to: "capabilities/vault-ontology" }),
+      callTool(4, "get_concept", { slug: "capabilities/cli-developer-entry" }),
+    ]);
+    const withNote = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), withNote);
+    assert.deepEqual(withNote.edges, [
+      { from: "capabilities/cli-developer-entry", to: "capabilities/mcp-server", via: "dependencies", rationale: why },
+    ]);
+
+    const withoutNote = getCallParsed(responses, 3);
+    assert.deepEqual(withoutNote.edges, [
+      { from: "capabilities/cli-developer-entry", to: "capabilities/vault-ontology", via: "relates" },
+    ]);
+    assert.equal("rationale" in withoutNote.edges[0], false);
+
+    const concept = getCallParsed(responses, 4);
+    assert.deepEqual(getCallStructured(responses, 4).outgoingEdges, concept.outgoingEdges);
+    assert.deepEqual(concept.outgoingEdges, [
+      { to: "capabilities/mcp-server", via: "dependencies", rationale: why },
+      { to: "capabilities/vault-ontology", via: "relates" },
+      { to: "domains/agent-integration", via: "domain" },
+    ]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("find_neighbors/get_concept — legacy depends_on frontmatter 를 dependencies edge 로 읽음", async () => {
   const root = makeVault([
     {

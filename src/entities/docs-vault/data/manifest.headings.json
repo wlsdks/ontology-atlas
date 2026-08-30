@@ -2918,6 +2918,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 · The reason on a relation is findable, and the agent reads what it wrote",
+      "slug": "2026-08-30-the-reason-on-a-relation-is-findable-and-the-agent-reads-what-it-wrote"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · A role box finishes its sentence",
       "slug": "2026-08-30-a-role-box-finishes-its-sentence"
     },
@@ -12839,8 +12844,8 @@
     },
     {
       "depth": 3,
-      "text": "Summary table (identical to `mcp/README.md`'s frontmatter table)",
-      "slug": "summary-table-identical-to-mcpreadmemds-frontmatter-table"
+      "text": "Summary table (identical to `mcp/README.md`'s frontmatter table for the five authorable kinds)",
+      "slug": "summary-table-identical-to-mcpreadmemds-frontmatter-table-for-the-five-authorable-kinds"
     },
     {
       "depth": 2,
@@ -13389,6 +13394,11 @@
       "depth": 2,
       "text": "Constraints: Impact and blast radius",
       "slug": "constraints-impact-and-blast-radius"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Relation rationale, read equals write",
+      "slug": "constraints-relation-rationale-read-equals-write"
     },
     {
       "depth": 2,

@@ -104,6 +104,10 @@ Rust repositories also do not report empty import graph as "no dependencies." `i
 
 `impact` and `blast_radius` follow only declared `depends_on`. Containment/domain/element relations are structural evidence for `reachability`/`subgraph`; do not promote to impact or risk. Return `review_required` if no `relation_notes` on declared dependency, `declared_with_rationale` if present. Both are currently not source-backed due to lack of current-source receipt per relation unit; keep completeness and risk as `unknown`. Therefore, 0 dependency declarations are not interpreted as low-risk or no impact.
 
+## Constraints: Relation rationale, read equals write
+
+`add_relation(why)` and `add_relations` store the sentence in the source document's `relation_notes` map in the same frontmatter write as the edge, and refuse a new `depends_on` without one. Every read surface returns that same sentence as an optional `rationale` string: `find_path().edges[]`, `get_concept().outgoingEdges[]`, `get_concepts` rows, and `query_ontology` path and impact rows. The key is omitted when no note is stored, never `null`, and never generated to fill a blank. `validate_vault` reports a value that swallowed the next entry (`swallowed-relation-note`) and a key that names no declared relation (`orphaned-relation-note`) as errors, because a note no edge carries is a sentence every reader drops.
+
 ## Inclusions / Exclusions
 
 - Included: MCP tool registration and I/O contracts, Vault parser/writer, deterministic compiler and

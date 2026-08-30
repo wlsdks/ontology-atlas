@@ -256,6 +256,28 @@ export function collectNeighborRefs(doc) {
 }
 
 /**
+ * The one-sentence rationale a source document stores for one of its relations:
+ * `relation_notes: { <target ref>: "why" }`, written by `add_relation(why)` in the
+ * same frontmatter write as the edge. The map is keyed by the ref exactly as the
+ * relation array spells it, so the raw ref is tried first and the resolved slug
+ * second — the same lookup order the compiler uses for `edge.rationale`.
+ *
+ * Returns the trimmed sentence, or `undefined` when the document carries no
+ * note for that target. Callers omit the key on `undefined` rather than sending
+ * `null`: an absent rationale is an absent claim, not a claim with a null value.
+ */
+export function relationNoteFor(doc, ref, resolvedSlug) {
+  const notes = doc?.frontmatter?.relation_notes;
+  if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return undefined;
+  for (const key of [ref, resolvedSlug]) {
+    if (typeof key !== 'string') continue;
+    const value = Object.prototype.hasOwnProperty.call(notes, key) ? notes[key] : undefined;
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+/**
  * Finds the documents that **name `ref` in a relation key**.
  *
  * Why it exists (measured 2026-07-26): the web map showed 289 concepts while the
@@ -1540,18 +1562,22 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   // the most specific meaning is kept. This lets an agent that receives a path
   // explain hop by hop why two nodes are connected, which carries far more of the
   // mental model than a bare slug sequence.
+  // Each adjacency entry is `{ via, rationale? }`. The rationale is the source
+  // document's `relation_notes` sentence for that target; it rides along in both
+  // directions because the note explains the pair, whichever way BFS walks it.
   const adj = new Map();
-  function addEdge(a, b, via) {
+  function addEdge(a, b, via, rationale) {
     if (!adj.has(a)) adj.set(a, new Map());
     if (!adj.has(b)) adj.set(b, new Map());
-    if (!adj.get(a).has(b)) adj.get(a).set(b, via);
-    if (!adj.get(b).has(a)) adj.get(b).set(a, via);
+    const meta = rationale === undefined ? { via } : { via, rationale };
+    if (!adj.get(a).has(b)) adj.get(a).set(b, meta);
+    if (!adj.get(b).has(a)) adj.get(b).set(a, meta);
   }
   for (const doc of docs) {
     for (const { key, ref } of collectNeighborRefs(doc)) {
       const resolved = resolveRef(ref);
       if (resolved && resolved !== doc.slug) {
-        addEdge(doc.slug, resolved, key);
+        addEdge(doc.slug, resolved, key, relationNoteFor(doc, ref, resolved));
       }
     }
   }
@@ -1561,27 +1587,28 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   const queue = [{ node: resolvedFrom, depth: 0 }];
   const visited = new Set([resolvedFrom]);
   const parent = new Map();
-  const parentVia = new Map();
+  const parentEdge = new Map();
   let head = 0;
   while (head < queue.length) {
     const { node: cur, depth } = queue[head++];
     if (depth >= maxHops) continue;
     const neighbors = adj.get(cur) || new Map();
-    for (const [n, via] of neighbors) {
+    for (const [n, meta] of neighbors) {
       if (visited.has(n)) continue;
       visited.add(n);
       parent.set(n, cur);
-      parentVia.set(n, via);
+      parentEdge.set(n, meta);
       if (n === resolvedTo) {
         // Path reconstruction: push to the end, then reverse once (O(D)). It used
         // to `hops.unshift(p)` each step, i.e. O(D²) — an antipattern even with a
-        // small maxHops. edges[] exposes the 'via' frontmatter key between hops i and i+1.
+        // small maxHops. edges[] exposes the 'via' frontmatter key between hops i
+        // and i+1, plus the stored `rationale` when the declaring document has one.
         const hops = [n];
         const edges = [];
         let p = n;
         while (parent.has(p)) {
           const prev = parent.get(p);
-          edges.unshift({ from: prev, to: p, via: parentVia.get(p) });
+          edges.unshift({ from: prev, to: p, ...parentEdge.get(p) });
           p = prev;
           hops.push(p);
         }

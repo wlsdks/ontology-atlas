@@ -202,6 +202,7 @@ Beyond that base, each kind adds:
 | `elements` | array default `[]` | slugs of directly-owned `element` nodes |
 | `dependencies` | optional | external/project-level dependencies |
 | `relates` | optional | non-hierarchical cross-references |
+| `relation_notes` | optional | `{ <target ref>: "one sentence" }` rationale map for this node's relations; see §5 |
 | `description` | optional | one-line summary |
 | `status` | optional | free-text lifecycle marker |
 
@@ -217,6 +218,7 @@ practice, or it contains nothing).
 | `depends_on` | optional | domain-level dependency edges |
 | `relates` | optional | |
 | `broader` | optional | direct same-kind broader domain; §2.2 and §5 apply |
+| `relation_notes` | optional | `{ <target ref>: "one sentence" }` rationale map for this node's relations; see §5 |
 | `description` | optional | |
 
 No `requiredExtras`.
@@ -231,6 +233,7 @@ No `requiredExtras`.
 | `depends_on` | optional | |
 | `relates` | optional | |
 | `broader` | optional | direct same-kind broader capability; §2.2 and §5 apply |
+| `relation_notes` | optional | `{ <target ref>: "one sentence" }` rationale map for this node's relations; see §5 |
 | `description` | optional | |
 
 `domain` is not a hard MUST at parse time (a capability without it still
@@ -248,6 +251,7 @@ tooling.
 | `depends_on` | optional | |
 | `relates` | optional | |
 | `broader` | optional | direct same-kind broader element; §2.2 and §5 apply |
+| `relation_notes` | optional | `{ <target ref>: "one sentence" }` rationale map for this node's relations; see §5 |
 | `description` | optional | |
 
 Elements have no `arrayDefaults` — no array key is auto-emitted on creation.
@@ -270,21 +274,22 @@ for recovery, but MUST NOT treat that as permission to emit a new one.
 |---|---|---|
 | `describes` | optional | slugs of nodes this document explains |
 | `relates` | optional | |
+| `relation_notes` | optional | `{ <target ref>: "one sentence" }` rationale map for this node's relations; see §5 |
 
 No `arrayDefaults`, no `requiredExtras` — the loosest kind, intended for
 prose (ADRs, design docs) that references the graph without being a graph
 object itself.
 
-### Summary table (identical to `mcp/README.md`'s frontmatter table)
+### Summary table (identical to `mcp/README.md`'s frontmatter table for the five authorable kinds)
 
-| kind | MUST have | always emitted on write | strongly expected |
-|---|---|---|---|
-| `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — |
-| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — |
-| `capability` | `uid`, `slug`, `kind`, `title` | `elements: []` | `domain` |
-| `element` | `uid`, `slug`, `kind`, `title` | — | `domain` |
-| `document` | `uid`, `slug`, `kind`, `title` | — | — |
-| `vault-readme` | `uid`, `slug`, `kind`, `title` | — | — |
+| kind | MUST have | always emitted on write | strongly expected | optional |
+|---|---|---|---|---|
+| `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `relation_notes`, `created_by` |
+| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `relation_notes`, `created_by` |
+| `capability` | `uid`, `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain`, plus `path` |
+| `element` | `uid`, `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
+| `document` | `uid`, `slug`, `kind`, `title` | — | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `describes`, `relates`, `relation_notes`, `created_by` |
+| `vault-readme` | `uid`, `slug`, `kind`, `title` | — | — | — |
 
 "Always emitted" fields are kept as empty arrays rather than omitted, so a
 human editing the file by hand sees the slot even before it is filled.
@@ -356,7 +361,7 @@ not hide that support boundary or invent an API that does not exist.
 | contained elements | `elements: []` | `project`/`domain`/`capability`, or an earned same-kind bridge, → `element` | parent→child; backlink only | query/write type `elements` | a path or import does not create it |
 | domain membership | `domain: <slug>` scalar | `capability`/`element` → `domain` | stored child→parent; containment views may display parent→child without writing an inverse | query/write type `domain` | no `project:` field is inferred; project membership is derived by §4 BFS |
 | generic containment | `contains: []` | authorable node → authorable node when the specific keys above do not fit | parent→child; backlink only | query/write type `contains` | physical directory containment is not semantic containment |
-| semantic dependency | canonical writer key `dependencies: []`; readers also accept `depends_on: []` | any authorable concept → required authorable concept | source depends on target; reverse is `depended_on_by`/backlink, not another `depends_on` | write type `depends_on`; compiled/query inputs may expose stored `dependencies` and normalized `depends_on` | not transitive; absence is unknown, not “no impact”; rationale and approval are required for a new semantic claim |
+| semantic dependency | canonical writer key `dependencies: []`; readers also accept `depends_on: []` | any authorable concept → required authorable concept | source depends on target; reverse is `depended_on_by`/backlink, not another `depends_on` | write type `depends_on`; compiled/query inputs may expose stored `dependencies` and normalized `depends_on` | not transitive; absence is unknown, not “no impact”; rationale and approval are required for a new semantic claim, and the rationale is stored as `relation_notes: { <target ref>: "one sentence" }` on the source document (below) |
 | loose association | `relates: []` | any authorable concept ↔ any authorable concept | symmetric meaning; one stored assertion is sufficient, but no reciprocal frontmatter is auto-written | query/write type `relates` | not transitive and implies no causality, ownership, similarity score, or interchangeability |
 | description | `describes: []` | normally `document` → authorable concept | document→described target; reverse is a backlink only | query/write type `describes` | does not make the document the source evidence for every claim in the target |
 | direct subsumption | `broader: []` | same-kind `domain`→`domain`, `capability`→`capability`, or `element`→`element` | narrower→direct broader; UI displays `is_a`; narrower-side read is a backlink only | **not accepted** by current relation query/write enums; read frontmatter with `get_concept`, then guarded full-array `patch_concept` | §2.2 test required; no inverse, transitive closure, inheritance, or reasoner |
@@ -365,6 +370,39 @@ not hide that support boundary or invent an API that does not exist.
 `add_relation(type: "depends_on")`. Some legacy/imported documents use
 `depends_on`; readers and validators keep accepting it, but a Level 2 writer
 SHOULD emit `dependencies` so the on-disk shape converges.
+
+**Relation rationale: `relation_notes`.** Every relation MAY carry one sentence
+saying why the claim holds, and a new semantic dependency MUST. The storage key
+is `relation_notes`, an object map on the **source** document whose keys are
+relation target refs spelled exactly as the relation array spells them and
+whose values are one-line strings:
+
+```yaml
+dependencies: [capabilities/mcp-server]
+relation_notes: { capabilities/mcp-server: "The CLI delegates its reads and writes to the same MCP contracts, so a schema change must be checked on both surfaces." }
+```
+
+Semantics a conformant implementation MUST keep:
+
+- The note belongs to the edge, not the node: a key MUST name a relation the
+  same document declares in one of its relation keys (§5 table) or its inline
+  `domain`. A key that names no declared relation is an error
+  (`orphaned-relation-note`, §6), because no edge carries it and every reader
+  drops the sentence. A note whose key is the full slug while the array holds
+  the tail alias, or the reverse, addresses the same node.
+- A Level 2 writer writes the note in the **same** frontmatter write as the
+  edge (`add_relation(why)`, `add_relations`), refuses a new `depends_on`
+  without one, and quotes a value containing a comma, a colon, or an
+  apostrophe; an unquoted value that runs past a comma turns the next entry
+  into a pseudo-key (`swallowed-relation-note`, §6). Rename, remove, and replace
+  MUST carry the note with the edge.
+- A Level 1 reader exposes the note as the optional `rationale` string of the
+  compiled edge and of every path or edge answer (`find_path().edges[]`,
+  `get_concept().outgoingEdges[]`, `query_ontology` path and impact rows). The
+  key is omitted when no note is stored; it is never `null` and never
+  generated. `query_ontology` grades a dependency with a note
+  `declared_with_rationale` and one without `review_required`; neither grade
+  is source-backed.
 
 To change `broader` on an existing node with the current MCP surface:
 
@@ -448,6 +486,8 @@ kept in lock-step by
 | `missing-expected-field` | warning | a "strongly expected" field for this kind (§3 — `domain` on capability/element) is absent or blank |
 | `non-canonical-graph-array` | warning | a relation array (§5) is present but not in canonical sorted/deduped form |
 | `dangling-graph-reference` | warning | *(whole-vault validators only — see below)* a relation array or `domain` key points at a slug that does not exist anywhere in the vault |
+| `swallowed-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` value contains another declared target in `target: ` form: an unquoted value swallowed the entries after it, and their rationale is gone |
+| `orphaned-relation-note` | **error** | *(MCP and CLI validators only — see below)* a `relation_notes` key names no relation the document declares, so no edge carries the sentence; the key side of the same unquoted-value accident, or a note left behind by a manual relation removal |
 
 Structural parse failures and v2 identity failures are errors; the other
 quality codes remain advisory. A v1 vault without UID is intentionally not a
@@ -463,6 +503,12 @@ difference, not drift: detecting a dangling reference requires scanning
 every other node's slug, which only a whole-vault pass can do. A per-file
 UI check (fast path, used while a human is editing a single file) cannot
 and does not claim to catch it.
+
+`swallowed-relation-note` and `orphaned-relation-note` live in
+`mcp/src/validate.mjs` and its byte-identical CLI copy
+(`cli/src/lib/validate.mjs`, `mcp/src/validate.test.mjs` and
+`cli/src/lib/validate.test.mjs` mirror the cases) and are not implemented by
+the per-document fast path either; that path does not read `relation_notes`.
 
 ## 7. The untrusted-content principle
 

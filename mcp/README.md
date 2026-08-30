@@ -489,7 +489,7 @@ real element-node slugs; a raw file path is evidence, not a graph child.
 | `disconnect_project_source` | Removes one project's source binding and receipt — the reversal of `connect_project_source`, for a folder bound by mistake or a measurement you want to stop trusting. Dry-run by default; `confirm:true` writes. Other projects' bindings are untouched and no ontology markdown changes; the diagnosis returns to `source_unbound` / `connect_source`. |
 | `find_backlinks` | Finds every node that points to a given `slug`. Inspects all frontmatter array keys (capabilities / elements / dependencies / relates / …) plus body wikilinks/markdown links. Each match row includes `uid`, current `slug`, `kind`, `title`, `domain`, and `mtime` (same shape as `list_concepts`) — agents can retain stable referrer identity and sort/filter "which referrer is in domain X" or "which referrer was touched recently" without follow-up `get_concept` calls. |
 | `find_neighbors` | **R+** One-hop graph neighborhood around a node. Accepts `slug`, optional `direction` (`outgoing` / `incoming` / `both`, default both), optional enum-validated `types` relation filter (`depends_on` is normalized to stored `dependencies`; typos fail with nearest-value hints), `includeNodes`, and `limit`. Returns canonical `edges[]` (`{direction, from, to, via, ref, resolved}`) plus neighbor node summaries carrying `{uid, slug}` so agents can retain stable node identity while inspecting a local graph subview without combining `get_concept` + `find_backlinks` manually. |
-| `find_path` | Shortest path between two slugs (BFS, undirected). Returns `{ from, to, hops, nodes, edges, hopCount, found }` where `nodes[i] = { uid, slug, kind, title, domain? }`, `edges[i] = { from, to, via }`, and `via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair — so the agent sees stable identity, the current path, and why the nodes connect. Option: `maxHops` (default 5, max 20). **Ask-to-Grow**: when `found:false`, the response includes `growthHint` — an `add_concept` example when an endpoint doesn't resolve, or an `add_relation` example when both endpoints exist but no path connects them. |
+| `find_path` | Shortest path between two slugs (BFS, undirected). Returns `{ from, to, hops, nodes, edges, hopCount, found }` where `nodes[i] = { uid, slug, kind, title, domain? }`, `edges[i] = { from, to, via, rationale? }`, `via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair, and `rationale` is the one-line `relation_notes` sentence the declaring document stores for that pair, present only when one is stored (never `null`) — so the agent sees stable identity, the current path, which key joins each hop, and, when someone wrote it down, why. Parity with `query_ontology({operation:'path'})` and with `get_concept().outgoingEdges[]`, which carry the same optional field. Option: `maxHops` (default 5, max 20). **Ask-to-Grow**: when `found:false`, the response includes `growthHint` — an `add_concept` example when an endpoint doesn't resolve, or an `add_relation` example when both endpoints exist but no path connects them. |
 | `list_kinds` | Vault kind census: `{ total, byKind: { capability: N, ... }, referencedOnlyTotal, conceptsIncludingReferenced }`. `total`/`byKind` count **documented** nodes (a `.md` with `kind:`). `referencedOnlyTotal` counts concepts the vault names in a relation key but no document defines yet — the web map/insights draw those too, so `conceptsIncludingReferenced` (= `total + referencedOnlyTotal`) is the number the screen shows. Reporting both is how the two entrances stop disagreeing about the same vault (2026-07-26: screen said 296, this tool said 96, and nothing explained the gap). |
 | `find_orphans` | **v0.5** Finds isolated nodes — docs that no other node references through graph frontmatter (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`). Options: enum-validated `kind` (filter) and `excludeKinds` (skip, default `['project', 'vault-readme']`; pass `[]` to include every kind); typos fail with nearest-value hints. Each orphan row includes `uid`, current `slug`, `kind`, `title`, `domain`, and `mtime` (same shape as `list_concepts` / `find_backlinks`) — agents can retain stable identity and sort/filter "old orphans in domain X" without follow-up `get_concept` calls. Useful as a starting point for cleanup or auditing unused nodes. |
 | `query_concepts` | **v0.6** Typed filter DSL — `kind=X AND has(Y) AND NOT ...`. Saved-filter / smart-list use case. `kind` values and `has(...)` graph keys are enum-validated with nearest-value hints, and `has(depends_on)` is canonicalized to `dependencies`, so typos do not silently return empty match sets. `limit` defaults to 100 and is capped at 500. Each match row includes `uid, slug, kind, title, domain, capabilities, elements, mtime` (same shape as `list_concepts` / `find_backlinks` / `find_orphans`) so agents retain stable identity and sort/filter staleness without follow-up calls. **Ask-to-Grow**: when `total=0`, the response includes `growthHint` — flags a referenced `kind`/`domain` with 0 nodes in the real vault census, or a generic loosen-the-filter nudge otherwise. |
@@ -919,16 +919,30 @@ later.
 
 | kind | required | always emitted | strongly expected | optional |
 |---|---|---|---|---|
-| `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `created_by` |
-| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `created_by` |
+| `project` | `uid`, `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `status`, `dependencies`, `relates`, `relation_notes`, `created_by` |
+| `domain` | `uid`, `slug`, `kind`, `title` | `capabilities: []` | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `description`, `depends_on`, `relates`, `broader`, `relation_notes`, `created_by` |
 | `capability` | `uid`, `slug`, `kind`, `title` | `elements: []` | `domain` | same as `domain`, plus `path` |
 | `element` | `uid`, `slug`, `kind`, `title` | — | `domain` | same as `domain`, plus `path` |
-| `document` | `uid`, `slug`, `kind`, `title` | — | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `describes`, `relates`, `created_by` |
+| `document` | `uid`, `slug`, `kind`, `title` | — | — | merge-owned `merged_uids`, `display`, `display_<locale>`, `describes`, `relates`, `relation_notes`, `created_by` |
 
 “Strongly expected” fields don’t throw — they come back in the response under
 `warnings`, and the validator (`mcp:validate`) flags them with the
 `missing-expected-field` issue code so users see them in the workbench banner
 without breaking pre-existing vaults.
+
+`relation_notes` is the relation rationale field, and it is optional on every
+kind: an object map `{ <relation target ref>: "one sentence" }` on the
+**source** document, keyed by the ref exactly as the relation array spells it
+(`relation_notes: { capabilities/mcp-server: "The CLI delegates its reads and
+writes to the same MCP contracts." }`). `add_relation(why)` and
+`add_relations` write it in the same frontmatter write as the edge and require
+it for every new `depends_on`; the compiler promotes it to `edge.rationale`;
+`find_path`, `get_concept`, and `query_ontology` return it; `rename_concept`,
+`remove_relation`, and `replace_relation` preserve it. Quote a value that
+contains a comma, a colon, or an apostrophe. The validator reports a value that
+swallowed the next entry as `swallowed-relation-note` and a key that names no
+relation the document declares as `orphaned-relation-note`; both are errors,
+because a note no edge carries is a rationale every reader drops.
 
 `uid` is different: it is a hard invariant for every `kind:` node, including
 `vault-readme`. Missing/invalid UID, invalid `merged_uids`, and any primary or
