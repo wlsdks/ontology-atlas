@@ -368,9 +368,12 @@ describe('ArchitectureWorkbench', () => {
      * of zeros where a sentence could be. A role that declared a summary prints it instead, and
      * `widgets`, which declares none, keeps its counts.
      */
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent(
+    /* The sentence is drawn on two caption lines whose break the box decides, so the readable
+       whole is asserted on the box's accessible name, and the drawing on its first words. */
+    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
       'One module per route-level screen',
     );
+    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
     expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveTextContent('0 modules');
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
@@ -407,9 +410,10 @@ describe('ArchitectureWorkbench', () => {
       </NextIntlClientProvider>,
     );
     /* The count moved into the panel with the modules; the box carries the role's sentence. */
-    expect(screen.getByTestId('architecture-graph-box-views')).toHaveTextContent(
+    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
       'One module per route-level screen',
     );
+    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
     const detail = screen.getByTestId('architecture-concepts-views');
