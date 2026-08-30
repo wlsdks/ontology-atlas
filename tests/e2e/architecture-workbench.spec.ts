@@ -381,3 +381,47 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
     }
   }
 });
+
+
+/*
+ * ⚠️ **A caption never crosses its own outline, on either profile** (owner, 2026-08-30, pointing
+ * at the Adapters pill: both lines of the sentence ran past the caps). The first caption gate
+ * measured the 180px receipt box only; this one runs on the shipped four-role sample, whose boxes
+ * are 148px and whose end roles are stadiums. For a stadium the allowed width at a line is the
+ * straight middle plus the cap chord at that height, so a line lower in the box gets less room.
+ */
+test('a role sentence stays inside the drawn box, including a stadium cap', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 945 });
+  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 60_000 });
+  await page.evaluate(() => document.fonts.ready);
+
+  const offenders = await page.evaluate(() => {
+    const PAD = 8;
+    const out: string[] = [];
+    for (const g of document.querySelectorAll('[data-testid^="architecture-graph-box-"]')) {
+      const id = g.getAttribute('data-testid')!.replace('architecture-graph-box-', '');
+      const box = g.getBoundingClientRect();
+      const w = Number(g.getAttribute('data-box-width'));
+      const h = Number(g.getAttribute('data-box-height'));
+      const isStadium = g.querySelector('rect[rx]') !== null;
+      const chordAt = (y: number) => {
+        if (!isStadium) return w;
+        const r = h / 2;
+        const d = Math.abs(y - r);
+        return Math.max(0, w - h) + 2 * Math.sqrt(Math.max(0, r * r - d * d));
+      };
+      for (const span of g.querySelectorAll('[data-testid^="architecture-box-line-"] tspan, [data-testid^="architecture-box-line-"]')) {
+        const b = span.getBoundingClientRect();
+        if (b.width === 0) continue;
+        const top = b.top - box.top;
+        const bottom = b.bottom - box.top;
+        const allowed = Math.min(chordAt(top), chordAt(bottom)) - PAD * 2;
+        if (b.width > allowed + 0.5)
+          out.push(`${id}: "${span.textContent}" is ${b.width.toFixed(1)}px wide, room ${allowed.toFixed(1)}px`);
+      }
+    }
+    return out;
+  });
+  expect(offenders, offenders.join('\n')).toEqual([]);
+});
