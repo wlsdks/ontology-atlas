@@ -11,17 +11,20 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/features/data-source-mode', () => ({
+vi.mock('@/entities/vault-session/model/use-data-source-mode', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-data-source-mode')>()),
   useDataSourceMode: () => 'local',
 }));
-
-vi.mock('@/features/vault-sample-source', () => ({
+vi.mock('@/entities/vault-session/model/use-sample-source', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-sample-source')>()),
   useSampleSource: () => ['dogfood'],
 }));
-
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
+
+
 
 import { useVaultHealth } from './use-vault-health';
 

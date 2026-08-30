@@ -32,10 +32,12 @@ import {
 } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
-  OntologyStarterCta,
   VaultConflictError,
-  buildOntologyStarterAgentVerifyPrompt,
   useLocalVault,
+} from '@/entities/vault-session';
+import {
+  OntologyStarterCta,
+  buildOntologyStarterAgentVerifyPrompt,
 } from '@/features/docs-vault-local';
 import { AppSettingsMenu } from '@/widgets/app-settings-menu';
 import { useNavRailSettingsSlot } from '@/widgets/app-nav-rail';
@@ -96,8 +98,8 @@ import {
   deriveOntologyFromVault,
   type VaultManifest,
 } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
-import { VaultSourceHydrationBoundary } from '@/features/data-source-mode';
+import { useStaticVaultSource } from '@/entities/vault-session';
+import { VaultSourceHydrationBoundary } from '@/entities/vault-session';
 import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
 import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';

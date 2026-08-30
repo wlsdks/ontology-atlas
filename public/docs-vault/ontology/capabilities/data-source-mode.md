@@ -6,7 +6,7 @@ title: Data Source Mode Branching
 display_ko: 데이터 출처 모드 분기
 domain: domains/local-vault-management
 elements: []
-path: src/features/data-source-mode
+path: src/entities/vault-session/model/use-data-source-mode.ts
 created_by: "agent:unknown"
 ---
 
@@ -14,7 +14,8 @@ created_by: "agent:unknown"
 The ability to keep one authoritative data source across the shared web/app bundle. A vault-less web visitor may use an explicit bundled sample; a mounted web vault and the installed app use one local manifest. The installed app remains neutral during restore, folder switches, and the pre-paint turn of an LNB route change, so static sample facts are never drawn over a local vault.
 
 ## Evidence
-- src/features/data-source-mode (implementation evidence)
+- src/entities/vault-session/model/use-data-source-mode.ts (mode decision; moved from src/features/data-source-mode on 2026-08-30 because every vault-reading feature depends on it)
+- src/entities/vault-session/ui/VaultSourceHydrationBoundary.tsx (pre-paint neutrality)
 - docs/FEATURES.md: "Mode branching (data source)" section (Note: risky-citation warning: includes negated/deprecated-state descriptions; requires re-verification)
 
 ## Confidence

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from './LocalVaultProvider';
 import {
   getDataSourceMode,
   publishDataSourceModeForDebug,

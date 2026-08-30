@@ -11,8 +11,8 @@ import {
 } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
-import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/features/data-source-mode";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/entities/vault-session";
+import { useLocalVault } from "@/entities/vault-session";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { formatDate } from "@/shared/lib/format-date";
 import { buildContainmentParents } from "@/entities/knowledge-graph/lib/ontology-tree";

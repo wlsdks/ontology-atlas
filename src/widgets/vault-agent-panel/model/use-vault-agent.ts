@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/entities/vault-session';
 import {
   AGENT_TOOLS,
   buildSystemPrompt,

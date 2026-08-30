@@ -13,7 +13,7 @@ import {
 } from '@/views/ontology-insights/lib/duplicate-pairs';
 import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import { buildDomainCouplingSummary } from '@/views/ontology-insights/lib/domain-coupling-rows';
-import { starterFilesForLocale } from '@/features/docs-vault-local/lib/ontology-starter';
+import { starterFilesForLocale } from '@/entities/vault-session/lib/ontology-starter';
 import { compileOntology } from '../../mcp/src/ontology-compiler.mjs';
 import { parseFrontmatter } from '../../mcp/src/parser.mjs';
 import { queryCompiledOntology } from '../../mcp/src/ontology-engine.mjs';

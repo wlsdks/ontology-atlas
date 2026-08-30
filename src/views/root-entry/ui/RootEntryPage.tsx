@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { Bot, HardDrive, Network } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { useLocalVault } from "@/entities/vault-session";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { GatewayLandingPage } from "@/views/download";
 import { HomePage } from "@/views/home";

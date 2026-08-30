@@ -56,14 +56,17 @@ vi.mock('@/features/locale-switch', () => ({
 // LocalVaultProvider through useLocalVault. This test renders without a provider,
 // so an idle vault is mocked (the agent detail panel appears only with a loaded
 // vault, and VaultAgentSetupPanel.test.tsx covers that separately).
-vi.mock('@/features/docs-vault-local', () => ({
-  // The bundled MCP server is visible only in the installed app — jsdom is in the same position as a web session.
+vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-agent-server')>()),
   useAgentServer: () => ({
     kind: 'unavailable',
     launch: null,
     binaryPath: null,
     reason: 'The bundled MCP server is only available in the installed app.',
   }),
+}));
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => ({
     status: mocks.vaultStatus,
     handle: mocks.vaultHandleName ? { name: mocks.vaultHandleName } : null,

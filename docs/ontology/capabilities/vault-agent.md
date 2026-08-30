@@ -37,7 +37,7 @@ That side has different layers for config isolation and permission gates, and th
 - src-tauri/src/llm_audit.rs: log-before-send scheduling/commitment, Unix openat/O_NOFOLLOW·link-count boundaries, vault-specific exclusive locking and reservation tail verification
 - src-tauri/src/agent_setup.rs: Unix dirfd/no-follow traversal and atomic replacement helpers shared by native vault writes
 - src/widgets/vault-agent-panel: panel where users judge read/failure/proposal
-- src/shared/config/mcp-server-launch.ts · src/features/docs-vault-local/model/use-local-vault.ts
+- src/shared/config/mcp-server-launch.ts · src/entities/vault-session/model/use-local-vault.ts
   : shared judgment of JSON/TOML launch shape and vault readiness
 - src/widgets/app-settings-menu/ui/VaultAgentSetupPanel.tsx: active config with two
   Settings surfaces that do not hide template roles

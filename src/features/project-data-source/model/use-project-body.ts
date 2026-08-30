@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { extractProjectBody, findProjectVaultDoc } from '@/entities/docs-vault';
 import { fetchServerDocContent } from '@/entities/docs-vault/lib/server-doc-content';
 

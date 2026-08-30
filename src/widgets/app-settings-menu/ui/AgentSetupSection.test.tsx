@@ -16,9 +16,15 @@ import { AgentSetupSection } from './AgentSetupSection';
 
 const vaultStatus = { current: 'idle' as 'idle' | 'loaded' };
 
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => ({ status: vaultStatus.current, manifest: null }),
+}));
+vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/use-agent-server')>()),
   useAgentServer: () => ({ launch: null }),
+}));
+vi.mock('@/features/docs-vault-local', () => ({
   OpenVaultCta: ({ testId }: { testId: string }) => <button data-testid={testId} />,
 }));
 

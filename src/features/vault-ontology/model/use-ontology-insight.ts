@@ -2,8 +2,8 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useSampleSource } from '@/features/vault-sample-source';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useSampleSource } from '@/entities/vault-session';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,

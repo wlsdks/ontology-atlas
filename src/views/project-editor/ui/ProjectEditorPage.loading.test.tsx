@@ -54,11 +54,11 @@ vi.mock("@/features/project-data-source", () => ({
   }),
 }));
 
-vi.mock("@/features/docs-vault-local", () => ({
+vi.mock("@/entities/vault-session/model/use-local-vault", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/entities/vault-session/model/use-local-vault")>()),
   VaultConflictError: class VaultConflictError extends Error {},
-  // The write-lock banner's «path to open a folder» — this test covers only the loading contract, so it
-  // keeps just the marker. Whether that path actually invokes the picker is measured in a browser by
-  // `tests/e2e/open-vault-cta.spec.ts` (a layer no source string can decide).
+}));
+vi.mock("@/features/docs-vault-local", () => ({
   OpenVaultCta: ({ testId }: { testId: string }) => <button type="button" data-testid={testId} />,
 }));
 

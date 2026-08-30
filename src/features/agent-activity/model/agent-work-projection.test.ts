@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { AgentActivityStatus } from '@/features/docs-vault-local';
+import type { AgentActivityStatus } from '@/entities/vault-session';
 import type { AgentWorkSession } from '@/shared/lib/agent-work-session';
 import { deriveAgentWorkProjection } from './agent-work-projection';
 

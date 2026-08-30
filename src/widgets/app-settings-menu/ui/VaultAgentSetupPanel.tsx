@@ -14,11 +14,13 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
-  AgentClientButtons,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
-  buildCursorMcpDeeplink,
   buildMcpConfigJson,
+} from '@/entities/vault-session';
+import {
+  AgentClientButtons,
+  buildCursorMcpDeeplink,
   buildOntologyStarterAgentVerifyPrompt,
   buildOntologyStarterJsonGateCommand,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -28,7 +30,7 @@ import {
 import { SETTINGS_SECTION_LABEL } from './settings-primitives';
 import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
-import type { AgentClientId } from '@/features/docs-vault-local';
+import type { AgentClientId } from '@/entities/vault-session';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { Chip } from '@/shared/ui/controls';

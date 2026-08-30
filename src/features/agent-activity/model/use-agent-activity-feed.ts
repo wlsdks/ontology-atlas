@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocale } from 'next-intl';
 
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useVaultIdentityScope } from '@/features/vault-scope';
+import { useLocalVault } from '@/entities/vault-session';
+import { useVaultIdentityScope } from '@/entities/vault-session';
 import {
   forgetLegacyUnscopedReadAt,
   readReadAt,

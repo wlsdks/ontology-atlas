@@ -1,20 +1,5 @@
-export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
-export { useAgentServer } from './model/use-agent-server';
-export { VaultConflictError } from './model/use-local-vault';
-export type {
-  AgentActivityFocus,
-  AgentActivityHeartbeat,
-  AgentActivityState,
-  AgentActivityStatus,
-} from './model/agent-activity-status';
 export { useVaultCreateFlow } from './model/use-vault-create-flow';
-export { useSummaryFreshness } from './model/use-summary-freshness';
 export { useJustStartVault } from './model/use-just-start-vault';
-export {
-  buildCodexMcpAddCommandTemplate,
-  buildCodexConfigTomlTemplate,
-  buildMcpConfigJson,
-} from './lib/ontology-starter';
 export { buildCursorMcpDeeplink } from './lib/mcp-deeplinks';
 export { AgentClientButtons } from './ui/AgentClientButtons';
 export {
@@ -36,6 +21,4 @@ export {
   type ExecuteBootstrapResult,
 } from './lib/execute-bootstrap-plan';
 export { VaultOpenGuideSheet } from './ui/VaultOpenGuideSheet';
-export type { AgentClientId } from './lib/agent-clients';
 export { OpenVaultCta } from './ui/OpenVaultCta';
-export { deniedFolderName } from './model/classify-vault-access-error';

@@ -1,7 +1,7 @@
 'use client';
 
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 
 /**
  * **Is this the moment the first-visit automatic tour may be raised?**

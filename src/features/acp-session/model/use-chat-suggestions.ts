@@ -3,9 +3,9 @@
 import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { useVaultHealth } from '@/features/vault-ontology/model/use-vault-health';
 import { capabilitiesWithoutImplementationEvidence } from '@/entities/knowledge-graph/lib/vault-health';
 import type { VaultDoc } from '@/entities/docs-vault/model/types';

@@ -12,7 +12,7 @@ import {
   buildDocsVaultHref,
   type VaultDoc,
 } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/features/vault-sample-source';
+import { useStaticVaultSource } from '@/entities/vault-session';
 import { IconButton } from '@/shared/ui';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';

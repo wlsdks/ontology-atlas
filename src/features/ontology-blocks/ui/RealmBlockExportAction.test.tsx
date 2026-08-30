@@ -17,7 +17,8 @@ const tauriMocks = vi.hoisted(() => ({
   pickTauriVaultDirectory: vi.fn(),
 }));
 
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 

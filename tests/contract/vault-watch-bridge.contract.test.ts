@@ -46,7 +46,7 @@ describe("폴더 감시 브리지", () => {
   });
 
   it("프런트 쪽: 그 이벤트를 실제로 듣는 다리가 있다", () => {
-    const bridge = read("src/features/docs-vault-local/model/TauriVaultWatchBridge.tsx");
+    const bridge = read("src/entities/vault-session/model/TauriVaultWatchBridge.tsx");
     expect(bridge).toContain("start_vault_watch");
     expect(
       bridge,
@@ -56,7 +56,7 @@ describe("폴더 감시 브리지", () => {
   });
 
   it("웹 쪽: 폴링 폴백이 살아 있다 — 웹이 '못 하는' 게 아니라 '늦는' 것이다", () => {
-    const cadence = read("src/features/docs-vault-local/model/poll-cadence.test.ts");
+    const cadence = read("src/entities/vault-session/model/poll-cadence.test.ts");
     expect(
       cadence,
       "폴링 케이던스가 사라지면 웹은 파일 변화를 정말로 못 보게 된다. 그러면 " +

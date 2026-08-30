@@ -48,7 +48,7 @@ const DEFINITION_FILES = ["src/shared/config/cli-invocation.ts"];
  * new file here is forbidden** — the `probe` below stops the list growing.
  */
 const HANDOFF_BLOBS_PENDING = [
-  "src/features/docs-vault-local/model/agent-activity-status.ts",
+  "src/entities/vault-session/model/agent-activity-status.ts",
   "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
   "src/entities/knowledge-graph/lib/ontology-tree/agent-readiness.ts",
   "src/views/home/lib/footprint-trail.ts",

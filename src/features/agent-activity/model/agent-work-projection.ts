@@ -1,4 +1,4 @@
-import type { AgentActivityState, AgentActivityStatus } from '@/features/docs-vault-local';
+import type { AgentActivityState, AgentActivityStatus } from '@/entities/vault-session';
 import type { AgentWorkSession } from '@/shared/lib/agent-work-session';
 import { agentDisplayName } from '@/shared/lib/agent-display-name';
 

@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
   sampleSource: 'dogfood',
 }));
 
-vi.mock('@/features/data-source-mode', () => ({
+vi.mock('./use-data-source-mode', () => ({
   useDataSourceMode: () => mocks.mode,
 }));
-
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('./LocalVaultProvider', () => ({
   useLocalVault: () => ({ status: mocks.status, handle: mocks.handle }),
 }));
-
-vi.mock('@/features/vault-sample-source', () => ({
+vi.mock('./use-sample-source', () => ({
   useSampleSource: () => [mocks.sampleSource],
 }));
+
+
 
 import {
   useVaultIdentityScope,

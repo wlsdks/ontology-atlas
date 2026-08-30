@@ -10,7 +10,7 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { controlClass, fieldClass, fieldLabel } from '@/shared/ui/control-class';
 import { Checkbox } from '@/shared/ui';
 
-import { AGENT_CLIENTS, type AgentClientId } from '../lib/agent-clients';
+import { AGENT_CLIENTS, type AgentClientId } from '@/entities/vault-session';
 import {
   ATLAS_CLONE_COMMAND,
   manualConnectConfig,

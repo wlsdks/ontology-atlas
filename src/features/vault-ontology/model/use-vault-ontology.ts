@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/entities/vault-session';
 import {
   deriveOntologyFromVault,
   type VaultOntologyDerivation,

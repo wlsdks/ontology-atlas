@@ -20,7 +20,8 @@ const UIDS = {
   blockSession: '33333333-3333-4333-8333-333333333333',
 };
 
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => mocks.vault,
 }));
 

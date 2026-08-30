@@ -29,8 +29,9 @@ import {
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
-import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/features/data-source-mode";
-import { OpenVaultCta, useLocalVault } from "@/features/docs-vault-local";
+import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/entities/vault-session";
+import { useLocalVault } from "@/entities/vault-session";
+import { OpenVaultCta } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {

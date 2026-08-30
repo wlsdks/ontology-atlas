@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/features/docs-vault-local", () => ({
+vi.mock("./LocalVaultProvider", () => ({
   useLocalVault: () => mocks.vault,
 }));
 

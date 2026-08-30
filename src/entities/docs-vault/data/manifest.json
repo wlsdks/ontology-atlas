@@ -262,7 +262,7 @@
       "headings": [],
       "excerpt": "Owner references: the owner-provided Downloads PNG generated at 23:22:15 on 2026-08-28 the owner-provided Downloads PNG generated at 23:07:54 on 2026-08-28 macOS menu-bar placement crop supplied on 2026-08-29 rail-size crops supplied at 01:13 and 01:40 on 2026-08-29 Selected: one raster-first pixel identity, platform i",
       "wordCount": 493,
-      "updatedAt": "2026-08-29",
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -1192,12 +1192,12 @@
         "display_ko": "데이터 출처 모드 분기",
         "domain": "domains/local-vault-management",
         "elements": [],
-        "path": "src/features/data-source-mode",
+        "path": "src/entities/vault-session/model/use-data-source-mode.ts",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "The ability to keep one authoritative data source across the shared web/app bundle. A vault-less web visitor may use an explicit bundled sample; a mounted web vault and the installed app use one local manifest. The installed app remains neutral during restore, folder switches, and the pre-paint turn of an LNB route cha",
-      "wordCount": 99,
+      "wordCount": 115,
       "updatedAt": "2026-08-30",
       "linksOut": []
     },
@@ -1322,7 +1322,7 @@
       },
       "headings": [],
       "excerpt": "The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under <project/atlas, that child is persisted and built as the canonical vault; direct standalon",
-      "wordCount": 88,
+      "wordCount": 113,
       "updatedAt": "2026-08-30",
       "linksOut": []
     },
@@ -1688,7 +1688,7 @@
       "headings": [],
       "excerpt": "The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs",
       "wordCount": 570,
-      "updatedAt": "2026-08-25",
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -1730,12 +1730,12 @@
         "display_ko": "예시 볼트 출처",
         "domain": "domains/local-vault-management",
         "elements": [],
-        "path": "src/features/vault-sample-source",
+        "path": "src/entities/vault-session/model/use-sample-source.ts",
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Source for a bundled example vault that lets a vault-less web visitor explore without installing or choosing a folder. This source is web-only: the installed app exposes no sample entrance, switch, command, or fallback manifest. src/features/vault-sample-source (implementation evidence) src/app/providers/AppShell.tsx (",
-      "wordCount": 52,
+      "excerpt": "Source for a bundled example vault that lets a vault-less web visitor explore without installing or choosing a folder. This source is web-only: the installed app exposes no sample entrance, switch, command, or fallback manifest. src/entities/vault-session/model/use-sample-source.ts and use-static-vault-source.ts (moved",
+      "wordCount": 68,
       "updatedAt": "2026-08-30",
       "linksOut": []
     },
@@ -3411,7 +3411,7 @@
       "headings": [],
       "excerpt": "Common issues users hit when starting with ontology-atlas. If your case isn't here, open an issue: https://github.com/wlsdks/ontology-atlas/issues There are two ways to run Ontology Atlas, and only two: 1. The installed macOS app. It carries the MCP server inside its own bundle. Open a vault folder and press the connec",
       "wordCount": 1249,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-30",
       "linksOut": []
     }
   ],

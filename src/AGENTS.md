@@ -7,7 +7,7 @@ before changing a file in this directory — nothing else surfaces them.
 - `.claude/rules/architecture.md` — `src/**`
 - `.claude/rules/codegraph.md` — `src/**`
 - `.claude/rules/design.md` — `src/**/*.tsx`, `src/**/ui/**`, `src/shared/motion/**`, `src/widgets/topology-map-v2/**`
-- `.claude/rules/surfaces.md` — `src/shared/lib/tauri-*.ts`, `src/features/docs-vault-local/**`, `src/shared/config/mcp-server-launch.ts`
+- `.claude/rules/surfaces.md` — `src/shared/lib/tauri-*.ts`, `src/entities/vault-session/**`, `src/features/docs-vault-local/**`, `src/shared/config/mcp-server-launch.ts`
 
 The repository root `AGENTS.md` still applies; this file adds to it rather than
 replacing it. Pointers only: the rules are never copied here, so the merged

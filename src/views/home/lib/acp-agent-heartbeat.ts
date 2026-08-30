@@ -30,7 +30,7 @@
  * unknown subject stays null rather than pretending to know.
  */
 
-import type { AgentActivityHeartbeat } from "@/features/docs-vault-local";
+import type { AgentActivityHeartbeat } from "@/entities/vault-session";
 import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
 
 /** Where the heartbeat lives — the same sidecar folder as `agent-activity.json`. */

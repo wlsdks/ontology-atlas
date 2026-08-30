@@ -60,7 +60,8 @@ vi.mock('@/shared/lib/tauri-git', () => ({
   gitHistory: vi.fn(async () => gitBridge.commits),
 }));
 
-vi.mock('@/features/docs-vault-local', () => ({
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
   useLocalVault: () => ({
     fileHandles: new Map(),
     createDoc: vi.fn(),

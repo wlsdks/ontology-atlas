@@ -23,8 +23,8 @@
 
 import { sourceCheckoutLaunch, type McpServerLaunch } from '@/shared/config';
 
-import { type AgentClientId, filesForClient } from './agent-clients';
-import { buildCodexConfigTomlTemplate, buildMcpConfigJson } from './ontology-starter';
+import { type AgentClientId, filesForClient } from '@/entities/vault-session';
+import { buildCodexConfigTomlTemplate, buildMcpConfigJson } from '@/entities/vault-session';
 
 /** What the shape check catches. `null` means the shape passed. */
 export type ManualPathIssue = 'empty' | 'relative' | 'tilde' | 'multiline';

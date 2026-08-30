@@ -26,7 +26,7 @@ import { useToast } from "@/shared/ui";
  * it without a same-layer cross-import.
  */
 
-import { AGENT_CLIENTS, type AgentClientId } from "../lib/agent-clients";
+import { AGENT_CLIENTS, type AgentClientId } from "@/entities/vault-session";
 import { WebManualConnectPanel } from "./WebManualConnectPanel";
 import { controlClass } from '@/shared/ui/control-class';
 

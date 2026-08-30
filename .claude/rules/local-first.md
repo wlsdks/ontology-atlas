@@ -22,7 +22,7 @@ provider-owned transfers.
    login and access checks entirely.
 2. **Choose a folder and continue.** Point at a Markdown folder on disk and enter
    the topology, tree, and editing workflow immediately. The browser path uses
-   the File System Access API through `src/features/docs-vault-local/`.
+   the File System Access API (`src/entities/vault-session/`).
 3. **The answer lives on the user's disk.** Vault frontmatter is the ontology.
    There is no server database, Firestore, or cloud store. Only the user's files
    and the browser's IndexedDB hold data.
@@ -33,8 +33,8 @@ provider-owned transfers.
 - Before adding a capability, ask: “Can this work from vault files alone?”
 - If it appears to require Firestore, server sync, or another backend, redesign
   it as Markdown on the user's disk.
-- `src/features/docs-vault-local/` owns the local-folder entry path. New work
-  must join that path rather than bypass it.
+- `src/entities/vault-session/` and `src/features/docs-vault-local/` (entry
+  UI) own local-folder access; new work joins them.
 
 ## Data shape
 

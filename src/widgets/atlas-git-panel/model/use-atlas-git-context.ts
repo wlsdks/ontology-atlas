@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import { useLocalVault } from "@/features/docs-vault-local";
+import { useLocalVault } from "@/entities/vault-session";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { computeOntologyChangeset, useChangeBaseline } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";

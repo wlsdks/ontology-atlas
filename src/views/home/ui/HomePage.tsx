@@ -44,13 +44,15 @@ import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle,
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { VaultSourceHydrationBoundary } from "@/features/data-source-mode";
+import { VaultSourceHydrationBoundary } from "@/entities/vault-session";
 import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   useAgentServer,
   useLocalVault,
-  VaultOpenGuideSheet,
   useSummaryFreshness,
+} from "@/entities/vault-session";
+import {
+  VaultOpenGuideSheet,
 } from "@/features/docs-vault-local";
 import {
   FirstRunReadout,
@@ -219,7 +221,7 @@ import {
   deriveDeeplinkAncestorExpansion,
   clearVaultScopedRouteState,
 } from "../model/url-state";
-import { useVaultSessionIdentityScope } from "@/features/vault-scope";
+import { useVaultSessionIdentityScope } from "@/entities/vault-session";
 import {
   computeTopologyShortestPath,
   formatTopologyPathAgentPacket,

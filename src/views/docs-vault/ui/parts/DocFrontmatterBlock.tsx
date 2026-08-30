@@ -4,7 +4,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
 import { buildNewNodeDoc, type VaultDoc } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
-import type { AgentActivityStatus } from "@/features/docs-vault-local";
+import type { AgentActivityStatus } from "@/entities/vault-session";
 import { computeEditAge } from "@/shared/lib/edit-age";
 import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
 import { truncateMiddlePath } from "@/shared/lib/truncate-middle-path";

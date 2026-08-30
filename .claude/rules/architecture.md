@@ -27,7 +27,8 @@ Imports flow `app → views → widgets → features → entities → shared`.
 
 - Never import upward, such as an entity importing a widget.
 - Avoid cross-imports within one layer. Move truly shared behaviour down one
-  layer instead.
+  layer instead. The remaining edges are a ledger that only falls:
+  `tests/contract/same-layer-cross-import-ratchet.contract.test.ts`.
 - `eslint-plugin-boundaries` enforces this direction.
 
 ## Next.js static export

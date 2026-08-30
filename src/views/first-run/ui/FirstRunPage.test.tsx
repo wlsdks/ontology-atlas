@@ -15,15 +15,10 @@ const mocks = vi.hoisted(() => ({
   vault: null as unknown as MockVault,
 }));
 
-vi.mock('@/features/docs-vault-local', async () => {
-  const actual = await vi.importActual<typeof import('@/features/docs-vault-local')>(
-    '@/features/docs-vault-local',
-  );
-  // `useVaultCreateFlow` / `useJustStartVault` are pure hooks taking the vault as an argument, so the
-  // real implementations are used — only `useLocalVault` (global provider access) needs mocking. The
-  // tauri-vault-fs calls inside `useJustStartVault` are mocked below.
-  return { ...actual, useLocalVault: () => mocks.vault };
-});
+vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
+  useLocalVault: () => mocks.vault,
+}));
 
 const tauriFsMocks = vi.hoisted(() => ({
   isTauriVaultRuntime: vi.fn(() => false),

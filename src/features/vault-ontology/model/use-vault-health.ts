@@ -1,9 +1,9 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useSampleSource } from '@/features/vault-sample-source';
-import { useLocalVault } from '@/features/docs-vault-local';
+import { useDataSourceMode } from '@/entities/vault-session';
+import { useSampleSource } from '@/entities/vault-session';
+import { useLocalVault } from '@/entities/vault-session';
 import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
 import {
   computeVaultHealth,

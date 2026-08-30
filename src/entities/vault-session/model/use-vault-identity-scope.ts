@@ -1,9 +1,9 @@
 'use client';
 
 import { vaultIdentityScope, type VaultIdentityScope } from '@/entities/docs-vault';
-import { useDataSourceMode } from '@/features/data-source-mode';
-import { useLocalVault } from '@/features/docs-vault-local';
-import { useSampleSource } from '@/features/vault-sample-source';
+import { useDataSourceMode } from './use-data-source-mode';
+import { useLocalVault } from './LocalVaultProvider';
+import { useSampleSource } from './use-sample-source';
 
 const localHandleIdentity = new WeakMap<FileSystemDirectoryHandle, string>();
 let nextLocalHandleIdentity = 1;

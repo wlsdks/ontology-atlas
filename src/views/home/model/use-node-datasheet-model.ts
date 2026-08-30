@@ -9,7 +9,7 @@ import {
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import type { AgentActivityStatus } from "@/features/docs-vault-local";
+import type { AgentActivityStatus } from "@/entities/vault-session";
 import { computeEditAge } from "@/shared/lib/edit-age";
 import type { LastEditSubjectKind } from "@/shared/lib/last-edit-subject";
 import { isWithinRecentWindow } from "@/entities/knowledge-graph/lib/ontology-tree";

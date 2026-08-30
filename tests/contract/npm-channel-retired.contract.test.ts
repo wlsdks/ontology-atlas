@@ -86,7 +86,7 @@ const TIER_A_GLOBS = [
   "cli/templates/vault/README.md",
   "cli/templates/vault-ko/README.md",
   // The web starter, which must stay byte-identical to the CLI template (starter-templates.contract).
-  "src/features/docs-vault-local/lib/ontology-starter.ts",
+  "src/entities/vault-session/lib/ontology-starter.ts",
 ];
 
 /** Tier B — may say "that is dead" in prose, but must not put it in a code block. */

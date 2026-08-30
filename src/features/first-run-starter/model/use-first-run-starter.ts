@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { useLocalVault, useVaultCreateFlow } from '@/features/docs-vault-local';
+import { useLocalVault } from '@/entities/vault-session';
+import { useVaultCreateFlow } from '@/features/docs-vault-local';
 import {
   FIRST_RUN_STARTER_DISMISSED_KEY,
   readFirstRunStarterDismissed,
@@ -8,7 +9,7 @@ import {
 } from './first-run-starter-dismiss';
 import { isDesktopShell } from '@/shared/lib/desktop-shell';
 import { requestAgentChat } from '@/shared/lib/agent-chat-intent';
-import { deniedFolderName } from '@/features/docs-vault-local';
+import { deniedFolderName } from '@/entities/vault-session';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { buildFromCodePrompt } from './build-from-code-prompt';
 import type { ProjectVaultLocation } from './project-vault-location';

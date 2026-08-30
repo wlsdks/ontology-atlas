@@ -193,7 +193,7 @@ const appSettingsMenu = readText("src/widgets/app-settings-menu/ui/AppSettingsMe
 // one.
 const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
-const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
+const localVaultHook = readText("src/entities/vault-session/model/use-local-vault.ts");
 const releaseWorkflow = readText(".github/workflows/release-macos.yml");
 const pagesDeployWorkflow = readText(".github/workflows/deploy-pages.yml");
 const downloadReleaseVerifier = readText("scripts/check-macos-download-release.mjs");
@@ -467,7 +467,7 @@ if (
 
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/features/docs-vault-local/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml"
+  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/entities/vault-session/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml"
 ) {
   pass("desktop native vault bridge tests cover WebView handle shim, agent config validation, and Rust path guard");
 } else {

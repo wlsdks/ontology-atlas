@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 
-import { LocalVaultProvider } from "@/features/docs-vault-local";
+import { LocalVaultProvider } from "@/entities/vault-session";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import enMessages from "../../../../messages/en.json";
 import { ProjectDetailPage } from "./ProjectDetailPage";
