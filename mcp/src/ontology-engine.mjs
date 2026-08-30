@@ -4147,6 +4147,7 @@ export function createOntologyEngine(artifact, options = {}) {
         'Run health, cycles, growth_plan, maintenance_plan, and validate_vault after code changes or vault writes before handing the graph to another agent.',
         'Use add_concept/add_relation/patch_concept/merge_concepts only after the intended ontology change is clear.',
         'Treat Definition/Includes lists as bounded positive claims, not exhaustive inventories. Never say only/all/every/exactly unless the full node body explicitly states completeness and cites a source-backed product boundary; otherwise say "the vault names/models these items" and preserve Excludes/Uncertainty limits.',
+        'When a source body says bounded packet, static packet, bounded excerpt, or selected evidence, preserve it in the same atomic claim as a measurement qualifier; never detach only/one/none/unmeasured/absent from it.',
         'Structural readiness is not semantic qualification: inspect projectSource.currentness, meaningAssessment.status, competency question witnesses, and meaningRepair before claiming a project is ontology-ready.',
         'The nested project-source receipt is the last measured snapshot; the outer projectSource.currentness is the current graph comparison. Treat ontology_changed, stale, unavailable, or review_required as unresolved.',
         'Ordinary synchronization must not call delete_concept, merge_concepts, rename_concept, absorb_document, or git_snapshot. These require an explicit human request plus dry-run or preflight review and conflict guards.',

@@ -52,6 +52,7 @@ function nonBlank(value, maxLength = 500) {
 }
 
 function safeRelativePath(value) {
+  if (value === '.') return true;
   return typeof value === 'string'
     && value.length > 0
     && value.length <= 500

@@ -1,6 +1,7 @@
 const COMPETENCY_HEADING = "## Competency answers";
 
 function safeRelativePath(value: string): boolean {
+  if (value === ".") return true;
   return value.length > 0
     && value.length <= 500
     && value.trim() === value

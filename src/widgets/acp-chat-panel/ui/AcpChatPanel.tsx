@@ -288,9 +288,8 @@ export function AcpChatPanel({
   openingRequest?: { text: string; nonce: number } | null;
   /**
    * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
-   * current state** (`useChatSuggestions`). Only shown on an empty conversation: once
-   * a conversation has started the user already knows what to ask, and from then on
-   * this area only takes up space.
+   * current state** (`useChatSuggestions`). It appears in the empty conversation and,
+   * after a completed answer, as a quiet endcap whose choice only fills the composer.
    *
    * The vault is **received** rather than read here — reading it directly would stop
    * this panel standing without a `LocalVaultProvider`, which is not a property this

@@ -273,6 +273,9 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    been rechecked. If evidence is missing, out of date, or unresolved, the
    assessment closes in one of the named review/evidence states instead of a
    score.
+   Persisted competency Evidence/Paths may use literal `.` for the bound
+   repository root. That witness resolves the root itself across app and MCP;
+   it never claims a canonical child file or complete source/runtime coverage.
 
 ### Dual node identity
 

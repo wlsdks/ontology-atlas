@@ -36,6 +36,8 @@ The internal `constructionQualification:v1` extends these per-question judgments
 
 The proposal writer and finalizer also share the meaning of source witnesses. From the exact `## Competency answers` section in project Markdown, the renderer derives backtick `Evidence`/`Paths` as source claims along with canonical `path:`, ensuring the app and MCP generate the same set. Arbitrary body filenames are not claims; paths that are unsafe or malformed close with failure as an empty set. Thus, grounds for the approved write plan persist from source receipt → finalize → new `agent_brief`, but paths not in the actual source inventory remain unsupported to the end.
 
+Literal repository root `.` is a valid explicit competency and element path. It proves the bound root itself, not a canonical child file or complete dependency/runtime coverage. MCP and app witness derivation keep `.` together with valid sibling Evidence/Paths rows, while absolute, parent-escaping, malformed, and embedded-dot paths still fail closed.
+
 ## Grounds
 
 - `src/shared/lib/project-source-receipt.ts`: Receipt, currentness, gap, and handoff contracts

@@ -126,6 +126,38 @@ test('admits exact persisted competency evidence without requiring a frontmatter
   assert.deepEqual(result.evidenceClaims, [{ concept: 'project', path: 'README.md' }]);
 });
 
+test('keeps repository-root competency evidence in the current witness inventory', () => {
+  const body = [
+    '## Competency answers',
+    '',
+    '### evidence — partial',
+    '',
+    'Question',
+    '',
+    'Answer',
+    '',
+    '- Evidence: `README.md`',
+    '- Paths: `.`, `cmd/tool/main.go`',
+    '- Gap: Canonical root file is unresolved.',
+  ].join('\n');
+  const result = buildProjectMeaningInventory({
+    projectSlug: 'project',
+    graphHash: GRAPH_HASH,
+    projectScope: scope([{ slug: 'project', kind: 'project' }]),
+    artifactEdges: [],
+    scopedDocs: [{ slug: 'project', frontmatter: { slug: 'project', kind: 'project' }, body }],
+    projectSource: source([
+      { id: 'root', nodeSlug: 'project', role: 'competency-evidence', path: '.', supported: true },
+      { id: 'readme', nodeSlug: 'project', role: 'competency-evidence', path: 'README.md', supported: true },
+      { id: 'command', nodeSlug: 'project', role: 'competency-evidence', path: 'cmd/tool/main.go', supported: true },
+    ]),
+  });
+
+  assert.equal(result.status, 'ready');
+  assert.deepEqual(result.inventory.evidence, ['.', 'cmd/tool/main.go', 'README.md']);
+  assert.deepEqual(result.inventory.paths, ['.', 'cmd/tool/main.go', 'README.md']);
+});
+
 test('fails closed when the saved source receipt is malformed', () => {
   const projectSource = source([
     { id: 'search', nodeSlug: 'capabilities/search', role: 'implementation', path: 'src/search.ts', supported: true },

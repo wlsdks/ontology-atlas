@@ -2923,6 +2923,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 · ACP next steps move on when the vault does",
+      "slug": "2026-08-30-acp-next-steps-move-on-when-the-vault-does"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · A role box finishes its sentence",
       "slug": "2026-08-30-a-role-box-finishes-its-sentence"
     },
@@ -2945,6 +2950,11 @@
       "depth": 2,
       "text": "2026-08-30 · Every role on the architecture canvas carries its own receipt",
       "slug": "2026-08-30-every-role-on-the-architecture-canvas-carries-its-own-receipt"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 · First-ontology handoff keeps its evidence boundaries intact",
+      "slug": "2026-08-30-first-ontology-handoff-keeps-its-evidence-boundaries-intact"
     },
     {
       "depth": 2,
@@ -6004,6 +6014,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 — ACP next actions hold current facts through refresh and advance after source binding",
+      "slug": "2026-08-30-acp-next-actions-hold-current-facts-through-refresh-and-advance-after-source-binding"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 — A role box gives its sentence two lines; the rows close up to pay for it",
       "slug": "2026-08-30-a-role-box-gives-its-sentence-two-lines-the-rows-close-up-to-pay-for-it"
     },
@@ -6016,6 +6031,41 @@
       "depth": 2,
       "text": "2026-08-30 — A role box states what the role is; its counts wait in the panel",
       "slug": "2026-08-30-a-role-box-states-what-the-role-is-its-counts-wait-in-the-panel"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Persisted handoff is 41/41; gross performance remains open",
+      "slug": "2026-08-30-persisted-handoff-is-4141-gross-performance-remains-open"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Repository root is a current competency witness",
+      "slug": "2026-08-30-repository-root-is-a-current-competency-witness"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Qualification schema discovery is file-backed",
+      "slug": "2026-08-30-qualification-schema-discovery-is-file-backed"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Payload witness digests are derived during sealing",
+      "slug": "2026-08-30-payload-witness-digests-are-derived-during-sealing"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Rooted reads publish their contract before T0",
+      "slug": "2026-08-30-rooted-reads-publish-their-contract-before-t0"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Recorded analyzer calls feed coverage directly",
+      "slug": "2026-08-30-recorded-analyzer-calls-feed-coverage-directly"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Coverage refs are generated before claim sealing",
+      "slug": "2026-08-30-coverage-refs-are-generated-before-claim-sealing"
     },
     {
       "depth": 2,
@@ -13109,6 +13159,23 @@
       "slug": "confidence-level"
     }
   ],
+  "ontology/capabilities/construction-review": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Source-checkout qualification handoff",
+      "slug": "source-checkout-qualification-handoff"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
+    }
+  ],
   "ontology/capabilities/control-primitives": [
     {
       "depth": 1,
@@ -13977,6 +14044,23 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    }
+  ],
+  "ontology/elements/qualification-handoff-helper": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
     }
   ],
   "ontology/ontology-atlas": [

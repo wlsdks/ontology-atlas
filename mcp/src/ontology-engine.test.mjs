@@ -2413,6 +2413,11 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
     assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
     assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
+    assert.ok(result.writePolicy.some((line) => (
+      line.includes('bounded packet')
+      && line.includes('same atomic claim')
+      && line.includes('measurement qualifier')
+    )));
     assert.ok(
       result.writePolicy.some((line) =>
         line.includes('Includes')

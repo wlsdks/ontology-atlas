@@ -50,6 +50,9 @@ absolute server/vault/repository paths. Its automatic `connection_info` must
 match both roots before the first census or source read. A mismatch is a setup
 failure: stop the process, record the elapsed recovery cost, and never call
 `list_kinds`, `index_project`, or a semantic reader on that wrong server.
+Discover that runner with the resolved script plus the single positional
+argument `schema`; `--schema`, `schema --output`, and an empty invocation are
+not rooted-reader discovery forms.
 
 ## Phase 1 — build (measures: cost)
 
@@ -77,6 +80,12 @@ the construction lifecycle, run this separate gate before Phase 3:
 1. Take the exact non-writing `reviewPlan` returned by the analyzer, including
    every full body, `planDigest`, `sourceDigest`, `planRevision`,
    `requiredGapIds`, and proposal-coverage receipt available at that phase.
+   Before freezing claims, run the bootstrap helper's `coverage` stage against
+   the exact reviewable analysis/proposal pair. Preserve its ordered refs and
+   require the manifest's first-occurrence proposal refs to match them exactly;
+   pass a supported complete recorder transcript directly when available, and
+   do not discover artifact shapes or relation/impact grammar through failed
+   coverage or seal attempts.
 2. Give that candidate packet to a fresh source-hidden evaluator. It receives no
    source clone and no starter/shared vault. The packet must state
    `sourceHidden: true`, `canWrite: false`, and must not contain `writePlan`.
@@ -148,6 +157,21 @@ When the bootstrap skill's qualification helper is available, record each
 helper stage separately and require the `join` receipt to prove parallel overlap;
 helper runtime does not replace actor isolation, source hiding, or the four
 field-trial measurements.
+Require every actor to discover the qualification helper through one file-backed
+`schema --output` call and read the emitted schema file. Displayed stdout is not
+a complete-contract receipt; any truncation-driven shape failure is a transport
+RED, not an evaluator semantic result.
+Record rooted-runner discovery and executions separately too. A clean run reads
+its emitted schema once and executes each deliberately authored packet once;
+any same-packet CLI-form retry or implementation source read invalidates the
+cold-start usability result even if no vault write occurred.
+Record `coverage` separately from candidate release and `seal`: it derives exact
+review-row labels only and is neither a second candidate nor a qualification
+result. Report coverage attempts/runtime and preserve any preflight mismatch.
+For payload-carrying witnesses, exercise seal-derived digests and report that
+the sealed payloads match their authored inputs; a wrong supplied digest must
+remain a no-output RED. Do not count deterministic digest derivation as a meaning
+decision or a qualification result.
 Use the helper's sibling-path `hidden` form so `qualificationCore` and `answers`
 remain separately authored artifacts instead of being copied into one large
 wrapper. Record embedded-versus-path wrapper bytes, helper attempts, and exact
@@ -306,6 +330,17 @@ Never introduce `only`, `all`, `every`, or `exactly` from list membership alone;
 carry `Excludes` and `Uncertainty` separately. If an exclusion merely says an
 item was not named/listed in bounded evidence, mark the answer partial and report
 that construction defect instead of repeating it as product scope.
+
+### Atomic claim qualifier gate
+
+Before sealing Phase 3 answers, inspect every atomic claim containing `only`,
+`one`, `none`, `no`, `complete`, `absence`, `unmeasured`, or an equivalent
+quantifier. When the full body says `bounded packet`, `static packet`, `bounded
+excerpt`, or `selected evidence`, preserve that measurement qualifier in the
+same atomic claim sentence. Never split “only one … in the bounded packet” into
+the source-wide claim “only one …”. Keep observed positives and still-unknown
+behavior in separate claims. Record the checked claim ids and a zero missing-
+qualifier count in the reader report; any missing qualifier blocks Phase 4.
 
 ## Phase 4 — hallucination check (measures: trust)
 

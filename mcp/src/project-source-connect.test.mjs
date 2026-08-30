@@ -186,7 +186,7 @@ describe('witnesses', () => {
         {
           slug: 'music-streaming',
           frontmatter: { kind: 'project', slug: 'music-streaming' },
-          body: '## Competency answers\n\n- Evidence: `generate`\n- Paths: `transform`, `jsonschema`\n',
+          body: '## Competency answers\n\n- Evidence: `generate`\n- Paths: `.`, `transform`, `jsonschema`\n',
         },
         { slug: 'capabilities/play', frontmatter: { kind: 'capability', path: 'transform' } },
         { slug: 'capabilities/escape', frontmatter: { kind: 'capability', path: '../secret' } },
@@ -197,11 +197,43 @@ describe('witnesses', () => {
       witnesses.map(({ nodeSlug, path }) => ({ nodeSlug, path })),
       [
         { nodeSlug: 'capabilities/play', path: 'transform' },
+        { nodeSlug: 'music-streaming', path: '.' },
         { nodeSlug: 'music-streaming', path: 'generate' },
         { nodeSlug: 'music-streaming', path: 'jsonschema' },
         { nodeSlug: 'music-streaming', path: 'transform' },
       ],
     );
+  });
+
+  it('mints the repository root as supported source evidence', () => {
+    const witnesses = deriveProjectSourceWitnessesFromDocs({
+      projectSlug: 'music-streaming',
+      docs: [{
+        slug: 'music-streaming',
+        frontmatter: { kind: 'project', slug: 'music-streaming' },
+        body: '## Competency answers\n\n- Evidence: `README.md`\n- Paths: `.`\n',
+      }],
+    });
+    const receipt = buildProjectSourceReceipt({
+      projectSlug: 'music-streaming',
+      graphHash: 'project-graph-v1:a1b2c3d4',
+      probe: {
+        sourceId: 'sha256:abc',
+        kind: 'git',
+        revision: 'deadbeef',
+        fingerprint: 'sha256:def',
+        dirty: false,
+        truncated: false,
+        files: ['README.md'],
+      },
+      witnesses,
+      measuredAt: '2026-08-30T00:00:00.000Z',
+    });
+    assert.deepEqual(witnesses.map(({ path }) => path), ['.', 'README.md']);
+    assert.deepEqual(receipt.witnesses.map(({ path, supported }) => ({ path, supported })), [
+      { path: '.', supported: true },
+      { path: 'README.md', supported: true },
+    ]);
   });
 });
 

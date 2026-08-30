@@ -1,6 +1,7 @@
 const COMPETENCY_HEADING = '## Competency answers';
 
 function safeRelativePath(value) {
+  if (value === '.') return true;
   return typeof value === 'string'
     && value.length > 0
     && value.length <= 500

@@ -54,12 +54,19 @@ already exposes its own dogfood MCP is especially easy to mistake for the new
 vault.
 
 For an in-session scratch run that cannot restart in the target folder, prepare
-`scripts/rooted-mcp-read.mjs` before the first measured call. Its input names
-the absolute source-checkout JavaScript `serverPath`, absolute `vaultRoot` / `repoRoot`,
-and an ordered read request list. It runs and verifies `connection_info` first,
-exposes only read/analysis operations, and writes one transcript only after
-every read succeeds. It is not a write path; accepted plans still use the
-normal MCP writer tools after the human gate.
+`scripts/rooted-mcp-read.mjs` before the first measured call. Resolve the script
+relative to the directory containing this `SKILL.md`, never relative to the
+repository root. Run its `schema` discovery once, author the input from the
+emitted JSON Schema and example. The bootstrap invocation is the resolved script
+with the single positional argument `schema`; do not add `--schema`, `--output`,
+or use an empty invocation. Then make one `--input` / `--output` call for
+each deliberately authored read packet; do not retry a packet to probe CLI forms
+or inspect implementation source. The input names the
+absolute source-checkout JavaScript `serverPath`, absolute `vaultRoot` /
+`repoRoot`, and an ordered read request list. The runner itself invokes and
+verifies `connection_info` first, exposes only read/analysis operations, and
+writes one transcript only after every read succeeds. It is not a write path;
+accepted plans still use the normal MCP writer tools after the human gate.
 
 Continue when the vault is empty, contains only starter/example nodes, or the
 user explicitly requests a rebuild. If it has 20+ curated nodes, use
@@ -315,8 +322,10 @@ may remain only when explicitly shown to the user.
 
 ### 8. Produce the non-writing review plan
 
-Call `analyze_repo_structure` with the complete `proposal` object and omit
-`qualification`. The first valid response is deliberately non-writing. Require:
+Call `analyze_repo_structure` with exact args
+`{ rootPath: "<repository root>", proposal: <complete proposal object> }`; omit
+`qualification` and do not add `maxFiles`. The first valid response is
+deliberately non-writing. Require:
 
 - `proposalValidation.status: pass`;
 - `proposalValidation.canWrite: false`;
@@ -365,12 +374,19 @@ claim against current source before the mandatory evidence axis can pass.
 
 #### Seal once, then qualify in isolated parallel lanes
 
-When this checkout provides
-`scripts/qualification-handoff.mjs`, use its `seal`, `hidden`, `audit`, `join`,
-`accept`, and `release` stages instead of recreating canonical JSON, digests,
+When this skill directory provides `scripts/qualification-handoff.mjs`, resolve
+that path relative to the directory containing this `SKILL.md`, never relative
+to the repository root, and reuse the resolved path for the whole run. Use its
+`coverage`, `seal`, `hidden`,
+`audit`, `join`, `accept`, and `release` stages instead of recreating canonical JSON, digests,
 CQ witness projection, or lifecycle comparison code in scratch. Read its
-machine contract with the `schema` stage, then author access, core, and answers
+machine contract by running `schema --output <fresh-scratch-directory>` exactly
+once and reading the emitted schema file; never rely on displayed schema stdout,
+which can truncate this large contract. Then author access, core, and answers
 from `commands.hidden.jsonSchemas` without opening helper implementation source.
+The source-aware auditor likewise authors access, claim results, fragment
+catalog, and quantifier rows from `commands.audit.jsonSchemas`; prose describing
+catalog deduplication is not a substitute for those exact shapes.
 The builder, hidden evaluator, and
 auditor still author the proposal, claims, witnesses, answers, axes, and source
 judgments; the helper only validates and packages those decisions, invokes no
@@ -379,6 +395,23 @@ Use `seal`'s compact analysis/proposal path form so the exact analyzer response
 becomes the candidate without copying or normalizing review-plan bodies. On a
 true cold start, `hidden` derives the reserved regression witness from the exact
 CQ set; the evaluator still owns the maintainability-axis judgment.
+Immediately after the first reviewable analyzer response and before authoring a
+claim manifest, run `coverage` with that exact analysis/proposal pair. Use its
+ordered proposal-coverage receipt refs as the manifest's first-occurrence coverage
+order, while retaining separate material Definition, Includes, Excludes, and
+Uncertainty claims. Then validate manifest, witness, and quantifier input against
+`commands.seal.jsonSchemas` and run `seal`. The coverage receipt derives labels
+only; it never chooses claims, witnesses, meaning, qualification, or writes.
+When a witness embeds `payload`, omit `provenance.digest`; `seal` derives the
+canonical SHA-256 into its cloned sealed witness without mutating the authored
+input. A caller-supplied digest must still match exactly, and a witness without
+payload must still supply its portable digest. Do not independently recreate the
+helper's canonical JSON hashing in scratch.
+Prefer the complete recorded analysis transcript as `analysisPath`. A transcript
+whose `calls[]` row carries `{ name, args, response }`, with `response` equal to
+the direct structured result, is a supported input and needs no hand-authored
+wrapper. Consult `derivedCandidate.supportedAnalysisForms` once; do not probe
+artifact shapes through failed `coverage` calls.
 For `hidden`, keep the access manifest inline, write the evaluator-authored
 `qualificationCore` and `answers` as two sibling JSON files beside the command
 input, and use `qualificationCorePath` plus `answersPath`. The helper accepts

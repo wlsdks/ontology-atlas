@@ -343,6 +343,7 @@ had become false).
 - The outer dock continues to yield space to the map width, but the actual conversation surface stands as a panel with 12px spacing on the top, bottom, and right sides. Its borders, radius, and shadows share existing panel tokens used by INDEX and node details, with ACP and API-key conversations sharing the same form. The top and vertical map controls on the left side of the panel are attached 12px from each side of the seam, totaling a 24px gap, moving in sync with the dock's timing and curvature.
 - From the first frame of opening the panel, the header, empty conversation prompt, current folder recommendations, and input box are all visible in their final positions. While waiting for connection, only the small spinner and "Connecting" status in the header move; when ready, only the text changes to "Ready." Session start occurs after the dock width movement and camera's final landing complete, ensuring map motion and process booting do not compete for the same frame.
 - When a non-empty turn completes, the same maximum-three current-vault recommendations return directly after the latest answer under **Useful next steps**. They appear only while the session is ready, no permission review or error is present, and the composer is empty. Starting a draft makes them yield; choosing one only fills the composer and never sends or writes automatically. An implementation-evidence recommendation matches the MCP maintenance boundary (`path:` or a resolved `elements:` relation) and says only that the capability is not yet linked to code, never that code is absent.
+- Those recommendations remain continuous while the same vault is re-read after a save: the last current health and source handle stay usable until the replacement manifest arrives, but never while switching folders. A completed ACP `connect_project_source` or `disconnect_project_source` receipt invalidates the project-source sidecar summary even though no ontology Markdown changed, so a finished source action is replaced by the next applicable prompt instead of being recommended again.
 - While the agent panel is open, the left INDEX temporarily collapses without changing its saved default state, yielding map width. Closing the conversation restores the original INDEX preference; opening the collapsed INDEX tab directly closes the agent panel so both auxiliary panels do not compress the map simultaneously.
 - Thought fragments and tool calls generated from a single user message are collected into a single line of the default-collapsed **「Process · N steps」**. During execution, only the indigo dot and step count update, while the agent's response is read in a separate body. Expanding it when needed reveals both the original order and target nodes, with thought Markdown rendered as actual bold, code, and lists.
 - GFM tables in agent responses appear as real tables with headers, row dividers, and cell padding. Long tables scroll horizontally only within the table itself, without widening the entire conversation dock.
@@ -1061,6 +1062,11 @@ scratch helper for those receipt stages. Agents still decide every meaning,
 answer, evidence mapping, and citation verdict; the helper only removes repeated
 JSON/digest/witness projection and emits non-executing writer-call data after an
 exact executable release.
+The complete qualification contract is read from one file-backed `schema.json`,
+not a potentially truncated display. It publishes exact hidden and audit input
+schemas; coverage refs are derived before material claims, payload witness
+digests are derived during seal without mutating caller input, and recorded
+analyzer responses pass directly without hand-authored wrappers.
 The helper requires one human-owned purpose/CQ set whose approval predates the
 source-hidden lane, keeps that owner distinct from all construction actors, and
 binds the full question projection into the post-join acceptance request. The
@@ -1080,10 +1086,16 @@ direction matches. It does not prove runtime, reverse, transitive,
 capability/business, or complete impact; the impact competency answer remains
 partial without separate current meaning evidence.
 Project-source receipts preserve safe explicit repository-root directory paths
-from frontmatter and persisted competency Evidence/Paths rows, not only paths
-with a slash or extension. App and MCP derivation stay aligned; absolute,
-parent-escaping, malformed, and relation-slug lookalikes do not become source
-witnesses.
+from frontmatter and persisted competency Evidence/Paths rows, including literal
+repository root `.`, not only paths with a slash or extension. The root witness
+proves the bound root rather than a canonical child file. App and MCP derivation
+stay aligned; absolute, parent-escaping, malformed, embedded-dot, and
+relation-slug lookalikes do not become source witnesses or erase valid siblings.
+
+Agent handoff preserves measurement scope at atomic-claim granularity. When a
+body says bounded/static packet, bounded excerpt, or selected evidence, any
+`only`, `one`, `none`, `unmeasured`, or absence claim keeps that qualifier in the
+same sentence instead of widening a packet-local gap into a source-wide fact.
 
 For `agent_brief`, structural readiness is not meaning confidence. A fresh call
 for an explicit project derives `meaningAssessment:v1` from three independent

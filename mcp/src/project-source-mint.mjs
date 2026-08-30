@@ -20,7 +20,7 @@ function normalizedRelativePath(value) {
  * pins the two entry points to byte-identical output.
  */
 export function buildProjectSourceReceipt(input) {
-  const files = new Set();
+  const files = new Set(['.']);
   for (const sourcePath of input.probe.files ?? []) {
     const normalized = normalizedRelativePath(sourcePath);
     files.add(normalized);

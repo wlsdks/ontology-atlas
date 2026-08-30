@@ -486,7 +486,38 @@ function acceptedFixture() {
 
 describe('qualification handoff happy path', () => {
   test('schema documents commands, atomic output, quantifiers, and all exit codes', () => {
-    assert.deepEqual(Object.keys(HANDOFF_SCHEMA.commands), ['seal', 'hidden', 'audit', 'join', 'accept', 'release']);
+    assert.deepEqual(Object.keys(HANDOFF_SCHEMA.commands), ['coverage', 'seal', 'hidden', 'audit', 'join', 'accept', 'release']);
+    assert.deepEqual(HANDOFF_SCHEMA.commands.coverage.compactInput, ['analysisPath', 'proposalPath', 'builderId']);
+    assert.deepEqual(HANDOFF_SCHEMA.commands.coverage.output, ['proposal-coverage.json']);
+    assert.equal(
+      HANDOFF_SCHEMA.derivedCandidate.supportedAnalysisForms.includes(
+        'recorded calls[] entry { name, args, response: <direct structuredContent> }',
+      ),
+      true,
+    );
+    assert.match(HANDOFF_SCHEMA.commands.seal.proposalCoverage.order, /sort/);
+    assert.deepEqual(HANDOFF_SCHEMA.commands.seal.proposalCoverage.patterns, {
+      concept: 'concept:<slug>',
+      relation: 'relation:<type>:<from>-><to>',
+      competency: 'competency:<id>',
+      dependencyImpact: 'impact:relation:<type>:<from>-><to>',
+      competencyImpact: 'impact:competency:<id>',
+    });
+    const sealSchemas = HANDOFF_SCHEMA.commands.seal.jsonSchemas;
+    assert.deepEqual(compileSchema(sealSchemas.manifest)(manifestFor(reviewPlan())), []);
+    assert.deepEqual(compileSchema(sealSchemas.witnesses)(witnesses()), []);
+    const derivedDigestWitnesses = witnesses();
+    delete derivedDigestWitnesses[0].provenance.digest;
+    assert.deepEqual(compileSchema(sealSchemas.witnesses)(derivedDigestWitnesses), []);
+    const digestlessExternalWitnesses = clone(derivedDigestWitnesses);
+    delete digestlessExternalWitnesses[0].payload;
+    assert.notDeepEqual(compileSchema(sealSchemas.witnesses)(digestlessExternalWitnesses), []);
+    assert.equal(HANDOFF_SCHEMA.commands.seal.witnessPayloadDigest.deriveWhenPayloadPresent, true);
+    assert.equal(HANDOFF_SCHEMA.commands.seal.witnessPayloadDigest.requiredWithoutPayload, true);
+    assert.deepEqual(compileSchema(sealSchemas.quantifierClassifications)(quantifiers(manifestFor(reviewPlan()))), []);
+    const longQuantifierSource = quantifiers(manifestFor(reviewPlan()));
+    longQuantifierSource[0].sourceRefs = ['s'.repeat(501)];
+    assert.ok(compileSchema(sealSchemas.quantifierClassifications)(longQuantifierSource).length > 0);
     assert.match(HANDOFF_SCHEMA.io.atomicity, /staged/);
     assert.match(HANDOFF_SCHEMA.quantifiers.rule, /source_bounded/);
     assert.match(HANDOFF_SCHEMA.commands.hidden.qualificationCore, /predates source-hidden evaluation/);
@@ -604,6 +635,17 @@ describe('qualification handoff happy path', () => {
     longQualificationId.qualificationId = 'q'.repeat(301);
     assert.ok(validateCore(longQualificationId).length > 0);
     assert.match(HANDOFF_SCHEMA.commands.audit.claimResults, /deduplicated sourceFragmentCatalog/);
+    const auditSchemas = HANDOFF_SCHEMA.commands.audit.jsonSchemas;
+    const auditCatalog = catalogAuditRows(manifestFor(reviewPlan()));
+    assert.deepEqual(compileSchema(auditSchemas.access)(
+      access('source_aware_auditor', 'agent:audit', '2026-01-02T03:05:00.000Z', '2026-01-02T03:15:00.000Z'),
+    ), []);
+    assert.deepEqual(compileSchema(auditSchemas.claimResults)(auditCatalog.claimResults), []);
+    assert.deepEqual(compileSchema(auditSchemas.sourceFragmentCatalog)(auditCatalog.sourceFragmentCatalog), []);
+    assert.deepEqual(compileSchema(auditSchemas.quantifierClassifications)(quantifiers(manifestFor(reviewPlan()))), []);
+    const inventedFragmentField = clone(auditCatalog.sourceFragmentCatalog);
+    inventedFragmentField[0].fragment = 'not part of the audit contract';
+    assert.notDeepEqual(compileSchema(auditSchemas.sourceFragmentCatalog)(inventedFragmentField), []);
     assert.deepEqual(Object.keys(HANDOFF_SCHEMA.exits).map(Number), [0, 2, 64, 65, 70, 74]);
   });
 
@@ -647,12 +689,240 @@ describe('qualification handoff happy path', () => {
     assert.equal(release.relationCalls.flatMap((call) => call.args.relations).length, sealed.candidate.reviewPlan.relations.length);
   });
 
+  test('CLI coverage preflight publishes exact ordered refs before the manifest and seals them on the first attempt', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-coverage-'));
+    const plan = reviewPlan();
+    const rawCandidate = candidate(plan);
+    await Promise.all([
+      writeJson(join(root, 'analysis.json'), analysisArtifact(rawCandidate)),
+      writeJson(join(root, 'proposal.json'), rawCandidate.proposal),
+    ]);
+    const coverageInput = join(root, 'coverage-input.json');
+    await writeJson(coverageInput, {
+      analysisPath: 'analysis.json',
+      proposalPath: 'proposal.json',
+      builderId: rawCandidate.builderId,
+    });
+    await execFileAsync(process.execPath, [SCRIPT, 'coverage', '--input', coverageInput, '--output', join(root, 'coverage')]);
+    const coverage = JSON.parse(await readFile(join(root, 'coverage/proposal-coverage.json'), 'utf8'));
+    assert.deepEqual(coverage.refs, proposalCoverageRefs(plan));
+    assert.equal(coverage.refs.length > plan.concepts.length, true, 'coverage preflight must include non-concept refs');
+    assert.equal(coverage.refs.some((ref) => ref.startsWith('relation:')), true, 'coverage preflight measured no relations');
+    assert.equal(Object.hasOwn(coverage, 'writePlan'), false);
+
+    const embeddedInput = join(root, 'coverage-embedded-input.json');
+    await writeJson(embeddedInput, {
+      analysis: analysisArtifact(rawCandidate),
+      proposal: rawCandidate.proposal,
+      builderId: rawCandidate.builderId,
+    });
+    await execFileAsync(process.execPath, [
+      SCRIPT,
+      'coverage',
+      '--input',
+      embeddedInput,
+      '--output',
+      join(root, 'coverage-embedded'),
+    ]);
+    assert.equal(
+      await readFile(join(root, 'coverage-embedded/proposal-coverage.json'), 'utf8'),
+      await readFile(join(root, 'coverage/proposal-coverage.json'), 'utf8'),
+    );
+
+    const manifest = coverage.refs.map((proposalRef, index) => ({
+      id: `coverage-claim-${String(index + 1).padStart(3, '0')}`,
+      statement: `The candidate includes the bounded review row ${proposalRef}.`,
+      status: 'supported',
+      witnessRefs: ['w-source'],
+      proposalRefs: [proposalRef],
+    }));
+    await Promise.all([
+      writeJson(join(root, 'manifest.json'), manifest),
+      writeJson(join(root, 'witnesses.json'), witnesses()),
+    ]);
+    const sealInput = join(root, 'seal-input.json');
+    await writeJson(sealInput, {
+      analysisPath: 'analysis.json',
+      proposalPath: 'proposal.json',
+      manifestPath: 'manifest.json',
+      witnessesPath: 'witnesses.json',
+      builderId: rawCandidate.builderId,
+      quantifierClassifications: [],
+    });
+    await execFileAsync(process.execPath, [SCRIPT, 'seal', '--input', sealInput, '--output', join(root, 'sealed')]);
+    const sealed = JSON.parse(await readFile(join(root, 'sealed/candidate-seal.json'), 'utf8'));
+    assert.deepEqual(sealed.proposalCoverageRefs, coverage.refs);
+  });
+
+  test('CLI coverage accepts a recorded direct response and still binds its exact request proposal', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-recorded-coverage-'));
+    const plan = reviewPlan();
+    const rawCandidate = candidate(plan);
+    const analysis = analysisArtifact(rawCandidate);
+    const recordedAnalysis = {
+      contract: 'rootedMcpReadTranscript:v1',
+      calls: [
+        {
+          id: 'root-check',
+          name: 'connection_info',
+          args: {},
+          response: { sameRoot: false },
+        },
+        {
+          ...analysis.calls[0],
+          response: analysis.responses[0].result.structuredContent,
+        },
+      ],
+    };
+    await Promise.all([
+      writeJson(join(root, 'analysis.json'), recordedAnalysis),
+      writeJson(join(root, 'analysis-standard.json'), analysis),
+      writeJson(join(root, 'proposal.json'), rawCandidate.proposal),
+      writeJson(join(root, 'coverage-input.json'), {
+        analysisPath: 'analysis.json',
+        proposalPath: 'proposal.json',
+        builderId: rawCandidate.builderId,
+      }),
+      writeJson(join(root, 'coverage-standard-input.json'), {
+        analysisPath: 'analysis-standard.json',
+        proposalPath: 'proposal.json',
+        builderId: rawCandidate.builderId,
+      }),
+    ]);
+
+    await Promise.all([
+      execFileAsync(process.execPath, [
+        SCRIPT,
+        'coverage',
+        '--input',
+        join(root, 'coverage-input.json'),
+        '--output',
+        join(root, 'coverage'),
+      ]),
+      execFileAsync(process.execPath, [
+        SCRIPT,
+        'coverage',
+        '--input',
+        join(root, 'coverage-standard-input.json'),
+        '--output',
+        join(root, 'coverage-standard'),
+      ]),
+    ]);
+
+    const coverageText = await readFile(join(root, 'coverage/proposal-coverage.json'), 'utf8');
+    const coverage = JSON.parse(coverageText);
+    assert.deepEqual(coverage.refs, proposalCoverageRefs(plan));
+    assert.equal(Object.hasOwn(coverage, 'writePlan'), false);
+    assert.equal(
+      coverageText,
+      await readFile(join(root, 'coverage-standard/proposal-coverage.json'), 'utf8'),
+    );
+
+    recordedAnalysis.calls[1].args.proposal = {
+      ...recordedAnalysis.calls[1].args.proposal,
+      projectSlug: 'drifted-paper-kite',
+    };
+    await writeJson(join(root, 'analysis-drifted.json'), recordedAnalysis);
+    await writeJson(join(root, 'coverage-drifted-input.json'), {
+      analysisPath: 'analysis-drifted.json',
+      proposalPath: 'proposal.json',
+      builderId: rawCandidate.builderId,
+    });
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        SCRIPT,
+        'coverage',
+        '--input',
+        join(root, 'coverage-drifted-input.json'),
+        '--output',
+        join(root, 'coverage-drifted'),
+      ]),
+      (error) => error.code === EXIT.DATA && /proposal drifted/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(root, 'coverage-drifted')), (error) => error.code === 'ENOENT');
+  });
+
+  test('seal derives an omitted payload digest without mutating input and still rejects drift', async () => {
+    const plan = reviewPlan();
+    const rawCandidate = candidate(plan);
+    const manifest = manifestFor(plan);
+    const digestlessWitnesses = witnesses();
+    delete digestlessWitnesses[0].provenance.digest;
+
+    const sealed = sealCandidate({
+      candidate: rawCandidate,
+      manifest,
+      witnesses: digestlessWitnesses,
+      quantifierClassifications: quantifiers(manifest),
+    });
+
+    assert.equal(Object.hasOwn(digestlessWitnesses[0].provenance, 'digest'), false);
+    assert.equal(sealed.witnesses[0].provenance.digest, digestJson(digestlessWitnesses[0].payload));
+    const driftedWitnesses = witnesses();
+    driftedWitnesses[0].provenance.digest = `sha256:${'0'.repeat(64)}`;
+    assert.throws(() => sealCandidate({
+      candidate: rawCandidate,
+      manifest,
+      witnesses: driftedWitnesses,
+      quantifierClassifications: quantifiers(manifest),
+    }), /payload digest drifted/);
+    const payloadlessWitnesses = witnesses();
+    delete payloadlessWitnesses[0].payload;
+    delete payloadlessWitnesses[0].provenance.digest;
+    assert.throws(() => sealCandidate({
+      candidate: rawCandidate,
+      manifest,
+      witnesses: payloadlessWitnesses,
+      quantifierClassifications: quantifiers(manifest),
+    }), /needs a digest/);
+
+    const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-witness-digest-red-'));
+    await Promise.all([
+      writeJson(join(root, 'analysis.json'), analysisArtifact(rawCandidate)),
+      writeJson(join(root, 'proposal.json'), rawCandidate.proposal),
+      writeJson(join(root, 'manifest.json'), manifest),
+      writeJson(join(root, 'witnesses.json'), driftedWitnesses),
+      writeJson(join(root, 'seal-input.json'), {
+        analysisPath: 'analysis.json',
+        proposalPath: 'proposal.json',
+        manifestPath: 'manifest.json',
+        witnessesPath: 'witnesses.json',
+        builderId: rawCandidate.builderId,
+        quantifierClassifications: quantifiers(manifest),
+      }),
+    ]);
+    await assert.rejects(
+      execFileAsync(process.execPath, [
+        SCRIPT,
+        'seal',
+        '--input',
+        join(root, 'seal-input.json'),
+        '--output',
+        join(root, 'sealed'),
+      ]),
+      (error) => error.code === EXIT.DATA && /payload digest drifted/.test(error.stderr),
+    );
+    await assert.rejects(stat(join(root, 'sealed')), (error) => error.code === 'ENOENT');
+  });
+
   test('CLI writes schema atomically to a new directory and refuses an existing target with exit 74', async () => {
     const root = await mkdtemp(join(tmpdir(), 'qualification-handoff-test-'));
     const output = join(root, 'schema-output');
     await execFileAsync(process.execPath, [SCRIPT, 'schema', '--output', output]);
     assert.equal((await stat(output)).isDirectory(), true);
-    assert.equal(JSON.parse(await readFile(join(output, 'schema.json'), 'utf8')).contract, HANDOFF_SCHEMA.contract);
+    assert.equal(HANDOFF_SCHEMA.schemaDiscovery.completeContractRequiresFileOutput, true);
+    assert.match(HANDOFF_SCHEMA.schemaDiscovery.preferredInvocation, /schema --output/);
+    const schemaText = await readFile(join(output, 'schema.json'), 'utf8');
+    const schema = JSON.parse(schemaText);
+    assert.equal(schema.contract, HANDOFF_SCHEMA.contract);
+    assert.ok(schemaText.length > 10000, 'file-backed schema gate measured an idle/truncated contract');
+    const core = schema.commands.hidden.jsonSchemas.qualificationCore;
+    assert.ok(core.properties.purposeAuthority.required.includes('owners'));
+    assert.ok(core.properties.competencyQuestions.items.required.includes('scenarioId'));
+    assert.ok(core.properties.competencyQuestions.items.properties.revision.required.includes('version'));
+    const auditCatalog = schema.commands.audit.jsonSchemas.sourceFragmentCatalog;
+    assert.ok(auditCatalog.items.required.includes('sourceRef'));
+    assert.equal(Object.hasOwn(auditCatalog.items.properties, 'fragment'), false);
     await assert.rejects(
       execFileAsync(process.execPath, [SCRIPT, 'schema', '--output', output]),
       (error) => error.code === EXIT.IO,
@@ -1053,6 +1323,9 @@ describe('seal RED probes', () => {
     const missing = make();
     missing.manifest.pop();
     assert.throws(() => sealCandidate(missing), /cover/);
+    const orderDrift = make();
+    [orderDrift.manifest[0], orderDrift.manifest[1]] = [orderDrift.manifest[1], orderDrift.manifest[0]];
+    assert.throws(() => sealCandidate(orderDrift), /first-occurrence order drifted/);
     const foreign = make();
     foreign.manifest[0].proposalRefs = ['concept:foreign'];
     assert.throws(() => sealCandidate(foreign), /foreign ref/);
@@ -1071,6 +1344,12 @@ describe('seal RED probes', () => {
     const unsafe = quantifiers(input.manifest);
     unsafe[0].classification = 'unsafe';
     assert.throws(() => sealCandidate({ ...input, quantifierClassifications: unsafe }), (error) => error.exitCode === EXIT.GATE_BLOCKED);
+    const overlong = quantifiers(input.manifest);
+    overlong[0].sourceRefs = ['s'.repeat(501)];
+    assert.throws(
+      () => sealCandidate({ ...input, quantifierClassifications: overlong }),
+      /sourceRefs/,
+    );
   });
 });
 
@@ -1542,6 +1821,33 @@ describe('hidden and audit RED probes', () => {
     assert.ok(audit.receipt.failures.length >= 2);
   });
 
+  test('audit runtime rejects schema-forbidden access and unknown nested fields', () => {
+    const sealed = sealedFixture();
+    const base = {
+      ...sealed,
+      access: access('source_aware_auditor', 'agent:audit', '2026-01-02T03:05:00.000Z', '2026-01-02T03:15:00.000Z'),
+      claimResults: auditRows(sealed.manifest),
+      quantifierClassifications: sealed.quantifierClassifications,
+      sourceDigest: sealed.candidate.sourceDigest,
+    };
+
+    const priorAuditorAccess = clone(base);
+    priorAuditorAccess.access.boundaries.auditorArtifactsAccessed = true;
+    assert.throws(() => buildAuditFragment(priorAuditorAccess), /auditor artifacts/);
+
+    const unknownResult = clone(base);
+    unknownResult.claimResults[0].extra = true;
+    assert.throws(() => buildAuditFragment(unknownResult), /unknown field/);
+
+    const unknownCitation = clone(base);
+    unknownCitation.claimResults[0].citations[0].extra = true;
+    assert.throws(() => buildAuditFragment(unknownCitation), /unknown field/);
+
+    const unknownInlineFragment = clone(base);
+    unknownInlineFragment.claimResults[0].citations[0].sourceFragments[0].fragment = 'not allowed';
+    assert.throws(() => buildAuditFragment(unknownInlineFragment), /unknown field/);
+  });
+
   test('audit fragment catalog rejects missing, foreign, duplicate, mixed, and unused evidence refs', () => {
     const sealed = sealedFixture();
     const catalog = catalogAuditRows(sealed.manifest);
@@ -1579,6 +1885,17 @@ describe('hidden and audit RED probes', () => {
       digest: digestJson({ unused: true }),
     });
     assert.throws(() => buildAuditFragment({ ...base, ...unused }), /unreferenced source fragment/);
+
+    const overlongRef = clone(catalog);
+    const oldRef = overlongRef.sourceFragmentCatalog[0].id;
+    const longRef = 'f'.repeat(501);
+    overlongRef.sourceFragmentCatalog[0].id = longRef;
+    for (const result of overlongRef.claimResults) {
+      for (const citation of result.citations) {
+        citation.sourceFragmentRefs = citation.sourceFragmentRefs.map((ref) => ref === oldRef ? longRef : ref);
+      }
+    }
+    assert.throws(() => buildAuditFragment({ ...base, ...overlongRef }), /too long/);
   });
 });
 
