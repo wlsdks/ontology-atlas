@@ -344,11 +344,13 @@ misreport a healthy app as an early SIGTERM exit. `--kill-existing` also clears
 installed or temporary `.app` copies with the same `Contents/MacOS/ontology-atlas`
 executable, preventing a stale `/Applications/Ontology Atlas.app` from sharing
 the bundle id during local dogfood. The Codex Run action (`./script/build_and_run.sh`)
-also refreshes an existing `/Applications/Ontology Atlas.app` when its bundle id
-matches the freshly built app, so Computer Use app-name dogfood opens the current
-build instead of an older installed copy. When that refresh happens, the Run
-action verifies and leaves running the refreshed `/Applications` app so shell
-evidence and Computer Use app-name evidence point at the same bundle. It also
+uses `desktop:build:app:local`, so local dogfood disables updater artifacts and
+never requires the release updater private key. It also refreshes an existing
+`/Applications/Ontology Atlas.app` when its bundle id matches the freshly built
+app, so Computer Use app-name dogfood opens the current build instead of an older
+installed copy. When that refresh happens, the Run action verifies and leaves
+running the refreshed `/Applications` app so shell evidence and Computer Use
+app-name evidence point at the same bundle. It also
 prints CoreGraphics window diagnostics and writes
 `.tmp/ontology-atlas-dogfood-desktop.png`, which is the fallback visual artifact
 when Computer Use cannot attach to the running app. For desktop UI dogfood

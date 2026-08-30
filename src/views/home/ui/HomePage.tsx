@@ -205,7 +205,10 @@ import {
   projectSlugForSource,
   useProjectSourceModel,
 } from "../model/use-project-source-model";
-import { useProjectSourceReadiness } from "../model/use-unbound-project-source";
+import {
+  buildProjectSourceReadinessRefreshToken,
+  useProjectSourceReadiness,
+} from "../model/use-unbound-project-source";
 import {
   selectTopologyNodeRouteState,
   selectTopologyPathRouteState,
@@ -2340,9 +2343,11 @@ function HomePageImpl() {
    * a quiet INDEX row.
    */
   const sourceProjectSlug = projectSlugForSource(selectedOntologyNode);
+  const usableVaultHandle =
+    vault.status === "loaded" || vault.isReloadingSameVault ? vault.handle : null;
   const projectSource = useProjectSourceModel({
     projectSlug: sourceProjectSlug,
-    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    vaultHandle: usableVaultHandle,
     nodes: ontologyInsight?.nodes ?? [],
     docs: vault.manifest?.docs ?? [],
     // Even the OS folder picker's title must be in the screen's language: measured
@@ -2350,17 +2355,30 @@ function HomePageImpl() {
     // screen.
     pickerTitle: t("nodeDatasheet.sourcePickerTitle"),
   });
+  const projectSourceReadinessRefreshToken = useMemo(
+    () =>
+      buildProjectSourceReadinessRefreshToken({
+        projectSlug: sourceProjectSlug,
+        bindingCardinality: projectSource.view?.bindingCardinality ?? null,
+        measuredAt: projectSource.view?.measuredAt ?? null,
+        proposalSettled: projectSource.proposalSettled,
+        acpWorkReceipts: vault.acpWorkReceipts,
+      }),
+    [
+      sourceProjectSlug,
+      projectSource.view?.bindingCardinality,
+      projectSource.view?.measuredAt,
+      projectSource.proposalSettled,
+      vault.acpWorkReceipts,
+    ],
+  );
   const projectSourceReadiness = useProjectSourceReadiness({
-    vaultHandle: vault.status === "loaded" ? vault.handle : null,
+    vaultHandle: usableVaultHandle,
     nodes: ontologyInsight?.nodes ?? [],
     // Since connections/measurement do not change the markdown graph, waiting for manifest update means it will never
-// re-parse. Uses the moment the selected project model finishes the actual sidecar transition as the invalidation token for this read-only summary.
-    refreshToken: [
-      sourceProjectSlug ?? "",
-      projectSource.view?.bindingCardinality ?? "",
-      projectSource.view?.measuredAt ?? "",
-      projectSource.proposalSettled ? "settled" : "pending",
-    ].join(":"),
+    // re-parse. The selected project model and the latest completed ACP source-binding receipt
+    // invalidate this read-only sidecar summary without rescanning the ontology.
+    refreshToken: projectSourceReadinessRefreshToken,
   });
   const unboundProjectSource = projectSourceReadiness.unbound;
   const projectSourceMeasuredAtLabel = useMemo(() => {

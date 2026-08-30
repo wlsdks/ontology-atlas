@@ -39,7 +39,7 @@ sync_existing_applications_copy() {
   DOGFOOD_APP_PATH="$APPLICATIONS_APP_PATH"
 }
 
-pnpm desktop:build:app
+pnpm desktop:build:app:local
 sync_existing_applications_copy
 mkdir -p "$ROOT_DIR/.tmp"
 pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH" \

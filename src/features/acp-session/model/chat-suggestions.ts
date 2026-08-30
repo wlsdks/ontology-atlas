@@ -97,8 +97,8 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
     });
   }
 
-  // One is always kept — leaving empty hands because nothing is wrong is exactly the moment
-  // "what should I even ask" comes back.
+  // This is the fallback when fewer than three observed repairs fill the list. A vault with three
+  // concrete repairs keeps those ahead of a generic explanation; a clean vault never leaves empty hands.
   out.push({ kind: 'explain', params: { count: input.nodeCount } });
 
   return out.slice(0, SUGGESTION_LIMIT);

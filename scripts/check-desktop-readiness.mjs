@@ -5,6 +5,7 @@ import {
   evaluateAgentSetupGate,
   evaluateDesktopReleasePreflight,
 } from "./lib/release-script-contract.mjs";
+import { inspectCodexRunContract } from "./lib/codex-run-contract.mjs";
 
 const root = process.cwd();
 
@@ -158,6 +159,7 @@ const verifyAppScript = readVerifyMacosAppLaunchScript();
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
 const deployMacosAppLocalScript = readText("scripts/deploy-macos-app-local.mjs");
 const codexBuildRunScript = readText("script/build_and_run.sh");
+const codexRunContract = inspectCodexRunContract(codexBuildRunScript);
 const codexEnvironmentConfig = readText(".codex/environments/environment.toml");
 const signMacosScript = readText("scripts/sign-macos-app.mjs");
 const notarizeMacosDmgScript = readText("scripts/notarize-macos-dmg.mjs");
@@ -398,7 +400,7 @@ if (
 }
 
 if (
-  codexBuildRunScript.includes("pnpm desktop:build:app") &&
+  codexRunContract.exactLocalBuild &&
   codexBuildRunScript.includes("src-tauri/target/release/bundle/macos/Ontology Atlas.app") &&
   codexBuildRunScript.includes('DOGFOOD_APP_PATH="$APP_PATH"') &&
   codexBuildRunScript.includes('pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH"') &&
@@ -409,10 +411,10 @@ if (
   codexEnvironmentConfig.includes("[actions.Run]") &&
   codexEnvironmentConfig.includes('command = "./script/build_and_run.sh"')
 ) {
-  pass("Codex Run action builds, launches, and verifies the freshly built macOS app bundle");
+  pass("Codex Run action builds without updater signing, launches, and verifies the freshly built macOS app bundle");
 } else {
   fail(
-    "script/build_and_run.sh and .codex/environments/environment.toml must wire Codex Run to build, LaunchServices-verify, and leave running the freshly built macOS app bundle",
+    "script/build_and_run.sh and .codex/environments/environment.toml must wire Codex Run to the updater-disabled local build, LaunchServices verification, and the freshly built macOS app bundle",
   );
 }
 
@@ -423,10 +425,7 @@ if (
   codexBuildRunScript.includes('pkill -f "$installed_executable"') &&
   codexBuildRunScript.includes('ditto "$APP_PATH" "$APPLICATIONS_APP_PATH"') &&
   codexBuildRunScript.includes('DOGFOOD_APP_PATH="$APPLICATIONS_APP_PATH"') &&
-  codexBuildRunScript.indexOf("pnpm desktop:build:app") <
-    codexBuildRunScript.lastIndexOf("sync_existing_applications_copy") &&
-  codexBuildRunScript.lastIndexOf("sync_existing_applications_copy") <
-    codexBuildRunScript.indexOf('pnpm desktop:verify-app -- "$DOGFOOD_APP_PATH"')
+  codexRunContract.ordered
 ) {
   pass("Codex Run action syncs an existing Applications copy before Computer Use dogfood");
 } else {
