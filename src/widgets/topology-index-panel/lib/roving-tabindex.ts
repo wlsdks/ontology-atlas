@@ -13,7 +13,7 @@
  * assembles these functions plus `ref.focus()`.
  */
 
-import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
+import type { OntologyTreeNode } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 /**
  * Flatten the nodeIds of the rows actually visible on screen into top-to-bottom

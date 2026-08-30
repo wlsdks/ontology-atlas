@@ -11,8 +11,8 @@
  */
 
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import type { OntologyTreeNode } from "@/shared/lib/ontology-tree";
-import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
+import type { OntologyTreeNode } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { buildContainmentParents, nearestDomainId } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 export interface RealmCensus {
   /** Element nodes in the subtree, root excluded. */

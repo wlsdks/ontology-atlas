@@ -2,7 +2,7 @@ import {
   buildOntologyReachability,
   computeOntologyDependents,
   IMPACT_RELATION_TYPES,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph/lib/ontology-tree";
 import {
   classifyTopologyRelationQuality,
   type TopologyRelationQualityBreakdown,

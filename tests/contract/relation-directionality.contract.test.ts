@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isContainmentRelation, isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
+import { isContainmentRelation, isDirectionalRelation } from "@/entities/knowledge-graph/lib/ontology-tree/relations";
 
 /**
  * The contract that **the map does not claim a direction that does not exist.**

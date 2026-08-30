@@ -8,7 +8,7 @@ import {
   restorePersistedBaseline,
   setChangeBaselineScope,
   shouldAutoMarkBaseline,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph/lib/ontology-tree";
 import { useVaultIdentityScope } from "@/features/vault-scope";
 import { useOntologyInsight } from "../model/use-ontology-insight";
 

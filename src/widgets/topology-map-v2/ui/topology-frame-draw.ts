@@ -25,7 +25,7 @@ import {
 } from "@/shared/lib/footprint-glyph";
 import { DEFAULT_EXPAND } from "@/shared/lib/appearance-preferences";
 import type { ExpandPreference, FootprintPreference } from "@/shared/lib/appearance-preferences";
-import { isDirectionalRelation } from "@/shared/lib/ontology-tree/relations";
+import { isDirectionalRelation } from "@/entities/knowledge-graph/lib/ontology-tree/relations";
 import { depthParallaxOffsetFor, ZERO_PARALLAX } from "../model/realm-depth-parallax";
 import {
   DOME_HALO_ALPHA_CAP,

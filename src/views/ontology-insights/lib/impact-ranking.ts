@@ -4,7 +4,7 @@ import {
   IMPACT_RELATION_TYPES,
   buildOntologyReachability,
   buildReachabilityIndex,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph/lib/ontology-tree";
 
 export interface ImpactRankingRow {
   id: string;

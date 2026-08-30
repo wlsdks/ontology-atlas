@@ -1,6 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { isEvidenceOnlyConcept } from "@/entities/knowledge-graph";
-import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
+import { buildContainmentParents, nearestDomainId } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;

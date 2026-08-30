@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeDomainCensusRows } from "@/shared/lib/ontology-tree";
+import { computeDomainCensusRows } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 /** One domain's capacity — capability/element counts reachable through containment (single-source BFS). */
 export interface DomainCapacityRow {

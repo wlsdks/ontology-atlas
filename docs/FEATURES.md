@@ -623,7 +623,7 @@ surface chrome.
 ### `/ontology/insights` — Insights (5-tab maintenance board, question-unit restructuring 2026-07-26)
 
 Every number on this page derives from the data source the page already used
-(`useOntologyInsight`, `shared/lib/ontology-tree`) — no separate persona or
+(`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`) — no separate persona or
 store layer. **One tab answers one question**: the old `Structure` tab stacked three
 different questions and grew to 2.2× the 14-inch viewport, so it was split into
 Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× viewport.

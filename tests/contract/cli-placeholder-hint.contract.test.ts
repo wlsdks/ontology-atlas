@@ -50,7 +50,7 @@ const DEFINITION_FILES = ["src/shared/config/cli-invocation.ts"];
 const HANDOFF_BLOBS_PENDING = [
   "src/features/docs-vault-local/model/agent-activity-status.ts",
   "src/features/docs-vault-local/ui/OntologyStarterCta.tsx",
-  "src/shared/lib/ontology-tree/agent-readiness.ts",
+  "src/entities/knowledge-graph/lib/ontology-tree/agent-readiness.ts",
   "src/views/home/lib/footprint-trail.ts",
   "src/views/home/lib/topology-analysis.ts",
 ];

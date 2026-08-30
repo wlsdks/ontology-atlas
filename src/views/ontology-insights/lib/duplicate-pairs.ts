@@ -4,7 +4,7 @@ import {
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { buildContainmentParents, nearestDomainId } from "@/shared/lib/ontology-tree";
+import { buildContainmentParents, nearestDomainId } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 /**
  * The computation behind the "similar names — are these the same thing?" card.

@@ -12,7 +12,7 @@ import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { AgentActivityStatus } from "@/features/docs-vault-local";
 import { computeEditAge } from "@/shared/lib/edit-age";
 import type { LastEditSubjectKind } from "@/shared/lib/last-edit-subject";
-import { isWithinRecentWindow } from "@/shared/lib/ontology-tree";
+import { isWithinRecentWindow } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { hasNodeMtimeConflict, resolveNodeLastEditSubject } from "../lib/resolve-node-edit-subject";
 import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";

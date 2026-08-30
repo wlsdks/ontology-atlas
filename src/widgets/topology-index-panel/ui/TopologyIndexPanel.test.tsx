@@ -6,7 +6,7 @@ import {
 } from "@testing-library/react";
 import type React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { buildOntologyTree } from "@/shared/lib/ontology-tree";
+import { buildOntologyTree } from "@/entities/knowledge-graph/lib/ontology-tree";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { TopologyIndexPanel } from "./TopologyIndexPanel";
 

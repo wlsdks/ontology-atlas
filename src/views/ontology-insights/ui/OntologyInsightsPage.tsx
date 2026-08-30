@@ -37,7 +37,7 @@ import {
   buildOntologyTree,
   computeEdgeTypeDistribution,
   rankAllByDegree,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph/lib/ontology-tree";
 import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
@@ -195,7 +195,7 @@ const INSIGHTS_TAB_BADGE: Record<
  * meant scrolling past two unrelated screens.
  *
  * Every number derives from the data sources this page already used
- * (`useOntologyInsight`, `shared/lib/ontology-tree`); the census formula (total
+ * (`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`); the census formula (total
  * nodes, edges, domains) is identical to the topology chrome's.
  */
 export function OntologyInsightsPage() {

@@ -20,7 +20,7 @@ import {
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
-import { selectRecentVaultDocs } from "@/shared/lib/ontology-tree";
+import { selectRecentVaultDocs } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { useAdvancedMenu } from "../../lib/use-advanced-menu";

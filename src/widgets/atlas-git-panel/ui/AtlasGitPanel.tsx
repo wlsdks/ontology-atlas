@@ -52,7 +52,7 @@ import {
   type GitSnapshotResult,
   type GitStatusResult,
 } from "@/shared/lib/tauri-git";
-import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
+import type { OntologyChangeset } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { Checkbox, controlClass } from "@/shared/ui";

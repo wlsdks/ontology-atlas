@@ -1,5 +1,5 @@
 import type { VaultDoc } from '@/entities/docs-vault';
-import type { OntologyTreeNode } from '@/shared/lib/ontology-tree';
+import type { OntologyTreeNode } from '@/entities/knowledge-graph/lib/ontology-tree';
 
 /**
  * Realm subtree → the vault documents to export as a block.

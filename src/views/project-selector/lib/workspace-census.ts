@@ -1,6 +1,6 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
-import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
+import { computeCanonicalCensus } from "@/entities/knowledge-graph/lib/ontology-tree/canonical-census";
+import { buildMeaningfulOntologyStats } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 export interface WorkspaceCensus {
   projectCount: number;

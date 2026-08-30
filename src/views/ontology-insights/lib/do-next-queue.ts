@@ -4,7 +4,7 @@ import {
   isEvidenceOnlyConcept,
   resolveNodeAgentTarget,
 } from "@/entities/knowledge-graph";
-import { rankAllByDegree } from "@/shared/lib/ontology-tree";
+import { rankAllByDegree } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 /**
  * The "to do" tab — insights moving from listing inventory to "so what should I do?". It combines

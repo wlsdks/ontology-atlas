@@ -1,5 +1,5 @@
 import { looksLikeCodePath } from "@/shared/lib/humanize-code-path-title";
-import { buildConnections, groupConnectionsByRole } from "@/shared/lib/ontology-tree/connections";
+import { buildConnections, groupConnectionsByRole } from "./ontology-tree/connections";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "../model/types";
 
 /**

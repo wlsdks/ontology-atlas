@@ -3,7 +3,7 @@ import {
   computeDomainCensusRows,
   domainCensusById,
   isContainmentRelation,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph/lib/ontology-tree";
 import type { TopologyV2Edge, TopologyV2Node } from "@/widgets/topology-map-v2";
 import { buildOntologySkeleton } from "./topology-ontology-skeleton";
 import { classifyTopologyRelationQuality } from "./topology-analysis";

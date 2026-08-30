@@ -15,7 +15,7 @@ import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/features/data
 import { useLocalVault } from "@/features/docs-vault-local";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { formatDate } from "@/shared/lib/format-date";
-import { buildContainmentParents } from "@/shared/lib/ontology-tree";
+import { buildContainmentParents } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui/control-class";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";

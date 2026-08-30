@@ -196,7 +196,7 @@ import {
   domainCensusById,
   filterTreeExcludeKind,
   useChangeBaseline,
-} from "@/shared/lib/ontology-tree";
+} from "@/entities/knowledge-graph/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import { useAgentConnectModel } from "../model/use-agent-connect-model";
@@ -247,7 +247,7 @@ import {
   resolveOntologyRelationPreview,
 } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
-import { computeCanonicalCensus } from "@/shared/lib/ontology-tree/canonical-census";
+import { computeCanonicalCensus } from "@/entities/knowledge-graph/lib/ontology-tree/canonical-census";
 import {
   nodeIntent,
   screenIntentFor,
@@ -4112,7 +4112,7 @@ function HomePageImpl() {
   ]);
   // P0c — Official census: since kind:project is already included in insight.nodes,
 // adding renderProjects causes double counting (cause of the mismatch between map 294 and insight 293). The "Concept/Relation" census has a single source for all insight derivations
-// (`shared/lib/ontology-tree/canonical-census.ts`).
+// (`entities/knowledge-graph/lib/ontology-tree/canonical-census.ts`).
   const topologyCanonicalCensus = computeCanonicalCensus(
     ontologyInsight?.nodes ?? [],
     ontologyInsight?.edges ?? [],
@@ -4120,7 +4120,7 @@ function HomePageImpl() {
   const topologyTotalNodes = topologyCanonicalCensus.conceptCount;
   const topologyTotalRelations = topologyCanonicalCensus.relationCount;
   // INDEX tree data — the SAME `buildOntologyTree` the old `/ontology` tree
-  // page used (`@/shared/lib/ontology-tree`), so the census row above and the
+  // page used (`@/entities/knowledge-graph/lib/ontology-tree`), so the census row above and the
   // tree rows below can never drift from the chrome's own `topologyTotalNodes`
   // / `topologyTotalRelations`.
   const indexTreeResult = useMemo(
