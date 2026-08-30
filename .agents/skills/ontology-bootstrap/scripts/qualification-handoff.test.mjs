@@ -22,6 +22,7 @@ import {
 } from './qualification-handoff.mjs';
 import {
   CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA,
+  CONSTRUCTION_QUALITY_AXES,
   evaluateConstructionQualification,
 } from '../../../../mcp/src/construction-qualification.mjs';
 import { constructionPlanDigest, proposalCoverageRefs } from '../../../../mcp/src/construction-lifecycle.mjs';
@@ -521,6 +522,44 @@ describe('qualification handoff happy path', () => {
     assert.match(HANDOFF_SCHEMA.io.atomicity, /staged/);
     assert.match(HANDOFF_SCHEMA.quantifiers.rule, /source_bounded/);
     assert.match(HANDOFF_SCHEMA.commands.hidden.qualificationCore, /predates source-hidden evaluation/);
+    assert.deepEqual(HANDOFF_SCHEMA.commands.hidden.claimCoverage, {
+      source: 'manifest[*].id',
+      collector: 'union(answers[*].claimIds)',
+      requirement: 'exact_set',
+      duplicatesAcrossAnswers: 'allowed',
+      unassignableClaimRule: 'If an approved CQ cannot truthfully carry a manifest claim, stop before hidden invocation and revise the question set through human approval; never pad an unrelated answer.',
+    });
+    assert.ok(
+      HANDOFF_SCHEMA.qualityAxes,
+      'the emitted agent contract must expose all quality-axis decisions before hidden evaluation',
+    );
+    assert.deepEqual(
+      Object.keys(HANDOFF_SCHEMA.qualityAxes.dimensions),
+      [...CONSTRUCTION_QUALITY_AXES],
+    );
+    assert.deepEqual(HANDOFF_SCHEMA.qualityAxes.mandatory, [
+      'semantic',
+      'structural',
+      'evidence_provenance',
+      'maintainability',
+      'interoperability',
+    ]);
+    assert.deepEqual(HANDOFF_SCHEMA.qualityAxes.humanGapEligible, ['functional', 'pragmatic']);
+    assert.ok(
+      HANDOFF_SCHEMA.qualityAxes.referenceNamespaces,
+      'the emitted agent contract must identify each qualification reference namespace',
+    );
+    assert.deepEqual(HANDOFF_SCHEMA.qualityAxes.referenceNamespaces, {
+      axisEvidenceRefs: 'sealed source-witnesses.json[*].id only',
+      diagnosticEvidenceRefs: 'sealed source-witnesses.json[*].id only',
+      axisFindingIds: 'qualificationCore.diagnostics[*].id with the same axis',
+      answerClaimIds: 'sealed claim-manifest.json[*].id; the union across answers is the exact manifest id set',
+      targetClaimIds: 'subset of the containing answer claimIds for that exact expected target',
+    });
+    for (const axis of CONSTRUCTION_QUALITY_AXES) {
+      assert.ok(HANDOFF_SCHEMA.qualityAxes.dimensions[axis].question.length > 0);
+      assert.ok(HANDOFF_SCHEMA.qualityAxes.dimensions[axis].evidence.length > 0);
+    }
     assert.deepEqual(HANDOFF_SCHEMA.commands.hidden.unknownPolicy, {
       required: ['allowed', 'response'],
       allowed: 'boolean; true permits an explicit partial/unknown/refusal gap, false does not',
@@ -584,6 +623,22 @@ describe('qualification handoff happy path', () => {
     );
     assert.equal(hiddenSchemas.qualificationCore.properties.axisResults.minItems, 6);
     assert.equal(hiddenSchemas.qualificationCore.properties.axisResults.maxItems, 6);
+    assert.match(
+      hiddenSchemas.qualificationCore.properties.axisResults.items.properties.evidenceRefs.description,
+      /sealed source-witnesses\.json only/,
+    );
+    assert.match(
+      hiddenSchemas.qualificationCore.properties.axisResults.items.properties.findingIds.description,
+      /diagnostics whose axis equals this row axis/,
+    );
+    assert.match(
+      hiddenSchemas.qualificationCore.properties.diagnostics.items.properties.evidenceRefs.description,
+      /sealed source-witnesses\.json only/,
+    );
+    assert.match(
+      hiddenSchemas.answers.items.properties.claimIds.description,
+      /complete manifest id set/,
+    );
     assert.deepEqual(
       hiddenSchemas.qualificationCore.properties.axisResults.allOf.map((row) => row.contains.properties.axis.const),
       ['semantic', 'structural', 'functional', 'pragmatic', 'maintainability', 'interoperability'],
@@ -1663,7 +1718,17 @@ describe('hidden and audit RED probes', () => {
     const answer = incomplete.answers.find(({ claimIds }) => claimIds.includes(omitted));
     answer.claimIds = answer.claimIds.filter((id) => id !== omitted);
     answer.targets.forEach((target) => { target.claimIds = target.claimIds.filter((id) => id !== omitted); });
-    assert.throws(() => buildHiddenPacket(incomplete), /do not cover every manifest claim/);
+    assert.throws(
+      () => buildHiddenPacket(incomplete),
+      (error) => (
+        /do not cover every manifest claim; missing 1/.test(error.message)
+        && error.details?.code === 'incomplete-manifest-claim-coverage'
+        && error.details?.expectedClaimCount === sealed.manifest.length
+        && error.details?.coveredClaimCount === sealed.manifest.length - 1
+        && error.details?.missingClaimIds?.length === 1
+        && error.details.missingClaimIds[0] === omitted
+      ),
+    );
   });
 
   test('hidden rejects invented, inconsistent, and late human CQ approval provenance', () => {
