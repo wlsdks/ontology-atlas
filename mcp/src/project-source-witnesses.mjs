@@ -29,6 +29,7 @@ export function looksLikeCodePath(title) {
 }
 
 function looksLikeSourceWitnessPath(value) {
+  if (value === '.') return true;
   if (
     typeof value !== 'string'
     || !value

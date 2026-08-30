@@ -227,6 +227,573 @@ without meaning and the counts should come back.
 without role summaries is measured.
 
 **Status**: standing
+## 2026-08-30 — Persisted handoff is 41/41; gross performance remains open
+
+**Convened**: field-trial accountable decision · **Trigger**: the qualification
+transport, source-aware meaning repair, exact write, source binding, finalizer,
+and source-hidden persisted handoff all completed on one unfamiliar repository,
+while the authoritative first-MCP-to-finalizer clock exceeded the 40-minute
+target.
+
+**Measured result**:
+
+- The first reviewable candidate arrived in **285.801 seconds**; coverage and
+  the final candidate seal each succeeded once. Source-aware qualification
+  replaced one overbroad mixed uncertainty with four atomic claims: observed
+  regex reuse, observed test-source import without execution/outcomes, unknown
+  canonical root file, and unknown external-module completeness.
+- The accepted candidate contained 5 concepts, 5 relations, 40 immutable claims,
+  3 current witnesses, 4 proposal gaps, and 11 exact acceptance roll-up ids.
+  Fresh v3 lanes overlapped **147.155 seconds**. Hidden covered 40/40 claims and
+  7/7 targets with no failed CQ; audit verified **40/40 claims** and **56/56
+  citations**, with 4/4 source paths resolving.
+- Exact release wrote 5/5 concepts and 5/5 relations. Four known scaffold nodes
+  were removed through dry-run/confirm; their complete frontmatter/body remains
+  recoverable in the execution transcript. The final vault has 6 nodes including
+  the vault README, 8/8 resolved edges, one connected actionable component, 0
+  validation problems, 0 path drift, 0 cycles, 0 relation recommendations, and
+  0 maintenance actions.
+- The first finalizer call exposed one literal-root parity defect: competency
+  `Paths: .` erased valid sibling evidence. With app/MCP extraction, receipt,
+  and inventory aligned, the unchanged body reminted 5/5 source witnesses and
+  finalized successfully. Structure is ready, source verified/current, and
+  abilities answered/resolved; the accepted partial scope/domain/evidence/impact
+  gaps correctly leave overall meaning at `needs_evidence`.
+- The first persisted reader produced a preserved **61/62 RED** by dropping
+  “within the bounded packet” from one atomic domain claim. After the atomic
+  qualifier gate and `agent_brief` policy were present before the next reader,
+  reader-v2 used all 6 full bodies untruncated, answered q3 and kept the other
+  five questions bounded partial, and emitted 41 claims with 51 witnesses.
+  Independent Phase 4 verified **41/41 claims**, **51/51 witnesses**, **22/22
+  qualifier checks**, and all 12 path-shaped occurrences across 5 identifiers.
+- First MCP to successful finalizer was **26,389.068 seconds**. The 15-minute
+  candidate target passed; the 2,400-second gross write target failed by
+  23,989.068 seconds. Human waits and in-run repairs are not removed from the
+  authoritative clock.
+
+**Decision (accountable: jinan)**:
+
+1. Land the bounded correctness and AI-efficiency fixes: canonical coverage
+   preflight, recorded analyzer transport, seal-derived witness digests,
+   file-backed qualification schema plus exact audit schemas, schema/runtime
+   parity probes, rooted-reader request examples, literal repository-root
+   witness parity, and atomic measurement-qualifier handoff policy.
+2. Preserve every intermediate RED: schema/CLI discovery retries, stdout
+   truncation, hidden/audit shape failures, 36/37 source audit, first finalizer
+   failure, and 61/62 persisted answer audit. None becomes a pass retroactively.
+3. The product reason is now proven again at 100% persisted accuracy: a reader
+   without source answered every frozen onboarding question, made explicit
+   bounded refusals, and a different actor verified every claim. Do not call
+   partial evidence completeness.
+4. Performance completion remains open. The next whole-run baseline must begin
+   with all landed fixes present before its first tool call and pass the gross
+   40-minute target without mid-run implementation.
+5. Do not append `BASELINE.md`: this run did not beat the 257.384-second candidate
+   or 2,594.799-second gross baseline, and its unanswered list stayed q3 answered
+   plus five bounded partial results.
+6. This record supersedes only the “merge remains gated on a fresh clean run”
+   clauses in the same-day transport records below; their RED evidence,
+   contracts, dissents, and falsifiers remain standing.
+
+**Recorded dissent**: repeated repair cycles can make perfect final accuracy a
+poor product experience; a system that needs this much orchestration still has
+an unclear speed advantage over careful documents and source search.
+**Falsifier**: a fresh clean run still needs a transport/shape retry, qualifier
+repair, root-path repair, or exceeds 2,400 seconds gross; in that case the
+current fixes improved correctness without establishing the product's speed
+wedge.
+**Revisit**: the next unfamiliar-repository whole-run field trial.
+
+**Status**: correctness complete; performance target open.
+
+---
+
+## 2026-08-30 — Repository root is a current competency witness
+
+**Convened**: solo PO pass · **Trigger**: the accepted clean field-trial plan
+persisted and validated with both element paths present, but its first
+`finalize_project_meaning` call failed because one valid competency `Paths` row
+contained repository root `.`. The persisted evidence extractor treated that
+single value as unsafe and discarded the whole Evidence/Paths set, so even the
+answered abilities row lost its otherwise resolving `README.md` witness.
+
+**Prior decision**: “First persisted handoff is 50/50; clean-run performance
+remains open” remains authoritative. It already established that safe explicit
+repository-root directory paths participate in source receipts. This run found
+the unclosed literal-root case in the competency extractor and browser/MCP
+witness mirrors.
+
+**PO pass**:
+
+- **Observed phenomenon**: validation accepted `path: .` and checked it against
+  the bound repository, while project-source competency extraction rejected it
+  and erased valid sibling paths.
+- **User problem**: an agent that has built an honest root-package ontology
+  cannot finalize its answered competency evidence, so a correct handoff remains
+  unusable despite current source and a clean graph.
+- **Phenomenon/problem tests**: difference passes because the finalization
+  decision remains blocked even without mentioning the parser; the second
+  observation is a source receipt with missing sibling witnesses or an answered
+  CQ with `witnessStatus:missing`; solution independence passes because the
+  candidate could alternatively avoid root paths at the cost of hiding its
+  exact package boundary.
+- **Audience and moment**: a builder finalizing a repository-root package after
+  exact-plan persistence and source binding.
+- **Current alternative**: invent a child file, remove the truthful root witness,
+  or downgrade an otherwise answered competency.
+- **Ontology value**: root-package identity, Evidence/Paths provenance, and the
+  distinction between canonical file unknown and repository root known remain
+  simultaneously expressible.
+- **Agent value**: source receipts and finalizer inventory resolve the exact same
+  project, capability, relation, evidence, and path witnesses.
+- **Simplification**: recognize only the literal `.` root sentinel; keep absolute,
+  parent-escaping, empty, backslash, and embedded-dot segments rejected.
+- **Verification**: plant `.` beside valid README/command rows, require the old
+  full-set drop RED, prove app/MCP parity, source receipt support, inventory
+  retention, then remint the actual receipt and rerun the unchanged finalizer.
+
+**Rubric anchors**: 0 starts from a feature/generic user/no ontology or agent
+consequence/intent only; 2 names a thin problem or unit-only outcome; 4 names
+observed workflow damage, a specific blocked decision, provenance value, an
+agent handoff, and matching runtime proof.
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 4 · Agent value 4 · Verification 4 = 24/24 (fatal zero: none).
+**Escalation**: not required; this completes an existing standing source-path
+contract without changing an MCP signature, vault schema, route, positioning,
+or first impression.
+**Verdict**: Build and verify.
+
+**Decision**:
+
+1. Treat exact `.` as the repository-root source witness in persisted competency
+   Evidence/Paths, MCP/app witness derivation, receipt minting, and meaning
+   inventory.
+2. A bounded source probe always supports its own root; this does not make any
+   child file, external module, runtime behavior, or dependency complete.
+3. Preserve fail-closed whole-row behavior for malformed paths and continue to
+   reject absolute, parent-escaping, empty, backslash, and non-root `.` segments.
+4. Pin browser/MCP byte parity and the finalizer consumer path; do not repair or
+   rewrite accepted project Markdown.
+
+**Forward proof**: the actual source receipt moved from 1/1 selected file
+witness to 5/5 complete witnesses (`.`, `README.md`, command path, and the two
+element-role claims). The same project body and mtime then finalized successfully:
+structure ready, source verified/current, abilities answered/resolved, and the
+four accepted partial competency gaps preserved as `needs_evidence`.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: treating `.` as evidence can turn “the repository exists”
+into a low-information witness that appears stronger than a canonical file.
+**Falsifier**: `.` satisfies a child-file claim, makes external/runtime impact
+complete, admits another unsafe dot segment, or causes valid sibling evidence to
+disappear again.
+**Revisit**: on the next repository-root package field trial or any root-path
+source-receipt regression.
+
+**Status**: valid.
+
+---
+
+## 2026-08-30 — Qualification schema discovery is file-backed
+
+**Convened**: solo PO pass · **Trigger**: the first approved source-hidden lane
+read the helper schema once from stdout, but its 11,934-token display was
+truncated. The evaluator consequently missed the purpose-authority shape, CQ
+`scenarioId`, and positive revision `version`; its single primary `hidden` call
+failed exit 65 with no output, repair, retry, audit access, or vault write.
+In the overlapping source-aware lane, all 37 claim judgments, 53 citations, and
+three cited paths passed manual source review, but `commands.audit` exposed no
+JSON Schemas. The auditor guessed a `fragment` catalog field and `pass` statuses;
+its single helper call also failed exit 65 with no receipt or protected write.
+
+**Prior decision**: “Qualification transport is machine-readable before hidden
+work” remains authoritative, and its transport falsifier was observed. The
+schema existed, but the agent-facing display did not deliver the complete
+machine contract at the decision moment.
+
+**PO pass**:
+
+- **Observed phenomenon**: the complete schema was larger than the tool display
+  budget, while an existing `schema --output` path could already preserve it;
+  the complete file still lacked exact audit input schemas.
+- **User problem**: an independent evaluator before qualification seal cannot
+  see required ownership, scenario, and revision fields, so it loses a valid
+  source-hidden handoff to transport guessing rather than meaning judgment.
+- **Phenomenon/problem tests**: difference passes because the evaluator still
+  lacks a trustworthy contract if the visual truncation is removed from the
+  wording; the second observation is a shape-related exit 65 or retry; solution
+  independence passes because a compact section schema could solve the same
+  problem.
+- **Audience and moment**: a fresh source-hidden or source-aware actor after
+  human question approval and before its first helper call.
+- **Current alternative**: trust partial stdout, rerun discovery, inspect helper
+  implementation, or infer missing fields from diagnostics.
+- **Ontology value**: human ownership, approved CQs, evidence provenance, and
+  explicit unknown behavior remain intact through qualification.
+- **Agent value**: one immutable `schema.json` gives every actor the complete
+  hidden/audit/join contract before authoring input.
+- **Simplification**: require the existing file-output form; add no command,
+  public MCP/CLI surface, schema field for vaults, or write path.
+- **Verification**: preserve both lane REDs; require a non-idle file larger than
+  10 kB containing purpose owner, CQ scenario, and revision version fields;
+  require audit access/claim/catalog/quantifier schemas to accept canonical
+  fixtures and reject the invented `fragment` field; require runtime to reject
+  prior-auditor access plus unknown result/citation/inline-fragment fields;
+  retain atomic existing-output refusal; rerun two fresh isolated lanes.
+
+**Rubric anchors**: 0 begins from a feature/generic user/no ontology or agent
+consequence/intent only; 2 names a thin problem or only a command; 4 names
+observed workflow damage, a specific blocked moment, ownership/provenance value,
+an agent handoff, and matching runtime proof.
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 4 · Agent value 4 · Verification 4 = 24/24 (fatal zero: none).
+**Escalation**: not required; this selects the complete transport form of an
+existing private helper schema and changes no public MCP/CLI signature, vault
+schema, route, positioning, or first impression.
+**Verdict**: Build and verify.
+
+**Decision**:
+
+1. Every qualification actor runs `schema --output <absent-directory>` once and
+   reads the emitted `schema.json`. Displayed stdout is not a complete-contract
+   receipt for this large schema.
+2. Publish that rule inside the schema itself and in both bootstrap and field
+   trial skills so a truncated display cannot silently qualify as discovery.
+3. Gate the file on non-idle size plus the exact derived purpose-owner, CQ
+   scenario, and revision-version requirements that the failed hidden lane
+   missed. Expose exact audit access, claim-result, source-fragment catalog, and
+   quantifier JSON Schemas plus the checks that remain runtime-only. Keep runtime
+   fail-closed with those schemas for branch access and every nested audit row.
+4. Preserve both failed lanes as transport REDs and rerun with new hidden/audit
+   actors; do not repair or reuse their unsealed semantic inputs.
+
+**Forward diagnostic replay**: applying only fields now exposed by the complete
+schema produced a source-hidden `passed` receipt with audit pending, and the
+auditor's unchanged 37 claim judgments produced a verified receipt covering
+37/37 claims and 53/53 citations after their catalog/status shapes were mapped
+to the published audit schema. These replays are transport evidence, not the
+replacement independent qualification pass.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: file-backed discovery adds scratch I/O and leaves the
+oversized schema intact; a smaller command-specific schema could be cleaner.
+**Falsifier**: the file output omits a runtime-required field or audit shape,
+schema and runtime disagree on access or nested rows, an actor still needs
+stdout or implementation inspection, atomic output can be overwritten, or a
+fresh lane fails for another hidden/audit shape absent from `schema.json`.
+**Revisit**: immediately after the replacement parallel qualification lanes.
+
+**Status**: valid; merge remains gated on a fresh clean join.
+
+---
+
+## 2026-08-30 — Payload witness digests are derived during sealing
+
+**Convened**: solo PO pass · **Trigger**: a fresh blind builder reached its first
+reviewable candidate in 340.477 seconds and ran `coverage` once successfully,
+but its single production seal failed because newline-terminated external
+canonical JSON produced the wrong witness payload digest. It stopped with no
+seal output, qualification, approval, or vault write.
+
+**Prior decision**: “Recorded analyzer calls feed coverage directly” remains
+authoritative. Its undisclosed-transport falsifier was observed one stage later:
+the emitted witness JSON Schema proved digest syntax but not the helper-private
+canonical byte representation needed to author a matching value.
+
+**PO pass**:
+
+- **Observed phenomenon**: three payload-carrying witnesses passed structural
+  schema checks, yet the first failed runtime binding because a trailing newline
+  changed SHA-256 bytes that carry no ontology meaning.
+- **User problem**: a source-hidden builder between coverage and seal must
+  reconstruct private serialization details instead of judging claims and
+  evidence, so a valid handoff loses time and cannot reach human review.
+- **Audience and moment**: an unfamiliar construction agent after authoring
+  portable witness payloads and before the first production seal.
+- **Current alternative**: duplicate canonicalization code in scratch, learn it
+  through a failed seal, or add another preflight command.
+- **Ontology value**: the exact evidence payload remains bound to the sealed
+  claims without treating transport bytes as a human-authored meaning decision.
+- **Agent value**: a payload witness can omit the derived digest and receive one
+  canonical binding in the normal seal output.
+- **Simplification**: derive one deterministic field inside the existing seal;
+  add no command, MCP call, permission, artifact, or write path.
+- **Verification**: preserve the clean-run RED, require schema/runtime tests for
+  omitted and wrong digests, prove input immutability, replay the exact failed
+  candidate, compare payloads/claims, then restart a fresh blind trial.
+
+**Rubric anchors**: 0 starts from a feature/generic user/no ontology or agent
+consequence/intent only; 2 names thin evidence or only a command; 4 names
+observed workflow damage, a specific blocked moment, evidence provenance value,
+an agent handoff, and matching runtime proof.
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 4 · Agent value 4 · Verification 4 = 24/24 (fatal zero: none).
+**Escalation**: not required; this changes only a private helper's deterministic
+sealed-field derivation and no public MCP/CLI signature, vault schema, route,
+positioning, or first impression.
+**Verdict**: Build and verify.
+
+**Decision**:
+
+1. When a witness carries `payload`, `seal` derives `provenance.digest` from the
+   existing canonical payload algorithm into a cloned sealed witness. Caller
+   input remains unchanged.
+2. A caller-supplied digest remains allowed only when it matches exactly. A
+   wrong value fails before output, and a witness without payload must continue
+   to provide its portable digest.
+3. Publish this conditional contract in the emitted witness JSON Schema and
+   seal schema metadata. Builders must not recreate canonical hashing in scratch.
+4. Treat digest derivation as transport binding, never evidence selection,
+   meaning, qualification, human approval, or write authority.
+
+**Forward proof**: the exact failed 45-claim / 6-concept / 5-relation /
+5-required-gap candidate sealed on the first replay after only the three input
+digest fields were omitted. The manifest and all witness payloads stayed equal;
+the output added canonical digests only. Unit RED still rejects a supplied
+wrong digest.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: automatic derivation could hide missing provenance or
+silently bless a changed evidence payload.
+**Falsifier**: a payloadless witness seals without a digest, a supplied wrong
+digest seals, the helper mutates caller input, a sealed payload differs from the
+authored value, or a fresh builder still needs a digest-related retry.
+**Revisit**: immediately after the next complete blind field trial.
+
+**Status**: valid; merge remains gated on a fresh complete run.
+
+---
+
+## 2026-08-30 — Rooted reads publish their contract before T0
+
+**Convened**: solo PO pass · **Trigger**: the restarted cold-start report
+recorded two exit-64 rooted-runner usage probes before evidence collection. The
+runner had neither `schema` nor a working `--help`, and the bootstrap prose named
+fields without an executable invocation or exact request contract.
+
+**Prior decision**: “Qualification transport is machine-readable before hidden
+work” remains authoritative. Its broader falsifier was observed at the first
+rooted read: a fresh builder needed private CLI knowledge before it could even
+produce the analyzer transcript.
+
+**PO pass**:
+
+- **Observed phenomenon**: a root-safe reader rejected discovery calls before
+  the first measured MCP request, while its implementation alone contained the
+  exact CLI and allowed tool inventory.
+- **User problem**: an unfamiliar agent preparing a source-hidden construction
+  run cannot determine how to bind roots and reads without guessing or opening
+  private implementation, so the trust boundary and timing baseline are lost.
+- **Audience and moment**: a cold-start builder immediately before T0, with a
+  selected repository and vault but no subject evidence.
+- **Current alternative**: infer flags from prose, provoke usage errors, or read
+  the runner source.
+- **Ontology value**: the evidence packet begins at the intended repository and
+  vault, preserving provenance before any meaning claim is authored.
+- **Agent value**: one machine-readable schema supplies the exact invocation,
+  input shape, read-only tool enum, automatic root check, output contract, exit
+  codes, and a non-idle example.
+- **Simplification**: expose the existing runtime constraints; add no read tool,
+  permission, public MCP method, or writer path.
+- **Verification**: preserve the missing-export RED; require `schema` and
+  `--help` byte parity, validate a path-substituted example through the runtime,
+  retain wrong-root/write-tool no-output probes, then run a fresh blind trial.
+
+**Rubric anchors**: 0 begins from a feature/generic user/no graph or agent
+consequence/intent only; 2 names thin evidence or only a command; 4 names
+observed workflow damage, a specific blocked moment, provenance value, an agent
+handoff, and matching runtime proof.
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 4 · Agent value 4 · Verification 4 = 24/24 (fatal zero: none).
+**Escalation**: not required; this is a private source-checkout helper contract,
+not a public MCP/CLI signature, vault schema, route, or positioning change.
+**Verdict**: Build and verify.
+
+**Decision**:
+
+1. Add JSON `schema` discovery and a byte-identical `--help` alias to the rooted
+   read runner. Discovery invokes no MCP process and writes no file.
+2. Derive the documented required fields and read-only name enum from the same
+   runtime constants, encode every representable runtime constraint, publish the
+   existence/canonical-root/unique-id checks that remain runtime-only, include
+   one non-empty packet plus exact `list_kinds`, `index_project`, `infer_imports`,
+   and `analyze_repo_structure` request examples, and keep `connection_info`
+   automatic rather than caller-authored.
+3. Resolve the runner relative to the loaded skill directory, read its schema
+   once through the exact single positional `schema` argument, then execute each
+   deliberately authored read packet once. `--schema`, `schema --output`, and an
+   empty invocation are not discovery forms. Any
+   same-packet CLI-form retry or implementation read invalidates the clean
+   cold-start usability result.
+4. Keep T0 at the first actual rooted `connection_info` attempt and report schema
+   preparation separately so discovery is visible without mislabeling it MCP
+   runtime.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: moving discovery before T0 can cosmetically improve the
+measured runtime while adding setup work.
+**Falsifier**: schema preparation is omitted from the report, its substituted
+example fails runtime validation, `--help` drifts, a write tool appears, a failed
+run writes a transcript, or a fresh builder still probes CLI forms or reads the
+implementation.
+**Revisit**: immediately after the next complete blind field trial.
+
+**Status**: valid; merge remains gated on a fresh complete run.
+
+---
+
+## 2026-08-30 — Recorded analyzer calls feed coverage directly
+
+**Convened**: solo PO pass · **Trigger**: the restarted cold-start builder
+reached a reviewable candidate in 396.573 seconds and sealed it safely, but first
+spent five failed `coverage` calls discovering how to reshape its ordinary
+recorded `{ name, args, response }` call into a helper-specific analysis
+artifact. Every failure returned exit 65 with no output or vault write.
+
+**Prior decision**: “Coverage refs are generated before claim sealing” remains
+authoritative, but its artifact-discovery falsifier was observed. The losing
+dissent was right: adding the preflight moved one undisclosed shape earlier in
+the workflow.
+
+**PO pass**:
+
+- **Observed phenomenon**: a valid recorder transcript contained the exact
+  analyzer request and direct structured response, yet the helper could not read
+  it until the builder synthesized a second wrapper after five rejected forms.
+- **User problem**: a cold-start agent between analysis and claim authoring loses
+  time and confidence to private transport reconstruction instead of judging
+  ontology meaning. Removing the failed calls still leaves that blocked handoff;
+  another implementation could solve it, and the second observation is repeated
+  shape probing or a hand-authored wrapper.
+- **Audience and moment**: an unfamiliar builder immediately after its first
+  reviewable analyzer result and before any claim, qualification, approval, or
+  write exists.
+- **Current alternative**: guess wrapper shapes from errors or copy request and
+  response values into a synthetic artifact.
+- **Ontology value**: exact review-plan concept, relation, competency, and impact
+  refs become available without changing any meaning row or weakening gaps.
+- **Agent value**: the recorder transcript already produced by the read-only lane
+  becomes the direct digest-bound handoff to coverage and seal.
+- **Simplification**: accept the existing recorder row and document the
+  skill-relative helper path; add no command, public contract, or new artifact.
+- **Verification**: reproduce the old exit-65 RED, require the focused suite to
+  turn green, replay the actual failed transcript byte-identically, reject a
+  drifted request with no output, then restart on a third unfamiliar subject.
+
+**Rubric anchors**: 0 starts from a feature/generic user/no Atlas meaning/no
+agent consequence/intent only; 2 names a thin problem or one audience and only
+copy/unit evidence; 4 names observed workflow damage, a specific blocked moment,
+the local-first meaning wedge, exact ontology and agent handoff value, and
+surface-matched runtime proof.
+**Rubric**: Problem insight 4 · User moment 4 · Differentiation 4 · Ontology
+value 4 · Agent value 4 · Verification 4 = 24/24 (fatal zero: none).
+**Escalation**: not required; this broadens only the private helper's accepted
+recording envelope and changes no public MCP/CLI signature, vault schema, route,
+positioning, or first impression.
+**Verdict**: Build and verify.
+
+**Decision**:
+
+1. Accept a recorded `calls[]` analyzer row whose `response` is the direct
+   structured result, while retaining exact request-proposal, lifecycle digest,
+   `canWrite:false`, and no-`writePlan` validation.
+2. Emit that supported shape in `schema` and tell builders to pass the complete
+   recorder transcript directly rather than probe or synthesize a wrapper.
+3. Resolve the helper script relative to the loaded bootstrap skill directory,
+   never by assuming a repository-root `scripts/` path.
+4. Preserve this second run as a performance RED. Its sealed candidate is not a
+   clean-run pass and must not advance to human approval or qualification.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: accepting another envelope can make a permissive parser
+choose a stale or unrelated response and hide recorder inconsistency.
+**Falsifier**: a request/proposal mismatch or lifecycle digest drift produces
+coverage output; the accepted result differs from the canonical wrapper; or a
+fresh builder needs any helper-path or coverage artifact-shape retry.
+**Revisit**: immediately after the third clean end-to-end field trial.
+
+**Status**: valid; merge remains gated on a third fresh clean run.
+
+---
+
+## 2026-08-30 — Coverage refs are generated before claim sealing
+
+**Convened**: solo PO pass · **Trigger**: the first clean end-to-end run after
+the qualification fast path reached a reviewable candidate in 375.972 seconds,
+then spent until 2,139.995 seconds trying to discover the seal manifest's exact
+relation/impact ref grammar and first-occurrence order. It stopped at seal with
+zero qualification calls, approvals, releases, or vault writes.
+**Rubric**: 24/24 (fatal zero: none).
+
+**Prior decision**: “Qualification transport is machine-readable before hidden
+work” remains authoritative. Its falsifier fired again one stage earlier: the
+builder needed private transport knowledge after a semantically valid candidate.
+The first-pass decision preserving material assertion claims and their exact
+proposal refs also stands; order/missing/foreign gates are not weakened.
+
+**Observed clean RED**:
+
+- Root binding succeeded on the first attempt. Analyzer attempt one was blocked;
+  attempt two released one 7-concept / 7-relation reviewable candidate with five
+  visible gaps, `canWrite:false`, and no `writePlan`.
+- The builder authored 46 material claims and seven current witnesses with zero
+  unsupported business assertions, citation-free business concepts, unsafe
+  quantifiers, or unresolved conflicts. The helper still rejected every full
+  manifest because `schema` exposed neither exact relation/impact refs nor their
+  canonical first-occurrence order.
+- The failure remained fail-closed: `Ts` was absent and every downstream/write
+  count was zero. The 40-minute clean-run objective was not completed.
+
+**Forward proof**:
+
+- A fresh source-hidden replay used the new preflight receipt to obtain 21 exact
+  refs: seven concepts, seven relations, five competencies, and two impact refs.
+- `coverage` and `seal` each succeeded on their first invocation in 0.06 seconds.
+  All 46 claim ids/statements/statuses/witness refs and all seven witness values
+  remained byte-identical; only proposal refs were corrected.
+- Foreign refs and one-byte candidate body truncation produced no output. A
+  “remove final claim” probe was correctly rejected as an invalid probe because
+  another claim still carried complete coverage; it is not reported as a gate
+  success.
+
+**Decision**:
+
+1. Add one internal read-only `coverage` preflight to the existing mirrored
+   qualification helper. From the exact reviewable analysis/proposal it emits
+   only the canonical ordered `proposalCoverageRefs`, current digests/revision,
+   counts, and a no-write guard.
+2. Run `coverage` before manifest authoring. The builder still authors every
+   material claim, witness selection, and claim-to-ref mapping; the helper does
+   not generate meaning or qualification.
+3. Expose exact manifest, witness, and quantifier input JSON Schemas beside the
+   existing seal contract. Missing, foreign, and first-occurrence order drift
+   remain blocking.
+4. This receipt is deterministic preflight data, not another candidate handoff,
+   public MCP/CLI/vault schema, permission token, identity proof, acceptance,
+   or writer path.
+5. Preserve the failed run as the performance RED and restart the full clean
+   trial on a fresh subject. A successful replay of the failed candidate is not
+   an end-to-end performance pass.
+
+**Accountable**: jinan.
+
+**Recorded dissent**: a seventh helper command expands an internal private API
+and may simply move the next undisclosed shape one step later. A more compact
+skill example might have been enough.
+**Falsifier**: a fresh builder following only the skill and emitted schema needs
+any coverage/seal discovery retry, the preflight changes a semantic claim, an
+order/missing/foreign mutation seals, or the restarted clean run fails for the
+same transport cause.
+**Revisit**: immediately after the restarted clean end-to-end field trial.
+
+**Status**: valid; merge remains gated on a fresh clean run.
+
+---
 
 ## 2026-08-30 — Qualification transport is machine-readable before hidden work
 

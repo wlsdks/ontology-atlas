@@ -40,6 +40,7 @@ export const EXIT = Object.freeze({
 
 const CONTRACTS = Object.freeze({
   candidate: 'qualificationHandoffCandidate:v1',
+  coverage: 'qualificationHandoffProposalCoverage:v1',
   seal: 'qualificationHandoffSeal:v1',
   access: 'qualificationHandoffAccess:v1',
   hidden: 'qualificationHandoffHidden:v1',
@@ -179,17 +180,17 @@ function tightenQualificationSchema(value) {
   return tightened;
 }
 
-function hiddenAccessJsonSchema() {
+function accessJsonSchema(role) {
   const boundaryProperties = Object.fromEntries(HANDOFF_SCHEMA_ACCESS_BOUNDARIES.map((key) => [
     key,
-    { type: 'boolean', const: false },
+    { type: 'boolean', const: role === ROLES.AUDITOR && key === 'subjectSourceAccessed' },
   ]));
   return {
     type: 'object',
     properties: {
       contract: { type: 'string', const: CONTRACTS.access },
       actorId: HANDOFF_ID_SCHEMA,
-      role: { type: 'string', const: ROLES.HIDDEN },
+      role: { type: 'string', const: role },
       startedAt: { type: 'string', format: 'date-time' },
       endedAt: { type: 'string', format: 'date-time' },
       readScopes: HANDOFF_STRING_ARRAY_SCHEMA,
@@ -203,6 +204,88 @@ function hiddenAccessJsonSchema() {
     },
     required: ['contract', 'actorId', 'role', 'startedAt', 'endedAt', 'readScopes', 'writeScopes', 'boundaries'],
     additionalProperties: false,
+  };
+}
+
+function hiddenAccessJsonSchema() {
+  return accessJsonSchema(ROLES.HIDDEN);
+}
+
+function auditAccessJsonSchema() {
+  return accessJsonSchema(ROLES.AUDITOR);
+}
+
+function auditSourceFragmentJsonSchema({ catalog = false } = {}) {
+  const properties = {
+    ...(catalog ? { id: HANDOFF_ID_SCHEMA } : {}),
+    sourceRef: { type: 'string', minLength: 1, pattern: TRIMMED_NONBLANK_PATTERN },
+    digest: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+    startLine: { type: 'integer', minimum: 1 },
+    endLine: { type: 'integer', minimum: 1 },
+  };
+  return {
+    type: 'object',
+    properties,
+    required: [...(catalog ? ['id'] : []), 'sourceRef', 'digest'],
+    additionalProperties: false,
+    allOf: [{
+      if: { anyOf: [{ required: ['startLine'] }, { required: ['endLine'] }] },
+      then: { required: ['startLine', 'endLine'] },
+    }],
+  };
+}
+
+function auditCitationJsonSchema() {
+  return {
+    type: 'object',
+    properties: {
+      witnessRef: HANDOFF_ID_SCHEMA,
+      status: { type: 'string', enum: ['verified', 'mismatch'] },
+      sourceFragments: {
+        type: 'array',
+        minItems: 1,
+        items: auditSourceFragmentJsonSchema(),
+      },
+      sourceFragmentRefs: {
+        ...HANDOFF_STRING_ARRAY_SCHEMA,
+        minItems: 1,
+      },
+    },
+    required: ['witnessRef', 'status'],
+    additionalProperties: false,
+    allOf: [
+      { anyOf: [{ required: ['sourceFragments'] }, { required: ['sourceFragmentRefs'] }] },
+      { not: { required: ['sourceFragments', 'sourceFragmentRefs'] } },
+    ],
+  };
+}
+
+function auditClaimResultsJsonSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    items: {
+      type: 'object',
+      properties: {
+        claimId: HANDOFF_ID_SCHEMA,
+        status: { type: 'string', enum: ['verified', 'mismatch'] },
+        citations: {
+          type: 'array',
+          minItems: 1,
+          items: auditCitationJsonSchema(),
+        },
+      },
+      required: ['claimId', 'status', 'citations'],
+      additionalProperties: false,
+    },
+  };
+}
+
+function auditSourceFragmentCatalogJsonSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    items: auditSourceFragmentJsonSchema({ catalog: true }),
   };
 }
 
@@ -261,12 +344,95 @@ function hiddenAnswersJsonSchema() {
   };
 }
 
+function sealManifestJsonSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    items: {
+      type: 'object',
+      properties: {
+        id: HANDOFF_ID_SCHEMA,
+        statement: { ...HANDOFF_STRING_SCHEMA, maxLength: 1000 },
+        status: { type: 'string', const: 'supported' },
+        witnessRefs: { ...HANDOFF_STRING_ARRAY_SCHEMA, minItems: 1 },
+        proposalRefs: { ...HANDOFF_STRING_ARRAY_SCHEMA, minItems: 1 },
+      },
+      required: ['id', 'statement', 'status', 'witnessRefs', 'proposalRefs'],
+      additionalProperties: false,
+    },
+  };
+}
+
+function sealWitnessesJsonSchema() {
+  return {
+    type: 'array',
+    minItems: 1,
+    items: {
+      type: 'object',
+      properties: {
+        id: HANDOFF_ID_SCHEMA,
+        kind: HANDOFF_ID_SCHEMA,
+        current: { type: 'boolean' },
+        provenance: {
+          type: 'object',
+          properties: {
+            sourceRef: {
+              type: 'string',
+              minLength: 1,
+              maxLength: 1000,
+              pattern: '^(?!/|file:)\\S(?:[\\s\\S]*\\S)?$',
+            },
+            digest: { type: 'string', pattern: '^sha256:[a-f0-9]{64}$' },
+          },
+          required: ['sourceRef'],
+          additionalProperties: false,
+        },
+        payload: {},
+      },
+      required: ['id', 'kind', 'current', 'provenance'],
+      additionalProperties: false,
+      allOf: [{
+        if: { not: { required: ['payload'] } },
+        then: { properties: { provenance: { required: ['digest'] } } },
+      }],
+    },
+  };
+}
+
+function sealQuantifierClassificationsJsonSchema() {
+  return {
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        claimId: HANDOFF_ID_SCHEMA,
+        term: HANDOFF_ID_SCHEMA,
+        classification: { type: 'string', enum: ['source_bounded', 'unsafe'] },
+        rationale: { ...HANDOFF_STRING_SCHEMA, maxLength: 1000 },
+        sourceRefs: HANDOFF_STRING_ARRAY_SCHEMA,
+      },
+      required: ['claimId', 'term', 'classification', 'rationale', 'sourceRefs'],
+      additionalProperties: false,
+      allOf: [{
+        if: { properties: { classification: { const: 'source_bounded' } }, required: ['classification'] },
+        then: { properties: { sourceRefs: { ...HANDOFF_STRING_ARRAY_SCHEMA, minItems: 1 } } },
+      }],
+    },
+  };
+}
+
 export const HANDOFF_SCHEMA = Object.freeze({
   contract: 'qualificationHandoffCli:v1',
   purpose: 'Validate and package an ontology construction qualification without invoking MCP or writing a vault.',
-  invocation: 'qualification-handoff.mjs <schema|seal|hidden|audit|join|accept|release> [--input file] [--output new-directory]',
+  invocation: 'qualification-handoff.mjs <schema|coverage|seal|hidden|audit|join|accept|release> [--input file] [--output new-directory]',
+  schemaDiscovery: {
+    preferredInvocation: 'qualification-handoff.mjs schema --output <absent-directory>',
+    completeContractPath: '<output-directory>/schema.json',
+    completeContractRequiresFileOutput: true,
+    stdoutRule: 'Do not use displayed stdout as the complete agent contract; transports may truncate this large schema.',
+  },
   io: {
-    schema: 'No input. Prints this document, or writes schema.json when --output is supplied.',
+    schema: 'No input. For agent use, write schema.json to a new directory with --output and read that file; displayed stdout may truncate the contract.',
     otherCommands: 'Require one JSON --input and an absent --output directory. Each input embeds the previous stage artifacts as JSON values.',
     atomicity: 'Files are staged in a new sibling directory and renamed. Existing output paths are refused.',
   },
@@ -279,11 +445,41 @@ export const HANDOFF_SCHEMA = Object.freeze({
     74: 'input/output filesystem error',
   },
   commands: {
+    coverage: {
+      input: ['analysis', 'proposal', 'builderId'],
+      compactInput: ['analysisPath', 'proposalPath', 'builderId'],
+      output: ['proposal-coverage.json'],
+      guard: 'Derives exact ordered proposal refs from the current reviewable analyzer response. It does not author claims, qualify, invoke MCP, or write a vault.',
+    },
     seal: {
       input: ['candidate', 'manifest', 'witnesses', 'quantifierClassifications'],
       compactInput: ['candidatePath', 'manifestPath', 'witnessesPath', 'quantifierClassifications'],
       derivedCompactInput: ['analysisPath', 'proposalPath', 'manifestPath', 'witnessesPath', 'builderId', 'quantifierClassifications'],
       candidate: 'Must carry the exact original proposal as candidate.proposal.',
+      proposalCoverage: {
+        source: 'mcp/src/construction-lifecycle.mjs#proposalCoverageRefs',
+        patterns: {
+          concept: 'concept:<slug>',
+          relation: 'relation:<type>:<from>-><to>',
+          competency: 'competency:<id>',
+          dependencyImpact: 'impact:relation:<type>:<from>-><to>',
+          competencyImpact: 'impact:competency:<id>',
+        },
+        order: 'Deduplicate exact refs, then apply JavaScript Array.prototype.sort(). Manifest first-occurrence coverage must equal that ordered list.',
+      },
+      witnessPayloadDigest: {
+        algorithm: 'sha256',
+        canonicalization: 'Recursively sort object keys, preserve array order, then JSON.stringify with no whitespace and no trailing newline.',
+        deriveWhenPayloadPresent: true,
+        providedDigestMustMatch: true,
+        requiredWithoutPayload: true,
+        output: 'Every sealed witness has provenance.digest; caller-owned input objects are not mutated.',
+      },
+      jsonSchemas: {
+        manifest: sealManifestJsonSchema(),
+        witnesses: sealWitnessesJsonSchema(),
+        quantifierClassifications: sealQuantifierClassificationsJsonSchema(),
+      },
       output: ['candidate-packet.json', 'claim-manifest.json', 'source-witnesses.json', 'candidate-seal.json'],
     },
     hidden: {
@@ -315,6 +511,24 @@ export const HANDOFF_SCHEMA = Object.freeze({
       input: ['candidate', 'seal', 'manifest', 'witnesses', 'access', 'claimResults', 'sourceFragmentCatalog?', 'quantifierClassifications'],
       compactInput: ['handoffDir', 'access', 'claimResults', 'sourceFragmentCatalog?', 'quantifierClassifications', 'sourceDigest'],
       claimResults: 'Each citation uses either legacy inline sourceFragments or sourceFragmentRefs into one deduplicated sourceFragmentCatalog. Catalog mode expands to the exact legacy output shape and rejects mixed, duplicate, foreign, or unused evidence.',
+      sourceFragmentDigest: 'The source-aware auditor supplies a sha256 binding for each exact current source fragment; the helper validates shape and receipt binding but does not select or interpret source evidence.',
+      runtimeOnlyChecks: [
+        'access timestamps are valid and endedAt is not before startedAt',
+        'source-aware auditor identity differs from the sealed builder identity',
+        'claim ids and order equal the sealed manifest',
+        'citation witness ids and order equal each claim witnessRefs',
+        'source fragment catalog ids and bodies are unique and every row is referenced',
+        'catalog refs are complete, known, and not mixed with inline fragments',
+        'endLine is greater than or equal to startLine',
+        'sourceDigest equals the sealed candidate sourceDigest',
+        'quantifier classifications exactly match sealed lexical coverage and contain no unsafe row',
+      ],
+      jsonSchemas: {
+        access: auditAccessJsonSchema(),
+        claimResults: auditClaimResultsJsonSchema(),
+        sourceFragmentCatalog: auditSourceFragmentCatalogJsonSchema(),
+        quantifierClassifications: sealQuantifierClassificationsJsonSchema(),
+      },
       output: ['qualification-source-fragment.json', 'auditor-access.json', 'audit-receipt.json'],
     },
     join: {
@@ -360,7 +574,12 @@ export const HANDOFF_SCHEMA = Object.freeze({
   },
   derivedCandidate: {
     rule: 'analysisPath must carry the exact analyze_repo_structure request plus current structuredContent. The helper binds proposalPath to that request and derives only lifecycle/review-plan fields; it does not generate claims.',
-    supportedAnalysisForms: ['batch calls+responses envelope', 'call/request plus result.structuredContent', 'call/request plus structuredContent'],
+    supportedAnalysisForms: [
+      'batch calls[] plus responses[] envelope',
+      'recorded calls[] entry { name, args, response: <direct structuredContent> }',
+      'call/request plus result.structuredContent',
+      'call/request plus structuredContent',
+    ],
   },
   coldStartRegression: {
     reservedWitnessId: COLD_START_REGRESSION_WITNESS_ID,
@@ -505,16 +724,39 @@ function validateCandidate(candidate) {
 function validateWitnesses(witnesses) {
   uniqueRows(witnesses, 'id', 'witnesses');
   for (const witness of witnesses) {
-    assert(nonBlank(witness.kind), `Witness ${witness.id} needs a kind.`);
+    assert(
+      Object.keys(witness).every((key) => ['id', 'kind', 'current', 'provenance', 'payload'].includes(key)),
+      `Witness ${witness.id ?? '(unknown)'} contains an unknown field.`,
+    );
+    assert(witness.id.length <= 500, `Witness ${witness.id} id is too long.`);
+    assert(nonBlank(witness.kind) && witness.kind.length <= 500, `Witness ${witness.id} needs a kind.`);
     assert(typeof witness.current === 'boolean', `Witness ${witness.id} needs currentness.`);
     assert(isRecord(witness.provenance), `Witness ${witness.id} needs provenance.`);
-    assert(nonBlank(witness.provenance.sourceRef), `Witness ${witness.id} needs a portable sourceRef.`);
+    assert(
+      Object.keys(witness.provenance).every((key) => ['sourceRef', 'digest'].includes(key)),
+      `Witness ${witness.id} provenance contains an unknown field.`,
+    );
+    assert(
+      nonBlank(witness.provenance.sourceRef) && witness.provenance.sourceRef.length <= 1000,
+      `Witness ${witness.id} needs a portable sourceRef.`,
+    );
     assert(!witness.provenance.sourceRef.startsWith('/') && !witness.provenance.sourceRef.startsWith('file:'), `Witness ${witness.id} sourceRef must be portable.`);
     assert(validDigest(witness.provenance.digest), `Witness ${witness.id} needs a digest.`);
     if (Object.hasOwn(witness, 'payload')) {
       assert(witness.provenance.digest === digestJson(witness.payload), `Witness ${witness.id} payload digest drifted.`);
     }
   }
+}
+
+function bindWitnessPayloadDigests(witnesses) {
+  assert(Array.isArray(witnesses), 'witnesses must be an array.');
+  return structuredClone(witnesses).map((witness) => {
+    if (!isRecord(witness) || !isRecord(witness.provenance) || !Object.hasOwn(witness, 'payload')) return witness;
+    const expected = digestJson(witness.payload);
+    if (witness.provenance.digest === undefined) witness.provenance.digest = expected;
+    else assert(witness.provenance.digest === expected, `Witness ${witness.id ?? '(unknown)'} payload digest drifted.`);
+    return witness;
+  });
 }
 
 function quantifierMatches(manifest) {
@@ -534,11 +776,16 @@ function validateQuantifiers(manifest, classifications) {
   const required = new Set(matches.map(({ claimId, term }) => `${claimId}\u0000${term}`));
   const provided = new Set();
   for (const row of classifications) {
+    assert(
+      Object.keys(row).every((key) => ['claimId', 'term', 'classification', 'rationale', 'sourceRefs'].includes(key)),
+      'Quantifier classification contains an unknown field.',
+    );
     const key = `${row.claimId}\u0000${String(row.term).toLowerCase()}`;
     assert(required.has(key), `Quantifier classification ${key} is foreign.`);
     assert(['source_bounded', 'unsafe'].includes(row.classification), `Quantifier ${key} needs source_bounded or unsafe classification.`);
-    assert(nonBlank(row.rationale), `Quantifier ${key} needs a rationale.`);
+    assert(nonBlank(row.rationale) && row.rationale.length <= 1000, `Quantifier ${key} needs a rationale.`);
     assert(uniqueStrings(row.sourceRefs), `Quantifier ${key} needs sourceRefs.`);
+    assert(row.sourceRefs.every((ref) => ref.length <= 500), `Quantifier ${key} sourceRefs are too long.`);
     if (row.classification === 'source_bounded') {
       assert(row.sourceRefs.length > 0, `Source-bounded quantifier ${key} needs a sourceRef.`);
     }
@@ -557,11 +804,26 @@ function validateManifest(manifest, witnesses, expectedRefs) {
   uniqueRows(manifest, 'id', 'manifest');
   const witnessIds = new Set(witnesses.map(({ id }) => id));
   for (const claim of manifest) {
-    assert(nonBlank(claim.statement), `Claim ${claim.id} needs a statement.`);
+    assert(
+      Object.keys(claim).every((key) => ['id', 'statement', 'status', 'witnessRefs', 'proposalRefs'].includes(key)),
+      `Claim ${claim.id ?? '(unknown)'} contains an unknown field.`,
+    );
+    assert(claim.id.length <= 500, `Claim ${claim.id} id is too long.`);
+    assert(nonBlank(claim.statement) && claim.statement.length <= 1000, `Claim ${claim.id} needs a statement.`);
     assert(claim.status === 'supported', `Claim ${claim.id} must be supported before sealing.`);
-    assert(uniqueStrings(claim.witnessRefs) && claim.witnessRefs.length > 0, `Claim ${claim.id} needs witnesses.`);
+    assert(
+      uniqueStrings(claim.witnessRefs)
+        && claim.witnessRefs.length > 0
+        && claim.witnessRefs.every((ref) => ref.length <= 500),
+      `Claim ${claim.id} needs witnesses.`,
+    );
     assert(claim.witnessRefs.every((id) => witnessIds.has(id)), `Claim ${claim.id} has an unknown witness.`);
-    assert(uniqueStrings(claim.proposalRefs) && claim.proposalRefs.length > 0, `Claim ${claim.id} needs one or more exact proposal refs.`);
+    assert(
+      uniqueStrings(claim.proposalRefs)
+        && claim.proposalRefs.length > 0
+        && claim.proposalRefs.every((ref) => ref.length <= 500),
+      `Claim ${claim.id} needs one or more exact proposal refs.`,
+    );
   }
   const flattenedRefs = manifest.flatMap(({ proposalRefs }) => proposalRefs);
   const expected = new Set(expectedRefs);
@@ -595,12 +857,12 @@ function verifySeal(candidate, seal, manifest, witnesses) {
 export function sealCandidate({ candidate, manifest, witnesses, quantifierClassifications = [] } = {}) {
   const packet = { ...structuredClone(candidate), contract: CONTRACTS.candidate };
   const expectedRefs = validateCandidate(packet);
-  validateWitnesses(witnesses);
-  validateManifest(manifest, witnesses, expectedRefs);
+  const sealedWitnesses = bindWitnessPayloadDigests(witnesses);
+  validateWitnesses(sealedWitnesses);
+  validateManifest(manifest, sealedWitnesses, expectedRefs);
   const quantifiers = validateQuantifiers(manifest, quantifierClassifications);
   packet.proposalCoverageRefs = expectedRefs;
   const sealedManifest = manifestProjection(manifest);
-  const sealedWitnesses = structuredClone(witnesses);
   const seal = {
     contract: CONTRACTS.seal,
     builderId: packet.builderId,
@@ -665,10 +927,10 @@ function validateAccess(accessRow, role) {
   assert(accessRow.boundaries.networkUsed === false, 'Qualification helpers cannot use the network.');
   assert(accessRow.boundaries.otherAgentContacted === false, 'Qualification branches must remain independent.');
   assert(accessRow.boundaries.builderPrivateArtifactsAccessed === false, 'Builder-private artifacts are outside the handoff.');
+  assert(accessRow.boundaries.auditorArtifactsAccessed === false, 'Qualification branch accessed auditor artifacts.');
   if (role === ROLES.HIDDEN) {
     assert(accessRow.boundaries.subjectSourceAccessed === false, 'Source-hidden evaluator accessed subject source.');
     assert(accessRow.boundaries.hiddenArtifactsAccessed === false, 'Source-hidden evaluator accessed prior hidden artifacts.');
-    assert(accessRow.boundaries.auditorArtifactsAccessed === false, 'Source-hidden evaluator accessed auditor artifacts.');
   } else {
     assert(accessRow.boundaries.subjectSourceAccessed === true, 'Source-aware auditor did not access subject source.');
     assert(accessRow.boundaries.hiddenArtifactsAccessed === false, 'Source-aware auditor accessed hidden artifacts.');
@@ -1008,6 +1270,10 @@ function citationKey(claimId, witnessRef) {
 
 function validateSourceFragment(fragment) {
   assert(isRecord(fragment), 'Source fragments must be objects.');
+  assert(
+    Object.keys(fragment).every((key) => ['sourceRef', 'digest', 'startLine', 'endLine'].includes(key)),
+    'Source fragment contains an unknown field.',
+  );
   assert(nonBlank(fragment.sourceRef) && validDigest(fragment.digest), 'Source fragments need sourceRef and digest.');
   if (fragment.startLine !== undefined || fragment.endLine !== undefined) {
     assert(Number.isInteger(fragment.startLine) && fragment.startLine > 0, 'Source fragment startLine must be positive.');
@@ -1043,6 +1309,7 @@ function expandAuditSourceFragments(claimResults, sourceFragmentCatalog) {
     assert(Object.keys(row).every((key) => allowedKeys.has(key)), `Source fragment ${row.id ?? '(unknown)'} has unknown fields.`);
     const { id, ...fragment } = row;
     assert(nonBlank(id), 'Source fragment catalog ids must be nonblank.');
+    assert(id.length <= 500, 'Source fragment catalog id is too long.');
     validateSourceFragment(fragment);
     const body = canonicalJson(fragment);
     assert(!bodies.has(body), 'sourceFragmentCatalog contains a duplicate source fragment body.');
@@ -1059,6 +1326,10 @@ function expandAuditSourceFragments(claimResults, sourceFragmentCatalog) {
           && citation.sourceFragmentRefs.length > 0
           && uniqueStrings(citation.sourceFragmentRefs),
         `Citation ${citationKey(result.claimId, citation.witnessRef)} needs unique nonblank sourceFragmentRefs.`,
+      );
+      assert(
+        citation.sourceFragmentRefs.every((ref) => ref.length <= 500),
+        `Citation ${citationKey(result.claimId, citation.witnessRef)} has a source fragment ref that is too long.`,
       );
       citation.sourceFragments = citation.sourceFragmentRefs.map((ref) => {
         assert(catalog.has(ref), `Citation ${citationKey(result.claimId, citation.witnessRef)} has unknown source fragment ref ${ref}.`);
@@ -1079,10 +1350,18 @@ function validateSourceFragmentRows(manifest, claimResults) {
   const citationChecks = [];
   for (const [index, result] of claimResults.entries()) {
     const claim = manifest[index];
+    assert(
+      Object.keys(result).every((key) => ['claimId', 'status', 'citations'].includes(key)),
+      `Claim result ${result.claimId ?? '(unknown)'} contains an unknown field.`,
+    );
     assert(['verified', 'mismatch'].includes(result.status), `Claim ${claim.id} needs verified or mismatch status.`);
     assert(Array.isArray(result.citations), `Claim ${claim.id} needs citations.`);
     assert(same(result.citations.map(({ witnessRef }) => witnessRef), claim.witnessRefs), `Claim ${claim.id} citation coverage is incomplete, foreign, or reordered.`);
     for (const citation of result.citations) {
+      assert(
+        Object.keys(citation).every((key) => ['witnessRef', 'status', 'sourceFragments'].includes(key)),
+        `Citation ${citationKey(claim.id, citation.witnessRef)} contains an unknown field.`,
+      );
       assert(['verified', 'mismatch'].includes(citation.status), `Citation ${citationKey(claim.id, citation.witnessRef)} needs a status.`);
       assert(Array.isArray(citation.sourceFragments) && citation.sourceFragments.length > 0, `Citation ${citationKey(claim.id, citation.witnessRef)} needs a source fragment.`);
       for (const fragment of citation.sourceFragments) {
@@ -1477,6 +1756,7 @@ export function prepareRelease({
 }
 
 function commandResult(command, input) {
+  if (command === 'coverage') return prepareProposalCoverage(input);
   if (command === 'seal') return sealCandidate(input);
   if (command === 'hidden') return buildHiddenPacket(input);
   if (command === 'audit') return buildAuditFragment(input);
@@ -1598,6 +1878,11 @@ function analyzeStructuredContentFrom(analysis, call) {
     const response = analysis.responses.find(({ id }) => call?.id === undefined || id === call.id);
     if (response?.result?.structuredContent) return response.result.structuredContent;
   }
+  if (isRecord(call?.response)) {
+    return call.response.result?.structuredContent
+      ?? call.response.structuredContent
+      ?? (call.response.proposalValidation ? call.response : null);
+  }
   return analysis.structuredContent
     ?? analysis.result?.structuredContent
     ?? analysis.response?.result?.structuredContent
@@ -1643,8 +1928,46 @@ function deriveCandidateFromAnalysis(analysis, proposal, builderId) {
   };
 }
 
+export function prepareProposalCoverage({ analysis, proposal, builderId } = {}) {
+  const candidate = deriveCandidateFromAnalysis(analysis, proposal, builderId);
+  const refs = validateCandidate(candidate);
+  const coverage = {
+    contract: CONTRACTS.coverage,
+    builderId: candidate.builderId,
+    planDigest: candidate.planDigest,
+    sourceDigest: candidate.sourceDigest,
+    planRevision: candidate.planRevision,
+    refs,
+    counts: {
+      concepts: candidate.reviewPlan.concepts.length,
+      relations: candidate.reviewPlan.relations.length,
+      competencies: Object.keys(candidate.reviewPlan.competencyAnswers).length,
+      impacts: refs.filter((ref) => ref.startsWith('impact:')).length,
+      total: refs.length,
+    },
+    guard: 'Exact coverage refs only; no claim, qualification, acceptance, MCP call, write plan, or vault write was created.',
+  };
+  return {
+    coverage,
+    files: { 'proposal-coverage.json': coverage },
+  };
+}
+
 async function hydrateCommandInput(command, input, inputDirectory) {
   assert(isRecord(input), 'CLI input JSON must be an object.');
+  if (command === 'coverage' && compactRequested(input, ['analysisPath', 'proposalPath'])) {
+    validateCompactChoice(
+      input,
+      ['analysisPath', 'proposalPath', 'builderId'],
+      ['analysis', 'proposal'],
+      command,
+    );
+    const [analysis, proposal] = await Promise.all([
+      readHydratedJson(inputDirectory, input.analysisPath, 'analysis'),
+      readHydratedJson(inputDirectory, input.proposalPath, 'proposal'),
+    ]);
+    return { ...input, analysis, proposal };
+  }
   if (command === 'seal' && compactRequested(input, ['analysisPath', 'proposalPath', 'builderId'])) {
     assert(!Object.hasOwn(input, 'candidatePath'), 'seal cannot mix candidatePath with analysisPath/proposalPath.');
     validateCompactChoice(

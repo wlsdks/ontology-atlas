@@ -13,6 +13,7 @@ function normalizedPath(value: string): string {
 }
 
 function looksLikeSourceWitnessPath(value: string): boolean {
+  if (value === ".") return true;
   if (
     !value
     || value.trim() !== value
