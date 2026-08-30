@@ -523,10 +523,19 @@ function DocsVaultContent() {
    */
   const localSourceReady =
     localVaultStatus === 'loaded' || localVault.isReloadingSameVault;
+  const showDesktopWelcome = shouldShowDesktopVaultWelcome({
+    isDesktopRuntime,
+    source,
+    localVaultStatus,
+    hasLocalManifest: Boolean(localVault.manifest),
+  });
   const vaultScopeSettled =
     sourcePreferenceHydrated &&
     landingSourceResolved &&
-    (source === 'server' || localSourceReady);
+    // A local source with no manifest is also a settled, non-sample state: the folder picker
+    // owns the screen. Requiring a loaded manifest here leaves the web `?intent=local` entry
+    // behind the neutral fallback forever, so the user can never choose that first folder.
+    (source === 'server' || localSourceReady || showDesktopWelcome);
 
   // The docs check modal must not persist its open state: a modal appearing on every load
   // violates modality, so it always starts closed. The toggle is plain component state and
@@ -654,12 +663,6 @@ function DocsVaultContent() {
     }
   }, [installedShell, isDesktopRuntime, replaceUrlState, view, localVault.status, setAdvancedOpen]);
 
-  const showDesktopWelcome = shouldShowDesktopVaultWelcome({
-    isDesktopRuntime,
-    source,
-    localVaultStatus,
-    hasLocalManifest: Boolean(localVault.manifest),
-  });
   const showDogfoodHint = hasDogfoodVaultPath() && shouldShowDogfoodVaultHint({
     dogfood: queryDogfood,
     isDesktopRuntime,
