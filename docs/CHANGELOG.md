@@ -7,6 +7,14 @@
 
 ---
 
+## 2026-08-30 · The download hero splits only when the column can hold the decision
+
+- From 1024 to 1279 the hero split into two columns on a 624px page column: the object took its
+  320px minimum, the decision block got 256px, the Windows button ran into the object, and all
+  five destinations stood one per row up to 1439. The split now opens at 1280 with a 500px
+  floor for the decision block; below that the object sits under the text with the whole
+  column, and at 1280 the destinations share rows the way they do at 1512.
+
 ## 2026-08-30 · Choosing a role no longer turns the chain
 
 - At 1920 the seven-role chain runs across; choosing a role opened the inspector beside the

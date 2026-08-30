@@ -518,3 +518,39 @@ test.describe("관문 다운로드의 그리드", () => {
   }
 
 });
+
+test.describe("the hero split waits for a column that can hold the decision", () => {
+  /*
+   * ⚠️ Measured 2026-08-30: the split opened at `lg`, where the page column is 624px. The object
+   * took its 320px minimum, the decision block got 256px, the Windows button (304px) ran into
+   * the object, and from 1024 to 1439 all five destinations stood one per row. The split opens
+   * at `xl` now with a 500px floor for the decision block. This measures the two things a
+   * reader would see: no destination leaves its column, and none stands on the object.
+   */
+  for (const width of [1024, 1100, 1280, 1440, 1512]) {
+    test(`${width}px — every destination stays in its column and off the object`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await seedFirstRunSeen(page);
+      await page.goto("/en/download/", { waitUntil: "load" });
+      await page.waitForTimeout(1500);
+      const m = await page.evaluate(() => {
+        const object = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
+        const out: string[] = [];
+        const rows = new Set<number>();
+        for (const a of document.querySelectorAll('a[data-testid^="gateway-hero-"]')) {
+          const r = a.getBoundingClientRect();
+          rows.add(Math.round(r.top));
+          /* A destination squeezed narrower than its label is the column failing, not the label. */
+          if (a.scrollWidth > a.clientWidth + 1) out.push(`${a.getAttribute("data-testid")} is narrower than its label by ${a.scrollWidth - a.clientWidth}px`);
+          const overlap = Math.min(r.right, object.right) - Math.max(r.left, object.left) > 0 && Math.min(r.bottom, object.bottom) - Math.max(r.top, object.top) > 0;
+          if (overlap) out.push(`${a.getAttribute("data-testid")} stands on the object`);
+        }
+        return { out, rows: rows.size, objectWidth: Math.round(object.width) };
+      });
+      expect(m.out, `at ${width}`).toEqual([]);
+      /* Two rows plus one for the destination the second row cannot hold; five is a column. */
+      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}`).toBeLessThanOrEqual(3);
+      expect(m.objectWidth, "the object keeps its minimum").toBeGreaterThanOrEqual(320);
+    });
+  }
+});
