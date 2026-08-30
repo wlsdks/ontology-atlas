@@ -159,17 +159,17 @@ export async function acpPermissionVerdict(
   });
 }
 
-export interface AcpLineEvent {
+interface AcpLineEvent {
   sessionId: string;
   line: string;
 }
 
-export interface AcpExitEvent {
+interface AcpExitEvent {
   sessionId: string;
   code: number | null;
 }
 
-export interface AcpNoticeEvent {
+interface AcpNoticeEvent {
   sessionId: string;
   message: string;
 }

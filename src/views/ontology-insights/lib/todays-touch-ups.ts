@@ -19,7 +19,7 @@ import type { DependencyCycle, DependencyCyclesResult } from "./dependency-cycle
  * empty array and the band is not rendered at all (no empty band on the first screen).
  */
 
-export type TouchUpReason =
+type TouchUpReason =
   | { kind: "cycle"; length: number }
   | { kind: "neglected-hub"; degree: number; agoDays: number }
   /** fanIn = the incoming reference count — evidence the queue row already carries (lumping it as
@@ -58,7 +58,7 @@ export interface PickTouchUpsOptions {
   reviewId?: string | null;
 }
 
-export const TOUCH_UP_TARGET = 3;
+const TOUCH_UP_TARGET = 3;
 export const TOUCH_UP_MIN_VAULT_NODES = 12;
 
 export function pickTodaysTouchUps(

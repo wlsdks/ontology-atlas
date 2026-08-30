@@ -1,14 +1,14 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
-export type OntologyReachabilityDirection = "incoming" | "outgoing" | "both";
+type OntologyReachabilityDirection = "incoming" | "outgoing" | "both";
 
-export interface OntologyReachabilityLayer {
+interface OntologyReachabilityLayer {
   distance: number;
   total: number;
   nodes: KnowledgeGraphNode[];
 }
 
-export interface OntologyReachabilitySummary {
+interface OntologyReachabilitySummary {
   reachableNodes: number;
   traversedEdges: number;
   layers: number;

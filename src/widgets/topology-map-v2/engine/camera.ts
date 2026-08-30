@@ -128,7 +128,7 @@ const PAN_BOUNDS_VELOCITY_TAU_SECONDS =
  * No assigned `--topology-v2-*` token yet (same "no token" precedent as
  * `topology-pointer-handlers.ts`'s `RIPPLE_PER_NEIGHBOR_DELAY_MS`).
  */
-export const DEFAULT_PAN_BOUNDS_MARGIN = 320;
+const DEFAULT_PAN_BOUNDS_MARGIN = 320;
 
 /** Expands a world-space bounding box by `margin` on every side — the soft pan-bounds envelope. */
 export function computePanBounds(

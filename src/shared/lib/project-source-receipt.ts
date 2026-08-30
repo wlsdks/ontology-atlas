@@ -16,7 +16,7 @@ export type ProjectSourceStatus =
   | "invalid"
   | "verified_current";
 
-export type ProjectSourceCurrentness = "current" | "stale" | "unavailable";
+type ProjectSourceCurrentness = "current" | "stale" | "unavailable";
 
 export interface ProjectSourceProbe {
   sourceId: string;
@@ -36,11 +36,11 @@ export interface ProjectSourceWitnessInput {
   path: string;
 }
 
-export interface ProjectSourceWitness extends ProjectSourceWitnessInput {
+interface ProjectSourceWitness extends ProjectSourceWitnessInput {
   supported: boolean;
 }
 
-export interface ProjectSourceGap {
+interface ProjectSourceGap {
   id:
     | "source_unbound"
     | "multiple_active_sources"
@@ -54,7 +54,7 @@ export interface ProjectSourceGap {
   nodeSlug?: string;
 }
 
-export interface ProjectSourceNextAction {
+interface ProjectSourceNextAction {
   id:
     | "connect_source"
     | "repair_source_binding"

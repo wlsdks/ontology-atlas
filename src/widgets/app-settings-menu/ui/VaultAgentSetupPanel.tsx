@@ -273,7 +273,7 @@ function shellQuoteForPacket(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
-export interface VaultAgentSetupLocalVault {
+interface VaultAgentSetupLocalVault {
   status:
     | 'idle'
     | 'opening'
@@ -759,7 +759,6 @@ export function VaultAgentSetupPanel({
     vaultRootPath ? shellQuoteForPacket(vaultRootPath) : '.'
   } --timeout-ms 15000`;
   const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
-
 
   /**
    * There is one thing to do now — decided **only from what the app actually knows.**

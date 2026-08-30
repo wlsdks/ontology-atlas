@@ -41,7 +41,7 @@ export interface ForceEdgeInput {
   target: string;
 }
 
-export interface ForcePosition {
+interface ForcePosition {
   x: number;
   y: number;
 }
@@ -98,7 +98,7 @@ export interface ForceSimulation {
  * the concentric fan-arcs — `strongGravity` holds the graph together around
  * its seeded centroid so spatial memory survives the relaxation.
  */
-export const DEFAULT_FORCE_SETTINGS = {
+const DEFAULT_FORCE_SETTINGS = {
   // Gentle relaxation: weak gravity + generous repulsion + heavy slowDown so
   // the settle *un-piles* overlaps without collapsing the seeded concentric
   // structure (preserving the owner's spatial memory). Strong gravity was

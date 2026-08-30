@@ -12,7 +12,7 @@ import {
   computeDomainSubcounts,
 } from "../lib/domain-subcounts";
 
-export interface TopologyIndexTreeRowLabels {
+interface TopologyIndexTreeRowLabels {
   capabilitiesShort: string;
   elementsShort: string;
   freshTitle: string;

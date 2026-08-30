@@ -25,8 +25,8 @@ import { bezierPoint, type Point } from "./traces";
 /** Pulse lifetime, ms — the prototype's `PULSE_DUR`. */
 export const PULSE_DURATION_MS = 420;
 /** Head/trail radii, px — from the prototype's drawPulses. */
-export const PULSE_HEAD_RADIUS_PX = 2.6;
-export const PULSE_TRAIL_RADIUS_PX = 1.4;
+const PULSE_HEAD_RADIUS_PX = 2.6;
+const PULSE_TRAIL_RADIUS_PX = 1.4;
 /** How far behind the head the trail sits, in phase — the prototype's 0.05. */
 export const PULSE_TRAIL_LAG = 0.05;
 /** Floor on the shrink so the pulse never vanishes outright (prototype: max(0.35, …)). */
@@ -235,7 +235,7 @@ export function updatePulses(pulses: readonly Pulse[], now: number, durationMs =
 }
 
 /** Raw pulse progress (0..1): elapsed since launch / lifetime. Out of range is not drawn. */
-export function pulseRawProgress(t0: number, now: number, durationMs = PULSE_DURATION_MS): number {
+function pulseRawProgress(t0: number, now: number, durationMs = PULSE_DURATION_MS): number {
   return (now - t0) / durationMs;
 }
 

@@ -49,7 +49,7 @@ export type IndexLens = "all" | "recent";
  */
 const UNBUILT_MAP_CONCEPT_CEILING = 8;
 
-export interface TopologyIndexPanelLabels {
+interface TopologyIndexPanelLabels {
   label: string;
   fold: string;
   foldAria: string;

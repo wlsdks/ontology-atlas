@@ -10,7 +10,7 @@
  * long-idle facts still read naturally.
  */
 
-export type EditAgeKey =
+type EditAgeKey =
   | "justNow"
   | "minutesAgo"
   | "hoursAgo"

@@ -45,7 +45,7 @@ export interface AgentSessionSummary {
   relations: number;
 }
 
-export interface VaultAgentNotices {
+interface VaultAgentNotices {
   roundCap: string;
   /** A turn that stopped without calling a tool once — the line symmetric with hitting the cap. */
   noToolCall: (args: { round: number; cap: number }) => string;

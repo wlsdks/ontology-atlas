@@ -45,7 +45,7 @@ const AGENT_QUERY_PLAN_TARGETS = new Set([
   "match_nodes",
 ]);
 
-export type AgentQueryRecipeId =
+type AgentQueryRecipeId =
   | "all_paths"
   | "agent_brief"
   | "workspace_brief"
@@ -93,23 +93,23 @@ export interface AgentProjectEntrypoint {
   degree: number;
 }
 
-export type AgentInvestigationPlaybookId =
+type AgentInvestigationPlaybookId =
   | "refactor_impact"
   | "onboarding_map"
   | "coupling_audit"
   | "graph_traversal";
 
-export type AgentTraversalStrategyId =
+type AgentTraversalStrategyId =
   | "plan_before_enumeration"
   | "bounded_path_evidence"
   | "containment_cross_check";
 
-export type AgentWriteGuardrailId =
+type AgentWriteGuardrailId =
   | "preflight_relation"
   | "preflight_rename"
   | "post_change_sync";
 
-export type AgentGraphDbQueryPackId =
+type AgentGraphDbQueryPackId =
   | "graph_facets"
   | "node_scan"
   | "edge_scan"
@@ -117,7 +117,7 @@ export type AgentGraphDbQueryPackId =
   | "path_evidence"
   | "business_questions";
 
-export type AgentPractitionerConcernId =
+type AgentPractitionerConcernId =
   | "context"
   | "tools"
   | "evidence"
@@ -178,7 +178,6 @@ export interface AgentPractitionerConcern {
 }
 
 export {
-  AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
 } from "./agent-readiness";
@@ -367,7 +366,7 @@ export function validateAgentMcpToolCall(payload: AgentMcpToolCall): string[] {
   return issues;
 }
 
-export function formatAgentMcpQueryPayload(payload: AgentMcpQueryCall): string {
+function formatAgentMcpQueryPayload(payload: AgentMcpQueryCall): string {
   const issues = validateAgentMcpQueryCall(payload);
   if (issues.length > 0) {
     throw new Error(`Invalid agent MCP query payload: ${issues.join("; ")}`);
@@ -375,7 +374,7 @@ export function formatAgentMcpQueryPayload(payload: AgentMcpQueryCall): string {
   return JSON.stringify({ tool: payload.tool, arguments: payload.arguments }, null, 2);
 }
 
-export function formatAgentMcpToolPayload(payload: AgentMcpToolCall): string {
+function formatAgentMcpToolPayload(payload: AgentMcpToolCall): string {
   const issues = validateAgentMcpToolCall(payload);
   if (issues.length > 0) {
     throw new Error(`Invalid agent MCP tool payload: ${issues.join("; ")}`);
@@ -426,7 +425,7 @@ export function formatAgentQueryCallCliCommand(payload: AgentMcpQueryCall): stri
   return formatAgentQueryArgumentsCliCommand(payload.arguments);
 }
 
-export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown>): string | null {
+function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown>): string | null {
   switch (args.operation) {
     case "agent_brief":
       return `${ATLAS_CLI} agent-brief [vault]`;
@@ -1086,7 +1085,7 @@ export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): stri
   ].join("\n");
 }
 
-export function formatAgentKindClassificationGuidance(): string {
+function formatAgentKindClassificationGuidance(): string {
   return [
     "Kind classification contract before writing frontmatter:",
     "- Do not classify from the label alone. Treat kind as an evidence-backed role in the shared conceptualization.",

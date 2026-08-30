@@ -54,7 +54,7 @@ const ID_TO_CLIENT: Record<AgentClientId, ClientId> = {
   codex: "codex",
 };
 type Feedback = "idle" | "busy" | "done" | "copied" | "failed";
-export type AgentClientConfigState = "missing" | "invalid" | "ready";
+type AgentClientConfigState = "missing" | "invalid" | "ready";
 
 export interface AgentClientButtonsProps {
   /**

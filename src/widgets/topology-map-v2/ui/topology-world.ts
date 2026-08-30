@@ -221,7 +221,7 @@ function accumulateBounds(
 }
 
 /** Radius-padded bbox of all nodes, with a finite fallback for an empty graph. */
-export function computeFullBounds(nodes: readonly WorldNode[], tokens: TopologyV2Tokens): Bounds {
+function computeFullBounds(nodes: readonly WorldNode[], tokens: TopologyV2Tokens): Bounds {
   return accumulateBounds(nodes, tokens) ?? { ...FALLBACK_BOUNDS };
 }
 

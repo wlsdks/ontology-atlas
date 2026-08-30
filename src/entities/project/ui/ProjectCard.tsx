@@ -16,7 +16,7 @@ export interface CardCategoryMeta {
 
 /** Preset status-dot colour — same set as `StatusDotColor` in entities/status. */
 export type CardStatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
-export type ProjectCardViewMode = 'card' | 'compact';
+type ProjectCardViewMode = 'card' | 'compact';
 
 interface Props {
   project: Project;

@@ -1,9 +1,7 @@
-export { GatewayDocPage, type GatewayDocPageProps } from './ui/GatewayDocPage';
-export { readVaultDoc, trimToRecentSections, type TrimmedDoc } from './lib/vault-doc';
+export { GatewayDocPage } from './ui/GatewayDocPage';
+export { readVaultDoc } from './lib/vault-doc';
 export {
   GUIDE_PAGES,
   GUIDE_ENTRY_PAGE,
   resolveGuidePage,
-  type GuidePage,
-  type GuidePageResolution,
 } from './model/guide-pages';

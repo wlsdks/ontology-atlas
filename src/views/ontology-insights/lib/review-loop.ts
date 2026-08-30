@@ -1,4 +1,4 @@
-export type DoNextReviewPhase =
+type DoNextReviewPhase =
   | "checking"
   | "active"
   | "cleared"

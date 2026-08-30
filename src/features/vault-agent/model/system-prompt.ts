@@ -48,7 +48,7 @@
  * in the MCP guidance. Both were fixed in that commit and the tests now hold them.
  */
 
-export const AGENT_INSTRUCTIONS_FILE = '.ontology-atlas/agent-instructions.md';
+const AGENT_INSTRUCTIONS_FILE = '.ontology-atlas/agent-instructions.md';
 
 // Literal mirror of `mcp/src/construction-rules.mjs#META_MODEL_RULES_EN`.
 // The packages cannot cross-import; the ontology meta-model contract test keeps

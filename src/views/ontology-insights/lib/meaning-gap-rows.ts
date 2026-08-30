@@ -42,7 +42,7 @@ import { withDoNextVerification } from "./do-next-queue";
  * opening-line chips ask the same question, so a second verdict would eventually have the queue and
  * the panel naming different concepts. This only re-exports the names.
  */
-export type { ConceptDocFacts, MeaningGapKind };
+export type { ConceptDocFacts };
 
 export interface MeaningGapRow {
   /** The row's unique id — for the review loop and for `key`. */

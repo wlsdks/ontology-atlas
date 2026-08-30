@@ -14,7 +14,7 @@ export interface VaultRelationProposal {
   inferredKey: VaultRelationKey;
 }
 
-export type VaultRelationPreflightDecision =
+type VaultRelationPreflightDecision =
   | "safe_to_add"
   | "skip_existing"
   | "review_inverse"
@@ -45,7 +45,7 @@ export interface VaultRelationGraphEffect {
   inferredMatchesSelected: boolean;
 }
 
-export const VAULT_RELATION_KEYS: VaultRelationKey[] = [
+const VAULT_RELATION_KEYS: VaultRelationKey[] = [
   "domains",
   "capabilities",
   "elements",

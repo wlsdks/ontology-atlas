@@ -1395,7 +1395,7 @@ export function commitDomeEntrySweep(runtime: DomeRuntime): void {
   runtime.yawTarget = runtime.yaw;
 }
 
-export function domeEntrySweep(entryClockMs: number): number {
+function domeEntrySweep(entryClockMs: number): number {
   const t = (entryClockMs - DOME_ENTRY_SWEEP_HOLD_MS) / (DOME_ENTRY_SWEEP_MS - DOME_ENTRY_SWEEP_HOLD_MS);
   const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
   return 1 - domeEaseOutCubic(c);
@@ -1878,7 +1878,7 @@ interface DomeRing {
  * background dot grid ("it only says a coordinate system exists"), and its ink is the
  * lowest tier to match.
  */
-export const DOME_RING_KINDS: readonly DomeViewKind[] = ["domain", "capability", "element"];
+const DOME_RING_KINDS: readonly DomeViewKind[] = ["domain", "capability", "element"];
 
 /**
  * Samples per ring. At 96, even the largest ring (r=224) has a per-segment chord-arc

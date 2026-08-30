@@ -26,7 +26,7 @@ export const CONSTRUCTION_QUALITY_AXES = Object.freeze([
   'interoperability',
 ]);
 
-export const CONSTRUCTION_FAILURE_CATEGORIES = Object.freeze([
+const CONSTRUCTION_FAILURE_CATEGORIES = Object.freeze([
   'evidence',
   'prompt',
   'ui',

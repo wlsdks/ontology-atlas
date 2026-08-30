@@ -22,7 +22,7 @@ export interface ProjectCompletenessInsight {
   prompts: string[];
 }
 
-export type ProjectFreshnessLevel = "fresh" | "active" | "stale";
+type ProjectFreshnessLevel = "fresh" | "active" | "stale";
 
 /**
  * The freshness verdict returns **a grade only** — the screen decides the label.

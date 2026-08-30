@@ -30,16 +30,16 @@ export interface AgentActivityHeartbeat {
   updatedAt: string;
 }
 
-export type AgentActivityReviewMode = "none" | "ontology-focus" | "business-extraction";
+type AgentActivityReviewMode = "none" | "ontology-focus" | "business-extraction";
 
-export interface AgentActivityReviewTarget {
+interface AgentActivityReviewTarget {
   kind: "none" | "ontology" | "source";
   ontologySlug: string | null;
   files: string[];
   label: string;
 }
 
-export interface AgentActivityProofSummary {
+interface AgentActivityProofSummary {
   count: number;
   sources: {
     mcp: number;
@@ -49,7 +49,7 @@ export interface AgentActivityProofSummary {
   label: string;
 }
 
-export interface AgentActivityRefreshRequest {
+interface AgentActivityRefreshRequest {
   required: boolean;
   reason: "stale" | null;
   previousAgent: string | null;

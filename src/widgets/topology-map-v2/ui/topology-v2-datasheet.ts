@@ -188,7 +188,7 @@ export interface V2ConnectionGroupsView {
 }
 
 /** Default rows shown per group before the typed "+N" overflow. */
-export const V2_CONNECTION_ROW_CAP = 6;
+const V2_CONNECTION_ROW_CAP = 6;
 
 /**
  * Group the full connection set by relation ROLE (contains / usedBy /

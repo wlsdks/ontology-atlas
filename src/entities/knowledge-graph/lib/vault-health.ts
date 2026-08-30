@@ -34,10 +34,10 @@ export interface VaultHealthDoc {
   diagnostics?: ReadonlyArray<{ code: string }>;
 }
 
-export type VaultHealthStatus = 'healthy' | 'needs_attention';
-export type VaultHealthCheckStatus = 'pass' | 'warn' | 'fail' | 'info';
+type VaultHealthStatus = 'healthy' | 'needs_attention';
+type VaultHealthCheckStatus = 'pass' | 'warn' | 'fail' | 'info';
 
-export interface VaultHealthCheck {
+interface VaultHealthCheck {
   id:
     | 'vault_present'
     | 'compile_issues'
@@ -50,7 +50,7 @@ export interface VaultHealthCheck {
 }
 
 /** A capability/element whose `domain:` never links back (missing containment). */
-export interface MissingContainmentTarget {
+interface MissingContainmentTarget {
   /** full node slug (e.g. `capabilities/invoice`) */
   slug: string;
   /** resolved domain slug that should back-link */

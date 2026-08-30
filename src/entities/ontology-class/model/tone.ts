@@ -78,7 +78,7 @@ export const ONTOLOGY_KIND_TONE: Record<OntologyVisualKind, OntologyKindTone> = 
   },
 };
 
-export function isOntologyVisualKind(kind: string | null | undefined): kind is OntologyVisualKind {
+function isOntologyVisualKind(kind: string | null | undefined): kind is OntologyVisualKind {
   return !!kind && (ONTOLOGY_VISUAL_KINDS as readonly string[]).includes(kind);
 }
 

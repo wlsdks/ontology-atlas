@@ -15,7 +15,7 @@
 
 import type { WorldEdge } from "./topology-world";
 
-export interface EdgeHitPoint {
+interface EdgeHitPoint {
   x: number;
   y: number;
 }

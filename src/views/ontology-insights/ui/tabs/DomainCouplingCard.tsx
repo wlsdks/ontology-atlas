@@ -40,7 +40,7 @@ export interface DomainCouplingCardLabels {
   gridSelfAria: (domain: string, count: number) => string;
 }
 
-export interface DomainCouplingCardLink {
+interface DomainCouplingCardLink {
   /** Clicking either end node of an example edge deeplinks to that node on the map (the same contract as rows in other tabs). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;

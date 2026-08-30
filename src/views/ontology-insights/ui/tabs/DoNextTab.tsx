@@ -189,7 +189,7 @@ export interface DoNextTouchUp {
   handoffPayload: string;
 }
 
-export interface DoNextTabAgentReadiness {
+interface DoNextTabAgentReadiness {
   ready: number;
   preflight: number;
   review: number;
@@ -204,7 +204,7 @@ export interface DoNextTabAgentReadiness {
   blockedDocuments: number;
 }
 
-export interface DoNextTabHealthQueue {
+interface DoNextTabHealthQueue {
   staleCount: number;
   orphanCount: number;
   promotionCount: number;

@@ -44,13 +44,11 @@
  * synchronous time in rAF callbacks actually reaches the floor after input stops.
  */
 import {
-  AMBIENT_SLEEP_DELAY_MS,
-  AMBIENT_SLEEP_RAMP_MS,
   ambientSleepFactor,
   isAmbientAsleep,
 } from '@/widgets/topology-map-v2/model/ambient-sleep';
 
-export interface GatewayFrameTick {
+interface GatewayFrameTick {
   /** rAF timestamp (ms) — baseline for paint throttling (30fps layer). */
   t: number;
   /**
@@ -134,5 +132,3 @@ export function registerGatewayFrameClient(client: GatewayFrameClient): () => vo
   };
 }
 
-/** Re-export for gate/dock — the gateway's sleep schedule uses the same constant as the map. */
-export { AMBIENT_SLEEP_DELAY_MS, AMBIENT_SLEEP_RAMP_MS };

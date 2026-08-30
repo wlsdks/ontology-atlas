@@ -118,7 +118,7 @@ import { transientSurface } from "@/shared/ui/transient-surface";
  * first-read attention with the plain-language facts.
  */
 
-export interface TopologyV2DetailPanelLabels {
+interface TopologyV2DetailPanelLabels {
   kindLabel: string;
   /** N6 — the prefix label for the first-class "owning domain" fact ("domain · <name>"). */
   domainLabel: string;

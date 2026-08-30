@@ -1,20 +1,20 @@
 import type { OntologyEgoSubgraph } from "./types";
 
-export interface EgoLayoutPoint {
+interface EgoLayoutPoint {
   /** Node identifier: `ego.centerId` for the centre, `OntologyEgoNeighbor.neighborId` for a neighbour. */
   id: string;
   x: number;
   y: number;
 }
 
-export interface EgoLayoutNeighborPoint extends EgoLayoutPoint {
+interface EgoLayoutNeighborPoint extends EgoLayoutPoint {
   /** The original `OntologyEgoNeighbor.direction`; decides which way the arrow points. */
   direction: "outgoing" | "incoming";
   /** Distance from the centre: 1 = inner ring, 2 = outer ring. */
   hop: 1 | 2;
 }
 
-export interface EgoLayoutEdge {
+interface EgoLayoutEdge {
   /** The original `OntologyEgoNeighbor.edge.id`, separating distinct edges between the same pair. */
   edgeId: string;
   from: { x: number; y: number };

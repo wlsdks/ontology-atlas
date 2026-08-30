@@ -33,7 +33,7 @@ export interface ConceptDocFacts {
  * (`mcp/src/schema.mjs`). Projects, domains, and documents are complete concepts
  * without a parent.
  */
-export const DOMAIN_REQUIRED_KINDS: ReadonlySet<string> = new Set([
+const DOMAIN_REQUIRED_KINDS: ReadonlySet<string> = new Set([
   "capability",
   "element",
 ]);

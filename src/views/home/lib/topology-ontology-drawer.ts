@@ -33,7 +33,7 @@ export type TopologyRelationProvenance =
   | "authored"
   | "needs_review";
 
-export interface TopologyOntologyDrawerReach {
+interface TopologyOntologyDrawerReach {
   /**
    * Transitive incoming closure — nodes that depend on this one directly or
    * indirectly, i.e. the blast radius of changing it. Same direction semantics

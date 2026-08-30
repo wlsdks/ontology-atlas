@@ -259,7 +259,7 @@ function readSafeInsets(tokens: SafeInsetTokens): SafeInsets {
  * `cameraScaleMax`, so a single hexagon fills half the screen. Below this
  * threshold the fit is capped at `cameraSmallGraphScaleMax` instead.
  */
-export const SMALL_GRAPH_NODE_MAX = 5;
+const SMALL_GRAPH_NODE_MAX = 5;
 
 export function computeOverviewFitScale(
   bounds: { minX: number; minY: number; maxX: number; maxY: number },

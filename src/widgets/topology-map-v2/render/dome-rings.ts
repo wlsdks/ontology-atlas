@@ -16,14 +16,14 @@
  * `model/dome-view.ts` for the physics and in the token reader for the colours.
  */
 
-export interface DomeRingScreenSample {
+interface DomeRingScreenSample {
   x: number;
   y: number;
   /** Normalised depth this frame: 0 near … 1 far. */
   u: number;
 }
 
-export interface DomeRingScreen {
+interface DomeRingScreen {
   /** That tier's assembly factor 0..1, so rings rise and fade with their tier across the 2D↔3D transition. */
   a: number;
   points: readonly DomeRingScreenSample[];

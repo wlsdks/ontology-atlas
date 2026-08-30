@@ -68,7 +68,7 @@ export interface NormalizedResponse {
   errorMessage?: string;
 }
 
-export type ProviderResponseReview =
+type ProviderResponseReview =
   | { action: 'accept' }
   | { action: 'retry' | 'fail'; expectedTool: string; message: string };
 

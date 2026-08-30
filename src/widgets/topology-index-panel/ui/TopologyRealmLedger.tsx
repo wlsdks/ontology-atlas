@@ -37,7 +37,7 @@ export interface RealmBoundaryRow {
   jumpRealmId: string;
 }
 
-export interface TopologyRealmLedgerLabels {
+interface TopologyRealmLedgerLabels {
   /** The top eyebrow — 「Realm」 (realm). */
   label: string;
   /** Labels for the realm census fragments. */

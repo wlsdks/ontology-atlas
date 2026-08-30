@@ -1,6 +1,6 @@
 import { TopologyV2KindGlyph } from "@/shared/ui";
 
-export interface DomainCapacityBarRow {
+interface DomainCapacityBarRow {
   id: string;
   title: string;
   capabilityCount: number;

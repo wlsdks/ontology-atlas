@@ -26,7 +26,7 @@ import type { VaultReadPort } from './vault-read-port';
  * This module does not write to disk. It takes only a read port.
  */
 
-export interface WriteIntent {
+interface WriteIntent {
   name: string;
   args: unknown;
 }
@@ -53,7 +53,7 @@ export interface BuildProposalInput {
   agentName: string | null;
 }
 
-export interface ProposalLabels {
+interface ProposalLabels {
   createFile: (path: string) => string;
   modifyFile: (path: string) => string;
   addRelation: (args: { from: string; to: string; type: string }) => string;

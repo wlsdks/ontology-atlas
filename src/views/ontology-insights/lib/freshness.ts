@@ -9,9 +9,9 @@ export const FRESHNESS_WINDOW_WEEKS = HEATSTRIP_WEEKS;
 const STALE_DAYS = 90;
 
 /** A week's update intensity — 0 (none) to 3 (three or more). Derived from real counts; no decorative randomness. */
-export type FreshnessLevel = 0 | 1 | 2 | 3;
+type FreshnessLevel = 0 | 1 | 2 | 3;
 
-export interface FreshnessWeekCell {
+interface FreshnessWeekCell {
   level: FreshnessLevel;
   /** Whether this is the most recent week (this week) — emphasized separately in indigo. */
   isCurrentWeek: boolean;

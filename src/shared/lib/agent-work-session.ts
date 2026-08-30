@@ -60,7 +60,7 @@ export const AGENT_TASK_IDLE_MS = 5 * 60 * 1000;
 export const AGENT_TASK_VISIBLE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /** The three things a session can do to the vault. Owner-agreed wording: 「Added · Edited · Removed」 (added · edited · removed). */
-export type AgentWriteKind = "added" | "edited" | "removed";
+type AgentWriteKind = "added" | "edited" | "removed";
 
 export type AgentWriteCounts = Record<AgentWriteKind, number>;
 

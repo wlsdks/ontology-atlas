@@ -93,16 +93,16 @@ export function realmDepthClarityScale(depth: number): number {
 /** Fling duration (ms) for nodes leaving the realm — ease-in acceleration. */
 export const REALM_OUTSIDE_FLING_MS = 420;
 /** Warding-ring self-drawing duration (ms). */
-export const REALM_WARDING_DRAW_MS = 300;
+const REALM_WARDING_DRAW_MS = 300;
 /** Warding-draw start delay (ms) — the seal is drawn once the world has roughly settled. */
 export const REALM_WARDING_DRAW_DELAY_MS = 700;
 /** Dot-grid parallax fall, rise→settle duration (ms). */
-export const REALM_DUST_SETTLE_MS = 1000;
+const REALM_DUST_SETTLE_MS = 1000;
 
 /** Extra distance (world units) a leaving node is pushed from the centre — enough to clear the screen. */
 export const REALM_FLING_REACH = 4200;
 /** Tangential curl (radians) of the fling path — it bends slightly instead of flying straight, which reads as re-forming. */
-export const REALM_FLING_CURL = 0.5;
+const REALM_FLING_CURL = 0.5;
 
 /**
  * Exit choreography constants.
@@ -214,13 +214,13 @@ function clamp01(t: number): number {
 }
 
 /** ease-out cubic — leaves fast, settles softly (the FLIP landing). */
-export function easeOutCubic(t: number): number {
+function easeOutCubic(t: number): number {
   const c = clamp01(t);
   return 1 - Math.pow(1 - c, 3);
 }
 
 /** ease-in cubic — leaves slowly, accelerates (the gravity fling). */
-export function easeInCubic(t: number): number {
+function easeInCubic(t: number): number {
   const c = clamp01(t);
   return c * c * c;
 }

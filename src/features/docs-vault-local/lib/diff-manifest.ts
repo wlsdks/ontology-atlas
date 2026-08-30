@@ -41,7 +41,7 @@ export function diffVaultManifest(
  * text with `t('featuresMisc.vaultDiffToaster.*')` — so a hardcoded English literal like
  * "Added: domains/refunds" cannot leak again.
  */
-export type VaultDiffToastKind = 'added' | 'edited' | 'removed' | 'digest';
+type VaultDiffToastKind = 'added' | 'edited' | 'removed' | 'digest';
 
 /**
  * **The contract that a toast never speaks a slug** (owner instruction, 2026-08-01).
@@ -66,7 +66,7 @@ export type VaultDiffNode = {
 };
 
 /** Per-kind counts within one action (added/edited). A row with no `kind` is the unknown share. */
-export type VaultDiffKindCount = { kind?: string; count: number };
+type VaultDiffKindCount = { kind?: string; count: number };
 
 export type VaultDiffActionCount = {
   total: number;
@@ -82,7 +82,7 @@ export type VaultDiffActionCount = {
  * document is gone from the manifest, leaving nowhere to read its kind, and even the count comes
  * from the activity log's `delete_concept` entries (see the note below).
  */
-export type VaultDiffDigestCounts = {
+type VaultDiffDigestCounts = {
   added: VaultDiffActionCount;
   modified: VaultDiffActionCount;
   removed: number;

@@ -33,7 +33,7 @@ export const REALM_PARALLAX_FACTOR_DEPTH2 = 0.03;
 /** depth3+ (element ring) parallax factor — 6%. The deeper the ring, the further it lags. */
 export const REALM_PARALLAX_FACTOR_DEPTH3 = 0.06;
 /** Below this absolute world-unit offset, treat it as converged and inactive. */
-export const REALM_PARALLAX_EPSILON = 0.02;
+const REALM_PARALLAX_EPSILON = 0.02;
 
 /**
  * Member depth → parallax factor. depth≤1 (root and domain rings) is 0, i.e. no

@@ -44,7 +44,7 @@ export const MAP_CANVAS_SURFACE_ROLE = 'map-canvas';
  * it sets the reading start point instead, which is correct accessibility
  * behaviour.
  */
-export const FOCUS_MAP_CANVAS_MAX_FRAMES = 120;
+const FOCUS_MAP_CANVAS_MAX_FRAMES = 120;
 
 function findMapCanvas(): HTMLElement | null {
   return document.querySelector<HTMLElement>(

@@ -22,7 +22,7 @@ import type { AgentFilesAnalysis } from './agent-files';
  */
 
 /** One skill's verdict. Three values only — more and the reader has to memorize a table. */
-export type SkillParityVerdict =
+type SkillParityVerdict =
   /** The two copies are identical, file for file. */
   | 'agreed'
   /** Both copies exist and their contents diverged. */

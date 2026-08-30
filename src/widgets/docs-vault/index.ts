@@ -4,7 +4,9 @@ export {
 } from './lib/resolve-doc-link';
 export {
   readRecentDocs,
+  migrateLegacyRecentDocs,
   pushRecentDoc,
+  RECENT_DOCS_STORAGE_PREFIX,
 } from './lib/recent-docs';
 export type { VaultRecentKey } from './lib/recent-docs';
 export {

@@ -115,7 +115,7 @@ import {
   migrateLegacyRecentDocs,
   pushRecentDoc,
   RECENT_DOCS_STORAGE_PREFIX,
-} from '@/widgets/docs-vault/lib/recent-docs';
+} from '@/widgets/docs-vault';
 
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();

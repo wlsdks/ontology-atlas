@@ -36,7 +36,7 @@ import {
  */
 
 /** Where a chip sits — a fixed priority: screen → queue → standing. */
-export type FirstWordsSlot = 'screen' | 'queue' | 'standing';
+type FirstWordsSlot = 'screen' | 'queue' | 'standing';
 
 /**
  * What the sentence means to say. Kept separate from the screen's language
@@ -153,7 +153,7 @@ export interface BuildFirstWordsInput {
 }
 
 /** Maximum chips — three, because there are three slots. Not increased (the answer to blank-page fear is accuracy, not quantity). */
-export const FIRST_WORDS_MAX_CHIPS = 3;
+const FIRST_WORDS_MAX_CHIPS = 3;
 
 /**
  * Draws opening-line candidates from this folder's state. Slot priority is fixed,

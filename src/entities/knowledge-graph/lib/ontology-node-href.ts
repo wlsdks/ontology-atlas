@@ -193,7 +193,7 @@ export function meaningEditRelationForEdgeType(
 }
 
 /** Query key for a deeplink's edit target — `edit=<relation>:<targetId>`. */
-export const ONTOLOGY_MEANING_EDIT_KEY = "edit";
+const ONTOLOGY_MEANING_EDIT_KEY = "edit";
 
 /**
  * Is edge A→B really authored in the `from` node's frontmatter — i.e. does

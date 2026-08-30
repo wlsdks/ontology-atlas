@@ -28,7 +28,7 @@ export interface OverviewTabLabels extends InsightsHeroCensusLabels {
  * "connections" tab — rows on both tabs do the same job (open that concept on the map), so the
  * contract must be one.
  */
-export interface OverviewTabDomainLink {
+interface OverviewTabDomainLink {
   /** `buildOntologyNodeHref` — the origin marker (`via=insights:composition`) rides along too. */
   href: (nodeId: string) => string;
   /**

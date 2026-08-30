@@ -17,7 +17,7 @@ interface RouteFocusIntent {
  * Query/hash changes stay inside one surface and locale changes keep the same
  * task. Only a different semantic pathname starts a new page-reading context.
  */
-export function normalizeRouteSurfacePath(pathname: string): string {
+function normalizeRouteSurfacePath(pathname: string): string {
   const withoutLocale = pathname.replace(/^\/(?:en|ko)(?=\/|$)/, '') || '/';
   if (withoutLocale === '/') return withoutLocale;
   return withoutLocale.replace(/\/+$/, '');

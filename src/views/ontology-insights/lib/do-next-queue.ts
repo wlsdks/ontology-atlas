@@ -14,7 +14,7 @@ import { rankAllByDegree } from "@/shared/lib/ontology-tree";
  * per-row agent handoff.
  */
 
-export type DoNextRowKind = "neglected-hub" | "orphan" | "promotion";
+type DoNextRowKind = "neglected-hub" | "orphan" | "promotion";
 
 export interface DoNextRow {
   /** The row's unique id — `${kind}:${nodeId}`. */

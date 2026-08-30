@@ -16,7 +16,7 @@
 
 export const PRE_COMMIT_MARKER_START =
   '# >>> ontology-atlas preflight (managed block: safe to remove) >>>';
-export const PRE_COMMIT_MARKER_END =
+const PRE_COMMIT_MARKER_END =
   '# <<< ontology-atlas preflight (managed block: safe to remove) <<<';
 
 const HOOK_BLOCK = [

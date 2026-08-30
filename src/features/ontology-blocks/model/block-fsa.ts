@@ -8,11 +8,11 @@ import type { BlockImportFile } from './merge-plan';
  * typing absorbs the iterator declaration differences across TS DOM libs).
  */
 
-export interface BlockFileLike {
+interface BlockFileLike {
   text(): Promise<string>;
 }
 
-export interface BlockFileHandleLike {
+interface BlockFileHandleLike {
   kind: 'file';
   name: string;
   getFile(): Promise<BlockFileLike>;

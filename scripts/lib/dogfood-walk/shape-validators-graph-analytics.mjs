@@ -7,8 +7,6 @@ import { matchRowsFailure, numericSummaryFailure } from "./shape-validators-prim
 import { growthCandidateRowFailure } from "./shape-validators-growth.mjs";
 import { graphEdgeFailure, lineageBucketFailure } from "./shape-validators-graph-structure.mjs";
 
-export { growthCandidateRowFailure } from "./shape-validators-growth.mjs";
-
 export function schemaShapeFailure(result) {
   if (result.operation !== "schema") {
     return `schema response operation mismatch — ${result.operation}`;

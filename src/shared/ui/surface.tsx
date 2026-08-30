@@ -60,7 +60,7 @@ import { usePanelPresence } from '@/shared/lib/use-presence';
  * a large part of the screen that moves reads as the screen itself shaking."* So
  * `origin` does nothing under `overlay` — there is no transform axis to shorten.
  */
-export type SurfaceMotion = 'chrome' | 'overlay';
+type SurfaceMotion = 'chrome' | 'overlay';
 
 const MOTION_CLASS: Record<SurfaceMotion, { enter: string; exit: string }> = {
   chrome: { enter: 'topology-chrome-in', exit: 'topology-chrome-out' },

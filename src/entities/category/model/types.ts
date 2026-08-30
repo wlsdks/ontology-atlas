@@ -6,14 +6,14 @@
  * presets, and indigo stays reserved for hub nodes.
  */
 
-export type BorderStyle = 'underline' | 'dashed' | 'sideLabel' | 'solid';
+type BorderStyle = 'underline' | 'dashed' | 'sideLabel' | 'solid';
 
-export interface CategoryPosition {
+interface CategoryPosition {
   x: number;
   y: number;
 }
 
-export interface CategorySize {
+interface CategorySize {
   width: number;
   height: number;
 }

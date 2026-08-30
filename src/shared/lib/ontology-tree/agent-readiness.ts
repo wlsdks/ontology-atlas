@@ -3,7 +3,7 @@ import type { OntologyTreeBuildResult } from "./types";
 import { ATLAS_CLI } from "@/shared/config/cli-invocation";
 
 export type AgentReadinessStatus = "ready" | "needs-links" | "needs-shape";
-export type AgentReadinessActionKey =
+type AgentReadinessActionKey =
   | "resolveUnknown"
   | "addConcepts"
   | "linkOrphans"

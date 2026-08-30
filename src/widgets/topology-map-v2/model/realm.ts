@@ -83,7 +83,7 @@ export function realmLayoutKind(depth: number): LayoutNodeKind {
 }
 
 /** The depth at which realm rings match the global spine; depth 3+ uses the spine rings unchanged. */
-export const REALM_FILL_FULL_DEPTH = 3;
+const REALM_FILL_FULL_DEPTH = 3;
 
 /** Deepest level in the subtree (0 when only the root is present). Pure. */
 export function realmMaxDepth(subtree: RealmSubtree): number {
@@ -123,7 +123,7 @@ export function realmRingsForDepth(
  * From N ≥ 3 the even division already reads as a deliberate polygon (triangle,
  * diamond), so it is left alone: zero coordinate regression for deep realms.
  */
-export const REALM_HORIZON_MAX_DEPTH1 = 2;
+const REALM_HORIZON_MAX_DEPTH1 = 2;
 
 /**
  * Realm-local coordinates: run the subtree through `computeConcentricLayout` by

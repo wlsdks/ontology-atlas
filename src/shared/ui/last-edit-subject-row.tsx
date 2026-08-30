@@ -2,7 +2,7 @@
 
 import { Bot, User } from "lucide-react";
 
-export type LastEditSubjectKind = "agent" | "human";
+type LastEditSubjectKind = "agent" | "human";
 
 export interface LastEditSubjectRowProps {
   kind: LastEditSubjectKind;

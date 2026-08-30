@@ -2,7 +2,6 @@
 
 import {
   LOCAL_DEFAULT_BASE_URL,
-  LOCAL_PROVIDER,
   type LlmVerifyResult,
 } from './tauri-secrets';
 
@@ -33,7 +32,7 @@ export interface LocalEndpointSettings {
   model: string;
 }
 
-export const EMPTY_LOCAL_ENDPOINT: LocalEndpointSettings = {
+const EMPTY_LOCAL_ENDPOINT: LocalEndpointSettings = {
   baseUrl: LOCAL_DEFAULT_BASE_URL,
   model: '',
 };
@@ -242,4 +241,3 @@ export function hostOfBaseUrl(baseUrl: string): string {
   return withoutScheme?.split(/[/?#]/)[0] ?? baseUrl;
 }
 
-export { LOCAL_PROVIDER };

@@ -105,7 +105,7 @@ export interface ManualConnectConfig {
 }
 
 /** The source-checkout launch contract — the floor where there is no app bundle. */
-export function manualLaunch({ checkoutAbsolute }: Pick<ManualConnectInput, 'checkoutAbsolute'>): McpServerLaunch {
+function manualLaunch({ checkoutAbsolute }: Pick<ManualConnectInput, 'checkoutAbsolute'>): McpServerLaunch {
   return sourceCheckoutLaunch(checkoutAbsolute);
 }
 

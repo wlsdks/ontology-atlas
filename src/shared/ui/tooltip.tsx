@@ -27,7 +27,7 @@ import * as TooltipPrimitive from "@radix-ui/react-tooltip";
  */
 export const TooltipProvider = TooltipPrimitive.Provider;
 
-export const TooltipContent = forwardRef<
+const TooltipContent = forwardRef<
   HTMLDivElement,
   ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 6, ...props }, ref) => (

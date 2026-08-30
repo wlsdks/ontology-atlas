@@ -25,7 +25,7 @@ export const EGO_BEARINGS: readonly EgoBearing[] = [
   "usedBy",
 ] as const;
 
-export interface EgoNeighbor {
+interface EgoNeighbor {
   id: string;
   label: string;
   kind: string;

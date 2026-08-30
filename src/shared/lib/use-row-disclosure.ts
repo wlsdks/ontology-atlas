@@ -136,7 +136,7 @@ function forceReflow(element: HTMLElement): void {
  * getComputedStyle per row would force a layout on every expand.
  */
 let disclosureExitMs: number | null = null;
-export function readDisclosureExitMs(): number {
+function readDisclosureExitMs(): number {
   if (disclosureExitMs !== null) return disclosureExitMs;
   const fallback = 180;
   if (typeof window === 'undefined') return fallback;

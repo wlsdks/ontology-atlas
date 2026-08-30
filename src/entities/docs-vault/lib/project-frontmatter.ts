@@ -23,7 +23,7 @@ import { generateNodeUid } from './build-vault-markdown';
  * A user who set their own display name is NOT in this set, so their choice is
  * never overwritten.
  */
-export const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
+const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
   '내 프로젝트',
   'My project',
 ]);
@@ -35,7 +35,7 @@ export const STARTER_PROJECT_DISPLAY_VALUES: ReadonlySet<string> = new Set([
  * "never filled in" so it renders as a placeholder (empty value), not a real
  * value the user has to delete before writing a real one-liner.
  */
-export const STARTER_PROJECT_DESCRIPTION_MARKERS: readonly string[] = [
+const STARTER_PROJECT_DESCRIPTION_MARKERS: readonly string[] = [
   'Write a one- or two-line summary of your project here',
   '프로젝트를 한두 줄로 요약',
 ];

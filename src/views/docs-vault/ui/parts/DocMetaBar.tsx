@@ -8,11 +8,6 @@ import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";
 import { controlClass } from '@/shared/ui/control-class';
 
-// Backwards compatibility — re-exported so callers that imported it from the DocMetaBar module
-// keep working. The real definition is ./reading-minutes.ts, split out so its tests do not pull
-// in React dependencies such as `@/i18n/navigation`.
-export { estimateReadingMinutes };
-
 const actionLinkClass = controlClass({
   shape: "chip",
   size: "md",

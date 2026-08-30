@@ -8,14 +8,14 @@ export type ProjectCategory = string;
  * Project status id — a free string matching either an `entities/status` default
  * or a vault frontmatter taxonomy.
  */
-export type ProjectStatus = string;
+type ProjectStatus = string;
 
-export interface ProjectLink {
+interface ProjectLink {
   label: string;
   url: string;
 }
 
-export interface ProjectTimeline {
+interface ProjectTimeline {
   startedAt?: Date;
   launchedAt?: Date;
 }

@@ -51,7 +51,7 @@ export interface AgentToolDefinition {
 }
 
 /** The same constant as in `mcp/src/ontology-engine.mjs`. A contract test compares them. */
-export const NODE_KIND_VALUES = [
+const NODE_KIND_VALUES = [
   'project',
   'domain',
   'capability',
@@ -60,7 +60,7 @@ export const NODE_KIND_VALUES = [
   'vault-readme',
 ] as const;
 
-export const RELATION_TYPE_VALUES = [
+const RELATION_TYPE_VALUES = [
   'domains',
   'domain',
   'capabilities',
@@ -72,7 +72,7 @@ export const RELATION_TYPE_VALUES = [
   'describes',
 ] as const;
 
-export const WRITE_RELATION_TYPE_VALUES = [
+const WRITE_RELATION_TYPE_VALUES = [
   'depends_on',
   'relates',
   'contains',

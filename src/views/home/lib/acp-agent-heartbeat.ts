@@ -34,8 +34,8 @@ import type { AgentActivityHeartbeat } from "@/features/docs-vault-local";
 import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
 
 /** Where the heartbeat lives — the same sidecar folder as `agent-activity.json`. */
-export const AGENT_HEARTBEAT_VAULT_DIR = ".ontology-atlas";
-export const AGENT_HEARTBEAT_VAULT_FILE = "agent-activity.json";
+const AGENT_HEARTBEAT_VAULT_DIR = ".ontology-atlas";
+const AGENT_HEARTBEAT_VAULT_FILE = "agent-activity.json";
 
 /**
  * The heartbeat for one turn. Narrows what ACP actually reported — tool kind and

@@ -70,7 +70,7 @@ export interface ProposalChange {
   expectedMtime?: number;
 }
 
-export type ProposalStatus =
+type ProposalStatus =
   | 'pending'
   /**
    * The write is **in flight**. The draft had no such value, so the state stayed
@@ -129,7 +129,7 @@ export interface ScreenContextSnapshot {
   recentChanges?: readonly string[];
 }
 
-export type NoticeCode =
+type NoticeCode =
   | 'network-failed'
   | 'timed-out'
   | 'rate-limited'
@@ -180,7 +180,7 @@ export type AgentEvent =
   | { kind: 'proposal'; proposal: AgentProposal }
   | { kind: 'notice'; code: NoticeCode; text: string };
 
-export type AgentTurnStatus =
+type AgentTurnStatus =
   | 'sending'
   | 'running'
   | 'done'

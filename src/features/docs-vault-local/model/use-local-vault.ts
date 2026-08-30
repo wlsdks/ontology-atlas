@@ -243,7 +243,7 @@ type Status =
  *   again" would be wrong guidance. `errorMessage` is null and the screen picks the
  *   reason in its own language (`vaultRootRejectionReason`).
  */
-export type VaultErrorCode =
+type VaultErrorCode =
   | 'path-missing'
   | 'permission-denied'
   | 'access-failed'

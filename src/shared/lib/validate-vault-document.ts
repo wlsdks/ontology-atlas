@@ -12,7 +12,7 @@ import { parseFrontmatter } from "./parse-frontmatter";
  * normal.
  */
 
-export type VaultIssueSeverity = "error" | "warning";
+type VaultIssueSeverity = "error" | "warning";
 
 export type VaultIssueCode =
   | "unclosed-frontmatter"
@@ -60,7 +60,7 @@ export interface VaultDocumentReport {
  * derive-ontology-from-vault recognises. `unknown` is a stub the system mints, never
  * something a user writes, so `unknown` as input is reported as an unknown-kind warning.
  */
-export const KNOWN_VAULT_KINDS = [
+const KNOWN_VAULT_KINDS = [
   "project",
   "domain",
   "capability",

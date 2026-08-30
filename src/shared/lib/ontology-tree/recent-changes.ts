@@ -55,7 +55,7 @@ export function daysAgoFromIso(updatedAtIso: string, nowMs: number): number {
   return Math.max(0, Math.floor((nowMs - updatedMs) / DAY_MS));
 }
 
-export interface RecentChangeRow {
+interface RecentChangeRow {
   id: string;
   title: string;
   kind: string;
@@ -115,7 +115,7 @@ export function computeRecentChanges(
  * vault where everything really did change today is not lied about by narrowing
  * the window until the answer is 0.
  */
-export const RECENT_CHANGES_ADAPTIVE_LADDER_DAYS: readonly number[] = [7, 3, 1];
+const RECENT_CHANGES_ADAPTIVE_LADDER_DAYS: readonly number[] = [7, 3, 1];
 
 export interface AdaptiveRecentChangesResult extends RecentChangesResult {
   /** The window actually used, in days. */

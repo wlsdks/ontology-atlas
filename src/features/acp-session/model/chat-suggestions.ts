@@ -22,7 +22,7 @@
 /** How many are shown at once. Given too many choices, people choose none (Hick). */
 export const SUGGESTION_LIMIT = 3;
 
-export type SuggestionKind =
+type SuggestionKind =
   /** starter vault has a project but no source binding — connect before analysis */
   | 'connectSource'
   /** The vault is empty — nothing to fix, so recommend making something */

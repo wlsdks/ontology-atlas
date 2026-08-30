@@ -14,7 +14,7 @@
 export const PAST_WALKS_MAX = 10;
 
 /** Steps per trail — the same cap as the live session trail (`FOOTPRINT_TRAIL_MAX`). */
-export const PAST_WALK_ENTRIES_MAX = 30;
+const PAST_WALK_ENTRIES_MAX = 30;
 
 /** Save threshold, matching the chip's own (2+ visits): only what looked like a trail is stored as one. */
 export const PAST_WALK_MIN_ENTRIES = 2;

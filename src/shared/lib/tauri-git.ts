@@ -40,7 +40,7 @@ function getInvoke(): TauriInvoke | null {
   return (command, args) => tauriInvoke(command, args);
 }
 
-export type GitChangeStatus = 'added' | 'modified' | 'deleted' | 'renamed';
+type GitChangeStatus = 'added' | 'modified' | 'deleted' | 'renamed';
 
 /** Rust `ChangeEntry` (serde camelCase). */
 export interface GitChangeEntry {
@@ -52,7 +52,7 @@ export interface GitChangeEntry {
 }
 
 /** Rust `SnapshotCounts`. */
-export interface GitSnapshotCounts {
+interface GitSnapshotCounts {
   added: number;
   modified: number;
   deleted: number;
@@ -84,7 +84,7 @@ export interface GitStatusResult {
 }
 
 /** Rust `PushOutcome` — a failed push is guidance, not a crash: the commit is already local. */
-export interface GitPushOutcome {
+interface GitPushOutcome {
   pushed: boolean;
   remoteUrl: string | null;
   message: string | null;

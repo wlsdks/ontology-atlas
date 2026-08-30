@@ -28,7 +28,7 @@ export interface RealmCensus {
 }
 
 /** One boundary relation — an edge joining inside the realm to outside it. */
-export interface RealmBoundaryCrossing {
+interface RealmBoundaryCrossing {
   edgeId: string;
   fromId: string;
   fromTitle: string;
@@ -51,7 +51,7 @@ export interface RealmBoundary {
  * the tree shape itself, so they are not a signal of reaching outside; only
  * lateral relations (depends on, uses, implements, evidences) count.
  */
-export const REALM_BOUNDARY_EXCLUDED_TYPES: ReadonlySet<string> = new Set([
+const REALM_BOUNDARY_EXCLUDED_TYPES: ReadonlySet<string> = new Set([
   "contains",
   "belongs_to",
 ]);

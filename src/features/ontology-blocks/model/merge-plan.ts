@@ -32,13 +32,13 @@ export interface BlockImportFile {
   raw: string;
 }
 
-export type BlockImportEntryStatus =
+type BlockImportEntryStatus =
   | 'new'
   | 'conflict-skipped'
   | 'conflict-renamed'
   | 'kindless';
 
-export interface BlockImportEntry {
+interface BlockImportEntry {
   originalSlug: string;
   /** null = not written (skipped, or kindless). */
   finalSlug: string | null;
@@ -47,7 +47,7 @@ export interface BlockImportEntry {
   status: BlockImportEntryStatus;
 }
 
-export interface BlockImportWrite {
+interface BlockImportWrite {
   slug: string;
   content: string;
 }

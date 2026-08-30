@@ -10,7 +10,7 @@ import type { TopologyOntologyDrawerModel } from "./topology-ontology-drawer";
  * - `leaf`: barely connected (total degree <= 1).
  * - `supporting`: everything in between.
  */
-export type NodeSignificanceLevel = "core" | "supporting" | "leaf";
+type NodeSignificanceLevel = "core" | "supporting" | "leaf";
 
 /**
  * Plain-language "so what" of a single node, *derived* from graph data that

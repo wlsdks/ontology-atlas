@@ -9,7 +9,7 @@ export interface TopologyRenderState {
   renderCanvas: boolean;
 }
 
-export type TopologyEmptyReason = "no-projects" | "no-relations";
+type TopologyEmptyReason = "no-projects" | "no-relations";
 
 export type TopologyOverlayState =
   | { kind: "none" }

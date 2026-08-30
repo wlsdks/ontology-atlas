@@ -16,7 +16,7 @@ import {
   SOURCE_BACKED_COMPETENCY_MESSAGE,
 } from './competency-qualification-boundary';
 
-export { GRAPH_FRONTMATTER_KEYS, wrapUntrusted } from './concept-evidence-pack';
+export { GRAPH_FRONTMATTER_KEYS } from './concept-evidence-pack';
 
 /**
  * Normalized tool call → actual execution.

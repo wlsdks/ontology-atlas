@@ -45,7 +45,7 @@ function looksLikeSourceWitnessPath(value) {
     && normalized.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..');
 }
 
-export function normalizeWitnessPath(value) {
+function normalizeWitnessPath(value) {
   return String(value ?? '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/^\/+/, '');
 }
 

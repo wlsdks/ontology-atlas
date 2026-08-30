@@ -17,17 +17,17 @@
 import { inferProjectSourceProposal } from "./project-source-inference.mjs";
 import type { ProjectSourceReceipt } from "./project-source-receipt";
 
-export type ProjectSourceCandidateMarker =
+type ProjectSourceCandidateMarker =
   | "enclosing_git_repository"
   | "ancestor_project_manifest";
 
-export type ProjectSourceProposalReason =
+type ProjectSourceProposalReason =
   | ProjectSourceCandidateMarker
   | "no_enclosing_source";
 
-export type ProjectSourceConfidence = "high" | "medium" | "low";
+type ProjectSourceConfidence = "high" | "medium" | "low";
 
-export interface ProjectSourceCandidate {
+interface ProjectSourceCandidate {
   rootPath: string;
   kind: "git" | "folder";
   marker: ProjectSourceCandidateMarker;

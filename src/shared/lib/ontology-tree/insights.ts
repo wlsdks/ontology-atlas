@@ -47,7 +47,7 @@ export interface OntologyDegreeRow {
   degree: number;
 }
 
-export interface DomainCouplingDomainRow {
+interface DomainCouplingDomainRow {
   domain: KnowledgeGraphNode;
   nodeCount: number;
   outgoing: number;
@@ -55,7 +55,7 @@ export interface DomainCouplingDomainRow {
   selfEdges: number;
 }
 
-export interface DomainCouplingConnectionRow {
+interface DomainCouplingConnectionRow {
   from: KnowledgeGraphNode;
   to: KnowledgeGraphNode;
   count: number;

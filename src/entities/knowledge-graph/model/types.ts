@@ -35,13 +35,6 @@ export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
   'is_a',
 ] as const;
 
-/**
- * Node kinds a person can create by hand in the map's contextual editor. The
- * `document` kind is derived from the frontmatter source of truth, so it is not
- * something a user creates and is excluded here.
- */
-export type ManualNodeKind = 'project' | 'domain' | 'capability' | 'element';
-
 export interface KnowledgeGraphNode {
   id: string;
   title: string;

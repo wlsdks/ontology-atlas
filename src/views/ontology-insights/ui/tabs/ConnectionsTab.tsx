@@ -46,7 +46,7 @@ export interface ConnectionsTabLabels {
   evidenceBadgeHint: string;
 }
 
-export interface ConnectionsTabHubLink {
+interface ConnectionsTabHubLink {
   /** Clicking a hub row deeplinks to that node on the map (`buildOntologyNodeHref`). */
   href: (nodeId: string) => string;
   ariaLabel: (title: string) => string;

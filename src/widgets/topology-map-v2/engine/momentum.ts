@@ -46,7 +46,7 @@
  */
 
 /** One recorded pointer position while dragging (screen px + `performance.now()`). */
-export interface DragSample {
+interface DragSample {
   x: number;
   y: number;
   t: number;

@@ -324,7 +324,7 @@ function consumeSettingsLocaleFocus(
   }
 }
 
-export interface AppSettingsScreenControls {
+interface AppSettingsScreenControls {
   audiencePlain: boolean;
   onAudiencePlainChange: (next: boolean) => void;
   indexCollapsed: boolean;
@@ -353,7 +353,6 @@ export interface AppSettingsMenuProps {
    */
   triggerVariant?: SettingsTriggerVariant;
 }
-
 
 export function AppSettingsMenu({
   mode,

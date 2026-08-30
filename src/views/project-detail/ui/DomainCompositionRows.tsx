@@ -11,7 +11,7 @@ import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
 import type { DomainCompositionRow } from "../model/domain-composition";
 
-export interface DomainCompositionRowsLabels {
+interface DomainCompositionRowsLabels {
   capabilityUnit: string;
   elementUnit: string;
   /** How to read the bar — one line per group. */
