@@ -440,7 +440,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. From 1024 t",
-      "wordCount": 84536,
+      "wordCount": 84692,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -480,7 +480,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 214163,
+      "wordCount": 215477,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "slug"
@@ -489,13 +489,13 @@
     {
       "slug": "DEMO-SCENARIO",
       "path": "docs/DEMO-SCENARIO.md",
-      "title": "Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)",
+      "title": "Demo Video Shooting Scenario — `atlas-tour`",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "One clip · 9 seconds · No cuts · No speed changes · No audio · No loop · Record separately in Korean/English. The implementation of the playback contract is in src/views/download/ui/DemoStage.tsx, and the asset registration section is in src/views/download/model/demo-clips.ts. What has changed: This section used to arg",
-      "wordCount": 3084,
-      "updatedAt": "2026-08-29",
+      "excerpt": "Current scenario: one localized page clip · 44 seconds · one take · no speed changes · no audio · recorded separately in Korean and English. The X export is a separate Korean 21.633-second LNB overview and is not part of the page registry. The playback contract lives in src/views/download/ui/DemoStage.tsx. Asset regist",
+      "wordCount": 1593,
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -792,13 +792,13 @@
     {
       "slug": "launch/DEMO-GIF-STORYBOARD",
       "path": "docs/launch/DEMO-GIF-STORYBOARD.md",
-      "title": "30s Demo GIF — storyboard",
+      "title": "30s Demo GIF — retired storyboard",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Storyboard for the 30-second GIF/mp4 to be featured on the README first screen. claim → proof 5-cut sequence. Each cut ~6 seconds. screen: Left side shows VS Code (or Obsidian) opening domains/auth.md with frontmatter visible. Right side shows Claude Code terminal displaying results of ontology-atlas tool calls. action",
-      "wordCount": 528,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Retired on 2026-08-30. The shipped X MP4 and localized download-page takes follow docs/DEMO-SCENARIO.md: the page takes show one selected capability, its relations and evidence, and a real read-only Codex getconcept/findpath round trip; the separate X take rapidly crosses the seven LNB destinations. The five-cut editor",
+      "wordCount": 596,
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -821,8 +821,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Collection of drafts for the open-source launch phase. Maintainers will publish directly at the appropriate time. Distribution channel (confirmed 2026-07-27, docs/DECISIONS.md): The plan to publish on npm has been scrapped. The public channel is a signed and notarized macOS DMG only, with the app carrying its compiled ",
-      "wordCount": 730,
-      "updatedAt": "2026-08-23",
+      "wordCount": 731,
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -2348,7 +2348,7 @@
       },
       "headings": [],
       "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. The pre-install hero pairs the real graph object with the static raised-hand pixel mascot; the object assembles as the typing echo of the headline (each typed character lights the next dots of the vault graph, apex first and then each p",
-      "wordCount": 134,
+      "wordCount": 227,
       "updatedAt": "2026-08-30",
       "linksOut": []
     },
@@ -5251,7 +5251,7 @@
             "path": "launch/DEMO-GIF-STORYBOARD",
             "type": "doc",
             "slug": "launch/DEMO-GIF-STORYBOARD",
-            "title": "30s Demo GIF — storyboard"
+            "title": "30s Demo GIF — retired storyboard"
           },
           {
             "name": "HN-POST",
@@ -6107,7 +6107,7 @@
         "path": "DEMO-SCENARIO",
         "type": "doc",
         "slug": "DEMO-SCENARIO",
-        "title": "Demo Video Shooting Scenario — `atlas-tour` (Revised 2026-08-22)"
+        "title": "Demo Video Shooting Scenario — `atlas-tour`"
       },
       {
         "name": "DEPLOYMENT",
