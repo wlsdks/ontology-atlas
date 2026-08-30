@@ -154,6 +154,7 @@ import { compileOntology } from './ontology-compiler.mjs';
 import {
   AGENT_BRIEF_TASK_MAX_CHARS,
   buildCompactAgentBrief,
+  projectSourceSnapshotUnchanged,
 } from './agent-brief-compact.mjs';
 import {
   buildNextImportRelationReview,
@@ -887,6 +888,8 @@ const MEANING_PROPOSAL_CONCEPT_INPUT_PROPERTIES = Object.freeze({
     minItems: 1,
     maxItems: 20,
     uniqueItems: true,
+    description:
+      'Repository evidence sources. Element proposals may keep an ordinary citation and append reviewed navigation:<primary|supporting|test>:<path>#<symbol> strings (limits 1/1/3); they are current structural navigation, never behavior proof.',
     items: NON_BLANK_STRING_SCHEMA,
   },
   confidence: { type: 'number', minimum: 0, maximum: 1 },
@@ -2411,8 +2414,8 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 ### A. A coding task is already known — use the shortest bounded handoff
 
 1. \`connection_info\` — prove the resolved vault and repository roots.
-2. \`query_ontology({operation:'agent_brief',project:'SLUG',detail:'compact',task:'...'})\` — receive currentness, the selected broad capability, cited element/path anchors, explicit unknowns, and one bounded full-body read.
-3. Run only the returned \`nextReads[0]\`, then inspect source from the recorded anchor. Do not call \`workspace_brief\`, \`list_concepts\`, or full \`agent_brief\` first; those are for whole-vault orientation and duplicate this task handoff.
+2. \`query_ontology({operation:'agent_brief',project:'SLUG',detail:'compact',task:'...'})\` — receive currentness, the selected broad capability, cited element/path anchors, explicit unknowns, and one bounded full-body read. Compact v2 may also return reviewed task-navigation coordinates after checking only their named files against current bound source.
+3. When \`focus.taskNavigation.status\` is \`ready\`, read its primary, supporting, focused-test, and verified manifest coordinates together in one source batch before any repository inventory or broad search. Add named positive and negative regression tests with exact observable output, run the focused check once, then the returned full check once without overlapping test runs. Broaden only when source contradicts the reviewed evidence. Otherwise run the returned full-body read and preserve navigation as unknown. Do not call \`workspace_brief\`, \`list_concepts\`, or full \`agent_brief\` first; those are for whole-vault orientation and duplicate this task handoff.
 
 ### B. No coding task is known — orient the vault first
 
@@ -4154,7 +4157,7 @@ const TOOLS = [
     name: 'query_ontology',
     description:
       'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `meaning_repair_review` (provenance-bound, byte-bounded typed evidence pages and literal full-body read calls for the compact meaning repair manifest), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
-      'For `agent_brief`, select `project` explicitly when the vault has more than one project. Omitted `detail` and `detail:"full"` return the complete project-scoped diagnostic contract. For a known coding task, call `detail:"compact"` directly after `connection_info`; do not precede it with `workspace_brief` or a full inventory unless the question needs whole-vault health. Compact mode requires a nonblank request-local `task` (max 2000 characters) and returns at most 8000 UTF-8 JSON bytes: final source/meaning currentness, broad capability selection, only persisted element/path evidence, explicit unknown impact and verification, exact full-body next reads, and a `detail:"full"` follow-up. Task matching selects evidence only; it never proves source behavior, persists task text, approves meaning, or writes the vault. ' +
+      'For `agent_brief`, select `project` explicitly when the vault has more than one project. Omitted `detail` and `detail:"full"` return the complete project-scoped diagnostic contract. For a known coding task, call `detail:"compact"` directly after `connection_info`; do not precede it with `workspace_brief` or a full inventory unless the question needs whole-vault health. Compact v2 requires a nonblank request-local `task` (max 2000 characters) and returns at most 12000 UTF-8 JSON bytes: final source/meaning currentness, broad capability selection, persisted element/path evidence, explicit unknown impact and verification, exact full-body next reads, and a `detail:"full"` follow-up. Its `content[0].text` is the bounded handoff prompt while `structuredContent` carries the typed facts once. When the selected element Markdown contains reviewed Primary implementation / Supporting implementation / Focused test coordinates and the bound source is current, taskNavigation verifies only those named files and returns exact current lines plus the reviewed non-exhaustive IN/OUT boundary. After those reads, Atlas rechecks the same source identity, fingerprint, revision, and graph hash; any mismatch removes the exact target and downgrades the complete outer currentness contract. A ready prompt reads primary, supporting, focused tests, and a verified manifest together; requires named positive and negative regression tests with exact observable output; and runs the focused check once followed by one non-overlapping full check. Missing, ambiguous, stale, unsafe, or unrecorded coordinates emit no exact target. Task matching selects evidence only; it never searches the repository, never proves source behavior, never persists task text, never approves meaning, and never writes the vault. ' +
       'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. A missing `depends_on` preflight is schema-only: `relation_check` returns `proposedAction:null` plus a non-writing `approvalGate` until the agent explains the observable ability and semantic rationale and receives explicit human approval. ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
@@ -4198,13 +4201,13 @@ const TOOLS = [
           type: 'string',
           enum: ['compact', 'full'],
           description:
-            'agent_brief only: compact returns a task-scoped, selected-project handoff capped at 8000 UTF-8 JSON bytes; full returns the complete legacy diagnostic manuals and graph packs. Omit to keep the current full response while compact is being qualified.',
+            'agent_brief only: compact v2 returns a task-scoped, selected-project handoff capped at 12000 UTF-8 JSON bytes, including exact reviewed taskNavigation only when the bound source is current; full returns the complete diagnostic manuals and graph packs. Omit to keep the current full response while compact is being qualified.',
         },
         task: {
           ...NON_BLANK_STRING_SCHEMA,
           maxLength: AGENT_BRIEF_TASK_MAX_CHARS,
           description:
-            'agent_brief detail:"compact" only: request-local coding task used to select persisted capability and element evidence. Never persisted and never treated as behavior proof or semantic approval.',
+            'agent_brief detail:"compact" only: request-local coding task used to select persisted capability, element, and reviewed navigation evidence. Never persisted, never used to invent a coordinate, and never treated as behavior proof or semantic approval.',
         },
         expectedGraphHash: nonBlankStringSchema(
           'meaning_repair_review first page: exact graphHash from meaningRepair:v2 provenance. Later nextCall values are revision-bound and omit it.',
@@ -5873,6 +5876,7 @@ const TOOLS = [
       '  - root Python packages plus at most 12 import-connected implementation boundaries → direct modules plus up to 2 exact security/policy/risk file anchors; unused files are not mirrored and no capability is inferred from imports\n' +
       '  - bounded root Cargo package or repo-contained literal direct workspace members → typed feature declaration + literal cfg/cfg_attr source provenance; predicates are not evaluated and no runtime/import/semantic dependency is inferred\n' +
       '  - a complete proposal may select at most 4 additional exact TypeScript, JavaScript, or Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
+      '  - an element proposal may keep an ordinary citation and append reviewed `navigation:primary|supporting|test:<path>#<symbol>` evidence strings (limits 1/1/3); the server verifies only those named current files, renders human-readable Evidence bullets, and rejects missing, ambiguous, unsafe, or task-inferred coordinates without treating them as behavior proof\n\n' +
       'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
       'and typed competency answers with resolvable concept/relation/evidence/path witnesses. Partial ' +
@@ -6818,8 +6822,12 @@ function formatUnknownToolError(name) {
 }
 
 function ok(result) {
+  const compactPrompt = result?.contract === 'agentBriefCompact:v2'
+    && typeof result?.handoffPrompt === 'string'
+    ? result.handoffPrompt
+    : null;
   const response = {
-    content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+    content: [{ type: 'text', text: compactPrompt ?? JSON.stringify(result, null, 2) }],
   };
   if (result && typeof result === 'object' && !Array.isArray(result)) {
     response.structuredContent = result;
@@ -8806,6 +8814,30 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns) {
   return { projectSlug, scope, scopedArtifact, result };
 }
 
+function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash) {
+  if (
+    projectSource?.status !== 'verified_current'
+    || projectSource?.currentness !== 'current'
+    || typeof projectSource?.receipt?.sourceId !== 'string'
+  ) return null;
+  const sidecar = readProjectSourceBindings(VAULT_ROOT);
+  if (sidecar.status !== 'ok') return null;
+  const matches = sidecar.bindings.filter((binding) => (
+    binding?.projectSlug === projectSlug
+    && binding?.sourceId === projectSource.receipt.sourceId
+    && typeof binding?.rootPath === 'string'
+    && binding.rootPath.trim()
+  ));
+  if (matches.length !== 1) return null;
+  return {
+    rootPath: matches[0].rootPath,
+    confirmCurrent() {
+      const refreshed = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
+      return projectSourceSnapshotUnchanged(projectSource, refreshed);
+    },
+  };
+}
+
 function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
@@ -8871,15 +8903,24 @@ function queryOntologyTool(args = {}) {
   if (args.operation === 'agent_brief') {
     result = refreshAgentBriefHandoffPrompt(result);
     if (args.detail === 'compact') {
+      const sourceAccess = privateCurrentProjectSourceAccess(
+        result.projectSlug,
+        result.projectSource,
+        agentBriefInput.scope.graphHash,
+      );
       result = buildCompactAgentBrief({
         brief: result,
         artifact: queryArtifact,
         docs: agentBriefInput.scope.docs,
+        sourceRoot: sourceAccess?.rootPath ?? null,
+        confirmSourceCurrent: sourceAccess?.confirmCurrent ?? null,
+        sourceAccessRequired: result.projectSource?.status === 'verified_current'
+          && result.projectSource?.currentness === 'current',
         task: args.task,
       });
     }
   }
-  if (result?.contract === 'agentBriefCompact:v1') return result;
+  if (result?.contract === 'agentBriefCompact:v2') return result;
   return {
     ...result,
     compiledSummary: {

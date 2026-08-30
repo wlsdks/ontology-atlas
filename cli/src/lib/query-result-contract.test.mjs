@@ -1451,7 +1451,7 @@ describe('query-result-contract', () => {
 
   it('validates compact agent_brief truth fields, byte budget, and full-detail boundary', () => {
     const valid = {
-      contract: 'agentBriefCompact:v1',
+      contract: 'agentBriefCompact:v2',
       operation: 'agent_brief',
       detail: 'compact',
       sideEffect: false,
@@ -1549,7 +1549,43 @@ describe('query-result-contract', () => {
         verification: {
           status: 'unknown',
           recordedPaths: [],
+          manifest: null,
+          runner: null,
           nextAction: 'Inspect tests near the anchor.',
+        },
+        taskNavigation: {
+          contract: 'taskNavigation:v1',
+          status: 'ready',
+          basis: 'reviewed_markdown_evidence',
+          currentness: 'current',
+          primary: {
+            path: 'src/session-store.ts',
+            symbol: 'SessionStore::write',
+            role: 'primary',
+            line: 12,
+            endLine: 18,
+            sourceStatus: 'supported_current',
+          },
+          supporting: null,
+          tests: [{
+            path: 'tests/session-store.test.ts',
+            symbol: 'stores a session',
+            role: 'test',
+            line: 8,
+            endLine: 11,
+            sourceStatus: 'supported_current',
+          }],
+          boundary: {
+            in: 'Session storage writes.',
+            out: 'Session issuance.',
+            completeness: 'recorded_non_exhaustive',
+          },
+          diagnostics: [],
+          readPlan: {
+            kind: 'source_batch',
+            targetCount: 2,
+            policy: 'stop_on_match',
+          },
         },
         unknowns: ['Revocation impact is unknown.'],
       },
@@ -1570,8 +1606,17 @@ describe('query-result-contract', () => {
         reason: 'Read full detail only when needed.',
       },
       handoffPrompt: [
+        'Task navigation: ready/current',
+        'Primary: "src/session-store.ts#SessionStore::write:12-18"',
+        'Supporting: none recorded',
+        'Focused tests: ["tests/session-store.test.ts#stores a session:8-11"]',
+        'IN: "Session storage writes."',
+        'OUT: "Session issuance."',
         'Current source: verified_current/current',
         'Meaning: needs_evidence',
+        'Verify: runner unknown; focused once; discover one full check.',
+        'Read: primary + supporting + tests; stop_on_match.',
+        'Tests: named positive + negative regression; exact observable output.',
       ].join('\n'),
     };
 
@@ -1581,6 +1626,35 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertAgentBriefCompactShape({ ...valid, safety: { ...valid.safety, automaticWrite: true } }),
       /human approval and no-auto-write\/finalize/,
+    );
+    assert.throws(
+      () => assertAgentBriefCompactShape({
+        ...valid,
+        focus: {
+          ...valid.focus,
+          taskNavigation: {
+            ...valid.focus.taskNavigation,
+            readPlan: {
+              ...valid.focus.taskNavigation.readPlan,
+              policy: 'broad_search',
+            },
+          },
+        },
+      }),
+      /taskNavigation readPlan must be one bounded source batch/,
+    );
+    assert.throws(
+      () => assertAgentBriefCompactShape({
+        ...valid,
+        focus: {
+          ...valid.focus,
+          taskNavigation: {
+            ...valid.focus.taskNavigation,
+            primary: { ...valid.focus.taskNavigation.primary, line: 0 },
+          },
+        },
+      }),
+      /taskNavigation.*target/i,
     );
     assert.throws(
       () => assertAgentBriefCompactShape({ ...valid, playbooks: [] }),
@@ -1602,14 +1676,26 @@ describe('query-result-contract', () => {
     );
     assert.throws(
       () => assertAgentBriefCompactShape({ ...valid, handoffPrompt: 'Current source: verified_current/current\nMeaning: verified_current' }),
-      /generated from final currentness facts/,
+      /preserve the exact source batch, verification sequence, and final currentness facts/,
     );
+    for (const fact of ['Focused tests:', 'IN:', 'OUT:', 'Verify:', 'stop_on_match', 'Tests:']) {
+      assert.throws(
+        () => assertAgentBriefCompactShape({
+          ...valid,
+          handoffPrompt: valid.handoffPrompt
+            .split('\n')
+            .filter((line) => !line.includes(fact))
+            .join('\n'),
+        }),
+        /preserve the exact source batch, verification sequence, and final currentness facts/,
+      );
+    }
     assert.throws(
       () => assertAgentBriefCompactShape({
         ...valid,
         purpose: { ...valid.purpose, statement: 'x'.repeat(8_000) },
       }),
-      /fit 8000 UTF-8 JSON bytes/,
+      /fit 12000 UTF-8 JSON bytes/,
     );
   });
 

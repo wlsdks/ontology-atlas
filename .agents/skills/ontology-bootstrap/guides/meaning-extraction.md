@@ -62,6 +62,26 @@ Use direct or triangulated evidence for domains and capabilities. Structural
 evidence alone can establish elements, not business meaning. Do not write
 speculative concepts.
 
+For a stable element that is meant to start later coding work, the existing
+proposal `evidence` string array may contain one reviewed primary coordinate,
+one reviewed supporting coordinate, and up to three focused tests using
+`navigation:<primary|supporting|test>:<repo-relative-path>#<qualified-symbol>`.
+Keep an ordinary evidence citation beside them. These annotations are
+human-readable navigation receipts, not new ontology objects or proof of source
+behavior. Verify the named symbol in the named current file before proposing
+one; never store line numbers, commands, snippets, task text, or a coordinate
+learned only after seeing the later task. Missing or unstable coordinates stay
+unknown rather than being guessed.
+
+This is the one bounded source-aware exception to the Atlas-only meaning flow.
+After Atlas evidence has already selected the element, a builder may inspect
+that exact local file and its nearest supporting/test files solely to verify the
+coordinate. If Atlas exposes only a package or manifest boundary, one
+conventional source-file inventory inside that boundary may supply at most the
+existing four selected endpoints. Record every lookup. Native source content
+cannot establish or strengthen business meaning, behavior, dependency, or
+impact, and the analyzer must still re-verify every coordinate before release.
+
 Keep attribution exact. A packet path proves that an implementation anchor
 exists; it does not prove every internal behavior of that file. Source-inspected
 detail must cite the exact source that demonstrated it and remain partial in a

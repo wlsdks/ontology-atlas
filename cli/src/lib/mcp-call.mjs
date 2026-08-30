@@ -339,6 +339,13 @@ export function parseMcpToolResponse(toolResp, { toolName } = {}) {
     if (typeof text !== 'string') {
       return result.structuredContent;
     }
+    if (
+      result.structuredContent?.contract === 'agentBriefCompact:v2'
+      && typeof result.structuredContent?.handoffPrompt === 'string'
+      && text === result.structuredContent.handoffPrompt
+    ) {
+      return result.structuredContent;
+    }
     let textPayload;
     try {
       textPayload = JSON.parse(text);

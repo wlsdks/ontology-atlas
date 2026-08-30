@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import {
   AGENT_BRIEF_COMPACT_MAX_BYTES,
   AGENT_BRIEF_TASK_MAX_CHARS,
   buildCompactAgentBrief,
+  projectSourceSnapshotUnchanged,
 } from './agent-brief-compact.mjs';
 
 const docs = [
@@ -36,7 +40,7 @@ const docs = [
   {
     slug: 'elements/writer',
     frontmatter: { kind: 'element', title: 'Writer', domain: 'domains/encoding', path: 'src/writer.ts' },
-    body: '## Definition\n\nWriter implementation.\n\n## Evidence\n\n- `tests/writer.test.ts`\n',
+    body: '## Definition\n\nWriter implementation.\n\n## Evidence\n\n- `tests/writer.test.ts`\n- `package.json`\n',
   },
 ];
 
@@ -92,6 +96,167 @@ const artifact = {
 };
 
 describe('compact agent brief projection', () => {
+  it('requires the same source fingerprint, revision, and graph hash after coordinate reads', () => {
+    const before = {
+      status: 'verified_current',
+      currentness: 'current',
+      receipt: {
+        sourceId: 'sha256:source',
+        sourceFingerprint: 'sha256:fingerprint',
+        sourceRevision: 'revision-a',
+        graphHash: 'sha256:graph',
+      },
+    };
+    assert.equal(projectSourceSnapshotUnchanged(before, before), true);
+    assert.equal(projectSourceSnapshotUnchanged(before, {
+      ...before,
+      receipt: { ...before.receipt, sourceFingerprint: 'sha256:remeasured' },
+    }), false);
+    assert.equal(projectSourceSnapshotUnchanged(before, {
+      ...before,
+      receipt: { ...before.receipt, sourceRevision: 'new-revision' },
+    }), false);
+    assert.equal(projectSourceSnapshotUnchanged(before, {
+      ...before,
+      receipt: { ...before.receipt, graphHash: 'sha256:new-graph' },
+    }), false);
+  });
+
+  it('projects current reviewed task navigation without persisting task text or source prose', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-compact-navigation-'));
+    try {
+      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'tests'), { recursive: true });
+      writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node --test"}}\n');
+      writeFileSync(join(root, 'src/writer.ts'), 'export function writeDerSet() { return true; }\n');
+      writeFileSync(join(root, 'tests/writer.test.ts'), "test('writes optional DER SET values', () => {});\n");
+      const navigationDocs = docs.map((row) => row.slug !== 'elements/writer' ? row : {
+        ...row,
+        body: `## Definition
+
+Writer implementation.
+
+## Evidence
+
+- \`package.json\`
+- Primary implementation: \`src/writer.ts#writeDerSet\`
+- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`
+
+## Includes
+
+DER SET output ordering and optional values.
+
+## Excludes
+
+DER parsing and unrelated encodings.
+`,
+      });
+      const result = buildCompactAgentBrief({
+        brief,
+        artifact,
+        docs: navigationDocs,
+        sourceRoot: root,
+        task: 'Encode an optional DER SET and keep present elements ordered.',
+      });
+      assert.equal(result.contract, 'agentBriefCompact:v2');
+      assert.equal(result.focus.taskNavigation.status, 'ready');
+      assert.equal(result.focus.taskNavigation.primary.symbol, 'writeDerSet');
+      assert.equal(result.focus.taskNavigation.primary.line, 1);
+      assert.equal(result.focus.taskNavigation.tests[0].symbol, 'writes optional DER SET values');
+      assert.deepEqual(result.focus.verification.recordedPaths, ['tests/writer.test.ts']);
+      assert.equal(result.focus.verification.manifest, 'package.json');
+      assert.equal(result.focus.verification.runner, 'package-script');
+      assert.match(result.handoffPrompt, /Verify: package-script\/package\.json; batch manifest; focused once, full once, no overlap\./);
+      assert.match(result.handoffPrompt, /Read: primary \+ supporting \+ tests \+ manifest; stop_on_match\./);
+      assert.equal(JSON.stringify(result).includes('return true'), false);
+      assert.equal(Object.hasOwn(result.task, 'text'), false);
+      assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('withdraws exact targets when source currentness changes after named-file reads', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-compact-navigation-race-'));
+    try {
+      mkdirSync(join(root, 'src'), { recursive: true });
+      mkdirSync(join(root, 'tests'), { recursive: true });
+      writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node --test"}}\n');
+      writeFileSync(join(root, 'src/writer.ts'), 'export function writeDerSet() { return true; }\n');
+      writeFileSync(join(root, 'tests/writer.test.ts'), "test('writes optional DER SET values', () => {});\n");
+      const navigationDocs = docs.map((row) => row.slug !== 'elements/writer' ? row : {
+        ...row,
+        body: `## Definition
+
+Writer implementation.
+
+## Evidence
+
+- \`tests/writer.test.ts\`
+- \`package.json\`
+- Primary implementation: \`src/writer.ts#writeDerSet\`
+- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`
+
+## Includes
+
+DER SET output ordering and optional values.
+
+## Excludes
+
+DER parsing and unrelated encodings.
+`,
+      });
+      const result = buildCompactAgentBrief({
+        brief,
+        artifact,
+        docs: navigationDocs,
+        sourceRoot: root,
+        confirmSourceCurrent: () => false,
+        task: 'Encode an optional DER SET and keep present elements ordered.',
+      });
+
+      assert.equal(result.focus.taskNavigation.status, 'blocked');
+      assert.equal(result.focus.taskNavigation.currentness, 'stale');
+      assert.equal(result.focus.taskNavigation.blockedBy, 'source_changed_during_navigation');
+      assert.equal(result.focus.taskNavigation.primary, null);
+      assert.deepEqual(result.focus.taskNavigation.tests, []);
+      assert.equal(result.status, 'needs_attention');
+      assert.equal(result.readiness.status, 'needs_attention');
+      assert.equal(result.currentness.source.status, 'review_required');
+      assert.equal(result.currentness.source.currentness, 'stale');
+      assert.equal(result.currentness.meaning.status, 'review_required');
+      assert.equal(result.meaningRepair.status, 'blocked');
+      assert.equal(result.meaningRepair.blockedBy, 'source_changed_during_navigation');
+      assert.equal(result.focus.evidenceAnchors[0].sourceStatus, 'stale_or_unavailable');
+      assert.equal(result.focus.verification.manifest, null);
+      assert.equal(result.focus.verification.runner, null);
+      assert.match(result.handoffPrompt, /Task navigation: blocked\/stale \(source_changed_during_navigation\)/);
+      assert.match(result.handoffPrompt, /Current source: review_required\/stale/);
+      assert.match(result.handoffPrompt, /Meaning: review_required/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('downgrades outer currentness when a previously current private binding disappears', () => {
+    const result = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs,
+      sourceRoot: null,
+      sourceAccessRequired: true,
+      task: 'Encode an optional DER SET and keep present elements ordered.',
+    });
+
+    assert.equal(result.focus.taskNavigation.status, 'blocked');
+    assert.equal(result.focus.taskNavigation.currentness, 'stale');
+    assert.equal(result.focus.taskNavigation.blockedBy, 'source_changed_during_navigation');
+    assert.equal(result.currentness.source.status, 'review_required');
+    assert.equal(result.currentness.source.currentness, 'stale');
+    assert.equal(result.currentness.meaning.status, 'review_required');
+    assert.equal(result.focus.evidenceAnchors[0].sourceStatus, 'stale_or_unavailable');
+  });
+
   it('selects a broad writing capability without promoting task text into proof', () => {
     const result = buildCompactAgentBrief({
       brief,
@@ -103,8 +268,9 @@ describe('compact agent brief projection', () => {
     assert.equal(result.focus.selectionPolicy.includes('not behavior proof'), true);
     assert.deepEqual(result.focus.evidenceAnchors.map((row) => row.slug), ['elements/writer']);
     assert.equal(result.focus.evidenceAnchors[0].sourceStatus, 'supported_current');
-    assert.equal(result.focus.verification.status, 'recorded');
-    assert.deepEqual(result.focus.verification.recordedPaths, ['tests/writer.test.ts']);
+    assert.equal(result.focus.verification.status, 'unknown');
+    assert.deepEqual(result.focus.verification.recordedPaths, []);
+    assert.ok(result.focus.unknowns.every((row) => row.length <= 96));
     assert.equal(Object.hasOwn(result.task, 'text'), false);
     assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
   });
@@ -230,10 +396,14 @@ describe('compact agent brief projection', () => {
       brief: staleBrief,
       artifact,
       docs,
+      sourceRoot: '/private/unreadable-source',
       task: 'Encode an optional DER SET.',
     });
     assert.equal(result.currentness.source.currentness, 'stale');
     assert.equal(result.focus.evidenceAnchors[0].sourceStatus, 'stale_or_unavailable');
+    assert.equal(result.focus.taskNavigation.status, 'blocked');
+    assert.equal(result.focus.taskNavigation.blockedBy, 'source_not_current');
+    assert.equal(result.focus.taskNavigation.primary, null);
   });
 
   it('rejects oversized tasks before projection', () => {
@@ -261,7 +431,7 @@ describe('compact agent brief projection', () => {
         docs,
         task: 'Encode an optional DER SET.',
       }),
-      /above the 8000-byte budget.*largest fields.*do not drop currentness, meaningRepair, qualifiers, or unknowns/i,
+      /above the 12000-byte budget.*largest fields.*do not drop currentness, meaningRepair, qualifiers, or unknowns/i,
     );
   });
 });

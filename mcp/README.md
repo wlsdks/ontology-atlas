@@ -56,7 +56,10 @@ MCP design contracts this package treats as release-critical:
   and tool annotations (`title`, `readOnlyHint`, `destructiveHint`,
   `idempotentHint`, `openWorldHint:false`).
 - Tool results must include `structuredContent`; when text JSON is also present,
-  the verify helpers compare both payloads for parity.
+  the verify helpers compare both payloads for parity. Compact agent brief v2 is
+  the versioned non-duplicating exception: typed facts stay in
+  `structuredContent`, `content.text` is the exact `handoffPrompt`, and the CLI
+  verifies that equality.
 - Read tools must stay side-effect free. Write tools must keep explicit
   `expected_mtime`, dry-run, `confirm`, `overwrite`, and `force` safety gates.
 - Every destructive dry-run exposes the same machine decision fields:
@@ -253,6 +256,21 @@ tool list. This is the trust-charter-aligned surface for third-party
 registration: a read consumer gets zero paths to the user's disk. Accepted
 truthy values: `1`, `true`, `yes`, `on` (case-insensitive); anything else
 leaves the full read+write surface intact.
+
+This is also the measured performance profile for a coding session that needs
+Atlas context but will not write ontology Markdown. For a known task, call only
+`connection_info` and compact `agent_brief`, then read the returned exact source
+batch when it is ready. In the matched product A/B this profile reduced pre-edit
+source reads from four to one. The final current treatment rerun against that
+frozen control reduced wall time by
+23.9% and uncached input by 19.1% against its frozen control; two order-reversed
+blind judges preferred it and found no hard failure. The complete two-call wire
+path measured 12,928 characters. The full 36-tool registration failed its
+earlier token gate, so no equivalent performance claim applies when the same
+session needs Atlas writes. Choose the full profile for write authority, not
+for this measured optimization. An unfamiliar repository preserved 10/10
+prospective coordinates, but its coding A/B lacked a local toolchain and did
+not earn a cross-repository speed claim.
 
 Steps for a fourth client:
 
@@ -504,16 +522,31 @@ the evidence row fail closed.
 explicit `project`; Atlas does not silently pick the first project. Omitted
 `detail` and `detail:"full"` return the complete diagnostic contract. For a
 known coding task, `detail:"compact"` requires a request-local `task` of at most
-2,000 characters and returns no more than 8,000 UTF-8 JSON bytes. The compact
-contract keeps final source/meaning currentness, `meaningRepair:v2`, approval
+2,000 characters and returns no more than 12,000 UTF-8 JSON bytes. The compact
+v2 contract keeps final source/meaning currentness, `meaningRepair:v2`, approval
 and no-auto-write/finalize guards, one broad capability selected from persisted
 evidence, cited element/path anchors, explicit impact/verification unknowns,
 one bounded full-body read, and an exact `detail:"full"` follow-up. It does not
 persist or echo raw task text, treat lexical matching as behavior proof, inspect
-raw source, or write the vault.
+raw source generally, or write the vault. An element may record human-reviewable
+Evidence coordinates as `Primary implementation`, `Supporting implementation`,
+and `Focused test` bullets. With a current bound source, `taskNavigation:v1`
+checks only those named files, requires each symbol/test to resolve uniquely,
+and returns current line locators plus the element's reviewed non-exhaustive
+Includes/Excludes boundary. Stale, missing, ambiguous, outside-root, symlinked,
+or unrecorded evidence emits no exact target; task text never creates one.
+After the complete named-file batch, Atlas rechecks the same source id,
+fingerprint, revision, and graph hash. Any mismatch detected by the exact-file
+guards or that final recheck withdraws the batch and downgrades outer
+source/meaning/readiness rather than mixing snapshots. A ready
+handoff batches any verified runner manifest, asks for separately named
+positive/negative regressions with exact observable output, and avoids
+overlapping full checks.
 For a known task, call compact `agent_brief` directly after `connection_info`;
-do not precede it with `workspace_brief` or a full inventory unless the question
-needs whole-vault health.
+when task navigation is ready, read all returned coordinates in one source batch
+before broad search. Otherwise use the bounded body/source follow-up and preserve
+the unknown. Do not precede it with `workspace_brief` or a full inventory unless
+the question needs whole-vault health.
 
 > **Impact truth contract.** `impact` and `blast_radius` follow declared
 > `depends_on` only. Structural relations are rejected and belong to
@@ -1267,8 +1300,10 @@ known-slug references, and resolved/external/unresolved edge breakdowns.
 It also requires every exercised direct read, write row-isolation smoke,
 destructive dry-run smoke, maintenance cursor, and
 `query_ontology` graph-query response to include `structuredContent`, and
-compares that payload with the text JSON payload, so agents can consume MCP
-results without reparsing text. Successful verify output summarizes the
+compares that payload with text JSON when both carry JSON. Compact agent brief
+v2 instead verifies `content.text === structuredContent.handoffPrompt`, so typed
+facts are not serialized twice. Agents can consume MCP results without reparsing
+human text. Successful verify output summarizes the
 direct-read, write, maintenance-cursor, and graph-query `structuredContent` coverage
 that was enforced in the run.
 Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and

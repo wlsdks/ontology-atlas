@@ -9,6 +9,82 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-31 — prospective exact-navigation construction and persisted handoff
+
+**Subject**: an unfamiliar MIT-licensed Go library for reading and writing a
+binary geospatial file format, pinned at one clean 2019 revision. The repository
+and its name remain outside the Atlas checkout. The six questions were frozen
+before construction, and the coding task remained unselected until after the
+reviewed vault and all coordinates were sealed.
+
+### Phase 1 — cost and construction truth
+
+| measurement | result | preceding clean exact-plan baseline |
+|---|---:|---:|
+| first valid MCP → first reviewable candidate | **529.329 s** | 257.384 s |
+| first valid MCP → successful finalizer | **3,081.883 s** | 2,594.799 s |
+| 40-minute exact-plan trigger | **FAIL by 681.883 s** | FAIL by 194.799 s |
+| released candidate | **6 concepts · 5 relations · 4 proposal gaps** | 9 concepts · 10 relations · 10 gaps |
+
+The gross clock is authoritative and is 487.084 seconds slower than the prior
+baseline. This run was deliberately interleaved with implementation review, so
+it is not a clean same-subject speed comparison. The first Atlas-only pass
+returned `filesScanned:0` and no file endpoints; the builder stopped instead of
+inventing navigation. A bounded source-aware construction exception then used
+one conventional file inventory and one declaration lookup only after meaning
+had selected two elements. The analyzer reverified ten prospective coordinates.
+
+The builder released one reviewable candidate after two rejected drafts. One
+helper schema invocation failed because its output directory already existed
+and was not retried; this run is not clean helper cold-start evidence. The
+independent lanes later discovered their schemas correctly. Their access windows
+overlapped for **548 seconds**. Qualification verified **50/50 claims** and
+**81/81 citations**, with 24 unique source fragments reused 161 times, before
+the exact owner accepted ten joined gaps. Mismatch join and pre-join acceptance
+both failed without output. The released six-concept/five-relation plan wrote
+exactly, validated with zero problems, compiled with zero issues/unresolved
+edges, connected to the pinned source, and finalized as `needs_evidence` with
+the accepted scope/domain/impact gaps still visible. Starter nodes were not in
+the released plan and therefore were not deleted.
+
+### Phase 2 — citation and coordinate accuracy
+
+- Unique cited source paths: **6 / 6** exist.
+- Proposal path/evidence occurrences: **20 / 20** resolve.
+- Prospective coordinates: **10 / 10** accurate, 9 unique.
+- Wrong, stale, ambiguous, or task-inferred coordinates: **0**.
+
+### Phase 3 — persisted-vault-only handoff
+
+A fresh reader received a sidecar-free copy of the written vault and no source,
+builder packet, hidden answers, or audit output. It selected the six project
+nodes and fetched all **6/6 full bodies** in one untruncated call.
+
+- Full answers: **1** (`q6`, exact recorded boundaries).
+- Partial answers: **5** (`q1`–`q5`), including direct impact explicitly unknown.
+- Unknown/unanswered questions: **0 / 0** at whole-question level.
+- Unanswered evidence list: **9** explicit items.
+- Atomic qualifier checks: **14**, missing qualifiers **0**.
+
+### Phase 4 — hallucination check
+
+- Persisted-reader atomic claims: **34 / 34 verified**.
+- Failed claims: **0**.
+- Source paths: **6 / 6**.
+- Coordinates: **10 / 10**.
+- Unsupported scope/impact promotion: **0**.
+
+### Performance generalization boundary
+
+The post-vault unseen coding A/B did not produce a product measurement. The host
+had no Go toolchain, so neither lane could run the required tests; a personal
+orchestration skill also captured the treatment before source work. Both are
+recorded setup contamination, not converted into Atlas success or failure.
+Therefore this row earns coordinate accuracy and persisted-handoff trust only;
+cross-repository coding speed remains unearned.
+
+---
+
 ## 2026-08-30 — schema-only qualification transport replay
 
 **Subject**: the same unfamiliar Apache-2.0 Rust library and pinned candidate

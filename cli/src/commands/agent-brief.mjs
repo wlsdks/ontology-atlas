@@ -104,7 +104,7 @@ export async function runAgentBrief(args) {
     process.stdout.write(formatGraphDbCliPack(result, vaultRoot).trimEnd() + '\n');
     return readinessExitCode(result, exitZero);
   }
-  if (result.contract === 'agentBriefCompact:v1') renderCompact(result);
+  if (result.contract === 'agentBriefCompact:v2') renderCompact(result);
   else render(result);
   const exitCode = readinessExitCode(result, exitZero);
   /*
@@ -662,6 +662,21 @@ function splitShellWords(input) {
 
 function renderCompact(result) {
   process.stdout.write(`${COLORS.bold}AGENT BRIEF${COLORS.reset} ${COLORS.dim}${result.project.slug} · compact${COLORS.reset}\n`);
+  const navigation = result.focus.taskNavigation;
+  process.stdout.write(
+    `${COLORS.bold}TASK NAVIGATION${COLORS.reset} ${navigation.status}/${navigation.currentness}`
+    + `${navigation.blockedBy ? ` · blocked ${navigation.blockedBy}` : ''}\n`,
+  );
+  process.stdout.write(`${COLORS.dim}PRIMARY${COLORS.reset} ${formatTaskNavigationTarget(navigation.primary)}\n`);
+  if (navigation.supporting) {
+    process.stdout.write(`${COLORS.dim}SUPPORTING${COLORS.reset} ${formatTaskNavigationTarget(navigation.supporting)}\n`);
+  }
+  process.stdout.write(
+    `${COLORS.dim}FOCUSED TESTS${COLORS.reset} `
+    + `${navigation.tests.length > 0 ? navigation.tests.map(formatTaskNavigationTarget).join(' · ') : 'unknown'}\n`,
+  );
+  process.stdout.write(`${COLORS.dim}IN${COLORS.reset} ${navigation.boundary.in || 'unknown'}\n`);
+  process.stdout.write(`${COLORS.dim}OUT${COLORS.reset} ${navigation.boundary.out || 'unknown'}\n`);
   process.stdout.write(`${COLORS.dim}STATUS${COLORS.reset} ${result.status} · ${result.readiness.status} ${result.readiness.score}/100\n`);
   process.stdout.write(
     `${COLORS.dim}VALIDATION${COLORS.reset} ${result.validation.status} · `
@@ -693,13 +708,28 @@ function renderCompact(result) {
     process.stdout.write(`  ${COLORS.dim}- ${anchor.slug}${anchor.path ? ` · ${anchor.path}` : ''} · ${anchor.sourceStatus}${COLORS.reset}\n`);
   }
   process.stdout.write(`${COLORS.dim}IMPACT${COLORS.reset} ${result.focus.impact.status} (${result.focus.impact.completeness})\n`);
-  process.stdout.write(`${COLORS.dim}VERIFY${COLORS.reset} ${result.focus.verification.status} · ${result.focus.verification.nextAction}\n`);
+  const verification = result.focus.verification;
+  const runner = verification.runner && verification.manifest
+    ? `${verification.runner} via ${verification.manifest}`
+    : 'runner unknown';
+  const verificationPaths = verification.recordedPaths.length > 0
+    ? verification.recordedPaths.join(' · ')
+    : 'tests unknown';
+  process.stdout.write(
+    `${COLORS.dim}VERIFY${COLORS.reset} ${verification.status} · ${runner} · ${verificationPaths} · ${verification.nextAction}\n`,
+  );
   if (result.focus.unknowns.length > 0) {
     process.stdout.write(`${COLORS.dim}UNKNOWNS${COLORS.reset}\n`);
     for (const unknown of result.focus.unknowns) process.stdout.write(`  ${COLORS.dim}- ${unknown}${COLORS.reset}\n`);
   }
   process.stdout.write(`${COLORS.dim}NEXT READ${COLORS.reset} ${formatToolCall(result.nextReads[0])}\n`);
   process.stdout.write(`${COLORS.dim}FULL DETAIL${COLORS.reset} ${formatToolCall(result.fullDetail)}\n`);
+}
+
+function formatTaskNavigationTarget(target) {
+  return target
+    ? `${target.path}#${target.symbol}:${target.line}${target.endLine === target.line ? '' : `-${target.endLine}`}`
+    : 'unknown';
 }
 
 function compactGapLabel(gap) {
@@ -1073,7 +1103,8 @@ function printUsage(stream = process.stderr) {
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
       `first MCP calls, investigation playbooks, traversal strategy, health coverage, and read-first write policy.\n` +
       `Use --json for repeatable agent handoff snapshots; use --prompt to print only .handoffPrompt.\n` +
-      `Use --compact --task TEXT for the request-local, selected-project handoff capped at 8000 UTF-8 JSON bytes.\n` +
+      `Use --compact --task TEXT for the request-local, selected-project handoff capped at 12000 UTF-8 JSON bytes.\n` +
+      `Compact v2 verifies reviewed path#symbol/test coordinates only against current bound source; stale, missing, ambiguous, or unsafe evidence returns no exact target.\n` +
       `Compact task text is not persisted and selects recorded evidence only; it never proves source behavior.\n` +
       `The current complete response remains the default while compact mode is qualified.\n` +
       `Use --graph-db-pack to print only executable CLI graph scan commands for connector-less sessions.\n` +

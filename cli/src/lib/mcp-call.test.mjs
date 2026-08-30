@@ -344,6 +344,32 @@ describe('mcp-call response parsing', () => {
     );
   });
 
+  it('accepts the compact v2 handoff prompt as the non-duplicated human content', () => {
+    const payload = {
+      contract: 'agentBriefCompact:v2',
+      handoffPrompt: 'Task navigation: ready/current',
+      focus: { taskNavigation: { status: 'ready' } },
+    };
+    assert.equal(
+      parseMcpToolResponse({
+        result: {
+          content: [{ text: payload.handoffPrompt }],
+          structuredContent: payload,
+        },
+      }),
+      payload,
+    );
+    assert.throws(
+      () => parseMcpToolResponse({
+        result: {
+          content: [{ text: 'different prompt' }],
+          structuredContent: payload,
+        },
+      }),
+      /structuredContent text is not JSON/,
+    );
+  });
+
   it('rejects successful responses when structuredContent drifts from text JSON', () => {
     assert.throws(
       () =>
