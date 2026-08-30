@@ -40,6 +40,81 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The spine is drawn under lower-only too, so seven boxes are a chain
+
+**Convened because**: the owner asked whether the design lead's recorded dissent
+of earlier the same day — "a canvas whose rest state shows one stroke reads as a
+spaced list rather than a graph" — was actually right. Both screens were measured
+rather than argued about.
+
+**The dissent's premise is false.** Its reason was that the reference the owner
+pointed at (Understand-Anything, MIT) "reads as a graph because every node is
+connected". Measured in its own live demo at 1512×945:
+
+| reference screen | nodes | edges | nodes with no edge |
+|---|---:|---:|---:|
+| project overview (its layer level, the one comparable to ours) | 8 | 5 | **3** |
+| inside one layer (Backend Microservices) | 13 | **0** | 13 |
+
+Three of its eight top-level boxes touch nothing, and they sit in the top row
+where the eye lands first; one level down it draws no edges at all and names
+cross-layer links as text stubs instead (*"API Contracts → 1 connection"*).
+Hovering a node at that level changes nothing: every edge keeps its `inactive`
+class and every node stays at opacity 1. It is less connected than we are, not
+more. The whole project is 393 nodes and 394 edges, and none of that graph is on
+that screen.
+
+**The dissent's conclusion is right anyway, for a reason it did not give.**
+Measured on our own two profiles at the same size:
+
+| profile | policy | boxes | strokes at rest | boxes with no stroke |
+|---|---|---:|---:|---:|
+| Storefront Services, 4 roles | `explicit` | 4 | 3 | **0** |
+| Atlas Web Workbench, 7 roles | `lower-only` | 7 | 3 | **3** |
+
+The measured profile drew seven equal boxes in one column, joined by two red
+dashed violation arcs and one short stroke at the bottom, with Routes,
+Application shell and Features touching nothing. Worse than the shape: five of
+those boxes stated an outgoing import count — `45`, `16`, `26,000`, `314`, `143` —
+while the canvas drew none of those strokes. Views said twenty-six thousand
+imports leave it and had no line leaving it. That is not a comparison to anybody;
+it is one screen's text contradicting its own drawing.
+
+**The cause was not the violation rule.** `buildArchitectureGraph` built permitted
+edges only when `policy === 'explicit'`, so a `lower-only` profile got no spine at
+all; the measured traffic was then almost entirely column skips, which the rest
+state holds back. Three strokes survived out of eight measured edges.
+
+**Decision**: under `lower-only`, draw the adjacent pairs and nothing else. Six
+strokes for seven roles, not twenty-one. The 2026-08-28 (3) argument stands for
+the 15 skips: each of them means "everything to my right", which the column order
+already carries. It does not stand for the 6, because the order says which role
+comes before which and only the stroke says they are a chain rather than a stack.
+
+**Refused**: drawing all measured traffic at rest, which is what the dissent
+proposed. It does not address the cause, and it restores the clutter the
+skip-hiding rule exists to prevent. Also refused, again: the reference's second
+palette, its glass and its `Click to explore →` trailing arrow, which this
+repository's own rules forbid.
+
+**Applied rule**: smallest slice — one filter in one function; no new data, no new
+route, no new mark, no schema change.
+**Signed**: stark
+
+**Recorded dissent**: the original argument was that under `lower-only` a
+permitted stroke cannot answer "why am I here", because the whole set is derivable
+from the order. That is still literally true of the six: a reader who trusts the
+column order can derive them. This record's answer is that deriving is not
+reading, and a drawing whose boxes touch nothing is not asking to be derived from.
+**Falsifier**: a reader looks at a measured profile and reads a spine stroke as a
+measured count — asks how many imports cross `routing → app` and expects the
+drawing to answer. If that is observed, mixing a rule stroke and a count stroke in
+one rest state failed, and the spine needs its own mark or its own state.
+**Revisit**: at the first outside walkthrough of this screen, or when a profile
+with more than one column per rank is measured.
+
+**Status**: standing
+
 ## 2026-08-30 — A role box states what the role is; its counts wait in the panel
 
 **Convened because**: the owner pointed at an open-source project (Understand-
@@ -1779,8 +1854,12 @@ strokes come out the way the arcs did.
 **Review**: after that walkthrough, and again if a real profile passes roughly
 fifteen roles, at which point the no-layout-library decision is the one to reopen.
 
-**Status**: standing. **Accountable**: owner (asked for the shape, rejected the
-first attempt, and approved the rewritten plan).
+**Status**: parts 1 and 3 standing. **Part 2 partly overturned on 2026-08-30**
+("The spine is drawn under lower-only too", below): the 15 skips stay undrawn for
+the reason given here, and the 6 adjacent pairs are now drawn, because "the
+columns already say it" turned out to say the order without saying the chain.
+**Accountable**: owner (asked for the shape, rejected the first attempt, and
+approved the rewritten plan).
 
 ## 2026-08-28 (2) — A rule the screen does not print is a rule the reader does not have
 

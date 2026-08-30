@@ -229,14 +229,15 @@ describe('ArchitectureWorkbench', () => {
   });
 
   /*
-   * ⚠️ **The policy is still fully stated, and the columns are how.** Under `lower-only` the
-   * permitted set is "everything to my right", which the column order already says: this profile
-   * has 21 permitted edges among 7 roles and drawing them would restate the order twenty-one
-   * times (`docs/DECISIONS.md`, 2026-08-28 (3)). What must survive that decision, and what this
-   * test pins: the boxes appear in dependency order left to right; no permitted stroke is drawn;
-   * and the assistive list still reads every layer's reach aloud, layer by layer.
+   * ⚠️ **The policy is still fully stated; the columns and the spine share the work.** Under
+   * `lower-only` the permitted set is "everything to my right", and this profile has 21 of them
+   * among 7 roles. Drawing all 21 restates the order twenty-one times and stays refused
+   * (`docs/DECISIONS.md`, 2026-08-28 (3)); drawing none left the measured screen a stack of seven
+   * boxes rather than a chain, which the 2026-08-30 record overturns. What this test pins now:
+   * the boxes appear in dependency order; exactly the six adjacent pairs are drawn and no skip is;
+   * and the assistive list still reads every layer's full reach aloud, layer by layer.
    */
-  it('states the whole policy through the columns, drawing no derivable edge', () => {
+  it('states the whole policy through the columns and the spine, drawing no skip', () => {
     renderWorkbench();
     const order = ['routing', 'app', 'views', 'widgets', 'features', 'entities', 'shared'];
 
@@ -245,8 +246,18 @@ describe('ArchitectureWorkbench', () => {
       (box) => box.getAttribute('data-graph-box')!,
     );
     expect(boxOrder, 'boxes must appear in dependency order').toEqual(order);
-    expect(graph).toHaveAttribute('data-edge-source', 'none');
-    expect(screen.queryByTestId('architecture-graph-edges')).toBeNull();
+    expect(graph).toHaveAttribute('data-edge-source', 'permitted');
+    const drawn = [...graph.querySelectorAll('path[data-edge-from]')].map(
+      (path) => `${path.getAttribute('data-edge-from')}>${path.getAttribute('data-edge-to')}`,
+    );
+    expect(drawn.sort()).toEqual([
+      'app>views',
+      'entities>shared',
+      'features>entities',
+      'routing>app',
+      'views>widgets',
+      'widgets>features',
+    ]);
 
     // The assistive list keeps stating the same reach in its own words.
     expect(

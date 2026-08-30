@@ -78,15 +78,30 @@ export function buildArchitectureGraph(
     row.forEach((id) => columnOf.set(id, column));
   });
 
-  const permitted: GraphEdge[] =
-    layout.policy === 'explicit'
-      ? layout.edges.map((edge) => ({
-          from: edge.from,
-          to: edge.to,
-          kind: 'permitted' as const,
-          columnSpan: Math.abs((columnOf.get(edge.to) ?? 0) - (columnOf.get(edge.from) ?? 0)),
-        }))
-      : [];
+  const spanOf = (edge: { from: string; to: string }) =>
+    Math.abs((columnOf.get(edge.to) ?? 0) - (columnOf.get(edge.from) ?? 0));
+
+  /*
+   * ⚠️ **Under `lower-only` the spine is drawn and the rest is not** (2026-08-30). Refusing all 21
+   * was right about the 15 and wrong about the 6: with no permitted stroke at all, the measured
+   * dogfood profile drew seven equal boxes in one column joined by three strokes, three roles
+   * touching nothing, while five of those boxes stated an outgoing import count (`45`, `16`,
+   * `26,000`, `314`, `143`) whose stroke the canvas never drew. A reader was asked to believe a
+   * number the drawing contradicted.
+   *
+   * The adjacent pair is the one permitted edge the column order cannot restate. The order says
+   * which role comes before which; only the stroke says they are a chain rather than a stack. The
+   * skips stay refused under this policy for the original reason — each of them means "everything
+   * to my right", which the order already carries.
+   */
+  const permitted: GraphEdge[] = layout.edges
+    .filter((edge) => layout.policy === 'explicit' || spanOf(edge) === 1)
+    .map((edge) => ({
+      from: edge.from,
+      to: edge.to,
+      kind: 'permitted' as const,
+      columnSpan: spanOf(edge),
+    }));
 
   /*
    * Same-role traffic is excluded rather than drawn faintly. It is the largest measured number on

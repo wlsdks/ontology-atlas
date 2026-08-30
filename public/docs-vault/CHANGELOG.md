@@ -7,6 +7,22 @@
 
 ---
 
+## 2026-08-30 · The architecture chain is drawn as a chain
+
+- On a measured profile the canvas used to draw no rule strokes at all: seven
+  role boxes stood in one column joined only by the two violation arcs and one
+  short stroke, and Routes, Application shell and Features touched nothing. Five
+  boxes stated how many imports leave them (45, 16, 26,000, 314, 143) while the
+  drawing showed none of those strokes, so the text and the picture disagreed on
+  the same screen.
+- The chain is now drawn: each role connects to the next one down, six strokes
+  for seven roles. Every box is on the chain, and the canvas still fits one
+  screen at 1512 with nothing below the fold.
+- What is still not drawn: the fifteen crossings that skip a role. Each of those
+  means "everything below me", which the order already says, and they arrive as
+  before when a role is chosen. A profile that declares its rules one by one is
+  unchanged, because its strokes were never derivable from the order.
+
 ## 2026-08-30 · A role box says what the role is
 
 - Each box now prints the reviewed profile's own one-line summary for that role,
