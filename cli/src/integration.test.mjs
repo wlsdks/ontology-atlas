@@ -6628,14 +6628,16 @@ await test('agent-brief --project — selects one project in a multi-project vau
     assert.equal(compactResult.code, 0, `stdout: ${compactResult.stdout}\nstderr: ${compactResult.stderr}`);
     assert.equal(compactResult.stderr, '');
     const compact = JSON.parse(compactResult.stdout);
-    assert.equal(compact.contract, 'agentBriefCompact:v1');
+    assert.equal(compact.contract, 'agentBriefCompact:v2');
     assert.equal(compact.detail, 'compact');
     assert.equal(compact.project.slug, 'projects/beta');
     assert.equal(compact.project.scope.nodes, 3);
     assert.equal(compact.validation.status, 'warn');
     assert.equal(compact.validation.warningFiles, 1);
+    assert.equal(compact.focus.taskNavigation.status, 'blocked');
+    assert.equal(compact.focus.taskNavigation.blockedBy, 'source_not_current');
     assert.doesNotMatch(JSON.stringify(compact), /projects\/alpha|domains\/alpha|capabilities\/alpha/);
-    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), 'utf8') <= 8000);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), 'utf8') <= 12000);
 
     const compactHuman = await run([
       'agent-brief',
@@ -6649,6 +6651,8 @@ await test('agent-brief --project — selects one project in a multi-project vau
     ]);
     assert.equal(compactHuman.code, 0, `stdout: ${compactHuman.stdout}\nstderr: ${compactHuman.stderr}`);
     const human = stripAnsi(compactHuman.stdout);
+    assert.match(human, /TASK NAVIGATION\s+blocked\/(?:stale|unavailable) · blocked source_not_current/);
+    assert.match(human, /PRIMARY\s+unknown/);
     assert.match(human, /STATUS\s+needs_attention · needs_shape \d+\/100/);
     assert.match(human, /VALIDATION\s+warn · 0 errors · 1 warnings/);
     assert.match(human, /SOURCE\s+\S+\/\S+ · gap \S+ · next \S+/);
@@ -6671,6 +6675,92 @@ await test('agent-brief --project — selects one project in a multi-project vau
     assert.match(compactGraphPack.stderr, /--compact cannot be used with --graph-db-pack/);
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-brief --compact — prints current reviewed navigation before trust diagnostics', async () => {
+  const vault = withVault([
+    {
+      slug: 'project',
+      content: '---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n',
+    },
+    {
+      slug: 'domains/encoding',
+      content: '---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n',
+    },
+    {
+      slug: 'capabilities/write-values',
+      content: '---\nkind: capability\ntitle: Write DER Values\ndomain: domains/encoding\nelements: [elements/writer]\n---\n## Definition\n\nWrite DER Values produces encoded output.\n',
+    },
+    {
+      slug: 'elements/writer',
+      content: `---
+kind: element
+title: Writer Implementation
+domain: domains/encoding
+path: src/writer.ts
+---
+## Definition
+
+Writer Implementation anchors encoded output.
+
+## Evidence
+
+- \`package.json\`
+- Primary implementation: \`src/writer.ts#writeDerSet\`
+- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`
+
+## Includes
+
+DER SET output ordering and optional values.
+
+## Excludes
+
+DER parsing and unrelated encodings.
+`,
+    },
+  ]);
+  const repo = mkdtempSync(join(tmpdir(), 'cli-task-navigation-repo-'));
+  try {
+    mkdirSync(join(repo, 'src'), { recursive: true });
+    mkdirSync(join(repo, 'tests'), { recursive: true });
+    writeFileSync(join(repo, 'package.json'), '{"scripts":{"test":"node --test"}}\n');
+    writeFileSync(join(repo, 'src/writer.ts'), 'export function writeDerSet() { return true; }\n');
+    writeFileSync(join(repo, 'tests/writer.test.ts'), "test('writes optional DER SET values', () => {});\n");
+    const connect = await run([
+      'connect-source',
+      'project',
+      vault,
+      '--root',
+      repo,
+      '--confirm',
+      '--json',
+    ]);
+    assert.equal(connect.code, 0, `stdout: ${connect.stdout}\nstderr: ${connect.stderr}`);
+
+    const result = await run([
+      'agent-brief',
+      vault,
+      '--project',
+      'project',
+      '--compact',
+      '--task',
+      'Write an optional DER SET value.',
+      '--exit-zero',
+    ]);
+    assert.equal(result.code, 0, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
+    const human = stripAnsi(result.stdout);
+    assert.match(human, /TASK NAVIGATION\s+ready\/current/);
+    assert.match(human, /PRIMARY\s+src\/writer\.ts#writeDerSet:1/);
+    assert.match(human, /FOCUSED TESTS\s+tests\/writer\.test\.ts#writes optional DER SET values:1/);
+    assert.match(human, /IN\s+DER SET output ordering and optional values/);
+    assert.match(human, /OUT\s+DER parsing and unrelated encodings/);
+    assert.match(human, /VERIFY\s+recorded · package-script via package\.json · tests\/writer\.test\.ts/);
+    assert.ok(human.indexOf('TASK NAVIGATION') < human.indexOf('STATUS'));
+    assert.doesNotMatch(human, new RegExp(repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
   }
 });
 

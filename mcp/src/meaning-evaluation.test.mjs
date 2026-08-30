@@ -795,6 +795,51 @@ test('repository proposal validates the complete approved graph and returns an e
   });
 });
 
+test('repository proposal carries reviewed navigation coordinates through the existing evidence strings', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  proposal.elements = [{
+    slug: 'elements/checkout-entrypoint',
+    title: 'Checkout Entrypoint',
+    definition: 'The source entrypoint that implements checkout behavior.',
+    domain: 'domains/purchase',
+    path: 'src/features/checkout/index.ts',
+    evidence: [
+      'src/features/checkout',
+      'navigation:primary:src/features/checkout/index.ts#checkoutFeature',
+    ],
+    confidence: 0.9,
+    includes: ['The checkout feature entrypoint.'],
+    excludes: ['Inventory reconciliation.'],
+    uncertainty: 'Other helper symbols remain unknown.',
+  }];
+  proposal.relations.push({
+    from: 'capabilities/checkout',
+    to: 'elements/checkout-entrypoint',
+    type: 'elements',
+    why: 'The checkout entrypoint implements checkout behavior.',
+    evidence: ['src/features/checkout'],
+    confidence: 0.9,
+  });
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+  assert.equal(result.status, 'pass', JSON.stringify(result.findings));
+  const element = result.writePlan.concepts.find((row) => row.slug === 'elements/checkout-entrypoint');
+  assert.match(
+    element.body,
+    /- Primary implementation: `src\/features\/checkout\/index\.ts#checkoutFeature`/,
+  );
+  assert.doesNotMatch(element.body, /navigation:primary:/);
+
+  const missing = structuredClone(proposal);
+  missing.elements[0].evidence[1] =
+    'navigation:primary:src/features/checkout/index.ts#notARealSymbol';
+  const rejected = validateMeaningProposalAgainstAnalysis(analysis, missing);
+  assert.equal(rejected.status, 'fail');
+  assert.ok(rejected.findings.some((row) => row.code === 'navigation-symbol-not-found'));
+  assert.equal(rejected.writePlan, undefined);
+});
+
 test('repository proposal fails closed on incomplete or invalid approved graph rows', () => {
   const analysis = analyzeRepoStructure(fixtureRoot);
   const proposal = repositoryProposalFromGolden(expected);

@@ -138,6 +138,47 @@ approve it. A path may support an `element`, but even there the node names the
 role, not the path. Process order remains source-bound evidence or a derived
 Skills view; it is not silently promoted into a sixth kind or inferred graph.
 
+#### 2.1.1 Reviewed task-navigation coordinates
+
+An `element` MAY carry a bounded, human-reviewable source-navigation receipt in
+its Markdown `## Evidence` section:
+
+```md
+- Primary implementation: `src/path.ext#QualifiedSymbol`
+- Supporting implementation: `src/other.ext#QualifiedSymbol`
+- Focused test: `tests/path.ext#test symbol or name`
+```
+
+The limits are one primary coordinate, one supporting coordinate, and three
+focused tests per element. The corresponding `analyze_repo_structure` proposal
+uses the existing evidence-string form
+`navigation:<primary|supporting|test>:<path>#<symbol>` and renders the bullets
+above; it adds no frontmatter field, kind, relation, or function node. Keep an
+ordinary repository citation beside these navigation annotations.
+
+Coordinates are structural evidence for a later first source read, not proof of
+the symbol's behavior, ownership, runtime impact, or completeness. Authors MUST
+verify the exact symbol in the exact current file before proposing it and MUST
+NOT persist line numbers, commands, snippets, raw task text, or coordinates
+inferred only after seeing a later coding task. A task may select an already
+reviewed element; it cannot create a coordinate. Readers MAY ignore this body
+convention. Atlas compact v2 resolves current line locators only while the bound
+project source is current and every named file/symbol is safe and unique;
+otherwise it emits no exact target. Test coordinates must resolve as actual test
+declarations/calls on a test surface, not merely as a nearby function name.
+After reading the named files, Atlas MUST reproduce the same source id,
+fingerprint, revision, and project graph hash. A changed/disconnected/replaced
+binding withdraws every target and downgrades the enclosing source/meaning state;
+one response cannot combine old currentness with new coordinates. `Includes` and
+`Excludes` remain the reviewed, non-exhaustive IN/OUT boundary.
+
+Business meaning construction remains Atlas-evidence-only. After that evidence
+has selected a stable element, a source-aware builder MAY inspect one bounded
+local source-file inventory and only the selected implementation/support/test
+files to author this optional receipt. Those native reads may refine structural
+navigation; they MUST NOT create or strengthen project, domain, capability,
+behavior, dependency, or impact meaning.
+
 ### 2.2 Direct `is_a` / `broader` test
 
 Atlas uses `is_a` only as an application-level **direct subsumption** claim.

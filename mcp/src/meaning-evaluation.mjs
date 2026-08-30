@@ -5,6 +5,10 @@ import { WRITE_RELATION_TYPE_VALUES } from './ontology-engine.mjs';
 import { MEANING_COMPETENCY_QUESTIONS } from './meaning-assessment.mjs';
 import { evaluateQuantifiedCompetencyCoverage } from './competency-coverage.mjs';
 import { renderProjectCompetencyMarkdown } from './project-meaning-receipt.mjs';
+import {
+  parseTaskNavigationEvidenceSource,
+  verifyTaskNavigationEvidenceCoordinate,
+} from './task-navigation-evidence.mjs';
 
 const DEFAULT_THRESHOLDS = Object.freeze({
   conceptPrecision: 0.8,
@@ -441,8 +445,26 @@ export function validateMeaningProposalAgainstAnalysis(
         }
       }
     }
+    const navigationEvidence = (concept.evidence ?? [])
+      .map((source) => ({ source, parsed: parseTaskNavigationEvidenceSource(source) }))
+      .filter((row) => row.parsed !== null);
+    const isElement = proposal.elements.includes(concept);
+    if (!isElement && navigationEvidence.length > 0) {
+      findings.push(finding(
+        'navigation-evidence-non-element',
+        'error',
+        `${path}.evidence`,
+        'Task-navigation coordinates are implementation evidence and may be authored only on element concepts.',
+        navigationEvidence.map((row) => row.source),
+      ));
+    }
     validateCitationsAndConfidence({
-      row: concept,
+      row: {
+        ...concept,
+        evidence: (concept.evidence ?? []).filter(
+          (source) => parseTaskNavigationEvidenceSource(source) === null,
+        ),
+      },
       path,
       availableSources,
       evidenceBySource,
@@ -521,6 +543,12 @@ export function validateMeaningProposalAgainstAnalysis(
         [element.path].filter(nonEmpty),
       ));
     }
+    validateElementTaskNavigationEvidence({
+      element,
+      index,
+      rootPath: analysis.rootPath,
+      findings,
+    });
   }
 
   const relationKeys = new Set();
@@ -1167,6 +1195,59 @@ function validateCitationsAndConfidence({
   }
 }
 
+function navigationFindingCode(code) {
+  return `navigation-${String(code).replaceAll('_', '-')}`;
+}
+
+function validateElementTaskNavigationEvidence({ element, index, rootPath, findings }) {
+  const parsedRows = [];
+  for (const source of element.evidence ?? []) {
+    const parsed = parseTaskNavigationEvidenceSource(source);
+    if (parsed === null) continue;
+    if (!parsed.ok) {
+      findings.push(finding(
+        navigationFindingCode(parsed.diagnostic.code),
+        'error',
+        `elements[${index}].evidence`,
+        'Task-navigation evidence must use navigation:<primary|supporting|test>:<path>#<symbol>.',
+        [source],
+      ));
+      continue;
+    }
+    parsedRows.push({ source, coordinate: parsed.coordinate });
+  }
+  const uniqueRows = [];
+  const seen = new Set();
+  for (const row of parsedRows) {
+    const key = `${row.coordinate.role}\0${row.coordinate.path}\0${row.coordinate.symbol}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    uniqueRows.push(row);
+  }
+  for (const [role, limit] of Object.entries({ primary: 1, supporting: 1, test: 3 })) {
+    const rows = uniqueRows.filter((row) => row.coordinate.role === role);
+    if (rows.length <= limit) continue;
+    findings.push(finding(
+      'navigation-coordinate-cardinality',
+      'error',
+      `elements[${index}].evidence`,
+      `Task-navigation evidence permits at most ${limit} ${role} coordinate(s); received ${rows.length}.`,
+      rows.map((row) => row.source),
+    ));
+  }
+  for (const row of uniqueRows) {
+    const verified = verifyTaskNavigationEvidenceCoordinate(rootPath, row.coordinate);
+    if (verified.target) continue;
+    findings.push(finding(
+      navigationFindingCode(verified.diagnostic.code),
+      'error',
+      `elements[${index}].evidence`,
+      `Task-navigation coordinate is not uniquely verifiable in the current source: ${row.coordinate.path}#${row.coordinate.symbol}.`,
+      [row.source],
+    ));
+  }
+}
+
 function repositoryPathExists(rootPath, value) {
   if (!nonEmpty(rootPath) || !nonEmpty(value) || isAbsolute(value)) return false;
   const absoluteRoot = resolve(rootPath);
@@ -1230,10 +1311,22 @@ function buildWritePlan(proposal) {
   };
 }
 
+function renderConceptEvidenceSource(source) {
+  const parsed = parseTaskNavigationEvidenceSource(source);
+  if (!parsed?.ok) return `- \`${source}\``;
+  const labels = {
+    primary: 'Primary implementation',
+    supporting: 'Supporting implementation',
+    test: 'Focused test',
+  };
+  const coordinate = parsed.coordinate;
+  return `- ${labels[coordinate.role]}: \`${coordinate.path}#${coordinate.symbol}\``;
+}
+
 function buildConceptBody(concept, relations, competencyAnswers = null) {
   const sections = [
     ['Definition', concept.definition],
-    ['Evidence', concept.evidence.map((source) => `- \`${source}\``).join('\n')],
+    ['Evidence', concept.evidence.map(renderConceptEvidenceSource).join('\n')],
     ['Confidence', String(concept.confidence)],
   ];
   if (concept.includes?.length) {

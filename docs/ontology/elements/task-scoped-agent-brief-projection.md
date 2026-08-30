@@ -16,24 +16,32 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 
 - `mcp/src/agent-brief-compact.mjs`
 - `mcp/src/index.js`
+- `mcp/package.json`
 - `cli/src/commands/agent-brief.mjs`
 - `mcp/src/agent-brief-compact.test.mjs`
 - `mcp/src/integration.test.mjs`
 - `cli/src/integration.test.mjs`
+- Primary implementation: `mcp/src/agent-brief-compact.mjs#buildCompactAgentBrief`
+- Supporting implementation: `mcp/src/index.js#queryOntologyTool`
+- Focused test: `mcp/src/task-navigation-evidence.test.mjs#resolves reviewed JavaScript functions and named tests without source snippets`
+- Focused test: `mcp/src/agent-brief-compact.test.mjs#projects current reviewed task navigation without persisting task text or source prose`
+- Focused test: `mcp/src/integration.test.mjs#query_ontology agent_brief: current reviewed coordinates become one exact task-navigation batch`
 
 ## Includes
 
 - Project-scoped counts, hubs, entrypoints, and final readiness wording.
-- A compact opt-in response with an 8,000-byte UTF-8 JSON ceiling.
+- A compact v2 opt-in response with a 12,000-byte UTF-8 JSON ceiling.
 - Lexical selection of one broad persisted capability and only task-matched element anchors.
+- A source-current task-navigation receipt for reviewed implementation, supporting, and focused-test coordinates.
 - Whole-vault validation, source and meaning currentness, approval guards, and explicit unknowns.
 
 ## Excludes
 
 - Source behavior inference or automatic semantic approval.
+- Repository-wide symbol search, call-graph construction, or task-inferred coordinates.
 - Raw task persistence, a new MCP tool, a new vault kind, or narrow task-named capabilities.
 - Compact-by-default promotion before measured coding outcomes meet the recorded gates.
 
 ## Uncertainty
 
-The repeated historical trial reduced MCP calls from 17 to 4 and made blind patch quality a tie, but overall wall-time and uncached-token overhead still missed the promotion thresholds. Compact delivery remains explicit opt-in.
+The latest same-task frozen-control run reduced source reads from four to one, wall time by 23.9%, and uncached input by 19.1%; two order-reversed blind judges preferred the treatment. Cross-repository speed remains unearned because the prospective unfamiliar-repository coding lane could not start without its required toolchain, so compact delivery remains explicit opt-in.

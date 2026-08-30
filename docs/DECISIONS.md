@@ -40,6 +40,271 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — Current exact handoff passes one read-only coding lane; cross-repository speed remains unearned
+
+**Trigger**: independent review invalidated the preceding performance evidence
+after the implementation added a second source-currentness probe and removed
+duplicated MCP transport. It also found wrong-span and false-test cases in
+comments, strings, regexes, nested templates/block comments, JavaScript test
+helpers, Rust owner and attribute parsing, Go receivers, and Python indentation
+or triple-quoted docstrings. The standing decision
+requires current code, actual wire bytes, and an unseen prospective trial.
+
+**Current known-task result**: the final treatment reran against the immediately
+preceding frozen Rust control after one task-independent test-quality correction.
+Pre-edit source reads fell from four to one. Wall time fell from 179.59s to
+136.59s (-23.9%), and uncached input fell from 49,959 to 40,401 (-19.1%). Both
+lanes passed the focused and complete offline suites. Two fresh blind judges,
+with patch order reversed, preferred the treatment's separately named positive
+and negative regressions; hard failures were zero. This is a frozen-control
+treatment rerun, not a claim of zero environment variance.
+
+**Transport result**: measuring the complete JSON-RPC responses exposed the old
+result-only count as incomplete: before repair, `content.text` duplicated the
+compact JSON already present in `structuredContent` and the two-call wire path
+was 24,262 characters. Compact v2 now keeps typed facts once in
+`structuredContent` and uses the exact `handoffPrompt` as human text. The current
+dogfood measurement is 11,646 pretty-JSON bytes and 12,928 total wire characters
+for `connection_info` plus compact; both limits are automated gates.
+
+**Prospective unseen result**: an unfamiliar MIT-licensed Go file-format library
+was selected before inspection. The first Atlas-only construction attempt
+correctly stopped because `infer_imports` exposed zero files and no exact
+endpoint; it did not invent coordinates. The bounded source-aware construction
+exception then produced one reviewable six-concept/five-relation plan with ten
+coordinates chosen before any coding task. Independent lanes overlapped for
+548 seconds: 50/50 frozen claims and 81/81 citations passed, all six cited paths
+existed, and all ten coordinates were accurate. A fresh persisted-vault-only
+reader fetched six full bodies and answered one question fully and five
+partially, preserving an unknown direct-impact result. The full first-MCP to
+finalizer clock was 3,081.883s, missing the 2,400s construction target; the first
+reviewable candidate took 529.329s. A later unseen coding A/B was a setup
+failure—the machine had no Go toolchain, and a personal orchestration skill
+captured the treatment before source work—so it supplies no cross-repository
+wall/token evidence.
+
+**Decision (accountable: jinan)**: keep compact v2 and recommend the existing
+20-tool `OATLAS_READ_ONLY=1` path only for a known coding task that does not need
+Atlas writes. The agent calls `connection_info`, then compact `agent_brief`,
+reads primary/supporting/tests and any verified manifest in one batch, and stops
+on match. A ready prompt requires named positive and negative regression
+coverage and exact observable output. `content.text` is that prompt;
+`structuredContent` is the typed contract, and the CLI accepts this one
+versioned non-duplicated form while retaining parity checks elsewhere.
+
+Exact targets remain element-only reviewed evidence. After the complete
+named-file batch, Atlas rechecks the same source id, fingerprint, revision, and graph hash;
+a mismatch detected by the exact-file guards or that final recheck withdraws
+all coordinates and downgrades outer source, meaning, readiness, anchors, and
+repair state together. A syntax
+case the bounded verifier cannot establish returns no exact span. The optional
+construction enrichment may inspect only selected local endpoints and their
+bounded supporting/tests; it cannot establish business meaning or impact.
+
+**Recorded dissent**: this proves a valuable repeat task, not a general coding
+speedup. The current compact pretty payload has limited headroom, exact symbols
+add construction maintenance, the unseen build was slower than the 40-minute
+target, and the unseen coding lane never obtained a valid toolchain-isolated
+measurement.
+
+**Falsifier**: withdraw even the known-task claim if the automated two-call wire
+gate reaches 20,000 characters, compact reaches 12,000 bytes, any stale/wrong
+coordinate escapes, source reads fail to fall, wall exceeds +20%, uncached input
+exceeds +25%, a hard failure appears, or blind quality regresses. Do not claim
+cross-repository performance until a fresh unseen subject completes the same
+coding A/B with its toolchain present and agent skills isolated. The full
+36-tool lane remains explicitly unqualified.
+
+**Status**: valid for the measured read-only known-task lane; supersedes the
+preceding 9.3%/12.8%/19,314 result as current evidence. No default promotion and
+no general or full-profile performance claim.
+
+---
+
+## 2026-08-30 — Exact handoff earns the read-only coding lane, not the full MCP lane
+
+**Trigger**: compact v2 passed its frozen static shadow, then ran three matched
+product A/B iterations against the same pristine Rust repair. The first used
+the full 36-tool MCP registration. The second used the existing 20-tool
+`OATLAS_READ_ONLY=1` registration but returned start lines without a complete
+source batch. The final read-only iteration returned current start/end spans,
+the runner and manifest, and an explicit `stop_on_match` read policy.
+
+**Observed result**: the full registration reduced pre-edit source commands
+from four to two but failed the product gate: the complete pre-source MCP path
+was 20,731 characters and uncached input rose from 44,129 to 61,273 (+38.9%).
+The first read-only packet stayed inside wall and token limits but did not cut
+source exploration (four to five commands). In the final matched read-only A/B,
+pre-edit source commands fell from eight to one, wall time fell from 204.37s to
+185.46s (-9.3%), and uncached input changed from 53,558 to 60,415 (+12.8%),
+inside the standing +25% ceiling. Both lanes passed focused and full tests.
+Two fresh blind judges, with patch order reversed, both preferred the exact-
+handoff patch; neither found a hard failure. A direct JSON-RPC measurement put
+`connection_info` plus compact v2 at 19,314 characters, 686 below the 20,000-
+character gate.
+
+**Decision (accountable: jinan)**: recommend the existing
+`OATLAS_READ_ONLY=1` registration as the measured performance profile for a
+known coding task whose Atlas work is read-only. Its shortest path is exactly
+`connection_info` followed by one compact `agent_brief`; when
+`taskNavigation.status` is `ready`, the agent reads that complete source batch
+and stops broad discovery unless the current source contradicts it. Keep the
+full read/write registration for sessions that need ontology writes, but make
+no exploration, wall-time, or token improvement claim for that lane. This does
+not flip either the default detail or the default tool profile.
+
+**Recorded dissent**: a +12.8% uncached-input increase is a passed guardrail,
+not a token reduction, and one familiar Rust task can still reward a packet
+tailored to its answer. A 686-character context margin is also too small to
+absorb casual response growth.
+
+**Falsifier**: withdraw the general improvement claim if the prospective unseen
+repository trial emits any wrong coordinate, has a hard or blind-patch quality
+regression, fails to reduce pre-edit discovery materially, or crosses either
+the +20% wall or +25% uncached-input ceiling. Any future read-only schema growth
+that takes the measured two-call path to 20,000 characters is an immediate
+regression. The full MCP lane stays explicitly unqualified until it passes its
+own matched trial.
+
+**Status**: valid for the read-only known-task lane; prospective generalization
+and the full MCP lane remain unearned.
+
+---
+
+## 2026-08-30 — Compact v2 spends 12 KiB on exact evidence, below the 20 KiB task gate
+
+**Trigger**: the first integrated current-source fixture produced 8,096 bytes
+with three coordinates, and the real dogfood element produced 11,464 bytes with
+one primary, one supporting, three tests, and reviewed IN/OUT boundaries. Both
+were correctly rejected by the standing 8,000-byte gate.
+
+**Prior decision relationship**: the selected-project compact decision remains
+valid for `agentBriefCompact:v1`; byte reduction alone still cannot authorize a
+default flip. The evidence-precision council explicitly allowed an additive
+versioned reshape if exact evidence could not fit without dropping safeguards.
+
+**Decision (accountable: jinan)**: `agentBriefCompact:v2` has a 12,000-byte
+UTF-8 pretty-JSON ceiling. The added budget is reserved for reviewed,
+source-current task-navigation coordinates and their non-exhaustive IN/OUT
+boundary. Source/meaning currentness, validation, `meaningRepair:v2`, approval
+and no-auto-write/finalize policy, qualifiers, unknowns, and the full-detail
+escape hatch remain mandatory. Full remains the default and compact remains
+opt-in. `connection_info` plus one v2 compact response must still stay below the
+standing 20,000-character pre-source gate.
+
+**Recorded dissent**: expanding a response after a compression failure can
+restart the same context-growth cycle, hide duplication, and make “compact” a
+name without a budget. **Falsifier**: task-navigation presentation duplicates
+the same coordinate more than once structurally, pre-source delivery exceeds
+20,000 characters, or the larger response fails the wall/uncached performance
+gates. On any falsifier, remove duplication or withdraw v2; never raise the cap
+again to rescue the trial.
+
+**Status**: valid for compact v2 only; no default promotion.
+
+---
+
+## 2026-08-30 — Exact task navigation is reviewed evidence, never task inference
+
+**Convened because**: the standing selected-project compact decision recorded a
+failed performance falsifier and explicitly routed the next slice to evidence
+precision. The proposed repair can change the public `agentBriefCompact`
+MCP/CLI response. Five PO seats ran one independent round and one rebuttal
+round. Only three seats could run simultaneously; the second two-seat wave saw
+the same literal brief and no first-wave verdicts.
+
+**Prior decision**: the 2026-08-30 selected-project task handoff remains
+standing. Compact stays opt-in, task text stays request-local, full remains the
+default, and source/meaning currentness, human approval, qualifiers, explicit
+unknowns, and no-auto-write/finalize rules remain mandatory. Its performance
+falsifier has been observed: delivery got smaller, but source exploration and
+test selection kept the Atlas lane slower.
+
+**Observed phenomenon**: the frozen source-only control used five pre-edit
+source-discovery commands. The compact treatment and the separate shortest-path
+probe each used four MCP reads plus eleven pre-edit source commands. Compact
+named the broad writer capability and `src/writer.rs`, but not
+`SetElementWriter::write_element`, the focused `test_write_set` target, or the
+parser/SET OF exclusion boundary. Treatment used 77,206 uncached input tokens
+versus control's 49,335.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a slice; prove causality with a static shadow packet before changing the contract | Problem insight 4 · User moment 4 |
+| Craft | Shape a slice; exact navigation must lead JSON, prompt, and human CLI without hiding trust qualifiers | Verification 3 |
+| Steward | Shape a slice; project reviewed evidence through the existing meaning objects, never create function nodes or a source index | Ontology value 4 · Agent value 4 |
+| Wedge | Shape a slice; source navigation is table stakes, while reviewed local meaning-to-verification history is the wedge | Differentiation 3 |
+| Leverage | Shape a slice; one-day shadow kill gate inside a three-day implementation appetite | appetite and slice |
+
+**Rubric total**: 22/24 (fatal zeros: none).
+
+**Decision (accountable: jinan)**: retain the existing
+`query_ontology({operation:"agent_brief", detail:"compact"})` workflow and add
+one versioned, bounded task-navigation projection only after the static kill
+gate passes. The projection may read only human-reviewable source coordinates
+authored in the selected capability/element Markdown and may check those exact
+named files against the current bound source. Task text may select the existing
+meaning node; it may not invent a symbol, test, behavior, command, or boundary.
+
+At most one primary implementation coordinate, one explicitly authored
+supporting coordinate, and three focused test coordinates may be returned.
+Each coordinate carries repository-relative path, qualified symbol/test name,
+current-source status, and a current line locator resolved at read time rather
+than persisted. The change boundary is a bounded projection of the same node's
+reviewed Includes/Excludes, with completeness explicitly non-exhaustive. Missing,
+ambiguous, stale, outside-root, symlinked, or unverified evidence returns
+`unknown`/`blocked` and no exact target. No source text is returned or stored.
+
+This is an additive `agentBriefCompact:v2` contract. The 8,000-byte ceiling
+remains a gate; presentation duplication may be removed, but safety and truth
+fields may not. JSON, handoff prompt, and human CLI use the same attention
+order: exact navigation, verification, IN/OUT boundary, then currentness and
+unknowns. Full remains the default, and compact-default promotion remains a
+separate measured decision.
+
+**Static shadow kill gate**: two fresh `gpt-5.6-sol` xhigh agents received the
+same pristine Rust task and ran concurrently without Atlas. The control found
+the correct patch but used ten pre-edit discovery commands and about twenty
+commands overall. The exact-evidence lane received independently verified
+function/test/IN/OUT coordinates, used two pre-edit source commands and about
+seven commands overall, and produced the same passing behavior. Total input
+fell from 415,490 to 242,388 tokens; uncached input fell from 57,602 to 39,636
+(-31%). Both focused and full offline tests passed. This earns implementation;
+it does not prove prospective construction or default promotion.
+
+**Decisive disagreement**: exact source navigation is already available from
+code-intelligence products and is readily copied. The winning narrower slice
+therefore forbids task-local source inference and earns value only when a person
+can judge the same meaning-to-symbol-to-test-to-exclusion evidence in Markdown
+and Git.
+
+**Recorded dissent**: a successful historical packet can be tautological—it may
+encode the answer learned from earlier successful runs. Symbol/test coordinates
+also drift faster than meaning and can create more maintenance and false
+confidence than the source discovery they replace.
+
+**Falsifier**: stop and keep the current compact contract if any emitted
+path/symbol/test is wrong or stale, a stale receipt emits an exact target, the
+gate scans zero coordinates, the identical coding A/B has a hard failure or
+blind-patch regression, pre-edit discovery does not materially fall, wall
+overhead exceeds 20%, or uncached-input overhead exceeds 25%. A second unseen,
+prospectively constructed vault must also preserve 100% emitted-coordinate
+accuracy before this can be called a general improvement.
+
+**Slice**: IN — one Markdown evidence-coordinate convention, bounded exact-file
+currentness verifier, compact v2 projection, matching CLI rendering/validation,
+negative and stale probes, frozen A/B, one unseen field trial, source/bundled
+parity, docs and dogfood ontology sync · OUT — new MCP tool/operation or CLI
+command, frontmatter/kind/relation expansion, repo-wide symbol extraction or
+index, task/session persistence, embeddings, raw source, inferred behavior,
+automatic writes/finalization, UI, exhaustive backfill, or default promotion ·
+appetite three working days with no rescue expansion after a failed gate.
+
+**Status**: valid for bounded implementation; general performance claim and
+default promotion remain unearned pending the recorded field-trial falsifier.
+
+---
+
 ## 2026-08-30 — The chain does not turn under a click
 
 **Convened because**: the owner asked for a last design pass over today's screens. Captured on

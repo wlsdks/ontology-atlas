@@ -7,6 +7,41 @@
 
 ---
 
+## 2026-08-30 · A known task can start at the exact reviewed source batch
+
+- Compact agent briefs v2 project a human-reviewed primary implementation
+  symbol, one supporting symbol, up to three focused tests, and the element's
+  non-exhaustive Includes/Excludes boundary when the bound source is current.
+  Atlas checks only the named files and resolves their current lines; stale,
+  missing, ambiguous, outside-root, symlinked, or unrecorded coordinates return
+  no exact target. Task text selects existing meaning but cannot invent source
+  behavior or a coordinate. Language-aware checks also keep JavaScript test
+  helpers and Python triple-quoted docstring contents from impersonating targets.
+- The same task-navigation receipt leads typed MCP `structuredContent`, the
+  copyable `content.text` prompt, and CLI human output without duplicating the
+  full JSON in both MCP channels. A ready receipt tells the coding agent to read all exact targets
+  and a verified runner manifest together before repository inventory or broad
+  search. It asks for named positive/negative regression coverage and exact
+  observable output, then one focused and one non-overlapping full check. Full
+  remains the default and compact remains opt-in.
+- Compact v2 has an explicit 12,000-byte ceiling while the complete pre-source
+  path stays below 20,000 characters. The current read-only frozen-control run
+  reduced source reads from four to one, wall time by 23.9%, and uncached input
+  by 19.1%; two order-reversed blind reviews preferred the treatment and found
+  zero hard failures. Compact human text no longer duplicates its typed JSON:
+  the current dogfood response is 11,646 pretty-JSON bytes and the complete
+  two-call wire path is 12,928 characters. The full 36-tool registration still
+  has no performance claim, and neither detail nor tool-profile defaults change.
+- A prospective unfamiliar repository preserved 10/10 coordinates, 50/50
+  claims, 81/81 citations, six of six cited paths, and one full plus five honest
+  partial persisted-vault answers. Its 51-minute construction missed the
+  40-minute target, and its coding A/B had no Go toolchain and an unrelated
+  personal-skill interception, so cross-repository speed remains unclaimed.
+- Bootstrap proposals may use the existing evidence string array for bounded
+  `navigation:primary|supporting|test:<path>#<symbol>` annotations. They remain
+  structural evidence visible in Markdown/Git, not new frontmatter, function
+  nodes, a repository symbol index, or automatic semantic approval.
+
 ## 2026-08-30 · Agent handoff starts with one project and one bounded task view
 
 - `agent_brief(project: ...)` no longer reports global starter-project counts,
