@@ -197,6 +197,45 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getByText('modeUnverifiedHint')).toBeInTheDocument();
   });
 
+  it('모델·작업 방식은 빈 상자나 정지 버튼과 겹치는 고정 폭이 되지 않는다', async () => {
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', {
+      sessionId: 's-1',
+      models: {
+        currentModelId: null,
+        availableModels: [{ modelId: 'gpt-5.6-sol-low', name: 'GPT-5.6-Sol (low)' }],
+      },
+      modes: {
+        currentModeId: null,
+        availableModes: [{ id: 'default', name: 'Default' }],
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+
+    const choices = screen.getByTestId('acp-chat-choices');
+    expect(choices).toHaveClass('w-full', 'min-w-0');
+    expect(choices).not.toHaveClass('shrink-0');
+    expect(screen.getByTestId('acp-chat-model')).toHaveTextContent('model');
+    expect(screen.getByTestId('acp-chat-mode')).toHaveTextContent('mode');
+
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '계속해 줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(screen.getByTestId('acp-chat-stop')).toBeInTheDocument());
+    expect(screen.getByTestId('acp-chat-choices')).toBeInTheDocument();
+  });
+
   it('세션이 서면 준비됨이 되고, 보낸 말과 받은 말이 각각 남는다', async () => {
     await bootSession();
 

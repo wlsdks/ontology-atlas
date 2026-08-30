@@ -6,6 +6,7 @@ import {
   computeVaultHealth,
 } from '@/entities/knowledge-graph/lib/vault-health';
 import { chatSuggestions } from '@/features/acp-session/model/chat-suggestions';
+import { suggestionDisplayNames } from '@/features/acp-session/model/use-chat-suggestions';
 
 /**
  * Locks that suggestions still point at things in this folder when they run
@@ -34,12 +35,19 @@ const manifest = resolveStaticVaultSource('dogfood').manifest;
 function suggestionsForRealVault() {
   const health = computeVaultHealth(manifest.docs);
   const unevidenced = capabilitiesWithoutImplementationEvidence(manifest.docs);
-  return { health, unevidenced, out: chatSuggestions({
-    nodeCount: health.summary.nodes,
-    islands: health.islands,
-    missingContainment: health.missingContainment,
+  const displayNames = suggestionDisplayNames(manifest.docs, 'ko');
+  return {
+    health,
     unevidenced,
-  }) };
+    displayNames,
+    out: chatSuggestions({
+      nodeCount: health.summary.nodes,
+      islands: health.islands,
+      missingContainment: health.missingContainment,
+      unevidenced,
+      displayNames,
+    }),
+  };
 }
 
 describe('추천은 진짜 볼트를 통과해도 이 폴더의 것을 짚는다', () => {
@@ -56,15 +64,26 @@ describe('추천은 진짜 볼트를 통과해도 이 폴더의 것을 짚는다
   });
 
   it('슬러그를 짚는 추천은 **실재하는 노드**를 짚는다', () => {
-    const { out } = suggestionsForRealVault();
+    const { out, displayNames } = suggestionsForRealVault();
     const known = new Set(manifest.docs.map((d) => d.slug));
+    const slugKeys = new Set(['first', 'slug', 'domain']);
+    const labelSourceKey = { firstLabel: 'first', slugLabel: 'slug', domainLabel: 'domain' } as const;
     for (const s of out) {
       for (const [key, value] of Object.entries(s.params)) {
         if (typeof value !== 'string') continue;
-        expect(
-          known.has(value),
-          `${s.kind}.${key} 가 볼트에 없는 「${value}」 를 짚는다`,
-        ).toBe(true);
+        if (slugKeys.has(key)) {
+          expect(
+            known.has(value),
+            `${s.kind}.${key} 가 볼트에 없는 「${value}」 를 짚는다`,
+          ).toBe(true);
+          continue;
+        }
+        if (key in labelSourceKey) {
+          const sourceKey = labelSourceKey[key as keyof typeof labelSourceKey];
+          const sourceSlug = s.params[sourceKey];
+          expect(typeof sourceSlug).toBe('string');
+          expect(value).toBe(displayNames[String(sourceSlug)]);
+        }
       }
     }
   });

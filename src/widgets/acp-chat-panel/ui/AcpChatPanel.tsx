@@ -750,7 +750,7 @@ export function AcpChatPanel({
         <div
           data-testid="acp-chat-choices"
           className={cn(
-            'grid shrink-0 gap-2',
+            'grid w-full min-w-0 gap-2',
             choices.models.length > 0 && choices.modes.length > 0
               ? 'grid-cols-2'
               : 'grid-cols-1',
@@ -761,6 +761,7 @@ export function AcpChatPanel({
               ariaLabel={t('model')}
               size="md"
               value={choices.currentModelId ?? ''}
+              placeholder={t('model')}
               onChange={(value) => void chooseModel(value)}
               options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
               data-testid="acp-chat-model"
@@ -772,6 +773,7 @@ export function AcpChatPanel({
               ariaLabel={t('mode')}
               size="md"
               value={choices.currentModeId ?? ''}
+              placeholder={t('mode')}
               onChange={(value) => void chooseMode(value)}
               options={choices.modes.map((mode) => {
                 const unverified = choices.unverifiedModeIds.includes(mode.id);
@@ -1465,7 +1467,7 @@ export function AcpChatPanel({
             {t('turnSilentHint')}
           </p>
         ) : null}
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
           <span className="flex min-w-0 flex-1 items-center gap-2">{choicesRow}</span>
           <span className="flex shrink-0 items-center gap-1.5">
             {busy ? (

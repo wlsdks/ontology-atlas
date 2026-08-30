@@ -7,6 +7,22 @@
 
 ---
 
+## 2026-08-30 · ACP next steps use names a person can read
+
+- A containment repair used to show raw identifiers such as
+  `elements/qualification-handoff-helper` and `domains/project-portfolio`, then describe
+  the missing reverse edge as "does not link back." Recommendation rows now use each
+  concept's locale display name and state the action directly; the editable agent prompt
+  keeps the canonical slugs beside those names so precision is not traded for readability.
+- One dogfood node's Korean display name had been committed as UTF-8 bytes decoded through
+  Latin-1, producing control glyphs on the map and in the inspector. The source now reads
+  the intended Korean label; renderers fall back to the canonical title for an obviously broken
+  localized value, and a non-empty dogfood gate rejects decoder controls or replacement
+  characters before they can ship again.
+- The composer model/mode grid no longer keeps an intrinsic fixed width that can run under
+  the Stop button in a narrow agent panel. It shrinks inside the space left by Stop and Send,
+  and a missing current model or mode now shows its field name instead of an empty button.
+
 ## 2026-08-30 · The architecture chain stays whole in the installed app, and the README shows it
 
 - In the installed app at a 1512x949 window the seven-role chain drew 4px taller than its
@@ -163,6 +179,7 @@
 - The boxes grew to fit it and no further: 74px tall and 180px wide, measured so
   that a seven-role chain still reads in one screen at 1512 and stays horizontal
   at 1920.
+
 ## 2026-08-30 · First-ontology handoff keeps its evidence boundaries intact
 
 - Source-checkout construction now publishes one complete file-backed
@@ -237,6 +254,7 @@
 - It compares the whole file rather than the version. A re-cut release keeps its
   tag while its sizes and checksums move, and a published checksum that no
   longer matches the file behind it is worse than an old version number.
+
 ## 2026-08-29 · Completed agent turns lead into grounded next steps
 
 - The in-app ACP conversation now places up to three current-vault next steps
@@ -255,6 +273,7 @@
 - Existing adapter-provided slash commands remain unchanged. No helper persona,
   generic prompt catalog, Atlas-owned command, route, or persistence surface was
   added.
+
 ## 2026-08-29 · Gateway identity completes the mascot rollout
 
 - Replaced the gateway chrome's remaining generic orbit mark with the compact
@@ -289,6 +308,7 @@
   old 16px helmet/`Atlas` caption and an enlarged compact mascot. The rail now
   begins with destinations; platform icons and truthful runtime poses carry the
   identity without competing with navigation.
+
 ## 2026-08-29 · One reviewed construction ends without hidden repair
 
 - The next fresh construction now passes its first persisted audit without body
@@ -1617,6 +1637,7 @@ Node 는 그대로였고, 압축 파일은 정리됐습니다.
   자리가 없다. 오늘 쓸 수 있는 것은 설정의 「실행기」 절까지다.
 - 브라우저에서는 도구를 실행할 수 없다. 웹에서는 그 자리에 왜 안 되는지와 어디서
   되는지를 적는다.
+
 ## 2026-08-16 · 대형 Go 저장소의 목적과 package 경계를 첫 분석에서 잃지 않는다
 
 - README 의미 packet은 앞에서 만난 1,200자를 그대로 자르지 않는다. purpose,
@@ -2111,6 +2132,7 @@ project의 competency 답에만 있던 `README.md` 같은 근거가 source recei
 
 새 토큰 0개(패널의 기존 `--topology-v2-panel-action-*` · `--topology-v2-panel-primary-*`
 재사용). 폴더를 실제로 고르는 코드는 손대지 않았다.
+
 ## 2026-08-04 · 「코드 폴더를 연결하세요」라고 말했으면 연결할 방법을 준다
 
 앱은 「이 프로젝트에 연결된 코드 폴더가 없습니다」라고 말하고 다음 행동으로
@@ -2167,6 +2189,7 @@ project의 competency 답에만 있던 `README.md` 같은 근거가 source recei
 
 게이트는 **결함 볼트 픽스처**로 잡는다(`tests/e2e/fixtures/broken-vault.ts`).
 dogfood/샘플 볼트는 이슈가 0이라 이 부류의 게이트를 영원히 통과시켰다.
+
 ## 2026-08-04 · 접근성 게이트가 빈 화면을 재던 자리를 닫는다
 
 두 래칫(`a11y-ratchet` · `contrast-ratchet`)이 17개 주소를 열고 **첫 화면만** 재고
@@ -2847,6 +2870,7 @@ CTA 가 보낸 사람이 도착해서 자기를 보낸 CTA 를 부정당하고 �
 `capability:order-create` 를 박고 있었고 재생성으로 한꺼번에 죽었는데 **제품
 결함은 0건**이었다. 이제 매니페스트에서 조건에 맞는 노드를 유도한다
 (`tests/e2e/storefront-node.ts`).
+
 ## 2026-08-01 · 채팅 에이전트가 로컬 러너에 붙는다 (Ollama · LM Studio · llama.cpp)
 
 **설정 › AI 연결에 네 번째 행이 생겼다. 키가 아니라 주소를 적는 자리.**
@@ -3564,6 +3588,7 @@ git · 키체인 · LLM)과 "앱 전용 능력은 웹에서 정직하게 강등�
 `docs/DECISIONS.md` 최상단에 있다. 계약 본문은 `.claude/rules/surfaces.md`,
 구조 설명은 `docs/ARCHITECTURE.md` "Surface contract", 능력 대조표는
 `docs/FEATURES.md`.
+
 ## 2026-07-27 · 앱이 MCP 서버를 품는다: 버튼 한 번으로 에이전트가 붙는다
 
 설치형 앱을 깔아도 에이전트가 못 붙었다. 안내는 `npx -y ontology-atlas-mcp` 를
@@ -3734,6 +3759,7 @@ x64` 였다. 아티팩트는 두 아치 다 있었다. **찾는 자리가 틀렸
 **문서 전부가 같은 날짜**를 받는다(실측: 247 경로 → 날짜 1개). 즉 배포된
 사이트에서는 모든 문서가 "오늘 바뀐" 것으로 보였다. 전체 히스토리를 받도록
 고쳤고, 얕은 클론이면 생성기가 경고한다.
+
 ## 2026-07-27 · 공개 준비: 다운로드 페이지가 다운로드를 주게 하고, 버전을 v1.0.0 으로
 
 **공개 예정인 `/download` 가 다운로드를 제공하지 않고 있었다.** 주 CTA
@@ -4252,6 +4278,7 @@ git 에 남으므로, 볼트 밖 제2 진실원(대화 저장소) 없이도 "지
 리플로우와 같은 duration·같은 곡선이라 둘이 한 몸으로 움직인다.
 
 ---
+
 ## 2026-07-27 · 도메인 구성 막대: 색이 나르지 않던 정체를 걷어냈다
 
 `/projects` 카드와 인사이트 「구성」 탭의 **도메인 용량 막대**가 앰버(역량)·
@@ -4325,6 +4352,7 @@ git 에 남으므로, 볼트 밖 제2 진실원(대화 저장소) 없이도 "지
 여백이 아니라 데이터 잉크다.
 
 ---
+
 ## 2026-07-26 · 첫 클릭이 오류로 끝나지 않고, 이름이 도형을 관통하지 않는다 (진입·지도 검수)
 
 진입·지도 표면 전수 검수(애플/토스 기준)에서 나온 **막힘 2건 + 자기모순 2건 +
@@ -4455,6 +4483,7 @@ i18n 키 **한 곳**(`vaultAgentPanel.title`)에서만 정의되고 지도 크�
   아니라 "내가 시킨 일이 일어났다" 의 증거다.
 
 ---
+
 ## 2026-07-26 · 화면이 멈추는 순간들을 지웠다 (빈 프레임 사냥)
 
 지도 옆 패널을 열면 **지도가 사라졌다.** 전체 상세로 들어가면 **창이 검어졌다.**
@@ -4524,6 +4553,7 @@ i18n 키 **한 곳**(`vaultAgentPanel.title`)에서만 정의되고 지도 크�
 번복 기록은 `docs/AGENT-GRAPH-WORKFLOW.md` 에 남겼다. 되살리기가 쉽다는 것도
 채택 근거였다. 8주 안에 병치를 특정해 요구하는 신호가 쌓이면 git 이력에서
 되돌린다.
+
 ## 2026-07-26 · 위험도 목록에 테스트 파일이 앉아 있지 않다 (근거 계층 분리)
 
 「연결」 탭의 「바꾸면 멀리 퍼지는 개념」은 *"어디를 건드리면 위험한가"* 에 답해야
@@ -4595,6 +4625,7 @@ i18n 키 **한 곳**(`vaultAgentPanel.title`)에서만 정의되고 지도 크�
 - 게이트: `tests/contract/graph-truth-parity.contract.test.ts`: 웹의 문서 노드
   수 == 컴파일러 노드 수, 웹의 파생 노드 참조 집합 == 컴파일러 미해석 참조 집합,
   화면이 복사해 주는 모든 슬러그가 볼트에서 해석됨.
+
 ## 2026-07-26 · AI 연결: 눌러 본 것을 되돌릴 수 있게
 
 설치 앱 스크린샷을 본 소유자 지적 세 건. 그중 하나는 취향이 아니라 **결함**
@@ -4735,6 +4766,7 @@ i18n 키 **한 곳**(`vaultAgentPanel.title`)에서만 정의되고 지도 크�
   늘여 놓아 이름(좌)과 막대(우) 사이가 1,100px 벌어져 있었다. 폭을 접으니 행의
   측정선이 옆 허브 카드와 같아졌고(743px vs 750px), 남은 자리는 여백이 아니라
   다음 6개 순위가 채운다(6행 → 12행, 카드 높이 불변).
+
 ## 2026-07-26 · 화면이 부르는 이름으로 찾고, 화면 언어로 만든다
 
 앱은 한국어로 말하는데 기계는 영어만 알던 두 자리를 고쳤다. 둘 다 "사용자가
@@ -4805,6 +4837,7 @@ i18n 키 **한 곳**(`vaultAgentPanel.title`)에서만 정의되고 지도 크�
   렌더하는 화면이 지도(map + INDEX + 데이터시트)이고 LNB 도 이미 그렇게
   부르므로 **지도 / Map** 으로 통일했다. 낯선 말(워크스페이스)도, 화면을
   설명하지 않는 말(홈)도 아니다.
+
 ## 2026-07-26 · 공방이 남의 문서에 쓰던 것을 멈췄다
 
 같은 뿌리의 세 번째 결함인데, 이건 읽기가 아니라 **쓰기**였다. 번들 도그푸드
@@ -4862,6 +4895,7 @@ i18n 키 **한 곳**(`vaultAgentPanel.title`)에서만 정의되고 지도 크�
   "id 꼬리 == 문서 slug 꼬리" 로 따로 추정하고 있었고, 그 추정은 **프로젝트
   노드를 놓쳤다**(프로젝트 id 는 frontmatter `slug:` 로 만들어진다). 두 표면이
   이제 같은 한 곳을 본다. 도그푸드 의심 건수는 11건 그대로다.
+
 ## 2026-07-26 · 프로젝트 표면의 시각 규율 3건 + 그것들이 새어 나온 게이트 구멍 2건
 
 같은 날 라벨 장식 화살표를 전수 제거한 PR 이, **자기가 재설계한 파일에** 그
@@ -4925,6 +4959,7 @@ S1(여백·폰트 체인·스크롤바)이 이 기기의 두부를 없앴지만,
   아니다: separator 로 포커스를 받고 ↑↓ 로도 같은 일을 한다. 정한 높이는 이
   기기가 기억한다. 드래그 중에는 셀 재적합을 미루고 **놓을 때 한 번**만
   확정한다. 프레임마다 fit 하면 드래그가 끈적해진다.
+
 ## 2026-07-26 · 중복 의심 쌍 · 도메인 결합 히트그리드
 
 정비 보드가 답하지 못하던 두 질문을 채웠다. 계산은 **한 줄도 새로 짜지 않았다**.
@@ -5087,6 +5122,7 @@ kind 글리프는 행마다 같고, 인디고 점 하나로는 "최근"인지 "�
   **기록** = 문서 변경 역사(영속).
 - 모델·인계 패킷·지도 발자국 링은 **무변경**. 패킷은 여전히 오래된 → 최근
   순서다(기계 재생용이라 시간순이 맞고, 헤더가 순서를 자기 명시한다).
+
 ## 2026-07-26 · 설정에 「AI 연결」: 내 API 키 · 연결 확인 · 보낸 기록
 
 키 보관 계층(`src-tauri/src/secrets.rs`)은 이미 출하돼 있었는데 도달할 표면이
@@ -5110,6 +5146,7 @@ kind 글리프는 행마다 같고, 인디고 점 하나로는 "최근"인지 "�
   first)를 그대로 존중한다. CLI 가능한 사용자는 MCP 32도구 + 터미널 도크로 이미
   커버되고, 미커버 집합의 수요 증거가 아직 0건이다. 화면도 그렇게 적는다:
   "지금 이 키로 할 수 있는 일: 연결 확인."
+
 ## 2026-07-26 · 터미널 도크: 깨진 프롬프트 글리프 · 왼쪽 벽 · 뚱뚱한 스크롤바
 
 소유자 지적("터미널 모양이 보기 안좋은데? 왼쪽 벽부터 시작해서 그런듯한데").
@@ -5131,6 +5168,7 @@ kind 글리프는 행마다 같고, 인디고 점 하나로는 "최근"인지 "�
   그려졌다(`4444…1111`). 스타일시트를 실어 사라졌다.
 - **스크롤바**: 긴 출력에서 OS 기본 스크롤바가 도크 안에만 떠 "터미널만 다른
   세계" 로 보였다. 앱의 얇은 스크롤바를 도크 스코프로 적용.
+
 ## 2026-07-26 · 인사이트: 질문 하나에 탭 하나 (구조 탭 3분할 + 잉크 삭감)
 
 `구조` 탭 하나가 서로 다른 세 질문("뭐가 얼마나 있나 / 뭐가 중심인가 /
@@ -5571,6 +5609,7 @@ R10 에서 Firebase SDK 는 이미 제거됐고, 남아 있던 것은 정적 사
 스프링을 뒤따라 끌린다), `key={step.id}` remount + **기존 패널 크로스페이드
 키프레임 재사용**으로 해결했다. 새 카피가 그 자리에서 떠오르듯 나타나고
 추종 정확도는 그대로. 실측: 전환 직후 opacity 0.47→1.00 보간 확인.
+
 ## 2026-07-24 · ERD 빌더(`/ontology/edit`) 은퇴 → 나침 무대가 흡수 · xyflow 제거
 
 원 마스터플랜의 후속: 나침 무대(Compass Stage, `/ontology/studio`)가 노드
@@ -5620,6 +5659,7 @@ R10 에서 Firebase SDK 는 이미 제거됐고, 남아 있던 것은 정적 사
 시작 체크리스트 3단계를 그 경우에 한해 **"시작 문서 만들기 (버튼 한 번)"**
 으로 바꿔 같은 스캐폴드를 제공한다(자동 실행 아님: local-first 원칙상
 남의 폴더에는 명시 클릭으로만 쓴다).
+
 ## 2026-07-24 · 온톨로지 스튜디오 = 나침 무대(Compass Stage) · 노드 팝오버 재설계 · 게임 예외 폐기
 
 디자이너(Apple/Toss/Notion/Linear 렌즈) + 사용자 평가단 루프를 거쳐 두 표면을
@@ -5841,6 +5881,7 @@ findings)와 salience 리서치(Furnas DOI · SKOS 위계)를 근거로 태블�
 - **관계 타입 위계 → DOI 랭킹**: contains > depends > relates 가 렌더
   (실선/파선)에만 있고 랭킹에 없던 gap 정정. 이웃 24-컷·라벨 8-컷에서
   contains 자식이 스쳐가는 relates 이웃보다 먼저 노출된다.
+
 ## 2026-07-23 · MCP Builder handoff + vault Git history + live toolset proof
 
 반복적인 graph health 확인이 아니라 실제 Builder/Git/클라이언트 업그레이드
@@ -6739,6 +6780,7 @@ capability) 전부 상시 노출 시 라벨/노드가 서로 뭉개져 지도 �
   도메인의 부모는 프로젝트지 다른 도메인이 아니므로, `buildTopologyOntologyDrawerModel`
   의 ownerDomain 파생이 domain/project 노드에는 도메인 소속을 붙이지 않도록
   가드했다(헤더 + 인계 패킷 `domain:` 필드 양쪽 정정).
+
 ## 2026-07-21 · 데스크톱 최근 vault 재열기 침묵 실패 수리 (P5 High)
 
 설치 앱(Tauri)에서 설정 → 작업공간의 "로컬 볼트 오류" 상시 배너 + "최근 vault
@@ -6931,6 +6973,7 @@ Kumu/Bloom/Foundry 공통형). 빈 공간 클릭이 엣지 7px 근접이면 팝�
 보이는 엣지 클릭 금지 계약). 노드 선택/빈 공간과 배타, 노드 팝오버와
 같은 포지셔너 계약. "온톨로지답다"의 분기점(문장화+선언 출처)이 표면이
 됐다. frontmatter 가 곧 그래프라 출처 비용 0.
+
 ## 2026-07-21 · 최근 변경 렌즈 · 에이전트 귀속 배지 · 성장 진입점 (P4a·P4b·P4c)
 
 - **최근 변경 렌즈** (mtime 7일 창, `computeRecentChanges`/`selectRecentVaultDocs`:
@@ -7056,6 +7099,7 @@ reduced-motion 즉착 경로를 그대로 재사용. 초기 로드/샘플에는 
 - 노드 데이터시트에 소속 도메인 1급 사실"도메인 · <이름>" 클릭 시
   해당 도메인 포커스 (선 스타일로만 섞여 있던 것, N6).
 - ⌘K 검색에서 경로형 요소 제목을 보조 톤으로 강등 (소음 제거, N12).
+
 ## 2026-07-21 · 외향 문서 슬라이스 (시장 언어 연결, 계획 구조 결함 해소)
 
 제품 검수가 "계획 전체에 외향(시장에 말하는) 슬라이스 0개"를 구조 결함으로
@@ -7297,7 +7341,6 @@ Playwright e2e 139개 중 108개가 실패하고 있었다. 전부 이미 삭제
   타임아웃(재시도가 실제로 돌게) + CI 한정 2회 재시도. 전부 정적 export
   엔 없는 dev-only 아티팩트라 제품 결함이 아니며, 재시도는 환경 편차만
   흡수하고 진짜 회귀는 재시도 후에도 실패한다.
-
 
 ## 2026-07-19 · 문서함 상단 그래프 census 제거 (docs-chrome-round 마감)
 
@@ -7764,6 +7807,7 @@ RELATIONS) 를 각인한다. 목업 데이터 0.
 명세로 승격했다. 새 필드/규칙 없음, 문서 전용. 5 kind · 관계 타입 ·
 untrusted-content 원칙 · 준수 테스트로 기존 contract test 스위트를 인용한다.
 8주 RFC 피드백 창 (kill criteria) 동안 GitHub Issues 로 코멘트 받는다.
+
 ## 2026-07-17 · 제품 계획 v9: 2층 정체성 (Layer 1 로컬 코어 + Layer 2 Atlas Network)
 
 하루 집중 재기획의 확정 (조사 17건 · 페르소나 7인 · CPO 심사 · 사상가 렌즈

@@ -84,6 +84,36 @@ const EVIDENCE_PENDING_DIAGNOSTIC = Object.freeze({
   message: 'Source-aware claim and citation verification is pending.',
   evidenceRefs: [],
 });
+const QUALITY_AXIS_GUIDANCE = Object.freeze({
+  semantic: {
+    question: 'Are kind, boundary, and relation meanings defensible without conflating implementation structure with product meaning?',
+    evidence: ['definitions and boundaries', 'includes and excludes', 'examples and counterexamples', 'relation rationale'],
+  },
+  structural: {
+    question: 'Does the candidate graph satisfy its declared structure with resolved references?',
+    evidence: ['schema validation', 'resolved concept and relation endpoints', 'candidate seal and proposal coverage'],
+  },
+  functional: {
+    question: 'Can the candidate answer the human-approved competency questions at their declared quantifiers and targets?',
+    evidence: ['expected answers', 'target-level claim coverage', 'required witness-kind coverage'],
+  },
+  evidence_provenance: {
+    question: 'Can every business claim be traced to current source evidence and approval lineage?',
+    evidence: ['claim citations', 'source fragments and digests', 'witness currentness', 'approval and receipt lineage'],
+  },
+  pragmatic: {
+    question: 'Can each approved audience make the intended decision from the source-hidden handoff?',
+    evidence: ['source-hidden task result', 'complete claim ledger coverage', 'resource-use receipt'],
+  },
+  maintainability: {
+    question: 'Can the candidate change be reviewed and its meaning retested against current source?',
+    evidence: ['exact review plan or diff', 'explicit impact boundary including honest gaps', 'cold-start or prior-CQ regression receipt', 'source-currentness binding'],
+  },
+  interoperability: {
+    question: 'Are format, export, and standards claims bounded to what the candidate actually preserves?',
+    evidence: ['declared format or profile boundary', 'candidate round-trip receipt', 'rejected missing, foreign, and truncated artifact mutations'],
+  },
+});
 const PROTECTED_HIDDEN_FIELDS = Object.freeze([
   'contract',
   'subject',
@@ -141,6 +171,8 @@ function qualificationCoreJsonSchema() {
   properties.axisResults.items.properties.axis.enum = CONSTRUCTION_QUALITY_AXES.filter(
     (axis) => axis !== 'evidence_provenance',
   );
+  properties.axisResults.items.properties.evidenceRefs.description = 'IDs from sealed source-witnesses.json only; claim ids, proposal refs, paths, and diagnostic ids are invalid here.';
+  properties.axisResults.items.properties.findingIds.description = 'IDs from qualificationCore.diagnostics whose axis equals this row axis. Keep empty for a passing axis unless a same-axis diagnostic is intentionally retained.';
   properties.axisResults.minItems = CONSTRUCTION_QUALITY_AXES.length - 1;
   properties.axisResults.maxItems = CONSTRUCTION_QUALITY_AXES.length - 1;
   properties.axisResults.allOf = CONSTRUCTION_QUALITY_AXES
@@ -155,6 +187,7 @@ function qualificationCoreJsonSchema() {
   properties.diagnostics.items.properties.axis.enum = CONSTRUCTION_QUALITY_AXES.filter(
     (axis) => axis !== 'evidence_provenance',
   );
+  properties.diagnostics.items.properties.evidenceRefs.description = 'IDs from sealed source-witnesses.json only; claim ids, proposal refs, paths, and axis ids are invalid here.';
   properties.diagnostics.items.properties.id.not = { const: EVIDENCE_PENDING_ID };
   properties.purposeAuthority.properties.owners.minItems = 1;
   properties.purposeAuthority.properties.owners.maxItems = 1;
@@ -300,14 +333,20 @@ function hiddenAnswersJsonSchema() {
         status: { type: 'string', enum: ['answered', 'partial', 'unknown', 'refused'] },
         answer: HANDOFF_STRING_SCHEMA,
         gap: { ...HANDOFF_STRING_SCHEMA, maxLength: 1000 },
-        claimIds: HANDOFF_STRING_ARRAY_SCHEMA,
+        claimIds: {
+          ...HANDOFF_STRING_ARRAY_SCHEMA,
+          description: 'IDs from sealed claim-manifest.json assigned to this CQ. Across all answers their union must equal the complete manifest id set.',
+        },
         targets: {
           type: 'array',
           items: {
             type: 'object',
             properties: {
               target: HANDOFF_ID_SCHEMA,
-              claimIds: HANDOFF_STRING_ARRAY_SCHEMA,
+              claimIds: {
+                ...HANDOFF_STRING_ARRAY_SCHEMA,
+                description: 'A subset of this answer claimIds supporting this exact expected target.',
+              },
             },
             required: ['target', 'claimIds'],
             additionalProperties: false,
@@ -488,7 +527,14 @@ export const HANDOFF_SCHEMA = Object.freeze({
       siblingPathInput: ['handoffDir', 'access', 'qualificationCorePath', 'answersPath'],
       siblingPathRule: 'qualificationCorePath and answersPath must both be plain sibling .json filenames beside the CLI input. Absolute, nested, parent-traversal, and inline/path mixed inputs are rejected before any file is read.',
       siblingFileRule: 'The stable input directory may not contain symlinked ancestors. Both sibling inputs must be regular, non-symlink files with exactly one filesystem link; special files and redirected inodes fail closed.',
-      answers: 'Compact rows {cqId,status,claimIds,targets:[{target,claimIds}],answer?,gap?}; witness refs and cqResults are derived. Partial/unknown/refused require gap and may leave explicit targets empty; answered targets require claims.',
+      answers: 'Compact rows {cqId,status,claimIds,targets:[{target,claimIds}],answer?,gap?}; witness refs and cqResults are derived. Partial/unknown/refused require gap and may leave explicit targets empty; answered targets require claims. Across all rows, the union of claimIds must cover every sealed manifest claim.',
+      claimCoverage: {
+        source: 'manifest[*].id',
+        collector: 'union(answers[*].claimIds)',
+        requirement: 'exact_set',
+        duplicatesAcrossAnswers: 'allowed',
+        unassignableClaimRule: 'If an approved CQ cannot truthfully carry a manifest claim, stop before hidden invocation and revise the question set through human approval; never pad an unrelated answer.',
+      },
       qualificationCore: 'Omits cqResults and the evidence_provenance axis; the helper injects an audit-pending diagnostic and axis. Exactly one named human owns purpose and every CQ revision, every revision approval predates source-hidden evaluation, and that owner must later accept the exact request. Required witness kinds must match the sealed witness kinds used by each answer; a failed CQ blocks instead of becoming a human gap. Maintainability remains the evaluator judgment supplied here and is never auto-promoted.',
       qualificationCoreShape: {
         required: [...QUALIFICATION_CORE_FIELDS],
@@ -562,6 +608,20 @@ export const HANDOFF_SCHEMA = Object.freeze({
   quantifiers: {
     lexicalTerms: [...new Set('all always any each every exactly never none only solely'.split(' '))],
     rule: 'Every lexical match needs a claimId/term classification of source_bounded or unsafe. Source-bounded rows need rationale and sourceRefs; unsafe rows block the stage.',
+  },
+  qualityAxes: {
+    authority: 'docs/FOUNDATIONS.md#quality-is-a-vector-no-green-total-may-hide-a-red-dimension',
+    evaluatorRule: 'Use passed only when current sealed evidence answers the axis question. A mandatory unknown, not_measured, or failed result blocks join; only measured functional or pragmatic gaps can proceed to exact human acceptance.',
+    mandatory: [...MANDATORY_AXES],
+    humanGapEligible: ['functional', 'pragmatic'],
+    referenceNamespaces: {
+      axisEvidenceRefs: 'sealed source-witnesses.json[*].id only',
+      diagnosticEvidenceRefs: 'sealed source-witnesses.json[*].id only',
+      axisFindingIds: 'qualificationCore.diagnostics[*].id with the same axis',
+      answerClaimIds: 'sealed claim-manifest.json[*].id; the union across answers is the exact manifest id set',
+      targetClaimIds: 'subset of the containing answer claimIds for that exact expected target',
+    },
+    dimensions: QUALITY_AXIS_GUIDANCE,
   },
   compactPaths: {
     resolution: 'Relative paths resolve against the directory containing the CLI --input JSON. Absolute paths remain absolute.',
@@ -1040,7 +1100,21 @@ function deriveCqResults(qualificationCore, answers, manifest) {
       ...(answer.status === 'answered' ? {} : { gap: answer.gap }),
     };
   });
-  assert(same([...coveredClaimIds].sort(), manifest.map(({ id }) => id).sort()), 'Compact answers do not cover every manifest claim.');
+  const missingClaimIds = manifest
+    .map(({ id }) => id)
+    .filter((id) => !coveredClaimIds.has(id));
+  assert(
+    missingClaimIds.length === 0,
+    `Compact answers do not cover every manifest claim; missing ${missingClaimIds.length}: ${missingClaimIds.join(', ')}.`,
+    {
+      details: {
+        code: 'incomplete-manifest-claim-coverage',
+        expectedClaimCount: manifest.length,
+        coveredClaimCount: coveredClaimIds.size,
+        missingClaimIds,
+      },
+    },
+  );
   return results;
 }
 
