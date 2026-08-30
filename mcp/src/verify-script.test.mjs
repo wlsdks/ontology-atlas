@@ -640,6 +640,7 @@ describe('verify.mjs first-contact gates', () => {
         properties: {
           to: { type: 'string' },
           via: { type: 'string' },
+          rationale: { type: 'string' },
         },
         additionalProperties: false,
       },
@@ -2765,6 +2766,7 @@ describe('verify.mjs first-contact gates', () => {
                   from: { type: 'string' },
                   to: { type: 'string' },
                   via: { type: 'string' },
+                  rationale: { type: 'string' },
                 },
                 additionalProperties: false,
               },
@@ -4917,6 +4919,31 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_path outputSchema edge via drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'find_path'),
+        {
+          ...tools.find((tool) => tool.name === 'find_path'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'find_path').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties,
+              edges: {
+                ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges,
+                items: {
+                  ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges.items,
+                  properties: {
+                    ...tools.find((tool) => tool.name === 'find_path').outputSchema.properties.edges.items.properties,
+                    rationale: { type: 'number' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'find_path outputSchema edge rationale drift',
     );
     assert.equal(
       toolsListSchemaFailure([

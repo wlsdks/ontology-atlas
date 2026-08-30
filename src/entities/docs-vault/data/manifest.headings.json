@@ -2918,6 +2918,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 · The reason on a relation is findable, and the agent reads what it wrote",
+      "slug": "2026-08-30-the-reason-on-a-relation-is-findable-and-the-agent-reads-what-it-wrote"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · ACP next steps move on when the vault does",
       "slug": "2026-08-30-acp-next-steps-move-on-when-the-vault-does"
     },
@@ -6001,6 +6006,16 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — The map slice is withdrawn: the owner meant the architecture tab",
+      "slug": "2026-08-30-the-map-slice-is-withdrawn-the-owner-meant-the-architecture-tab"
+    },
+    {
+      "depth": 2,
+      "text": "PO Council Verdict — the map says what an area is and why two areas are joined",
+      "slug": "po-council-verdict-the-map-says-what-an-area-is-and-why-two-areas-are-joined"
     },
     {
       "depth": 2,
@@ -12884,8 +12899,8 @@
     },
     {
       "depth": 3,
-      "text": "Summary table (identical to `mcp/README.md`'s frontmatter table)",
-      "slug": "summary-table-identical-to-mcpreadmemds-frontmatter-table"
+      "text": "Summary table (identical to `mcp/README.md`'s frontmatter table for the five authorable kinds)",
+      "slug": "summary-table-identical-to-mcpreadmemds-frontmatter-table-for-the-five-authorable-kinds"
     },
     {
       "depth": 2,
@@ -13451,6 +13466,11 @@
       "depth": 2,
       "text": "Constraints: Impact and blast radius",
       "slug": "constraints-impact-and-blast-radius"
+    },
+    {
+      "depth": 2,
+      "text": "Constraints: Relation rationale, read equals write",
+      "slug": "constraints-relation-rationale-read-equals-write"
     },
     {
       "depth": 2,

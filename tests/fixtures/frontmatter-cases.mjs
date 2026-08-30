@@ -199,6 +199,31 @@ export const CASES = [
       body: "본문",
     },
   },
+  {
+    // The inline flow-map form `add_relation(why)` actually writes, with the value
+    // quoted because it carries a comma and a colon. Unquoted, the comma would end
+    // the entry early and turn the rest of the sentence plus the next slug into a
+    // pseudo-key (the acp-runtime accident, 2026-08-30). Every parser must read
+    // one map with two string entries, or `find_path` and the compiler read a
+    // rationale the writer never meant.
+    name: "relation_notes inline flow map — quoted values with commas and colons",
+    input:
+      '---\nkind: capability\ntitle: T\ndependencies: [capabilities/mcp-server]\nrelates: [capabilities/reviewed-ontology-writing]\n' +
+      'relation_notes: { capabilities/mcp-server: "The ACP session receives this server as an mcpServer, ACP sits on top of it.", capabilities/reviewed-ontology-writing: "Permission requests reuse the reviewed contract: read tools continue, write tools pause." }\n---\nbody',
+    expected: {
+      frontmatter: {
+        kind: "capability",
+        title: "T",
+        dependencies: ["capabilities/mcp-server"],
+        relates: ["capabilities/reviewed-ontology-writing"],
+        relation_notes: {
+          "capabilities/mcp-server": "The ACP session receives this server as an mcpServer, ACP sits on top of it.",
+          "capabilities/reviewed-ontology-writing": "Permission requests reuse the reviewed contract: read tools continue, write tools pause.",
+        },
+      },
+      body: "body",
+    },
+  },
   // ── Line endings and encoding (measured in the 2026-07-28 code-quality review) ──
   //
   // This matrix had **zero** CRLF or BOM cases. The 4-way contract guarantees the four

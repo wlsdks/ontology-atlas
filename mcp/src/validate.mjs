@@ -196,20 +196,56 @@ export function validateVaultDocument(raw) {
  * actually declared**, in `target: ` form, that is a swallowed entry rather than a
  * sentence. The condition is narrow — no sentence coincidentally quotes its own
  * neighbour's slug down to the colon.
+ *
+ * The second test covers the key side: every `relation_notes` key must name a
+ * relation this node declares. A comma inside an unquoted value ends the entry
+ * early and turns the remainder plus the next slug into a pseudo-key, which the
+ * value test cannot see. That key is reported as `orphaned-relation-note`.
  */
 function pushSwallowedRelationNoteIssues(frontmatter, issues) {
   const notes = frontmatter.relation_notes;
   if (!notes || typeof notes !== 'object' || Array.isArray(notes)) return;
 
-  // Where this node declared it connects to — if something was swallowed, one of these is inside a value.
-  const targets = new Set();
-  for (const value of Object.values(frontmatter)) {
+  // Where this node declared it connects to: every relation array entry plus the
+  // inline `domain` parent. A note key must name one of these, and if something
+  // was swallowed, one of these is inside a value.
+  const declared = new Set();
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (key === 'relation_notes') continue;
+    if (key === 'domain' && typeof value === 'string' && value.trim()) declared.add(value.trim());
     if (!Array.isArray(value)) continue;
-    for (const item of value) if (typeof item === 'string' && item.includes('/')) targets.add(item);
+    for (const item of value) if (typeof item === 'string' && item.trim()) declared.add(item.trim());
   }
+  // A note may spell its target as the full slug while the array holds the tail
+  // alias, or the other way round; both address one node.
+  const isDeclared = (key) =>
+    declared.has(key) ||
+    [...declared].some((ref) => ref.endsWith(`/${key}`) || key.endsWith(`/${ref}`));
+
+  // Slug-shaped targets only for the value test, so a short alias such as `b`
+  // cannot match ordinary prose by accident.
+  const targets = new Set([...declared].filter((ref) => ref.includes('/')));
   for (const key of Object.keys(notes)) targets.add(key);
 
   for (const [key, value] of Object.entries(notes)) {
+    // The key side of the same accident (found 2026-08-30 in
+    // `capabilities/acp-runtime.md`): an unquoted value containing a comma ends at
+    // the comma, and the rest of the sentence plus the NEXT entry's slug become the
+    // next KEY. The value test below cannot see it because the swallowed slug sits
+    // in a key, not in a value. Any key that names no declared relation is a note
+    // no edge can carry, so every reader silently drops the sentence.
+    if (!isDeclared(key)) {
+      issues.push({
+        code: 'orphaned-relation-note',
+        severity: 'error',
+        message:
+          `the relation_notes key \`${key}\` names no relation this node declares` +
+          (declared.size > 0 ? ` (declared: ${[...declared].join(' · ')})` : '') +
+          '. No edge carries this note, so every reader drops the sentence. ' +
+          'If the key is a swallowed entry (an unquoted value ran past its comma), wrap that value in double quotes and split the entries; ' +
+          'otherwise declare the relation or remove the note.',
+      });
+    }
     if (typeof value !== 'string') continue;
     const swallowed = [...targets].filter(
       (target) => target !== key && value.includes(`${target}: `),
@@ -219,9 +255,9 @@ function pushSwallowedRelationNoteIssues(frontmatter, issues) {
       code: 'swallowed-relation-note',
       severity: 'error',
       message:
-        `relation_notes 의 \`${key}\` 값 안에 다른 항목이 글자로 들어가 있습니다 ` +
-        `(${swallowed.join(' · ')}). 값에 따옴표가 없어 구분자가 안 읽힌 자국입니다 — ` +
-        '그 항목들의 이유가 사라진 상태입니다. 값을 큰따옴표로 감싸고 항목을 나눠 주세요.',
+        `the \`${key}\` value in relation_notes has swallowed other entries as text ` +
+        `(${swallowed.join(' · ')}). The value is unquoted, so the separator was never read -- ` +
+        'those entries have lost their rationale. Wrap the value in double quotes and split the entries.',
     });
   }
 }

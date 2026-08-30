@@ -7,6 +7,26 @@
 
 ---
 
+## 2026-08-30 · The reason on a relation is findable, and the agent reads what it wrote
+
+- `relation_notes` (the one-sentence why stored with a relation, mandatory for every
+  new `depends_on` since the agent gate landed) had never been named where the
+  meta-model lives: it was in no `optional:` list of `mcp/src/schema.mjs`, no row of
+  the frontmatter table in `mcp/README.md`, and nowhere in `docs/ONTOLOGY-ATLAS-SPEC.md`.
+  A reader of the spec concluded the field did not exist. All three now name it, with
+  its shape, its writer, and its readers, and the four-parser contract carries a
+  fixture in the exact form `add_relation(why)` writes.
+- `find_path` claimed to show why two nodes connect and returned only the frontmatter
+  key. Its `edges[]` and `get_concept().outgoingEdges[]` now carry the stored sentence
+  as an optional `rationale` (omitted when none is stored, never null), the same field
+  `query_ontology` path and impact rows already returned.
+- The validator's swallow guard only read values, so a `relation_notes` value with an
+  unquoted comma that turned the next entry into a 100-character pseudo-key passed
+  `validate_vault` with 0 problems (found in the dogfood vault's `acp-runtime`). A key
+  that names no relation the document declares is now `orphaned-relation-note`, the
+  sibling of `swallowed-relation-note`; the dogfood note is repaired; the MCP message is
+  English, as the CLI's already was.
+
 ## 2026-08-30 · ACP next steps move on when the vault does
 
 - Re-reading the same vault after a save no longer makes the completed-turn

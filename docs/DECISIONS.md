@@ -40,6 +40,146 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The map slice is withdrawn: the owner meant the architecture tab
+
+**Convened because**: after the council above, the owner said the Map tab had nothing to
+touch and that the reference screenshot (cards with a summary, edges with a sentence)
+was about the **architecture tab**, all along. The caller had read the screenshot as the
+Map's domain view because it draws domains joined by edges; that reading was wrong.
+
+**Decision**: the canvas half of the council's slice (its PR 3, "the map says what an
+area is") is withdrawn before any code. The chosen direction B for it is void. The
+plumbing half stands on its own merits, independent of any screen: `relation_notes`
+named in the meta-model, `find_path` and `get_concept` returning the stored rationale,
+the validator's key-side swallow guard, and the repaired dogfood note are defects the
+council measured, not map features.
+
+**What the council still taught, and carries to the architecture tab**: text must never
+cross the outline of the shape it belongs to (now gated per line on the architecture
+canvas); a sentence drawn on a surface must be the same string the agent receives; a
+blank is drawn as nothing, never filled by a generator; and the owner's request may be
+about the feel of dense cards as much as their content.
+
+**Applied rule**: the target screen goes in the first line of every brief from here.
+**Signed**: stark
+
+**Status**: standing
+
+## PO Council Verdict — the map says what an area is and why two areas are joined
+
+**Convened because**: the owner showed the reference's Domain view (cards with a sentence,
+edges with a sentence) and asked for that feel; a solo PO pass scored two slices and found a
+fatal zero in one and a public schema change in the other. Both premises were wrong, and the
+council's first job turned out to be finding out why a competent pass could believe them.
+
+**What every seat measured the same way**: at 1512×945 the spine view draws 9 domain
+nodes, each a count and a name; 60 strokes, none with text; the click popover carries **no
+sentence either** (complete innerText: `Orders / Domain / changed 1w ago / Edit / contains 14
+/ used by 2 / leans on 3 / belongs to 1 / evidence 1 / order / order / Full detail`), so the
+sentence lives on the third surface. The reference's 10 cards and 10 edges all carry one.
+
+**The two premises, corrected**:
+
+1. *"Relations have no sentence field"* is false. `relation_notes: { <target-slug>: "why" }`
+   ships end to end: `add_relation(why)` writes it in the same frontmatter write and requires
+   it for every new `depends_on`; the CLI refuses a `depends_on` without `--why`; the
+   compiler promotes it to `edge.rationale`; `query_ontology` path and impact return it and
+   grade `declared_with_rationale` vs `review_required`; the web derives it onto the edge and
+   shows it in the hover card and edge panel; rename and remove preserve it. It is absent from
+   `mcp/src/schema.mjs`'s `optional:` lists, from `mcp/README.md`'s frontmatter table, and
+   from `docs/ONTOLOGY-ATLAS-SPEC.md`, the sole owner of the meta-model. A reader of the spec
+   concludes it does not exist. That omission is the root defect of this council.
+2. *"Dogfood domains have no sentence (0/8)"* is false as an operative fact. `description:`
+   is 0/8, but `list_concepts({summary:true})` returns a summary for 8/8 from the body's
+   first prose paragraph (`extractSummaryExcerpt`, `mcp/src/vault.mjs`). That helper exists
+   only in the MCP tree; the web has no equivalent. The empty-card fear was a key-choice
+   error, and the fix is a condition: whatever the canvas draws must be the same string the
+   agent receives, from one shared helper.
+
+**What the council found that the pass did not**:
+
+- The demo the owner looks at draws 16 `depends` strokes at rest with 0 rationales, while
+  the product's own README calls an unfounded edge "a mind-map line, not an ontology claim".
+  12 of those are domain→domain; the rest of the 60 (44 `contains`) run to folded children
+  that are off-canvas at spine altitude.
+- The map's own relation writer (`relation-proposal.ts`, 272 lines) has no `why` field. The
+  product demands a reason from every agent and cannot accept one from a person. Dogfood
+  coverage after months of the agent gate: 18 of 207 relations (8.7%). That is a writer
+  defect, not a fill-rate law.
+- `find_path` returns `{from, to, via}` and drops the rationale that `query_ontology(path)`
+  already returns; `mcp/README.md` claims `find_path` shows "why". Documentation overclaim.
+- `docs/ontology/capabilities/acp-runtime.md` carries a `relation_notes` flow map whose
+  unquoted comma swallowed the next entry into the *key*; `validate_vault` reports 0
+  problems because the swallow guard only inspects values.
+- The canvas paints labels in `-apple-system, 'SF Pro Text'` while every DOM string is
+  Pretendard; the count numeral is already 8–8.9px (derived from radius) and yields to the
+  10px name, so the "numeral outweighs the name" reading in Round 1 was a misread of the
+  expand pill's 13px constant; the readout strip's last word is occluded by the mascot badge
+  at exactly 1512 (`obstacleInsets.right = 0`); "Tap a node" and "CLICK A DOT" name one
+  thing two ways; the `?` glossary calls the count "Number on a circle" (it is inside a
+  square).
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Shape a slice | Problem insight 4 · User moment 4 |
+| Craft | Shape a slice; word and geometry fixes now | Verification 3 |
+| Steward | Shape a slice; A needs no exemption on the same-string condition | Ontology value 4 · Agent value 3 |
+| Wedge | Shape a slice; fill and document before paint | Differentiation 3 |
+| Leverage | Shape a slice; two working days, one PR train | appetite and slice |
+
+**Rubric total**: 21/24 (fatal zeros: none — the pass's Agent value 0 for A was withdrawn by
+the steward on the same-string condition).
+
+**Decisive disagreement**: whether relation sentences may be painted at rest. Steward argued
+hover/focus only from 8.7% fill and the provenance risk (a minted sentence reads like a typed
+one); leverage and craft argued rest-tier painting is a 12-string set the demo can fill to
+100% in an afternoon. Resolved by narrowing: at rest, only on domain→domain edges that carry
+a note, only when both endpoints are labelled and the placer finds room; hover/selected at any
+altitude; nothing is ever generated to fill a blank.
+
+**Decision (accountable: owner, delegated to the caller for this session)**: shape one slice
+in three PRs, smallest first, each shippable alone.
+
+1. **Make the field findable, and make the agent's read match its write.** Name
+   `relation_notes` in `schema.mjs` optional lists, `mcp/README.md`'s table, and SPEC §3/§5;
+   add one fixture row to the parser contract. `find_path().edges[]` and
+   `get_concept().outgoingEdges[]` carry `rationale` (optional, parity with `query_ontology`;
+   regenerate the surface and the drift test). Extend the swallow guard to keys; repair
+   `acp-runtime.md`. No design gate: nothing is drawn.
+2. **Let a person say why, and give the demo its reasons.** A `why` field in the web relation
+   writer (parity with the agent gate). Author `relation_notes` for the sample's 12
+   domain→domain `depends` edges. Ship craft's word and geometry fixes: one noun for the drawn
+   shape, "Spine view" → plain words, the glossary's count entry corrected and moved into the
+   visible words panel, the readout strip reserved against the badge.
+3. **The canvas.** Lift the summary helper into a shared package so web and MCP return one
+   string; canvas font to Pretendard; a two-line caption under the ≤10 labels the budget
+   already paints, in capability ink (5.37:1; element ink fails at 3.72:1), fixed measure,
+   drawn only when the string exists and carrying the stale-summary mark; suppress
+   folded-child `contains` strokes at spine altitude; then the sentence on the 12 domain
+   edges that carry one. This PR goes through `/design-directions` and `/design-council`
+   before code, because it changes what the flagship draws at rest. The count numeral and the
+   name sizes do not move (design-infoviz, measured).
+
+**Slice**: IN the three PRs above · OUT a new schema key, capability chips at rest (27–45
+labels: the wall of names the 2026-08-29 falsifier already killed), card-shaped nodes, any
+size change to the numeral or name, any sentence generated to fill a blank · appetite two
+working days for PRs 1–2, PR 3 sized by its own directions pass.
+
+**Recorded dissent** (craft, leverage, evidence — the same point from three seats): the
+owner's request may have been about the *feel* of dense cards, not their content. Two lines
+of tertiary 9.5px text add 2.6% ink to a canvas that is mostly empty ground, and a correctly
+seeded 21-string map may still look wrong to the person who asked. — **falsifier**: the owner
+looks at the seeded map and says it still does not look like the reference. — **revisit**:
+if that is observed, the next pass is about fill and layout (the map's ink share), not about
+sentences, and it starts at `/design-directions` with that measurement.
+
+**Second dissent** (wedge): the agent gate has produced 8.7% coverage in months; if the
+human `why` field ships and coverage stays under 25% by the next release, the rationale loop
+is a rule people route around, and Atlas's advantage here is a schema, not a practice. —
+**falsifier**: dogfood coverage under 25% at the next release. — **revisit**: then.
+
+**Status**: standing
+
 ## 2026-08-30 — ACP next actions hold current facts through refresh and advance after source binding
 
 **Convened because**: the standing 2026-08-29 completed-turn decision said that

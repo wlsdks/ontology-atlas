@@ -89,6 +89,7 @@ import {
   GRAPH_ARRAY_KEYS,
   VaultConflictError,
   collectNeighborRefs,
+  relationNoteFor,
   FULL_BODY_MAX_CHARS,
   GET_CONCEPTS_FULL_BODY_MAX,
   deleteDoc,
@@ -1470,11 +1471,23 @@ const CONCEPT_NEIGHBORS_OUTPUT_SCHEMA = Object.freeze({
   required: ['domains', 'domain', 'capabilities', 'elements', 'dependencies', 'relates', 'contains', 'describes'],
   additionalProperties: false,
 });
+/**
+ * One stored relation rationale, as `add_relation(why)` wrote it into the source
+ * document's `relation_notes` map. Optional on every edge shape that carries it:
+ * the key is omitted (never null) when the document stores no sentence for that
+ * target, so absence reads as "no claim", not as an empty claim.
+ */
+const EDGE_RATIONALE_OUTPUT_SCHEMA = Object.freeze({
+  ...NON_BLANK_STRING_SCHEMA,
+  description:
+    'One-line rationale stored with this relation in the source document\'s `relation_notes` map (written by `add_relation(why)`). Omitted when no note is stored for the target.',
+});
 const OUTGOING_EDGE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
     to: NON_BLANK_STRING_SCHEMA,
     via: NON_BLANK_STRING_SCHEMA,
+    rationale: EDGE_RATIONALE_OUTPUT_SCHEMA,
   },
   required: ['to', 'via'],
   additionalProperties: false,
@@ -2403,7 +2416,7 @@ ${CONSTRUCTION_LIFECYCLE_EN}
 8. \`get_concept({slug})\` or \`get_concept({uid})\` — exact node identity as \`{uid, slug}\` plus frontmatter, body excerpt, graph neighbors / outgoingEdges, and \`mtime\`. **Capture the \`mtime\`** if you plan to write later. **For K specific selectors use one of \`get_concepts({slugs: [...]})\` / \`get_concepts({uids: [...]})\` (max 50).**
 9. \`find_backlinks(slug)\` — understand how a node is referenced (run *before* rename / merge). Each row already includes \`domain\` + \`mtime\` — no follow-up \`get_concept\` needed for sort/filter.
 10. \`find_neighbors(slug)\` — one-hop graph subgraph around a node; use \`direction\` / \`types\` to inspect incoming, outgoing, or both.
-11. \`find_path(from, to)\` — "how does A relate to B?" (BFS, undirected). Returns \`hops: [slug...]\`, aligned \`nodes: [{slug, kind, title, domain?}]\`, **and \`edges: [{from, to, via}]\` where \`via\` is the frontmatter key (\`domains\` / \`domain\` / \`capabilities\` / \`elements\` / \`dependencies\` / \`relates\` / \`contains\` / \`describes\`) that linked the pair** — so you see not just *that* A and B are connected but *why*.
+11. \`find_path(from, to)\` — "how does A relate to B?" (BFS, undirected). Returns \`hops: [slug...]\`, aligned \`nodes: [{slug, kind, title, domain?}]\`, **and \`edges: [{from, to, via, rationale?}]\` where \`via\` is the frontmatter key (\`domains\` / \`domain\` / \`capabilities\` / \`elements\` / \`dependencies\` / \`relates\` / \`contains\` / \`describes\`) that linked the pair and \`rationale\` is the stored \`relation_notes\` sentence when one exists** — so you see not just *that* A and B are connected but by which key and, when it was written down, *why*.
 12. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates; project roots and vault README are excluded by default).
 13. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 14. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
@@ -2691,7 +2704,7 @@ const TOOLS = [
   {
     name: 'get_concept',
     description:
-      'Fetch one node by exactly one selector: `slug` (canonical slug or unique alias) or immutable `uid`. Successful responses always carry both the permanent `uid` and current canonical `slug`; graph relations and graph-operation inputs remain slug-based. Returns frontmatter, body, direct graph neighbors, outgoingEdges, and mtime. **By default you get `excerpt` — the first prose paragraph only. The node body is where the construction rules put definition, evidence, confidence, and in-scope/out-of-scope, so pass `body: "full"` whenever you are reading a node to answer a question rather than just to identify it.** `bodyInfo` always reports `totalChars` / `returnedChars` / `truncated`, so a partial read is never silent. **For K specific selectors in one call use `get_concepts({slugs: [...]})` or `get_concepts({uids: [...]})`.** When a slug does not resolve, structured growth guidance remains available.',
+      'Fetch one node by exactly one selector: `slug` (canonical slug or unique alias) or immutable `uid`. Successful responses always carry both the permanent `uid` and current canonical `slug`; graph relations and graph-operation inputs remain slug-based. Returns frontmatter, body, direct graph neighbors, outgoingEdges (each `{to, via, rationale?}`, the rationale being the stored `relation_notes` sentence when one exists), and mtime. **By default you get `excerpt` — the first prose paragraph only. The node body is where the construction rules put definition, evidence, confidence, and in-scope/out-of-scope, so pass `body: "full"` whenever you are reading a node to answer a question rather than just to identify it.** `bodyInfo` always reports `totalChars` / `returnedChars` / `truncated`, so a partial read is never silent. **For K specific selectors in one call use `get_concepts({slugs: [...]})` or `get_concepts({uids: [...]})`.** When a slug does not resolve, structured growth guidance remains available.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3648,10 +3661,11 @@ const TOOLS = [
     name: 'find_path',
     description:
       'Shortest path between two nodes (undirected BFS). Returns ' +
-      '`{ from, to, hops: [slug...], nodes: [{uid, slug, kind, title, domain?}], edges: [{from, to, via}] }` where each ' +
+      '`{ from, to, hops: [slug...], nodes: [{uid, slug, kind, title, domain?}], edges: [{from, to, via, rationale?}] }` where each ' +
       '`via` is the frontmatter key (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / ' +
-      '`relates` / `contains` / `describes`) that linked the two slugs — so the ' +
-      'agent sees not just *that* A and B are connected but *why*. ' +
+      '`relates` / `contains` / `describes`) that linked the two slugs and `rationale` is the one-line ' +
+      '`relation_notes` sentence the declaring document stores for that pair (present only when one is stored) — so the ' +
+      'agent sees not just *that* A and B are connected but by which key and, when someone wrote it down, *why*. ' +
       'Returns `{ found: false }` when no path is found within maxHops, plus a `growthHint` — a concrete add_relation (both endpoints exist) or add_concept (an endpoint is missing) example so the unanswered question becomes a vault-growth signal instead of a dead end. maxHops defaults to 5 and is capped at 20.',
     inputSchema: {
       type: 'object',
@@ -3687,6 +3701,7 @@ const TOOLS = [
               from: NON_BLANK_STRING_SCHEMA,
               to: NON_BLANK_STRING_SCHEMA,
               via: NON_BLANK_STRING_SCHEMA,
+              rationale: EDGE_RATIONALE_OUTPUT_SCHEMA,
             },
             required: ['from', 'to', 'via'],
             additionalProperties: false,
@@ -7319,10 +7334,13 @@ function getConcept({ slug, uid, body }, context = {}) {
     context.danglingIssuesBySlug ??
     groupDanglingIssuesBySlug(context.docs ?? loadVaultDocs(VAULT_ROOT));
   warnings.push(...(danglingIssuesBySlug.get(doc.slug) ?? []));
-  const outgoingEdges = collectNeighborRefs(doc).map(({ key, ref }) => ({
-    to: ref,
-    via: key,
-  }));
+  // `rationale` is the document's own `relation_notes` sentence for that target,
+  // present only when one is stored — the same optional field `find_path` and
+  // `query_ontology` edges carry, so an agent reads what `add_relation(why)` wrote.
+  const outgoingEdges = collectNeighborRefs(doc).map(({ key, ref }) => {
+    const rationale = relationNoteFor(doc, ref);
+    return rationale === undefined ? { to: ref, via: key } : { to: ref, via: key, rationale };
+  });
   // **Say that it was truncated.** Even excerpt mode must carry the original
   // length and the number of characters withheld, so the caller knows there is
   // more and can ask again. It used to cut silently, and an agent handed only the

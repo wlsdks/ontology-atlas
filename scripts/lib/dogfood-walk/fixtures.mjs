@@ -274,6 +274,9 @@ function outgoingEdgesSchemaFixture() {
       properties: {
         to: { type: "string" },
         via: { type: "string" },
+        // The stored `relation_notes` sentence; optional, so the pin in
+        // `mcp/scripts/verify.mjs` requires the property, not the value.
+        rationale: { type: "string" },
       },
       additionalProperties: false,
     },
@@ -1052,6 +1055,9 @@ export function makeDogfoodToolsList() {
                   from: { type: "string" },
                   to: { type: "string" },
                   via: { type: "string" },
+                  // Optional stored `relation_notes` sentence, mirrored from the
+                  // `find_path` pin in `mcp/scripts/verify.mjs`.
+                  rationale: { type: "string" },
                 },
                 additionalProperties: false,
               },
