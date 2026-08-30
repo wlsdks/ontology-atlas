@@ -25,7 +25,8 @@ const entitiesMocks = vi.hoisted(() => ({
   computeLocalVaultFingerprint: vi.fn(),
 }));
 
-vi.mock('@/entities/docs-vault', () => ({
+vi.mock('@/entities/docs-vault', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/entities/docs-vault')>()),
   buildLocalManifestWithEntries: entitiesMocks.buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental: entitiesMocks.rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint: entitiesMocks.computeLocalVaultFingerprint,

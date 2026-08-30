@@ -8,7 +8,13 @@ import {
   consumeQueuedAgentChatIntent,
   subscribeAgentChatIntent,
 } from "@/shared/lib/agent-chat-intent";
-import { isGuardedRuntime, runtimeOwnsWriteGate } from "@/features/acp-session/model/runtime-gate";
+import {
+  isGuardedRuntime,
+  runtimeOwnsWriteGate,
+  vaultMcpServers,
+  vaultSelfReadSlot,
+  useChatSuggestions,
+} from "@/features/acp-session";
 import { agentChatDoor } from "../model/agent-chat-door";
 import {
   AcpChatPanel,
@@ -17,10 +23,7 @@ import {
   type AcpMapIntent,
   type AcpOntologyRelationPreview,
 } from "@/widgets/acp-chat-panel";
-import { vaultMcpServers, vaultSelfReadSlot } from "@/features/acp-session/model/vault-mcp-server";
-import { useChatSuggestions } from "@/features/acp-session/model/use-chat-suggestions";
-import type { ChatSuggestion } from "@/features/acp-session/model/chat-suggestions";
-import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
+import type { ChatSuggestion, AcpTurnActivity } from "@/features/acp-session";
 import { cn } from "@/shared/lib/cn";
 import {
   type CSSProperties,
@@ -44,13 +47,14 @@ import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle,
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
-import { VaultSourceHydrationBoundary } from "@/entities/vault-session";
-import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
+  VaultSourceHydrationBoundary,
   useAgentServer,
   useLocalVault,
   useSummaryFreshness,
+  useVaultSessionIdentityScope,
 } from "@/entities/vault-session";
+import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
 import {
   VaultOpenGuideSheet,
 } from "@/features/docs-vault-local";
@@ -157,12 +161,12 @@ import { GestureHint } from "@/widgets/gesture-hint";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
-import { resolveToastBottomOffsetForStack } from "@/shared/ui/toast-position";
+import { resolveToastBottomOffsetForStack, resolveToastRightOffset } from "@/shared/ui/toast-position";
 import {
   getProjectRuntimeDetailHref,
   type ProjectImpactMode,
 } from "@/entities/project";
-import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
+import { buildDocsVaultHref, buildNewNodeDoc, daysBehind } from "@/entities/docs-vault";
 import {
   buildOntologyChangeSet,
   buildTopologyMeaningEditorNodeHref,
@@ -179,6 +183,13 @@ import {
   type OntologyChangeSet,
   type MeaningEditRelation,
   useRelationVocabulary,
+  buildOntologyTree,
+  computeDomainCensusRows,
+  computeOntologyChangeset,
+  domainCensusById,
+  filterTreeExcludeKind,
+  useChangeBaseline,
+  computeCanonicalCensus,
 } from "@/entities/knowledge-graph";
 import {
   MeaningEditorPanel,
@@ -187,14 +198,6 @@ import {
 import { copyText } from "@/shared/lib/copy-text";
 import { copyHandoffWithFeedback } from "../lib/copy-handoff-with-feedback";
 import { formatProjectSourceHandoff } from "@/shared/lib/project-source-receipt";
-import {
-  buildOntologyTree,
-  computeDomainCensusRows,
-  computeOntologyChangeset,
-  domainCensusById,
-  filterTreeExcludeKind,
-  useChangeBaseline,
-} from "@/entities/knowledge-graph/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import { useBootstrapFlow } from "../model/use-bootstrap-flow";
 import { useAgentConnectModel } from "../model/use-agent-connect-model";
@@ -221,7 +224,6 @@ import {
   deriveDeeplinkAncestorExpansion,
   clearVaultScopedRouteState,
 } from "../model/url-state";
-import { useVaultSessionIdentityScope } from "@/entities/vault-session";
 import {
   computeTopologyShortestPath,
   formatTopologyPathAgentPacket,
@@ -245,7 +247,6 @@ import {
   resolveOntologyRelationPreview,
 } from "../lib/resolve-agent-focus-node";
 import { resolveTopologyNodeEditTarget } from "../lib/topology-node-edit";
-import { computeCanonicalCensus } from "@/entities/knowledge-graph/lib/ontology-tree/canonical-census";
 import {
   nodeIntent,
   screenIntentFor,
@@ -257,9 +258,7 @@ import {
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import { useAgentDockDefaultOpen } from "@/shared/lib/use-agent-dock-default";
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
-import { daysBehind } from "@/entities/docs-vault";
 import { buildAgentAnalyzePrompt } from "@/shared/config/agent-prompts";
-import { resolveToastRightOffset } from "@/shared/ui/toast-position";
 import { MapEntryLoadingVisual } from "@/shared/ui/map-entry-loading-visual";
 import { RIGHT_DOCK_WIDTH_VAR } from "@/shared/lib/right-dock-reserve";
 
@@ -268,11 +267,9 @@ import { buildNavRailContextHrefs } from "../lib/nav-rail-context-hrefs";
 import { restoreTopologyFocusAfterDatasheetClose } from "../lib/topology-focus-return";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { OntologyBootstrapForm } from "./OntologyBootstrapForm";
-import { TopologyV2EdgePanel } from "@/widgets/topology-map-v2/ui/TopologyV2EdgePanel";
-import { PLAIN_TIER_REVEAL } from "@/widgets/topology-map-v2/model/tier-visibility";
-import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
-import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import {
+  TopologyV2EdgePanel,
+  PLAIN_TIER_REVEAL,
   TopologyMapV2,
   TopologyV2ContextMenu,
   TopologyV2DetailPanel,
@@ -284,6 +281,8 @@ import {
   formatV2HandoffText,
   refreshIndexDependentTokens,
 } from "@/widgets/topology-map-v2";
+import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
+import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { buildTopologyV2Graph } from "../lib/topology-v2-adapter";
 import { deriveDustySlugs } from "../lib/topology-dusty";

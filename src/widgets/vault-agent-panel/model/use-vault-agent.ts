@@ -17,9 +17,10 @@ import {
   type ScreenContextSnapshot,
   type VaultReadDoc,
   type VaultReadPort,
+  applyProposal,
+  proposalToClipboardPacket,
+  buildProposal,
 } from '@/features/vault-agent';
-import { applyProposal, proposalToClipboardPacket } from '@/features/vault-agent/model/proposal-applier';
-import { buildProposal } from '@/features/vault-agent/model/proposal-builder';
 import { llmChat, llmChatErrorMessage } from '@/shared/lib/tauri-llm';
 import type { ConnectionProvider } from '@/shared/lib/tauri-secrets';
 

@@ -1,4 +1,4 @@
-import { isContainmentRelation } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,

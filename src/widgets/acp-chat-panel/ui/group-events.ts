@@ -1,4 +1,4 @@
-import type { AcpEvent } from '@/features/acp-session/model/use-acp-session';
+import type { AcpEvent } from '@/features/acp-session';
 
 type AcpWorkEvent = Extract<AcpEvent, { kind: 'thought' | 'tool' }>;
 

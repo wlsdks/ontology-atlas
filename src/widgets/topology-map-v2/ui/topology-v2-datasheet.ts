@@ -32,9 +32,9 @@ export {
   buildConnections as buildV2Connections,
   groupConnectionsByDirection as groupV2ConnectionsByDirection,
   type DatasheetConnection as V2DatasheetConnection,
-} from "@/entities/knowledge-graph/lib/ontology-tree/connections";
-import { groupConnectionsByRole } from "@/entities/knowledge-graph/lib/ontology-tree/connections";
-import type { DatasheetConnection as V2DatasheetConnection } from "@/entities/knowledge-graph/lib/ontology-tree/connections";
+} from "@/entities/knowledge-graph";
+import { groupConnectionsByRole } from "@/entities/knowledge-graph";
+import type { DatasheetConnection as V2DatasheetConnection } from "@/entities/knowledge-graph";
 
 /**
  * S2 part 3 — when the "Contains" (what this contains) list is long (>15), show an

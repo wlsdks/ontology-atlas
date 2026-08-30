@@ -17,8 +17,8 @@ import {
   type ConnectionSourceEdge,
   type ConnectionSourceNode,
   type DatasheetConnection,
-} from "@/entities/knowledge-graph/lib/ontology-tree/connections";
-import { isContainmentRelation } from "@/entities/knowledge-graph/lib/ontology-tree/relations";
+  isContainmentRelation,
+} from "@/entities/knowledge-graph";
 
 export interface FullDetailConnectionRow {
   id: string;

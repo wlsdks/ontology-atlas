@@ -4,9 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Eye, GitCompareArrows, ShieldAlert } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { permissionIntent } from '@/features/acp-session/model/permission-intent';
-import { permissionScope } from '@/features/acp-session/model/permission-scope';
-import { permissionLocality } from '@/features/acp-session/model/permission-locality';
+import { permissionIntent, permissionScope, permissionLocality } from '@/features/acp-session';
 import { OntologyChangeReview } from '@/features/ontology-change-review';
 import {
   buildOntologyChangeSet,
@@ -16,7 +14,7 @@ import {
 import { Button } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import type { PendingPermission } from '@/features/acp-session/model/use-acp-session';
+import type { PendingPermission } from '@/features/acp-session';
 
 /**
  * The 「May I do this?」 card — it appears whenever policy requires an explicit

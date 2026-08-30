@@ -41,7 +41,7 @@ const LEDGER: Record<string, number> = {
   "features:project-quick-edit->project-data-source": 1,
   "entities:docs-vault->knowledge-graph": 1,
   "entities:docs-vault->project": 4,
-  "entities:vault-session->docs-vault": 6,
+  "entities:vault-session->docs-vault": 5,
   "entities:vault-session->local-fs-handle": 2,
   "entities:vault-session->ontology-class": 1,
 };

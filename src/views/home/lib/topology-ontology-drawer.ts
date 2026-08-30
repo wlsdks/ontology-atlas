@@ -2,16 +2,14 @@ import {
   buildOntologyReachability,
   computeOntologyDependents,
   IMPACT_RELATION_TYPES,
-} from "@/entities/knowledge-graph/lib/ontology-tree";
-import {
-  classifyTopologyRelationQuality,
-  type TopologyRelationQualityBreakdown,
-} from "./topology-analysis";
-import {
   resolveNodeDocument,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
+import {
+  classifyTopologyRelationQuality,
+  type TopologyRelationQualityBreakdown,
+} from "./topology-analysis";
 
 /**
  * The shared "node facts" model behind the compact canvas popover

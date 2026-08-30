@@ -5,7 +5,7 @@ import { FileText } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 import type { AgentProposal, ProposalChange } from '@/features/vault-agent';
-import { summarizeChangeVolume } from '@/features/vault-agent/model/proposal-applier';
+import { summarizeChangeVolume } from '@/features/vault-agent';
 import { Checkbox, controlClass } from '@/shared/ui';
 
 /**

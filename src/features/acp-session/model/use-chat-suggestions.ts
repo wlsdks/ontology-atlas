@@ -3,12 +3,10 @@
 import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 
-import { useDataSourceMode } from '@/entities/vault-session';
-import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
-import { useVaultHealth } from '@/features/vault-ontology/model/use-vault-health';
-import { capabilitiesWithoutImplementationEvidence } from '@/entities/knowledge-graph/lib/vault-health';
-import type { VaultDoc } from '@/entities/docs-vault/model/types';
+import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
+import { useVaultHealth } from '@/features/vault-ontology';
+import { capabilitiesWithoutImplementationEvidence } from '@/entities/knowledge-graph';
+import type { VaultDoc } from '@/entities/docs-vault';
 import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';

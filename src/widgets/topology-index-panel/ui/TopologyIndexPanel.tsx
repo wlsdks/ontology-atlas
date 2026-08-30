@@ -17,7 +17,7 @@ import {
   filterTreeByQuery,
   type DomainCensusRow,
   type OntologyTreeBuildResult,
-} from "@/entities/knowledge-graph/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 import { FirstRunStarterModule } from "@/features/first-run-starter";
 import { computeMaxDomainDescendantCount } from "../lib/domain-subcounts";
 import {

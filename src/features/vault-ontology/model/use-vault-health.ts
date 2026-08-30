@@ -1,14 +1,12 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useDataSourceMode } from '@/entities/vault-session';
-import { useSampleSource } from '@/entities/vault-session';
-import { useLocalVault } from '@/entities/vault-session';
+import { useDataSourceMode, useSampleSource, useLocalVault } from '@/entities/vault-session';
 import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
 import {
   computeVaultHealth,
   type VaultHealthResult,
-} from '@/entities/knowledge-graph/lib/vault-health';
+} from '@/entities/knowledge-graph';
 
 /**
  * Mode-aware vault health verdict — the browser-side twin of

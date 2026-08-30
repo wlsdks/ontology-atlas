@@ -1,10 +1,10 @@
 import type { Category } from "@/entities/category";
-import { projectToInput } from "@/entities/project/model/to-input";
+import { projectToInput } from "@/entities/project";
 import type {
   Project,
   ProjectInput,
   ProjectPosition,
-} from "@/entities/project/model/types";
+} from "@/entities/project";
 import { findProjectPlacement } from "./placement";
 
 function sortProjectsForBulkUpdate(projects: Project[]) {

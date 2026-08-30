@@ -47,33 +47,29 @@ import {
   type OntologyChangeSet,
 } from '@/entities/knowledge-graph';
 import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
-import { useAcpSession, type AcpEvent } from '@/features/acp-session/model/use-acp-session';
-import { turnLiveness } from '@/features/acp-session/model/turn-liveness';
-import { readAcpTrouble } from '@/features/acp-session/model/acp-trouble';
-import { isAgentDoctorAvailable } from '@/features/acp-doctor/model/acp-doctor';
-import { useAgentDoctor } from '@/features/acp-doctor/ui/AgentDoctor';
 import {
+  useAcpSession,
+  type AcpEvent,
+  turnLiveness,
+  readAcpTrouble,
   matchSlashCommands,
   slashQuery,
   type AcpSlashCommand,
-} from '@/features/acp-session/model/slash-commands';
-import { claudeLoginRepairCommand } from '@/features/acp-session/model/claude-login-repair';
-import { modeCopyKey } from '@/features/acp-session/model/mode-copy';
-import { withoutErrorEcho } from '@/features/acp-session/model/error-echo';
-import type { ChatSuggestion } from '@/features/acp-session/model/chat-suggestions';
-import { linkSlugs } from '@/features/acp-session/model/link-slugs';
-import { readToolTargets } from '@/features/acp-session/model/tool-targets';
-import {
+  claudeLoginRepairCommand,
+  modeCopyKey,
+  withoutErrorEcho,
+  linkSlugs,
+  readToolTargets,
   deriveAcpTurnActivity,
   type AcpTurnActivity,
-} from '@/features/acp-session/model/acp-turn-activity';
-import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
-
-import { VAULT_MCP_SERVER_NAME } from '@/features/acp-session/model/vault-mcp-server';
-import {
+  VAULT_MCP_SERVER_NAME,
   deriveAcpMapIntent,
   type AcpMapIntent,
-} from '@/features/acp-session/model/map-intent';
+} from '@/features/acp-session';
+import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
+import type { ChatSuggestion } from '@/features/acp-session';
+import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
+
 
 import { AcpPermissionCard } from './AcpPermissionCard';
 import { groupEvents } from './group-events';

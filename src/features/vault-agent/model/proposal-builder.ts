@@ -2,11 +2,9 @@ import {
   buildVaultMarkdown,
   vaultFolderForKind,
   vaultAgentCreatedBy,
-} from '@/entities/docs-vault';
-import {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
-} from '@/entities/docs-vault/lib/frontmatter-updates';
+} from '@/entities/docs-vault';
 
 import type {
   AgentProposal,

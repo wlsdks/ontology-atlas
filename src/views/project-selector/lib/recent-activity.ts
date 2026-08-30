@@ -1,6 +1,6 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { VaultDoc } from "@/entities/docs-vault";
-import { nearestDomainId } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { nearestDomainId } from "@/entities/knowledge-graph";
 import { resolveAuthoredDescription } from "./authored-description";
 
 export interface RecentActivityRow {

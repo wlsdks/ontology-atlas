@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useDataSourceMode } from '@/entities/vault-session';
-import { useLocalVault } from '@/entities/vault-session';
-import { useStaticVaultSource } from '@/entities/vault-session';
-import { extractProjectBody, findProjectVaultDoc } from '@/entities/docs-vault';
-import { fetchServerDocContent } from '@/entities/docs-vault/lib/server-doc-content';
+import { useDataSourceMode, useLocalVault, useStaticVaultSource } from '@/entities/vault-session';
+import { extractProjectBody, findProjectVaultDoc, fetchServerDocContent } from '@/entities/docs-vault';
 
 export interface UseProjectBodyState {
   /** The real markdown body of project.md. Null when absent or not yet read. */

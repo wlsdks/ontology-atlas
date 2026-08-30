@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { computeDomainCouplingMatrix } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { computeDomainCouplingMatrix } from "@/entities/knowledge-graph";
 
 /** One real edge between a pair of domains — used by the click-to-inspect example list. */
 interface DomainCouplingExampleRow {

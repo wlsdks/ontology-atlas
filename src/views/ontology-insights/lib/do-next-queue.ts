@@ -3,8 +3,8 @@ import {
   buildOntologyHealthSignals,
   isEvidenceOnlyConcept,
   resolveNodeAgentTarget,
+  rankAllByDegree,
 } from "@/entities/knowledge-graph";
-import { rankAllByDegree } from "@/entities/knowledge-graph/lib/ontology-tree";
 
 /**
  * The "to do" tab — insights moving from listing inventory to "so what should I do?". It combines

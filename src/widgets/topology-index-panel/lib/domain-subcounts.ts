@@ -1,4 +1,4 @@
-import { flattenTree, type OntologyTreeNode } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { flattenTree, type OntologyTreeNode } from "@/entities/knowledge-graph";
 
 /**
  * INDEX tree domain rows show a "Capability N · Element M" subcount + a proportional

@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useLocale } from 'next-intl';
 
-import { useLocalVault } from '@/entities/vault-session';
-import { useVaultIdentityScope } from '@/entities/vault-session';
+import { useLocalVault, useVaultIdentityScope } from '@/entities/vault-session';
 import {
   forgetLegacyUnscopedReadAt,
   readReadAt,
   writeReadAt,
 } from './read-at-storage';
-import { computeVaultHealth } from '@/entities/knowledge-graph/lib/vault-health';
+import { computeVaultHealth } from '@/entities/knowledge-graph';
 import {
   AGENT_TASK_VISIBLE_WINDOW_MS,
   activeSession,

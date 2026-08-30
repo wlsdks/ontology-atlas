@@ -7,12 +7,12 @@ import {
   resolveNodeAgentTarget,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
+  isWithinRecentWindow,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { AgentActivityStatus } from "@/entities/vault-session";
 import { computeEditAge } from "@/shared/lib/edit-age";
 import type { LastEditSubjectKind } from "@/shared/lib/last-edit-subject";
-import { isWithinRecentWindow } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { computeUpdatedAgo } from "../lib/format-updated-ago";
 import { hasNodeMtimeConflict, resolveNodeLastEditSubject } from "../lib/resolve-node-edit-subject";
 import { buildTopologyOntologyDrawerModel } from "../lib/topology-ontology-drawer";

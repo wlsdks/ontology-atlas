@@ -6,7 +6,7 @@ import {
   TopologyV2KindGlyph,
   TopologyV2TraceMark,
 } from "@/shared/ui";
-import { isContainmentRelation } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { isContainmentRelation } from "@/entities/knowledge-graph";
 import { relationTypeIndigo } from "../../lib/relation-type-tone";
 import type { ImpactRanking } from "../../lib/impact-ranking";
 import { InsightsBar } from "../parts/InsightsBar";

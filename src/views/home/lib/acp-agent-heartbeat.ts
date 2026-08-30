@@ -31,7 +31,7 @@
  */
 
 import type { AgentActivityHeartbeat } from "@/entities/vault-session";
-import type { AcpTurnActivity } from "@/features/acp-session/model/acp-turn-activity";
+import type { AcpTurnActivity } from "@/features/acp-session";
 
 /** Where the heartbeat lives — the same sidecar folder as `agent-activity.json`. */
 const AGENT_HEARTBEAT_VAULT_DIR = ".ontology-atlas";

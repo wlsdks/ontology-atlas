@@ -13,7 +13,7 @@ import { IconButton, controlClass, useToast } from "@/shared/ui";
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
-} from "@/entities/knowledge-graph/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 import type { VaultManifest } from "@/entities/docs-vault";
 import type { SkillParityModel, SkillParityRow } from "../../lib/skill-parity";
 

@@ -46,7 +46,7 @@
 import {
   ambientSleepFactor,
   isAmbientAsleep,
-} from '@/widgets/topology-map-v2/model/ambient-sleep';
+} from '@/widgets/topology-map-v2';
 
 interface GatewayFrameTick {
   /** rAF timestamp (ms) — baseline for paint throttling (30fps layer). */

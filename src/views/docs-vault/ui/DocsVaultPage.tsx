@@ -34,6 +34,8 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
   VaultConflictError,
   useLocalVault,
+  useStaticVaultSource,
+  VaultSourceHydrationBoundary,
 } from '@/entities/vault-session';
 import {
   OntologyStarterCta,
@@ -79,7 +81,18 @@ import {
   parseDocsTreeSort,
   type DocsTreeGroup,
   type DocsTreeSort,
-} from '@/widgets/docs-vault/lib/tree-order';
+  DocsVaultBacklinks,
+  DocsVaultEditor,
+  DocsVaultUnifiedPalette,
+  DocsVaultViewer,
+  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
+  DOCS_VAULT_REPO_ROOT,
+  PINNED_DOCS_STORAGE_PREFIX,
+  useDocsBodyIndex,
+  migrateLegacyRecentDocs,
+  pushRecentDoc,
+  RECENT_DOCS_STORAGE_PREFIX,
+} from '@/widgets/docs-vault';
 import {
   buildTagIndexForDocs,
   filterDocsByCollection,
@@ -97,27 +110,11 @@ import {
   buildTopologyDeeplinkForDoc,
   deriveOntologyFromVault,
   type VaultManifest,
+  loadStaticVaultHeadings,
+  resolveStaticVaultSource,
+  type StaticVaultHeadings,
 } from '@/entities/docs-vault';
-import { useStaticVaultSource } from '@/entities/vault-session';
-import { VaultSourceHydrationBoundary } from '@/entities/vault-session';
-import { DocsVaultBacklinks } from '@/widgets/docs-vault/ui/DocsVaultBacklinks';
-import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
-import { DocsVaultUnifiedPalette } from '@/widgets/docs-vault/ui/DocsVaultUnifiedPalette';
-import { DocsVaultViewer } from '@/widgets/docs-vault/ui/DocsVaultViewer';
-import {
-  ONTOLOGY_ATLAS_REPO_BLOB_BASE,
-  DOCS_VAULT_REPO_ROOT,
-} from '@/widgets/docs-vault';
-import type { VaultCommand } from '@/widgets/docs-vault/model/command';
-import {
-  PINNED_DOCS_STORAGE_PREFIX,
-} from '@/widgets/docs-vault/lib/pinned-docs';
-import { useDocsBodyIndex } from '@/widgets/docs-vault/lib/use-docs-body-index';
-import {
-  migrateLegacyRecentDocs,
-  pushRecentDoc,
-  RECENT_DOCS_STORAGE_PREFIX,
-} from '@/widgets/docs-vault';
+import type { VaultCommand } from '@/widgets/docs-vault';
 
 const subscribeDesktopRuntime = () => () => undefined;
 const readDesktopRuntime = () => isTauriVaultRuntime();
@@ -186,11 +183,6 @@ import {
   buildOntologyInsightsReturnHref,
   parseInsightsReturnMarker,
 } from "@/entities/knowledge-graph";
-import {
-  loadStaticVaultHeadings,
-  resolveStaticVaultSource,
-  type StaticVaultHeadings,
-} from '@/entities/docs-vault';
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');

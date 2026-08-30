@@ -1,4 +1,4 @@
-import { applyFrontmatterUpdates } from '@/entities/docs-vault/lib/frontmatter-updates';
+import { applyFrontmatterUpdates } from '@/entities/docs-vault';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { buildDocLinkMarkdown } from './relative-doc-path';
 

@@ -6,7 +6,7 @@ import {
   computeRecentChanges,
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   type AdaptiveRecentChangesResult,
-} from '@/entities/knowledge-graph/lib/ontology-tree';
+} from '@/entities/knowledge-graph';
 import { useOntologyInsight } from './use-ontology-insight';
 import { useVaultDocFreshnessIndex } from './use-vault-doc-freshness';
 

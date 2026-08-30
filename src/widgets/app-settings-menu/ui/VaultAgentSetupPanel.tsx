@@ -28,7 +28,7 @@ import {
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
 } from '@/features/docs-vault-local';
 import { SETTINGS_SECTION_LABEL } from './settings-primitives';
-import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph/lib/ontology-tree';
+import { formatAgentPostChangeSyncPacket } from '@/entities/knowledge-graph';
 import type { VaultManifest } from '@/entities/docs-vault';
 import type { AgentClientId } from '@/entities/vault-session';
 import { copyText } from '@/shared/lib/copy-text';

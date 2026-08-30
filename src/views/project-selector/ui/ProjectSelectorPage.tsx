@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { buildOntologyNodeHref } from "@/entities/knowledge-graph";
+import { buildOntologyNodeHref, buildContainmentParents } from "@/entities/knowledge-graph";
 import {
   getProjectRuntimeDetailHref,
   getTopologyProjectHref,
@@ -11,11 +11,9 @@ import {
 } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
-import { useDataSourceMode, VaultSourceHydrationBoundary } from "@/entities/vault-session";
-import { useLocalVault } from "@/entities/vault-session";
+import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { formatDate } from "@/shared/lib/format-date";
-import { buildContainmentParents } from "@/entities/knowledge-graph/lib/ontology-tree";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui/control-class";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";

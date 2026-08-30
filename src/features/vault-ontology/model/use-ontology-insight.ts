@@ -2,20 +2,19 @@
 
 import { useMemo } from 'react';
 import { useLocale } from 'next-intl';
-import { useDataSourceMode } from '@/entities/vault-session';
-import { useSampleSource } from '@/entities/vault-session';
+import { useDataSourceMode, useSampleSource } from '@/entities/vault-session';
 import {
   type KnowledgeGraphNode,
   type KnowledgeGraphEdge,
   type KnowledgeProjectInsight,
   stripVaultSlugPrefix,
+  isContainmentRelation,
 } from '@/entities/knowledge-graph';
 import {
   deriveOntologyFromVault,
   resolveStaticVaultSource,
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
-import { isContainmentRelation } from '@/entities/knowledge-graph/lib/ontology-tree';
 import { useVaultOntology } from './use-vault-ontology';
 
 // Vault and dogfood nodes have frontmatter as their source of truth and carry no

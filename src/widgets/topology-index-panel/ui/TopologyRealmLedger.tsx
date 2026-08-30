@@ -13,7 +13,7 @@ import {
   filterTreeByQuery,
   type DomainCensusRow,
   type OntologyTreeNode,
-} from "@/entities/knowledge-graph/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 import { RealmBlockExportAction } from "@/features/ontology-blocks";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import { controlClass } from "@/shared/ui";

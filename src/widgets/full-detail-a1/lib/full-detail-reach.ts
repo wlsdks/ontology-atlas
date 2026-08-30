@@ -17,7 +17,7 @@ import {
   buildContainmentParents,
   buildOntologyReachability,
   nearestDomainId,
-} from "@/entities/knowledge-graph/lib/ontology-tree";
+} from "@/entities/knowledge-graph";
 
 export type FullDetailReachDepth = 1 | 2 | 3;
 

@@ -13,3 +13,22 @@ export {
   readPinnedDocs,
   togglePinnedDoc,
 } from './lib/pinned-docs';
+export {
+  serializeDocsTreeGroup,
+  serializeDocsTreeSort,
+  parseDocsTreeGroup,
+  parseDocsTreeSort,
+  DEFAULT_DOCS_TREE_GROUP,
+  DEFAULT_DOCS_TREE_SORT,
+  DOCS_TREE_GROUPS,
+  DOCS_TREE_SORTS,
+} from './lib/tree-order';
+export type { DocsTreeGroup, DocsTreeSort } from './lib/tree-order';
+export { DocsVaultBacklinks } from './ui/DocsVaultBacklinks';
+export { DocsVaultEditor } from './ui/DocsVaultEditor';
+export { DocsVaultUnifiedPalette } from './ui/DocsVaultUnifiedPalette';
+export { DocsVaultViewer } from './ui/DocsVaultViewer';
+export type { VaultCommand } from './model/command';
+export { PINNED_DOCS_STORAGE_PREFIX } from './lib/pinned-docs';
+export { useDocsBodyIndex } from './lib/use-docs-body-index';
+export { DocsVaultTree } from './ui/DocsVaultTree';

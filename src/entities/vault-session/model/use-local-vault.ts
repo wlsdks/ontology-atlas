@@ -16,11 +16,9 @@ import {
   type BuiltVaultEntry,
   type LocalVaultBuild,
   type VaultManifest,
-} from '@/entities/docs-vault';
-import {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
-} from '@/entities/docs-vault/lib/frontmatter-updates';
+} from '@/entities/docs-vault';
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,
   deleteLocalFsHandle,
@@ -371,7 +369,7 @@ async function resolveVaultHandle(handle: FileSystemDirectoryHandle): Promise<Re
 export {
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
-} from '@/entities/docs-vault/lib/frontmatter-updates';
+} from '@/entities/docs-vault';
 
 /**
  * Capability is decided by **whether it can be called**, not by `in`. `'showDirectoryPicker'

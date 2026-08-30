@@ -5,7 +5,7 @@ import { useLatinEyebrow } from "@/shared/lib/latin-eyebrow";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
 import { ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import type { DomainCensusRow, OntologyTreeNode } from "@/entities/knowledge-graph/lib/ontology-tree";
+import type { DomainCensusRow, OntologyTreeNode } from "@/entities/knowledge-graph";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
 import {
   computeCapacityRatio,

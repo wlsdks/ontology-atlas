@@ -14,17 +14,16 @@ import {
 } from "@/widgets/app-nav-rail";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useAtlasGitContext } from "@/widgets/atlas-git-panel";
-import { useDataSourceMode } from "@/entities/vault-session";
+import { useDataSourceMode, useLocalVault } from "@/entities/vault-session";
 import {
   DestinationGuide,
   GuideReplayProvider,
   applyGuideOverride,
 } from "@/features/guided-tour";
 import { AppUpdateProvider, UpdateToast, useAppUpdateContext } from "@/features/app-update";
-import { useLocalVault } from "@/entities/vault-session";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { isGatewaySurface, resolveActiveNavDestination } from "@/shared/lib/nav-destination";
-import { useInstallNotice } from "@/features/acp-doctor/model/use-install-notice";
+import { useInstallNotice } from "@/features/acp-doctor";
 import { AgentMascotPresence } from "@/features/agent-activity";
 import { RouteFocusManager } from "@/shared/ui/route-focus-manager";
 import { useHydrated } from "@/shared/lib/use-hydrated";

@@ -1,5 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { countConnectedDocuments } from "@/entities/knowledge-graph/lib/ontology-tree";
+import { countConnectedDocuments } from "@/entities/knowledge-graph";
 
 export interface ProjectCardFacts {
   domain: number;
