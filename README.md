@@ -151,7 +151,10 @@ roadmap promise. It summarizes current product behavior documented in the
   presence is never presented as a live connection.
 - **MCP over stdio** for Claude Code, Cursor, VS Code, Codex, and any other MCP
   client — a typed read and write surface the running server advertises through
-  `tools/list`. [Agent guide](mcp/README.md).
+  `tools/list`. For a known coding task that only reads Atlas context, the
+  measured `OATLAS_READ_ONLY=1` path returns one compact current-source batch;
+  use the full profile when that session must also write ontology Markdown.
+  [Agent guide](mcp/README.md).
 - **A CLI carrying the same authority as the agent** — scaffold, validate,
   dry-run writes, bounded traversal, blast radius, commit preflight,
   vault-scoped git snapshots, agent handoff. [CLI reference](cli/README.md).
@@ -653,6 +656,19 @@ node $ATLAS agent-brief ./atlas
 node $ATLAS agent-brief ./atlas --project project-slug --compact --task "Describe the change"
 ```
 
+Compact v2 can start the first source read at an exact implementation symbol,
+supporting symbol, focused test, and reviewed IN/OUT boundary when those
+coordinates are already human-reviewable in the selected element's Markdown
+and the bound source is current. It checks only the named files. It does not
+build a symbol index or infer coordinates from the task; stale, ambiguous,
+unsafe, missing, or unrecorded evidence remains explicitly unknown. For a
+known task that only reads Atlas context, use `OATLAS_READ_ONLY=1`: the current
+frozen-control run cut source reads from four to one, wall time by 23.9%, and
+uncached input by 19.1%, with the treatment preferred by two blind judges. This
+is the concrete reason to keep reviewed function/test evidence in the vault:
+later agents pay one exact batch instead of rediscovering it per task. The full
+write-capable profile and cross-repository speed do not carry that claim yet.
+
 Both install commands are required: `mcp/` owns a separate lockfile, so rerun
 `pnpm --dir mcp install` after each pull. Restart your agent in your repository,
 then use `node $ATLAS mcp-verify ./atlas` to prove the real server process and
@@ -740,7 +756,10 @@ agent handoff, or the validation falls short.
 Read [CONTRIBUTING.md](CONTRIBUTING.md) first — external pull requests come from
 forks, and that is a security boundary rather than a formality. If you are
 working inside this repository, [AGENTS.md](AGENTS.md) is the canonical guide for
-people and AI agents alike.
+people and AI agents alike. Start verification with `pnpm checks:changed`; it
+maps a changed MCP source with a real sibling test to that direct test and the
+full MCP unit gate. [Development checks](docs/DEVELOPMENT-CHECKS.md) records the
+exact-navigation RED→GREEN probes and escalation path.
 
 ## License
 

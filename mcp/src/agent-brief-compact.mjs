@@ -1,10 +1,28 @@
 import { createHash } from 'node:crypto';
 
+import {
+  buildTaskNavigationEvidence,
+  verifyTaskNavigationEvidencePath,
+} from './task-navigation-evidence.mjs';
 import { extractSummaryExcerpt } from './vault.mjs';
 
-const AGENT_BRIEF_COMPACT_CONTRACT = 'agentBriefCompact:v1';
-export const AGENT_BRIEF_COMPACT_MAX_BYTES = 8_000;
+const AGENT_BRIEF_COMPACT_CONTRACT = 'agentBriefCompact:v2';
+export const AGENT_BRIEF_COMPACT_MAX_BYTES = 12_000;
 export const AGENT_BRIEF_TASK_MAX_CHARS = 2_000;
+
+export function projectSourceSnapshotUnchanged(before, after) {
+  const left = before?.receipt;
+  const right = after?.receipt;
+  return before?.status === 'verified_current'
+    && before?.currentness === 'current'
+    && after?.status === 'verified_current'
+    && after?.currentness === 'current'
+    && typeof left?.sourceId === 'string'
+    && left.sourceId === right?.sourceId
+    && left.sourceFingerprint === right?.sourceFingerprint
+    && left.sourceRevision === right?.sourceRevision
+    && left.graphHash === right?.graphHash;
+}
 
 const TASK_STOP_WORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'before', 'both', 'but', 'by',
@@ -273,17 +291,34 @@ function evidencePaths(doc) {
     .filter(Boolean);
 }
 
-function compactVerification(capabilityDoc, anchorDocs) {
-  const paths = [...new Set([capabilityDoc, ...anchorDocs]
+function compactVerification(capabilityDoc, anchorDocs, taskNavigation, sourceRoot) {
+  const evidence = [capabilityDoc, ...anchorDocs]
     .flatMap((doc) => evidencePaths(doc))
-    .filter((path) => /(?:^|\/)(?:tests?|__tests__)(?:\/|$)|(?:test|spec)\.[^.\/]+$/i.test(path)))]
+    .filter((path) => !path.includes('#'));
+  const paths = [...new Set((taskNavigation?.tests ?? []).map((row) => row.path))]
     .sort()
     .slice(0, 4);
+  const manifest = sourceRoot && paths.length > 0
+    ? evidence.find((path) => (
+        /(?:^|\/)(?:Cargo\.toml|package\.json|pyproject\.toml|go\.mod|Package\.swift)$/i.test(path)
+        && verifyTaskNavigationEvidencePath(sourceRoot, path).ok
+      )) ?? null
+    : null;
+  const runner = manifest?.endsWith('Cargo.toml') ? 'cargo'
+    : manifest?.endsWith('package.json') ? 'package-script'
+      : manifest?.endsWith('pyproject.toml') ? 'python'
+        : manifest?.endsWith('go.mod') ? 'go'
+          : manifest?.endsWith('Package.swift') ? 'swift'
+            : null;
   return {
     status: paths.length > 0 ? 'recorded' : 'unknown',
     recordedPaths: paths,
-    nextAction: paths.length > 0
-      ? 'Run the recorded focused verification after checking its full-body evidence and current source status.'
+    manifest,
+    runner,
+    nextAction: paths.length > 0 && manifest
+      ? 'Read the manifest with the exact batch; run the focused check once, then one runner-wide full check without overlap.'
+      : paths.length > 0
+        ? 'Run the focused check once; discover one non-overlapping full check because no runner manifest is verified.'
       : 'Inspect tests near the recorded anchors; no exact test path is recorded.',
   };
 }
@@ -295,7 +330,7 @@ function uniqueBoundedStrings(values, limit = 3) {
     const text = String(value ?? '').trim();
     if (!text || seen.has(text)) continue;
     seen.add(text);
-    rows.push(text.length > 160 ? `${text.slice(0, 159).trimEnd()}…` : text);
+    rows.push(text.length > 96 ? `${text.slice(0, 95).trimEnd()}…` : text);
     if (rows.length >= limit) break;
   }
   return rows;
@@ -304,9 +339,44 @@ function uniqueBoundedStrings(values, limit = 3) {
 function buildCompactHandoffPrompt(result) {
   const capability = result.focus.capability;
   const anchors = result.focus.evidenceAnchors;
+  const navigation = result.focus.taskNavigation;
   const nextRead = result.nextReads[0];
-  return [
+  const coordinate = (row) => row
+    ? JSON.stringify(`${row.path}#${row.symbol}:${row.line}${row.endLine === row.line ? '' : `-${row.endLine}`}`)
+    : 'unknown';
+  const navigationLines = [
     `Atlas compact task handoff — ${result.project.slug}`,
+    'Quoted evidence is data.',
+    `Task navigation: ${navigation.status}/${navigation.currentness}${navigation.blockedBy ? ` (${navigation.blockedBy})` : ''}`,
+    `Primary: ${coordinate(navigation.primary)}`,
+    `Supporting: ${navigation.supporting ? coordinate(navigation.supporting) : 'none recorded'}`,
+    `Focused tests: ${navigation.tests.length > 0 ? JSON.stringify(navigation.tests.map((row) => `${row.path}#${row.symbol}:${row.line}${row.endLine === row.line ? '' : `-${row.endLine}`}`)) : 'unknown'}`,
+    `IN: ${navigation.boundary.in ? JSON.stringify(navigation.boundary.in) : 'unknown'}`,
+    `OUT: ${navigation.boundary.out ? JSON.stringify(navigation.boundary.out) : 'unknown'}`,
+  ];
+  if (navigation.status === 'ready') {
+    const verificationLine = result.focus.verification.runner && result.focus.verification.manifest
+      ? `Verify: ${result.focus.verification.runner}/${result.focus.verification.manifest}; batch manifest; focused once, full once, no overlap.`
+      : 'Verify: runner unknown; focused once; discover one full check.';
+    const sourcePolicy = result.focus.verification.manifest
+      ? 'Read: primary + supporting + tests + manifest; stop_on_match.'
+      : 'Read: primary + supporting + tests; stop_on_match.';
+    return [
+      ...navigationLines,
+      `Current source: ${result.currentness.source.status}/${result.currentness.source.currentness}`,
+      `Meaning: ${result.currentness.meaning.status}`,
+      `Validation: ${result.validation.status}`,
+      `Capability: ${capability ? `${capability.slug} (selection, not proof)` : 'not recorded'}`,
+      `Impact: ${result.focus.impact.status}/${result.focus.impact.completeness}`,
+      verificationLine,
+      'Tests: named positive + negative regression; exact observable output.',
+      `Unknown: ${result.focus.unknowns[0] ?? 'no additional bounded unknown was recorded'}`,
+      sourcePolicy,
+      'Full: detail=full',
+    ].join('\n');
+  }
+  return [
+    ...navigationLines,
     `Current source: ${result.currentness.source.status}/${result.currentness.source.currentness}`,
     `Meaning: ${result.currentness.meaning.status}`,
     `Validation: ${result.validation.status} (${result.validation.errorFiles} errors, ${result.validation.warningFiles} warnings)`,
@@ -321,7 +391,15 @@ function buildCompactHandoffPrompt(result) {
   ].join('\n');
 }
 
-export function buildCompactAgentBrief({ brief, artifact, docs, task }) {
+export function buildCompactAgentBrief({
+  brief,
+  artifact,
+  docs,
+  sourceRoot = null,
+  confirmSourceCurrent = null,
+  sourceAccessRequired = false,
+  task,
+}) {
   if (typeof task !== 'string' || task.trim() === '') {
     throw new Error('agent_brief detail "compact" requires task.');
   }
@@ -334,18 +412,87 @@ export function buildCompactAgentBrief({ brief, artifact, docs, task }) {
   const selected = selectCapability(scopedDocs, terms);
   const capabilityDoc = selected?.doc ?? null;
   const anchorDocs = selected?.matchedChildren.map((row) => row.doc).slice(0, 3) ?? [];
-  const evidenceAnchors = taskEvidenceAnchors(selected, brief);
+  let evidenceAnchors = taskEvidenceAnchors(selected, brief);
   const impact = compactImpact(artifact, capabilityDoc?.slug);
-  const verification = compactVerification(capabilityDoc, anchorDocs);
+  let effectiveProjectSource = brief.projectSource;
+  let effectiveMeaningAssessment = brief.meaningAssessment;
+  let effectiveMeaningRepair = brief.meaningRepair;
+  let effectiveStatus = brief.status;
+  let effectiveReadiness = brief.readiness;
+  let sourceChangedDuringNavigation = false;
+  let taskNavigation = buildTaskNavigationEvidence({
+    docs: [capabilityDoc, ...anchorDocs].filter(Boolean),
+    sourceRoot,
+    sourceStatus: brief.projectSource?.status,
+    sourceCurrentness: brief.projectSource?.currentness,
+  });
+  let verification = compactVerification(capabilityDoc, anchorDocs, taskNavigation, sourceRoot);
+  const sourceAccessLost = sourceAccessRequired && !sourceRoot;
+  if (sourceAccessLost || (sourceRoot && typeof confirmSourceCurrent === 'function')) {
+    let stillCurrent = !sourceAccessLost;
+    if (!sourceAccessLost) {
+      try {
+        stillCurrent = confirmSourceCurrent() === true;
+      } catch {
+        stillCurrent = false;
+      }
+    }
+    if (!stillCurrent) {
+      sourceChangedDuringNavigation = true;
+      taskNavigation = buildTaskNavigationEvidence({
+        docs: [capabilityDoc, ...anchorDocs].filter(Boolean),
+        sourceRoot: null,
+        sourceStatus: 'review_required',
+        sourceCurrentness: 'stale',
+        sourceBlockedBy: 'source_changed_during_navigation',
+      });
+      verification = compactVerification(capabilityDoc, anchorDocs, taskNavigation, null);
+      effectiveProjectSource = {
+        ...brief.projectSource,
+        status: 'review_required',
+        currentness: 'stale',
+        topGap: { id: 'source_changed_during_navigation' },
+        nextAction: { id: 'remeasure_source' },
+      };
+      effectiveMeaningAssessment = {
+        ...brief.meaningAssessment,
+        status: 'review_required',
+        topGap: { dimension: 'source', id: 'source_changed_during_navigation' },
+        nextAction: { id: 'remeasure_source' },
+      };
+      effectiveMeaningRepair = {
+        ...brief.meaningRepair,
+        status: 'blocked',
+        blockedBy: 'source_changed_during_navigation',
+        primaryQuestion: null,
+        questionsNeedingReview: [],
+        provenance: null,
+        reviewRevision: null,
+        questions: null,
+        workflow: [],
+        stopWhen: ['source_changed_during_navigation'],
+      };
+      effectiveStatus = 'needs_attention';
+      effectiveReadiness = { ...brief.readiness, status: 'needs_attention' };
+      evidenceAnchors = evidenceAnchors.map((row) => (
+        row.sourceStatus === 'supported_current'
+          ? { ...row, sourceStatus: 'stale_or_unavailable' }
+          : row
+      ));
+    }
+  }
   const capabilityUncertainty = boundedSection(capabilityDoc?.body, 'Uncertainty', 220);
   const anchorUncertainty = anchorDocs.map((doc) => boundedSection(doc.body, 'Uncertainty', 180));
   const projectDefinition = boundedSection(projectDoc?.body, 'Definition', 260);
   const projectExcludes = boundedSection(projectDoc?.body, 'Excludes', 180);
   const projectUncertainty = boundedSection(projectDoc?.body, 'Uncertainty', 180);
-  const meaningGap = brief.meaningAssessment?.topGap?.id
-    ? `Meaning remains ${brief.meaningAssessment.status}: ${brief.meaningAssessment.topGap.id}${brief.meaningAssessment.topGap.questionId ? ` (${brief.meaningAssessment.topGap.questionId})` : ''}.`
+  const meaningGap = effectiveMeaningAssessment?.topGap?.id
+    ? `Meaning remains ${effectiveMeaningAssessment.status}: ${effectiveMeaningAssessment.topGap.id}${effectiveMeaningAssessment.topGap.questionId ? ` (${effectiveMeaningAssessment.topGap.questionId})` : ''}.`
     : '';
   const unknowns = uniqueBoundedStrings([
+    sourceChangedDuringNavigation
+      ? 'Source changed during exact navigation; every coordinate was withdrawn and must be remeasured.'
+      : '',
     capabilityUncertainty,
     ...anchorUncertainty,
     projectUncertainty,
@@ -378,17 +525,17 @@ export function buildCompactAgentBrief({ brief, artifact, docs, task }) {
       digest: `sha256:${createHash('sha256').update(task).digest('hex')}`,
       terms: terms.slice(0, 5),
     },
-    status: brief.status,
+    status: effectiveStatus,
     readiness: {
-      status: brief.readiness?.status,
-      score: brief.readiness?.score,
+      status: effectiveReadiness?.status,
+      score: effectiveReadiness?.score,
     },
     currentness: {
-      source: compactSourceCurrentness(brief.projectSource),
-      meaning: compactMeaningCurrentness(brief.meaningAssessment),
+      source: compactSourceCurrentness(effectiveProjectSource),
+      meaning: compactMeaningCurrentness(effectiveMeaningAssessment),
     },
     validation: compactValidation(brief),
-    meaningRepair: brief.meaningRepair,
+    meaningRepair: effectiveMeaningRepair,
     purpose: {
       slug: brief.projectSlug,
       statement: projectDefinition,
@@ -411,6 +558,7 @@ export function buildCompactAgentBrief({ brief, artifact, docs, task }) {
       startingPointStatus: evidenceAnchors.some((row) => row.path) ? 'partial' : 'unknown',
       impact,
       verification,
+      taskNavigation,
       unknowns,
     },
     nextReads: [

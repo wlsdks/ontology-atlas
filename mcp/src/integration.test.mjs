@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { StringDecoder } from "node:string_decoder";
@@ -236,6 +236,8 @@ function getCallText(responses, id) {
 }
 
 function getCallParsed(responses, id) {
+  const structured = getCallStructured(responses, id);
+  if (structured?.contract === "agentBriefCompact:v2") return structured;
   return JSON.parse(getCallText(responses, id));
 }
 
@@ -1701,8 +1703,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.match(
       findTool("query_ontology")?.description ?? "",
-      /agent_brief[\s\S]*detail:\"compact\"[\s\S]*8000 UTF-8 JSON bytes[\s\S]*never proves source behavior/,
+      /agent_brief[\s\S]*detail:\"compact\"[\s\S]*12000 UTF-8 JSON bytes[\s\S]*taskNavigation[\s\S]*never searches the repository[\s\S]*never proves source behavior/,
       "query_ontology description documents the bounded task handoff and evidence limit",
+    );
+    assert.match(
+      findTool("analyze_repo_structure")?.description ?? "",
+      /navigation:primary\|supporting\|test:<path>#<symbol>[\s\S]*limits 1\/1\/3[\s\S]*rejects missing, ambiguous, unsafe, or task-inferred coordinates/,
+      "analyze_repo_structure documents reviewed navigation evidence without widening meaning proof",
     );
     assert.deepEqual(
       {
@@ -9661,7 +9668,7 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.match(full.handoffPrompt, new RegExp(`status ${full.status}\\.`));
 
     const compact = getCallParsed(responses, 3);
-    assert.equal(compact.contract, "agentBriefCompact:v1");
+    assert.equal(compact.contract, "agentBriefCompact:v2");
     assert.equal(compact.operation, "agent_brief");
     assert.equal(compact.detail, "compact");
     assert.equal(compact.sideEffect, false);
@@ -9684,6 +9691,9 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.equal(compact.focus.capability.claimStatus, "recorded_bounded_claim");
     assert.deepEqual(compact.focus.evidenceAnchors.map((row) => row.slug), ["elements/writer"]);
     assert.deepEqual(compact.focus.evidenceAnchors.map((row) => row.path), ["src/writer.rs"]);
+    assert.equal(compact.focus.taskNavigation.status, "blocked");
+    assert.equal(compact.focus.taskNavigation.blockedBy, "source_not_current");
+    assert.equal(compact.focus.taskNavigation.primary, null);
     assert.equal(compact.focus.impact.completeness, "unknown");
     assert.ok(compact.focus.unknowns.length > 0);
     assert.ok(compact.nextReads.some((row) => row.tool === "get_concepts" && row.arguments.body === "full"));
@@ -9702,10 +9712,11 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.equal(Object.hasOwn(compact, "cliFallbackCommands"), false);
     assert.doesNotMatch(JSON.stringify(compact), /project-b|domains\/example|capabilities\/example|elements\/example/);
     assert.ok(
-      Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 8000,
-      "compact agent brief must fit the 8 KiB first-contact budget",
+      Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000,
+      "compact agent brief must fit the 12 KiB first-contact budget",
     );
     assert.match(compact.handoffPrompt, new RegExp(`Current source: ${compact.currentness.source.status}/${compact.currentness.source.currentness}`));
+    assert.match(compact.handoffPrompt, /Task navigation: blocked/);
     assert.match(compact.handoffPrompt, new RegExp(`Meaning: ${compact.currentness.meaning.status}`));
     assert.doesNotMatch(
       loadVaultDocs(root).map((doc) => `${doc.frontmatter?.title ?? ""}\n${doc.body}`).join("\n"),
@@ -9725,6 +9736,160 @@ await test("query_ontology agent_brief — selected project and compact task han
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("query_ontology agent_brief: current reviewed coordinates become one exact task-navigation batch", async () => {
+  const vault = makeVault([
+    {
+      slug: "project",
+      content: "---\nkind: project\ntitle: Encoding Library\ndomains: [domains/encoding]\n---\n## Definition\n\nA library that writes encoded values.\n",
+    },
+    {
+      slug: "domains/encoding",
+      content: "---\nkind: domain\ntitle: Encoding\ncapabilities: [capabilities/write-values]\n---\n## Definition\n\nEncoding owns value production.\n",
+    },
+    {
+      slug: "capabilities/write-values",
+      content: "---\nkind: capability\ntitle: Write DER Values\ndomain: domains/encoding\nelements: [elements/writer]\n---\n## Definition\n\nWrite DER Values produces encoded output.\n",
+    },
+    {
+      slug: "elements/writer",
+      content: `---
+kind: element
+title: Writer Implementation
+domain: domains/encoding
+path: src/writer.ts
+---
+## Definition
+
+Writer Implementation anchors encoded output.
+
+## Evidence
+
+- Primary implementation: \`src/writer.ts#writeDerSet\`
+- Supporting implementation: \`src/writer.ts#writeOptionalValue\`
+- Focused test: \`tests/writer.test.ts#writes optional DER SET values\`
+
+## Includes
+
+DER SET output ordering and optional values.
+
+## Excludes
+
+DER parsing and unrelated encodings.
+`,
+    },
+  ]);
+  const repo = mkdtempSync(join(tmpdir(), "ontology-atlas-task-navigation-repo-"));
+  try {
+    mkdirSync(join(repo, "src"), { recursive: true });
+    mkdirSync(join(repo, "tests"), { recursive: true });
+    writeFileSync(
+      join(repo, "src/writer.ts"),
+      "export function writeDerSet() { return writeOptionalValue(); }\nexport function writeOptionalValue() { return true; }\n",
+    );
+    writeFileSync(
+      join(repo, "tests/writer.test.ts"),
+      "test('writes optional DER SET values', () => {});\n",
+    );
+    const connected = await rpcForRepo(vault, repo, [
+      ...INIT_REQUESTS,
+      callTool(2, "connect_project_source", {
+        projectSlug: "project",
+        rootPath: repo,
+        confirm: true,
+      }),
+    ]);
+    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
+
+    const { responses } = await rpcForRepo(vault, repo, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "agent_brief",
+        project: "project",
+        detail: "compact",
+        task: "Write an optional DER SET value.",
+      }),
+    ], 3000);
+    const compact = getCallParsed(responses, 2);
+    const compactText = getCallText(responses, 2);
+    assert.equal(compactText, compact.handoffPrompt);
+    assert.equal(compact.contract, "agentBriefCompact:v2");
+    assert.equal(compact.focus.taskNavigation.status, "ready");
+    assert.deepEqual(compact.focus.taskNavigation.primary, {
+      path: "src/writer.ts",
+      symbol: "writeDerSet",
+      role: "primary",
+      line: 1,
+      endLine: 1,
+      sourceStatus: "supported_current",
+    });
+    assert.equal(compact.focus.taskNavigation.supporting.symbol, "writeOptionalValue");
+    assert.equal(compact.focus.taskNavigation.tests[0].symbol, "writes optional DER SET values");
+    assert.equal(compact.focus.taskNavigation.readPlan.targetCount, 3);
+    assert.match(compact.handoffPrompt, /Primary: "src\/writer\.ts#writeDerSet:1"/);
+    assert.match(compact.handoffPrompt, /Focused tests: \["tests\/writer\.test\.ts#writes optional DER SET values:1"\]/);
+    assert.match(compact.handoffPrompt, /IN: "DER SET output ordering and optional values\."/);
+    assert.match(compact.handoffPrompt, /OUT: "DER parsing and unrelated encodings\."/);
+    assert.match(compact.handoffPrompt, /Verify: runner unknown/);
+    assert.match(compact.handoffPrompt, /Read: .*stop_on_match/);
+    assert.match(compact.handoffPrompt, /Tests: named positive \+ negative regression; exact observable output\./);
+    assert.equal(JSON.stringify(compact).includes(repo), false, "private source root must not cross MCP output");
+    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test("query_ontology agent_brief — read-only known-task wire path stays below 20000 characters", async () => {
+  const scratch = mkdtempSync(join(tmpdir(), "ontology-atlas-compact-wire-"));
+  const vault = join(scratch, "vault");
+  const repo = resolve(__dirname, "../..");
+  cpSync(resolve(repo, "docs/ontology"), vault, {
+    recursive: true,
+    filter: (source) => !source.split(/[\\/]/).includes(".ontology-atlas"),
+  });
+  try {
+    const connected = await rpcForRepo(vault, repo, [
+      ...INIT_REQUESTS,
+      callTool(2, "connect_project_source", {
+        projectSlug: "ontology-atlas",
+        rootPath: repo,
+        confirm: true,
+      }),
+    ], 10_000);
+    assert.equal(getCallParsed(connected.responses, 2).projectSource.status, "verified_current");
+
+    const { responses } = await rpcForRepo(vault, repo, [
+      ...INIT_REQUESTS,
+      callTool(2, "connection_info", {}),
+      callTool(3, "query_ontology", {
+        operation: "agent_brief",
+        project: "ontology-atlas",
+        detail: "compact",
+        task: "Change the task-scoped compact agent brief projection.",
+      }),
+    ], 10_000, { OATLAS_READ_ONLY: "1" });
+    const connectionResponse = responses.find((row) => row.id === 2);
+    const compactResponse = responses.find((row) => row.id === 3);
+    assert.ok(connectionResponse?.result, "connection_info must return one wire result");
+    assert.ok(compactResponse?.result, "compact agent_brief must return one wire result");
+    const compact = getCallParsed(responses, 3);
+    assert.equal(compact.focus.taskNavigation.status, "ready");
+    assert.equal(compact.focus.taskNavigation.currentness, "current");
+    assert.equal(compact.focus.verification.runner, "package-script");
+    assert.equal(compact.focus.verification.manifest, "mcp/package.json");
+    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+    const wireCharacters = JSON.stringify(connectionResponse).length + JSON.stringify(compactResponse).length;
+    assert.ok(
+      wireCharacters < 20_000,
+      `connection_info + compact read-only wire path must stay below 20000 characters; received ${wireCharacters}`,
+    );
+    assert.equal(JSON.stringify(compactResponse).includes(repo), false, "wire response must not expose the private root");
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
 });
 
@@ -9765,7 +9930,7 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
     assert.equal(compact.project.scope.nodes, 501);
     assert.equal(compact.focus.status, "not_recorded");
     assert.equal(compact.currentness.meaning.status, "invalid");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 8000);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

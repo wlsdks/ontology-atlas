@@ -259,10 +259,9 @@ const RULES = [
   },
   {
     command: 'pnpm test:mcp:unit',
-    reason: 'MCP core unit implementation changed',
+    reason: 'MCP source or unit contract changed',
     matches: [
-      /^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
-      /^mcp\/src\/(?:analyze|architecture-profile|meaning-evaluation|construction-qualification|construction-lifecycle|infer-imports|ontology-atlas-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines|source-hidden-field-trial)\.test\.mjs$/,
+      /^mcp\/src\/(?!integration\.test\.mjs$)[^/]+\.(?:mjs|js)$/,
       /^tests\/fixtures\/source-hidden-field-trial\/v1\.json$/,
     ],
   },
@@ -1143,14 +1142,25 @@ function resolveVitestTestFile(path, pathSet) {
   return null;
 }
 
+function resolveMcpUnitTestFile(path, pathSet) {
+  const mapped = MCP_DIRECT_UNIT_TESTS.get(path);
+  if (mapped) return mapped;
+  if (MCP_DIRECT_UNIT_TEST_FILES.has(path)) return path;
+  if (/^mcp\/src\/(?!integration\.test\.mjs$)[^/]+\.test\.mjs$/.test(path)) return path;
+  if (!/^mcp\/src\/[^/]+\.(?:mjs|js)$/.test(path)) return null;
+  const testFile = path.replace(/\.(?:mjs|js)$/, '.test.mjs');
+  return pathSet.has(testFile) || existsSync(testFile) ? testFile : null;
+}
+
 function directMcpUnitTestSuggestions(paths) {
   const byTestFile = new Map();
+  const pathSet = new Set(paths);
   for (const path of paths) {
-    const testFile = MCP_DIRECT_UNIT_TESTS.get(path) ?? (MCP_DIRECT_UNIT_TEST_FILES.has(path) ? path : null);
+    const testFile = resolveMcpUnitTestFile(path, pathSet);
     if (!testFile) continue;
     const row = byTestFile.get(testFile) ?? {
       command: `pnpm exec node --test ${testFile}`,
-      reason: 'direct MCP unit test for changed core file',
+      reason: 'direct MCP unit test for changed source or test',
       paths: [],
     };
     row.paths.push(path);

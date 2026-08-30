@@ -1115,15 +1115,26 @@ An explicit project now scopes every handoff count, hub, entrypoint, and graph
 pack to that project's containment tree; a multi-project vault fails closed
 until `project` is supplied. The complete response remains the default. For a
 known coding task, opt-in `detail:"compact"` plus a request-local `task` returns
-an `agentBriefCompact:v1` projection capped at 8,000 UTF-8 JSON bytes. It keeps
+an `agentBriefCompact:v2` projection capped at 12,000 UTF-8 JSON bytes. It keeps
 final source/meaning currentness, the compact meaning-repair and human-approval
 guards, a broad persisted capability, cited element/path evidence, explicit
 impact/verification unknowns, bounded full-body reads, and an exact full-detail
-follow-up. Task matching selects evidence; it never proves code behavior,
-persists raw task text, or creates a narrow capability.
-The first repeated historical run reduced MCP calls from 17 to 4 and preserved
-correctness, but did not meet the overall wall-time or uncached-token target, so
-compact remains explicit opt-in rather than the default.
+follow-up. When reviewed implementation/supporting/test coordinates exist in
+the selected element and the bound source is current, `taskNavigation:v1`
+verifies only those named files and returns exact current line locators plus the
+reviewed non-exhaustive IN/OUT boundary. Stale, missing, ambiguous, unsafe, or
+unrecorded evidence returns no exact target; task matching never searches source,
+proves code behavior, persists raw task text, or creates a narrow capability.
+The same source fingerprint, revision, and graph hash are checked again after
+the named reads; a mismatch detected by the exact-file guards or that final
+recheck withdraws every target and downgrades outer currentness. Compact v2
+sends typed facts once in `structuredContent` and
+the handoff prompt as human text. The current `OATLAS_READ_ONLY=1` frozen-control
+run reduced source reads from four to one, wall time by 23.9%, and uncached input
+by 19.1%; two order-reversed blind judges preferred the treatment. The two-call
+wire path measured 12,928 characters. The full read/write profile and
+cross-repository coding speed remain unqualified, so compact and read-only stay
+explicit choices rather than defaults.
 
 `query_ontology({operation:"cycles"})` returns each cycle as the canonical slug
 path plus aligned `nodeSummaries[]`, so dependency-cycle diagnostics are readable

@@ -217,6 +217,7 @@ describe('focused check suggestions', () => {
       'pnpm exec eslint src/shared/lib/validate-vault-document.ts',
       'pnpm exec vitest run src/shared/lib/validate-vault-document.test.ts',
       'pnpm test:contracts',
+      'pnpm test:mcp:unit',
       'pnpm exec tsc --noEmit',
       'pnpm test:cli:lib',
       'pnpm vault:validate',
@@ -240,6 +241,20 @@ describe('focused check suggestions', () => {
       'pnpm integration:mcp:repo-analysis',
       'pnpm integration:mcp:vault-read',
       'pnpm integration:mcp:write',
+      'pnpm vault:validate',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
+  it('discovers a new MCP source and sibling test without a hand-maintained allowlist', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/task-navigation-evidence.mjs',
+      'mcp/src/task-navigation-evidence.test.mjs',
+    ]);
+
+    assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test mcp/src/task-navigation-evidence.test.mjs',
+      'pnpm test:mcp:unit',
       'pnpm vault:validate',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
@@ -464,6 +479,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test mcp/src/suggestions.test.mjs',
+      'pnpm test:mcp:unit',
       'pnpm test:mcp:suggestions',
       'pnpm vault:validate',
     ]);
@@ -1136,6 +1152,8 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(domainCommands(result), [
+      'pnpm exec node --test mcp/src/verify-script.test.mjs',
+      'pnpm test:mcp:unit',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:verify:first-contact',
       'pnpm test:mcp:verify:timeout',

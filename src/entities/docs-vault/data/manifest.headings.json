@@ -2950,6 +2950,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-30 · A known task can start at the exact reviewed source batch",
+      "slug": "2026-08-30-a-known-task-can-start-at-the-exact-reviewed-source-batch"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · Agent handoff starts with one project and one bounded task view",
       "slug": "2026-08-30-agent-handoff-starts-with-one-project-and-one-bounded-task-view"
     },
@@ -6088,6 +6093,26 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — Current exact handoff passes one read-only coding lane; cross-repository speed remains unearned",
+      "slug": "2026-08-31-current-exact-handoff-passes-one-read-only-coding-lane-cross-repository-speed-remains-unearned"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Exact handoff earns the read-only coding lane, not the full MCP lane",
+      "slug": "2026-08-30-exact-handoff-earns-the-read-only-coding-lane-not-the-full-mcp-lane"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Compact v2 spends 12 KiB on exact evidence, below the 20 KiB task gate",
+      "slug": "2026-08-30-compact-v2-spends-12-kib-on-exact-evidence-below-the-20-kib-task-gate"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-30 — Exact task navigation is reviewed evidence, never task inference",
+      "slug": "2026-08-30-exact-task-navigation-is-reviewed-evidence-never-task-inference"
     },
     {
       "depth": 2,
@@ -12958,6 +12983,11 @@
       "depth": 3,
       "text": "2.1 Evidence does not promote itself",
       "slug": "21-evidence-does-not-promote-itself"
+    },
+    {
+      "depth": 4,
+      "text": "2.1.1 Reviewed task-navigation coordinates",
+      "slug": "211-reviewed-task-navigation-coordinates"
     },
     {
       "depth": 3,

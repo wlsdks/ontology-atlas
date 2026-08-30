@@ -12,7 +12,11 @@ and source-backed justification.
 
 Use only ontology-atlas MCP tools for the core workflow. Do not depend on
 CodeGraph, another skill, shell search, or an AST index. Those may exist, but a
-plain agent connected only to Atlas must still succeed.
+plain agent connected only to Atlas must still succeed at the meaning model.
+The optional, bounded task-navigation enrichment below is the sole exception:
+after meaning selects a stable element, a source-aware builder may use an
+available local source reader to verify exact coordinates that Atlas then
+checks again. Navigation may remain unknown without blocking the core model.
 
 ## Meaning contract
 
@@ -216,6 +220,37 @@ Rules:
 - A selected endpoint remains structural evidence, not automatic business
   meaning. Cite its exact repo-relative path, state what the import proves, and
   keep behavioral ownership partial when no semantic source establishes it.
+- When an element is deliberately selected as a stable coding starting point,
+  its existing `evidence` string array may also carry reviewed task-navigation
+  coordinates. Keep at least one ordinary repository citation, then use only
+  these exact additional forms:
+  `navigation:primary:<path>#<qualified-symbol>` (at most one),
+  `navigation:supporting:<path>#<qualified-symbol>` (at most one), and
+  `navigation:test:<path>#<test-symbol-or-name>` (at most three). The analyzer
+  writes these as human-readable `Primary implementation`, `Supporting
+  implementation`, and `Focused test` Evidence bullets.
+
+  Establish project/domain/capability meaning first from the Atlas packet. Then,
+  only for an already selected stable element, a source-aware builder may use a
+  local source reader as a bounded structural enrichment. Start from an exact
+  file endpoint already exposed by Atlas. If Atlas exposes only a package or
+  manifest boundary, inspect one conventional source-file inventory inside that
+  boundary and select no more than the existing four-endpoint allowance. Read
+  only those selected implementation files, at most one supporting file and
+  three matching test files per element. Record every native source lookup in
+  the construction report. These reads may refine an element role and its
+  navigation but may not create or strengthen project, domain, capability,
+  behavior, dependency, or impact meaning.
+
+  Verify every exact symbol before proposing it; the analyzer must independently
+  re-verify the unchanged coordinate against the named current file. Never
+  persist line numbers, commands, source snippets, task text, or a coordinate
+  inferred from a later coding task. Coordinates are structural navigation
+  evidence, not behavior or semantic approval. Keep the element's reviewed
+  Includes/Excludes as the non-exhaustive IN/OUT boundary. If the repository is
+  remote, the source reader is unavailable, the bounded inventory has no stable
+  target, or more exploration would be needed, omit the annotation and let
+  compact handoff report navigation as unknown.
 - If `infer_imports` returns zero files or module edges because the repository
   language is unsupported, that is a coverage gap, not evidence that source
   files or runtime/build endpoints are absent. Use exact paths exposed by the
@@ -371,6 +406,10 @@ The source-hidden task judges what the portable plan can safely hand off. Raw
 source absence makes source-body detail partial; it does not by itself prove the
 unchanged candidate false. The source-aware citation check must then verify that
 claim against current source before the mandatory evidence axis can pass.
+For every `navigation:` evidence string, that auditor must also verify the exact
+repo-relative file and qualified symbol/test in current source. A missing,
+ambiguous, redirected, or task-inferred coordinate is an evidence-axis failure;
+an existing symbol still does not prove the proposed behavior or impact.
 
 #### Seal once, then qualify in isolated parallel lanes
 

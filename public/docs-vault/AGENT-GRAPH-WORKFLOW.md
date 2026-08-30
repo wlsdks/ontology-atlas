@@ -197,7 +197,9 @@ MCP adds three things that terminal-only use does not provide as naturally:
 3. Tool responses include structured repair fields, result contracts, and
    write guardrails so the agent can recover from bad inputs without guessing.
 
-When a coding task is already known, use this shortest read-only sequence:
+When a coding task is already known and the session does not need to write the
+ontology, register the server with `OATLAS_READ_ONLY=1` and use this shortest
+read-only sequence:
 
 ```json
 { "tool": "connection_info", "arguments": {} }
@@ -212,10 +214,24 @@ When a coding task is already known, use this shortest read-only sequence:
 }
 ```
 
-Then run only the returned `nextReads[0]` before inspecting source from the
-recorded anchor. Do not precede this path with `workspace_brief`,
+When `focus.taskNavigation.status` is `ready`, read its primary, supporting, and
+focused-test coordinates plus any verified runner manifest together in one
+source batch before repository inventory or broad search. Make separately named
+positive/negative regressions with exact observable output; run one focused and
+one non-overlapping full check. Broaden only if current source contradicts the
+reviewed evidence. Otherwise run the returned full-body read and preserve exact
+navigation as unknown. Do not precede this path with `workspace_brief`,
 `list_concepts`, or full `agent_brief`; those are whole-vault orientation and
 duplicate the known-task handoff.
+
+This is a measured profile, not a generic claim about every MCP registration.
+The current frozen-control coding run reduced source reads from four to one,
+wall time by 23.9%, and uncached input by 19.1%; two order-reversed blind judges
+preferred the treatment. The full 36-tool registration failed its earlier token
+gate, so use it when the same session requires ontology writes without assuming
+the same performance result. Ten of ten prospective coordinates survived an
+unfamiliar-repository audit, but its coding lane lacked a local toolchain;
+cross-repository speed remains unearned.
 
 When no coding task is known yet, the first MCP calls should be read-only:
 
@@ -226,12 +242,15 @@ When no coding task is known yet, the first MCP calls should be read-only:
 { "tool": "query_ontology", "arguments": { "operation": "health" } }
 ```
 
-Compact responses stay within 8,000 UTF-8 JSON bytes and return an exact
+Compact v2 responses stay within 12,000 UTF-8 JSON bytes and return an exact
 `detail:"full"` follow-up when the complete diagnostic manuals or graph packs
 are actually needed. The complete response remains the default while this mode
-is qualified against coding outcomes. `project` is mandatory when the vault has
-several projects. Task text is request-local, is not stored, and does not prove
-source behavior.
+is qualified against coding outcomes. Reviewed Markdown Evidence coordinates
+are checked only in their named current-source files; missing, ambiguous, stale,
+unsafe, or unrecorded coordinates return no exact target. There is no repository
+symbol scan or task-derived coordinate. `project` is mandatory when the vault
+has several projects. Task text is request-local, is not stored, and does not
+prove source behavior.
 
 Only after those checks are clean should an agent propose writes.
 
