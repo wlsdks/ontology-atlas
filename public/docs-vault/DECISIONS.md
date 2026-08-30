@@ -40,6 +40,70 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — A role box gives its sentence two lines; the rows close up to pay for it
+
+**Convened because**: the "role box states what the role is" record of this morning wrote its
+own falsifier, and it fired the same day at 7 of 7: every drawn box cut the profile's sentence
+before the clause carried meaning (`Locale-prefixed Next entry…`, `A composite block a screen
+drops…`). The owner, having said UI finish now ranks with function, asked for directions rather
+than a patch. `/design-directions` was run by `chief` with the measurements below; four shapes
+were put up, including the status quo and the record's own remedy; the owner chose **C**.
+
+**What was measured** (dogfood profile through the picker stub, receipt seeded):
+
+| | before | after |
+|---|---:|---:|
+| box | 180×74 | 180×82 |
+| row gap | 18 | 12 |
+| sentence budget | 34 chars, 1 line | 34 chars, 2 lines |
+| first clause carries meaning | 0 / 7 | **7 / 7** |
+| chain bottom at 1512×945, rest | 851 | 871 |
+| chain bottom at 1512×945, inspector open | 857 | 877 (fold 945) |
+| widest caption line | – | 149px inside 156 |
+| 1920×1080 axis | across | across, unchanged |
+
+**Decision**: the sentence takes two caption lines at the same 34-character budget, wrapping on
+words and ellipsizing only the last line and only when something was left out
+(`src/views/architecture/model/summary-lines.ts`). The box grows 8px and the row gap gives up 6,
+so seven rows still clear a 1512×945 viewport with the inspector open. The no-receipt box grows
+the same way (62 → 72) so both box kinds hold the same two lines.
+
+**Why not the record's own remedy** (direction B, "bring the counts back"): it abandons the idea
+over a wrong budget. A box that says *how much* is in a role instead of *what it is* would put
+`0 concepts` back on every browser-opened vault, the row of zeros that record refused; and the
+reference the owner pointed at reads as designed precisely because each card finishes its
+sentence. The falsifier was right that the line as shipped carried no meaning; it was wrong about
+which half to keep.
+
+**Why not the margin note** (direction D, sentence beside the chain): it buys full sentences and
+canvas fill at the price of two placements to build and gate, and with the 380px inspector open
+the note field drops to about 60 characters, so the ellipsis returns in the state a reader is in
+most of the time after clicking. Seven left-aligned captions beside a column is also the shape of
+the document the 2026-08-28 record separated from the diagram.
+
+**Kept**: the receipt on one line under a ruled separator; the 90px gate threshold; `/architecture`
+as one screen; every mark. The ellipsis remains in 7 of 7, because every full sentence is longer
+than 68 characters, but it now sits after the first clause rather than inside it.
+
+**Overturned**: two numbers in the role-ledger record of this morning (74px tall, 18px gap) and
+the first-line-only reading of the summary record. Both records otherwise stand.
+
+**Applied rule**: smallest slice that clears the fired falsifier as it fired; one box geometry for
+both axes and both dock states; no new mark, mode, or data.
+**Signed**: stark
+
+**Recorded dissent**: none of the four directions fills the canvas the way the reference does
+(about 70%). At 1512 the drawing still owns roughly 15% of a 1345px-wide field; D moved that to
+about 45% and was refused for the reasons above. If "designed" turns out to mean fill more than
+it means a finished sentence, this record chose the wrong axis.
+**Falsifier**: a fresh-eyes walker reads a role box and still cannot say what the role is without
+opening the dock, in more than half the boxes; or the canvas is described as empty before the
+boxes are described at all. Either observation reopens D.
+**Revisit**: at the first outside walkthrough of this screen, or when a profile whose sentences
+run past 68 characters before their first clause is measured.
+
+**Status**: standing
+
 ## 2026-08-30 — The spine is drawn under lower-only too, so seven boxes are a chain
 
 **Convened because**: the owner asked whether the design lead's recorded dissent
@@ -357,10 +421,12 @@ first outside reader reads a box aloud.
 the picker stub, 1512×945 and 1920×1080): a two-line receipt made boxes 82px tall
 and cut *Shared foundation* — the role every arrow points at — in half below the
 fold; the one-line receipt then rendered 144–156px wide inside a 148px box and
-crossed both outlines. The shipped values are 74px tall, 180px wide, one line,
+crossed both outlines. The shipped values were 74px tall, 180px wide, one line,
 and `tests/e2e/architecture-role-ledger.spec.ts` fails at 90px tall (60px below
 the fold) and at 148px wide. Both failures were reproduced before the gate was
-kept.
+kept. (Later the same day the box became 82px tall with a 12px row gap so the
+role's sentence could take two lines; the receipt is still one line. See "A role
+box gives its sentence two lines" above.)
 
 **Status**: standing
 

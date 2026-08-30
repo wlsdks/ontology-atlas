@@ -156,12 +156,19 @@ test('a measured profile states each role’s receipt inside its box, whole chai
           sentences: [
             ...document.querySelectorAll('[data-testid^="architecture-role-ledger-"]'),
           ].map((text) => (text as SVGTextElement).getBBox().width),
+          /* The two caption lines of the role's sentence, measured the same way (Direction C). */
+          captions: [
+            ...document.querySelectorAll('[data-testid^="architecture-box-line-"]'),
+          ].map((text) => (text as SVGTextElement).getBBox().width),
         };
       });
 
       const where = `${locale} @ ${size.width}`;
       /* No sentence crosses its own outline. */
       expect(Math.max(...measured.sentences), where).toBeLessThanOrEqual(
+        measured.boxWidth - BOX_SIDE_PAD * 2,
+      );
+      expect(Math.max(...measured.captions), where).toBeLessThanOrEqual(
         measured.boxWidth - BOX_SIDE_PAD * 2,
       );
       /* And no role box sits below the fold: the whole chain is one screen. */
