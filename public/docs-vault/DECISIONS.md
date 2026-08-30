@@ -40,6 +40,74 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The X cut shows the whole workbench; the page cut keeps the agent proof
+
+**Convened because**: the owner opened the finished 30-second X asset immediately before
+posting and rejected it: the clip stayed on one map/detail/Codex exchange when the posting
+moment needed the product's breadth to pass quickly through the LNB. This explicitly reopens
+only the X portion of the same-day “Two real-use cuts” decision. The 44-second localized page
+takes and their read-only Atlas MCP proof remain standing.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify, with a source-hidden comparison | Problem insight 2 · User moment 4 |
+| Craft | Build and verify | Verification 3 |
+| Steward | Build and verify | Ontology value 4 · Agent value 2 |
+| Wedge | Build and verify | Differentiation 3 |
+| Leverage | Build and verify | appetite 4 hours; X asset and truthful records only |
+
+**Rubric total**: 18/24 (fatal zeros: none).
+
+**Observed phenomenon**: all 30 one-second samples of the first X cut held the same
+Map/detail/Codex composition. Its changing object was the answer text, while the seven LNB
+destinations remained peripheral. The owner could not use that finished artifact for the
+intended fast social-feed overview. This proves the posting failure for the owner; it does not
+prove a general viewer-retention problem, so Problem insight remains 2 rather than 4.
+
+**Decisive disagreement**: Evidence warned that seven quick screens could replace one coherent
+proof with a generic dashboard reel, and required a source-hidden comparison. Wedge and Steward
+agreed that tab count is not the claim: the same local ontology must visibly continue from
+product meaning to implementation structure, Markdown, maintenance, project scope, agents, and
+human-owned history. Craft prescribed a readable three-second rhythm; Leverage capped the work
+at one X asset and excluded the already-approved page surface.
+
+**Decision (accountable: owner)**: replace only
+`docs/launch/ontology-atlas-x-demo.ko.mp4` with one Korean, installed-app, natural-speed LNB take.
+Start on the settled public example and move Map → Architecture → Docs → Insights → Projects →
+Agents → Git History in 20–25 seconds. End on History rather than returning to Map: the final
+sentence is that one local ontology remains reviewable and human-owned. Include Agents and
+History only after their complete frames pass the privacy check. Settings is not an LNB
+destination and stays out.
+
+The previous decision is **overturned only for the X clip's single MCP-round-trip scenario**.
+The Korean and English page takes remain 44 seconds, keep their complete two-`get_concept` plus
+one-`find_path` proof, and do not gain a second tab or a player change.
+
+**Verification**: the accepted X take measures 21.633 seconds, 1512×950, uniform 30fps, silent
+H.264. Twenty-two one-second samples plus the full six-transition phase strip contain only the
+Ontology Atlas window and public example data. Three source-hidden evaluators classified the
+new cut as a codebase-ontology workbench by three seconds and recalled all seven work surfaces;
+they recalled the old cut as one or two surfaces. This is a useful proxy, not human retention
+evidence.
+
+**Recorded dissent**: a fast tab tour is easy to copy, dense on a phone, and may still leave a
+viewer remembering only “an app with many tabs”; the old clip at least proved a real agent
+workflow. **Falsifier**: a source-hidden person cannot identify the codebase-ontology category by
+three seconds or recall four work surfaces after the new cut; the screens do not read as one
+public project; the page clip loses its agent proof; or any delivered frame exposes a picker,
+absolute path, account, notification, desktop content, or personal information.
+**Revisit**: on any falsifier or a real X-viewer report that the cuts are too fast to classify.
+
+**Slice**: IN one 21.633-second Korean X MP4, real LNB clicks, seven privacy-clean destinations,
+truthful X scenario/launch records, 30fps phase and privacy proof · OUT page assets, `DEMO_CLIPS`,
+player/UI/copy, Settings, deep interaction inside a destination, audio, captions, posting to X,
+and product fixes found while filming · appetite 4 hours.
+
+**Status**: valid; installed-app, privacy, motion, and source-hidden proxy proof complete; X
+publication remains the owner's action.
+
+---
+
 ## 2026-08-30 — Looked, and decided: the glob stays in the dock, and the echo stays proportional
 
 **Convened because**: two items were left open on the same day, each with an owner's choice
@@ -163,6 +231,72 @@ the count; `HeroTypewriter.test.tsx` owns that progress is reported after paint.
 **Standing decisions**: (99) typewriter cadence and budget stand and now drive the object;
 (100) demo axis stands; 2026-08-22 scroll-timeline entrance stands for the stage only, its
 section-head part overturned here.
+
+---
+
+## 2026-08-30 — Two real-use cuts replace the nine-second neighbourhood loop
+
+**Convened because**: the owner needs footage for an X post and directly reported that the
+hosted Korean download-page clip is too short. The change spends the gateway's first
+impression and overturns part of the 2026-08-23 (104) recording decision, so the five-seat PO
+Council ran one independent round and one rebuttal round. Runtime capacity limited Round 1 to
+two waves; positions stayed independent because no seat received another position before its
+own verdict.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify | Problem insight 4 · User moment 4 |
+| Craft | Build and verify | Verification 3 |
+| Steward | Build and verify | Ontology value 4 · Agent value 4 |
+| Wedge | Build and verify | Differentiation 3 |
+| Leverage | Build and verify | appetite 1.5 working days; shortest complete path |
+
+**Rubric total**: 22/24 (fatal zeros: none).
+
+**Observed phenomenon**: the active 9.000-second clip starts with loading, settles the map,
+selects one domain, and ends on its neighbourhood and detail panel. It cannot show the
+gateway's fuller claim that a person and an agent use the same evidence-backed ontology. The
+footage is also stale relative to the current dogfood vault, and the owner independently named
+its duration as the problem while preparing an actual distribution post.
+
+**Decisive disagreement**: Wedge initially prescribed 45–60 seconds for X and 70–100 seconds
+for the page so typed meaning and the agent path would not be compressed into another graph
+demo. Craft and Leverage argued that a 70–100-second clip inside a looping player with no
+controls would require a player redesign and revive the retired three-minute-tour cost without
+visitor evidence. In rebuttal all five converged on measuring the shortest reproducible complete
+path rather than prescribing length before rehearsal.
+
+**Decision (accountable: owner)**: make two owner-facing outputs from one rehearsed installed-app
+journey. The X cut is 20–30 seconds. The download-page take is 35–45 seconds and is filmed
+separately in Korean and English so each locale remains truthful. Both start on an already-open,
+settled example project and show concept selection → typed relation and implementation evidence
+→ a real Atlas-only Codex lookup whose result remains visible. The X file stays outside the page
+registry; the gateway keeps one clip, not two tabs.
+
+The 2026-08-23 (104) decision is **overturned only for the nine-second duration and the
+single-neighbourhood scenario**. Its one-clip, no-controls, viewport-bounded loop remains for this
+first replacement because the page take is capped at 45 seconds. Reopen that player decision
+instead of stretching it if the complete path exceeds the cap or cannot be understood from a
+mid-loop entry.
+
+**Applied rule**: smallest complete proof · one rehearsed path · no union · privacy before polish.
+**Slice**: IN installed `rc.18` on current `main`, app-window-only capture, Korean X export,
+matched Korean/English page WebM/MP4/posters, truthful duration/copy, one-second privacy sweep,
+asset gates, and hosted playback proof · OUT Finder/folder selection, Settings, absolute paths,
+desktop/menu bar/Dock/notifications, History, cold adapter download, 3D/Cloud tour, player or tab
+redesign, product fixes discovered while filming, and posting to X.
+
+**Recorded dissent**: there is no visitor-confusion or retention evidence; this may overfit one
+owner's reversible preference, and a polished video is easy to copy. The stronger product asset
+is the accumulated typed meaning, evidence, and human-reviewed agent history, not footage.
+**Falsifier**: a source-hidden viewer still cannot name the concept → relation/evidence → agent
+handoff after watching the new page take; the live agent path is staged or does not use Atlas
+lookup evidence; a mid-loop entry is incomprehensible; or any sampled frame exposes a picker,
+path, notification, desktop content, or personal information.
+**Revisit**: immediately on any falsifier, or when real playback data shows that the complete
+claim is not reached before viewers leave.
+
+**Status**: valid; runtime proof complete, hosted proof pending publication.
 
 ---
 
@@ -615,6 +749,7 @@ without meaning and the counts should come back.
 without role summaries is measured.
 
 **Status**: standing
+
 ## 2026-08-30 — Persisted handoff is 41/41; gross performance remains open
 
 **Convened**: field-trial accountable decision · **Trigger**: the qualification

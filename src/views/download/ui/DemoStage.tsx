@@ -179,21 +179,20 @@ function DemoPlayer({ clip }: { clip: DemoClip }) {
          * `muted` + `playsInline` are the conditions for silent autoplay, and the sound is **zero,
          * including any BGM**.
          *
-         * ## [Revised 2026-08-23] No controls, and it loops
+         * ## [Revised 2026-08-30] One bounded take, no controls, viewport loop
          *
-         * Owner, looking at the shipped page: the timecode should not be there, and the clip
-         * should keep playing. Both halves reverse an earlier decision, so both are in the ledger
-         * (`docs/DECISIONS.md` 2026-08-23) rather than changed quietly.
+         * The 2026-08-23 decision removed player chrome and looped a nine-second scene. The
+         * 2026-08-30 replacement is longer, so the PO Council reconsidered that premise rather
+         * than inheriting it silently. The first replacement remains one fixed, at-most-45-second
+         * narrative, and the IntersectionObserver still confines motion to this section.
          *
-         * **No `controls`.** The bar existed for scrubbing a 199-second tour. At nine seconds
-         * there is nothing to scrub to, and `0:04 / 0:09` plus a progress rail is chrome that
-         * says "this is a video player" over a scene meant to read as the product.
+         * **No `controls`.** There is still no alternate chapter or hidden state to scrub toward;
+         * a timecode and progress rail would put player chrome over the app evidence.
          *
-         * **`loop`.** The 2026-07-29 scenario said *no loop*, deciding for a three-minute take
-         * that would have restarted in a reader's peripheral vision. Nine seconds is a different
-         * object: without a loop it freezes on its last frame, and with no controls there is then
-         * no way back to the start. Looping makes the section self-restoring — arrive at any
-         * moment and the whole scene still plays.
+         * **`loop`.** Without controls, the section must restore its start for a person who arrives
+         * after playback began. The viewport observer pauses it outside the section. If a mid-loop
+         * entry is incomprehensible or the longer repetition distracts from adjacent copy, the
+         * 2026-08-30 decision requires reopening the player contract instead of stretching it.
          *
          * The consequence to keep in view: `onEnded` never fires now, so the play button no
          * longer returns after playback. It is still the entry point for reduced-motion readers
