@@ -684,6 +684,11 @@ from regressing while preserving typed Korean locale data and runtime strings.
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before
 semantic reads and that qualification keeps explicit unknown/refusal behavior.
+The same gate proves sibling-file hidden inputs are byte-identical to embedded
+inputs; under a stable scratch directory it rejects lexical escapes, symlinked
+ancestors, symlinks, hard links, and non-regular inputs. It also proves the
+machine schema matches accepted helper inputs and that access timestamps do not
+become a late qualification retry.
 
 The rest of the gate reference lives in
 [development checks](docs/DEVELOPMENT-CHECKS.md), which is where a contributor
