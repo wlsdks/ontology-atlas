@@ -418,8 +418,8 @@ function HeroSection({
       <div
         className={cn(
           PAGE_COLUMN,
-          'grid min-w-0 items-center gap-x-12 gap-y-10 pb-6 pt-7 xl:pb-7',
-          'xl:grid-cols-[minmax(500px,1fr)_minmax(320px,0.85fr)]',
+          'grid min-w-0 items-center gap-x-10 gap-y-10 pb-6 pt-7 xl:pb-7',
+          'xl:grid-cols-[minmax(520px,1fr)_minmax(320px,0.85fr)]',
         )}
       >
         {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"Too much space at the top"* — too much space at the top; measured at 1512, the correction lifted the

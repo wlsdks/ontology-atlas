@@ -548,11 +548,12 @@ test.describe("the hero split waits for a column that can hold the decision", ()
           const overlap = Math.min(r.right, object.right) - Math.max(r.left, object.left) > 0 && Math.min(r.bottom, object.bottom) - Math.max(r.top, object.top) > 0;
           if (overlap) out.push(`${a.getAttribute("data-testid")} stands on the object`);
         }
-        return { out, rows: rows.size, objectWidth: Math.round(object.width) };
+        const widths = [...document.querySelectorAll('a[data-testid^="gateway-hero-"]')].map((a) => `${a.getAttribute("data-testid")}=${Math.round(a.getBoundingClientRect().width)}`);
+        return { out, rows: rows.size, objectWidth: Math.round(object.width), widths, mono: getComputedStyle(document.querySelector('[data-testid="gateway-hero-cta"] span:last-child')!).fontFamily.slice(0, 60) };
       });
       expect(m.out, `at ${width}`).toEqual([]);
       /* Two rows plus one for the destination the second row cannot hold; five is a column. */
-      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}`).toBeLessThanOrEqual(3);
+      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}: ${m.widths.join(" ")} (mono: ${m.mono})`).toBeLessThanOrEqual(3);
       expect(m.objectWidth, "the object keeps its minimum").toBeGreaterThanOrEqual(320);
     });
   }
