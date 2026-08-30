@@ -152,6 +152,12 @@ test('선택한 로컬 볼트의 LNB 전환은 번들 샘플을 한 프레임도
   });
 
   await expectLocalOnlyTransition(page, 'architecture', 'Local Only Architecture');
+  const installedRail = page.getByTestId('app-nav-rail');
+  await expect(installedRail).toHaveAttribute('data-hidden', 'false');
+  expect(
+    await installedRail.evaluate((element) => Math.round(element.getBoundingClientRect().width)),
+    '실제 로컬 볼트가 열린 설치 셸의 LNB 폭이 0이다',
+  ).toBeGreaterThan(0);
   await expectLocalOnlyTransition(page, 'docs', 'Local Only Capability');
   await expect(page.getByTestId('docs-missing-slug-banner')).toHaveCount(0);
   await expectLocalOnlyTransition(page, 'insights', '로컬 전용 역량');
