@@ -9,6 +9,7 @@ import {
 import type { ArchitectureRecord, ArchitectureRoleEdge } from '@/entities/architecture-record';
 
 import { buildArchitectureGraph } from '../model/graph-layout';
+import type { SentenceEdge } from '../model/edge-sentences';
 import { buildRoleLedgers, type RoleLedger } from '../model/role-ledger';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
@@ -38,6 +39,7 @@ export function ArchitectureFlow({
   roleTraffic,
   record,
   roleSummary,
+  edgeSentence,
   ledgerStatusLabel,
   ledgerImportsLabel,
   violatedPairs,
@@ -74,6 +76,7 @@ export function ArchitectureFlow({
   record?: ArchitectureRecord | null;
   /** The profile's own sentence for a role, or null; the box prints it in place of counts. */
   roleSummary: (id: string) => string | null;
+  edgeSentence: (edge: SentenceEdge) => string;
   ledgerStatusLabel: (ledger: RoleLedger) => string;
   /** `from>to` for each crossing the receipt counted as a violation; drawn apart from the rest. */
   violatedPairs: ReadonlySet<string>;
@@ -135,6 +138,7 @@ export function ArchitectureFlow({
           roleLabel={roleLabel}
           ledgers={ledgers}
           roleSummary={roleSummary}
+          edgeSentence={edgeSentence}
           violatedPairs={violatedPairs}
           ledgerStatusLabel={ledgerStatusLabel}
           ledgerImportsLabel={ledgerImportsLabel}

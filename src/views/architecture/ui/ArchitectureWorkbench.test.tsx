@@ -247,7 +247,7 @@ describe('ArchitectureWorkbench', () => {
     );
     expect(boxOrder, 'boxes must appear in dependency order').toEqual(order);
     expect(graph).toHaveAttribute('data-edge-source', 'permitted');
-    const drawn = [...graph.querySelectorAll('path[data-edge-from]')].map(
+    const drawn = [...graph.querySelectorAll('path[data-edge-drawn="true"]')].map(
       (path) => `${path.getAttribute('data-edge-from')}>${path.getAttribute('data-edge-to')}`,
     );
     expect(drawn.sort()).toEqual([

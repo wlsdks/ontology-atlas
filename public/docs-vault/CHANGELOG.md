@@ -7,6 +7,21 @@
 
 ---
 
+## 2026-08-30 · Every stroke on the architecture canvas says its sentence
+
+- A stroke used to carry nothing at rest, and a count only when a role was chosen; what
+  it meant lived in a panel that was closed by default. Every drawn stroke now states
+  its own sentence beside it, the same one the panel printed: a declared rule reads
+  `Routes may depend on Application shell`, a measured crossing reads `Views reaches
+  Widgets in 314 imports`, a counted violation is marked and toned. A sentence that
+  has no room is held, never cropped into a box, and nothing on the canvas overlaps.
+- The canvas is drawn exactly now: 1px boxes and one clean curve per stroke replace the
+  hand-drawn wobble. A hovered role recedes everything unrelated over the feedback
+  step instead of cutting, and a crossing revealed by choosing a role fades in where it
+  already was.
+- The panel behind "Roles and rules" keeps the key for every mark and the direction the
+  dependencies run; its sentence list moved onto the strokes.
+
 ## 2026-08-30 · The reason on a relation is findable, and the agent reads what it wrote
 
 - `relation_notes` (the one-sentence why stored with a relation, mandatory for every

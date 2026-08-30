@@ -17,6 +17,11 @@ function draw(ledgers: Record<string, RoleLedger> = {}, violatedPairs = new Set<
       graph={graph}
       ledgers={ledgers}
       roleSummary={() => null}
+      edgeSentence={(edge) =>
+        edge.kind === 'permitted'
+          ? `${edge.from} may depend on ${edge.to}`
+          : `${edge.from} reaches ${edge.to} in ${edge.count ?? 0} imports`
+      }
       violatedPairs={violatedPairs}
       ledgerStatusLabel={(ledger) =>
         ledger.state === 'clean' ? 'no violations out' : `${ledger.violated} violated`
@@ -78,7 +83,7 @@ describe('the run control', () => {
        so a global query reports the class still present no matter what this case does. */
     const { container } = draw();
     fireEvent.click(screen.getByTestId('architecture-graph-run'));
-    const edges = [...container.querySelectorAll('[data-edge-kind]')];
+    const edges = [...container.querySelectorAll('[data-edge-kind][data-edge-drawn="true"]')];
     expect(edges.every((e) => e.classList.contains('architecture-flow-running'))).toBe(true);
     /* `bubbles: true` is required: React listens at the root, and Testing Library's default
        initialiser for an animation event does not bubble, so the handler would never run. */

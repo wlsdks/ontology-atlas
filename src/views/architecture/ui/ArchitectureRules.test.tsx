@@ -15,9 +15,6 @@ function draw() {
     <ArchitectureRules
       graph={graph}
       violatedPairs={new Set(['adapter>domain'])}
-      roleLabel={(id) => id}
-      permittedEdgeLabel={(from, to) => `${from}: may use ${to}`}
-      trafficEdgeLabel={(from, to, n) => `${from}: imports ${to} ${n} times`}
       legendPermitted="a reviewed dependency"
       legendTraffic="measured imports"
       legendSkipHint="a crossing that skips a role"
@@ -30,34 +27,17 @@ function draw() {
 }
 
 describe('the rule sentences', () => {
-  it('are painted, not left one pixel wide in the accessibility tree', () => {
+  it('no longer live here: every stroke states its own sentence on the canvas', () => {
     /*
-     * ⚠️ The walkthrough on 2026-08-28 found the complete answer to the screen's own question
-     * inside an `sr-only` box measured at one pixel. A fact only the accessibility tree carries is
-     * a fact on no screen at all. They live in the panel beside the canvas now (2026-08-30) —
-     * still painted, and below `xl` still the next section down the page.
+     * The 2026-08-28 walkthrough found the sentences in an `sr-only` box one pixel wide; on
+     * 2026-08-30 they moved into this panel, painted; the same day (Direction B) they moved onto
+     * the strokes themselves. This panel keeps the key for every mark, which is still painted.
      */
     const { container } = draw();
-    const list = container.querySelector('[data-testid="architecture-edge-sentences"]');
-    expect(list).not.toBeNull();
-    expect(list?.className).not.toContain('sr-only');
-  });
-
-  it('read down the chain, not in the order the canvas paints them', () => {
-    /* The canvas paints the longest skip first so short strokes land on top; read as sentences
-       that order scatters the same role across the list. */
-    const { container } = draw();
-    const froms = [...container.querySelectorAll('[data-testid="architecture-edge-sentences"] li')]
-      .map((li) => li.textContent?.split(':')[0]?.trim() ?? '');
-    const firstSeen = new Map<string, number>();
-    froms.forEach((from, index) => {
-      if (!firstSeen.has(from)) firstSeen.set(from, index);
-    });
-    /* Every run of one role is contiguous: a role never reappears after another has begun. */
-    for (const [role, start] of firstSeen) {
-      const last = froms.lastIndexOf(role);
-      expect(froms.slice(start, last + 1).every((f) => f === role)).toBe(true);
-    }
+    expect(container.querySelector('[data-testid="architecture-edge-sentences"]')).toBeNull();
+    const legend = container.querySelector('p');
+    expect(legend).not.toBeNull();
+    expect(legend?.className).not.toContain('sr-only');
   });
 
   /*

@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from 'react';
-
 import { cn } from '@/shared/lib/cn';
 import type { ArchitectureGraph } from '../model/graph-layout';
 import { EDGE_STROKE, VIOLATED_STROKE } from './ArchitectureSketch';
@@ -20,16 +18,13 @@ import { EDGE_STROKE, VIOLATED_STROKE } from './ArchitectureSketch';
  * a fact only the accessibility tree carries is a fact on no screen at all. A panel a reader opens
  * keeps it on a screen; an `sr-only` box did not.
  *
- * It also carries what the drawing cannot. At rest the canvas draws the spine and holds skips back
- * until a role is chosen, so a profile with six declared rules shows three strokes. The sentences
- * carry all six, and a measured count carries a number a stroke width can only approximate.
+ * The sentences themselves left this panel on 2026-08-30 (Direction B): every stroke states its
+ * own sentence on the canvas now, so this panel keeps what the drawing still cannot say in
+ * place, the key for every mark and the direction the dependencies run.
  */
 export function ArchitectureRules({
   graph,
   violatedPairs,
-  roleLabel,
-  permittedEdgeLabel,
-  trafficEdgeLabel,
   legendPermitted,
   legendTraffic,
   legendSkipHint,
@@ -42,9 +37,6 @@ export function ArchitectureRules({
   graph: ArchitectureGraph;
   /** `from>to` for each crossing the receipt counted as a violation. */
   violatedPairs: ReadonlySet<string>;
-  roleLabel: (id: string) => string;
-  permittedEdgeLabel: (from: string, to: string) => string;
-  trafficEdgeLabel: (from: string, to: string, count: number) => string;
   legendPermitted: string;
   legendTraffic: string;
   legendSkipHint: string;
@@ -55,25 +47,6 @@ export function ArchitectureRules({
   /** True while the dock is answering a role: the rules are one button away, not stacked under it. */
   hiddenAtWorkbench?: boolean;
 }) {
-  /*
-   * ⚠️ **Reading order is not drawing order.** `buildArchitectureGraph` sorts by column span
-   * descending so the longest skip is painted first and short strokes land on top of it. Read as
-   * sentences that order scatters: the storefront profile listed adapter, adapter, application,
-   * adapter, application, port. Grouped by where the rule starts, the same six read down the
-   * chain, so the list is sorted here instead of changing what the canvas paints.
-   */
-  const sentenceOrder = useMemo(() => {
-    const columnOf = new Map(graph.boxes.map((box) => [box.id, box.column]));
-    const at = (id: string) => columnOf.get(id) ?? 0;
-    return [...graph.edges].sort(
-      (a, b) =>
-        at(a.from) - at(b.from) ||
-        at(a.to) - at(b.to) ||
-        a.from.localeCompare(b.from) ||
-        a.to.localeCompare(b.to),
-    );
-  }, [graph.boxes, graph.edges]);
-
   if (graph.edges.length === 0) return null;
 
   return (
@@ -82,33 +55,9 @@ export function ArchitectureRules({
         'flex shrink-0 flex-col gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2',
         hiddenAtWorkbench ? 'xl:hidden' : undefined,
       )}
+    
+      data-testid="architecture-rules"
     >
-      <ol
-        className="flex flex-col gap-1 text-caption text-[color:var(--color-text-tertiary)]"
-        data-testid="architecture-edge-sentences"
-      >
-        {sentenceOrder.map((edge) => {
-          const violated = violatedPairs.has(`${edge.from}>${edge.to}`);
-          return (
-            <li
-              key={`${edge.kind}-${edge.from}-${edge.to}`}
-              className={cn(
-                'break-keep',
-                /* The words agree with the drawing: the strokes this sentence describes are the
-                   toned, dashed ones, so the sentence carries the same glyph the box does. */
-                violated ? 'text-[color:var(--color-danger-text)]' : undefined,
-              )}
-              data-violated={violated ? 'true' : undefined}
-            >
-              {violated ? '⊘ ' : ''}
-              {edge.kind === 'permitted'
-                ? permittedEdgeLabel(roleLabel(edge.from), roleLabel(edge.to))
-                : trafficEdgeLabel(roleLabel(edge.from), roleLabel(edge.to), edge.count ?? 0)}
-            </li>
-          );
-        })}
-      </ol>
-
       {/*
         A legend for a mark nobody drew is noise, so each row appears only in the case that draws
         it. The arrow sentence stays whenever any stroke exists, because both kinds point.

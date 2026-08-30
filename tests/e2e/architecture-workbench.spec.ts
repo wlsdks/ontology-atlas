@@ -258,7 +258,7 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
     'data-architecture-inspector',
     'rules',
   );
-  await expect(page.getByTestId('architecture-edge-sentences')).toBeVisible();
+  await expect(page.getByTestId('architecture-rules')).toBeVisible();
 
   await page.goto('/ko/architecture/?role=application');
   await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
@@ -424,4 +424,36 @@ test('a role sentence stays inside the drawn box, including a stadium cap', asyn
     return out;
   });
   expect(offenders, offenders.join('\n')).toEqual([]);
+});
+
+
+/*
+ * ⚠️ **Every stroke at rest says its sentence, and no sentence touches anything** (Direction B,
+ * 2026-08-30). The sentences are the dock's own strings; a sentence with no room is held with a
+ * reason rather than cropped, so the assertion is on what is drawn: no drawn sentence intersects a
+ * box or another drawn sentence. And the hover recede is a transition, not a hard cut: the
+ * unrelated box carries the feedback duration and settles at its receded opacity.
+ */
+test('every drawn stroke says its sentence, and no sentence touches anything', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 945 });
+  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page.getByTestId('architecture-graph')).toBeVisible({ timeout: 60_000 });
+  await page.evaluate(() => document.fonts.ready);
+
+  const rest = await page.evaluate(() => {
+    const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')].map((b) => b.getBoundingClientRect());
+    const drawn = [...document.querySelectorAll('[data-edge-sentence="drawn"]')].map((t) => ({ id: t.getAttribute('data-testid'), r: t.getBoundingClientRect() }));
+    const hits = (a: DOMRect, b: DOMRect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const offenders: string[] = [];
+    for (const s of drawn) if (boxes.some((b) => hits(s.r, b))) offenders.push(`${s.id} touches a box`);
+    for (let i = 0; i < drawn.length; i++) for (let j = i + 1; j < drawn.length; j++) if (hits(drawn[i].r, drawn[j].r)) offenders.push(`${drawn[i].id} touches ${drawn[j].id}`);
+    const strokes = document.querySelectorAll('path[data-edge-drawn="true"]').length;
+    return { drawn: drawn.length, strokes, offenders };
+  });
+  expect(rest.offenders, rest.offenders.join('\n')).toEqual([]);
+  expect(rest.drawn).toBeGreaterThan(0);
+  /* Adjacent strokes carry their rule; where a measured count shares the gap the rule wins. */
+  expect(rest.drawn).toBeLessThanOrEqual(rest.strokes);
+  /* Every role in a hexagonal profile touches every other, so nothing recedes here; the hover
+     transition is measured on the seven-role profile in architecture-role-ledger.spec.ts. */
 });

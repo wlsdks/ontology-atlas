@@ -160,6 +160,23 @@ test('a measured profile states each role’s receipt inside its box, whole chai
           captions: [
             ...document.querySelectorAll('[data-testid^="architecture-box-line-"]'),
           ].map((text) => (text as SVGTextElement).getBBox().width),
+          /* Direction B: every drawn sentence clears every box and every other sentence. */
+          sentenceOffenders: (() => {
+            const boxRects = boxes.map((b) => b.getBoundingClientRect());
+            const drawn = [...document.querySelectorAll('[data-edge-sentence="drawn"]')].map((t) => ({
+              id: t.getAttribute('data-testid'),
+              r: t.getBoundingClientRect(),
+            }));
+            const hits = (a: DOMRect, b: DOMRect) =>
+              a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+            const out: string[] = [];
+            for (const s of drawn) if (boxRects.some((b) => hits(s.r, b))) out.push(`${s.id} touches a box`);
+            for (let i = 0; i < drawn.length; i++)
+              for (let j = i + 1; j < drawn.length; j++)
+                if (hits(drawn[i].r, drawn[j].r)) out.push(`${drawn[i].id} touches ${drawn[j].id}`);
+            return out;
+          })(),
+          sentencesDrawn: document.querySelectorAll('[data-edge-sentence="drawn"]').length,
         };
       });
 
@@ -173,6 +190,27 @@ test('a measured profile states each role’s receipt inside its box, whole chai
       );
       /* And no role box sits below the fold: the whole chain is one screen. */
       expect(measured.belowFold, where).toBeLessThanOrEqual(1);
+      /* Direction B: the strokes say their sentences, and none of them touches anything. */
+      expect(measured.sentenceOffenders, `${where} ${measured.sentenceOffenders.join('\n')}`).toEqual([]);
+      expect(measured.sentencesDrawn, where).toBeGreaterThanOrEqual(6);
+    }
+
+    /*
+     * ⚠️ **Hover recedes over the feedback step, never as a hard cut.** Routes and Entities share
+     * no stroke, so hovering one recedes the other; the box carries `--motion-fast` and settles at
+     * its receded opacity. Measured here because the four-role sample connects every role to every
+     * other and nothing there ever recedes.
+     */
+    {
+      await page.setViewportSize({ width: 1512, height: 945 });
+      await page.getByTestId('architecture-graph-box-routing').hover();
+      const receded = page.getByTestId('architecture-graph-box-entities');
+      await expect
+        .poll(() => receded.evaluate((el) => getComputedStyle(el).opacity), { timeout: 2000 })
+        .toBe('0.35');
+      const duration = await receded.evaluate((el) => getComputedStyle(el).transitionDuration);
+      expect(duration, `${locale}: hover recede runs at the feedback step`).toBe('0.12s');
+      await page.mouse.move(5, 5);
     }
   }
 });
@@ -246,7 +284,7 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     /* And the button opens it again without any role being chosen. */
     await page.getByTestId('architecture-inspector-toggle').click();
     await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'true');
-    await expect(page.getByTestId('architecture-edge-sentences'), where).toBeVisible();
+    await expect(page.getByTestId('architecture-rules'), where).toBeVisible();
 
     /*
      * ⚠️ **The stage takes one column, not two.** `lg:col-span-2` emits a `grid-column` shorthand

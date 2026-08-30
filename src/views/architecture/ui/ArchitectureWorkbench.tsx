@@ -954,6 +954,17 @@ export function ArchitectureWorkbench({
                 roleTraffic={roleTraffic}
                 violatedPairs={violatedPairs}
                 roleSummary={(id) => roleSummaryOf.get(id) ?? null}
+                edgeSentence={(edge) =>
+                  `${edge.violated ? '⊘ ' : ''}${
+                    edge.kind === 'permitted'
+                      ? t('permittedEdge', { from: roleLabel(edge.from), to: roleLabel(edge.to) })
+                      : t('trafficEdge', {
+                          from: roleLabel(edge.from),
+                          to: roleLabel(edge.to),
+                          count: edge.count ?? 0,
+                        })
+                  }`
+                }
                 /* The same receipt, grouped per role. Without it a box shows no ledger at all
                    rather than a row of zeros — an unmeasured role must not read as a clean one. */
                 record={record}
@@ -1268,9 +1279,6 @@ export function ArchitectureWorkbench({
           <ArchitectureRules
             graph={rulesGraph}
             violatedPairs={violatedPairs}
-            roleLabel={roleLabel}
-            permittedEdgeLabel={(from, to) => t('permittedEdge', { from, to })}
-            trafficEdgeLabel={(from, to, count) => t('trafficEdge', { from, to, count })}
             legendPermitted={t('legendPermitted')}
             legendTraffic={t('legendTraffic')}
             legendSkipHint={t('legendSkipHint')}

@@ -1306,6 +1306,20 @@
   }
 }
 
+/*
+ * A stroke or its sentence arrives and leaves by opacity: a skip held at zero at rest fades in
+ * with the role that reveals it (base), and everything unrelated to a hovered role recedes at the
+ * feedback step (fast). The base-layer reduced-motion rule below zeroes these like every other
+ * transition, so the still frame is the settled one.
+ */
+.architecture-stroke {
+  transition: opacity var(--motion-base) var(--motion-ease);
+}
+
+.architecture-recede {
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
 .architecture-flow-running {
   stroke-dasharray: var(--architecture-run-dash);
   animation: architectureFlowRun var(--architecture-run-duration) var(--motion-ease) both;
