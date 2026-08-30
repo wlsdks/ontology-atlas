@@ -532,6 +532,9 @@ test.describe("the hero split waits for a column that can hold the decision", ()
       await page.setViewportSize({ width, height: 900 });
       await seedFirstRunSeen(page);
       await page.goto("/en/download/", { waitUntil: "load" });
+      /* Measured with the page's own face, not the fallback: on a cold CI runner the labels were
+         still in the fallback font at 1.5s, wider by a word, and five rows were counted. */
+      await page.evaluate(() => document.fonts.ready);
       await page.waitForTimeout(1500);
       const m = await page.evaluate(() => {
         const object = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();

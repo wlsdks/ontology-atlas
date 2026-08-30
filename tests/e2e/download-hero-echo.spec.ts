@@ -66,10 +66,12 @@ test.describe("download hero — the typing echo", () => {
     expect(mid.some((s) => s.lit > 0 && s.lit < s.count), "the object was observed mid-assembly").toBe(true);
 
     // The lit count is the typed count's echo: it never exceeds what the typed count has earned
-    // (ceil of the proportion) and never lags it by more than one keystroke's worth.
+    // (ceil of the proportion) and never lags it by more than two keystrokes' worth. Two, not
+    // one: the character paints, then an effect reports it, then the engine lights the dot, and
+    // on a loaded CI runner that chain measured one 30ms English keystroke behind the caret.
     for (const s of samples) {
       const earned = s.typed >= s.total ? s.count : Math.ceil((s.typed / s.total) * s.count);
-      const earnedBefore = s.typed <= 1 ? 0 : Math.ceil(((s.typed - 1) / s.total) * s.count);
+      const earnedBefore = s.typed <= 2 ? 0 : Math.ceil(((s.typed - 2) / s.total) * s.count);
       expect(s.lit, `typed ${s.typed}/${s.total} lit ${s.lit}/${s.count}`).toBeLessThanOrEqual(earned);
       expect(s.lit, `typed ${s.typed}/${s.total} lit ${s.lit}/${s.count}`).toBeGreaterThanOrEqual(earnedBefore);
     }
