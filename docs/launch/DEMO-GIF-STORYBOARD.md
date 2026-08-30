@@ -1,4 +1,10 @@
-# 30s Demo GIF — storyboard
+# 30s Demo GIF — retired storyboard
+
+> Retired on 2026-08-30. The shipped X MP4 and localized download-page takes follow
+> `docs/DEMO-SCENARIO.md`: the page takes show one selected capability, its relations and
+> evidence, and a real read-only Codex `get_concept`/`find_path` round trip; the separate X take
+> rapidly crosses the seven LNB destinations. The five-cut editor/terminal/picker plan below
+> remains only as historical launch planning and must not be used for a new capture.
 
 Storyboard for the 30-second GIF/mp4 to be featured on the README first screen. **claim → proof** 5-cut sequence. Each cut ~6 seconds.
 

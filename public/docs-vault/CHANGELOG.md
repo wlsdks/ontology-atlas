@@ -75,6 +75,20 @@
 - Below the fold the page moves in three places instead of twelve: each section's stage still
   rises with scroll, and the three lines above it are simply there.
 
+## 2026-08-30 · The gateway demo now reaches the agent handoff
+
+- The nine-second neighbourhood clip stopped before the gateway's agent claim. The Korean and
+  English download pages now carry separate 44-second installed-app takes: find one capability,
+  read its typed relations and evidence, then watch Codex use Atlas MCP `get_concept` and
+  `find_path` to explain the path between two concepts without writing files.
+- A separate 21.633-second Korean X clip now answers the breadth-first posting moment: it moves
+  through Map, Architecture, Docs, Insights, Projects, Agents, and Git History on the same public
+  example. The page clips keep the deeper Atlas MCP proof. All captures start after the example
+  is open; Finder, Settings, absolute paths, terminals, notifications, the desktop, menu bar, and
+  Dock never enter the frame.
+- The gateway remains one silent, viewport-bounded looping clip with no player chrome. The player
+  contract must be reopened if the longer loop is distracting or a mid-loop entry is unclear.
+
 ## 2026-08-30 · Every stroke on the architecture canvas says its sentence
 
 - A stroke used to carry nothing at rest, and a count only when a role was chosen; what
