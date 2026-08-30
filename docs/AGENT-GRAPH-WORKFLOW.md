@@ -197,7 +197,27 @@ MCP adds three things that terminal-only use does not provide as naturally:
 3. Tool responses include structured repair fields, result contracts, and
    write guardrails so the agent can recover from bad inputs without guessing.
 
-The first MCP calls should be read-only:
+When a coding task is already known, use this shortest read-only sequence:
+
+```json
+{ "tool": "connection_info", "arguments": {} }
+{
+  "tool": "query_ontology",
+  "arguments": {
+    "operation": "agent_brief",
+    "project": "project-slug",
+    "detail": "compact",
+    "task": "Describe the requested code change"
+  }
+}
+```
+
+Then run only the returned `nextReads[0]` before inspecting source from the
+recorded anchor. Do not precede this path with `workspace_brief`,
+`list_concepts`, or full `agent_brief`; those are whole-vault orientation and
+duplicate the known-task handoff.
+
+When no coding task is known yet, the first MCP calls should be read-only:
 
 ```json
 { "tool": "validate_vault", "arguments": {} }
@@ -205,6 +225,13 @@ The first MCP calls should be read-only:
 { "tool": "query_ontology", "arguments": { "operation": "agent_brief" } }
 { "tool": "query_ontology", "arguments": { "operation": "health" } }
 ```
+
+Compact responses stay within 8,000 UTF-8 JSON bytes and return an exact
+`detail:"full"` follow-up when the complete diagnostic manuals or graph packs
+are actually needed. The complete response remains the default while this mode
+is qualified against coding outcomes. `project` is mandatory when the vault has
+several projects. Task text is request-local, is not stored, and does not prove
+source behavior.
 
 Only after those checks are clean should an agent propose writes.
 
@@ -216,8 +243,9 @@ answers, witness text, a private absolute source root, or remote coordinates.
 `ok: true` means that receipt write completed; it does not mean the project is
 verified. Read `agent_brief.meaningAssessment` for the categorical fail-closed
 state (`verified_current`, `review_required`, `needs_evidence`, or `invalid`).
-For a multi-project vault, use `query_ontology({ operation: "agent_brief",
-project: "SLUG" })` or `ontology-atlas agent-brief <vault> --project SLUG`.
+For a multi-project vault, `project` is required: use
+`query_ontology({ operation: "agent_brief", project: "SLUG" })` or
+`ontology-atlas agent-brief <vault> --project SLUG`.
 
 ## How This Differs From A Graph Database
 

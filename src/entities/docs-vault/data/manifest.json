@@ -22,8 +22,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Current as of 2026-08-02. This is the user-facing guide for running ontology-atlas as a local meaning graph: CLI-only, MCP-connected, and web workbench flows over the same markdown vault. ontology-atlas is not a hosted graph database. It is a local-first graph workbench where markdown frontmatter is the graph, git is t",
-      "wordCount": 2811,
-      "updatedAt": "2026-08-28",
+      "wordCount": 2954,
+      "updatedAt": "2026-08-30",
       "linksOut": []
     },
     {
@@ -439,8 +439,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. From 1024 t",
-      "wordCount": 84863,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. agentbrief(",
+      "wordCount": 85024,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -480,7 +480,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 216249,
+      "wordCount": 217396,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "slug"
@@ -586,7 +586,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-29 (replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench, source-derived conformance, a",
-      "wordCount": 24417,
+      "wordCount": 24552,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "slug",
@@ -1399,14 +1399,17 @@
         "kind": "capability",
         "title": "MCP Server",
         "domain": "domains/agent-integration",
-        "elements": [],
+        "elements": [
+          "elements/task-scoped-agent-brief-projection"
+        ],
         "path": "mcp/src",
         "created_by": "agent:unknown",
         "dependencies": [
           "capabilities/vault-ontology"
         ],
         "relation_notes": {
-          "capabilities/vault-ontology": "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract."
+          "capabilities/vault-ontology": "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.",
+          "elements/task-scoped-agent-brief-projection": "The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs."
         },
         "display_ko": "AI 연결 서버",
         "display_en": "AI Connection Server"
@@ -3030,6 +3033,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/task-scoped-agent-brief-projection",
+      "path": "docs/ontology/elements/task-scoped-agent-brief-projection.md",
+      "title": "Task-scoped agent brief projection",
+      "tags": [],
+      "frontmatter": {
+        "uid": "864cb667-c65c-4e94-aea2-2026d7abdef6",
+        "slug": "elements/task-scoped-agent-brief-projection",
+        "kind": "element",
+        "title": "Task-scoped agent brief projection",
+        "domain": "domains/agent-integration",
+        "path": "mcp/src/agent-brief-compact.mjs",
+        "created_by": "agent:codex"
+      },
+      "headings": [],
+      "excerpt": "Task-scoped agent brief projection is the read-side implementation that turns one selected project and one request-local coding task into a bounded handoff of currentness, broad capability meaning, cited implementation anchors, explicit unknowns, and exact next reads. mcp/src/agent-brief-compact.mjs mcp/src/index.js cl",
+      "wordCount": 172,
+      "updatedAt": "2026-08-30",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/topology-controls",
       "path": "docs/ontology/elements/topology-controls.md",
       "title": "Topology Controls",
@@ -3709,6 +3732,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/elements/task-scoped-agent-brief-projection",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/elements/vault-agent-panel",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4143,6 +4171,13 @@
         "fromSlug": "ontology/domains/local-vault-management",
         "context": "frontmatter · **[capabilities/vault-sample-source]**",
         "linkText": "capabilities/vault-sample-source"
+      }
+    ],
+    "ontology/elements/task-scoped-agent-brief-projection": [
+      {
+        "fromSlug": "ontology/capabilities/mcp-server",
+        "context": "frontmatter · **[elements/task-scoped-agent-brief-projection]**",
+        "linkText": "elements/task-scoped-agent-brief-projection"
       }
     ],
     "ontology/capabilities/vault-ontology": [
@@ -5915,6 +5950,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/status",
                 "title": "Status"
+              },
+              {
+                "name": "task-scoped-agent-brief-projection",
+                "path": "ontology/elements/task-scoped-agent-brief-projection",
+                "type": "doc",
+                "slug": "ontology/elements/task-scoped-agent-brief-projection",
+                "title": "Task-scoped agent brief projection"
               },
               {
                 "name": "topology-controls",

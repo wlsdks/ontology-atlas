@@ -1,4 +1,5 @@
 const DIAGNOSIS_STATUSES = new Set(['healthy', 'needs_attention']);
+const AGENT_READINESS_STATUSES = new Set(['ready', 'needs_attention', 'needs_shape']);
 const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
 const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
 const MAINTENANCE_ACTION_SEVERITIES = new Set(['fail', 'warn', 'info']);
@@ -52,6 +53,13 @@ const MEANING_QUESTION_STATUSES = new Set(['answered', 'partial', 'visible-gap',
 const MEANING_WITNESS_STATUSES = new Set(['resolved', 'missing', 'unavailable']);
 const MEANING_QUESTION_IDS = ['scope', 'domains', 'abilities', 'evidence', 'impact'];
 const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
+const AGENT_BRIEF_COMPACT_MAX_BYTES = 8_000;
+const AGENT_BRIEF_EVIDENCE_SOURCE_STATUSES = new Set([
+  'supported_current',
+  'stale_or_unavailable',
+  'missing_or_changed',
+  'not_measured',
+]);
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -267,6 +275,187 @@ export function assertWorkspaceBriefShape(result) {
   }
   if (result.growth !== undefined && !isPlainObject(result.growth)) {
     throw new Error('workspace_brief growth must be an object when present');
+  }
+  return result;
+}
+
+export function assertAgentBriefResponseShape(result) {
+  return result?.contract === 'agentBriefCompact:v1'
+    ? assertAgentBriefCompactShape(result)
+    : assertAgentBriefShape(result);
+}
+
+export function assertAgentBriefCompactShape(result) {
+  assertQueryOperation(result, 'agent_brief');
+  if (result.contract !== 'agentBriefCompact:v1' || result.detail !== 'compact' || result.sideEffect !== false) {
+    throw new Error('agent_brief compact response must use agentBriefCompact:v1, detail compact, and sideEffect false');
+  }
+  if (new TextEncoder().encode(JSON.stringify(result, null, 2)).byteLength > AGENT_BRIEF_COMPACT_MAX_BYTES) {
+    throw new Error(`agent_brief compact response must fit ${AGENT_BRIEF_COMPACT_MAX_BYTES} UTF-8 JSON bytes`);
+  }
+  if (!isPlainObject(result.project) || !hasNonEmptyString(result.project.slug, result.project.title)) {
+    throw new Error('agent_brief compact project must contain slug and title');
+  }
+  if (!isPlainObject(result.project.scope)) {
+    throw new Error('agent_brief compact project.scope must be an object');
+  }
+  for (const field of ['nodes', 'domains', 'capabilities', 'elements', 'internalEdges']) {
+    if (!validCount(result.project.scope[field])) {
+      throw new Error(`agent_brief compact project.scope.${field} must be a non-negative integer`);
+    }
+  }
+  if (
+    !isPlainObject(result.task)
+    || result.task.requestLocal !== true
+    || result.task.persisted !== false
+    || !/^sha256:[a-f0-9]{64}$/.test(result.task.digest)
+    || !Array.isArray(result.task.terms)
+    || !result.task.terms.every((term) => hasNonEmptyString(term))
+    || Object.hasOwn(result.task, 'text')
+  ) {
+    throw new Error('agent_brief compact task must be request-local, non-persisted, digested, and omit raw text');
+  }
+  if (!DIAGNOSIS_STATUSES.has(result.status) || !isPlainObject(result.readiness)) {
+    throw new Error('agent_brief compact status/readiness must use diagnosis statuses');
+  }
+  if (!AGENT_READINESS_STATUSES.has(result.readiness.status) || !validCount(result.readiness.score)) {
+    throw new Error('agent_brief compact readiness must contain status and score');
+  }
+  const source = result.currentness?.source;
+  const meaning = result.currentness?.meaning;
+  if (
+    !isPlainObject(source)
+    || !PROJECT_SOURCE_STATUSES.has(source.status)
+    || !PROJECT_SOURCE_CURRENTNESS.has(source.currentness)
+    || !isPlainObject(source.witnessSummary)
+    || !['total', 'supported', 'missing'].every((field) => validCount(source.witnessSummary[field]))
+  ) {
+    throw new Error('agent_brief compact currentness.source must preserve categorical source state and witness counts');
+  }
+  if (
+    !isPlainObject(meaning)
+    || !MEANING_ASSESSMENT_STATUSES.has(meaning.status)
+    || !Array.isArray(meaning.questions)
+    || !meaning.questions.every((row) => (
+      isPlainObject(row)
+      && MEANING_QUESTION_IDS.includes(row.id)
+      && MEANING_QUESTION_STATUSES.has(row.status)
+      && MEANING_WITNESS_STATUSES.has(row.witnessStatus)
+    ))
+  ) {
+    throw new Error('agent_brief compact currentness.meaning must preserve categorical question state');
+  }
+  if (
+    !isPlainObject(result.validation)
+    || !['pass', 'warn', 'fail', 'not_checked'].includes(result.validation.status)
+    || result.validation.scope !== 'whole_vault'
+    || !['problemFiles', 'errorFiles', 'warningFiles', 'driftCount'].every((field) => validCount(result.validation[field]))
+    || typeof result.validation.sourcePathsChecked !== 'boolean'
+  ) {
+    throw new Error('agent_brief compact validation must preserve whole-vault problem and source-path status');
+  }
+  if (!validMeaningRepair(result.meaningRepair, result.project.slug)) {
+    throw new Error('agent_brief compact meaningRepair must preserve the action-first human review packet');
+  }
+  if (!isPlainObject(result.purpose) || result.purpose.slug !== result.project.slug) {
+    throw new Error('agent_brief compact purpose must belong to the selected project');
+  }
+  if (!isPlainObject(result.focus) || !hasNonEmptyString(result.focus.selectionPolicy)) {
+    throw new Error('agent_brief compact focus must explain that task match is selection, not proof');
+  }
+  if (result.focus.capability !== null && !validCompactNode(result.focus.capability, 'capability')) {
+    throw new Error('agent_brief compact focus.capability must be null or a bounded capability row');
+  }
+  if (!Array.isArray(result.focus.evidenceAnchors) || !result.focus.evidenceAnchors.every((row) => validCompactNode(row, 'element'))) {
+    throw new Error('agent_brief compact evidenceAnchors must contain bounded element rows');
+  }
+  for (const row of result.focus.evidenceAnchors) {
+    if (
+      !['recorded_path_anchor', 'recorded_element_without_path'].includes(row.claimStatus)
+      || !AGENT_BRIEF_EVIDENCE_SOURCE_STATUSES.has(row.sourceStatus)
+      || !hasNonEmptyString(row.relation)
+    ) {
+      throw new Error('agent_brief compact evidenceAnchors must preserve claim, relation, and categorical source status');
+    }
+    if (
+      row.sourceStatus === 'supported_current'
+      && (source.status !== 'verified_current' || source.currentness !== 'current')
+    ) {
+      throw new Error('agent_brief compact evidenceAnchors cannot claim supported_current when outer source currentness is not current');
+    }
+  }
+  if (
+    !isPlainObject(result.focus.impact)
+    || !BLAST_RADIUS_QUALIFICATION_STATUSES.has(result.focus.impact.status)
+    || result.focus.impact.completeness !== 'unknown'
+    || result.focus.impact.sourceBacked !== false
+    || !validCount(result.focus.impact.declaredEdges)
+    || !Array.isArray(result.focus.impact.edges)
+  ) {
+    throw new Error('agent_brief compact impact must remain bounded and non-source-backed');
+  }
+  if (
+    !isPlainObject(result.focus.verification)
+    || !['recorded', 'unknown'].includes(result.focus.verification.status)
+    || !Array.isArray(result.focus.verification.recordedPaths)
+    || !result.focus.verification.recordedPaths.every((path) => hasNonEmptyString(path))
+    || !hasNonEmptyString(result.focus.verification.nextAction)
+  ) {
+    throw new Error('agent_brief compact verification must distinguish recorded paths from unknown');
+  }
+  if (!Array.isArray(result.focus.unknowns) || !result.focus.unknowns.every((row) => hasNonEmptyString(row))) {
+    throw new Error('agent_brief compact unknowns must be an array of non-empty bounded statements');
+  }
+  if (!Array.isArray(result.nextReads) || result.nextReads.length === 0) {
+    throw new Error('agent_brief compact nextReads must contain an exact follow-up');
+  }
+  const bodyRead = result.nextReads.find((row) => row?.tool === 'get_concepts');
+  if (
+    !bodyRead
+    || !isPlainObject(bodyRead.arguments)
+    || bodyRead.arguments.body !== 'full'
+    || !Array.isArray(bodyRead.arguments.slugs)
+    || bodyRead.arguments.slugs.length === 0
+    || bodyRead.arguments.slugs.length > 6
+  ) {
+    throw new Error('agent_brief compact nextReads must include one bounded get_concepts body full call');
+  }
+  if (
+    !isPlainObject(result.safety)
+    || !hasExactKeys(result.safety, [
+      'humanApprovalRequiredForMeaningWrites',
+      'automaticWrite',
+      'automaticFinalize',
+      'structuralReadinessIsSemanticApproval',
+    ])
+    || result.safety.humanApprovalRequiredForMeaningWrites !== true
+    || result.safety.automaticWrite !== false
+    || result.safety.automaticFinalize !== false
+    || result.safety.structuralReadinessIsSemanticApproval !== false
+  ) {
+    throw new Error('agent_brief compact safety must preserve human approval and no-auto-write/finalize');
+  }
+  if (
+    !isPlainObject(result.fullDetail)
+    || result.fullDetail.tool !== 'query_ontology'
+    || result.fullDetail.arguments?.operation !== 'agent_brief'
+    || result.fullDetail.arguments?.project !== result.project.slug
+    || result.fullDetail.arguments?.detail !== 'full'
+    || !hasNonEmptyString(result.fullDetail.reason)
+  ) {
+    throw new Error('agent_brief compact fullDetail must point to the selected project full response');
+  }
+  if (
+    !hasNonEmptyString(result.handoffPrompt)
+    || !result.handoffPrompt.includes(`Current source: ${source.status}/${source.currentness}`)
+    || !result.handoffPrompt.includes(`Meaning: ${meaning.status}`)
+  ) {
+    throw new Error('agent_brief compact handoffPrompt must be generated from final currentness facts');
+  }
+  for (const forbidden of ['playbooks', 'cliFallbackCommands', 'graphDbQueryPack', 'traversalStrategy', 'writePolicy']) {
+    if (Object.hasOwn(result, forbidden)) {
+      throw new Error(`agent_brief compact response must keep ${forbidden} behind full detail`);
+    }
   }
   return result;
 }
@@ -1453,6 +1642,12 @@ export function workspaceBriefExitCode(result) {
 }
 
 export function agentBriefExitCode(result) {
+  if (result?.contract === 'agentBriefCompact:v1') {
+    if (!DIAGNOSIS_STATUSES.has(result.status)) return 1;
+    if (!isPlainObject(result.readiness) || !AGENT_READINESS_STATUSES.has(result.readiness.status)) return 1;
+    if (!validCount(result.readiness.score)) return 1;
+    return result.status === 'healthy' && result.readiness.status === 'ready' ? 0 : 1;
+  }
   if (!DIAGNOSIS_STATUSES.has(result?.status)) return 1;
   if (!validAgentReadiness(result?.readiness)) return 1;
   if (!Array.isArray(result?.health?.checks)) return 1;
@@ -1497,6 +1692,13 @@ function validAgentReadiness(readiness) {
       'healthChecks',
     ].every((field) => validCount(readiness[field]))
   );
+}
+
+function validCompactNode(row, expectedKind) {
+  return isPlainObject(row)
+    && hasNonEmptyString(row.slug, row.title)
+    && row.kind === expectedKind
+    && (row.path === undefined || hasNonEmptyString(row.path));
 }
 
 function validAgentEntrypoint(row) {

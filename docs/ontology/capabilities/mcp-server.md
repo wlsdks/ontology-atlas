@@ -4,11 +4,11 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server
 domain: domains/agent-integration
-elements: []
+elements: [elements/task-scoped-agent-brief-projection]
 path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
-relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract." }
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs. }
 display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---

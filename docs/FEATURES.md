@@ -1111,6 +1111,20 @@ overall result is categorical (`verified_current`, `needs_evidence`,
 `review_required`, or `invalid`); Atlas emits no combined score or percentage
 that could hide a stale source or unresolved witness.
 
+An explicit project now scopes every handoff count, hub, entrypoint, and graph
+pack to that project's containment tree; a multi-project vault fails closed
+until `project` is supplied. The complete response remains the default. For a
+known coding task, opt-in `detail:"compact"` plus a request-local `task` returns
+an `agentBriefCompact:v1` projection capped at 8,000 UTF-8 JSON bytes. It keeps
+final source/meaning currentness, the compact meaning-repair and human-approval
+guards, a broad persisted capability, cited element/path evidence, explicit
+impact/verification unknowns, bounded full-body reads, and an exact full-detail
+follow-up. Task matching selects evidence; it never proves code behavior,
+persists raw task text, or creates a narrow capability.
+The first repeated historical run reduced MCP calls from 17 to 4 and preserved
+correctness, but did not meet the overall wall-time or uncached-token target, so
+compact remains explicit opt-in rather than the default.
+
 `query_ontology({operation:"cycles"})` returns each cycle as the canonical slug
 path plus aligned `nodeSummaries[]`, so dependency-cycle diagnostics are readable
 without extra node lookups.

@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-08-30 · Agent handoff starts with one project and one bounded task view
+
+- `agent_brief(project: ...)` no longer reports global starter-project counts,
+  hubs, or entrypoints. Its complete diagnostic response is built from the
+  selected containment tree, while whole-vault validation findings remain
+  visible as validation evidence.
+- The copyable handoff prompt is regenerated after source and meaning checks, so
+  it cannot say `ready 100/100` beside a final `needs_attention 75/100` result.
+- Coding agents can opt into `detail:"compact"` with a request-local `task` (CLI:
+  `--compact --task`). The response is capped at 8,000 UTF-8 JSON bytes and
+  carries currentness, one broad persisted capability, cited implementation
+  anchors, explicit unknown impact/verification, a bounded full-body read, and
+  an exact full-detail follow-up. A repeated coding A/B cut MCP calls from 17 to
+  4 and made blind patch quality a tie, but overall wall-time and uncached-token
+  overhead still missed the promotion gates. The complete response therefore
+  stays the default; task text is not persisted or treated as source-behavior
+  proof.
+
 ## 2026-08-30 · The download hero splits only when the column can hold the decision
 
 - From 1024 to 1279 the hero split into two columns on a 624px page column: the object took its
