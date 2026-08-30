@@ -360,13 +360,13 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
         for (const arc of arcs) {
           const total = arc.getTotalLength();
           if (total === 0) continue;
-          const key = `${arc.getAttribute('data-edge-from') ?? ''}>${arc.getAttribute('data-edge-to') ?? ''}`;
+          const key = `${arc.getAttribute('data-edge-from') ?? ''}-${arc.getAttribute('data-edge-to') ?? ''}`;
           const ctm = arc.getScreenCTM();
           if (!ctm) continue;
           for (let i = 0; i <= 60; i += 1) {
             const p = arc.getPointAtLength((i / 60) * total).matrixTransform(ctm);
             for (const s of sentences) {
-              if (s.id.endsWith(key)) continue;
+              if (s.id.endsWith(`-${key}`)) continue;
               if (p.x >= s.r.left - 2 && p.x <= s.r.right + 2 && p.y >= s.r.top - 2 && p.y <= s.r.bottom + 2) {
                 out.push(`${key} through ${s.id}`);
                 break;
@@ -413,4 +413,53 @@ test('the count of what is below sits inside the faded strip, never on opaque in
   expect(strip.fadePx, `no bottom fade read from the mask: ${strip.mask}`).toBeGreaterThan(0);
   expect(strip.pillTop, `the count stands ${strip.stripTop - strip.pillTop}px above the ${strip.fadePx}px fade`).toBeGreaterThanOrEqual(strip.stripTop - 0.5);
   expect(strip.pillBottom).toBeLessThanOrEqual(strip.bottom + 0.5);
+});
+
+test('choosing a role does not turn the chain, and the chosen box is in view', async ({ page }) => {
+  /*
+   * ⚠️ Measured 2026-08-30 at 1920: the chain ran across at rest; choosing Entities opened the
+   * inspector beside the canvas, the canvas narrowed from 1756px to 1376px, and the whole drawing
+   * turned into a column under the click. The axis is measured against the canvas at rest now;
+   * a selection may cut the chain but not turn it, and the chosen box is scrolled into view.
+   */
+  test.setTimeout(180_000);
+  await openSeededVault(page);
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/en/architecture/?e2e=1&guides=off', { waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-testid^="architecture-role-ledger-"]')).toHaveCount(7, { timeout: 30_000 });
+  await page.waitForTimeout(600);
+  const axisOf = () =>
+    page.evaluate(() => {
+      const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')].map((b) => b.getBoundingClientRect());
+      return boxes.length > 1 && Math.abs(boxes[0].top - boxes[1].top) < 1 ? 'across' : 'down';
+    });
+  expect(await axisOf(), 'the seven-role chain runs across at 1920 at rest').toBe('across');
+  for (const role of ['shared', 'routing', 'entities']) {
+    await page.getByTestId(`architecture-graph-box-${role}`).click();
+    await page.waitForTimeout(900);
+    expect(await axisOf(), `choosing ${role} turned the chain`).toBe('across');
+    const seen = await page.evaluate((id) => {
+      const box = document.querySelector(`[data-testid="architecture-graph-box-${id}"]`)!.getBoundingClientRect();
+      const scroller = document.querySelector('[data-testid="architecture-graph"]')!.parentElement!.getBoundingClientRect();
+      return box.left >= scroller.left - 1 && box.right <= scroller.right + 1 && box.top >= scroller.top - 1 && box.bottom <= scroller.bottom + 1;
+    }, role);
+    expect(seen, `${role} is chosen but not in view`).toBe(true);
+    /* No stale sentence survives the re-render: one sentence element per stroke, no two alike. */
+    const counts = await page.evaluate(() => {
+      const strokes = document.querySelectorAll('path[data-edge-from]').length;
+      const sentences = [...document.querySelectorAll('[data-edge-sentence]')];
+      const seenKeys = new Set<string>();
+      let alike = 0;
+      for (const t of sentences) {
+        const k = `${t.getAttribute('data-edge-sentence-kind')}:${t.getAttribute('data-testid')}`;
+        if (seenKeys.has(k)) alike += 1;
+        seenKeys.add(k);
+      }
+      return { strokes, sentences: sentences.length, alike };
+    });
+    expect(counts.sentences, 'a sentence element per stroke').toBe(counts.strokes);
+    expect(counts.alike, 'two sentence elements share one stroke').toBe(0);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+  }
 });

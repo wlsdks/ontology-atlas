@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 
@@ -256,6 +256,20 @@ export function ArchitectureSketch({
    */
   const [boxWidth, setBoxWidth] = useState(0);
   /*
+   * ⚠️ **The chain does not turn under a click** (2026-08-30). At 1920 the seven-role chain runs
+   * across; choosing a role opens the inspector beside the canvas, the canvas loses 380px, and
+   * the drawing that was measured against the narrower box turned into a column — every box,
+   * every sentence and every arc moved the moment a reader pointed at one of them. The axis is
+   * still measured, but against the width the canvas has *at rest*: a selection may narrow the
+   * canvas and cut the chain (the fade, the count and the pan say so), it may not turn it. The
+   * chosen box is scrolled into view instead.
+   */
+  const [restWidth, setRestWidth] = useState(0);
+  const selectedRef = useRef(selected);
+  useEffect(() => {
+    selectedRef.current = selected;
+  }, [selected]);
+  /*
    * ⚠️ **One height for every box, not one per box.** A ledger exists per role, but a chain whose
    * boxes are two different heights reads as two kinds of thing rather than as one row of roles —
    * and the lane arithmetic below assumes a single box height everywhere. So the drawing grows when
@@ -270,7 +284,8 @@ export function ArchitectureSketch({
   const ranks = graph.columns;
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
   const naturalAcross = PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP;
-  const axis: FlowAxis = boxWidth > 0 && naturalAcross > boxWidth ? 'down' : 'across';
+  const axisWidth = restWidth > 0 ? restWidth : boxWidth;
+  const axis: FlowAxis = axisWidth > 0 && naturalAcross > axisWidth ? 'down' : 'across';
 
   /*
    * ⚠️ **The drawing answers the pointer before it is clicked.** A reference the owner pointed at
@@ -363,6 +378,7 @@ export function ArchitectureSketch({
     const element = scrollerRef.current;
     if (!element) return;
     setBoxWidth(element.clientWidth);
+    if (selectedRef.current === null) setRestWidth(element.clientWidth);
     /*
      * ⚠️ **Measured along the axis the chain runs.** These readings were written when a drawing
      * could only be cut on the right; a chain that runs down is cut at the bottom instead, and a
@@ -400,6 +416,40 @@ export function ArchitectureSketch({
       hiddenRight: alongCovered.filter((end) => end > edge).length,
     });
   }, [boxEnd, axis, boxH, boxW]);
+  /*
+   * The chosen box is brought into view when the canvas has cut it — a selection that narrows
+   * the canvas at 1920 leaves the far end of an across chain behind the fade. Nearest edge only,
+   * with time when the reader has not asked for none.
+   */
+  useEffect(() => {
+    const element = scrollerRef.current;
+    const at = selected !== null ? placed.get(selected) : undefined;
+    if (!element || !at) return;
+    const svg = element.querySelector('[data-testid="architecture-graph"]');
+    if (!(svg instanceof SVGGraphicsElement)) return;
+    const scale = svg.getBoundingClientRect().width / Math.max(1, Number(svg.getAttribute('width')) || 1);
+    const ROOM = 24;
+    const left = at.x * scale - ROOM;
+    const right = (at.x + boxW) * scale + ROOM;
+    const top = at.y * scale - ROOM;
+    const bottom = (at.y + boxH) * scale + ROOM;
+    let dx = 0;
+    let dy = 0;
+    if (right > element.scrollLeft + element.clientWidth) dx = right - element.clientWidth - element.scrollLeft;
+    else if (left < element.scrollLeft) dx = left - element.scrollLeft;
+    if (bottom > element.scrollTop + element.clientHeight) dy = bottom - element.clientHeight - element.scrollTop;
+    else if (top < element.scrollTop) dy = top - element.scrollTop;
+    if (dx === 0 && dy === 0) return;
+    const still =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (typeof element.scrollBy === 'function') {
+      element.scrollBy({ left: dx, top: dy, behavior: still ? 'auto' : 'smooth' });
+    } else {
+      element.scrollLeft += dx;
+      element.scrollTop += dy;
+    }
+  }, [selected, placed, boxW, boxH]);
+
   const attachScroller = useCallback(
     (element: HTMLDivElement | null) => {
       observerRef.current?.disconnect();
@@ -865,14 +915,16 @@ export function ArchitectureSketch({
           in `data-edge-sentence` so the gate can count it.
         */}
         {sentences.map((sentence) => {
-          const edge = graph.edges.find((e) => e.from === sentence.from && e.to === sentence.to);
+          const edge = graph.edges.find(
+            (e) => e.kind === sentence.kind && e.from === sentence.from && e.to === sentence.to,
+          );
           const drawnStroke = edge !== undefined && visibleEdges.includes(edge);
           const receded = focus !== null && focus !== sentence.from && focus !== sentence.to;
           const violated = violatedPairs.has(sentence.key);
           const shown = sentence.hidden === undefined && drawnStroke;
           return (
             <text
-              key={`sentence-${sentence.key}`}
+              key={`sentence-${sentence.kind}-${sentence.key}`}
               x={sentence.x}
               y={sentence.y}
               textAnchor={sentence.anchor}
@@ -880,7 +932,7 @@ export function ArchitectureSketch({
                 'architecture-stroke text-caption',
                 violated
                   ? 'fill-[color:var(--color-danger-text)]'
-                  : edge?.kind === 'traffic'
+                  : sentence.kind === 'traffic'
                     ? 'fill-[color:var(--color-text-secondary)] tabular-nums'
                     : 'fill-[color:var(--color-text-tertiary)]',
               )}
@@ -888,6 +940,7 @@ export function ArchitectureSketch({
               aria-hidden={!shown}
               data-testid={`architecture-edge-sentence-${sentence.from}-${sentence.to}`}
               data-edge-sentence={sentence.hidden ?? (drawnStroke ? 'drawn' : 'held')}
+              data-edge-sentence-kind={sentence.kind}
             >
               {sentence.text}
             </text>

@@ -95,6 +95,18 @@ describe('placeEdgeSentences', () => {
     }
   });
 
+  it('gives a rule and a count on one pair two placements that are not one identity', () => {
+    /* Keyed on the pair alone they shared one identity; a re-render on selection left the rule
+       drawn twice on top of itself and the count's sentence coloured as a rule (2026-08-30). */
+    const placed = chainDown(400);
+    const rule: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false };
+    const traffic: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false };
+    const out = placeEdgeSentences({
+      axis: 'down', edges: [traffic, rule], placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
+    });
+    expect(out.map((s) => `${s.kind}:${s.key}`).sort()).toEqual(['permitted:views>widgets', 'traffic:views>widgets']);
+  });
+
   it('lets a rule win over traffic when two sentences would share one place', () => {
     const placed = chainDown(400);
     const rule: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false };
