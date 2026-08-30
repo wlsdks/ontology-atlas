@@ -439,8 +439,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. The hero ob",
-      "wordCount": 83766,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. A containme",
+      "wordCount": 83949,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -1007,7 +1007,7 @@
       },
       "headings": [],
       "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch only those with a verified app-owned permission gate (currently Claude Agent), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscription a",
-      "wordCount": 1651,
+      "wordCount": 1700,
       "updatedAt": "2026-08-30",
       "linksOut": [
         "ontology/elements/agents-destination"
@@ -2126,7 +2126,7 @@
         "kind": "element",
         "title": "Architecture Workbench",
         "display_en": "Architecture Workbench",
-        "display_ko": "ìí¤íì² ìí¬ë²¤ì¹",
+        "display_ko": "아키텍처 워크벤치",
         "domain": "domains/codebase-architecture",
         "path": "src/views/architecture",
         "created_by": "agent:unknown"
@@ -2892,6 +2892,7 @@
         "slug": "elements/qualification-handoff-helper",
         "kind": "element",
         "title": "Qualification handoff helper",
+        "display_ko": "자격 검증 도우미",
         "domain": "domains/project-portfolio",
         "path": ".agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs",
         "created_by": "agent:unknown"
@@ -3628,7 +3629,7 @@
     "ontology/elements/agents-destination": [
       {
         "fromSlug": "ontology/capabilities/acp-runtime",
-        "context": "d by the caller) - src/views/agents/ui/AgentsPage.tsx: \"Agents\" destination, current user surface for this capability (`**[elements/agents-destination]**`) - src/features/acp-session/model/chat-suggestions.ts · src/features/vault-ontology/model/use-vault-health.ts · src/vi",
+        "context": "d by the caller) - src/views/agents/ui/AgentsPage.tsx: \"Agents\" destination, current user surface for this capability (`**[elements/agents-destination]**`) - src/features/acp-session/model/chat-suggestions.ts · src/features/acp-session/model/use-chat-suggestions.ts · src/s",
         "linkText": "elements/agents-destination"
       },
       {

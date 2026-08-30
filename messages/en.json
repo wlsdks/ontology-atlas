@@ -3727,16 +3727,16 @@
         "prompt": "Start building the ontology from the connected source code. First orient with connection_info and list_kinds. Propose domains, capabilities, implementation elements, and evidence paths from the source; look for similar existing concepts first and write nothing before I review it. Write only the candidates I approve as a batch, then report validate_vault and compile_ontology results."
       },
       "island": {
-        "label": "{count} nodes around “{first}” sit apart from the map",
-        "prompt": "{count} nodes including “{first}” are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why."
+        "label": "Check why {count} nodes around “{firstLabel}” sit apart",
+        "prompt": "{count} nodes including “{firstLabel}” ({first}) are not connected to the rest of the map. Using the code as evidence, work out where they belong and propose the links along with why."
       },
       "containment": {
-        "label": "“{domain}” does not link back to “{slug}”",
-        "prompt": "“{slug}” says it belongs to “{domain}”, but “{domain}” does not list it. Check whether that is right, and link it if so."
+        "label": "Align “{slugLabel}” under “{domainLabel}”",
+        "prompt": "“{slugLabel}” ({slug}) says it belongs to “{domainLabel}” ({domain}), but the domain-side link is missing. Check whether that home is right, and align both sides if so."
       },
       "evidence": {
         "label": "{count} capabilities are not yet linked to implementation code",
-        "prompt": "Run query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}'), then inspect “{first}” first. These {count} capabilities have neither a canonical path nor a resolved elements relation in the vault. Find the implementation evidence and propose the smallest path or element update. Do not write before I review it, and say when no evidence can be found."
+        "prompt": "Run query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}'), then inspect “{firstLabel}” ({first}) first. These {count} capabilities have neither a canonical path nor a resolved elements relation in the vault. Find the implementation evidence and propose the smallest path or element update. Do not write before I review it, and say when no evidence can be found."
       },
       "explain": {
         "label": "Explain this folder from the map alone",

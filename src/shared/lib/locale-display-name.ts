@@ -15,6 +15,12 @@
  */
 
 /** Collects only `display_` keys followed by a two-letter locale, e.g. `display_ko:`. */
+export function hasBrokenTextEncoding(value: string): boolean {
+  // UTF-8 bytes decoded as Latin-1 leave C1 control characters in otherwise visible text;
+  // U+FFFD is the decoder's explicit replacement marker. Neither can be a readable name.
+  return /[\u0080-\u009f\ufffd]/u.test(value);
+}
+
 export function readDisplayLocales(
   frontmatter: Record<string, unknown> | null | undefined,
 ): Record<string, string> | undefined {
@@ -24,7 +30,7 @@ export function readDisplayLocales(
     const match = /^display_([a-z]{2})$/.exec(key);
     if (!match || typeof value !== "string") continue;
     const trimmed = value.trim();
-    if (!trimmed) continue;
+    if (!trimmed || hasBrokenTextEncoding(trimmed)) continue;
     (out ??= {})[match[1]] = trimmed;
   }
   return out;

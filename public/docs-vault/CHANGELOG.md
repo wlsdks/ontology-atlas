@@ -7,6 +7,22 @@
 
 ---
 
+## 2026-08-30 · ACP next steps use names a person can read
+
+- A containment repair used to show raw identifiers such as
+  `elements/qualification-handoff-helper` and `domains/project-portfolio`, then describe
+  the missing reverse edge as "does not link back." Recommendation rows now use each
+  concept's locale display name and state the action directly; the editable agent prompt
+  keeps the canonical slugs beside those names so precision is not traded for readability.
+- One dogfood node's Korean display name had been committed as UTF-8 bytes decoded through
+  Latin-1, producing control glyphs on the map and in the inspector. The source now reads
+  the intended Korean label; renderers fall back to the canonical title for an obviously broken
+  localized value, and a non-empty dogfood gate rejects decoder controls or replacement
+  characters before they can ship again.
+- The composer model/mode grid no longer keeps an intrinsic fixed width that can run under
+  the Stop button in a narrow agent panel. It shrinks inside the space left by Stop and Send,
+  and a missing current model or mode now shows its field name instead of an empty button.
+
 ## 2026-08-30 · The download hero assembles as the headline is typed
 
 - The hero object used to fade in on a clock of its own, 450ms after the page, with no relation

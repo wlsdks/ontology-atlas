@@ -38,7 +38,7 @@ export type SuggestionKind =
 
 export interface ChatSuggestion {
   kind: SuggestionKind;
-  /** The values the screen passes straight to `t(...)`. Real slugs and counts go in here. */
+  /** Values passed to `t(...)`: readable labels for UI plus canonical slugs for agent prompts. */
   params: Record<string, string | number>;
 }
 
@@ -49,6 +49,8 @@ export interface SuggestionInput {
   missingContainment: readonly { slug: string; domain: string }[];
   /** Capability slugs matching maintenance_plan's capability_without_evidence predicate */
   unevidenced: readonly string[];
+  /** Human-facing names keyed by canonical ontology slug; prompts still keep the slug itself. */
+  displayNames?: Readonly<Record<string, string>>;
   sourceState?: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects';
 }
 
@@ -57,6 +59,13 @@ export interface SuggestionInput {
  * built this map yet.
  */
 const STARTER_NODE_CEILING = 5;
+
+function displayName(input: SuggestionInput, slug: string): string {
+  const recorded = input.displayNames?.[slug]?.trim();
+  if (recorded) return recorded;
+  const tail = slug.replace(/^ontology\//, '').split('/').at(-1) ?? slug;
+  return tail.replaceAll('-', ' ');
+}
 
 export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   // Recommending "fix this" to a vault with nothing built yet invents a problem that does not exist.
@@ -81,19 +90,35 @@ export function chatSuggestions(input: SuggestionInput): ChatSuggestion[] {
   if (biggestIsland && biggestIsland.length > 0) {
     out.push({
       kind: 'island',
-      params: { first: biggestIsland[0], count: biggestIsland.length },
+      params: {
+        first: biggestIsland[0],
+        firstLabel: displayName(input, biggestIsland[0]),
+        count: biggestIsland.length,
+      },
     });
   }
 
   const gap = input.missingContainment[0];
   if (gap) {
-    out.push({ kind: 'containment', params: { slug: gap.slug, domain: gap.domain } });
+    out.push({
+      kind: 'containment',
+      params: {
+        slug: gap.slug,
+        slugLabel: displayName(input, gap.slug),
+        domain: gap.domain,
+        domainLabel: displayName(input, gap.domain),
+      },
+    });
   }
 
   if (input.unevidenced.length > 0) {
     out.push({
       kind: 'evidence',
-      params: { first: input.unevidenced[0], count: input.unevidenced.length },
+      params: {
+        first: input.unevidenced[0],
+        firstLabel: displayName(input, input.unevidenced[0]),
+        count: input.unevidenced.length,
+      },
     });
   }
 

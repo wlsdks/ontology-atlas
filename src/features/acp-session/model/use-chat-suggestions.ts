@@ -1,5 +1,6 @@
 'use client';
 
+import { useLocale } from 'next-intl';
 import { useMemo } from 'react';
 
 import { useDataSourceMode } from '@/features/data-source-mode';
@@ -7,8 +8,31 @@ import { useLocalVault } from '@/features/docs-vault-local';
 import { useStaticVaultSource } from '@/features/vault-sample-source';
 import { useVaultHealth } from '@/features/vault-ontology/model/use-vault-health';
 import { capabilitiesWithoutImplementationEvidence } from '@/entities/knowledge-graph/lib/vault-health';
+import type { VaultDoc } from '@/entities/docs-vault/model/types';
+import { resolveLocaleDisplayName } from '@/shared/lib/locale-display-name';
 
 import { chatSuggestions, type ChatSuggestion } from './chat-suggestions';
+
+export function suggestionDisplayNames(
+  docs: readonly VaultDoc[],
+  locale: string,
+): Record<string, string> {
+  const names: Record<string, string> = {};
+  for (const doc of docs) {
+    const name = resolveLocaleDisplayName(doc.frontmatter, locale, doc.title);
+    const addresses = [
+      typeof doc.frontmatter.slug === 'string' ? doc.frontmatter.slug : '',
+      doc.slug,
+    ];
+    for (const address of addresses) {
+      const trimmed = address.trim();
+      if (!trimmed) continue;
+      names[trimmed] = name;
+      names[trimmed.replace(/^ontology\//, '')] = name;
+    }
+  }
+  return names;
+}
 
 /**
  * The suggestions the conversation pane shows — derived from **the vault currently being viewed**.
@@ -23,6 +47,7 @@ export function useChatSuggestions(
   sourceState: 'loading' | 'unbound' | 'bound' | 'unavailable' | 'no-projects' = 'bound',
 ): ChatSuggestion[] {
   const health = useVaultHealth();
+  const locale = useLocale();
   const mode = useDataSourceMode();
   const vault = useLocalVault();
   const staticSource = useStaticVaultSource();
@@ -33,16 +58,19 @@ export function useChatSuggestions(
   const manifest = mode === 'static' ? staticSource.manifest : (vault.manifest ?? null);
 
   return useMemo(
-    () =>
-      chatSuggestions({
+    () => {
+      const displayNames = manifest ? suggestionDisplayNames(manifest.docs, locale) : {};
+      return chatSuggestions({
         nodeCount: health.summary.nodes,
         islands: health.islands,
         missingContainment: health.missingContainment,
         unevidenced: manifest
           ? capabilitiesWithoutImplementationEvidence(manifest.docs)
           : [],
+        displayNames,
         sourceState,
-      }),
-    [health, manifest, sourceState],
+      });
+    },
+    [health, locale, manifest, sourceState],
   );
 }

@@ -3,6 +3,7 @@ uid: 4e411db0-d689-406c-a299-b9122f173ddd
 slug: elements/qualification-handoff-helper
 kind: element
 title: Qualification handoff helper
+display_ko: 자격 검증 도우미
 domain: domains/project-portfolio
 path: .agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs
 created_by: "agent:unknown"

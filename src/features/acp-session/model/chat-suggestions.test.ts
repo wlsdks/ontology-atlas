@@ -61,6 +61,38 @@ describe('추천은 이 볼트에서 관측된 사실에서만 나온다', () =>
     expect(fix?.params.domain).toBe('domains/billing');
   });
 
+  it('화면 이름과 agent용 slug를 분리한다', () => {
+    const out = chatSuggestions({
+      ...empty,
+      nodeCount: 40,
+      missingContainment: [{ slug: 'elements/checkout-form', domain: 'domains/billing' }],
+      displayNames: {
+        'elements/checkout-form': '결제 입력 화면',
+        'domains/billing': '결제 관리',
+      },
+    });
+    const fix = out.find((suggestion) => suggestion.kind === 'containment');
+
+    expect(fix?.params).toMatchObject({
+      slug: 'elements/checkout-form',
+      slugLabel: '결제 입력 화면',
+      domain: 'domains/billing',
+      domainLabel: '결제 관리',
+    });
+  });
+
+  it('표시 이름이 없으면 namespace를 걷은 이름을 보여 준다', () => {
+    const [island] = chatSuggestions({
+      ...empty,
+      nodeCount: 40,
+      islands: [['capabilities/invoice-review']],
+    });
+    expect(island.params).toMatchObject({
+      first: 'capabilities/invoice-review',
+      firstLabel: 'invoice review',
+    });
+  });
+
   it('코드 근거가 없는 역량이 있으면 그것을 찾아 달라고 권한다', () => {
     const out = chatSuggestions({
       ...empty,
