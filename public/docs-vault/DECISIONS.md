@@ -40,6 +40,59 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — Looked, and decided: the glob stays in the dock, and the echo stays proportional
+
+**Convened because**: two items were left open on the same day, each with an owner's choice
+or an owner's observation still to come, and the owner asked for both to be settled by
+looking at captures rather than by asking again. Both are recorded here so neither is
+re-opened as if it had never been looked at.
+
+**1. The mono glob beside a role box (deferred from the strokes decision above)**
+
+Built as a probe on a branch and captured, never merged: each box with its role's first glob
+(`src/widgets/**`) in the caption ramp, quaternary mono, right of the box on the down axis at
+1512 and under the box on the across axis at 1920. Measured on the seven-role profile with two
+violated crossings and Views chosen:
+
+- 1512, at rest: the two violated skips (Entities to Views, Entities to Widgets) are drawn at
+  rest, and their arcs pass through `src/widgets/**`, `src/features/**` and `src/entities/**`,
+  striking the strings mid-word. With Views chosen the 26,000-import skip crosses the same
+  two globs again.
+- 1920, at rest: the arcs leave the box bottoms and cross `src/views/**`, `src/widgets/**` and
+  `src/entities/**` on their way under the chain.
+- The ground beside a box on the arc side is exactly where the arcs live; the other side is
+  where the sentences live; inside the box there is no 12px at 1512 (the reason it was
+  deferred). There is no place on the canvas that is empty at rest and stays empty on focus.
+
+**Decision**: the glob does not go on the canvas. It stays where it is: in the role's detail
+when a role is chosen, under the sentence, which the 2026-08-28 walkthrough already ranked
+above it ("the glob is the address and this is the purpose"). Evidence:
+`.claude/shots-2026-08-30/18-B-rest-1512.png`, `19-B-hover-views-1512.png`,
+`18-B-rest-1920.png` (local, not committed).
+
+**Recorded dissent**: a glob is the one string a person can paste into a file search, and the
+sentence is not. **Falsifier**: if a reader is observed opening the dock only to copy a glob,
+the address has earned a place beside the name; the place to try then is the receipt line,
+`no violations out · 75 imports · src/widgets/**`, with an ellipsis rule, not the ground.
+
+**2. The typing echo's mapping (the dissent recorded in the echo decision above)**
+
+The falsifier was "the assembly reads as a burst rather than as typing". Judged from the
+static-export recording (KO, 1512), frames 46 to 78 laid out two frames apart (67ms, about
+1.75 keystrokes): every frame adds a few dots and their lines, the apex, the domain ring, the
+capability ring and the element dome arrive in that order, and no frame adds a clump while
+the caret stands still. The adjacent-frame change over the window has no zero frame. The
+headline and the dome stop changing on the same frame.
+
+**Decision**: the proportional mapping stands (three dots per Korean keystroke, about one and
+a half per English one). One dot per character with a remainder on the last beat is not
+tried. Evidence: `.claude/shots-2026-08-30/17-echo-dense-strip.png` (local).
+
+**Falsifier** (unchanged): an observer reading the assembly as clumps that do not track the
+caret. **Revisit**: next gateway pass.
+
+---
+
 ## 2026-08-30 — The hero object is the headline's echo, and the page moves in three places
 
 **Convened because**: the owner asked for the download page the same day the architecture
