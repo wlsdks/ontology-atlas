@@ -7,6 +7,16 @@
 
 ---
 
+## 2026-08-30 · Choosing a role no longer turns the chain
+
+- At 1920 the seven-role chain runs across; choosing a role opened the inspector beside the
+  canvas and the drawing turned into a column under the click. The chain keeps the direction
+  it had at rest; a selection may cut it at the edge (the fade, the count and the pan say so)
+  and the chosen box is scrolled into view.
+- A rule and a measured count on the same pair of roles shared one sentence identity, so after a
+  selection the rule was drawn twice on top of itself and the count's sentence was coloured as a
+  rule. Each sentence now carries its stroke's kind.
+
 ## 2026-08-30 · What the review found: the count stays on the fade, sentences clear every arc, and the headline hydrates clean
 
 - The "N more below" count sat 28px tall on a 16px fade, so in a short window it stood on the

@@ -40,6 +40,14 @@ export interface SentenceEdge {
 
 export interface SentencePlacement {
   key: string;
+  /**
+   * The stroke's kind. A rule and a measurement can join the same pair, and a placement keyed
+   * on the pair alone gave two placements one identity: React reconciled the pair's two
+   * sentences under one key and, after a selection re-rendered the list, left a stale copy in
+   * the DOM on top of the live one (measured 2026-08-30: the rule drawn twice, the count's
+   * sentence coloured as a rule).
+   */
+  kind: SentenceEdge['kind'];
   from: string;
   to: string;
   text: string;
@@ -196,7 +204,7 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
 
     const budget = budgetFor(roomPx);
     if (budget < MIN_CHARS) {
-      out.push({ key, from: edge.from, to: edge.to, text: full, x, y, anchor, hidden: 'no-room' });
+      out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text: full, x, y, anchor, hidden: 'no-room' });
       continue;
     }
     const [text] = splitSummaryLines(full, budget, 1);
@@ -208,11 +216,11 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       height: LINE_H,
     };
     if (boxes.some((box) => intersects(rect, box)) || taken.some((t) => intersects(rect, t))) {
-      out.push({ key, from: edge.from, to: edge.to, text, x, y, anchor, hidden: 'collision' });
+      out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text, x, y, anchor, hidden: 'collision' });
       continue;
     }
     if (isDrawn(edge)) taken.push(rect);
-    out.push({ key, from: edge.from, to: edge.to, text, x, y, anchor, rect });
+    out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text, x, y, anchor, rect });
   }
   return out;
 }

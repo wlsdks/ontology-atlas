@@ -40,6 +40,39 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-30 — The chain does not turn under a click
+
+**Convened because**: the owner asked for a last design pass over today's screens. Captured on
+the static export at 1512, 1920, 1440, 1280 and 390, rest and with a role chosen, and measured
+for overlaps, off-ramp type, spills and horizontal scroll.
+
+**Observed**: at 1920 the seven-role chain runs across at rest (canvas 1756px, drawing 1628px).
+Choosing Entities opens the inspector beside the canvas, the canvas narrows to 1376px, and the
+axis rule ("across while it fits across, down once it does not") turned the whole drawing into
+a column under the click: every box, sentence and arc moved. The 2026-08-28 walkthrough already
+named the class: a page that moves under a click is a worse defect than a canvas with space in
+it. At 1512 the chain is down at rest, so the flip never showed there.
+
+**Decision**: the axis is measured against the width the canvas has at rest, not the width it
+has after a selection narrowed it. A selection may cut the chain at the edge, which the fade,
+the count and the pan already state, and the chosen box is scrolled into view (nearest edge,
+smooth unless motion is reduced). Resizing the window with no role chosen still turns the chain.
+Gate: `architecture-role-ledger.spec.ts`, "choosing a role does not turn the chain, and the
+chosen box is in view", probed red with the live width restored.
+
+**Also found by the same pass**: a rule and a count on one pair of roles shared one sentence
+identity, so React left a stale copy of the rule's sentence on top of the live one after the
+selection re-render (the rule drawn twice, the count coloured as a rule). Placements carry
+their kind now; the same gate counts one sentence element per stroke.
+
+**Recorded dissent**: a cut chain hides its far end while a turned chain shows every box; a
+reader who chose Shared foundation at 1920 sees the canvas scroll to it rather than the whole
+chain re-laid. **Falsifier**: a reader observed dragging the canvas back and forth after a
+selection to see the ends, where the turned column showed them at once. **Revisit**: when the
+inspector learns to open over the canvas at 1920 instead of beside it.
+
+---
+
 ## 2026-08-30 — Looked, and decided: the glob stays in the dock, and the echo stays proportional
 
 **Convened because**: two items were left open on the same day, each with an owner's choice
