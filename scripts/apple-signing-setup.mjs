@@ -147,27 +147,27 @@ function run(command, args, options = {}) {
 function printHelp() {
   console.log(`Usage: node scripts/apple-signing-setup.mjs <command>
 
-  csr      개인키 + CSR 을 만든다. 그다음 Apple 에 업로드하는 것은 사람 몫.
-             --name="법적 실명"  --email="Apple 계정 이메일"
-  bundle   Apple 이 준 .cer 을 개인키와 합쳐 local secret files와 .p12 를 만든다.
+  csr      Creates the private key + CSR. Uploading it to Apple afterwards is a person's job.
+             --name="legal full name"  --email="Apple account email"
+  bundle   Combines the .cer Apple issued with the private key into local secret files and a .p12.
              --cer=~/Downloads/developerID_application.cer
-  verify   ${SIGNING_ENVIRONMENT}의 7개 secret과 repository-scope 복사본을 읽는다.
+  verify   Reads the 7 secrets in ${SIGNING_ENVIRONMENT} and their repository-scope copies.
 
-공통: --dir=<경로> (기본 ${DEFAULT_DIR}) · --repo=<owner/name>
+Common: --dir=<path> (default ${DEFAULT_DIR}) · --repo=<owner/name>
 
-이 스크립트는 비밀 값을 화면에 찍거나 GitHub를 변경하지 않는다.
-${SIGNING_ENVIRONMENT}은 main 전용이고 admin bypass 없이 승인되어야 한다.
-APPLE_KEYCHAIN_PASSWORD와 APPLE_SIGNING_IDENTITY는 CI/local keychain에서만
-생성·유도되는 값이므로 GitHub secret으로 등록하지 않는다.`);
+This script never prints a secret value and never changes anything on GitHub.
+${SIGNING_ENVIRONMENT} is main-only and must be approved without an admin bypass.
+APPLE_KEYCHAIN_PASSWORD and APPLE_SIGNING_IDENTITY are created or derived only inside
+the CI/local keychain, so they are never registered as GitHub secrets.`);
 }
 
 /** Step 1 — key pair and CSR. Needs no credentials, so it is fully automatic. */
 export function commandCsr({ dir, name, email }) {
   if (!name || !email) {
     fail(
-      'csr 에는 --name 과 --email 이 필요하다.\n' +
-        '  --name 은 Apple 계정의 **법적 실명**이어야 한다 (별명이면 심사가 지연된다).\n' +
-        '  예: node scripts/apple-signing-setup.mjs csr --name="Hong Gildong" --email="me@example.com"',
+      'csr needs --name and --email.\n' +
+        '  --name must be the **legal full name** on the Apple account (a nickname delays review).\n' +
+        '  example: node scripts/apple-signing-setup.mjs csr --name="Hong Gildong" --email="me@example.com"',
     );
   }
 
@@ -177,8 +177,8 @@ export function commandCsr({ dir, name, email }) {
 
   if (fs.existsSync(keyPath)) {
     fail(
-      `개인키가 이미 있다: ${keyPath}\n` +
-        "덮어쓰면 그 키로 발급받은 인증서가 전부 쓸모없어진다. 다시 만들려면 먼저 옮겨 두라.",
+      `A private key already exists: ${keyPath}\n` +
+        "Overwriting it makes every certificate issued for that key useless. Move it aside first if you must recreate it.",
     );
   }
 
@@ -193,7 +193,7 @@ export function commandCsr({ dir, name, email }) {
   // So openssl asks for the passphrase itself. **Only the person knows it** — if
   // the script chose it, the person would not, and the backup would be unusable.
   // That is why only this call uses `stdio: inherit`.
-  console.log("[apple-signing] 개인키를 보호할 비밀번호를 입력하라 (화면에 표시되지 않는다).");
+  console.log("[apple-signing] Enter a password to protect the private key (it is not shown on screen).");
   run("openssl", ["req", "-new", "-newkey", "rsa:2048",
     "-keyout", keyPath,
     "-out", csrPath,
@@ -202,27 +202,27 @@ export function commandCsr({ dir, name, email }) {
 
   fs.chmodSync(keyPath, 0o600);
 
-  console.log(`[apple-signing] 개인키: ${keyPath} (0600)`);
+  console.log(`[apple-signing] private key: ${keyPath} (0600)`);
   console.log(`[apple-signing] CSR:   ${csrPath}`);
   console.log(`
-[apple-signing] 여기서부터 사람 차례다 — Apple 로그인이 필요하다.
+[apple-signing] From here it is a person's turn — an Apple login is required.
 
   1. https://developer.apple.com/account/resources/certificates/add
-  2. 종류: **Developer ID Application** (앱스토어용이 아니다)
-  3. 위 CSR 파일을 업로드하고 .cer 을 내려받는다
-  4. 돌아와서:  node scripts/apple-signing-setup.mjs bundle --cer=<내려받은 .cer 경로>
+  2. Type: **Developer ID Application** (not the App Store one)
+  3. Upload the CSR file above and download the .cer
+  4. Come back and run:  node scripts/apple-signing-setup.mjs bundle --cer=<path to the downloaded .cer>
 
-[apple-signing] 개인키를 잃어버리면 그 인증서는 못 쓴다. 이 폴더를 지우지 마라.`);
+[apple-signing] Lose the private key and that certificate is unusable. Do not delete this folder.`);
 }
 
 /** Step 2 — .cer + key → .p12 + local secret files. Changes nothing on GitHub. */
 export function commandBundle({ dir, cer, repo }) {
-  if (!cer) fail("bundle 에는 --cer=<Apple 이 준 .cer 경로> 가 필요하다.");
+  if (!cer) fail("bundle needs --cer=<path to the .cer Apple issued>.");
 
   const cerPath = cer.replace(/^~/, os.homedir());
   const keyPath = path.join(dir, "developer-id.key");
-  if (!fs.existsSync(cerPath)) fail(`.cer 을 찾을 수 없다: ${cerPath}`);
-  if (!fs.existsSync(keyPath)) fail(`개인키가 없다: ${keyPath} — 먼저 csr 명령을 실행하라.`);
+  if (!fs.existsSync(cerPath)) fail(`Cannot find the .cer: ${cerPath}`);
+  if (!fs.existsSync(keyPath)) fail(`No private key: ${keyPath} — run the csr command first.`);
 
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "apple-signing-"));
   const pemPath = path.join(tempDir, "cert.pem");
@@ -242,7 +242,7 @@ export function commandBundle({ dir, cer, repo }) {
     // hard.
     const passOutPath = path.join(tempDir, "p12-pass");
     fs.writeFileSync(passOutPath, password, { mode: 0o600 });
-    console.log("[apple-signing] 개인키 비밀번호를 입력하라 (csr 단계에서 정한 것).");
+    console.log("[apple-signing] Enter the private key password (the one you chose in the csr step).");
     run("openssl", ["pkcs12", "-export",
       "-inkey", keyPath,
       "-in", pemPath,
@@ -304,16 +304,16 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
   const repositoryCopies = repositoryScopedSecrets(repositoryListed);
 
   if (missingEnvironment.length === 0 && missingRepository.length === 0 && repositoryCopies.length === 0) {
-    console.log(`[apple-signing] split-scope signing secret ${REQUIRED_SECRETS.length}개가 모두 등록됐다 ✓`);
-    console.log("[apple-signing] 다음 태그부터 워크플로가 서명 경로로 간다 — 코드 수정은 필요 없다.");
-    console.log("[apple-signing] 확인: pnpm desktop:release-github -- --tag=<다음 태그>");
+    console.log(`[apple-signing] all ${REQUIRED_SECRETS.length} split-scope signing secrets are registered ✓`);
+    console.log("[apple-signing] from the next tag the workflow takes the signing path — no code change is needed.");
+    console.log("[apple-signing] check with: pnpm desktop:release-github -- --tag=<next tag>");
     return;
   }
 
   if (missingEnvironment.length > 0) {
-    console.error(`[apple-signing] ${SIGNING_ENVIRONMENT}에 아직 없는 API secret ${missingEnvironment.length}개:`);
+    console.error(`[apple-signing] ${missingEnvironment.length} API secrets still missing from ${SIGNING_ENVIRONMENT}:`);
     for (const name of missingEnvironment) {
-      const who = OWNER_ENTERED_SECRETS.includes(name) ? "사람이 넣는다" : "bundle 명령이 만든 local file을 사용한다";
+      const who = OWNER_ENTERED_SECRETS.includes(name) ? "a person enters it" : "uses the local file the bundle command created";
       console.error(`[apple-signing]   ${name} (${who})`);
     }
     const localInputNames = new Set([
@@ -328,7 +328,7 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
     );
   }
   if (missingRepository.length > 0) {
-    console.error(`[apple-signing] repository scope에 아직 없는 signing secret ${missingRepository.length}개:`);
+    console.error(`[apple-signing] ${missingRepository.length} signing secrets still missing from repository scope:`);
     console.error(
       missingRepository.map((name) => `  ${setupSecretCommand(name, repo, path.join(dir, name))}`).join("\n"),
     );
@@ -342,7 +342,7 @@ export function commandVerify({ repo, dir = DEFAULT_DIR }) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  if (process.platform !== "darwin") fail("이 절차는 macOS 에서 실행한다.");
+  if (process.platform !== "darwin") fail("Run this procedure on macOS.");
 
   switch (options.command) {
     case "csr":

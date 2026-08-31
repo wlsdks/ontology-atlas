@@ -34,9 +34,9 @@ const PROFILE = `/tmp/atlas-readability-${process.pid}`;
  * synthetic graphs would leave the screen we look at daily never measured.
  */
 const CASES = [
-  { q: "", label: "도그푸드 볼트" },
-  { q: "synth=300", label: "합성 300" },
-  { q: "synth=3000", label: "합성 3000" },
+  { q: "", label: "dogfood vault" },
+  { q: "synth=300", label: "synthetic 300" },
+  { q: "synth=3000", label: "synthetic 3000" },
 ];
 
 /** Fixed viewport — crossings are counted in screen coordinates, so the window size is part of the measurement condition. */
@@ -45,9 +45,9 @@ const VIEWPORT = { width: 1512, height: 900 }; // 14" MacBook logical resolution
 /** Pulls coordinates out of the page. Makes no judgement. */
 function collectInPage() {
   const api = window.__atlasMap;
-  if (!api) return { error: "__atlasMap 없음 — ?e2e=1 가 빠졌거나 빌드가 옛것이다" };
+  if (!api) return { error: "__atlasMap missing — ?e2e=1 was dropped, or the build is older than this instrument" };
   if (typeof api.edges !== "function") {
-    return { error: "edges() 창구가 없다 — 빌드가 이 계기보다 옛것이다" };
+    return { error: "no edges() window — the build is older than this instrument" };
   }
   return {
     nodes: api.nodes().filter((n) => !n.hidden),
@@ -87,29 +87,29 @@ for (const { q, label } of CASES) {
 await ctx.close();
 rmSync(PROFILE, { recursive: true, force: true });
 
-console.log(`\n  그래프 가독성 — ${VIEWPORT.width}×${VIEWPORT.height}, 수렴 후\n`);
+console.log(`\n  graph readability — ${VIEWPORT.width}×${VIEWPORT.height}, after convergence\n`);
 for (const r of rows) {
   if (r.error) {
     console.log(`  ${r.label.padEnd(14)} ❌ ${r.error}`);
     continue;
   }
   console.log(
-    `  ${r.label.padEnd(14)} 노드 ${String(r.visibleNodes).padStart(5)}/${String(r.totalNodes).padEnd(5)}` +
-      ` 엣지 ${String(r.visibleEdges).padStart(5)}/${String(r.totalEdges).padEnd(5)}`,
+    `  ${r.label.padEnd(14)} nodes ${String(r.visibleNodes).padStart(5)}/${String(r.totalNodes).padEnd(5)}` +
+      ` edges ${String(r.visibleEdges).padStart(5)}/${String(r.totalEdges).padEnd(5)}`,
   );
   console.log(
     r.crossingMeasurable
-      ? `  ${"".padEnd(14)} 교차 ${String(r.crossings).padStart(6)} / 가능 ${String(r.maxCrossings).padStart(8)}` +
-          `  → 품질 ${r.crossingQuality}   (1 이 무교차)`
+      ? `  ${"".padEnd(14)} crossings ${String(r.crossings).padStart(6)} / possible ${String(r.maxCrossings).padStart(8)}` +
+          `  → quality ${r.crossingQuality}   (1 is crossing-free)`
       : // Not a perfect score but **not measurable**. When the density gate folds
         // the graph down to a star shape, crossings become impossible by
         // construction and you get the inverted conclusion that the largest vault
         // is the best.
-        `  ${"".padEnd(14)} 교차 잴 수 없음 — 화면에 남은 엣지가 전부 끝점을 공유한다 (접힘)`,
+        `  ${"".padEnd(14)} crossings not measurable — every edge left on screen shares an endpoint (folded)`,
   );
   console.log(
-    `  ${"".padEnd(14)} 겹침 ${String(r.overlaps).padStart(6)} 쌍 (노드당 ${r.overlapRate})` +
-      `  최악 침범 ${r.worstOverlapPx}px\n`,
+    `  ${"".padEnd(14)} overlaps ${String(r.overlaps).padStart(6)} pairs (${r.overlapRate} per node)` +
+      `  worst intrusion ${r.worstOverlapPx}px\n`,
   );
 }
 console.log("");

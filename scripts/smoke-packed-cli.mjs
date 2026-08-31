@@ -673,7 +673,7 @@ try {
   const missingMcpVaultRoot = runRaw(cliBin, ['overview', 'not-a-vault'], { cwd: projectDir });
   assertStatus(missingMcpVaultRoot, 2, 'installed CLI missing MCP vault root');
   assert.match(missingMcpVaultRoot.stderr, /Vault root not found/);
-  assert.doesNotMatch(missingMcpVaultRoot.stderr, /mcp exited|vault root 검증 실패/);
+  assert.doesNotMatch(missingMcpVaultRoot.stderr, /mcp exited|vault root validation failed/);
 
   const installedMcpDir = join(installDir, 'node_modules', 'ontology-atlas-mcp');
   const mcpVerifyArgs = (args = [], { silent = false } = {}) => [

@@ -766,8 +766,8 @@ if (
 } else {
   fail(
     "package.json must expose desktop:release-artifact as the credentialed direct-download artifact path: release secret check, build/smoke, app build, app sign, DMG package, **DMG container sign**, notarize, verify-release-dmg, and install smoke\n" +
-      `[desktop-check]   기대: ${RELEASE_ARTIFACT_COMMAND} + isolated 11-step pipeline\n` +
-      `[desktop-check]   실제: ${pkg.scripts?.["desktop:release-artifact"] ?? "(없음)"}`,
+      `[desktop-check]   expected: ${RELEASE_ARTIFACT_COMMAND} + isolated 11-step pipeline\n` +
+      `[desktop-check]   actual: ${pkg.scripts?.["desktop:release-artifact"] ?? "(none)"}`,
   );
 }
 
@@ -914,10 +914,10 @@ if (
   /folder/i.test(enMessages.featuresMisc.localVaultPicker.openLabel) &&
   /폴더/.test(koMessages.featuresMisc.localVaultPicker.openLabel)
 ) {
-  pass("강등 고지는 설치된 앱을, 단축키 설명은 여는 폴더를 말한다 — FSA 를 능력으로 광고하지 않는다");
+  pass("the demotion notice names the installed app and the shortcut copy names the folder it opens — neither advertises FSA as a capability");
 } else {
   fail(
-    "강등 고지는 설치된 앱을 가리켜야 하고, 단축키 설명은 여는 대상(폴더)을 말해야 하며, 어느 쪽도 브라우저 File System Access 를 능력으로 광고하면 안 된다",
+    "the demotion notice must point at the installed app, the shortcut copy must name what it opens (the folder), and neither may advertise browser File System Access as a capability",
   );
 }
 
@@ -1919,10 +1919,10 @@ if (
   fail(
     "src-tauri/capabilities/default.json must not grant broad fs, shell, http, or opener permissions" +
       (unexpectedPermissions.length > 0
-        ? `\n[desktop-check]   허용 목록에 없는 권한: ${unexpectedPermissions.join(", ")} — 필요하면 이 스크립트의 ALLOWED_CAPABILITY_PERMISSIONS 에 이유와 함께 추가하라`
+        ? `\n[desktop-check]   permissions outside the allowlist: ${unexpectedPermissions.join(", ")} — add them to ALLOWED_CAPABILITY_PERMISSIONS in this script with a reason if they are needed`
         : "") +
       (forbiddenPermissions.length > 0
-        ? `\n[desktop-check]   금지 계열: ${forbiddenPermissions.join(", ")}`
+        ? `\n[desktop-check]   forbidden families: ${forbiddenPermissions.join(", ")}`
         : ""),
   );
 }

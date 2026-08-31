@@ -67,7 +67,7 @@ test("UID migration is dry-run by default, writes only with opt-in, and is idemp
 
     const dryRun = run(["2026-08-02-add-node-uids", "--vault", vault]);
     assert.equal(dryRun.status, 0, dryRun.stderr);
-    assert.match(dryRun.stdout, /DRY-RUN.*1 변경/);
+    assert.match(dryRun.stdout, /DRY-RUN.*1 changed/);
     assert.equal(readFileSync(file, "utf8"), before);
 
     const write = run([
@@ -89,7 +89,7 @@ test("UID migration is dry-run by default, writes only with opt-in, and is idemp
       "--force",
     ]);
     assert.equal(again.status, 0, again.stderr);
-    assert.match(again.stdout, /WRITE.*0 변경/);
+    assert.match(again.stdout, /WRITE.*0 changed/);
     assert.equal(readFileSync(file, "utf8"), after);
   } finally {
     rmSync(vault, { recursive: true, force: true });
@@ -123,7 +123,7 @@ test("UID migration inherits the canonical dirty Markdown write guard", () => {
     ]);
 
     assert.notEqual(result.status, 0);
-    assert.match(result.stderr, /commit 안 된 \.md 변경 1 개/);
+    assert.match(result.stderr, /1 uncommitted \.md change/);
     assert.equal(readFileSync(file, "utf8"), dirty);
   } finally {
     rmSync(vault, { recursive: true, force: true });

@@ -3,11 +3,19 @@ import test from 'node:test';
 
 import {
   auditSourceCommentEntries,
+  auditSourceStringEntries,
   classifySourcePath,
+  classifyStringScanPath,
   extractCommentTokens,
+  extractStringTokens,
   isSupportedSourcePath,
 } from './inventory.mjs';
-import { evaluateSourceCommentLanguageGate } from './check.mjs';
+import {
+  evaluateSourceCommentLanguageGate,
+  evaluateSourceStringLanguageGate,
+  SOURCE_STRING_LANGUAGE_ALLOWLIST,
+  SOURCE_STRING_LANGUAGE_BASELINES,
+} from './check.mjs';
 
 test('classifies current, test, and historical prototype source', () => {
   assert.equal(classifySourcePath('src/example.ts'), 'current');
@@ -153,4 +161,130 @@ test("genuine char literals are still stepped over, including escapes", () => {
 test("a comment marker inside a string literal is still not a comment", () => {
   // The repair must not overshoot: string contents stay invisible to the language gate.
   assert.equal(extractCommentTokens("x.rs", 'let s = "// 한국어";\n').length, 0);
+});
+
+test('scopes the printed-string scan to programs whose strings are output', () => {
+  assert.equal(classifyStringScanPath('scripts/release-rehearsal.mjs'), 'scripts');
+  assert.equal(classifyStringScanPath('mcp/src/index.js'), 'mcpServer');
+  assert.equal(classifyStringScanPath('cli/src/commands/validate.mjs'), 'cliCommands');
+  // Test names are Korean by convention here, fixtures must hold Korean input, and the product's
+  // own locale data is not this ratchet's business.
+  assert.equal(classifyStringScanPath('scripts/release-rehearsal.test.mjs'), null);
+  assert.equal(classifyStringScanPath('tests/fixtures/frontmatter-cases.mjs'), null);
+  assert.equal(classifyStringScanPath('src/entities/status/model/defaults.ts'), null);
+  assert.equal(classifyStringScanPath('messages/ko.json'), null);
+});
+
+test('reads string and template literals but never a regex or a comment', () => {
+  const source = [
+    'const error = "실패했다";',
+    'const label = `${count}개 남음`;',
+    'const matcher = /(규칙|정책)/;',
+    '// 한국어 주석',
+  ].join('\n');
+  const tokens = extractStringTokens('scripts/example.mjs', source);
+  const texts = tokens.map((token) => source.slice(token.start, token.end));
+  assert.ok(texts.some((text) => text.includes('실패했다')));
+  assert.ok(texts.some((text) => text.includes('개 남음')));
+  assert.ok(!texts.some((text) => text.includes('규칙')));
+  assert.ok(!texts.some((text) => text.includes('주석')));
+
+  const audit = auditSourceStringEntries([{ path: 'scripts/example.mjs', content: source }]);
+  assert.equal(audit.scopes.scripts.unexpectedLines, 2);
+});
+
+test('an allowlist row exempts its own lines and nothing else', () => {
+  const allowlist = [
+    { id: 'expected-title', path: 'scripts/example.mjs', why: 'expected UI title', allow: /^const title/ },
+  ];
+  const audit = auditSourceStringEntries(
+    [
+      {
+        path: 'scripts/example.mjs',
+        content: 'const title = "지도 · Ontology Atlas";\nconsole.log("실패했다");\n',
+      },
+    ],
+    allowlist,
+  );
+  assert.equal(audit.allowedLines, 1);
+  assert.equal(audit.allowlistHits['expected-title'], 1);
+  assert.deepEqual(audit.violations.map((row) => row.line), [2]);
+});
+
+test('an allowlist row that stopped matching fails instead of silently widening', () => {
+  const allowlist = [{ id: 'stale', path: 'scripts/example.mjs', why: 'gone', allow: /nothing/ }];
+  const audit = auditSourceStringEntries(
+    [{ path: 'scripts/example.mjs', content: 'const ok = "English only";\n' }],
+    allowlist,
+  );
+  const errors = evaluateSourceStringLanguageGate(audit, SOURCE_STRING_LANGUAGE_BASELINES, allowlist);
+  assert.match(errors.join('\n'), /allowlist row "stale".*matched nothing/s);
+});
+
+test('the printed-string gate fails closed on an idle scan', () => {
+  const audit = auditSourceStringEntries([{ path: 'src/example.ts', content: 'const a = 1;\n' }]);
+  assert.match(
+    evaluateSourceStringLanguageGate(audit, SOURCE_STRING_LANGUAGE_BASELINES, []).join('\n'),
+    /scanned zero files or zero string literals/,
+  );
+});
+
+test('the printed-string gate ratchets in both directions', () => {
+  const audit = auditSourceStringEntries([
+    { path: 'scripts/example.mjs', content: 'throw new Error("실패했다");\n' },
+    { path: 'mcp/src/example.mjs', content: 'const ok = "English";\n' },
+    { path: 'cli/src/example.mjs', content: 'const ok = "English";\n' },
+  ]);
+  const exact = Object.fromEntries(
+    Object.entries(audit.scopes).map(([scope, value]) => [
+      scope,
+      {
+        unexpectedFiles: value.unexpectedFiles,
+        unexpectedLanguageCodePoints: value.unexpectedLanguageCodePoints,
+      },
+    ]),
+  );
+  assert.deepEqual(evaluateSourceStringLanguageGate(audit, exact, []), []);
+
+  const tooLow = structuredClone(exact);
+  tooLow.scripts.unexpectedLanguageCodePoints -= 1;
+  assert.match(evaluateSourceStringLanguageGate(audit, tooLow, []).join('\n'), /regressed/);
+
+  const tooHigh = structuredClone(exact);
+  tooHigh.mcpServer.unexpectedFiles += 1;
+  assert.match(evaluateSourceStringLanguageGate(audit, tooHigh, []).join('\n'), /lower the baseline/);
+});
+
+test('gate probe: one planted Korean error string turns the live baselines red', () => {
+  // The probe the gate discipline asks for, kept as a test so it runs on every change instead of
+  // once by hand. The planted line is the exact shape this round translated away — an error
+  // message an operator reads — and it is planted in `mcp/src`, whose live baseline is zero, so
+  // the assertion measures the shipped baselines rather than a copy of them.
+  const plant = (message) => [
+    { path: 'mcp/src/example.mjs', content: `throw new Error("${message}");\n` },
+    { path: 'scripts/example.mjs', content: 'const ok = "English";\n' },
+    { path: 'cli/src/example.mjs', content: 'const ok = "English";\n' },
+  ];
+  const red = evaluateSourceStringLanguageGate(
+    auditSourceStringEntries(plant('태그를 찍으면 여기서 멈춘다'), SOURCE_STRING_LANGUAGE_ALLOWLIST),
+    SOURCE_STRING_LANGUAGE_BASELINES,
+    [],
+  );
+  assert.match(red.join('\n'), /mcpServer printed strings unexpectedFiles regressed: 0 -> 1/);
+
+  const green = evaluateSourceStringLanguageGate(
+    auditSourceStringEntries(plant('it stops right here'), SOURCE_STRING_LANGUAGE_ALLOWLIST),
+    SOURCE_STRING_LANGUAGE_BASELINES,
+    [],
+  );
+  assert.deepEqual(green.filter((error) => error.startsWith('mcpServer')), []);
+  assert.deepEqual(green.filter((error) => error.startsWith('cliCommands')), []);
+});
+
+test('every allowlist row states why the Korean is data', () => {
+  for (const row of SOURCE_STRING_LANGUAGE_ALLOWLIST) {
+    assert.ok(row.id && row.path, 'a row needs an id and a path');
+    assert.ok((row.why ?? '').length > 40, `${row.id} needs a reason a reviewer can judge`);
+    assert.ok(row.allow === 'file' || row.allow instanceof RegExp, `${row.id} needs a matcher`);
+  }
 });

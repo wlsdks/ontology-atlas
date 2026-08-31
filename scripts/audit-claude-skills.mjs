@@ -293,42 +293,42 @@ function main() {
 
   const skills = loadSkills(roots);
   if (skills.length === 0) {
-    console.log('[skill-audit] 스킬을 하나도 못 찾았다 — 경로를 인자로 넘기거나 설치 위치를 확인하라.');
+    console.log('[skill-audit] found no skills at all — pass a path as an argument or check the install location.');
     process.exit(0);
   }
   const report = auditSkills(skills);
   const scopes = skills.reduce((acc, s) => ((acc[s.scope] = (acc[s.scope] ?? 0) + 1), acc), {});
 
   console.log(
-    `[skill-audit] ${scanAll ? '⚠️ 디스크 전체(로드되지 않는 스냅샷·카탈로그 포함)' : '실제 로드되는 스킬'} ` +
-      `${report.total}개 · 고유 이름 ${report.uniqueNames}개 (${Object.entries(scopes)
+    `[skill-audit] ${scanAll ? '⚠️ whole disk (including snapshots and catalogs that are never loaded)' : 'skills that actually load'} ` +
+      `${report.total} · unique names ${report.uniqueNames} (${Object.entries(scopes)
         .map(([k, v]) => `${k}=${v}`)
         .join(' ')})`,
   );
   if (!scanAll && !skills.some((s) => s.scope === 'plugin')) {
-    console.log('   ⚠️ installed_plugins.json 을 못 읽어 플러그인 스킬은 세지 않았다 (--all 로 디스크 전체)');
+    console.log('   ⚠️ could not read installed_plugins.json, so plugin skills were not counted (--all scans the whole disk)');
   }
 
-  console.log(`\n① 이름 충돌 — 같은 이름 ${report.duplicates.length}개, 사본 ${report.total - report.uniqueNames}개 초과`);
+  console.log(`\n① name collisions — ${report.duplicates.length} shared names, ${report.total - report.uniqueNames} copies beyond the first`);
   const risky = report.duplicates.filter((d) => d.descriptionsDiffer);
-  console.log(`   그중 설명까지 서로 다른 것: ${risky.length}개 ← 발동 조건이 다른 것들이 같은 이름으로 경쟁한다`);
+  console.log(`   of those, ones whose descriptions also differ: ${risky.length} ← different trigger conditions competing under one name`);
   for (const dup of risky.slice(0, 6)) console.log(`   ✗ ${dup.name} × ${dup.copies}`);
 
   const strong = report.overlaps.filter((o) => o.score >= 0.25);
-  console.log(`\n② 트리거 겹침 — 후보 ${report.overlaps.length}쌍 · 강한 겹침(≥0.25) ${strong.length}쌍`);
+  console.log(`\n② trigger overlap — ${report.overlaps.length} candidate pairs · strong overlap (≥0.25) ${strong.length} pairs`);
   for (const pair of strong.slice(0, 6)) {
     console.log(`   ${pair.score}  ${pair.a} ↔ ${pair.b}  [${pair.shared.slice(0, 5).join(', ')}]`);
   }
-  console.log(`   설명에 경계("Do not use for X")를 적은 스킬: ${report.withBoundary}/${report.total}`);
+  console.log(`   skills whose description states a boundary ("Do not use for X"): ${report.withBoundary}/${report.total}`);
 
   const { bundledTotal, bundledMissing, conditionalTotal, conditionalMissing } = report.references;
-  console.log(`\n③ 자기 폴더 참조 — ${bundledTotal}건 중 ${bundledMissing.length}건 없음`);
+  console.log(`\n③ self-folder references — ${bundledMissing.length} of ${bundledTotal} missing`);
   for (const miss of bundledMissing.slice(0, 6)) console.log(`   ✗ ${miss.name}: ${miss.ref}`);
   console.log(
-    `   (저장소 루트에서 찾은 것 ${report.references.repoRelative}건은 결함이 아니다 — 스킬이 아니라 그 저장소의 스크립트다)`,
+    `   (the ${report.references.repoRelative} resolved from the repository root are not defects — they are that repository's scripts, not the skill's)`,
   );
   console.log(
-    `   (프로젝트 쪽 조건부 참조 ${conditionalTotal}건 중 ${conditionalMissing}건은 없어도 정상 — 「있으면 읽어라」이므로 결함이 아니다)`,
+    `   (${conditionalMissing} of ${conditionalTotal} conditional project-side references may be absent — they say "read it if it exists", so absence is not a defect)`,
   );
 }
 

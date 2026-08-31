@@ -77,7 +77,7 @@ const REPO_BLOB = 'https://github.com/wlsdks/ontology-atlas/blob/main';
 function readFrontmatter(file) {
   const text = fs.readFileSync(file, 'utf8');
   const match = /^---\n([\s\S]*?)\n---/.exec(text);
-  if (!match) throw new Error(`${file}: frontmatter 가 없다`);
+  if (!match) throw new Error(`${file}: has no frontmatter`);
   return match[1].split('\n');
 }
 
@@ -158,7 +158,7 @@ function build() {
 
   if (!domain || !dependency || !implPath) {
     throw new Error(
-      `${SPECIMEN_SLUG}: 표본은 domain · dependencies · path 를 전부 가져야 한다 ` +
+      `${SPECIMEN_SLUG}: the specimen must carry domain, dependencies and path together ` +
         `(domain=${!!domain} dependencies=${!!dependency} path=${!!implPath})`,
     );
   }
@@ -231,7 +231,7 @@ if (process.argv.includes('--check')) {
   const current = fs.existsSync(OUT) ? fs.readFileSync(OUT, 'utf8') : '';
   if (current !== next) {
     console.error(
-      '[gateway:specimen] 생성물이 볼트와 어긋난다 — `pnpm gateway:specimen` 을 돌리고 커밋해라.',
+      '[gateway:specimen] the generated file disagrees with the vault — run `pnpm gateway:specimen` and commit the result.',
     );
     process.exit(1);
   }

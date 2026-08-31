@@ -133,7 +133,7 @@ test("two DMGs are refused rather than picked", () => {
   const { root, bundleDir, outDir } = fakeBundle("1.0.0", "aarch64");
   writeFileSync(join(bundleDir, "dmg", "ontology-atlas_1.0.0_x64.dmg"), "dmg");
   try {
-    assert.throws(() => stageReleaseAssets({ bundleDir, outDir }), /2개/);
+    assert.throws(() => stageReleaseAssets({ bundleDir, outDir }), /has 2 .* candidates/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

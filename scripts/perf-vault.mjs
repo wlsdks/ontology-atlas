@@ -39,7 +39,7 @@ function genFrontmatter(i) {
     '',
     `# Node ${i}`,
     '',
-    `이 노드는 자동 생성된 perf fixture. ${kind} 타입.`,
+    `This node is an automatically generated perf fixture. Kind: ${kind}.`,
     '',
     'Lorem ipsum dolor sit amet consectetur adipiscing elit, ' +
       'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',

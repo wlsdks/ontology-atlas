@@ -5612,7 +5612,7 @@ await test("find_path — structuredContent 로 shortest path 계약을 노출",
       from: "login",
       to: "missing-node",
       found: false,
-      reason: "경로 없음 (또는 maxHops 초과)",
+      reason: "no path found (or maxHops exceeded)",
       // "to" is absent from the vault while "login" is present, so the suggestion
       // is an add_concept scaffold, not add_relation.
       growthHint: {

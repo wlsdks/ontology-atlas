@@ -55,25 +55,25 @@ const FULL_SHA = /^[0-9a-f]{40}$/i;
  */
 export const REHEARSAL_SKIPS = {
   "Require protected main dispatch context":
-    "workflow_dispatch 의 ref·event SHA·workflow SHA 는 GitHub가 만든 실행 문맥에서만 비교할 수 있다. --tag 리허설은 아래의 tag/current-main admission 검사까지 실행한다.",
+    "The ref, event SHA and workflow SHA of workflow_dispatch can only be compared inside the execution context GitHub builds. A --tag rehearsal also runs the tag/current-main admission checks below.",
   "Verify requested release version":
-    "ADMISSION SKIP — 기존 태그를 만든 뒤 --tag=vX.Y.Z 를 주면 desktop:release-tag 를 실행한다.",
+    "ADMISSION SKIP — create the tag first, then pass --tag=vX.Y.Z to run desktop:release-tag.",
   "Admit tag at current main SHA":
-    "ADMISSION SKIP — 기존 태그를 만든 뒤 --tag=vX.Y.Z 를 주면 현재 HEAD 전체 SHA로 desktop:release-source --mode=admit 를 실행한다.",
+    "ADMISSION SKIP — create the tag first, then pass --tag=vX.Y.Z to run desktop:release-source --mode=admit against the full SHA of the current HEAD.",
   "Verify release source commit":
-    "build-macos 의 pin 검사는 admit-release 가 고정해 전달한 RELEASE_SHA 를 다시 확인한다. pin 모드에서는 main 이 그 뒤로 전진해도 된다. --tag 리허설은 그보다 앞선 admit 검사를 현재 HEAD로 실행하지만, 호스팅된 잡 사이 전달값은 이 기계에서 재현할 수 없다.",
+    "The pin check in build-macos re-verifies the RELEASE_SHA that admit-release pinned and handed over. In pin mode main may move ahead afterwards. A --tag rehearsal runs the earlier admit check against the current HEAD, but the value handed between hosted jobs cannot be reproduced on this machine.",
   "Verify release tag version":
-    "실제 태그 이름이 필요하다. 대신 아래에서 package.json · tauri.conf.json · Cargo.toml 세 버전이 서로 맞는지 확인한다.",
+    "A real tag name is required. Instead, the check below confirms that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   "Require signed release credentials":
-    "레포에 Apple 시크릿 5종이 모두 등록돼 있어야 러너가 이 게이트를 통과한다. 이 기계에는 Actions secret 이 없으므로 실제 값 검사는 태그 워크플로에서만 성립한다.",
+    "All five Apple secrets must be registered on the repository for the runner to pass this gate. This machine holds no Actions secret, so checking the real values only holds in the tag workflow.",
   "Import Apple Developer ID certificate":
-    "APPLE_CERTIFICATE_P12_BASE64 로 임시 키체인을 만드는 단계다. 시크릿 없이는 밟을 수 없고, 밟아도 이 기계의 키체인을 건드리게 되므로 리허설에서 일부러 하지 않는다.",
+    "This step builds a temporary keychain from APPLE_CERTIFICATE_P12_BASE64. It cannot run without the secrets, and running it would touch this machine's keychain, so the rehearsal deliberately leaves it out.",
   "Enable Corepack pnpm":
-    "러너에 pnpm 을 심는 단계다. 이 기계에는 이미 pnpm 이 있고, 버전이 러너와 같은지는 위의 도구 점검이 답한다.",
+    "This step installs pnpm on the runner. This machine already has pnpm, and whether the version matches the runner is answered by the tool probe above.",
   "Build signed and notarized release artifact":
-    "codesign(Developer ID) + notarytool 이 필요하다. 대신 같은 단계의 로컬 대체 명령이 ad-hoc 서명 경로를 끝까지 돌려 빌드·스모크·사이드카 동봉·DMG·체크섬·설치 스모크를 증명한다. Developer ID 서명·공증·DMG 컨테이너 서명만 실제 태그에서 처음 밟힌다.",
-  "Summarize macOS release assets": "GITHUB_STEP_SUMMARY 에 표를 쓸 뿐이라 성립 여부가 없다.",
-  "Cleanup Apple signing keychain": "서명 경로에서만 만들어진 키체인을 지운다.",
+    "codesign (Developer ID) plus notarytool are required. Instead, the local substitute for the same step runs the ad-hoc signing path end to end and proves the build, smoke, sidecar bundling, DMG, checksum and install smoke. Only Developer ID signing, notarization and DMG container signing are first stepped on by a real tag.",
+  "Summarize macOS release assets": "It only writes a table into GITHUB_STEP_SUMMARY, so there is nothing here that can hold or fail.",
+  "Cleanup Apple signing keychain": "It removes a keychain that only the signing path creates.",
 };
 
 /**
@@ -87,11 +87,11 @@ export const REHEARSAL_SKIPS = {
 export const REHEARSAL_SUBSTITUTES = {
   "Verify release tag version": {
     argv: ["node", "scripts/release-rehearsal.mjs", "--check-versions"],
-    note: "태그 이름 대신 package.json · tauri.conf.json · Cargo.toml 세 버전이 서로 맞는지 본다.",
+    note: "Instead of a tag name, it checks that the package.json, tauri.conf.json and Cargo.toml versions agree with each other.",
   },
   "Build signed and notarized release artifact": {
     argv: ["pnpm", "desktop:release-artifact:unsigned"],
-    note: "공개 workflow에는 unsigned 폴백이 없다. 로컬에서만 ad-hoc 서명 대체 경로를 끝까지 돌려 Developer ID 서명·공증 외의 체인을 증명한다.",
+    note: "The public workflow has no unsigned fallback. Only locally does the ad-hoc signing substitute run the path end to end and prove the chain apart from Developer ID signing and notarization.",
   },
 };
 
@@ -166,7 +166,7 @@ export function probeTool(tool, args, { spawn = spawnSync, timeout = PROBE_TIMEO
 
 export function parseReleaseJobSteps(workflow, jobName) {
   const jobStart = workflow.indexOf(`\n  ${jobName}:`);
-  if (jobStart < 0) throw new Error(`release-macos.yml 에 ${jobName} 잡이 없다.`);
+  if (jobStart < 0) throw new Error(`release-macos.yml has no ${jobName} job.`);
   // This job extends up to the next job (another key at 2-space indent).
   const rest = workflow.slice(jobStart + 1);
   const nextJob = rest.slice(1).search(/\n {2}[a-z][a-z0-9-]*:\n/);
@@ -226,7 +226,7 @@ export function currentHeadSha(root = process.cwd()) {
   const sha = result.status === 0 ? result.stdout.trim() : "";
   if (!FULL_SHA.test(sha)) {
     throw new Error(
-      `현재 HEAD의 전체 commit SHA를 읽지 못했다: ${(result.stderr || result.stdout || "git rev-parse failed").trim()}`,
+      `Could not read the full commit SHA of the current HEAD: ${(result.stderr || result.stdout || "git rev-parse failed").trim()}`,
     );
   }
   return sha;
@@ -235,7 +235,7 @@ export function currentHeadSha(root = process.cwd()) {
 /** Builds local commands for admit-release's two real checks, only when a tag is given. */
 export function admissionCheckCommands(tag, sha) {
   if (!tag) return [];
-  if (!FULL_SHA.test(sha)) throw new Error("admission에는 전체 40자 commit SHA가 필요하다.");
+  if (!FULL_SHA.test(sha)) throw new Error("admission needs the full 40-character commit SHA.");
   return [
     {
       name: "Verify requested release version",
@@ -330,15 +330,15 @@ function main() {
   if (argv.includes("--check-versions")) {
     const { versions, agree } = checkVersionsAgree();
     const rendered = Object.entries(versions)
-      .map(([source, version]) => `${source}=${version ?? "(없음)"}`)
+      .map(([source, version]) => `${source}=${version ?? "(none)"}`)
       .join(", ");
     if (!agree) {
       console.error(
-        `[rehearsal] 버전이 서로 다르다: ${rendered}. 태그를 찍으면 "Verify release tag version" 이 여기서 멈춘다.`,
+        `[rehearsal] the versions disagree: ${rendered}. If you tag, "Verify release tag version" stops right here.`,
       );
       return 1;
     }
-    console.log(`[rehearsal] package.json · tauri.conf.json · Cargo.toml 모두 ${versions.package}`);
+    console.log(`[rehearsal] package.json · tauri.conf.json · Cargo.toml all ${versions.package}`);
     return 0;
   }
   if (argv.includes("--help") || argv.includes("-h")) {
@@ -409,7 +409,7 @@ function main() {
         ...step,
         job: "admit-release",
         kind: "skip",
-        reason: `GitHub Action(${step.uses}) — 러너 전용 단계다. 이 도구가 이 기계에 있는지는 아래 도구 점검이 대신 답한다.`,
+        reason: `GitHub Action(${step.uses}) — a runner-only step. Whether this tool exists on this machine is answered by the tool probe below instead.`,
       });
       continue;
     }
@@ -417,7 +417,7 @@ function main() {
       ...step,
       job: "admit-release",
       kind: "skip",
-      reason: "러너 환경 변수에 기대는 셸 단계라 이 기계에서 그대로 옮길 수 없다.",
+      reason: "A shell step that leans on runner environment variables, so it cannot be carried over to this machine verbatim.",
     });
   }
 
@@ -432,7 +432,7 @@ function main() {
         ...step,
         job: "build-macos",
         kind: "skip",
-        reason: `GitHub Action(${step.uses}) — 러너 전용 단계다. 이 도구가 이 기계에 있는지는 아래 도구 점검이 대신 답한다.`,
+        reason: `GitHub Action(${step.uses}) — a runner-only step. Whether this tool exists on this machine is answered by the tool probe below instead.`,
       });
       continue;
     }
@@ -442,13 +442,13 @@ function main() {
         ...step,
         job: "build-macos",
         kind: "skip",
-        reason: "러너 환경 변수에 기대는 셸 단계라 이 기계에서 그대로 옮길 수 없다.",
+        reason: "A shell step that leans on runner environment variables, so it cannot be carried over to this machine verbatim.",
       });
       continue;
     }
     if (fast && (reachedSlow || REHEARSAL_SLOW_STEPS.has(step.name))) {
       reachedSlow = true;
-      plan.push({ ...step, job: "build-macos", kind: "skip", argv: argvForStep, reason: "--fast 로 생략했다." });
+      plan.push({ ...step, job: "build-macos", kind: "skip", argv: argvForStep, reason: "left out by --fast." });
       continue;
     }
     plan.push({
@@ -470,7 +470,7 @@ function main() {
     ["rustc", ["--version"]],
   ];
 
-  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + build-macos — 이 기계에서 순서대로"));
+  console.log(color(1, "[rehearsal] release-macos.yml · admit-release + build-macos — in order, on this machine"));
   console.log("");
   for (const [tool, args] of tools) {
     const probe = probeTool(tool, args);
@@ -481,11 +481,11 @@ function main() {
       // time", not "absent on this machine". Calling both the same thing sends the next
       // person off to install a tool that is already there.
       console.log(
-        `${color(33, "  tool ?    ")} ${tool} — ${PROBE_TIMEOUT_MS}ms 안에 답이 없어 확인 못 했다(없다는 뜻이 아니다).`,
+        `${color(33, "  tool ?    ")} ${tool} — no answer within ${PROBE_TIMEOUT_MS}ms, so this is unconfirmed (it does not mean absent).`,
       );
     } else {
       console.log(
-        `${color(31, "  tool MISSING")} ${tool} — 러너에는 설치 단계가 있다. 이 기계에 없으면 아래 단계가 여기서 멈춘다.`,
+        `${color(31, "  tool MISSING")} ${tool} — the runner has an install step. If it is missing here, the steps below stop at this point.`,
       );
     }
   }
@@ -508,9 +508,9 @@ function main() {
     console.log(
       color(
         33,
-        "  note  TAURI_SIGNING_PRIVATE_KEY 가 없어 **버리는 업데이터 키**를 만들어 쓴다.\n" +
-          "        증명되는 것은 '아카이브가 서명된 앱으로 다시 만들어지고 서명이 붙는가' 이지\n" +
-          "        '우리 키로 서명됐는가' 가 아니다 — 후자는 실제 태그에서만 참이 된다.",
+        "  note  TAURI_SIGNING_PRIVATE_KEY is absent, so a **throwaway updater key** is created and used.\n" +
+          "        What that proves is 'the archive is rebuilt from a signed app and a signature is attached',\n" +
+          "        not 'it was signed with our key' — the latter only becomes true on a real tag.",
       ),
     );
     console.log("");
@@ -535,7 +535,7 @@ function main() {
     if (!outcome.ok) break;
   }
 
-  console.log(color(1, "\n[rehearsal] 결과"));
+  console.log(color(1, "\n[rehearsal] result"));
   for (const result of results) {
     const label =
       result.state === "pass"
@@ -556,15 +556,15 @@ function main() {
   console.log("");
   if (failed) {
     console.log(
-      color(31, `[rehearsal] blocked at "${failed.name}". 태그를 찍으면 러너도 같은 자리에서 멈춘다.`),
+      color(31, `[rehearsal] blocked at "${failed.name}". If you tag, the runner stops at the same place.`),
     );
     return 1;
   }
   console.log(
-    color(32, `[rehearsal] 이 기계에서 돌 수 있는 단계는 전부 통과했다 (${skipped}개는 SKIP).`),
+    color(32, `[rehearsal] every step that can run on this machine passed (${skipped} skipped).`),
   );
   console.log(
-    "[rehearsal] SKIP 은 '확인했다' 가 아니다 — 위 목록에서 각 이유를 읽고, 서명 경로는 실제 태그에서 처음 밟힌다는 것을 알고 찍어라.",
+    "[rehearsal] SKIP is not 'checked' — read each reason in the list above, and tag only knowing that the signing path is first stepped on by a real tag.",
   );
   return 0;
 }

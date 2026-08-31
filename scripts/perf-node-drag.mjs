@@ -42,8 +42,8 @@ const PROFILE = `/tmp/atlas-perf-${process.pid}`;
 
 /** Vault sizes measured — the small one is the control for "does cost scale with node count". */
 const CASES = [
-  { q: "synth=3000&t=freeze", label: "노드 3000" },
-  { q: "synth=31&t=freeze", label: "노드 31 (대조)" },
+  { q: "synth=3000&t=freeze", label: "3000 nodes" },
+  { q: "synth=31&t=freeze", label: "31 nodes (control)" },
 ];
 
 const stat = (xs) => {
@@ -69,12 +69,12 @@ const stat = (xs) => {
 async function pickDraggable(page) {
   return page.evaluate(() => {
     const api = window.__atlasMap;
-    if (!api) return { error: "__atlasMap 없음 — ?e2e=1 가 빠졌거나 빌드가 옛것이다" };
+    if (!api) return { error: "__atlasMap missing — ?e2e=1 was dropped, or the build is older than this instrument" };
     const vw = innerWidth, vh = innerHeight;
     const cands = api
       .nodes()
       .filter((n) => n.draggable && !n.hidden && n.x > 80 && n.y > 80 && n.x < vw - 80 && n.y < vh - 80);
-    if (cands.length === 0) return { error: "끌 수 있는 노드가 화면 안에 없다" };
+    if (cands.length === 0) return { error: "no draggable node is on screen" };
     // More neighbours means more simulation load — pick a domain-tier node to measure the worst case.
     const rank = { project: 0, domain: 1, capability: 2, element: 3 };
     cands.sort((a, b) => (rank[a.kind] ?? 9) - (rank[b.kind] ?? 9));
@@ -173,7 +173,7 @@ for (const { q, label } of CASES) {
 await ctx.close();
 rmSync(PROFILE, { recursive: true, force: true });
 
-console.log("\n  노드 드래그 — 앱 rAF 콜백 시간(ms)\n");
+console.log("\n  node drag — app rAF callback time (ms)\n");
 for (const r of rows) {
   if (r.error) {
     console.log(`  ${r.label.padEnd(16)} ❌ ${r.error}`);
@@ -181,7 +181,7 @@ for (const r of rows) {
   }
   const ok = r.grabbed?.kind === "node";
   console.log(
-    `  ${r.label.padEnd(16)} ${ok ? "노드 잡음 ✓" : `❌ ${r.grabbed?.kind} (배경을 밀었다 — 이 수치는 무효)`}` +
+    `  ${r.label.padEnd(16)} ${ok ? "node grabbed ✓" : `❌ ${r.grabbed?.kind} (pushed the background — this number is invalid)`}` +
       `  [${r.target.kind} ${r.target.label}]`,
   );
   // **Read p95 as the representative value.** Dragging at human speed mixes idle
@@ -189,8 +189,8 @@ for (const r of rows) {
   // faster, the actual dragging just became a minority of the sample. The cost
   // occurs only on dragging frames, so the tail is what to look at.
   console.log(
-    `  ${"".padEnd(16)} p95 ${String(r.work.p95).padStart(6)} · 최악 ${String(r.work.max).padStart(6)} ` +
-      `(중앙 ${r.work.med} — 유휴 프레임 포함이라 참고용) · 백킹 ${r.backing?.width}x${r.backing?.height}\n`,
+    `  ${"".padEnd(16)} p95 ${String(r.work.p95).padStart(6)} · worst ${String(r.work.max).padStart(6)} ` +
+      `(median ${r.work.med} — includes idle frames, so it is only for reference) · backing ${r.backing?.width}x${r.backing?.height}\n`,
   );
 }
 console.log("");

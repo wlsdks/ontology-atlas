@@ -99,18 +99,18 @@ export function parseDmgName(name) {
 
 function exactlyOneFile(dir, matches, label) {
   if (!fs.existsSync(dir)) {
-    throw new Error(`${label} 을(를) 찾을 폴더가 없다: ${dir}`);
+    throw new Error(`no folder to look for ${label} in: ${dir}`);
   }
   const hits = fs
     .readdirSync(dir, { withFileTypes: true })
     .filter((entry) => entry.isFile() && matches(entry.name))
     .map((entry) => entry.name);
   if (hits.length === 0) {
-    throw new Error(`${dir} 에 ${label} 이(가) 없다.`);
+    throw new Error(`${dir} has no ${label}.`);
   }
   if (hits.length > 1) {
     throw new Error(
-      `${dir} 에 ${label} 이(가) ${hits.length}개다: ${hits.join(", ")} — 어느 것을 낼지 정할 수 없다.`,
+      `${dir} has ${hits.length} ${label} candidates: ${hits.join(", ")} - cannot decide which one to ship.`,
     );
   }
   return hits[0];
@@ -141,30 +141,30 @@ export function stageReleaseAssets({ bundleDir, outDir, expectArch, dsymDir, req
   const parsed = parseDmgName(dmg);
   if (!parsed) {
     throw new Error(
-      `DMG 이름이 규칙과 다르다: ${dmg} — ontology-atlas_<버전>_<aarch64|x64>.dmg 여야 한다.`,
+      `DMG name does not follow the rule: ${dmg} - expected ontology-atlas_<version>_<aarch64|x64>.dmg.`,
     );
   }
   if (expectArch && parsed.arch !== expectArch) {
     throw new Error(
-      `이 잡은 ${expectArch} 를 만든다는데 DMG 는 ${parsed.arch} 다: ${dmg}.`,
+      `this job builds ${expectArch} but the DMG is ${parsed.arch}: ${dmg}.`,
     );
   }
 
   const checksum = `${dmg}.sha256`;
   if (!fs.existsSync(path.join(dmgDir, checksum))) {
-    throw new Error(`${dmgDir} 에 ${checksum} 이 없다 — 서명 없는 배포의 유일한 무결성 검사다.`);
+    throw new Error(`${dmgDir} has no ${checksum} - the only integrity check an unsigned distribution has.`);
   }
 
   const archive = exactlyOneFile(
     macosDir,
     (name) => name.endsWith(".app.tar.gz"),
-    "업데이터 아카이브(.app.tar.gz)",
+    "updater archive (.app.tar.gz)",
   );
   const signature = `${archive}.sig`;
   if (!fs.existsSync(path.join(macosDir, signature))) {
     throw new Error(
-      `${macosDir} 에 ${signature} 가 없다 — TAURI_SIGNING_PRIVATE_KEY 없이 빌드하면 ` +
-        "아카이브만 나오고 서명이 빠진다. 그 상태로 배포하면 앱이 갱신을 거부한다(조용히 '갱신 없음' 으로 보인다).",
+      `${macosDir} has no ${signature} - a build without TAURI_SIGNING_PRIVATE_KEY ` +
+        "emits the archive but no signature. Shipped that way, the app refuses the update (it quietly reads as 'no update').",
     );
   }
 

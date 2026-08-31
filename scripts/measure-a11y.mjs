@@ -91,18 +91,18 @@ const ranked = [...byRule.values()].sort(
   (a, b) => (IMPACT_ORDER[a.impact] ?? 9) - (IMPACT_ORDER[b.impact] ?? 9) || b.nodes - a.nodes,
 );
 
-console.log(`\n  접근성 센서스 — axe-core, WCAG 2.x A/AA 만 · ${VIEWPORT.width}×${VIEWPORT.height}\n`);
+console.log(`\n  accessibility census — axe-core, WCAG 2.x A/AA only · ${VIEWPORT.width}×${VIEWPORT.height}\n`);
 for (const { route, violations } of rows) {
   const nodes = violations.reduce((n, v) => n + v.count, 0);
-  console.log(`  ${route.padEnd(24)} 룰 ${String(violations.length).padStart(2)} · 원소 ${String(nodes).padStart(3)}`);
+  console.log(`  ${route.padEnd(24)} rules ${String(violations.length).padStart(2)} · elements ${String(nodes).padStart(3)}`);
 }
-console.log(`\n  룰별 (처방 단위):\n`);
+console.log(`\n  by rule (the unit of a prescription):\n`);
 for (const r of ranked) {
-  console.log(`  [${(r.impact ?? "?").padEnd(8)}] ${r.id.padEnd(34)} 원소 ${String(r.nodes).padStart(3)} · 라우트 ${r.routes.size}`);
+  console.log(`  [${(r.impact ?? "?").padEnd(8)}] ${r.id.padEnd(34)} elements ${String(r.nodes).padStart(3)} · routes ${r.routes.size}`);
   console.log(`             ${r.help}`);
-  console.log(`             예: ${r.sample}`);
+    console.log(`             example: ${r.sample}`);
 }
 console.log(
-  `\n  합계: 룰 ${ranked.length}종 · 원소 ${ranked.reduce((n, r) => n + r.nodes, 0)}건\n` +
-    `  ⚠️ 이 수가 한 PR 로 못 치울 규모면 게이트를 켜지 않는다 — 소음은 기존 신호까지 덮는다.\n`,
+  `\n  total: ${ranked.length} rules · ${ranked.reduce((n, r) => n + r.nodes, 0)} elements\n` +
+    `  ⚠️ If this count is too large to clear in one PR, do not turn the gate on — the noise buries the signal we already have.\n`,
 );

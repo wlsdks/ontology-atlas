@@ -386,7 +386,7 @@ function runTask(task, mode, iter) {
   const filePath = resolve(OUT_DIR, `${TODAY}-codex-${task.id}-${mode}${suffix}.txt`);
   writeFileSync(filePath, out, "utf-8");
   console.log(
-    `  ${task.id} ${mode.toUpperCase()}${repeat > 1 ? ` r${iter}` : ""}${grade ? `  [경계 ${grade.boundary}/3 · 출처 ${grade.provenance}/2${grade.contradicted ? " · 모순 ✗" : ""}]` : ""}  shell=${shellCalls}  mcp=${mcpCalls}${mcpFailed ? `(+${mcpFailed} failed)` : ""}  tok=${tokens || "?"}  ${(durationMs / 1000).toFixed(1)}s`,
+    `  ${task.id} ${mode.toUpperCase()}${repeat > 1 ? ` r${iter}` : ""}${grade ? `  [boundary ${grade.boundary}/3 · provenance ${grade.provenance}/2${grade.contradicted ? " · contradicted ✗" : ""}]` : ""}  shell=${shellCalls}  mcp=${mcpCalls}${mcpFailed ? `(+${mcpFailed} failed)` : ""}  tok=${tokens || "?"}  ${(durationMs / 1000).toFixed(1)}s`,
   );
   return { task: task.id, mode, iter, mcpCalls, mcpFailed, shellCalls, tokens, grade, durationMs };
 }
