@@ -9,6 +9,80 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-31 — optical-record interchange construction and persisted handoff
+
+**Subject**: an unfamiliar dual MIT/Apache-2.0 Rust library for reading,
+writing, and validating optical spectral records, pinned at one clean revision.
+The repository and its name remained outside the Atlas checkout. Six questions
+were frozen and approved before construction.
+
+### Phase 1 — cost and construction truth
+
+| measurement | result | preceding clean exact-plan baseline |
+|---|---:|---:|
+| first valid rooted MCP → first reviewable candidate | **201.494 s** | 257.384 s |
+| first valid rooted MCP → successful finalizer | **4,286.244 s** | 2,594.799 s |
+| 40-minute exact-plan trigger | **FAIL by 1,886.244 s** | FAIL by 194.799 s |
+| released candidate | **4 concepts · 3 relations · 5 proposal gaps** | 9 concepts · 10 relations · 10 gaps |
+
+The reviewable-candidate path improved by **55.890 seconds (21.7%)**, which is
+the named measurement this row advances. The gross finalizer path regressed by
+**1,691.445 seconds (65.2%)** and remains the authoritative user-visible cost.
+The exact joined acceptance request carried the five proposal gaps plus six
+measured CQ/functional gap ids, for 11 accepted ids in total. The released rows
+wrote exactly and finalized with the accepted evidence gaps still visible.
+
+The first source-hidden evaluator found that the builder had run missing,
+foreign, and truncated-manifest probes but had not sealed those receipts for an
+independent reader. It stopped before `hidden`, and the concurrent audit was
+discarded. The unchanged 29-claim candidate was resealed with one portable,
+digest-bound interoperability witness. Fresh lanes then overlapped for **136
+seconds**, verified **29/29 claims** and **57/57 citations**, and all eight
+join/acceptance mutation probes failed without output.
+
+### Phase 2 — citation accuracy
+
+- Meaningful-slice path occurrences: **31 / 31** exist.
+- Unique cited source paths: **3 / 3** exist.
+- Persisted validation: zero problems; index and health path drift: zero.
+- Five untouched starter records were named and excluded from subject accuracy.
+
+### Phase 3 — persisted-vault-only handoff
+
+A fresh reader received a sidecar-free nine-node copy and an intentionally empty
+repository root. It selected the four authored project nodes and fetched all
+**4/4 full bodies** in one untruncated batch.
+
+- Full answers: **2** (`q3`, `q6`).
+- Partial answers: **4** (`q1`, `q2`, `q4`, `q5`).
+- Unknown / unanswered questions: **0 / 0**.
+- Explicit unanswered evidence items: **6**.
+- Atomic qualifier checks: **10** after source-aware expansion; missing
+  qualifiers **0**.
+
+The initial attempted all-in-one reader packet was rejected because
+`get_concepts` requires explicit slugs or UIDs. It wrote no transcript and is
+recorded as a transport usability failure, not a semantic result.
+
+### Phase 4 — hallucination check
+
+- Persisted-reader atomic claims: **21 / 21 verified**.
+- Failed claims: **0**.
+- Unsupported scope or impact promotion: **0**.
+- Path hallucinations: **0**.
+
+### What this run changes
+
+This row advances only the time-to-reviewable-candidate baseline while holding
+100% citation and claim accuracy. It does not advance total construction time.
+The highest-value remaining gap is explicit: the static packet did not measure
+Rust `use` / `mod` / macro dependency evidence, so the project-critical external
+dependency and direct/runtime/transitive impact questions stayed partial. The
+transport REDs also show that successful private probes are not qualification
+evidence until their receipts are sealed for the source-hidden evaluator.
+
+---
+
 ## 2026-08-31 — prospective exact-navigation construction and persisted handoff
 
 **Subject**: an unfamiliar MIT-licensed Go library for reading and writing a
