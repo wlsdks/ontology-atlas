@@ -3039,9 +3039,120 @@ fn install_panic_logger() {
         let thread_name = thread.name().unwrap_or("unnamed").to_string();
         let report = format_panic_report(&thread_name, &location, &message);
         log::error!("{report}");
-        eprintln!("{report}");
+        // `log::error!` reaches the rotating file only once the log plugin is registered. A
+        // panic before that (context generation, plugin construction, `build`) would otherwise
+        // leave nothing but a stderr line a Finder-launched `.app` discards, so the report is
+        // also appended to its own file in the same log directory. Every step is fallible and
+        // ignored on purpose: a hook that can fail loudly is a double panic.
+        append_panic_report_file(&report);
+        // `writeln!`, not `eprintln!`. `eprintln!` panics when the write fails, and a panic
+        // raised inside a panic hook is a double panic, which aborts immediately — losing both
+        // the report this hook exists to leave behind and the original panic's own unwinding.
+        // A packaged `.app` launched from Finder inherits a stderr pipe it does not own, so a
+        // closed pipe is a real state, not a hypothetical one.
+        let _ = writeln!(std::io::stderr(), "{report}");
         previous(info);
     }));
+}
+
+/// The file the panic hook appends to before the log plugin exists. Same directory the log
+/// plugin uses on macOS, so a person collecting evidence opens one folder.
+#[cfg(target_os = "macos")]
+fn panic_report_path() -> Option<PathBuf> {
+    let home = std::env::var_os("HOME")?;
+    Some(
+        PathBuf::from(home)
+            .join("Library")
+            .join("Logs")
+            .join("dev.jinan.ontology-atlas")
+            .join("panic.log"),
+    )
+}
+
+#[cfg(not(target_os = "macos"))]
+fn panic_report_path() -> Option<PathBuf> {
+    None
+}
+
+fn append_panic_report_file(report: &str) {
+    let Some(path) = panic_report_path() else {
+        return;
+    };
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let _ = writeln!(file, "[unix {stamp}] {report}");
+    }
+}
+
+/// A WebView failure the page could not recover from, forwarded by the root layout's error
+/// listener so it lands in the same log file as native failures. Without this a React render
+/// crash or an unhandled promise rejection left no trace outside the WebView console, which a
+/// shipped `.app` never shows. Bounded so a runaway page cannot fill the log.
+#[tauri::command]
+async fn log_webview_error(
+    message: String,
+    source: Option<String>,
+    line: Option<u32>,
+    column: Option<u32>,
+    stack: Option<String>,
+    kind: String,
+) -> Result<(), String> {
+    let report = format_webview_error_report(
+        &message,
+        source.as_deref(),
+        line,
+        column,
+        stack.as_deref(),
+        &kind,
+    );
+    log::error!("{report}");
+    Ok(())
+}
+
+fn format_webview_error_report(
+    message: &str,
+    source: Option<&str>,
+    line: Option<u32>,
+    column: Option<u32>,
+    stack: Option<&str>,
+    kind: &str,
+) -> String {
+    fn clip(text: &str, max: usize) -> String {
+        if text.chars().count() <= max {
+            return text.to_string();
+        }
+        let head: String = text.chars().take(max).collect();
+        format!("{head}… (clipped)")
+    }
+    let kind = match kind {
+        "error" | "unhandledrejection" | "render" => kind,
+        _ => "unknown",
+    };
+    let mut report = format!("webview {kind}: {}", clip(message, 2_000));
+    if let Some(source) = source.filter(|s| !s.is_empty()) {
+        report.push_str(&format!(" at {}", clip(source, 512)));
+        if let Some(line) = line {
+            report.push_str(&format!(":{line}"));
+            if let Some(column) = column {
+                report.push_str(&format!(":{column}"));
+            }
+        }
+    }
+    if let Some(stack) = stack.filter(|s| !s.is_empty()) {
+        report.push('\n');
+        report.push_str(&clip(stack, 8_000));
+    }
+    report
 }
 
 pub fn run() {
@@ -3321,6 +3432,7 @@ pub fn run() {
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
             start_vault_watch,
+            log_webview_error,
             secrets::secret_set,
             secrets::secret_status,
             secrets::secret_clear,
@@ -4729,6 +4841,36 @@ mod window_geometry_tests {
                 <= REFERENCE_14_INCH.y + REFERENCE_14_INCH.height,
             "a recentred window must not hang off the bottom"
         );
+    }
+}
+
+#[cfg(test)]
+mod webview_error_report_tests {
+    use super::format_webview_error_report;
+
+    #[test]
+    fn report_names_kind_location_and_stack() {
+        let report = format_webview_error_report(
+            "boom",
+            Some("http://tauri.localhost/app.js"),
+            Some(12),
+            Some(5),
+            Some("Error: boom\n  at f"),
+            "render",
+        );
+        assert_eq!(
+            report,
+            "webview render: boom at http://tauri.localhost/app.js:12:5\nError: boom\n  at f"
+        );
+    }
+
+    #[test]
+    fn report_clips_runaway_text_and_unknown_kinds() {
+        let long = "x".repeat(3_000);
+        let report = format_webview_error_report(&long, None, None, None, None, "weird");
+        assert!(report.starts_with("webview unknown: "));
+        assert!(report.ends_with("… (clipped)"));
+        assert!(report.chars().count() < 2_100);
     }
 }
 

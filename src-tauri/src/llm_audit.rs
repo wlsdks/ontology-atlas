@@ -36,6 +36,16 @@ use std::path::{Path, PathBuf};
 const SIDECAR_DIR: &str = ".ontology-atlas";
 const AUDIT_FILE: &str = "llm-audit.jsonl";
 
+/// The same two names as NUL-terminated literals, for the `openat`/`mkdirat` calls below.
+///
+/// They exist so that opening the audit file has no fallible `CString::new(...).expect(...)`
+/// step at all. That `expect` could never fire on a constant, but `llm_chat` reaches this code
+/// and a panic anywhere in the crate is a process abort once it unwinds through an
+/// Objective-C frame — so the impossibility is made structural instead of asserted.
+/// `names_stay_in_step` pins each literal to its `&str` twin.
+const SIDECAR_DIR_C: &std::ffi::CStr = c".ontology-atlas";
+const AUDIT_FILE_C: &std::ffi::CStr = c"llm-audit.jsonl";
+
 /// Transmission scope — "what and how much went out from the vault." Connection checks are all 0.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -166,7 +176,7 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
     }
     let root = unsafe { fs::File::from_raw_fd(root_fd) };
 
-    let sidecar_name = CString::new(SIDECAR_DIR).expect("상수에는 NUL이 없다");
+    let sidecar_name = SIDECAR_DIR_C;
     let made = unsafe { libc::mkdirat(root.as_raw_fd(), sidecar_name.as_ptr(), 0o700) };
     if made != 0 {
         let error = std::io::Error::last_os_error();
@@ -192,7 +202,7 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
     }
     let sidecar = unsafe { fs::File::from_raw_fd(sidecar_fd) };
 
-    let audit_name = CString::new(AUDIT_FILE).expect("상수에는 NUL이 없다");
+    let audit_name = AUDIT_FILE_C;
     let audit_fd = unsafe {
         libc::openat(
             sidecar.as_raw_fd(),
@@ -362,6 +372,14 @@ pub fn finalize(mut reservation: AuditReservation, outcome: &AuditOutcome) -> Re
 mod tests {
     use super::*;
     use serde_json::Value;
+
+    /// The `&str` and `&CStr` spellings of the sidecar names must never drift apart; the path
+    /// builder uses one pair and the `openat` calls use the other.
+    #[test]
+    fn names_stay_in_step() {
+        assert_eq!(SIDECAR_DIR_C.to_str(), Ok(SIDECAR_DIR));
+        assert_eq!(AUDIT_FILE_C.to_str(), Ok(AUDIT_FILE));
+    }
 
     fn temp_vault(tag: &str) -> PathBuf {
         let dir = std::env::temp_dir().join(format!(

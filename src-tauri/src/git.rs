@@ -29,8 +29,7 @@ pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
         return Err("vault 경로가 비어 있어요.".into());
     }
     let path = PathBuf::from(vault_path);
-    let metadata =
-        fs::metadata(&path).map_err(|_| "vault 경로가 존재하지 않아요.".to_string())?;
+    let metadata = fs::metadata(&path).map_err(|_| "vault 경로가 존재하지 않아요.".to_string())?;
     if !metadata.is_dir() {
         return Err("vault 경로가 디렉토리가 아니에요.".into());
     }
@@ -210,25 +209,30 @@ struct PorcelainRow {
 
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
     out.lines()
-        .filter(|line| line.len() >= 3)
-        .map(|line| {
+        .filter_map(|line| {
+            // `git status --porcelain` writes `XY <path>`, so byte 3 *should* be a character
+            // boundary. It is read through `get` rather than sliced anyway, because the caller
+            // is a synchronous Tauri command and Tauri runs those on the macOS main thread: a
+            // panic there unwinds through an Objective-C frame and takes the whole app down
+            // with SIGABRT. A line this parser does not recognise must be skipped, never fatal.
             let bytes = line.as_bytes();
-            let index = bytes[0] as char;
-            let worktree = bytes[1] as char;
-            // The first 3 bytes (status 2 + space 1) are always ASCII → byte 3 is a char boundary.
-            let rest = &line[3..];
+            let index = *bytes.first()? as char;
+            let worktree = *bytes.get(1)? as char;
+            let rest = line.get(3..)?;
             let mut renamed_from = None;
             let mut path = rest.to_string();
             if let Some(arrow) = rest.find(" -> ") {
-                renamed_from = Some(rest[..arrow].to_string());
-                path = rest[arrow + 4..].to_string();
+                if let (Some(before), Some(after)) = (rest.get(..arrow), rest.get(arrow + 4..)) {
+                    renamed_from = Some(before.to_string());
+                    path = after.to_string();
+                }
             }
-            PorcelainRow {
+            Some(PorcelainRow {
                 index,
                 worktree,
                 path,
                 renamed_from,
-            }
+            })
         })
         .collect()
 }
@@ -312,16 +316,21 @@ fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
     (kind, slug)
 }
 
+/// Strips one matching pair of surrounding quotes from a frontmatter scalar.
+///
+/// Written with `strip_prefix`/`strip_suffix` rather than byte indexing: this runs inside
+/// synchronous Tauri commands, which Tauri executes on the macOS main thread, where a panic
+/// aborts the process instead of failing one call. These combinators cannot land mid-character.
 fn unquote(value: &str) -> String {
-    let bytes = value.as_bytes();
-    if value.len() >= 2
-        && ((bytes[0] == b'"' && bytes[value.len() - 1] == b'"')
-            || (bytes[0] == b'\'' && bytes[value.len() - 1] == b'\''))
-    {
-        value[1..value.len() - 1].to_string()
-    } else {
-        value.to_string()
+    for quote in ['"', '\''] {
+        if let Some(inner) = value
+            .strip_prefix(quote)
+            .and_then(|rest| rest.strip_suffix(quote))
+        {
+            return inner.to_string();
+        }
     }
+    value.to_string()
 }
 
 // ── Change summary ──────────────────────────────────────────────────────────────
@@ -536,8 +545,9 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
     if text.contains("would be overwritten") || text.contains("overwritten by merge") {
         return GitErrorInfo {
             reason: "local-changes",
-            message: "커밋 안 된 로컬 변경이 있어 막혔어요 — 먼저 스냅샷으로 커밋하거나 stash 하세요."
-                .into(),
+            message:
+                "커밋 안 된 로컬 변경이 있어 막혔어요 — 먼저 스냅샷으로 커밋하거나 stash 하세요."
+                    .into(),
             note: None,
             guidance: None,
         };
@@ -561,7 +571,8 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
     {
         return GitErrorInfo {
             reason: "remote-unreachable",
-            message: "원격 저장소에 닿지 못했어요 — 주소가 맞는지, 접근 권한이 있는지 확인하세요.".into(),
+            message: "원격 저장소에 닿지 못했어요 — 주소가 맞는지, 접근 권한이 있는지 확인하세요."
+                .into(),
             note: first_line,
             guidance: Some("git remote -v   # 등록된 주소 확인".into()),
         };
@@ -582,7 +593,9 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
     if text.contains("pre-commit") || text.contains("commit-msg") || text.contains("hook") {
         return GitErrorInfo {
             reason: "pre-commit-hook",
-            message: "커밋 훅이 스냅샷을 거부했어요 — 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.".into(),
+            message:
+                "커밋 훅이 스냅샷을 거부했어요 — 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요."
+                    .into(),
             note: first_line,
             guidance: None,
         };
@@ -931,8 +944,7 @@ pub fn git_snapshot(
     let auto_summary = format_snapshot_summary(&changes);
     let custom = message.as_deref().map(str::trim).filter(|m| !m.is_empty());
     let subject = custom.unwrap_or(&auto_summary).to_string();
-    let full_message =
-        build_commit_message(&subject, &auto_summary, &changes, custom.is_some());
+    let full_message = build_commit_message(&subject, &auto_summary, &changes, custom.is_some());
 
     let full_rows = get_full_porcelain_status(&repo_root);
     let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
@@ -1002,7 +1014,9 @@ fn run_push(repo_root: &Path) -> PushOutcome {
         return PushOutcome {
             pushed: false,
             remote_url: None,
-            message: Some("push 실패 — 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.".into()),
+            message: Some(
+                "push 실패 — 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.".into(),
+            ),
             guidance: Some(format!("git push -u origin {branch}")),
         };
     };
@@ -1037,10 +1051,7 @@ fn run_push(repo_root: &Path) -> PushOutcome {
 /// Summary of recent commits touching the vault path (hash/message/time) — Obsidian
 /// Git history parity. Empty list when there are no commits at all.
 #[tauri::command]
-pub fn git_history(
-    vault_path: String,
-    limit: Option<u32>,
-) -> Result<Vec<GitCommitInfo>, String> {
+pub fn git_history(vault_path: String, limit: Option<u32>) -> Result<Vec<GitCommitInfo>, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -1201,7 +1212,11 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
             &pathspec,
         ],
     )?;
-    let diff = if out.success { out.stdout } else { String::new() };
+    let diff = if out.success {
+        out.stdout
+    } else {
+        String::new()
+    };
 
     Ok(GitDiffResult {
         count: 0,
@@ -1267,9 +1282,7 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
         || trimmed.starts_with("git://");
     let looks_path = trimmed.starts_with('/') || trimmed.starts_with("file://");
     if !(looks_scp || looks_url || looks_path) {
-        return Err(
-            "주소 형태를 알아볼 수 없어요. 예: git@github.com:내이름/저장소.git".into(),
-        );
+        return Err("주소 형태를 알아볼 수 없어요. 예: git@github.com:내이름/저장소.git".into());
     }
     Ok(trimmed.to_string())
 }
@@ -1367,7 +1380,10 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
     let existing = get_remote_url(&repo_root, "origin");
     // If origin already exists, add will fail, so replace with set-url.
     let subcommand = if existing.is_some() { "set-url" } else { "add" };
-    let out = run_git(&repo_root, &["remote", subcommand, "origin", clean.as_str()])?;
+    let out = run_git(
+        &repo_root,
+        &["remote", subcommand, "origin", clean.as_str()],
+    )?;
     if !out.success {
         let info = classify_git_error(&git_error_text(&out), "remote");
         return Err(classified_error_string(&info));
@@ -1509,14 +1525,26 @@ pub fn git_probe() -> GitProbe {
             let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
             GitProbe {
                 installed: true,
-                version: if version.is_empty() { None } else { Some(version) },
+                version: if version.is_empty() {
+                    None
+                } else {
+                    Some(version)
+                },
                 platform,
             }
         }
         // A non-zero exit still means "it did run", so treat git as installed.
-        Ok(_) => GitProbe { installed: true, version: None, platform },
+        Ok(_) => GitProbe {
+            installed: true,
+            version: None,
+            platform,
+        },
         // Spawn failure = the executable is absent.
-        Err(_) => GitProbe { installed: false, version: None, platform },
+        Err(_) => GitProbe {
+            installed: false,
+            version: None,
+            platform,
+        },
     }
 }
 
@@ -1685,7 +1713,12 @@ mod tests {
             slug: "a".into(),
             renamed_from: None,
         }];
-        let msg = build_commit_message("my subject", "ontology snapshot: +1 concept (a)", &changes, true);
+        let msg = build_commit_message(
+            "my subject",
+            "ontology snapshot: +1 concept (a)",
+            &changes,
+            true,
+        );
         assert!(msg.starts_with("my subject\n\n"));
         assert!(msg.contains("ontology snapshot: +1 concept (a)"));
         assert!(msg.contains("  A  docs/a.md"));
@@ -1740,7 +1773,11 @@ mod tests {
             "ssh://git@host/me/repo.git",
             "/Users/me/backup/repo.git",
         ] {
-            assert_eq!(validate_remote_url(url).unwrap(), url, "should accept {url}");
+            assert_eq!(
+                validate_remote_url(url).unwrap(),
+                url,
+                "should accept {url}"
+            );
         }
         // Leading/trailing whitespace is trimmed — pasting is the normal path.
         assert_eq!(
@@ -1752,11 +1789,14 @@ mod tests {
     #[test]
     fn validate_remote_url_rejects_non_addresses() {
         // Empty value · flag lookalike · internal whitespace · unrecognizable shape.
-        for bad in ["", "   ", "--upload-pack=evil", "git@host:a b", "저장소주소"] {
-            assert!(
-                validate_remote_url(bad).is_err(),
-                "should reject {bad:?}"
-            );
+        for bad in [
+            "",
+            "   ",
+            "--upload-pack=evil",
+            "git@host:a b",
+            "저장소주소",
+        ] {
+            assert!(validate_remote_url(bad).is_err(), "should reject {bad:?}");
         }
     }
 
@@ -1765,7 +1805,11 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("atlas-git-test-{}", std::process::id()));
         let _ = fs::create_dir_all(&dir);
         let file = dir.join("node.md");
-        fs::write(&file, "---\nkind: capability\nslug: \"my-cap\"\n---\n# Body\n").unwrap();
+        fs::write(
+            &file,
+            "---\nkind: capability\nslug: \"my-cap\"\n---\n# Body\n",
+        )
+        .unwrap();
         let (kind, slug) = read_kind_slug(&file);
         assert_eq!(kind.as_deref(), Some("capability"));
         assert_eq!(slug.as_deref(), Some("my-cap"));
