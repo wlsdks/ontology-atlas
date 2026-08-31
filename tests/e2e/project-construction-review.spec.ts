@@ -81,7 +81,7 @@ test.describe("프로젝트 온톨로지 구축 검수", () => {
 
     await page.getByTestId("construction-review-cq-scope").fill("Which meaning is actually in scope?");
     await page.getByTestId("construction-review-plan-draft").fill('{"concepts":[{"slug":"revised-storefront"}]}');
-    await expect(page.getByTestId("construction-review-draft-dirty")).toContainText("qualification");
+    await expect(page.getByTestId("construction-review-draft-dirty")).toContainText("다시 검증");
     await expect(page.getByTestId("construction-review-plan-digest")).toContainText(PLAN_DIGEST);
     await expect(page.getByTestId("construction-review-summary")).toHaveAttribute("data-qualification-status", "qualified");
     await expect(page.getByTestId("construction-review-summary")).toHaveAttribute("data-plan-equality", "equal");
