@@ -2987,9 +2987,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Six-tab maintenance board: five measured questions plus Flow. In the installed app, the Flow handoff opens the existing agent dock with a visible, person-owned prefilled request; a verified ACP runtime is used when available, otherwise the key-backed agent panel is used. The web copy action stays explicit. docs/ARCHITE",
-      "wordCount": 59,
-      "updatedAt": "2026-08-31",
+      "excerpt": "Six-tab maintenance board: five measured questions plus Flow. The Do-next tab is one flat list under one count (owner decision, 2026-09-01): each row is a concept or document title, one sentence naming the observed fact, and actions in a fixed order (hand it to the in-app AI chat through the ask deep link for missing d",
+      "wordCount": 159,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
