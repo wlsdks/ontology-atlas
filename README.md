@@ -164,9 +164,13 @@ roadmap promise. It summarizes current product behavior documented in the
 - **Export to standard graph formats.** JSON-LD and GraphML come off the same
   deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
   Cytoscape, NetworkX, or Neo4j without a converter of your own.
-- **Scaffolded vaults carry their own agent skills.** A connected coding agent
-  finds review / grow / absorb procedures in its command menu with no extra
-  setup, because `init` wrote them into the vault.
+- **Scaffolding puts the agent's procedures where the agent runs.** `init`
+  installs review / grow / absorb skills into the repository root's
+  `.claude/skills/`, so a coding agent started in that repository finds them in
+  its command menu with no extra setup. It also prints the one sentence the MCP
+  server cannot say — that this repository has a reviewed ontology and when to
+  read it — for you to paste into your own `CLAUDE.md` or `AGENTS.md`. Atlas
+  does not edit files you wrote.
 - **The hosted web app as a gateway** — a static export that opens your local
   folder through the File System Access API, with nothing installed.
 
@@ -442,33 +446,73 @@ Ownership, boundaries, evidence, bounded impact, and the next verification path
 should remain inspectable by both a person and an AI agent. Atlas is not making
 the broader claim that every source lookup becomes faster.
 
-We now run a paired lifecycle benchmark: the same source and fixed task in a
-greenfield-shaped and a brownfield-shaped subject, with Atlas physically absent
-versus a prepared Atlas vault plus read-only MCP. The first three-repeat pilot
-showed higher machine-measured required-evidence coverage with Atlas, but also
-higher median time:
+### What we measured, and the mistake we found in it
 
-| Subject | Without Atlas | With Atlas | Coverage delta | Median time delta |
-|---|---:|---:|---:|---:|
-| Greenfield-shaped fixture | 0.25 | 0.875 | +0.625 | +17.2 s |
-| Brownfield-shaped fixture | 0.2834 | 0.7389 | +0.4555 | +33.2 s |
+We run a paired benchmark. Two sides get the same source code and the same
+question; the only difference is that one side has a prepared Atlas vault and
+the other has nothing. We score whether the answer named the things it should
+have named.
 
-This is feasibility evidence, not a universal product claim: the subjects are
-small internal fixtures, the score checks final structured coverage rather than
-semantic truth, and vault construction/maintenance cost is separate. The full
-method, limits, raw answers, and next experiments live in the
-[paired lifecycle findings](docs/benchmark/FINDINGS-2026-08-31.md) and the
-[benchmark log](docs/benchmark/README.md). We will keep the claim only if
-future unfamiliar-repository runs show better decision quality or handoff
-trust after those costs are included.
+The first run looked like a large win for Atlas — 0.25 against 0.875. Then we
+re-scored the same saved answers and found that most of that gap was not a
+comparison at all.
 
-We also ran the first end-to-end change-flow slice: the same fixed change was
-carried through code, focused tests, an Atlas capability update on the `on` arm,
-commit, local push, merge, and cleanup in both shapes. All four cells passed
-(`greenfield/off`, `greenfield/on`, `brownfield/off`, `brownfield/on`), including
-deterministic conflict recovery in brownfield. This is **workflow parity**, not
-proof that Atlas made the code better: the Atlas arm was slower by 28.2 seconds
-in greenfield and 51.1 seconds in brownfield in this one-repeat synthetic run.
+The problem was in the answer key. Most of the things an answer was required to
+name were Atlas's own concept names, like `capabilities/checkout`. Those names
+exist only inside the vault. The side without a vault had nothing to name, so it
+could never score those points however good its answer was. We had, in part,
+published a vocabulary test that only one side could sit.
+
+Splitting the score into the part both sides could earn and the part only Atlas
+could earn gives the honest picture:
+
+| Subject | The part **both sides** could earn | The part **only Atlas** could earn | What we published before |
+|---|---|---|---|
+| Greenfield fixture | 0.75 → 1.00 | 0 → 0.83 | 0.25 → 0.875 |
+| Brownfield fixture | 0.75 → 1.00 | 0 → 0.57 | 0.28 → 0.74 |
+
+Each cell reads *without Atlas → with Atlas*.
+
+In every control run, the side without Atlas named **100% of the source files**
+it was supposed to name. And the small gap that remains rests on a single word:
+the answer key wanted *excludes*, and one control answer said *"explicitly
+outside it"* — the same boundary, correctly stated, scored zero.
+
+**So the honest status is that we have not yet measured a difference in answer
+quality.** Atlas was also slower, by a median of 17 and 33 seconds.
+
+What the run does show is narrower, and still worth something: only the Atlas
+side returned names you can look something up by. `capabilities/checkout` is an
+address a person or an agent can resolve next session, in another tool, months
+from now. "The checkout feature" is not. That is a real property of keeping
+meaning in a vault — and a different claim from "better answers".
+
+The same re-scoring found a bug on our own side: the Atlas run dropped its own
+concept names in a third of the harder cases, scoring 0.57 where it should have
+scored 1.00. Reading the vault and then answering without the names throws away
+the one thing the vault uniquely supplies. That is on the fix list, not
+explained away.
+
+Blind human grading of those same saved answers is the next measurement, and it
+is now the only route to a real quality comparison. Method, limits, every raw
+answer and the word behind every miss are in the
+[paired lifecycle findings](docs/benchmark/FINDINGS-2026-08-31.md), the
+[correction](docs/benchmark/FINDINGS-2026-08-31-metric-split.md), and the
+[benchmark log](docs/benchmark/README.md). We will make a stronger claim only
+when unfamiliar repositories, human grading, and the cost of building and
+maintaining a vault are all accounted for.
+
+### Carrying a change from end to end
+
+We also ran the same fixed change all the way through on both sides: write the
+code, run focused tests, commit, push to a local remote, merge, and clean up the
+branch. The Atlas side additionally updated one capability record and committed
+it alongside the code. All four runs completed every step, including a
+deliberate merge conflict that both sides recovered from.
+
+That is **both sides finishing the job**, not proof that Atlas made the code
+better. The Atlas side was slower here too — 28.2 seconds on greenfield, 51.1 on
+brownfield, in a single small synthetic run.
 The result and raw receipts are in the
 [change-flow findings](docs/benchmark/FINDINGS-2026-08-31-change-flow.md) and
 the [r7 summary](docs/benchmark/results/2026-08-31-change-r7-summary.md).

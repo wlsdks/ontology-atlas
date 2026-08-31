@@ -1,0 +1,1160 @@
+{"grades":[{"id":"C01","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The answer correctly assigns acknowledgement changes to Coordination while bounding policy involvement and unavailable runtime details."},{"id":"C02","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source clearly separates Inventory reconciliation from Purchase confirmation and supports the stated integration rationale."},{"id":"C03","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly places permission evaluation in Access Control and explicitly excludes it from Coordination."},{"id":"C04","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The vault supports the named owner, capability chain, source anchors, and limits on inferred runtime impact."},{"id":"C05","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"The recorded Checkout boundary explicitly excludes reconciliation and the dependency rationale directly answers why ownership should not move."},{"id":"C06","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It accurately identifies Coordination as owner and treats realtime and policy effects as bounded rather than proven."},{"id":"C07","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented system map and domain split place evaluation in the policy package outside Coordination."},{"id":"C08","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It gives the correct Access Control owner and the correct exclusion from Coordination."},{"id":"C09","correct":1,"citations":1,"boundary":1,"nextStep":1,"unsupported":2,"unverifiable":0,"note":"Although it finds the Coordination domain, it incorrectly presents the Access Control permission levels “coordinate” and “read” as acknowledgement capabilities."},{"id":"C10","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It correctly makes Checkout the only established direct capability and avoids inventing discount effects on Inventory."},{"id":"C11","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The vault explicitly records separate ownership, mutual exclusions, and Checkout’s dependency on Inventory Sync."},{"id":"C12","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"Workspace Authorization and its boundaries exactly support the claimed Access Control ownership and Coordination exclusion."},{"id":"C13","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":5,"note":"The answer accurately follows the recorded capability dependencies while clearly stopping short of claiming a runtime blast radius."},{"id":"C14","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Its ownership and dependency analysis is right, but starting at realtime rather than the directly anchored web acknowledgement capability is a minor prioritization error."},{"id":"C15","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly locates the vague discount change in Purchase while making clarification of the missing discount contract the first decision."},{"id":"C16","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented purchase flow supports Checkout and cart summary as the bounded starting surface without establishing an Inventory change."},{"id":"C17","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The explicit capability boundaries and dependency reason fully support keeping reconciliation outside Checkout."},{"id":"C18","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It precisely states both sides of the Access Control–Coordination boundary and names the correct policy anchor."},{"id":"C19","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It assigns the change to Purchase, excludes unrelated responsibilities, and turns the unspecified rule semantics into a concrete decision step."},{"id":"C20","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Checkout is the right provisional owner, but treating Inventory Sync as part of the known discount surface is broader than the evidence establishes."},{"id":"C21","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The product documents support both the ownership split and the stated consistency rationale without moving reconciliation into Checkout."},{"id":"C22","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"It correctly identifies Checkout as directly touched and limits Inventory Sync to an adjacent dependency unless requirements justify more."},{"id":"C23","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The cited domain and capability boundaries decisively place permission evaluation in Access Control outside Coordination."},{"id":"C24","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source directly supports separate Purchase and Inventory ownership and the cross-boundary consistency relationship described."}]}
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.151.0
+--------
+workdir: /var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/ontology-atlas-grading-8771c789-a6f7-4df3-98ee-d4f6b015138c
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: none
+reasoning summaries: none
+session id: 01a05584-4d8f-70e0-a440-61d409814820
+--------
+user
+Grade 24 answers in answers.md. Each answer has an opaque id and was
+written by an AI agent asked one question about one of the two codebases here.
+
+You have: answers.md (the answers), criteria.md (how to score, section
+"Lifecycle matrix scoring"), source-greenfield/ and source-brownfield/ (the
+codebases the questions were about), and vault-greenfield/ and
+vault-brownfield/ (a curated concept vault that some of the answering agents
+could read and others could not).
+
+Read the sources and the vault before scoring, and check every path and
+concept an answer cites against them.
+
+What you do NOT have: some of these agents could also query a live server
+over the vault, and those tool responses are not in this packet. An answer
+may therefore cite reported metadata you cannot see — currentness, impact
+status, completeness or source-binding flags. That is a gap in this packet,
+not a fault in the answer.
+
+Score every id on correct (0-3), citations (0-2), boundary (0-2) and
+nextStep (0-2), and split what you cannot confirm into two counts:
+
+- unsupported: claims the material you have contradicts, and paths or
+  concepts that do not exist in it. These are faults.
+- unverifiable: claims you simply cannot check because they rest on the tool
+  responses above. These are not faults, and must not lower any score.
+
+Score citations only on paths and concept names you can actually check
+against the material you have. Do not deduct for a citation you cannot see.
+
+Put the one thing that decided the correct score in note, in one sentence.
+
+Some answers name vault concepts and some describe the same idea in ordinary
+words. That difference is not itself a quality difference — grade what the
+answer establishes about the codebase, not which vocabulary it used.
+
+Return exactly one JSON object matching the provided output schema. Do not
+edit any file.
+codex
+{"grades":[{"id":"status","correct":0,"citations":0,"boundary":0,"nextStep":0,"unsupported":0,"unverifiable":0,"note":"I’m reading the scoring rubric, all 24 answers, both source trees, and both vaults before checking each cited path and concept."}]}
+exec
+/bin/zsh -lc "sed -n '/Lifecycle matrix scoring/,"'$p'"' criteria.md && printf '\\nANSWERS\\n' && sed -n '1,260p' answers.md && printf '\\nFILES\\n' && rg --files source-greenfield source-brownfield vault-greenfield vault-brownfield" in /var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/ontology-atlas-grading-8771c789-a6f7-4df3-98ee-d4f6b015138c
+ succeeded in 0ms:
+## Lifecycle matrix scoring
+
+The greenfield/brownfield runner records two separate results. **Required
+coverage** is a deterministic diagnostic over the final structured answer: it
+checks the fixed task's required slugs, paths, and bounded-unknown signal.
+**Content pass** requires full coverage and no forbidden item, while **usable
+cell** means the process and arm-integrity checks passed. Neither is a human
+semantic verdict.
+
+For the lifecycle matrix, a person reads each answer and scores it. This section
+is the whole specification. If something here is ambiguous, that is a defect in
+this section, not a judgement call for the grader.
+
+### The material
+
+Build the packet with `pnpm benchmark:blind-set --run-id=<run>`. It gives every
+answer an opaque id and shuffles the order, so nobody grades in a convenient
+sequence or scores the label instead of the answer. Grade against:
+
+- the codebase the question was about;
+- the curated concept vault, which some answering agents could read and some
+  could not.
+
+**What you will not have:** the vault-reading agents also queried a live server,
+and those tool responses are not saved. An answer may cite reported metadata you
+cannot see. That is a gap in the packet, not a fault in the answer — see
+*Unverifiable* below.
+
+### The five things you record
+
+| # | Name | Out of | The question it answers |
+|---:|---|---:|---|
+| 1 | Correct | **3** | Did it get the question right? |
+| 2 | Citations | **2** | Does what it points at exist, and say what it claims? |
+| 3 | Boundary | **2** | Did it name who owns this, and what is outside? |
+| 4 | Next step | **2** | Could someone act on this without asking again? |
+| 5 | Unsupported / Unverifiable | counts | What could not stand — and which kind. |
+
+**Always write a score with its maximum.** `2 / 3`, never `2`. A number without
+its scale is not a result. (These maxima are the lifecycle matrix's own; the
+`D-a` and `D-b` axes further down belong to the older D tasks and use different
+ones. Never mix the two sets in one table.)
+
+### 1. Correct — out of 3
+
+| Score | Meaning |
+|---:|---|
+| **3** | Everything the question asked for is present and accurate. No false claim. |
+| **2** | The main answer is right, with a minor omission or one borderline sub-item. |
+| **1** | It addresses the question but misses material content, or states something confidently wrong. |
+| **0** | Wrong, evasive, or a non-answer such as "I'd need more context". |
+
+*A real 3, on "should reconciliation move into checkout":* it answered no, gave
+both exclusions, and quoted the recorded relation and its stored reason.
+
+*A real 1, on "what does an acknowledgement change touch":* it named the right
+domain, then listed *"coordinate"* and *"read"* as that domain's capabilities —
+they are permission levels belonging to a different domain, reused as capability
+names.
+
+### 2. Citations — out of 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Every path and concept it cites exists, and each supports the claim attached to it. |
+| **1** | Everything cited exists, but at least one does not support the claim made from it. |
+| **0** | It cites a path or concept that does not exist. |
+
+Score only what you can actually check against the material you have. **Never
+deduct for a citation you cannot see** — that belongs in *Unverifiable*.
+
+### 3. Boundary — out of 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Names the responsibility that owns the work **and** what is outside it. |
+| **1** | Names the owner correctly but never says what is excluded. |
+| **0** | Puts the work in the wrong place, or states an exclusion that is not true. |
+
+*A real 2:* "Permission evaluation belongs in Access Control … deciding who may
+read, coordinate, or administer an incident is explicitly outside it." Owner
+named, exclusion named. Whether it said *excludes* or *explicitly outside* makes
+no difference here — that is wording, and wording is not scored.
+
+### 4. Next step — out of 2
+
+One question decides it: **could a second person or agent act on this without
+coming back to ask?**
+
+| Score | Meaning |
+|---:|---|
+| **2** | A specific action against specific files, or a specific decision that has to be made first. |
+| **1** | Actionable but generic, or it restates the answer instead of moving past it. |
+| **0** | No usable next step. |
+
+*A real 1:* "Read README.md, docs/SYSTEM-MAP.md, apps/web, packages/realtime in
+that order" — the answer had already said that. It repeats rather than advances.
+
+### 5. Unsupported and Unverifiable — counts, never scores
+
+Two different things, and collapsing them breaks the measurement.
+
+| Count | What goes in it | Does it lower a score? |
+|---|---|---|
+| **Unsupported** | Claims the material **contradicts**, and paths or concepts that do not exist. | It is a named defect. Report it; do not subtract it from an axis. |
+| **Unverifiable** | Claims you cannot check because they rest on tool responses the packet does not contain. | **No. Never.** |
+
+Report both as counts. Never average either into a total: one invented claim is
+a specific defect worth naming, not a fraction of a point.
+
+> **Why the split exists.** The first independent grading of `2026-08-31-gb-r3`
+> returned 17 unsupported claims against the vault side and `citations 1/2` on
+> nearly every one of its answers — while its own notes called those same answers
+> *"correct"*, *"fully establish the boundary"*, and *"decisively"* right. It was
+> penalising claims it had never been given the evidence for. Separating the two
+> counts moved citation agreement between graders from 33% to 96% and the vault
+> side's unsupported count from 17 to 0. **A score and its own note disagreeing
+> that consistently is the signal that a criterion is broken, not an answer.**
+
+### What never affects a score
+
+- **Which vocabulary an answer used.** Some name vault concepts, some describe
+  the same idea in ordinary words. Grade what the answer establishes about the
+  codebase.
+- **Tool calls, tokens, elapsed time.** Diagnostics, like a stack trace. A cell
+  is never won or lost on them.
+- **Build and upkeep cost.** A separate measurement, deliberately not folded in.
+
+Record separately, as invalidating rather than scoring a cell: any control leak,
+server setup failure, or answer-key contamination.
+
+## End-to-end change-flow scoring
+
+The change-flow runner has a different unit of analysis: a fixed change in a
+fresh Git repository. A workflow pass is conjunctive and requires all of these
+receipts:
+
+- exact changed-file allowlist;
+- focused test before merge and the same test after merge;
+- conventional feature commit;
+- on-arm exact capability update through `patch_concept`, followed by
+  `validate_vault` and `compile_ontology`;
+- local bare-remote push;
+- clean merge or explicit deterministic conflict recovery;
+- deletion of the local and remote feature branch, with a clean worktree.
+
+The `on` arm's extra Atlas Markdown file is intentional: the question is
+whether meaning survives the code-change handoff as a reviewed record. Git
+push, merge, and branch cleanup are ordinary workflow evidence, not proof that
+Atlas owns Git integration. A passing workflow only establishes that the
+bounded process completed; it does not establish better code quality or user
+value. Those require blind human grading, unfamiliar repositories, and
+construction/maintenance-cost accounting.
+
+## The four axes
+
+### 1. Correctness (0–3) — primary score
+
+| Score | Meaning |
+|---|---|
+| **3** | Fully correct. Every item the prompt asked for is present and accurate; no false claims. |
+| **2** | Mostly correct. The main answer is right; minor omissions OR one borderline-wrong sub-item. |
+| **1** | Partially correct. The answer addresses the question but is missing material content OR contains a confidently wrong statement. |
+| **0** | Wrong, evasive, or refuses. Includes "I'd need more context" non-answers. |
+
+**Verify against the actual repo state at measurement time** — don't grade from memory. Open the file / run `pnpm dogfood:walk` if needed.
+
+### 2. Tool-call count and tokens (diagnostic, never a score)
+
+Recorded, never scored. They are useful for one thing only: reading *how* an agent
+reached its answer, the same way you would read a stack trace. A cell is decided by
+the axes above and below this one.
+
+`scripts/benchmark.mjs` captures both. If you do look at them, read the median
+across runs and never a single cell: on 2026-08-25 a single-shot C2 read 10,534
+tokens in one mode and 49,196 in the other, for two identical shell commands.
+
+For Claude Code: visible in the conversation as tool-use blocks.
+For Codex: count the tool invocations shown in the CLI output.
+
+**Don't penalize MCP-off** for using more Read/Grep calls — that's the cost of not having the graph. The point is to make that cost visible.
+
+### 3. Hallucinations (count)
+
+Count of confidently asserted items that don't exist in the repo.
+
+Examples:
+- "The validator detects `parse-fail-soft`" → no such code exists. **+1**
+- "It's defined in `src/shared/lib/foo.ts`" but that file doesn't exist. **+1**
+- "The `findOrphans` function returns…" but it's actually `find_orphans`. **0** — name typo, not invented behavior.
+
+If unsure whether something's hallucinated, search for it. The cost of a wrong "+1" or "+0" is small; the cost of letting confident fabrication go uncounted is large.
+
+### D-only axes — the ones that decide a meaning cell
+
+Score these **only for D tasks**. They exist because a D answer can be fluent,
+plausible, and wrong in a way the correctness axis does not catch.
+
+#### D-a. Boundary fidelity (0–3)
+
+| Score | Meaning |
+|---|---|
+| **3** | Named the documented boundary, stated which side the request falls on, and stopped there. |
+| **2** | Found the boundary but hedged about whether it applies. |
+| **1** | Described the area correctly without noticing that a boundary governs it. |
+| **0** | Crossed a documented exclusion without noticing, or asserted the opposite of what the vault says. |
+
+A D1 answer that agrees symbol search belongs in `capabilities/mcp-server` scores
+**0** regardless of how well written it is: `## Inclusions / Exclusions` excludes
+an AST/source search engine in as many words.
+
+#### D-b. Provenance (0–2)
+
+| Score | Meaning |
+|---|---|
+| **2** | Cited the node slug **and** the section the claim came from, so a human can open it and disagree. |
+| **1** | Cited a node but not where inside it. |
+| **0** | Asserted the reason with no citation. Indistinguishable from a guess. |
+
+#### D-c. Invented rationale (count)
+
+Count reasons the answer gives that appear **neither in the vault nor in the
+source**. This is different from axis 3: the fact can be real while the *why* is
+fabricated, and a confident fabricated *why* is the most expensive failure this
+product can have, because it is the one a reader is least able to check.
+
+A D answer with any invented rationale cannot score above **1** on correctness,
+whatever else it got right.
+
+### 4. Subjective utility (1–5) — last, optional
+
+Strictly the human grader's gut feel: "if I'd asked this in real work, would this answer have moved me forward?"
+
+| Score | Meaning |
+|---|---|
+| **5** | Yes, immediately actionable. |
+| **4** | Yes, with one small follow-up. |
+| **3** | Mixed — useful but I'd verify before acting. |
+| **2** | Confusing or so verbose I'd ignore most of it. |
+| **1** | Worse than no answer (misleading or distracting). |
+
+This axis is noisy by design — it captures the texture (terseness, citation, framing) that the other axes miss.
+
+---
+
+## What the data should show
+
+### If the ontology helps (positive result)
+
+- **Cat A**: MCP-on correctness > MCP-off by ≥1 point on average. Tool calls fewer. Hallucinations lower.
+- **Cat B**: MCP-on correctness ≥ MCP-off (small but positive delta).
+- **Cat C**: Roughly neutral. MCP-on shouldn't be worse here.
+
+### If the ontology doesn't help (null result)
+
+- **Cat A**: MCP-on and MCP-off score the same on correctness. Tool calls maybe lower with MCP-on (efficiency win) but no quality difference.
+- This means the AI agent already extracts equivalent structure from raw markdown — the curated graph isn't earning its keep.
+
+### If the ontology hurts (negative result)
+
+- **Cat C**: MCP-on under-performs. Agent over-relies on ontology tools when raw file-read would be faster and more accurate.
+- **Cat A hallucinations** climb because the agent invents slugs based on the schema rather than checking.
+
+Each outcome has a clear next action. That's why we're running the bench.
+
+---
+
+## A note on ties
+
+When MCP-on and MCP-off score identically on correctness, **tie-break on tool-call efficiency**. If a Cat A task is solved in 1 tool call (MCP-on `find_backlinks`) vs 12 (MCP-off recursive grep), that's still a meaningful win for the agent's working economy — sub agents, latency, context budget — even if the final answer is identical.
+
+ANSWERS
+# Grading packet — 2026-08-31-gb-r3
+
+Each answer below is identified only by an opaque id, and the order is shuffled.
+Which side wrote which answer is withheld until the grades are saved.
+
+Record five things for each answer. The full specification, with the level
+definitions and worked examples, is `docs/benchmark/rubric.md`, section
+"Lifecycle matrix scoring".
+
+| # | Name | Out of | The question it answers |
+|---:|---|---:|---|
+| 1 | Correct | **3** | Did it get the question right? |
+| 2 | Citations | **2** | Does what it points at exist, and say what it claims? |
+| 3 | Boundary | **2** | Did it name who owns this, and what is outside? |
+| 4 | Next step | **2** | Could someone act on this without asking again? |
+| 5 | Unsupported / Unverifiable | counts | What could not stand — and which kind. |
+
+Always write a score with its maximum: `2 / 3`, never `2`.
+
+Two rules that decide more cells than anything else:
+
+- **Vocabulary is not quality.** Some answers name vault concepts and some
+  describe the same idea in ordinary words. Grade what the answer establishes
+  about the codebase, not which words it reached for.
+- **A claim you cannot check is not a fault.** The answering agents could also
+  query a live server, and those responses are not in this packet. Count such
+  claims as unverifiable and never let them lower a score. Unsupported is only
+  for what the material contradicts, or a path or concept that does not exist.
+
+The question each answer was given is shown, because the same question was put
+to both sides and grading without it is impossible.
+
+## C01  (question B1)
+
+**Answer**: An acknowledgement-state change belongs to the Coordination domain. The implicated capabilities are recording/publishing responder decisions and showing who has acknowledged them, with timeline presentation in the web console and update distribution through realtime. Read README.md first for the domain contract, then docs/SYSTEM-MAP.md for component ownership, followed by apps/web/package.json, packages/realtime/package.json, and packages/policy/package.json. Permission evaluation by the policy package is a recorded product dependency, but its runtime effect on acknowledgement changes is not proven because this repository contains only package manifests and product documentation, not implementation paths.
+
+**Evidence given**:
+- README.md: Coordination says responders publish decisions and see who has acknowledged them.
+- README.md: Access Control says workspace owners decide who may read, coordinate, or administer an incident.
+- docs/SYSTEM-MAP.md: the web console presents the incident timeline, realtime distributes timeline updates, and policy evaluates workspace permissions.
+- apps/web/package.json, packages/realtime/package.json, and packages/policy/package.json identify the corresponding packages but expose no runtime implementation.
+
+**Next step proposed**: If runtime source becomes available, trace the acknowledgement mutation from the web entry point through realtime publication and verify where policy authorization is enforced.
+
+**Stated as unknown**:
+- The acknowledgement data model, mutation handler, persistence mechanism, event schema, and concrete UI update path are absent.
+- Whether policy checks gate acknowledgement writes, reads, broadcasts, or all three cannot be established from the available files.
+
+## C02  (question G2)
+
+**Answer**: No. Inventory reconciliation should remain in Inventory; Checkout/Purchase owns only turning a reviewed cart into a confirmed order. The recorded relationship is cross-boundary coordination: Checkout relies on trustworthy sellable-stock information maintained by Inventory. The reason is to prevent orders for unavailable stock while keeping purchase completion and inventory availability consistent enough to resolve exceptions before fulfillment.
+
+**Evidence given**:
+- docs/PRODUCT.md assigns order confirmation from a reviewed cart to Purchase and trustworthy sellable stock across storefront and warehouse to Inventory.
+- README.md says merchants reconcile storefront and warehouse stock under Inventory, while Purchase handles cart-to-order completion.
+- src/features/checkout/index.ts labels checkout as "purchase completion"; src/features/inventory-sync/index.ts separately labels inventory sync as "stock reconciliation".
+
+**Next step proposed**: Verify the integration seam next: trace where Checkout reads, reserves, or validates Inventory availability, then confirm with an integration/contract test that reconciliation remains behind the Inventory boundary while Checkout consumes only the resulting availability decision.
+
+**Stated as unknown**:
+- The available files do not record a detailed API, reservation protocol, failure policy, or existing verification test for the Checkout–Inventory seam.
+
+## C03  (question B2)
+
+**Answer**: Permission evaluation belongs in Access Control, implemented by the policy package (`@relay/policy`), not in Coordination. Coordination owns responders publishing decisions and tracking acknowledgements. Workspace permission evaluation—and owner control over who may read, coordinate, or administer incidents—is explicitly outside Coordination.
+
+**Evidence given**:
+- `docs/SYSTEM-MAP.md` states: “The policy package evaluates workspace permissions.”
+- `README.md` defines Coordination as publishing decisions and seeing acknowledgements.
+- `README.md` separately defines Access Control as deciding who may read, coordinate, or administer an incident.
+- `packages/policy/package.json` identifies the owning package as `@relay/policy`.
+
+**Next step proposed**: The receiving agent should verify the concrete `@relay/policy` API and its consumers, then confirm that Coordination calls that boundary without embedding permission rules. This checkout contains only package manifests and product documents, so implementation, call sites, and tests are not available to verify here.
+
+**Stated as unknown**:
+- The policy API, permission model, enforcement call sites, and tests are absent from the available files.
+- The documents do not specify whether policy decisions are synchronous, cached, or enforced additionally at transport or UI boundaries.
+
+## C04  (question B1)
+
+**Answer**: Acknowledgement-state changes belong primarily to the Coordination domain. The directly involved capability is Acknowledgement Tracking; Decision Broadcast is a recorded dependent capability, and Workspace Authorization is a recorded prerequisite across the Access Control boundary. Read `apps/web` first, then `packages/realtime`, and consult `packages/policy` for the authorization boundary. In this repository those paths currently contain only package manifests, so `README.md` and `docs/SYSTEM-MAP.md` provide the available implementation-level context.
+
+**Evidence given**:
+- Atlas defines Coordination as owning decision state and containing Acknowledgement Tracking and Decision Broadcast.
+- Atlas anchors Acknowledgement Tracking and the Web Console at `apps/web`.
+- Atlas records `capabilities/decision-broadcast depends_on capabilities/acknowledgement-tracking`, with the rationale that acknowledgement is meaningful after publication.
+- Atlas records `capabilities/acknowledgement-tracking depends_on capabilities/workspace-authorization`, with the rationale that acknowledgement display must respect workspace authority.
+- Source inspection found acknowledgement behavior described in `README.md`, component responsibilities in `docs/SYSTEM-MAP.md`, and only name-only manifests under `apps/web`, `packages/realtime`, and `packages/policy`.
+- Atlas explicitly marks dependency impact as declared with rationale but not source-backed, with unknown completeness; runtime and transitive impact remain unmeasured.
+
+**Next step proposed**: Start implementation investigation at `apps/web`; trace any acknowledgement-state flow into `packages/realtime`, then inspect `packages/policy` only where authorization checks intersect that display or flow.
+
+**Stated as unknown**:
+- The recorded dependency from Decision Broadcast to Acknowledgement Tracking remains a product-level dependency, not proven runtime impact or a complete blast radius.
+- The Acknowledgement Tracking dependency on Workspace Authorization is also declared ontology meaning rather than source-backed runtime execution.
+- No acknowledgement implementation or exact test path is present in the inspected source snapshot.
+
+## C05  (question G2)
+
+**Answer**: No. Recorded project meaning keeps inventory reconciliation outside Checkout. Checkout authorizes a purchase and produces an order confirmation; Inventory Sync owns reconciling storefront availability with warehouse stock. Checkout depends on Inventory Sync, but does not absorb it.
+
+**Evidence given**:
+- Checkout boundary: includes turning a reviewed cart into a confirmed order; explicitly excludes inventory reconciliation.
+- Inventory Sync boundary: includes sellable-stock reconciliation; explicitly excludes purchase confirmation.
+- Recorded relationship: capabilities/checkout --depends_on--> capabilities/inventory-sync.
+- Recorded reason: "Checkout depends on trustworthy sellable availability before it confirms a purchase."
+- Source anchors remain separate: src/features/checkout/index.ts identifies purchase completion, while src/features/inventory-sync/index.ts identifies stock reconciliation.
+
+**Next step proposed**: Read src/features/checkout/index.ts first, then src/features/inventory-sync/index.ts, and inspect nearby tests or callers to verify runtime interaction before changing the boundary. Atlas records no exact test path.
+
+**Stated as unknown**:
+- Runtime behavior is not measured by Atlas and the source anchors only name the features.
+- No tests or callers are present in the recorded verification path, so dependency completeness remains unknown.
+- Project competency answers have not been authored, so Atlas marks overall meaning currentness as invalid despite the explicit recorded boundary.
+
+## C06  (question B1)
+
+**Answer**: An acknowledgement-state change belongs to the Coordination domain. It involves the capability to publish incident decisions and see who has acknowledged them, with the web timeline as the presentation surface and realtime update distribution as the likely delivery capability. Read README.md first, then docs/SYSTEM-MAP.md, followed by apps/web/ and packages/realtime/; consult packages/policy/ if acknowledgement changes require permission checks. Policy involvement—and, more broadly, any concrete runtime propagation—is only a recorded product dependency, not proven runtime impact, because this repository contains package manifests and product documentation but no implementation source establishing call paths or state handling.
+
+**Evidence given**:
+- README.md defines Coordination as publishing decisions and seeing who has acknowledged them.
+- README.md separately records Access Control: workspace owners govern read, coordinate, and administer permissions.
+- docs/SYSTEM-MAP.md says the web console presents the incident timeline, packages/realtime distributes timeline updates, and packages/policy evaluates workspace permissions.
+- apps/web/package.json, packages/realtime/package.json, and packages/policy/package.json identify the relevant packages, but no implementation files are present to prove runtime effects.
+
+**Next step proposed**: Read implementation sources for apps/web and packages/realtime first if they become available; then verify whether acknowledgement mutations invoke packages/policy.
+
+**Stated as unknown**:
+- The acknowledgement state model, mutation entry point, persistence layer, and exact runtime consumers are not present.
+- Whether policy evaluation actually runs on acknowledgement-state changes is not proven.
+
+## C07  (question B2)
+
+**Answer**: Permission evaluation belongs in the policy capability/package (`@relay/policy`), not in coordination. Coordination owns publishing responder decisions and tracking acknowledgements. Access control—including deciding and evaluating who may read, coordinate, or administer an incident—is explicitly outside coordination.
+
+**Evidence given**:
+- README.md defines Coordination as publishing decisions and showing acknowledgements.
+- README.md defines Access Control separately as workspace-owner control over read, coordinate, and administer permissions.
+- docs/SYSTEM-MAP.md explicitly states that the policy package evaluates workspace permissions.
+- packages/policy/package.json identifies that package as `@relay/policy`; packages/realtime/package.json separately identifies the timeline-distribution package.
+
+**Next step proposed**: The receiving agent should verify the current `@relay/policy` implementation or intended public API and identify its callers/integration points before changing code, especially whether the web console or realtime path must invoke it at a boundary.
+
+**Stated as unknown**:
+- The repository contains package manifests but no policy implementation source, so the concrete permission API and enforcement call sites cannot yet be confirmed.
+
+## C08  (question B2)
+
+**Answer**: Permission evaluation belongs in Access Control, implemented by the policy package—not in Coordination. Coordination is limited to publishing decisions and tracking acknowledgements; deciding who may read, coordinate, or administer an incident is explicitly outside it.
+
+**Evidence given**:
+- README.md defines Coordination as: responders publish decisions and see who has acknowledged them.
+- README.md separately assigns permission decisions to Access Control and workspace owners.
+- docs/SYSTEM-MAP.md states that packages/policy evaluates workspace permissions, while packages/realtime distributes timeline updates.
+
+**Next step proposed**: The receiving agent should verify the @relay/policy package’s public contract and existing consumers, then ensure coordination/realtime calls that policy boundary rather than implementing authorization rules itself.
+
+**Stated as unknown**:
+- The available files do not define the policy API, permission model, enforcement call sites, or tests.
+
+## C09  (question B1)
+
+**Answer**: Acknowledgement state belongs to the Coordination domain. The relevant capabilities are coordinate (changing acknowledgement state) and read (viewing acknowledgements). Read README.md first for the domain and capability model, then docs/SYSTEM-MAP.md for component responsibilities; inspect apps/web and packages/realtime next if implementations are added. Realtime distribution is only a recorded product dependency: the system map says the realtime package distributes timeline updates, but the available source contains only package manifests, so no runtime impact from acknowledgement changes is proven.
+
+**Evidence given**:
+- README.md: Coordination says responders publish decisions and see who has acknowledged them.
+- README.md: Access Control defines read, coordinate, and administer capabilities.
+- docs/SYSTEM-MAP.md: The web console presents the incident timeline, and the realtime package distributes timeline updates.
+- apps/web/package.json and packages/realtime/package.json contain package identities only; no acknowledgement-handling runtime code is present.
+
+**Next step proposed**: Read README.md, docs/SYSTEM-MAP.md, apps/web, and packages/realtime in that order when tracing or implementing acknowledgement-state behavior.
+
+**Stated as unknown**:
+- Whether acknowledgement changes actually publish realtime timeline updates at runtime.
+- The concrete permission checks, event schema, storage path, and UI update flow for acknowledgements.
+
+## C10  (question G1)
+
+**Answer**: Own the change in the existing Purchase responsibility, specifically the Checkout capability. Checkout owns converting a reviewed cart into a confirmed order. The only capability established as directly touched is Checkout; Inventory Sync is a declared dependency/adjacent capability to review because Checkout relies on trustworthy sellable availability, but the evidence does not establish that a discount rule must change inventory behavior.
+
+**Evidence given**:
+- Atlas: domains/purchase owns order confirmation; inventory owns sellable stock.
+- Atlas: capabilities/checkout includes turning a reviewed cart into a confirmed order and excludes inventory reconciliation.
+- Atlas: Checkout declares a dependency on capabilities/inventory-sync: trustworthy sellable availability is required before purchase confirmation.
+- Read first: src/features/checkout/index.ts, the canonical Checkout entrypoint.
+- Read second: src/features/inventory-sync/index.ts, as required by the Checkout handoff before changing its boundary.
+- Then inspect src/widgets/cart-summary/index.ts if the rule affects reviewed-cart presentation or totals; this path is source-discovered, not an Atlas-declared capability anchor.
+- Current source files contain only feature-identifying constants; README.md and docs/PRODUCT.md confirm the Purchase/Inventory boundary but define no discount behavior.
+- No tests are present or recorded in the inspected repository paths.
+
+**Next step proposed**: Before implementation, obtain the discount rule’s calculation, eligibility, timing, rounding, stacking, persistence, and display requirements; then inspect or create the Checkout implementation and tests within that confirmed scope.
+
+**Stated as unknown**:
+- What “discount rule” means: eligibility, percentage/fixed amount, scope, stacking, limits, or validity period.
+- Whether the discount is applied before authorization, persisted on the order, or only displayed in the cart summary.
+- Whether discounts affect inventory availability; no evidence establishes that they do.
+- Money representation, currency handling, tax/shipping ordering, and rounding behavior.
+- Expected failure behavior and required tests.
+- Runtime behavior is unmeasured, Atlas source currentness is unavailable, and ontology competency meaning is not authored.
+
+## C11  (question G2)
+
+**Answer**: No. Inventory reconciliation should remain outside checkout. Checkout’s boundary is authorizing a reviewed purchase and producing confirmation; it explicitly excludes inventory reconciliation. Inventory Sync owns reconciling storefront availability with warehouse stock and explicitly excludes purchase confirmation.
+
+**Evidence given**:
+- Atlas records `capabilities/checkout --depends_on--> capabilities/inventory-sync`: “Checkout depends on trustworthy sellable availability before it confirms a purchase.”
+- The responsibilities belong to separate recorded domains: checkout to `domains/purchase`, inventory sync to `domains/inventory`.
+- Source anchors preserve the distinction: `src/features/checkout/index.ts` exports `purchase completion`; `src/features/inventory-sync/index.ts` exports `stock reconciliation`.
+- No test or spec files were found in the repository.
+
+**Next step proposed**: Verify behavior from `src/features/checkout/index.ts`, follow the dependency into `src/features/inventory-sync/index.ts`, then add or inspect integration tests proving reconciliation supplies trustworthy availability before checkout confirmation without transferring ownership into checkout.
+
+**Stated as unknown**:
+- Atlas reports source behavior as not measured and the project source as unbound.
+- Runtime sequencing and enforcement remain unproven because the entrypoints are only labels and no tests are present.
+
+## C12  (question B2)
+
+**Answer**: Permission evaluation belongs in Access Control, specifically the Workspace Authorization capability anchored at `packages/policy`, not in Coordination. Coordination owns publishing, distributing, and acknowledging incident decisions; workspace permission evaluation and member authority are explicitly outside it.
+
+**Evidence given**:
+- Atlas: `domains/access-control` owns permission evaluation and excludes incident decision content.
+- Atlas: `capabilities/workspace-authorization` evaluates whether members may read, coordinate, or administer an incident; it includes workspace permission decisions and excludes publishing or acknowledging decisions.
+- Atlas: `domains/coordination` owns decision state, while member authority belongs to Access Control.
+- Atlas: `capabilities/decision-broadcast` explicitly excludes workspace permission evaluation and member authority.
+- Atlas records Acknowledgement Tracking as depending on Workspace Authorization because the web console must respect workspace authority while showing acknowledgement state.
+- Source documentation agrees: `docs/SYSTEM-MAP.md` assigns permission evaluation to the policy package; `README.md` separates Coordination from Access Control.
+
+**Next step proposed**: The receiving agent should inspect `packages/policy` as the authorization entry point, then verify that coordination consumers—starting with `packages/realtime` and acknowledgement handling in `apps/web`—consume authorization results without reimplementing permission rules. Locate or add verification around that integration boundary; no tests or implementation files are currently recorded beyond package manifests.
+
+**Stated as unknown**:
+- Atlas marks source currentness as unmeasured and runtime/transitive impact as unknown.
+- No exact test path, runtime call path, or implementation beyond the package-level anchors exists in the inspected repository.
+
+## C13  (question B1)
+
+**Answer**: An acknowledgement-state change belongs primarily to the Coordination domain. The directly involved capability is Acknowledgement Tracking; Decision Broadcast is the related upstream Coordination capability, and Workspace Authorization is the cross-domain dependency in Access Control. Read `apps/web` first for acknowledgement display/state handling, then `packages/realtime` for decision distribution, and `packages/policy` for permission enforcement. In this repository those paths currently contain only package manifests, so no runtime propagation is proven. The declared dependency chain—Decision Broadcast → Acknowledgement Tracking → Workspace Authorization—remains recorded product meaning with rationale, not a source-backed or complete runtime impact assessment.
+
+**Evidence given**:
+- Atlas defines Coordination as owning publication and acknowledgement decision state, while member authority belongs to Access Control.
+- Atlas records Acknowledgement Tracking at `apps/web`, Decision Broadcast at `packages/realtime`, and Workspace Authorization at `packages/policy`.
+- Atlas states that Decision Broadcast depends on Acknowledgement Tracking because acknowledgement is meaningful only after publication.
+- Atlas states that Acknowledgement Tracking depends on Workspace Authorization because the console must respect workspace authority while showing acknowledgement state.
+- Source inspection found only `package.json` manifests at those anchors; `docs/SYSTEM-MAP.md` describes web presentation, realtime distribution, and policy permission evaluation but does not demonstrate runtime call paths.
+- Atlas marks dependency impact as `declared_with_rationale`, `sourceBacked: false`, and completeness `unknown`; source currentness is also unmeasured.
+
+**Next step proposed**: If runtime impact must be established, inspect or add the actual implementation and tests beneath `apps/web`, `packages/realtime`, and `packages/policy`; the present repository cannot prove it.
+
+**Stated as unknown**:
+- The concrete acknowledgement mutation handler and storage mechanism are absent or not represented in the available source tree.
+- Runtime and transitive effects of acknowledgement changes remain unknown.
+- Atlas competency evidence is not authored and its source binding/currentness is unavailable.
+
+## C14  (question B1)
+
+**Answer**: Acknowledgement-state changes primarily involve the Coordination domain and its Acknowledgement Tracking capability, alongside Decision Broadcast. Workspace Authorization in the Access Control domain is an adjacent capability because acknowledgement display must respect workspace permissions. Read `packages/realtime` first, then `apps/web`, and read `packages/policy` when checking authorization behavior. In this repository those paths currently contain only package manifests, so the ontology’s dependencies—Decision Broadcast → Acknowledgement Tracking and Acknowledgement Tracking → Workspace Authorization—remain recorded product relationships, not proven runtime or transitive impact.
+
+**Evidence given**:
+- Atlas defines Coordination as owning publication and acknowledgement of incident decisions; member authority belongs to Access Control.
+- Atlas records `packages/realtime` for Decision Broadcast, `apps/web` for Acknowledgement Tracking, and `packages/policy` for Workspace Authorization.
+
+FILES
+vault-greenfield/elements/checkout-entry.md
+vault-greenfield/elements/inventory-sync-entry.md
+vault-brownfield/elements/web-console.md
+vault-brownfield/elements/realtime-package.md
+vault-brownfield/elements/policy-package.md
+vault-greenfield/projects/northstar-commerce.md
+vault-brownfield/projects/relay-collaboration.md
+source-brownfield/apps/web/package.json
+vault-brownfield/capabilities/workspace-authorization.md
+vault-greenfield/capabilities/inventory-sync.md
+vault-brownfield/capabilities/acknowledgement-tracking.md
+vault-brownfield/capabilities/decision-broadcast.md
+vault-greenfield/capabilities/checkout.md
+source-greenfield/src/widgets/cart-summary/index.ts
+source-brownfield/packages/policy/package.json
+vault-brownfield/domains/access-control.md
+vault-brownfield/domains/coordination.md
+source-brownfield/README.md
+source-brownfield/packages/realtime/package.json
+source-brownfield/package.json
+source-greenfield/package.json
+source-greenfield/README.md
+vault-greenfield/domains/purchase.md
+source-brownfield/docs/SYSTEM-MAP.md
+vault-greenfield/domains/inventory.md
+source-greenfield/src/features/theme-toggle/index.ts
+source-greenfield/docs/PRODUCT.md
+source-greenfield/src/features/checkout/index.ts
+source-greenfield/src/features/inventory-sync/index.ts
+
+exec
+/bin/zsh -lc "sed -n '260,620p' answers.md && printf '\\nSOURCE AND VAULT CONTENTS\\n' && for f in "'$(rg --files source-greenfield source-brownfield vault-greenfield vault-brownfield | sort); do printf '"'\\n### %s\\n' \""'$f"; sed -n '"'1,240p' \""'$f"; done' in /var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/ontology-atlas-grading-8771c789-a6f7-4df3-98ee-d4f6b015138c
+ succeeded in 0ms:
+- Atlas records `packages/realtime` for Decision Broadcast, `apps/web` for Acknowledgement Tracking, and `packages/policy` for Workspace Authorization.
+- The Decision Broadcast handoff explicitly says to start with the realtime package and then check acknowledgement tracking.
+- `docs/SYSTEM-MAP.md` says the web console presents the incident timeline, realtime distributes timeline updates, and policy evaluates workspace permissions.
+- The three recorded source directories contain only `package.json` files naming their packages; no executable implementation or tests establish runtime call paths.
+- Atlas reports dependency impact as `sourceBacked: false`, with `completeness: unknown`; source currentness is also `not_measured` because the project source is unbound.
+
+**Next step proposed**: If runtime impact must be established, locate or add the actual realtime, web-console, and policy implementations and tests, then trace acknowledgement-state producers, consumers, and authorization checks from those sources.
+
+**Stated as unknown**:
+- Whether changing acknowledgement state actually executes code in the realtime or policy packages.
+- The complete runtime and transitive blast radius.
+- Exact test paths; Atlas records none and the repository currently contains no tests.
+
+## C15  (question G1)
+
+**Answer**: The existing Purchase responsibility should own the change, but only insofar as the discount participates in turning a reviewed cart into a confirmed order. It touches the Purchase capability and likely the cart-review presentation boundary. No source or product document supports assigning discount logic to Inventory. Read `docs/PRODUCT.md`, `README.md`, `src/features/checkout/index.ts`, and `src/widgets/cart-summary/index.ts` first. The repository contains no existing discount implementation or documented rule behavior.
+
+**Evidence given**:
+- `docs/PRODUCT.md` states: “Purchase owns order confirmation from a reviewed cart.”
+- `README.md` states that Purchase owns turning a reviewed cart into a confirmed order and describes cart review, payment authorization, and order confirmation.
+- `src/features/checkout/index.ts` identifies checkout as the `purchase completion` feature.
+- `src/widgets/cart-summary/index.ts` is the only source path representing cart-summary presentation.
+- Inventory is documented as owning trustworthy sellable stock and stock reconciliation; neither product documents nor `src/features/inventory-sync/index.ts` connect it to discounts.
+- The inspected repository contains only checkout, cart-summary, inventory-sync, and theme-toggle stubs; no discount, pricing, promotion, totals, payment, tax, or order model is present.
+
+**Next step proposed**: Clarify the discount contract before implementation, then begin design at the Purchase checkout boundary and cart-summary boundary; introduce any new pricing capability only if the clarified requirements justify it.
+
+**Stated as unknown**:
+- What kind of discount rule is intended: code-based, automatic, item-level, cart-level, percentage, fixed amount, or another form.
+- Eligibility, validity dates, usage limits, stacking and precedence rules, rounding, currency behavior, and maximum-discount constraints.
+- Whether discounts must be shown during cart review, persisted on the confirmed order, or revalidated during checkout.
+- Required interactions with tax, shipping, payment authorization, refunds, and inventory reservation.
+- Where cart totals and confirmed orders are modeled, because those implementations do not exist in the available source files.
+- Expected APIs, storage, tests, failure behavior, and migration or compatibility requirements.
+
+## C16  (question G1)
+
+**Answer**: Purchase should own the discount-rule change because it owns turning a reviewed cart into a confirmed order. The change touches cart review/summary and purchase completion; it may also affect payment authorization and order confirmation if discounts change the authorized or recorded total, but the repository does not establish that behavior. Read `src/features/checkout/index.ts` first, followed by `src/widgets/cart-summary/index.ts`. Inventory is not an established owner or capability for this change unless the proposed rule depends on stock, which is unspecified.
+
+**Evidence given**:
+- `README.md`: Purchase owns turning a reviewed cart into a confirmed order; the documented flow includes cart review, payment authorization, and order confirmation.
+- `docs/PRODUCT.md`: Purchase owns order confirmation from a reviewed cart, while Inventory owns trustworthy sellable stock.
+- `src/features/checkout/index.ts`: identifies checkout as the `purchase completion` feature.
+- `src/widgets/cart-summary/index.ts`: identifies the cart-summary UI path relevant to reviewing discounted cart totals.
+- `src/features/inventory-sync/index.ts`: contains only stock-reconciliation responsibility; no discount behavior is present.
+- The inspected source and product documents contain no existing discount implementation, pricing module, rule engine, tests, or detailed checkout behavior.
+
+**Next step proposed**: Define the discount rule’s inputs, eligibility, calculation and rounding semantics, stacking policy, lifecycle timing, and required presentation before selecting concrete implementation points beyond checkout and cart summary.
+
+**Stated as unknown**:
+- Discount type and calculation formula.
+- Eligibility criteria and whether rules can stack.
+- Currency, rounding, tax, shipping, and refund interactions.
+- Whether payment authorization and order records use pre-discount or discounted totals.
+- Whether discounts depend on inventory or product data.
+- Persistence, validation, API, UI, and audit requirements.
+- Expected tests and acceptance criteria.
+
+## C17  (question G2)
+
+**Answer**: No. Recorded project meaning keeps inventory reconciliation outside checkout.
+
+**Evidence given**:
+- Boundary: Checkout authorizes a purchase and produces an order confirmation; it includes converting a reviewed cart into a confirmed order and explicitly excludes inventory reconciliation. Inventory Sync owns reconciliation of storefront availability with warehouse stock and excludes purchase confirmation.
+- Relationship: capabilities/checkout depends_on capabilities/inventory-sync. Recorded reason: "Checkout depends on trustworthy sellable availability before it confirms a purchase."
+- Source anchors confirm separate entrypoints: src/features/checkout/index.ts identifies purchase completion, while src/features/inventory-sync/index.ts identifies stock reconciliation.
+
+**Next step proposed**: Read src/features/checkout/index.ts first, then src/features/inventory-sync/index.ts, and inspect or discover tests near both anchors before changing the boundary; Atlas records no exact test path.
+
+**Stated as unknown**:
+- Atlas marks source behavior as not measured and meaning competency answers as unauthored. The current source files only expose feature labels, so runtime behavior and dependency completeness remain unverified.
+
+## C18  (question B2)
+
+**Answer**: Permission evaluation belongs in Access Control, specifically the Workspace Authorization capability anchored at `packages/policy`, not in Coordination. Coordination owns incident decision state—publishing, distributing, and acknowledging decisions. Explicitly outside Coordination are workspace permission evaluation and member authority; conversely, Access Control does not own incident decision content.
+
+**Evidence given**:
+- Atlas `domains/coordination`: “Coordination owns decision state; member authority belongs to access control.”
+- Atlas `domains/access-control`: “Access control owns permission evaluation; it does not own incident decision content.”
+- Atlas `capabilities/workspace-authorization`: includes workspace permission decisions and excludes publishing or acknowledging incident decisions; its recorded path is `packages/policy`.
+- Atlas `capabilities/decision-broadcast`: explicitly excludes workspace permission evaluation and member authority.
+- Source inspection confirms `packages/policy/package.json` defines `@relay/policy`, but the repository contains no policy implementation or tests beyond that package manifest.
+
+**Next step proposed**: The receiving agent should inspect or implement the authorization entry point under `packages/policy`, then verify with tests that read/coordinate/administer permission decisions stay there and that Coordination only consumes authorization outcomes while retaining ownership of decision publication and acknowledgement. Because Atlas reports source currentness as unmeasured and records no exact test path, the agent must discover or add those tests rather than infer runtime behavior from the package map.
+
+**Stated as unknown**:
+- No runtime permission-evaluation implementation is present in the inspected source.
+- No exact test path or complete runtime/transitive impact is recorded.
+- Atlas reports the project source as unbound/not measured, so the recorded paths are anchors rather than current behavior proof.
+
+## C19  (question G1)
+
+**Answer**: Purchase should own the discount-rule change because it owns turning a reviewed cart into a confirmed order. The explicitly supported capabilities it may touch are cart review and purchase completion; payment authorization and order confirmation are adjacent Purchase capabilities, but whether the rule changes them is unknown. Read `src/features/checkout/index.ts` first, followed by `src/widgets/cart-summary/index.ts`. There is no evidence that Inventory or interface preferences should own the rule.
+
+**Evidence given**:
+- `README.md`: Purchase owns turning a reviewed cart into a confirmed order; its flow includes cart review, payment authorization, and order confirmation.
+- `docs/PRODUCT.md`: Purchase owns order confirmation from a reviewed cart, while Inventory owns trustworthy sellable stock.
+- `src/features/checkout/index.ts`: identifies checkout as the `purchase completion` feature.
+- `src/widgets/cart-summary/index.ts`: identifies the cart-summary widget, the only source path explicitly associated with reviewing cart information.
+- `src/features/inventory-sync/index.ts`: concerns stock reconciliation, with no documented pricing or discount behavior.
+- `src/features/theme-toggle/index.ts`: concerns interface preferences and is unrelated by the available evidence.
+
+**Next step proposed**: Define the requested rule’s trigger, calculation basis, stacking/precedence, rounding, eligibility, display requirements, and effect on payment/order records; then trace those requirements through checkout and cart summary before changing code.
+
+**Stated as unknown**:
+- What kind of discount is intended: percentage, fixed amount, item-level, cart-level, coupon-based, automatic, or another form.
+- Eligibility conditions, validity periods, usage limits, and whether discounts can stack.
+- Whether discounts apply before or after taxes, shipping, fees, or other adjustments.
+- Currency and rounding rules.
+- Whether cart summary must display eligibility, labels, original prices, or discount breakdowns.
+- Whether payment authorization and persisted order confirmation must use or record the discounted amount.
+- Whether rejected or expired discounts need user-facing errors.
+- Whether discount behavior has any inventory implications; the available documents do not establish one.
+- No implementation logic, tests, domain types, persistence paths, or external pricing/payment integrations are present in the available source files.
+
+## C20  (question G1)
+
+**Answer**: Provisional owner: Checkout (`capabilities/checkout`) in the Purchase domain, but only if the discount rule participates in turning a reviewed cart into a confirmed order. The known capability surface is Checkout plus its declared dependency, Inventory Sync. Read `src/features/checkout/index.ts` first, followed by `src/features/inventory-sync/index.ts`.
+
+**Evidence given**:
+- Atlas defines Checkout as authorizing a purchase and producing an order confirmation; its boundary includes turning a reviewed cart into a confirmed order.
+- Atlas explicitly excludes inventory reconciliation from Checkout and assigns that concern to the Inventory Sync dependency.
+- Atlas records `src/features/checkout/index.ts` as Checkout’s canonical entrypoint and instructs readers to inspect the inventory capability next.
+- The checkout source currently exposes only `checkoutFeature = 'purchase completion'`; the inventory source exposes only `inventorySyncFeature = 'stock reconciliation'`. No discount behavior or tests were found in the bounded source inventory.
+- Atlas reports the dependency as declared with rationale but not source-backed, with unknown impact completeness.
+
+**Next step proposed**: Clarify where the discount is computed and applied—before cart review, during purchase confirmation, or elsewhere—then inspect nearby callers/tests starting from `src/features/checkout/index.ts`; keep Inventory Sync in scope only where availability affects confirmation.
+
+**Stated as unknown**:
+- Whether the requested rule calculates, validates, displays, or merely applies a discount.
+- Whether discounting occurs inside Checkout’s documented boundary or requires a responsibility not represented in the ontology.
+- Runtime behavior is unmeasured because the Atlas project source is unbound.
+- No exact test path is recorded, and no tests appeared in the bounded repository file inventory.
+- The ontology’s competency assessment is not authored, so semantic coverage is incomplete.
+- The declared Checkout → Inventory Sync impact is not verified by current source evidence.
+
+## C21  (question G2)
+
+**Answer**: No. Inventory reconciliation should remain in Inventory; Checkout/Purchase owns only turning a reviewed cart into a confirmed order. The recorded relationship is that purchase completion must stay consistent with inventory availability, not absorb reconciliation. The reason is to prevent orders for unavailable stock and let merchants resolve exceptions before fulfillment.
+
+**Evidence given**:
+- docs/PRODUCT.md assigns order confirmation from a reviewed cart to Purchase and trustworthy sellable stock to Inventory.
+- README.md says Purchase confirms orders, while Inventory reconciles storefront and warehouse stock.
+- src/features/checkout/index.ts labels checkout as "purchase completion"; src/features/inventory-sync/index.ts separately labels inventory sync as "stock reconciliation".
+
+**Next step proposed**: Verify the integration boundary by tracing how checkout obtains an availability or reservation decision from inventory while reconciliation remains behind src/features/inventory-sync. Then check the relevant integration/contract tests; none are present in the supplied files, so runtime coupling is not yet verifiable here.
+
+**Stated as unknown**:
+- The supplied source and product documents do not record the concrete API, event, reservation protocol, or failure behavior between Checkout and Inventory.
+
+## C22  (question G1)
+
+**Answer**: The bounded existing owner is the Purchase responsibility (`domains/purchase`), through Checkout (`capabilities/checkout`), because Purchase owns turning a reviewed cart into a confirmed order. Checkout is the directly touched capability. Inventory Sync is an adjacent dependency to inspect, but Atlas assigns it sellable-stock reconciliation and explicitly excludes purchase confirmation, so no Inventory change is justified yet. Read `src/features/checkout/index.ts` first, then `src/features/inventory-sync/index.ts`; inspect `src/widgets/cart-summary/index.ts` only if the proposed rule changes the reviewed-cart summary or display.
+
+**Evidence given**:
+- Atlas defines Purchase as the responsibility for turning a reviewed cart into a confirmed order and says Purchase owns order confirmation.
+- Atlas defines Checkout as authorizing a purchase and producing an order confirmation, with `src/features/checkout/index.ts` as its canonical entrypoint.
+- Checkout declares a dependency on Inventory Sync because confirmation requires trustworthy sellable availability.
+- Atlas defines Inventory Sync as stock reconciliation and explicitly excludes purchase confirmation.
+- The inspected implementation files currently contain only feature-name constants; they do not reveal discount behavior. `docs/PRODUCT.md` confirms the Purchase/Inventory boundary but says nothing about discounts.
+
+**Next step proposed**: Specify the discount rule’s trigger, calculation, application stage, and whether it changes stock eligibility or only order pricing; then trace the checkout entrypoint and nearby tests before selecting concrete code changes.
+
+**Stated as unknown**:
+- Whether the discount is calculated before cart review, during checkout, or after confirmation.
+- Whether it affects pricing only, tax, payment authorization, inventory eligibility, or presentation.
+- Whether `cart-summary` participates in calculation or only display.
+- The concrete checkout and inventory runtime flow; the recorded source entrypoints are stubs.
+- No exact test path is recorded or present in the inspected file list.
+- Atlas source currentness is unmeasured and project competency meaning is not authored, so dependency completeness remains unknown.
+
+## C23  (question B2)
+
+**Answer**: Permission evaluation belongs in the Access Control domain, specifically the Workspace Authorization capability anchored at packages/policy—not in Coordination. Coordination owns incident decision state: publishing decisions and tracking acknowledgements. Member authority and workspace permission decisions are explicitly outside Coordination; conversely, Access Control does not own incident decision content.
+
+**Evidence given**:
+- Atlas domains/access-control: “Access control owns permission evaluation; it does not own incident decision content.”
+- Atlas domains/coordination: “Coordination owns decision state; member authority belongs to access control.”
+- Atlas capabilities/workspace-authorization places permission decisions in domains/access-control, includes workspace permission decisions, excludes publishing or acknowledging incident decisions, and records packages/policy as its implementation anchor.
+- docs/SYSTEM-MAP.md says the policy package evaluates workspace permissions; README.md assigns read, coordinate, and administer authority to Access Control.
+- Source inspection found only package manifests and documentation—no implementation or tests proving runtime behavior.
+
+**Next step proposed**: The receiving agent should inspect or implement packages/policy and verify tests for read, coordinate, and administer permission decisions. It should also verify that Coordination merely consumes an authorization result at its boundary and retains ownership of publishing and acknowledgement behavior. Because Atlas reports source currentness as unmeasured/source-unbound and records no exact test path, runtime integration and transitive impact must remain unclaimed until verified.
+
+**Stated as unknown**:
+- No permission-evaluation implementation or tests are present in the inspected repository snapshot.
+- The runtime call path between Coordination and packages/policy is not recorded or source-proven.
+- Runtime and transitive impact remain unmeasured.
+
+## C24  (question G2)
+
+**Answer**: No. Inventory reconciliation should not move into checkout. The boundary is: Purchase/checkout owns turning a reviewed cart into a confirmed order; Inventory owns maintaining and reconciling trustworthy sellable stock across storefront and warehouse. The recorded relationship is consistency between purchase completion and inventory availability, so merchants can resolve stock exceptions before fulfillment—not ownership of reconciliation by checkout.
+
+**Evidence given**:
+- docs/PRODUCT.md: Purchase owns order confirmation from a reviewed cart; Inventory owns trustworthy sellable stock across storefront and warehouse.
+- docs/PRODUCT.md: The product goal is to keep purchase completion and inventory availability consistent enough for merchants to resolve exceptions before fulfillment.
+- README.md: Checkout covers cart review, payment authorization, and order confirmation; Inventory covers stock reconciliation across storefront and warehouse.
+- src/features/checkout/index.ts names checkout as "purchase completion"; src/features/inventory-sync/index.ts separately names inventory sync as "stock reconciliation".
+
+**Next step proposed**: Verify the proposal against the checkout and inventory-sync entry points and their tests/contracts: checkout may consume an inventory availability result, but reconciliation logic should remain under inventory-sync. If the required interaction is not encoded yet, define and test that interface before relocating any implementation.
+
+**Stated as unknown**:
+- The available files do not record a more specific API, event, or test suite for the checkout-to-inventory interaction.
+
+
+SOURCE AND VAULT CONTENTS
+
+### source-brownfield/README.md
+# Relay Collaboration
+
+Relay lets incident teams establish a shared operational picture while an event is unfolding.
+
+## Coordination
+
+Responders publish decisions and see who has acknowledged them.
+
+## Access Control
+
+Workspace owners decide who may read, coordinate, or administer an incident.
+
+### source-brownfield/apps/web/package.json
+{
+  "name": "@relay/web"
+}
+
+### source-brownfield/docs/SYSTEM-MAP.md
+# System map
+
+The web console presents the incident timeline. The realtime package distributes
+timeline updates. The policy package evaluates workspace permissions.
+
+### source-brownfield/package.json
+{
+  "name": "@relay/collaboration",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"]
+}
+
+### source-brownfield/packages/policy/package.json
+{
+  "name": "@relay/policy"
+}
+
+### source-brownfield/packages/realtime/package.json
+{
+  "name": "@relay/realtime"
+}
+
+### source-greenfield/README.md
+# Northstar Commerce
+
+Northstar helps independent merchants accept orders and keep sellable stock accurate.
+
+## Purchase
+
+Purchase owns turning a reviewed cart into a confirmed order.
+
+Customers review a cart, authorize payment, and receive an order confirmation.
+
+## Inventory
+
+Inventory owns maintaining trustworthy sellable stock.
+
+Merchants reconcile available stock across the storefront and warehouse.
+
+## Installation
+
+Run the workspace with pnpm.
+
+### source-greenfield/docs/PRODUCT.md
+# Product contract
+
+## User need
+
+Independent merchants need to sell without accepting an order for unavailable stock.
+
+## Product goal
+
+Keep purchase completion and inventory availability consistent enough that merchants
+can resolve exceptions before fulfillment.
+
+Purchase owns order confirmation from a reviewed cart. Inventory owns trustworthy
+sellable stock across storefront and warehouse.
+
+### source-greenfield/package.json
+{
+  "name": "northstar-commerce",
+  "description": "Commerce operations workspace"
+}
+
+### source-greenfield/src/features/checkout/index.ts
+export const checkoutFeature = 'purchase completion';
+
+### source-greenfield/src/features/inventory-sync/index.ts
+export const inventorySyncFeature = 'stock reconciliation';
+
+### source-greenfield/src/features/theme-toggle/index.ts
+export const themeToggleFeature = 'interface preference';
+
+### source-greenfield/src/widgets/cart-summary/index.ts
+export const cartSummaryWidget = 'cart summary';
+
+### vault-brownfield/capabilities/acknowledgement-tracking.md
+---
+slug: capabilities/acknowledgement-tracking
+kind: capability
+title: Acknowledgement Tracking
+domain: domains/coordination
+path: apps/web
+elements: [elements/web-console]
+dependencies: [capabilities/workspace-authorization]
+relation_notes: { capabilities/workspace-authorization: The receiving console must respect workspace authority while it shows acknowledgement state. }
+---
+
+## Definition
+Show which responders have acknowledged a decision.
+
+## Boundaries
+- Includes acknowledgement state in the incident workspace.
+- Excludes evaluating who may read or administer the workspace.
+### vault-brownfield/capabilities/decision-broadcast.md
+---
+slug: capabilities/decision-broadcast
+kind: capability
+title: Decision Broadcast
+domain: domains/coordination
+path: packages/realtime
+elements: [elements/realtime-package]
+dependencies: [capabilities/acknowledgement-tracking]
+relation_notes: { capabilities/acknowledgement-tracking: Acknowledgement state is meaningful only after a decision has been published to responders. }
+---
+
+## Definition
+Publish an operational decision and distribute it to active responders.
+
+## Boundaries
+- Includes decision publication and distribution.
+- Excludes workspace permission evaluation and member authority.
+
+## Uncertainty
+The recorded dependency states a product relationship. It does not establish a complete runtime blast radius.
+### vault-brownfield/capabilities/workspace-authorization.md
+---
+slug: capabilities/workspace-authorization
+kind: capability
+title: Workspace Authorization
+domain: domains/access-control
+path: packages/policy
+elements: [elements/policy-package]
+---
+
+## Definition
+Evaluate whether a member may read, coordinate, or administer an incident.
+
+## Boundaries
+- Includes workspace permission decisions.
+- Excludes publishing or acknowledging incident decisions.
+### vault-brownfield/domains/access-control.md
+---
+slug: domains/access-control
+kind: domain
+title: Access Control
+capabilities: [capabilities/workspace-authorization]
+---
+
+## Definition
+The responsibility boundary for incident workspace authority.
+
+## Boundaries
+Access control owns permission evaluation; it does not own incident decision content.
+### vault-brownfield/domains/coordination.md
+---
+slug: domains/coordination
+kind: domain
+title: Coordination
+capabilities: [capabilities/acknowledgement-tracking, capabilities/decision-broadcast]
+---
+
+## Definition
+The responsibility boundary for publishing and acknowledging incident decisions.
+
+## Boundaries
+Coordination owns decision state; member authority belongs to access control.
+### vault-brownfield/elements/policy-package.md
+---
+slug: elements/policy-package
+kind: element
+title: Policy package
+domain: domains/access-control
+path: packages/policy
+---
+
+The package path used as source evidence for workspace authorization.
+### vault-brownfield/elements/realtime-package.md
+---
+slug: elements/realtime-package
+kind: element
+title: Realtime package
+domain: domains/coordination
+path: packages/realtime
+---
+
+The package path used as source evidence for decision distribution.
+### vault-brownfield/elements/web-console.md
+---
+slug: elements/web-console
+kind: element
+title: Web console
+domain: domains/coordination
+path: apps/web
+---
+
+The application path used as source evidence for acknowledgement display.
+### vault-brownfield/projects/relay-collaboration.md
+---
+slug: projects/relay-collaboration
+kind: project
+title: Relay Collaboration
+domains: [domains/access-control, domains/coordination]
+path: .
+---
+
+# Relay Collaboration
+
+## Definition
+A shared operational picture for teams responding to an incident.
+
+## Boundary
+This project record connects responsibilities spread across packages; package names alone are not product capabilities.
+
+## Uncertainty
+The package map is source evidence. Runtime and transitive impact remain unmeasured by this static benchmark.
+### vault-greenfield/capabilities/checkout.md
+---
+slug: capabilities/checkout
+kind: capability
+title: Checkout
+domain: domains/purchase
+path: src/features/checkout/index.ts
+elements: [elements/checkout-entry]
+dependencies: [capabilities/inventory-sync]
+relation_notes: { capabilities/inventory-sync: Checkout depends on trustworthy sellable availability before it confirms a purchase. }
+---
+
+## Definition
+Authorize a purchase and produce an order confirmation.
+
+## Boundaries
+- Includes turning a reviewed cart into a confirmed order.
+- Excludes inventory reconciliation itself and interface preference changes.
+### vault-greenfield/capabilities/inventory-sync.md
+---
+slug: capabilities/inventory-sync
+kind: capability
+title: Inventory Sync
+domain: domains/inventory
+path: src/features/inventory-sync/index.ts
+elements: [elements/inventory-sync-entry]
+---
+
+## Definition
+Reconcile storefront availability with warehouse stock.
+
+## Boundaries
+- Includes sellable stock reconciliation.
+- Excludes purchase confirmation.
+### vault-greenfield/domains/inventory.md
+---
+slug: domains/inventory
+kind: domain
+title: Inventory
+capabilities: [capabilities/inventory-sync]
+---
+
+## Definition
+The responsibility boundary for maintaining trustworthy sellable stock.
+
+## Boundaries
+Inventory owns reconciliation across storefront and warehouse; purchase consumes availability before confirmation.
+### vault-greenfield/domains/purchase.md
+---
+slug: domains/purchase
+kind: domain
+title: Purchase
+capabilities: [capabilities/checkout]
+---
+
+## Definition
+The responsibility boundary for turning a reviewed cart into a confirmed order.
+
+## Boundaries
+Purchase owns order confirmation; inventory owns sellable stock.
+### vault-greenfield/elements/checkout-entry.md
+---
+slug: elements/checkout-entry
+kind: element
+title: Checkout entrypoint
+domain: domains/purchase
+path: src/features/checkout/index.ts
+---
+
+The implementation entrypoint named by the reviewed checkout capability.
+### vault-greenfield/elements/inventory-sync-entry.md
+---
+slug: elements/inventory-sync-entry
+kind: element
+title: Inventory sync entrypoint
+domain: domains/inventory
+path: src/features/inventory-sync/index.ts
+---
+
+The implementation entrypoint named by the reviewed inventory capability.
+### vault-greenfield/projects/northstar-commerce.md
+---
+slug: projects/northstar-commerce
+kind: project
+title: Northstar Commerce
+domains: [domains/inventory, domains/purchase]
+path: .
+---
+
+# Northstar Commerce
+
+## Definition
+A commerce workspace that keeps purchase completion and sellable inventory consistent.
+
+## Boundary
+This record preserves the cross-file responsibility map that the source does not express as one artifact.
+
+## Uncertainty
+The fixture names implementation entrypoints but does not measure runtime behavior.
+codex
+{"grades":[{"id":"C01","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The answer correctly assigns acknowledgement changes to Coordination while bounding policy involvement and unavailable runtime details."},{"id":"C02","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source clearly separates Inventory reconciliation from Purchase confirmation and supports the stated integration rationale."},{"id":"C03","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly places permission evaluation in Access Control and explicitly excludes it from Coordination."},{"id":"C04","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The vault supports the named owner, capability chain, source anchors, and limits on inferred runtime impact."},{"id":"C05","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"The recorded Checkout boundary explicitly excludes reconciliation and the dependency rationale directly answers why ownership should not move."},{"id":"C06","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It accurately identifies Coordination as owner and treats realtime and policy effects as bounded rather than proven."},{"id":"C07","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented system map and domain split place evaluation in the policy package outside Coordination."},{"id":"C08","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It gives the correct Access Control owner and the correct exclusion from Coordination."},{"id":"C09","correct":1,"citations":1,"boundary":1,"nextStep":1,"unsupported":2,"unverifiable":0,"note":"Although it finds the Coordination domain, it incorrectly presents the Access Control permission levels “coordinate” and “read” as acknowledgement capabilities."},{"id":"C10","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It correctly makes Checkout the only established direct capability and avoids inventing discount effects on Inventory."},{"id":"C11","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The vault explicitly records separate ownership, mutual exclusions, and Checkout’s dependency on Inventory Sync."},{"id":"C12","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"Workspace Authorization and its boundaries exactly support the claimed Access Control ownership and Coordination exclusion."},{"id":"C13","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":5,"note":"The answer accurately follows the recorded capability dependencies while clearly stopping short of claiming a runtime blast radius."},{"id":"C14","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Its ownership and dependency analysis is right, but starting at realtime rather than the directly anchored web acknowledgement capability is a minor prioritization error."},{"id":"C15","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly locates the vague discount change in Purchase while making clarification of the missing discount contract the first decision."},{"id":"C16","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented purchase flow supports Checkout and cart summary as the bounded starting surface without establishing an Inventory change."},{"id":"C17","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The explicit capability boundaries and dependency reason fully support keeping reconciliation outside Checkout."},{"id":"C18","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It precisely states both sides of the Access Control–Coordination boundary and names the correct policy anchor."},{"id":"C19","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It assigns the change to Purchase, excludes unrelated responsibilities, and turns the unspecified rule semantics into a concrete decision step."},{"id":"C20","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Checkout is the right provisional owner, but treating Inventory Sync as part of the known discount surface is broader than the evidence establishes."},{"id":"C21","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The product documents support both the ownership split and the stated consistency rationale without moving reconciliation into Checkout."},{"id":"C22","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"It correctly identifies Checkout as directly touched and limits Inventory Sync to an adjacent dependency unless requirements justify more."},{"id":"C23","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The cited domain and capability boundaries decisively place permission evaluation in Access Control outside Coordination."},{"id":"C24","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source directly supports separate Purchase and Inventory ownership and the cross-boundary consistency relationship described."}]}
+tokens used
+53,854

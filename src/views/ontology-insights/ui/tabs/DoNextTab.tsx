@@ -151,6 +151,10 @@ export interface DoNextTabLabels extends QueueRowActionLabels {
   moreCount: (count: number) => string;
   digestTitle: string;
   digestToday: (count: number) => string;
+  /** "last 3 · 0 today" — the list and the count are different populations. */
+  digestScope: (shown: number, today: number) => string;
+  /** Compact relative time, or null when the stamp is unusable. */
+  digestWhen: (iso: string) => string | null;
   digestApproveHint: string;
   /** Prefix before the why row ("Why · "). */
   digestWhyPrefix: string;
@@ -1422,30 +1426,68 @@ export function DoNextTab({
               <InsightsSectionTitle level={2} className="text-body-lg font-[var(--font-weight-signature)] tracking-[var(--tracking-title)] text-[color:var(--color-text-primary)]">
                 {labels.digestTitle}
               </InsightsSectionTitle>
+              {/*
+                * `0 today` used to sit above three visible rows, because the count and the
+                * list are different populations: the count is today, the list is the tail
+                * of the log. A number that contradicts what is under it teaches people to
+                * stop reading numbers on this page.
+                */}
               <span className="ml-auto font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-                {labels.digestToday(activityDigest.todayCount)}
+                {labels.digestScope(activityDigest.latest.length, activityDigest.todayCount)}
               </span>
             </div>
-            <div className="mt-2 flex flex-col gap-1.5">
-              {activityDigest.latest.map((entry, index) => (
-                <div key={`${entry.at}-${index}`} data-testid="do-next-digest-entry">
-                  <p className="truncate font-mono text-label text-[color:var(--color-text-tertiary)]">
-                    {entry.summary}
-                    {entry.agent ? (
-                      <span className="text-[color:var(--color-text-quaternary)]"> · {entry.agent}</span>
+            {/*
+              * The sentence leads; the slugs are its evidence.
+              *
+              * Both lines used to be `font-mono text-label`, separated only by one ink
+              * step and an italic — so `elements/topology-map-v2 --depends_on-->
+              * elements/knowledge-graph` and *"the canvas renderer draws the node/edge
+              * model the knowledge-graph entity derives"* were drawn as the same kind of
+              * thing, and both were truncated to one line. The only part a person could
+              * read was the part being cut off.
+              *
+              * Front-loading the distinguishing content is the ordinary finding about how
+              * lists are scanned: the eye goes top-most and left-most, so what
+              * distinguishes one row from the next belongs there. The relation triple
+              * stays, one step down and in mono, because an agent copies it verbatim and a
+              * reader uses it to check the sentence above.
+              *
+              * `at` has been in the log since the beginning and no screen ever drew it. A
+              * list of what happened that cannot say when is missing its second column.
+              */}
+            <div className="mt-2 flex flex-col gap-3">
+              {activityDigest.latest.map((entry, index) => {
+                const when = labels.digestWhen(entry.at);
+                const evidence = entry.agent ? `${entry.summary} · ${entry.agent}` : entry.summary;
+                return (
+                  <div key={`${entry.at}-${index}`} data-testid="do-next-digest-entry" className="flex flex-col gap-0.5">
+                    <div className="flex items-baseline gap-3">
+                      {/* No `truncate`: this is the one line on the card written to be read. */}
+                      <p
+                        data-testid={entry.why ? "do-next-digest-why" : undefined}
+                        className={`min-w-0 flex-1 text-body text-[color:var(--color-text-secondary)] ${entry.why ? "" : "font-mono"}`}
+                      >
+                        {entry.why ?? evidence}
+                      </p>
+                      {when ? (
+                        <time
+                          data-testid="do-next-digest-when"
+                          dateTime={entry.at}
+                          title={entry.at}
+                          className="shrink-0 font-mono text-label tabular-nums text-[color:var(--color-text-quaternary)]"
+                        >
+                          {when}
+                        </time>
+                      ) : null}
+                    </div>
+                    {entry.why ? (
+                      <p className="truncate font-mono text-label text-[color:var(--color-text-quaternary)]">
+                        {evidence}
+                      </p>
                     ) : null}
-                  </p>
-                  {entry.why ? (
-                    <p
-                      data-testid="do-next-digest-why"
-                      className="truncate font-mono text-label italic text-[color:var(--color-text-quaternary)]"
-                    >
-                      {labels.digestWhyPrefix}
-                      {entry.why}
-                    </p>
-                  ) : null}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
             <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">{labels.digestApproveHint}</p>
           </div>

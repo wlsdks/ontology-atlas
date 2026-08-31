@@ -40,6 +40,245 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — The agent's procedures go where the agent runs; the sentence in your own file stays yours
+
+**Convened**: solo pass (`/po-pass`, 21/24, no fatal zero, verdict *shape a
+slice*) · **Trigger**: the owner asked how a developer actually uses Atlas
+while coding — two windows, an in-app terminal, or something that reaches into
+the session they already have — and noticed that a coding agent started in a
+plain terminal may not know Atlas is there at all.
+
+**Observed**: `init docs/ontology` was run in a fresh repository and the
+resulting file locations inspected. `.mcp.json` and `.codex/` land at the
+repository root; `AGENTS.md`, `CLAUDE.md`, and `.claude/skills/atlas-{review,
+grow,absorb}` land **inside the vault folder**. This repository's own visibility
+table records that Claude Code does not load a nested `CLAUDE.md`, and Codex
+merges a nested `AGENTS.md` only when the working path passes through it. The
+README meanwhile promised the skills appear "in its command menu with no extra
+setup" — true only when the vault *is* the repository root, and `README.md`
+documents the nested `atlas/` folder as the ordinary shape.
+
+**Not the whole story**: the MCP server already sends substantial `instructions`
+at initialize, at system-prompt level. A connected agent is not blind — it
+receives a tool-routing manual. What it does not receive is a standing statement
+about *this* codebase or the scaffolded procedures.
+
+**Decision**: `init` installs the three skills at the repository root's
+`.claude/skills/`, where the agent is started, and no longer copies them into a
+nested vault. When the vault is the repository root the template already places
+them correctly and nothing moves. It then **prints** the one sentence the server
+cannot say — that this repository has a reviewed ontology, where it is, and the
+first call — for the person to paste into their own instruction file.
+
+**Rejected: writing that sentence into the user's `CLAUDE.md` / `AGENTS.md`.**
+Those files are authored voice, not configuration. The deliberation is recorded
+because the losing case is strong: the person who most needs the briefing is the
+least likely to paste it, and an appended Markdown section is the most
+inspectable write this product could make. It loses on four grounds.
+
+1. `surfaces.md` "Installing an agent tool for the user (2026-08-20)" requires
+   installation to stay "in an app-owned location". That condition is
+   definitionally unmeetable when the point is to write into a file Atlas does
+   not own. The rule governs a CLI rather than Markdown, so it binds by analogy
+   — but it is the closest standing statement of posture.
+2. **The precedent licenses the location, not the medium.** `.mcp.json` is
+   already written to the user's root by design (2026-08-17). But JSON has
+   `mcpServers["ontology-atlas"]` — a keyed slot whose identity, idempotent
+   replacement, and deletion the format itself defines, which is the only reason
+   the 2026-08-13 (3) contract ("exactly that entry, preserve everything else")
+   is expressible. Prose has only comment markers a user cannot be assumed to
+   respect and other generators will not.
+3. **The failure modes are not alike.** A stale server entry fails loudly — zero
+   tools, wrong vault — and (3) built repair for it. A stale prose instruction
+   fails silently, misdirecting every later session with no error anywhere, and
+   `documentation.md` forbids the cheap gate that would catch it.
+4. Two scars already exist from writing machine-owned config into user
+   territory: 2026-08-13 (3) and 2026-08-25 "`init` may only wire the project it
+   was actually run inside". Both concluded that between a silent edit and one
+   more step for the person, the recoverable failure is the right one.
+
+**Applied rule**: smallest slice; do not author in someone else's voice.
+
+**Signature**: Stark
+
+**Recorded dissent**: printing is a drop-off. The developer who does not yet
+think in agent-instruction files is exactly the one who will not paste it, and
+every competing tool that wins this slot wins it by writing.
+
+**Falsifier**: if a walkthrough or field trial of a freshly-inited repository
+shows agents repeatedly starting work without consulting the vault *while the
+printed text observably goes unpasted*, print-only was wrong. The remedy is then
+an explicit opt-in flag in the mould of `agent-setup --install-pre-commit-hook`
+— this repository's one existing append-to-a-user-file, opt-in per invocation —
+with a marker-bounded block, refusal on a hand-edited interior, and a removal
+flag. Never a default of `init`.
+
+**Review**: at the first walkthrough of a freshly-inited repository.
+
+**Status**: valid
+
+## 2026-08-31 — An analysis is a dated record beside the vault, not a concept inside it
+
+**Convened**: solo pass (`/po-pass`, 21/24, no fatal zero, verdict *shape a
+slice*) · **Trigger**: the owner asked why the analysis surface reports how much
+is there rather than what is weak, and asked for results kept in a tab,
+re-runnable, and diffable against last time.
+
+**Prior decisions read, and one of them contested**: `FlowTab` holds that an
+analysis answer belongs in the conversation that produced it — *"there is no
+result pane here"* — because the permission trail and the follow-up questions
+live there, and decision (21) added *"no persistence"* to the endcap slice.
+Keeping a result on screen contests both. This record does not overturn them:
+the slice below writes a file and adds no result pane, so the standing position
+stands until a council decides otherwise.
+
+**Decision**: `ontology-atlas analysis` writes a dated findings record and
+compares it with the previous one. Three boundaries hold it:
+
+1. **It derives nothing itself.** It runs this CLI's own `health`, `validate`,
+   and `architecture`. A second implementation of "what counts as a problem" is
+   how this surface once told people to fix 83 things that could not be fixed
+   (2026-08-16 (16)).
+2. **Identity is not wording.** Each finding's id is built from the check and the
+   thing it points at. Two runs can therefore be compared at all; prose cannot
+   be, because the same problem described twice is two paragraphs.
+3. **It is not reviewed meaning.** The record carries no `kind:` and sits beside
+   the vault, not inside it. Inside, `validate` warns `missing-kind` on every
+   record and is right to — a `kind:`-less file in a vault folder is usually a
+   mistake, and teaching it an exception is a vault-contract change.
+
+**Public contract change**: one new CLI command, `analysis`. The count moves 57
+→ 58 across `cli/package.json`, the generated MCP surface, and the three
+documents that state it.
+
+**Applied rule**: smallest slice; no model call, no new kind, no new route, no
+new MCP tool. Deterministic evidence only.
+
+**Rejected**: writing the record inside the vault so the app could read it
+today. That buys an in-app tab at the price of the vault contract, and the app
+cannot show these findings anyway — the CLI's health emits eight checks and the
+browser computes six, and the two missing ones include the only finding open on
+this repository.
+
+**Signature**: Stark
+
+**Recorded dissent**: a record the app cannot open is a file nobody will read.
+The value the owner asked for was a tab, and this delivers a command; a
+developer who has to run a CLI to learn what is weak will not run it twice.
+
+**Falsifier**: the command is run once and never again. If the second run does
+not happen within the next round of work, the dissent was right and the surface —
+not the record — was the thing worth building.
+
+**Review**: when the vault-contract question is put to `/design-council`, and at
+the first observation of whether anyone re-ran it.
+
+**Status**: valid
+
+## 2026-08-31 — The static budget is raised once; the next time, move the ledgers out
+
+**Convened**: solo pass · **Trigger**: the desktop static-asset gate measured
+7.81 MiB against an 8 MiB ceiling — 97.6% — during a routine rebuild and install
+of the current app.
+
+**Measured before deciding**: the ceiling was not being approached by product
+code. `src/entities/docs-vault/data/content.json` is 4.53 MiB, of which
+`DECISIONS` is 2.84 MiB and `CHANGELOG` is 1.14 MiB. Those two files are
+append-only by charter, so this input rises monotonically and reaches any
+ceiling eventually. The same documents already ship as plain Markdown in
+`out/docs-vault/` (5.4 MiB), which this gate does not count, so the bundle
+carries a second copy of documents the app can already fetch. The whole macOS
+bundle is 87.89 MiB, so a 2 MiB change in the static portion is not what
+constrains this product.
+
+**Decision**: raise `nextStaticBytes` to 10 MiB, with the measurement and the
+structural fix written into the constant's own comment. If the gate goes red
+again, stop bundling the two ledgers and read them from the static copy on
+demand instead of raising the number a second time.
+
+**Applied rule**: smallest slice that unblocks, with the real fix named rather
+than deferred silently.
+
+**Rejected**: raising it without recording why. A budget answered by moving the
+line stops being a budget, and the next person sees only a bigger number with no
+account of how it got there.
+
+**Signature**: Stark
+
+**Recorded dissent**: the ledgers should have been unbundled now rather than
+recorded as a follow-up, because a gate raised once is usually raised twice.
+
+**Falsifier**: the gate goes red again and the response is another increase. If
+that happens the dissent was right and the ceiling should be reverted to 8 MiB
+until the ledgers are unbundled.
+
+**Review**: at the next red reading of `pnpm desktop:perf`.
+
+**Status**: valid
+
+## 2026-08-31 — A score only one side can earn is reported, never quoted as a gap
+
+**Convened**: solo pass · **Trigger**: `README.md` quoted the paired lifecycle
+pilot's coverage gap as evidence for what Atlas is trying to earn. Reading the
+runner showed the score was a literal word match over a list of required items,
+and that 14 of the 19 items were Atlas concept names. Those names exist only
+inside the prepared vault, so the side without a vault could not score them
+under any answer.
+
+**Measured**: the 24 saved answers of `2026-08-31-gb-r3` were scored again with
+nothing re-run. All four published averages came back exactly (0.25 / 0.875 /
+0.2834 / 0.7389), so the re-score reads the same answers. Separating the part
+both sides could earn from the part only Atlas could moved the comparable gap
+from +0.625 and +0.4555 down to **+0.25 in both subjects**. In all 12 control
+cells the side without Atlas named 100% of the source paths; every other miss
+was an Atlas concept name, except the single word `excludes` in the two boundary
+questions — and there the brownfield control had written "explicitly outside
+it", which is the same boundary correctly stated and scored zero. Evidence:
+[the correction](benchmark/FINDINGS-2026-08-31-metric-split.md) and
+[the re-scored matrix](benchmark/results/2026-08-31-gb-r3-regrade-summary.md).
+
+**Decision**: required items are sorted into an Atlas concept name, a source
+path, or an ordinary phrase. Summaries report the comparable score and the
+Atlas-name score in separate columns and print the word behind every miss. The
+old combined number survives only so past runs still reproduce, and is labelled
+not for quoting. The sorting is checked rather than trusted: the runner refuses
+to start unless every concept name is a real entry in that subject's vault and
+absent from the source tree, and every path exists on disk. `--dry-run`, which
+printed `definitions valid` while calling nothing that could fail, now runs the
+checks and exits non-zero; both new checks were planted red and restored green.
+
+**Applied rule**: charter first. An honest measurement is this product's
+strongest asset, so a number that cannot be a comparison is reported as what it
+is rather than narrowed away or deleted. The Atlas-name column stays visible:
+returning a name that can be looked up again is a genuine property of the vault.
+
+**Rejected**: adding *outside*, *not part of* and similar synonyms to the
+boundary word list. Rejected because those synonyms were chosen after seeing
+which control answers they would rescue, which is tuning the ruler to the
+preferred result. Boundary judgement goes to blind human grading instead.
+
+**Signature**: Stark
+
+**Recorded dissent**: the split understates Atlas. A concept name is the unit
+that makes a handoff addressable across sessions and tools, so scoring it is
+scoring the product's actual contribution, and moving it into a non-comparable
+column hides the one thing Atlas uniquely supplies.
+
+**Falsifier**: if blind human grading of these same 24 answers finds the Atlas
+side materially better on correctness, boundary fidelity, citation accuracy, or
+usefulness of the handoff, then the combined score pointed the right way and the
+dissent won on substance while losing on method.
+
+**Review**: when blind human grading of `2026-08-31-gb-r3` is recorded, and
+again on the first unfamiliar-repository run.
+
+**Follow-on obligations**: `README.md` was restated in the same change. The
+Atlas side's own concept-name score was 0.8333 greenfield and 0.5695 brownfield
+— it repeatedly answered without the names it had just read — which is a product
+bug to fix, not a scoring artifact.
+
+**Status**: valid
+
 ## 2026-08-31 — Current exact handoff passes one read-only coding lane; cross-repository speed remains unearned
 
 **Trigger**: independent review invalidated the preceding performance evidence

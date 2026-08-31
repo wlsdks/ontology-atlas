@@ -71,6 +71,7 @@ import {
 import { computeCensusHealth, computeInsightsCensus } from "../lib/census-health";
 import { buildVaultHealthRepair } from "../lib/vault-health-repair";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
+import { formatDigestTime } from "../lib/digest-time";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
@@ -813,6 +814,14 @@ export function OntologyInsightsPage() {
     moreCount: (count: number) => t("doNext.moreCount", { count }),
     digestTitle: t("doNext.digestTitle"),
     digestToday: (count: number) => t("doNext.digestToday", { count }),
+    digestScope: (shown: number, today: number) => t("doNext.digestScope", { shown, today }),
+    digestWhen: (iso: string) =>
+      formatDigestTime(iso, {
+        justNow: t("doNext.digestJustNow"),
+        minutes: (count: number) => t("doNext.digestMinutesAgo", { count }),
+        hours: (count: number) => t("doNext.digestHoursAgo", { count }),
+        days: (count: number) => t("doNext.digestDaysAgo", { count }),
+      }),
     digestApproveHint: t("doNext.digestApproveHint"),
     digestWhyPrefix: t("doNext.digestWhyPrefix"),
     touchUpBandTitle: t("doNext.touchUpBandTitle"),

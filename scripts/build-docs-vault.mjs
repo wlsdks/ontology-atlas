@@ -240,11 +240,22 @@ export function parseArgs(argv = process.argv.slice(2)) {
   return { check: argv[0] === '--check' };
 }
 
+// Directories under docs/ that are not product documentation and must not ship.
+//
+// `analyses/` holds dated per-run findings records written by `ontology-atlas
+// analysis`. They are committed on purpose — that is what makes them versioned
+// and diffable — but they are this repository's own working output, not
+// documentation anybody installs. Bundling them would grow the shipped app on
+// every run, against a static budget already at 78% (docs/DECISIONS.md,
+// 2026-08-31).
+const NOT_PRODUCT_DOCS = new Set(['analyses']);
+
 async function walk(dir) {
   const out = [];
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
+    if (entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       const nested = await walk(full);

@@ -79,7 +79,7 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 57 commands)                      │
+│ CLI (cli/, v0.11.0 — 58 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
 │ ├─ mcp-verify/analyze/infer-imports/architecture       │
 │ ├─ bootstrap/compile                                   │

@@ -1547,7 +1547,12 @@
         "inlineConflict": "This file just changed: we reloaded it. Press save once more to write your sentence anyway.",
         "inlineNeedsText": "Write one sentence to enable saving",
         "inlineNeedsDomain": "Pick one area",
-        "inlineReadOnlyHint": "The example folder cannot be edited. Open your own folder to write right here."
+        "inlineReadOnlyHint": "The example folder cannot be edited. Open your own folder to write right here.",
+        "digestScope": "last {shown} · {today} today",
+        "digestJustNow": "just now",
+        "digestMinutesAgo": "{count}m ago",
+        "digestHoursAgo": "{count}h ago",
+        "digestDaysAgo": "{count}d ago"
       },
       "flow": {
         "title": "Business flow",
