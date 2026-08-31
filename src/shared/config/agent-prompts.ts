@@ -62,6 +62,22 @@ function vaultRef(vaultPath: string | null | undefined): string {
  *
  * So it no longer paraphrases the write path. It hands over the proposal and
  * points at the authority that knows the rest.
+ *
+ * ## Why it now stops instead of chasing `canWrite`
+ *
+ * The first repair of this told the agent to "keep following nextStep until
+ * canWrite is true", which was still wrong for the reader it was written for. A
+ * single-context agent cannot honestly reach that state: writing needs a
+ * qualification packet whose evaluator is not its builder, and the server fails
+ * closed on `maker-self-evaluation` when they match. Told to chase the flag, such
+ * an agent either loops or invents the second actor.
+ *
+ * The other half of that repair was a wrong diagnosis worth recording. The plan
+ * digest is a pure function of the proposal the caller submits, so a proposal
+ * carried back verbatim reproduces the digest the human accepted. Acceptance does
+ * not expire; a fresh session simply re-authors the proposal by default and
+ * invalidates its own approval. Saying "save what you showed them" costs one
+ * sentence and removes that whole failure.
  */
 export function buildAgentAnalyzePrompt({
   vaultPath,
@@ -94,12 +110,21 @@ export function buildAgentAnalyzePrompt({
     `   while proposalValidation.canWrite is false — approval alone does not`,
     `   make it true, and no write is authorized without the writePlan the`,
     `   server returns.`,
-    `7. After the human responds, follow the nextStep the server returns, and`,
-    `   keep following it until canWrite is true. This server publishes the`,
-    `   full construction lifecycle in its own instructions; read that rather`,
-    `   than inferring the remaining steps. If a step needs the person, say`,
-    `   which one and what it needs — do not stop silently on canWrite: false.`,
-    `8. Never use delete_concept, merge_concepts, rename_concept,`,
+    `7. After the human accepts, save the exact proposal you showed them,`,
+    `   unchanged. The plan digest their acceptance is bound to is derived`,
+    `   from that proposal, so resubmitting it verbatim reproduces the same`,
+    `   digest, while re-deriving the proposal produces a different one their`,
+    `   acceptance no longer matches.`,
+    `8. Writing additionally needs an independent evaluation lane: the server`,
+    `   rejects a qualification whose evaluator is its builder. If you cannot`,
+    `   run that lane as a separate context, do not attempt the write.`,
+    `   Do not fabricate an evaluator. Say that the plan is accepted and is`,
+    `   waiting on an independent evaluation, name where you saved the`,
+    `   proposal, and stop. Follow the nextStep the server returns for`,
+    `   everything before that point; this server publishes its full`,
+    `   construction lifecycle in its own instructions, so read that rather`,
+    `   than inferring the rest.`,
+    `9. Never use delete_concept, merge_concepts, rename_concept,`,
     `   absorb_document, or git_snapshot as part of ordinary synchronization`,
     `   unless the human explicitly requested that operation and reviewed its`,
     `   dry-run or preflight.`,
