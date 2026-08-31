@@ -404,6 +404,18 @@
       ]
     },
     {
+      "slug": "benchmark/FINDINGS-2026-08-31-two-graders",
+      "path": "docs/benchmark/FINDINGS-2026-08-31-two-graders.md",
+      "title": "The difference is smaller than the ruler — 2026-08-31-gb-r3",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "A second reader was given the same 24 answers, then asked to read them three times. The three readings are what matters. Command: pnpm benchmark:grade --bypass --run-id=2026-08-31-gb-r3 --repeat=3. · Correctness, out of 3 · Reading 1 · Reading 2 · Reading 3 · Without Atlas · 2.75 · 2.833 · 2.833 · With Atlas · 2.833 · ",
+      "wordCount": 635,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -411,7 +423,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 2948,
+      "wordCount": 3067,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
@@ -422,6 +434,7 @@
         "benchmark/FINDINGS-2026-08-31-metric-split",
         "benchmark/results/2026-08-31-gb-r3-summary",
         "benchmark/results/2026-08-31-gb-r3-regrade-summary",
+        "benchmark/FINDINGS-2026-08-31-two-graders",
         "benchmark/FINDINGS-2026-08-31-screening-grade",
         "benchmark/results/2026-08-31-gb-r3-blind-packet",
         "benchmark/results/2026-08-31-gb-r3-screening-grades",
@@ -594,8 +607,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. Score each answer on four axes and one count. Full definitions are in docs/benchmark/rubric.md, section \"Lifecycle matrix scoring\". In short: · Axis · Out of · What full",
-      "wordCount": 5626,
+      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. Record five things for each answer. The full specification, with the level definitions and worked examples, is docs/benchmark/rubric.md, section \"Lifecycle matrix scorin",
+      "wordCount": 5718,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -644,8 +657,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. Score each answer on four axes and one count. Full definitions are in docs/benchmark/rubric.md, section \"Lifecycle matrix scoring\". In short: · Axis · Out of · What full",
-      "wordCount": 2957,
+      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. Record five things for each answer. The full specification, with the level definitions and worked examples, is docs/benchmark/rubric.md, section \"Lifecycle matrix scorin",
+      "wordCount": 3049,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -669,7 +682,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Score each agent × mode × task cell (40 cells total for the 10 legacy tasks in a full Claude Code + Codex measurement run). The lifecycle runner has its own 8-cell-per-repeat matrix and reports machine coverage separately. Be strict. If you find yourself wanting to round up because the agent \"almost\" got it, write the ",
-      "wordCount": 1864,
+      "wordCount": 2471,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -3785,7 +3798,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`FINDINGS-2026-08-31-sc",
+        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`FINDINGS-2026-08-31-tw",
         "linkText": "`results/2026-08-31-gb-r3-regrade-summary.md`"
       },
       {
@@ -4055,10 +4068,17 @@
         "linkText": "`FINDINGS-2026-08-31-change-flow.md`"
       }
     ],
+    "benchmark/FINDINGS-2026-08-31-two-graders": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "b-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | **[`FINDINGS-2026-08-31-two-graders.md`]** | **The gap between the two sides is the same size as the grader changing its mind.** Read before quoting any grade. |",
+        "linkText": "`FINDINGS-2026-08-31-two-graders.md`"
+      }
+    ],
     "benchmark/FINDINGS-2026-08-31-screening-grade": [
       {
         "fromSlug": "benchmark/README",
-        "context": "b-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | **[`FINDINGS-2026-08-31-screening-grade.md`]** | A first read of those 24 answers by a model. Atlas won the two boundary questions and lost the orientation question.",
+        "context": "**The gap between the two sides is the same size as the grader changing its mind.** Read before quoting any grade. | | **[`FINDINGS-2026-08-31-screening-grade.md`]** | A first read of those 24 answers by a model. Atlas won the two boundary questions and lost the orientation question.",
         "linkText": "`FINDINGS-2026-08-31-screening-grade.md`"
       }
     ],
@@ -5707,6 +5727,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-08-31-screening-grade",
             "title": "Reading the 24 answers — 2026-08-31"
+          },
+          {
+            "name": "FINDINGS-2026-08-31-two-graders",
+            "path": "benchmark/FINDINGS-2026-08-31-two-graders",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-08-31-two-graders",
+            "title": "The difference is smaller than the ruler — 2026-08-31-gb-r3"
           },
           {
             "name": "README",

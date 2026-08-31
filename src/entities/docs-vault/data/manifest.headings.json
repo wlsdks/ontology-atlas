@@ -2484,6 +2484,43 @@
       "slug": "what-to-do-about-it"
     }
   ],
+  "benchmark/FINDINGS-2026-08-31-two-graders": [
+    {
+      "depth": 1,
+      "text": "The difference is smaller than the ruler — 2026-08-31-gb-r3",
+      "slug": "the-difference-is-smaller-than-the-ruler-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "The result",
+      "slug": "the-result"
+    },
+    {
+      "depth": 2,
+      "text": "Measure the floor at the size of the claim",
+      "slug": "measure-the-floor-at-the-size-of-the-claim"
+    },
+    {
+      "depth": 2,
+      "text": "What the readings do agree on",
+      "slug": "what-the-readings-do-agree-on"
+    },
+    {
+      "depth": 2,
+      "text": "The criterion that had to be fixed first",
+      "slug": "the-criterion-that-had-to-be-fixed-first"
+    },
+    {
+      "depth": 2,
+      "text": "A finding hiding inside that fix",
+      "slug": "a-finding-hiding-inside-that-fix"
+    },
+    {
+      "depth": 2,
+      "text": "What still outranks all of this",
+      "slug": "what-still-outranks-all-of-this"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -3441,29 +3478,44 @@
       "slug": "lifecycle-matrix-scoring"
     },
     {
-      "depth": 4,
-      "text": "1. Correctness — 0 to 3",
-      "slug": "1-correctness-0-to-3"
+      "depth": 3,
+      "text": "The material",
+      "slug": "the-material"
     },
     {
-      "depth": 4,
-      "text": "2. Citations — 0 to 2",
-      "slug": "2-citations-0-to-2"
+      "depth": 3,
+      "text": "The five things you record",
+      "slug": "the-five-things-you-record"
     },
     {
-      "depth": 4,
-      "text": "3. Boundary — 0 to 2",
-      "slug": "3-boundary-0-to-2"
+      "depth": 3,
+      "text": "1. Correct — out of 3",
+      "slug": "1-correct-out-of-3"
     },
     {
-      "depth": 4,
-      "text": "4. Next step — 0 to 2",
-      "slug": "4-next-step-0-to-2"
+      "depth": 3,
+      "text": "2. Citations — out of 2",
+      "slug": "2-citations-out-of-2"
     },
     {
-      "depth": 4,
-      "text": "5. Unsupported claims — a count, never a score",
-      "slug": "5-unsupported-claims-a-count-never-a-score"
+      "depth": 3,
+      "text": "3. Boundary — out of 2",
+      "slug": "3-boundary-out-of-2"
+    },
+    {
+      "depth": 3,
+      "text": "4. Next step — out of 2",
+      "slug": "4-next-step-out-of-2"
+    },
+    {
+      "depth": 3,
+      "text": "5. Unsupported and Unverifiable — counts, never scores",
+      "slug": "5-unsupported-and-unverifiable-counts-never-scores"
+    },
+    {
+      "depth": 3,
+      "text": "What never affects a score",
+      "slug": "what-never-affects-a-score"
     },
     {
       "depth": 2,

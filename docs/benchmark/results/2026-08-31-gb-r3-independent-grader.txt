@@ -1,3 +1,333 @@
+{"grades":[{"id":"C01","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The answer correctly assigns acknowledgement changes to Coordination while bounding policy involvement and unavailable runtime details."},{"id":"C02","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source clearly separates Inventory reconciliation from Purchase confirmation and supports the stated integration rationale."},{"id":"C03","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly places permission evaluation in Access Control and explicitly excludes it from Coordination."},{"id":"C04","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The vault supports the named owner, capability chain, source anchors, and limits on inferred runtime impact."},{"id":"C05","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"The recorded Checkout boundary explicitly excludes reconciliation and the dependency rationale directly answers why ownership should not move."},{"id":"C06","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It accurately identifies Coordination as owner and treats realtime and policy effects as bounded rather than proven."},{"id":"C07","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented system map and domain split place evaluation in the policy package outside Coordination."},{"id":"C08","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It gives the correct Access Control owner and the correct exclusion from Coordination."},{"id":"C09","correct":1,"citations":1,"boundary":1,"nextStep":1,"unsupported":2,"unverifiable":0,"note":"Although it finds the Coordination domain, it incorrectly presents the Access Control permission levels “coordinate” and “read” as acknowledgement capabilities."},{"id":"C10","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It correctly makes Checkout the only established direct capability and avoids inventing discount effects on Inventory."},{"id":"C11","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The vault explicitly records separate ownership, mutual exclusions, and Checkout’s dependency on Inventory Sync."},{"id":"C12","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"Workspace Authorization and its boundaries exactly support the claimed Access Control ownership and Coordination exclusion."},{"id":"C13","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":5,"note":"The answer accurately follows the recorded capability dependencies while clearly stopping short of claiming a runtime blast radius."},{"id":"C14","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Its ownership and dependency analysis is right, but starting at realtime rather than the directly anchored web acknowledgement capability is a minor prioritization error."},{"id":"C15","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly locates the vague discount change in Purchase while making clarification of the missing discount contract the first decision."},{"id":"C16","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented purchase flow supports Checkout and cart summary as the bounded starting surface without establishing an Inventory change."},{"id":"C17","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The explicit capability boundaries and dependency reason fully support keeping reconciliation outside Checkout."},{"id":"C18","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It precisely states both sides of the Access Control–Coordination boundary and names the correct policy anchor."},{"id":"C19","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It assigns the change to Purchase, excludes unrelated responsibilities, and turns the unspecified rule semantics into a concrete decision step."},{"id":"C20","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Checkout is the right provisional owner, but treating Inventory Sync as part of the known discount surface is broader than the evidence establishes."},{"id":"C21","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The product documents support both the ownership split and the stated consistency rationale without moving reconciliation into Checkout."},{"id":"C22","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"It correctly identifies Checkout as directly touched and limits Inventory Sync to an adjacent dependency unless requirements justify more."},{"id":"C23","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The cited domain and capability boundaries decisively place permission evaluation in Access Control outside Coordination."},{"id":"C24","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source directly supports separate Purchase and Inventory ownership and the cross-boundary consistency relationship described."}]}
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.151.0
+--------
+workdir: /var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/ontology-atlas-grading-8771c789-a6f7-4df3-98ee-d4f6b015138c
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: none
+reasoning summaries: none
+session id: 01a05584-4d8f-70e0-a440-61d409814820
+--------
+user
+Grade 24 answers in answers.md. Each answer has an opaque id and was
+written by an AI agent asked one question about one of the two codebases here.
+
+You have: answers.md (the answers), criteria.md (how to score, section
+"Lifecycle matrix scoring"), source-greenfield/ and source-brownfield/ (the
+codebases the questions were about), and vault-greenfield/ and
+vault-brownfield/ (a curated concept vault that some of the answering agents
+could read and others could not).
+
+Read the sources and the vault before scoring, and check every path and
+concept an answer cites against them.
+
+What you do NOT have: some of these agents could also query a live server
+over the vault, and those tool responses are not in this packet. An answer
+may therefore cite reported metadata you cannot see — currentness, impact
+status, completeness or source-binding flags. That is a gap in this packet,
+not a fault in the answer.
+
+Score every id on correct (0-3), citations (0-2), boundary (0-2) and
+nextStep (0-2), and split what you cannot confirm into two counts:
+
+- unsupported: claims the material you have contradicts, and paths or
+  concepts that do not exist in it. These are faults.
+- unverifiable: claims you simply cannot check because they rest on the tool
+  responses above. These are not faults, and must not lower any score.
+
+Score citations only on paths and concept names you can actually check
+against the material you have. Do not deduct for a citation you cannot see.
+
+Put the one thing that decided the correct score in note, in one sentence.
+
+Some answers name vault concepts and some describe the same idea in ordinary
+words. That difference is not itself a quality difference — grade what the
+answer establishes about the codebase, not which vocabulary it used.
+
+Return exactly one JSON object matching the provided output schema. Do not
+edit any file.
+codex
+{"grades":[{"id":"status","correct":0,"citations":0,"boundary":0,"nextStep":0,"unsupported":0,"unverifiable":0,"note":"I’m reading the scoring rubric, all 24 answers, both source trees, and both vaults before checking each cited path and concept."}]}
+exec
+/bin/zsh -lc "sed -n '/Lifecycle matrix scoring/,"'$p'"' criteria.md && printf '\\nANSWERS\\n' && sed -n '1,260p' answers.md && printf '\\nFILES\\n' && rg --files source-greenfield source-brownfield vault-greenfield vault-brownfield" in /var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/ontology-atlas-grading-8771c789-a6f7-4df3-98ee-d4f6b015138c
+ succeeded in 0ms:
+## Lifecycle matrix scoring
+
+The greenfield/brownfield runner records two separate results. **Required
+coverage** is a deterministic diagnostic over the final structured answer: it
+checks the fixed task's required slugs, paths, and bounded-unknown signal.
+**Content pass** requires full coverage and no forbidden item, while **usable
+cell** means the process and arm-integrity checks passed. Neither is a human
+semantic verdict.
+
+For the lifecycle matrix, a person reads each answer and scores it. This section
+is the whole specification. If something here is ambiguous, that is a defect in
+this section, not a judgement call for the grader.
+
+### The material
+
+Build the packet with `pnpm benchmark:blind-set --run-id=<run>`. It gives every
+answer an opaque id and shuffles the order, so nobody grades in a convenient
+sequence or scores the label instead of the answer. Grade against:
+
+- the codebase the question was about;
+- the curated concept vault, which some answering agents could read and some
+  could not.
+
+**What you will not have:** the vault-reading agents also queried a live server,
+and those tool responses are not saved. An answer may cite reported metadata you
+cannot see. That is a gap in the packet, not a fault in the answer — see
+*Unverifiable* below.
+
+### The five things you record
+
+| # | Name | Out of | The question it answers |
+|---:|---|---:|---|
+| 1 | Correct | **3** | Did it get the question right? |
+| 2 | Citations | **2** | Does what it points at exist, and say what it claims? |
+| 3 | Boundary | **2** | Did it name who owns this, and what is outside? |
+| 4 | Next step | **2** | Could someone act on this without asking again? |
+| 5 | Unsupported / Unverifiable | counts | What could not stand — and which kind. |
+
+**Always write a score with its maximum.** `2 / 3`, never `2`. A number without
+its scale is not a result. (These maxima are the lifecycle matrix's own; the
+`D-a` and `D-b` axes further down belong to the older D tasks and use different
+ones. Never mix the two sets in one table.)
+
+### 1. Correct — out of 3
+
+| Score | Meaning |
+|---:|---|
+| **3** | Everything the question asked for is present and accurate. No false claim. |
+| **2** | The main answer is right, with a minor omission or one borderline sub-item. |
+| **1** | It addresses the question but misses material content, or states something confidently wrong. |
+| **0** | Wrong, evasive, or a non-answer such as "I'd need more context". |
+
+*A real 3, on "should reconciliation move into checkout":* it answered no, gave
+both exclusions, and quoted the recorded relation and its stored reason.
+
+*A real 1, on "what does an acknowledgement change touch":* it named the right
+domain, then listed *"coordinate"* and *"read"* as that domain's capabilities —
+they are permission levels belonging to a different domain, reused as capability
+names.
+
+### 2. Citations — out of 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Every path and concept it cites exists, and each supports the claim attached to it. |
+| **1** | Everything cited exists, but at least one does not support the claim made from it. |
+| **0** | It cites a path or concept that does not exist. |
+
+Score only what you can actually check against the material you have. **Never
+deduct for a citation you cannot see** — that belongs in *Unverifiable*.
+
+### 3. Boundary — out of 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Names the responsibility that owns the work **and** what is outside it. |
+| **1** | Names the owner correctly but never says what is excluded. |
+| **0** | Puts the work in the wrong place, or states an exclusion that is not true. |
+
+*A real 2:* "Permission evaluation belongs in Access Control … deciding who may
+read, coordinate, or administer an incident is explicitly outside it." Owner
+named, exclusion named. Whether it said *excludes* or *explicitly outside* makes
+no difference here — that is wording, and wording is not scored.
+
+### 4. Next step — out of 2
+
+One question decides it: **could a second person or agent act on this without
+coming back to ask?**
+
+| Score | Meaning |
+|---:|---|
+| **2** | A specific action against specific files, or a specific decision that has to be made first. |
+| **1** | Actionable but generic, or it restates the answer instead of moving past it. |
+| **0** | No usable next step. |
+
+*A real 1:* "Read README.md, docs/SYSTEM-MAP.md, apps/web, packages/realtime in
+that order" — the answer had already said that. It repeats rather than advances.
+
+### 5. Unsupported and Unverifiable — counts, never scores
+
+Two different things, and collapsing them breaks the measurement.
+
+| Count | What goes in it | Does it lower a score? |
+|---|---|---|
+| **Unsupported** | Claims the material **contradicts**, and paths or concepts that do not exist. | It is a named defect. Report it; do not subtract it from an axis. |
+| **Unverifiable** | Claims you cannot check because they rest on tool responses the packet does not contain. | **No. Never.** |
+
+Report both as counts. Never average either into a total: one invented claim is
+a specific defect worth naming, not a fraction of a point.
+
+> **Why the split exists.** The first independent grading of `2026-08-31-gb-r3`
+> returned 17 unsupported claims against the vault side and `citations 1/2` on
+> nearly every one of its answers — while its own notes called those same answers
+> *"correct"*, *"fully establish the boundary"*, and *"decisively"* right. It was
+> penalising claims it had never been given the evidence for. Separating the two
+> counts moved citation agreement between graders from 33% to 96% and the vault
+> side's unsupported count from 17 to 0. **A score and its own note disagreeing
+> that consistently is the signal that a criterion is broken, not an answer.**
+
+### What never affects a score
+
+- **Which vocabulary an answer used.** Some name vault concepts, some describe
+  the same idea in ordinary words. Grade what the answer establishes about the
+  codebase.
+- **Tool calls, tokens, elapsed time.** Diagnostics, like a stack trace. A cell
+  is never won or lost on them.
+- **Build and upkeep cost.** A separate measurement, deliberately not folded in.
+
+Record separately, as invalidating rather than scoring a cell: any control leak,
+server setup failure, or answer-key contamination.
+
+## End-to-end change-flow scoring
+
+The change-flow runner has a different unit of analysis: a fixed change in a
+fresh Git repository. A workflow pass is conjunctive and requires all of these
+receipts:
+
+- exact changed-file allowlist;
+- focused test before merge and the same test after merge;
+- conventional feature commit;
+- on-arm exact capability update through `patch_concept`, followed by
+  `validate_vault` and `compile_ontology`;
+- local bare-remote push;
+- clean merge or explicit deterministic conflict recovery;
+- deletion of the local and remote feature branch, with a clean worktree.
+
+The `on` arm's extra Atlas Markdown file is intentional: the question is
+whether meaning survives the code-change handoff as a reviewed record. Git
+push, merge, and branch cleanup are ordinary workflow evidence, not proof that
+Atlas owns Git integration. A passing workflow only establishes that the
+bounded process completed; it does not establish better code quality or user
+value. Those require blind human grading, unfamiliar repositories, and
+construction/maintenance-cost accounting.
+
+## The four axes
+
+### 1. Correctness (0–3) — primary score
+
+| Score | Meaning |
+|---|---|
+| **3** | Fully correct. Every item the prompt asked for is present and accurate; no false claims. |
+| **2** | Mostly correct. The main answer is right; minor omissions OR one borderline-wrong sub-item. |
+| **1** | Partially correct. The answer addresses the question but is missing material content OR contains a confidently wrong statement. |
+| **0** | Wrong, evasive, or refuses. Includes "I'd need more context" non-answers. |
+
+**Verify against the actual repo state at measurement time** — don't grade from memory. Open the file / run `pnpm dogfood:walk` if needed.
+
+### 2. Tool-call count and tokens (diagnostic, never a score)
+
+Recorded, never scored. They are useful for one thing only: reading *how* an agent
+reached its answer, the same way you would read a stack trace. A cell is decided by
+the axes above and below this one.
+
+`scripts/benchmark.mjs` captures both. If you do look at them, read the median
+across runs and never a single cell: on 2026-08-25 a single-shot C2 read 10,534
+tokens in one mode and 49,196 in the other, for two identical shell commands.
+
+For Claude Code: visible in the conversation as tool-use blocks.
+For Codex: count the tool invocations shown in the CLI output.
+
+**Don't penalize MCP-off** for using more Read/Grep calls — that's the cost of not having the graph. The point is to make that cost visible.
+
+### 3. Hallucinations (count)
+
+Count of confidently asserted items that don't exist in the repo.
+
+Examples:
+- "The validator detects `parse-fail-soft`" → no such code exists. **+1**
+- "It's defined in `src/shared/lib/foo.ts`" but that file doesn't exist. **+1**
+- "The `findOrphans` function returns…" but it's actually `find_orphans`. **0** — name typo, not invented behavior.
+
+If unsure whether something's hallucinated, search for it. The cost of a wrong "+1" or "+0" is small; the cost of letting confident fabrication go uncounted is large.
+
+### D-only axes — the ones that decide a meaning cell
+
+Score these **only for D tasks**. They exist because a D answer can be fluent,
+plausible, and wrong in a way the correctness axis does not catch.
+
+#### D-a. Boundary fidelity (0–3)
+
+| Score | Meaning |
+|---|---|
+| **3** | Named the documented boundary, stated which side the request falls on, and stopped there. |
+| **2** | Found the boundary but hedged about whether it applies. |
+| **1** | Described the area correctly without noticing that a boundary governs it. |
+| **0** | Crossed a documented exclusion without noticing, or asserted the opposite of what the vault says. |
+
+A D1 answer that agrees symbol search belongs in `capabilities/mcp-server` scores
+**0** regardless of how well written it is: `## Inclusions / Exclusions` excludes
+an AST/source search engine in as many words.
+
+#### D-b. Provenance (0–2)
+
+| Score | Meaning |
+|---|---|
+| **2** | Cited the node slug **and** the section the claim came from, so a human can open it and disagree. |
+| **1** | Cited a node but not where inside it. |
+| **0** | Asserted the reason with no citation. Indistinguishable from a guess. |
+
+#### D-c. Invented rationale (count)
+
+Count reasons the answer gives that appear **neither in the vault nor in the
+source**. This is different from axis 3: the fact can be real while the *why* is
+fabricated, and a confident fabricated *why* is the most expensive failure this
+product can have, because it is the one a reader is least able to check.
+
+A D answer with any invented rationale cannot score above **1** on correctness,
+whatever else it got right.
+
+### 4. Subjective utility (1–5) — last, optional
+
+Strictly the human grader's gut feel: "if I'd asked this in real work, would this answer have moved me forward?"
+
+| Score | Meaning |
+|---|---|
+| **5** | Yes, immediately actionable. |
+| **4** | Yes, with one small follow-up. |
+| **3** | Mixed — useful but I'd verify before acting. |
+| **2** | Confusing or so verbose I'd ignore most of it. |
+| **1** | Worse than no answer (misleading or distracting). |
+
+This axis is noisy by design — it captures the texture (terseness, citation, framing) that the other axes miss.
+
+---
+
+## What the data should show
+
+### If the ontology helps (positive result)
+
+- **Cat A**: MCP-on correctness > MCP-off by ≥1 point on average. Tool calls fewer. Hallucinations lower.
+- **Cat B**: MCP-on correctness ≥ MCP-off (small but positive delta).
+- **Cat C**: Roughly neutral. MCP-on shouldn't be worse here.
+
+### If the ontology doesn't help (null result)
+
+- **Cat A**: MCP-on and MCP-off score the same on correctness. Tool calls maybe lower with MCP-on (efficiency win) but no quality difference.
+- This means the AI agent already extracts equivalent structure from raw markdown — the curated graph isn't earning its keep.
+
+### If the ontology hurts (negative result)
+
+- **Cat C**: MCP-on under-performs. Agent over-relies on ontology tools when raw file-read would be faster and more accurate.
+- **Cat A hallucinations** climb because the agent invents slugs based on the schema rather than checking.
+
+Each outcome has a clear next action. That's why we're running the bench.
+
+---
+
+## A note on ties
+
+When MCP-on and MCP-off score identically on correctness, **tie-break on tool-call efficiency**. If a Cat A task is solved in 1 tool call (MCP-on `find_backlinks`) vs 12 (MCP-off recursive grep), that's still a meaningful win for the agent's working economy — sub agents, latency, context budget — even if the final answer is identical.
+
+ANSWERS
 # Grading packet — 2026-08-31-gb-r3
 
 Each answer below is identified only by an opaque id, and the order is shuffled.
@@ -258,6 +588,42 @@ to both sides and grading without it is impossible.
 **Evidence given**:
 - Atlas defines Coordination as owning publication and acknowledgement of incident decisions; member authority belongs to Access Control.
 - Atlas records `packages/realtime` for Decision Broadcast, `apps/web` for Acknowledgement Tracking, and `packages/policy` for Workspace Authorization.
+
+FILES
+vault-greenfield/elements/checkout-entry.md
+vault-greenfield/elements/inventory-sync-entry.md
+vault-brownfield/elements/web-console.md
+vault-brownfield/elements/realtime-package.md
+vault-brownfield/elements/policy-package.md
+vault-greenfield/projects/northstar-commerce.md
+vault-brownfield/projects/relay-collaboration.md
+source-brownfield/apps/web/package.json
+vault-brownfield/capabilities/workspace-authorization.md
+vault-greenfield/capabilities/inventory-sync.md
+vault-brownfield/capabilities/acknowledgement-tracking.md
+vault-brownfield/capabilities/decision-broadcast.md
+vault-greenfield/capabilities/checkout.md
+source-greenfield/src/widgets/cart-summary/index.ts
+source-brownfield/packages/policy/package.json
+vault-brownfield/domains/access-control.md
+vault-brownfield/domains/coordination.md
+source-brownfield/README.md
+source-brownfield/packages/realtime/package.json
+source-brownfield/package.json
+source-greenfield/package.json
+source-greenfield/README.md
+vault-greenfield/domains/purchase.md
+source-brownfield/docs/SYSTEM-MAP.md
+vault-greenfield/domains/inventory.md
+source-greenfield/src/features/theme-toggle/index.ts
+source-greenfield/docs/PRODUCT.md
+source-greenfield/src/features/checkout/index.ts
+source-greenfield/src/features/inventory-sync/index.ts
+
+exec
+/bin/zsh -lc "sed -n '260,620p' answers.md && printf '\\nSOURCE AND VAULT CONTENTS\\n' && for f in "'$(rg --files source-greenfield source-brownfield vault-greenfield vault-brownfield | sort); do printf '"'\\n### %s\\n' \""'$f"; sed -n '"'1,240p' \""'$f"; done' in /var/folders/lk/h16phdtj1fx_j2lkwwxnzm1r0000gn/T/ontology-atlas-grading-8771c789-a6f7-4df3-98ee-d4f6b015138c
+ succeeded in 0ms:
+- Atlas records `packages/realtime` for Decision Broadcast, `apps/web` for Acknowledgement Tracking, and `packages/policy` for Workspace Authorization.
 - The Decision Broadcast handoff explicitly says to start with the realtime package and then check acknowledgement tracking.
 - `docs/SYSTEM-MAP.md` says the web console presents the incident timeline, realtime distributes timeline updates, and policy evaluates workspace permissions.
 - The three recorded source directories contain only `package.json` files naming their packages; no executable implementation or tests establish runtime call paths.
@@ -461,3 +827,334 @@ to both sides and grading without it is impossible.
 **Stated as unknown**:
 - The available files do not record a more specific API, event, or test suite for the checkout-to-inventory interaction.
 
+
+SOURCE AND VAULT CONTENTS
+
+### source-brownfield/README.md
+# Relay Collaboration
+
+Relay lets incident teams establish a shared operational picture while an event is unfolding.
+
+## Coordination
+
+Responders publish decisions and see who has acknowledged them.
+
+## Access Control
+
+Workspace owners decide who may read, coordinate, or administer an incident.
+
+### source-brownfield/apps/web/package.json
+{
+  "name": "@relay/web"
+}
+
+### source-brownfield/docs/SYSTEM-MAP.md
+# System map
+
+The web console presents the incident timeline. The realtime package distributes
+timeline updates. The policy package evaluates workspace permissions.
+
+### source-brownfield/package.json
+{
+  "name": "@relay/collaboration",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"]
+}
+
+### source-brownfield/packages/policy/package.json
+{
+  "name": "@relay/policy"
+}
+
+### source-brownfield/packages/realtime/package.json
+{
+  "name": "@relay/realtime"
+}
+
+### source-greenfield/README.md
+# Northstar Commerce
+
+Northstar helps independent merchants accept orders and keep sellable stock accurate.
+
+## Purchase
+
+Purchase owns turning a reviewed cart into a confirmed order.
+
+Customers review a cart, authorize payment, and receive an order confirmation.
+
+## Inventory
+
+Inventory owns maintaining trustworthy sellable stock.
+
+Merchants reconcile available stock across the storefront and warehouse.
+
+## Installation
+
+Run the workspace with pnpm.
+
+### source-greenfield/docs/PRODUCT.md
+# Product contract
+
+## User need
+
+Independent merchants need to sell without accepting an order for unavailable stock.
+
+## Product goal
+
+Keep purchase completion and inventory availability consistent enough that merchants
+can resolve exceptions before fulfillment.
+
+Purchase owns order confirmation from a reviewed cart. Inventory owns trustworthy
+sellable stock across storefront and warehouse.
+
+### source-greenfield/package.json
+{
+  "name": "northstar-commerce",
+  "description": "Commerce operations workspace"
+}
+
+### source-greenfield/src/features/checkout/index.ts
+export const checkoutFeature = 'purchase completion';
+
+### source-greenfield/src/features/inventory-sync/index.ts
+export const inventorySyncFeature = 'stock reconciliation';
+
+### source-greenfield/src/features/theme-toggle/index.ts
+export const themeToggleFeature = 'interface preference';
+
+### source-greenfield/src/widgets/cart-summary/index.ts
+export const cartSummaryWidget = 'cart summary';
+
+### vault-brownfield/capabilities/acknowledgement-tracking.md
+---
+slug: capabilities/acknowledgement-tracking
+kind: capability
+title: Acknowledgement Tracking
+domain: domains/coordination
+path: apps/web
+elements: [elements/web-console]
+dependencies: [capabilities/workspace-authorization]
+relation_notes: { capabilities/workspace-authorization: The receiving console must respect workspace authority while it shows acknowledgement state. }
+---
+
+## Definition
+Show which responders have acknowledged a decision.
+
+## Boundaries
+- Includes acknowledgement state in the incident workspace.
+- Excludes evaluating who may read or administer the workspace.
+### vault-brownfield/capabilities/decision-broadcast.md
+---
+slug: capabilities/decision-broadcast
+kind: capability
+title: Decision Broadcast
+domain: domains/coordination
+path: packages/realtime
+elements: [elements/realtime-package]
+dependencies: [capabilities/acknowledgement-tracking]
+relation_notes: { capabilities/acknowledgement-tracking: Acknowledgement state is meaningful only after a decision has been published to responders. }
+---
+
+## Definition
+Publish an operational decision and distribute it to active responders.
+
+## Boundaries
+- Includes decision publication and distribution.
+- Excludes workspace permission evaluation and member authority.
+
+## Uncertainty
+The recorded dependency states a product relationship. It does not establish a complete runtime blast radius.
+### vault-brownfield/capabilities/workspace-authorization.md
+---
+slug: capabilities/workspace-authorization
+kind: capability
+title: Workspace Authorization
+domain: domains/access-control
+path: packages/policy
+elements: [elements/policy-package]
+---
+
+## Definition
+Evaluate whether a member may read, coordinate, or administer an incident.
+
+## Boundaries
+- Includes workspace permission decisions.
+- Excludes publishing or acknowledging incident decisions.
+### vault-brownfield/domains/access-control.md
+---
+slug: domains/access-control
+kind: domain
+title: Access Control
+capabilities: [capabilities/workspace-authorization]
+---
+
+## Definition
+The responsibility boundary for incident workspace authority.
+
+## Boundaries
+Access control owns permission evaluation; it does not own incident decision content.
+### vault-brownfield/domains/coordination.md
+---
+slug: domains/coordination
+kind: domain
+title: Coordination
+capabilities: [capabilities/acknowledgement-tracking, capabilities/decision-broadcast]
+---
+
+## Definition
+The responsibility boundary for publishing and acknowledging incident decisions.
+
+## Boundaries
+Coordination owns decision state; member authority belongs to access control.
+### vault-brownfield/elements/policy-package.md
+---
+slug: elements/policy-package
+kind: element
+title: Policy package
+domain: domains/access-control
+path: packages/policy
+---
+
+The package path used as source evidence for workspace authorization.
+### vault-brownfield/elements/realtime-package.md
+---
+slug: elements/realtime-package
+kind: element
+title: Realtime package
+domain: domains/coordination
+path: packages/realtime
+---
+
+The package path used as source evidence for decision distribution.
+### vault-brownfield/elements/web-console.md
+---
+slug: elements/web-console
+kind: element
+title: Web console
+domain: domains/coordination
+path: apps/web
+---
+
+The application path used as source evidence for acknowledgement display.
+### vault-brownfield/projects/relay-collaboration.md
+---
+slug: projects/relay-collaboration
+kind: project
+title: Relay Collaboration
+domains: [domains/access-control, domains/coordination]
+path: .
+---
+
+# Relay Collaboration
+
+## Definition
+A shared operational picture for teams responding to an incident.
+
+## Boundary
+This project record connects responsibilities spread across packages; package names alone are not product capabilities.
+
+## Uncertainty
+The package map is source evidence. Runtime and transitive impact remain unmeasured by this static benchmark.
+### vault-greenfield/capabilities/checkout.md
+---
+slug: capabilities/checkout
+kind: capability
+title: Checkout
+domain: domains/purchase
+path: src/features/checkout/index.ts
+elements: [elements/checkout-entry]
+dependencies: [capabilities/inventory-sync]
+relation_notes: { capabilities/inventory-sync: Checkout depends on trustworthy sellable availability before it confirms a purchase. }
+---
+
+## Definition
+Authorize a purchase and produce an order confirmation.
+
+## Boundaries
+- Includes turning a reviewed cart into a confirmed order.
+- Excludes inventory reconciliation itself and interface preference changes.
+### vault-greenfield/capabilities/inventory-sync.md
+---
+slug: capabilities/inventory-sync
+kind: capability
+title: Inventory Sync
+domain: domains/inventory
+path: src/features/inventory-sync/index.ts
+elements: [elements/inventory-sync-entry]
+---
+
+## Definition
+Reconcile storefront availability with warehouse stock.
+
+## Boundaries
+- Includes sellable stock reconciliation.
+- Excludes purchase confirmation.
+### vault-greenfield/domains/inventory.md
+---
+slug: domains/inventory
+kind: domain
+title: Inventory
+capabilities: [capabilities/inventory-sync]
+---
+
+## Definition
+The responsibility boundary for maintaining trustworthy sellable stock.
+
+## Boundaries
+Inventory owns reconciliation across storefront and warehouse; purchase consumes availability before confirmation.
+### vault-greenfield/domains/purchase.md
+---
+slug: domains/purchase
+kind: domain
+title: Purchase
+capabilities: [capabilities/checkout]
+---
+
+## Definition
+The responsibility boundary for turning a reviewed cart into a confirmed order.
+
+## Boundaries
+Purchase owns order confirmation; inventory owns sellable stock.
+### vault-greenfield/elements/checkout-entry.md
+---
+slug: elements/checkout-entry
+kind: element
+title: Checkout entrypoint
+domain: domains/purchase
+path: src/features/checkout/index.ts
+---
+
+The implementation entrypoint named by the reviewed checkout capability.
+### vault-greenfield/elements/inventory-sync-entry.md
+---
+slug: elements/inventory-sync-entry
+kind: element
+title: Inventory sync entrypoint
+domain: domains/inventory
+path: src/features/inventory-sync/index.ts
+---
+
+The implementation entrypoint named by the reviewed inventory capability.
+### vault-greenfield/projects/northstar-commerce.md
+---
+slug: projects/northstar-commerce
+kind: project
+title: Northstar Commerce
+domains: [domains/inventory, domains/purchase]
+path: .
+---
+
+# Northstar Commerce
+
+## Definition
+A commerce workspace that keeps purchase completion and sellable inventory consistent.
+
+## Boundary
+This record preserves the cross-file responsibility map that the source does not express as one artifact.
+
+## Uncertainty
+The fixture names implementation entrypoints but does not measure runtime behavior.
+codex
+{"grades":[{"id":"C01","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The answer correctly assigns acknowledgement changes to Coordination while bounding policy involvement and unavailable runtime details."},{"id":"C02","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source clearly separates Inventory reconciliation from Purchase confirmation and supports the stated integration rationale."},{"id":"C03","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly places permission evaluation in Access Control and explicitly excludes it from Coordination."},{"id":"C04","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The vault supports the named owner, capability chain, source anchors, and limits on inferred runtime impact."},{"id":"C05","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"The recorded Checkout boundary explicitly excludes reconciliation and the dependency rationale directly answers why ownership should not move."},{"id":"C06","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It accurately identifies Coordination as owner and treats realtime and policy effects as bounded rather than proven."},{"id":"C07","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented system map and domain split place evaluation in the policy package outside Coordination."},{"id":"C08","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It gives the correct Access Control owner and the correct exclusion from Coordination."},{"id":"C09","correct":1,"citations":1,"boundary":1,"nextStep":1,"unsupported":2,"unverifiable":0,"note":"Although it finds the Coordination domain, it incorrectly presents the Access Control permission levels “coordinate” and “read” as acknowledgement capabilities."},{"id":"C10","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It correctly makes Checkout the only established direct capability and avoids inventing discount effects on Inventory."},{"id":"C11","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The vault explicitly records separate ownership, mutual exclusions, and Checkout’s dependency on Inventory Sync."},{"id":"C12","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"Workspace Authorization and its boundaries exactly support the claimed Access Control ownership and Coordination exclusion."},{"id":"C13","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":5,"note":"The answer accurately follows the recorded capability dependencies while clearly stopping short of claiming a runtime blast radius."},{"id":"C14","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Its ownership and dependency analysis is right, but starting at realtime rather than the directly anchored web acknowledgement capability is a minor prioritization error."},{"id":"C15","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It correctly locates the vague discount change in Purchase while making clarification of the missing discount contract the first decision."},{"id":"C16","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The documented purchase flow supports Checkout and cart summary as the bounded starting surface without establishing an Inventory change."},{"id":"C17","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":1,"note":"The explicit capability boundaries and dependency reason fully support keeping reconciliation outside Checkout."},{"id":"C18","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"It precisely states both sides of the Access Control–Coordination boundary and names the correct policy anchor."},{"id":"C19","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"It assigns the change to Purchase, excludes unrelated responsibilities, and turns the unspecified rule semantics into a concrete decision step."},{"id":"C20","correct":2,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":4,"note":"Checkout is the right provisional owner, but treating Inventory Sync as part of the known discount surface is broader than the evidence establishes."},{"id":"C21","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The product documents support both the ownership split and the stated consistency rationale without moving reconciliation into Checkout."},{"id":"C22","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":3,"note":"It correctly identifies Checkout as directly touched and limits Inventory Sync to an adjacent dependency unless requirements justify more."},{"id":"C23","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":2,"note":"The cited domain and capability boundaries decisively place permission evaluation in Access Control outside Coordination."},{"id":"C24","correct":3,"citations":2,"boundary":2,"nextStep":2,"unsupported":0,"unverifiable":0,"note":"The source directly supports separate Purchase and Inventory ownership and the cross-boundary consistency relationship described."}]}
+tokens used
+53,854

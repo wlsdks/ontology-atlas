@@ -3,18 +3,29 @@
 Each answer below is identified only by an opaque id, and the order is shuffled.
 Which side wrote which answer is withheld until the grades are saved.
 
-Score each answer on four axes and one count. Full definitions are in
-`docs/benchmark/rubric.md`, section "Lifecycle matrix scoring". In short:
+Record five things for each answer. The full specification, with the level
+definitions and worked examples, is `docs/benchmark/rubric.md`, section
+"Lifecycle matrix scoring".
 
-| Axis | Out of | What full marks means |
-|---|---:|---|
-| Correct | **3** | Everything the question asked for is present and accurate, with no false claim. |
-| Citations | **2** | Every path and concept it cites exists, and each supports the claim made from it. |
-| Boundary | **2** | Names the responsibility that owns the work **and** what is outside it. |
-| Next step | **2** | A second agent could act on it without coming back to ask. |
-| Unsupported | count | Statements the source and vault do not support. A count, never averaged in. |
+| # | Name | Out of | The question it answers |
+|---:|---|---:|---|
+| 1 | Correct | **3** | Did it get the question right? |
+| 2 | Citations | **2** | Does what it points at exist, and say what it claims? |
+| 3 | Boundary | **2** | Did it name who owns this, and what is outside? |
+| 4 | Next step | **2** | Could someone act on this without asking again? |
+| 5 | Unsupported / Unverifiable | counts | What could not stand — and which kind. |
 
 Always write a score with its maximum: `2 / 3`, never `2`.
+
+Two rules that decide more cells than anything else:
+
+- **Vocabulary is not quality.** Some answers name vault concepts and some
+  describe the same idea in ordinary words. Grade what the answer establishes
+  about the codebase, not which words it reached for.
+- **A claim you cannot check is not a fault.** The answering agents could also
+  query a live server, and those responses are not in this packet. Count such
+  claims as unverifiable and never let them lower a score. Unsupported is only
+  for what the material contradicts, or a path or concept that does not exist.
 
 The question each answer was given is shown, because the same question was put
 to both sides and grading without it is impossible.

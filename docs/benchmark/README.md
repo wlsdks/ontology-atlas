@@ -32,6 +32,7 @@ Either way, **measurement before further investment**.
 | [`FINDINGS-2026-08-31-metric-split.md`](FINDINGS-2026-08-31-metric-split.md) | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, not a comparison. |
 | [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. |
 | [`results/2026-08-31-gb-r3-regrade-summary.md`](results/2026-08-31-gb-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. |
+| [`FINDINGS-2026-08-31-two-graders.md`](FINDINGS-2026-08-31-two-graders.md) | **The gap between the two sides is the same size as the grader changing its mind.** Read before quoting any grade. |
 | [`FINDINGS-2026-08-31-screening-grade.md`](FINDINGS-2026-08-31-screening-grade.md) | A first read of those 24 answers by a model. Atlas won the two boundary questions and lost the orientation question. A screening pass, not a verdict. |
 | [`results/2026-08-31-gb-r3-blind-packet.md`](results/2026-08-31-gb-r3-blind-packet.md) | The 24 answers with ids instead of side labels, shuffled, ready for a person to grade. |
 | [`results/2026-08-31-gb-r3-screening-grades.md`](results/2026-08-31-gb-r3-screening-grades.md) | The screening grades, per cell, with a note on each. |
@@ -151,17 +152,27 @@ the grader cannot guess.
 #### Have a second grader read the same packet
 
 ```bash
-pnpm benchmark:grade --bypass --run-id=2026-08-31-gb-r3
+pnpm benchmark:grade --bypass --run-id=2026-08-31-gb-r3 --repeat=3
 ```
 
 Hands the packet to a separate process — a fresh agent with no memory of this
 repository's conversation — together with the criteria, both codebases, and both
-prepared vaults, and records its scores in the same shape. Where two graders
-agree the grade is probably about the answer; where they disagree the criteria
-are unclear, and that is the more useful output.
+prepared vaults, and records its scores in the same shape.
 
-It is still not a person. It removes one specific bias, a grader scoring its own
-earlier conclusion, and leaves the rest.
+**It reads the answers three times by default, and that is the point.** A grader
+given the identical packet does not return identical scores, so until that
+wobble is measured a difference between two sides cannot be told apart from the
+grader changing its mind. The command prints the spread beside every average and
+names the noise floor. On `2026-08-31-gb-r3` the floor turned out to be as large
+as the effect being measured — see
+[the two-grader findings](FINDINGS-2026-08-31-two-graders.md).
+
+Measure the floor at the grain of the claim. Across all 24 answers the readings
+move by 0.041; split into twelve per side, they move by 0.083. The comparison is
+per side, so 0.083 is the honest number.
+
+It is still not a person. It removes one specific bias — a grader scoring its
+own earlier conclusion — and leaves the rest.
 
 #### Re-score a saved run without running anything
 

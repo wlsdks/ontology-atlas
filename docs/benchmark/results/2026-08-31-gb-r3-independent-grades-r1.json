@@ -1,0 +1,242 @@
+{
+ "C01": {
+  "id": "C01",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly assigns acknowledgement changes to Coordination while separating the web, realtime, and policy responsibilities and bounding absent runtime evidence."
+ },
+ "C02": {
+  "id": "C02",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly keeps reconciliation in Inventory and gives the documented availability dependency and rationale."
+ },
+ "C03": {
+  "id": "C03",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly places permission evaluation in Access Control and explicitly excludes it from Coordination."
+ },
+ "C04": {
+  "id": "C04",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 3,
+  "note": "It identifies the complete acknowledgement, broadcast, and authorization relationship while clearly distinguishing recorded dependencies from runtime impact."
+ },
+ "C05": {
+  "id": "C05",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 3,
+  "note": "It correctly states both reciprocal exclusions and quotes the recorded Checkout-to-Inventory dependency reason."
+ },
+ "C06": {
+  "id": "C06",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly locates acknowledgement work in Coordination and limits realtime and policy involvement to what the sparse source can establish."
+ },
+ "C07": {
+  "id": "C07",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly assigns evaluation to the policy package and names authorization as outside Coordination."
+ },
+ "C08": {
+  "id": "C08",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It fully answers the ownership question by separating policy evaluation from decision publication and acknowledgement."
+ },
+ "C09": {
+  "id": "C09",
+  "correct": 1,
+  "citations": 1,
+  "boundary": 0,
+  "nextStep": 1,
+  "unsupported": 2,
+  "unverifiable": 0,
+  "note": "The decisive error is treating read and coordinate permission levels from Access Control as Coordination capabilities implicated by acknowledgement state."
+ },
+ "C10": {
+  "id": "C10",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 2,
+  "note": "It correctly makes Checkout the only established direct capability and keeps Inventory and cart-summary involvement conditional."
+ },
+ "C11": {
+  "id": "C11",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 1,
+  "note": "It correctly applies the two capability boundaries and the documented dependency without claiming runtime enforcement."
+ },
+ "C12": {
+  "id": "C12",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 2,
+  "note": "It correctly assigns permission evaluation to Workspace Authorization and explicitly excludes member authority from Coordination."
+ },
+ "C13": {
+  "id": "C13",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 6,
+  "note": "It correctly gives the full dependency chain, ownership boundaries, source anchors, and runtime-evidence limitation."
+ },
+ "C14": {
+  "id": "C14",
+  "correct": 2,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 5,
+  "note": "The answer is substantively right, but it directs an acknowledgement-state investigation to realtime before the directly owning apps/web anchor."
+ },
+ "C15": {
+  "id": "C15",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly selects Purchase while treating cart presentation as likely and requiring the missing discount contract before implementation."
+ },
+ "C16": {
+  "id": "C16",
+  "correct": 2,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "The owner is correct, but it states that cart review and summary are touched before the unspecified discount behavior establishes that sub-item."
+ },
+ "C17": {
+  "id": "C17",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 1,
+  "note": "It directly answers no and supports the decision with both exclusions and the recorded dependency reason."
+ },
+ "C18": {
+  "id": "C18",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 2,
+  "note": "It correctly states both sides of the Access Control–Coordination boundary and gives a concrete verification plan."
+ },
+ "C19": {
+  "id": "C19",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly assigns Purchase ownership, keeps adjacent effects conditional, and thoroughly identifies the decisions needed before coding."
+ },
+ "C20": {
+  "id": "C20",
+  "correct": 2,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 5,
+  "note": "It identifies the likely Checkout owner but overstates Inventory Sync as part of the known discount capability surface despite admitting that connection is unestablished."
+ },
+ "C21": {
+  "id": "C21",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly preserves Inventory ownership and explains the documented consistency relationship without inventing an integration mechanism."
+ },
+ "C22": {
+  "id": "C22",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 3,
+  "note": "It correctly identifies Checkout as directly touched and makes Inventory Sync and cart-summary investigation explicitly conditional."
+ },
+ "C23": {
+  "id": "C23",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 2,
+  "note": "It fully establishes Access Control ownership, Coordination's exclusion, and the concrete policy integration work to verify."
+ },
+ "C24": {
+  "id": "C24",
+  "correct": 3,
+  "citations": 2,
+  "boundary": 2,
+  "nextStep": 2,
+  "unsupported": 0,
+  "unverifiable": 0,
+  "note": "It correctly rejects the move, distinguishes both owners, and gives the source-backed product reason for their integration boundary."
+ }
+}
