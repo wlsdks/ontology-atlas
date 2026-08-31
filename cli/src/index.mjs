@@ -437,15 +437,30 @@ async function runInit(targetArg, opts = {}) {
   // The same three skills, put where the agent will actually look for them.
   // Existing files are preserved: a person who has already written their own
   // `atlas-review` keeps it.
+  //
+  // Two trees, one source. Claude Code reads `.claude/skills/`; Codex and Cursor
+  // read `.agents/skills/` and never look inside `.claude/`. `agent-setup`
+  // advertises all three clients and the README promises the skills appear with
+  // no extra setup, so installing only the Claude tree left two of the three
+  // supported clients with the server wired and no procedure at all. Copying
+  // from one template directory into both keeps them byte identical by
+  // construction rather than by a checker on a second committed copy.
+  const agentsSkillsRelativeRoot = join('.agents', 'skills');
   const installedSkills = [];
-  if (!vaultIsRepoRoot) {
-    const skillsSource = join(templateRoot, skillsRelativeRoot);
-    if (existsSync(skillsSource)) {
-      const rootSkills = copyTree(skillsSource, join(cwd(), skillsRelativeRoot));
-      for (const name of readdirSync(skillsSource)) installedSkills.push(name);
-      if (rootSkills.created > 0) {
-        ok(`  ${skillsRelativeRoot}/ — ${installedSkills.join(', ')} (installed where the agent runs, not in the vault)`);
-      }
+  const skillsSource = join(templateRoot, skillsRelativeRoot);
+  if (existsSync(skillsSource)) {
+    for (const name of readdirSync(skillsSource)) installedSkills.push(name);
+    const destinations = vaultIsRepoRoot
+      // The template already wrote `.claude/skills` here; only the mirror is missing.
+      ? [agentsSkillsRelativeRoot]
+      : [skillsRelativeRoot, agentsSkillsRelativeRoot];
+    const written = [];
+    for (const relativeRoot of destinations) {
+      if (copyTree(skillsSource, join(cwd(), relativeRoot)).created > 0) written.push(relativeRoot);
+    }
+    if (written.length > 0) {
+      const where = vaultIsRepoRoot ? '' : ' (installed where the agent runs, not in the vault)';
+      ok(`  ${written.map((relativeRoot) => `${relativeRoot}/`).join(' + ')} — ${installedSkills.join(', ')}${where}`);
     }
   }
 
