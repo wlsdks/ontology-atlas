@@ -3737,7 +3737,7 @@
         "prompt": "「{firstLabel}」({first}) 를 포함한 {count}개 노드가 지도의 나머지와 이어져 있지 않아요. 코드를 근거로 어디에 붙어야 하는지 찾아서, 왜 그렇게 잇는지와 함께 제안해 줘."
       },
       "containment": {
-        "label": "「{slugLabel}」 — 「{domainLabel}」 소속이라 적혀 있는데 반대쪽 목록엔 없어요. 맞는지 확인하고 양쪽을 맞춰 줘",
+        "label": "「{slugLabel}」에 「{domainLabel}」 소속이라 적혀 있는데 반대쪽 목록엔 없어요. 맞는지 확인하고 양쪽을 맞춰 줘",
         "prompt": "「{slugLabel}」({slug}) 는 「{domainLabel}」({domain})에 속한다고 적혀 있는데, 도메인 쪽 연결에는 빠져 있어요. 소속이 맞는지 확인하고, 맞으면 양쪽 연결을 맞춰 줘."
       },
       "evidence": {
