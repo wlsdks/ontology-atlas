@@ -70,6 +70,8 @@ const labels: DoNextTabLabels = {
   moreCount: (count) => `+${count} more`,
   digestTitle: "What the agent did",
   digestToday: (count) => `${count} today`,
+  digestScope: (shown, today) => `last ${shown} · ${today} today`,
+  digestWhen: (iso) => (iso === "bad" ? null : "2m ago"),
   digestApproveHint: "Review via git diff",
   digestWhyPrefix: "Why · ",
   touchUpBandTitle: "Review first today",
@@ -538,9 +540,12 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
     expect(digest).toHaveTextContent("Review via git diff");
   });
 
-    // `add_relation --why` was stored in activity.jsonl but appeared on no screen. When a digest
-    // row has a `why`, it must appear alongside.
-  it("why 가 있는 항목은 요약 아래에 truncate 된 이유 줄을 함께 보여준다", () => {
+    // `add_relation --why` was stored in activity.jsonl but appeared on no screen.
+    // It now leads the row instead of trailing it: the reason is the one line here
+    // written to be read, and it used to be the one line being truncated. The
+    // relation triple stays underneath as the evidence for it, and an entry with no
+    // reason falls back to the triple rather than drawing an empty lead.
+  it("이유가 있으면 행의 첫 줄이 되고, 관계 삼항은 그 아래 근거로 남는다", () => {
     render(
       <DoNextTab
         queue={{ rows: [], activeRowIds: [], counts: { neglectedHub: 0, orphan: 0, promotion: 0 } }}
@@ -572,11 +577,17 @@ describe("DoNextTab — 활동 다이제스트 (B3)", () => {
     );
     const entries = screen.getAllByTestId("do-next-digest-entry");
     expect(entries).toHaveLength(2);
-    expect(within(entries[0]).getByTestId("do-next-digest-why")).toHaveTextContent(
-      "Why · reminder-worker reads offline-sync's queue directly",
-    );
-    // The second item has no `why`, so it has no why row at all.
+    const lead = within(entries[0]).getByTestId("do-next-digest-why");
+    expect(lead).toHaveTextContent("reminder-worker reads offline-sync's queue directly");
+    // No prefix: a sentence that leads its row does not need to announce itself.
+    expect(lead).not.toHaveTextContent("Why ·");
+    // The triple it explains stays with it, as the evidence line.
+    expect(entries[0]).toHaveTextContent("a --depends_on--> b · claude-code");
+    // Every row says when, which no screen has ever shown before.
+    expect(within(entries[0]).getByTestId("do-next-digest-when")).toHaveTextContent("2m ago");
+    // The second item has no `why`, so the triple leads and there is no second line.
     expect(within(entries[1]).queryByTestId("do-next-digest-why")).toBeNull();
+    expect(entries[1]).toHaveTextContent("patch_concept capabilities/x");
   });
 
   it("static 모드(null)에서는 카드를 렌더하지 않는다", () => {
