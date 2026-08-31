@@ -74,7 +74,9 @@ const COPY_PLAN = [
   ['src-tauri/icons/Square30x30Logo.png', 'tile-30'],
   ['src-tauri/icons/StoreLogo.png', 'tile-50'],
   ['app/apple-icon.png', 'apple-180'],
-  ['app/icon.png', 'icon-32'],
+  // Google Search recommends a square favicon larger than 48px. Keep the browser
+  // icon on the canonical full-size brand output; browsers downsample it as needed.
+  ['app/icon.png', 'icon-512'],
   ['public/og-image.png', 'og-image'],
   ['public/brand-icon-512.png', 'icon-512'],
   ['public/logo.png', 'icon-1024'],

@@ -715,7 +715,7 @@ ${briefingSnippet}`}
 
   ${COLORS.dim}7.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, macOS app):
        Install the ontology-atlas macOS app from:
-       ${COLORS.cyan}https://wlsdks.github.io/ontology-atlas/download/${COLORS.reset}
+       ${COLORS.cyan}https://ontologyatlas.com/en/download/${COLORS.reset}
        Point its ${COLORS.bold}/docs${COLORS.reset} picker at this vault.
 
 ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.reset}

@@ -17,7 +17,7 @@ const koMessages = JSON.parse(
   fs.readFileSync(path.join(REPO_ROOT, "messages", "ko.json"), "utf8"),
 );
 
-const DEFAULT_BASE_URL = "https://wlsdks.github.io/ontology-atlas";
+const DEFAULT_BASE_URL = "https://ontologyatlas.com";
 const DEFAULT_TIMEOUT_MS = 15000;
 
 function printHelp() {

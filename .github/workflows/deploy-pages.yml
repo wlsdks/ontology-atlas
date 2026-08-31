@@ -1,5 +1,5 @@
 # GitHub Pages — the sole web host for the static export, served at the
-# /ontology-atlas subpath. Firebase Hosting was removed (2026-07); Pages has no
+# ontologyatlas.com custom-domain root. Firebase Hosting was removed (2026-07); Pages has no
 # daily transfer hard-cap, so the read-only demo stays up under traffic spikes.
 # Triggers on push to main, on GitHub Release publication, and on manual
 # dispatch.
@@ -29,7 +29,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PAGES_BASE_URL: https://wlsdks.github.io/ontology-atlas
+  PAGES_BASE_URL: https://ontologyatlas.com
   PUBLISHED_RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
 
 jobs:
@@ -53,10 +53,9 @@ jobs:
           corepack prepare pnpm@10.18.0 --activate
           pnpm --version
       - run: pnpm install --frozen-lockfile
-      - name: Build static export with base path
+      - name: Build static export for the custom-domain root
         run: pnpm build
         env:
-          NEXT_PUBLIC_BASE_PATH: /ontology-atlas
           # Search Console ownership verification code — retrieved from repository Variables
           # (Settings → Secrets and variables → Actions → Variables).
           #
@@ -71,22 +70,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           PUBLISHED_RELEASE_TAG: ${{ env.PUBLISHED_RELEASE_TAG }}
-      - name: Adapt static PWA manifest to base path
-        run: |
-          test -f out/manifest.webmanifest
-          node -e '
-            const fs = require("fs");
-            const p = "out/manifest.webmanifest";
-            const m = JSON.parse(fs.readFileSync(p, "utf8"));
-            const bp = "/ontology-atlas";
-            for (const k of ["id", "scope", "start_url"]) {
-              if (typeof m[k] === "string" && m[k].startsWith("/") && !m[k].startsWith(bp)) m[k] = bp + (m[k] === "/" ? "/" : m[k]);
-            }
-            for (const icon of m.icons ?? []) {
-              if (icon.src?.startsWith("/") && !icon.src.startsWith(bp)) icon.src = bp + icon.src;
-            }
-            fs.writeFileSync(p, JSON.stringify(m, null, 2));
-          '
       - name: Disable Jekyll (serve _next/*)
         run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
