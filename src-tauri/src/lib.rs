@@ -19,6 +19,8 @@ mod acp_doctor;
 mod managed_node;
 /// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
+/// One shape for every failure a command hands to the WebView (`<code>: <detail>`).
+mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
 mod git;
 /// BYOK connection check — verifies authentication using the keychain key and logs to the Bolt audit log.

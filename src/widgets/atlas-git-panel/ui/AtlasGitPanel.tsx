@@ -52,6 +52,7 @@ import {
   type GitSnapshotResult,
   type GitStatusResult,
 } from "@/shared/lib/tauri-git";
+import { useNativeErrorLookup } from "@/shared/lib/use-native-error-lookup";
 import type { OntologyChangeset, KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { gitHostPlatformFrom, gitInstallGuide } from "@/shared/lib/git-install-guide";
 import { TopologyV2KindGlyph } from "@/shared/ui/topology-v2-kind-glyph";
@@ -296,6 +297,23 @@ export function AtlasGitPanel({
   className,
 }: AtlasGitPanelProps) {
   const t = useTranslations("atlasGit");
+  const nativeErrors = useNativeErrorLookup();
+  /**
+   * `git_fetch` answers with a code, not a sentence: only this side knows the
+   * reader's language, and only this side already holds `ahead`/`behind` to fill
+   * the diverged wording in. Anything else (a `git pull` summary, which is git's
+   * own output) passes through untouched.
+   */
+  const remoteSummary = useCallback(
+    (summary: string, ahead: number | null, behind: number | null) => {
+      if (summary === "remote-no-upstream") return t("summaryNoUpstream");
+      if (summary === "remote-in-sync") return t("summaryInSync");
+      if (summary === "remote-diverged")
+        return t("summaryDiverged", { ahead: ahead ?? 0, behind: behind ?? 0 });
+      return summary;
+    },
+    [t],
+  );
   const format = useFormatter();
   /*
    * Kind names have one source of truth: the `kinds` namespace. A key minted
@@ -499,9 +517,9 @@ export function AtlasGitPanel({
     setLoadState("ready");
   }, []);
   const reportWorkspaceReadFailure = useCallback((err: unknown) => {
-    setLoadErrorText(gitErrorMessage(err));
+    setLoadErrorText(gitErrorMessage(err, nativeErrors));
     setLoadState("error");
-  }, []);
+  }, [nativeErrors]);
   // Read-only queries (status/diff/history) only — a write (git_snapshot) never happens here.
   const refresh = useCallback(async () => {
     if (!vaultPath) return;
@@ -627,11 +645,11 @@ export function AtlasGitPanel({
       setSelectedPath(null);
       await refresh();
     } catch (err) {
-      setSnapshotError(gitErrorMessage(err));
+      setSnapshotError(gitErrorMessage(err, nativeErrors));
     } finally {
       setSnapshotting(false);
     }
-  }, [vaultPath, pushOptIn, snapshotMessage, refresh]);
+  }, [vaultPath, pushOptIn, snapshotMessage, refresh, nativeErrors]);
 
   /**
    * A copy reports **both success and failure** (2026-07-28 QA).
@@ -663,11 +681,11 @@ export function AtlasGitPanel({
       await gitInit(vaultPath);
       await refresh();
     } catch (err) {
-      setInitError(gitErrorMessage(err));
+      setInitError(gitErrorMessage(err, nativeErrors));
     } finally {
       setInitRunning(false);
     }
-  }, [vaultPath, refresh]);
+  }, [vaultPath, refresh, nativeErrors]);
 
   /*
    * The three remote actions — Fetch, Pull, Push.
@@ -693,7 +711,10 @@ export function AtlasGitPanel({
       try {
         if (kind === "fetch") {
           const r = await gitFetch(vaultPath);
-          if (r) setRemoteActionNotice(t("remoteDoneFetch", { summary: r.summary }));
+          if (r)
+            setRemoteActionNotice(
+              t("remoteDoneFetch", { summary: remoteSummary(r.summary, r.ahead, r.behind) }),
+            );
         } else if (kind === "pull") {
           const r = await gitPull(vaultPath);
           if (r) setRemoteActionNotice(t("remoteDonePull", { summary: r.summary }));
@@ -707,17 +728,20 @@ export function AtlasGitPanel({
            */
           const r = await gitSnapshot(vaultPath, { push: true });
           if (r?.push?.pushed) setRemoteActionNotice(t("remoteDonePush"));
+          // The reason first, in the reader's language; the bare git command is the
+          // fallback for a push failure Rust had no code for.
+          else if (r?.push?.message)
+            setRemoteActionError(gitErrorMessage(r.push.message, nativeErrors));
           else if (r?.push?.guidance) setRemoteActionError(r.push.guidance);
-          else if (r?.push?.message) setRemoteActionError(r.push.message);
         }
         await refresh();
       } catch (err) {
-        setRemoteActionError(gitErrorMessage(err));
+        setRemoteActionError(gitErrorMessage(err, nativeErrors));
       } finally {
         setRemoteBusy(null);
       }
     },
-    [vaultPath, refresh, t],
+    [vaultPath, refresh, t, nativeErrors, remoteSummary],
   );
 
   /**
@@ -742,11 +766,11 @@ export function AtlasGitPanel({
       }
       await refresh();
     } catch (err) {
-      setRemoteError(gitErrorMessage(err));
+      setRemoteError(gitErrorMessage(err, nativeErrors));
     } finally {
       setRemoteRunning(false);
     }
-  }, [vaultPath, remoteUrl, refresh, t]);
+  }, [vaultPath, remoteUrl, refresh, t, nativeErrors]);
 
   return (
     <section

@@ -1,5 +1,7 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
+import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
+
 /**
  * BYOK key storage — the Tauri IPC bridge (a typed wrapper over
  * `src-tauri/src/secrets.rs` and `llm.rs`), following the conventions in
@@ -207,9 +209,15 @@ export async function secretVerify(
   });
 }
 
-/** invoke reject payload → one line for the user (Rust returns `Err(String)`). */
-export function secretErrorMessage(err: unknown): string {
-  if (typeof err === 'string') return err;
-  if (err instanceof Error) return err.message;
-  return String(err);
+/**
+ * invoke reject payload → one line for the user.
+ *
+ * Rust answers with `<code>: <English detail>` (`src-tauri/src/errors.rs`), never a
+ * finished sentence, because the locale it would have to pick lives here and not
+ * there. Pass the `nativeErrors` lookup and the reader gets their own
+ * language; pass nothing and the payload comes back untouched, exactly as this
+ * returned before codes existed.
+ */
+export function secretErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
+  return nativeErrorMessage(err, lookup);
 }

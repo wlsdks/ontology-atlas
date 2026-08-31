@@ -34,7 +34,7 @@ import ko from '../../messages/ko.json';
  * Same reason as every other copy gate here: some of these words have honest
  * uses. The word for "violation" is ordinary Korean for a rule violation and the
  * architecture screen means exactly that; the word for the guard an agent must
- * pass is a real product concept that eight strings currently lean on. Freezing
+ * pass is a real product concept that seven strings currently lean on. Freezing
  * them at today's count lets the number fall and refuses to let it rise. **When a number falls, lower its baseline with it** —
  * otherwise every repair becomes new headroom.
  *
@@ -124,14 +124,15 @@ const TOLERATED: Readonly<Record<string, readonly string[]>> = {
   원소: [],
 
   // A real product concept: the check an agent has to pass before it may write
-  // or reach outside the folder. Eight strings lean on the word without any of
-  // them saying what it is. Replacing it needs one decision about what the
-  // concept is called everywhere, which is larger than a copy pass.
+  // or reach outside the folder. Seven strings lean on the word without any of
+  // them saying what it is (the gateway's own truncation note was one of eight
+  // until the severity-3 pass made it say "this list" instead). Replacing the
+  // rest needs one decision about what the concept is called everywhere, which
+  // is larger than a copy pass.
   관문: [
     'docsVault.agentSetup.boundaryDesc',
     'download.agentsSub',
     'download.col1Body',
-    'gatewayNav.truncatedNote',
     'guidedTour.steps.agentsWhat.body',
     'nav.settingsMenu.runtimes.guardedExplainerNone',
     'nav.settingsMenu.runtimes.intro',
@@ -375,7 +376,12 @@ export function unglossedAcronyms(messages: Json): string[] {
 const UNGLOSSED_BASELINE: readonly string[] = [
   'footer/MCP', // the technology list in the footer
   'gatewayNav/CLI', // the name of a guide page
-  'liveActivity/MCP', // a namespace with no renderer left (grep finds no consumer)
+  // No renderer: `src/**` and `app/**` contain no `useTranslations('liveActivity')`
+  // and no reference to any of its 58 child keys (swept key by key, 2026-08-31).
+  // It is not deletable from here either: `scripts/validate-messages.test.mjs`
+  // reads `ko.liveActivity` and asserts on 23 of those keys, so removing the
+  // namespace and that test block is one change, not two.
+  'liveActivity/MCP',
   'metadata/MCP', // search-engine descriptions, never drawn on a screen
   'projectPages/CLI', // a two-character column label beside the command itself
   'settings/MCP', // one of three example tags in a placeholder

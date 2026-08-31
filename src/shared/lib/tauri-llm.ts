@@ -1,5 +1,7 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
+import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
+
 /**
  * The vault agent's chat round trip — the Tauri IPC bridge (a typed wrapper over
  * `llm_chat` in `src-tauri/src/llm.rs`), following the conventions of
@@ -98,9 +100,14 @@ export async function llmChat(args: {
   });
 }
 
-/** invoke rejection payload → one line for the user (Rust returns `Err(String)`). */
-export function llmChatErrorMessage(err: unknown): string {
-  if (typeof err === 'string') return err;
-  if (err instanceof Error) return err.message;
-  return String(err);
+/**
+ * invoke rejection payload → one line for the user.
+ *
+ * Rust answers with `<code>: <English detail>` (`src-tauri/src/errors.rs`); the
+ * optional lookup is the `nativeErrors` catalogue. Without one the payload comes
+ * back untouched, which the agent loop relies on: it recognises a failed turn by the
+ * `audit-blocked:` / `timed-out:` prefix.
+ */
+export function llmChatErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
+  return nativeErrorMessage(err, lookup);
 }

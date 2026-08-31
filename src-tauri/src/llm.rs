@@ -16,6 +16,7 @@
 // ① No new HTTP client crate is added, keeping the supply chain surface at zero (git.rs
 // already has precedent for shell-ing out to system git), and ② crucially, **the key never enters argv** — URL and headers are passed to stdin via `--config -`, so other processes on the same machine can't see the key with `ps`. Common implementations passing the key as a `-H` argument are themselves a leak path.
 
+use crate::errors::coded;
 use crate::llm_audit::{self, AuditDraft, AuditOutcome, AuditScope, AuditToolRef};
 use crate::secrets;
 use serde::{Deserialize, Serialize};
@@ -171,35 +172,32 @@ impl HttpEcho {
 fn normalize_base_url(raw: &str) -> Result<String, String> {
     let trimmed = raw.trim().trim_end_matches('/');
     if trimmed.is_empty() {
-        return Err("주소가 비어 있어요.".into());
+        return Err(coded("endpoint-empty", ""));
     }
     if trimmed.len() > 300 {
-        return Err("주소가 너무 길어요.".into());
+        return Err(coded("endpoint-too-long", ""));
     }
     if trimmed
         .chars()
         .any(|ch| ch.is_whitespace() || ch.is_control() || matches!(ch, '"' | '\\' | '?' | '#'))
     {
-        return Err("주소에 쓸 수 없는 문자가 있어요.".into());
+        return Err(coded("endpoint-invalid-characters", ""));
     }
     let (scheme, rest) = trimmed
         .split_once("://")
-        .ok_or_else(|| "주소는 http:// 또는 https:// 로 시작해야 해요.".to_string())?;
+        .ok_or_else(|| coded("endpoint-scheme-unsupported", ""))?;
     if scheme != "http" && scheme != "https" {
-        return Err("주소는 http:// 또는 https:// 로 시작해야 해요.".into());
+        return Err(coded("endpoint-scheme-unsupported", ""));
     }
     let authority = rest.split('/').next().unwrap_or("");
     if authority.is_empty() {
-        return Err("주소에 호스트가 없어요.".into());
+        return Err(coded("endpoint-host-missing", ""));
     }
     if authority.contains('@') {
-        return Err("주소에 아이디·비밀번호를 담지 마세요. 기록에 그대로 남아요.".into());
+        return Err(coded("endpoint-credentials-in-url", ""));
     }
     if scheme == "http" && !is_loopback_authority(authority) {
-        return Err(
-            "이 컴퓨터(localhost) 밖으로는 https:// 로만 보낼 수 있어요. 평문으로 나가는 길은 열지 않아요."
-                .into(),
-        );
+        return Err(coded("endpoint-plaintext-blocked", ""));
     }
     Ok(trimmed.to_string())
 }
@@ -232,7 +230,7 @@ fn local_endpoint(base_url: &str, path: &str) -> String {
 /// trims, so normal keys won't have this, but stopping here is better than sending malformed requests.
 fn checked_secret(secret: &str) -> Result<&str, String> {
     if secret.contains('\n') || secret.contains('\r') {
-        return Err("키에 줄바꿈이 섞여 있어요. 다시 저장해 주세요.".into());
+        return Err(coded("secret-has-newline", ""));
     }
     Ok(secret)
 }
@@ -242,9 +240,9 @@ fn checked_secret(secret: &str) -> Result<&str, String> {
 /// arises precisely from that "silence".
 fn wrong_target(provider: &str) -> String {
     if provider == LOCAL_PROVIDER {
-        "주소로 연결하는 갈래에는 키를 쓰지 않아요.".into()
+        coded("endpoint-not-for-key", "")
     } else {
-        format!("{provider} 는 주소를 바꿀 수 없어요 — 키는 코드에 박힌 공식 주소로만 가요.")
+        coded("endpoint-fixed-for-provider", provider)
     }
 }
 
@@ -290,7 +288,7 @@ fn verify_request(provider: &str, target: &Target<'_>) -> Result<VerifyRequest, 
             returns_body: true,
         }),
         (LOCAL_PROVIDER, _) | ("anthropic" | "openai" | "gemini", _) => Err(wrong_target(provider)),
-        (other, _) => Err(format!("지원하지 않는 제공자예요: {other}")),
+        (other, _) => Err(coded("unsupported-provider", other)),
     }
 }
 
@@ -368,12 +366,15 @@ pub(crate) const TIMED_OUT_PREFIX: &str = "timed-out:";
 
 fn curl_failure_message(code: Option<i32>, stderr: &str) -> String {
     match code {
-        Some(6) => "그 주소의 호스트를 찾지 못했어요 — 주소를 다시 확인해 주세요.".into(),
-        Some(7) => "그 주소에서 응답이 없어요 — 러너가 꺼져 있거나 포트가 달라요.".into(),
-        Some(28) => format!("{TIMED_OUT_PREFIX}시간 안에 응답이 오지 않았어요."),
-        Some(35) | Some(60) => "보안 연결(TLS)을 맺지 못했어요.".into(),
-        _ if stderr.is_empty() => "응답을 받지 못했어요 (네트워크 확인).".to_string(),
-        _ => format!("응답을 받지 못했어요: {stderr}"),
+        Some(6) => coded("host-not-found", ""),
+        Some(7) => coded("connection-refused", ""),
+        // The colon belongs to the prefix, so this arm is written out rather than
+        // built by `coded`: the screen matches `timed-out:` by `startsWith`, and a
+        // curl run that says nothing on stderr must still carry the colon.
+        Some(28) => format!("{TIMED_OUT_PREFIX} curl exit 28"),
+        Some(35) | Some(60) => coded("tls-failed", ""),
+        _ if stderr.is_empty() => coded("no-response", ""),
+        _ => coded("no-response", stderr),
     }
 }
 
@@ -384,16 +385,16 @@ fn run_curl(argv: [&'static str; 9], config: &str) -> Result<(u16, String), Stri
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|err| format!("요청을 보낼 수 없어요: {err}"))?;
+        .map_err(|err| coded("request-failed", err))?;
     child
         .stdin
         .as_mut()
-        .ok_or_else(|| "요청을 보낼 수 없어요.".to_string())?
+        .ok_or_else(|| coded("request-failed", ""))?
         .write_all(config.as_bytes())
-        .map_err(|err| format!("요청을 보낼 수 없어요: {err}"))?;
+        .map_err(|err| coded("request-failed", err))?;
     let output = child
         .wait_with_output()
-        .map_err(|err| format!("응답을 받지 못했어요: {err}"))?;
+        .map_err(|err| coded("no-response", err))?;
     interpret_curl_output(
         output.status.code(),
         output.status.success(),
@@ -647,7 +648,7 @@ fn model_placement(provider: &str) -> ModelPlacement {
 fn validate_model_id(model: &str, placement: ModelPlacement) -> Result<&str, String> {
     let trimmed = model.trim();
     if trimmed.is_empty() {
-        return Err("모델 이름이 비어 있어요.".into());
+        return Err(coded("model-empty", ""));
     }
     let allowed = |ch: char| {
         ch.is_ascii_alphanumeric()
@@ -655,7 +656,7 @@ fn validate_model_id(model: &str, placement: ModelPlacement) -> Result<&str, Str
             || (placement == ModelPlacement::Body && matches!(ch, ':' | '/'))
     };
     if trimmed.len() > 100 || !trimmed.chars().all(allowed) {
-        return Err(format!("모델 이름에 쓸 수 없는 문자가 있어요: {trimmed}"));
+        return Err(coded("model-invalid", trimmed));
     }
     Ok(trimmed)
 }
@@ -708,7 +709,7 @@ fn chat_request(
             body: body.to_string(),
         }),
         (LOCAL_PROVIDER, _) | ("anthropic" | "openai" | "gemini", _) => Err(wrong_target(provider)),
-        (other, _) => Err(format!("지원하지 않는 제공자예요: {other}")),
+        (other, _) => Err(coded("unsupported-provider", other)),
     }
 }
 
@@ -1672,9 +1673,11 @@ mod tests {
         let refused = curl_failure_message(Some(7), "Couldn't connect to server");
         let unknown_host = curl_failure_message(Some(6), "Could not resolve host");
         let timeout = curl_failure_message(Some(28), "Operation timed out");
-        assert!(refused.contains("꺼져 있거나 포트가 달라요"));
-        assert!(unknown_host.contains("호스트를 찾지 못했어요"));
-        assert!(timeout.contains("시간 안에"));
+        // The codes, not the wording: the sentence lives in `messages/<locale>.json`
+        // now, and asserting a sentence here would pin one language into Rust again.
+        assert_eq!(refused, "connection-refused");
+        assert_eq!(unknown_host, "host-not-found");
+        assert!(timeout.starts_with(TIMED_OUT_PREFIX));
         assert_ne!(refused, unknown_host);
         assert_ne!(refused, timeout);
     }
@@ -1831,7 +1834,7 @@ mod tests {
         // promise to "explain why it failed" breaks immediately at the first failure.
         let refused = interpret_curl_output(Some(7), false, "\n000", "Couldn't connect to server");
         assert!(refused.is_err());
-        assert!(refused.unwrap_err().contains("꺼져 있거나 포트가 달라요"));
+        assert_eq!(refused.unwrap_err(), "connection-refused");
 
         // Normal responses pass through as-is.
         let ok = interpret_curl_output(Some(0), true, "{\"data\":[]}\n200", "").unwrap();

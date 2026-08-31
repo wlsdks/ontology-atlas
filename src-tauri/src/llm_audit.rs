@@ -32,6 +32,8 @@ use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
+use crate::errors::coded;
+
 /// The sidecar directory inside the vault — where `activity.jsonl` already resides.
 const SIDECAR_DIR: &str = ".ontology-atlas";
 const AUDIT_FILE: &str = "llm-audit.jsonl";
@@ -154,14 +156,14 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
     use std::os::fd::{AsRawFd, FromRawFd};
     use std::os::unix::ffi::OsStrExt;
 
-    let canonical_vault = fs::canonicalize(vault_dir)
-        .map_err(|err| format!("볼트 폴더를 확정할 수 없어요: {err}"))?;
+    let canonical_vault =
+        fs::canonicalize(vault_dir).map_err(|err| coded("audit-vault-unreadable", err))?;
     if !canonical_vault.is_dir() {
-        return Err("감사 기록 대상인 볼트가 폴더가 아니에요.".into());
+        return Err(coded("audit-vault-unreadable", "not a directory"));
     }
 
     let vault_c = CString::new(canonical_vault.as_os_str().as_bytes())
-        .map_err(|_| "볼트 경로에 허용할 수 없는 문자가 있어요.".to_string())?;
+        .map_err(|_| coded("audit-vault-unreadable", "path contains a NUL byte"))?;
     let root_fd = unsafe {
         libc::open(
             vault_c.as_ptr(),
@@ -169,9 +171,9 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
         )
     };
     if root_fd < 0 {
-        return Err(format!(
-            "볼트 폴더를 안전하게 열 수 없어요: {}",
-            std::io::Error::last_os_error()
+        return Err(coded(
+            "audit-vault-unreadable",
+            std::io::Error::last_os_error(),
         ));
     }
     let root = unsafe { fs::File::from_raw_fd(root_fd) };
@@ -181,7 +183,7 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
     if made != 0 {
         let error = std::io::Error::last_os_error();
         if error.kind() != std::io::ErrorKind::AlreadyExists {
-            return Err(format!("감사 기록 폴더를 만들 수 없어요: {error}"));
+            return Err(coded("audit-log-write-failed", error));
         }
     }
 
@@ -195,9 +197,12 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
         )
     };
     if sidecar_fd < 0 {
-        return Err(format!(
-            "감사 기록 폴더가 심볼릭 링크이거나 폴더가 아니에요: {}",
-            std::io::Error::last_os_error()
+        return Err(coded(
+            "audit-log-tampered",
+            format!(
+                ".ontology-atlas is a link or not a directory: {}",
+                std::io::Error::last_os_error()
+            ),
         ));
     }
     let sidecar = unsafe { fs::File::from_raw_fd(sidecar_fd) };
@@ -217,26 +222,32 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
         )
     };
     if audit_fd < 0 {
-        return Err(format!(
-            "감사 기록 파일이 심볼릭 링크이거나 열 수 없어요: {}",
-            std::io::Error::last_os_error()
+        return Err(coded(
+            "audit-log-tampered",
+            format!(
+                "llm-audit.jsonl is a link or cannot be opened: {}",
+                std::io::Error::last_os_error()
+            ),
         ));
     }
     let file = unsafe { fs::File::from_raw_fd(audit_fd) };
     let metadata = file
         .metadata()
-        .map_err(|err| format!("감사 기록 파일을 확인할 수 없어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     if !metadata.is_file() {
-        return Err("감사 기록 대상이 일반 파일이 아니에요.".into());
+        return Err(coded("audit-log-tampered", "not a regular file"));
     }
     use std::os::unix::fs::MetadataExt;
     if metadata.nlink() != 1 {
-        return Err("감사 기록 파일이 다른 경로와 하드링크되어 있어요.".into());
+        return Err(coded("audit-log-tampered", "hard-linked from another path"));
     }
     if unsafe { libc::fchmod(file.as_raw_fd(), 0o600) } != 0 {
-        return Err(format!(
-            "감사 기록 파일 권한을 제한할 수 없어요: {}",
-            std::io::Error::last_os_error()
+        return Err(coded(
+            "audit-log-write-failed",
+            format!(
+                "cannot restrict the file mode: {}",
+                std::io::Error::last_os_error()
+            ),
         ));
     }
 
@@ -247,9 +258,9 @@ fn open_audit_file(vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
     if locked != 0 {
         let error = std::io::Error::last_os_error();
         if error.kind() == std::io::ErrorKind::WouldBlock {
-            return Err("같은 볼트의 다른 LLM 요청이 감사 기록을 확정하고 있어요.".into());
+            return Err(coded("audit-log-busy", ""));
         }
-        return Err(format!("감사 기록 파일을 잠글 수 없어요: {error}"));
+        return Err(coded("audit-log-write-failed", error));
     }
     Ok((audit_log_path(&canonical_vault), file))
 }
@@ -259,14 +270,17 @@ fn open_audit_file(_vault_dir: &Path) -> Result<(PathBuf, fs::File), String> {
     // Pre-checking the path and then reopening it does not close the Windows
     // reparse-point race. Until native-handle-based no-follow + file-ID verification
     // exists, this feature fails closed rather than allowing transmission without a record.
-    Err("이 플랫폼에서는 안전한 LLM 감사 기록을 아직 지원하지 않아요.".into())
+    Err(coded("audit-log-unsupported", ""))
 }
 
 fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
-    let path_metadata = fs::symlink_metadata(path)
-        .map_err(|err| format!("예약한 감사 기록 경로를 확인할 수 없어요: {err}"))?;
+    let path_metadata =
+        fs::symlink_metadata(path).map_err(|err| coded("audit-log-tampered", err))?;
     if path_metadata.file_type().is_symlink() || !path_metadata.is_file() {
-        return Err("예약한 감사 기록 경로가 링크이거나 파일이 아니에요.".into());
+        return Err(coded(
+            "audit-log-tampered",
+            "the reserved path became a link or stopped being a file",
+        ));
     }
 
     #[cfg(unix)]
@@ -274,12 +288,18 @@ fn ensure_reservation_path(path: &Path, file: &fs::File) -> Result<(), String> {
         use std::os::unix::fs::MetadataExt;
         let opened = file
             .metadata()
-            .map_err(|err| format!("예약한 감사 기록 파일을 확인할 수 없어요: {err}"))?;
+            .map_err(|err| coded("audit-log-tampered", err))?;
         if opened.dev() != path_metadata.dev() || opened.ino() != path_metadata.ino() {
-            return Err("예약한 감사 기록 파일이 다른 파일로 교체됐어요.".into());
+            return Err(coded(
+                "audit-log-tampered",
+                "the reserved file was swapped for another",
+            ));
         }
         if opened.nlink() != 1 || path_metadata.nlink() != 1 {
-            return Err("예약한 감사 기록 파일이 다른 경로와 하드링크되어 있어요.".into());
+            return Err(coded(
+                "audit-log-tampered",
+                "the reserved file is hard-linked from another path",
+            ));
         }
     }
     Ok(())
@@ -292,18 +312,18 @@ pub fn reserve(vault_dir: &Path, draft: AuditDraft) -> Result<AuditReservation, 
     let (path, mut file) = open_audit_file(vault_dir)?;
     ensure_reservation_path(&path, &file)?;
     let mut reserved_line =
-        serde_json::to_string(&draft).map_err(|err| format!("감사 줄을 만들 수 없어요: {err}"))?;
+        serde_json::to_string(&draft).map_err(|err| coded("audit-log-write-failed", err))?;
     reserved_line.push('\n');
     let reserved_line = reserved_line.into_bytes();
     let offset = file
         .metadata()
-        .map_err(|err| format!("감사 기록 파일을 읽을 수 없어요: {err}"))?
+        .map_err(|err| coded("audit-log-write-failed", err))?
         .len();
     file.write_all(&reserved_line)
-        .map_err(|err| format!("감사 기록을 남기지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     // Only with the sync does "it was recorded before sending" stay true even in the face of a crash.
     file.sync_all()
-        .map_err(|err| format!("감사 기록을 저장하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     ensure_reservation_path(&path, &file)?;
 
     Ok(AuditReservation {
@@ -324,47 +344,54 @@ pub fn finalize(mut reservation: AuditReservation, outcome: &AuditOutcome) -> Re
         draft: &reservation.draft,
         outcome,
     })
-    .map_err(|err| format!("감사 줄을 완성하지 못했어요: {err}"))?;
+    .map_err(|err| coded("audit-log-write-failed", err))?;
 
     ensure_reservation_path(&reservation.path, &reservation.file)?;
     let expected_len = reservation.offset + reservation.reserved_line.len() as u64;
     let actual_len = reservation
         .file
         .metadata()
-        .map_err(|err| format!("예약한 감사 기록 파일을 확인할 수 없어요: {err}"))?
+        .map_err(|err| coded("audit-log-tampered", err))?
         .len();
     if actual_len != expected_len {
-        return Err("예약 뒤 감사 기록 파일의 길이가 바뀌었어요. 기존 기록을 보존했어요.".into());
+        return Err(coded(
+            "audit-log-tampered",
+            "the file changed length after the line was reserved; \
+             the existing records were kept",
+        ));
     }
     reservation
         .file
         .seek(SeekFrom::Start(reservation.offset))
-        .map_err(|err| format!("예약한 감사 줄을 확인하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-tampered", err))?;
     let mut actual_reserved_line = vec![0; reservation.reserved_line.len()];
     reservation
         .file
         .read_exact(&mut actual_reserved_line)
-        .map_err(|err| format!("예약한 감사 줄을 확인하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-tampered", err))?;
     if actual_reserved_line != reservation.reserved_line {
-        return Err("예약한 감사 줄이 바뀌었어요. 기존 기록을 보존했어요.".into());
+        return Err(coded(
+            "audit-log-tampered",
+            "the reserved line changed; the existing records were kept",
+        ));
     }
     reservation
         .file
         .set_len(reservation.offset)
-        .map_err(|err| format!("감사 기록을 정리하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     reservation
         .file
         .seek(SeekFrom::End(0))
-        .map_err(|err| format!("감사 기록을 정리하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     reservation
         .file
         .write_all(line.as_bytes())
         .and_then(|()| reservation.file.write_all(b"\n"))
-        .map_err(|err| format!("감사 기록을 완성하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     reservation
         .file
         .sync_all()
-        .map_err(|err| format!("감사 기록을 저장하지 못했어요: {err}"))?;
+        .map_err(|err| coded("audit-log-write-failed", err))?;
     Ok(())
 }
 
