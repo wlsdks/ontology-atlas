@@ -3733,15 +3733,15 @@
         "prompt": "연결된 소스 코드를 근거로 온톨로지 구축을 시작해 줘. 먼저 connection_info와 list_kinds로 현재 온톨로지를 확인하고, 소스에서 도메인·역량·구현 원소 후보와 근거 파일을 제안해. 비슷한 기존 개념을 먼저 찾고, 내가 검토하기 전에는 쓰지 마. 내가 승인한 후보만 묶음 변경으로 쓰고 마지막에 validate_vault와 compile_ontology 결과를 알려 줘."
       },
       "island": {
-        "label": "「{firstLabel}」 등 {count}개가 지도에서 떨어져 있어요. 어디에 붙어야 하는지 찾아 줘",
+        "label": "「{firstLabel}」 등 {count}개는 다른 어떤 항목과도 이어져 있지 않아요. 어디에 이어야 하는지 찾아 줘",
         "prompt": "「{firstLabel}」({first}) 를 포함한 {count}개 노드가 지도의 나머지와 이어져 있지 않아요. 코드를 근거로 어디에 붙어야 하는지 찾아서, 왜 그렇게 잇는지와 함께 제안해 줘."
       },
       "containment": {
-        "label": "「{slugLabel}」에 「{domainLabel}」 소속이라 적혀 있는데 반대쪽 목록엔 없어요. 맞는지 확인하고 양쪽을 맞춰 줘",
+        "label": "「{slugLabel}」 문서에는 「{domainLabel}」 소속이라고 적혀 있는데, 「{domainLabel}」 문서의 목록에는 「{slugLabel}」이(가) 없어요. 어느 쪽이 맞는지 확인하고 두 문서를 같게 맞춰 줘",
         "prompt": "「{slugLabel}」({slug}) 는 「{domainLabel}」({domain})에 속한다고 적혀 있는데, 도메인 쪽 연결에는 빠져 있어요. 소속이 맞는지 확인하고, 맞으면 양쪽 연결을 맞춰 줘."
       },
       "evidence": {
-        "label": "역량 {count}개는 어느 코드로 만들어졌는지 아직 안 적혀 있어요. 「{firstLabel}」부터 근거를 찾아 줘",
+        "label": "역량 {count}개는 어떤 코드가 구현하는지 아직 안 적혀 있어요. 「{firstLabel}」부터 그 코드를 찾아 줘",
         "prompt": "query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}')를 실행하고, 먼저 「{firstLabel}」({first}) 를 확인해 줘. 이 {count}개 역량에는 온톨로지 기준으로 정본 path도, 해소된 elements 관계도 없어요. 구현 근거를 찾아 가장 작은 path 또는 element 수정안을 제안해 줘. 내가 검토하기 전에는 쓰지 말고, 근거를 못 찾으면 못 찾았다고 말해 줘."
       },
       "explain": {
