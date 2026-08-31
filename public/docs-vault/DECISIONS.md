@@ -40,6 +40,50 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — An authored vault is told to finalize, not to author
+
+**Convened**: solo pass (agent-prepared for owner review on the PR) ·
+**Trigger**: the decision gate names any `mcp/src/index.js` edit a public
+contract change. This change edits one health hint string; no tool, gap id,
+nextAction id, or schema changes.
+
+**Prior decision**: 2026-08-17 (28) stands and is cited, not overturned. It
+named the missing finalize receipt `competency_not_authored` and ruled that the
+wording must never assert the section is missing, because a vault can have the
+section and only lack the receipt, and it named this repository as such a
+vault. The dogfood vault then hit exactly that case: all five competency
+answers were written in `docs/ontology/ontology-atlas.md`, no receipt existed
+in the gitignored sidecar, and `health` answered with a hint that starts from
+filling in the section.
+
+**Decision**:
+
+1. When the `## Competency answers` section parses, the `health` and
+   `workspace_brief` message says the finalize receipt is missing and asks only
+   for `finalize_project_meaning`. The write-the-answers hint remains for a
+   section that is absent or does not parse.
+2. The gap id stays `competency_not_authored` and the nextAction id stays
+   `author_competency_answers`. Agents branch on those ids; renaming one or
+   adding a distinct `competency_not_finalized` id is a real contract change
+   that needs its own convened decision, and this record does not make it.
+3. Gate: a new integration test in `mcp/src/integration.test.mjs` fails on the
+   old "Fill in the section" instruction when the message split is reverted
+   (probed red 2026-08-31).
+
+**Accountable**: jinan (to confirm on PR review).
+
+**Recorded dissent**: one gap id for two different situations means an agent
+that branches on `competency_not_authored` alone still cannot tell "never
+written" from "written but not finalized" without reading prose; the honest id
+fix is a distinct gap id.
+**Falsifier**: an agent or person is observed misrouting on the id alone,
+treating an authored-but-unfinalized project as unwritten while ignoring the
+message. Then add the distinct id through a convened decision and version it.
+**Revisit**: on the first observed misroute, or when the meaningAssessment
+contract next changes for another reason.
+
+**Status**: standing; refines 2026-08-17 (28) within its own wording rule.
+
 ## 2026-08-31 — PO Council: the relay does not ship into `init`, and `init` stops naming what it did not install
 
 **Convened because**: the owner asked for item 9, shipping the independent
