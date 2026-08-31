@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next';
 import { deriveBundledProjects } from '@/entities/docs-vault';
 import { SITE_URL } from '@/shared/config';
 import { routing } from '@/i18n/routing';
+import { GUIDE_PAGES, guideCanonicalPath } from '@/views/gateway-doc';
 
 // Static export — must resolve at build time.
 export const dynamic = 'force-static';
@@ -14,6 +15,9 @@ const STATIC_ROUTES = [
   'download',
   'topology',
   'docs',
+  'guide',
+  'changelog',
+  ...GUIDE_PAGES.slice(1).map(guideCanonicalPath),
   // 'ontology' is excluded — it redirects to `/topology`, so it is not its own canonical
   // (`app/[locale]/ontology/page.tsx`). Putting an address whose canonical points elsewhere into
   // the sitemap makes two signals say different things.
@@ -34,8 +38,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
    * A value derived in two places lets a half-fix pass. They are merged into one.
    */
   const projects = deriveBundledProjects();
-  const now = new Date();
-
   const entries: MetadataRoute.Sitemap = [];
 
   // Per-locale entries for the static set + per-locale per-project entries.
@@ -46,7 +48,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       const path = route ? `/${locale}/${route}/` : `/${locale}/`;
       entries.push({
         url: `${SITE_URL}${path}`,
-        lastModified: now,
         changeFrequency: 'weekly',
         priority: route === '' ? 1 : 0.8,
         alternates: {
@@ -67,7 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const project of projects) {
       entries.push({
         url: `${SITE_URL}/${locale}/project/${project.slug}/`,
-        lastModified: project.updatedAt ?? now,
+        ...(project.updatedAt ? { lastModified: project.updatedAt } : {}),
         changeFrequency: 'weekly',
         priority: 0.7,
         alternates: {

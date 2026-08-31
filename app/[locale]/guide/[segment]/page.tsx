@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
-import { GatewayDocPage, GUIDE_PAGES, GUIDE_ENTRY_PAGE, resolveGuidePage } from '@/views/gateway-doc';
+import {
+  GatewayDocPage,
+  GUIDE_PAGES,
+  GUIDE_ENTRY_PAGE,
+  guideCanonicalPath,
+  resolveGuidePage,
+} from '@/views/gateway-doc';
 import { buildPageMetadata } from '@/shared/lib/page-metadata';
 import { routing } from '@/i18n/routing';
 
@@ -25,7 +31,7 @@ export async function generateMetadata({
   const t = await getTranslations({ locale, namespace: 'metadata' });
   return buildPageMetadata({
     locale,
-    path: `guide/${page.segment}`,
+    path: guideCanonicalPath(page),
     title: `${tNav(`guidePages.${page.titleKey}`)} · ${t('pages.guide')}`,
     description: t('descriptions.guide'),
   });

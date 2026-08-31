@@ -50,6 +50,15 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
 export const GUIDE_ENTRY_PAGE = GUIDE_PAGES[0]!;
 
 /**
+ * The first chapter is rendered at both `/guide/` and its generated segment route. Search engines
+ * must receive one canonical address for that body, so the shared entry route owns chapter one and
+ * every later chapter keeps its segment.
+ */
+export function guideCanonicalPath(page: GuidePage): string {
+  return page.segment === GUIDE_ENTRY_PAGE.segment ? 'guide' : `guide/${page.segment}`;
+}
+
+/**
  * The result of resolving a segment — it states **which chapter to draw** and **whether that chapter is
  * the one requested**.
  *
