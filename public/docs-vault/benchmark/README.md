@@ -25,8 +25,12 @@ Either way, **measurement before further investment**.
 | File | Purpose |
 |---|---|
 | [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. |
-| [`tasks.md`](tasks.md) | 7 benchmark tasks — 3 categories (cross-cutting / semantic / negative-control). Each task has a known correct answer for human grading. |
+| [`tasks.md`](tasks.md) | 10 retrieval and meaning tasks — 4 categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. |
 | [`rubric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. |
+| [`FINDINGS-2026-08-31.md`](FINDINGS-2026-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. |
+| [`FINDINGS-2026-08-31-change-flow.md`](FINDINGS-2026-08-31-change-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. |
+| [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. |
+| [`results/2026-08-31-change-r7-summary.md`](results/2026-08-31-change-r7-summary.md) | Four-cell change-flow result with direct Git and Atlas update receipts. |
 | [`results/2026-05-template.md`](results/2026-05-template.md) | Empty matrix (task × agent × mode). Fill in after each measurement run. |
 
 ## How to measure
@@ -34,14 +38,81 @@ Either way, **measurement before further investment**.
 Two paths, depending on which agent:
 
 - **Claude Code**: manual, see "Manual run protocol" below. (Claude Code CLI doesn't expose a non-interactive mode that's safe to script.)
-- **Codex CLI**: **automated** via [`scripts/benchmark.mjs`](../../scripts/benchmark.mjs) (R13 #62) — `pnpm benchmark --bypass` runs all 7 tasks × 2 modes, captures transcripts, and writes a tool-call summary table. Correctness/hallucination scoring still happens by hand against the saved transcripts.
+- **Codex CLI**: the legacy retrieval matrix is automated via [`scripts/benchmark.mjs`](../../scripts/benchmark.mjs) — `pnpm benchmark --bypass` runs all 10 tasks × 2 modes, captures transcripts, and writes a tool-call summary table. `--with-none` adds the physically no-vault control. This self-repository matrix is diagnostic, not causal, because the repository documents itself heavily.
+
+### Lifecycle benchmark: greenfield versus brownfield
+
+The long-term investment question needs a different matrix from the legacy
+self-repository lookup benchmark. [`scripts/benchmark-lifecycle.mjs`](../../scripts/benchmark-lifecycle.mjs)
+runs the same frozen task against the same source snapshot in two arms:
+
+| Arm | Subject contents | What it measures |
+|---|---|---|
+| `off` | source and product documents only; no Atlas vault, MCP, or answer key | what the agent can recover without Atlas |
+| `on` | the same source plus a validated, prepared Atlas vault and read-only MCP | whether recorded meaning changes the agent's bounded handoff |
+
+The current subjects are small internal fixture proxies: `greenfield` is a
+small feature-sliced project and `brownfield` is a multi-package collaboration
+project. They represent lifecycle shape, not an external customer cohort. The
+runner removes `golden.json`, keeps the answer key outside the temporary
+workspace, validates the treatment vault, injects MCP through a per-process
+config override, requires MCP traffic in `on`, rejects MCP traffic in `off`,
+and preserves a caller-supplied run id.
+
+The fixed lifecycle tasks are intentionally about meaning rather than source
+lookup:
+
+| Subject | Task | Decision being tested |
+|---|---|---|
+| Greenfield | G1 orientation | assign a new request to a product responsibility and name the first implementation paths |
+| Greenfield | G2 boundary | keep inventory reconciliation out of purchase confirmation and preserve the recorded reason |
+| Brownfield | B1 impact | distinguish cross-package product dependencies from proven runtime impact |
+| Brownfield | B2 handoff | place permission evaluation in its owning boundary and give the next verification action |
+
+Run it as a feasibility check first, then repeat each cell three times:
+
+```bash
+pnpm benchmark:lifecycle --dry-run
+pnpm benchmark:lifecycle --bypass --run-id=2026-08-31-gb-r3 --repeat=3
+```
+
+The machine-readable coverage score checks whether a final structured answer
+contains the required slugs, paths, and bounded-unknown signal. It is not a
+semantic quality certificate. Human review must still check factual
+correctness, unsupported rationale, citation accuracy, and handoff usefulness.
+Bootstrap/maintenance cost and the source-hidden field trial are separate
+measurements, not hidden in this score.
+
+### End-to-end change-flow benchmark
+
+The lifecycle matrix above stops before an edit. [`scripts/benchmark-change-flow.mjs`](../../scripts/benchmark-change-flow.mjs)
+measures the next boundary: one fixed change in a fresh repository, followed by
+tests, a scoped commit, a push to a local bare remote, a clean or recovered
+merge, post-merge tests, and branch cleanup. The `on` arm also updates one
+existing capability through `patch_concept`, validates and compiles the vault,
+and commits that meaning record with the source and tests. The `off` arm has no
+Atlas vault or MCP. No external remote is contacted.
+
+```bash
+pnpm benchmark:change-flow --dry-run
+pnpm benchmark:change-flow --bypass --run-id=YYYY-MM-DD-change-rN --repeat=1
+```
+
+The adopted first feasibility result is [`2026-08-31-change-r7`](results/2026-08-31-change-r7-summary.md): all four cells passed every required
+workflow step. Atlas therefore showed **workflow parity**, not a proven code
+quality advantage. The on arm was slower by 28.2 seconds in the greenfield
+subject and 51.1 seconds in the brownfield subject, while adding the reviewed
+capability update. The brownfield cells include deterministic conflict
+recovery. See the [change-flow findings](FINDINGS-2026-08-31-change-flow.md)
+for the protocol, failed diagnostic runs, and falsifiers.
 
 ### Codex automated run
 
 ```bash
 pnpm benchmark --dry-run     # verify config without spawning codex
-pnpm benchmark --bypass      # full 14-cell run (~5-10 minutes)
-pnpm benchmark --bypass --on-only   # ON-only (faster re-test after vault change)
+pnpm benchmark --bypass      # legacy 20-cell run: 10 tasks × OFF/ON
+pnpm benchmark --bypass --with-none # legacy 30-cell run: NONE/OFF/ON
+pnpm benchmark --bypass --on-only   # legacy ON-only 10 cells
 pnpm benchmark:scale --dry-run      # verify scale benchmark config without spawning codex
 pnpm perf:graph                     # in-process compile_ontology/query_ontology scale audit
 pnpm perf:graph:scale               # stricter 1k + 5k graph hot-path budget
@@ -51,7 +122,7 @@ Why `--bypass` is required: Codex's `exec` mode default-denies all MCP tool call
 
 Output:
 - `docs/benchmark/results/<date>-codex-<task>-<mode>.txt` — per-cell raw transcript
-- `docs/benchmark/results/<date>-codex-summary.md` — auto-generated tool-call table
+- `docs/benchmark/results/<date>-codex-summary.md` — auto-generated tool-call table, including NONE when requested
 
 ### Manual run protocol
 
@@ -83,7 +154,7 @@ For each task in `tasks.md`:
 
 ### Run all four cells per task
 
-Each of the 7 tasks should be measured 4 times:
+Each of the 10 legacy tasks should be measured 4 times:
 
 | Cell | Agent | MCP mode |
 |---|---|---|
@@ -92,7 +163,7 @@ Each of the 7 tasks should be measured 4 times:
 | 3 | Codex | OFF |
 | 4 | Codex | ON |
 
-7 tasks × 4 cells = **28 runs total**. Each run is ~2-5 minutes — total bench time is ~1-2 hours.
+10 tasks × 4 cells = **40 runs total**. Each run is ~2-5 minutes — total bench time is ~1-3 hours.
 
 ## Honest measurement principles
 
@@ -108,27 +179,45 @@ Each of the 7 tasks should be measured 4 times:
 - **Does Cat C (grep-able) show neutrality?** If MCP-on hurts here, we've over-trained agents to reach for the wrong tool.
 - **Cross-agent consistency** — does the effect hold across Claude Code and Codex, or is it agent-specific?
 
-Results will be summarized in this README and (if signal is strong) in the project's main README under "Verifiable promises".
+Results will be summarized in this README and (only with the stated limitations) in the project's main README under the long-term value section.
 
 ## Current measurement status
 
 | Run | Vault | Agents (n) | Result file | Headline |
 |---|---|---|---|---|
-| R13 first | 22 nodes | Claude Code self + Codex bypass (n=2) | `results/2026-05-04-claude-code.md` · `results/2026-05-04-codex.md` | CC: hallucination 9→0, +1.0 correctness · Codex: tool calls 7.0→1.67 (-76%), correctness saturated |
+| 2026-08-31 change flow R7 | two internal fixture proxies | Codex, one fresh repeat per cell | [`results/2026-08-31-change-r7-summary.md`](results/2026-08-31-change-r7-summary.md) | workflow parity 4/4; Atlas update 2/2 on cells; no quality or speed claim |
+| 2026-08-31 lifecycle R3 | two internal fixture proxies | Codex, 3 fresh repeats per cell | [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | required-evidence coverage: greenfield `0.25 → 0.875`; brownfield `0.2834 → 0.7389`; arm integrity 24/24; pilot evidence only |
+| R13/R14 legacy retrieval | self-documented Atlas repository | Claude Code + Codex historical runs | `results/2026-05-04-claude-code.md` · `results/2026-05-04-codex.md` | useful for retrieval diagnostics, not causal Atlas value; see [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) |
 
-R14 (post-2026-05-05) note: vault grew **22 → 25 nodes** (added `capabilities/ontology-sync-skill` + `capabilities/session-start-ontology-context`). Re-measurement is **user-triggered** since Codex bypass requires explicit `--dangerously-bypass-approvals-and-sandbox` and Claude Code self-run requires a manual session.
+The lifecycle result is deliberately not described as a product win. Atlas was
+slower in this pilot (median +17.2 seconds in greenfield and +33.2 seconds in
+brownfield), so the present signal is about bounded meaning coverage, not
+latency or token savings. The brownfield impact task was a median tie and is a
+named improvement target.
 
 ### Re-measurement triggers (user runs these manually)
 
 ```bash
-# Codex 14-cell automated re-measurement (full bypass, ~20 min)
+# Legacy Codex 20-cell automated re-measurement (full bypass)
 pnpm benchmark --bypass
 
-# Codex ON-only 7 cells (faster, ~10 min)
+# Legacy no-vault control included
+pnpm benchmark --bypass --with-none
+
+# Lifecycle 2×2: one feasibility pilot
+pnpm benchmark:lifecycle --bypass --run-id=YYYY-MM-DD-gb-pilot --repeat=1
+
+# Lifecycle decision-grade repeat
+pnpm benchmark:lifecycle --bypass --run-id=YYYY-MM-DD-gb-r3 --repeat=3
+
+# End-to-end change flow: one greenfield + one brownfield, Atlas off/on
+pnpm benchmark:change-flow --bypass --run-id=YYYY-MM-DD-change-rN --repeat=1
+
+# Legacy Codex ON-only 10 cells (faster)
 pnpm benchmark --bypass --on-only
 
 # Claude Code self-measurement is manual — open a new session and walk
-# the 7 prompts in tasks.md, recording transcripts into a new
+# the 10 prompts in tasks.md, recording transcripts into a new
 # results/<date>-claude-code.md.
 ```
 

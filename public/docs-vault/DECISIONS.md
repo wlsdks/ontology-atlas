@@ -25368,3 +25368,184 @@ present with one. Probed by forcing the condition true: 2 failed.
 **Status**: valid
 
 ---
+
+## 2026-08-31 — Atlas value is a paired lifecycle question, not a self-repository lookup
+
+**Convened because**: the owner asked which benefit Atlas provides in both
+greenfield and brownfield work, compared with not using Atlas, and asked for
+the result to guide the long-term goal and README. This changes product
+positioning and the first words a stranger reads.
+
+**Prior decision**: `docs/benchmark/FINDINGS-2026-08-25.md` already concluded
+that this repository is too heavily self-documented to provide a causal control
+and directed the next run to an isolated unfamiliar repository. That decision
+stands. The existing source-hidden field trials measure vault construction and
+handoff truth, but do not supply an Atlas-absent counterfactual.
+
+**PO Council**:
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify the measurement slice | Problem insight 4 · User moment 4 |
+| Craft | Build and verify, conditional on current runtime evidence | Verification 2 |
+| Steward | Build and verify | Ontology value 4 · Agent value 4 |
+| Wedge | Build and verify | Differentiation 3 |
+| Leverage | Build and verify | appetite and slice |
+
+**Rubric total**: **21/24** (fatal zeros: none)
+
+**Decision (accountable: jinan)**: build only the benchmark and evidence loop.
+Do not add a product surface, MCP schema, CLI contract, AST index, or new
+ontology prose to make the result look better. The treatment arm is a prepared,
+validated Atlas vault plus read-only Atlas MCP; the control arm is physically
+without the vault, MCP, and answer key. Both arms use the same source snapshot,
+fixed questions, same Codex model, fresh temporary workspace, and explicit
+control-integrity checks.
+
+**Slice**: one greenfield-shaped and one brownfield-shaped fixture, two meaning
+tasks per subject, Atlas `on` versus physically Atlas-absent `off`, three fresh
+repeats for decision-grade data; record required-evidence coverage, unsupported
+claims, citations, handoff usefulness, elapsed time, shell/MCP calls, setup
+failures, and raw transcripts. Keep bootstrap/maintenance cost and the
+source-hidden handoff as separate measurements. Current fixture run names are
+proxies for lifecycle shape, not evidence from an external customer cohort.
+
+**Implemented guardrails**: `scripts/benchmark-lifecycle.mjs` creates isolated
+temporary subjects, removes the golden answer file, validates the treatment
+vault before execution, injects MCP through a per-process `--config` table
+override without touching global Codex configuration, requires MCP traffic in
+the treatment arm, rejects MCP leakage in control, preserves a caller-supplied
+run id, and scores only the final structured answer rather than transcript/tool
+output. The runner's first pilot also exposed and fixed case-definition passing,
+MCP activation, vault array ordering, and result-overwrite defects.
+
+**Feasibility pilot**: run `2026-08-31-gb-pilot-r2`, one repeat, completed all 8
+cells with zero arm-integrity or process failures. Required-evidence coverage
+was greenfield `0.25 → 1.0` and brownfield `0.2833 → 0.6167` from `off → on`;
+the on arm observed 3–4 MCP calls per cell. This is a promising pilot, not a
+product claim: the subjects are small internal fixtures, the scoring is
+machine coverage, and three-repeat human semantic/citation review remains
+required.
+
+**Recorded dissent**: a two-subject, three-repeat matrix can still measure task
+selection, prompt/model variance, extra authored context, or vault-authoring
+cost rather than a durable Atlas effect. The counter is that a matched
+Atlas-absent arm is the cheapest missing counterfactual, and the result is
+explicitly bounded as pilot evidence until the repeated run and separate
+source-hidden/maintenance measurements exist.
+
+**Falsifier**: after clean control-integrity checks and repeated runs, Atlas does
+not improve meaning correctness, boundary/impact fidelity, citation accuracy,
+or handoff usefulness after its construction and maintenance cost, or it
+increases unsupported claims or harms the negative control. Then the README
+must narrow or remove the long-term value claim and the next investment is
+reconsidered rather than expanded.
+
+**Status**: valid · benchmark slice implemented · three-repeat measurement pending
+
+---
+
+## 2026-08-31 — Three-repeat lifecycle pilot favors boundary and handoff, not speed
+
+**Follows**: the paired lifecycle decision immediately above. The runner was
+repaired forward after its first feasibility attempt and the exact same fixed
+tasks were repeated three times per arm on each of the two fixture subjects.
+
+**Result**: all 24 cells completed with expected arm exposure and no process or
+control-integrity failures. Required-evidence coverage improved from `0.25` to
+`0.875` for the greenfield-shaped subject (`+0.625`) and from `0.2834` to
+`0.7389` for the brownfield-shaped subject (`+0.4555`). Content passes were
+`0/6 → 4/6` and `0/6 → 2/6`. Atlas was slower by median `17.2s` and `33.2s`,
+respectively, so no speed or token-saving claim is made.
+
+**Interpretation**: the strongest signal is in the tasks that ask for explicit
+boundaries, ownership, rationale-bearing relations, and a next verification
+path. The brownfield impact task tied at the median because package-level source
+anchors cannot prove runtime or transitive impact; a graph edge does not remove
+that evidence boundary.
+
+**Decision**: keep the long-term goal bounded to a local, reviewed,
+business-to-code handoff whose value compounds across changes. Treat the pilot
+as feasibility evidence only. Before using it for public investment or product
+claims, add human semantic/citation grading, real unfamiliar greenfield and
+brownfield snapshots, construction/maintenance cost, and a stale-vault arm.
+
+**Improvement targets**: preserve canonical slugs and provenance in compact
+agent answers; improve impact evidence without promoting declared dependencies
+to runtime claims; and measure whether maintenance cost is repaid by fewer
+unsupported decisions. A null or harmful result in those follow-ups reopens the
+README claim under the recorded falsifier.
+
+**Evidence**: `docs/benchmark/results/2026-08-31-gb-r3-summary.md`,
+`docs/benchmark/FINDINGS-2026-08-31.md`, and the 24 raw transcripts named by
+that summary. The machine score is required-evidence coverage, not a human
+semantic certificate.
+
+**Status**: valid · feasibility result recorded · external/general claim pending
+
+---
+
+## 2026-08-31 — Measure Atlas through one bounded change-flow slice
+
+**Follows**: the paired lifecycle pilot above and the owner's clarification
+that Atlas value must be judged across an actual code-change handoff, not as a
+search benchmark.
+
+**Council result**: the five product-owner seats unanimously kept `Shape a
+slice`. The smallest credible next experiment is one fixed change on one
+greenfield-shaped and one brownfield-shaped subject, each with Atlas physically
+absent versus a prepared, read-only Atlas vault; fresh temporary repositories;
+fixed tests and changed-file allowlists; a local bare remote; a conventional
+commit; local push; one clean merge and one deterministic conflict/recovery;
+post-merge tests; and, on the Atlas arm, ontology validation plus a reviewed
+post-change update attempt. Repeat runs wait until this first pass has clean
+integrity.
+
+**Boundary**: Git branch push, merge, and cleanup are harness evidence of the
+agent workflow, not a new Atlas MCP/CLI contract. Atlas owns durable product
+meaning, provenance, boundaries, handoff, and ontology freshness. `git_snapshot`
+is a local vault checkpoint and `merge_concepts` is an ontology identity merge;
+neither is evidence that Atlas owns a Git branch merge.
+
+**Falsifier**: equal human-graded change quality, no improvement in boundary,
+provenance, or handoff decisions, or an apparent advantage explained by generic
+source/Git competence, authored fixture context, or maintenance cost. If that
+happens, narrow or remove the README claim before expanding the benchmark.
+
+**Accountable**: jinan
+
+**Status**: approved · bounded change-flow benchmark in progress
+
+---
+
+## 2026-08-31 — First change-flow repeat shows workflow parity, not product lift
+
+**Follows**: the bounded change-flow slice immediately above. The fixture
+baseline, Atlas local-sidecar ignore contract, feature-commit capture, and
+failure diagnostics were repaired before accepting the final repeat.
+
+**Result**: `2026-08-31-change-r7` completed all four matched cells: greenfield
+`off/on` and brownfield `off/on`. Every cell passed exact scope, focused tests
+before and after merge, conventional commit, local bare-remote push, merge,
+and branch/worktree cleanup. The brownfield cells both exercised the planned
+deterministic conflict recovery. Both Atlas cells also made one exact
+`patch_concept` update and passed `validate_vault` plus `compile_ontology`.
+
+**Observed delta**: workflow completion was `1/1` in every arm, so this repeat
+shows no completion advantage. The Atlas arm took `+28.2s` in greenfield and
+`+51.1s` in brownfield. This is not evidence of a code-quality, safety, or
+cost-adjusted win; the fixed synthetic tasks were machine-checked and not
+blindly graded by humans.
+
+**Decision**: keep the README claim at feasibility level. Atlas has now earned
+the narrower statement that a reviewed meaning record can travel with a
+bounded code change through tests, commit, local push, merge, and cleanup.
+Do not claim that Atlas owns Git integration or improves code outcomes until
+human semantic grading, unfamiliar repositories, stale-vault behavior, and
+construction/maintenance cost are measured.
+
+**Evidence**: `docs/benchmark/FINDINGS-2026-08-31-change-flow.md` and
+`docs/benchmark/results/2026-08-31-change-r7-summary.md`; diagnostic failures
+remain linked there and are not counted as successful product evidence.
+
+**Status**: valid · first end-to-end feasibility result recorded · general claim pending

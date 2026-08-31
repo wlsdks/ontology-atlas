@@ -1,0 +1,48 @@
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b..7842045 100644
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,11 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(
++  totalCents,
++  inventoryAvailable,
++  { discountCents = 0 } = {},
++) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88e..b57be19 100644
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@ test('confirms an available purchase at its current total', () => {
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('clamps the discounted total at zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 0.5 }),
++    RangeError,
++  );
++});

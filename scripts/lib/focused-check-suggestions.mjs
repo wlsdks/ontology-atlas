@@ -541,6 +541,11 @@ const RULES = [
     matches: [/^scripts\/benchmark\.mjs$/],
   },
   {
+    command: 'pnpm benchmark:change-flow --dry-run',
+    reason: 'end-to-end meaning-to-change benchmark runner config changed',
+    matches: [/^scripts\/benchmark-change-flow(?:\.test)?\.mjs$/],
+  },
+  {
     command: 'pnpm benchmark:scale --dry-run',
     reason: 'Codex scale benchmark runner config changed',
     matches: [/^scripts\/benchmark-scale\.mjs$/],

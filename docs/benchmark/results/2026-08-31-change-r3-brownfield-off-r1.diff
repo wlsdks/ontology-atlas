@@ -1,0 +1,42 @@
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901..9935684 100644
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e..7242def 100644
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,24 @@ import assert from 'node:assert/strict';
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('preserves the acknowledgement when the note is absent or blank', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('appends a trimmed non-blank note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Notify the incident commander.  ',
++    }),
++    'Lee acknowledged `Containment` — Notify the incident commander.',
++  );
+ });

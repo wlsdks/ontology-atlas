@@ -2311,6 +2311,85 @@
       "slug": "appendix-why-the-first-three-attempts-measured-nothing"
     }
   ],
+  "benchmark/FINDINGS-2026-08-31": [
+    {
+      "depth": 1,
+      "text": "Paired lifecycle findings — 2026-08-31",
+      "slug": "paired-lifecycle-findings-2026-08-31"
+    },
+    {
+      "depth": 2,
+      "text": "The decision this run can inform",
+      "slug": "the-decision-this-run-can-inform"
+    },
+    {
+      "depth": 2,
+      "text": "Protocol",
+      "slug": "protocol"
+    },
+    {
+      "depth": 2,
+      "text": "Result",
+      "slug": "result"
+    },
+    {
+      "depth": 2,
+      "text": "What the pilot suggests",
+      "slug": "what-the-pilot-suggests"
+    },
+    {
+      "depth": 2,
+      "text": "What this does not prove",
+      "slug": "what-this-does-not-prove"
+    },
+    {
+      "depth": 2,
+      "text": "Improvement backlog from this run",
+      "slug": "improvement-backlog-from-this-run"
+    },
+    {
+      "depth": 2,
+      "text": "Current long-term goal",
+      "slug": "current-long-term-goal"
+    }
+  ],
+  "benchmark/FINDINGS-2026-08-31-change-flow": [
+    {
+      "depth": 1,
+      "text": "Findings — 2026-08-31 end-to-end change flow",
+      "slug": "findings-2026-08-31-end-to-end-change-flow"
+    },
+    {
+      "depth": 2,
+      "text": "Question",
+      "slug": "question"
+    },
+    {
+      "depth": 2,
+      "text": "Protocol",
+      "slug": "protocol"
+    },
+    {
+      "depth": 2,
+      "text": "Adopted result: `2026-08-31-change-r7`",
+      "slug": "adopted-result-2026-08-31-change-r7"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation",
+      "slug": "interpretation"
+    },
+    {
+      "depth": 2,
+      "text": "Defects found and fixed while building the measurement",
+      "slug": "defects-found-and-fixed-while-building-the-measurement"
+    },
+    {
+      "depth": 2,
+      "text": "Next falsifiable slice",
+      "slug": "next-falsifiable-slice"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -2331,6 +2410,16 @@
       "depth": 2,
       "text": "How to measure",
       "slug": "how-to-measure"
+    },
+    {
+      "depth": 3,
+      "text": "Lifecycle benchmark: greenfield versus brownfield",
+      "slug": "lifecycle-benchmark-greenfield-versus-brownfield"
+    },
+    {
+      "depth": 3,
+      "text": "End-to-end change-flow benchmark",
+      "slug": "end-to-end-change-flow-benchmark"
     },
     {
       "depth": 3,
@@ -2721,6 +2810,226 @@
       "slug": "next-human-grading"
     }
   ],
+  "benchmark/results/2026-08-31-change-r1-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r1",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r1"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r2-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r2",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r2"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r3-smoke-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r3-smoke",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r3-smoke"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r3-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r3",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r3"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r4-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r4",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r4"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r5-diagnose-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r5-diagnose",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r5-diagnose"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r6-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r6",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r6"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-change-r7-summary": [
+    {
+      "depth": 1,
+      "text": "Meaning-to-change benchmark — 2026-08-31-change-r7",
+      "slug": "meaning-to-change-benchmark-2026-08-31-change-r7"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-pilot-r2-summary": [
+    {
+      "depth": 1,
+      "text": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-pilot-r2",
+      "slug": "greenfieldbrownfield-lifecycle-benchmark-2026-08-31-gb-pilot-r2"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-r3-summary": [
+    {
+      "depth": 1,
+      "text": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r3",
+      "slug": "greenfieldbrownfield-lifecycle-benchmark-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "Paired deltas",
+      "slug": "paired-deltas"
+    },
+    {
+      "depth": 2,
+      "text": "Interpretation boundary",
+      "slug": "interpretation-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    }
+  ],
   "benchmark/rubric": [
     {
       "depth": 1,
@@ -2731,6 +3040,16 @@
       "depth": 2,
       "text": "What this measures, and what it does not",
       "slug": "what-this-measures-and-what-it-does-not"
+    },
+    {
+      "depth": 2,
+      "text": "Lifecycle matrix scoring",
+      "slug": "lifecycle-matrix-scoring"
+    },
+    {
+      "depth": 2,
+      "text": "End-to-end change-flow scoring",
+      "slug": "end-to-end-change-flow-scoring"
     },
     {
       "depth": 2,
@@ -10148,6 +10467,26 @@
       "depth": 2,
       "text": "2026-08-25 — The empty map stops offering a round trip to itself",
       "slug": "2026-08-25-the-empty-map-stops-offering-a-round-trip-to-itself"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — Atlas value is a paired lifecycle question, not a self-repository lookup",
+      "slug": "2026-08-31-atlas-value-is-a-paired-lifecycle-question-not-a-self-repository-lookup"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — Three-repeat lifecycle pilot favors boundary and handoff, not speed",
+      "slug": "2026-08-31-three-repeat-lifecycle-pilot-favors-boundary-and-handoff-not-speed"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — Measure Atlas through one bounded change-flow slice",
+      "slug": "2026-08-31-measure-atlas-through-one-bounded-change-flow-slice"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — First change-flow repeat shows workflow parity, not product lift",
+      "slug": "2026-08-31-first-change-flow-repeat-shows-workflow-parity-not-product-lift"
     }
   ],
   "DEMO-SCENARIO": [

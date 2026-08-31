@@ -1,0 +1,429 @@
+{"summary":"Implemented optional discountCents validation and zero-clamped checkout totals. Added focused tests; all 6 tests pass. Reviewed and committed the intended two files as fc7507d. No push or merge performed.","changedFiles":["src/checkout.mjs","test/checkout.test.mjs"],"testCommand":"node --test test/checkout.test.mjs","commitSubject":"feat: add checkout discount handling","atlasAction":"Skipped patch_concept, validate_vault, and compile_ontology because Atlas was explicitly unavailable in this control run.","unknowns":[]}
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.151.0
+--------
+workdir: /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: none
+reasoning summaries: none
+session id: 01a054fa-2ff9-7251-8e02-a700b098a77a
+--------
+user
+Atlas is not available in this control run. Use the source and product documents only; do not look for an Atlas folder or MCP server.
+
+Implement this approved change in the repository:
+
+- Extend confirmPurchase(totalCents, inventoryAvailable) so it accepts a third options argument with discountCents.
+- A non-negative integer discountCents reduces the confirmed total but never below zero.
+- Reject a negative or non-integer discountCents with RangeError.
+- Keep inventory availability as a separate responsibility; do not move code into src/inventory.mjs.
+- Add focused tests for the new behavior while keeping the existing tests.
+- After the code tests pass, use Atlas MCP `patch_concept` on `capabilities/checkout` to append exactly this section to the existing body (preserve all existing frontmatter and body text):
+  ## Change record
+  - The confirmed total now accepts non-negative integer discountCents and clamps at zero.
+- Then use Atlas MCP `validate_vault` and `compile_ontology` to verify the updated vault. Do not add, rename, delete, or directly edit any other Atlas file.
+
+Run exactly: node --test test/checkout.test.mjs
+Review the diff, commit only the intended files with the conventional subject `feat: add checkout discount handling`, and do not push or merge; the harness will verify those steps.
+
+Return exactly one JSON object matching the output schema. Do not push or merge; the harness will do and verify those operations.
+codex
+{"summary":"I’ll implement the checkout change using only repository source and product documents, run the exact requested test command, review the diff, and commit only the intended files. Because Atlas is explicitly unavailable in this control run, I will not search for or invoke Atlas and will report that action as skipped.","changedFiles":[],"testCommand":"node --test test/checkout.test.mjs","commitSubject":"feat: add checkout discount handling","atlasAction":"skipped: Atlas unavailable by user instruction","unknowns":[]}
+exec
+/bin/zsh -lc "pwd && rg --files -g '"'!node_modules'"' | sed -n '1,160p' && git status --short" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+ succeeded in 0ms:
+/private/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+src/checkout.mjs
+src/inventory.mjs
+package.json
+README.md
+test/checkout.test.mjs
+
+exec
+/bin/zsh -lc "sed -n '1,240p' src/checkout.mjs && sed -n '1,260p' test/checkout.test.mjs && sed -n '1,220p' README.md && sed -n '1,160p' src/inventory.mjs && git log -5 --oneline" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+ succeeded in 0ms:
+export function confirmPurchase(totalCents, inventoryAvailable) {
+  if (!inventoryAvailable) throw new Error('inventory unavailable');
+  return totalCents;
+}
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { confirmPurchase } from '../src/checkout.mjs';
+
+test('confirms an available purchase at its current total', () => {
+  assert.equal(confirmPurchase(1200, true), 1200);
+});
+
+test('refuses a purchase when inventory is unavailable', () => {
+  assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+});
+# greenfield-shaped purchase project
+
+This subject contains source and product documents only.
+export function isSellable(inventoryAvailable) {
+  return inventoryAvailable === true;
+}
+834afc9 chore: create benchmark baseline
+
+codex
+{"summary":"The checkout implementation is intentionally small: inventory rejection already lives in checkout and will remain unchanged. I’ll add an optional `{ discountCents }` input defaulting to zero, validate it as a non-negative integer, clamp the result at zero, and add focused tests for discounting, clamping, and both invalid classes.","changedFiles":[],"testCommand":"node --test test/checkout.test.mjs","commitSubject":"feat: add checkout discount handling","atlasAction":"skipped: Atlas unavailable by user instruction","unknowns":[]}
+apply patch
+patch: completed
+/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off/src/checkout.mjs
+/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off/test/checkout.test.mjs
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b4c64e93da4beb00aa41baf9ef9b775e83..88ada6d4a5edcb744df4e4d320c3922700bf62ee
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88efe125d7cc17405572a68a1f9cd2a7ec96..43a6c65eb1f08846ab781a70530f6145d68deeac
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b4c64e93da4beb00aa41baf9ef9b775e83..88ada6d4a5edcb744df4e4d320c3922700bf62ee
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88efe125d7cc17405572a68a1f9cd2a7ec96..43a6c65eb1f08846ab781a70530f6145d68deeac
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+exec
+/bin/zsh -lc 'node --test test/checkout.test.mjs' in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+ succeeded in 0ms:
+✔ confirms an available purchase at its current total (0.407791ms)
+✔ refuses a purchase when inventory is unavailable (0.205166ms)
+✔ reduces the confirmed total by a non-negative integer discount (0.063667ms)
+✔ does not reduce the confirmed total below zero (0.051916ms)
+✔ rejects a negative discount (0.646167ms)
+✔ rejects a non-integer discount (0.18075ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 50.363917
+
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b4c64e93da4beb00aa41baf9ef9b775e83..88ada6d4a5edcb744df4e4d320c3922700bf62ee
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88efe125d7cc17405572a68a1f9cd2a7ec96..43a6c65eb1f08846ab781a70530f6145d68deeac
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+codex
+{"summary":"The exact requested test command passes all 6 tests, including the 2 existing tests. I’m now reviewing the working-tree diff and will commit only `src/checkout.mjs` and `test/checkout.test.mjs` with the required subject.","changedFiles":["src/checkout.mjs","test/checkout.test.mjs"],"testCommand":"node --test test/checkout.test.mjs","commitSubject":"feat: add checkout discount handling","atlasAction":"skipped: Atlas unavailable by user instruction","unknowns":[]}
+exec
+/bin/zsh -lc 'git status --short && git diff --check && git diff -- src/checkout.mjs test/checkout.test.mjs' in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+ succeeded in 0ms:
+ M src/checkout.mjs
+ M test/checkout.test.mjs
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b..88ada6d 100644
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88e..43a6c65 100644
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@ test('confirms an available purchase at its current total', () => {
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b4c64e93da4beb00aa41baf9ef9b775e83..88ada6d4a5edcb744df4e4d320c3922700bf62ee
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88efe125d7cc17405572a68a1f9cd2a7ec96..43a6c65eb1f08846ab781a70530f6145d68deeac
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+exec
+/bin/zsh -lc "git add -- src/checkout.mjs test/checkout.test.mjs && git commit -m \"feat: add checkout discount handling\" && git status --short && git log -1 --format='%h %s'" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-5620dd09-8296-467c-91e3-355d5285be52/greenfield-off
+ succeeded in 0ms:
+[benchmark/greenfield-change fc7507d] feat: add checkout discount handling
+ 2 files changed, 27 insertions(+), 2 deletions(-)
+fc7507d feat: add checkout discount handling
+
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b4c64e93da4beb00aa41baf9ef9b775e83..88ada6d4a5edcb744df4e4d320c3922700bf62ee
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88efe125d7cc17405572a68a1f9cd2a7ec96..43a6c65eb1f08846ab781a70530f6145d68deeac
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+codex
+{"summary":"Implemented optional discountCents validation and zero-clamped checkout totals. Added focused tests; all 6 tests pass. Reviewed and committed the intended two files as fc7507d. No push or merge performed.","changedFiles":["src/checkout.mjs","test/checkout.test.mjs"],"testCommand":"node --test test/checkout.test.mjs","commitSubject":"feat: add checkout discount handling","atlasAction":"Skipped patch_concept, validate_vault, and compile_ontology because Atlas was explicitly unavailable in this control run.","unknowns":[]}
+diff --git a/src/checkout.mjs b/src/checkout.mjs
+index ac56a9b4c64e93da4beb00aa41baf9ef9b775e83..88ada6d4a5edcb744df4e4d320c3922700bf62ee
+--- a/src/checkout.mjs
++++ b/src/checkout.mjs
+@@ -1,4 +1,7 @@
+-export function confirmPurchase(totalCents, inventoryAvailable) {
++export function confirmPurchase(totalCents, inventoryAvailable, { discountCents = 0 } = {}) {
+   if (!inventoryAvailable) throw new Error('inventory unavailable');
+-  return totalCents;
++  if (!Number.isInteger(discountCents) || discountCents < 0) {
++    throw new RangeError('discountCents must be a non-negative integer');
++  }
++  return Math.max(0, totalCents - discountCents);
+ }
+diff --git a/test/checkout.test.mjs b/test/checkout.test.mjs
+index 09bc88efe125d7cc17405572a68a1f9cd2a7ec96..43a6c65eb1f08846ab781a70530f6145d68deeac
+--- a/test/checkout.test.mjs
++++ b/test/checkout.test.mjs
+@@ -9,3 +9,25 @@
+ test('refuses a purchase when inventory is unavailable', () => {
+   assert.throws(() => confirmPurchase(1200, false), /inventory unavailable/);
+ });
++
++test('reduces the confirmed total by a non-negative integer discount', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 200 }), 1000);
++});
++
++test('does not reduce the confirmed total below zero', () => {
++  assert.equal(confirmPurchase(1200, true, { discountCents: 1500 }), 0);
++});
++
++test('rejects a negative discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: -1 }),
++    RangeError,
++  );
++});
++
++test('rejects a non-integer discount', () => {
++  assert.throws(
++    () => confirmPurchase(1200, true, { discountCents: 1.5 }),
++    RangeError,
++  );
++});
+
+tokens used
+28,046

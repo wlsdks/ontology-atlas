@@ -1051,6 +1051,7 @@ describe('focused check suggestions', () => {
   it('suggests focused benchmark and onboarding smoke checks', () => {
     const result = suggestFocusedChecks([
       'scripts/benchmark.mjs',
+      'scripts/benchmark-change-flow.mjs',
       'scripts/benchmark-scale.mjs',
       'scripts/perf-vault.mjs',
       'scripts/perf-graph.mjs',
@@ -1060,6 +1061,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm benchmark --dry-run',
+      'pnpm benchmark:change-flow --dry-run',
       'pnpm benchmark:scale --dry-run',
       'node scripts/perf-vault.mjs 10',
       'node --test scripts/perf-graph.test.mjs',
