@@ -1165,7 +1165,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
-      "wordCount": 6396,
+      "wordCount": 6437,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -2340,13 +2340,13 @@
         "domain": "domains/agent-integration",
         "path": "src/views/agents/ui/AgentsPage.tsx",
         "created_by": "agent:unknown",
-        "display_ko": "에이전트\" 목적지",
+        "display_ko": "에이전트 목적지",
         "display_en": "Agents Destination"
       },
       "headings": [],
       "excerpt": "A single location (/agents/) on this computer where you receive, install, attach, fix, and initiate conversations with AI coding tools. It is the eighth destination of the rail. Until 2026-08-20, this task occupied two cells in the settings sheet (\"Executor\"·\"MCP Connection\"), while a separate connection sheet on the m",
       "wordCount": 481,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {

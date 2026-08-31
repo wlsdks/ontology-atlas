@@ -17,6 +17,7 @@ type VaultIssueSeverity = "error" | "warning";
 export type VaultIssueCode =
   | "unclosed-frontmatter"
   | "malformed-frontmatter-line"
+  | "malformed-quoted-scalar"
   | "empty-kind"
   | "missing-kind"
   | "unknown-kind"
@@ -166,14 +167,24 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
   return { ok: issuesHaveNoErrors(issues), issues };
 }
 
+/**
+ * Parser diagnostics that are vault issues in their own right. Both mean the
+ * author wrote frontmatter the reader cannot honour, so both are errors — the
+ * same set `mcp/src/validate.mjs` surfaces.
+ */
+const SURFACED_DIAGNOSTIC_CODES = new Set<VaultIssueCode>([
+  "malformed-frontmatter-line",
+  "malformed-quoted-scalar",
+]);
+
 function pushFrontmatterDiagnostics(
   diagnostics: ReadonlyArray<{ code: string; message: string }>,
   issues: VaultDocumentIssue[],
 ): void {
   for (const diagnostic of diagnostics) {
-    if (diagnostic.code !== "malformed-frontmatter-line") continue;
+    if (!SURFACED_DIAGNOSTIC_CODES.has(diagnostic.code as VaultIssueCode)) continue;
     issues.push({
-      code: "malformed-frontmatter-line",
+      code: diagnostic.code as VaultIssueCode,
       severity: "error",
       message: diagnostic.message,
     });

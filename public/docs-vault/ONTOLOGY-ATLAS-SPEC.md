@@ -516,6 +516,7 @@ kept in lock-step by
 |---|---|---|
 | `unclosed-frontmatter` | **error** | file starts with `---` but has no closing `---` — not parseable as a node at all |
 | `empty-kind` | **error** | `kind:` key present but its value is blank/whitespace — cannot be classified into any of the six kinds |
+| `malformed-quoted-scalar` | **error** | a scalar opens with `"` or `'` that does not close as the value's last character — the reader keeps the quote as literal text, so the value renders wrong everywhere while nothing else fails |
 | `parse-zero-keys` | warning | a frontmatter block exists but zero keys were extracted (indentation/colon issue suspected) |
 | `missing-kind` | warning | no `kind:` key at all (the file may be intentionally kind-less prose) |
 | `unknown-kind` | warning | `kind:` has a value outside the six recognized values (§2) |

@@ -6,7 +6,7 @@ title: Agents Destination
 domain: domains/agent-integration
 path: src/views/agents/ui/AgentsPage.tsx
 created_by: "agent:unknown"
-display_ko: "에이전트" 목적지
+display_ko: 에이전트 목적지
 display_en: Agents Destination
 ---
 

@@ -38,6 +38,11 @@ export const KNOWN_CODES = [
     description: 'a frontmatter declaration or indented list breaks key: value syntax.',
   },
   {
+    code: 'malformed-quoted-scalar',
+    severity: 'error',
+    description: 'a scalar opens a quote it never closes as the last character, so the quote is kept as literal text.',
+  },
+  {
     code: 'missing-kind',
     severity: 'warning',
     description: 'no `kind:` key at all: the file is left out of the graph.',

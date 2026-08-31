@@ -163,6 +163,7 @@ export function parseFrontmatter(input) {
       }
       continue;
     }
+    pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
     const scalar = unquote(value);
     if (assignParsedKey(frontmatter, key, scalar, diagnostics, i + 2)) {
       pushGraphArrayDiagnostic(diagnostics, key, i + 2, scalar);
@@ -179,6 +180,71 @@ function pushGraphArrayDiagnostic(diagnostics, key, line, value) {
     code: 'malformed-frontmatter-line',
     line,
     message: `Frontmatter line ${line} graph relation \`${key}:\` must be an array.`,
+  });
+}
+
+/**
+ * Reports a scalar that **opens a quote the value never closes as its last
+ * character** — `display_ko: "Agents" destination`, found in this repository's own
+ * vault on 2026-08-31.
+ *
+ * `unquote` strips a wrapping pair only when the first and last characters are
+ * the same quote, so a value that opens a quote it never closes falls through to
+ * its lenient tail
+ * (`replace(/^["']|["']$/g, '')`), which removes the opening quote and keeps the
+ * rest verbatim, so every reader renders `Agents" destination`. Nothing else noticed:
+ * the key parses, the node loads, and `validate` answered `0 issues` while the
+ * map, the lists and the app title all showed the broken text.
+ *
+ * Top-level scalars only. Inline list and object members reach `unquote` through
+ * the quote-aware `splitTopLevel`, and a block scalar carries no quoting at all.
+ *
+ * @param {string} value raw text after `key:`
+ * @returns {'trailing' | 'unterminated' | null}
+ */
+function quotedScalarFault(value) {
+  const trimmed = value.trim();
+  const quote = trimmed[0];
+  if (quote !== '"' && quote !== "'") return null;
+  // **Match the renderer, not YAML.** `unquote` strips a wrapping pair whenever
+  // the last character is the same quote, so `'Owner's guide'` and
+  // `"He said "hi" today"` render exactly as written. Only a value that never
+  // closes is a fault; anything else would fail a vault that reads correctly.
+  if (closesWithQuote(trimmed, quote)) return null;
+  for (let i = 1; i < trimmed.length; i += 1) {
+    // The same escape rule `unquote` reverses, so a `\\"` is not a closer.
+    if (trimmed[i] === '\\' && i + 1 < trimmed.length) {
+      i += 1;
+      continue;
+    }
+    if (trimmed[i] === quote) return 'trailing';
+  }
+  return 'unterminated';
+}
+
+/** Whether the last character closes the opening quote rather than being escaped. */
+function closesWithQuote(trimmed, quote) {
+  if (trimmed.length < 2 || trimmed[trimmed.length - 1] !== quote) return false;
+  let backslashes = 0;
+  for (let i = trimmed.length - 2; i >= 0 && trimmed[i] === '\\'; i -= 1) backslashes += 1;
+  return backslashes % 2 === 0;
+}
+
+function pushQuotedScalarDiagnostic(diagnostics, key, line, value) {
+  const fault = quotedScalarFault(value);
+  if (!fault) return;
+  const trimmed = value.trim();
+  const suggestion = trimmed.split(trimmed[0]).join('').replace(/\s+/g, ' ').trim();
+  const fix = suggestion ? `: \`${key}: ${suggestion}\`` : '';
+  diagnostics.push({
+    code: 'malformed-quoted-scalar',
+    line,
+    message:
+      `Frontmatter line ${line} \`${key}:\` ` +
+      (fault === 'trailing'
+        ? 'closes its quote before the end of the value, so the rest is read as literal text'
+        : 'opens a quote the value never closes, so the quote is read as literal text') +
+      `. Close the quote or remove it${fix}`,
   });
 }
 
