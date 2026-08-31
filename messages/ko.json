@@ -1547,7 +1547,12 @@
         "inlineConflict": "방금 이 문서가 바뀌었어요. 새로 읽어왔어요. 그대로 적으려면 한 번 더 저장해 주세요.",
         "inlineNeedsText": "한 문장을 적으면 저장할 수 있어요",
         "inlineNeedsDomain": "영역을 하나 골라 주세요",
-        "inlineReadOnlyHint": "예시 폴더는 고칠 수 없어요. 내 폴더를 열면 이 자리에서 바로 적을 수 있어요."
+        "inlineReadOnlyHint": "예시 폴더는 고칠 수 없어요. 내 폴더를 열면 이 자리에서 바로 적을 수 있어요.",
+        "digestScope": "최근 {shown}건 · 오늘 {today}건",
+        "digestJustNow": "방금",
+        "digestMinutesAgo": "{count}분 전",
+        "digestHoursAgo": "{count}시간 전",
+        "digestDaysAgo": "{count}일 전"
       },
       "flow": {
         "title": "비즈니스 흐름",
