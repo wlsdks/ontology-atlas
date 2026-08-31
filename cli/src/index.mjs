@@ -24,13 +24,14 @@ import {
   readdirSync,
   realpathSync,
 } from 'node:fs';
-import { join, dirname, resolve, relative } from 'node:path';
+import { join, dirname, resolve, relative, sep } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { stdout, stderr, argv, cwd } from 'node:process';
 import { CLI_COMMAND_COUNT, CLI_COMMAND_RUNNERS, CLI_COMMANDS } from './lib/cli-commands.mjs';
 import { startHereContext, startHereRows } from './lib/start-here.mjs';
+import { indentBriefing, rootBriefing } from './lib/root-briefing.mjs';
 import { closestAllowedValue, formatUnknownFlagError } from './lib/cli-args.mjs';
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
 import { runBootstrap } from './commands/bootstrap.mjs';
@@ -356,11 +357,12 @@ function shellQuote(value) {
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
-function copyTree(srcRoot, destRoot) {
+function copyTree(srcRoot, destRoot, { skip = () => false } = {}) {
   let created = 0;
   let skipped = 0;
 
   function walk(rel) {
+    if (rel && skip(rel)) return;
     const src = rel ? join(srcRoot, rel) : srcRoot;
     const dest = rel ? join(destRoot, rel) : destRoot;
     const stat = statSync(src);
@@ -416,7 +418,38 @@ async function runInit(targetArg, opts = {}) {
     return 2;
   }
 
-  const { created, skipped } = copyTree(templateRoot, target);
+  // Where the agent runs decides where its procedures go.
+  //
+  // The starter carries three skills. They belong wherever the coding agent is
+  // started, and that is the repository root — Claude Code discovers skills from
+  // the root `.claude/skills/`, not from an arbitrary sub-folder. When the vault
+  // *is* the root (`init .` in a vault-only repo) the template lands them in the
+  // right place already. When it is nested, which is the ordinary case for a
+  // code repository, copying them into the vault would leave three files nobody
+  // can invoke while the README promises they appear "with no extra setup". So
+  // in that case they are skipped here and installed at the root below.
+  const vaultIsRepoRoot = resolve(target) === resolve(cwd());
+  const skillsRelativeRoot = join('.claude', 'skills');
+  const { created, skipped } = copyTree(templateRoot, target, {
+    skip: (rel) => !vaultIsRepoRoot && (rel === skillsRelativeRoot || rel.startsWith(`${skillsRelativeRoot}${sep}`)),
+  });
+
+  // The same three skills, put where the agent will actually look for them.
+  // Existing files are preserved: a person who has already written their own
+  // `atlas-review` keeps it.
+  const installedSkills = [];
+  if (!vaultIsRepoRoot) {
+    const skillsSource = join(templateRoot, skillsRelativeRoot);
+    if (existsSync(skillsSource)) {
+      const rootSkills = copyTree(skillsSource, join(cwd(), skillsRelativeRoot));
+      for (const name of readdirSync(skillsSource)) installedSkills.push(name);
+      if (rootSkills.created > 0) {
+        ok(`  ${skillsRelativeRoot}/ — ${installedSkills.join(', ')} (installed where the agent runs, not in the vault)`);
+      }
+    }
+  }
+
+  const briefingSnippet = `${COLORS.dim}${indentBriefing(rootBriefing(relative(cwd(), target)))}${COLORS.reset}`;
 
   if (created === 0) {
     warn(`no new files written: target already has matching files`);
@@ -642,7 +675,15 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}${codexSetupCommand}${COLORS.reset}
        ${COLORS.dim}Codex can store MCP servers globally too, so the command is optional when the repo-local config is enough.${COLORS.reset}
 
-  ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, macOS app):
+  ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}Tell your agent the vault is here${COLORS.reset}${vaultIsRepoRoot ? ' (already done — this folder is the vault)' : ':'}${vaultIsRepoRoot ? '' : `
+       The server hands every connected agent a manual for its tools. What it
+       cannot say is that ${COLORS.bold}this${COLORS.reset} repository has a reviewed ontology, or when
+       to read it. That sentence is yours to add, so paste this into your own
+       ${COLORS.bold}CLAUDE.md${COLORS.reset} or ${COLORS.bold}AGENTS.md${COLORS.reset} — Atlas does not edit files you wrote:
+
+${briefingSnippet}`}
+
+  ${COLORS.dim}7.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, macOS app):
        Install the ontology-atlas macOS app from:
        ${COLORS.cyan}https://wlsdks.github.io/ontology-atlas/download/${COLORS.reset}
        Point its ${COLORS.bold}/docs${COLORS.reset} picker at this vault.

@@ -393,16 +393,18 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       const v = await run(['validate', dir], { cwd: repo });
       assert.equal(v.code, 0, `${dir} validate failed: ${v.stdout}${v.stderr}`);
       /*
-       * **Not every `.md` on disk is a vault document** (2026-08-17).
+       * **Not every `.md` on disk is a vault document** (2026-08-17), and the
+       * procedures are no longer among them.
        *
        * The vault scan skips dot-prefixed folders (`cli/src/lib/walk-vault.mjs`,
        * and the discipline comes from `.claude/rules/local-first.md` — the promise
-       * never to scan system folders such as `.git/`). The procedural skills the
-       * starter puts in the vault (`.claude/skills/**\/SKILL.md`) live exactly there.
-       *
-       * So rather than dropping it, **both** are asserted: they exist on disk (not
-       * installing them is a defect too) and they are absent from the document
-       * count (counting them means a skill was mistaken for an ontology document).
+       * never to scan system folders such as `.git/`). The starter's three skills
+       * used to sit under the vault's own `.claude/skills/`, which kept them out
+       * of the document count but also out of reach: a coding agent started at the
+       * repository root never finds skills in a nested folder. They install at the
+       * root now, so this asserts **where they went** as well as that the vault
+       * document count is unaffected — in Korean too, because a localized starter
+       * that strands its procedures is the same defect in another language.
        */
       const vaultRoot = join(repo, dir);
       const markdownEntries = readdirSync(vaultRoot, {
@@ -417,9 +419,15 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
       const skillFiles = markdownEntries.filter(inHiddenFolder);
       assert.equal(
         skillFiles.length,
-        3,
-        `${dir}: 볼트 절차 스킬 3개가 깔려야 한다 — 본 것: ${skillFiles.map((e) => e.name).join(', ') || '없음'}`,
+        0,
+        `${dir}: 절차 스킬은 볼트가 아니라 저장소 루트에 깔려야 한다 — 볼트에서 본 것: ${skillFiles.map((e) => e.name).join(', ') || '없음'}`,
       );
+      for (const skill of ['atlas-review', 'atlas-grow', 'atlas-absorb']) {
+        assert.ok(
+          existsSync(join(repo, '.claude', 'skills', skill, 'SKILL.md')),
+          `${dir}: ${skill} 이 에이전트가 도는 자리(저장소 루트)에 있어야 한다`,
+        );
+      }
       const markdownFileCount = markdownEntries.length - skillFiles.length;
       assert.match(
         stripAnsi(v.stdout),
@@ -665,6 +673,61 @@ await test('init — starter .gitignore keeps the local-only Slice 0 telemetry f
     assert.equal(r.code, 0);
     const gitignore = readFileSync(join(root, 'ontology', '.gitignore'), 'utf-8');
     assert.match(gitignore, /\.ontology-atlas\//);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — the agent\'s procedures land where the agent runs, not inside the vault', async () => {
+  // Claude Code discovers skills from the repository root's `.claude/skills/`.
+  // Copying them into a nested vault folder leaves three files nobody can
+  // invoke, while the README promises they appear "with no extra setup".
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-skills-'));
+  try {
+    const r = await run(['init', 'atlas'], { cwd: root });
+    assert.equal(r.code, 0, r.stderr);
+
+    const rootSkills = join(root, '.claude', 'skills');
+    assert.ok(existsSync(join(rootSkills, 'atlas-review', 'SKILL.md')), 'review skill must reach the repository root');
+    assert.ok(existsSync(join(rootSkills, 'atlas-grow', 'SKILL.md')));
+    assert.ok(existsSync(join(rootSkills, 'atlas-absorb', 'SKILL.md')));
+
+    // And no inert second copy stranded one directory down.
+    assert.ok(!existsSync(join(root, 'atlas', '.claude', 'skills')), 'the vault must not carry a copy nobody can invoke');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — a vault that is its own repository keeps its skills in place', async () => {
+  // When the vault *is* the root the template already lands them correctly;
+  // the nested-case fix must not move them out from under this shape.
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-standalone-'));
+  try {
+    const r = await run(['init', '.'], { cwd: root });
+    assert.equal(r.code, 0, r.stderr);
+    assert.ok(existsSync(join(root, '.claude', 'skills', 'atlas-review', 'SKILL.md')));
+    assert.ok(existsSync(join(root, 'AGENTS.md')), 'the vault briefing is the root briefing here');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('init — prints the briefing to paste and writes no instruction file of its own', async () => {
+  // `CLAUDE.md` and `AGENTS.md` are authored voice, not config. Atlas prints the
+  // sentence the MCP server cannot say and leaves the writing to the person.
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-briefing-'));
+  try {
+    const r = await run(['init', 'atlas'], { cwd: root });
+    assert.equal(r.code, 0, r.stderr);
+    const out = stripAnsi(r.stdout);
+    assert.match(out, /## Codebase ontology/, 'the exact text to paste must be shown');
+    assert.match(out, /reviewed ontology in `atlas\/`/, 'and must name this vault, not a generic path');
+    assert.match(out, /workspace_brief/, 'and must carry the first call, not just the claim');
+    assert.match(out, /Atlas does not edit files you wrote/);
+
+    assert.ok(!existsSync(join(root, 'CLAUDE.md')), 'init must not author the user\'s instruction file');
+    assert.ok(!existsSync(join(root, 'AGENTS.md')));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -40,6 +40,83 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — The agent's procedures go where the agent runs; the sentence in your own file stays yours
+
+**Convened**: solo pass (`/po-pass`, 21/24, no fatal zero, verdict *shape a
+slice*) · **Trigger**: the owner asked how a developer actually uses Atlas
+while coding — two windows, an in-app terminal, or something that reaches into
+the session they already have — and noticed that a coding agent started in a
+plain terminal may not know Atlas is there at all.
+
+**Observed**: `init docs/ontology` was run in a fresh repository and the
+resulting file locations inspected. `.mcp.json` and `.codex/` land at the
+repository root; `AGENTS.md`, `CLAUDE.md`, and `.claude/skills/atlas-{review,
+grow,absorb}` land **inside the vault folder**. This repository's own visibility
+table records that Claude Code does not load a nested `CLAUDE.md`, and Codex
+merges a nested `AGENTS.md` only when the working path passes through it. The
+README meanwhile promised the skills appear "in its command menu with no extra
+setup" — true only when the vault *is* the repository root, and `README.md`
+documents the nested `atlas/` folder as the ordinary shape.
+
+**Not the whole story**: the MCP server already sends substantial `instructions`
+at initialize, at system-prompt level. A connected agent is not blind — it
+receives a tool-routing manual. What it does not receive is a standing statement
+about *this* codebase or the scaffolded procedures.
+
+**Decision**: `init` installs the three skills at the repository root's
+`.claude/skills/`, where the agent is started, and no longer copies them into a
+nested vault. When the vault is the repository root the template already places
+them correctly and nothing moves. It then **prints** the one sentence the server
+cannot say — that this repository has a reviewed ontology, where it is, and the
+first call — for the person to paste into their own instruction file.
+
+**Rejected: writing that sentence into the user's `CLAUDE.md` / `AGENTS.md`.**
+Those files are authored voice, not configuration. The deliberation is recorded
+because the losing case is strong: the person who most needs the briefing is the
+least likely to paste it, and an appended Markdown section is the most
+inspectable write this product could make. It loses on four grounds.
+
+1. `surfaces.md` "Installing an agent tool for the user (2026-08-20)" requires
+   installation to stay "in an app-owned location". That condition is
+   definitionally unmeetable when the point is to write into a file Atlas does
+   not own. The rule governs a CLI rather than Markdown, so it binds by analogy
+   — but it is the closest standing statement of posture.
+2. **The precedent licenses the location, not the medium.** `.mcp.json` is
+   already written to the user's root by design (2026-08-17). But JSON has
+   `mcpServers["ontology-atlas"]` — a keyed slot whose identity, idempotent
+   replacement, and deletion the format itself defines, which is the only reason
+   the 2026-08-13 (3) contract ("exactly that entry, preserve everything else")
+   is expressible. Prose has only comment markers a user cannot be assumed to
+   respect and other generators will not.
+3. **The failure modes are not alike.** A stale server entry fails loudly — zero
+   tools, wrong vault — and (3) built repair for it. A stale prose instruction
+   fails silently, misdirecting every later session with no error anywhere, and
+   `documentation.md` forbids the cheap gate that would catch it.
+4. Two scars already exist from writing machine-owned config into user
+   territory: 2026-08-13 (3) and 2026-08-25 "`init` may only wire the project it
+   was actually run inside". Both concluded that between a silent edit and one
+   more step for the person, the recoverable failure is the right one.
+
+**Applied rule**: smallest slice; do not author in someone else's voice.
+
+**Signature**: Stark
+
+**Recorded dissent**: printing is a drop-off. The developer who does not yet
+think in agent-instruction files is exactly the one who will not paste it, and
+every competing tool that wins this slot wins it by writing.
+
+**Falsifier**: if a walkthrough or field trial of a freshly-inited repository
+shows agents repeatedly starting work without consulting the vault *while the
+printed text observably goes unpasted*, print-only was wrong. The remedy is then
+an explicit opt-in flag in the mould of `agent-setup --install-pre-commit-hook`
+— this repository's one existing append-to-a-user-file, opt-in per invocation —
+with a marker-bounded block, refusal on a hand-edited interior, and a removal
+flag. Never a default of `init`.
+
+**Review**: at the first walkthrough of a freshly-inited repository.
+
+**Status**: valid
+
 ## 2026-08-31 — An analysis is a dated record beside the vault, not a concept inside it
 
 **Convened**: solo pass (`/po-pass`, 21/24, no fatal zero, verdict *shape a
