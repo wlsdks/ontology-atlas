@@ -759,6 +759,14 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('automatically suggests the ontology design guard when Insights changes', () => {
+    const result = suggestFocusedChecks([
+      'src/views/ontology-insights/lib/insights-tab-state.ts',
+    ]);
+
+    assert.ok(domainCommands(result).includes('pnpm design:ontology'));
+  });
+
   it('suggests static export gates when Next config changes', () => {
     const result = suggestFocusedChecks(['next.config.ts']);
 

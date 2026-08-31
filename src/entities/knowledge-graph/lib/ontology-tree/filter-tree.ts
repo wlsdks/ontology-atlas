@@ -1,19 +1,21 @@
+import { nameIncludes, normalizeForMatch } from "@/shared/lib/node-name-match";
 import type { KnowledgeGraphNode } from "../../model";
 import type { OntologyTreeNode } from "./types";
 
 /**
- * Does a node match the search text — lower-case containment on `title` or on
- * `id` (kind:slug). `query` is expected to be already trimmed and lower-cased.
- * Single source so tree filtering/counting and orphan filtering share one rule.
+ * Does a node match the search text — canonical/display-name containment or
+ * `id` (kind:slug) containment. `query` is expected to be normalised with
+ * `normalizeForMatch`. Single source so tree filtering/counting and orphan
+ * filtering share one rule.
  */
 export function knowledgeNodeMatchesQuery(
   node: KnowledgeGraphNode,
-  trimmedLowerQuery: string,
+  normalizedQuery: string,
 ): boolean {
-  if (trimmedLowerQuery === "") return false;
+  if (normalizedQuery === "") return false;
   return (
-    node.title.toLowerCase().includes(trimmedLowerQuery)
-    || node.id.toLowerCase().includes(trimmedLowerQuery)
+    nameIncludes(node, normalizedQuery)
+    || normalizeForMatch(node.id).includes(normalizedQuery)
   );
 }
 
@@ -25,11 +27,11 @@ export function countMatchingTreeNodes(
   roots: readonly OntologyTreeNode[],
   query: string,
 ): number {
-  const trimmed = query.trim().toLowerCase();
-  if (trimmed === "") return 0;
+  const normalizedQuery = normalizeForMatch(query);
+  if (normalizedQuery === "") return 0;
   let count = 0;
   const walk = (node: OntologyTreeNode): void => {
-    if (knowledgeNodeMatchesQuery(node.node, trimmed)) count += 1;
+    if (knowledgeNodeMatchesQuery(node.node, normalizedQuery)) count += 1;
     for (const child of node.children) walk(child);
   };
   for (const root of roots) walk(root);
@@ -39,10 +41,11 @@ export function countMatchingTreeNodes(
 /**
  * Keeps only nodes matching the query while **preserving the parent chain**.
  *
- * Matching is lower-case containment on `node.title` or `node.id` (the
- * `kind:slug` form), so mixed Korean/English works. Developers read slugs daily
- * in frontmatter and code, so a slug search like 'mcp-server' must not come back
- * empty.
+ * Matching is normalised containment on the canonical title, current and raw
+ * locale display names, or `node.id` (the `kind:slug` form), so the name visible
+ * on screen remains searchable without hiding canonical and developer-facing
+ * names. Developers read slugs daily in frontmatter and code, so a slug search
+ * like 'mcp-server' must not come back empty.
  *
  * Every ancestor of a match survives to keep the tree shape; non-matching
  * siblings are dropped; all descendants of a match are kept, because the user
@@ -54,11 +57,11 @@ export function filterTreeByQuery(
   roots: readonly OntologyTreeNode[],
   query: string,
 ): OntologyTreeNode[] {
-  const trimmed = query.trim().toLowerCase();
-  if (trimmed === "") return roots.slice();
+  const normalizedQuery = normalizeForMatch(query);
+  if (normalizedQuery === "") return roots.slice();
 
   function visit(node: OntologyTreeNode): OntologyTreeNode | null {
-    const titleMatch = knowledgeNodeMatchesQuery(node.node, trimmed);
+    const titleMatch = knowledgeNodeMatchesQuery(node.node, normalizedQuery);
     const filteredChildren = node.children
       .map(visit)
       .filter((c): c is OntologyTreeNode => c !== null);

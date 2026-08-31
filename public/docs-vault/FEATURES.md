@@ -1,12 +1,12 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-29 (replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
 > `/ontology/studio` route to the contextual writer within the map; Insights is
-> a maintenance screen with five question tabs: tasks · configuration · connections · boundaries · freshness.
+> a six-tab maintenance screen: five measured questions (tasks · configuration · connections · boundaries · freshness) plus the agent-written Flow handoff.
 > Desktop static smoke tests and the installed app verifier/Computer Use confirmed the same — see §2 for each route section).
 > Earlier (2026-07-18): round where all pages were rebuilt based on approved drafts,
 > PRs #355–#366.
@@ -614,23 +614,24 @@ that floats over the map, reusing the same `buildOntologyTree` /
 unchanged even though the surface is.
 
 `/topology` is the read/write workbench and `/ontology/insights` is the
-five-question maintenance board. The old
+six-tab maintenance board: five measured questions plus Flow. The old
 Browse/Write/Query labels are historical shorthand, not current navigation or
 surface chrome.
 
 ---
 
-### `/ontology/insights` — Insights (5-tab maintenance board, question-unit restructuring 2026-07-26)
+### `/ontology/insights` — Insights (6-tab maintenance board)
 
-Every number on this page derives from the data source the page already used
+The first five tabs derive their numbers from the data source the page already used
 (`useOntologyInsight`, `entities/knowledge-graph/lib/ontology-tree`) — no separate persona or
-store layer. **One tab answers one question**: the old `Structure` tab stacked three
+store layer. Flow is intentionally prose rather than another metric: it gives the
+agent one visible, reviewable request grounded in the same ontology. **One tab answers one question**: the old `Structure` tab stacked three
 different questions and grew to 2.2× the 14-inch viewport, so it was split into
 Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× viewport.
 
 #### Header (always visible)
 - Title + subtitle + right-aligned engraved census (`N concepts · N relations · N domains`)
-- `TabBar` — Do next (default) / Composition Inventory / Connection Connections / Boundary Boundaries / Freshness. Tab state in `?tab=`; each tab badge counts what that tab is about (verdict total / nodes / edges / cross-domain relations / freshness window). Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
+- `TabBar` — Do next (default) / Composition Inventory / Connection Connections / Boundary Boundaries / Freshness / Flow. Tab state in `?tab=`; the first four badges count what their tabs are about (verdict total / nodes / edges / cross-domain relations). Freshness and Flow leave the badge slot empty because neither has an honest single count. Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
 
 #### Tab 1 — Do next
 - Today's touch-ups, agent readiness gauge, repair queue, and the growth queue (see `DoNextTab`); the badge is the single verdict model (`insights-verdict`) shared with the body.
@@ -657,6 +658,12 @@ Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× 
 #### Tab 5 — Freshness
 - **Domain freshness heatstrip** — one row per domain, a week-by-week heat strip (neutral ramp, current week in indigo) built from real vault `updatedAt` values (`FRESHNESS_WINDOW_WEEKS`); domains with no dated docs are excluded from the stale count rather than counted as stale ("unknown" ≠ "old"); stale domains get a dashed "stale" tag
 - **Recent updates** — most recently touched nodes with kind glyph, domain, and ISO date; footer shows total stale-domain count
+
+#### Tab 6 — Flow
+- Answers “what is this product and how does it move?” with an agent-written narrative rather than an invented graph score.
+- Shows the exact request before handoff. In the installed app, **Draw business flow** travels to the map, opens the existing agent dock, and prefills the composer without sending; the person still owns Send. The map keeps a return marker to this tab.
+- In the browser or built-in sample, where no local agent process can be launched, the same request remains visible and copyable instead of presenting a dead control.
+- The request asks the agent to read project/domain bodies and cite ontology slugs paragraph by paragraph, keeping the narrative judgeable against the local Markdown source.
 
 #### Bottom handoff row (`InsightsHandoffRow`, always visible)
 - One copyable `query_ontology(...)` chain per active tab — the tab's question translated into the agent's execution order (connections → `centrality` then `blast_radius`; boundaries → `domain_matrix` then `match_edges`)
@@ -1337,7 +1344,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 - **Round 15** — Removed VSCode plugin (surfaces reduced from 4 → 3). Made CLI `init` create `.mcp.json` directly (for both working directory and vault), eliminating one step of manual MCP registration. Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. Changed `--auto-prefix` for `add` / `import` to default on (to avoid conflicting with initial folder structure); use `--raw-slug` to disable.
 - **Round 16** — fresh repo bootstrap path. `analyze_repo_structure` / CLI `analyze` propose project/domain/capability/element candidates from package metadata, README headings, and source layout with side effect 0.
 - **Round 17** — import-derived dependency evidence. `infer_imports` / CLI `infer-imports` parse TS/JS and bounded static Python file imports plus root-module Go package imports, resolve supported internal paths, and return review-only evidence without mutating the vault.
-- **Round 18+** — the first workbench loop consolidated Browse / Builder / Query handoffs. Those standalone surfaces were later retired: `/ontology`, `/ontology/edit`, and `/ontology/studio` are compatibility redirects into the topology workbench; relation writing is contextual on `/topology`, and Insights is the five-question maintenance board. Graph query packs remain agent/CLI handoff material, while `pnpm dogfood:graph-db` fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
+- **Round 18+** — the first workbench loop consolidated Browse / Builder / Query handoffs. Those standalone surfaces were later retired: `/ontology`, `/ontology/edit`, and `/ontology/studio` are compatibility redirects into the topology workbench; relation writing is contextual on `/topology`, and Insights is the six-tab board with five measured maintenance questions plus Flow. Graph query packs remain agent/CLI handoff material, while `pnpm dogfood:graph-db` fail-closes on setup self-check, `health --json`, graph scan follow-ups, public relation-name parity, structural `pattern-walk` / `project-map` traversal, bounded path completeness, relation preflight, and relation explanation contracts.
 - **Round where all pages were recreated based on approved drafts (2026-07-18, PR #355~#366)** — Updated full-screen views in `docs/prototypes/` according to approved drafts. Removed: old 4-tab unique type system for `/ontology/insights` (proof/collaboration/agent/census presets, session evidence lines, collaborator brief, query-recipe cockpit, ~6,200 lines) — replaced with Overview/Relations/Freshness 3 tabs; card list with search/filter/pagination for `/projects` — replaced with embossed count header + recent activity line + full-width cards + dashed "Next Project" placeholder (`ProjectQuickCreatePanel` remains as a component but no longer appears on this page); "More info" collapsible section and tag/stack/link display on `/project/[slug]` — moved to quick edit and full edit. Added: increased topology data sheet from 288 → 352px and moved evidence groups up; `TopologyV2SettingsGear` (right tool rail); `/ontology/edit` 3-split (240 · canvas · 340, always visible on `xl`) + `BuilderWriteConfirmBar`; permanent Pinned/Vault/Recent sidebar (280px, `lg`+) for `/docs` + `DocFrontmatterBlock` + bottom backlinks line; honest facts line for `/download` (says "recorded at publish" when size/checksum are unavailable) + spctl trust panel + changelog preview.
 - **Agent-loop vault freshness (R+)** — Created CLI `preflight`: matches staged git files against vault `path:` / `elements:` frontmatter and shows which nodes this commit affects *before* committing (notification only, no blocking — always exits 0; silently passes if no matching nodes). Installs pre-commit hook via `agent-setup --install-pre-commit-hook` (appends if hook already exists, idempotent across multiple runs, respects `--no-verify`). `.github/workflows/vault-freshness.yml` is a reusable workflow for other repos and also applies to this repo's PRs: `scripts/vault-freshness-drift.mjs` (dependency-free node script) detects cases where source files pointed to by vault nodes changed in the PR, but the corresponding `.md` did not. Ends without comment if none found; leaves exactly one comment on the PR if any are found (updates or removes existing comments to avoid spam).
 

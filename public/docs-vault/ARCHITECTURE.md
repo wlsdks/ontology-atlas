@@ -11,8 +11,9 @@ tags: [architecture, infra, overview]
 > and AI coding agents read and write that same folder. Round 10 permanently
 > removed every login and cloud-data screen. In today's route model, reading and
 > contextual writing happen together on Topology, ACP writes pause in the same
-> conversation for human review, and upkeep lives on the five-question Insights
-> page. The old `/ontology/studio` and `/ontology/edit` URLs only translate old links.
+> conversation for human review, and upkeep lives on the six-tab Insights page:
+> five measured questions plus Flow. The old `/ontology/studio` and
+> `/ontology/edit` URLs only translate old links.
 > Earlier cloud and retired-workbench design notes are in `docs/archive/`.
 
 ## High-level shape
@@ -30,7 +31,7 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
-│ ├─ /ontology/insights      five-question maintenance   │
+│ ├─ /ontology/insights      five measures + Flow        │
 │ ├─ /git                    vault Git workbench         │
 │ ├─ /agents                 fetch · install · connect   │
 │ ├─ /projects               project list                │
@@ -350,7 +351,7 @@ until a local manifest exists.
 /ontology                  thin redirect → /topology?index=expanded (old tree/ego hub retired, B3)
 /ontology/edit             compatibility redirect → /topology contextual workbench
 /ontology/studio           compatibility redirect; translates node/mode/edit/via/review to /topology
-/ontology/insights         five-question maintenance board
+/ontology/insights         six-tab maintenance board: five measured questions + Flow
 /git                       local vault git history / snapshot workbench; remains a
                            primary desktop-rail destination with contextual links too
 /agents                    coding agents this computer can run — the app launches them and

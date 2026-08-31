@@ -11844,8 +11844,8 @@
     },
     {
       "depth": 3,
-      "text": "`/ontology/insights` — Insights (5-tab maintenance board, question-unit restructuring 2026-07-26)",
-      "slug": "ontologyinsights-insights-5-tab-maintenance-board-question-unit-restructuring-2026-07-26"
+      "text": "`/ontology/insights` — Insights (6-tab maintenance board)",
+      "slug": "ontologyinsights-insights-6-tab-maintenance-board"
     },
     {
       "depth": 4,
@@ -11876,6 +11876,11 @@
       "depth": 4,
       "text": "Tab 5 — Freshness",
       "slug": "tab-5-freshness"
+    },
+    {
+      "depth": 4,
+      "text": "Tab 6 — Flow",
+      "slug": "tab-6-flow"
     },
     {
       "depth": 4,
@@ -12565,8 +12570,8 @@
     },
     {
       "depth": 2,
-      "text": "1. Divided into five branches",
-      "slug": "1-divided-into-five-branches"
+      "text": "1. Five measured branches plus Flow",
+      "slug": "1-five-measured-branches-plus-flow"
     },
     {
       "depth": 2,
@@ -12610,8 +12615,13 @@
     },
     {
       "depth": 2,
-      "text": "6. Handing over the entire screen to the agent",
-      "slug": "6-handing-over-the-entire-screen-to-the-agent"
+      "text": "6. Asking for the business flow",
+      "slug": "6-asking-for-the-business-flow"
+    },
+    {
+      "depth": 2,
+      "text": "7. Handing over the entire screen to the agent",
+      "slug": "7-handing-over-the-entire-screen-to-the-agent"
     },
     {
       "depth": 2,

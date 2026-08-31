@@ -129,6 +129,25 @@ function buildFixtureTree() {
 }
 
 describe("TopologyIndexPanel", () => {
+  it("uses one tree role without conflicting navigation semantics", () => {
+    render(
+      <TopologyIndexPanel
+        treeResult={buildFixtureTree()}
+        totalConcepts={4}
+        totalRelations={3}
+        domainCount={1}
+        changedSlugs={new Set()}
+        selectedId={null}
+        onSelect={() => {}}
+        onCollapse={() => {}}
+        labels={labels}
+      />,
+    );
+
+    const tree = screen.getByRole("tree", { name: labels.label });
+    expect(tree.tagName).toBe("DIV");
+  });
+
   it("does not render the retired agent/growth/handoff footer", () => {
     render(
       <TopologyIndexPanel
@@ -363,7 +382,10 @@ describe("TopologyIndexPanel", () => {
       />,
     );
 
-    fireEvent.change(screen.getByTestId("topology-index-search"), {
+    const search = screen.getByRole("textbox", { name: labels.searchPlaceholder });
+    expect(search).toHaveAttribute("name", "topology-index-search");
+
+    fireEvent.change(search, {
       target: { value: "agent brief" },
     });
 

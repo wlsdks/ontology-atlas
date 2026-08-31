@@ -51,7 +51,7 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "<MeaningEditorPanel",
       "create-node-change-review",
-      "previewEdge={meaningPreview}",
+      "previewEdge={mapRelationPreview}",
     ].join("\n"),
   );
   writeFixture(
@@ -97,6 +97,7 @@ function writeCleanWorkbenchFixtures(root) {
       '  "connections",',
       '  "boundaries",',
       '  "freshness",',
+      '  "flow",',
       "] as const;",
     ].join("\n"),
   );
@@ -107,8 +108,24 @@ function writeCleanWorkbenchFixtures(root) {
       '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
       "<TabBar",
       'role="tabpanel"',
+      '{tab === "flow" ? (',
+      "<FlowTab",
+      'request={buildBusinessFlowRequest({ request: t("flow.request") })}',
+      'canLaunchAgent={isAcpBridgeAvailable()}',
+      'router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));',
       "<InsightsHandoffRow",
       "<InsightsHeroCensus",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/tabs/FlowTab.tsx",
+    [
+      'function FlowTab() { return <section data-testid="flow-tab">',
+      '<button data-testid="flow-prefill" onClick={() => onPrefill?.(request)} />',
+      "navigator.clipboard.writeText(request)",
+      '<button data-testid="flow-copy" />',
+      "</section>; }",
     ].join("\n"),
   );
   writeFixture(
@@ -223,8 +240,10 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "Product design gate",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
-      "mandatory",
-      "Public references are principle sources only",
+      "/design-directions",
+      "/design-build",
+      "/design-audit",
+      "/design-system-audit",
     ].join("\n"),
   );
   writeFixture(
@@ -269,6 +288,24 @@ test("ontology design surface passes when visual and workbench contracts are pre
   assert.equal(report.requiredSurfaceMarkerCount, 6);
   assert.equal(report.violations.length, 0);
   assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 6 workbench structure contracts/);
+});
+
+test("ontology design surface fails closed when its scan matches zero files", () => {
+  const root = makeFixture();
+  fs.mkdirSync(path.join(root, "src/views/empty-design-surface"), { recursive: true });
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/views/empty-design-surface"],
+    requiredSurfaceMarkers: [],
+  });
+
+  assert.equal(report.ok, false);
+  assert.equal(report.files.length, 0);
+  assert.deepEqual(
+    report.violations.map((violation) => violation.check.id),
+    ["ontology-design-scan-idle"],
+  );
 });
 
 test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {
@@ -340,8 +377,8 @@ test("ontology design surface rejects kind decision full-height stripes", () => 
 test("ontology design surface reports missing workbench structure markers", () => {
   const root = makeFixture();
   writeCleanWorkbenchFixtures(root);
-  // Break the current maintenance-board contract: five question tabs, one active
-  // panel, and the tab-scoped agent handoff must all be present.
+  // Break the current maintenance-board contract: five measured tabs plus Flow,
+  // one active panel, and the tab-scoped agent handoff must all be present.
   writeFixture(
     root,
     "src/views/ontology-insights/lib/insights-tab-state.ts",
@@ -383,16 +420,96 @@ test("ontology design surface reports missing workbench structure markers", () =
         '  "connections",',
         '  "boundaries",',
         '  "freshness",',
+        '  "flow",',
         "] as const;",
       ].join("\n"),
       'missing marker: data-insights-surface="maintenance-board"',
       'missing marker: data-insights-question-model="one-tab-one-question"',
       "missing marker: TabBar",
       'missing marker: role="tabpanel"',
+      'missing marker: {tab === "flow" ? (',
+      "missing marker: <FlowTab",
+      'missing marker: request={buildBusinessFlowRequest({ request: t("flow.request") })}',
+      'missing marker: canLaunchAgent={isAcpBridgeAvailable()}',
+      'missing marker: router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));',
       "missing marker: InsightsHandoffRow",
       'missing marker: data-insights-handoff="tab-query"',
       "missing marker: CopyAgentTextButton",
     ],
+  );
+});
+
+test("ontology design surface rejects a metrics-only board that omits Flow", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/ontology-insights/lib/insights-tab-state.ts",
+    [
+      "export const INSIGHTS_TABS = [",
+      '  "do-next",',
+      '  "composition",',
+      '  "connections",',
+      '  "boundaries",',
+      '  "freshness",',
+      "] as const;",
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/views/ontology-insights"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["insights-maintenance-board"],
+  );
+  assert.match(report.violations[0].source, /"flow"/);
+});
+
+test("ontology design surface rejects a named Flow tab whose handoff no longer works", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    [
+      '<main data-insights-surface="maintenance-board" data-insights-question-model="one-tab-one-question">',
+      "<TabBar",
+      'role="tabpanel"',
+      '{tab === "flow" ? <FlowTab /> : null}',
+      "<InsightsHandoffRow",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/ontology-insights/ui/tabs/FlowTab.tsx",
+    'function FlowTab() { return <section data-testid="flow-tab" />; }',
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/views/ontology-insights"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["insights-maintenance-board"],
+  );
+  assert.match(
+    report.violations.map((violation) => violation.source).join("\n"),
+    /buildBusinessFlowRequest/,
+  );
+  assert.match(
+    report.violations.map((violation) => violation.source).join("\n"),
+    /buildBusinessFlowHref/,
+  );
+  assert.match(
+    report.violations.map((violation) => violation.source).join("\n"),
+    /onPrefill|clipboard/,
   );
 });
 

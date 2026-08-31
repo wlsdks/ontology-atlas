@@ -59,4 +59,23 @@ describe("useHomeRouteState — 히스토리 계약", () => {
     expect(window.history.length).toBe(before);
     expect(currentUrl()).toContain("p=docs-vault");
   });
+
+  it("대화창을 닫으면 전체 그래프 요청을 현재 주소에서 지운다", () => {
+    window.history.replaceState(
+      {},
+      "",
+      "/ko/topology/?ask=business-flow&via=insights%3Aflow",
+    );
+    const { result } = renderHook(() => useHomeRouteState());
+
+    act(() => {
+      result.current[1](
+        { askIntent: null, askBusinessFlow: false },
+        { replace: true },
+      );
+    });
+
+    expect(currentUrl()).toBe("/ko/topology/?via=insights%3Aflow");
+    expect(result.current[0].askBusinessFlow).toBe(false);
+  });
 });

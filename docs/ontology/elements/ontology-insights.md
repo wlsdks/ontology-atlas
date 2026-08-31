@@ -9,4 +9,4 @@ path: src/views/ontology-insights
 created_by: "agent:unknown"
 ---
 
-Five-question maintenance dashboard. docs/ARCHITECTURE.md: "maintenance on five-question Insights".
+Six-tab maintenance board: five measured questions plus Flow. In the installed app, the Flow handoff opens the existing agent dock with a visible, person-owned prefilled request; a verified ACP runtime is used when available, otherwise the key-backed agent panel is used. The web copy action stays explicit. docs/ARCHITECTURE.md: "maintenance on the six-tab Insights page: five measured questions plus Flow".

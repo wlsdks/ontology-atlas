@@ -707,8 +707,8 @@ The direction is no longer waiting on a phase pick. The active bar is evidence:
 
 - Installed macOS app launches and route-smokes the ontology workbench surfaces.
 - Topology + INDEX is the read/inspect surface, contextual map writing is the
-  frontmatter relation-write surface, and Insights is the five-question
-  maintenance board.
+  frontmatter relation-write surface, and Insights is the six-tab maintenance
+  board: five measured questions plus Flow.
 - `/ontology` redirects to `/topology?index=expanded`; `/ontology/edit` and
   `/ontology/studio` redirect into `/topology` and translate legacy edit query
   strings. None of those redirects owns current chrome.

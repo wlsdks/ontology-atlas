@@ -17,6 +17,10 @@ import {
 } from "@/features/acp-session";
 import { agentChatDoor } from "../model/agent-chat-door";
 import {
+  planRouteAskDockSync,
+  type RouteAskDockRequest,
+} from "../model/route-ask-dock-sync";
+import {
   AcpChatPanel,
   AcpChatResizeHandle,
   useChatWidth,
@@ -2265,7 +2269,10 @@ function HomePageImpl() {
   const agentDockRequestedOpen =
     acpDockFrameOpen ||
     vaultAgentOpen ||
-    Boolean(llmBridgeAvailable && routeState.askIntent);
+    Boolean(
+      llmBridgeAvailable &&
+        (routeState.askIntent || routeState.askBusinessFlow),
+    );
   /*
    * ⚠️ Lifted out of the JSX so INDEX can yield to it (owner, 2026-08-25). The checklist centres in
    * the map area; with INDEX open that area is not the window, so the surface asking for attention
@@ -2999,6 +3006,37 @@ function HomePageImpl() {
   ]);
 
   /**
+   * A route-carried request must open the **physical** dock, not only select which
+   * branch owns it. `agentChatDoor` can derive `runtimeChatOpen`, but the ACP panel's
+   * width and `Surface.open` are intentionally animated from `acpDockFrameOpen`; without
+   * going through the one door here, a runtime request owns an invisible zero-width
+   * panel.
+   *
+   * Remember request + resolved branch. Ordinary renders (including every keystroke in
+   * the draft) must not call `openVaultAgent` again, while an asynchronously discovered
+   * coding runtime may replace the fallback key branch exactly once. Closing marks the
+   * dock touched before clearing the URL, so the intermediate render cannot reopen it.
+   */
+  const routeAskDockRequestRef = useRef<RouteAskDockRequest | null>(null);
+  useEffect(() => {
+    const requestKey = askPrefill
+      ? `${askPrefill.nonce}:${askPrefill.text}`
+      : null;
+    const branch = agentChatUsesRuntime ? "runtime" : "key";
+    const plan = planRouteAskDockSync({
+      requestKey,
+      branch,
+      touched: agentDockTouchedRef.current,
+      previous: routeAskDockRequestRef.current,
+    });
+    routeAskDockRequestRef.current = plan.next;
+    if (plan.resetTouched) {
+      agentDockTouchedRef.current = false;
+    }
+    if (plan.shouldOpen) openVaultAgent();
+  }, [agentChatUsesRuntime, askPrefill, openVaultAgent]);
+
+  /**
    * Closing also withdraws the request in the URL. Otherwise the derived state reopens
    * the panel after every close and it reads as "close does not work".
    */
@@ -3017,7 +3055,10 @@ function HomePageImpl() {
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
     setVaultAgentPrefill(null);
-    setRouteState({ askIntent: null }, { replace: true });
+    setRouteState(
+      { askIntent: null, askBusinessFlow: false },
+      { replace: true },
+    );
   }, [cancelAcpSessionStart, setRouteState]);
 
   /**
@@ -4442,7 +4483,7 @@ function HomePageImpl() {
                       <Tooltip content={t('controls.switchToMyDataTooltip')} side="bottom" withProvider={false}>
                         <ChromeChip
                           onClick={requestVaultOpen}
-                          aria-label={t('controls.switchToMyDataAriaLabel')}
+                          aria-label={`${t('controls.switchToMyDataLabel')} — ${t('controls.switchToMyDataAriaLabel')}`}
                           data-testid="topology-switch-to-my-data"
                           data-utility-action-token-contract="support-surface-family"
                           data-utility-action-surface-token="--chrome-surface"

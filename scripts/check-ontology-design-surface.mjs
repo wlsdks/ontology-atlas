@@ -200,7 +200,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "buildOntologyRelationEditPlan",
       "meaning-editor-change-review",
       "create-node-change-review",
-      "previewEdge={meaningPreview}",
+      "previewEdge={mapRelationPreview}",
       "acp-ontology-change-review",
       "reviewKind === 'ontology-write'",
       "allowAlways && !ontologyWrite",
@@ -210,16 +210,17 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
   },
   // Replaced the old three-tab "insights-tabbed-handoff" check (2026-07-27). Insights
-  // is a maintenance board answering five user questions (do next / composition /
-  // connections / boundaries / freshness), one per tab. Neither a fixed three tabs nor
-  // a single inventory hero is treated as a product contract. What must hold together
-  // is the exact five-tab set restorable from the URL, one active tabpanel at a time,
-  // and an agent handoff matching the current question.
+  // has five measured maintenance questions (do next / composition / connections /
+  // boundaries / freshness) plus one agent-written Flow question. Neither a fixed
+  // three-tab dashboard nor a metrics-only five-tab board is the current contract.
+  // What must hold together is the exact six-tab set restorable from the URL, one
+  // active tabpanel at a time, and an agent handoff matching the current question.
   {
     id: "insights-maintenance-board",
     files: [
       "src/views/ontology-insights/lib/insights-tab-state.ts",
       "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+      "src/views/ontology-insights/ui/tabs/FlowTab.tsx",
       "src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx",
     ],
     markers: [
@@ -230,18 +231,29 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
         '  "connections",',
         '  "boundaries",',
         '  "freshness",',
+        '  "flow",',
         "] as const;",
       ].join("\n"),
       'data-insights-surface="maintenance-board"',
       'data-insights-question-model="one-tab-one-question"',
       "TabBar",
       'role="tabpanel"',
+      '{tab === "flow" ? (',
+      "<FlowTab",
+      'request={buildBusinessFlowRequest({ request: t("flow.request") })}',
+      'canLaunchAgent={isAcpBridgeAvailable()}',
+      'router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));',
+      'data-testid="flow-tab"',
+      'data-testid="flow-prefill"',
+      "onClick={() => onPrefill?.(request)}",
+      "navigator.clipboard.writeText(request)",
+      'data-testid="flow-copy"',
       "InsightsHandoffRow",
       'data-insights-handoff="tab-query"',
       "CopyAgentTextButton",
     ],
     reason:
-      "/ontology/insights must keep five URL-restorable question tabs, one active maintenance panel, and a tab-scoped copyable agent handoff.",
+      "/ontology/insights must keep five measured maintenance tabs plus a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
   },
   {
     id: "product-design-operating-system",
@@ -310,8 +322,10 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       "Product design gate",
       "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
-      "mandatory",
-      "Public references are principle sources only",
+      "/design-directions",
+      "/design-build",
+      "/design-audit",
+      "/design-system-audit",
     ],
     reason:
       "AGENTS.md must route UI, graph readability, responsive, and macOS workbench changes through the Product Design OS after the PO pass.",
@@ -415,7 +429,20 @@ export function evaluateOntologyDesignSurface({
   const files = targetDirs
     .flatMap((dir) => collectFiles(root, dir, allowedExtensions, ignoredFilePattern))
     .sort();
+  const idleViolations = files.length === 0
+    ? [{
+        file: targetDirs.join(", ") || "(no target directories)",
+        line: 1,
+        column: 1,
+        check: {
+          id: "ontology-design-scan-idle",
+          reason: "The ontology design gate must scan at least one real source file.",
+        },
+        source: "matched zero design-surface files",
+      }]
+    : [];
   const violations = [
+    ...idleViolations,
     ...files.flatMap((file) => findForbiddenPatternViolations({ root, file, checks })),
     ...findRequiredMarkerViolations({ root, requiredSurfaceMarkers }),
   ];

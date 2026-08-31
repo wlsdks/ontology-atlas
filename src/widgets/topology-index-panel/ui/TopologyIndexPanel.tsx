@@ -345,7 +345,7 @@ export function TopologyIndexPanel({
   // (using the same `isOpen` that reflects the search/lens auto-expansion) and leave
   // exactly one of them as the Tab entry point (tabIndex=0). Sibling movement is
   // handled by the arrow handler on the nav below.
-  const treeRef = useRef<HTMLElement>(null);
+  const treeRef = useRef<HTMLDivElement>(null);
   const [activeRowId, setActiveRowId] = useState<string | null>(null);
   const orderedRowIds = useMemo(
     () => flattenVisibleRowIds(visibleRoots, isOpen),
@@ -500,6 +500,8 @@ export function TopologyIndexPanel({
             }
           }}
           placeholder={labels.searchPlaceholder}
+          aria-label={labels.searchPlaceholder}
+          name="topology-index-search"
           autoComplete="off"
           data-testid="topology-index-search"
           className={fieldClass({ size: "md", className: "w-full pl-7" })}
@@ -640,7 +642,7 @@ export function TopologyIndexPanel({
         </p>
       ) : null}
 
-      <nav
+      <div
         ref={treeRef}
         role="tree"
         aria-label={labels.label}
@@ -685,7 +687,7 @@ export function TopologyIndexPanel({
             />
           ))
         )}
-      </nav>
+      </div>
 
       {/* The quiet "N documents not on the map" row. It takes
           `bootstrapPlan.elements.length` (HomePage, `deriveBootstrapPlan` — a count

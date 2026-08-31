@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import {
+  ONTOLOGY_DEEPLINK_ASK_KEY,
   ONTOLOGY_DEEPLINK_REVIEW_KEY,
   ONTOLOGY_DEEPLINK_VIA_KEY,
   parseInsightsReturnMarker,
@@ -13,8 +14,8 @@ import {
 /**
  * `/ontology` — a thin convergence entry (the hub is the map). The old tree/ego hub
  * (`OntologyViewPage`, `ontology-tree-view`, `ontology-ego-graph`) is retired; this route now only
- * translates its deep-link contract (`?node=<id>`) into `/topology`'s
- * (`?p=<id>&index=expanded`) and redirects client-side.
+ * translates its deep-link contract (`?node=<id>`, return marker, and ask intent)
+ * into `/topology`'s (`?p=<id>&index=expanded`) and redirects client-side.
  *
  * A real client redirect (not Next's `redirect()`) because `next.config.ts` sets `output: 'export'` —
  * no server-side redirect surface exists in a static export. Kept as its own route (not folded away) so
@@ -32,6 +33,7 @@ export function OntologyRedirectPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nodeParam = searchParams.get("node");
+  const askParam = searchParams.get(ONTOLOGY_DEEPLINK_ASK_KEY);
   const viaParam = searchParams.get(ONTOLOGY_DEEPLINK_VIA_KEY);
   const reviewParam = searchParams.get(ONTOLOGY_DEEPLINK_REVIEW_KEY);
 
@@ -49,8 +51,14 @@ export function OntologyRedirectPage() {
         params.set(ONTOLOGY_DEEPLINK_REVIEW_KEY, reviewParam);
       }
     }
+    // `ask` carries only the kind of request. HomePage owns validation and rebuilds
+    // the localized sentence, so the redirect must preserve the value without ever
+    // turning it into a message or sending it on the person's behalf.
+    if (askParam) {
+      params.set(ONTOLOGY_DEEPLINK_ASK_KEY, askParam);
+    }
     router.replace(`/topology/?${params.toString()}`);
-  }, [router, nodeParam, viaParam, reviewParam]);
+  }, [router, nodeParam, askParam, viaParam, reviewParam]);
 
   return null;
 }
