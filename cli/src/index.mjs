@@ -201,6 +201,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15: wraps the M
   ontology-atlas topological-order [vault] Prerequisite-first dependency ordering
        --limit N --types A,B --include-isolated --json
   ontology-atlas health [vault]               Graph integrity dashboard (6 checks, source paths compared)
+  ontology-atlas analysis [rootPath]          Dated findings record, compared with the previous run
        --json --component-types A,B           ${COLORS.dim}focused diagnosis tuning${COLORS.reset}
   ontology-atlas agent-brief [vault]          Claude Code/Codex handoff: readiness + first MCP calls
        --prompt --graph-db-pack --verify-fallbacks

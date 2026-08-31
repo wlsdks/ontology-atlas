@@ -498,7 +498,7 @@
     ]
   },
   "cli": {
-    "commandCount": 57,
+    "commandCount": 58,
     "commands": [
       "absorb",
       "add",
@@ -507,6 +507,7 @@
       "agent-files",
       "agent-setup",
       "all-paths",
+      "analysis",
       "analyze",
       "architecture",
       "backlinks",

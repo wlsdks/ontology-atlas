@@ -35,6 +35,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   components: runner('components.mjs', 'runComponents'),
   'topological-order': runner('topological-order.mjs', 'runTopologicalOrder'),
   health: runner('health.mjs', 'runHealth'),
+  analysis: runner('analysis.mjs', 'runAnalysis'),
   'agent-brief': runner('agent-brief.mjs', 'runAgentBrief'),
   'workspace-brief': runner('workspace-brief.mjs', 'runWorkspaceBrief'),
   growth: runner('growth.mjs', 'runGrowth'),
