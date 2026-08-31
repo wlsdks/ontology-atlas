@@ -392,12 +392,13 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "A screening pass, not a verdict. Read the scoring correction first: it showed that the machine score could not compare the two sides, and that only a person reading the answers could. This is a first read of those answers by a model, which is weaker evidence than the human grading the rubric asks for and does not repla",
-      "wordCount": 1058,
+      "wordCount": 1590,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
         "benchmark/results/2026-08-31-gb-r3-blind-packet",
         "benchmark/results/2026-08-31-gb-r3-screening-grades",
+        "benchmark/rubric",
         "../tests/fixtures/meaning-corpus/commerce-fsd/docs/PRODUCT",
         "benchmark/FINDINGS-2026-08-25"
       ]
@@ -410,7 +411,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 2728,
+      "wordCount": 2948,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
@@ -593,8 +594,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. For every answer record: correctness, any claim the source does not support, whether the cited paths and concepts exist, whether the boundary is right, and whether the n",
-      "wordCount": 5520,
+      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. Score each answer on four axes and one count. Full definitions are in docs/benchmark/rubric.md, section \"Lifecycle matrix scoring\". In short: · Axis · Out of · What full",
+      "wordCount": 5626,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -618,7 +619,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This is a model-graded screening pass, not the human grading the rubric asks for. It was produced by the same assistant that built the scoring split. It read the shuffled packet in 2026-08-31-gb-r3-blind-packet.md and saved these grades before opening the key. Two limits are structural and cannot be argued away: the gr",
-      "wordCount": 1416,
+      "wordCount": 1552,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/rubric"
@@ -637,6 +638,30 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/results/2026-08-31-gb-r4-fixed-blind-packet",
+      "path": "docs/benchmark/results/2026-08-31-gb-r4-fixed-blind-packet.md",
+      "title": "Grading packet — 2026-08-31-gb-r4-fixed",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. Score each answer on four axes and one count. Full definitions are in docs/benchmark/rubric.md, section \"Lifecycle matrix scoring\". In short: · Axis · Out of · What full",
+      "wordCount": 2957,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-gb-r4-fixed-summary",
+      "path": "docs/benchmark/results/2026-08-31-gb-r4-fixed-summary.md",
+      "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r4-fixed",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Two sides answer the same questions about the same source code. off has no Atlas vault, no MCP server, and no answer key in its workspace; on has the identical source plus a checked Atlas vault and the read-only Atlas MCP server. These scores count whether an answer contained the things it should have named. They do no",
+      "wordCount": 981,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/rubric",
       "path": "docs/benchmark/rubric.md",
       "title": "Rubric — how to score each run",
@@ -644,7 +669,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Score each agent × mode × task cell (40 cells total for the 10 legacy tasks in a full Claude Code + Codex measurement run). The lifecycle runner has its own 8-cell-per-repeat matrix and reports machine coverage separately. Be strict. If you find yourself wanting to round up because the agent \"almost\" got it, write the ",
-      "wordCount": 1505,
+      "wordCount": 1864,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -3941,14 +3966,19 @@
         "linkText": "`rubric.md`"
       },
       {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "reading found Twelve answers per side. Every axis is scored out of the maximum shown, and the full definitions are in **[`rubric.md` § Lifecycle matrix scoring]**. | Axis | Out of | What full marks means | Without Atlas | With Atlas | |---|---:|---|---:|---:| | Correct | 3 | Every",
+        "linkText": "`rubric.md` § Lifecycle matrix scoring"
+      },
+      {
         "fromSlug": "benchmark/README",
         "context": "categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. | | **[`rubric.md`]** | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | [`FINDINGS-2026-08-3",
         "linkText": "`rubric.md`"
       },
       {
         "fromSlug": "benchmark/results/2026-08-31-gb-r3-screening-grades",
-        "context": "rding alone. Read this as a pointer to where to > look, and replace it when a person grades the same packet. Criteria: **[`rubric.md`]**. Correctness 0–3; citations, boundary and next step 0–2; unsupported claims counted, lower is better. | Cell | Subject",
-        "linkText": "`rubric.md`"
+        "context": "here to > look, and replace it when a person grades the same packet. ## What the numbers mean Full definitions are in **[`rubric.md` § Lifecycle matrix scoring]**. In short: | Axis | Out of | What full marks means | |---|---:|---| | Correct | **3** | Everything the question asked",
+        "linkText": "`rubric.md` § Lifecycle matrix scoring"
       },
       {
         "fromSlug": "benchmark/tasks",
@@ -5626,6 +5656,20 @@
                 "type": "doc",
                 "slug": "benchmark/results/2026-08-31-gb-r3-summary",
                 "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r3"
+              },
+              {
+                "name": "2026-08-31-gb-r4-fixed-blind-packet",
+                "path": "benchmark/results/2026-08-31-gb-r4-fixed-blind-packet",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-r4-fixed-blind-packet",
+                "title": "Grading packet — 2026-08-31-gb-r4-fixed"
+              },
+              {
+                "name": "2026-08-31-gb-r4-fixed-summary",
+                "path": "benchmark/results/2026-08-31-gb-r4-fixed-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-r4-fixed-summary",
+                "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r4-fixed"
               }
             ]
           },

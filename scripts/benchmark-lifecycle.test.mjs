@@ -12,11 +12,13 @@ import {
   benchmarkPlan,
   buildCodexConfig,
   classifyEvidence,
+  fixtureHeadings,
   parseTranscriptAnswer,
   readPublishedCoverage,
   regradeRun,
   scoreFinalAnswer,
   validateDefinitions,
+  vaultHeadings,
 } from './benchmark-lifecycle.mjs';
 
 test('lifecycle benchmark definitions cover paired greenfield and brownfield subjects', () => {
@@ -192,4 +194,24 @@ test('re-grading a saved matrix reports arm integrity without spawning Codex', (
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('the prepared vault may not invent a section shape the real vault never uses', () => {
+  // A `## Handoff` section naming what to read first was the fixture's own
+  // invention. The agent followed it to a capability the task never touched, and
+  // the run recorded that as Atlas steering wrong.
+  const real = vaultHeadings();
+  assert.ok(real.size > 0, 'the dogfood vault should supply headings to compare against');
+  const invented = [...fixtureHeadings()].filter((heading) => !real.has(heading));
+  assert.deepEqual(invented, [], 'every fixture section shape must exist in docs/ontology/');
+});
+
+test('no prepared node tells the agent what to read first', () => {
+  // A reading order is task-dependent. A vault records what is true regardless of
+  // the task; which file to open is the agent's call once it knows the question.
+  const ordering = /\b(read|start with|inspect|open)\b[^.]*\bfirst\b|\bthen (inspect|check|read)\b/i;
+  const offenders = CASES.flatMap((entry) => entry.nodes
+    .filter((node) => ordering.test(node.body))
+    .map((node) => `${entry.id}/${node.slug}`));
+  assert.deepEqual(offenders, [], 'a prepared node prescribed a reading order');
 });

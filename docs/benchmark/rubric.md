@@ -36,14 +36,58 @@ checks the fixed task's required slugs, paths, and bounded-unknown signal.
 cell** means the process and arm-integrity checks passed. Neither is a human
 semantic verdict.
 
-For the lifecycle matrix, blind-review each final answer against the source and
-prepared vault, recording:
+For the lifecycle matrix, read each final answer against the source and the
+prepared vault and give it four scores plus one count. Build the packet with
+`pnpm benchmark:blind-set --run-id=<run>` so the answers arrive with ids instead
+of side labels, in a shuffled order.
 
-- factual correctness and unsupported rationale;
-- path and concept citation accuracy;
-- boundary/impact fidelity and explicit unknown handling;
-- usefulness of the next handoff action;
-- any control leak, MCP setup failure, or source/key contamination.
+**Every score below is out of the maximum shown.** A number without its scale is
+not a result — write `2.8 / 3`, never `2.8`.
+
+These maxima belong to the lifecycle matrix. The `D-a` and `D-b` axes further
+down belong to the older D tasks and use different ones; do not mix the two sets
+in a single table.
+
+#### 1. Correctness — 0 to 3
+
+Does the answer get the question right? Use the four levels in
+[§ Correctness](#1-correctness-03--primary-score) below; they are the same ones
+the legacy tasks use.
+
+#### 2. Citations — 0 to 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Every path and concept it cites exists, and each one supports the claim attached to it. |
+| **1** | Everything it cites exists, but at least one citation does not support the claim made from it. |
+| **0** | It cites a path or a concept that does not exist. |
+
+#### 3. Boundary — 0 to 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Names the responsibility that owns the work **and** what is outside it. |
+| **1** | Names the owner correctly but never says what is excluded. |
+| **0** | Puts the work in the wrong place, or states an exclusion that is not true. |
+
+#### 4. Next step — 0 to 2
+
+Ask one question: could a second agent act on this without coming back?
+
+| Score | Meaning |
+|---:|---|
+| **2** | Names a specific next action against specific files, or a specific decision that has to be made first. |
+| **1** | Actionable but generic, or it restates the answer instead of moving past it. |
+| **0** | No usable next step. |
+
+#### 5. Unsupported claims — a count, never a score
+
+How many statements the source and the vault do not support. Report the count.
+Never average it into a total and never subtract it from another axis: one
+invented claim is a specific defect worth naming, not a fraction of a point.
+
+Also record any control leak, MCP setup failure, or source/key contamination.
+Those invalidate a cell rather than scoring it.
 
 Do not turn MCP calls, tokens, or elapsed time into a quality score. They remain
 diagnostics, and construction/maintenance cost is a separate long-term ROI

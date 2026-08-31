@@ -28,18 +28,19 @@ So treat every number below as a place to look, not as a result.
 
 ## What the reading found
 
-Correctness is 0–3. Twelve answers per side.
+Twelve answers per side. Every axis is scored out of the maximum shown, and the
+full definitions are in [`rubric.md` § Lifecycle matrix scoring](rubric.md#lifecycle-matrix-scoring).
 
-| | Without Atlas | With Atlas |
-|---|---:|---:|
-| Correctness | 2.50 | **2.83** |
-| Boundary right | 1.92 | 2.00 |
-| Citations exist | 2.00 | 2.00 |
-| Next step worth taking | **1.92** | 1.83 |
-| Claims the source does not support | 1 | **0** |
+| Axis | Out of | What full marks means | Without Atlas | With Atlas |
+|---|---:|---|---:|---:|
+| Correct | 3 | Everything the question asked for is present and accurate, no false claim | 2.50 | **2.83** |
+| Boundary | 2 | Names the owning responsibility **and** what is outside it | 1.92 | **2.00** |
+| Citations | 2 | Every cited path and concept exists and supports its claim | 2.00 | 2.00 |
+| Next step | 2 | A second agent could act on it without coming back to ask | **1.92** | 1.83 |
+| Unsupported | count | Statements the source and vault do not support — a count, never averaged | 1 | **0** |
 
 The averages are close, and the averages are the least interesting part. The
-four questions do not behave the same way:
+four questions do not behave the same way (correctness, out of 3):
 
 | Question | What it asked | Without Atlas | With Atlas |
 |---|---|---:|---:|
@@ -69,26 +70,80 @@ decision content. No control answer stated the second half. That comes straight
 from the `Inclusions / Exclusions` sections, and it is the clearest thing the
 vault contributed anywhere in this run.
 
-### Atlas lost the orientation question, and the reason is worth knowing
+### Atlas lost the orientation question — and the cause was our own fixture
 
 G1 asked who should own a new discount rule and what to read first. Both sides
 correctly said Purchase, through Checkout. They differed on what to read second:
 
 - **Without Atlas** → `src/widgets/cart-summary/index.ts`, the cart display.
-- **With Atlas** → `src/features/inventory-sync/index.ts`, following the recorded
-  `checkout depends_on inventory-sync` edge.
+- **With Atlas** → `src/features/inventory-sync/index.ts`.
 
-For a discount rule, the cart summary is the better second file: a discount
-changes what the customer sees and what the order records. Inventory is only
-involved if the discount depends on stock, which nobody said it did. **The
-recorded dependency became a reading order, and pointed slightly away from the
-change.** One Atlas answer avoided this by listing cart-summary third and
-labelling it "source-discovered, not an Atlas-declared anchor" — which is
-exactly the right instinct, and only one of three did it.
+For a discount rule the cart summary is the better second file: a discount
+changes what the customer sees and what the order records. Inventory matters only
+if the discount depends on stock, which nobody said it did.
 
-That is a lead about the product, not a scoring artifact: *a declared dependency
-is not the same thing as the file a change will touch, and the handoff currently
-presents them in one list.*
+Two explanations were offered for this, and the run falsified both.
+
+**First explanation: the recorded dependency edge steered it.** Plausible, never
+tested.
+
+**Second explanation: a sentence in the fixture steered it.** The prepared
+vault's `capabilities/checkout` body carried this:
+
+```
+## Handoff
+Read the checkout entrypoint first, then inspect the inventory capability
+before changing the boundary.
+```
+
+`capabilities/decision-broadcast` carried a matching one. That is a real defect
+and it was fixed — see below — but **removing it did not change the reading
+order.** In `2026-08-31-gb-r4-fixed` the Atlas side still names checkout, then
+inventory-sync, then cart-summary, exactly as before.
+
+So the honest position on G1 is: **the cause is not established.** What remains
+is the observation itself — on the discount question the Atlas side put inventory
+ahead of the cart display, and the control side did not — with no demonstrated
+mechanism behind it. Do not repeat either explanation as if it were a finding.
+
+### The fixture defect was real, and fixing it was right anyway
+
+No node in `docs/ontology/` uses a `## Handoff` section, and neither the
+specification nor the bootstrap skill defines one. The benchmark had invented a
+shape Atlas does not produce and was measuring the invention. Both sections are
+gone, and two checks stop it recurring: the runner refuses to start if the
+prepared vault uses a heading absent from the real vault, or if a prepared node
+tells the agent what to read first. Both were planted and confirmed to fail
+before being removed.
+
+### Re-running exposed something larger
+
+`2026-08-31-gb-r4-fixed` re-ran the twelve Atlas-side cells against the corrected
+fixture. The control side was untouched, because nothing about its input changed.
+
+| Subject | Comparable, before → after | Atlas names, before → after |
+|---|---|---|
+| Greenfield | 1.00 → 1.00 | 0.83 → **0.94** |
+| Brownfield | 1.00 → 1.00 | 0.57 → **0.17** |
+
+The comparable half did not move at all. The Atlas-name half moved enormously in
+both directions — and the edit that moved it deleted one sentence from one
+greenfield node and rewrote one sentence in one brownfield node. Nothing about
+the concepts those questions are *about* changed. Counting slugs in the answers
+shows the same thing directly: brownfield B2 emitted 4, 4 and 3 canonical names
+before and 0, 0 and 5 after, for answers whose substance reads the same.
+
+**That is the most useful number in this run.** A score that swings from 0.57 to
+0.17 on an unrelated sentence is not measuring a durable property of the product.
+It is measuring whether the agent happened to echo the vocabulary — which
+confirms, from the other direction, why
+[the scoring correction](FINDINGS-2026-08-31-metric-split.md) refuses to report
+it as a gap.
+
+It also sharpens the product defect underneath. If Atlas's own tool responses
+made canonical names load-bearing, an unrelated prose edit could not knock them
+out of the answer. Today a body sentence naming the neighbours was doing that
+work. That is worth fixing in the MCP response, not in the fixture.
 
 ### The only made-up claim came from the side without Atlas
 
@@ -117,9 +172,11 @@ vocabulary is supposed to prevent.
 
 ## What to do about it
 
-1. **Have a person grade the same packet.** `pnpm benchmark:blind-set
-   --run-id=2026-08-31-gb-r3` regenerates it byte for byte. Compare the two
-   gradings; where they disagree is where the criteria are unclear.
+1. **Have a second grader read the same packet.** `pnpm benchmark:blind-set
+   --run-id=2026-08-31-gb-r3` regenerates it byte for byte, and `pnpm
+   benchmark:grade --bypass --run-id=…` hands it to a separate process with no
+   memory of this conversation. Compare the two gradings; where they disagree is
+   where the criteria are unclear. A person still outranks both.
 2. **Look at the G1 reading order as a product question.** Should a handoff
    present a declared dependency and a likely-touched file in the same list, in
    the same voice? This run says an agent follows the edge.

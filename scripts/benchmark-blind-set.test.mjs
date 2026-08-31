@@ -28,8 +28,14 @@ test('a packet withholds which side wrote each answer, and the key restores it',
     assert.equal(entries.length, 2);
     const packet = readFileSync(packetPath, 'utf8');
     assert.match(packet, /## C01/);
-    assert.doesNotMatch(packet, /\boff\b|\bon\b/, 'the packet must not name the side');
-    assert.doesNotMatch(packet, /run-greenfield/, 'the packet must not leak the filename');
+    // "on" and "off" are ordinary English, so the check has to be about what
+    // would actually identify a side: the filename, or a label attached to a cell.
+    assert.doesNotMatch(packet, /run-greenfield|run-brownfield/, 'the packet must not leak the transcript filename');
+    assert.doesNotMatch(packet, /\bwith(out)? Atlas\b/i, 'the packet must not label a cell by side');
+    assert.doesNotMatch(packet, /-(off|on)-r\d/, 'the packet must not carry the side from the filename');
+    for (const block of packet.split(/^## /m).slice(1)) {
+      assert.doesNotMatch(block.split('\n')[0], /\b(off|on)\b/i, 'a cell heading must carry only its id and question');
+    }
     assert.deepEqual(Object.keys(key).sort(), ['C01', 'C02']);
     assert.deepEqual(Object.values(key).map((row) => row.side).sort(), ['off', 'on']);
   } finally {
