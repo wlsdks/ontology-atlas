@@ -123,7 +123,7 @@ describe('VaultAgentSetupPanel', () => {
     const localVault = renderPanel();
 
     expect(
-      screen.getByRole('region', { name: 'MCP 연결' }),
+      screen.getByRole('region', { name: '에이전트 연결(MCP)' }),
     ).toBeInTheDocument();
     // The amber badge that stated the same fact a third time is gone (design
     // council S2, 2026-08-02) — the row stating the number is still directly below
@@ -1095,7 +1095,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'MCP 연결' });
+    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '확인 명령 복사' }),
     );
@@ -1125,7 +1125,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'MCP 연결' });
+    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '맞추기 절차 복사' }),
     );

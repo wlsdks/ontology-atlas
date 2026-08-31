@@ -98,7 +98,7 @@ describe("DocMetaBar", () => {
     expect(screen.getByText("지도에 없음")).toBeInTheDocument();
     expect(
       screen.getByText(
-        /아직 지도의 노드가 아니에요/,
+        /아직 지도에 그려지지 않아요/,
       ),
     ).toBeInTheDocument();
     // Zero dead CTAs — with no address to build, the link does not exist.

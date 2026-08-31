@@ -303,7 +303,7 @@ describe('i18n message catalog', () => {
       settings.mcpProofCopied,
     ].join('\n');
 
-    assert.equal(settings.mcpProofTitle, 'MCP 첫 호출');
+    assert.equal(settings.mcpProofTitle, '실제로 연결됐는지 확인하기');
     assert.match(visibleCopy, /에이전트/);
     /*
      * ⚠️ **Re-aimed 2026-08-21** (ledger 90). This used to compare the first characters
@@ -370,7 +370,7 @@ describe('i18n message catalog', () => {
       en.topology.controls.docsAriaLabel,
       'Open the doc library quick view (D)',
     );
-    assert.equal(en.topology.controls.docsLabel, 'Workspace');
+    assert.equal(en.topology.controls.docsLabel, 'Docs');
     assert.doesNotMatch(
       [
         en.topology.controls.docsTooltip,
@@ -400,7 +400,7 @@ describe('i18n message catalog', () => {
       ko.topology.controls.docsAriaLabel,
       '문서함 빠른 보기 열기 (D)',
     );
-    assert.equal(ko.topology.controls.docsLabel, '작업공간');
+    assert.equal(ko.topology.controls.docsLabel, '문서함');
     assert.equal(ko.topology.controls.relayoutToast, '지도를 다시 정렬합니다');
     assert.doesNotMatch(
       [
@@ -644,7 +644,7 @@ describe('i18n message catalog', () => {
       en.docsVault.sourceContract.agentCopyGateAriaLabel,
     ].join('\n');
 
-    assert.equal(en.metadata.pages.docs, 'Ontology workspace');
+    assert.equal(en.metadata.pages.docs, 'Docs');
     // `nav.docs`/`nav.tooltipDocs`/`modeBadge.*` retired with `OperationsNav`/
     // `ModeBadge` (feat/rail-rollout) — `navRail.docs` (shared by AppNavRail +
     // BottomTabBar) is the one surviving primary-nav label for this surface.
@@ -711,7 +711,7 @@ describe('i18n message catalog', () => {
 
     assert.equal(ko.featuresMisc.starterCta.emptyAriaLabel, '온톨로지 시작 시드');
     assert.equal(ko.featuresMisc.starterCta.proofLocalLabel, '로컬');
-    assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '그래프 근거');
+    assert.equal(ko.featuresMisc.starterCta.proofGraphLabel, '서로 맞는지 확인함');
     assert.equal(ko.featuresMisc.starterCta.proofAgentLabel, 'AI 흐름');
     assert.equal(ko.featuresMisc.starterCta.copyCliLabel, '터미널 근거 복사');
     assert.equal(ko.featuresMisc.starterCta.copyJsonGateLabel, '자동화 JSON 점검 복사');
@@ -758,7 +758,7 @@ describe('i18n message catalog', () => {
     );
     assert.equal(
       settings.mcpProofBody,
-      '연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 첫 호출 안내를 붙여넣으세요.',
+      '이 화면만으로는 연결을 장담할 수 없어요. Codex나 Claude에서 이 서버가 보이면, 아래 첫 질문을 복사해 붙여넣어 에이전트가 이 폴더의 개념으로 답하는지 확인해 보세요.',
     );
     assert.doesNotMatch(
       mixedLanguageCopy,

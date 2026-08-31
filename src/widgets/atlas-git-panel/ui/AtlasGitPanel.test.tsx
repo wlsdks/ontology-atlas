@@ -1116,7 +1116,7 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     const ego = await screen.findByTestId("atlas-git-concept-ego");
     expect(ego).toHaveTextContent("첫 실행 안내");
     // The owning domain comes from the belongsTo neighbours — 「Belongs to」 has to be drawn.
-    expect(ego).toHaveTextContent("속한 곳");
+    expect(ego).toHaveTextContent("상위 항목");
 
     /*
      * **Withholding what you already know is an omission, not a degradation.** The

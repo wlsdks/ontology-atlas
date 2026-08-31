@@ -4,11 +4,11 @@
     "siteTagline": "Open-source ontology workbench",
     "pages": {
       "topology": "Map",
-      "docs": "Ontology workspace",
+      "docs": "Docs",
       "download": "Download",
       "projects": "Projects",
       "ontology": "Ontology",
-      "ontologyInsights": "Graph Insights",
+      "ontologyInsights": "My folder analysis",
       "projectNew": "New project",
       "guide": "Guide",
       "changelog": "Changelog",
@@ -68,7 +68,7 @@
         "line": "Line"
       },
       "arrangementLabel": "Arrange by",
-      "arrangementCaption": "Pick what decides where nodes sit in the 3D map. Ownership is a dome with fixed tiers; coupling is a cloud where the relations decide",
+      "arrangementCaption": "Pick what decides where nodes sit in the 3D map. Ownership stacks the containment tree in layers; coupling pulls closely related nodes near each other",
       "arrangement": {
         "ownership": "Ownership",
         "coupling": "Coupling"
@@ -102,8 +102,8 @@
       "vaultCtaStatic": "Get started",
       "agentStatusNoVault": "No workspace connected",
       "agentNoVaultHint": "Open a workspace folder to check and repair agent config files here.",
-      "mcpProofTitle": "MCP first calls",
-      "mcpProofBody": "Don't declare the connection from this screen alone: prove it in the agent session. When the server shows up in Codex or Claude, paste this call packet first.",
+      "mcpProofTitle": "Check that the connection really works",
+      "mcpProofBody": "This screen alone cannot promise the connection. When Codex or Claude shows this server, copy the first question below and paste it to see whether the agent answers with a concept from this folder.",
       "mcpProofCopy": "Copy first-call packet",
       "mcpProofCopied": "Copied",
       "footprint": {
@@ -187,7 +187,7 @@
         "app": "App"
       },
       "guideAutoStartLabel": "Show guides automatically",
-      "guideAutoStartCaption": "Opens a guide the first time you visit each screen: turn off and it only opens from Replay or the map compass",
+      "guideAutoStartCaption": "Opens a guide the first time you visit each screen. Turn it off and it reopens only from the Replay button below or the guide icon at the map's top right",
       "guideAutoStartOn": "On",
       "guideAutoStartOff": "Off",
       "frameMeterLabel": "Frame meter",
@@ -203,7 +203,7 @@
       "agentNotificationKindsLabel": "What to receive",
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
-        "intro": "Atlas finds the AI coding tools installed on this computer. Tools with a verified in-app gate can open beside the map; the rest remain available for MCP connection setup.",
+        "intro": "Atlas finds the AI coding tools installed on this computer. Tools with a verified in-app gate can open beside the map; the rest remain available for agent-connection (MCP) setup.",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
@@ -266,19 +266,19 @@
     "description": "See the reviewed implementation roles before an agent changes code.",
     "profileList": "Applied scopes",
     "sourceCheckRequired": "Source check required",
-    "sourceCheckBody": "The profile is reviewed intent. Current imports are inspected by Atlas MCP or CLI; this screen does not turn missing evidence into a pass.",
+    "sourceCheckBody": "This rule was approved by a person. The real imports in the code are checked separately by Atlas over the agent connection (MCP) or the terminal command (CLI), and missing evidence is never shown as a pass.",
     "sourceCheckNext": "Run atlas architecture --record in the repository to write one, or hand this profile to your agent from the Plan stage.",
     "recordStatus": {
       "conforms": "Conforms",
       "violated": "Violated",
       "unknown": "Unknown"
     },
-    "recordCounts": "{violations, plural, one {# violation} other {# violations}} · {unmapped, plural, one {# edge unmapped} other {# edges unmapped}}",
+    "recordCounts": "{violations, plural, one {# rule violation} other {# rule violations}} · {unmapped, plural, one {# dependency with no assigned role} other {# dependencies with no assigned role}}",
     "recordTypeOnly": "{count, plural, one {# type-only edge} other {# type-only edges}}",
     "recordCheckedGit": "Checked {date} at commit {sha}",
     "recordCheckedFolder": "Checked {date} against a content fingerprint of the source folder",
     "recordDirty": "with uncommitted edits",
-    "recordCannotConfirm": "This screen does not re-measure. The record is a receipt from the moment it was taken.",
+    "recordCannotConfirm": "This screen does not re-check now. The record below is the result of the last check.",
     "patterns": "Pattern axes",
     "roles": "Roles and dependency direction",
     "rolePaths": "{count, plural, one {# path} other {# paths}}",
@@ -293,7 +293,7 @@
       "verify": "Verify"
     },
     "understandTitle": "Read the intended structure",
-    "understandBody": "Pattern names summarize the contract. Roles, paths, and dependency rules are the facts an agent must follow.",
+    "understandBody": "The pattern name is shorthand for these rules. What actually has to be followed are the roles, paths, and dependency directions below.",
     "evidenceTitle": "Reviewed evidence",
     "planTitle": "Architecture-first agent plan",
     "planBody": "Give the selected scope to the connected coding agent before implementation. The agent must return a typed plan before editing.",
@@ -305,7 +305,7 @@
     "verifyTitle": "Verify the actual change",
     "verifyBody": "Run the same source inspection after editing and compare planned dependencies with actual imports.",
     "unknownIsNotCompliant": "Unknown is not compliant. Unsupported languages, unmapped paths, and empty roles remain explicit gaps.",
-    "verifyCommands": "Agent check: inspect_architecture → focused tests → inspect_architecture",
+    "verifyCommands": "Run the structure check (inspect_architecture) once before the edit, run the focused tests, then run it again and compare. The agent calls it for you.",
     "noProfiles": "This codebase's structure has not been recorded yet",
     "noProfilesBody": "A connected agent reads the folders and the real imports and proposes a draft architecture profile. There is nothing to write by hand: review the draft, and accepting it saves one file in your ontology folder.",
     "roleLabels": {
@@ -338,7 +338,7 @@
     "layerConcepts": "Reviewed concepts in this role: {count}",
     "conceptCount": "{count, plural, one {# concept} other {# concepts}}",
     "moduleCount": "{count, plural, one {# module} other {# modules}}",
-    "legendViolated": "a crossing the receipt counted as a violation",
+    "legendViolated": "a connection the last check flagged as a rule violation",
     "walkChain": "Walk the chain",
     "walkStep": "{index} of {total}",
     "walkNext": "Next role",
@@ -642,7 +642,7 @@
       },
       "architectureBlueprint": {
         "title": "Keep the blueprint stable while work moves",
-        "body": "Understand, Plan, and Verify reuse the same role positions. Planned and observed changes alter state, not the meaning of the layout."
+        "body": "The Understand, Plan, and Verify screens use the same slots. Planning a change or making one alters the state, never what that slot means."
       },
       "gitWhat": {
         "title": "A record of what changed, and when",
@@ -654,7 +654,7 @@
       },
       "agentsWhat": {
         "title": "Connect your AI coding tools here",
-        "body": "Atlas finds the coding tools on this computer, opens in-app chat only for tools with a verified gate, and keeps MCP setup available for the rest. Supported installs use an app-only folder."
+        "body": "Atlas finds the coding tools on this computer, opens in-app chat only for tools with a verified gate, and keeps agent-connection (MCP) setup available for the rest. Supported installs use an app-only folder."
       },
       "agentsCheck": {
         "title": "If nothing connects, measure it here",
@@ -663,8 +663,8 @@
     }
   },
   "ontologyBlocks": {
-    "exportAction": "Export block",
-    "exportAria": "Export this realm's original .md files as a block folder",
+    "exportAction": "Save this group as a folder",
+    "exportAria": "Copy the .md files behind the concepts you are viewing into a new folder",
     "exportBusy": "Exporting…",
     "exportDone": "Exported {count}",
     "exportError": "Could not export. Try again.",
@@ -700,7 +700,7 @@
     "redirectBody": "The installed app starts at local store setup before it shows any hosted introduction.",
     "redirectFilesProof": "Markdown files stay local",
     "redirectGraphProof": "The info block at the top becomes the map",
-    "redirectAgentProof": "Agent gate uses MCP and CLI fallback"
+    "redirectAgentProof": "An agent asks first before touching anything outside this folder"
   },
   "download": {
     "back": "Back to the map",
@@ -752,7 +752,7 @@
     "specimenFactsHeading": "What the agent reads",
     "specimenFactName": "Name",
     "specimenFactKind": "Kind",
-    "specimenFactDomain": "Sits in",
+    "specimenFactDomain": "Domain",
     "specimenFactDependsOn": "Depends on",
     "specimenFactPath": "Code",
     "specimenElided": "These {shown} lines become one node and one line on the map. The other {count} (ids and bookkeeping) are not shown.",
@@ -768,8 +768,8 @@
     "acpToolWhy": "user note: the payment feature leans on user auth, so if\n                auth goes down payments go down with it (2026-08-16)",
     "acpResultLine": "✓ Approved once · one relation written into a markdown file in your folder",
     "col1Title": "The agent you already use",
-    "col1Body": "Claude Agent for guarded in-app chat; Codex for external MCP connection. Atlas runs the local adapter or MCP child, while the coding agent itself may communicate with its provider.",
-    "col1Code": "ACP adapter · runs on your machine",
+    "col1Body": "Claude Agent for guarded in-app chat; Codex for an external agent connection (MCP). Atlas runs the local adapter or MCP child process, while the coding agent itself may communicate with its provider.",
+    "col1Code": "Agent connector · runs on your machine",
     "col2Title": "Atlas reads flow. Atlas writes wait.",
     "col2Body": "Atlas read tools proceed inside the selected folder. Every Atlas write pauses on an exact change review, and access outside the folder asks first.",
     "col2Code": "Atlas read → allow · Atlas write → review",
@@ -1199,8 +1199,8 @@
       "closeTooltip": "Close (Esc)",
       "saveFailed": "Save failed",
       "saveConflict": "This file changed on disk before the save completed. Your edits are kept. Copy them, refresh, then apply them to the latest file.",
-      "saveIdentityUid": "A document's uid is its permanent identity, so it can't be removed or changed. Restore the uid line and the save will go through.",
-      "saveIdentityHistory": "merged_uids is merge-owned history and can't be edited here. Restore that line and the save will go through.",
+      "saveIdentityUid": "This line (uid) is the permanent id that keeps the document recognizable even after a rename, so it cannot be removed or changed. Restore the uid line and the save will go through.",
+      "saveIdentityHistory": "This line (merged_uids) records the documents merged into this one, so it cannot be edited here. Restore that line and the save will go through.",
       "discardConfirm": "Discard unsaved changes and close the editor?",
       "linkText": "Link text",
       "placeholder": "Text",
@@ -1233,9 +1233,9 @@
       "noBodySearchTitle": "Not found anywhere in your docs",
       "noBodySearchHint": "Titles, summaries, tags, and full body text were all searched. Try a different word or a shorter phrase.",
       "bodyIndexingNotice": "Still preparing body search: more body matches may appear in a moment.",
-      "canonicalDocsLabel": "Jump to canonical docs",
-      "canonicalMcp": "MCP registration guide",
-      "canonicalCli": "CLI reference",
+      "canonicalDocsLabel": "Jump to the main guide docs",
+      "canonicalMcp": "Agent connection (MCP) setup guide",
+      "canonicalCli": "Terminal command (CLI) reference",
       "canonicalReadme": "Project overview (README)",
       "resultsAnnounce": "{count} results available",
       "secPinned": "Pinned",
@@ -1252,7 +1252,7 @@
       "footerLegend": "> command · # tag"
     },
     "backlinks": {
-      "heading": "Backlinks · {count}",
+      "heading": "Docs that link here · {count}",
       "expand": "Show context",
       "collapse": "Hide context"
     },
@@ -1266,7 +1266,7 @@
         "topologyLinkTitle": "Open this concept on the map",
         "notOnMapAria": "Not on the map",
         "notOnMapLabel": "Not on the map",
-        "notOnMapBody": "This document is not a node on the map yet: the diagnostic above says what is missing."
+        "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there."
       },
       "sidebar": {
         "treeHeader": "Document list",
@@ -1390,7 +1390,7 @@
       "kindGlyphCaption": "Glyphs match the map's node shapes exactly: panel and canvas share one world.",
       "domainCapacityCaption": "The number on the right is how many concepts live in this domain. The bar shows how those split between capabilities and elements: capabilities on the left, elements on the right. A bar leaning hard one way means claims without evidence, or the reverse. A concept in multiple domains is counted once per domain, so the totals can exceed the whole.",
       "relationTypesTitle": "Relation types",
-      "relationTypesCaption": "What kind of relations you have: if containment dominates, it's a sign to draw more “leans on” links. This count is distinct relations, counted once (a relation written in both documents still counts as 1). The CLI and MCP count every reference as written, so their number is larger.",
+      "relationTypesCaption": "What kind of relations you have: if containment dominates, it is a sign to draw more \"leans on\" links. This count is distinct relations, counted once (a relation written in both documents still counts as 1). The terminal command (CLI) and the agent connection (MCP) count every reference as written, so their number is larger.",
       "noRelationTypes": "No relations connected yet",
       "noRelationTypesHint": "Connect concepts on the map.",
       "hubsTitle": "Hubs: top connected",
@@ -1442,14 +1442,14 @@
       "agentReadinessReview": "review",
       "agentReadinessBlocked": "blocked",
       "agentReadinessBlockedBreakdown": "Blocked: {documents} document(s) with check errors · {relations} relation(s) without evidence",
-      "repairQueueTitle": "Repair queue",
+      "repairQueueTitle": "Things to fix",
       "repairQueueStale": "stale evidence",
-      "repairQueueOrphan": "open question",
-      "repairQueuePromotion": "hub candidate",
+      "repairQueueOrphan": "no domain yet",
+      "repairQueuePromotion": "parent-concept candidate",
       "repairQueueEmpty": "Nothing to repair: you're all caught up.",
       "repairQueueActionKindStale": "Stale evidence",
-      "repairQueueActionKindOrphan": "Open question",
-      "repairQueueActionKindPromotion": "Hub candidate",
+      "repairQueueActionKindOrphan": "No domain yet",
+      "repairQueueActionKindPromotion": "Parent-concept candidate",
       "repairQueueIsland": "disconnected island",
       "repairQueueMissingContainment": "missing link",
       "repairQueueActionKindIsland": "Disconnected island",
@@ -1520,14 +1520,14 @@
         "reviewCleared": "The {title} signal is gone from the current folder. Remaining items were reprioritized.",
         "reviewUnverified": "The current result cannot verify whether the {title} signal was cleared.",
         "openBuilderReadOnly": "view on map",
-        "handoffCopyIdle": "copy the command to hand off",
+        "handoffCopyIdle": "Copy this request to paste into an AI tool",
         "handoffCopiedHint": "Copied: paste it into your AI tool or a teammate's terminal.",
         "groupMeaningTitle": "You can fix these right now",
         "groupMeaningTitleReadOnly": "Open your own folder to fix these",
         "groupMeaningHint": "No code needed. Each one is settled by deciding a meaning, a home, or whether two names are the same thing.",
         "groupMeaningHintReadOnly": "This is the example folder. Open your own and you can finish these right here: for now you can copy the command and hand it off.",
         "groupCodeTitle": "Hand these to a developer or an AI",
-        "groupCodeHint": "These need a look at the implementation or the direction of a dependency. Copy the command and hand it off.",
+        "groupCodeHint": "These need a look at the code. Copy the request and hand it to an AI tool.",
         "sectionMissingDefinition": "No meaning written down: add one sentence?",
         "hintMissingDefinition": "Nothing anywhere says what this is. One sentence and the map, search, and your AI all read the same meaning.",
         "sectionMissingDomain": "No area written down: pick one?",
@@ -1606,7 +1606,7 @@
       "nextSlotCliCaption": "From the terminal · the info block at the top gets tidied automatically",
       "nextSlotAgentLabel": "AI agent",
       "nextSlotAgentCommand": "add_concept(slug, kind: \"project\", title)",
-      "nextSlotAgentCaption": "MCP · created directly by Claude Code / Codex",
+      "nextSlotAgentCaption": "Agent connection (MCP) · created directly by Claude Code / Codex",
       "factStripGloss": "The areas this project covers, and how many features and components live inside each.",
       "domainOverlapNote": "A concept in multiple domains is counted once per domain, so adding up the numbers on the right can exceed the count above.",
       "emptyStateDesc": "Create a project document in your folder and it appears here. Put `kind: project` in the info block at the top of the file.",
@@ -1630,7 +1630,7 @@
       "documentTitleSuffix": "Ontology Atlas",
       "globalCensus": "WHOLE FOLDER · {concepts} CONCEPTS · {relations} RELATIONS",
       "heroLabel": "Individual project",
-      "heroLabelHub": "Hub",
+      "heroLabelHub": "Highly connected",
       "statusActive": "Active",
       "heroUpdatedAt": "Updated {date}",
       "inlineNameAria": "Project name",
@@ -1672,7 +1672,7 @@
       "saveErrorPrefix": "Save failed: {message}",
       "readOnlyBadge": "View only: open a folder to edit",
       "constructionReview": {
-        "eyebrow": "Construction review",
+        "eyebrow": "Safety check before writing to the map",
         "title": "What is safe to decide now",
         "openResult": "Open review result",
         "readingResult": "Reading review result…",
@@ -1680,7 +1680,7 @@
         "errors": {
           "malformed": "Required qualification artifacts are missing or unreadable. No plan or approval is shown.",
           "project_mismatch": "This result belongs to a different project. Open the result for this project.",
-          "digest_mismatch": "The plan or source digest does not match across the artifacts. Open one intact result bundle.",
+          "digest_mismatch": "These files come from different check runs. Open results from a single run only.",
           "plan_mismatch": "The reviewed plan and writable plan differ. Writing stays blocked."
         },
         "currentDecision": "Current decision",
@@ -1719,7 +1719,7 @@
         "draftHint": "Refine the CQ, evidence location, and exact plan inside this result. The source verdict and vault never change.",
         "showDraft": "Open review edits",
         "hideDraft": "Close review edits",
-        "draftDirty": "The review draft changed. It is not saved; qualification must run again before any write.",
+        "draftDirty": "The review draft changed. It is not saved, and it must pass verification again before anything is written.",
         "draftChangedField": "Changed: {field}",
         "draftClean": "The review draft matches the original result.",
         "resetDraft": "Restore original",
@@ -1835,7 +1835,7 @@
         "parseZeroKeys": "There is an info block at the top of the file, but no values could be read from it. Check the formatting.",
         "missingUid": "No uid: this node needs a permanent identifier that never changes.",
         "invalidUid": "uid is not a UUIDv4: don't derive it from the slug or title.",
-        "duplicateUid": "Another document claims the same uid as its identity.",
+        "duplicateUid": "Another document already uses this unique id (uid).",
         "invalidMergedUids": "merged_uids is malformed: it must list absorbed nodes' UUIDv4s.",
         "nonCanonicalMergedUids": "merged_uids is not a sorted, duplicate-free set."
       },
@@ -1954,7 +1954,7 @@
       "error": "Finder open failed: {message}"
     },
     "agentSetup": {
-      "ariaLabel": "MCP connection",
+      "ariaLabel": "Agent connection (MCP)",
       "title": "My agent connection",
       "ready": "ready",
       "missing": "missing",
@@ -2320,7 +2320,7 @@
     },
     "analysis": {
       "healthStale": "stale evidence",
-      "healthOrphan": "open question",
+      "healthOrphan": "No domain yet",
       "healthPromotion": "hub candidate",
       "overviewBriefCopy": "Copy map brief",
       "overviewBriefCopied": "Map brief copied",
@@ -2393,7 +2393,7 @@
       "spotlightLabel": "Recent",
       "docsTooltip": "Quick view of the doc library (D)",
       "docsAriaLabel": "Open the doc library quick view (D)",
-      "docsLabel": "Workspace",
+      "docsLabel": "Docs",
       "switchToMyDataLabel": "Switch to my data",
       "switchToMyDataAriaLabel": "Open my markdown folder and light up the map with my data (⌘O)",
       "switchToMyDataTooltip": "Open my markdown folder: the map fills with my data (⌘O)",
@@ -2465,7 +2465,7 @@
       "recentEmptyHint": "Nothing changed in the last {days} days",
       "agentBadge": "Agent just now",
       "uncatalogedDocsLabel": "{count} docs not on the map",
-      "uncatalogedDocsAction": "Promote",
+      "uncatalogedDocsAction": "Add to map",
       "dustyNodesLabel": "{count} nodes gathering dust: untouched for a while",
       "dustyNodesAction": "See to-dos",
       "sourceUnboundLabel": "{count} project(s) with no code folder",
@@ -2596,7 +2596,7 @@
       "agent": {
         "title": "Connect an AI agent",
         "bodyFound": "Found an AI tool on this computer. Connect it and you can fill the ontology together in conversation.",
-        "bodyMissing": "If you use Claude Agent, you can open a guarded chat here. Codex and other MCP clients can connect to this folder from their own app or terminal. Everything else works without connecting.",
+        "bodyMissing": "If you use Claude Agent, you can open a chat here. That chat always asks first before touching anything outside this folder. Codex and other tools that speak the agent connection (MCP) can reach this folder from their own app or terminal. Everything else works without connecting.",
         "cta": "Open agent settings",
         "runtimeReady": "Ready to talk to inside the app"
       },
@@ -2645,13 +2645,13 @@
     },
     "groups": {
       "containsTitle": "What this node contains",
-      "containsCaption": "contains",
+      "containsCaption": "What sits inside this concept",
       "usedByTitle": "Places that use this node",
-      "usedByCaption": "used by",
+      "usedByCaption": "The side that uses this one",
       "dependsOnTitle": "Places this node leans on",
-      "dependsOnCaption": "depends on",
+      "dependsOnCaption": "Without these it does not work",
       "belongsToTitle": "Belongs to",
-      "belongsToCaption": "belongs to",
+      "belongsToCaption": "The concept this one sits inside",
       "empty": "No direct connections.",
       "freshDotTitle": "Recently updated"
     },
@@ -2724,12 +2724,12 @@
       "emptyTitle": "Create the ontology starter",
       "emptyBodyLine1": "Creates 5 starter markdown files (project / domain / capability / element + README), <code>.mcp.json</code>, and <code>.codex/config.toml</code> in this folder.",
       "emptyBodyLine2": "Then edit the info block at the top of the file to match your project, and it shows up in the tree, the map, and Save/edit right away.",
-      "definitionLabel": "ontology definition",
-      "definitionBody": "A codebase ontology is an executable meaning model: projects, domains, capabilities, elements, and typed relations that explain ownership, dependency, evidence, and impact.",
+      "definitionLabel": "what an ontology is",
+      "definitionBody": "A written record, inside the files themselves, of what this folder does, what it depends on, and what a change would affect. It is written as projects, domains, capabilities, elements, and the relations between them.",
       "proofLocalLabel": "local",
       "proofLocalBody": "Markdown in the folder is the database. No account or server; it reads and writes your PC files.",
-      "proofGraphLabel": "graph proof",
-      "proofGraphBody": "workspace_brief and agent_brief verify nodes, relations, health, and handoff order.",
+      "proofGraphLabel": "checked for consistency",
+      "proofGraphBody": "Atlas checks automatically that the concepts you create really connect to each other and hold together.",
       "proofAgentLabel": "agent loop",
       "proofAgentBody": "Claude Code, Cursor, and Codex check the same folder read-first before editing.",
       "verifyAriaLabel": "Starter includes AI agent verification steps",
@@ -2748,7 +2748,7 @@
       "emptyBusy": "Creating…",
       "emptyCta": "Create starter seed",
       "secondaryTitle": "Adds 5 ontology starter files plus agent verification guidance (existing files are left untouched)",
-      "secondaryCopyTitle": "Copy the read-first MCP verification prompt without adding starter files",
+      "secondaryCopyTitle": "Copy the read-first agent-connection (MCP) verification prompt without adding starter files",
       "secondaryCliTitle": "Copy commands that prove the same connection in a terminal without an agent",
       "secondaryJsonGateTitle": "Copy the JSON self-check command that Claude Code / Codex setup automation can read directly",
       "secondaryBusy": "Adding…",
@@ -2873,7 +2873,7 @@
         "createNoticeStay": "Project created: ready to keep editing.",
         "editNoticeStay": "Saved the changes. You can verify on the right preview and the detail page link.",
         "deleteRowTitle": "Delete project",
-        "deleteRowCaption": "The md file is deleted and relations remain as dangling warnings: a dry-run shows this first."
+        "deleteRowCaption": "The document file is deleted, and documents that linked to it are left with a broken-link warning. You will see exactly what disappears before it happens."
       },
       "preview": {
         "summaryDirty": "Completeness {score}% · {count} changes",
@@ -3062,7 +3062,7 @@
     "otherToolsColLocation": "MCP config location",
     "otherToolsProjectRoot": "project root",
     "otherToolsCursorScopes": "project / global (~/.cursor)",
-    "otherToolsCodexNote": "config file or CLI command",
+    "otherToolsCodexNote": "config file or terminal command (CLI)",
     "otherToolsClaudeDesktopNote": "Register manually in Settings → Developer (dedicated extension later)",
     "step1Title": "Press a connect button",
     "step1TitleManual": "Create the connect config",
@@ -3092,7 +3092,7 @@
     "copyCodexCommandDone": "Copied · paste in terminal",
     "deeplinkWebNote": "One-click for Cursor needs the folder path.",
     "deeplinkWebNoteCta": "Automatic in the desktop app",
-    "serverLine": "The Atlas MCP server is not a daemon: your agent starts it as a local stdio child and stops it with the session. It opens no port and makes no network request. The agent itself may use its provider when you ask it to.",
+    "serverLine": "Atlas's agent-connection (MCP) server is not a program that stays running. Your agent starts it on this computer only when it is needed and shuts it down with the conversation. It opens no port and makes no network request. The agent itself may talk to its own provider when you ask it to.",
     "copiedToast": "Config copied: paste it into your tool to connect.",
     "serverUnavailableTitle": "Only saving the config for you is out of reach here",
     "serverUnavailableDesc": "Your agent connects to the folder, not to Atlas: it starts the MCP server in its own session and reads and writes that folder. A browser just cannot know where the folder you opened actually lives, so it cannot save the config file for you. Tell it the path and the working config is built right here. Open the same folder in the desktop app and it is one button instead.",
@@ -3297,8 +3297,8 @@
   "agentFiles": {
     "header": "Agent files",
     "headerHint": "Which AI tool reads which instruction file: read-only detection, nothing is rewritten",
-    "driftBadge": "drift",
-    "driftCount": "drift {count}",
+    "driftBadge": "mismatch",
+    "driftCount": "{count} files out of sync",
     "listAria": "Agent instruction files",
     "drift": {
       "missing-agents-import": "CLAUDE.md does not import @AGENTS.md: Claude Code and AGENTS.md readers see different instructions",
@@ -3327,7 +3327,7 @@
   "summaryFreshness": {
     "prefix": "Description is behind what this holds",
     "lag": "{count}d",
-    "action": "re-judge"
+    "action": "Update this description"
   },
   "vaultOpenGuide": {
     "title": "Turn your folder into the map",
@@ -3351,7 +3351,7 @@
     "placeholderFirst": "Write what you want done",
     "thinking": "Thinking",
     "thinkingSeconds": "Thinking · {seconds}s",
-    "unsupported": "Answered without reading the folder this turn. Do not take it as fact.",
+    "unsupported": "This answer was made without reading the folder. Do not take it as fact.",
     "charsLabel": "{chars} chars",
     "footer": "{provider} · {rounds} recorded",
     "boundary": "Work that needs your source code is better done by the AI in your own terminal. Here the agent only reads your document folder.",
@@ -3415,7 +3415,7 @@
       "auditBlocked": "Nothing was sent, because the record could not be written.",
       "providerRefused": "This request was declined.",
       "failed": "Something went wrong.",
-      "noToolCall": "Stopped at round {round}/{cap} without calling a single tool."
+      "noToolCall": "The agent stopped at attempt {round} of {cap} without reading this folder even once. Try asking again."
     },
     "degraded": {
       "webTitle": "Available in the desktop app only",
@@ -3451,7 +3451,7 @@
     "uncited": "Read this turn:",
     "footerDetail": "{chars} characters went out this turn: mostly system guidance and tool descriptions.",
     "reground": {
-      "title": "Stopped at round {round}/{cap}: have it read first"
+      "title": "Stopped at attempt {round} of {cap}. Have it re-read this folder and answer again"
     }
   },
   "skillParity": {
@@ -3535,7 +3535,7 @@
     "historyTitle": "Recent history",
     "inboxEmpty": "Nothing to report yet. When an agent or a person edits this folder, it lands here.",
     "inboxFooter": "Execution stays local in activity.jsonl; in-app allow and reject decisions stay in acp-work.jsonl.",
-    "receiptTitle": "Work receipts",
+    "receiptTitle": "Work results",
     "receiptItems": "{count} changes",
     "receiptAt": "Result time",
     "receiptDecision": {
@@ -3553,9 +3553,9 @@
     "summaryEdited": "{count} edited",
     "summaryRemoved": "{count} removed",
     "summaryJoin": " · ",
-    "problemUnresolved": "{count} unresolved refs",
-    "problemCycles": "{count} cycles",
-    "bridgeChildren": "took {count} children",
+    "problemUnresolved": "{count} broken links",
+    "problemCycles": "{count} pairs that point back at each other",
+    "bridgeChildren": "moved {count} sub-concepts under a new in-between concept",
     "event": {
       "taskStart": "Task started",
       "taskStartAgent": "{agent} started a task",
@@ -3563,7 +3563,7 @@
       "taskEndAgent": "{agent} finished a task",
       "domainAdded": "Domain added",
       "domainRemoved": "Domain removed",
-      "bridgeInserted": "Middle concept inserted",
+      "bridgeInserted": "A new concept was inserted between two existing ones",
       "vaultProblem": "Folder problem"
     }
   },
@@ -3602,10 +3602,10 @@
     "whyHint": "Add the reason when you know it so the next person does not have to infer the line.",
     "whyRequiredHint": "A dependency needs a reason for relying on the target.",
     "relationName": {
-      "isA": "Broader concept",
-      "dependsOn": "Depends on",
-      "contains": "Contains",
-      "relates": "Related to"
+      "isA": "Is a kind of (belongs to a broader category)",
+      "dependsOn": "Depends on (this concept needs it to work)",
+      "contains": "Contains (holds it inside this concept)",
+      "relates": "Related to (neither one needs the other)"
     },
     "review": "Review change",
     "remove": "Remove this relation",
@@ -3748,7 +3748,7 @@
       },
       "evidence": {
         "label": "{count} capabilities do not say which code implements them yet. Start with “{firstLabel}” and find that code",
-        "prompt": "Run query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}'), then inspect “{firstLabel}” ({first}) first. These {count} capabilities have neither a canonical path nor a resolved elements relation in the vault. Find the implementation evidence and propose the smallest path or element update. Do not write before I review it, and say when no evidence can be found."
+        "prompt": "Run query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}'), then inspect “{firstLabel}” ({first}) first. These {count} capabilities have no implementation file path and no linked element written down yet. Find the implementation evidence and propose the smallest path or element update. Do not write before I review it, and say when no evidence can be found."
       },
       "explain": {
         "label": "Explain what this folder does from the map alone",
@@ -3831,7 +3831,7 @@
   },
   "agents": {
     "title": "Agents",
-    "lede": "Atlas finds coding tools on this computer, shows which can open safely inside the app, and keeps MCP setup available for the rest. If a supported tool is missing, you can install it here.",
+    "lede": "Atlas finds coding tools on this computer, shows which can open safely inside the app, and keeps agent-connection (MCP) setup available for the rest. If a supported tool is missing, you can install it here.",
     "runtimesHeading": "Tools on this computer",
     "mcpHeading": "MCP connection"
   }

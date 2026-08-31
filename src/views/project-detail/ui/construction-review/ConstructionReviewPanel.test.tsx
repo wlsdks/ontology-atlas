@@ -112,7 +112,7 @@ describe("ConstructionReviewPanel", () => {
     const plan = screen.getByTestId("construction-review-plan-draft");
     fireEvent.change(plan, { target: { value: '{"concepts":[{"slug":"revised-atlas"}]}' } });
     expect(plan).toHaveValue('{"concepts":[{"slug":"revised-atlas"}]}');
-    expect(screen.getByTestId("construction-review-draft-dirty")).toHaveTextContent(/qualification/i);
+    expect(screen.getByTestId("construction-review-draft-dirty")).toHaveTextContent(/verification/i);
     expect(screen.getByTestId("construction-review-draft-diff")).toHaveTextContent(/CQ: cq:scope/i);
     expect(screen.getByTestId("construction-review-plan-digest")).toHaveTextContent(`sha256:${"a".repeat(64)}`);
     fireEvent.click(screen.getByTestId("construction-review-draft-reset"));

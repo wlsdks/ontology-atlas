@@ -40,9 +40,9 @@ describe('OntologyStarterCta', () => {
       screen.getByLabelText('시작 시드에 포함된 AI 검증 단계'),
     ).toBeInTheDocument();
     expect(screen.getByText(/Claude Code, Cursor, Codex용/)).toBeInTheDocument();
-    expect(screen.getByText('온톨로지 정의')).toBeInTheDocument();
-    expect(screen.getByText(/실행 가능한 의미 모델/)).toBeInTheDocument();
-    expect(screen.getByText(/소유권, 의존성, 근거, 변경 영향/)).toBeInTheDocument();
+    expect(screen.getByText('온톨로지란')).toBeInTheDocument();
+    expect(screen.getByText(/무엇에 의존하는지/)).toBeInTheDocument();
+    expect(screen.getByText(/프로젝트·도메인·역량·요소/)).toBeInTheDocument();
     expect(screen.getByText('로컬')).toBeInTheDocument();
     expect(screen.getByText('그래프 근거')).toBeInTheDocument();
     expect(screen.getByText('AI 흐름')).toBeInTheDocument();

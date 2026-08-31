@@ -4,7 +4,7 @@
     "siteTagline": "오픈소스 온톨로지 워크벤치",
     "pages": {
       "topology": "지도",
-      "docs": "저장소",
+      "docs": "문서함",
       "download": "다운로드",
       "projects": "프로젝트",
       "ontology": "온톨로지",
@@ -68,7 +68,7 @@
         "line": "라인"
       },
       "arrangementLabel": "배치 기준",
-      "arrangementCaption": "3D 지도에서 노드의 자리를 무엇이 정할지 고릅니다. 소유는 층과 방향이 정해진 돔, 결합은 관계가 자리를 정하는 구름이에요",
+      "arrangementCaption": "3D 지도에서 노드의 자리를 무엇이 정할지 고릅니다. 「소유」는 담는 구조를 층으로 쌓고, 「결합」은 관계가 많은 노드끼리 가까이 모아요",
       "arrangement": {
         "ownership": "소유",
         "coupling": "결합"
@@ -102,8 +102,8 @@
       "vaultCtaStatic": "시작하기",
       "agentStatusNoVault": "작업공간 미연결",
       "agentNoVaultHint": "작업공간 폴더를 열면 설정 파일 상태 확인과 수리를 여기서 할 수 있어요.",
-      "mcpProofTitle": "MCP 첫 호출",
-      "mcpProofBody": "연결 여부는 이 화면만으로 단정하지 않고 에이전트 세션에서 증명합니다. Codex나 Claude에 서버가 보이면 이 첫 호출 안내를 붙여넣으세요.",
+      "mcpProofTitle": "실제로 연결됐는지 확인하기",
+      "mcpProofBody": "이 화면만으로는 연결을 장담할 수 없어요. Codex나 Claude에서 이 서버가 보이면, 아래 첫 질문을 복사해 붙여넣어 에이전트가 이 폴더의 개념으로 답하는지 확인해 보세요.",
       "mcpProofCopy": "첫 호출 안내 복사",
       "mcpProofCopied": "복사됨",
       "footprint": {
@@ -187,7 +187,7 @@
         "app": "앱"
       },
       "guideAutoStartLabel": "화면 안내 자동 표시",
-      "guideAutoStartCaption": "처음 여는 화면마다 안내를 저절로 띄워요. 끄면 아래 「다시 보기」나 지도의 나침반으로만 열려요",
+      "guideAutoStartCaption": "처음 여는 화면마다 안내를 저절로 띄워요. 끄면 아래 「다시 보기」 버튼이나 지도 오른쪽 위 안내 아이콘으로만 다시 열 수 있어요",
       "guideAutoStartOn": "켬",
       "guideAutoStartOff": "끔",
       "frameMeterLabel": "프레임 계기",
@@ -203,7 +203,7 @@
       "agentNotificationKindsLabel": "받을 알림",
       "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다.",
       "runtimes": {
-        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾습니다. 앱 안 관문이 검증된 도구만 지도 옆에서 대화를 열고, 나머지는 MCP 연결 설정에 계속 쓸 수 있어요.",
+        "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾습니다. 앱 안 관문이 검증된 도구만 지도 옆에서 대화를 열고, 나머지는 에이전트 연결(MCP) 설정에 계속 쓸 수 있어요.",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
         "readyHeading": "이 컴퓨터에서 확인됐어요 ({count})",
@@ -266,19 +266,19 @@
     "description": "에이전트가 코드를 바꾸기 전에 승인된 구현 역할과 경계를 읽습니다.",
     "profileList": "적용 범위",
     "sourceCheckRequired": "소스 확인 필요",
-    "sourceCheckBody": "이 프로필은 사람이 승인한 의도입니다. 현재 import는 Atlas MCP나 CLI가 확인하며, 근거가 없다고 통과로 표시하지 않습니다.",
+    "sourceCheckBody": "이 규칙은 사람이 승인한 것이고, 실제 코드의 import는 Atlas가 에이전트 연결(MCP)이나 터미널 명령(CLI)으로 따로 검사합니다. 근거가 없으면 통과로 표시하지 않아요.",
     "sourceCheckNext": "저장소에서 atlas architecture --record 를 실행하면 기록이 남고, 계획 단계에서 이 프로필을 에이전트에 넘길 수도 있습니다.",
     "recordStatus": {
       "conforms": "규칙 준수",
       "violated": "위반",
       "unknown": "알 수 없음"
     },
-    "recordCounts": "위반 {violations}건 · 미분류 의존 {unmapped}건",
+    "recordCounts": "규칙 위반 {violations}건 · 역할이 안 정해진 의존 {unmapped}건",
     "recordTypeOnly": "타입 전용 의존 {count}건",
     "recordCheckedGit": "{date} 커밋 {sha} 기준으로 확인함",
     "recordCheckedFolder": "{date} 소스 폴더 내용 지문 기준으로 확인함",
     "recordDirty": "(커밋하지 않은 변경 포함)",
-    "recordCannotConfirm": "이 화면은 다시 재지 않습니다. 기록은 잰 그 순간의 영수증입니다.",
+    "recordCannotConfirm": "이 화면은 지금 다시 검사하지 않아요. 아래 기록은 마지막으로 검사했을 때의 결과입니다.",
     "patterns": "패턴 축",
     "roles": "역할과 의존 방향",
     "rolePaths": "경로 {count}개",
@@ -293,7 +293,7 @@
       "verify": "검증"
     },
     "understandTitle": "의도한 구조 읽기",
-    "understandBody": "패턴 이름은 계약을 요약합니다. 에이전트가 따라야 할 사실은 역할·경로·의존 규칙입니다.",
+    "understandBody": "패턴 이름은 이 규칙들을 줄여 부르는 이름이에요. 실제로 지켜야 하는 것은 아래의 역할, 경로, 의존 방향입니다.",
     "evidenceTitle": "승인된 근거",
     "planTitle": "아키텍처부터 읽는 에이전트 계획",
     "planBody": "구현 전에 선택한 범위를 연결된 코딩 에이전트에 넘깁니다. 에이전트는 편집 전에 타입 있는 계획을 반환해야 합니다.",
@@ -305,7 +305,7 @@
     "verifyTitle": "실제 변경 검증",
     "verifyBody": "편집 뒤 같은 소스 검사를 다시 실행하고 계획한 의존과 실제 import를 비교합니다.",
     "unknownIsNotCompliant": "알 수 없음은 통과가 아닙니다. 미지원 언어·미분류 경로·빈 역할은 그대로 빈틈으로 남습니다.",
-    "verifyCommands": "에이전트 검사: inspect_architecture → 집중 테스트 → inspect_architecture",
+    "verifyCommands": "고치기 전에 구조 검사(inspect_architecture)를 한 번, 관련 테스트를 돌린 뒤 한 번 더 실행해 두 결과를 비교합니다. 에이전트가 알아서 호출해요.",
     "noProfiles": "이 코드베이스의 구조가 아직 기록되지 않았습니다",
     "noProfilesBody": "연결된 에이전트가 폴더와 실제 import를 읽어 아키텍처 프로필 초안을 제안합니다. 손으로 적을 것은 없습니다. 제안된 초안을 확인하고 승인하면 온톨로지 폴더에 파일 하나로 저장됩니다.",
     "roleLabels": {
@@ -338,7 +338,7 @@
     "layerConcepts": "이 역할의 리뷰된 개념 {count}개",
     "conceptCount": "개념 {count}개",
     "moduleCount": "모듈 {count}개",
-    "legendViolated": "영수증이 위반으로 센 교차",
+    "legendViolated": "지난 검사에서 규칙 위반으로 잡힌 연결",
     "walkChain": "사슬 따라 걷기",
     "walkStep": "{total} 중 {index}",
     "walkNext": "다음 역할",
@@ -642,7 +642,7 @@
       },
       "architectureBlueprint": {
         "title": "작업이 움직여도 청사진의 자리는 유지해요",
-        "body": "이해·계획·검증은 같은 역할 위치를 재사용해요. 계획과 실제 변경은 상태만 바꾸고 배치의 뜻은 바꾸지 않아요."
+        "body": "이해·계획·검증 화면은 같은 자리를 씁니다. 계획을 세우거나 실제로 바꿔도 그 자리가 뜻하는 역할은 그대로예요."
       },
       "gitWhat": {
         "title": "무엇이 언제 바뀌었는지 남기는 곳이에요",
@@ -654,7 +654,7 @@
       },
       "agentsWhat": {
         "title": "AI 코딩 도구를 여기서 붙여요",
-        "body": "이 컴퓨터의 코딩 도구를 찾고, 관문이 검증된 도구만 앱 안 대화를 열어요. 나머지도 MCP 연결 설정은 할 수 있고, 지원하는 설치는 앱 전용 폴더만 사용해요."
+        "body": "이 컴퓨터의 코딩 도구를 찾고, 관문이 검증된 도구만 앱 안 대화를 열어요. 나머지도 에이전트 연결(MCP) 설정은 할 수 있고, 지원하는 설치는 앱 전용 폴더만 사용해요."
       },
       "agentsCheck": {
         "title": "안 붙으면 여기서 재 봐요",
@@ -663,8 +663,8 @@
     }
   },
   "ontologyBlocks": {
-    "exportAction": "블록 내보내기",
-    "exportAria": "이 영역의 원본 .md 를 블록 폴더로 내보내기",
+    "exportAction": "이 묶음을 폴더로 저장",
+    "exportAria": "지금 보고 있는 개념들의 원본 .md 파일을 새 폴더로 복사",
     "exportBusy": "내보내는 중…",
     "exportDone": "{count}개 내보냄",
     "exportError": "내보내지 못했습니다. 다시 시도해 주세요.",
@@ -700,7 +700,7 @@
     "redirectBody": "설치 앱은 공개 웹 소개가 아니라 내 디스크의 문서함 설정 화면에서 시작합니다.",
     "redirectFilesProof": "마크다운 파일은 로컬에 유지",
     "redirectGraphProof": "파일 맨 위 정보칸이 곧 지도",
-    "redirectAgentProof": "에이전트는 MCP와 CLI 대체 검증 사용"
+    "redirectAgentProof": "에이전트가 이 폴더 밖을 건드리기 전에 먼저 물어봐요"
   },
   "download": {
     "back": "지도로 돌아가기",
@@ -752,8 +752,8 @@
     "specimenFactsHeading": "에이전트가 읽어 가는 것",
     "specimenFactName": "이름",
     "specimenFactKind": "종류",
-    "specimenFactDomain": "속한 곳",
-    "specimenFactDependsOn": "기대는 곳",
+    "specimenFactDomain": "도메인",
+    "specimenFactDependsOn": "의존 대상",
     "specimenFactPath": "코드",
     "specimenElided": "이 {shown}줄이 지도에서 노드 하나와 선 하나가 됩니다. 나머지 {count}줄(id·기록용)은 뺐습니다.",
     "specimenComplete": "이 {shown}줄이 지도에서 노드 하나와 선 하나가 됩니다.",
@@ -768,8 +768,8 @@
     "acpToolWhy": "사용자 설명: 결제 기능이 사용자 인증에 기대고 있어서,\n                인증이 죽으면 결제도 같이 죽는다 (2026-08-16)",
     "acpResultLine": "✓ 한 번 승인함 · 관계 1건이 폴더 안 마크다운 파일에 적혔습니다",
     "col1Title": "이미 쓰는 에이전트 그대로",
-    "col1Body": "관문이 있는 앱 안 대화는 Claude Agent, 외부 MCP 연결은 Codex도 지원합니다. Atlas는 로컬 어댑터나 MCP 자식을 실행하고, 코딩 에이전트 자체는 자기 제공자와 통신할 수 있습니다.",
-    "col1Code": "ACP 어댑터 · 내 기기에서 실행",
+    "col1Body": "관문이 있는 앱 안 대화는 Claude Agent, 외부 에이전트 연결(MCP)은 Codex도 지원합니다. Atlas는 로컬 어댑터나 MCP 자식 프로세스를 실행하고, 코딩 에이전트 자체는 자기 제공자와 통신할 수 있습니다.",
+    "col1Code": "에이전트 연결 도구 · 내 기기에서 실행",
     "col2Title": "Atlas 읽기는 바로, Atlas 쓰기는 확인 뒤",
     "col2Body": "고른 폴더 안의 Atlas 읽기 도구는 바로 진행됩니다. Atlas 쓰기는 정확한 변경안을 보여 주고 멈추며, 폴더 밖 접근도 먼저 묻습니다.",
     "col2Code": "Atlas 읽기 → 통과 · Atlas 쓰기 → 검토",
@@ -1199,8 +1199,8 @@
       "closeTooltip": "닫기 (Esc)",
       "saveFailed": "저장 실패",
       "saveConflict": "디스크에서 먼저 변경되어 저장하지 못했습니다. 편집 내용은 유지됩니다. 내용을 복사한 뒤 새로고침해 최신 파일에 다시 반영하세요.",
-      "saveIdentityUid": "문서의 uid 는 이 노드의 영구 신원이라 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.",
-      "saveIdentityHistory": "merged_uids 는 합치기 기록이라 여기서 고칠 수 없어요. 그 줄을 원래대로 되돌리면 저장됩니다.",
+      "saveIdentityUid": "이 줄(uid)은 문서 이름이 바뀌어도 같은 문서임을 알아보게 하는 고유 번호라서 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.",
+      "saveIdentityHistory": "이 줄(merged_uids)은 예전에 이 문서로 합쳐진 문서들의 기록이라 여기서 고칠 수 없어요. 그 줄을 원래대로 되돌리면 저장됩니다.",
       "discardConfirm": "저장하지 않은 변경 사항을 버리고 편집을 닫을까요?",
       "linkText": "링크 텍스트",
       "placeholder": "텍스트",
@@ -1233,9 +1233,9 @@
       "noBodySearchTitle": "문서 어디에서도 못 찾았어요",
       "noBodySearchHint": "제목·요약·태그에 더해 본문 전체까지 검색했어요. 다른 단어나 더 짧은 구절로 다시 시도해 보세요.",
       "bodyIndexingNotice": "본문 검색을 준비하고 있어요. 잠시 후 본문에서 걸리는 결과가 더 나올 수 있어요.",
-      "canonicalDocsLabel": "캐노니컬 문서 바로가기",
-      "canonicalMcp": "MCP 등록 가이드",
-      "canonicalCli": "CLI 레퍼런스",
+      "canonicalDocsLabel": "대표 안내 문서로 이동",
+      "canonicalMcp": "에이전트 연결(MCP) 등록 가이드",
+      "canonicalCli": "터미널 명령(CLI) 레퍼런스",
       "canonicalReadme": "프로젝트 개요 (README)",
       "resultsAnnounce": "결과 {count}개",
       "secPinned": "고정",
@@ -1252,7 +1252,7 @@
       "footerLegend": "> 명령 · # 태그"
     },
     "backlinks": {
-      "heading": "역참조 · {count}",
+      "heading": "이 문서를 가리키는 글 · {count}",
       "expand": "컨텍스트 보기",
       "collapse": "컨텍스트 숨기기"
     },
@@ -1266,7 +1266,7 @@
         "topologyLinkTitle": "이 개념을 지도에서 열기",
         "notOnMapAria": "지도에 없음",
         "notOnMapLabel": "지도에 없음",
-        "notOnMapBody": "이 문서는 아직 지도의 노드가 아니에요. 위쪽 진단에서 무엇이 빠졌는지 볼 수 있어요."
+        "notOnMapBody": "이 문서는 아직 지도에 그려지지 않아요. 위 진단에 나온 빠진 항목을 채우면 지도에 나타납니다."
       },
       "sidebar": {
         "treeHeader": "문서 목록",
@@ -1390,7 +1390,7 @@
       "kindGlyphCaption": "글리프 = 지도의 노드 셰이프 그대로: 패널과 캔버스는 같은 세계.",
       "domainCapacityCaption": "오른쪽 숫자가 이 도메인에 담긴 개념 수예요. 막대는 그 안에서 역량과 요소가 어떤 비율인지를 보여줘요. 왼쪽이 역량, 오른쪽이 요소이고, 한쪽으로 쏠려 있으면 말만 있거나 증거만 있다는 뜻이에요. 여러 도메인에 속한 개념은 각 도메인에 한 번씩 세어져 합계가 전체보다 클 수 있어요.",
       "relationTypesTitle": "관계 타입",
-      "relationTypesCaption": "관계가 어떤 성격인지: 담는 관계에 치우쳐 있으면 「기대는」 관계를 더 그려야 한다는 신호예요. 여기 수는 서로 다른 관계를 한 번씩 셉니다(양쪽 문서가 같은 관계를 적어도 1). CLI·MCP 는 적힌 참조를 그대로 세서 이보다 큽니다.",
+      "relationTypesCaption": "관계가 어떤 성격인지: 담는 관계에 치우쳐 있으면 「필요한 항목」 관계를 더 그려야 한다는 신호예요. 여기 수는 서로 다른 관계를 한 번씩 셉니다(양쪽 문서가 같은 관계를 적어도 1). 터미널 명령(CLI)과 에이전트 연결(MCP)은 적힌 참조를 그대로 세서 이보다 큽니다.",
       "noRelationTypes": "아직 이어진 관계가 없어요",
       "noRelationTypesHint": "지도에서 개념끼리 관계를 이어보세요.",
       "hubsTitle": "허브: 연결 상위",
@@ -1442,13 +1442,13 @@
       "agentReadinessReview": "검토 필요",
       "agentReadinessBlocked": "막힘",
       "agentReadinessBlockedBreakdown": "막힌 것: 검사 오류가 난 문서 {documents}개 · 근거 없는 관계 {relations}개",
-      "repairQueueTitle": "수리 큐",
+      "repairQueueTitle": "손볼 목록",
       "repairQueueStale": "오래된 근거",
-      "repairQueueOrphan": "소속 미정",
+      "repairQueueOrphan": "도메인 없음",
       "repairQueuePromotion": "상위 개념 후보",
       "repairQueueEmpty": "수리할 게 없어요. 지금은 다 정돈됐어요.",
       "repairQueueActionKindStale": "오래된 근거",
-      "repairQueueActionKindOrphan": "소속 미정",
+      "repairQueueActionKindOrphan": "도메인 없음",
       "repairQueueActionKindPromotion": "상위 개념 후보",
       "repairQueueIsland": "분리된 섬",
       "repairQueueMissingContainment": "누락된 연결",
@@ -1520,14 +1520,14 @@
         "reviewCleared": "지금 폴더에서는 {title} 신호가 보이지 않습니다. 남은 항목을 다시 정렬했습니다.",
         "reviewUnverified": "{title} 신호는 현재 결과만으로 해소 여부를 확인할 수 없습니다.",
         "openBuilderReadOnly": "지도에서 보기",
-        "handoffCopyIdle": "넘길 명령 복사",
+        "handoffCopyIdle": "이 요청을 복사해서 AI 도구에 붙여넣기",
         "handoffCopiedHint": "복사했어요. AI 도구나 동료의 터미널에 붙여넣으면 처리돼요.",
         "groupMeaningTitle": "지금 바로 고칠 수 있어요",
         "groupMeaningTitleReadOnly": "내 폴더를 열면 고칠 수 있어요",
         "groupMeaningHint": "코드를 몰라도 돼요. 뜻·소속·같은 개념인지만 정하면 끝나는 일이에요.",
         "groupMeaningHintReadOnly": "지금은 예시 폴더예요. 내 폴더를 열면 이 일들은 여기서 바로 끝낼 수 있어요. 지금은 명령을 복사해 넘길 수 있어요.",
         "groupCodeTitle": "개발자·AI에게 넘길 일",
-        "groupCodeHint": "구현이나 기대는 방향을 봐야 답이 나오는 일이에요. 명령을 복사해 넘기면 돼요.",
+        "groupCodeHint": "코드를 봐야 답이 나오는 일이에요. 요청 문장을 복사해 AI 도구에 넘기면 돼요.",
         "sectionMissingDefinition": "뜻이 안 적혀 있어요. 한 문장 적을까요?",
         "hintMissingDefinition": "이 개념이 무슨 뜻인지 어디에도 없어요. 한 문장만 적으면 지도·검색·AI가 모두 같은 뜻을 읽어요.",
         "sectionMissingDomain": "어느 도메인인지 안 적혀 있어요. 골라 줄까요?",
@@ -1606,7 +1606,7 @@
       "nextSlotCliCaption": "터미널에서 · 파일 맨 위 정보칸 자동 정리",
       "nextSlotAgentLabel": "AI 에이전트",
       "nextSlotAgentCommand": "add_concept(slug, kind: \"project\", title)",
-      "nextSlotAgentCaption": "MCP · Claude Code / Codex 가 직접 생성",
+      "nextSlotAgentCaption": "에이전트 연결(MCP) · Claude Code / Codex 가 직접 생성",
       "factStripGloss": "이 프로젝트가 다루는 영역과 그 안의 기능·구성요소 개수예요",
       "domainOverlapNote": "여러 도메인에 속한 개념은 도메인마다 한 번씩 세어져서, 오른쪽 숫자를 다 더하면 위 개수보다 클 수 있어요.",
       "emptyStateDesc": "폴더에 프로젝트 문서를 만들면 여기 나타납니다. 파일 맨 위 정보칸에 `kind: project` 를 적으면 됩니다.",
@@ -1630,7 +1630,7 @@
       "documentTitleSuffix": "Ontology Atlas",
       "globalCensus": "폴더 전체 {concepts} 개념 · {relations} 관계",
       "heroLabel": "개별 프로젝트",
-      "heroLabelHub": "허브",
+      "heroLabelHub": "연결 많음",
       "statusActive": "진행중",
       "heroUpdatedAt": "업데이트 {date}",
       "inlineNameAria": "프로젝트 이름",
@@ -1672,7 +1672,7 @@
       "saveErrorPrefix": "저장 실패: {message}",
       "readOnlyBadge": "보기 전용: 폴더를 열면 편집",
       "constructionReview": {
-        "eyebrow": "온톨로지 구축 검수",
+        "eyebrow": "지도에 쓰기 전 안전 점검",
         "title": "지금 안전하게 결정할 것",
         "openResult": "검수 결과 열기",
         "readingResult": "검수 결과 읽는 중…",
@@ -1680,7 +1680,7 @@
         "errors": {
           "malformed": "필수 검증 자료가 없거나 읽을 수 없습니다. 계획과 승인을 정상 결과처럼 보여주지 않습니다.",
           "project_mismatch": "다른 프로젝트의 결과입니다. 이 프로젝트의 검수 결과를 열어주세요.",
-          "digest_mismatch": "자료 사이의 계획 또는 소스 digest가 다릅니다. 하나의 온전한 결과 묶음을 열어주세요.",
+          "digest_mismatch": "이 파일들은 서로 다른 검사 실행에서 나왔습니다. 한 번의 검사에서 나온 결과만 함께 여세요.",
           "plan_mismatch": "검토한 계획과 작성 계획이 다릅니다. 작성은 계속 차단됩니다."
         },
         "currentDecision": "현재 결정",
@@ -1719,7 +1719,7 @@
         "draftHint": "CQ·증거 위치·정확한 계획을 이 결과 안에서 세밀하게 고쳐 볼 수 있습니다. 원본 판정과 온톨로지는 바뀌지 않습니다.",
         "showDraft": "검토용 수정 열기",
         "hideDraft": "검토용 수정 닫기",
-        "draftDirty": "검토용 초안이 바뀌었습니다. 저장하지 않으며, 다시 qualification을 받아야 합니다.",
+        "draftDirty": "검토용 초안이 바뀌었습니다. 저장되지 않으며, 무언가 쓰이기 전에 다시 검증을 통과해야 합니다.",
         "draftChangedField": "변경됨: {field}",
         "draftClean": "원본 결과와 같은 검토용 초안입니다.",
         "resetDraft": "원본으로 되돌리기",
@@ -1835,7 +1835,7 @@
         "parseZeroKeys": "파일 맨 위 정보칸은 있는데 값을 하나도 읽지 못했어요. 형식을 확인해 주세요.",
         "missingUid": "uid 가 없어요. 이 노드에는 바뀌지 않는 영구 식별자가 필요해요.",
         "invalidUid": "uid 가 UUIDv4 형식이 아니에요. slug 나 제목에서 만들면 안 돼요.",
-        "duplicateUid": "다른 문서가 같은 uid 를 자기 정체성으로 주장하고 있어요.",
+        "duplicateUid": "다른 문서가 이미 이 고유 번호(uid)를 쓰고 있어요.",
         "invalidMergedUids": "merged_uids 형식이 맞지 않아요. 흡수된 노드의 UUIDv4 목록이어야 해요.",
         "nonCanonicalMergedUids": "merged_uids 가 중복 없이 정렬된 목록이 아니에요."
       },
@@ -1954,7 +1954,7 @@
       "error": "Finder 열기 실패: {message}"
     },
     "agentSetup": {
-      "ariaLabel": "MCP 연결",
+      "ariaLabel": "에이전트 연결(MCP)",
       "title": "내 에이전트 연결",
       "ready": "준비됨",
       "missing": "누락",
@@ -2320,7 +2320,7 @@
     },
     "analysis": {
       "healthStale": "오래된 근거",
-      "healthOrphan": "소속 미정",
+      "healthOrphan": "도메인 없음",
       "healthPromotion": "상위 개념 후보",
       "overviewBriefCopy": "지도 요약 복사",
       "overviewBriefCopied": "지도 요약 복사됨",
@@ -2393,7 +2393,7 @@
       "spotlightLabel": "최근 변경",
       "docsTooltip": "문서함 빠른 보기 (D)",
       "docsAriaLabel": "문서함 빠른 보기 열기 (D)",
-      "docsLabel": "작업공간",
+      "docsLabel": "문서함",
       "switchToMyDataLabel": "내 데이터로 전환",
       "switchToMyDataAriaLabel": "내 폴더를 열어 지도를 내 데이터로 채웁니다 (⌘O)",
       "switchToMyDataTooltip": "내 폴더 열기: 지도가 내 데이터로 채워집니다 (⌘O)",
@@ -2465,7 +2465,7 @@
       "recentEmptyHint": "최근 {days}일 안에 바뀐 노드가 없습니다",
       "agentBadge": "에이전트가 방금",
       "uncatalogedDocsLabel": "지도에 없는 문서 {count}개",
-      "uncatalogedDocsAction": "올리기",
+      "uncatalogedDocsAction": "지도에 추가",
       "dustyNodesLabel": "먼지 앉은 노드 {count}개: 오래 손대지 않았어요",
       "dustyNodesAction": "할 일 보기",
       "sourceUnboundLabel": "코드 폴더가 연결 안 된 프로젝트 {count}개",
@@ -2596,7 +2596,7 @@
       "agent": {
         "title": "AI 에이전트 연결",
         "bodyFound": "이 컴퓨터에서 쓸 수 있는 AI 도구를 찾았어요. 연결하면 대화하면서 온톨로지를 같이 채울 수 있어요.",
-        "bodyMissing": "Claude Agent를 쓰고 있다면 여기서 관문이 있는 대화를 열 수 있어요. Codex와 다른 MCP 클라이언트는 자기 앱이나 터미널에서 이 폴더에 연결할 수 있습니다. 연결하지 않아도 나머지는 그대로 쓸 수 있어요.",
+        "bodyMissing": "Claude Agent를 쓰고 있다면 여기서 대화를 열 수 있어요. 이 대화는 폴더 밖 파일을 건드리기 전에 항상 먼저 물어봅니다. Codex처럼 에이전트 연결(MCP)을 지원하는 다른 도구는 자기 앱이나 터미널에서 이 폴더에 연결할 수 있어요. 연결하지 않아도 나머지는 그대로 쓸 수 있어요.",
         "cta": "에이전트 설정 열기",
         "runtimeReady": "앱 안에서 바로 대화할 수 있어요"
       },
@@ -2645,13 +2645,13 @@
     },
     "groups": {
       "containsTitle": "하위 항목",
-      "containsCaption": "contains",
+      "containsCaption": "이 개념 안에 들어 있는 것들",
       "usedByTitle": "이 항목을 사용하는 곳",
-      "usedByCaption": "used by",
+      "usedByCaption": "이 개념을 가져다 쓰는 쪽",
       "dependsOnTitle": "필요한 항목",
-      "dependsOnCaption": "depends on",
+      "dependsOnCaption": "이것들이 없으면 동작하지 않아요",
       "belongsToTitle": "상위 항목",
-      "belongsToCaption": "belongs to",
+      "belongsToCaption": "이 개념이 들어가 있는 상위",
       "empty": "직접 연결이 없습니다.",
       "freshDotTitle": "최근 갱신"
     },
@@ -2724,12 +2724,12 @@
       "emptyTitle": "온톨로지 시작 시드 만들기",
       "emptyBodyLine1": "프로젝트, 도메인, 역량, 요소, README로 구성된 시작 마크다운 5개와 <code>.mcp.json</code>, <code>.codex/config.toml</code>을 이 폴더에 만듭니다.",
       "emptyBodyLine2": "그 다음 파일 맨 위 정보칸을 본인 프로젝트에 맞게 고치면 트리·지도·저장·편집에 바로 반영돼요.",
-      "definitionLabel": "온톨로지 정의",
-      "definitionBody": "코드베이스 온톨로지는 실행 가능한 의미 모델입니다. 프로젝트, 도메인, 역량, 요소와 관계로 소유권, 의존성, 근거, 변경 영향을 설명합니다.",
+      "definitionLabel": "온톨로지란",
+      "definitionBody": "이 폴더가 무엇을 하는지, 무엇에 의존하는지, 바꾸면 무엇이 영향을 받는지를 파일 안에 적어 둔 것이에요. 프로젝트·도메인·역량·요소와 그 사이의 관계로 적습니다.",
       "proofLocalLabel": "로컬",
       "proofLocalBody": "폴더 안 마크다운이 곧 데이터입니다. 계정·서버 없이 내 PC 파일만 읽고 씁니다.",
-      "proofGraphLabel": "그래프 근거",
-      "proofGraphBody": "작업공간 브리핑과 에이전트 브리핑으로 노드, 관계, 상태, 전달 순서를 검증합니다.",
+      "proofGraphLabel": "서로 맞는지 확인함",
+      "proofGraphBody": "만든 개념들이 실제로 서로 이어져 있고 앞뒤가 맞는지 Atlas가 자동으로 확인해요.",
       "proofAgentLabel": "AI 흐름",
       "proofAgentBody": "Claude Code, Cursor, Codex가 같은 문서함을 수정 전 읽기 우선으로 확인합니다.",
       "verifyAriaLabel": "시작 시드에 포함된 AI 검증 단계",
@@ -2748,7 +2748,7 @@
       "emptyBusy": "만드는 중…",
       "emptyCta": "시작 시드 만들기",
       "secondaryTitle": "온톨로지 시작 파일 5개와 AI 검증 안내를 추가합니다 (이미 있는 파일은 안 건드립니다)",
-      "secondaryCopyTitle": "시작 파일을 추가하지 않고 읽기 우선 MCP 검증 프롬프트만 복사합니다",
+      "secondaryCopyTitle": "시작 파일을 추가하지 않고, 읽기 우선 에이전트 연결(MCP) 검증 프롬프트만 복사합니다",
       "secondaryCliTitle": "AI 없이 터미널에서 같은 검증을 실행하는 명령을 복사합니다",
       "secondaryJsonGateTitle": "Claude Code / Codex 자동 설정 점검이 그대로 읽어 들일 수 있는 JSON 자체 점검 명령을 복사합니다",
       "secondaryBusy": "추가 중…",
@@ -2802,8 +2802,8 @@
         "duplicateNotice": "기존 프로젝트 내용을 복제해서 시작합니다.",
         "categoryMissingWarning": "현재 카테고리 참조가 깨졌습니다. 다른 카테고리를 선택해 복구하세요.",
         "statusMissingWarning": "현재 상태 참조가 깨졌습니다. 다른 상태를 선택해 복구하세요.",
-        "categoryMissingOption": "Missing category · {id}",
-        "statusMissingOption": "Missing status · {id}",
+        "categoryMissingOption": "없어진 분류 · {id}",
+        "statusMissingOption": "없어진 상태 · {id}",
         "categoryUnspecified": "미지정 · 원본 유지",
         "statusUnspecified": "미지정 · 원본 유지",
         "namePlaceholder": "내 프로젝트",
@@ -2873,7 +2873,7 @@
         "createNoticeStay": "프로젝트를 만들고 이어서 편집할 수 있게 준비했습니다.",
         "editNoticeStay": "변경 사항을 저장했습니다. 오른쪽 미리보기와 상세 화면 링크에서 바로 확인할 수 있습니다.",
         "deleteRowTitle": "프로젝트 삭제",
-        "deleteRowCaption": "md 파일이 삭제되고 관계는 dangling 경고로 남습니다. dry-run 이 먼저 보여줍니다."
+        "deleteRowCaption": "문서 파일이 지워지고, 이 문서를 가리키던 다른 문서에는 「연결 끊김」 경고가 남아요. 지우기 전에 무엇이 사라지는지 먼저 보여드려요."
       },
       "preview": {
         "summaryDirty": "완성도 {score}% · 바뀌는 내용 {count}건",
@@ -2908,7 +2908,7 @@
       "suggestionAcceptLabel": "{name} 의존성 추가",
       "suggestionAccept": "수락",
       "suggestionRejectLabel": "{name} 제안 거절",
-      "missingHeading": "Missing dependency reference",
+      "missingHeading": "없어진 참조",
       "missingHint": "더 이상 존재하지 않는 프로젝트 참조입니다. 칩을 눌러 하나씩 제거하세요.",
       "searchPlaceholder": "프로젝트 검색: 이름 또는 주소",
       "noMatch": "일치하는 결과 없음",
@@ -3062,7 +3062,7 @@
     "otherToolsColLocation": "MCP 설정 위치",
     "otherToolsProjectRoot": "프로젝트 루트",
     "otherToolsCursorScopes": "프로젝트 / 글로벌 (~/.cursor)",
-    "otherToolsCodexNote": "설정 파일 또는 CLI 명령",
+    "otherToolsCodexNote": "설정 파일 또는 터미널 명령(CLI)",
     "otherToolsClaudeDesktopNote": "설정 → Developer 에서 수동 등록 (전용 확장은 후속)",
     "step1Title": "연결 버튼 누르기",
     "step1TitleManual": "연결 설정 만들기",
@@ -3092,7 +3092,7 @@
     "copyCodexCommandDone": "복사됨 · 터미널에 붙여넣기",
     "deeplinkWebNote": "Cursor 원클릭은 폴더 경로가 필요해요.",
     "deeplinkWebNoteCta": "데스크톱 앱에서 자동으로",
-    "serverLine": "Atlas MCP 서버는 데몬이 아니에요. 에이전트가 로컬 stdio 자식으로 띄우고 세션과 함께 끕니다. 포트를 열거나 네트워크 요청을 만들지 않아요. 에이전트 자체는 사용자가 요청할 때 자기 제공자와 통신할 수 있어요.",
+    "serverLine": "Atlas의 에이전트 연결(MCP) 서버는 늘 켜져 있는 프로그램이 아니에요. 에이전트가 필요할 때 이 컴퓨터 안에서 실행했다가 대화가 끝나면 함께 종료합니다. 포트를 열거나 네트워크 요청을 만들지 않아요. 에이전트 자체는 사용자가 요청할 때 자기 제공자와 통신할 수 있어요.",
     "copiedToast": "설정을 복사했어요. 도구에 붙여넣으면 연결돼요.",
     "serverUnavailableTitle": "설정을 대신 저장해 주는 것만 이 화면이 못 해요",
     "serverUnavailableDesc": "에이전트는 Atlas 가 아니라 폴더에 붙습니다. 자기 세션에서 MCP 서버를 띄우고 그 폴더를 읽고 써요. 다만 브라우저는 열어 둔 폴더의 실제 위치를 알 수 없어서 설정 파일을 대신 저장하지 못합니다. 경로만 알려주시면 붙는 설정을 여기서 만들어 드려요. 데스크톱 앱에서 같은 폴더를 열면 이 과정 없이 버튼 한 번입니다.",
@@ -3277,10 +3277,10 @@
     "egoNone": "없음",
     "egoEmpty": "이 개념은 아직 이어진 곳이 없어요",
     "egoBack": "커밋이 바꾼 개념으로",
-    "bearingBelongsTo": "속한 곳",
-    "bearingContains": "담고 있는 것",
-    "bearingDependsOn": "기대는 곳",
-    "bearingUsedBy": "이곳을 쓰는 곳",
+    "bearingBelongsTo": "상위 항목",
+    "bearingContains": "하위 항목",
+    "bearingDependsOn": "필요한 항목",
+    "bearingUsedBy": "이 항목을 쓰는 곳",
     "dockNoRemote": "아직 이 컴퓨터에만 쌓여요. 원격 저장소를 연결하면 다른 기기에서도 보고 백업돼요.",
     "dockConnectRemote": "원격 저장소 연결",
     "sectionUnpushed": "아직 안 보냄 {count}",
@@ -3297,8 +3297,8 @@
   "agentFiles": {
     "header": "에이전트 파일",
     "headerHint": "어느 AI 도구가 어느 지침 파일을 읽는지: 읽기 전용 감지, 아무것도 고쳐 쓰지 않아요",
-    "driftBadge": "drift",
-    "driftCount": "drift {count}건",
+    "driftBadge": "어긋남",
+    "driftCount": "어긋난 파일 {count}개",
     "listAria": "에이전트 지침 파일",
     "drift": {
       "missing-agents-import": "CLAUDE.md 가 @AGENTS.md 를 import 하지 않아요. Claude Code 와 AGENTS.md 를 읽는 도구가 서로 다른 지침을 봅니다",
@@ -3327,7 +3327,7 @@
   "summaryFreshness": {
     "prefix": "설명이 지금 담고 있는 것보다 뒤처짐",
     "lag": "{count}일",
-    "action": "재검토"
+    "action": "설명 다시 쓰기"
   },
   "vaultOpenGuide": {
     "title": "내 폴더를 지도로 켜기",
@@ -3351,7 +3351,7 @@
     "placeholderFirst": "무엇을 시킬지 여기에 적어요",
     "thinking": "생각 중",
     "thinkingSeconds": "생각 중 · {seconds}초",
-    "unsupported": "이 턴에는 폴더를 읽지 않고 답했어요. 그대로 믿지 마세요.",
+    "unsupported": "이번 답은 이 폴더를 읽지 않고 한 거예요. 그대로 믿지 마세요.",
     "charsLabel": "{chars}자",
     "footer": "{provider} · 기록 {rounds}건",
     "boundary": "코드까지 봐야 하는 일은 내 컴퓨터의 터미널에서 여는 AI 가 나아요. 여기서는 문서 폴더만 봐요.",
@@ -3415,7 +3415,7 @@
       "auditBlocked": "기록을 남길 수 없어 보내지 않았어요.",
       "providerRefused": "이 요청은 거절됐어요.",
       "failed": "실패했어요.",
-      "noToolCall": "{round}/{cap}번째에서 도구를 한 번도 안 부르고 멈췄어요."
+      "noToolCall": "에이전트가 이 폴더를 한 번도 읽지 않은 채 {cap}번 중 {round}번째에서 멈췄어요. 다시 물어봐 주세요."
     },
     "degraded": {
       "webTitle": "데스크톱 앱에서만 쓸 수 있어요",
@@ -3451,7 +3451,7 @@
     "uncited": "이 턴에 읽은 자료:",
     "footerDetail": "이 턴에 오간 글 {chars}자: 대부분 시스템 안내와 도구 설명이에요.",
     "reground": {
-      "title": "{round}/{cap}번째에서 멈췄어요. 읽고 다시 답하게 하기"
+      "title": "{cap}번 중 {round}번째에서 멈췄어요. 이 폴더를 다시 읽고 답하게 하기"
     }
   },
   "skillParity": {
@@ -3535,7 +3535,7 @@
     "historyTitle": "최근 기록",
     "inboxEmpty": "아직 알릴 것이 없어요. 에이전트나 사람이 이 폴더를 고치면 여기에 남습니다.",
     "inboxFooter": "실행 기록은 activity.jsonl, 앱 안 승인·거절은 acp-work.jsonl에 로컬로 남습니다.",
-    "receiptTitle": "작업 영수증",
+    "receiptTitle": "작업 결과",
     "receiptItems": "변경 {count}건",
     "receiptAt": "결과 시각",
     "receiptDecision": {
@@ -3553,9 +3553,9 @@
     "summaryEdited": "편집 {count}",
     "summaryRemoved": "삭제 {count}",
     "summaryJoin": " · ",
-    "problemUnresolved": "허공 참조 {count}",
-    "problemCycles": "순환 {count}",
-    "bridgeChildren": "자식 {count}개를 데려감",
+    "problemUnresolved": "끊어진 연결 {count}개",
+    "problemCycles": "서로 되짚는 연결 {count}쌍",
+    "bridgeChildren": "하위 개념 {count}개를 새 중간 개념 밑으로 옮김",
     "event": {
       "taskStart": "작업 시작",
       "taskStartAgent": "{agent} 작업 시작",
@@ -3563,7 +3563,7 @@
       "taskEndAgent": "{agent} 작업 끝",
       "domainAdded": "도메인 생김",
       "domainRemoved": "도메인 사라짐",
-      "bridgeInserted": "중간 개념 끼어듦",
+      "bridgeInserted": "두 개념 사이에 새 개념이 끼어듦",
       "vaultProblem": "폴더 문제"
     }
   },
@@ -3602,10 +3602,10 @@
     "whyHint": "알고 있다면 적어 두세요. 다음 사람이 선을 해석하지 않아도 됩니다.",
     "whyRequiredHint": "의존 관계는 왜 기대는지 적어야 합니다.",
     "relationName": {
-      "isA": "상위 개념",
-      "dependsOn": "기대는 곳",
-      "contains": "담는 것",
-      "relates": "비슷한 것"
+      "isA": "상위 개념 (더 넓은 갈래에 속함)",
+      "dependsOn": "의존함 (이 개념이 동작하려면 필요함)",
+      "contains": "포함함 (이 개념 안에 둠)",
+      "relates": "관련됨 (서로 필요하지는 않음)"
     },
     "review": "변경안 보기",
     "remove": "이 관계 끊기",
@@ -3736,7 +3736,7 @@
       },
       "bootstrap": {
         "label": "코드 훑어서 지도 시작하기",
-        "prompt": "연결된 소스 코드를 근거로 온톨로지 구축을 시작해 줘. 먼저 connection_info와 list_kinds로 현재 온톨로지를 확인하고, 소스에서 도메인·역량·구현 원소 후보와 근거 파일을 제안해. 비슷한 기존 개념을 먼저 찾고, 내가 검토하기 전에는 쓰지 마. 내가 승인한 후보만 묶음 변경으로 쓰고 마지막에 validate_vault와 compile_ontology 결과를 알려 줘."
+        "prompt": "연결된 소스 코드를 근거로 온톨로지 구축을 시작해 줘. 먼저 connection_info와 list_kinds로 현재 온톨로지를 확인하고, 소스에서 도메인·역량·구현 요소 후보와 근거 파일을 제안해. 비슷한 기존 개념을 먼저 찾고, 내가 검토하기 전에는 쓰지 마. 내가 승인한 후보만 묶음 변경으로 쓰고 마지막에 validate_vault와 compile_ontology 결과를 알려 줘."
       },
       "island": {
         "label": "「{firstLabel}」 등 {count}개는 다른 어떤 항목과도 이어져 있지 않아요. 어디에 이어야 하는지 찾아 줘",
@@ -3748,7 +3748,7 @@
       },
       "evidence": {
         "label": "역량 {count}개는 어떤 코드가 구현하는지 아직 안 적혀 있어요. 「{firstLabel}」부터 그 코드를 찾아 줘",
-        "prompt": "query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}')를 실행하고, 먼저 「{firstLabel}」({first}) 를 확인해 줘. 이 {count}개 역량에는 온톨로지 기준으로 정본 path도, 해소된 elements 관계도 없어요. 구현 근거를 찾아 가장 작은 path 또는 element 수정안을 제안해 줘. 내가 검토하기 전에는 쓰지 말고, 근거를 못 찾으면 못 찾았다고 말해 줘."
+        "prompt": "query_ontology('{operation: \"maintenance_plan\", kinds: [\"capability_without_evidence\"], limit: 3}')를 실행하고, 먼저 「{firstLabel}」({first}) 를 확인해 줘. 이 {count}개 역량에는 아직 구현 파일 경로(path)도, 이어진 요소(elements) 관계도 적혀 있지 않아요. 구현 근거를 찾아 가장 작은 path 또는 element 수정안을 제안해 줘. 내가 검토하기 전에는 쓰지 말고, 근거를 못 찾으면 못 찾았다고 말해 줘."
       },
       "explain": {
         "label": "지도만 보고 이 폴더가 무엇을 하는지 설명해 줘",
@@ -3831,7 +3831,7 @@
   },
   "agents": {
     "title": "에이전트",
-    "lede": "이 컴퓨터의 코딩 도구를 찾고, 앱 안에서 안전하게 열 수 있는 도구를 구분해 보여 줍니다. 나머지도 MCP 연결 설정은 할 수 있고, 지원하는 도구가 없으면 여기서 설치할 수 있어요.",
+    "lede": "이 컴퓨터의 코딩 도구를 찾고, 앱 안에서 안전하게 열 수 있는 도구를 구분해 보여 줍니다. 나머지도 에이전트 연결(MCP) 설정은 할 수 있고, 지원하는 도구가 없으면 여기서 설치할 수 있어요.",
     "runtimesHeading": "이 컴퓨터의 도구",
     "mcpHeading": "MCP 연결"
   }

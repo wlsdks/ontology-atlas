@@ -308,7 +308,7 @@ describe('DocsVaultEditor', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalled());
     expect(
       screen.getByText(
-        '문서의 uid 는 이 노드의 영구 신원이라 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.',
+        '이 줄(uid)은 문서 이름이 바뀌어도 같은 문서임을 알아보게 하는 고유 번호라서 지우거나 바꿀 수 없어요. uid 줄을 원래대로 되돌리면 저장됩니다.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/is immutable/)).not.toBeInTheDocument();
