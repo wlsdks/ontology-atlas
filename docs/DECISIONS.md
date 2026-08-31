@@ -40,6 +40,47 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — The static budget is raised once; the next time, move the ledgers out
+
+**Convened**: solo pass · **Trigger**: the desktop static-asset gate measured
+7.81 MiB against an 8 MiB ceiling — 97.6% — during a routine rebuild and install
+of the current app.
+
+**Measured before deciding**: the ceiling was not being approached by product
+code. `src/entities/docs-vault/data/content.json` is 4.53 MiB, of which
+`DECISIONS` is 2.84 MiB and `CHANGELOG` is 1.14 MiB. Those two files are
+append-only by charter, so this input rises monotonically and reaches any
+ceiling eventually. The same documents already ship as plain Markdown in
+`out/docs-vault/` (5.4 MiB), which this gate does not count, so the bundle
+carries a second copy of documents the app can already fetch. The whole macOS
+bundle is 87.89 MiB, so a 2 MiB change in the static portion is not what
+constrains this product.
+
+**Decision**: raise `nextStaticBytes` to 10 MiB, with the measurement and the
+structural fix written into the constant's own comment. If the gate goes red
+again, stop bundling the two ledgers and read them from the static copy on
+demand instead of raising the number a second time.
+
+**Applied rule**: smallest slice that unblocks, with the real fix named rather
+than deferred silently.
+
+**Rejected**: raising it without recording why. A budget answered by moving the
+line stops being a budget, and the next person sees only a bigger number with no
+account of how it got there.
+
+**Signature**: Stark
+
+**Recorded dissent**: the ledgers should have been unbundled now rather than
+recorded as a follow-up, because a gate raised once is usually raised twice.
+
+**Falsifier**: the gate goes red again and the response is another increase. If
+that happens the dissent was right and the ceiling should be reverted to 8 MiB
+until the ledgers are unbundled.
+
+**Review**: at the next red reading of `pnpm desktop:perf`.
+
+**Status**: valid
+
 ## 2026-08-31 — A score only one side can earn is reported, never quoted as a gap
 
 **Convened**: solo pass · **Trigger**: `README.md` quoted the paired lifecycle
