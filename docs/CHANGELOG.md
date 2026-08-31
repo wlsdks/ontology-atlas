@@ -2,10 +2,37 @@
 
 > Major change history. Code commit messages answer *why*; this file answers *when / which surface changed*. Focused on **user-visible changes**, not PR-level granularity.
 >
-> Newest at the top. Entries stay date-based; the app version reached v1.0.0 on
-> 2026-07-27, so a release tag now carries the semver promise instead.
+> Newest at the top. Entries stay date-based. The manifests moved to the 1.0.0
+> line on 2026-07-27 and have shipped as `1.0.0-rc.N` release candidates since;
+> the release tag, not this file, carries the semver promise. `package.json`
+> is the version authority.
 
 ---
+
+## 2026-08-31 · Installed-app crashes leave a trace, and the chat's first suggestions say what they ask
+
+- The empty chat's suggestion chips are now the sentence the person is about to
+  send: the observed fact in plain words, then the request (for example, a node
+  says it belongs to a domain but the domain's own list lacks it, so check and
+  line both sides up). A copy contract refuses bare noun-phrase labels.
+- Installed-app crashes become diagnosable. A panic hook writes thread, file,
+  line and message to the app log and stderr; the release keeps a packed dSYM
+  beside the still-stripped binary and ships it as a release asset (the
+  workflow fails when it is missing); log timestamps use local time. The vault
+  watcher no longer rebuilds an FSEvents stream for an unchanged folder, and a
+  replaced watcher is dropped off the main thread.
+- A frontmatter scalar whose quote closes before the value ends (for example
+  `display_ko: "Agents" destination`) is reported as `malformed-quoted-scalar`
+  by every validator instead of rendering the stray quote on the map; the
+  dogfood vault line that did this is corrected.
+- The unmodified `d` shortcut no longer opens the documents drawer over an
+  agent chat that is opening.
+- Operator-facing script and MCP messages are English, and the source-language
+  gate now scans string literals in scripts, MCP and CLI code, not only
+  comments.
+- README describes release-candidate status by tag rather than as an absolute,
+  and the MCP and CLI changelogs restate the current 36-tool and 58-command
+  surfaces.
 
 ## 2026-08-31 · Rust dependency evidence stays exact, bounded, and review-only
 
