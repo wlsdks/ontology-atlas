@@ -40,6 +40,122 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — The install-count review triggers have not fired; here is the number and how to re-read it
+
+**Convened**: observation record, no verdict sought · **Trigger**: several
+standing records gate their review on an install count phrased as a condition
+(“after the first ten people have finished an install”, “after the first ten
+open `/download` and try to install”). Nobody had ever measured it, so every
+pass that touched those surfaces was guessing whether it was allowed to reopen
+them.
+
+**Measured** (read-only `gh api`, 14-day window ending 2026-08-31):
+
+| Signal | Value |
+|---|---|
+| Repository views | 815 total, **418 unique** |
+| Referrers by unique | LinkedIn 125 + LinkedIn Android 47 = 172; Google 124; github.com 18 |
+| Landing page | **374 unique** |
+| `/releases` | **3 unique** |
+| Stars by day | 08-28: 32 · 08-29: 20 · 08-30: 15 · 08-31: 1 (**68 of 78 in four days**; single digits per month before) |
+| Installers, rc.19 | aarch64 DMG 3 · x64 DMG 2 · Windows exe 4 |
+| Installers, rc.18 | aarch64 DMG 6 · x64 DMG 4 · Windows exe 4 |
+
+**Decision**: the install-count triggers are **not** met, and the records that
+depend on them stay closed. Approximately twenty desktop installers were
+downloaded across the spike, an unknown share of them the owner's own machines,
+which is under every threshold those records name and far under ten confirmed
+installs by strangers.
+
+**One proxy is invalid, and this record exists partly to retire it.** The
+`.sha256` assets are downloaded *more* often than the binaries they check
+(7–13 against 2–6). That is not evidence of people verifying checksums and it
+is not a page-visit count: `scripts/generate-download-release-facts.mjs` fetches
+the `.sha256` body at build time to embed the checksum, and
+`scripts/check-macos-download-release.mjs` runs against releases in CI. The
+rendered page fetches nothing. Do not read `.sha256` counts as demand.
+
+**What the numbers do say**: an 18% star rate on the landing page is high, so
+the first surface is not the loss. The losses are star → download and
+download → any signal at all, with zero issues, zero discussions, and zero
+external pull requests standing against 418 unique visitors.
+
+**Applied rule**: an observable review condition is worth nothing until someone
+observes it.
+
+**Signature**: Stark
+
+**Recorded dissent**: fourteen days during an unrepeatable referral spike is a
+poor baseline, and a single owner-run `gh api` snapshot is not a measurement
+programme. A reading this thin can be used to justify whatever the reader
+already wanted.
+
+**Falsifier**: if a later reading shows installers accumulating while stars stay
+flat, the funnel described here was an artifact of the spike, and star →
+download was never the constraint.
+
+**Review**: re-read the same four signals at the next release, and whenever a
+pass proposes to reopen a record gated on install count.
+
+**Status**: valid
+
+## 2026-08-31 — A refusal names the path that stays open, or it is a dead end
+
+**Convened**: solo pass (`/po-pass`, 23/24, no fatal zero, verdict *build and
+verify*) · **Trigger**: repository traffic showed 68 of 78 stars arriving in
+four days and roughly twenty desktop downloads in the same window, while the
+2026-08-31 first-run walkthrough had just found that the north-star path does
+not complete for a person with one coding agent.
+
+**Observed**: the write gate covers the bulk `writePlan`, not ordinary writing.
+`add_concept` / `add_concepts` / `add_relation` / `patch_concept` carry no
+qualification check, the server's own initialize text tells connected agents to
+mirror new capabilities with `add_concept`, and the shipped `atlas-grow` skill
+teaches exactly that path. Three surfaces nevertheless described only what was
+missing:
+
+1. `construction-lifecycle.mjs` answered `Complete the
+   constructionQualification:v1 packet for this exact review plan.` — a file
+   format, not an action.
+2. `agent-prompts.ts` step 6 forbade `add_concept` outright whenever
+   `canWrite` was false, a **stricter rule than the server's own**, which is
+   what closed the last open path.
+3. The server's initialize instructions, the one surface every connected agent
+   on every client receives, ended `stop without writes`.
+
+The 2026-08-25 field trial had already recorded the consequence on three
+unfamiliar repositories: the builder `stopped at canWrite:false with zero
+semantic writes`. It was adopted then as safe no-write evidence, which it was;
+what went unnamed is that a legitimate path was installed on the same disk.
+
+**Decision**: all three surfaces state the open path at the moment they decline.
+The bulk plan stays gated exactly as before, and each surface repeats that an
+evaluator must not be fabricated. Nothing about maker independence, the digest
+binding, or human acceptance moves.
+
+**Applied rule**: smallest slice; a guard's refusal text is all a blocked agent
+gets to read.
+
+**Signature**: Stark
+
+**Recorded dissent**: naming a second path at the moment the first is refused
+teaches that gates are negotiable, and a person routed to incremental writing
+may build a shallow vault while believing they completed construction. The
+bulk lifecycle exists because batch review is where quality is judged.
+
+**Falsifier**: if a freshly-inited walkthrough shows solo users completing
+through the recovery routing but producing junk vaults — validation red, wrong
+kinds, evidence-free nodes — then the qualification funnel was load-bearing for
+quality and this routing sent people around it. The remedy is then to ship the
+relay helper into `init` under `/po-council` and narrow the recovery text to
+point at it, never to restore a bare refusal.
+
+**Review**: at the first walkthrough of a freshly-inited repository, together
+with the 2026-08-31 print-only record, whose review condition is the same
+observation.
+
+**Status**: valid
+
 ## 2026-08-31 — The agent's procedures go where the agent runs; the sentence in your own file stays yours
 
 **Convened**: solo pass (`/po-pass`, 21/24, no fatal zero, verdict *shape a
