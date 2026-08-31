@@ -3797,6 +3797,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-31 · Rust dependency evidence stays exact, bounded, and review-only",
+      "slug": "2026-08-31-rust-dependency-evidence-stays-exact-bounded-and-review-only"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-30 · A known task can start at the exact reviewed source batch",
       "slug": "2026-08-30-a-known-task-can-start-at-the-exact-reviewed-source-batch"
     },
@@ -6950,6 +6955,16 @@
       "depth": 2,
       "text": "2026-08-31 — A refusal names the path that stays open, or it is a dead end",
       "slug": "2026-08-31-a-refusal-names-the-path-that-stays-open-or-it-is-a-dead-end"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — The Rust replay earns coverage, not inferred impact",
+      "slug": "2026-08-31-the-rust-replay-earns-coverage-not-inferred-impact"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — Rust imports are bounded source receipts, never inferred impact",
+      "slug": "2026-08-31-rust-imports-are-bounded-source-receipts-never-inferred-impact"
     },
     {
       "depth": 2,

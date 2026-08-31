@@ -848,7 +848,8 @@ working inside this repository, [AGENTS.md](AGENTS.md) is the canonical guide fo
 people and AI agents alike. Start verification with `pnpm checks:changed`; it
 maps a changed MCP source with a real sibling test to that direct test and the
 full MCP unit gate. [Development checks](docs/DEVELOPMENT-CHECKS.md) records the
-exact-navigation RED→GREEN probes and escalation path.
+exact-navigation RED→GREEN probes and escalation path, including the dogfood
+vault's automatically wired section-shape ratchet.
 
 ## License
 

@@ -80,8 +80,8 @@ function rustConfigurationEvidenceFixture() {
 function importScanCoverageFixture() {
   return {
     contract: "importScanCoverage:v1",
-    supportedLanguages: ["go", "javascript", "python", "typescript"],
-    supportedExtensions: [".go", ".js", ".py", ".ts"],
+    supportedLanguages: ["go", "javascript", "python", "rust", "typescript"],
+    supportedExtensions: [".go", ".js", ".py", ".rs", ".ts"],
     detectedUnsupportedLanguages: [],
     allDetectedLanguagesSupported: true,
     zeroEdgesMeaning: "no_supported_static_import_edges_observed",
@@ -1697,7 +1697,7 @@ export function makeDogfoodToolsList() {
                 contract: { type: "string", enum: ["importScanCoverage:v1"] },
                 detectedUnsupportedLanguages: {
                   type: "array",
-                  items: { type: "string", enum: ["c", "rust"] },
+                  items: { type: "string", enum: ["c"] },
                 },
                 allDetectedLanguagesSupported: { type: "boolean" },
                 zeroEdgesMeaning: { type: "string", enum: ["no_supported_static_import_edges_observed"] },

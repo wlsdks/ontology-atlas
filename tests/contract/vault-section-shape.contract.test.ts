@@ -41,15 +41,13 @@ const REPO_ROOT = join(import.meta.dirname, "..", "..");
 const VAULT_ROOT = join(REPO_ROOT, "docs", "ontology");
 
 /**
- * **The worst surviving section, in bytes** (`Constraints: Import inference by
- * language` in `capabilities/mcp-server.md`, 6,597 B).
+ * **The worst surviving section, in bytes** (`Behaviour Contract` in
+ * `capabilities/acp-runtime.md`, 5,952 B).
  *
  * That section is five language scan contracts — Python, Go, C/Autotools, Rust,
- * plus the shared caps — and each one is a real boundary. It is left whole
- * because splitting per language would scatter one contract across five
- * headings. It is the honest current ceiling, not a target.
+ * It is the honest current ceiling, not a target.
  */
-const SECTION_BYTE_CAP = 6_600;
+const SECTION_BYTE_CAP = 6_000;
 
 /**
  * **The gap the cap is allowed to sit above reality.**

@@ -113,8 +113,12 @@ responses exceed 128 KiB, and requires checking `allowLargeResponse:true` even f
 4. **P1 · 100+ semantic-node qualification** — This measurement proved bounded discovery of 874 review candidates and 253
    unique endpoints, but did not prove the quality of 100+ semantic nodes.
    Execute only when human approval, write, and source-hidden tasks are needed in scenarios with 100+ accepted concepts across different domains/CQs. Do not bulk-promote based on node count as a goal.
-5. **P2 · unsupported languages** — Rust `use`/`mod`/macro graph remains explicitly unsupported.
-   Do not interpret 0 edges as no dependencies; open only when repeated FDE demand exceeds Python/TS P1.
+5. **Complete · bounded Rust dependency evidence** — The 2026-08-31 frozen Rust
+   field trial observed zero dependency files and independently left q4 partial
+   and q5 unmeasured. `infer_imports` now admits deterministic `use`, file-backed
+   `mod`, and exact literal path/include receipts under file/text/statement caps.
+   Macro expansion, `cfg` evaluation, runtime/business impact, and automatic
+   relations remain unsupported; 0 edges still never proves no dependencies.
 
 ### Task Cards and Completion Criteria
 

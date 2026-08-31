@@ -153,6 +153,86 @@ point at it, never to restore a bare refusal.
 **Review**: at the first walkthrough of a freshly-inited repository, together
 with the 2026-08-31 print-only record, whose review condition is the same
 observation.
+## 2026-08-31 — The Rust replay earns coverage, not inferred impact
+
+**Trigger**: result of the frozen replay required by “Rust imports are bounded
+source receipts, never inferred impact.” The owner accepted plan digest
+`14a0cc391368ab9c476b30aa17336ad2d08e480edc2e24977962a8de4aa26191`,
+revision 1, and all eleven visible gaps.
+
+**Observed result**: the unchanged five-concept/five-relation plan wrote and
+finalized. A persisted source-hidden reader improved q4 from no Rust dependency
+receipt to `src/lib.rs` plus qualified serde source use, and q5 to the reviewed
+entrypoint `depends_on` resampling path. Runtime criticality, comparative
+importance, reverse/transitive propagation, and business impact remain
+unearned. The sealed pre-write packet audited 38/38 claims and 83/83 citations.
+The persisted reader required two attribution corrections (21/22, then 23/25)
+before the final immutable pass reached 27/27 with no unsupported promotion.
+
+**Decision (accountable: Stark)**: the falsifier fired for clean first-pass
+accuracy, so this result is explicitly coverage only. Land the deterministic
+read-only receipt and its fail-closed limits; do not claim that Rust syntax
+proves importance, runtime behavior, or semantic impact. Keep the two failed
+audit passes in the field-trial baseline rather than reporting only the corrected
+score.
+
+**Revisit**: only after a new frozen repository produces the q4/q5 gain at 100%
+on its first persisted-reader audit, or when measured Rust demand justifies a
+broader parser. Compiler/Cargo execution, macro expansion, automatic relation
+writes, and runtime/business impact remain outside this decision.
+
+**Status**: valid; narrows the preceding decision to coverage-only evidence.
+
+## 2026-08-31 — Rust imports are bounded source receipts, never inferred impact
+
+**Convened**: PO council (`/po-council`) · **Trigger**: the frozen Rust field
+trial returned zero dependency files; its independent persisted-vault reader
+left the important-dependency question partial and the direct-source-impact
+question unmeasured. Adding Rust to `infer_imports` support changes a public MCP
+response enum.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Build and verify from the two independently observed q4/q5 failures; external frequency remains unknown. | Problem insight 4 · User moment 4 |
+| Craft | Build only with exact direction, adjacent static-only qualification, strict-consumer parity, and frozen runtime proof. | Verification 4 |
+| Steward | Build inside the existing read-only evidence envelope; preserve local containment and require review before any semantic relation. | Ontology value 4 · Agent value 4 |
+| Wedge | The parser is copyable infrastructure; value exists only when qualified evidence improves the persisted source-hidden handoff. | Differentiation 3 |
+| Leverage | Cap the slice at one developer day plus one frozen trial; finalizer latency remains the broader next constraint. | appetite and slice |
+
+**Rubric total**: 23/24 (fatal zeros: none)
+
+**Decisive disagreement**: whether a read-only Rust parser can improve the
+persisted ontology at all. Static syntax cannot identify a “project-critical”
+crate and transient output alone is generic code intelligence. The accountable
+slice therefore succeeds only when exact imports are corroborated against the
+existing Cargo/package evidence, reviewed through the existing ontology fields,
+and improve the frozen persisted q4/q5 answers without changing their
+qualification.
+
+**Decision (accountable: Stark)**: add deterministic Rust `use`, file-backed
+`mod`, and exact literal path/include evidence to the existing `infer_imports`
+envelope. Name external crates only as observed candidates. Ambiguous paths,
+conditional resolution, and non-literal macro expansion remain unresolved or
+explicitly outside coverage. Import evidence never proves runtime, reverse,
+transitive, capability, business, or accepted semantic impact and never writes
+or self-approves `depends_on`.
+
+**Recorded dissent**: finalizer repair reaches every bootstrap and already has
+a measured 65.2% regression, while Rust-repository demand is unmeasured and a
+one-sprint parser is not a moat. — **Falsifier**: stop and treat this as coverage
+only if the first frozen replay leaves persisted q4/q5 unchanged, any receipt is
+false, claim/path accuracy drops below 100%, a static import is promoted beyond
+direct source evidence, or the slice requires a new top-level schema object,
+compiler/runtime execution, or more than one developer day. — **Revisit**: on
+the first frozen persisted-vault replay, then profile the finalizer if the
+falsifier fires or after this bounded slice lands.
+
+**Slice**: IN existing `edges` / `externalImports` / `unresolved` /
+`moduleEdges` / `coverage`, bounded file/text/import caps, exact direction,
+source/bundled MCP + CLI parity, decision/docs/ontology sync, and frozen q1–q6
+measurement · OUT Cargo/compiler/network execution, arbitrary macro expansion,
+symbol/call graphs, automatic writes or relations, new tool/command/route/UI,
+and syntax-derived importance.
 
 **Status**: valid
 

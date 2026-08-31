@@ -7,6 +7,24 @@
 
 ---
 
+## 2026-08-31 · Rust dependency evidence stays exact, bounded, and review-only
+
+- `infer_imports`, `index_project`, and CLI `infer-imports` now read deterministic
+  Rust `use` paths, file-backed `mod` declarations, and exact literal path/include
+  forms through the existing file-edge envelope. External crate names remain
+  observed candidates; Cargo/package evidence and human review decide importance.
+- Rust source reads stop at 256 KiB and 256 dependency statements per file.
+  Conditional modules, non-literal macros, escaped paths, and unsupported syntax
+  remain unresolved instead of being guessed. No compiler, Cargo command, cache,
+  network, symbol graph, vault write, or automatic `depends_on` is introduced.
+- The public coverage contract now lists Rust as supported bounded static evidence.
+  Runtime, reverse, transitive, capability, and business impact remain explicitly
+  unproven, and C stays fail-closed as unsupported.
+- The frozen persisted-vault replay improved the qualified q4 starting-point and
+  q5 direct-dependency answers. Its first two reader audits exposed attribution
+  errors (21/22 and 23/25); the corrected immutable pass reached 27/27. This is
+  recorded as coverage progress, not a clean first-pass or inferred-impact win.
+
 ## 2026-08-30 · A known task can start at the exact reviewed source batch
 
 - Compact agent briefs v2 project a human-reviewed primary implementation

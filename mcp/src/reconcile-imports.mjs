@@ -24,7 +24,7 @@
  *   (needs the nodes modelled first). Neither category is directly landable: an import is
  *   source evidence, not by itself a semantic ontology dependency.
  * @param {Record<string,string>|Map<string,string>} [args.pathBySlug]  slug → that node's `path:`.
- *   When given, edges whose implementation **the scanner cannot read** (Rust and other unsupported
+ *   When given, edges whose implementation **the scanner cannot read** (C and other unsupported
  *   extensions, or an unknown path) are split out into `notJudgeableByImports`. Omit it and behaviour
  *   is unchanged.
  * @param {Set<string>|Array<string>} [args.scannedExtensions]  the extensions the scanner actually read
@@ -43,7 +43,7 @@ const DEPENDS_ON_VIA = new Set(['dependencies', 'depends_on']);
  * accepted precisely to stop the two drifting apart.
  */
 const DEFAULT_SCANNED_EXTENSIONS = new Set([
-  '.cjs', '.cts', '.go', '.js', '.jsx', '.mjs', '.mts', '.py', '.ts', '.tsx',
+  '.cjs', '.cts', '.go', '.js', '.jsx', '.mjs', '.mts', '.py', '.rs', '.ts', '.tsx',
 ]);
 
 /**
@@ -53,8 +53,8 @@ const DEFAULT_SCANNED_EXTENSIONS = new Set([
  * all three of our vault's `depends_on` edges came back as "absent from the code →
  * review as stale", and all three were correct relations. The scanner missed them
  * not because the relation was absent but because it **could not see it** —
- * `capabilities/acp-runtime` is implemented in `src-tauri/src/acp.rs` (Rust) and
- * the scanner does not read `.rs`.
+ * a native C endpoint is outside the supported extension set, so its missing
+ * import cannot be judged as stale evidence.
  *
  * **Reporting "did not see" as "does not exist" makes an agent delete a correct
  * relation.** This repository's CodeGraph rule already says the same thing:

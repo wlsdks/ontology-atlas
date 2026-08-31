@@ -874,7 +874,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.contract?.enum, ["importScanCoverage:v1"]);
     assert.deepEqual(
       inferImports?.outputSchema?.properties?.coverage?.properties?.detectedUnsupportedLanguages?.items?.enum,
-      ["c", "rust"],
+      ["c"],
     );
     assert.deepEqual(inferImports?.outputSchema?.properties?.coverage?.properties?.zeroEdgesMeaning?.enum, ["no_supported_static_import_edges_observed"]);
     assert.equal(inferImports?.outputSchema?.properties?.coverage?.additionalProperties, false);
@@ -900,7 +900,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.evidenceLimited?.type, "boolean");
     assert.deepEqual(
       inferImports?.outputSchema?.properties?.coverage?.properties?.supportedLanguages?.items?.enum,
-      ["go", "javascript", "python", "typescript"],
+      ["go", "javascript", "python", "rust", "typescript"],
     );
     const goPackageEvidenceSchema = inferImports?.outputSchema?.properties?.packageImportEvidence;
     assert.deepEqual(goPackageEvidenceSchema?.required, [
@@ -3344,7 +3344,7 @@ await test("infer_imports auto delivery — oversized omitted calls compact, exp
   }
 });
 
-await test("Rust and Autotools C MCP evidence — analyze, infer, and index preserve provenance and unsupported import coverage", async () => {
+await test("Rust and Autotools C MCP evidence — analyze, infer, and index preserve provenance and bounded import coverage", async () => {
   const vaultRoot = makeVault();
   const repoRoot = realpathSync(mkdtempSync(join(tmpdir(), "ontology-atlas-rust-evidence-")));
   try {
@@ -3399,9 +3399,21 @@ await test("Rust and Autotools C MCP evidence — analyze, infer, and index pres
     );
 
     assert.deepEqual(getCallStructured(responses, 3), imports);
-    assert.equal(imports.filesScanned, 0);
-    assert.deepEqual(imports.edges, []);
-    assert.deepEqual(imports.coverage.detectedUnsupportedLanguages, ["c", "rust"]);
+    assert.equal(imports.filesScanned, 2);
+    assert.deepEqual(
+      imports.edges.map((edge) => [edge.from, edge.to]),
+      [
+        ["src/lib.rs", "src/portable.rs"],
+      ],
+    );
+    assert.deepEqual(imports.unresolved, [
+      {
+        from: "src/lib.rs",
+        spec: '#[cfg(feature = "portable")]\nmod portable',
+        reason: "unsupported-static-form",
+      },
+    ]);
+    assert.deepEqual(imports.coverage.detectedUnsupportedLanguages, ["c"]);
     assert.equal(imports.coverage.allDetectedLanguagesSupported, false);
     assert.equal(imports.coverage.zeroEdgesMeaning, "no_supported_static_import_edges_observed");
 
