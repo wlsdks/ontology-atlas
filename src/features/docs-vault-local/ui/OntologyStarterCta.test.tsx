@@ -44,7 +44,7 @@ describe('OntologyStarterCta', () => {
     expect(screen.getByText(/무엇에 의존하는지/)).toBeInTheDocument();
     expect(screen.getByText(/프로젝트·도메인·역량·요소/)).toBeInTheDocument();
     expect(screen.getByText('로컬')).toBeInTheDocument();
-    expect(screen.getByText('그래프 근거')).toBeInTheDocument();
+    expect(screen.getByText('서로 맞는지 확인함')).toBeInTheDocument();
     expect(screen.getByText('AI 흐름')).toBeInTheDocument();
     expect(screen.getByText(/validate_vault/)).toBeInTheDocument();
     expect(screen.getAllByText(/workspace_brief/).length).toBeGreaterThan(0);
