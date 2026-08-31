@@ -8944,10 +8944,23 @@ function queryOntologyTool(args = {}) {
  * A vault straight out of `init` in particular received "invalid" here, so
  * someone who had done nothing wrong concluded they had broken something.
  */
+// One gap id, two different situations (2026-08-17 (28) named the missing
+// receipt `competency_not_authored` in both). When the project document already
+// carries a parseable `## Competency answers` section, the only missing thing
+// is the finalize receipt, and the instruction must say exactly that: a person
+// who wrote all five answers must never be told to write them. The generic
+// hint below stays for the case where the section is absent or does not parse.
+const MEANING_AUTHORED_NOT_FINALIZED_HINT =
+  'This project\'s five competency answers are already written, but this vault '
+  + 'has no finalize receipt for them. Nothing is broken. Call '
+  + 'finalize_project_meaning to record the receipt.';
+
 const MEANING_NEXT_ACTION_HINTS = Object.freeze({
   // Never assert "the section is missing" — a vault can have the section and
   // simply not have finalised it (this repository is one), and telling that user
-  // to "add it" is wrong guidance.
+  // to "add it" is wrong guidance. The parseable-section case is answered by
+  // MEANING_AUTHORED_NOT_FINALIZED_HINT above, so this text covers a section
+  // that is absent or does not parse.
   author_competency_answers:
     'This project\'s five competency answers have not been finalized yet. '
     + 'Nothing is broken. Fill in the `## Competency answers` section of the '
@@ -9008,6 +9021,10 @@ function meaningReadinessCheck(artifact) {
         // The remedy was already computed and was being discarded here
         // (2026-08-17), so the reader — person or agent — got only an error code.
         nextAction: context.meaningAssessment?.nextAction?.id ?? 'repair_assessment_input',
+        // Whether the `## Competency answers` section parses. This picks the
+        // honest hint when the receipt is missing: written-but-not-finalized
+        // gets "call finalize_project_meaning", not "write the answers".
+        competencyAuthored: Boolean(context.meaningRepairInput?.competency),
       };
     } catch {
       return {
@@ -9015,6 +9032,7 @@ function meaningReadinessCheck(artifact) {
         status: 'invalid',
         topGap: 'assessment_input_invalid',
         nextAction: 'repair_assessment_input',
+        competencyAuthored: false,
       };
     }
   });
@@ -9030,6 +9048,9 @@ function meaningReadinessCheck(artifact) {
     };
   }
   const first = unresolved[0];
+  const firstHint = first.nextAction === 'author_competency_answers' && first.competencyAuthored
+    ? MEANING_AUTHORED_NOT_FINALIZED_HINT
+    : MEANING_NEXT_ACTION_HINTS[first.nextAction] ?? `Next: ${first.nextAction}.`;
   return {
     status: 'warn',
     count: unresolved.length,
@@ -9038,7 +9059,7 @@ function meaningReadinessCheck(artifact) {
     message:
       `${unresolved.length} project meaning assessment(s) require review; `
       + `first ${first.projectSlug}: ${first.status} (${first.topGap}). `
-      + `${MEANING_NEXT_ACTION_HINTS[first.nextAction] ?? `Next: ${first.nextAction}.`}`,
+      + `${firstHint}`,
     assessments,
   };
 }
