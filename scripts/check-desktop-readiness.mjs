@@ -959,7 +959,10 @@ if (
   rootEntryPage.includes("if (vault.manifest) return <HomePage />") &&
   rootEntryPage.includes("if (isDesktopShell())") &&
   rootEntryPage.includes("return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />") &&
-  rootEntryPage.includes("return <GatewayLandingPage />")
+  // Since 2026-09-01 the hosted branch may wrap the gateway with a lost-vault notice
+  // (a failed restore says so instead of landing silently), so the fact checked here is
+  // that the empty hosted session still renders the gateway, not the exact return shape.
+  rootEntryPage.includes("<GatewayLandingPage />")
 ) {
   pass("root entry derives the loaded-vault map, desktop first run, and hosted gateway from runtime state");
 } else {
