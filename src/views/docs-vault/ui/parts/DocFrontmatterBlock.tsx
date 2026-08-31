@@ -240,13 +240,18 @@ export function DocFrontmatterBlock({
     const frontmatterForValidation: Record<string, unknown> = debouncedValidation.kind
       ? { ...stored, kind: debouncedValidation.kind, domain: debouncedValidation.domain }
       : stored;
-    const issues = validateVaultDocFrontmatter(frontmatterForValidation).issues;
+    // The parser's own complaints about this file travel with the doc, so a line it could not
+    // read is shown here rather than silently dropped (census state 3e, 2026-08-31).
+    const issues = validateVaultDocFrontmatter(
+      frontmatterForValidation,
+      doc.diagnostics,
+    ).issues;
     // Errors first — reading order is repair order.
     return [
       ...issues.filter((issue) => issue.severity === "error"),
       ...issues.filter((issue) => issue.severity !== "error"),
     ];
-  }, [doc.frontmatter, debouncedValidation]);
+  }, [doc.frontmatter, doc.diagnostics, debouncedValidation]);
 
   const issueMessageDict = useMemo<Partial<Record<VaultIssueCode, string>>>(
     () => ({
@@ -265,6 +270,10 @@ export function DocFrontmatterBlock({
       "duplicate-uid": t("validatorIssues.duplicateUid"),
       "invalid-merged-uids": t("validatorIssues.invalidMergedUids"),
       "non-canonical-merged-uids": t("validatorIssues.nonCanonicalMergedUids"),
+      // The parser's two complaints. They had no entry here, so before the diagnostics were
+      // routed in they would have surfaced as the bare code string.
+      "malformed-frontmatter-line": t("validatorIssues.malformedFrontmatterLine"),
+      "malformed-quoted-scalar": t("validatorIssues.malformedQuotedScalar"),
     }),
     [t],
   );

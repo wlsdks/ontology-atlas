@@ -20,6 +20,7 @@ const NO_SECTIONS: InsightsSignalCounts["sections"] = {
 const NONE: InsightsSignalCounts = {
   islands: 0,
   missingContainment: 0,
+  blockedDocuments: 0,
   sections: NO_SECTIONS,
 };
 
@@ -30,6 +31,16 @@ const withSections = (
 ): InsightsSignalCounts => ({ ...NONE, ...rest, sections: { ...NO_SECTIONS, ...partial } });
 
 describe("buildInsightsVerdict", () => {
+  // The "to do" tab draws one row per blocked document. A row the screen shows and the badge does
+  // not count is the contradiction this module exists to prevent.
+  it("검사에서 막힌 문서는 차단 신호로 센다", () => {
+    const verdict = buildInsightsVerdict({ ...NONE, blockedDocuments: 2 });
+    expect(verdict.blocking).toBe(2);
+    expect(verdict.total).toBe(2);
+    expect(verdict.healthy).toBe(false);
+    expect(verdict.status).toBe("needs_attention");
+  });
+
   it("신호가 하나도 없을 때만 '건강함' — CLI 판정도 healthy", () => {
     expect(buildInsightsVerdict(NONE)).toEqual({
       blocking: 0,

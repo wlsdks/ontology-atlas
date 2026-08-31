@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
   vaultRootPath: null as string | null,
   vaultStatus: 'idle' as string,
+  vaultErrorCode: null as string | null,
+  vaultErrorMessage: null as string | null,
   vaultHandleName: null as string | null,
   revealInFinder: vi.fn(),
   copyPath: vi.fn(),
@@ -72,7 +74,8 @@ vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOrigin
     handle: mocks.vaultHandleName ? { name: mocks.vaultHandleName } : null,
     manifest: null,
     agentConfigStatus: null,
-    errorMessage: null,
+    errorMessage: mocks.vaultErrorMessage,
+    errorCode: mocks.vaultErrorCode,
     lastLoadedAt: null,
     recentVaults: [],
     open: vi.fn(),
@@ -126,9 +129,10 @@ function openSheet(
   ui?: ReactNode,
   section?: 'screen' | 'background' | 'expand' | 'footprint' | 'workspace' | 'ai',
 ) {
-  render(ui ?? <AppSettingsMenu mode="static" />);
+  const view = render(ui ?? <AppSettingsMenu mode="static" />);
   fireEvent.click(screen.getByTestId('app-settings-trigger'));
   if (section && section !== 'screen') fireEvent.click(screen.getByTestId(`app-settings-nav-${section}`));
+  return view;
 }
 
 /**
@@ -211,6 +215,35 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(panel).toBeInTheDocument();
     expect(overlay.className).toContain('app-settings-scrim-in');
     expect(panel.className).toContain('app-settings-panel-in');
+  });
+
+  /*
+   * ⚠️ Census state 1c, 2026-08-31. This caption read `errorMessage ?? fallback`, so a browser's
+   * own English `NotFoundError` sentence — written for a developer — landed in a Korean settings
+   * row, while `path-missing` (which deliberately carries no message) fell through to a sentence
+   * that never said why. `FirstRunPage` already branches on the code; this row now does the same.
+   */
+  it('폴더 실패의 까닭을 코드로 갈라 말하고, 날 것 그대로의 예외 문장은 쓰지 않는다', () => {
+    const raw =
+      'A requested file or directory could not be found at the time an operation was processed.';
+    for (const [code, key] of [
+      ['path-missing', 'nav.settingsMenu.workspaceFolderErrorPathMissing'],
+      ['permission-denied', 'nav.settingsMenu.workspaceFolderErrorPermissionDenied'],
+      ['root-rejected', 'nav.settingsMenu.workspaceFolderErrorRootRejected'],
+      ['access-failed', 'nav.settingsMenu.workspaceFolderErrorFallback'],
+    ] as const) {
+      mocks.vaultStatus = 'error';
+      mocks.vaultErrorCode = code;
+      mocks.vaultErrorMessage = raw;
+      const view = openSheet(undefined, 'workspace');
+      const row = screen.getByTestId('app-settings-workspace-folder');
+      expect(row, code).toHaveTextContent(key);
+      expect(row.textContent, code).not.toContain(raw);
+      view.unmount();
+    }
+    mocks.vaultStatus = 'idle';
+    mocks.vaultErrorCode = null;
+    mocks.vaultErrorMessage = null;
   });
 
   it('shows the workspace folder row with a direct open action when no vault is loaded', () => {

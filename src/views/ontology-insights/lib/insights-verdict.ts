@@ -46,6 +46,17 @@ export interface InsightsSignalCounts {
   /** A signal the CLI flips to needs_attention on — missing parent domain. */
   missingContainment: number;
   /**
+   * Documents that fail frontmatter validation.
+   *
+   * Added 2026-08-31 with the one-list "to do" tab. The readiness meter used to be the only place
+   * these appeared, as a number with no names attached; now each blocked document is a row in the
+   * list. A row the screen draws and the badge does not count is the exact contradiction this
+   * module exists to prevent, so the signal joins the verdict on the blocking side: a document
+   * that fails validation either never becomes a node or collides on identity, so an agent cannot
+   * use it at all.
+   */
+  blockedDocuments: number;
+  /**
    * Per-section totals of the "to do" queue (the pre-truncation scale) — **all of them** must be
    * present.
    *
@@ -107,13 +118,15 @@ export function buildInsightsVerdict(counts: InsightsSignalCounts): InsightsVerd
     if (SECTION_SEVERITY[key] === "blocking") sectionBlocking += total;
     else advisory += total;
   }
-  const blocking = counts.islands + counts.missingContainment + sectionBlocking;
+  const blocking =
+    counts.islands + counts.missingContainment + counts.blockedDocuments + sectionBlocking;
   return {
     blocking,
     advisory,
     total: blocking + advisory,
     healthy: blocking === 0 && advisory === 0,
-    // The CLI flips to needs_attention only on islands, missing containment, and cycles —
+    // The CLI flips to needs_attention only on islands, missing containment, blocked documents,
+    // and cycles —
     // advisory items are statistical suggestions and do not change the verdict. So `status` reads
     // blocking alone, while `healthy` (may the screen say "healthy"?) reads both.
     status: blocking === 0 ? "healthy" : "needs_attention",

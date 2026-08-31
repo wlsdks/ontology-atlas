@@ -90,6 +90,10 @@ interface TopologyIndexPanelLabels {
    *  forbidden here (Guardian's first ruling). */
   dustyNodesLabel: string;
   dustyNodesAction: string;
+  /** "N documents the checks caught" (count formatted by the caller) plus the action that opens
+   *  the document library, where the per-document explanation and repair already live. */
+  brokenDocsLabel: string;
+  brokenDocsAction: string;
   /**
    * 「This project has no code folder attached」 (this project has no code folder
    * attached) — a fact that used to be visible **only after clicking that exact
@@ -147,6 +151,8 @@ export interface TopologyIndexPanelProps {
   uncatalogedDocCount?: number;
   /** Living-map drift — the number of dusty nodes. At 0 the row is hidden. */
   dustyNodeCount?: number;
+  /** Documents carrying at least one error-severity validation issue. At 0 the row is absent. */
+  brokenDocCount?: number;
   /** The node id of a project with no code folder bound. null means the row does not exist. */
   unboundProjectNodeId?: string | null;
   /** The vault holds no project node at all — distinct from "every project already has code bound". */
@@ -229,6 +235,7 @@ export function TopologyIndexPanel({
   recentChanges = null,
   uncatalogedDocCount,
   dustyNodeCount,
+  brokenDocCount,
   unboundProjectNodeId = null,
   noProjectsYet = false,
   openedInsidePickedFolder = null,
@@ -735,6 +742,29 @@ export function TopologyIndexPanel({
           </span>
           <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
             {labels.dustyNodesAction}
+          </span>
+        </Link>
+      ) : null}
+
+      {/* ⚠️ **The checks had nowhere to speak on the map** (census state 3, 2026-08-31). A
+          document whose `kind` is broken is dropped from the graph and one with an unreadable
+          frontmatter line quietly loses a field; either way the map drew a healthy node or no
+          node, and the only screen that could explain it was the document library, which somebody
+          has to already suspect a problem to open. This is one quiet row in the same grammar as
+          the two above it, and it does not diagnose here: the destination owns the per-document
+          sentence and the repair. Errors only — a warning is advice, not a fault. At 0 the row
+          does not exist (no success badge). */}
+      {vaultLoaded && brokenDocCount && brokenDocCount > 0 ? (
+        <Link
+          href="/docs/"
+          data-testid="topology-index-broken-docs"
+          className={controlClass({ shape: "chip", size: "md", className: "mt-2 shrink-0 gap-2 rounded-[var(--chrome-radius-inner)] border-[color:var(--topology-v2-panel-border)] text-left hover:bg-[color:var(--topology-v2-panel-row-hover)]" })}
+        >
+          <span className="min-w-0 flex-1 truncate text-[color:var(--topology-v2-panel-text-tertiary)]">
+            {labels.brokenDocsLabel}
+          </span>
+          <span className="shrink-0 text-[color:var(--color-indigo-accent)]">
+            {labels.brokenDocsAction}
           </span>
         </Link>
       ) : null}

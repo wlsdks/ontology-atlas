@@ -49,6 +49,16 @@
 - The static-artifact size gate widens to 64 MiB total and 8 MiB per chunk by
   owner decision: it catches a stray dependency or a duplicated bundle, not
   documented growth. Recorded in the decision ledger with its falsifier.
+- The analysis screen's Do-next tab is one list. The readiness meter, the
+  repair-queue counters and the agent footer are gone; each item is a title,
+  one sentence naming the observed fact, and actions in one order: hand it to
+  the in-app AI chat, fix it here, see it on the map. Documents that fail
+  validation join the list by name instead of hiding behind a count.
+- Going wrong now says so. A returning web visitor whose folder moved sees a
+  notice with a re-pick button instead of a silent gateway; a failed agent
+  config write names the file and says nothing changed; a missing bundled MCP
+  server explains itself; broken frontmatter shows on the document and as a
+  quiet count in the map's index.
 - Native failures speak in sentences. Git, keychain and LLM errors reach the
   screen as a stable code that the app renders in the reader's language with
   the machine detail in parentheses; an unknown code shows its English detail

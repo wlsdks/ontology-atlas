@@ -58,6 +58,37 @@ export function deniedFolderName(rootPath: string | null | undefined): string | 
   return name ? name : null;
 }
 
+/**
+ * Signatures of "that folder is not there any more", as each runtime words it.
+ *
+ * The browser throws a `DOMException` named `NotFoundError` whose message is a sentence written
+ * for a developer ("A requested file or directory could not be found at the time an operation was
+ * processed."), and that sentence used to reach a Korean screen verbatim. Rust words the same fact
+ * as `No such file or directory (os error 2)`.
+ */
+const MISSING_SIGNATURES = [
+  'notfounderror',
+  'no such file or directory',
+  'os error 2)',
+  'could not be found',
+];
+
+/**
+ * Is this failure "the folder is gone" rather than "the read broke"?
+ *
+ * Kept separate from `classifyVaultAccessError` because the two answer different questions and the
+ * remedies differ: a protected folder is allowed in System Settings, a missing one is chosen again.
+ * The desktop already reports the missing case as `path-missing` through a path preflight; the web
+ * has no path to preflight, so it has to read the exception instead.
+ */
+export function isMissingFolderError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'NotFoundError') return true;
+  const text = typeof error === 'string' ? error : messageOf(error);
+  if (!text) return false;
+  const lowered = text.toLowerCase();
+  return MISSING_SIGNATURES.some((signature) => lowered.includes(signature));
+}
+
 function messageOf(error: unknown): string {
   if (error instanceof Error) return error.message;
   return '';

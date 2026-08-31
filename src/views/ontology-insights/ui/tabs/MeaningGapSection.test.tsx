@@ -23,10 +23,9 @@ const labels: MeaningGapLabels = {
   handoffCopyFailed: '복사 실패',
   handoffCopiedHint: "Paste it into your AI tool.",
   rowMenuTrigger: "More actions",
-  sectionTitle: "No meaning written down",
-  hint: "One sentence is enough.",
-  openMap: "Inspect on map",
-  writeHere: "write it here",
+  askAgent: "Ask the agent",
+  fixHere: "Fix it myself",
+  viewOnMap: "View on map",
   writeHereClose: "collapse",
   definitionPlaceholder: "Describe this in one sentence",
   domainLegend: "Which area?",
@@ -41,7 +40,6 @@ const labels: MeaningGapLabels = {
   conflict: "This file just changed",
   needsText: "Write one sentence",
   needsDomain: "Pick one area",
-  readOnlyHint: "The example folder cannot be edited.",
 };
 
 const row: MeaningGapRow = {
@@ -64,13 +62,12 @@ function renderSection(
     <MeaningGapSection
       gapKind="missing-definition"
       rows={[row]}
-      totalCount={1}
+      sentence="Nothing says what this means."
       abilities={{ canWriteVault: true, agentObserved: false }}
       mapHref={(id) => `/?node=${id}`}
       sourceHref={() => "/docs/?slug=capabilities%2Fpay"}
       builderHref={() => "/ontology/studio/?node=capability%3Apay"}
       onWrite={onWrite}
-      moreCount={(count) => `+${count} more`}
       labels={labels}
       {...overrides}
     />,
@@ -144,13 +141,12 @@ describe("MeaningGapSection", () => {
         <MeaningGapSection
           gapKind="missing-definition"
           rows={[row]}
-          totalCount={1}
+          sentence="Nothing says what this means."
           abilities={{ canWriteVault: true, agentObserved: false }}
           mapHref={() => "/"}
           sourceHref={() => null}
           builderHref={() => "/"}
           onWrite={vi.fn(async () => {})}
-          moreCount={(count) => `+${count} more`}
           labels={labels}
         />
       </div>,
@@ -200,11 +196,17 @@ describe("MeaningGapSection", () => {
     );
   });
 
-  it("읽기 전용 세션엔 입력칸이 없고, 대신 넘길 명령과 이유가 있다 — 회색 비활성 버튼 0", () => {
+  /**
+   * The read-only line itself moved up to the list (it is said once per screen, beside the control
+   * that opens a folder, rather than once per run of rows). What the row must still do is offer a
+   * door that opens: no input, but a way to look and a command to hand over.
+   */
+  it("읽기 전용 세션엔 입력칸이 없고, 대신 넘길 명령이 있다 — 회색 비활성 버튼 0", () => {
     renderSection({ abilities: { canWriteVault: false, agentObserved: false } });
     expect(screen.queryByTestId("meaning-gap-write-toggle")).toBeNull();
-    expect(screen.getByTestId("do-next-handoff-copy")).toHaveTextContent("Copy the command");
-    expect(screen.getByTestId("meaning-gap-readonly-hint")).toBeInTheDocument();
+    expect(screen.getByTestId("do-next-item-view")).toHaveTextContent("View on map");
+    fireEvent.click(screen.getByTestId("do-next-row-menu"));
+    expect(screen.getByTestId("do-next-row-menu-handoff")).toHaveTextContent("Copy the command");
     expect(
       screen.queryAllByRole("button").filter((button) => button.hasAttribute("disabled")),
     ).toHaveLength(0);
@@ -221,7 +223,7 @@ describe("MeaningGapSection", () => {
       <MeaningGapSection
         gapKind="missing-domain"
         rows={[domainRow]}
-        totalCount={1}
+        sentence="No domain is written down."
         abilities={{ canWriteVault: true, agentObserved: true }}
         domainChoices={[
           { value: "billing", label: "결제" },
@@ -231,8 +233,7 @@ describe("MeaningGapSection", () => {
         sourceHref={() => null}
         builderHref={() => "/"}
         onWrite={onWrite}
-        moreCount={(count) => `+${count} more`}
-        labels={{ ...labels, sectionTitle: "No area written down" }}
+        labels={labels}
       />,
     );
     fireEvent.click(screen.getByTestId("meaning-gap-write-toggle"));
@@ -251,13 +252,12 @@ describe("MeaningGapSection", () => {
       <MeaningGapSection
         gapKind="missing-definition"
         rows={[]}
-        totalCount={0}
+        sentence="Nothing says what this means."
         abilities={{ canWriteVault: true, agentObserved: false }}
         mapHref={() => "/"}
         sourceHref={() => null}
         builderHref={() => "/"}
         onWrite={vi.fn(async () => {})}
-        moreCount={(count) => `+${count} more`}
         labels={labels}
       />,
     );

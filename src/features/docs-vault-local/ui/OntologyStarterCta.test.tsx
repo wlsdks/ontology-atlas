@@ -45,7 +45,7 @@ describe('OntologyStarterCta', () => {
     expect(screen.getByText(/프로젝트·도메인·역량·요소/)).toBeInTheDocument();
     expect(screen.getByText('로컬')).toBeInTheDocument();
     expect(screen.getByText('서로 맞는지 확인함')).toBeInTheDocument();
-    expect(screen.getByText('AI 흐름')).toBeInTheDocument();
+    expect(screen.getByText('AI가 확인하는 순서')).toBeInTheDocument();
     expect(screen.getByText(/validate_vault/)).toBeInTheDocument();
     expect(screen.getAllByText(/workspace_brief/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/agent_brief/).length).toBeGreaterThan(0);
@@ -57,7 +57,7 @@ describe('OntologyStarterCta', () => {
       screen.getByRole('button', { name: '터미널 근거 복사' }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', { name: '자동화 JSON 점검 복사' }),
+      screen.getByRole('button', { name: '자동 점검 명령 복사' }),
     ).toBeInTheDocument();
   });
 
@@ -129,14 +129,14 @@ describe('OntologyStarterCta', () => {
     copyTextMock.mockResolvedValue(true);
     render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: '자동화 JSON 점검 복사' }));
+    fireEvent.click(screen.getByRole('button', { name: '자동 점검 명령 복사' }));
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
     expect(copyTextMock).toHaveBeenCalledWith(
       'node $ATLAS/cli/src/index.mjs agent-brief . --verify-fallbacks --json --exit-zero --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
-    expect(await screen.findByRole('button', { name: 'JSON 점검 복사됨' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: '자동 점검 명령을 복사했어요' })).toBeInTheDocument();
   });
 
   it('데스크톱 vault 절대경로가 있으면 바로 실행 가능한 proof 명령을 복사한다', async () => {

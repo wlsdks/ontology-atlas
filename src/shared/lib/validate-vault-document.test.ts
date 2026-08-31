@@ -249,3 +249,59 @@ describe("summarizeVaultValidation", () => {
     ]);
   });
 });
+
+/*
+ * ⚠️ Census state 3e, 2026-08-31. `parseFrontmatter` records these two, `build-local-manifest`
+ * keeps them on the doc, and the raw-text validator reports them — but the fast path every screen
+ * in the app uses never saw them, so a line the parser could not read silently cost the document a
+ * field and nothing anywhere said so.
+ */
+describe("파서가 못 읽은 줄은 문서의 문제로 함께 보고된다", () => {
+  const malformed = [
+    { code: "malformed-frontmatter-line", message: "3행을 읽지 못했습니다" },
+    { code: "malformed-quoted-scalar", message: "따옴표가 닫히지 않았습니다" },
+  ];
+
+  it("파싱 진단을 error 로 올려 보낸다", () => {
+    const r = validateVaultDocFrontmatter(
+      { uid: VALID_UID, kind: "project", title: "X" },
+      malformed,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.issues.map((i) => i.code)).toEqual([
+      "malformed-frontmatter-line",
+      "malformed-quoted-scalar",
+    ]);
+    expect(r.issues.every((i) => i.severity === "error")).toBe(true);
+  });
+
+  it("ontology 노드가 아닌 문서에서도 못 읽은 줄은 말한다", () => {
+    // Being a docs-only file is a reason to stay quiet about kinds. It is not a reason to stay
+    // quiet about a line nobody can read.
+    const r = validateVaultDocFrontmatter({ title: "Just a doc" }, malformed);
+    expect(r.ok).toBe(false);
+    expect(r.issues.map((i) => i.code)).toContain("malformed-frontmatter-line");
+  });
+
+  it("진단이 없으면 아무 것도 늘어나지 않는다", () => {
+    const r = validateVaultDocFrontmatter({ uid: VALID_UID, kind: "project", title: "X" });
+    expect(r.issues).toHaveLength(0);
+  });
+
+  it("진단과 무관한 파서 코드는 올려 보내지 않는다", () => {
+    const r = validateVaultDocFrontmatter({ uid: VALID_UID, kind: "project", title: "X" }, [
+      { code: "some-other-note", message: "무시되어야 한다" },
+    ]);
+    expect(r.issues).toHaveLength(0);
+  });
+
+  it("요약도 같은 사실을 센다 — 지도가 그리는 문서 전체의 단일 지점", () => {
+    const summary = summarizeVaultValidation([
+      { slug: "a", frontmatter: { uid: VALID_UID, kind: "project" }, diagnostics: malformed },
+      { slug: "b", frontmatter: { uid: "3f1a2b4c-5d6e-4f70-8a91-b2c3d4e5f607", kind: "project" } },
+    ]);
+    expect(summary.ok).toBe(false);
+    expect(summary.errorCount).toBe(2);
+    expect(summary.issuesBySlug.map((entry) => entry.slug)).toEqual(["a"]);
+  });
+});

@@ -31,11 +31,11 @@ const doc: VaultDoc = {
   linksOut: [],
 };
 
-function renderBlock(locale: "en" | "ko" = "ko") {
+function renderBlock(locale: "en" | "ko" = "ko", override: Partial<VaultDoc> = {}) {
   const messages = locale === "ko" ? koMessages : enMessages;
   return render(
     <NextIntlClientProvider locale={locale} messages={messages}>
-      <DocFrontmatterBlock doc={doc} />
+      <DocFrontmatterBlock doc={{ ...doc, ...override }} />
     </NextIntlClientProvider>,
   );
 }
@@ -528,5 +528,37 @@ describe("DocFrontmatterBlock — last-edit provenance", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.queryByTestId("mtime-conflict-badge")).not.toBeInTheDocument();
+  });
+});
+
+/*
+ * ⚠️ Census state 3e, 2026-08-31. `parseFrontmatter` records an unreadable line and an unclosed
+ * quote, the manifest keeps them on the doc, and this screen is the one place that explains a
+ * document to the person editing it. It never read them, so a broken line cost the document a
+ * field and no screen in the product said a word about it.
+ */
+describe("DocFrontmatterBlock - 파서가 못 읽은 줄", () => {
+  it("못 읽은 줄과 닫히지 않은 따옴표를 사람 말로 말한다", () => {
+    renderBlock("ko", {
+      diagnostics: [
+        { code: "malformed-frontmatter-line", line: 3, message: "raw parser text" },
+        { code: "malformed-quoted-scalar", line: 5, message: "raw parser text" },
+      ],
+    });
+
+    const rows = screen.getAllByTestId("doc-frontmatter-issue");
+    const text = rows.map((row) => row.textContent ?? "").join("\n");
+    expect(text).toContain("정보칸의 한 줄을 읽지 못했어요");
+    expect(text).toContain("따옴표로 연 값이 닫히지 않았어요");
+    // The machine code itself must never be what the person reads. An unknown code falls back to
+    // the code string, so this also proves the dictionary really has both entries.
+    expect(text).not.toContain("malformed-frontmatter-line");
+    expect(text).not.toContain("malformed-quoted-scalar");
+    for (const row of rows) expect(row).toHaveAttribute("data-severity", "error");
+  });
+
+  it("진단이 없는 문서에는 아무 줄도 만들지 않는다", () => {
+    renderBlock("ko");
+    expect(screen.queryByTestId("doc-frontmatter-issue")).not.toBeInTheDocument();
   });
 });

@@ -190,7 +190,6 @@
   --color-indigo-focus-ring: rgb(94, 106, 210);
   --color-indigo-a50: rgba(94, 106, 210, 0.5);
   --color-indigo-a55: rgba(94, 106, 210, 0.55);
-  --color-indigo-a58: rgba(94, 106, 210, 0.58);
   --color-indigo-a66: rgba(94, 106, 210, 0.66);
   /* pale indigo text. */
   --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
@@ -1900,7 +1899,6 @@
     --color-indigo-focus-ring: rgb(94, 106, 210);
     --color-indigo-a50: rgba(94, 106, 210, 0.5);
     --color-indigo-a55: rgba(94, 106, 210, 0.55);
-    --color-indigo-a58: rgba(94, 106, 210, 0.58);
     --color-indigo-a66: rgba(94, 106, 210, 0.66);
     --color-indigo-text-strong: rgba(159, 170, 235, 0.95);
     --color-indigo-text-soft: rgba(188, 195, 255, 0.92);
@@ -4241,7 +4239,6 @@ html[data-gateway-stage] {
   --color-indigo-a46: rgba(193, 74, 36, 0.46);
   --color-indigo-a50: rgba(193, 74, 36, 0.5);
   --color-indigo-a55: rgba(193, 74, 36, 0.55);
-  --color-indigo-a58: rgba(193, 74, 36, 0.58);
   --color-indigo-a60: rgba(193, 74, 36, 0.6);
   --color-indigo-a66: rgba(193, 74, 36, 0.66);
   --color-indigo-focus-ring: rgb(193, 74, 36);

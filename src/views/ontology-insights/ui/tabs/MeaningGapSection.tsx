@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Pencil } from "lucide-react";
+import { Check, MessageCircle, Pencil } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { useRowDisclosure } from "@/shared/lib/use-row-disclosure";
@@ -11,13 +11,17 @@ import { controlClass, fieldClass } from "@/shared/ui/control-class";
 import type { MeaningGapKind } from "@/entities/knowledge-graph";
 import type { DomainChoice, MeaningGapRow } from "../../lib/meaning-gap-rows";
 import {
-  HandoffCopyButton,
   RowActionMenu,
   type QueueRowAbilities,
-  type QueueRowActionLabels,
 } from "../parts/QueueRowActions";
 import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
-import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
+import {
+  ACCENT_CHIP_IDLE,
+  ACCENT_CHIP_OPEN,
+  FIX_ROW_SECONDARY_INK,
+  FIX_ROW_TERTIARY_INK,
+  type FixRowLabels,
+} from "../parts/FixRow";
 
 /**
  * **The section where a to-do that ends in one sentence is finished on the spot** — the first
@@ -42,29 +46,8 @@ import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
  *   `app/globals.css`) — it grows downward only, and the way out matches the way in.
  */
 
-/**
- * The **ink** for this section's indigo chips — the layer the value layer (`controlClass`)
- * deliberately does not emit.
- *
- * The ramp's `tone` emits **the text colour only** (`control-class.ts`). Border and background
- * tints and hover are not in the ramp yet, so the consumer owns them. The same string was
- * scattered across three sites, and writing it by hand three times eventually splits one of
- * them — binding it to a constant removes that. **Not one value is new** (the existing
- * `--color-indigo-line-*`).
- */
-const ACCENT_CHIP_IDLE =
-  "border-[color:var(--color-indigo-line-a22)] hover:border-[color:var(--color-indigo-line-a42)] hover:bg-[color:var(--color-indigo-line-a13)]";
-const ACCENT_CHIP_OPEN =
-  "border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)]";
-const ACCENT_CHIP_FILLED =
-  "font-[var(--font-weight-signature)] border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] hover:border-[color:var(--color-indigo-line-a45)]";
-
-export interface MeaningGapLabels extends QueueRowActionLabels {
-  sectionTitle: string;
-  hint: string;
-  openMap: string;
-  /** Opens and closes the inline input. */
-  writeHere: string;
+export interface MeaningGapLabels extends FixRowLabels {
+  /** Closes the inline input again. Opening it uses the list-wide "fix it myself" label. */
   writeHereClose: string;
   definitionPlaceholder: string;
   domainLegend: string;
@@ -79,9 +62,15 @@ export interface MeaningGapLabels extends QueueRowActionLabels {
   conflict: string;
   needsText: string;
   needsDomain: string;
-  /** One line appended below this section in a read-only session. */
-  readOnlyHint: string;
 }
+
+/**
+ * The filled state of the domain chip that already carries a value. It stays here rather than
+ * beside the shared row chips because it is this form's own "you picked this" ink, not a role the
+ * flat list has anywhere else. Not one value is new (the existing `--color-indigo-line-*`).
+ */
+const ACCENT_CHIP_FILLED =
+  "font-[var(--font-weight-signature)] border-[color:var(--color-indigo-line-a32)] bg-[color:var(--color-indigo-line-a13)] hover:border-[color:var(--color-indigo-line-a45)]";
 
 type RowPhase =
   | { kind: "editing" }
@@ -104,7 +93,8 @@ const SAVED_ROW_LINGER_MS = 2200;
 export interface MeaningGapSectionProps {
   gapKind: MeaningGapRow["gap"];
   rows: MeaningGapRow[];
-  totalCount: number;
+  /** The one plain sentence every row of this gap kind states. Owned by the list, not by a heading. */
+  sentence: string;
   abilities: QueueRowAbilities;
   /** Candidates to choose from on an unassigned-parent row. Unused on an undefined-meaning row. */
   domainChoices?: DomainChoice[];
@@ -124,14 +114,13 @@ export interface MeaningGapSectionProps {
    * a conflict.
    */
   onWrite: (row: MeaningGapRow, value: string) => Promise<void>;
-  moreCount: (count: number) => string;
   labels: MeaningGapLabels;
 }
 
 export function MeaningGapSection({
   gapKind,
   rows,
-  totalCount,
+  sentence,
   abilities,
   domainChoices = [],
   mapHref,
@@ -139,7 +128,6 @@ export function MeaningGapSection({
   builderHref,
   askAgentHref,
   onWrite,
-  moreCount,
   labels,
 }: MeaningGapSectionProps) {
   const [openRowId, setOpenRowId] = useState<string | null>(null);
@@ -215,32 +203,22 @@ export function MeaningGapSection({
     (a, b) => a.title.localeCompare(b.title),
   );
   if (visibleRows.length === 0) return null;
-  const hiddenCount = Math.max(0, totalCount - rows.length);
 
+  /*
+   * **No section chrome any more.** These rows are members of the tab's one flat list (owner
+   * decision, 2026-08-31), so the heading, the count, the hint and the truncation line are gone
+   * and this component emits rows only. What it still owns is the state a run of rows shares:
+   * which row is expanded, what is typed in it, and the pin that keeps a just-saved row on screen
+   * after it drops out of the data.
+   */
   return (
-    <section
-      aria-label={labels.sectionTitle}
-      data-testid={`do-next-${gapKind}`}
-      className="flex flex-col"
-    >
-      <div className="flex flex-col gap-1 border-b border-[color:var(--color-divider)] pb-2">
-        <div className="flex items-baseline gap-2">
-          <InsightsSectionTitle level={3} className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {labels.sectionTitle}
-          </InsightsSectionTitle>
-          <span className="font-mono text-label tabular-nums text-[color:var(--topology-v2-numeral-face)]">
-            {totalCount}
-          </span>
-        </div>
-        <p className="text-label leading-label text-[color:var(--color-text-quaternary)]">
-          {labels.hint}
-        </p>
-      </div>
+    <>
       {visibleRows.map((row) => (
         <MeaningGapRowView
           key={row.id}
           row={row}
           gapKind={gapKind}
+          sentence={sentence}
           open={openRowId === row.id}
           ui={uiById.get(row.id) ?? EMPTY_UI}
           abilities={abilities}
@@ -261,26 +239,14 @@ export function MeaningGapSection({
           labels={labels}
         />
       ))}
-      {hiddenCount > 0 ? (
-        <p className="pt-2 text-label text-[color:var(--color-text-quaternary)]">
-          {moreCount(hiddenCount)}
-        </p>
-      ) : null}
-      {!abilities.canWriteVault ? (
-        <p
-          data-testid="meaning-gap-readonly-hint"
-          className="pt-2 text-label leading-label text-[color:var(--color-text-quaternary)]"
-        >
-          {labels.readOnlyHint}
-        </p>
-      ) : null}
-    </section>
+    </>
   );
 }
 
 function MeaningGapRowView({
   row,
   gapKind,
+  sentence,
   open,
   ui,
   abilities,
@@ -297,6 +263,7 @@ function MeaningGapRowView({
 }: {
   row: MeaningGapRow;
   gapKind: MeaningGapRow["gap"];
+  sentence: string;
   open: boolean;
   ui: RowUiState;
   abilities: QueueRowAbilities;
@@ -362,6 +329,7 @@ function MeaningGapRowView({
 
   const canSave = dirty && !saving;
   const candidate = { id: row.id, title: row.title };
+  const askAgentUrl = askAgentHref?.(row.nodeId, row.gap) ?? null;
   const confirmLine =
     gapKind === "missing-definition"
       ? labels.confirmDefinition(row.ownSlug)
@@ -381,15 +349,50 @@ function MeaningGapRowView({
     >
       {/* The header band uses the **same shell** as the queue's other section rows (py-2.5 and the
           same column order). A different height here alone breaks the rhythm within one list. */}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 py-2.5">
+      <div
+        data-testid="do-next-item"
+        data-fix-kind={gapKind}
+        className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5 py-2.5"
+      >
         <TopologyV2KindGlyph kind={row.nodeKind} size={13} />
-        <span className="min-w-0 flex-1 truncate text-body text-[color:var(--color-text-secondary)]">
-          {row.title}
-        </span>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
+            {row.title}
+          </span>
+          {/* The one plain sentence naming the observed fact. It used to be a section hint above
+              a run of rows; with one list it belongs to the row, because there is no header left
+              to carry it. `break-keep` because Korean breaks mid-word otherwise. */}
+          <span
+            data-testid="do-next-item-why"
+            className="min-w-0 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]"
+          >
+            {sentence}
+          </span>
+        </div>
         <span className="flex w-full items-center justify-end gap-1.5 sm:w-auto sm:shrink-0">
-          {/* A row whose save has finished has nothing to open or close — the confirmation line
-              states the state and it will shortly leave the queue. Leaving the control would give
-              "collapse" nothing to point at. */}
+          {/* Primary: hand it to the agent beside the map with the sentence already written. It
+              exists only where that agent surface does, so in a browser the row falls through to
+              its own next-best action rather than offering a door that will not open. */}
+          {askAgentUrl ? (
+            <Link
+              href={askAgentUrl}
+              data-testid="do-next-item-ask-agent"
+              className={controlClass({
+                shape: "chip",
+                size: "md",
+                tone: "accentOnTint",
+                className: ACCENT_CHIP_IDLE,
+              })}
+            >
+              <MessageCircle size={ICON_SIZE.sm} aria-hidden />
+              {labels.askAgent}
+            </Link>
+          ) : null}
+          {/* Secondary: do it yourself. On these rows that is the inline write, which is the whole
+              point of the meaning-gap sections and the only place on this screen a person finishes
+              a to-do without leaving it.
+              A row whose save has finished has nothing to open or close: the confirmation line
+              states the state and the row will shortly leave the list. */}
           {abilities.canWriteVault && !saved ? (
             <button
               type="button"
@@ -408,25 +411,34 @@ function MeaningGapRowView({
               })}
             >
               <Pencil size={ICON_SIZE.sm} aria-hidden />
-              {open ? labels.writeHereClose : labels.writeHere}
+              {open ? labels.writeHereClose : labels.fixHere}
             </button>
-          ) : abilities.canWriteVault ? null : (
-            <HandoffCopyButton payload={row.handoffPayload} labels={labels} abilities={abilities} />
+          ) : (
+            <Link
+              href={builderHref(row.nodeId)}
+              data-testid="do-next-item-fix"
+              className={controlClass({ shape: "chip", size: "md", className: FIX_ROW_SECONDARY_INK })}
+            >
+              {labels.fixHere}
+            </Link>
           )}
+          {/* Tertiary: go look at it, without promising a change. */}
           <Link
             href={mapHref(row.nodeId)}
+            data-testid="do-next-item-view"
             className={controlClass({
               shape: "chip",
               size: "md",
-              className: "hover:text-[color:var(--color-text-primary)]",
+              tone: "muted",
+              className: FIX_ROW_TERTIARY_INK,
             })}
           >
-            {labels.openMap}
+            {labels.viewOnMap}
           </Link>
           <RowActionMenu
             sourceHref={sourceHref(row.nodeId)}
             builderHref={builderHref(row.nodeId)}
-            askAgentHref={askAgentHref?.(row.nodeId, row.gap) ?? null}
+            hideBuilder
             handoffPayload={row.handoffPayload}
             candidate={candidate}
             abilities={abilities}

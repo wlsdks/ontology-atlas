@@ -40,6 +40,32 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-09-01 — The Do-next tab is one list, and the a58 indigo step retires with its meter
+
+**Convened**: solo pass after the owner's direction (2026-08-31: the tab "shows
+things I cannot see a reason for"; option "one list" chosen, with the ask that
+analysis items hand off to the in-app agent) · **Trigger**: a removed surface
+element retired the only consumer of a design ramp step.
+
+**Decision**: 분석 → 할 일 renders one flat list titled by one count. The
+readiness meter, the repair-queue counter band, the activity digest and the
+agent footer are removed; every item keeps its computed source and gains, where
+the chat can take it, a primary "AI에게 맡기기" action through the existing ask
+deep link (missing definition, missing domain, and missing relations for
+orphan, island and containment rows). Blocked documents join the list by name
+with the failed check in plain words. `--color-indigo-a58` had exactly one
+consumer, the removed meter, and is deleted from `app/globals.css`; the
+unused-token ratchet enforces the absence. MCP `maintenance_plan` still serves
+agents the full queue; nothing served to agents was reduced.
+
+**Recorded dissent**: the meter gave a one-glance health impression the list
+does not; a large vault's long list may read as noise where the band read as a
+number. **Falsifier**: an owner or field-trial reader asks "how healthy is this
+vault overall" and the page cannot answer without counting rows. **Revisit**:
+first field trial after 1.0.0.
+
+**Status**: standing
+
 ## 2026-08-31 — MCP and script messages a person or agent reads are English
 
 **Convened**: solo pass on the release-hardening branch · **Trigger**: the

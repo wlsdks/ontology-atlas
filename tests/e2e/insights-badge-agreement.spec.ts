@@ -25,13 +25,20 @@ import { expect, test } from "@playwright/test";
  * does have branches such as "0 concepts means a 0 badge").
  */
 
-test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 수를 말한다", () => {
+test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 수를 말한다", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
 
-  test("탭 배지 = 묶음 배지 합 + 수리 큐의 차단 신호", async ({ page }) => {
+  /**
+   * **What changed on 2026-08-31.** The tab used to carry group badges and a repair-queue chip
+   * row, and this check balanced the tab badge against their sum. The owner's one-list decision
+   * removed both, so there are exactly **two** numbers on this screen now: the tab badge and the
+   * list heading. Fewer places to disagree is the point of the change; that they still agree is
+   * what this measures.
+   */
+  test("탭 배지 = 목록 제목이 말하는 규모", async ({ page }) => {
     await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(1800);
+    await expect(page.getByTestId("do-next-list")).toBeVisible({ timeout: 20_000 });
 
     const seen = await page.evaluate(() => {
       const text = (el: Element | null) => (el?.textContent ?? "").trim();
@@ -39,46 +46,33 @@ test.describe("인사이트 할 일 — 탭 배지와 묶음 배지가 같은 �
         const m = /(\d+)/.exec(s);
         return m ? Number(m[1]) : null;
       };
-
       const tab = [...document.querySelectorAll("button")].find((b) => /^할\s*일/.test(text(b)));
-      const groups = [...document.querySelectorAll('[data-testid^="do-next-group-"]')]
-        .filter((el) => (el.getAttribute("data-testid") ?? "").endsWith("-count"))
-        .map((el) => num(text(el)) ?? 0);
-
-      // The repair queue's blocking signals (isolated islands, missing connections) are
-      // separate signals rather than queue sections, so they enter the tab badge but not
-      // the group badge. Both are read from the screen to balance the equation.
-      //
-      // ⚠️ **Do not read this as `num(parent text)`** — the first attempt did, grabbed a
-      // container further up, and read the concept count **112** as a blocking signal.
-      // Match a whole chip's shape (`"0 isolated islands"`) instead, so a failed match turns the
-      // count assertion below red rather than **silently yielding 0**.
-      const CHIP = /^(\d+)\s*(분리된 섬|누락된 연결)$/;
-      const repair = [...document.querySelectorAll("*")]
-        .filter((el) => el.childElementCount === 0 && /분리된 섬|누락된 연결/.test(text(el)))
-        .map((el) => CHIP.exec((el.parentElement?.textContent ?? "").replace(/\s+/g, " ").trim()))
-        .filter(Boolean)
-        .map((m) => Number(m![1]));
-
-      return { tab: num(text(tab ?? null)), groups, repair };
+      const heading = document.querySelector('[data-testid="do-next-list-title"]');
+      // Every counter that used to live on this tab. Any of them coming back means the same work
+      // is being counted in a second place again.
+      const removed = [
+        "insights-agent-readiness",
+        "insights-repair-queue",
+        "insights-activity-digest",
+        "do-next-groups",
+      ].filter((id) => document.querySelector(`[data-testid="${id}"]`) !== null);
+      return { tab: num(text(tab ?? null)), heading: num(text(heading)), removed };
     });
 
-    // Idling guard — an unread badge makes the equation below hold because nothing was looked at.
+    // Idling guards — an unread badge makes the equation below hold because nothing was looked at.
     expect(seen.tab, "탭 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
-    expect(seen.groups.length, "묶음 배지를 하나도 못 찾았다").toBeGreaterThan(0);
+    expect(seen.heading, "목록 제목의 수를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
     expect(seen.tab, "샘플 볼트인데 할 일이 0이다 — 이 검사가 헛돈다").toBeGreaterThan(0);
-    // Failing to read the two blocking-signal chips silently shrinks the right-hand side.
-    expect(seen.repair.length, "수리 큐의 차단 칩(분리된 섬 · 누락된 연결)을 못 읽었다").toBe(2);
-
-    const groupSum = seen.groups.reduce((a, b) => a + b, 0);
-    const blocking = seen.repair.reduce((a, b) => a + b, 0);
 
     expect(
-      seen.tab,
-      `탭 배지(${seen.tab}) ≠ 묶음 배지 합(${groupSum}) + 차단 신호(${blocking}). ` +
-        "같은 일을 두 수로 세고 있다 — 섹션 총계는 " +
-        "`queueSectionTotals` 한 곳에서만 갈라져 나가야 한다",
-    ).toBe(groupSum + blocking);
+      seen.removed,
+      "같은 일을 세는 자리가 다시 생겼다 — 「할 일」 탭은 목록 하나다",
+    ).toEqual([]);
+    expect(
+      seen.heading,
+      `탭 배지(${seen.tab}) ≠ 목록 제목(${seen.heading}). 같은 일을 두 수로 세고 있다 — ` +
+        "둘 다 `insightsVerdict.total` 한 곳에서만 갈라져 나가야 한다",
+    ).toBe(seen.tab);
   });
 });
 

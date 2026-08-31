@@ -58,7 +58,7 @@ import {
   useSummaryFreshness,
   useVaultSessionIdentityScope,
 } from "@/entities/vault-session";
-import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex, useVaultValidationSummary } from "@/features/vault-ontology";
 import {
   VaultOpenGuideSheet,
 } from "@/features/docs-vault-local";
@@ -828,6 +828,23 @@ function HomePageImpl() {
   const dustySlugs = useMemo(
     () => deriveDustySlugs(ontologyInsight?.nodes ?? [], docFreshnessIndex, updatedAgoNowMs),
     [ontologyInsight, docFreshnessIndex, updatedAgoNowMs],
+  );
+  /*
+   * ⚠️ **A document the checks caught is invisible on the map** (census state 3, 2026-08-31). A
+   * broken `kind` drops the node from the graph and an unreadable frontmatter line silently loses
+   * a field, and both were drawn as a healthy node or as nothing at all — the map has no place to
+   * say "this file is not what it claims". The same summary the settings sheet and the insights
+   * screen already count from is read here, so the three surfaces cannot disagree about one
+   * folder, and the count is one quiet row shaped like the two beside it. Only errors: a warning
+   * is advice, and advice does not belong in a row that says something is wrong.
+   */
+  const vaultValidation = useVaultValidationSummary();
+  const brokenDocCount = useMemo(
+    () =>
+      vaultValidation.issuesBySlug.filter((entry) =>
+        entry.issues.some((issue) => issue.severity === "error"),
+      ).length,
+    [vaultValidation],
   );
   const selectedOntologyNode = useMemo(() => {
     if (!selectedSlug || selectedProject) return null;
@@ -5091,6 +5108,7 @@ function HomePageImpl() {
                     uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
                     // Dusty (long-untouched) node count; the row hides at 0.
                     dustyNodeCount={dustySlugs.size}
+                    brokenDocCount={brokenDocCount}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                     noProjectsYet={projectSourceReadiness.state === "no-projects"}
                     // The door hands work to an agent; without one it would create a folder and
@@ -5140,6 +5158,8 @@ function HomePageImpl() {
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                       dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
                       dustyNodesAction: t("index.dustyNodesAction"),
+                      brokenDocsLabel: t("index.brokenDocsLabel", { count: brokenDocCount }),
+                      brokenDocsAction: t("index.brokenDocsAction"),
                       sourceUnboundLabel: t("index.sourceUnboundLabel", {
                         count: unboundProjectSource?.count ?? 0,
                       }),

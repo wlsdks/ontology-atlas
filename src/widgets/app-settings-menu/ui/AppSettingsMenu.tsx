@@ -1006,7 +1006,22 @@ export function AppSettingsMenu({
                     label={t('workspaceFolderLabel')}
                     caption={
                       localVault.status === 'error'
-                        ? (localVault.errorMessage ?? t('workspaceFolderErrorFallback'))
+                        ? /*
+                           * ⚠️ **The raw cause is not the caption** (census state 1c, 2026-08-31).
+                           * This read `errorMessage ?? fallback`, so a browser's own
+                           * `NotFoundError` sentence — English, written for a developer — landed
+                           * in a Korean settings row, while `path-missing` (which deliberately
+                           * carries no message) fell through to a sentence telling the person to
+                           * pick the folder again without saying why. `FirstRunPage` already
+                           * branches on the code; this row now says the same thing the same way.
+                           */
+                          localVault.errorCode === 'path-missing'
+                          ? t('workspaceFolderErrorPathMissing')
+                          : localVault.errorCode === 'permission-denied'
+                            ? t('workspaceFolderErrorPermissionDenied')
+                            : localVault.errorCode === 'root-rejected'
+                              ? t('workspaceFolderErrorRootRejected')
+                              : t('workspaceFolderErrorFallback')
                         : localVault.status === 'permission-needed'
                           ? t('workspaceFolderPermissionCaption')
                           : isLocalVaultLoaded

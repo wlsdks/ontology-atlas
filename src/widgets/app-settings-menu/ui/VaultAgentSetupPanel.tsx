@@ -14,9 +14,11 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import {
+  AGENT_CLIENTS,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
+  filesForClient,
 } from '@/entities/vault-session';
 import {
   AgentClientButtons,
@@ -387,16 +389,35 @@ export function VaultAgentSetupPanel({
   // A deep link needs an absolute path (installed app). Web is null → degrade to copy.
   const cursorDeeplink = buildCursorMcpDeeplink(vaultRootPath, serverAvailability.launch);
 
-  /** Take a tool and write only its file — omit it and all of them go, as before (the scaffold position). */
+  /**
+   * Take a tool and write only its file — omit it and all of them go, as before (the scaffold
+   * position).
+   *
+   * ⚠️ **A failed write must reach the button that started it** (census state 5e, 2026-08-31).
+   * Two things were wrong at once. This handler swallowed the rejection, so
+   * `AgentClientButtons.writeAndConfirm` — which decides its state by awaiting this — saw a
+   * resolved promise and drew the tick for `done` on a write that never happened. And the
+   * sentence it showed was the raw exception, which names neither the file it tried to write nor
+   * the fact that the folder is unchanged. So the message is composed here, and the rejection is
+   * re-thrown so the pressed button says it failed.
+   */
   async function handleEnsureAgentConfigs(client?: AgentClientId) {
     setAgentSetupError(null);
     setAgentSetupBusy(true);
     try {
       await localVault.ensureAgentConfigs(client);
     } catch (err) {
+      const files = (
+        client ? filesForClient(client) : AGENT_CLIENTS.flatMap((entry) => entry.files)
+      ).join(', ');
+      const detail = err instanceof Error ? err.message.trim() : '';
+      // Never print empty brackets: with no cause to quote, the sentence stands without one.
       setAgentSetupError(
-        err instanceof Error ? err.message : t('agentSetup.errorFallback'),
+        detail
+          ? t('agentSetup.writeFailed', { files, detail })
+          : t('agentSetup.writeFailedNoDetail', { files }),
       );
+      throw err;
     } finally {
       setAgentSetupBusy(false);
     }
@@ -815,6 +836,26 @@ export function VaultAgentSetupPanel({
             : t('agentSetup.rootSummaryMissing')
           : t('agentSetup.rootSummaryBlocked')}
       </p>
+      {/*
+        ⚠️ **The diagnosis that existed and was never drawn** (census state 5d, 2026-08-31).
+        `agent_setup.rs` composes a `reason` for a bundled server it cannot find, its own doc
+        comment says the UI shows it verbatim, and `AgentServerAvailability.reason` repeats the
+        promise — yet no component in `src/` read the field. So an installed app whose MCP server
+        binary is missing quietly dropped the connect option and explained nothing.
+
+        It renders only when there is a real diagnosis: a web session sets no reason (not being
+        the installed app is the ordinary state, and the line above already says it), so this is
+        the installed app's row alone.
+      */}
+      {!publicPackagesReady && serverAvailability.reason ? (
+        <p
+          role="status"
+          data-testid="agent-setup-server-reason"
+          className="mt-1 break-keep text-label leading-prose text-[color:var(--color-amber-source-text-a95)]"
+        >
+          {t('agentSetup.serverMissingReason', { reason: serverAvailability.reason })}
+        </p>
+      ) : null}
 
       {/*
         ── Three steps ─────────────────────────────────────────────────
@@ -845,7 +886,10 @@ export function VaultAgentSetupPanel({
                the argument, so whichever button was pressed, the same files went out. */
             onWriteConfigs={
               publicPackagesReady && canEditCurrent
-                ? (client) => void handleEnsureAgentConfigs(client)
+                ? /* The promise is **returned**, not voided: the button awaits it to decide
+                     between "written" and "failed", and voiding it made every failed write draw
+                     the success tick. */
+                  (client) => handleEnsureAgentConfigs(client)
                 : null
             }
             /* The four are **pick one**, not «one right answer» — four full-width rows
@@ -1053,7 +1097,9 @@ export function VaultAgentSetupPanel({
           {hasMissingAgentConfig && canEditCurrent ? (
             <Chip
               size="sm"
-              onClick={() => void handleEnsureAgentConfigs()}
+              /* The message is already on screen; this catch only stops an unhandled rejection
+                 from the re-throw that tells the per-tool buttons their write failed. */
+              onClick={() => void handleEnsureAgentConfigs().catch(() => undefined)}
               disabled={agentSetupBusy}
               title={t('agentSetup.repairTitle')}
               tone="accentOnTint"

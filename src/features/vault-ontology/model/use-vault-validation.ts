@@ -34,6 +34,10 @@ function manifestValidation(manifest: VaultManifest): VaultValidationSummary {
     manifest.docs.map((doc) => ({
       slug: doc.slug,
       frontmatter: doc.frontmatter ?? {},
+      // The single choke point where every document the map draws is checked. The parser's own
+      // complaints ride along from the manifest, so a file whose frontmatter has an unreadable
+      // line is counted as broken instead of counted as fine (census state 3, 2026-08-31).
+      diagnostics: doc.diagnostics,
     })),
   );
   summaryCache.set(manifest, result);
