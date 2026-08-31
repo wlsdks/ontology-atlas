@@ -2390,6 +2390,48 @@
       "slug": "next-falsifiable-slice"
     }
   ],
+  "benchmark/FINDINGS-2026-08-31-metric-split": [
+    {
+      "depth": 1,
+      "text": "Most of the published gap was our own vocabulary — 2026-08-31",
+      "slug": "most-of-the-published-gap-was-our-own-vocabulary-2026-08-31"
+    },
+    {
+      "depth": 2,
+      "text": "What was re-scored",
+      "slug": "what-was-re-scored"
+    },
+    {
+      "depth": 2,
+      "text": "What was wrong with the original score",
+      "slug": "what-was-wrong-with-the-original-score"
+    },
+    {
+      "depth": 2,
+      "text": "The two halves, separated",
+      "slug": "the-two-halves-separated"
+    },
+    {
+      "depth": 2,
+      "text": "What we can and cannot say now",
+      "slug": "what-we-can-and-cannot-say-now"
+    },
+    {
+      "depth": 2,
+      "text": "What changed in the harness",
+      "slug": "what-changed-in-the-harness"
+    },
+    {
+      "depth": 2,
+      "text": "What has to happen next",
+      "slug": "what-has-to-happen-next"
+    },
+    {
+      "depth": 2,
+      "text": "The rule this produces",
+      "slug": "the-rule-this-produces"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -2415,6 +2457,16 @@
       "depth": 3,
       "text": "Lifecycle benchmark: greenfield versus brownfield",
       "slug": "lifecycle-benchmark-greenfield-versus-brownfield"
+    },
+    {
+      "depth": 4,
+      "text": "The score comes in two halves — only one of them is a comparison",
+      "slug": "the-score-comes-in-two-halves-only-one-of-them-is-a-comparison"
+    },
+    {
+      "depth": 4,
+      "text": "Re-score a saved run without running anything",
+      "slug": "re-score-a-saved-run-without-running-anything"
     },
     {
       "depth": 3,
@@ -3006,6 +3058,38 @@
       "depth": 2,
       "text": "Cells",
       "slug": "cells"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-r3-regrade-summary": [
+    {
+      "depth": 1,
+      "text": "Lifecycle benchmark, re-scored with the two halves separated — 2026-08-31-gb-r3",
+      "slug": "lifecycle-benchmark-re-scored-with-the-two-halves-separated-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 3,
+      "text": "Does this read the same answers the run scored?",
+      "slug": "does-this-read-the-same-answers-the-run-scored"
+    },
+    {
+      "depth": 2,
+      "text": "Paired gaps",
+      "slug": "paired-gaps"
+    },
+    {
+      "depth": 2,
+      "text": "How to read this",
+      "slug": "how-to-read-this"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    },
+    {
+      "depth": 2,
+      "text": "Which word decided each miss",
+      "slug": "which-word-decided-each-miss"
     }
   ],
   "benchmark/results/2026-08-31-gb-r3-summary": [
@@ -6412,6 +6496,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — A score only one side can earn is reported, never quoted as a gap",
+      "slug": "2026-08-31-a-score-only-one-side-can-earn-is-reported-never-quoted-as-a-gap"
     },
     {
       "depth": 2,
