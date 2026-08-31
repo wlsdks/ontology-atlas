@@ -1785,6 +1785,63 @@
       "slug": "audits-잰-것의-기록"
     }
   ],
+  "audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31": [
+    {
+      "depth": 1,
+      "text": "First-run walkthrough — 2026-08-31",
+      "slug": "first-run-walkthrough-2026-08-31"
+    },
+    {
+      "depth": 2,
+      "text": "North-star",
+      "slug": "north-star"
+    },
+    {
+      "depth": 2,
+      "text": "Findings, most severe first",
+      "slug": "findings-most-severe-first"
+    },
+    {
+      "depth": 3,
+      "text": "1. The instruction the app hands out promised a path the server refuses",
+      "slug": "1-the-instruction-the-app-hands-out-promised-a-path-the-server-refuses"
+    },
+    {
+      "depth": 3,
+      "text": "2. The same repository and instruction produce different proposals",
+      "slug": "2-the-same-repository-and-instruction-produce-different-proposals"
+    },
+    {
+      "depth": 3,
+      "text": "3. Pointing Atlas at a code repository shows no code",
+      "slug": "3-pointing-atlas-at-a-code-repository-shows-no-code"
+    },
+    {
+      "depth": 3,
+      "text": "4. The download page ends without saying what happens next",
+      "slug": "4-the-download-page-ends-without-saying-what-happens-next"
+    },
+    {
+      "depth": 2,
+      "text": "What the product did well",
+      "slug": "what-the-product-did-well"
+    },
+    {
+      "depth": 2,
+      "text": "Quality is uneven along the path",
+      "slug": "quality-is-uneven-along-the-path"
+    },
+    {
+      "depth": 2,
+      "text": "Diagnostics, not scores",
+      "slug": "diagnostics-not-scores"
+    },
+    {
+      "depth": 2,
+      "text": "Not claimed",
+      "slug": "not-claimed"
+    }
+  ],
   "audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07": [
     {
       "depth": 1,
