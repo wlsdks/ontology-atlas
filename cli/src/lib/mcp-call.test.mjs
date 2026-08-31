@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -152,6 +152,37 @@ describe('mcp-call response parsing', () => {
       }).message,
       'mcp exited code 7 while calling query_ontology (vault /tmp/vault). Check OATLAS_MCP_PATH, or set OATLAS_CLI_MCP_TIMEOUT_MS=N for large or slow vaults. stderr:\nfake mcp boom',
     );
+  });
+
+  it('replaces a source-checkout dependency crash with the exact install recovery', () => {
+    const scratchRoot = '/tmp/atlas-mcp-preflight-agent';
+    mkdirSync(scratchRoot, { recursive: true });
+    const root = mkdtempSync(join(scratchRoot, 'mcp-call-'));
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ dependencies: { 'fixture-mcp-dependency': '1.0.0' } }),
+    );
+    try {
+      const error = formatMcpProcessExitError(1, {
+        entry: join(root, 'src', 'index.js'),
+        sourceCheckoutMcpRoot: root,
+        toolName: 'query_ontology',
+        vaultRoot: '/tmp/vault',
+        stderr:
+          "Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'fixture-mcp-dependency' " +
+          "imported from '/tmp/mcp/src/index.js'\n    at node:internal/modules/esm/resolve:767:9",
+      });
+
+      assert.equal(
+        error.message,
+        'Source-checkout MCP dependencies are missing (fixture-mcp-dependency). ' +
+          'Run: pnpm --dir mcp install --frozen-lockfile',
+      );
+      assert.equal(error.message.match(/pnpm --dir mcp install --frozen-lockfile/g)?.length, 1);
+      assert.doesNotMatch(error.message, /ERR_MODULE_NOT_FOUND|OATLAS_MCP_PATH|timeout/i);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('formats MCP process signal errors with actionable retry guidance', () => {

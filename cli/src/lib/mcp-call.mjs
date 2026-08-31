@@ -19,6 +19,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+import { sourceCheckoutMcpDependencyError } from './mcp-module.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -156,7 +157,7 @@ export function callMcpTool(vaultRoot, toolName, args = {}, options = {}) {
       }
       if (code !== 0 && code !== null) {
         finish(() => rejectP(
-          formatMcpProcessExitError(code, { toolName, vaultRoot, stderr: stderrBuf }),
+          formatMcpProcessExitError(code, { entry, toolName, vaultRoot, stderr: stderrBuf }),
         ));
         return;
       }
@@ -258,7 +259,16 @@ export function formatMcpCallTimeoutError(timeoutMs, { toolName, vaultRoot, stde
   );
 }
 
-export function formatMcpProcessExitError(code, { toolName, vaultRoot, stderr } = {}) {
+export function formatMcpProcessExitError(
+  code,
+  { entry, sourceCheckoutMcpRoot, toolName, vaultRoot, stderr } = {},
+) {
+  const dependencyError = sourceCheckoutMcpDependencyError(stderr, {
+    entry,
+    mcpRoot: sourceCheckoutMcpRoot,
+  });
+  if (dependencyError) return dependencyError;
+
   const tool = toolName || '(unknown tool)';
   const vault = vaultRoot || '(unknown vault)';
   const stderrText = String(stderr || '').trim() || '(empty)';
