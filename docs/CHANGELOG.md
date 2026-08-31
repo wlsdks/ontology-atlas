@@ -49,6 +49,11 @@
 - The static-artifact size gate widens to 64 MiB total and 8 MiB per chunk by
   owner decision: it catches a stray dependency or a duplicated bundle, not
   documented growth. Recorded in the decision ledger with its falsifier.
+- Native failures speak in sentences. Git, keychain and LLM errors reach the
+  screen as a stable code that the app renders in the reader's language with
+  the machine detail in parentheses; an unknown code shows its English detail
+  instead of a bare kebab-case string, and a parity test keeps every code
+  translated in both locales.
 - Screen words say what they mean. A catalog audit against the rule that every
   feature must be understandable from its on-screen words rewrote 64 strings:
   "Repair queue" is "Things to fix", "Promote" is "Add to map", relation
