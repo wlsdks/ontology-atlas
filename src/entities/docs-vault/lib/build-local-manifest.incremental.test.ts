@@ -125,6 +125,50 @@ const BASE: Record<string, FakeFile> = {
 };
 
 describe('rebuildLocalManifestIncremental — 동치성', () => {
+  /**
+   * **The counters have to cross this path too.**
+   *
+   * `sourceFileCount` is what tells the first-run card the folder holds code. The
+   * incremental rebuild used the entries-only walk and passed no walk info, so the
+   * count vanished on the first refresh and the card silently reordered from
+   * "draft the map from your code" to "start from the documents in this folder"
+   * while it was still on screen — triggered by this feature's own happy path, an
+   * agent writing an approved document into the folder.
+   *
+   * The equivalence rule above would have caught it on its own; it did not,
+   * because no fixture here contained a file that was not Markdown.
+   */
+  it('소스 파일이 있는 폴더에서도 증분 결과가 전체 재빌드와 같다', async () => {
+    const withCode = {
+      ...BASE,
+      'src/editor.ts': { text: "export const editor = 'x';", lastModified: 3000 },
+      'src/sync.ts': { text: "export const sync = 'y';", lastModified: 3000 },
+      'src/export.ts': { text: "export const exporter = 'z';", lastModified: 3000 },
+    };
+    const before = await buildLocalManifestWithEntries(makeRoot(withCode));
+    expect(before.build.manifest.sourceFileCount).toBe(3);
+
+    const next = {
+      ...withCode,
+      'caps/x.md': {
+        text: ['---', 'title: Cap X 변경', '---', '# Cap X 변경'].join('\n'),
+        lastModified: 4000,
+      },
+    };
+    const incremental = await rebuildLocalManifestIncremental(makeRoot(next), before.entries);
+    const full = await buildLocalManifest(makeRoot(next));
+
+    expect(incremental.build.manifest.sourceFileCount).toBe(3);
+    expect(stripGenerated(incremental.build.manifest)).toEqual(stripGenerated(full.manifest));
+  });
+
+  it('소스 파일이 없으면 그 값은 아예 안 실린다 — 문서 폴더의 매니페스트는 그대로다', async () => {
+    const built = await buildLocalManifestWithEntries(makeRoot(BASE));
+    expect(built.build.manifest.sourceFileCount).toBeUndefined();
+    const incremental = await rebuildLocalManifestIncremental(makeRoot(BASE), built.entries);
+    expect(incremental.build.manifest.sourceFileCount).toBeUndefined();
+  });
+
   it('파일 하나 본문 변경 시 전체 재빌드와 동일', async () => {
     const before = await buildLocalManifestWithEntries(makeRoot(BASE));
     const next = {
