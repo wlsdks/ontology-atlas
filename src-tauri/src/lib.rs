@@ -3017,11 +3017,10 @@ fn format_panic_report(thread_name: &str, location: &str, message: &str) -> Stri
     format!("panic in thread '{thread_name}' at {location}: {message}")
 }
 
-/// Installs a panic hook that records the panic through the app log *and* stderr, then defers to the
-/// hook that was already installed so Rust's own default output is not lost.
+/// Installs a panic hook that records the panic in `panic.log` beside the app log and on stderr,
+/// then defers to the hook that was already installed so Rust's own default output is not lost.
 ///
-/// Registered before the Tauri builder runs. `log::error!` resolves its logger at call time, so a
-/// panic after the log plugin initializes still reaches the rotating file in the OS log directory.
+/// Registered before the Tauri builder runs. It deliberately never touches the `log` facade.
 fn install_panic_logger() {
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -3038,12 +3037,11 @@ fn install_panic_logger() {
         let thread = std::thread::current();
         let thread_name = thread.name().unwrap_or("unnamed").to_string();
         let report = format_panic_report(&thread_name, &location, &message);
-        log::error!("{report}");
-        // `log::error!` reaches the rotating file only once the log plugin is registered. A
-        // panic before that (context generation, plugin construction, `build`) would otherwise
-        // leave nothing but a stderr line a Finder-launched `.app` discards, so the report is
-        // also appended to its own file in the same log directory. Every step is fallible and
-        // ignored on purpose: a hook that can fail loudly is a double panic.
+        // No `log::error!` here. The logger is one of the things that can panic (fern aborts
+        // when its stderr retry fails), and a panic raised while the hook runs is a double
+        // panic, which aborts at once. On 2026-08-31 that turned a recoverable panic on a
+        // background thread into a dead app. The report goes to its own file in the log
+        // directory and to stderr, both through calls that cannot panic.
         append_panic_report_file(&report);
         // `writeln!`, not `eprintln!`. `eprintln!` panics when the write fails, and a panic
         // raised inside a panic hook is a double panic, which aborts immediately — losing both
@@ -3053,6 +3051,23 @@ fn install_panic_logger() {
         let _ = writeln!(std::io::stderr(), "{report}");
         previous(info);
     }));
+}
+
+/// A stderr writer that never reports an error. fern turns a failed stderr write into a panic,
+/// and the process that spawned this app may close its end of the pipe at any time; a log line
+/// nobody is reading is not worth the app.
+struct QuietStderr;
+
+impl Write for QuietStderr {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let _ = std::io::stderr().write_all(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        let _ = std::io::stderr().flush();
+        Ok(())
+    }
 }
 
 /// The file the panic hook appends to before the log plugin exists. Same directory the log
@@ -3218,7 +3233,17 @@ pub fn run() {
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("ontology-atlas".to_string()),
                     }),
-                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stderr),
+                    // Not `TargetKind::Stderr`. fern's stderr output panics when a write fails
+                    // (`backup_logging`: it retries the error on stderr and panics if that fails
+                    // too), and a harness that spawns the app with a piped stderr and then exits
+                    // leaves exactly that: every later log line hits EPIPE and the panic aborts
+                    // the app. Symbolicated on 2026-08-31 against the retained dSYM; it was the
+                    // shape of all five SIGABRT reports since rc.16. This writer drops what it
+                    // cannot deliver.
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Dispatch(
+                        tauri_plugin_log::fern::Dispatch::new()
+                            .chain(Box::new(QuietStderr) as Box<dyn Write + Send>),
+                    )),
                 ])
                 .level(log::LevelFilter::Info)
                 // A crash report is named in local time and the log was written in UTC, so matching
