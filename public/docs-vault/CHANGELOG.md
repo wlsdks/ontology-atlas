@@ -49,6 +49,13 @@
 - The static-artifact size gate widens to 64 MiB total and 8 MiB per chunk by
   owner decision: it catches a stray dependency or a duplicated bundle, not
   documented growth. Recorded in the decision ledger with its falsifier.
+- Screen words say what they mean. A catalog audit against the rule that every
+  feature must be understandable from its on-screen words rewrote 64 strings:
+  "Repair queue" is "Things to fix", "Promote" is "Add to map", relation
+  names explain themselves in the editor, the empty-folder starter says what
+  an ontology is in one sentence, and the agent-connection notes gloss MCP
+  where it first appears. A catalog-wide contract ratchets internal
+  vocabulary, untranslated English, and bare acronyms.
 
 ## 2026-08-31 · Rust dependency evidence stays exact, bounded, and review-only
 
