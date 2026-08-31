@@ -176,7 +176,7 @@ const CASES = Object.freeze([
             'capabilities/inventory-sync': 'Checkout depends on trustworthy sellable availability before it confirms a purchase.',
           },
         },
-        body: '## Definition\nAuthorize a purchase and produce an order confirmation.\n\n## Boundaries\n- Includes turning a reviewed cart into a confirmed order.\n- Excludes inventory reconciliation itself and interface preference changes.\n\n## Handoff\nRead the checkout entrypoint first, then inspect the inventory capability before changing the boundary.',
+        body: '## Definition\nAuthorize a purchase and produce an order confirmation.\n\n## Boundaries\n- Includes turning a reviewed cart into a confirmed order.\n- Excludes inventory reconciliation itself and interface preference changes.',
       }),
       node({
         slug: 'capabilities/inventory-sync',
@@ -245,7 +245,7 @@ const CASES = Object.freeze([
             'capabilities/acknowledgement-tracking': 'Acknowledgement state is meaningful only after a decision has been published to responders.',
           },
         },
-        body: '## Definition\nPublish an operational decision and distribute it to active responders.\n\n## Boundaries\n- Includes decision publication and distribution.\n- Excludes workspace permission evaluation and member authority.\n\n## Handoff\nStart with the realtime package, then check acknowledgement tracking; do not infer a complete runtime blast radius from this relation.',
+        body: '## Definition\nPublish an operational decision and distribute it to active responders.\n\n## Boundaries\n- Includes decision publication and distribution.\n- Excludes workspace permission evaluation and member authority.\n\n## Uncertainty\nThe recorded dependency states a product relationship. It does not establish a complete runtime blast radius.',
       }),
       node({
         slug: 'capabilities/acknowledgement-tracking',
@@ -662,6 +662,45 @@ function renderMissedEvidence(rows) {
   ];
 }
 
+// The benchmark's vault is written by this file, so nothing stops it from
+// inventing a section the product never produces — and then measuring the
+// invention. Comparing its headings against the vault this repository actually
+// keeps is the cheapest way to notice.
+//
+// This caught a real one: two capability bodies carried a `## Handoff` section
+// naming what to read first, a shape no node in `docs/ontology/` uses. On the
+// discount question the agent followed that order to the inventory capability,
+// which the change never touches, and the benchmark recorded it as Atlas
+// steering the agent wrong. It was the fixture talking.
+export function fixtureHeadings() {
+  const headings = new Set();
+  for (const entry of CASES) {
+    for (const node of entry.nodes) {
+      for (const line of node.body.split('\n')) {
+        if (line.startsWith('## ')) headings.add(line.slice(3).trim());
+      }
+    }
+  }
+  return headings;
+}
+
+export function vaultHeadings(vaultRoot = join(REPO_ROOT, 'docs/ontology')) {
+  const headings = new Set();
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const target = join(directory, entry.name);
+      if (entry.isDirectory()) walk(target);
+      else if (entry.name.endsWith('.md')) {
+        for (const line of readFileSync(target, 'utf8').split('\n')) {
+          if (line.startsWith('## ')) headings.add(line.slice(3).trim());
+        }
+      }
+    }
+  };
+  if (existsSync(vaultRoot)) walk(vaultRoot);
+  return headings;
+}
+
 export function validateDefinitions() {
   const errors = [];
   for (const entry of CASES) {
@@ -695,6 +734,14 @@ export function validateDefinitions() {
     }
     for (const entryNode of entry.nodes) {
       if (!entryNode.slug || !entryNode.kind || !entryNode.title || !entryNode.body) errors.push(`${entry.id}: incomplete node`);
+    }
+  }
+  const realHeadings = vaultHeadings();
+  if (realHeadings.size > 0) {
+    for (const heading of [...fixtureHeadings()].sort()) {
+      if (!realHeadings.has(heading)) {
+        errors.push(`the prepared vault uses a "## ${heading}" section that no node in docs/ontology/ uses. Either the fixture is inventing a shape this product does not produce, or the real vault should adopt it — decide which before measuring with it.`);
+      }
     }
   }
   return errors;

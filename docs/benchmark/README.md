@@ -64,6 +64,17 @@ workspace, validates the treatment vault, injects MCP through a per-process
 config override, requires MCP traffic in `on`, rejects MCP traffic in `off`,
 and preserves a caller-supplied run id.
 
+The prepared vault is written by the runner, which means nothing stops it from
+inventing a section shape the product never produces and then measuring the
+invention. `--dry-run` fails if any section heading in the prepared vault is
+absent from `docs/ontology/`, and a second check fails if a prepared node tells
+the agent what to read first. Both exist because of a real defect: two capability
+bodies carried a `## Handoff` section naming a reading order, a shape no node in
+the real vault uses. On the discount question the agent followed that order to a
+capability the change never touches, and the run recorded it as Atlas steering
+wrong. It was the fixture talking. Runs before `2026-08-31-gb-r4-fixed` contain
+that text.
+
 The fixed lifecycle tasks are intentionally about meaning rather than source
 lookup:
 
@@ -136,6 +147,21 @@ an answer written without one does not, so a grader can often tell the sides
 apart from the wording. The shuffle protects against grading in a convenient
 order and against scoring the label instead of the answer. It is not a claim that
 the grader cannot guess.
+
+#### Have a second grader read the same packet
+
+```bash
+pnpm benchmark:grade --bypass --run-id=2026-08-31-gb-r3
+```
+
+Hands the packet to a separate process — a fresh agent with no memory of this
+repository's conversation — together with the criteria, both codebases, and both
+prepared vaults, and records its scores in the same shape. Where two graders
+agree the grade is probably about the answer; where they disagree the criteria
+are unclear, and that is the more useful output.
+
+It is still not a person. It removes one specific bias, a grader scoring its own
+earlier conclusion, and leaves the rest.
 
 #### Re-score a saved run without running anything
 
