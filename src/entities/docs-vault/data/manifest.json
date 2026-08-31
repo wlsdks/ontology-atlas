@@ -369,6 +369,22 @@
       ]
     },
     {
+      "slug": "benchmark/FINDINGS-2026-08-31-metric-split",
+      "path": "docs/benchmark/FINDINGS-2026-08-31-metric-split.md",
+      "title": "Most of the published gap was our own vocabulary — 2026-08-31",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Read this before quoting any number from FINDINGS-2026-08-31.md. It does not replace that run. It re-scores the very same answers and shows that most of the headline gap was never a comparison between the two sides. Nothing was re-run. No Codex process started, no fixture was rebuilt, and no answer changed. The 24 answ",
+      "wordCount": 1070,
+      "updatedAt": "2026-08-31",
+      "linksOut": [
+        "benchmark/FINDINGS-2026-08-31",
+        "benchmark/results/2026-08-31-gb-r3-regrade-summary",
+        "benchmark/rubric"
+      ]
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -376,7 +392,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 2064,
+      "wordCount": 2479,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
@@ -384,7 +400,9 @@
         "benchmark/rubric",
         "benchmark/FINDINGS-2026-08-31",
         "benchmark/FINDINGS-2026-08-31-change-flow",
+        "benchmark/FINDINGS-2026-08-31-metric-split",
         "benchmark/results/2026-08-31-gb-r3-summary",
+        "benchmark/results/2026-08-31-gb-r3-regrade-summary",
         "benchmark/results/2026-08-31-change-r7-summary",
         "benchmark/results/2026-05-template"
       ]
@@ -548,6 +566,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/results/2026-08-31-gb-r3-regrade-summary",
+      "path": "docs/benchmark/results/2026-08-31-gb-r3-regrade-summary.md",
+      "title": "Lifecycle benchmark, re-scored with the two halves separated — 2026-08-31-gb-r3",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Two sides answer the same questions about the same source code. off has no Atlas vault, no MCP server, and no answer key in its workspace; on has the identical source plus a checked Atlas vault and the read-only Atlas MCP server. These scores count whether an answer contained the things it should have named. They do no",
+      "wordCount": 1610,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/results/2026-08-31-gb-r3-summary",
       "path": "docs/benchmark/results/2026-08-31-gb-r3-summary.md",
       "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r3",
@@ -647,9 +677,11 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 221854,
+      "wordCount": 222431,
       "updatedAt": "2026-08-31",
       "linksOut": [
+        "benchmark/FINDINGS-2026-08-31-metric-split",
+        "benchmark/results/2026-08-31-gb-r3-regrade-summary",
         "slug"
       ]
     },
@@ -3656,6 +3688,35 @@
         "linkText": "slug"
       }
     ],
+    "benchmark/FINDINGS-2026-08-31-metric-split": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "ge-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | **[`FINDINGS-2026-08-31-metric-split.md`]** | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, n",
+        "linkText": "`FINDINGS-2026-08-31-metric-split.md`"
+      },
+      {
+        "fromSlug": "DECISIONS",
+        "context": "eld control had written \"explicitly outside it\", which is the same boundary correctly stated and scored zero. Evidence: **[the correction]** and [the re-scored matrix](benchmark/results/2026-08-31-gb-r3-regrade-summary.md). **Decision**: required items are so",
+        "linkText": "the correction"
+      }
+    ],
+    "benchmark/results/2026-08-31-gb-r3-regrade-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-metric-split",
+        "context": ".7389 on the brownfield one — so what follows is a different reading of the same run, not a different run. Full matrix: **[`2026-08-31-gb-r3-regrade-summary.md`]**. ## What was wrong with the original score The score was one number: of the things an answer was supposed to name, ho",
+        "linkText": "`2026-08-31-gb-r3-regrade-summary.md`"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`results/2026-08-31-cha",
+        "linkText": "`results/2026-08-31-gb-r3-regrade-summary.md`"
+      },
+      {
+        "fromSlug": "DECISIONS",
+        "context": "oundary correctly stated and scored zero. Evidence: [the correction](benchmark/FINDINGS-2026-08-31-metric-split.md) and **[the re-scored matrix]**. **Decision**: required items are sorted into an Atlas concept name, a source path, or an ordinary phrase. Summaries r",
+        "linkText": "the re-scored matrix"
+      }
+    ],
     "design-references/DESIGN-linear": [
       {
         "fromSlug": "DESIGN-SYSTEM",
@@ -3784,7 +3845,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-change-r7-summary.md`]** | Four-cell change-flow result with direct Git and Atlas update receipts. | | [`results/2026-05-template.md`](results/2",
+        "context": "b-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | **[`results/2026-08-31-change-r7-summary.md`]** | Four-cell change-flow result with direct Git and Atlas update receipts. | | [`results/2026-05-template.md`](results/2",
         "linkText": "`results/2026-08-31-change-r7-summary.md`"
       }
     ],
@@ -3809,6 +3870,35 @@
         "linkText": "the passing diagnosis smoke"
       }
     ],
+    "benchmark/FINDINGS-2026-08-31": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-metric-split",
+        "context": "# Most of the published gap was our own vocabulary — 2026-08-31 > Read this before quoting any number from > **[`FINDINGS-2026-08-31.md`]**. It does not replace that > run. It re-scores the very same answers and shows that most of the headline > gap was never",
+        "linkText": "`FINDINGS-2026-08-31.md`"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "bric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
+        "linkText": "`FINDINGS-2026-08-31.md`"
+      }
+    ],
+    "benchmark/rubric": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-metric-split",
+        "context": "now the only way forward.** It is the sole remaining route to a comparable result. The criteria already exist in **[`rubric.md`]** and the 24 answers are on disk; grade them with the side labels removed. 3. **Do not add synonyms to the word list.*",
+        "linkText": "`rubric.md`"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. | | **[`rubric.md`]** | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | [`FINDINGS-2026-08-3",
+        "linkText": "`rubric.md`"
+      },
+      {
+        "fromSlug": "benchmark/tasks",
+        "context": "the vault body and nowhere in the source, so an agent that only greps has to invent one. Score with the D-only axes in **[`rubric.md`]**. ### D1 — Documented exclusion **Prompt:** > A request came in to make our MCP server do code symbol search too. Shou",
+        "linkText": "`rubric.md`"
+      }
+    ],
     "benchmark/results/2026-08-31-gb-r3-summary": [
       {
         "fromSlug": "benchmark/FINDINGS-2026-08-31",
@@ -3817,7 +3907,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "ge-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | **[`results/2026-08-31-gb-r3-summary.md`]** | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | [`results/2026-08-31-change-r7-summary.md`](results",
+        "context": "ing the run above.** Most of its published delta was vault vocabulary a control arm cannot write, not a comparison. | | **[`results/2026-08-31-gb-r3-summary.md`]** | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | [`results/2026-08-31-gb-r3-regrade-summary.md`](res",
         "linkText": "`results/2026-08-31-gb-r3-summary.md`"
       }
     ],
@@ -3835,29 +3925,10 @@
         "linkText": "`tasks.md`"
       }
     ],
-    "benchmark/rubric": [
-      {
-        "fromSlug": "benchmark/README",
-        "context": "categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. | | **[`rubric.md`]** | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | [`FINDINGS-2026-08-3",
-        "linkText": "`rubric.md`"
-      },
-      {
-        "fromSlug": "benchmark/tasks",
-        "context": "the vault body and nowhere in the source, so an agent that only greps has to invent one. Score with the D-only axes in **[`rubric.md`]**. ### D1 — Documented exclusion **Prompt:** > A request came in to make our MCP server do code symbol search too. Shou",
-        "linkText": "`rubric.md`"
-      }
-    ],
-    "benchmark/FINDINGS-2026-08-31": [
-      {
-        "fromSlug": "benchmark/README",
-        "context": "bric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
-        "linkText": "`FINDINGS-2026-08-31.md`"
-      }
-    ],
     "benchmark/FINDINGS-2026-08-31-change-flow": [
       {
         "fromSlug": "benchmark/README",
-        "context": "26-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | **[`FINDINGS-2026-08-31-change-flow.md`]** | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | [`results/2",
+        "context": "26-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | **[`FINDINGS-2026-08-31-change-flow.md`]** | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | [`FINDINGS-",
         "linkText": "`FINDINGS-2026-08-31-change-flow.md`"
       }
     ],
@@ -5429,6 +5500,13 @@
                 "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-pilot-r2"
               },
               {
+                "name": "2026-08-31-gb-r3-regrade-summary",
+                "path": "benchmark/results/2026-08-31-gb-r3-regrade-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-r3-regrade-summary",
+                "title": "Lifecycle benchmark, re-scored with the two halves separated — 2026-08-31-gb-r3"
+              },
+              {
                 "name": "2026-08-31-gb-r3-summary",
                 "path": "benchmark/results/2026-08-31-gb-r3-summary",
                 "type": "doc",
@@ -5457,6 +5535,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-08-31-change-flow",
             "title": "Findings — 2026-08-31 end-to-end change flow"
+          },
+          {
+            "name": "FINDINGS-2026-08-31-metric-split",
+            "path": "benchmark/FINDINGS-2026-08-31-metric-split",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-08-31-metric-split",
+            "title": "Most of the published gap was our own vocabulary — 2026-08-31"
           },
           {
             "name": "README",

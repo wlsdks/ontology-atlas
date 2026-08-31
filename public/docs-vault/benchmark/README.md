@@ -29,7 +29,9 @@ Either way, **measurement before further investment**.
 | [`rubric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. |
 | [`FINDINGS-2026-08-31.md`](FINDINGS-2026-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. |
 | [`FINDINGS-2026-08-31-change-flow.md`](FINDINGS-2026-08-31-change-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. |
+| [`FINDINGS-2026-08-31-metric-split.md`](FINDINGS-2026-08-31-metric-split.md) | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, not a comparison. |
 | [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. |
+| [`results/2026-08-31-gb-r3-regrade-summary.md`](results/2026-08-31-gb-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. |
 | [`results/2026-08-31-change-r7-summary.md`](results/2026-08-31-change-r7-summary.md) | Four-cell change-flow result with direct Git and Atlas update receipts. |
 | [`results/2026-05-template.md`](results/2026-05-template.md) | Empty matrix (task × agent × mode). Fill in after each measurement run. |
 
@@ -82,6 +84,46 @@ semantic quality certificate. Human review must still check factual
 correctness, unsupported rationale, citation accuracy, and handoff usefulness.
 Bootstrap/maintenance cost and the source-hidden field trial are separate
 measurements, not hidden in this score.
+
+#### The score comes in two halves — only one of them is a comparison
+
+A single combined score once hid the fact that half of it could only ever be
+earned by one side. The summary now reports both halves separately:
+
+| Column | What it counts | Can both sides earn it? |
+|---|---|---|
+| **Comparable** | source paths, and boundary words like *excludes* | **Yes.** The file is on disk for both sides, and either can say a thing is excluded. |
+| **Atlas names** | Atlas concept names such as `capabilities/checkout` | **No.** That name lives only in the vault. With no vault there is nothing to name, so the control side scores zero however good its answer is. |
+
+So a gap in the Atlas-names column is not evidence of a better answer. It shows
+something else, which is still worth showing: `capabilities/checkout` is an
+address a person or an agent can look up again next session, and "the checkout
+feature" is not. The old combined column stays only so past runs still
+reproduce — don't quote it.
+
+The sorting is checked rather than trusted. `--dry-run` refuses to start unless
+every Atlas name is a real entry in that subject's vault *and* absent from the
+source tree, and every path exists on disk.
+
+One caution about the comparable half: boundary words are matched literally, so
+a control answer saying *explicitly outside* instead of *excludes* scores zero
+for it. Every summary therefore ends with the exact word behind each miss. Do
+not add synonyms to that list after seeing which answers they would rescue —
+that is tuning the ruler to the result you wanted. Send boundary judgement to
+blind human grading instead.
+
+#### Re-score a saved run without running anything
+
+```bash
+pnpm benchmark:lifecycle --regrade --run-id=2026-08-31-gb-r3
+```
+
+This reads the answers already on disk, scores them again, and writes
+`<run-id>-regrade-summary.md`. It first re-derives what that run published and
+fails if the numbers don't come back, so a re-score cannot quietly grade a
+different set of answers. Use it whenever the scoring changes: re-scoring a past
+run costs nothing, and it is the only way to tell a change in scoring apart from
+a change in behaviour.
 
 ### End-to-end change-flow benchmark
 
