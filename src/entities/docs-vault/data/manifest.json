@@ -1712,7 +1712,7 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3138,
+      "wordCount": 3189,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -2904,8 +2904,8 @@
       },
       "headings": [],
       "excerpt": "Native bridge that allows the Tauri WebView to read and write files and directories within the selected vault. Unix mutations hold canonical roots and relative parent directories as no-follow directory file descriptors, complete regular files with umask-based temporary inodes for atomic replacement within the same pare",
-      "wordCount": 83,
-      "updatedAt": "2026-08-23",
+      "wordCount": 201,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
