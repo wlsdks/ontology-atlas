@@ -166,7 +166,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   // the Pages workflow check below.
   assert.match(
     result.stdout,
-    /✓ GitHub Pages workflow builds the base-path static export, deploys the sole hosted download site on push\/release, and verifies the hosted download route/,
+    /✓ GitHub Pages workflow builds the custom-domain root export, deploys the sole hosted download site on push\/release, and verifies the hosted download route/,
   );
   assert.match(
     result.stdout,

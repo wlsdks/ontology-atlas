@@ -11,7 +11,7 @@ describe('installed-app updater feed', () => {
     const endpoints = tauri.plugins?.updater?.endpoints;
     expect(endpoints, 'updater endpoint census is empty').toHaveLength(1);
     expect(endpoints[0]).toBe(
-      'https://wlsdks.github.io/ontology-atlas/update/latest.json',
+      'https://ontologyatlas.com/update/latest.json',
     );
 
     const workflow = read('.github/workflows/deploy-pages.yml');

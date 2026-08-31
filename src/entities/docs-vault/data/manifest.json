@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-31",
+  "generatedAt": "2026-09-01",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -802,8 +802,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "2026-05 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (GitHub Pages, Vercel, Netlify, S3 + CloudFront, …). The canonical host is GitHub Pages. The old Firebase-specific guide was deleted along with the dependency — this lin",
-      "wordCount": 992,
-      "updatedAt": "2026-08-17",
+      "wordCount": 983,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -870,8 +870,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13368,
-      "updatedAt": "2026-08-31",
+      "wordCount": 13367,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -1106,7 +1106,7 @@
       "headings": [],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
       "wordCount": 646,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -1130,7 +1130,7 @@
       "headings": [],
       "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
       "wordCount": 1068,
-      "updatedAt": "2026-08-09",
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {

@@ -15,10 +15,10 @@ This produces an `out/` directory with HTML/JS/CSS only. No server runtime.
 
 Any static host works. Pick one:
 
-> **Official host (2026-07): GitHub Pages — the sole web host.** The canonical
-> live site is `https://wlsdks.github.io/ontology-atlas/`, deployed automatically
+> **Official host: GitHub Pages — the sole web host.** The canonical live site is
+> `https://ontologyatlas.com/`, deployed automatically
 > by `.github/workflows/deploy-pages.yml` on every `main` push and on GitHub
-> Release publication (subpath build via `NEXT_PUBLIC_BASE_PATH=/ontology-atlas`).
+> Release publication as a root-path static export.
 > Firebase Hosting was removed — Pages' 100 GB/month soft limit comfortably
 > covers a read-only demo, and keeping a single static host removes a whole
 > deploy toolchain and its credentials.
@@ -29,10 +29,10 @@ Any static host works. Pick one:
 
 - triggers on push to `main`, on `release: published`, and on manual
   `workflow_dispatch`
-- builds the static export with `NEXT_PUBLIC_BASE_PATH=/ontology-atlas`, adapts the PWA manifest to the
-  base path, disables Jekyll, and uploads/deploys the Pages artifact
+- builds the root-path static export, disables Jekyll, and uploads/deploys the
+  Pages artifact
 - verifies the deployed download surface with
-  `pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`,
+  `pnpm desktop:verify-hosted -- --base-url="https://ontologyatlas.com"`,
   and on a release event also runs
   `pnpm desktop:verify-download -- --tag=<published tag>` so the website deploy
   record includes the public DMG/checksum asset proof
@@ -42,7 +42,7 @@ OIDC. The macOS tag release workflow (`.github/workflows/release-macos.yml`) is
 intentionally app-only and separate: it publishes signed/notarized DMGs and does
 not deploy the website.
 
-Public URL after deploy: `https://wlsdks.github.io/ontology-atlas/`.
+Public URL after deploy: `https://ontologyatlas.com/`.
 
 ### Vercel
 

@@ -18,8 +18,8 @@ import { routing } from '@/i18n/routing';
  *   itself with no basis for which of ko/en to serve to whom.
  *
  * **Absolute URLs are required.** Even with `metadataBase`, `alternates` does not
- * auto-prefix the basePath (`/ontology-atlas`) — a trap this repo already pinned in
- * the `app/layout.tsx` comments. Hence assembling from `SITE_URL` here.
+ * auto-prefix an optional deployment basePath — a trap this repo already pinned
+ * in the `app/layout.tsx` comments. Hence assembling from `SITE_URL` here.
  */
 export interface PageMetadataInput {
   locale: string;
