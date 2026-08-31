@@ -1,6 +1,8 @@
 # Rubric — how to score each run
 
-> Score each agent × mode × task cell (28 cells total per measurement run).
+> Score each agent × mode × task cell (40 cells total for the 10 legacy tasks
+> in a full Claude Code + Codex measurement run). The lifecycle runner has its
+> own 8-cell-per-repeat matrix and reports machine coverage separately.
 > Be strict. If you find yourself wanting to round up because the agent
 > "almost" got it, write the gap in the **Notes** column instead of inflating.
 
@@ -24,6 +26,51 @@
 >
 > The A and C tasks measure retrieval. The **D tasks measure meaning**, and only
 > the D axes below can tell whether this product does what it claims.
+
+## Lifecycle matrix scoring
+
+The greenfield/brownfield runner records two separate results. **Required
+coverage** is a deterministic diagnostic over the final structured answer: it
+checks the fixed task's required slugs, paths, and bounded-unknown signal.
+**Content pass** requires full coverage and no forbidden item, while **usable
+cell** means the process and arm-integrity checks passed. Neither is a human
+semantic verdict.
+
+For the lifecycle matrix, blind-review each final answer against the source and
+prepared vault, recording:
+
+- factual correctness and unsupported rationale;
+- path and concept citation accuracy;
+- boundary/impact fidelity and explicit unknown handling;
+- usefulness of the next handoff action;
+- any control leak, MCP setup failure, or source/key contamination.
+
+Do not turn MCP calls, tokens, or elapsed time into a quality score. They remain
+diagnostics, and construction/maintenance cost is a separate long-term ROI
+measurement.
+
+## End-to-end change-flow scoring
+
+The change-flow runner has a different unit of analysis: a fixed change in a
+fresh Git repository. A workflow pass is conjunctive and requires all of these
+receipts:
+
+- exact changed-file allowlist;
+- focused test before merge and the same test after merge;
+- conventional feature commit;
+- on-arm exact capability update through `patch_concept`, followed by
+  `validate_vault` and `compile_ontology`;
+- local bare-remote push;
+- clean merge or explicit deterministic conflict recovery;
+- deletion of the local and remote feature branch, with a clean worktree.
+
+The `on` arm's extra Atlas Markdown file is intentional: the question is
+whether meaning survives the code-change handoff as a reviewed record. Git
+push, merge, and branch cleanup are ordinary workflow evidence, not proof that
+Atlas owns Git integration. A passing workflow only establishes that the
+bounded process completed; it does not establish better code quality or user
+value. Those require blind human grading, unfamiliar repositories, and
+construction/maintenance-cost accounting.
 
 ## The four axes
 

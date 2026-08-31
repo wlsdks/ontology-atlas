@@ -1,0 +1,80 @@
+{"answer":"An acknowledgement-state change belongs primarily to the Coordination domain. The directly involved capability is Acknowledgement Tracking; Decision Broadcast is the related upstream Coordination capability, and Workspace Authorization is the cross-domain dependency in Access Control. Read `apps/web` first for acknowledgement display/state handling, then `packages/realtime` for decision distribution, and `packages/policy` for permission enforcement. In this repository those paths currently contain only package manifests, so no runtime propagation is proven. The declared dependency chain—Decision Broadcast → Acknowledgement Tracking → Workspace Authorization—remains recorded product meaning with rationale, not a source-backed or complete runtime impact assessment.","evidence":["Atlas defines Coordination as owning publication and acknowledgement decision state, while member authority belongs to Access Control.","Atlas records Acknowledgement Tracking at `apps/web`, Decision Broadcast at `packages/realtime`, and Workspace Authorization at `packages/policy`.","Atlas states that Decision Broadcast depends on Acknowledgement Tracking because acknowledgement is meaningful only after publication.","Atlas states that Acknowledgement Tracking depends on Workspace Authorization because the console must respect workspace authority while showing acknowledgement state.","Source inspection found only `package.json` manifests at those anchors; `docs/SYSTEM-MAP.md` describes web presentation, realtime distribution, and policy permission evaluation but does not demonstrate runtime call paths.","Atlas marks dependency impact as `declared_with_rationale`, `sourceBacked: false`, and completeness `unknown`; source currentness is also unmeasured."],"nextAction":"If runtime impact must be established, inspect or add the actual implementation and tests beneath `apps/web`, `packages/realtime`, and `packages/policy`; the present repository cannot prove it.","unknowns":["The concrete acknowledgement mutation handler and storage mechanism are absent or not represented in the available source tree.","Runtime and transitive effects of acknowledgement changes remain unknown.","Atlas competency evidence is not authored and its source binding/currentness is unavailable."]}
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.151.0
+--------
+workdir: /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-lifecycle-4670d920-399a-4742-8186-337a60fbcb1f/brownfield-on
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: none
+reasoning summaries: none
+session id: 01a0536d-5a94-7591-a6c9-81c87b71c2ea
+--------
+user
+Atlas MCP is connected for this run. Use its read-only tools first for ontology meaning, boundaries, relations, and handoff facts; then read source files for implementation detail.
+
+If acknowledgement state changes, which domain and capabilities are involved, which source paths should be read first, and which part remains a recorded product dependency rather than proven runtime impact?
+
+Return exactly one JSON object matching the provided output schema. Do not edit files and do not call Atlas write tools.
+codex
+{"answer":"I’ll inspect the connected Atlas read-only capabilities first, then verify implementation details in the repository without making changes.","evidence":[],"nextAction":"Query Atlas ontology and handoff facts, then read the implicated source paths.","unknowns":[]}
+mcp: ontology-atlas/connection_info started
+mcp: ontology-atlas/connection_info (completed)
+mcp: ontology-atlas/query_ontology started
+mcp: ontology-atlas/query_ontology (completed)
+mcp: ontology-atlas/get_concepts started
+mcp: ontology-atlas/get_concepts (completed)
+codex
+{"answer":"Atlas identifies acknowledgement tracking in the Coordination domain, bounded away from authorization decisions. I’m now following its `apps/web` anchor into source to locate the concrete state-change path and adjacent tests.","evidence":["Atlas records `capabilities/acknowledgement-tracking` under `domains/coordination`, with `elements/web-console`.","Atlas records a rationale-bearing dependency on `capabilities/workspace-authorization`, but explicitly marks impact completeness unknown and not source-backed."],"nextAction":"Inspect indexed code structure, then read the smallest relevant implementation and test files.","unknowns":["The exact implementation entry point is not recorded beyond `apps/web`."]}
+exec
+/bin/zsh -lc "if [[ -d .codegraph ]]; then codegraph explore \"acknowledgement acknowledged ack state apps/web\"; else rg -n -i \"acknowledg|acknowledged\" apps/web . --glob '"'!atlas/**'"'; fi" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-lifecycle-4670d920-399a-4742-8186-337a60fbcb1f/brownfield-on
+ succeeded in 0ms:
+./README.md:7:Responders publish decisions and see who has acknowledged them.
+
+exec
+/bin/zsh -lc "rg --files -g '"'!atlas/**'"'" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-lifecycle-4670d920-399a-4742-8186-337a60fbcb1f/brownfield-on
+ succeeded in 0ms:
+apps/web/package.json
+package.json
+packages/policy/package.json
+packages/realtime/package.json
+docs/SYSTEM-MAP.md
+README.md
+
+exec
+/bin/zsh -lc "sed -n '1,220p' apps/web/package.json && sed -n '1,240p' packages/realtime/package.json && sed -n '1,240p' packages/policy/package.json && sed -n '1,260p' docs/SYSTEM-MAP.md && sed -n '1,180p' README.md" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-lifecycle-4670d920-399a-4742-8186-337a60fbcb1f/brownfield-on
+ succeeded in 0ms:
+{
+  "name": "@relay/web"
+}
+{
+  "name": "@relay/realtime"
+}
+{
+  "name": "@relay/policy"
+}
+# System map
+
+The web console presents the incident timeline. The realtime package distributes
+timeline updates. The policy package evaluates workspace permissions.
+# Relay Collaboration
+
+Relay lets incident teams establish a shared operational picture while an event is unfolding.
+
+## Coordination
+
+Responders publish decisions and see who has acknowledged them.
+
+## Access Control
+
+Workspace owners decide who may read, coordinate, or administer an incident.
+
+mcp: ontology-atlas/get_concepts started
+mcp: ontology-atlas/get_concepts (completed)
+codex
+{"answer":"An acknowledgement-state change belongs primarily to the Coordination domain. The directly involved capability is Acknowledgement Tracking; Decision Broadcast is the related upstream Coordination capability, and Workspace Authorization is the cross-domain dependency in Access Control. Read `apps/web` first for acknowledgement display/state handling, then `packages/realtime` for decision distribution, and `packages/policy` for permission enforcement. In this repository those paths currently contain only package manifests, so no runtime propagation is proven. The declared dependency chain—Decision Broadcast → Acknowledgement Tracking → Workspace Authorization—remains recorded product meaning with rationale, not a source-backed or complete runtime impact assessment.","evidence":["Atlas defines Coordination as owning publication and acknowledgement decision state, while member authority belongs to Access Control.","Atlas records Acknowledgement Tracking at `apps/web`, Decision Broadcast at `packages/realtime`, and Workspace Authorization at `packages/policy`.","Atlas states that Decision Broadcast depends on Acknowledgement Tracking because acknowledgement is meaningful only after publication.","Atlas states that Acknowledgement Tracking depends on Workspace Authorization because the console must respect workspace authority while showing acknowledgement state.","Source inspection found only `package.json` manifests at those anchors; `docs/SYSTEM-MAP.md` describes web presentation, realtime distribution, and policy permission evaluation but does not demonstrate runtime call paths.","Atlas marks dependency impact as `declared_with_rationale`, `sourceBacked: false`, and completeness `unknown`; source currentness is also unmeasured."],"nextAction":"If runtime impact must be established, inspect or add the actual implementation and tests beneath `apps/web`, `packages/realtime`, and `packages/policy`; the present repository cannot prove it.","unknowns":["The concrete acknowledgement mutation handler and storage mechanism are absent or not represented in the available source tree.","Runtime and transitive effects of acknowledgement changes remain unknown.","Atlas competency evidence is not authored and its source binding/currentness is unavailable."]}
+tokens used
+48,791

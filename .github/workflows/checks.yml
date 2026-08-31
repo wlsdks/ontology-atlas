@@ -199,6 +199,7 @@ jobs:
           pnpm test:source:language
           pnpm test:docs:language
           pnpm test:docs:checks
+          pnpm test:benchmark
           pnpm test:skills:audit
           pnpm test:cli:args
           pnpm test:cli:mcp-call

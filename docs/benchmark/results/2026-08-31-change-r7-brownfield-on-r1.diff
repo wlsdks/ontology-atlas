@@ -1,0 +1,60 @@
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901..9935684 100644
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e..b39d0ef 100644
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,27 @@ import assert from 'node:assert/strict';
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
+ });
++
++test('formats an acknowledgement with a trimmed non-blank note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Waiting for the final host to drain.  ',
++    }),
++    'Lee acknowledged `Containment` — Waiting for the final host to drain.',
++  );
++});
++
++test('formats an acknowledgement with a blank note exactly as before', () => {
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
+diff --git a/atlas/capabilities/acknowledgement-tracking.md b/atlas/capabilities/acknowledgement-tracking.md
+index dd97401..38e22c0 100644
+--- a/atlas/capabilities/acknowledgement-tracking.md
++++ b/atlas/capabilities/acknowledgement-tracking.md
+@@ -19,4 +19,7 @@ Display which responders acknowledged an incident decision.
+ - Excludes permission evaluation and realtime distribution.
+
+ ## Handoff
+-Read apps/web/src/acknowledgement.mjs and its focused test; consult policy only for the authorization boundary.
+\ No newline at end of file
++Read apps/web/src/acknowledgement.mjs and its focused test; consult policy only for the authorization boundary.
++
++## Change record
++- Acknowledgements now render a trimmed non-blank note after the decision.
+\ No newline at end of file

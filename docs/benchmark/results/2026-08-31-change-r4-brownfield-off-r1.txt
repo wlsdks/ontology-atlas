@@ -1,0 +1,428 @@
+{"summary":"Implemented optional trimmed acknowledgement notes in apps/web while preserving exact output for absent or blank notes. Added focused tests and committed the intended files as 919d4390b272189ee184cbd651868702e29fb05e.","changedFiles":["apps/web/src/acknowledgement.mjs","apps/web/test/acknowledgement.test.mjs"],"testCommand":"node --test apps/web/test/acknowledgement.test.mjs (passed: 2 tests)","commitSubject":"feat: show acknowledgement notes","atlasAction":"Not attempted because Atlas was explicitly unavailable in this control run; no Atlas folder or MCP server was sought and no Atlas files were edited.","unknowns":[]}
+
+[stderr]
+Reading additional input from stdin...
+OpenAI Codex v0.151.0
+--------
+workdir: /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+model: gpt-5.6-sol
+provider: openai
+approval: never
+sandbox: danger-full-access
+reasoning effort: none
+reasoning summaries: none
+session id: 01a05501-7d7a-7bf0-a450-208f32220dcc
+--------
+user
+Atlas is not available in this control run. Use the source and product documents only; do not look for an Atlas folder or MCP server.
+
+Implement this approved change in the repository:
+
+- Extend formatAcknowledgement(record) so an optional non-blank record.note is shown after the decision.
+- When note is absent or blank, preserve the existing output exactly.
+- Keep acknowledgement presentation in apps/web. Do not move permission logic into packages/policy or distribution logic into packages/realtime.
+- Add focused tests for both the note and no-note cases.
+- After the code tests pass, use Atlas MCP `patch_concept` on `capabilities/acknowledgement-tracking` to append exactly this section to the existing body (preserve all existing frontmatter and body text):
+  ## Change record
+  - Acknowledgements now render a trimmed non-blank note after the decision.
+- Then use Atlas MCP `validate_vault` and `compile_ontology` to verify the updated vault. Do not add, rename, delete, or directly edit any other Atlas file.
+
+Run exactly: node --test apps/web/test/acknowledgement.test.mjs
+Review the diff, commit only the intended files with the conventional subject `feat: show acknowledgement notes`, and do not push or merge; the harness will verify those steps.
+
+Return exactly one JSON object matching the output schema. Do not push or merge; the harness will do and verify those operations.
+warning: Skill descriptions were shortened to fit the skills context budget. Codex can still see every skill, but some descriptions are shorter. Disable unused skills or plugins to leave more room for the rest.
+codex
+{"summary":"I’ll inspect the repository’s source and product guidance, implement the web-only formatting change with focused tests, run the exact requested test command, review the diff, and commit only the intended files. Since Atlas is explicitly unavailable in this control run, I will report the Atlas update and validation as unavailable rather than searching for or editing Atlas files.","changedFiles":[],"testCommand":"node --test apps/web/test/acknowledgement.test.mjs","commitSubject":"feat: show acknowledgement notes","atlasAction":"Not attempted: Atlas is unavailable in this control run.","unknowns":[]}
+exec
+/bin/zsh -lc "pwd && printf '%s\\n' '---ROOT---' && rg --files -g '"'!*node_modules*'"' | sed -n '1,160p' && printf '%s\\n' '---STATUS---' && git status --short && printf '%s\\n' '---CODEGRAPH---' && if [ -d .codegraph ]; then echo yes; else echo no; fi" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+ succeeded in 0ms:
+/private/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+---ROOT---
+apps/web/src/acknowledgement.mjs
+apps/web/test/acknowledgement.test.mjs
+packages/policy/src/authorize.mjs
+packages/realtime/src/publish.mjs
+package.json
+README.md
+---STATUS---
+---CODEGRAPH---
+no
+
+exec
+/bin/zsh -lc "sed -n '1,240p' README.md && sed -n '1,200p' package.json && sed -n '1,240p' apps/web/src/acknowledgement.mjs && sed -n '1,260p' apps/web/test/acknowledgement.test.mjs && sed -n '1,160p' packages/policy/src/authorize.mjs && sed -n '1,160p' packages/realtime/src/publish.mjs" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+ succeeded in 0ms:
+# brownfield-shaped collaboration project
+
+This subject contains source and product documents only.
+{
+  "name": "benchmark-subject",
+  "private": true
+}
+export function formatAcknowledgement(record) {
+  return `${record.member} acknowledged \`${record.decision}\``;
+}
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+test('formats an acknowledgement for the incident timeline', () => {
+  assert.equal(
+    formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+    'Lee acknowledged `Containment`',
+  );
+});
+export function canCoordinate(member) {
+  return member?.permissions?.includes('coordinate') === true;
+}
+export function publishTimelineEvent(event) {
+  return { channel: 'incident-timeline', event };
+}
+
+codex
+{"summary":"The repository is minimal and clean. The formatter and its presentation test are both confined to apps/web; policy and realtime are unrelated and will remain untouched. I found no product-prescribed separator, so I’m using a concise em dash before the trimmed note while preserving the exact legacy string for absent or whitespace-only notes.","changedFiles":[],"testCommand":"node --test apps/web/test/acknowledgement.test.mjs","commitSubject":"feat: show acknowledgement notes","atlasAction":"Not attempted: Atlas is unavailable in this control run.","unknowns":["The source/product documents do not specify the separator between decision and note; an em dash is the presentation choice."]}
+apply patch
+patch: completed
+/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off/apps/web/src/acknowledgement.mjs
+/var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off/apps/web/test/acknowledgement.test.mjs
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901b0c4b1aea20bc7b64a2e887c0d99988c3..9935684b250f378a725cc46a590fcb0cb57f597e
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e857e5f5ef6d9082d1b7c0b7971d12f2be..1e96b4363e5b864ba30281626b2cc6ffcdc90b96
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901b0c4b1aea20bc7b64a2e887c0d99988c3..9935684b250f378a725cc46a590fcb0cb57f597e
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e857e5f5ef6d9082d1b7c0b7971d12f2be..1e96b4363e5b864ba30281626b2cc6ffcdc90b96
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+
+exec
+/bin/zsh -lc 'node --test apps/web/test/acknowledgement.test.mjs' in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+ succeeded in 0ms:
+✔ formats an acknowledgement without a note exactly as before (0.38125ms)
+✔ formats a trimmed acknowledgement note after the decision (0.061583ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 47.027208
+
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901b0c4b1aea20bc7b64a2e887c0d99988c3..9935684b250f378a725cc46a590fcb0cb57f597e
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e857e5f5ef6d9082d1b7c0b7971d12f2be..1e96b4363e5b864ba30281626b2cc6ffcdc90b96
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+
+codex
+{"summary":"The exact requested test command passes both focused cases, including whitespace-only preservation and trimming a non-blank note. I’m now doing the final diff and scope review before committing the two apps/web files.","changedFiles":["apps/web/src/acknowledgement.mjs","apps/web/test/acknowledgement.test.mjs"],"testCommand":"node --test apps/web/test/acknowledgement.test.mjs (passed: 2 tests)","commitSubject":"feat: show acknowledgement notes","atlasAction":"Not attempted: Atlas is unavailable in this control run.","unknowns":["The source/product documents do not specify the separator between decision and note; an em dash is the presentation choice."]}
+exec
+/bin/zsh -lc 'git diff --check && git diff -- apps/web/src/acknowledgement.mjs apps/web/test/acknowledgement.test.mjs && git status --short' in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+ succeeded in 0ms:
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901..9935684 100644
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e..1e96b43 100644
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@ import assert from 'node:assert/strict';
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+ M apps/web/src/acknowledgement.mjs
+ M apps/web/test/acknowledgement.test.mjs
+
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901b0c4b1aea20bc7b64a2e887c0d99988c3..9935684b250f378a725cc46a590fcb0cb57f597e
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e857e5f5ef6d9082d1b7c0b7971d12f2be..1e96b4363e5b864ba30281626b2cc6ffcdc90b96
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+
+exec
+/bin/zsh -lc "git add -- apps/web/src/acknowledgement.mjs apps/web/test/acknowledgement.test.mjs && git commit -m 'feat: show acknowledgement notes' && git status --short && git log -1 --format='%H%n%s'" in /var/folders/c6/vccybz6x45s4csc77hq86dpc0000gn/T/ontology-atlas-change-flow-799998ec-8cc8-4556-bc82-6cf00a084f74/brownfield-off
+ succeeded in 0ms:
+[benchmark/brownfield-change 919d439] feat: show acknowledgement notes
+ 2 files changed, 21 insertions(+), 2 deletions(-)
+919d4390b272189ee184cbd651868702e29fb05e
+feat: show acknowledgement notes
+
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901b0c4b1aea20bc7b64a2e887c0d99988c3..9935684b250f378a725cc46a590fcb0cb57f597e
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e857e5f5ef6d9082d1b7c0b7971d12f2be..1e96b4363e5b864ba30281626b2cc6ffcdc90b96
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+
+codex
+{"summary":"Implemented optional trimmed acknowledgement notes in apps/web while preserving exact output for absent or blank notes. Added focused tests and committed the intended files as 919d4390b272189ee184cbd651868702e29fb05e.","changedFiles":["apps/web/src/acknowledgement.mjs","apps/web/test/acknowledgement.test.mjs"],"testCommand":"node --test apps/web/test/acknowledgement.test.mjs (passed: 2 tests)","commitSubject":"feat: show acknowledgement notes","atlasAction":"Not attempted because Atlas was explicitly unavailable in this control run; no Atlas folder or MCP server was sought and no Atlas files were edited.","unknowns":[]}
+diff --git a/apps/web/src/acknowledgement.mjs b/apps/web/src/acknowledgement.mjs
+index 5255901b0c4b1aea20bc7b64a2e887c0d99988c3..9935684b250f378a725cc46a590fcb0cb57f597e
+--- a/apps/web/src/acknowledgement.mjs
++++ b/apps/web/src/acknowledgement.mjs
+@@ -1,3 +1,6 @@
+ export function formatAcknowledgement(record) {
+-  return `${record.member} acknowledged \`${record.decision}\``;
++  const acknowledgement = `${record.member} acknowledged \`${record.decision}\``;
++  const note = record.note?.trim();
++
++  return note ? `${acknowledgement} — ${note}` : acknowledgement;
+ }
+diff --git a/apps/web/test/acknowledgement.test.mjs b/apps/web/test/acknowledgement.test.mjs
+index 318a02e857e5f5ef6d9082d1b7c0b7971d12f2be..1e96b4363e5b864ba30281626b2cc6ffcdc90b96
+--- a/apps/web/test/acknowledgement.test.mjs
++++ b/apps/web/test/acknowledgement.test.mjs
+@@ -2,9 +2,25 @@
+ import test from 'node:test';
+ import { formatAcknowledgement } from '../src/acknowledgement.mjs';
+
+-test('formats an acknowledgement for the incident timeline', () => {
++test('formats an acknowledgement without a note exactly as before', () => {
+   assert.equal(
+     formatAcknowledgement({ member: 'Lee', decision: 'Containment' }),
+     'Lee acknowledged `Containment`',
+   );
++
++  assert.equal(
++    formatAcknowledgement({ member: 'Lee', decision: 'Containment', note: '   ' }),
++    'Lee acknowledged `Containment`',
++  );
++});
++
++test('formats a trimmed acknowledgement note after the decision', () => {
++  assert.equal(
++    formatAcknowledgement({
++      member: 'Lee',
++      decision: 'Containment',
++      note: '  Coordinate the follow-up.  ',
++    }),
++    'Lee acknowledged `Containment` — Coordinate the follow-up.',
++  );
+ });
+
+tokens used
+18,489

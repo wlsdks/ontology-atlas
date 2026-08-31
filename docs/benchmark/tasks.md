@@ -1,6 +1,6 @@
 # Benchmark tasks
 
-> 7 tasks across 3 categories. Each has a known correct answer (verifiable
+> 10 tasks across 4 categories. Each has a known correct answer (verifiable
 > by human against the current `docs/ontology/` vault, code, and PR history)
 > so we can grade independent of the AI's confidence.
 >
@@ -172,5 +172,6 @@ the D-only axes in [`rubric.md`](rubric.md).
 - **Cat A (3 tasks)** — designed to play to the ontology's strengths. If MCP-on doesn't win here, the product premise is in trouble.
 - **Cat B (2 tasks)** — semantic questions where the body text and frontmatter both hold partial answers. Tests whether the agent navigates the graph or wanders.
 - **Cat C (2 tasks)** — negative control. If we don't see neutrality here, the test is bias-confounded.
+- **Cat D (3 tasks)** — meaning questions about boundaries, impact, and verification; these are the product claim, not ordinary lookup.
 
-The 3:2:2 ratio biases the bench *toward* showing a positive effect — by design, because that's the hypothesis we're trying to falsify. If the bench leans MCP-on and we still see no effect, the negative result is robust.
+The 3:2:2:3 ratio biases the bench *toward* showing a positive effect — by design, because that's the hypothesis we're trying to falsify. If the bench leans MCP-on and we still see no effect, the negative result is stronger.

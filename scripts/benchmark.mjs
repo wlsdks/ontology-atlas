@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // R13 #62 — pnpm benchmark
 //
-// Codex 7 task × 2 mode automated re-measurement. Records per-cell:
+// Codex 10 task × 2 mode automated re-measurement. Records per-cell:
 //   - raw stdout transcript → docs/benchmark/results/<date>-codex-<id>-<mode>.txt
 //   - shell exec count + MCP tool-call count (regex extracted)
 // And produces a markdown summary table (tool calls only — correctness
 // and hallucination counts still need human review of transcripts).
 //
 // Usage:
-//   pnpm benchmark --bypass          # full 14-cell run
-//   pnpm benchmark --bypass --on-only # ON mode 7 cells (faster)
+//   pnpm benchmark --bypass          # full 20-cell run
+//   pnpm benchmark --bypass --with-none # 30-cell no-vault control matrix
+//   pnpm benchmark --bypass --on-only # ON mode 10 cells (faster)
 //   pnpm benchmark --dry-run         # verify config without burning calls
 //
 // Why --bypass is required:
@@ -449,19 +450,24 @@ const median = (xs) => {
 const pick = (id, mode, key) => cells.filter((c) => c.task === id && c.mode === mode).map((c) => c[key]);
 const span = (xs) => (xs.length > 1 && Math.min(...xs) !== Math.max(...xs) ? ` (${Math.min(...xs)}\u2013${Math.max(...xs)})` : "");
 md += `Runs per cell: **${repeat}**. Cell values are the median; the observed range follows in parentheses.\n\n`;
-md += `| Task | OFF shell / MCP | ON shell / MCP | \u0394 shell | \u0394 MCP | OFF tok | ON tok | \u0394 tok |\n|---|---|---|---|---|---|---|---|\n`;
+const reportModes = noneOnly ? ['none'] : onOnly ? ['on'] : offOnly ? ['off'] : withNone ? ['none', 'off', 'on'] : ['off', 'on'];
+md += `| Task | ${reportModes.map((mode) => `${mode.toUpperCase()} shell / MCP`).join(' | ')} | \u0394 ON\u2212OFF shell | \u0394 ON\u2212OFF MCP | OFF tok | ON tok | \u0394 tok |\n`;
+md += `|---|${reportModes.map(() => '---').join('|')}|---|---|---|---|---|\n`;
 for (const t of SELECTED) {
   const offShellM = median(pick(t.id, "off", "shellCalls"));
   const onShellM = median(pick(t.id, "on", "shellCalls"));
   const off = offShellM === null ? null : { shellCalls: offShellM, mcpCalls: median(pick(t.id, "off", "mcpCalls")), tokens: median(pick(t.id, "off", "tokens")) };
   const on = onShellM === null ? null : { shellCalls: onShellM, mcpCalls: median(pick(t.id, "on", "mcpCalls")), tokens: median(pick(t.id, "on", "tokens")) };
-  const offText = off ? `${off.shellCalls} / ${off.mcpCalls}${span(pick(t.id, "off", "shellCalls"))}` : "—";
-  const onText = on ? `${on.shellCalls} / ${on.mcpCalls}${span(pick(t.id, "on", "shellCalls"))}` : "—";
   const dShell = off && on ? on.shellCalls - off.shellCalls : null;
   const dMcp = off && on ? on.mcpCalls - off.mcpCalls : null;
   const fmt = (n) => (n === null ? "—" : n > 0 ? `+${n}` : `${n}`);
   const dTok = off && on && off.tokens && on.tokens ? on.tokens - off.tokens : null;
-  md += `| **${t.id}** ${t.label} | ${offText} | ${onText} | ${fmt(dShell)} | ${fmt(dMcp)} | ${off?.tokens ? off.tokens + span(pick(t.id, "off", "tokens")) : "—"} | ${on?.tokens ? on.tokens + span(pick(t.id, "on", "tokens")) : "—"} | ${fmt(dTok)} |\n`;
+  const modeCells = reportModes.map((mode) => {
+    const shell = median(pick(t.id, mode, "shellCalls"));
+    const mcp = median(pick(t.id, mode, "mcpCalls"));
+    return shell === null ? "—" : `${shell} / ${mcp}${span(pick(t.id, mode, "shellCalls"))}`;
+  });
+  md += `| **${t.id}** ${t.label} | ${modeCells.join(" | ")} | ${fmt(dShell)} | ${fmt(dMcp)} | ${off?.tokens ? off.tokens + span(pick(t.id, "off", "tokens")) : "—"} | ${on?.tokens ? on.tokens + span(pick(t.id, "on", "tokens")) : "—"} | ${fmt(dTok)} |\n`;
 }
 
 const gradedTasks = SELECTED.filter((t) => t.key);
@@ -470,7 +476,7 @@ if (gradedTasks.length > 0) {
   md += `Key lives beside each prompt in \`scripts/benchmark.mjs\`. Open it and disagree with it; that is the point of pinning it.\n\n`;
   md += `| Task | Mode | Boundary /3 | Provenance /2 | Contradicts the vault |\n|---|---|---|---|---|\n`;
   for (const t of gradedTasks) {
-    for (const mode of ["off", "on"]) {
+    for (const mode of reportModes) {
       for (const c of cells.filter((x) => x.task === t.id && x.mode === mode && x.grade)) {
         md += `| **${t.id}**${repeat > 1 ? ` r${c.iter}` : ""} | ${mode.toUpperCase()} | ${c.grade.boundary} (${c.grade.boundaryHits}/${c.grade.of}) | ${c.grade.provenance} | ${c.grade.contradicted ? "**yes**" : "no"} |\n`;
       }
@@ -484,16 +490,12 @@ function avg(items) {
   if (items.length === 0) return null;
   return items.reduce((s, n) => s + n, 0) / items.length;
 }
-const offShell = cells.filter((c) => c.mode === "off").map((c) => c.shellCalls);
-const onShell = cells.filter((c) => c.mode === "on").map((c) => c.shellCalls);
-const offMcp = cells.filter((c) => c.mode === "off").map((c) => c.mcpCalls);
-const onMcp = cells.filter((c) => c.mode === "on").map((c) => c.mcpCalls);
-md += `- Avg shell exec: OFF ${(avg(offShell) ?? 0).toFixed(1)} → ON ${(avg(onShell) ?? 0).toFixed(1)}\n`;
-md += `- Avg MCP calls: OFF ${(avg(offMcp) ?? 0).toFixed(1)} → ON ${(avg(onMcp) ?? 0).toFixed(1)}\n`;
-const offTok = cells.filter((c) => c.mode === "off" && c.tokens).map((c) => c.tokens);
-const onTok = cells.filter((c) => c.mode === "on" && c.tokens).map((c) => c.tokens);
-md += `- Avg tokens: OFF ${(avg(offTok) ?? 0).toFixed(0)} → ON ${(avg(onTok) ?? 0).toFixed(0)}`;
-md += offTok.length && onTok.length ? ` (${(((avg(onTok) - avg(offTok)) / avg(offTok)) * 100).toFixed(1)}%)\n` : " (not reported by codex)\n";
+for (const mode of reportModes) {
+  const shell = cells.filter((c) => c.mode === mode).map((c) => c.shellCalls);
+  const mcp = cells.filter((c) => c.mode === mode).map((c) => c.mcpCalls);
+  const tok = cells.filter((c) => c.mode === mode && c.tokens).map((c) => c.tokens);
+  md += `- Avg ${mode.toUpperCase()}: shell ${(avg(shell) ?? 0).toFixed(1)} · MCP ${(avg(mcp) ?? 0).toFixed(1)} · tokens ${tok.length ? (avg(tok) ?? 0).toFixed(0) : "not reported"}\n`;
+}
 md += `- Total cells run: ${cells.length}\n`;
 md += `\n## Next: human grading\n\n`;
 md += `Open each transcript and score per \`docs/benchmark/rubric.md\` (correctness 0–3, hallucinations count, subjective utility 1–5). Drop the result in a new \`${TODAY}-codex-graded.md\`.\n`;

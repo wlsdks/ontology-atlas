@@ -338,6 +338,37 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/FINDINGS-2026-08-31",
+      "path": "docs/benchmark/FINDINGS-2026-08-31.md",
+      "title": "Paired lifecycle findings — 2026-08-31",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Atlas should earn its long-term place by improving a person's or an agent's business-to-code decision: where work belongs, what boundary it crosses, what impact is actually recorded, what evidence supports the claim, and what the next verification action is. It should not claim that every source lookup gets faster, or ",
+      "wordCount": 918,
+      "updatedAt": "2026-08-31",
+      "linksOut": [
+        "benchmark/results/2026-08-31-gb-r3-summary"
+      ]
+    },
+    {
+      "slug": "benchmark/FINDINGS-2026-08-31-change-flow",
+      "path": "docs/benchmark/FINDINGS-2026-08-31-change-flow.md",
+      "title": "Findings — 2026-08-31 end-to-end change flow",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Does a reviewed Atlas meaning layer change what an agent can safely carry through a small repository change, rather than only improve a lookup answer? The measured slice is deliberately narrow: one greenfield-shaped subject and one brownfield-shaped subject, each with Atlas physically absent (off) or a prepared Atlas v",
+      "wordCount": 858,
+      "updatedAt": "2026-08-31",
+      "linksOut": [
+        "benchmark/results/2026-08-31-change-r7-summary",
+        "benchmark/results/2026-08-31-change-r3-summary",
+        "benchmark/results/2026-08-31-change-r4-summary",
+        "benchmark/results/2026-08-31-change-r5-diagnose-summary"
+      ]
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -345,12 +376,16 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 1331,
-      "updatedAt": "2026-08-25",
+      "wordCount": 2064,
+      "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
         "benchmark/tasks",
         "benchmark/rubric",
+        "benchmark/FINDINGS-2026-08-31",
+        "benchmark/FINDINGS-2026-08-31-change-flow",
+        "benchmark/results/2026-08-31-gb-r3-summary",
+        "benchmark/results/2026-08-31-change-r7-summary",
         "benchmark/results/2026-05-template"
       ]
     },
@@ -405,15 +440,135 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/results/2026-08-31-change-r1-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r1-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r1",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault and read-only Atlas MCP. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Arm · Cells · Workflow passes · Us",
+      "wordCount": 439,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r2-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r2-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r2",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault and read-only Atlas MCP. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Arm · Cells · Workflow passes · Us",
+      "wordCount": 439,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r3-smoke-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r3-smoke-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r3-smoke",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault and read-only Atlas MCP. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Arm · Cells · Workflow passes · Us",
+      "wordCount": 306,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r3-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r3-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r3",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault and read-only Atlas MCP. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Arm · Cells · Workflow passes · Us",
+      "wordCount": 484,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r4-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r4-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r4",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault, read-only context reads, and one reviewed Atlas update. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Ar",
+      "wordCount": 488,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r5-diagnose-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r5-diagnose-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r5-diagnose",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault, read-only context reads, and one reviewed Atlas update. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Ar",
+      "wordCount": 310,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r6-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r6-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r6",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault, read-only context reads, and one reviewed Atlas update. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Ar",
+      "wordCount": 488,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-change-r7-summary",
+      "path": "docs/benchmark/results/2026-08-31-change-r7-summary.md",
+      "title": "Meaning-to-change benchmark — 2026-08-31-change-r7",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each cell gave a fresh temporary Git repository to the same Codex agent. off had no Atlas vault or MCP; on had the same source plus a prepared validated vault, read-only context reads, and one reviewed Atlas update. A local bare remote stood in for push. No external remote was contacted. Runs per cell: 1 · Subject · Ar",
+      "wordCount": 518,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-gb-pilot-r2-summary",
+      "path": "docs/benchmark/results/2026-08-31-gb-pilot-r2-summary.md",
+      "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-pilot-r2",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "This is a paired Codex measurement of a prepared Atlas vault. off has no vault, MCP, or answer key in the subject workspace; on has the same source plus a validated curated vault and Atlas MCP. Machine coverage is not a semantic quality certificate; inspect the saved transcripts before making a product claim. Runs per ",
+      "wordCount": 475,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-gb-r3-summary",
+      "path": "docs/benchmark/results/2026-08-31-gb-r3-summary.md",
+      "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r3",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "This is a paired Codex measurement of a prepared Atlas vault. off has no vault, MCP, or answer key in the subject workspace; on has the same source plus a validated curated vault and Atlas MCP. Machine coverage is not a semantic quality certificate; inspect the saved transcripts before making a product claim. Runs per ",
+      "wordCount": 839,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/rubric",
       "path": "docs/benchmark/rubric.md",
       "title": "Rubric — how to score each run",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Score each agent × mode × task cell (28 cells total per measurement run). Be strict. If you find yourself wanting to round up because the agent \"almost\" got it, write the gap in the Notes column instead of inflating. Saving tokens is not a goal of this project (owner, 2026-08-25): \"I care about whether we build accurat",
-      "wordCount": 1188,
-      "updatedAt": "2026-08-25",
+      "excerpt": "Score each agent × mode × task cell (40 cells total for the 10 legacy tasks in a full Claude Code + Codex measurement run). The lifecycle runner has its own 8-cell-per-repeat matrix and reports machine coverage separately. Be strict. If you find yourself wanting to round up because the agent \"almost\" got it, write the ",
+      "wordCount": 1505,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -423,9 +578,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "7 tasks across 3 categories. Each has a known correct answer (verifiable by human against the current docs/ontology/ vault, code, and PR history) so we can grade independent of the AI's confidence. Paste the prompt verbatim into a fresh agent session. No follow-ups. Questions where the answer requires reasoning over mu",
-      "wordCount": 1339,
-      "updatedAt": "2026-08-25",
+      "excerpt": "10 tasks across 4 categories. Each has a known correct answer (verifiable by human against the current docs/ontology/ vault, code, and PR history) so we can grade independent of the AI's confidence. Paste the prompt verbatim into a fresh agent session. No follow-ups. Questions where the answer requires reasoning over m",
+      "wordCount": 1360,
+      "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/rubric"
       ]
@@ -492,7 +647,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 220498,
+      "wordCount": 221854,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "slug"
@@ -3621,6 +3776,51 @@
         "linkText": "`mcp/README.md`"
       }
     ],
+    "benchmark/results/2026-08-31-change-r7-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-change-flow",
+        "context": "y` call per subject, and committed the corresponding capability Markdown beside the source and test changes. Evidence: **[r7 summary]**, [greenfield on diff](results/2026-08-31-change-r7-greenfield-on-r1.diff), [brownfield on diff](results/2026-08-31-chan",
+        "linkText": "r7 summary"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-change-r7-summary.md`]** | Four-cell change-flow result with direct Git and Atlas update receipts. | | [`results/2026-05-template.md`](results/2",
+        "linkText": "`results/2026-08-31-change-r7-summary.md`"
+      }
+    ],
+    "benchmark/results/2026-08-31-change-r3-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-change-flow",
+        "context": "mary so a future failure cannot collapse into an unexplained `workflow=false`. The diagnostic runs remain available: **[the unadopted sidecar-failure run]**, [the unadopted verification run](results/2026-08-31-change-r4-summary.md), and [the passing diagnosis smoke](results/2",
+        "linkText": "the unadopted sidecar-failure run"
+      }
+    ],
+    "benchmark/results/2026-08-31-change-r4-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-change-flow",
+        "context": "`. The diagnostic runs remain available: [the unadopted sidecar-failure run](results/2026-08-31-change-r3-summary.md), **[the unadopted verification run]**, and [the passing diagnosis smoke](results/2026-08-31-change-r5-diagnose-summary.md). ## Next falsifiable slice Keep",
+        "linkText": "the unadopted verification run"
+      }
+    ],
+    "benchmark/results/2026-08-31-change-r5-diagnose-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-change-flow",
+        "context": "esults/2026-08-31-change-r3-summary.md), [the unadopted verification run](results/2026-08-31-change-r4-summary.md), and **[the passing diagnosis smoke]**. ## Next falsifiable slice Keep the public claim bounded until the next run adds: 1. blind human grading of code cor",
+        "linkText": "the passing diagnosis smoke"
+      }
+    ],
+    "benchmark/results/2026-08-31-gb-r3-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31",
+        "context": "ct runner is [`scripts/benchmark-lifecycle.mjs`](../../scripts/benchmark-lifecycle.mjs), and the complete raw matrix is **[`results/2026-08-31-gb-r3-summary.md`]**. ## Result | Subject | OFF coverage | ON coverage | Delta | Content passes OFF → ON | ON median time delta | Arm inte",
+        "linkText": "`results/2026-08-31-gb-r3-summary.md`"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "ge-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | **[`results/2026-08-31-gb-r3-summary.md`]** | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | [`results/2026-08-31-change-r7-summary.md`](results",
+        "linkText": "`results/2026-08-31-gb-r3-summary.md`"
+      }
+    ],
     "benchmark/FINDINGS-2026-08-25": [
       {
         "fromSlug": "benchmark/README",
@@ -3631,14 +3831,14 @@
     "benchmark/tasks": [
       {
         "fromSlug": "benchmark/README",
-        "context": "6-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. | | **[`tasks.md`]** | 7 benchmark tasks — 3 categories (cross-cutting / semantic / negative-control). Each task has a known correct answer",
+        "context": "6-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. | | **[`tasks.md`]** | 10 retrieval and meaning tasks — 4 categories (cross-cutting / semantic / negative-control / meaning). Each task has",
         "linkText": "`tasks.md`"
       }
     ],
     "benchmark/rubric": [
       {
         "fromSlug": "benchmark/README",
-        "context": "3 categories (cross-cutting / semantic / negative-control). Each task has a known correct answer for human grading. | | **[`rubric.md`]** | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | [`results/2026-05-te",
+        "context": "categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. | | **[`rubric.md`]** | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | [`FINDINGS-2026-08-3",
         "linkText": "`rubric.md`"
       },
       {
@@ -3647,10 +3847,24 @@
         "linkText": "`rubric.md`"
       }
     ],
+    "benchmark/FINDINGS-2026-08-31": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "bric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | **[`FINDINGS-2026-08-31.md`]** | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | [`FINDINGS-2",
+        "linkText": "`FINDINGS-2026-08-31.md`"
+      }
+    ],
+    "benchmark/FINDINGS-2026-08-31-change-flow": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "26-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | **[`FINDINGS-2026-08-31-change-flow.md`]** | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | [`results/2",
+        "linkText": "`FINDINGS-2026-08-31-change-flow.md`"
+      }
+    ],
     "benchmark/results/2026-05-template": [
       {
         "fromSlug": "benchmark/README",
-        "context": "bric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. | | **[`results/2026-05-template.md`]** | Empty matrix (task × agent × mode). Fill in after each measurement run. | ## How to measure Two paths, depending on",
+        "context": "(results/2026-08-31-change-r7-summary.md) | Four-cell change-flow result with direct Git and Atlas update receipts. | | **[`results/2026-05-template.md`]** | Empty matrix (task × agent × mode). Fill in after each measurement run. | ## How to measure Two paths, depending on",
         "linkText": "`results/2026-05-template.md`"
       }
     ],
@@ -5150,6 +5364,76 @@
                 "type": "doc",
                 "slug": "benchmark/results/2026-08-25-codex-summary",
                 "title": "Benchmark — 2026-08-25 — Codex automated"
+              },
+              {
+                "name": "2026-08-31-change-r1-summary",
+                "path": "benchmark/results/2026-08-31-change-r1-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r1-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r1"
+              },
+              {
+                "name": "2026-08-31-change-r2-summary",
+                "path": "benchmark/results/2026-08-31-change-r2-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r2-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r2"
+              },
+              {
+                "name": "2026-08-31-change-r3-smoke-summary",
+                "path": "benchmark/results/2026-08-31-change-r3-smoke-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r3-smoke-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r3-smoke"
+              },
+              {
+                "name": "2026-08-31-change-r3-summary",
+                "path": "benchmark/results/2026-08-31-change-r3-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r3-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r3"
+              },
+              {
+                "name": "2026-08-31-change-r4-summary",
+                "path": "benchmark/results/2026-08-31-change-r4-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r4-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r4"
+              },
+              {
+                "name": "2026-08-31-change-r5-diagnose-summary",
+                "path": "benchmark/results/2026-08-31-change-r5-diagnose-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r5-diagnose-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r5-diagnose"
+              },
+              {
+                "name": "2026-08-31-change-r6-summary",
+                "path": "benchmark/results/2026-08-31-change-r6-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r6-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r6"
+              },
+              {
+                "name": "2026-08-31-change-r7-summary",
+                "path": "benchmark/results/2026-08-31-change-r7-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-change-r7-summary",
+                "title": "Meaning-to-change benchmark — 2026-08-31-change-r7"
+              },
+              {
+                "name": "2026-08-31-gb-pilot-r2-summary",
+                "path": "benchmark/results/2026-08-31-gb-pilot-r2-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-pilot-r2-summary",
+                "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-pilot-r2"
+              },
+              {
+                "name": "2026-08-31-gb-r3-summary",
+                "path": "benchmark/results/2026-08-31-gb-r3-summary",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-r3-summary",
+                "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r3"
               }
             ]
           },
@@ -5159,6 +5443,20 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-08-25",
             "title": "Does the ontology help? — 2026-08-25"
+          },
+          {
+            "name": "FINDINGS-2026-08-31",
+            "path": "benchmark/FINDINGS-2026-08-31",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-08-31",
+            "title": "Paired lifecycle findings — 2026-08-31"
+          },
+          {
+            "name": "FINDINGS-2026-08-31-change-flow",
+            "path": "benchmark/FINDINGS-2026-08-31-change-flow",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-08-31-change-flow",
+            "title": "Findings — 2026-08-31 end-to-end change flow"
           },
           {
             "name": "README",

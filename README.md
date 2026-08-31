@@ -434,6 +434,48 @@ do not read unknown as low risk.
 Connect and use it through the [MCP guide](mcp/README.md), or start from the
 [CLI reference](cli/README.md).
 
+## What Atlas is trying to earn
+
+Atlas's long-term goal is specific: make a repository's reviewed product
+meaning a durable, local, queryable handoff that compounds across changes.
+Ownership, boundaries, evidence, bounded impact, and the next verification path
+should remain inspectable by both a person and an AI agent. Atlas is not making
+the broader claim that every source lookup becomes faster.
+
+We now run a paired lifecycle benchmark: the same source and fixed task in a
+greenfield-shaped and a brownfield-shaped subject, with Atlas physically absent
+versus a prepared Atlas vault plus read-only MCP. The first three-repeat pilot
+showed higher machine-measured required-evidence coverage with Atlas, but also
+higher median time:
+
+| Subject | Without Atlas | With Atlas | Coverage delta | Median time delta |
+|---|---:|---:|---:|---:|
+| Greenfield-shaped fixture | 0.25 | 0.875 | +0.625 | +17.2 s |
+| Brownfield-shaped fixture | 0.2834 | 0.7389 | +0.4555 | +33.2 s |
+
+This is feasibility evidence, not a universal product claim: the subjects are
+small internal fixtures, the score checks final structured coverage rather than
+semantic truth, and vault construction/maintenance cost is separate. The full
+method, limits, raw answers, and next experiments live in the
+[paired lifecycle findings](docs/benchmark/FINDINGS-2026-08-31.md) and the
+[benchmark log](docs/benchmark/README.md). We will keep the claim only if
+future unfamiliar-repository runs show better decision quality or handoff
+trust after those costs are included.
+
+We also ran the first end-to-end change-flow slice: the same fixed change was
+carried through code, focused tests, an Atlas capability update on the `on` arm,
+commit, local push, merge, and cleanup in both shapes. All four cells passed
+(`greenfield/off`, `greenfield/on`, `brownfield/off`, `brownfield/on`), including
+deterministic conflict recovery in brownfield. This is **workflow parity**, not
+proof that Atlas made the code better: the Atlas arm was slower by 28.2 seconds
+in greenfield and 51.1 seconds in brownfield in this one-repeat synthetic run.
+The result and raw receipts are in the
+[change-flow findings](docs/benchmark/FINDINGS-2026-08-31-change-flow.md) and
+the [r7 summary](docs/benchmark/results/2026-08-31-change-r7-summary.md).
+Atlas contributes the durable meaning, boundary, provenance, and handoff
+record; Git push/merge remains ordinary integration evidence rather than a new
+Atlas contract.
+
 ## Why not just use a notes tool
 
 Local Markdown, git diffs, and MCP are table stakes. Notes tools such as
