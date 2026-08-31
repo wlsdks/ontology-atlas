@@ -302,6 +302,18 @@
       "linksOut": []
     },
     {
+      "slug": "audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31",
+      "path": "docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md",
+      "title": "First-run walkthrough — 2026-08-31",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "One complete journey, walked rather than reviewed: download page → installed app → point at a folder → build a vault → connect an agent → first useful answer. Walker's knowledge state: uses a coding agent daily, maintains agent instruction files, comfortable with Git. Does not know Atlas, the product use of \"ontology\",",
+      "wordCount": 1037,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
       "slug": "audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07",
       "path": "docs/audits/VISUAL-DESIGN-REVIEW-BRIEF-2026-07.md",
       "title": "Ontology Atlas — Visual Design Review Brief (2026-07)",
@@ -5538,6 +5550,13 @@
             "type": "doc",
             "slug": "audits/README",
             "title": "audits/ — 잰 것의 기록"
+          },
+          {
+            "name": "USER-WALKTHROUGH-FIRST-RUN-2026-08-31",
+            "path": "audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31",
+            "type": "doc",
+            "slug": "audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31",
+            "title": "First-run walkthrough — 2026-08-31"
           },
           {
             "name": "VISUAL-DESIGN-REVIEW-BRIEF-2026-07",

@@ -42,6 +42,26 @@ function vaultRef(vaultPath: string | null | undefined): string {
  * human approved. Where comparable setup prompts end in "EXECUTE NOW", this one
  * writes the contract that the human is the arbiter of meaning into the prompt
  * itself.
+ *
+ * ## Why this stops short of describing the write
+ *
+ * It used to end "write only approved items", and that sentence sent people into
+ * a wall. A walkthrough pasted this instruction into a fresh agent, approved the
+ * proposal it produced, and got nothing: the server answered `canWrite: false`,
+ * because acceptance has to be bound to a generated plan digest and an
+ * independent evaluation that a blanket "I approve" predates. The instruction had
+ * promised a path the server refuses, and named none of the fields that would
+ * explain it.
+ *
+ * The cause was not the gate. It was that this file carried a **second,
+ * hand-shortened copy** of a lifecycle the server already publishes in full —
+ * ten steps in its own `instructions`, plus a `nextStep` on every response. Two
+ * hand-written copies of one contract drift, which is the same failure the
+ * insights surface hit when it disagreed with the CLI about what a node is
+ * (`docs/DECISIONS.md`, 2026-08-16).
+ *
+ * So it no longer paraphrases the write path. It hands over the proposal and
+ * points at the authority that knows the rest.
  */
 export function buildAgentAnalyzePrompt({
   vaultPath,
@@ -69,11 +89,17 @@ export function buildAgentAnalyzePrompt({
     `5. Qualify project meaning separately: report project source currentness,`,
     `   competency questions, witnesses, gaps, and any review-required state.`,
     `   Structural readiness is not semantic qualification.`,
-    `6. Present the proposal, qualification gaps, and exact write plan for`,
-    `   human review. Do not call add_concept / add_concepts / add_relation /`,
-    `   add_relations until the human explicitly approves that plan. Write only`,
-    `   approved items, with the expected mtime guard where available.`,
-    `7. Never use delete_concept, merge_concepts, rename_concept,`,
+    `6. Present the proposal and its qualification gaps for human review. Do`,
+    `   not call add_concept / add_concepts / add_relation / add_relations`,
+    `   while proposalValidation.canWrite is false — approval alone does not`,
+    `   make it true, and no write is authorized without the writePlan the`,
+    `   server returns.`,
+    `7. After the human responds, follow the nextStep the server returns, and`,
+    `   keep following it until canWrite is true. This server publishes the`,
+    `   full construction lifecycle in its own instructions; read that rather`,
+    `   than inferring the remaining steps. If a step needs the person, say`,
+    `   which one and what it needs — do not stop silently on canWrite: false.`,
+    `8. Never use delete_concept, merge_concepts, rename_concept,`,
     `   absorb_document, or git_snapshot as part of ordinary synchronization`,
     `   unless the human explicitly requested that operation and reviewed its`,
     `   dry-run or preflight.`,
