@@ -6953,6 +6953,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-31 — Artifact size is not a constraint; the size gate catches only accidents",
+      "slug": "2026-08-31-artifact-size-is-not-a-constraint-the-size-gate-catches-only-accidents"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-31 — An authored vault is told to finalize, not to author",
       "slug": "2026-08-31-an-authored-vault-is-told-to-finalize-not-to-author"
     },

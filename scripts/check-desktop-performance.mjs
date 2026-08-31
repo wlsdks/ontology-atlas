@@ -4,24 +4,20 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
-// Raised from 8 MiB on 2026-08-31 at 7.81 MiB measured, which is 97.6% of the
-// old ceiling. The number was not the problem and raising it is not the fix.
-//
-// Measured cause: `src/entities/docs-vault/data/content.json` is 4.53 MiB, of
-// which `DECISIONS` is 2.84 MiB and `CHANGELOG` is 1.14 MiB. Both ledgers are
-// append-only by charter, so this input only ever grows and will reach any
-// ceiling eventually. The same documents already ship as plain files in
-// `out/docs-vault/` (5.4 MiB), which does not count here — the bundle is
-// carrying a second copy of documents the app can already fetch.
-//
-// So this ceiling buys time for the structural fix, which is to stop bundling
-// the two ledgers and read them from the static copy on demand. **If this gate
-// goes red again, do that instead of raising the number a second time.** The
-// gate exists to catch accidental bloat; it stops meaning anything if documented
-// growth is answered by moving the line.
+// Owner decision, 2026-08-31: artifact size is not a constraint this product
+// optimizes for. The previous ceiling (8 MiB, then 10 MiB) sat at 97% of the
+// measured bundle and was being raised release by release, which turned a
+// bloat detector into a recurring chore. The gate now catches only an
+// order-of-magnitude accident: a build that ships a stray dependency, a
+// duplicated vendor bundle, or a generated file that was never meant to be
+// bundled. Ordinary growth from the append-only ledgers in
+// `src/entities/docs-vault/data/content.json` (4.5 MiB today) is expected and
+// is not what this number is for. If the structural change lands (reading
+// the ledgers from `out/docs-vault/` on demand instead of bundling them), the
+// number can come down again; until then it stays wide.
 export const DESKTOP_PERFORMANCE_BUDGETS = {
-  nextStaticBytes: 10 * 1024 * 1024,
-  maxStaticAssetBytes: 1.5 * 1024 * 1024,
+  nextStaticBytes: 64 * 1024 * 1024,
+  maxStaticAssetBytes: 8 * 1024 * 1024,
 };
 
 const STATIC_ASSET_EXTENSIONS = new Set([".js", ".css"]);

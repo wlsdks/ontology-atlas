@@ -40,6 +40,35 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — Artifact size is not a constraint; the size gate catches only accidents
+
+**Convened**: owner decision, recorded by the agent on the release-hardening
+branch · **Trigger**: the desktop performance gate's comment instructed that a
+second red must be answered by unbundling the ledgers, never by raising the
+number; the owner overruled that instruction in plain words ("size can keep
+growing; if there is a ceiling, raise it a lot").
+
+**Prior decision**: the 2026-08-31 ceiling raise from 8 MiB to 10 MiB, recorded
+only in `scripts/check-desktop-performance.mjs`, is overturned in its
+prescription, not its measurement. The measurement stands: the bundle carries a
+second copy of `DECISIONS` and `CHANGELOG` that `out/docs-vault/` already ships.
+
+**Decision**: `nextStaticBytes` becomes 64 MiB and `maxStaticAssetBytes`
+becomes 8 MiB. The gate exists to catch an order-of-magnitude accident (a stray
+dependency, a duplicated vendor bundle, a generated file that should never have
+been bundled), not documented growth. The release binary keeps its debug
+line tables in a packed dSYM for the same reason: legibility of a crash outranks
+bytes.
+
+**Recorded dissent** (the gate's own comment, 2026-08-31 morning): a ceiling at
+97% of the measured size catches bloat; a ceiling at 6x the measured size
+catches nothing until the damage is large. **Falsifier**: a release whose
+`_next/static` grows by more than 4 MiB in one version without a named cause.
+**Revisit**: when that is observed, land the on-demand ledger read and bring
+the number down with a measurement, not a guess.
+
+**Status**: standing
+
 ## 2026-08-31 — An authored vault is told to finalize, not to author
 
 **Convened**: solo pass (agent-prepared for owner review on the PR) ·
