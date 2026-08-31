@@ -24,6 +24,7 @@ export async function generateMetadata({
   // English by intent), so a separate `topBarProjectsLabel` is used, localized properly for each locale.
   return {
     title: t("topBarProjectsLabel"),
+    robots: { index: false, follow: false },
   };
 }
 

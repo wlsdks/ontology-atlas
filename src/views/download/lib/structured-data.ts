@@ -1,6 +1,6 @@
 import { SITE_URL } from '@/shared/config';
-import { RELEASE_MIN_MACOS } from './release-facts';
-import { MACOS_RELEASE } from './release-state';
+import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS } from './release-facts';
+import { MACOS_RELEASE, windowsAsset } from './release-state';
 
 /**
  * `SoftwareApplication` structured data — the only schema that can earn this app download page a
@@ -22,15 +22,20 @@ export function downloadStructuredData(locale: string, description: string) {
   const published = MACOS_RELEASE.published && MACOS_RELEASE.assets.length > 0;
   const primary =
     MACOS_RELEASE.assets.find((asset) => asset.arch === 'aarch64') ?? MACOS_RELEASE.assets[0];
+  const windows = windowsAsset();
+  const downloadUrls = [
+    ...(MACOS_RELEASE.published ? MACOS_RELEASE.assets.map((asset) => asset.downloadUrl) : []),
+    ...(windows ? [windows.downloadUrl] : []),
+  ];
 
   return {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Ontology Atlas',
     applicationCategory: 'DeveloperApplication',
-    operatingSystem: RELEASE_MIN_MACOS,
+    operatingSystem: windows ? [RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS] : RELEASE_MIN_MACOS,
     description,
-    url: `${SITE_URL}/${locale}/download`,
+    url: `${SITE_URL}/${locale}/download/`,
     inLanguage: locale,
     license: 'https://opensource.org/licenses/MIT',
     isAccessibleForFree: true,
@@ -42,7 +47,7 @@ export function downloadStructuredData(locale: string, description: string) {
     ...(published && primary
       ? {
           softwareVersion: MACOS_RELEASE.tag.replace(/^v/, ''),
-          downloadUrl: primary.downloadUrl,
+          downloadUrl: downloadUrls,
           ...(MACOS_RELEASE.publishedAt ? { datePublished: MACOS_RELEASE.publishedAt } : {}),
         }
       : {}),

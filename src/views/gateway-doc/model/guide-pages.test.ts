@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { GUIDE_ENTRY_PAGE, GUIDE_PAGES, resolveGuidePage } from './guide-pages';
+import {
+  GUIDE_ENTRY_PAGE,
+  GUIDE_PAGES,
+  guideCanonicalPath,
+  resolveGuidePage,
+} from './guide-pages';
 
 /**
  * The **honesty** contract of the unknown-segment fallback.
@@ -28,5 +33,17 @@ describe('resolveGuidePage — 폴백은 대체 사실을 말한다', () => {
     const result = resolveGuidePage('ONTOLOGY-ATLAS-SPEC.md');
     expect(result.page).toEqual(GUIDE_ENTRY_PAGE);
     expect(result.matched, '모르는 세그먼트가 특정 장을 사칭하면 안 된다').toBe(false);
+  });
+});
+
+describe('guideCanonicalPath', () => {
+  it('첫 장의 중복 세그먼트를 공유 /guide 주소로 통합한다', () => {
+    expect(guideCanonicalPath(GUIDE_ENTRY_PAGE)).toBe('guide');
+  });
+
+  it('나머지 장은 자기 세그먼트를 canonical 로 유지한다', () => {
+    for (const page of GUIDE_PAGES.slice(1)) {
+      expect(guideCanonicalPath(page)).toBe(`guide/${page.segment}`);
+    }
   });
 });
