@@ -88,7 +88,7 @@ entry point.
 **Pure local-first**: no backend, no auth, no DB, no cloud SDK in the
 bundle.
 
-Hosted demo (read-only, dogfood vault, no install): https://wlsdks.github.io/ontology-atlas/en/topology/
+Hosted demo (read-only, dogfood vault, no install): https://ontologyatlas.com/en/topology/
 Repo: https://github.com/wlsdks/ontology-atlas
 MIT licensed.
 

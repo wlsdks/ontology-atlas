@@ -648,8 +648,8 @@ if (
   /release:\s*\n\s+types:\s*\[published\]/.test(pagesDeployWorkflow) &&
   /push:\s*\n\s+branches:\s*\[main\]/.test(pagesDeployWorkflow) &&
   /workflow_dispatch:/.test(pagesDeployWorkflow) &&
-  /PAGES_BASE_URL:\s*https:\/\/wlsdks\.github\.io\/ontology-atlas/.test(pagesDeployWorkflow) &&
-  /NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
+  /PAGES_BASE_URL:\s*https:\/\/ontologyatlas\.com/.test(pagesDeployWorkflow) &&
+  !/NEXT_PUBLIC_BASE_PATH:\s*\/ontology-atlas/.test(pagesDeployWorkflow) &&
   /uses:\s*actions\/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38\s+# v6/.test(pagesDeployWorkflow) &&
   /node-version:\s*24/.test(pagesDeployWorkflow) &&
   /corepack enable/.test(pagesDeployWorkflow) &&
@@ -663,10 +663,10 @@ if (
   /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(pagesDeployWorkflow) &&
   !/FIREBASE|firebase-tools|deploy --only hosting/.test(pagesDeployWorkflow)
 ) {
-  pass("GitHub Pages workflow builds the base-path static export, deploys the sole hosted download site on push/release, and verifies the hosted download route");
+  pass("GitHub Pages workflow builds the custom-domain root export, deploys the sole hosted download site on push/release, and verifies the hosted download route");
 } else {
   fail(
-    ".github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build with the /ontology-atlas base path, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the Pages URL, verify published release assets on release, and never depend on Firebase",
+    ".github/workflows/deploy-pages.yml must deploy GitHub Pages on push to main / release publication / manual dispatch, build at the ontologyatlas.com root without the retired /ontology-atlas base path, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, upload+deploy the Pages artifact, verify the hosted download route at the canonical URL, verify published release assets on release, and never depend on Firebase",
   );
 }
 
@@ -929,7 +929,7 @@ if (
 const readmeFlow = flow(rootReadme);
 if (
   readmeFlow.includes("# Ontology Atlas") &&
-  readmeFlow.includes("https://wlsdks.github.io/ontology-atlas/") &&
+  readmeFlow.includes("https://ontologyatlas.com/") &&
   readmeFlow.includes("Tauri macOS shell") &&
   readmeFlow.includes("The desktop app uses a Tauri bridge to your selected folder") &&
   readmeFlow.includes("hosted web app can open a local folder through the File System Access API") &&
@@ -1735,9 +1735,8 @@ if (missingBundleIcons.length === 0) {
 
 if (
   rootLayout.includes("title: 'Ontology Atlas'") &&
-  // GitHub Pages serves under the `/ontology-atlas` base path, so the manifest link
-  // must be base-path aware (#617). A literal `/manifest.webmanifest` 404s on Pages,
-  // so the `withBasePath(...)` form is pinned as the contract.
+  // Official Pages now serves at a custom-domain root. Keep the manifest helper so
+  // forks that still deploy beneath a base path do not regress (#617).
   rootLayout.includes("manifest: withBasePath('/manifest.webmanifest')") &&
   rootLayout.includes("alternateName: 'ontology-atlas'") &&
   webManifest.name === "Ontology Atlas" &&

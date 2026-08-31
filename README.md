@@ -13,9 +13,9 @@
 </p>
 
 <p align="center">
-  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Download for macOS</strong></a>
+  <a href="https://ontologyatlas.com/en/download/"><strong>Download for macOS</strong></a>
   ·
-  <a href="https://wlsdks.github.io/ontology-atlas/en/download/"><strong>Windows x64 beta</strong></a>
+  <a href="https://ontologyatlas.com/en/download/"><strong>Windows x64 beta</strong></a>
 </p>
 
 <p align="center">
@@ -47,9 +47,9 @@
 </p>
 
 <p align="center">
-  <a href="https://wlsdks.github.io/ontology-atlas/en/topology/">Live demo</a>
+  <a href="https://ontologyatlas.com/en/topology/">Live demo</a>
   ·
-  <a href="https://wlsdks.github.io/ontology-atlas/en/guide/">Guide</a>
+  <a href="https://ontologyatlas.com/en/guide/">Guide</a>
   ·
   <a href="#the-journey">The journey</a>
   ·
@@ -110,7 +110,7 @@ notarization, installer, updater, and hosted-download checks as a final build,
 but has not been widely run yet. A tag without `-rc` is a final release and
 makes the same promises with the wider run behind it.
 
-The [download page](https://wlsdks.github.io/ontology-atlas/en/download/) is the
+The [download page](https://ontologyatlas.com/en/download/) is the
 release authority: it renders a generated record of the current published tag,
 real asset sizes, checksums, platforms, and signing state. This README does not
 pin a tag or copy those values, so an older document cannot contradict the files
@@ -136,7 +136,7 @@ roadmap promise. It summarizes current product behavior documented in the
 [feature inventory](docs/FEATURES.md), the
 [specification](docs/ONTOLOGY-ATLAS-SPEC.md), and the
 [decision ledger](docs/DECISIONS.md). For what is downloadable today, use the
-[download page](https://wlsdks.github.io/ontology-atlas/en/download/).
+[download page](https://ontologyatlas.com/en/download/).
 
 ### Working today
 
@@ -652,7 +652,7 @@ available. MCP and CLI skip the screens and operate on the same files directly.
 
 See the [feature inventory](docs/FEATURES.md) for every current surface and the
 [architecture guide](docs/ARCHITECTURE.md) for the desktop/web boundary. The
-[live demo](https://wlsdks.github.io/ontology-atlas/en/topology/) opens Atlas's
+[live demo](https://ontologyatlas.com/en/topology/) opens Atlas's
 own dogfood vault in [`docs/ontology/`](docs/ontology/); run
 `node cli/src/index.mjs overview docs/ontology` when you need its current census.
 
@@ -827,7 +827,7 @@ edited ledgers, and the agent-runtime snapshot a release refuses to ship stale.
 
 ## Documentation
 
-- **Use the product:** [hosted guide](https://wlsdks.github.io/ontology-atlas/en/guide/) ·
+- **Use the product:** [hosted guide](https://ontologyatlas.com/en/guide/) ·
   [features](docs/FEATURES.md) · [MCP setup](mcp/README.md) ·
   [CLI reference](cli/README.md)
 - **Model a vault:** [what becomes a node?](docs/guide/what-becomes-a-node.md) ·

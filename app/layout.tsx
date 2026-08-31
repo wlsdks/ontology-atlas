@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  // Metadata fields are not auto-prefixed by next.config's basePath.
+  // Metadata fields are not auto-prefixed by an optional next.config basePath.
   manifest: withBasePath('/manifest.webmanifest'),
   // Title template is owned by app/[locale]/layout.tsx so the locale-aware
   // string ends up in <title>. We only set a fallback default here for the

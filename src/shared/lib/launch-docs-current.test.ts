@@ -131,7 +131,7 @@ describe('current-surface launch docs', () => {
    * *"no install"* and sends the reader to the root.
    */
   it('demo links promise the map, so they point at the map', async () => {
-    const SITE = 'https://wlsdks.github.io/ontology-atlas/';
+    const SITE = 'https://ontologyatlas.com/';
     const PROMISE = /demo|데모|no install|설치 없이|지도를 본|see the graph/i;
     /** A URL that ends at the site root with no locale segment. */
     const bareRoot = (text: string) =>

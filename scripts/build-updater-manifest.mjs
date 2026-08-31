@@ -4,7 +4,7 @@
  *
  * The app knows only one stable endpoint in `tauri.conf.json`:
  *
- *   https://wlsdks.github.io/ontology-atlas/update/latest.json
+ *   https://ontologyatlas.com/update/latest.json
  *
  * GitHub's `releases/latest` excludes pre-releases, resulting in 404s during RC-only periods.
  * Pages deployment copies this file from the newest non-draft release (including pre-releases) to the stable

@@ -532,7 +532,7 @@ data structures and ForceAtlas2 physics. Sigma WebGL and the xyflow ERD are
 retired:
 
 - **Hosted website** (intro, download, read-only dogfood demo):
-  https://wlsdks.github.io/ontology-atlas/
+  https://ontologyatlas.com/
 - **Local workbench** (read/write your vault): install the macOS app, then
   open `/docs` and pick your vault folder.
 

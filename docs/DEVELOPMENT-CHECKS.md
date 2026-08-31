@@ -129,9 +129,9 @@ source-checkout templates so local agent registration keeps pointing at
 `pnpm test:mcp:registration` when only those MCP registration templates changed.
 The hosted demo website is served by GitHub Pages via
 `.github/workflows/deploy-pages.yml`, the sole web host. It builds the static
-export to the `/ontology-atlas` base path on push to `main` and on release
+export at the `ontologyatlas.com` root on push to `main` and on release
 publication, then runs
-`pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`
+`pnpm desktop:verify-hosted -- --base-url="https://ontologyatlas.com"`
 and, when a release tag is present,
 `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` so the hosted
 download route proves the public DMG/checksum assets are still reachable. GitHub

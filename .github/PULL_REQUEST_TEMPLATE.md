@@ -21,7 +21,7 @@ Korean or English both fine.
 - [ ] If hosted-vs-installed runtime routing changed: `pnpm test:desktop:runtime`
 - [ ] If Tauri native vault bridge changed: `pnpm test:desktop:bridge`
 - [ ] If macOS release scripts/workflows changed: `pnpm test:desktop:check`
-- [ ] If the GitHub Pages deploy workflow changed: `pnpm desktop:verify-hosted -- --base-url="https://wlsdks.github.io/ontology-atlas"`
+- [ ] If the GitHub Pages deploy workflow changed: `pnpm desktop:verify-hosted -- --base-url="https://ontologyatlas.com"`
 - [ ] If `scripts/validate-vault.mjs`, vault validation docs, or release/local validation gates changed: `pnpm test:vault:validate`
 - [ ] If `scripts/audit-vault-paths.mjs`, dogfood path audit docs, or release/local audit gates changed: `pnpm test:vault:audit`
 - [ ] If `docs/`, `public/docs-vault/`, or static dogfood manifest behavior changed: `pnpm docs-vault:check`

@@ -46,7 +46,7 @@ describe('pixel mascot brand outputs', () => {
 
   it('ships the raster marks and lockups consumed by the app and README', () => {
     const expected: Record<string, { width: number; height: number }> = {
-      'app/icon.png': { width: 32, height: 32 },
+      'app/icon.png': { width: 512, height: 512 },
       'public/brand/mascot-full.png': { width: 512, height: 512 },
       'public/brand/mascot-compact.png': { width: 64, height: 64 },
       'public/brand/mascot-micro.png': { width: 16, height: 16 },
