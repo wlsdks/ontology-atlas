@@ -6953,6 +6953,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-31 — MCP and script messages a person or agent reads are English",
+      "slug": "2026-08-31-mcp-and-script-messages-a-person-or-agent-reads-are-english"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-31 — Artifact size is not a constraint; the size gate catches only accidents",
       "slug": "2026-08-31-artifact-size-is-not-a-constraint-the-size-gate-catches-only-accidents"
     },
