@@ -788,6 +788,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec eslint app/layout.tsx app/page.tsx app/sitemap.ts app/[locale]/docs/page.tsx',
+      'pnpm exec vitest run app/sitemap.test.ts',
       'pnpm test:contracts',
       'pnpm exec tsc --noEmit',
       'pnpm exec playwright test tests/e2e/a11y-ratchet.spec.ts tests/e2e/contrast-ratchet.spec.ts',
