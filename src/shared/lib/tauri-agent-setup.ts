@@ -28,11 +28,14 @@ export interface BundledMcpServer {
 export async function readBundledMcpServer(): Promise<BundledMcpServer> {
   const invoke = getInvoke();
   if (!invoke) {
-    return {
-      path: null,
-      available: false,
-      reason: 'The bundled MCP server is only available in the installed app.',
-    };
+    /*
+     * ⚠️ `reason` is **null** on the web, and that is the point. It carries a *diagnosis* the
+     * screen shows verbatim, and a browser has nothing to diagnose: not being the installed app
+     * is the ordinary state of a web session, and the panel already says so in the reader's own
+     * language. Filling this with an English sentence put untranslated developer prose one render
+     * away from a Korean screen (census state 5d, 2026-08-31).
+     */
+    return { path: null, available: false, reason: null };
   }
   return invoke<BundledMcpServer>('mcp_bundled_server');
 }

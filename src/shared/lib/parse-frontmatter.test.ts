@@ -213,3 +213,56 @@ describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ v
     expect(contexts[0].target).toBe('ontology/domains/ai-agent-partner');
   });
 });
+
+describe('parseFrontmatter — malformed-quoted-scalar', () => {
+  const codesOf = (raw: string) =>
+    (parseFrontmatter(raw).diagnostics ?? []).map((d) => d.code);
+
+  const FLAGGED: Array<[string, string]> = [
+    ['closing quote followed by text', 'display_ko: "에이전트" 목적지'],
+    ['single quotes closing early', "title: 'a' b"],
+    ['double quote never closed', 'title: "unclosed'],
+    ['a lone quote', 'title: "'],
+  ];
+  for (const [name, line] of FLAGGED) {
+    it(`flags ${name}`, () => {
+      expect(codesOf(`---\n${line}\n---\n`)).toEqual(['malformed-quoted-scalar']);
+    });
+  }
+
+  const CLEAN: Array<[string, string]> = [
+    ['a properly quoted value', 'title: "a"'],
+    ['a properly single-quoted value', "title: 'a'"],
+    ['quotes inside an unquoted value', 'title: a "b" c'],
+    ['an escaped quote inside a quoted value', 'title: "a \\"b\\""'],
+    ['an empty quoted value', 'title: ""'],
+    ['an empty value', 'title:'],
+    // `unquote` strips a wrapping pair whenever the last character is the same
+    // quote, so both of these render as written. The rule follows the renderer.
+    ['an apostrophe inside a closed single-quoted pair', "title: 'Owner's guide'"],
+    ['an inner pair inside a closed double-quoted pair', 'display_en: "He said "hi" today"'],
+    ['a colon inside the quoted value', 'created_by: "agent:unknown"'],
+  ];
+  for (const [name, line] of CLEAN) {
+    it(`accepts ${name}`, () => {
+      expect(codesOf(`---\n${line}\n---\n`)).toEqual([]);
+    });
+  }
+
+  it('names the key and offers the repaired line', () => {
+    // The line that stood in docs/ontology/elements/agents-destination.md while
+    // `pnpm vault:validate` reported 0 issues (2026-08-31).
+    const { frontmatter, diagnostics } = parseFrontmatter(
+      '---\ndisplay_ko: "에이전트" 목적지\n---\n',
+    );
+    // Parsing stays lenient — the broken value is exactly what every reader showed.
+    expect(frontmatter.display_ko).toBe('에이전트" 목적지');
+    expect(diagnostics?.[0]).toEqual({
+      code: 'malformed-quoted-scalar',
+      line: 2,
+      message:
+        'Frontmatter line 2 `display_ko:` closes its quote before the end of the value, ' +
+        'so the rest is read as literal text. Close the quote or remove it: `display_ko: 에이전트 목적지`',
+    });
+  });
+});

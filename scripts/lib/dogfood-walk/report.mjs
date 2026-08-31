@@ -164,7 +164,7 @@ export async function runDogfoodWalk() {
     }
     if (list.nodes && list.nodes.length > 8) {
       console.log(
-        `  ${COLORS.dim}... 외 ${list.nodes.length - 8} 개${COLORS.reset}`,
+        `  ${COLORS.dim}... and ${list.nodes.length - 8} more${COLORS.reset}`,
       );
     }
     if (list.vaultWarnings) {
@@ -253,7 +253,7 @@ export async function runDogfoodWalk() {
       console.log(`  hops: ${path.hopCount}`);
       console.log(`  ${path.hops.join(" → ")}`);
     } else {
-      console.log(`  ${COLORS.yellow}경로 없음${COLORS.reset} — ${path.reason || ""}`);
+      console.log(`  ${COLORS.yellow}no path${COLORS.reset} — ${path.reason || ""}`);
     }
   }
 
@@ -272,7 +272,7 @@ export async function runDogfoodWalk() {
   }
 
   // 7. find_orphans
-  header(`find_orphans (어떤 backlink 도 없는 고립 노드)`);
+  header(`find_orphans (isolated nodes with no backlink at all)`);
   const orph = getResult(responses, 7);
   const orphStructured = getRpcResult(responses, 7)?.structuredContent ?? null;
   if (orph) {
@@ -1311,7 +1311,7 @@ export async function runDogfoodWalk() {
   const total = kinds?.total || 0;
   const orphCount = orph?.total || 0;
   const orphRatio = total > 0 ? ((orphCount / total) * 100).toFixed(0) : 0;
-  console.log(`  vault size: ${total} 노드`);
+  console.log(`  vault size: ${total} nodes`);
   const inventoryFailure = toolsListInventoryFailure(toolsList?.tools);
   const schemaFailure = toolsListSchemaFailure(toolsList?.tools);
   console.log(`  initialize instructions: ${initializeInstructionStatus(initialize)}`);
@@ -1321,7 +1321,7 @@ export async function runDogfoodWalk() {
   console.log(`  tools/list write row labels: ${writeRowLabelGuidanceSummary(toolsList?.tools)}`);
   console.log(`  orphans: ${orphCount} (${orphRatio}%)`);
   console.log(
-    `  list_concepts vaultWarnings: ${list?.vaultWarnings ? "있음 (vault 정합성 회귀!)" : "0 (clean)"}`,
+    `  list_concepts vaultWarnings: ${list?.vaultWarnings ? "present (vault integrity regression!)" : "0 (clean)"}`,
   );
   console.log(`  project_probe: ${projectProbe ? formatCount(projectProbe.total ?? 0, "project node") : "n/a"}`);
   console.log(`  get_concepts: ${(batch?.concepts || []).filter((row) => row?.ok === true).length} ok · ${(batch?.concepts || []).filter((row) => row?.ok === false).length} partial`);

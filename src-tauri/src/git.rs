@@ -19,6 +19,8 @@ use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
+use crate::errors::coded;
+
 // ── Vault path validation (absolute path injection defense) ─────────────────────────────────
 // vault_path comes from JS (web GUI). Confirm existence + directory,
 // canonicalize to resolve symbolic links/relative pieces into real paths, then use as git's
@@ -26,15 +28,14 @@ use std::process::Command;
 // are fundamentally impossible.
 pub(crate) fn validate_vault_dir(vault_path: &str) -> Result<PathBuf, String> {
     if vault_path.trim().is_empty() {
-        return Err("vault 경로가 비어 있어요.".into());
+        return Err(coded("vault-path-empty", ""));
     }
     let path = PathBuf::from(vault_path);
-    let metadata =
-        fs::metadata(&path).map_err(|_| "vault 경로가 존재하지 않아요.".to_string())?;
+    let metadata = fs::metadata(&path).map_err(|_| coded("vault-path-missing", ""))?;
     if !metadata.is_dir() {
-        return Err("vault 경로가 디렉토리가 아니에요.".into());
+        return Err(coded("vault-path-not-a-folder", ""));
     }
-    fs::canonicalize(&path).map_err(|err| format!("vault 경로를 확정할 수 없어요: {err}"))
+    fs::canonicalize(&path).map_err(|err| coded("vault-path-unresolvable", err))
 }
 
 // ── Low-level git shell-out ──────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ fn run_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
     silence_git_credential_prompts(&mut command);
     let output = command
         .output()
-        .map_err(|err| format!("git 을 실행할 수 없어요 (설치 확인): {err}"))?;
+        .map_err(|err| coded("git-not-runnable", err))?;
     Ok(GitRun {
         success: output.status.success(),
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -115,7 +116,7 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
 
     let mut child = command
         .spawn()
-        .map_err(|err| format!("git 을 실행할 수 없어요 (설치 확인): {err}"))?;
+        .map_err(|err| coded("git-not-runnable", err))?;
 
     let started = std::time::Instant::now();
     loop {
@@ -139,15 +140,18 @@ fn run_network_git(cwd: &Path, args: &[&str]) -> Result<GitRun, String> {
                 if started.elapsed() >= NETWORK_GIT_DEADLINE {
                     let _ = child.kill();
                     let _ = child.wait();
-                    return Err(format!(
-                        "git {} 이(가) {}초 안에 끝나지 않아 멈췄어요 — 원격 주소와 인증을 확인해 주세요.",
-                        args.first().copied().unwrap_or("명령"),
-                        NETWORK_GIT_DEADLINE.as_secs()
+                    return Err(coded(
+                        "git-network-timeout",
+                        format!(
+                            "git {} did not finish within {}s",
+                            args.first().copied().unwrap_or("command"),
+                            NETWORK_GIT_DEADLINE.as_secs()
+                        ),
                     ));
                 }
                 std::thread::sleep(std::time::Duration::from_millis(50));
             }
-            Err(err) => return Err(format!("git 상태를 확인할 수 없어요: {err}")),
+            Err(err) => return Err(coded("git-not-runnable", err)),
         }
     }
 }
@@ -176,7 +180,7 @@ pub(crate) fn find_repo_root(vault_dir: &Path) -> Result<Option<PathBuf>, String
 fn require_repo_root(vault_dir: &Path) -> Result<PathBuf, String> {
     match find_repo_root(vault_dir)? {
         Some(root) => Ok(root),
-        None => Err("아직 이 폴더의 기록을 시작하지 않았어요. 발자취 화면에서 '기록 시작하기' 를 누르면 시작할 수 있어요.".into()),
+        None => Err(coded("git-repo-missing", "")),
     }
 }
 
@@ -210,25 +214,30 @@ struct PorcelainRow {
 
 fn parse_porcelain(out: &str) -> Vec<PorcelainRow> {
     out.lines()
-        .filter(|line| line.len() >= 3)
-        .map(|line| {
+        .filter_map(|line| {
+            // `git status --porcelain` writes `XY <path>`, so byte 3 *should* be a character
+            // boundary. It is read through `get` rather than sliced anyway, because the caller
+            // is a synchronous Tauri command and Tauri runs those on the macOS main thread: a
+            // panic there unwinds through an Objective-C frame and takes the whole app down
+            // with SIGABRT. A line this parser does not recognise must be skipped, never fatal.
             let bytes = line.as_bytes();
-            let index = bytes[0] as char;
-            let worktree = bytes[1] as char;
-            // The first 3 bytes (status 2 + space 1) are always ASCII → byte 3 is a char boundary.
-            let rest = &line[3..];
+            let index = *bytes.first()? as char;
+            let worktree = *bytes.get(1)? as char;
+            let rest = line.get(3..)?;
             let mut renamed_from = None;
             let mut path = rest.to_string();
             if let Some(arrow) = rest.find(" -> ") {
-                renamed_from = Some(rest[..arrow].to_string());
-                path = rest[arrow + 4..].to_string();
+                if let (Some(before), Some(after)) = (rest.get(..arrow), rest.get(arrow + 4..)) {
+                    renamed_from = Some(before.to_string());
+                    path = after.to_string();
+                }
             }
-            PorcelainRow {
+            Some(PorcelainRow {
                 index,
                 worktree,
                 path,
                 renamed_from,
-            }
+            })
         })
         .collect()
 }
@@ -246,9 +255,9 @@ fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<Porcelai
         ],
     )?;
     if !out.success {
-        return Err(format!(
-            "git status 실패: {}",
-            first_nonempty_line(&out.stderr).unwrap_or_else(|| "unknown error".into())
+        return Err(coded(
+            "git-status-failed",
+            first_nonempty_line(&out.stderr).unwrap_or_else(|| "unknown error".into()),
         ));
     }
     Ok(parse_porcelain(&out.stdout))
@@ -312,16 +321,21 @@ fn read_kind_slug(abs_path: &Path) -> (Option<String>, Option<String>) {
     (kind, slug)
 }
 
+/// Strips one matching pair of surrounding quotes from a frontmatter scalar.
+///
+/// Written with `strip_prefix`/`strip_suffix` rather than byte indexing: this runs inside
+/// synchronous Tauri commands, which Tauri executes on the macOS main thread, where a panic
+/// aborts the process instead of failing one call. These combinators cannot land mid-character.
 fn unquote(value: &str) -> String {
-    let bytes = value.as_bytes();
-    if value.len() >= 2
-        && ((bytes[0] == b'"' && bytes[value.len() - 1] == b'"')
-            || (bytes[0] == b'\'' && bytes[value.len() - 1] == b'\''))
-    {
-        value[1..value.len() - 1].to_string()
-    } else {
-        value.to_string()
+    for quote in ['"', '\''] {
+        if let Some(inner) = value
+            .strip_prefix(quote)
+            .and_then(|rest| rest.strip_suffix(quote))
+        {
+            return inner.to_string();
+        }
     }
+    value.to_string()
 }
 
 // ── Change summary ──────────────────────────────────────────────────────────────
@@ -479,11 +493,21 @@ fn first_nonempty_line(text: &str) -> Option<String> {
 }
 
 // ── Graceful failure classification (mirror of git-snapshot.mjs classifyGitError) ──────────────
+/// What went wrong, in the only two pieces that survive a language boundary: a
+/// **code** the screen looks up in `messages/<locale>.json` under `nativeErrors`,
+/// and git's own words as the machine detail behind it.
+///
+/// The finished sentence used to live here. It could only ever be written in one
+/// language, so an English-locale reader met Korean; `errors.rs` explains the whole
+/// contract. What could not move to the screen is `note` — git's own first line —
+/// because only git knows it, and a failure without "what went wrong" cannot be fixed.
 struct GitErrorInfo {
-    #[allow(dead_code)]
-    reason: &'static str,
-    message: String,
+    /// Looked up in `nativeErrors`, and the prefix of the `Err(String)` payload.
+    code: &'static str,
+    /// git's first stderr line. Machine detail, never prose.
     note: Option<String>,
+    /// The command that gets the person unstuck. Deliberately untranslated: it is
+    /// typed verbatim into a shell. The localized sentence names it too.
     guidance: Option<String>,
 }
 
@@ -496,9 +520,8 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         || (text.contains("[rejected]") && text.contains("fetch first"))
     {
         return GitErrorInfo {
-            reason: "push-non-fast-forward",
-            message: "원격이 앞섰어요 — `git pull` 후 다시 스냅샷하세요.".into(),
-            note: Some("커밋은 이미 로컬에 기록됨".into()),
+            code: "push-non-fast-forward",
+            note: first_line,
             guidance: Some("git pull".into()),
         };
     }
@@ -508,37 +531,32 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         || (text.contains("gpg") && text.contains("sign"))
     {
         return GitErrorInfo {
-            reason: "gpg-sign-failed",
-            message: "커밋 서명(gpg)에 실패했어요 — 서명 키를 확인하세요.".into(),
+            code: "gpg-sign-failed",
             note: first_line,
-            guidance: Some("git config commit.gpgsign false   # 서명을 끄고 다시 스냅샷".into()),
+            guidance: Some("git config commit.gpgsign false".into()),
         };
     }
 
     if text.contains("cannot do a partial commit") {
         return GitErrorInfo {
-            reason: "merge-in-progress",
-            message: "머지/리베이스가 진행 중이라 vault 범위만 커밋할 수 없어요 — 진행 중인 작업을 먼저 마치거나 중단하세요.".into(),
-            note: None,
-            guidance: Some("git status   # 진행 중 상태 확인".into()),
+            code: "merge-in-progress",
+            note: first_line,
+            guidance: Some("git status".into()),
         };
     }
 
     if text.contains("conflict") || text.contains("automatic merge failed") {
         return GitErrorInfo {
-            reason: "pull-conflict",
-            message: "pull 중 충돌이 났어요 — 충돌 파일을 해결한 뒤 커밋하세요.".into(),
-            note: None,
-            guidance: Some("git status   # 충돌 파일 확인".into()),
+            code: "pull-conflict",
+            note: first_line,
+            guidance: Some("git status".into()),
         };
     }
 
     if text.contains("would be overwritten") || text.contains("overwritten by merge") {
         return GitErrorInfo {
-            reason: "local-changes",
-            message: "커밋 안 된 로컬 변경이 있어 막혔어요 — 먼저 스냅샷으로 커밋하거나 stash 하세요."
-                .into(),
-            note: None,
+            code: "local-changes",
+            note: first_line,
             guidance: None,
         };
     }
@@ -548,9 +566,8 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         || text.contains("no such remote")
     {
         return GitErrorInfo {
-            reason: "no-upstream",
-            message: "이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요.".into(),
-            note: None,
+            code: "no-upstream",
+            note: first_line,
             guidance: Some("git push -u origin <branch>".into()),
         };
     }
@@ -560,10 +577,9 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         || text.contains("does not appear to be a git repository")
     {
         return GitErrorInfo {
-            reason: "remote-unreachable",
-            message: "원격 저장소에 닿지 못했어요 — 주소가 맞는지, 접근 권한이 있는지 확인하세요.".into(),
+            code: "remote-unreachable",
             note: first_line,
-            guidance: Some("git remote -v   # 등록된 주소 확인".into()),
+            guidance: Some("git remote -v".into()),
         };
     }
 
@@ -572,8 +588,7 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
         || text.contains("could not read username")
     {
         return GitErrorInfo {
-            reason: "remote-auth",
-            message: "원격 인증에 실패했어요 — 자격 증명을 확인하세요.".into(),
+            code: "remote-auth",
             note: first_line,
             guidance: None,
         };
@@ -581,8 +596,7 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
 
     if text.contains("pre-commit") || text.contains("commit-msg") || text.contains("hook") {
         return GitErrorInfo {
-            reason: "pre-commit-hook",
-            message: "커밋 훅이 스냅샷을 거부했어요 — 훅이 보고한 문제를 고친 뒤 다시 스냅샷하세요.".into(),
+            code: "pre-commit-hook",
             note: first_line,
             guidance: None,
         };
@@ -590,30 +604,26 @@ fn classify_git_error(raw: &str, operation: &str) -> GitErrorInfo {
 
     if operation == "commit" {
         return GitErrorInfo {
-            reason: "commit-rejected",
-            message: "커밋이 거부됐어요 (커밋 훅이 막았을 수 있어요).".into(),
+            code: "commit-rejected",
             note: first_line,
             guidance: None,
         };
     }
     GitErrorInfo {
-        reason: "git-command-failed",
-        message: format!("git {operation} 명령이 실패했어요."),
-        note: first_line,
+        code: "git-command-failed",
+        // Which git command failed is a fact only this side knows, so it rides with
+        // the note rather than being written into eleven translated sentences.
+        note: Some(match first_line {
+            Some(line) => format!("git {operation}: {line}"),
+            None => format!("git {operation}"),
+        }),
         guidance: None,
     }
 }
 
-/// The classification result as a one-line user-facing string — the Err payload of Result<_, String>.
+/// The classification as the `Err` payload of `Result<_, String>` — `<code>: <git's words>`.
 fn classified_error_string(info: &GitErrorInfo) -> String {
-    let mut out = info.message.clone();
-    if let Some(note) = &info.note {
-        out.push_str(&format!(" ({note})"));
-    }
-    if let Some(guidance) = &info.guidance {
-        out.push_str(&format!(" → {guidance}"));
-    }
-    out
+    coded(info.code, info.note.clone().unwrap_or_default())
 }
 
 fn git_error_text(run: &GitRun) -> String {
@@ -866,7 +876,9 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
             upstream: String::new(),
             ahead: None,
             behind: None,
-            summary: "보낼 곳이 아직 없어요".to_string(),
+            // A code, not a sentence: `nativeErrors` holds the wording, and the
+            // panel already has `ahead`/`behind` to fill the diverged one in.
+            summary: "remote-no-upstream".to_string(),
         });
     };
     let out = run_network_git(&repo_root, &["fetch", "--prune"])?;
@@ -883,12 +895,8 @@ pub fn git_fetch(vault_path: String) -> Result<GitFetchResult, String> {
         ahead,
         behind,
         summary: match (ahead, behind) {
-            (Some(0), Some(0)) => "원격과 같아요".to_string(),
-            (a, b) => format!(
-                "내 걸음 {}개 · 원격 걸음 {}개",
-                a.unwrap_or(0),
-                b.unwrap_or(0)
-            ),
+            (Some(0), Some(0)) => "remote-in-sync".to_string(),
+            (_, _) => "remote-diverged".to_string(),
         },
     })
 }
@@ -931,8 +939,7 @@ pub fn git_snapshot(
     let auto_summary = format_snapshot_summary(&changes);
     let custom = message.as_deref().map(str::trim).filter(|m| !m.is_empty());
     let subject = custom.unwrap_or(&auto_summary).to_string();
-    let full_message =
-        build_commit_message(&subject, &auto_summary, &changes, custom.is_some());
+    let full_message = build_commit_message(&subject, &auto_summary, &changes, custom.is_some());
 
     let full_rows = get_full_porcelain_status(&repo_root);
     let staged_outside = find_staged_outside_vault(&full_rows, &pathspec);
@@ -1002,7 +1009,7 @@ fn run_push(repo_root: &Path) -> PushOutcome {
         return PushOutcome {
             pushed: false,
             remote_url: None,
-            message: Some("push 실패 — 이 브랜치에 upstream 이 없어요. 커밋은 로컬에 기록됨.".into()),
+            message: Some(coded("push-no-upstream", "")),
             guidance: Some(format!("git push -u origin {branch}")),
         };
     };
@@ -1021,7 +1028,7 @@ fn run_push(repo_root: &Path) -> PushOutcome {
             PushOutcome {
                 pushed: false,
                 remote_url: None,
-                message: Some(info.message),
+                message: Some(classified_error_string(&info)),
                 guidance: info.guidance,
             }
         }
@@ -1037,10 +1044,7 @@ fn run_push(repo_root: &Path) -> PushOutcome {
 /// Summary of recent commits touching the vault path (hash/message/time) — Obsidian
 /// Git history parity. Empty list when there are no commits at all.
 #[tauri::command]
-pub fn git_history(
-    vault_path: String,
-    limit: Option<u32>,
-) -> Result<Vec<GitCommitInfo>, String> {
+pub fn git_history(vault_path: String, limit: Option<u32>) -> Result<Vec<GitCommitInfo>, String> {
     let vault_dir = validate_vault_dir(&vault_path)?;
     let repo_root = require_repo_root(&vault_dir)?;
     let pathspec = vault_pathspec(&repo_root, &vault_dir);
@@ -1201,7 +1205,11 @@ pub fn git_commit_diff(vault_path: String, hash: String) -> Result<GitDiffResult
             &pathspec,
         ],
     )?;
-    let diff = if out.success { out.stdout } else { String::new() };
+    let diff = if out.success {
+        out.stdout
+    } else {
+        String::new()
+    };
 
     Ok(GitDiffResult {
         count: 0,
@@ -1219,9 +1227,7 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
 
     let Some(upstream) = get_upstream_ref(&repo_root) else {
         let branch = get_current_branch(&repo_root).unwrap_or_else(|| "<branch>".into());
-        return Err(format!(
-            "이 브랜치에 연결된 원격이 없어요 — 먼저 upstream 을 설정하세요. → git push -u origin {branch}"
-        ));
+        return Err(coded("no-upstream", format!("git push -u origin {branch}")));
     };
 
     let out = run_network_git(&repo_root, &["pull"])?;
@@ -1251,13 +1257,13 @@ pub fn git_pull(vault_path: String) -> Result<GitPullResult, String> {
 fn validate_remote_url(url: &str) -> Result<String, String> {
     let trimmed = url.trim();
     if trimmed.is_empty() {
-        return Err("보낼 주소를 입력해 주세요.".into());
+        return Err(coded("remote-url-empty", ""));
     }
     if trimmed.starts_with('-') {
-        return Err("주소가 '-' 로 시작할 수 없어요.".into());
+        return Err(coded("remote-url-leading-dash", ""));
     }
     if trimmed.chars().any(char::is_whitespace) {
-        return Err("주소에 공백이 들어 있어요. 저장소 주소만 붙여 주세요.".into());
+        return Err(coded("remote-url-has-whitespace", ""));
     }
     // Allow only the four common shapes: scp-like (git@host:path) · https · ssh · file path.
     let looks_scp = trimmed.contains('@') && trimmed.contains(':');
@@ -1267,9 +1273,7 @@ fn validate_remote_url(url: &str) -> Result<String, String> {
         || trimmed.starts_with("git://");
     let looks_path = trimmed.starts_with('/') || trimmed.starts_with("file://");
     if !(looks_scp || looks_url || looks_path) {
-        return Err(
-            "주소 형태를 알아볼 수 없어요. 예: git@github.com:내이름/저장소.git".into(),
-        );
+        return Err(coded("remote-url-unrecognized", ""));
     }
     Ok(trimmed.to_string())
 }
@@ -1325,9 +1329,7 @@ pub fn git_init(vault_path: String) -> Result<GitInitResult, String> {
     }
 
     // Re-read toplevel immediately after init to obtain the canonical path (differences in symlinks, /var, etc.).
-    let root = find_repo_root(&vault_dir)?.ok_or_else(|| {
-        "기록을 시작했지만 저장소를 다시 찾지 못했어요. 폴더 권한을 확인해 주세요.".to_string()
-    })?;
+    let root = find_repo_root(&vault_dir)?.ok_or_else(|| coded("git-init-repo-missing", ""))?;
     let pathspec = vault_pathspec(&root, &vault_dir);
     let changed = get_porcelain_status(&root, &pathspec)?.len();
 
@@ -1367,7 +1369,10 @@ pub fn git_set_remote(vault_path: String, url: String) -> Result<GitSetRemoteRes
     let existing = get_remote_url(&repo_root, "origin");
     // If origin already exists, add will fail, so replace with set-url.
     let subcommand = if existing.is_some() { "set-url" } else { "add" };
-    let out = run_git(&repo_root, &["remote", subcommand, "origin", clean.as_str()])?;
+    let out = run_git(
+        &repo_root,
+        &["remote", subcommand, "origin", clean.as_str()],
+    )?;
     if !out.success {
         let info = classify_git_error(&git_error_text(&out), "remote");
         return Err(classified_error_string(&info));
@@ -1509,14 +1514,26 @@ pub fn git_probe() -> GitProbe {
             let version = String::from_utf8_lossy(&out.stdout).trim().to_string();
             GitProbe {
                 installed: true,
-                version: if version.is_empty() { None } else { Some(version) },
+                version: if version.is_empty() {
+                    None
+                } else {
+                    Some(version)
+                },
                 platform,
             }
         }
         // A non-zero exit still means "it did run", so treat git as installed.
-        Ok(_) => GitProbe { installed: true, version: None, platform },
+        Ok(_) => GitProbe {
+            installed: true,
+            version: None,
+            platform,
+        },
         // Spawn failure = the executable is absent.
-        Err(_) => GitProbe { installed: false, version: None, platform },
+        Err(_) => GitProbe {
+            installed: false,
+            version: None,
+            platform,
+        },
     }
 }
 
@@ -1685,7 +1702,12 @@ mod tests {
             slug: "a".into(),
             renamed_from: None,
         }];
-        let msg = build_commit_message("my subject", "ontology snapshot: +1 concept (a)", &changes, true);
+        let msg = build_commit_message(
+            "my subject",
+            "ontology snapshot: +1 concept (a)",
+            &changes,
+            true,
+        );
         assert!(msg.starts_with("my subject\n\n"));
         assert!(msg.contains("ontology snapshot: +1 concept (a)"));
         assert!(msg.contains("  A  docs/a.md"));
@@ -1694,20 +1716,20 @@ mod tests {
     #[test]
     fn classify_git_error_detects_non_fast_forward() {
         let info = classify_git_error("! [rejected] main -> main (non-fast-forward)", "push");
-        assert_eq!(info.reason, "push-non-fast-forward");
+        assert_eq!(info.code, "push-non-fast-forward");
         assert!(info.guidance.as_deref() == Some("git pull"));
     }
 
     #[test]
     fn classify_git_error_detects_hook_rejection() {
         let info = classify_git_error("pre-commit hook failed", "commit");
-        assert_eq!(info.reason, "pre-commit-hook");
+        assert_eq!(info.code, "pre-commit-hook");
     }
 
     #[test]
     fn classify_git_error_commit_fallback() {
         let info = classify_git_error("something weird happened", "commit");
-        assert_eq!(info.reason, "commit-rejected");
+        assert_eq!(info.code, "commit-rejected");
     }
 
     #[test]
@@ -1740,7 +1762,11 @@ mod tests {
             "ssh://git@host/me/repo.git",
             "/Users/me/backup/repo.git",
         ] {
-            assert_eq!(validate_remote_url(url).unwrap(), url, "should accept {url}");
+            assert_eq!(
+                validate_remote_url(url).unwrap(),
+                url,
+                "should accept {url}"
+            );
         }
         // Leading/trailing whitespace is trimmed — pasting is the normal path.
         assert_eq!(
@@ -1752,11 +1778,14 @@ mod tests {
     #[test]
     fn validate_remote_url_rejects_non_addresses() {
         // Empty value · flag lookalike · internal whitespace · unrecognizable shape.
-        for bad in ["", "   ", "--upload-pack=evil", "git@host:a b", "저장소주소"] {
-            assert!(
-                validate_remote_url(bad).is_err(),
-                "should reject {bad:?}"
-            );
+        for bad in [
+            "",
+            "   ",
+            "--upload-pack=evil",
+            "git@host:a b",
+            "저장소주소",
+        ] {
+            assert!(validate_remote_url(bad).is_err(), "should reject {bad:?}");
         }
     }
 
@@ -1765,7 +1794,11 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("atlas-git-test-{}", std::process::id()));
         let _ = fs::create_dir_all(&dir);
         let file = dir.join("node.md");
-        fs::write(&file, "---\nkind: capability\nslug: \"my-cap\"\n---\n# Body\n").unwrap();
+        fs::write(
+            &file,
+            "---\nkind: capability\nslug: \"my-cap\"\n---\n# Body\n",
+        )
+        .unwrap();
         let (kind, slug) = read_kind_slug(&file);
         assert_eq!(kind.as_deref(), Some("capability"));
         assert_eq!(slug.as_deref(), Some("my-cap"));

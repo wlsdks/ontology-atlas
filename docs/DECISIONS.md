@@ -40,6 +40,90 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-09-01 — The Do-next tab is one list, and the a58 indigo step retires with its meter
+
+**Convened**: solo pass after the owner's direction (2026-08-31: the tab "shows
+things I cannot see a reason for"; option "one list" chosen, with the ask that
+analysis items hand off to the in-app agent) · **Trigger**: a removed surface
+element retired the only consumer of a design ramp step.
+
+**Decision**: the analysis screen's Do-next tab renders one flat list titled by one count. The
+readiness meter, the repair-queue counter band, the activity digest and the
+agent footer are removed; every item keeps its computed source and gains, where
+the chat can take it, a primary hand-it-to-the-AI action through the existing ask
+deep link (missing definition, missing domain, and missing relations for
+orphan, island and containment rows). Blocked documents join the list by name
+with the failed check in plain words. `--color-indigo-a58` had exactly one
+consumer, the removed meter, and is deleted from `app/globals.css`; the
+unused-token ratchet enforces the absence. MCP `maintenance_plan` still serves
+agents the full queue; nothing served to agents was reduced.
+
+**Recorded dissent**: the meter gave a one-glance health impression the list
+does not; a large vault's long list may read as noise where the band read as a
+number. **Falsifier**: an owner or field-trial reader asks "how healthy is this
+vault overall" and the page cannot answer without counting rows. **Revisit**:
+first field trial after 1.0.0.
+
+**Status**: standing
+
+## 2026-08-31 — MCP and script messages a person or agent reads are English
+
+**Convened**: solo pass on the release-hardening branch · **Trigger**: the
+decision gate names any `mcp/src/index.js` edit a public contract change. This
+change rewrites one `find_path` reason string ("no path found (or maxHops
+exceeded)") and the operator-facing throw/log strings of 27 scripts and 8 MCP
+modules from Korean to English; no tool, argument, gap id, or schema changes.
+
+**Prior decision**: `.claude/rules/forbidden.md` already forbids
+contributor-facing operational prose in Korean and names typed locale data and
+the `vault-ko` template as the only exceptions. It is cited, not overturned.
+The source-language gate enforced that rule for comments only, so the strings
+drifted for months under a green check.
+
+**Decision**: every string literal an operator or agent can read from
+`scripts/**`, `mcp/src/**`, and `cli/src/**` is English. The gate scans string
+and template literals in those scopes, ignores regex literals (a Korean
+alternation is matcher data), and admits Korean data only through an allowlist
+row that must keep matching a real line. Every scope starts at zero. Localized
+MCP output selected by a `locale` argument and Korean text inside the user's own
+documents are data and stay.
+
+**Recorded dissent**: an agent that reads the Korean vault benefits from Korean
+tool hints. **Falsifier**: a Korean-locale field trial in which the agent's
+answers regress after this change with no other cause. **Revisit**: at the next
+source-hidden field trial.
+
+**Status**: standing
+
+## 2026-08-31 — Artifact size is not a constraint; the size gate catches only accidents
+
+**Convened**: owner decision, recorded by the agent on the release-hardening
+branch · **Trigger**: the desktop performance gate's comment instructed that a
+second red must be answered by unbundling the ledgers, never by raising the
+number; the owner overruled that instruction in plain words ("size can keep
+growing; if there is a ceiling, raise it a lot").
+
+**Prior decision**: the 2026-08-31 ceiling raise from 8 MiB to 10 MiB, recorded
+only in `scripts/check-desktop-performance.mjs`, is overturned in its
+prescription, not its measurement. The measurement stands: the bundle carries a
+second copy of `DECISIONS` and `CHANGELOG` that `out/docs-vault/` already ships.
+
+**Decision**: `nextStaticBytes` becomes 64 MiB and `maxStaticAssetBytes`
+becomes 8 MiB. The gate exists to catch an order-of-magnitude accident (a stray
+dependency, a duplicated vendor bundle, a generated file that should never have
+been bundled), not documented growth. The release binary keeps its debug
+line tables in a packed dSYM for the same reason: legibility of a crash outranks
+bytes.
+
+**Recorded dissent** (the gate's own comment, 2026-08-31 morning): a ceiling at
+97% of the measured size catches bloat; a ceiling at 6x the measured size
+catches nothing until the damage is large. **Falsifier**: a release whose
+`_next/static` grows by more than 4 MiB in one version without a named cause.
+**Revisit**: when that is observed, land the on-demand ledger read and bring
+the number down with a measurement, not a guess.
+
+**Status**: standing
+
 ## 2026-08-31 — An authored vault is told to finalize, not to author
 
 **Convened**: solo pass (agent-prepared for owner review on the PR) ·

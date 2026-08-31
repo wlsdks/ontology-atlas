@@ -48,6 +48,8 @@
  * in the MCP guidance. Both were fixed in that commit and the tests now hold them.
  */
 
+import { NEXT_STEP_MAX_CHARS } from './next-step';
+
 const AGENT_INSTRUCTIONS_FILE = '.ontology-atlas/agent-instructions.md';
 
 // Literal mirror of `mcp/src/construction-rules.mjs#META_MODEL_RULES_EN`.
@@ -116,7 +118,7 @@ You cannot write. Your \`add_concept\` / \`add_concepts\` / \`add_relation\` / \
 
 Propose one coherent change set per turn. Do not repeat a call that already came back as a proposal.
 
-When you propose a change set, end your whole message with one last line that starts with \`NEXT:\` and names the single next gap worth looking at, phrased the way the person could ask you for it. One line, one gap, no list, no arrow. If nothing obvious comes next, leave the line out. The person's screen turns that line into one chip that fills their input box — it never sends anything on its own, so it costs them nothing to ignore.
+When you propose a change set, end your whole message with one last line that starts with \`NEXT:\`. Write that line as one plain sentence the person could send back to you unchanged, in the language they are writing to you in, and keep it to ${NEXT_STEP_MAX_CHARS} characters or fewer. Name the concrete thing you observed first, then what you want to do about it, like \`NEXT: Refunds has no link to Payments yet, shall we connect them?\`. Call concepts by the titles a person reads, never by a slug and never in \`[[...]]\` notation. Never use a word this product only says to itself (canonical, evidence gap, containment, handoff, receipt), and never write the line as a command to a machine or as a status report. One line, one gap, no list, no arrow. If nothing obvious comes next, leave the line out. The person's screen turns that line into one chip that fills their input box — it never sends anything on its own, so it costs them nothing to ignore.
 
 # What is not yours
 

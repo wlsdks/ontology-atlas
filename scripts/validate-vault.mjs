@@ -239,9 +239,19 @@ function validate(raw) {
   };
 }
 
+/**
+ * Parser diagnostics that are vault issues in their own right. Both mean the
+ * author wrote frontmatter the reader cannot honour, so both are errors — the
+ * same set `mcp/src/validate.mjs` surfaces.
+ */
+const SURFACED_DIAGNOSTIC_CODES = new Set([
+  "malformed-frontmatter-line",
+  "malformed-quoted-scalar",
+]);
+
 function pushFrontmatterDiagnostics(diagnostics, issues) {
   for (const diagnostic of diagnostics) {
-    if (!diagnostic || diagnostic.code !== "malformed-frontmatter-line") continue;
+    if (!diagnostic || !SURFACED_DIAGNOSTIC_CODES.has(diagnostic.code)) continue;
     issues.push({
       code: diagnostic.code,
       severity: "error",

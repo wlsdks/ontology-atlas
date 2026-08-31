@@ -58,7 +58,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * otherwise the reduction becomes slack again and the next person spends it on a new
  * combination.
  */
-const BASELINE_SURFACE_COMBOS = 12;
+const BASELINE_SURFACE_COMBOS = 11;
 const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [

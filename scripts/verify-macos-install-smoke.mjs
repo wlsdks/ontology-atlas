@@ -94,9 +94,9 @@ export function verifyBundleSignature(appPath, { label = appBundleName } = {}) {
     const detail = `${verified.stderr ?? ""}${verified.stdout ?? ""}`.trim();
     throw new Error(
       `codesign --verify rejected ${label}: ${detail || `exit ${verified.status}`}\n` +
-        "브라우저로 받은 사용자는 이 번들을 '확인되지 않은 개발자'가 아니라 '손상되었습니다'로 만나고,\n" +
-        "그 대화상자에는 '확인 없이 열기'가 없다 — 다운로드 페이지의 안내가 통째로 틀리게 된다.\n" +
-        "미서명 릴리스라면 pnpm desktop:sign:adhoc 를 패키징 전에 실행하라.",
+        "A user who downloaded this through a browser meets 'is damaged' rather than 'unidentified developer',\n" +
+        "and that dialog has no 'Open anyway' — which makes the whole download-page guidance wrong.\n" +
+        "For an unsigned release, run pnpm desktop:sign:adhoc before packaging.",
     );
   }
 }

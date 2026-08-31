@@ -33,10 +33,11 @@ export {
   PROMOTION_MIN_FAN_IN,
   type OntologyHealthActionTarget,
 } from "./lib/ontology-health-signals";
-export {
-  classifyRelationQuality,
-  summarizeAgentReadiness,
-} from "./lib/relation-quality";
+// `summarizeAgentReadiness` left the barrel on 2026-08-31: the "to do" tab's readiness meter was
+// its only consumer, and the one-list decision removed it. The function and its unit test stay in
+// `lib/relation-quality.ts` because the ratio it computes is the relation-quality vocabulary
+// itself; an export nobody imports is misinformation, so only the re-export goes.
+export { classifyRelationQuality } from "./lib/relation-quality";
 export { translateOntologyDeeplinkToTopologyParam } from "./lib/translate-ontology-deeplink";
 export {
   buildOntologyChangeSet,

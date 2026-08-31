@@ -173,7 +173,7 @@ function pickLaunch(distribution) {
 async function fetchBrandInk() {
   const res = await fetch(BRAND_SOURCE, { headers: { accept: 'application/json' } });
   if (!res.ok) {
-    console.error(`[acp-registry] 브랜드 색 받기 실패: HTTP ${res.status}`);
+    console.error(`[acp-registry] failed to fetch the brand colors: HTTP ${res.status}`);
     process.exit(1);
   }
   const data = await res.json();
@@ -183,8 +183,8 @@ async function fetchBrandInk() {
   for (const [id, title] of Object.entries(BRAND_MARK)) {
     const match = byTitle.get(title.toLowerCase());
     if (!match) {
-      console.error(`[acp-registry] 브랜드 색 짝이 사라졌습니다: ${id} → "${title}"`);
-      console.error('  BRAND_MARK 의 그 줄을 사람이 다시 확인해야 합니다.');
+      console.error(`[acp-registry] a brand color pairing disappeared: ${id} → "${title}"`);
+      console.error('  A person has to re-check that row of BRAND_MARK.');
       process.exit(1);
     }
     ink[id] = `#${match.hex}`;
@@ -311,7 +311,7 @@ async function main() {
   const check = process.argv.includes('--check');
   const response = await fetch(SOURCE, { headers: { accept: 'application/json' } });
   if (!response.ok) {
-    console.error(`[acp-registry] 받기 실패: HTTP ${response.status}`);
+    console.error(`[acp-registry] fetch failed: HTTP ${response.status}`);
     process.exit(1);
   }
   const rawJson = await response.json();
@@ -378,9 +378,9 @@ async function main() {
   }
   writeFileSync(OUT, `${JSON.stringify(normalized, null, 2)}\n`);
   const verified = normalized.agents.filter((a) => a.verified).length;
-  console.log(`[acp-registry] 아이콘 ${icons}개 → public/acp-icons/`);
+  console.log(`[acp-registry] ${icons} icons → public/acp-icons/`);
   console.log(
-    `[acp-registry] ${normalized.agents.length} agents (검증됨 ${verified}) → src-tauri/src/acp-registry.json`,
+    `[acp-registry] ${normalized.agents.length} agents (${verified} verified) → src-tauri/src/acp-registry.json`,
   );
 }
 

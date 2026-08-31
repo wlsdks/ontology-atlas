@@ -9,11 +9,16 @@ import { controlClass } from "@/shared/ui/control-class";
 import { Surface } from "@/shared/ui/surface";
 
 /**
- * The actions on a "to do" queue row — only the primary action (the map) stays outside; the rest
- * fold into the kebab.
+ * The overflow actions on a "to do" row — the three named actions stay on the row and the rest fold
+ * into the kebab.
  *
- * It lives here because the meaning-gap sections (undefined meaning, unassigned parent) use the
- * same action set. Two copies would give one kebab different items per surface.
+ * It lives here because both the queue rows and the meaning-gap rows use the same set. Two copies
+ * would give one kebab different items per surface.
+ *
+ * The standalone copy button that used to live beside this menu was deleted on 2026-08-31 with the
+ * one-list "to do" tab: the row now carries three named actions plus this kebab, and a fourth
+ * always-visible control offering what the kebab already offers was the redundancy the owner asked
+ * to remove.
  *
  * ## Labels are **translated** by session ability (never hidden or greyed out)
  *
@@ -67,67 +72,11 @@ function resolveHandoffLabel(
   return abilities.agentObserved ? labels.handoffCopy : labels.handoffCopyIdle;
 }
 
-export function HandoffCopyButton({
-  payload,
-  labels,
-  abilities,
-  candidate,
-  onReviewStart,
-}: {
-  payload: string;
-  labels: QueueRowActionLabels;
-  abilities: QueueRowAbilities;
-  candidate?: { id: string; title: string };
-  onReviewStart?: (candidate: { id: string; title: string }) => void;
-}) {
-  /**
-   * The copy result states **both success and failure** (QA 2026-07-28). Clipboard permission can
-   * be refused silently, and staying quiet then leaves the user believing it copied — they find out
-   * at the paste. It uses the shared three-state hook (no new mechanism).
-   */
-  const { state: copyState, copy: copyHandoff } = useCopyFeedback(1600);
-  const copied = copyState === "copied";
-  const label = resolveHandoffLabel(labels, abilities);
-  return (
-    <>
-      <button
-        type="button"
-        data-testid="do-next-handoff-copy"
-        onClick={async () => {
-          if (candidate) onReviewStart?.(candidate);
-          await copyHandoff(payload);
-        }}
-        /**
-         * **The `compact` prop disappeared on 2026-08-03.** What it chose was one height (30 vs 32),
-         * and once the chip ramp converged on 32 the two values became equal. An axis that chooses
-         * nothing only adds something to choose, so it was deleted.
-         */
-        className={controlClass({ hoverInk: 'strong',
-          shape: "chip",
-          size: "md",
-          className: "hover:border-[color:var(--color-indigo-a46)]",
-        })}
-      >
-        {copied ? <Check size={ICON_SIZE.sm} aria-hidden /> : <Copy size={ICON_SIZE.sm} aria-hidden />}
-        {copyState === "failed"
-          ? labels.handoffCopyFailed
-          : copied
-            ? labels.handoffCopied
-            : label}
-      </button>
-      {/* A successful copy changes almost nothing on screen — one sentence saying what is now in
-          hand and what to do with it is given to assistive tech as well. */}
-      <span className="sr-only" aria-live="polite" aria-atomic="true">
-        {copied ? labels.handoffCopiedHint : ""}
-      </span>
-    </>
-  );
-}
-
 export function RowActionMenu({
   sourceHref,
   builderHref,
   askAgentHref,
+  hideBuilder = false,
   handoffPayload,
   candidate,
   onReviewStart,
@@ -136,6 +85,14 @@ export function RowActionMenu({
 }: {
   sourceHref: string | null;
   builderHref: string;
+  /**
+   * Drop the builder item because the row itself already carries it.
+   *
+   * The one-list "to do" tab promotes "fix it myself" out of the kebab and onto the row, so
+   * leaving the item here too would offer one action twice in one row. Every other caller keeps
+   * the default and keeps the item.
+   */
+  hideBuilder?: boolean;
   /**
    * Crosses to the map and opens the agent panel with a sentence carrying this row's context.
    * **The address carries only the kind of intent**; the sentence is composed by the destination's
@@ -231,19 +188,21 @@ export function RowActionMenu({
               {labels.openSource}
             </Link>
           ) : null}
-          <Link
-            href={builderHref}
-            role="menuitem"
-            data-testid="do-next-row-menu-builder"
-            onClick={() => {
-              onReviewStart?.(candidate);
-              setOpen(false);
-            }}
-            className={menuItemClass}
-          >
-            <GitBranch size={ICON_SIZE.sm} aria-hidden />
-            {resolveBuilderLabel(labels, abilities)}
-          </Link>
+          {hideBuilder ? null : (
+            <Link
+              href={builderHref}
+              role="menuitem"
+              data-testid="do-next-row-menu-builder"
+              onClick={() => {
+                onReviewStart?.(candidate);
+                setOpen(false);
+              }}
+              className={menuItemClass}
+            >
+              <GitBranch size={ICON_SIZE.sm} aria-hidden />
+              {resolveBuilderLabel(labels, abilities)}
+            </Link>
+          )}
           {askAgentHref && labels.askAgent ? (
             <Link
               href={askAgentHref}

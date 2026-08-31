@@ -70,7 +70,13 @@ const emptyImpact = {
 };
 
 describe("ConnectionsTab", () => {
-  it("does not render the moved readiness/repair instruments", () => {
+  /**
+   * The readiness meter and the repair-queue counters were moved out of this tab and later
+   * removed altogether (owner decision, 2026-08-31: the "to do" tab is one list). The assertion
+   * stays because it is cheap and it names the exact testids: if either instrument is ever
+   * rebuilt, this tab is not where it belongs.
+   */
+  it("does not render the removed readiness/repair instruments", () => {
     render(
       <ConnectionsTab
         edgeTypeRows={[{ type: "contains", count: 10 }]}

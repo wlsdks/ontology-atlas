@@ -400,7 +400,7 @@ if (release.draft && !allowDraft) {
 if (release.prerelease && !prereleaseAllowed) {
   fail(
     `release ${tag} is a prerelease — the download page advertises the stable build.\n` +
-      `프리릴리스를 일부러 걸려면 --allow-prerelease 를 붙여라. 정식 릴리스를 기다리는 중이면 --unpublished 로 두라.`,
+      `To pin a prerelease deliberately, pass --allow-prerelease. If you are waiting for a stable release, leave it as --unpublished.`,
   );
 }
 

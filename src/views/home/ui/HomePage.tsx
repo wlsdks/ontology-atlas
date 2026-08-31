@@ -58,7 +58,7 @@ import {
   useSummaryFreshness,
   useVaultSessionIdentityScope,
 } from "@/entities/vault-session";
-import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex } from "@/features/vault-ontology";
+import { RecentChangesNeedsVaultDialog, useAdaptiveRecentChanges, useOntologyInsight, useVaultConceptFacts, useVaultDocFreshnessIndex, useVaultValidationSummary } from "@/features/vault-ontology";
 import {
   VaultOpenGuideSheet,
 } from "@/features/docs-vault-local";
@@ -162,7 +162,8 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, LiveAnnouncer, Surface, Tooltip, controlClass, useToast } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, LiveAnnouncer, Surface, Tooltip, WidgetErrorFallback, controlClass, useToast } from "@/shared/ui";
+import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
 import { resolveToastBottomOffsetForStack, resolveToastRightOffset } from "@/shared/ui/toast-position";
@@ -827,6 +828,23 @@ function HomePageImpl() {
   const dustySlugs = useMemo(
     () => deriveDustySlugs(ontologyInsight?.nodes ?? [], docFreshnessIndex, updatedAgoNowMs),
     [ontologyInsight, docFreshnessIndex, updatedAgoNowMs],
+  );
+  /*
+   * ⚠️ **A document the checks caught is invisible on the map** (census state 3, 2026-08-31). A
+   * broken `kind` drops the node from the graph and an unreadable frontmatter line silently loses
+   * a field, and both were drawn as a healthy node or as nothing at all — the map has no place to
+   * say "this file is not what it claims". The same summary the settings sheet and the insights
+   * screen already count from is read here, so the three surfaces cannot disagree about one
+   * folder, and the count is one quiet row shaped like the two beside it. Only errors: a warning
+   * is advice, and advice does not belong in a row that says something is wrong.
+   */
+  const vaultValidation = useVaultValidationSummary();
+  const brokenDocCount = useMemo(
+    () =>
+      vaultValidation.issuesBySlug.filter((entry) =>
+        entry.issues.some((issue) => issue.severity === "error"),
+      ).length,
+    [vaultValidation],
   );
   const selectedOntologyNode = useMemo(() => {
     if (!selectedSlug || selectedProject) return null;
@@ -3669,6 +3687,12 @@ function HomePageImpl() {
       combo: { key: "d" },
       onFire: () => {
         if (shortcutsSuppressed) return;
+        // The documents drawer is a full-width overlay. With the agent dock open, a stray
+        // physical D (under a Korean layout that key types a common consonant) covered the chat that had just
+        // opened, and the person saw the drawer where the answer should have been
+        // (installed app, 2026-08-31). The dock is not a modal, so the other shortcuts stay
+        // live; only the one that would paint over the conversation goes quiet.
+        if (agentDockOpen) return;
         setDocsDrawerOpen((v) => !v);
       },
     },
@@ -5084,6 +5108,7 @@ function HomePageImpl() {
                     uncatalogedDocCount={bootstrapPlan?.elements.length ?? 0}
                     // Dusty (long-untouched) node count; the row hides at 0.
                     dustyNodeCount={dustySlugs.size}
+                    brokenDocCount={brokenDocCount}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                     noProjectsYet={projectSourceReadiness.state === "no-projects"}
                     // The door hands work to an agent; without one it would create a folder and
@@ -5133,6 +5158,8 @@ function HomePageImpl() {
                       uncatalogedDocsAction: t("index.uncatalogedDocsAction"),
                       dustyNodesLabel: t("index.dustyNodesLabel", { count: dustySlugs.size }),
                       dustyNodesAction: t("index.dustyNodesAction"),
+                      brokenDocsLabel: t("index.brokenDocsLabel", { count: brokenDocCount }),
+                      brokenDocsAction: t("index.brokenDocsAction"),
                       sourceUnboundLabel: t("index.sourceUnboundLabel", {
                         count: unboundProjectSource?.count ?? 0,
                       }),
@@ -5323,121 +5350,138 @@ function HomePageImpl() {
                   // hold were deleted outright once v2 became the default — owner
                   // directive: *"Delete all the old canvas code."* (delete all the old
                   // canvas code).
-                  <TopologyMapV2
-                    nodes={topologyV2Graph.nodes}
-                    edges={topologyV2Graph.edges}
-                    /* Say so when an arrow key has nowhere to walk (owner, 2026-08-10).
-                       With no response at all the user cannot tell "broken" from "nothing
-                       that way". The wording and the surface belong to the page; the
-                       widget only emits the event, because it is tested with no provider
-                       around it. */
-                    walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
-                    focus={{ selectedSlug: canvasSelectedSlug }}
-                    /* Closes the defect where switching vaults mid-session (sample →
-                       local) drew the new graph with the previous graph's camera. The
-                       single source is `useVaultSessionIdentityScope()` above — the **same
-                       signal** the deep-link cleanup uses, because "which vault am I
-                       looking at" must not be answered differently per surface.
-                       `deeplinkSourceReady` wraps it for the same reason as its neighbour
-                       (see "a scope before it settles is not a scope"): a live refresh
-                       returns status to `'loading'`, and the identity computed then is
-                       `sample:…`. Passing that straight down makes the camera jump every
-                       time one file is saved into the vault (measured dy −10.66). */
-                    dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
-                    overviewFit={
-                      expandAllActive || expandedParentSet.size > 0 ? "full" : "spine"
-                    }
-                    fitViewToken={combinedFitToken}
-                    spotlightFitToken={spotlightFitToken}
-                    relayoutToken={topologyRelayoutToken}
-                    revealToken={mapRevealToken}
-                    onSelectEdge={(edge) => {
-                      setFullDetailSlug(null);
-                      setHoverEdge(null); // The popover demotes the hover micro-card.
-                      // Fixes edge clicks being swallowed while a node had focus, because
-                      // the edge panel is gated on `!selectedOntologyNode`. Selecting an
-                      // edge (pair focus) is by definition a **replacement** for a node's
-                      // ego focus — two transient surfaces may not coexist — so, mirroring
-                      // `onSelect` clearing `selectedEdge`, the node focus is released
-                      // here to open that gate. The camera path is the same as
-                      // overview → edge.
-                      if (selectedOntologyNode) handleClose();
-                      setSelectedEdge(edge);
-                    }}
-                    onHoverEdge={handleHoverEdge}
-                    selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId } : null}
-                    previewEdge={mapRelationPreview}
-                    onSelect={(slug) => {
-                      setMeaningEditorState(null);
-                      setSelectedEdge(null);
-                      handleSelect(slug);
-                    }}
-                    onOpen={handleExpandRequest}
-                    onPaneClick={() => {
-                      setMeaningEditorState(null);
-                      setSelectedEdge(null);
-                      handleClose();
-                    }}
-                    onVisibleCountChange={setTopologyVisibleCount}
-                    onGraphStatsChange={handleTopologyGraphStatsChange}
-                    onZoomTierChange={setMapZoomTier}
-                    onContextMenuNode={handleContextMenuNode}
-                    /*
-                     * Right-clicking empty canvas means "create a concept here" and takes
-                     * the place of the chrome pill removed from the top. Wired only for a
-                     * writable vault: a menu on a vault that cannot be written to is a
-                     * dead door.
-                     */
-                    onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
-                    minimal={localGraphRoot !== null}
-                    agentFocusNodeId={agentFocusNodeId}
-                    spotlightIds={mapLensIds}
-                    mapLensKind={mapLensKind}
-                    pathEdgeIds={pathLensEdgeIds}
-                    expandedParents={
-                      pathExpandedParents ??
-                      (expandAllActive ? allExpandedParentIds : null) ??
-                      spotlightExpandedParents ??
-                      expandedParentSet
-                    }
-                    onToggleCluster={handleToggleCluster}
-                    onHoverCluster={handleHoverCluster}
-                    clusterHint={t('cluster.hint')}
-                    realmRootId={resolvedRealmSlug}
-                    onEnterRealm={handleEnterRealm}
-                    realmEnterLabel={t('realm.enterAction')}
-                    realmEnterTooltip={t('realm.enterTooltip')}
-                    realmCaption={realmCaption}
-                    clusterBarLabels={clusterBarLabels}
-                    canvasLabel={t('canvas.ariaLabel')}
-                    visitedTrail={footprintVisitedIds}
-                    trailLensActiveRef={footprintLensActiveRef}
-                    trailHoverNodeIdRef={footprintBrushNodeIdRef}
-                    panelHoverNodeIdRef={panelHoverNodeIdRef}
-                    // Plain mode pushes the element tier into an unreachable band so it
-                    // stays hidden; the ego exception still applies.
-                    tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
-                    // Projection for the guided tour's canvas-node anchors.
-                    tourAnchorNodeId={tourAnchorNodeId}
-                    tourAnchorRef={tourAnchorRef}
-                    // While the global search palette is genuinely open (the same
-                    // condition as `MountedGlobalSearch`'s `open` prop), the canvas leaves
-                    // the accessibility tree via aria-hidden + inert.
-                    overlayOpen={!createNodeOpen && ontologySearchOpen}
-                    // Appearance preferences from the settings sheet. The DOM glyphs read
-                    // the same store themselves and swap in lockstep.
-                    glyphSet={glyphSet}
-                    canvasBackground={canvasBackground}
-                    view3d={view3d}
-                    mapArrangement={mapArrangement}
-                    // The "the viewport changed" event for the 3D selection reframe: true
-                    // while the detail panel actually covers the screen, false once its
-                    // exit animation ends. On each flip the dome reframes smoothly against
-                    // the visible area; 2D ignores it (see `use-topology-loop`).
-                    detailPanelVisible={nodePanelMounted}
-                    footprint={footprint}
-                    expand={expand}
-                  />
+                  // One dead widget must not take the page with it. A canvas throw — a lost
+                  // WebGL/2D context, a graph shape the renderer cannot lay out — used to blank
+                  // the whole route; now the rail, the panels and the chrome stay usable and the
+                  // map alone offers a retry.
+                  <ErrorBoundary
+                    fallback={({ error, reset }) => (
+                      <WidgetErrorFallback
+                        error={error}
+                        onReset={reset}
+                        title={t('widgetError.mapTitle')}
+                        body={t('widgetError.body')}
+                        retryLabel={t('widgetError.retry')}
+                        className="h-full w-full"
+                      />
+                    )}
+                  >
+                    <TopologyMapV2
+                      nodes={topologyV2Graph.nodes}
+                      edges={topologyV2Graph.edges}
+                      /* Say so when an arrow key has nowhere to walk (owner, 2026-08-10).
+                         With no response at all the user cannot tell "broken" from "nothing
+                         that way". The wording and the surface belong to the page; the
+                         widget only emits the event, because it is tested with no provider
+                         around it. */
+                      walkNoticeLabel={tTopologyKeyboardWalk("deadEnd")}
+                      focus={{ selectedSlug: canvasSelectedSlug }}
+                      /* Closes the defect where switching vaults mid-session (sample →
+                         local) drew the new graph with the previous graph's camera. The
+                         single source is `useVaultSessionIdentityScope()` above — the **same
+                         signal** the deep-link cleanup uses, because "which vault am I
+                         looking at" must not be answered differently per surface.
+                         `deeplinkSourceReady` wraps it for the same reason as its neighbour
+                         (see "a scope before it settles is not a scope"): a live refresh
+                         returns status to `'loading'`, and the identity computed then is
+                         `sample:…`. Passing that straight down makes the camera jump every
+                         time one file is saved into the vault (measured dy −10.66). */
+                      dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
+                      overviewFit={
+                        expandAllActive || expandedParentSet.size > 0 ? "full" : "spine"
+                      }
+                      fitViewToken={combinedFitToken}
+                      spotlightFitToken={spotlightFitToken}
+                      relayoutToken={topologyRelayoutToken}
+                      revealToken={mapRevealToken}
+                      onSelectEdge={(edge) => {
+                        setFullDetailSlug(null);
+                        setHoverEdge(null); // The popover demotes the hover micro-card.
+                        // Fixes edge clicks being swallowed while a node had focus, because
+                        // the edge panel is gated on `!selectedOntologyNode`. Selecting an
+                        // edge (pair focus) is by definition a **replacement** for a node's
+                        // ego focus — two transient surfaces may not coexist — so, mirroring
+                        // `onSelect` clearing `selectedEdge`, the node focus is released
+                        // here to open that gate. The camera path is the same as
+                        // overview → edge.
+                        if (selectedOntologyNode) handleClose();
+                        setSelectedEdge(edge);
+                      }}
+                      onHoverEdge={handleHoverEdge}
+                      selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId } : null}
+                      previewEdge={mapRelationPreview}
+                      onSelect={(slug) => {
+                        setMeaningEditorState(null);
+                        setSelectedEdge(null);
+                        handleSelect(slug);
+                      }}
+                      onOpen={handleExpandRequest}
+                      onPaneClick={() => {
+                        setMeaningEditorState(null);
+                        setSelectedEdge(null);
+                        handleClose();
+                      }}
+                      onVisibleCountChange={setTopologyVisibleCount}
+                      onGraphStatsChange={handleTopologyGraphStatsChange}
+                      onZoomTierChange={setMapZoomTier}
+                      onContextMenuNode={handleContextMenuNode}
+                      /*
+                       * Right-clicking empty canvas means "create a concept here" and takes
+                       * the place of the chrome pill removed from the top. Wired only for a
+                       * writable vault: a menu on a vault that cannot be written to is a
+                       * dead door.
+                       */
+                      onContextMenuPane={canCreateNode ? () => openCreateNode() : undefined}
+                      minimal={localGraphRoot !== null}
+                      agentFocusNodeId={agentFocusNodeId}
+                      spotlightIds={mapLensIds}
+                      mapLensKind={mapLensKind}
+                      pathEdgeIds={pathLensEdgeIds}
+                      expandedParents={
+                        pathExpandedParents ??
+                        (expandAllActive ? allExpandedParentIds : null) ??
+                        spotlightExpandedParents ??
+                        expandedParentSet
+                      }
+                      onToggleCluster={handleToggleCluster}
+                      onHoverCluster={handleHoverCluster}
+                      clusterHint={t('cluster.hint')}
+                      realmRootId={resolvedRealmSlug}
+                      onEnterRealm={handleEnterRealm}
+                      realmEnterLabel={t('realm.enterAction')}
+                      realmEnterTooltip={t('realm.enterTooltip')}
+                      realmCaption={realmCaption}
+                      clusterBarLabels={clusterBarLabels}
+                      canvasLabel={t('canvas.ariaLabel')}
+                      visitedTrail={footprintVisitedIds}
+                      trailLensActiveRef={footprintLensActiveRef}
+                      trailHoverNodeIdRef={footprintBrushNodeIdRef}
+                      panelHoverNodeIdRef={panelHoverNodeIdRef}
+                      // Plain mode pushes the element tier into an unreachable band so it
+                      // stays hidden; the ego exception still applies.
+                      tierReveal={audiencePlain ? PLAIN_TIER_REVEAL : undefined}
+                      // Projection for the guided tour's canvas-node anchors.
+                      tourAnchorNodeId={tourAnchorNodeId}
+                      tourAnchorRef={tourAnchorRef}
+                      // While the global search palette is genuinely open (the same
+                      // condition as `MountedGlobalSearch`'s `open` prop), the canvas leaves
+                      // the accessibility tree via aria-hidden + inert.
+                      overlayOpen={!createNodeOpen && ontologySearchOpen}
+                      // Appearance preferences from the settings sheet. The DOM glyphs read
+                      // the same store themselves and swap in lockstep.
+                      glyphSet={glyphSet}
+                      canvasBackground={canvasBackground}
+                      view3d={view3d}
+                      mapArrangement={mapArrangement}
+                      // The "the viewport changed" event for the 3D selection reframe: true
+                      // while the detail panel actually covers the screen, false once its
+                      // exit animation ends. On each flip the dome reframes smoothly against
+                      // the visible area; 2D ignores it (see `use-topology-loop`).
+                      detailPanelVisible={nodePanelMounted}
+                      footprint={footprint}
+                      expand={expand}
+                    />
+                  </ErrorBoundary>
                 ) : null}
                 {topologyRenderState.renderCanvas ? (
                   <TopologyChangeAnnouncement
@@ -6179,6 +6223,18 @@ function HomePageImpl() {
           moves both: the map narrowing and the panel arriving share a frame and a curve.
           Not two animations tuned to match — physically one. */}
       {llmBridgeAvailable ? (
+        <ErrorBoundary
+          fallback={({ error, reset }) => (
+            <WidgetErrorFallback
+              error={error}
+              onReset={reset}
+              title={t('widgetError.panelTitle')}
+              body={t('widgetError.body')}
+              retryLabel={t('widgetError.retry')}
+              className="m-2 w-[320px] shrink-0"
+            />
+          )}
+        >
         <VaultAgentPanel
           /*
            * A URL carrying "ask about this concept" is enough to open it.
@@ -6204,6 +6260,7 @@ function HomePageImpl() {
           downloadHref={`/${activeLocale}/download/`}
           prefillRequest={vaultAgentPrefill ?? askPrefill}
         />
+        </ErrorBoundary>
       ) : null}
       {/*
         The in-app conversation with **the user's own coding agent**. A sibling in the
@@ -6275,6 +6332,18 @@ function HomePageImpl() {
             onWidth={chatWidth.setWidth}
             onCommit={chatWidth.commitWidth}
           />
+          <ErrorBoundary
+            fallback={({ error, reset }) => (
+              <WidgetErrorFallback
+                error={error}
+                onReset={reset}
+                title={t('widgetError.panelTitle')}
+                body={t('widgetError.body')}
+                retryLabel={t('widgetError.retry')}
+                className="min-h-0 flex-1"
+              />
+            )}
+          >
           <AcpChatPanel
             /*
              * Changing the runtime **rebuilds the panel.** A session is bound to one
@@ -6302,6 +6371,7 @@ function HomePageImpl() {
             onWorkReceipt={handleAcpWorkReceipt}
             onClose={closeVaultAgent}
           />
+          </ErrorBoundary>
           </Surface>
           ) : null}
         </div>

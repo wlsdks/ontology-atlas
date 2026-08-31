@@ -188,7 +188,7 @@ test("two archives under one arch folder are refused, not guessed", () => {
     console.error = originalError;
     rmSync(root, { recursive: true, force: true });
   }
-  assert.match(message, /2개/);
+  assert.match(message, /2 \.app\.tar\.gz files/);
 });
 
 test("still resolves a bare arch folder", () => {

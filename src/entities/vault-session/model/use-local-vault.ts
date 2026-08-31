@@ -49,7 +49,7 @@ import {
   tauriVaultPathExists,
 } from '@/shared/lib/tauri-vault-fs';
 import { resolvePickedVaultFolder } from './resolve-picked-vault-folder';
-import { classifyVaultAccessError } from './classify-vault-access-error';
+import { classifyVaultAccessError, isMissingFolderError } from './classify-vault-access-error';
 import { toErrorMessage } from '@/shared/lib/error-message';
 import { isPickerAbort } from '@/shared/lib/picker-abort';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
@@ -1514,6 +1514,15 @@ export function useLocalVaultInternal() {
     })()
       .catch((error: unknown) => {
         if (cancelled) return;
+        /*
+         * ⚠️ **A folder that is gone must say so on the web too** (census, 2026-08-31). The desktop
+         * preflights the stored absolute path and reports `path-missing`; a browser has no path to
+         * preflight, so the folder's disappearance arrives only as a `NotFoundError` thrown out of
+         * the File System Access API. That fell into `access-failed`, and its developer sentence
+         * ("A requested file or directory could not be found…") was then printed verbatim on a
+         * Korean screen. Reading the exception gives both runtimes one code for one fact.
+         */
+        const missing = isMissingFolderError(error);
         setState({
           status: 'error',
           handle: null,
@@ -1524,13 +1533,16 @@ export function useLocalVaultInternal() {
           acpWorkReceipts: [],
           fileHandles: new Map(),
           imageHandles: new Map(),
-          errorMessage: error instanceof Error ? error.message : String(error),
+          // `path-missing` deliberately carries no cause string: the screen owns that sentence.
+          errorMessage: missing ? null : error instanceof Error ? error.message : String(error),
           // Every path that can meet a protected folder classifies the same way; otherwise the app
           // says different things about one fact depending on how the person arrived at it.
           errorCode:
             classifyVaultAccessError(error) === 'permission-denied'
               ? 'permission-denied'
-              : 'access-failed',
+              : missing
+                ? 'path-missing'
+                : 'access-failed',
           lastLoadedAt: null,
           manifestHandle: null,
         });

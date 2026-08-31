@@ -2368,9 +2368,9 @@ try {
   ensureVaultRoot(VAULT_ROOT);
 } catch (err) {
   const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write(`[ontology-atlas-mcp] vault root 검증 실패: ${msg}\n`);
+  process.stderr.write(`[ontology-atlas-mcp] vault root validation failed: ${msg}\n`);
   process.stderr.write(
-    `[ontology-atlas-mcp] OATLAS_VAULT 환경 변수가 markdown vault 디렉토리를 가리키게 설정해 주세요. (현재: ${VAULT_ROOT})\n`,
+    `[ontology-atlas-mcp] Point the OATLAS_VAULT environment variable at a markdown vault directory. (currently: ${VAULT_ROOT})\n`,
   );
   process.exit(1);
 }
@@ -2606,7 +2606,7 @@ const TOOLS = [
           type: 'number',
           minimum: 0,
           description:
-            'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
+            'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since is excluded) so re-passing the max from a previous response does not double-fetch.',
         },
         offset: {
           type: 'integer',
@@ -2617,7 +2617,7 @@ const TOOLS = [
         summary: {
           type: 'boolean',
           description:
-            'When true, each node row includes a `summary` (max 200 chars, prose-only — heading / 표 / 코드블록 / 이미지 / 구분선 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
+            'When true, each node row includes a `summary` (max 200 chars, prose-only — heading / table / code block / image / divider / list / quote are skipped and only the first paragraph is kept, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
         },
         limit: {
           type: 'integer',
@@ -2897,7 +2897,7 @@ const TOOLS = [
   {
     name: 'find_evidence',
     description:
-      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker), then by whether the doc is a graph node, then slug — best-first. **A vault holds ordinary markdown too** (meeting notes, memos, drafts have no `kind:` and are not graph nodes); every row says which it is via `isNode`, non-nodes rank below nodes of equal relevance, and `nodesOnly: true` filters them out. Do not cite a non-node as graph evidence without saying so. Pass `limit` for the top-N. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
+      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, headings/tables/code skipped) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker), then by whether the doc is a graph node, then slug — best-first. **A vault holds ordinary markdown too** (meeting notes, memos, drafts have no `kind:` and are not graph nodes); every row says which it is via `isNode`, non-nodes rank below nodes of equal relevance, and `nodesOnly: true` filters them out. Do not cite a non-node as graph evidence without saying so. Pass `limit` for the top-N. When zero docs mention the title, the response includes a `growthHint` — near-titled vault nodes to check first, or an add_concept scaffold if the concept looks genuinely new.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -6607,7 +6607,7 @@ function summarizeWrite(name, args, result) {
       return result?.dryRun ? null : { target: args.from, summary: `replace ${args.from} --${args.oldType}--> ${args.oldTo} with --${args.newType}--> ${args.newTo}`, why: args.why ?? null };
     case 'add_concepts': {
       const okRows = (result?.concepts ?? []).filter((row) => row?.ok).length;
-      return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows}행 성공` } : null;
+      return okRows > 0 ? { target: '(batch)', summary: `add_concepts ${okRows} rows written` } : null;
     }
     case 'add_relations': {
       const rows = result?.relations ?? [];
@@ -6640,7 +6640,7 @@ function summarizeWrite(name, args, result) {
       ];
       return {
         target: '(batch)',
-        summary: `add_relations ${okRows}행 성공`,
+        summary: `add_relations ${okRows} rows written`,
         why: reasons.length > 0 ? reasons.join(' · ') : null,
       };
     }
@@ -6652,7 +6652,7 @@ function summarizeWrite(name, args, result) {
         : null;
     case 'disconnect_project_source':
       return result?.changed
-        ? { target: result.projectSlug, summary: `disconnect_project_source ${result.removed}건` }
+        ? { target: result.projectSlug, summary: `disconnect_project_source ${result.removed} removed` }
         : null;
     case 'rename_concept':
       return result?.dryRun ? null : { target: args.newSlug, summary: `rename ${args.oldSlug} → ${args.newSlug}` };
@@ -8572,7 +8572,7 @@ function findPathTool({ from, to, maxHops }) {
       from,
       to,
       found: false,
-      reason: '경로 없음 (또는 maxHops 초과)',
+      reason: 'no path found (or maxHops exceeded)',
       growthHint: buildFindPathGrowthHint({ from, to, fromExists, toExists }),
     };
   }
@@ -10125,7 +10125,7 @@ function findDanglingGraphReferenceIssues(docs) {
         issue: {
           code: 'dangling-graph-reference',
           severity: 'warning',
-          message: `\`${key}:\` graph reference "${ref}" 가 vault 의 어떤 node 로도 resolve 되지 않습니다.`,
+          message: `\`${key}:\` graph reference "${ref}" does not resolve to any node in the vault.`,
         },
       });
     }
@@ -11054,7 +11054,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       targetPath,
       moved: false,
       backlinkUpdates: publicBacklinkUpdates(preview),
-      message: `dry-run — confirm:true 를 주면 파일 이동 + ${preview.totalUpdated} 곳 backlink redirect 가 실제 적용됩니다.`,
+      message: `dry-run — pass confirm:true to actually move the file and redirect ${preview.totalUpdated} backlinks.`,
     };
   }
 
@@ -11274,7 +11274,7 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
         frontmatter: fromDoc.frontmatter,
         bodyExcerpt: extractSummaryExcerpt(fromDoc.body, 200),
       },
-      message: `dry-run — confirm:true 를 주면 ${preview.totalUpdated} 곳 backlink redirect 후 ${fromSlug}.md 가 영구 삭제됩니다.`,
+      message: `dry-run — pass confirm:true to redirect ${preview.totalUpdated} backlinks and then permanently delete ${fromSlug}.md.`,
     };
   }
 
@@ -11500,16 +11500,16 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
       backlinks,
       message:
         backlinks.length > 0
-          ? `dry-run — ${backlinks.length} 개 backlink 가 있어 confirm:true 만으로는 거부됩니다. force:true 까지 줘야 강행.`
-          : 'dry-run — confirm:true 를 주면 실제 삭제됩니다.',
+          ? `dry-run — ${backlinks.length} backlinks point here, so confirm:true alone is refused. Pass force:true as well to push through.`
+          : 'dry-run — pass confirm:true to delete it for real.',
     };
   }
 
   if (backlinks.length > 0 && !force) {
     throw new Error(
-      `${backlinks.length} 개 backlink 가 있어 삭제 거부: ` +
+      `Refusing to delete: ${backlinks.length} backlinks point here: ` +
         backlinks.map((b) => b.slug).join(', ') +
-        ' — force:true 로 강행 가능 (참조 노드 dangling).',
+        ' — force:true pushes through (the referring nodes are left dangling).',
     );
   }
 

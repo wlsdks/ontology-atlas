@@ -68,8 +68,13 @@ const ROOT = process.cwd();
  * hand hover declarations with it (`docs/DECISIONS.md` 83). Axis adoption did not
  * rise; **the places disappeared**, so this decrease earns no credit — but the
  * floor still comes down.
+ * 312 → 304 (2026-08-31): the "to do" tab became one list (owner decision). The readiness meter,
+ * the repair-queue counter band, the activity digest, the group headings and the per-section
+ * chrome went with it, and the row actions converged onto three shared ink fragments in
+ * `parts/FixRow.tsx` instead of one hand-written hover per row family. Part of this is genuine
+ * convergence and part is places that **ceased to exist**; either way the floor comes down.
  */
-const CEILING = 312;
+const CEILING = 304;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {

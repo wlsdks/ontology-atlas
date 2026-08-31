@@ -84,7 +84,11 @@ describe('tauri-llm 웹 강등', () => {
   });
 
   it('Rust 의 Err(String) 을 사용자 한 줄로 접는다', () => {
-    expect(llmChatErrorMessage('보낼 수 없어요')).toBe('보낼 수 없어요');
+    // Rust now sends only the code (`src-tauri/src/errors.rs`). The sentence is chosen
+    // here, the one side that knows the reader's language.
+    const lookup = (code: string) => (code === 'no-response' ? '답을 받지 못했어요.' : undefined);
+    expect(llmChatErrorMessage('no-response', lookup)).toBe('답을 받지 못했어요.');
+    expect(llmChatErrorMessage('request-failed: broken pipe', lookup)).toBe('broken pipe');
     expect(llmChatErrorMessage(new Error('offline'))).toBe('offline');
   });
 });

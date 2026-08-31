@@ -1,5 +1,7 @@
 import { invoke as tauriInvoke, isTauri } from '@tauri-apps/api/core';
 
+import { type NativeErrorLookup, nativeErrorMessage } from './native-error';
+
 /**
  * Atlas Git — the Tauri IPC bridge: typed wrappers over the commands in
  * `src-tauri/src/git.rs`, which is the source of truth for the contract.
@@ -307,12 +309,13 @@ export async function gitFetch(vaultPath: string): Promise<GitFetchResult | null
 }
 
 /**
- * Turns an invoke rejection payload into one user-facing line. Rust returns
- * `Err(String)`, so it is usually a plain string, but Error/unknown are accepted
- * too in case the bridge or serialisation fails.
+ * Turns an invoke rejection payload into one user-facing line.
+ *
+ * Rust answers with `<code>: <git's own words>` (`src-tauri/src/errors.rs`), so the
+ * sentence is chosen here, where the reader's locale is known, and git's stderr
+ * rides along in parentheses because only git knows what actually went wrong.
+ * Without a lookup the payload comes back untouched.
  */
-export function gitErrorMessage(err: unknown): string {
-  if (typeof err === 'string') return err;
-  if (err instanceof Error) return err.message;
-  return String(err);
+export function gitErrorMessage(err: unknown, lookup?: NativeErrorLookup): string {
+  return nativeErrorMessage(err, lookup);
 }

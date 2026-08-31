@@ -67,7 +67,7 @@ test('두 번째에 성공하면 세 번째는 돌지 않는다', async () => {
 
   assert.equal(result.code, 0);
   assert.equal(fake.attempts(), 2);
-  assert.match(result.stdout, /2번째 시도에 성공/);
+  assert.match(result.stdout, /succeeded on attempt 2/);
 });
 
 test('계속 실패하면 정확히 attempts 만큼 돌고 1로 끝난다', async () => {
@@ -76,7 +76,7 @@ test('계속 실패하면 정확히 attempts 만큼 돌고 1로 끝난다', asyn
 
   assert.equal(result.code, 1, '필수 단계가 실패했는데 0으로 끝났다');
   assert.equal(fake.attempts(), 3);
-  assert.match(result.stderr, /3번 다 실패/);
+  assert.match(result.stderr, /all 3 attempts failed/);
 });
 
 test('--best-effort 면 다 실패해도 0으로 끝나되, 조용히 넘어가지 않는다', async () => {
@@ -100,7 +100,7 @@ test('멈춘 명령은 타임아웃에 죽고, 그 자리가 재시도로 이어
 
   assert.equal(result.code, 1);
   assert.equal(fake.attempts(), 2, '타임아웃 뒤에 재시도가 안 일어났다');
-  assert.match(result.stdout, /700ms 안에 안 끝남/);
+  assert.match(result.stdout, /did not finish within 700ms/);
   assert.ok(elapsed < 20_000, `타임아웃이 안 먹었다 — ${elapsed}ms 걸렸다`);
 });
 
@@ -117,8 +117,8 @@ test('없는 명령은 spawn 단계에서 실패로 잡힌다', async () => {
 });
 
 test('parseArgs — `--` 가 없거나 뒤가 비면 거절한다', () => {
-  assert.throws(() => parseArgs(['--attempts=2']), /`--` 뒤에 실행할 명령/);
-  assert.throws(() => parseArgs(['--attempts=2', '--']), /`--` 뒤가 비었다/);
+  assert.throws(() => parseArgs(['--attempts=2']), /command to run after `--`/);
+  assert.throws(() => parseArgs(['--attempts=2', '--']), /nothing follows `--`/);
 });
 
 test('parseArgs — 옵션을 읽고, 이상한 값은 거절한다', () => {
@@ -138,9 +138,9 @@ test('parseArgs — 옵션을 읽고, 이상한 값은 거절한다', () => {
   assert.equal(options.label, 'apt');
   assert.deepEqual(command, ['echo', 'hi']);
 
-  assert.throws(() => parseArgs(['--attempts=0', '--', 'echo']), /양수여야 한다/);
-  assert.throws(() => parseArgs(['--attempts=nope', '--', 'echo']), /양수여야 한다/);
-  assert.throws(() => parseArgs(['--unknown', '--', 'echo']), /모르는 옵션/);
+  assert.throws(() => parseArgs(['--attempts=0', '--', 'echo']), /must be a positive number/);
+  assert.throws(() => parseArgs(['--attempts=nope', '--', 'echo']), /must be a positive number/);
+  assert.throws(() => parseArgs(['--unknown', '--', 'echo']), /unknown option/);
 });
 
 test('label 을 안 주면 명령 자체가 라벨이 된다', () => {

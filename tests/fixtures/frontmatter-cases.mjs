@@ -370,4 +370,71 @@ export const CASES = [
       body: "",
     },
   },
+  {
+    // Found in this repository's own vault, 2026-08-31, on `display_ko`.
+    // `unquote` only strips a matching pair, so the opening quote survived as
+    // literal text and every reader rendered the stray quote — with 0 issues.
+    name: "quoted scalar closing early keeps the quote — diagnosed",
+    input: '---\ntitle: Agents Destination\ndisplay_ko: "에이전트" 목적지\n---\n',
+    expected: {
+      frontmatter: { title: "Agents Destination", display_ko: '에이전트" 목적지' },
+      body: "",
+      diagnostics: [
+        {
+          code: "malformed-quoted-scalar",
+          line: 3,
+          message:
+            "Frontmatter line 3 `display_ko:` closes its quote before the end of the value, " +
+            "so the rest is read as literal text. Close the quote or remove it: `display_ko: 에이전트 목적지`",
+        },
+      ],
+    },
+  },
+  {
+    name: "single quote closing early and a never-closed quote are both diagnosed",
+    input: "---\nsummary: 'a' b\nnote: \"unclosed\n---\n",
+    expected: {
+      frontmatter: { summary: "a' b", note: "unclosed" },
+      body: "",
+      diagnostics: [
+        {
+          code: "malformed-quoted-scalar",
+          line: 2,
+          message:
+            "Frontmatter line 2 `summary:` closes its quote before the end of the value, " +
+            "so the rest is read as literal text. Close the quote or remove it: `summary: a b`",
+        },
+        {
+          code: "malformed-quoted-scalar",
+          line: 3,
+          message:
+            "Frontmatter line 3 `note:` opens a quote the value never closes, " +
+            "so the quote is read as literal text. Close the quote or remove it: `note: unclosed`",
+        },
+      ],
+    },
+  },
+  {
+    // The boundary: an escaped inner quote, an unquoted value that merely contains
+    // quotes, and an empty quoted value are all legal and must stay silent.
+    name: "escaped, unquoted and empty quoted values stay clean",
+    input: '---\ntitle: "a \\"b\\""\nsubtitle: a "b" c\nempty: ""\n---\n',
+    expected: {
+      frontmatter: { title: 'a "b"', subtitle: 'a "b" c', empty: "" },
+      body: "",
+    },
+  },
+  {
+    // The rule follows `unquote`, not YAML: a wrapping pair is stripped whenever
+    // the last character is the same quote, so an inner apostrophe or an inner
+    // pair of double quotes renders exactly as written. Diagnosing these would
+    // turn a vault that reads correctly today into an error tomorrow.
+    name: "inner quotes inside a closed pair render as written and stay clean",
+    input:
+      "---\ntitle: 'Owner's guide'\ndisplay_en: \"He said \"hi\" today\"\n---\n",
+    expected: {
+      frontmatter: { title: "Owner's guide", display_en: 'He said "hi" today' },
+      body: "",
+    },
+  },
 ];

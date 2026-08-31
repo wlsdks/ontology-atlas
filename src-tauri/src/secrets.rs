@@ -28,6 +28,8 @@
 use keyring::Entry;
 use serde::Serialize;
 
+use crate::errors::coded;
+
 /// Keychain service name — users find this by this name in Keychain Access.app.
 /// Must match the app name to avoid "what is this?" confusion.
 const SERVICE: &str = "Ontology Atlas";
@@ -56,12 +58,12 @@ pub(crate) fn validate_provider(provider: &str) -> Result<&'static str, String> 
         .iter()
         .find(|known| **known == provider)
         .copied()
-        .ok_or_else(|| format!("지원하지 않는 제공자예요: {provider}"))
+        .ok_or_else(|| coded("unsupported-provider", provider))
 }
 
 fn entry(provider: &str) -> Result<Entry, String> {
     let account = validate_provider(provider)?;
-    Entry::new(SERVICE, account).map_err(|err| format!("키체인을 열 수 없어요: {err}"))
+    Entry::new(SERVICE, account).map_err(|err| coded("keychain-unavailable", err))
 }
 
 /// The tail 4 characters, to show only the key's **shape**. The full value never goes
@@ -91,12 +93,12 @@ pub struct SecretStatus {
 pub fn secret_set(provider: String, secret: String) -> Result<SecretStatus, String> {
     let trimmed = secret.trim();
     if trimmed.is_empty() {
-        return Err("키가 비어 있어요. 지우려면 '지우기' 를 눌러주세요.".into());
+        return Err(coded("secret-empty", ""));
     }
     let known = validate_provider(&provider)?;
     entry(&provider)?
         .set_password(trimmed)
-        .map_err(|err| format!("키를 저장하지 못했어요: {err}"))?;
+        .map_err(|err| coded("keychain-write-failed", err))?;
     Ok(SecretStatus {
         provider: known.to_string(),
         stored: true,
@@ -133,7 +135,7 @@ pub(crate) fn read_secret(provider: &str) -> Result<String, String> {
     let known = validate_provider(provider)?;
     entry(known)?
         .get_password()
-        .map_err(|_| "저장된 키가 없어요. 먼저 키를 등록해 주세요.".to_string())
+        .map_err(|_| coded("secret-missing", ""))
 }
 
 /// Delete a key — absence still counts as success (idempotent). "I deleted it and got
@@ -190,7 +192,11 @@ pub fn secret_clear(provider: String) -> Result<SecretStatus, String> {
     if is_cleared(deleted, readback) {
         Ok(cleared)
     } else {
-        Err(STILL_THERE.to_string())
+        // The sentence the user reads lives in `messages/<locale>.json` under
+        // `nativeErrors`, keyed by this code. It gives the reason together with **a
+        // way to delete it themselves** — the same degradation-card discipline as
+        // everywhere else here (why it cannot + where to go).
+        Err(coded("keychain-clear-failed", ""))
     }
 }
 
@@ -225,12 +231,6 @@ pub(crate) fn is_cleared(deleted: Step, readback: Step) -> bool {
         },
     }
 }
-
-/// The sentence the user reads when deletion failed. Gives why it failed together with
-/// **a way to delete it themselves** — same as this repository's degradation-card
-/// discipline (the reason it cannot + where to go).
-const STILL_THERE: &str = "키를 지우지 못했어요. 키체인이 잠겨 있을 수 있어요 — \
-잠금을 풀고 다시 시도하거나, 키체인 접근 앱에서 \"Ontology Atlas\" 항목을 직접 지워 주세요.";
 
 #[cfg(test)]
 mod tests {

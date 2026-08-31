@@ -109,6 +109,27 @@ describe('validateVaultDocument (R11 #23)', () => {
     );
   });
 
+  it('a scalar whose quote closes early is an error, not a silent rename', () => {
+    // docs/ontology/elements/agents-destination.md, 2026-08-31: the node loaded,
+    // validate said 0 issues, and the map rendered the stray quote.
+    const r = validateVaultDocument(
+      `---\nuid: ${TEST_UID}\nkind: element\ndomain: domains/agent-integration\ntitle: Agents Destination\ndisplay_ko: "에이전트" 목적지\n---\n`,
+    );
+    assert.equal(r.ok, false);
+    const issue = r.issues.find((i) => i.code === 'malformed-quoted-scalar');
+    assert.equal(issue.severity, 'error');
+    assert.match(issue.message, /`display_ko:`/);
+    assert.match(issue.message, /Close the quote or remove it: `display_ko: 에이전트 목적지`/);
+  });
+
+  it('a correctly quoted or escaped scalar stays clean', () => {
+    const r = validateVaultDocument(
+      `---\nuid: ${TEST_UID}\nkind: element\ndomain: domains/agent-integration\ntitle: "Agents Destination"\ndisplay_ko: 에이전트 목적지\ndisplay_en: "a \\"quoted\\" word"\n---\n`,
+    );
+    assert.equal(r.ok, true);
+    assert.equal(r.issues.some((i) => i.code === 'malformed-quoted-scalar'), false);
+  });
+
   it('malformed graph relation values are errors, not silently ignored', () => {
     const r = validateVaultDocument(
       `---\nuid: ${TEST_UID}\nkind: capability\ndepends_on: [capabilities/auth\nrelates: capabilities/legacy\n---\n`,

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { AccentBootScript, JsonLd } from '@/shared/ui';
+import { AccentBootScript, JsonLd, WebviewErrorReporter } from '@/shared/ui';
 import { JetBrains_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
 import { SITE_URL } from '@/shared/config';
@@ -115,6 +115,10 @@ export default function RootLayout({
             does not know `data-accent`, so `<html>` needs `suppressHydrationWarning` — an
             intentional mismatch limited to one attribute. */}
         <AccentBootScript />
+        {/* Forwards a WebView script error or unhandled rejection to the app log. Inside the
+            installed app nobody is watching a console, so without this a panel that dies in an
+            async callback leaves no trace at all. No-op in a browser. */}
+        <WebviewErrorReporter />
         <JsonLd
           data={{
             '@context': 'https://schema.org',

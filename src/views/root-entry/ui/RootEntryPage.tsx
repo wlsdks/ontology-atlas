@@ -1,9 +1,11 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { Bot, HardDrive, Network } from "lucide-react";
+import { useState, useSyncExternalStore } from "react";
+import { Bot, FolderSearch, HardDrive, Network, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useLocalVault } from "@/entities/vault-session";
+import { Button, IconButton } from "@/shared/ui";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { isDesktopShell } from "@/shared/lib/desktop-shell";
 import { GatewayLandingPage } from "@/views/download";
 import { HomePage } from "@/views/home";
@@ -32,6 +34,7 @@ import { FirstRunPage } from "@/views/first-run";
  */
 export function RootEntryPage() {
   const vault = useLocalVault();
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
   const clientReady = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -45,10 +48,89 @@ export function RootEntryPage() {
     // this stops FirstRun from flashing for one frame.
     return vault.restoreAttempted ? <FirstRunPage /> : <DesktopVaultRedirect />;
   }
-  // A web visitor who has not opened any folder yet. **For this person `/` is the face.** The condition
-  // matches the shell's gateway verdict (`isGatewaySurface`), so chrome and content cannot disagree.
-  // Opening a vault moves them to the `vault.manifest` branch above and the map.
-  return <GatewayLandingPage />;
+  /*
+   * A web visitor who has not opened any folder yet. **For this person `/` is the face.** The
+   * condition matches the shell's gateway verdict (`isGatewaySurface`), so chrome and content
+   * cannot disagree. Opening a vault moves them to the `vault.manifest` branch above and the map.
+   *
+   * ⚠️ **Coming back is not the same as arriving** (census state 1b, 2026-08-31). Someone who
+   * connected a folder and then moved or deleted it landed on this same promotional face with no
+   * trace that a folder had ever been chosen — the most common re-entry path answered with total
+   * silence. The gateway still renders (there is nothing else to show), but the notice above it
+   * says what happened and hands over the picker. The stored handle is **not** cleared here: a
+   * failed restore is not proof the folder is gone forever, and forgetting it would delete the one
+   * fact the next visit needs. Only picking a folder again replaces it.
+   */
+  const failedRestore =
+    vault.restoreAttempted && vault.status === 'error' && !noticeDismissed;
+  return (
+    <>
+      {failedRestore ? (
+        <LostVaultNotice
+          folderName={vault.handle?.name ?? vault.recentVaults[0]?.name ?? null}
+          missing={vault.errorCode === 'path-missing'}
+          onOpen={() => void vault.open()}
+          onDismiss={() => setNoticeDismissed(true)}
+        />
+      ) : null}
+      <GatewayLandingPage />
+    </>
+  );
+}
+
+/**
+ * The one line a returning visitor gets when the folder they connected is no longer readable.
+ *
+ * It names the folder when a name is known, because "your folder is gone" points at nothing a
+ * person can recognise; without one it falls back to a sentence that works with no name rather
+ * than printing empty quotation marks. Neutral panel tone: this is a fact plus a next step, not an
+ * alarm, and the person did nothing wrong.
+ */
+function LostVaultNotice({
+  folderName,
+  missing,
+  onOpen,
+  onDismiss,
+}: {
+  folderName: string | null;
+  missing: boolean;
+  onOpen: () => void;
+  onDismiss: () => void;
+}) {
+  const t = useTranslations('rootEntry');
+  return (
+    <div
+      role="status"
+      data-testid="root-entry-lost-vault-notice"
+      className="flex flex-wrap items-center gap-3 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-4 py-3"
+    >
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+        <FolderSearch size={ICON_SIZE.md} aria-hidden />
+      </span>
+      <p className="min-w-0 flex-1 break-keep text-label leading-prose text-[color:var(--color-text-secondary)]">
+        {missing && folderName
+          ? t('lostVaultMissing', { name: folderName })
+          : t('lostVaultUnreadable')}
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        data-testid="root-entry-lost-vault-open"
+        onClick={onOpen}
+      >
+        {t('lostVaultAction')}
+      </Button>
+      <IconButton
+        label={t('lostVaultDismiss')}
+        size="sm"
+        data-testid="root-entry-lost-vault-dismiss"
+        onClick={onDismiss}
+      >
+        <X size={ICON_SIZE.md} aria-hidden />
+      </IconButton>
+    </div>
+  );
 }
 
 function DesktopVaultRedirect() {

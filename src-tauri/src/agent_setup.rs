@@ -133,7 +133,11 @@ pub(crate) fn open_absolute_directory_no_follow(path: &Path) -> Result<fs::File,
         return Err(err_str("native write root must be absolute"));
     }
 
-    let slash = std::ffi::CString::new("/").expect("slash contains no NUL");
+    // A `c"…"` literal, not `CString::new("/").expect(…)`. The `expect` could never fire, but
+    // the callers here are synchronous Tauri commands, which Tauri runs on the macOS main
+    // thread — a panic there aborts the app rather than failing one call, so the crate keeps
+    // no panicking step on that path even when the input is a constant.
+    let slash = c"/";
     let root_fd = unsafe {
         libc::open(
             slash.as_ptr(),
@@ -278,11 +282,21 @@ pub(crate) fn write_entry_atomically(
 
     for _ in 0..64 {
         let sequence = TEMP_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let temporary_name = std::ffi::CString::new(format!(
+        // `file_name` is a `&CStr`, so `printable_name` cannot contain an interior NUL and this
+        // conversion cannot fail. It is still an error rather than a panic: the callers are
+        // synchronous Tauri commands, and Tauri runs those on the macOS main thread, where an
+        // unwinding panic aborts the whole app instead of failing the one write.
+        let temporary_name = match std::ffi::CString::new(format!(
             ".{printable_name}.oatlas-tmp-{}-{nonce:x}-{sequence:x}",
             std::process::id()
-        ))
-        .expect("generated temporary name contains no NUL");
+        )) {
+            Ok(name) => name,
+            Err(_) => {
+                return Err(err_str(
+                    "temporary file name contained an unsupported NUL byte",
+                ))
+            }
+        };
         let temporary_fd = unsafe {
             libc::openat(
                 parent.as_raw_fd(),
@@ -587,5 +601,4 @@ mod tests {
         assert!(error.to_string().contains("linked before commit"));
         let _ = fs::remove_dir_all(&base);
     }
-
 }

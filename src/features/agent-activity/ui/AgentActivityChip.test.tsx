@@ -336,8 +336,8 @@ describe("AgentActivityChip", () => {
     });
     fireEvent.click(screen.getByTestId("agent-activity-bell"));
     const row = screen.getByTestId("agent-activity-inbox-row");
-    expect(row.textContent).toContain("허공 참조 3");
-    expect(row.textContent).toContain("순환 1");
+    expect(row.textContent).toContain("끊어진 연결 3개");
+    expect(row.textContent).toContain("서로 되짚는 연결 1쌍");
     expect(row.querySelector('[class*="--color-status-warning"]')).not.toBeNull();
   });
 });

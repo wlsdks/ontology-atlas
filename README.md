@@ -105,9 +105,10 @@ and standards/inference boundary live in the
 
 ## Status — read this before installing
 
-Every public build is prerelease software. A release candidate walks the same
-signing, notarization, installer, updater, and hosted-download checks as a final
-build, but has not been widely run yet.
+A build tagged `-rc.N` is a release candidate: it walks the same signing,
+notarization, installer, updater, and hosted-download checks as a final build,
+but has not been widely run yet. A tag without `-rc` is a final release and
+makes the same promises with the wider run behind it.
 
 The [download page](https://ontologyatlas.com/en/download/) is the
 release authority: it renders a generated record of the current published tag,

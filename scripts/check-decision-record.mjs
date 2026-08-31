@@ -131,11 +131,11 @@ const changedPaths = new Set(entries.map((entry) => entry.path));
 
 const surfaceChanges = entries
   .filter((entry) => (entry.status === "A" || entry.status === "D") && ROUTE_PATTERN.test(entry.path))
-  .map((entry) => `${entry.status === "A" ? "새 표면" : "표면 제거"}: ${entry.path}`);
+  .map((entry) => `${entry.status === "A" ? "new surface" : "surface removed"}: ${entry.path}`);
 
 const contractChanges = entries
   .filter((entry) => CONTRACT_FILES.includes(entry.path))
-  .map((entry) => `공개 계약 변경: ${entry.path}`);
+  .map((entry) => `public contract changed: ${entry.path}`);
 
 /**
  * Design spec — looks at **whether the spec moved, not whether a file was touched.**
@@ -191,17 +191,17 @@ if (changedPaths.has(LEDGER)) {
   process.exit(0);
 }
 
-console.error(`[decisions] 이 변경은 카운슬 소집 트리거를 밟았는데 ${LEDGER} 기록이 없다:`);
+console.error(`[decisions] this change tripped a council trigger but ${LEDGER} holds no record of it:`);
 for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
-[decisions] 다음 중 하나를 하라:
-[decisions]   1. /po-council 을 소집하고 그 평결을 ${LEDGER} 최상단에 덧붙인다
-[decisions]   2. 이미 결정된 사안이면, 선행 기록을 인용하고 이번 변경을 그 기록에 덧붙인다
-[decisions]   3. 트리거가 오탐이면 (예: 라우트 파일 이동), 그 사실을 기록에 한 줄로 남긴다
+[decisions] Do one of these:
+[decisions]   1. convene /po-council and append its verdict to the top of ${LEDGER}
+[decisions]   2. if it was already decided, cite the earlier record and append this change to it
+[decisions]   3. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]
-[decisions] «규격 …» 트리거라면 소집할 자리는 /design-council 의 「체계」다
+[decisions] For a «specification …» trigger the seat to convene is design-system on /design-council
 [decisions] (.claude/rules/design.md “Changing the specification requires design-system”).
 [decisions]
-[decisions] 기록은 품질 심사가 아니라 존재 확인이다 — 다음 패스가 읽을 자리에
-[decisions] 결정과 그때 진 반대 의견이 남아 있어야 같은 논쟁을 다시 하지 않는다.`);
+[decisions] The record is an existence check, not a quality review — the next pass must find
+[decisions] the decision and the dissent that lost, so the same argument is not held twice.`);
 process.exit(1);

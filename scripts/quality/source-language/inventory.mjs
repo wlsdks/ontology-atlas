@@ -2,11 +2,18 @@ import ts from 'typescript';
 
 import {
   classifySourcePath,
+  classifyStringScanPath,
   isSupportedSourcePath,
   sourceCommentSyntax,
+  STRING_SCAN_SCOPES,
 } from './source-paths.mjs';
 
-export { classifySourcePath, isSupportedSourcePath } from './source-paths.mjs';
+export {
+  classifySourcePath,
+  classifyStringScanPath,
+  isStringScannedPath,
+  isSupportedSourcePath,
+} from './source-paths.mjs';
 
 const UNEXPECTED_LANGUAGE = /[\p{Script=Hangul}\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu;
 
@@ -359,6 +366,136 @@ export function auditSourceCommentEntries(entries) {
       result.unexpectedLanguageCodePoints += fileCodePoints;
       scope.unexpectedFiles += 1;
       scope.unexpectedLines += fileLines.size;
+      scope.unexpectedLanguageCodePoints += fileCodePoints;
+    }
+  }
+  return result;
+}
+
+/**
+ * The literal kinds a program can *print*.
+ *
+ * `RegularExpressionLiteral` is deliberately absent, and that is the whole exemption rule for
+ * matcher data. A Korean alternation inside a regex is not prose this repository writes; it is how
+ * `absorb` recognises a heading in the **user's own** Korean CLAUDE.md, how the verify scripts
+ * assert against the installed app's Korean UI, and how a slug is built from a Korean title. That
+ * is typed data in the same sense as `display_ko`. A regex cannot be an error message, so treating
+ * every regex as data costs no coverage while removing ~60 lines of hand-maintained allowlist.
+ */
+const PRINTED_STRING_KINDS = new Set([
+  ts.SyntaxKind.StringLiteral,
+  ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+  ts.SyntaxKind.TemplateHead,
+  ts.SyntaxKind.TemplateMiddle,
+  ts.SyntaxKind.TemplateTail,
+]);
+
+export function extractStringTokens(path, source) {
+  const sourceFile = ts.createSourceFile(
+    path.endsWith('.ts') ? 'source.ts' : 'source.js',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const tokens = [];
+  const visit = (node) => {
+    if (PRINTED_STRING_KINDS.has(node.kind)) {
+      tokens.push({ start: node.getStart(sourceFile), end: node.end });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return tokens;
+}
+
+function emptyStringScope() {
+  return {
+    scannedFiles: 0,
+    scannedStrings: 0,
+    unexpectedFiles: 0,
+    unexpectedLines: 0,
+    unexpectedLanguageCodePoints: 0,
+  };
+}
+
+/**
+ * Counts non-English code points inside printed string literals, per ratchet scope.
+ *
+ * `allowlist` rows are `{ id, path, why, allow }`, where `allow` is `'file'` or a RegExp tested
+ * against the whole source line. Every row's `id` is reported in `allowlistHits` so a row that
+ * stopped matching anything can fail as stale — an exception nobody can see expiring is how the
+ * previous allowlist grew to cover files that were merely never translated.
+ */
+export function auditSourceStringEntries(entries, allowlist = []) {
+  const result = {
+    scannedFiles: 0,
+    scannedStrings: 0,
+    unexpectedFiles: 0,
+    unexpectedLines: 0,
+    unexpectedLanguageCodePoints: 0,
+    allowedLines: 0,
+    allowlistHits: Object.fromEntries(allowlist.map((row) => [row.id, 0])),
+    scopes: Object.fromEntries(
+      Object.keys(STRING_SCAN_SCOPES).map((scope) => [scope, emptyStringScope()]),
+    ),
+    violations: [],
+  };
+
+  for (const entry of entries) {
+    const scopeName = classifyStringScanPath(entry.path);
+    if (!scopeName) continue;
+    const scope = result.scopes[scopeName];
+    const tokens = extractStringTokens(entry.path, entry.content);
+    const starts = lineStarts(entry.content);
+    const lines = entry.content.split(/\r?\n/);
+    const rows = allowlist.filter((row) => row.path === entry.path);
+    const seen = new Set();
+    const allowedSeen = new Set();
+    let fileCodePoints = 0;
+    let fileLines = 0;
+
+    result.scannedFiles += 1;
+    result.scannedStrings += tokens.length;
+    scope.scannedFiles += 1;
+    scope.scannedStrings += tokens.length;
+
+    for (const token of tokens) {
+      const text = entry.content.slice(token.start, token.end);
+      const matches = [...text.matchAll(UNEXPECTED_LANGUAGE)];
+      for (const match of matches) {
+        const line = lineAt(starts, token.start + (match.index ?? 0));
+        const lineText = lines[line - 1] ?? '';
+        const allowed = rows.find((row) => row.allow === 'file' || row.allow.test(lineText));
+        if (allowed) {
+          // Count *lines*, not code points: one Korean label is one exempted line, so a row's hit
+          // count stays readable next to the file it covers.
+          if (!allowedSeen.has(`${allowed.id}:${line}`)) {
+            allowedSeen.add(`${allowed.id}:${line}`);
+            result.allowlistHits[allowed.id] += 1;
+            result.allowedLines += 1;
+          }
+          continue;
+        }
+        fileCodePoints += 1;
+        if (seen.has(line)) continue;
+        seen.add(line);
+        fileLines += 1;
+        result.violations.push({
+          path: entry.path,
+          line,
+          scope: scopeName,
+          text: lineText.trim(),
+        });
+      }
+    }
+
+    if (fileCodePoints > 0) {
+      result.unexpectedFiles += 1;
+      result.unexpectedLines += fileLines;
+      result.unexpectedLanguageCodePoints += fileCodePoints;
+      scope.unexpectedFiles += 1;
+      scope.unexpectedLines += fileLines;
       scope.unexpectedLanguageCodePoints += fileCodePoints;
     }
   }

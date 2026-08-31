@@ -5246,7 +5246,7 @@ await test('graph MCP calls — reject invalid explicit vault roots before spawn
   const missing = await run(['overview', './not-a-vault']);
   assert.equal(missing.code, 2);
   assert.match(stripAnsi(missing.stderr), /Vault root not found:/);
-  assert.doesNotMatch(stripAnsi(missing.stderr), /mcp exited|vault root 검증 실패/);
+  assert.doesNotMatch(stripAnsi(missing.stderr), /mcp exited|vault root validation failed/);
 
   const dir = mkdtempSync(join(tmpdir(), 'cli-vault-root-'));
   const file = join(dir, 'not-a-vault.md');
@@ -5255,7 +5255,7 @@ await test('graph MCP calls — reject invalid explicit vault roots before spawn
     const notDirectory = await run(['overview', file]);
     assert.equal(notDirectory.code, 2);
     assert.match(stripAnsi(notDirectory.stderr), /Vault root is not a directory:/);
-    assert.doesNotMatch(stripAnsi(notDirectory.stderr), /mcp exited|vault root 검증 실패/);
+    assert.doesNotMatch(stripAnsi(notDirectory.stderr), /mcp exited|vault root validation failed/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

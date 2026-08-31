@@ -11,7 +11,7 @@
 
 export const id = "2026-05-04-trim-frontmatter-values";
 export const description =
-  "frontmatter scalar 라인의 trailing whitespace 정리.";
+  "Trim trailing whitespace from frontmatter scalar lines.";
 
 /**
  * @param {{ path: string; raw: string; relativePath: string }} file

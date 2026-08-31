@@ -149,7 +149,7 @@ export function checkFile(file, { root = ROOT } = {}) {
       // only on the author's machine, so an exists() check would make a gate that is
       // green locally and red everywhere else.
       if (ref.ghost) {
-        problems.push({ file: relative, line: ref.line, target: ref.target, kind: 'cited path (저장소에 없는 자리)' });
+        problems.push({ file: relative, line: ref.line, target: ref.target, kind: 'cited path (not present in the repository)' });
         continue;
       }
       const resolved = ref.relative ? path.resolve(path.dirname(file), ref.target) : path.join(root, ref.target);

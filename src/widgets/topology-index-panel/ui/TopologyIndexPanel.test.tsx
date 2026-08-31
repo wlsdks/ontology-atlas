@@ -105,6 +105,8 @@ const labels = {
   uncatalogedDocsAction: "Promote",
   dustyNodesLabel: "0 nodes gathering dust",
   dustyNodesAction: "See freshness",
+  brokenDocsLabel: "2 docs the checks caught",
+  brokenDocsAction: "Open the library",
   sourceUnboundLabel: "1 project with no code folder",
   openedInsideLabel: 'opened-inside',
   openedInsideDismiss: 'opened-inside-dismiss',
@@ -787,6 +789,71 @@ describe("TopologyIndexPanel", () => {
       );
       expect(screen.getByTestId("topology-index-dusty-nodes")).toBeInTheDocument();
       expect(screen.getByTestId("topology-index-uncataloged-docs")).toBeInTheDocument();
+    });
+
+    /*
+     * Census state 3, 2026-08-31: a document the checks caught is drawn as a healthy node or as no
+     * node at all, and the only screen that explains it is the document library, which somebody
+     * has to already suspect a problem to open. This row is the map's one quiet way to say so.
+     */
+    it("검사에 걸린 문서가 있으면 지도에서도 그 사실을 말하고 문서함으로 보낸다", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          brokenDocCount={2}
+          vaultLoaded
+        />,
+      );
+      const row = screen.getByTestId("topology-index-broken-docs");
+      expect(row).toHaveTextContent("2 docs the checks caught");
+      expect(row).toHaveAttribute("href", expect.stringContaining("/docs"));
+    });
+
+    it("걸린 문서가 없으면 그 줄은 존재하지 않는다", () => {
+      // No success badge: a row that says "0 problems" is furniture, not information.
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          brokenDocCount={0}
+          vaultLoaded
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-broken-docs")).not.toBeInTheDocument();
+    });
+
+    it("폴더가 붙기 전에는 그 줄도 나오지 않는다", () => {
+      render(
+        <TopologyIndexPanel
+          treeResult={buildFixtureTree()}
+          totalConcepts={4}
+          totalRelations={3}
+          domainCount={1}
+          changedSlugs={new Set()}
+          selectedId={null}
+          onSelect={() => {}}
+          onCollapse={() => {}}
+          labels={labels}
+          brokenDocCount={2}
+          vaultLoaded={false}
+        />,
+      );
+      expect(screen.queryByTestId("topology-index-broken-docs")).not.toBeInTheDocument();
     });
 
     it("surfaces the unbound-code-folder fact without anyone clicking the project node", () => {

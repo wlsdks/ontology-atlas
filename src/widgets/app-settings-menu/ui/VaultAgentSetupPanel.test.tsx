@@ -20,8 +20,15 @@ const copyTextMock = vi.mocked(copyText);
 const bundledServer = agentServerFromBundle(
   '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp',
 );
-const noServer = agentServerUnavailable(
-  'The bundled MCP server is only available in the installed app.',
+/*
+ * A web session carries **no** reason: not being the installed app is the ordinary state of a
+ * browser, and the panel already says so in the reader's own language. Filling `reason` there put
+ * an untranslated English sentence one render away from a Korean screen.
+ */
+const noServer = agentServerUnavailable(null);
+/** The installed app that cannot find its own bundled server — the case that had a diagnosis and no renderer. */
+const missingBinaryServer = agentServerUnavailable(
+  'The bundled MCP server is missing at /Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp.',
 );
 
 function render(ui: React.ReactElement) {
@@ -123,7 +130,7 @@ describe('VaultAgentSetupPanel', () => {
     const localVault = renderPanel();
 
     expect(
-      screen.getByRole('region', { name: 'MCP 연결' }),
+      screen.getByRole('region', { name: '에이전트 연결(MCP)' }),
     ).toBeInTheDocument();
     // The amber badge that stated the same fact a third time is gone (design
     // council S2, 2026-08-02) — the row stating the number is still directly below
@@ -137,7 +144,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('밖의 도구를 잇는 자리예요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. Atlas 안의 관문 있는 Claude Agent 대화는 별도 화면입니다.',
+        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면입니다.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('더 확인하려면')).toBeInTheDocument();
@@ -1095,7 +1102,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'MCP 연결' });
+    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '확인 명령 복사' }),
     );
@@ -1125,7 +1132,7 @@ describe('VaultAgentSetupPanel', () => {
       },
     });
 
-    const agentSetup = screen.getByRole('region', { name: 'MCP 연결' });
+    const agentSetup = screen.getByRole('region', { name: '에이전트 연결(MCP)' });
     fireEvent.click(
       within(agentSetup).getByRole('button', { name: '맞추기 절차 복사' }),
     );
@@ -1424,5 +1431,97 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.queryByRole('button', { name: 'Claude Code에 연결' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('agent-setup-advanced-toggle')).not.toBeInTheDocument();
     expect(localVault.ensureAgentConfigs).not.toHaveBeenCalled();
+  });
+  /*
+   * ⚠️ Census state 5d, 2026-08-31. `agent_setup.rs` writes this sentence, its doc comment says
+   * the UI shows it verbatim, and `AgentServerAvailability.reason` repeats the promise — but no
+   * component in `src/` read the field, so an app whose bundled server is missing dropped the
+   * connect option and explained nothing at all.
+   */
+  it('앱 안의 서버 파일을 찾지 못한 까닭을 화면에 옮긴다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={missingBinaryServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    const row = screen.getByTestId('agent-setup-server-reason');
+    expect(row).toHaveTextContent('이 앱 안에서 MCP 서버 파일을 찾지 못했어요');
+    expect(row).toHaveTextContent('The bundled MCP server is missing at');
+  });
+
+  it('웹에서는 진단할 것이 없으므로 그 줄을 만들지 않는다', () => {
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={makeLocalVault()}
+        serverAvailability={noServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('agent-setup-server-reason')).not.toBeInTheDocument();
+  });
+
+  /*
+   * ⚠️ Census state 5e, 2026-08-31. The write failure was caught here and dropped, and the
+   * per-tool button (which decides its state by awaiting this handler) then drew the success tick
+   * on a write that never happened.
+   */
+  it('설정 파일을 쓰지 못하면 어떤 파일이었는지, 폴더는 그대로라는 사실을 말한다', async () => {
+    const localVault = makeLocalVault({
+      ensureAgentConfigs: vi
+        .fn()
+        .mockRejectedValue(new Error('Permission denied (os error 13)')),
+    });
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={localVault}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Claude Code에 연결' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('.mcp.json 파일을 쓰지 못했어요');
+    expect(alert).toHaveTextContent('폴더 안은 그대로예요');
+    expect(alert).toHaveTextContent('Permission denied (os error 13)');
+    // The pressed button must not claim success for a write that did not happen.
+    await waitFor(() =>
+      expect(screen.getByTestId('agent-client-claude-code')).toHaveAttribute(
+        'data-state',
+        'failed',
+      ),
+    );
+  });
+
+  it('까닭이 돌아오지 않아도 빈 괄호를 그리지 않는다', async () => {
+    const localVault = makeLocalVault({
+      ensureAgentConfigs: vi.fn().mockRejectedValue(new Error('')),
+    });
+    render(
+      <VaultAgentSetupPanel
+        canEditCurrent
+        localVault={localVault}
+        serverAvailability={bundledServer}
+        validationSummary={null}
+        onOpenWorkflowGuide={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Claude Code에 연결' }));
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('.mcp.json 파일을 쓰지 못했어요');
+    expect(alert.textContent).not.toContain('()');
   });
 });

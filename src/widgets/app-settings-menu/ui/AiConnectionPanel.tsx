@@ -15,6 +15,7 @@ import {
   type SecretProvider,
   type SecretStatus,
 } from '@/shared/lib/tauri-secrets';
+import { useNativeErrorLookup } from '@/shared/lib/use-native-error-lookup';
 import {
   clearLocalEndpoint,
   countChatCapableModels,
@@ -375,6 +376,7 @@ function ProviderCard({
   onVerified: () => void;
 }) {
   const t = useTranslations('settings.ai');
+  const nativeErrors = useNativeErrorLookup();
   const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [verify, setVerify] = useState<VerifyState>({ kind: 'idle' });
@@ -408,7 +410,7 @@ function ProviderCard({
           message: result.message ?? String(result.httpStatus ?? ''),
         });
     } catch (err) {
-      setVerify({ kind: 'failed', message: secretErrorMessage(err) });
+      setVerify({ kind: 'failed', message: secretErrorMessage(err, nativeErrors) });
     } finally {
       // Success or denial, the call was logged — so the log is shown immediately.
       onVerified();
@@ -438,7 +440,7 @@ function ProviderCard({
       setVerify({ kind: 'idle' });
       toast.show(t('cleared'));
     } catch (err) {
-      setError(secretErrorMessage(err));
+      setError(secretErrorMessage(err, nativeErrors));
     }
   };
 
@@ -627,6 +629,7 @@ function LocalEndpointCard({
   onVerified: () => void;
 }) {
   const t = useTranslations('settings.ai');
+  const nativeErrors = useNativeErrorLookup();
   const toast = useToast();
   const [settings, setSettings] = useState<LocalEndpointSettings>(() => readLocalEndpoint());
   const [draftUrl, setDraftUrl] = useState(() => readLocalEndpoint().baseUrl);
@@ -667,7 +670,7 @@ function LocalEndpointCard({
         kind: 'done',
         reason: 'failed',
         models: [],
-        detail: secretErrorMessage(err),
+        detail: secretErrorMessage(err, nativeErrors),
       });
     } finally {
       // Success or failure, this call was logged — so the log is shown immediately.
@@ -971,6 +974,7 @@ function KeyDraftForm({
   onError: (message: string | null) => void;
 }) {
   const t = useTranslations('settings.ai');
+  const nativeErrors = useNativeErrorLookup();
   const [draftKey, setDraftKey] = useState('');
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -995,7 +999,7 @@ function KeyDraftForm({
       setDraftKey('');
       if (next) onSaved(next);
     } catch (err) {
-      onError(secretErrorMessage(err));
+      onError(secretErrorMessage(err, nativeErrors));
     } finally {
       setSaving(false);
     }

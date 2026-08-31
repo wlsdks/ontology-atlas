@@ -56,7 +56,7 @@ test('map relation editor previews, reviews, and writes one relation without lea
   await page.setViewportSize({ width: 1512, height: 900 });
   await mountFixture(page);
   await openCheckoutEditor(page);
-  await chooseOption(page, 'meaning-editor-relation', '비슷한 것');
+  await chooseOption(page, 'meaning-editor-relation', '관련됨 (서로 필요하지는 않음)');
   await chooseOption(page, 'meaning-editor-target', '세금 신고 자료');
   await page.getByTestId('meaning-editor-why').fill('결제 승인과 세금 신고의 의미 경계를 함께 검토한다.');
   await expect(page.getByTestId('topology-map-v2')).toHaveAttribute(
@@ -176,7 +176,7 @@ test('contextual editor stays inside the responsive workbench and every control 
   await expect(page.getByTestId('topology-v2-detail-panel')).toBeVisible({ timeout: 15_000 });
   await openRelationEditorFromDetail(page);
   await expect(page.getByTestId('meaning-editor-panel')).toBeVisible({ timeout: 15_000 });
-  await chooseOption(page, 'meaning-editor-relation', '비슷한 것');
+  await chooseOption(page, 'meaning-editor-relation', '관련됨 (서로 필요하지는 않음)');
   await chooseOption(page, 'meaning-editor-target', '세금 신고 자료');
   const revealedByPreview = await page.evaluate(() =>
     window.__atlasMap?.nodes(),

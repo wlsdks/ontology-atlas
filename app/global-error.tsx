@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import "./globals.css";
 import { controlClass } from '@/shared/ui/control-class';
+import { reportWebviewError } from '@/shared/lib/report-webview-error';
 
 interface Props {
   error: Error & { digest?: string };
@@ -19,6 +20,8 @@ interface Props {
 export default function GlobalError({ error, reset }: Props) {
   useEffect(() => {
     console.error("[global-error]", error);
+    // The installed app has no console anyone reads; the same error goes to the app log.
+    reportWebviewError("render", error);
   }, [error]);
 
   return (

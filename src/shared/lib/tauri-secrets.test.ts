@@ -114,7 +114,12 @@ describe('tauri secrets bridge', () => {
   });
 
   it('turns a Rust Err(String) rejection into a single user line', () => {
-    expect(secretErrorMessage('키가 비어 있어요.')).toBe('키가 비어 있어요.');
+    // Rust answers with a code now (`src-tauri/src/errors.rs`); the sentence is
+    // chosen here, where the reader's locale is known.
+    const lookup = (code: string) =>
+      code === 'secret-empty' ? 'Paste the key first.' : undefined;
+    expect(secretErrorMessage('secret-empty', lookup)).toBe('Paste the key first.');
+    expect(secretErrorMessage('keychain-unavailable: locked', lookup)).toBe('locked');
     expect(secretErrorMessage(new Error('boom'))).toBe('boom');
   });
 });

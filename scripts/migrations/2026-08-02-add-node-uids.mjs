@@ -7,7 +7,7 @@ import { parseFrontmatter } from "../lib/parse-frontmatter.mjs";
 
 export const id = "2026-08-02-add-node-uids";
 export const description =
-  "모든 kind 노드에 불변 lowercase UUIDv4 uid를 발급하고 기존 identity claim을 검증.";
+  "Mint an immutable lowercase UUIDv4 uid on every kind node and verify the existing identity claims.";
 
 function insertUid(raw, uid) {
   if (raw.startsWith("---\r\n")) {

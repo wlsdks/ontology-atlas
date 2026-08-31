@@ -82,6 +82,15 @@ function fakeBundle(root: string, version: string, arch: string): string {
   writeFileSync(join(bundleDir, "dmg", `${dmg}.sha256`), `${"a".repeat(64)}  ${dmg}\n`);
   writeFileSync(join(bundleDir, "macos", "Ontology Atlas.app.tar.gz"), `archive-${arch}`);
   writeFileSync(join(bundleDir, "macos", "Ontology Atlas.app.tar.gz.sig"), `sig-${arch}\n`);
+  // Cargo writes the packed dSYM one level above `bundle/`, beside the binary; the stager
+  // derives that folder from the bundle path, so the replay must lay it out the same way.
+  mkdirSync(join(root, arch, "ontology-atlas.dSYM", "Contents", "Resources", "DWARF"), {
+    recursive: true,
+  });
+  writeFileSync(
+    join(root, arch, "ontology-atlas.dSYM", "Contents", "Resources", "DWARF", "ontology-atlas"),
+    `dwarf-${arch}`,
+  );
   return bundleDir;
 }
 

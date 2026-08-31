@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### Changed — surface count restated (2026-08-31)
+
+- The MCP surface is 36 tools (20 read and 16 write); `pnpm docs:surface:check`
+  is the count authority. Earlier lines below that say 33 tools describe the
+  surface at the time they were written and are kept as history.
+
 ### Changed — bounded competency repair review pages
 
 - `agent_brief.meaningRepair:v2` is now a compact, 5 KiB-bounded manifest with

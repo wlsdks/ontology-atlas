@@ -38,6 +38,7 @@ import { inspectMergedUids, missingExpectedFields, nodeUidIssue } from './schema
  *  - non-canonical-graph-array (warning)
  *  - parse-zero-keys (warning)
  *  - malformed-frontmatter-line (error)
+ *  - malformed-quoted-scalar (error)
  *  - dangling-graph-reference (warning) — whole-vault graph validation
  *
  * @param {string} raw
@@ -47,6 +48,10 @@ export const VAULT_ISSUE_CODE_VALUES = Object.freeze([
   'unclosed-frontmatter',
   'parse-zero-keys',
   'malformed-frontmatter-line',
+  // A scalar whose opening quote never closes as the last character. The parser
+  // keeps the quote as literal text, so the value renders wrong in every reader
+  // while nothing else fails (found in this repository's own vault, 2026-08-31).
+  'malformed-quoted-scalar',
   'missing-kind',
   'empty-kind',
   'unknown-kind',
@@ -266,9 +271,18 @@ function pushSwallowedRelationNoteIssues(frontmatter, issues) {
   }
 }
 
+/**
+ * Parser diagnostics that are vault issues in their own right. Both mean the
+ * author wrote frontmatter the reader cannot honour, so both are errors.
+ */
+const SURFACED_DIAGNOSTIC_CODES = new Set([
+  'malformed-frontmatter-line',
+  'malformed-quoted-scalar',
+]);
+
 function pushFrontmatterDiagnostics(diagnostics, issues) {
   for (const diagnostic of diagnostics) {
-    if (!diagnostic || diagnostic.code !== 'malformed-frontmatter-line') continue;
+    if (!diagnostic || !SURFACED_DIAGNOSTIC_CODES.has(diagnostic.code)) continue;
     issues.push({
       code: diagnostic.code,
       severity: 'error',

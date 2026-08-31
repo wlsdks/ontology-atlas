@@ -2,7 +2,7 @@
 
 import { Fragment, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, Check, Copy, Info, Loader2 } from "lucide-react";
+import { ArrowUpRight, Check, CircleAlert, Copy, Info, Loader2 } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { AGENT_GRAPH_WORKFLOW_HREF, type AgentServerAvailability } from "@/shared/config";
@@ -146,8 +146,16 @@ export function AgentClientButtons({
     try {
       await onWriteConfigs(CLIENT_TO_ID[id]);
       setState(id, "done");
-    } catch {
+    } catch (error) {
+      /*
+       * ⚠️ **A swallowed write failure looked exactly like never having pressed** (census state
+       * 5e, 2026-08-31). This caught with no binding and `failed` had no render branch, so a
+       * refused write left the button in its resting label with nothing said anywhere. The
+       * button now says it failed, and the panel that owns the write (`onWriteConfigs`) owns the
+       * sentence naming the file and the cause — one fact, said once in each place it belongs.
+       */
       setState(id, "failed");
+      console.error("Writing the agent config failed", error);
     }
   }
 
@@ -488,13 +496,19 @@ function ClientAction({
   busyLabel?: string;
   onClick: () => void;
 }) {
+  const t = useTranslations("agentConnect");
   const isDone = feedback === "done";
   const isCopied = feedback === "copied";
   const isBusy = feedback === "busy";
+  // A failure is a state of this control, so it is said on this control. One sentence serves
+  // every action here: what did not happen is already in the label beside it.
+  const isFailed = feedback === "failed";
   const shownIcon = isBusy ? (
     <Loader2 size={ICON_SIZE.md} aria-hidden className="animate-spin" />
   ) : isDone || isCopied ? (
     <Check size={ICON_SIZE.md} aria-hidden />
+  ) : isFailed ? (
+    <CircleAlert size={ICON_SIZE.md} aria-hidden />
   ) : (
     icon
   );
@@ -504,7 +518,9 @@ function ClientAction({
       ? (doneLabel ?? label)
       : isCopied
         ? (copiedLabel ?? label)
-        : label;
+        : isFailed
+          ? t("actionFailed")
+          : label;
   return (
     <Button
       type="button"

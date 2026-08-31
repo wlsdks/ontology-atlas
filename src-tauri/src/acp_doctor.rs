@@ -227,7 +227,7 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
 fn finish(mut out: Vec<AcpCheck>) -> Vec<AcpCheck> {
     debug_assert!(
         out.iter().all(|check| CHECK_IDS.contains(&check.id)),
-        "등재되지 않은 검사 id 를 돌려줬다"
+        "returned a check id that is not on the list"
     );
 
     // When a prerequisite is blocked, the later ones **are not claimed fixable.**

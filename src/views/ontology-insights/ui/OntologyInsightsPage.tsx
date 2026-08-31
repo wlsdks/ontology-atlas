@@ -10,12 +10,8 @@ import {
   buildEdgeTypeRows,
   buildInsightsReturnMarker,
   buildTopologyMeaningEditorNodeHref,
-  buildOntologyHealthActionTarget,
-  buildOntologyHealthSignals,
   buildOntologyNodeHref,
-  classifyRelationQuality,
   isEvidenceOnlyConcept,
-  summarizeAgentReadiness,
   useEdgeTypeLabel,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
@@ -33,6 +29,7 @@ import {
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
+import type { VaultDocumentIssue } from "@/shared/lib/validate-vault-document";
 import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
@@ -61,7 +58,7 @@ import { resolveSessionAbilities } from "../lib/session-abilities";
 import type { QueueSectionKey } from "../lib/queue-work-groups";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
 import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
-import { countRecentEntries } from "@/shared/lib/agent-activity-log";
+import { buildBlockedDocumentRows, countBlockedDocuments } from "../lib/fix-list";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import {
@@ -71,7 +68,6 @@ import {
 import { computeCensusHealth, computeInsightsCensus } from "../lib/census-health";
 import { buildVaultHealthRepair } from "../lib/vault-health-repair";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
-import { formatDigestTime } from "../lib/digest-time";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
 import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
@@ -128,6 +124,28 @@ const DUPLICATE_DISPLAY_LIMIT = 3;
  * caption states.
  */
 const DUPLICATE_DISCLOSURE_LIMIT = 24;
+/**
+ * How many rows of one kind the "to do" list shows.
+ *
+ * Three is the ceiling that keeps the tab inside the scroll contract (at most 1.3× the viewport)
+ * whatever the folder's size. The heading states the full scale and one truncation line at the
+ * bottom states what is not drawn, so nothing is hidden without saying so.
+ */
+const DO_NEXT_PER_KIND_LIMIT = 3;
+/**
+ * The validation codes that have a plain sentence of their own. An unlisted code falls back to
+ * `blockedReason.other`, so a blocked row always says something rather than nothing.
+ */
+const BLOCKED_REASON_KEYS: ReadonlySet<VaultDocumentIssue["code"]> = new Set([
+  "unclosed-frontmatter",
+  "malformed-frontmatter-line",
+  "malformed-quoted-scalar",
+  "empty-kind",
+  "missing-uid",
+  "invalid-uid",
+  "invalid-merged-uids",
+  "duplicate-uid",
+]);
 const RECENT_UPDATES_LIMIT = 8;
 /**
  * How many rows the "recently updated" evidence layer expands to.
@@ -289,53 +307,35 @@ export function OntologyInsightsPage() {
 
   const edgeTypeDist = useMemo(() => computeEdgeTypeDistribution(edges), [edges]);
   const edgeTypeRows = useMemo(() => buildEdgeTypeRows(edgeTypeDist), [edgeTypeDist]);
-  // Readiness counts relation quality **and validation errors** together. Counting
-  // only edges made the meter 100% indigo even in a folder with five errors (the
-  // risk segment measured 0px) — the single element on screen that speaks in colour
-  // was saying exactly the opposite. A document that fails validation either never
-  // becomes a node or collides on identity, so an agent cannot use it.
+  /*
+   * Frontmatter validation, read through the **same** `summarizeVaultValidation` the settings
+   * sheet uses. It used to feed a readiness meter that said "5 blocked" and named none of them;
+   * with the one-list "to do" tab each blocked document is a row that names itself and links to
+   * the file. A document that fails validation either never becomes a node or collides on
+   * identity, so an agent cannot use it at all — which is why it counts on the blocking side of
+   * the single verdict.
+   */
   const vaultValidation = useVaultValidationSummary();
-  const agentReadiness = useMemo(() => {
-    const counts = { strong: 0, supported: 0, weak: 0, review: 0 };
-    for (const edge of edges) {
-      counts[classifyRelationQuality(edge)] += 1;
-    }
-    return summarizeAgentReadiness(counts, vaultValidation.errorCount);
-  }, [edges, vaultValidation.errorCount]);
+  const blockedDocuments = useMemo(
+    () => buildBlockedDocumentRows(vaultValidation, DO_NEXT_PER_KIND_LIMIT),
+    [vaultValidation],
+  );
+  const blockedDocumentCount = useMemo(
+    () => countBlockedDocuments(vaultValidation),
+    [vaultValidation],
+  );
   const edgeTypeSummary = useMemo(
     () => edgeTypeRows.slice(0, 4).map((r) => ({ key: r.type, label: edgeTypeLabel(r.type), count: r.count })),
     [edgeTypeRows, edgeTypeLabel],
   );
-  // The repair queue, moved here from the map's left-rail health mode. It reuses the
-  // same entities-level functions as the map's health chip
-  // (`buildOntologyHealthSignals` / `buildOntologyHealthActionTarget`) and handles
-  // only ontology-graph-level signals computed from the `nodes`/`edges` this page
-  // already holds. The project-level stale/orphan detection behind the `/projects`
-  // cards is out of scope — that is a project-entity lens reading a different source.
-  const healthSignals = useMemo(() => buildOntologyHealthSignals(nodes, edges), [nodes, edges]);
-  // CLI-parity health verdict (disconnected islands · missing domain containment)
-  // read from the raw frontmatter, so the repair queue agrees with
-  // `node $ATLAS/cli/src/index.mjs health` instead of falsely claiming there is nothing to repair.
+  // CLI-parity health verdict (disconnected islands · missing domain containment) read from the
+  // raw frontmatter, so the screen agrees with `node $ATLAS/cli/src/index.mjs health` instead of
+  // falsely claiming there is nothing to repair. These used to be two counters in a band; they are
+  // rows in the one list now, and the counts still feed the single verdict.
   const vaultHealth = useVaultHealth();
   const healthRepair = useMemo(
     () => buildVaultHealthRepair(vaultHealth, nodes),
     [vaultHealth, nodes],
-  );
-  const healthQueue = useMemo(
-    () => ({
-      staleCount: healthSignals.stale.length,
-      orphanCount: healthSignals.orphan.length,
-      promotionCount: healthSignals.promotion.length,
-      islandCount: healthRepair.islandCount,
-      missingContainmentCount: healthRepair.missingContainmentCount,
-      // CLI-parity issues rank above the statistical stale/orphan/promotion
-      // signals — they're what flip the CLI to needs_attention.
-      actionTarget: healthRepair.actionTarget ?? buildOntologyHealthActionTarget(healthSignals),
-      actionTargets: healthRepair.actionTargets,
-      builderHref: buildTopologyMeaningEditorNodeHref,
-      ontologyHref: mapNodeHref,
-    }),
-    [healthSignals, healthRepair, mapNodeHref],
   );
 
   // `computeDomainCouplingMatrix` existed with unit tests but had no UI consumer —
@@ -395,24 +395,6 @@ export function OntologyInsightsPage() {
     [nodes, edges, docFreshnessIndex],
   );
 
-  // The activity digest reads the local vault's audit log tail (null in static mode).
-  // The reference time is a mount snapshot — no `Date.now` during render.
-  const [digestNowMs] = useState(() => Date.now());
-  const activityDigest = useMemo(() => {
-    const log = vault.agentActivityLog ?? [];
-    if (log.length === 0) return null;
-    const latest = log.slice(-3).reverse().map((entry) => ({
-      at: entry.at,
-      summary: entry.summary,
-      agent: entry.agent,
-  // `add_relation`'s `--why` was already stored in activity.jsonl but appeared on no
-  // UI surface at all — users were asked to write a rationale with nowhere to read it.
-  // The digest card shows it truncated beside the summary.
-      why: entry.why,
-    }));
-    return { todayCount: countRecentEntries(log, digestNowMs), latest };
-  }, [vault.agentActivityLog, digestNowMs]);
-
   // The "to do" queue is a combination of already-loaded derivations (health signals,
   // degree, freshness).
   //
@@ -422,7 +404,7 @@ export function OntologyInsightsPage() {
   // lost; the full list is carried by the handoff payload rather than the screen
   // (the tab ≤ 1.3× viewport contract).
   const doNextQueue = useMemo(
-    () => buildDoNextQueue(nodes, edges, docFreshnessIndex, { perKindLimit: 3 }),
+    () => buildDoNextQueue(nodes, edges, docFreshnessIndex, { perKindLimit: DO_NEXT_PER_KIND_LIMIT }),
     [nodes, edges, docFreshnessIndex],
   );
 
@@ -450,7 +432,7 @@ export function OntologyInsightsPage() {
   // document never appears here.
   const conceptFacts = useVaultConceptFacts();
   const meaningGapResult = useMemo(
-    () => buildMeaningGapRows(nodes, conceptFacts, { perKindLimit: 3 }),
+    () => buildMeaningGapRows(nodes, conceptFacts, { perKindLimit: DO_NEXT_PER_KIND_LIMIT }),
     [nodes, conceptFacts],
   );
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
@@ -513,7 +495,7 @@ export function OntologyInsightsPage() {
    * through the same builder as every other map-bound link and keeps the return
    * marker, so the way back is never cut.
    */
-  const askAgentHref = (nodeId: string, gap: MeaningGapKind): string | null =>
+  const askAgentHref = (nodeId: string, gap: MeaningGapKind | "missing-relations"): string | null =>
     // The agent surface exists only in the desktop app; this item is not emitted in a
     // browser. A link that goes somewhere and does nothing is a betrayal, not guidance.
     isLlmChatBridgeAvailable()
@@ -662,9 +644,10 @@ export function OntologyInsightsPage() {
       buildInsightsVerdict({
         islands: healthRepair.islandCount,
         missingContainment: healthRepair.missingContainmentCount,
+        blockedDocuments: blockedDocumentCount,
         sections: queueSectionTotals,
       }),
-    [healthRepair, queueSectionTotals],
+    [healthRepair, blockedDocumentCount, queueSectionTotals],
   );
   const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
     totalNodes,
@@ -760,73 +743,36 @@ export function OntologyInsightsPage() {
       t("domainCouplingGridSelfAria", { domain, count }),
   };
   const doNextLabels = {
-    agentReadinessTitle: t("agentReadinessTitle"),
-    agentReadinessHint: t("agentReadinessHint"),
-    agentReadinessReady: t("agentReadinessReady"),
-    agentReadinessPreflight: t("agentReadinessPreflight"),
-    agentReadinessReview: t("agentReadinessReview"),
-    agentReadinessBlocked: t("agentReadinessBlocked"),
-    agentReadinessBlockedBreakdown: (documents: number, relations: number) =>
-      t("agentReadinessBlockedBreakdown", { documents, relations }),
-    repairQueueTitle: t("repairQueueTitle"),
-    repairQueueStale: t("repairQueueStale"),
-    repairQueueOrphan: t("repairQueueOrphan"),
-    repairQueuePromotion: t("repairQueuePromotion"),
-    repairQueueIsland: t("repairQueueIsland"),
-    repairQueueMissingContainment: t("repairQueueMissingContainment"),
-    repairQueueEmpty: t("repairQueueEmpty"),
-    repairQueueActionKindStale: t("repairQueueActionKindStale"),
-    repairQueueActionKindOrphan: t("repairQueueActionKindOrphan"),
-    repairQueueActionKindPromotion: t("repairQueueActionKindPromotion"),
-    repairQueueActionKindIsland: t("repairQueueActionKindIsland"),
-    repairQueueActionKindContainment: t("repairQueueActionKindContainment"),
-    repairQueueOpenBuilder: t("repairQueueOpenBuilder"),
-    repairQueueOpenOntology: t("repairQueueOpenOntology"),
-    repairQueueRestShow: (count: number) => t("repairQueueRestShow", { count }),
-    repairQueueRestHide: t("repairQueueRestHide"),
-    queueTitle: t("doNext.queueTitle"),
-    sectionNeglectedHub: t("doNext.sectionNeglectedHub"),
-    sectionOrphan: t("doNext.sectionOrphan"),
-    sectionPromotion: t("doNext.sectionPromotion"),
-    sectionCycle: t("doNext.sectionCycle"),
-    sectionDuplicate: t("doNext.sectionDuplicate"),
-    hintDuplicate: t("doNext.hintDuplicate"),
-    duplicateMetric: (percent: number) => t("doNext.duplicateMetric", { percent }),
-    duplicateRestShow: (count: number) => t("doNext.duplicateRestShow", { count }),
-    duplicateRestHide: t("doNext.duplicateRestHide"),
-    duplicateTruncated: (shown: number, total: number) =>
-      t("doNext.duplicateTruncated", { shown, total }),
-    hintNeglectedHub: t("doNext.hintNeglectedHub"),
-    hintOrphan: t("doNext.hintOrphan"),
-    hintPromotion: t("doNext.hintPromotion"),
-    promotionMetric: (count: number) => t("doNext.promotionMetric", { count }),
+    listTitle: (count: number) => t("doNext.listTitle", { count }),
+    moreCount: (count: number) => t("doNext.moreCount", { count }),
+    emptyQueue: t("doNext.emptyQueue"),
+    readOnlyHint: t("doNext.groupMeaningHintReadOnly"),
+    openDocument: t("doNext.openDocument"),
+    fixHere: t("doNext.fixHere"),
+    viewOnMap: t("doNext.viewOnMap"),
+    whyNeglectedHub: (degree: number, agoDays: number) =>
+      t("doNext.touchUpWhyNeglectedHub", { degree, days: agoDays }),
+    whyOrphan: t("doNext.whyOrphan"),
+    whyPromotion: (count: number) => t("doNext.touchUpWhyPromotion", { count }),
+    whyCycle: (length: number) => t("doNext.touchUpWhyCycle", { length }),
+    whyDuplicate: (percent: number) => t("doNext.whyDuplicate", { percent }),
+    whyMissingDefinition: t("doNext.whyMissingDefinition"),
+    whyMissingDomain: t("doNext.whyMissingDomain"),
+    whyIsland: t("doNext.whyIsland"),
+    whyContainment: t("doNext.whyContainment"),
+    whyBlockedDocument: (reason: string) => t("doNext.whyBlockedDocument", { reason }),
+    // An unlisted code still gets a sentence. Silence on a row that says "your AI cannot read
+    // this" would be the one place a reader most needs a reason.
+    blockedReason: (code: VaultDocumentIssue["code"]) =>
+      BLOCKED_REASON_KEYS.has(code)
+        ? t(`doNext.blockedReason.${code}` as "doNext.blockedReason.other")
+        : t("doNext.blockedReason.other"),
     cycleMoreNodes: (count: number) => t("doNext.cycleMoreNodes", { count }),
-    neglectedHubMetric: (degree: number, agoDays: number) =>
-      t("doNext.neglectedHubMetric", { degree, days: agoDays }),
-    cycleMetric: (length: number) => t("doNext.cycleMetric", { length }),
-    openMap: t("doNext.openMap"),
     openSource: t("doNext.openSource"),
     openBuilder: t("doNext.openBuilder"),
     handoffCopy: t("doNext.handoffCopy"),
     handoffCopied: t("agentCopied"),
     handoffCopyFailed: t("agentCopyFailed"),
-    emptyQueue: t("doNext.emptyQueue"),
-    moreCount: (count: number) => t("doNext.moreCount", { count }),
-    digestTitle: t("doNext.digestTitle"),
-    digestToday: (count: number) => t("doNext.digestToday", { count }),
-    digestScope: (shown: number, today: number) => t("doNext.digestScope", { shown, today }),
-    digestWhen: (iso: string) =>
-      formatDigestTime(iso, {
-        justNow: t("doNext.digestJustNow"),
-        minutes: (count: number) => t("doNext.digestMinutesAgo", { count }),
-        hours: (count: number) => t("doNext.digestHoursAgo", { count }),
-        days: (count: number) => t("doNext.digestDaysAgo", { count }),
-      }),
-    digestApproveHint: t("doNext.digestApproveHint"),
-    digestWhyPrefix: t("doNext.digestWhyPrefix"),
-    touchUpBandTitle: t("doNext.touchUpBandTitle"),
-    touchUpPriorityCount: (count: number) => t("doNext.touchUpPriorityCount", { count }),
-    touchUpFlowHint: t("doNext.touchUpFlowHint"),
     rowMenuTrigger: t("doNext.rowMenuTrigger"),
     askAgent: t("doNext.askAgent"),
     reviewChecking: (title: string | null) =>
@@ -842,12 +788,6 @@ export function OntologyInsightsPage() {
     openBuilderReadOnly: t("doNext.openBuilderReadOnly"),
     handoffCopyIdle: t("doNext.handoffCopyIdle"),
     handoffCopiedHint: t("doNext.handoffCopiedHint"),
-    groupMeaningTitle: t("doNext.groupMeaningTitle"),
-    groupMeaningTitleReadOnly: t("doNext.groupMeaningTitleReadOnly"),
-    groupMeaningHint: t("doNext.groupMeaningHint"),
-    groupMeaningHintReadOnly: t("doNext.groupMeaningHintReadOnly"),
-    groupCodeTitle: t("doNext.groupCodeTitle"),
-    groupCodeHint: t("doNext.groupCodeHint"),
   };
   // Copy for the inline write sections — the action labels (kebab, handoff) use the
   // **same keys** as the queue. Calling one action by different names per surface makes
@@ -863,8 +803,8 @@ export function OntologyInsightsPage() {
     handoffCopiedHint: doNextLabels.handoffCopiedHint,
     rowMenuTrigger: doNextLabels.rowMenuTrigger,
     askAgent: doNextLabels.askAgent,
-    openMap: doNextLabels.openMap,
-    writeHere: t("doNext.inlineWriteHere"),
+    fixHere: doNextLabels.fixHere,
+    viewOnMap: doNextLabels.viewOnMap,
     writeHereClose: t("doNext.inlineWriteHereClose"),
     definitionPlaceholder: t("doNext.inlineDefinitionPlaceholder"),
     domainLegend: t("doNext.inlineDomainLegend"),
@@ -880,18 +820,11 @@ export function OntologyInsightsPage() {
     conflict: t("doNext.inlineConflict"),
     needsText: t("doNext.inlineNeedsText"),
     needsDomain: t("doNext.inlineNeedsDomain"),
-    readOnlyHint: t("doNext.inlineReadOnlyHint"),
   };
-  const meaningGapDefinitionLabels: MeaningGapLabels = {
-    ...meaningGapCommon,
-    sectionTitle: t("doNext.sectionMissingDefinition"),
-    hint: t("doNext.hintMissingDefinition"),
-  };
-  const meaningGapDomainLabels: MeaningGapLabels = {
-    ...meaningGapCommon,
-    sectionTitle: t("doNext.sectionMissingDomain"),
-    hint: t("doNext.hintMissingDomain"),
-  };
+  // Both gap kinds share every label: with one list there is no per-kind heading or hint left to
+  // differ, and the row's sentence is passed to the component rather than carried in `labels`.
+  const meaningGapDefinitionLabels: MeaningGapLabels = meaningGapCommon;
+  const meaningGapDomainLabels: MeaningGapLabels = meaningGapCommon;
   const formatDaysAgo = (days: number) => {
     if (days <= 0) return t("daysAgoToday");
     if (days < 7) return t("daysAgoDays", { count: days });
@@ -1076,37 +1009,35 @@ export function OntologyInsightsPage() {
           >
             {tab === "do-next" ? (
               <DoNextTab
+                totalCount={insightsVerdict.total}
                 queue={doNextQueue}
                 touchUps={doNextTouchUps}
                 cycles={dependencyCycles}
                 duplicates={duplicates.rows}
-                duplicateRest={duplicates.restRows}
-                duplicateTotal={duplicates.suspectCount}
                 duplicateHandoff={duplicateHandoff}
-                agentReadiness={agentReadiness}
-                healthQueue={healthQueue}
+                blockedDocuments={blockedDocuments}
+                docHref={(slug) => buildDocsVaultHref({ slug })}
+                repairTargets={healthRepair.actionTargets}
                 mapHref={mapNodeHref}
                 sourceHref={sourceHref}
                 builderHref={builderHref}
                 askAgentHref={askAgentHref}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
-                activityDigest={activityDigest}
                 reviewState={reviewState}
                 onReviewStart={onReviewStart}
                 abilities={abilities}
                 meaningGaps={{
                   definitionRows: meaningGapResult.definitionRows,
                   domainRows: meaningGapResult.domainRows,
-                  counts: meaningGapResult.counts,
                   domainChoices,
                   onWrite: writeMeaningGap,
                   definitionLabels: meaningGapDefinitionLabels,
                   domainLabels: meaningGapDomainLabels,
                 }}
                 labels={doNextLabels}
-          // The read-only group heading says *"if you open your folder …"*, so the control that
-          // does that is placed in the same box (2026-08-07, a dead-end CTA).
+                // The read-only line says *"open your folder and you can finish these here"*, so
+                // the control that does that sits in the same box (2026-08-07, a dead-end CTA).
                 openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
               />
             ) : null}
@@ -1229,6 +1160,14 @@ export function OntologyInsightsPage() {
           </div>
         )}
 
+        {/*
+          * **Not on the "to do" tab** (owner decision, 2026-08-31). That tab now offers the agent
+          * per row, with the sentence already written; a second, tab-wide "hand this to an AI"
+          * band under it repeated the offer and was the last of the three ways the same work was
+          * shown. Every other tab answers a question rather than listing work, so the row still
+          * belongs there.
+          */}
+        {tab === "do-next" ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}
@@ -1236,6 +1175,7 @@ export function OntologyInsightsPage() {
           copyLabel={t("handoffCopy")}
           copiedLabel={t("agentCopied")}
         />
+        )}
         </main>
       </div>
     </div>

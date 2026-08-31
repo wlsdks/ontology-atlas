@@ -45,12 +45,12 @@ async function loadMigration(id) {
   const found = all.find((m) => m.id === id);
   if (!found) {
     throw new Error(
-      `migration "${id}" 없음. 사용 가능: ${all.map((m) => m.id).join(", ")}`,
+      `migration "${id}" not found. Available: ${all.map((m) => m.id).join(", ")}`,
     );
   }
   const mod = await import(found.path);
   if (typeof mod.migrate !== "function") {
-    throw new Error(`migration "${id}" 가 \`migrate\` 함수를 export 하지 않음.`);
+    throw new Error(`migration "${id}" does not export a \`migrate\` function.`);
   }
   return mod;
 }
@@ -84,7 +84,7 @@ function parseArgs(argv) {
     else if (a === "--force") args.force = true;
     else if (a === "--vault") args.vault = path.resolve(process.cwd(), argv[++i]);
     else if (!a.startsWith("--") && !args.id) args.id = a;
-    else throw new Error(`알 수 없는 인자: ${a}`);
+    else throw new Error(`Unknown argument: ${a}`);
   }
   return args;
 }
@@ -123,27 +123,27 @@ async function main() {
   const args = parseArgs(process.argv);
 
   if (args.help) {
-    console.log(`사용: pnpm vault:migrate <id> [options]
+    console.log(`Usage: pnpm vault:migrate <id> [options]
 
-옵션:
-  --list          등록된 migration 목록
-  --vault <dir>   대상 vault (기본: docs/ontology)
-  --write         dry-run 결과를 디스크에 기록
-  --force         commit 안 된 Markdown 보호를 의식적으로 우회
-  --help, -h      이 도움말`);
+Options:
+  --list          list the registered migrations
+  --vault <dir>   target vault (default: docs/ontology)
+  --write         write the dry-run result to disk
+  --force         deliberately bypass the uncommitted-Markdown guard
+  --help, -h      this help`);
     return;
   }
 
   if (args.list || (!args.id && !args.list)) {
     const all = await listMigrations();
     if (all.length === 0) {
-      console.log("[migrate-vault] 등록된 마이그레이션 없음.");
+      console.log("[migrate-vault] no migrations registered.");
       return;
     }
-    console.log("[migrate-vault] 등록된 마이그레이션:");
+    console.log("[migrate-vault] registered migrations:");
     for (const m of all) console.log(`  ${m.id}\n    ${m.description}`);
     if (!args.id) {
-      console.log("\n사용: pnpm vault:migrate <id> [--write] [--vault <dir>]");
+      console.log("\nUsage: pnpm vault:migrate <id> [--write] [--vault <dir>]");
     }
     return;
   }
@@ -156,21 +156,21 @@ async function main() {
     const { isRepo, dirtyMdFiles } = checkGitState(args.vault);
     if (isRepo && dirtyMdFiles.length > 0) {
       console.error(
-        `[migrate-vault] 거부: vault 안에 commit 안 된 .md 변경 ${dirtyMdFiles.length} 개 있음.`,
+        `[migrate-vault] refused: the vault holds ${dirtyMdFiles.length} uncommitted .md change${dirtyMdFiles.length === 1 ? "" : "s"}.`,
       );
       console.error(
-        "  마이그레이션 결과와 사용자 변경이 섞이면 rollback 어려워집니다.",
+        "  Mixing migration output with the user's own changes makes a rollback hard.",
       );
-      console.error("  dirty 파일들:");
+      console.error("  dirty files:");
       for (const f of dirtyMdFiles.slice(0, 10)) console.error(`    ${f}`);
       if (dirtyMdFiles.length > 10) {
-        console.error(`    ... 외 ${dirtyMdFiles.length - 10} 개`);
+        console.error(`    ... and ${dirtyMdFiles.length - 10} more`);
       }
       console.error("");
       console.error(
-        "  먼저 commit 하거나 stash 해서 vault 를 clean 상태로 두고 재시도.",
+        "  Commit or stash first so the vault is clean, then run this again.",
       );
-      console.error("  또는 의식적으로 강행하려면 --force 추가.");
+      console.error("  Or add --force to push through deliberately.");
       process.exit(1);
     }
   }
@@ -207,20 +207,20 @@ async function main() {
 
   const tag = args.write ? "WRITE" : "DRY-RUN";
   console.log(
-    `[migrate-vault:${tag}] ${args.id} — ${inspectedCount} 파일 / ${changedCount} 변경${
-      args.write ? " (디스크에 기록됨)" : " (디스크에 변경 없음)"
+    `[migrate-vault:${tag}] ${args.id} — ${inspectedCount} files / ${changedCount} changed${
+      args.write ? " (written to disk)" : " (nothing written to disk)"
     }`,
   );
 
   if (!args.write && previews.length > 0) {
-    console.log(`\n변경 예정 파일 (${previews.length}):`);
+    console.log(`\nFiles that would change (${previews.length}):`);
     for (const p of previews.slice(0, 20)) console.log(`  ${p.file}`);
-    if (previews.length > 20) console.log(`  ... 외 ${previews.length - 20} 개`);
-    console.log("\n적용하려면: pnpm vault:migrate " + args.id + " --write");
+    if (previews.length > 20) console.log(`  ... and ${previews.length - 20} more`);
+    console.log("\nTo apply: pnpm vault:migrate " + args.id + " --write");
   }
 }
 
 main().catch((err) => {
-  console.error(`[migrate-vault] 실패: ${err.message}`);
+  console.error(`[migrate-vault] failed: ${err.message}`);
   process.exit(1);
 });

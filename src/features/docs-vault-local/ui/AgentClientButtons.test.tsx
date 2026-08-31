@@ -6,8 +6,8 @@
 // repair is to derive render order from that array, and this test locks that derivation as still
 // true: change the array order and the screen order must follow, and a screen that ignores the array
 // turns this red.
-import { describe, expect, it } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { AgentClientButtons } from "./AgentClientButtons";
 import { AGENT_CLIENTS } from "@/entities/vault-session";
@@ -99,5 +99,65 @@ describe("AgentClientButtons — 넷은 같은 무게다", () => {
         `${client.id} 연결 버튼에 상태 없는 글리프가 있다`,
       ).toBe(0);
     }
+  });
+});
+
+/*
+ * ⚠️ Census state 5e, 2026-08-31. `writeAndConfirm` caught with **no binding** and `failed` had no
+ * render branch, so a refused write left the button in its resting label with nothing said
+ * anywhere. What a person saw was indistinguishable from never having pressed it.
+ */
+describe("AgentClientButtons — 쓰지 못한 write 는 성공처럼 보이지 않는다", () => {
+  function renderWithWriter(onWriteConfigs: () => Promise<void>) {
+    return render(
+      <NextIntlClientProvider locale="ko" messages={ko}>
+        <AgentClientButtons
+          serverAvailability={{
+            kind: "app-bundled",
+            launch: { kind: "app-bundled", command: "/bundle/ontology-atlas-mcp", args: [] },
+            binaryPath: "/bundle/ontology-atlas-mcp",
+            reason: null,
+          }}
+          onWriteConfigs={onWriteConfigs}
+          cursorDeeplink={null}
+          mcpJsonSnippet="{}"
+          codexCommand="codex mcp add"
+          needsManualPath={false}
+        />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it("실패한 write 는 실패라고 말한다", async () => {
+    const onWriteConfigs = vi.fn(() => Promise.reject(new Error("Permission denied")));
+    renderWithWriter(onWriteConfigs);
+
+    fireEvent.click(screen.getByTestId("agent-client-claude-code"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute(
+        "data-state",
+        "failed",
+      ),
+    );
+    expect(screen.getByTestId("agent-client-claude-code")).toHaveTextContent(
+      "안 됐어요. 다시 눌러 주세요.",
+    );
+  });
+
+  it("성공한 write 만 완료 표시를 받는다", async () => {
+    const onWriteConfigs = vi.fn(() => Promise.resolve());
+    renderWithWriter(onWriteConfigs);
+
+    fireEvent.click(screen.getByTestId("agent-client-claude-code"));
+
+    // A finished write flips the control to the ready status, which is the opposite outcome from
+    // the failed branch above — the point is that the two cannot look the same any more.
+    await waitFor(() =>
+      expect(screen.getByTestId("agent-client-claude-code")).toHaveAttribute("data-state", "ready"),
+    );
+    expect(screen.getByTestId("agent-client-claude-code")).not.toHaveTextContent(
+      "안 됐어요. 다시 눌러 주세요.",
+    );
   });
 });

@@ -19,6 +19,8 @@ mod acp_doctor;
 mod managed_node;
 /// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
+/// One shape for every failure a command hands to the WebView (`<code>: <detail>`).
+mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
 mod git;
 /// BYOK connection check — verifies authentication using the keychain key and logs to the Bolt audit log.
@@ -180,11 +182,23 @@ const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 /// Type alias for the default watcher type of notify-debouncer-full — for State storage.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
 
+/// The live watcher plus the canonical root it was built for. Keeping the root beside the debouncer
+/// is what lets a repeated call for the same folder be answered without building a second FSEvents
+/// stream — the frontend effect re-runs often, and each rebuild used to tear one down on the main
+/// thread.
+struct VaultWatch {
+    root: PathBuf,
+    // Never read after it is stored: holding it *is* the behaviour, because dropping a debouncer
+    // stops the watcher.
+    #[allow(dead_code)]
+    debouncer: VaultDebouncer,
+}
+
 /// live-tauri — State keeping the vault file watcher alive for the app's lifetime. start_vault_watch
 /// must place the debouncer here so it does not drop and continues monitoring.
 #[derive(Default)]
 struct VaultWatcherState {
-    debouncer: Mutex<Option<VaultDebouncer>>,
+    watch: Mutex<Option<VaultWatch>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -2840,15 +2854,34 @@ fn schedule_show_main_window(app: AppHandle) {
 /// file changes, debounced by 500ms so one editor's burst of writes arrives as a single event.
 ///
 /// The screen listens and refreshes immediately, which is what the app has over the web surface:
-/// no five-second polling gap. The debouncer is held in `State` so it lives as long as the app —
-/// calling this again replaces and drops the previous one.
+/// no five-second polling gap. The debouncer is held in `State` so it lives as long as the app.
+///
+/// Two properties matter more than they look. The command is idempotent per canonical root: the
+/// frontend effect re-runs whenever its dependencies change, and rebuilding the watcher each time
+/// meant a fresh FSEvents stream several times a minute for one unchanged folder. And when a
+/// different root does replace the previous watcher, the old debouncer is dropped on a background
+/// thread — FSEvents teardown joins the watcher's own run loop, and doing that on the main thread
+/// is exactly the kind of blocking a UI thread must not do. The command is `async` so Tauri runs
+/// it on the async runtime rather than the main thread; the state lock is never held across an
+/// await because there is none.
 #[tauri::command]
-fn start_vault_watch(
+async fn start_vault_watch(
     app: AppHandle,
     root_path: String,
     state: State<'_, VaultWatcherState>,
 ) -> Result<(), String> {
     let canonical = canonical_root(&root_path)?;
+    let mut watch = state
+        .watch
+        .lock()
+        .map_err(|_| "vault watcher state poisoned".to_string())?;
+    if watch
+        .as_ref()
+        .is_some_and(|existing| existing.root == canonical)
+    {
+        log::debug!("vault watcher reused at {}", canonical.display());
+        return Ok(());
+    }
     let app_handle = app.clone();
     let mut debouncer = new_debouncer(
         Duration::from_millis(500),
@@ -2884,10 +2917,16 @@ fn start_vault_watch(
         .watch(&canonical, RecursiveMode::Recursive)
         .map_err(|err| err.to_string())?;
     log::info!("vault watcher started at {}", canonical.display());
-    *state
-        .debouncer
-        .lock()
-        .map_err(|_| "vault watcher state poisoned".to_string())? = Some(debouncer);
+    let previous = watch.replace(VaultWatch {
+        root: canonical,
+        debouncer,
+    });
+    drop(watch);
+    if let Some(previous) = previous {
+        // Off the calling thread on purpose: dropping a debouncer stops the FSEvents stream and
+        // joins the watcher thread, and neither has a bounded cost the UI thread can afford.
+        std::thread::spawn(move || drop(previous));
+    }
     Ok(())
 }
 
@@ -2973,7 +3012,168 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
     });
 }
 
+/// One line naming where the process died. The release binary is stripped, so a macOS crash report
+/// carries nothing but addresses; this is written before the panic unwinds and is the only record
+/// that survives.
+fn format_panic_report(thread_name: &str, location: &str, message: &str) -> String {
+    format!("panic in thread '{thread_name}' at {location}: {message}")
+}
+
+/// Installs a panic hook that records the panic in `panic.log` beside the app log and on stderr,
+/// then defers to the hook that was already installed so Rust's own default output is not lost.
+///
+/// Registered before the Tauri builder runs. It deliberately never touches the `log` facade.
+fn install_panic_logger() {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let message = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(|text| (*text).to_string())
+            .or_else(|| info.payload().downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "unknown panic payload".to_string());
+        let location = info
+            .location()
+            .map(|at| format!("{}:{}:{}", at.file(), at.line(), at.column()))
+            .unwrap_or_else(|| "unknown location".to_string());
+        let thread = std::thread::current();
+        let thread_name = thread.name().unwrap_or("unnamed").to_string();
+        let report = format_panic_report(&thread_name, &location, &message);
+        // No `log::error!` here. The logger is one of the things that can panic (fern aborts
+        // when its stderr retry fails), and a panic raised while the hook runs is a double
+        // panic, which aborts at once. On 2026-08-31 that turned a recoverable panic on a
+        // background thread into a dead app. The report goes to its own file in the log
+        // directory and to stderr, both through calls that cannot panic.
+        append_panic_report_file(&report);
+        // `writeln!`, not `eprintln!`. `eprintln!` panics when the write fails, and a panic
+        // raised inside a panic hook is a double panic, which aborts immediately — losing both
+        // the report this hook exists to leave behind and the original panic's own unwinding.
+        // A packaged `.app` launched from Finder inherits a stderr pipe it does not own, so a
+        // closed pipe is a real state, not a hypothetical one.
+        let _ = writeln!(std::io::stderr(), "{report}");
+        previous(info);
+    }));
+}
+
+/// A stderr writer that never reports an error. fern turns a failed stderr write into a panic,
+/// and the process that spawned this app may close its end of the pipe at any time; a log line
+/// nobody is reading is not worth the app.
+struct QuietStderr;
+
+impl Write for QuietStderr {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let _ = std::io::stderr().write_all(buf);
+        Ok(buf.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        let _ = std::io::stderr().flush();
+        Ok(())
+    }
+}
+
+/// The file the panic hook appends to before the log plugin exists. Same directory the log
+/// plugin uses on macOS, so a person collecting evidence opens one folder.
+#[cfg(target_os = "macos")]
+fn panic_report_path() -> Option<PathBuf> {
+    let home = std::env::var_os("HOME")?;
+    Some(
+        PathBuf::from(home)
+            .join("Library")
+            .join("Logs")
+            .join("dev.jinan.ontology-atlas")
+            .join("panic.log"),
+    )
+}
+
+#[cfg(not(target_os = "macos"))]
+fn panic_report_path() -> Option<PathBuf> {
+    None
+}
+
+fn append_panic_report_file(report: &str) {
+    let Some(path) = panic_report_path() else {
+        return;
+    };
+    if let Some(parent) = path.parent() {
+        let _ = std::fs::create_dir_all(parent);
+    }
+    if let Ok(mut file) = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+    {
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        let _ = writeln!(file, "[unix {stamp}] {report}");
+    }
+}
+
+/// A WebView failure the page could not recover from, forwarded by the root layout's error
+/// listener so it lands in the same log file as native failures. Without this a React render
+/// crash or an unhandled promise rejection left no trace outside the WebView console, which a
+/// shipped `.app` never shows. Bounded so a runaway page cannot fill the log.
+#[tauri::command]
+async fn log_webview_error(
+    message: String,
+    source: Option<String>,
+    line: Option<u32>,
+    column: Option<u32>,
+    stack: Option<String>,
+    kind: String,
+) -> Result<(), String> {
+    let report = format_webview_error_report(
+        &message,
+        source.as_deref(),
+        line,
+        column,
+        stack.as_deref(),
+        &kind,
+    );
+    log::error!("{report}");
+    Ok(())
+}
+
+fn format_webview_error_report(
+    message: &str,
+    source: Option<&str>,
+    line: Option<u32>,
+    column: Option<u32>,
+    stack: Option<&str>,
+    kind: &str,
+) -> String {
+    fn clip(text: &str, max: usize) -> String {
+        if text.chars().count() <= max {
+            return text.to_string();
+        }
+        let head: String = text.chars().take(max).collect();
+        format!("{head}… (clipped)")
+    }
+    let kind = match kind {
+        "error" | "unhandledrejection" | "render" => kind,
+        _ => "unknown",
+    };
+    let mut report = format!("webview {kind}: {}", clip(message, 2_000));
+    if let Some(source) = source.filter(|s| !s.is_empty()) {
+        report.push_str(&format!(" at {}", clip(source, 512)));
+        if let Some(line) = line {
+            report.push_str(&format!(":{line}"));
+            if let Some(column) = column {
+                report.push_str(&format!(":{column}"));
+            }
+        }
+    }
+    if let Some(stack) = stack.filter(|s| !s.is_empty()) {
+        report.push('\n');
+        report.push_str(&clip(stack, 8_000));
+    }
+    report
+}
+
 pub fn run() {
+    install_panic_logger();
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();
     let isolated_window_count =
@@ -3035,9 +3235,22 @@ pub fn run() {
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("ontology-atlas".to_string()),
                     }),
-                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stderr),
+                    // Not `TargetKind::Stderr`. fern's stderr output panics when a write fails
+                    // (`backup_logging`: it retries the error on stderr and panics if that fails
+                    // too), and a harness that spawns the app with a piped stderr and then exits
+                    // leaves exactly that: every later log line hits EPIPE and the panic aborts
+                    // the app. Symbolicated on 2026-08-31 against the retained dSYM; it was the
+                    // shape of all five SIGABRT reports since rc.16. This writer drops what it
+                    // cannot deliver.
+                    tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Dispatch(
+                        tauri_plugin_log::fern::Dispatch::new()
+                            .chain(Box::new(QuietStderr) as Box<dyn Write + Send>),
+                    )),
                 ])
                 .level(log::LevelFilter::Info)
+                // A crash report is named in local time and the log was written in UTC, so matching
+                // one to the other meant converting timestamps by hand before reading a single line.
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .max_file_size(APP_LOG_MAX_FILE_BYTES)
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
                 .build(),
@@ -3246,6 +3459,7 @@ pub fn run() {
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
             start_vault_watch,
+            log_webview_error,
             secrets::secret_set,
             secrets::secret_status,
             secrets::secret_clear,
@@ -4653,6 +4867,57 @@ mod window_geometry_tests {
             result.geometry.y + result.geometry.height
                 <= REFERENCE_14_INCH.y + REFERENCE_14_INCH.height,
             "a recentred window must not hang off the bottom"
+        );
+    }
+}
+
+#[cfg(test)]
+mod webview_error_report_tests {
+    use super::format_webview_error_report;
+
+    #[test]
+    fn report_names_kind_location_and_stack() {
+        let report = format_webview_error_report(
+            "boom",
+            Some("http://tauri.localhost/app.js"),
+            Some(12),
+            Some(5),
+            Some("Error: boom\n  at f"),
+            "render",
+        );
+        assert_eq!(
+            report,
+            "webview render: boom at http://tauri.localhost/app.js:12:5\nError: boom\n  at f"
+        );
+    }
+
+    #[test]
+    fn report_clips_runaway_text_and_unknown_kinds() {
+        let long = "x".repeat(3_000);
+        let report = format_webview_error_report(&long, None, None, None, None, "weird");
+        assert!(report.starts_with("webview unknown: "));
+        assert!(report.ends_with("… (clipped)"));
+        assert!(report.chars().count() < 2_100);
+    }
+}
+
+#[cfg(test)]
+mod panic_report_tests {
+    use super::format_panic_report;
+
+    #[test]
+    fn panic_report_names_thread_location_and_message() {
+        assert_eq!(
+            format_panic_report("main", "src/lib.rs:12:5", "index out of bounds"),
+            "panic in thread 'main' at src/lib.rs:12:5: index out of bounds"
+        );
+    }
+
+    #[test]
+    fn panic_report_keeps_the_unknown_placeholders_readable() {
+        assert_eq!(
+            format_panic_report("unnamed", "unknown location", "unknown panic payload"),
+            "panic in thread 'unnamed' at unknown location: unknown panic payload"
         );
     }
 }

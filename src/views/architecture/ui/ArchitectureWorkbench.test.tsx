@@ -498,7 +498,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     renderWithRecord(buildRecord());
     const pill = screen.getByTestId('architecture-record-pill');
     // The verdict and its accounting are one line: N violations · M edges unmapped · type-only labelled.
-    expect(pill).toHaveTextContent('Violated · 3 violations · 2 edges unmapped · 18 type-only edges');
+    expect(pill).toHaveTextContent('Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges');
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
       'Checked 2026-08-27 at commit a8df66d',
     );
@@ -506,7 +506,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     expect(screen.queryByText('Source check required')).toBeNull();
     // This surface cannot re-probe the source, and must say so instead of claiming currency.
     expect(screen.getByTestId('architecture-record-cannot-confirm')).toHaveTextContent(
-      'This screen does not re-measure. The record is a receipt from the moment it was taken.',
+      'This screen does not re-check now. The record below is the result of the last check.',
     );
   });
 
@@ -532,7 +532,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
     // Counts still ride beside the verdict even when everything is zero.
     expect(screen.getByTestId('architecture-record-pill')).toHaveTextContent(
-      'Conforms · 0 violations · 2 edges unmapped',
+      'Conforms · 0 rule violations · 2 dependencies with no assigned role',
     );
   });
 

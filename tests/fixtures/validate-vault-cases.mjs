@@ -149,4 +149,15 @@ export const VALIDATE_CASES = [
     expectedCodes: ['non-canonical-graph-array'],
     expectedOk: true,
   },
+  {
+    // Regression fixture — the exact line that stood in
+    // `docs/ontology/elements/agents-destination.md` while `vault:validate`
+    // reported "0 issues" (2026-08-31). The value renders with a stray quote,
+    // so this is an error: the document is readable but says the wrong thing.
+    name: 'quoted scalar closing early → malformed-quoted-scalar (error, ok=false)',
+    input:
+      '---\nuid: 981cd7f6-506a-4b2b-b62c-cd56896e81b0\nkind: element\ndomain: domains/agent-integration\ntitle: Agents Destination\ndisplay_ko: "에이전트" 목적지\n---\n',
+    expectedCodes: ['malformed-quoted-scalar'],
+    expectedOk: false,
+  },
 ];

@@ -63,12 +63,12 @@ const DEFAULTS = {
 export function parseArgs(argv) {
   const separator = argv.indexOf('--');
   if (separator < 0) {
-    throw new Error('run-with-retry: `--` 뒤에 실행할 명령을 적어라');
+    throw new Error('run-with-retry: put the command to run after `--`');
   }
   const flags = argv.slice(0, separator);
   const command = argv.slice(separator + 1);
   if (command.length === 0) {
-    throw new Error('run-with-retry: `--` 뒤가 비었다');
+    throw new Error('run-with-retry: nothing follows `--`');
   }
 
   const options = {
@@ -82,7 +82,7 @@ export function parseArgs(argv) {
       const raw = flag.slice(`--${name}=`.length);
       const value = Number(raw);
       if (!Number.isFinite(value) || value <= 0) {
-        throw new Error(`run-with-retry: --${name} 는 양수여야 한다 (받은 값: ${raw})`);
+        throw new Error(`run-with-retry: --${name} must be a positive number (got: ${raw})`);
       }
       return value;
     };
@@ -93,7 +93,7 @@ export function parseArgs(argv) {
     else if (flag.startsWith('--kill-grace-ms=')) options.killGraceMs = numeric('kill-grace-ms');
     else if (flag.startsWith('--backoff-ms=')) options.backoffMs = numeric('backoff-ms');
     else if (flag.startsWith('--label=')) options.label = flag.slice('--label='.length);
-    else throw new Error(`run-with-retry: 모르는 옵션 ${flag}`);
+    else throw new Error(`run-with-retry: unknown option ${flag}`);
   }
 
   return { options, command };
@@ -156,14 +156,14 @@ export async function runWithRetry(command, options) {
 
     if (result.ok) {
       if (attempt > 1) {
-        console.log(`[run-with-retry] ${options.label}: ${attempt}번째 시도에 성공 (${seconds}s)`);
+        console.log(`[run-with-retry] ${options.label}: succeeded on attempt ${attempt} (${seconds}s)`);
       }
       return { ok: true, attempts: attempt };
     }
 
-    const why = result.reason === 'timeout' ? `${options.timeoutMs}ms 안에 안 끝남` : result.reason;
+    const why = result.reason === 'timeout' ? `did not finish within ${options.timeoutMs}ms` : result.reason;
     console.log(
-      `[run-with-retry] ${options.label}: ${attempt}/${options.attempts} 실패 — ${why} (${seconds}s)`,
+      `[run-with-retry] ${options.label}: ${attempt}/${options.attempts} failed — ${why} (${seconds}s)`,
     );
 
     if (attempt < options.attempts) await sleep(options.backoffMs * attempt);
@@ -181,13 +181,13 @@ async function main() {
     // The format GitHub surfaces as an annotation. Passing silently would be
     // indistinguishable from success.
     console.log(
-      `::warning title=${options.label}::${options.attempts}번 다 실패했지만 필수 단계가 아니라 계속한다. ` +
-        `이것 때문에 다음 단계가 깨지면 그 실패 메시지가 무엇이 빠졌는지 이름을 댄다.`,
+      `::warning title=${options.label}::all ${options.attempts} attempts failed, but this is not a required step, so the run continues. ` +
+        `If the next step breaks because of it, that failure message names what is missing.`,
     );
     return 0;
   }
 
-  console.error(`[run-with-retry] ${options.label}: ${options.attempts}번 다 실패했다`);
+  console.error(`[run-with-retry] ${options.label}: all ${options.attempts} attempts failed`);
   return 1;
 }
 

@@ -562,8 +562,9 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
 
     const card = page.getByTestId("ai-connection-web-degraded");
     await expect(card).toBeVisible({ timeout: 15_000 });
-    // A rejection in principle, so a reason must stand — not "coming soon".
-    await expect(card).toContainText("XSS");
+    // A rejection in principle, so a reason must stand — not "coming soon". The reason is
+    // written in plain words now (2026-09-01): scripts from another site could take the key.
+    await expect(card).toContainText("악성 코드");
     await expect(page.getByTestId("ai-connection-download-link")).toHaveAttribute(
       "href",
       /\/download\//,

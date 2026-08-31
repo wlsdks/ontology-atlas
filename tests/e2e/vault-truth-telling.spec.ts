@@ -24,8 +24,6 @@ import { BROKEN_VAULT, HEALTHY_VAULT } from "./fixtures/broken-vault";
  * against a healthy vault to confirm the detector is not always-red.
  */
 
-const READINESS_MIN_SEGMENT_PX = 4;
-
 async function loadVault(page: Page, seed: Record<string, string>) {
   await stubDirectoryPicker(page, seed);
   await seedFirstRunSeen(page);
@@ -37,24 +35,25 @@ async function loadVault(page: Page, seed: Record<string, string>) {
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
 }
 
-/** The meter segment's measured width and background colour. The only way to catch "non-zero but 0px". */
-async function measureMeter(page: Page) {
+/**
+ * The blocked-document rows on the "to do" tab, read as text.
+ *
+ * **What replaced the meter (2026-08-31).** This measurement used to read the readiness meter's
+ * danger segment, because that was the only place a validation error reached the screen: a colour
+ * band that said "5 blocked" and named none of them. The owner's one-list decision removed the
+ * meter, and the same fact is now a row per document that names the file and says which check
+ * failed. That is strictly more truth-telling, and it is what this gate measures now.
+ */
+async function measureBlockedRows(page: Page) {
   await page.goto("/ko/ontology/insights/?tab=do-next&guides=off");
   await page.waitForLoadState("networkidle");
-  const meter = page.getByTestId("insights-agent-readiness-meter");
-  await expect(meter).toBeVisible({ timeout: 20_000 });
+  await expect(page.getByTestId("do-next-list")).toBeVisible({ timeout: 20_000 });
   return page.evaluate(() => {
-    const meterEl = document.querySelector('[data-testid="insights-agent-readiness-meter"]');
-    const card = document.querySelector('[data-testid="insights-agent-readiness"]');
-    const segments = Array.from(meterEl?.children ?? []).map((el) => ({
-      width: Math.round(el.getBoundingClientRect().width * 100) / 100,
-      background: getComputedStyle(el).backgroundColor,
-    }));
-    return {
-      segments,
-      caption: (card?.textContent ?? "").replace(/\s+/g, " ").trim(),
-      ariaLabel: card?.getAttribute("aria-label") ?? "",
-    };
+    const rows = [...document.querySelectorAll('[data-fix-kind="blocked-document"]')].map((el) =>
+      (el.textContent ?? "").replace(/\s+/g, " ").trim(),
+    );
+    const heading = document.querySelector('[data-testid="do-next-list-title"]');
+    return { rows, heading: (heading?.textContent ?? "").replace(/\s+/g, " ").trim() };
   });
 }
 
@@ -115,31 +114,31 @@ async function measureDoc(page: Page, title: string, expectFile: string) {
 }
 
 test.describe("결함 볼트 — 화면이 검사 결과를 말하는가", () => {
-  test("① 준비도 미터: 오류가 있으면 위험 세그먼트가 보인다", async ({ page }) => {
+  test("① 막힌 문서: 오류가 있으면 그 문서가 목록에서 자기 이름을 말한다", async ({ page }) => {
     await loadVault(page, BROKEN_VAULT);
-    const broken = await measureMeter(page);
-    console.log("[meter/broken]", JSON.stringify(broken));
+    const broken = await measureBlockedRows(page);
+    console.log("[blocked/broken]", JSON.stringify(broken));
 
-    const danger = broken.segments.at(-1);
-    expect(danger, "미터에 위험 세그먼트가 있어야 한다").toBeTruthy();
-    // A non-zero value must not render as 0px — at 390px wide, 1 error against 200
-    // ready would be 3px on flexGrow alone and vanish.
     expect(
-      danger!.width,
-      `오류 5건인데 위험 세그먼트 폭이 ${danger!.width}px — 가장 강한 요소가 반대로 말한다`,
-    ).toBeGreaterThanOrEqual(READINESS_MIN_SEGMENT_PX);
-    expect(broken.caption, "캡션이 막힌 수를 말해야 한다").toContain("5");
+      broken.rows.length,
+      "오류가 5건인데 「할 일」 목록에 막힌 문서가 한 줄도 없다 — 화면이 검사 결과를 말하지 않는다",
+    ).toBeGreaterThan(0);
+    // A row that says "your AI cannot read this" without saying which check failed is a colour
+    // band with words on it. Every row must carry both the file and the reason.
+    for (const row of broken.rows) {
+      expect(row, `막힌 문서 행이 파일 이름을 말하지 않는다: ${row}`).toMatch(/[a-z-]+\//);
+      expect(row.length, `막힌 문서 행에 이유가 없다: ${row}`).toBeGreaterThan(20);
+    }
   });
 
-  test("① 대조군 — 정상 볼트는 위험 세그먼트가 0px 다", async ({ page }) => {
+  test("① 대조군 — 정상 볼트에는 막힌 문서 행이 없다", async ({ page }) => {
     await loadVault(page, HEALTHY_VAULT);
-    const healthy = await measureMeter(page);
-    console.log("[meter/healthy]", JSON.stringify(healthy));
-    const danger = healthy.segments.at(-1);
+    const healthy = await measureBlockedRows(page);
+    console.log("[blocked/healthy]", JSON.stringify(healthy));
     expect(
-      danger!.width,
-      "정상 볼트에서까지 빨간 세그먼트가 뜨면 이 계기는 항상-빨강이라 쓸모없다",
-    ).toBe(0);
+      healthy.rows,
+      "정상 볼트에서까지 막힌 문서가 뜨면 이 계기는 항상-빨강이라 쓸모없다",
+    ).toEqual([]);
   });
 
   test("② 오류가 파일 옆에서 보인다 (경고만 보여 주지 않는다)", async ({ page }) => {

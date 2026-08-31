@@ -117,7 +117,9 @@ test("인사이트의 「여기서 적기」가 내 폴더의 파일을 바꾼�
    * **in place**. Without it, it is a board that only shows a list, which is what this
    * repository calls a dead-end CTA.
    */
-  const write = page.locator("button", { hasText: "여기서 적기" }).first();
+  // 2026-09-01: the one-list Do-next tab labels the inline-write toggle with the shared
+  // fix-here action word; the button still opens the same in-place editor.
+  const write = page.locator("button", { hasText: "직접 고치기" }).first();
   await expect(write, "인사이트가 뜻을 적을 자리를 주지 않는다").toBeVisible({ timeout: 30_000 });
   await write.click();
 

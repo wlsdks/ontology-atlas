@@ -92,13 +92,13 @@ test("desktop smoke titles follow current metadata and do not revive retired sur
   assert.deepEqual(DESKTOP_SMOKE_ROUTE_TITLES, {
     "en:/download": "Download · Ontology Atlas",
     "ko:/download": "다운로드 · Ontology Atlas",
-    "en:/docs": "Ontology workspace · Ontology Atlas",
-    "ko:/docs": "저장소 · Ontology Atlas",
+    "en:/docs": "Docs · Ontology Atlas",
+    "ko:/docs": "문서함 · Ontology Atlas",
     "en:/ontology": "Ontology · Ontology Atlas",
     "ko:/ontology": "온톨로지 · Ontology Atlas",
     "en:/topology": "Map · Ontology Atlas",
     "ko:/topology": "지도 · Ontology Atlas",
-    "en:/ontology/insights": "Graph Insights · Ontology Atlas",
+    "en:/ontology/insights": "My folder analysis · Ontology Atlas",
     "ko:/ontology/insights": "내 폴더 분석 · Ontology Atlas",
   });
   assert.equal(
@@ -311,7 +311,7 @@ test("desktop smoke detects stale route metadata without prescribing another bui
   write(
     outDir,
     routePath,
-    html.replace("Graph Insights · Ontology Atlas", "Verify Graph · Ontology Atlas"),
+    html.replace("My folder analysis · Ontology Atlas", "Verify Graph · Ontology Atlas"),
   );
 
   const report = evaluateDesktopSmoke({

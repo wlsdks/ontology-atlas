@@ -17,6 +17,7 @@ type VaultIssueSeverity = "error" | "warning";
 export type VaultIssueCode =
   | "unclosed-frontmatter"
   | "malformed-frontmatter-line"
+  | "malformed-quoted-scalar"
   | "empty-kind"
   | "missing-kind"
   | "unknown-kind"
@@ -166,14 +167,24 @@ export function validateVaultDocument(raw: string): VaultDocumentReport {
   return { ok: issuesHaveNoErrors(issues), issues };
 }
 
+/**
+ * Parser diagnostics that are vault issues in their own right. Both mean the
+ * author wrote frontmatter the reader cannot honour, so both are errors — the
+ * same set `mcp/src/validate.mjs` surfaces.
+ */
+const SURFACED_DIAGNOSTIC_CODES = new Set<VaultIssueCode>([
+  "malformed-frontmatter-line",
+  "malformed-quoted-scalar",
+]);
+
 function pushFrontmatterDiagnostics(
   diagnostics: ReadonlyArray<{ code: string; message: string }>,
   issues: VaultDocumentIssue[],
 ): void {
   for (const diagnostic of diagnostics) {
-    if (diagnostic.code !== "malformed-frontmatter-line") continue;
+    if (!SURFACED_DIAGNOSTIC_CODES.has(diagnostic.code as VaultIssueCode)) continue;
     issues.push({
-      code: "malformed-frontmatter-line",
+      code: diagnostic.code as VaultIssueCode,
       severity: "error",
       message: diagnostic.message,
     });
@@ -283,8 +294,19 @@ const ONTOLOGY_SIGNAL_KEYS = [
 
 export function validateVaultDocFrontmatter(
   frontmatter: Record<string, unknown>,
+  diagnostics: ReadonlyArray<{ code: string; message: string }> = [],
 ): VaultDocumentReport {
   const issues: VaultDocumentIssue[] = [];
+  /*
+   * ⚠️ **A line the parser could not read is an issue about this document** (census state 3e,
+   * 2026-08-31). `parseFrontmatter` records `malformed-frontmatter-line` and
+   * `malformed-quoted-scalar`, `build-local-manifest` keeps them on the doc, and
+   * `validateVaultDocument` (the raw-text path, used by the CLI) reports them — but this fast
+   * path never saw them, so on every screen in the app a broken line was silently dropped and
+   * the document simply lost a field with nothing said. The parse already happened; the caller
+   * passes what it produced rather than reading the file a second time.
+   */
+  pushFrontmatterDiagnostics(diagnostics, issues);
   const hasKindKey = "kind" in frontmatter;
   const rawKind = frontmatter.kind;
   const isArchitectureProfile =
@@ -295,8 +317,9 @@ export function validateVaultDocFrontmatter(
   const isOntologyIntent = hasKindKey || (hasOntologySignal && !isArchitectureProfile);
 
   if (!isOntologyIntent) {
-    // Docs-only: nothing here claims to be an ontology node, so staying quiet is correct.
-    return { ok: true, issues };
+    // Docs-only: nothing here claims to be an ontology node, so staying quiet is correct — except
+    // about a line that could not be read, which is broken whatever the file was meant to be.
+    return { ok: issuesHaveNoErrors(issues), issues };
   }
 
   if (!hasKindKey) {
@@ -376,13 +399,18 @@ export interface VaultValidationSummary {
  * gets every number a banner or chip needs in one call.
  */
 export function summarizeVaultValidation(
-  items: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
+  items: ReadonlyArray<{
+    slug: string;
+    frontmatter: Record<string, unknown>;
+    /** What the parser could not read in this document, straight from the manifest it built. */
+    diagnostics?: ReadonlyArray<{ code: string; message: string }>;
+  }>,
 ): VaultValidationSummary {
   let errorCount = 0;
   let warningCount = 0;
   const issuesBySlug: VaultValidationSummary["issuesBySlug"] = [];
   for (const item of items) {
-    const report = validateVaultDocFrontmatter(item.frontmatter);
+    const report = validateVaultDocFrontmatter(item.frontmatter, item.diagnostics);
     if (report.issues.length === 0) continue;
     issuesBySlug.push({ slug: item.slug, issues: report.issues });
     for (const issue of report.issues) {

@@ -45,5 +45,31 @@ describe('ACP suggestion prompt catalog', () => {
       expect(prompt).toContain(params.slugLabel);
       expect(prompt).toContain(params.domainLabel);
     });
+
+    it(`${locale} labels read as a request a person could send, not a bare noun phrase`, () => {
+      // 2026-08-31: the owner read "align A's membership under B" on the installed app and could not
+      // tell what pressing it would do. Every chip is the sentence the person is about to send,
+      // so it must name the observed fact and end as a request or an action.
+      const t = createTranslator({ locale, messages, namespace: 'acpChat' });
+      const params = {
+        count: 2,
+        first: 'capabilities/example',
+        firstLabel: 'Example',
+        slug: 'elements/example',
+        slugLabel: 'Example',
+        domain: 'domains/example',
+        domainLabel: 'Example domain',
+      };
+      for (const kind of ['island', 'containment', 'evidence', 'explain'] as const) {
+        const label = t(`suggest.${kind}.label`, params);
+        if (locale === 'ko') {
+          expect(label, kind).toMatch(/줘$/);
+        } else {
+          expect(label.split(/\s+/).length, kind).toBeGreaterThanOrEqual(8);
+          expect(label, kind).toMatch(/[A-Z][a-z]+ [^.]*$/);
+        }
+        expect(label, kind).not.toMatch(/맞추기$|확인하기$/);
+      }
+    });
   }
 });

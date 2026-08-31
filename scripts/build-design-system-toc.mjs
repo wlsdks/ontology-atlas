@@ -68,7 +68,7 @@ export function render(source) {
   }
   // first insertion: after the frontmatter + H1 + intro blockquote, before the first `## `
   const firstSection = source.search(/^## /m);
-  if (firstSection === -1) throw new Error('DESIGN-SYSTEM.md 에 `## ` 절이 하나도 없다');
+  if (firstSection === -1) throw new Error('DESIGN-SYSTEM.md has no `## ` section at all');
   return { next: `${source.slice(0, firstSection)}${block}\n\n${source.slice(firstSection)}`, rows };
 }
 
@@ -78,7 +78,7 @@ const { next, rows } = render(source);
 
 if (check) {
   if (next !== source) {
-    console.error('[design-toc] 목차가 헤딩과 어긋난다 — `pnpm design:toc` 로 다시 생성하라.');
+    console.error('[design-toc] the table of contents disagrees with the headings — run `pnpm design:toc` to regenerate it.');
     process.exit(1);
   }
   console.log(`[design-toc] current · ${rows.length} sections`);

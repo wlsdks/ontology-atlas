@@ -109,7 +109,9 @@ function installDesktopGit({
     replaced: null,
   },
   probe = { installed: true, version: "git version 2.49.0" },
-  fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "내 걸음 2개 · 원격 걸음 0개" },
+  // `git_fetch` answers with a code now, not a sentence: only the screen knows the
+  // reader's language, and only the screen already holds `ahead`/`behind`.
+  fetch = { ok: true, upstream: "origin/main", ahead: 2, behind: 0, summary: "remote-diverged" },
   pull = { ok: true, upstream: "origin/main", summary: "1개 받아옴" },
 }: {
   status?: unknown;
@@ -905,6 +907,16 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
     );
   });
 
+  it("fetch 가 돌려준 코드를 읽는 사람의 말로 바꿔 적는다", async () => {
+    // Rust writes no sentence. The only place that picks one knows the reader's
+    // language, and it already holds the ahead/behind counts too.
+    installDesktopGit();
+    renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
+    fireEvent.click(await screen.findByTestId("atlas-git-remote-fetch"));
+    await waitFor(() => expect(screen.getByText(/내 걸음 2개/)).toBeInTheDocument());
+    expect(screen.queryByText(/remote-diverged/)).toBeNull();
+  });
+
   it("Pull 을 누르면 git_pull 을 부른다 — 이 배선이 없던 것이 결함이었다", async () => {
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
@@ -1116,7 +1128,7 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     const ego = await screen.findByTestId("atlas-git-concept-ego");
     expect(ego).toHaveTextContent("첫 실행 안내");
     // The owning domain comes from the belongsTo neighbours — 「Belongs to」 has to be drawn.
-    expect(ego).toHaveTextContent("속한 곳");
+    expect(ego).toHaveTextContent("상위 항목");
 
     /*
      * **Withholding what you already know is an omission, not a degradation.** The
@@ -1128,7 +1140,7 @@ describe("AtlasGitPanel — 고른 개념의 성질과 이웃", () => {
     expect(ego).toHaveTextContent("첫 실행에서 볼트를 만들어 준다");
     expect(ego).toHaveTextContent("아틀라스");
     expect(ego).toHaveTextContent("capabilities/foo");
-    expect(ego).toHaveTextContent("에이전트 참조");
+    expect(ego).toHaveTextContent("AI에게 말할 때 쓰는 이름");
     expect(ego).not.toHaveTextContent("에이전트 이름");
 
     // Relations are **names, not counts** — 「1」 cannot say what the 1 is.

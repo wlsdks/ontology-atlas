@@ -192,7 +192,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     // natures. That is the direction .claude/rules/documentation.md forbids: better
     // copy blocked by the gate. The gate had written that very failure into its own
     // preamble.
-  /✓ .*(?:강등 고지|degrad).*(?:FSA|File System Access)/,
+  /✓ .*(?:demotion|degrad).*(?:FSA|File System Access)/,
   );
   assert.match(
     result.stdout,

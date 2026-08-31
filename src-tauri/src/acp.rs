@@ -249,7 +249,6 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 /// merges this env into the project entry rather than replacing it — `connection_info` still
 /// returned the vault's own path while `add_concept` was refused. `command`/`args` are placeholders
 /// the merge overrides; the project entry supplies the real launch.
-
 const ISOLATED_CODEX_CONFIG: &str = r#"approval_policy = "untrusted"
 sandbox_mode = "read-only"
 

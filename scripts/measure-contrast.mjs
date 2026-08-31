@@ -173,12 +173,12 @@ for (const route of ROUTES.length > 0 ? ROUTES : DEFAULT_ROUTES) {
 await ctx.close();
 rmSync(PROFILE, { recursive: true, force: true });
 
-console.log(`\n  텍스트 대비 — ${VIEWPORT.width}×${VIEWPORT.height} · WCAG 1.4.3 (본문 4.5:1 · 큰 글자 3:1)\n`);
+console.log(`\n  text contrast — ${VIEWPORT.width}×${VIEWPORT.height} · WCAG 1.4.3 (body 4.5:1 · large text 3:1)\n`);
 let totalFail = 0;
 for (const r of report) {
   totalFail += r.failures.length;
-  const head = `  ${r.route.padEnd(22)} 조합 ${String(r.total).padStart(3)}  미달 ${String(r.failures.length).padStart(3)}`;
-  console.log(r.unmeasured > 0 ? `${head}  ⚠️ 미측정 ${r.unmeasured}` : head);
+  const head = `  ${r.route.padEnd(22)} pairs ${String(r.total).padStart(3)}  below ${String(r.failures.length).padStart(3)}`;
+  console.log(r.unmeasured > 0 ? `${head}  ⚠️ unmeasured ${r.unmeasured}` : head);
   for (const f of r.failures) {
     console.log(
       `      ${String(f.ratio).padStart(5)}:1 < ${f.required}   ${String(f.fontSizePx) + "px"} ${f.fg} on ${f.bg}`,
@@ -186,22 +186,22 @@ for (const r of report) {
     console.log(`              ${f.selector}  «${f.sample}»`);
   }
 }
-console.log(`\n  합계 미달 ${totalFail}건\n`);
+console.log(`\n  ${totalFail} below the threshold in total\n`);
 
 // ── Adjacent data marks (WCAG 1.4.11 non-text, 3:1)
 const markTotal = report.reduce((n, r) => n + r.marks.length, 0);
 const markFail = report.reduce((n, r) => n + r.markFailures.length, 0);
 const sepTotal = report.reduce((n, r) => n + r.separated.length, 0);
 console.log(
-  `  인접 데이터 마크 — WCAG 1.4.11 (3:1) · 맞닿은 쌍 ${markTotal} · 미달 ${markFail}` +
-    `  (1px 틈으로 이미 갈린 쌍 ${sepTotal} 은 색-무관 구분자가 있어 판정 대상 아님)\n`,
+  `  adjacent data marks — WCAG 1.4.11 (3:1) · touching pairs ${markTotal} · below ${markFail}` +
+    `  (the ${sepTotal} pairs already parted by a 1px gap have a color-independent separator and are not judged here)\n`,
 );
 for (const r of report) {
   if (r.marks.length === 0 && r.separated.length === 0) continue;
-  console.log(`  ${r.route.padEnd(22)} 맞닿음 ${String(r.marks.length).padStart(3)}  미달 ${String(r.markFailures.length).padStart(3)}  틈있음 ${String(r.separated.length).padStart(3)}`);
+  console.log(`  ${r.route.padEnd(22)} touching ${String(r.marks.length).padStart(3)}  below ${String(r.markFailures.length).padStart(3)}  with a gap ${String(r.separated.length).padStart(3)}`);
   for (const m of r.markFailures) {
     console.log(`      ${String(m.ratio).padStart(5)}:1 < 3   ${m.a} ↔ ${m.b}  on ${m.over}`);
-    console.log(`              ${m.selector}  ← 색-무관 구분자(심·라벨·패턴·순서)가 있어야 한다`);
+    console.log(`              ${m.selector}  ← needs a color-independent separator (shape, label, pattern or order)`);
   }
 }
 if (markFail > 0) process.exitCode = 1;

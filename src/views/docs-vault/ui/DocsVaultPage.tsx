@@ -2234,9 +2234,22 @@ function DocsVaultContent() {
                 // `vault-root-rejected:filesystem-root`.
                 localVault.errorCode === 'root-rejected'
                 ? t('vaultStatus.rootRejectedBanner')
-                : t('vaultStatus.errorBanner', {
-                    message: localVault.errorMessage ?? '',
-                  })}
+                : /*
+                   * ⚠️ **Never interpolate a message that may not exist** (census state 1c,
+                   * 2026-08-31). `path-missing` deliberately carries a null cause, so this
+                   * printed "Workspace folder is unavailable ()." — an empty pair of brackets
+                   * where the explanation should be. On the web the opposite happened: the
+                   * browser's own English `NotFoundError` sentence filled the brackets on a
+                   * Korean screen. Each code now owns a finished sentence, and the cause string
+                   * rides along only when there actually is one.
+                   */
+                  localVault.errorCode === 'path-missing'
+                  ? t('vaultStatus.pathMissingBanner')
+                  : localVault.errorCode === 'permission-denied'
+                    ? t('vaultStatus.permissionDeniedBanner')
+                    : localVault.errorMessage
+                      ? t('vaultStatus.errorBanner', { message: localVault.errorMessage })
+                      : t('vaultStatus.unknownErrorBanner')}
           </span>
           <button
             type="button"

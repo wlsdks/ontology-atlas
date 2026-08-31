@@ -106,8 +106,8 @@ const verified = spawnSync("codesign", ["--verify", "--deep", "--strict", "--ver
 if (verified.status !== 0) {
   fail(
     `codesign --verify rejected ${appBundleName}: ${`${verified.stderr ?? ""}${verified.stdout ?? ""}`.trim()}\n` +
-      "  이 단계는 **서명 뒤에** 와야 한다 — pnpm desktop:sign 또는 pnpm desktop:sign:adhoc 다음.\n" +
-      "  깨진 번들을 다시 담으면 갱신받은 사용자는 '확인되지 않은 개발자'가 아니라 '손상되었습니다'를 만난다.",
+      "  This step must come **after signing** — right after pnpm desktop:sign or pnpm desktop:sign:adhoc.\n" +
+      "  Repacking a broken bundle means an updated user meets 'is damaged' rather than 'unidentified developer'.",
   );
 }
 

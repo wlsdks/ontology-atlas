@@ -65,7 +65,7 @@ export function resolveArchDir(root, arch) {
     .filter((name) => fs.statSync(path.join(root, name)).isDirectory());
 
   if (matches.length > 1) {
-    fail(`${arch} 에 해당하는 폴더가 ${matches.length}개다: ${matches.join(", ")} — 어느 것인지 정할 수 없다.`);
+    fail(`${matches.length} folders match ${arch}: ${matches.join(", ")} — cannot decide which one.`);
   }
   return matches.length === 1 ? path.join(root, matches[0]) : null;
 }
@@ -108,8 +108,8 @@ export function findUpdaterArtifacts(dir) {
   if (archives.length === 0) return null;
   if (archives.length > 1) {
     fail(
-      `${dir} 아래에 .app.tar.gz 가 ${archives.length}개다: ` +
-        `${archives.map((file) => path.relative(dir, file)).join(", ")} — 어느 것을 낼지 정할 수 없다.`,
+      `${dir} holds ${archives.length} .app.tar.gz files: ` +
+        `${archives.map((file) => path.relative(dir, file)).join(", ")} — cannot decide which one to ship.`,
     );
   }
   const archivePath = archives[0];
@@ -117,9 +117,9 @@ export function findUpdaterArtifacts(dir) {
   const signaturePath = `${archivePath}.sig`;
   if (!fs.existsSync(signaturePath)) {
     fail(
-      `${dir} 에 ${archive} 는 있는데 ${archive}.sig 가 없다.\n` +
-        "TAURI_SIGNING_PRIVATE_KEY 없이 빌드하면 아카이브만 나오고 서명이 빠진다 — " +
-        "그 상태로 배포하면 앱이 갱신을 거부한다(조용히 '갱신 없음' 으로 보인다).",
+      `${dir} has ${archive} but no ${archive}.sig.\n` +
+        "Building without TAURI_SIGNING_PRIVATE_KEY produces the archive without its signature — " +
+        "shipping it that way makes the app refuse the update (it silently looks like 'no update').",
     );
   }
   return {
@@ -137,8 +137,8 @@ export function buildManifest({ version, pubDate, notes, repo, tag, platforms })
   const missing = REQUIRED_ARCHES.filter((arch) => !platforms[arch]);
   if (missing.length > 0) {
     fail(
-      `업데이터 아티팩트가 없는 아키텍처: ${missing.join(", ")}.\n` +
-        "한쪽만 내면 그 아키텍처 사용자는 영영 갱신을 못 받는다 — 오류도 없이 조용히.",
+      `Architectures with no updater artifact: ${missing.join(", ")}.\n` +
+        "Shipping only one leaves that architecture's users without updates forever — silently, with no error.",
     );
   }
 
@@ -175,7 +175,7 @@ function parseArgs(argv) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  if (!options.tag) fail("--tag 또는 GITHUB_REF_NAME 이 필요하다.");
+  if (!options.tag) fail("--tag or GITHUB_REF_NAME is required.");
   const version = options.tag.replace(/^v/, "");
 
   const platforms = {};

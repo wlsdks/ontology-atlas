@@ -123,6 +123,66 @@ describe("validate-vault script arguments", () => {
     }
   });
 
+  // Regression — the exact line that stood in
+  // `docs/ontology/elements/agents-destination.md` while this script reported
+  // "93 files scanned — 0 issues" (2026-08-31). The node parsed, so nothing
+  // failed; the app simply rendered the stray quote on the map and in lists.
+  it("fails closed when a scalar closes its quote before the end of the value", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-"));
+    const file = join(dir, "agents-destination.md");
+    try {
+      writeFileSync(
+        file,
+        "---\n" +
+          "uid: 981cd7f6-506a-4b2b-b62c-cd56896e81b0\n" +
+          "kind: element\n" +
+          "domain: domains/agent-integration\n" +
+          "title: Agents Destination\n" +
+          'display_ko: "에이전트" 목적지\n' +
+          "---\n",
+      );
+
+      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+        cwd: ROOT,
+        encoding: "utf8",
+      });
+
+      assert.equal(result.status, 1);
+      assert.match(result.stdout, /\[malformed-quoted-scalar\]/);
+      assert.match(result.stdout, /display_ko: 에이전트 목적지/);
+      assert.match(result.stdout, /error 1/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts a correctly quoted, unquoted or escaped scalar", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-quoted-ok-"));
+    try {
+      writeFileSync(
+        join(dir, "clean.md"),
+        "---\n" +
+          "uid: 981cd7f6-506a-4b2b-b62c-cd56896e81b0\n" +
+          "kind: element\n" +
+          "domain: domains/agent-integration\n" +
+          'title: "Agents Destination"\n' +
+          "display_ko: 에이전트 목적지\n" +
+          'display_en: "a \\"quoted\\" word"\n' +
+          "---\n",
+      );
+
+      const result = spawnSync(process.execPath, [SCRIPT, dir], {
+        cwd: ROOT,
+        encoding: "utf8",
+      });
+
+      assert.equal(result.status, 0);
+      assert.doesNotMatch(result.stdout, /malformed-quoted-scalar/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it("does not let a keyless malformed block pass the zero-key fast path", () => {
     const dir = mkdtempSync(join(tmpdir(), "ontology-atlas-validate-vault-keyless-"));
     const file = join(dir, "broken.md");

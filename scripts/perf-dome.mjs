@@ -163,13 +163,13 @@ async function measureNodeDrag(page) {
   const box = await page.locator("canvas").first().boundingBox();
   const target = await page.evaluate(() => {
     const api = window.__atlasMap;
-    if (!api) return { error: "__atlasMap 없음 — ?e2e=1 가 빠졌거나 빌드가 옛것이다" };
+    if (!api) return { error: "__atlasMap missing — ?e2e=1 was dropped, or the build is older than this instrument" };
     const vw = innerWidth;
     const vh = innerHeight;
     const cands = api
       .nodes()
       .filter((n) => n.draggable && !n.hidden && n.x > 120 && n.y > 120 && n.x < vw - 120 && n.y < vh - 120);
-    if (cands.length === 0) return { error: "끌 수 있는 노드가 화면 안에 없다" };
+    if (cands.length === 0) return { error: "no draggable node is on screen" };
     // More neighbours means more load — pick the higher tier to measure the worst case.
     const rank = { project: 0, domain: 1, capability: 2, element: 3 };
     cands.sort((a, b) => (rank[a.kind] ?? 9) - (rank[b.kind] ?? 9));
@@ -210,11 +210,11 @@ const page = ctx.pages()[0] ?? (await ctx.newPage());
 const rows = [];
 
 for (const view3d of [true, false]) {
-  const label = view3d ? "3D 돔" : "2D (대조)";
+  const label = view3d ? "3D dome" : "2D (control)";
   await openMap(page, view3d);
   const dome = await page.evaluate(() => window.__atlasMap?.dome?.() ?? null);
   if (view3d && dome === null) {
-    rows.push({ label, error: "3D 가 켜지지 않았다 — localStorage 스위치를 확인" });
+    rows.push({ label, error: "3D did not turn on — check the localStorage switch" });
     continue;
   }
   const drag = await measureNodeDrag(page);
@@ -238,7 +238,7 @@ if (JSON_OUT) {
 }
 
 let failed = 0;
-console.log(`\n  3D 돔 비용 — 볼트 ${SYNTH} 노드, 앱 rAF 콜백 시간(ms) · ${HEADLESS ? "헤드리스" : "창 있음"}\n`);
+console.log(`\n  3D dome cost — vault of ${SYNTH} nodes, app rAF callback time (ms) · ${HEADLESS ? "headless" : "with a window"}\n`);
 for (const row of rows) {
   if (row.error) {
     console.log(`  ${row.label.padEnd(12)} ❌ ${row.error}`);
@@ -254,24 +254,24 @@ for (const row of rows) {
     const overBudget = row.view3d && d.work.p95 > DRAG_BUDGET_P95_MS;
     if (!grabbedNode || overBudget) failed += 1;
     console.log(
-      `  ${row.label.padEnd(12)} 노드 드래그 ${grabbedNode ? "잡음 ✓" : `❌ ${d.grabbed?.kind} (배경을 밀었다 — 무효)`}` +
-        `  p95 ${String(d.work.p95).padStart(6)} · 최악 ${String(d.work.max).padStart(6)}` +
-        (overBudget ? `  ❌ 예산 ${DRAG_BUDGET_P95_MS}ms 초과` : ""),
+      `  ${row.label.padEnd(12)} node drag ${grabbedNode ? "grabbed ✓" : `❌ ${d.grabbed?.kind} (pushed the background — invalid)`}` +
+        `  p95 ${String(d.work.p95).padStart(6)} · worst ${String(d.work.max).padStart(6)}` +
+        (overBudget ? `  ❌ over the ${DRAG_BUDGET_P95_MS}ms budget` : ""),
     );
   }
   if (row.idle) {
     const over = row.idle.busyFrames > IDLE_BUDGET_BUSY_FRAMES;
     if (over) failed += 1;
     console.log(
-      `  ${"".padEnd(12)} 유휴(무입력 ${Math.round(SLEEP_WAIT_MS / 1000)}s 후) ` +
-        `일한 프레임 ${row.idle.busyFrames}/${row.idle.frames} · ${String(row.idle.cpuMsPerSec).padStart(6)} ms/s(참고)` +
-        (over ? `  ❌ 예산 ${IDLE_BUDGET_BUSY_FRAMES}프레임 초과 — 앰비언트 휴면이 깨졌다` : " ✓"),
+      `  ${"".padEnd(12)} idle (${Math.round(SLEEP_WAIT_MS / 1000)}s after the last input) ` +
+        `busy frames ${row.idle.busyFrames}/${row.idle.frames} · ${String(row.idle.cpuMsPerSec).padStart(6)} ms/s (for reference)` +
+        (over ? `  ❌ over the ${IDLE_BUDGET_BUSY_FRAMES}-frame budget — ambient rest is broken` : " ✓"),
     );
   }
   console.log("");
 }
 
 if (failed > 0) {
-  console.error(`  ${failed}건이 예산을 넘었거나 측정이 무효다.\n`);
+  console.error(`  ${failed} rows went over budget or were measured invalid.\n`);
   process.exit(1);
 }

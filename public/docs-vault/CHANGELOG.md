@@ -2,10 +2,75 @@
 
 > Major change history. Code commit messages answer *why*; this file answers *when / which surface changed*. Focused on **user-visible changes**, not PR-level granularity.
 >
-> Newest at the top. Entries stay date-based; the app version reached v1.0.0 on
-> 2026-07-27, so a release tag now carries the semver promise instead.
+> Newest at the top. Entries stay date-based. The manifests moved to the 1.0.0
+> line on 2026-07-27 and have shipped as `1.0.0-rc.N` release candidates since;
+> the release tag, not this file, carries the semver promise. `package.json`
+> is the version authority.
 
 ---
+
+## 2026-08-31 · Installed-app crashes leave a trace, and the chat's first suggestions say what they ask
+
+- The empty chat's suggestion chips are now the sentence the person is about to
+  send: the observed fact in plain words, then the request (for example, a node
+  says it belongs to a domain but the domain's own list lacks it, so check and
+  line both sides up). A copy contract refuses bare noun-phrase labels.
+- Installed-app crashes become diagnosable. A panic hook writes thread, file,
+  line and message to the app log and stderr; the release keeps a packed dSYM
+  beside the still-stripped binary and ships it as a release asset (the
+  workflow fails when it is missing); log timestamps use local time. The vault
+  watcher no longer rebuilds an FSEvents stream for an unchanged folder, and a
+  replaced watcher is dropped off the main thread.
+- A frontmatter scalar whose quote closes before the value ends (for example
+  `display_ko: "Agents" destination`) is reported as `malformed-quoted-scalar`
+  by every validator instead of rendering the stray quote on the map; the
+  dogfood vault line that did this is corrected.
+- The unmodified `d` shortcut no longer opens the documents drawer over an
+  agent chat that is opening.
+- Operator-facing script and MCP messages are English, and the source-language
+  gate now scans string literals in scripts, MCP and CLI code, not only
+  comments.
+- README describes release-candidate status by tag rather than as an absolute,
+  and the MCP and CLI changelogs restate the current 36-tool and 58-command
+  surfaces.
+- A crash census of the desktop shell found 27 panic-capable expressions and
+  closed the twelve that could abort the app (a synchronous Tauri command
+  runs on the macOS main thread, where a panic ends in SIGABRT): the git
+  status parser, frontmatter unquoting, one C-string conversion, and the
+  panic hook's own stderr write. A panic before the log plugin exists is
+  appended to `panic.log` in the app's log directory.
+- A crash census of the WebView closed three silent failures (an agent turn
+  that never released the panel, a bare `JSON.parse` in the evidence pack,
+  a render-time `localStorage` read) and mounted error boundaries around the
+  map canvas, the vault agent panel, and the ACP chat panel, so one widget's
+  render crash no longer blanks the route. Window errors, unhandled
+  rejections, and boundary catches are forwarded to the app log through the
+  new `log_webview_error` command.
+- The static-artifact size gate widens to 64 MiB total and 8 MiB per chunk by
+  owner decision: it catches a stray dependency or a duplicated bundle, not
+  documented growth. Recorded in the decision ledger with its falsifier.
+- The analysis screen's Do-next tab is one list. The readiness meter, the
+  repair-queue counters and the agent footer are gone; each item is a title,
+  one sentence naming the observed fact, and actions in one order: hand it to
+  the in-app AI chat, fix it here, see it on the map. Documents that fail
+  validation join the list by name instead of hiding behind a count.
+- Going wrong now says so. A returning web visitor whose folder moved sees a
+  notice with a re-pick button instead of a silent gateway; a failed agent
+  config write names the file and says nothing changed; a missing bundled MCP
+  server explains itself; broken frontmatter shows on the document and as a
+  quiet count in the map's index.
+- Native failures speak in sentences. Git, keychain and LLM errors reach the
+  screen as a stable code that the app renders in the reader's language with
+  the machine detail in parentheses; an unknown code shows its English detail
+  instead of a bare kebab-case string, and a parity test keeps every code
+  translated in both locales.
+- Screen words say what they mean. A catalog audit against the rule that every
+  feature must be understandable from its on-screen words rewrote 64 strings:
+  "Repair queue" is "Things to fix", "Promote" is "Add to map", relation
+  names explain themselves in the editor, the empty-folder starter says what
+  an ontology is in one sentence, and the agent-connection notes gloss MCP
+  where it first appears. A catalog-wide contract ratchets internal
+  vocabulary, untranslated English, and bare acronyms.
 
 ## 2026-08-31 · Rust dependency evidence stays exact, bounded, and review-only
 

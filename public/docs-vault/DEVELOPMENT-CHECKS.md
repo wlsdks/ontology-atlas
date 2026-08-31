@@ -296,14 +296,29 @@ someone improved the prose. They are gone; these two nets replace them.
   separate ratchets so progress in one scope cannot hide regression in another. A
   lower count fails with an instruction to lower the baseline; zero scanned files,
   locale fields, templates, generated files, or mirrors also fails as an idle detector.
-- **`source:language` — comments are English; localized data stays localized.**
-  `scripts/quality/source-language/check.mjs` scans tracked and untracked TypeScript,
-  JavaScript, Rust, C-family, Swift, CSS, HTML, YAML, TOML, shell, and supported
-  dotfiles. It parses comment tokens instead of raw text, so Korean runtime strings,
-  message catalogs, fixtures, and regular expressions remain untouched. Current code,
-  tests/fixtures, and historical prototypes have independent zero baselines. Each scope
-  must scan files and comments, preventing an empty inventory from reporting a false
-  green result.
+- **`source:language` — comments *and printed strings* are English; localized data
+  stays localized.** `scripts/quality/source-language/check.mjs` scans tracked and
+  untracked TypeScript, JavaScript, Rust, C-family, Swift, CSS, HTML, YAML, TOML,
+  shell, and supported dotfiles. It parses comment tokens instead of raw text, so
+  message catalogs and fixtures stay untouched. Current code, tests/fixtures, and
+  historical prototypes have independent zero baselines. Each scope must scan files
+  and comments, preventing an empty inventory from reporting a false green result.
+
+  A second pass reads **printed string and template literals** under `scripts/**`,
+  `mcp/src/**`, and `cli/src/**` (non-test), each with its own ratchet. Measured
+  2026-08-31: those three roots printed Korean on ~250 lines — `--help` text, throw
+  messages, refusal reasons, and MCP tool responses an agent reads — while the
+  comment gate reported a clean zero, the same blind spot
+  `cli-output-language.contract.test.ts` was written for. Those lines were
+  translated rather than recorded, so `mcpServer` and `cliCommands` are zero;
+  `scripts` still carries `scripts/stage-macos-release-assets.mjs`, and translating
+  it lowers that baseline to zero. **Regex literals are never scanned**: a Korean
+  alternation is matcher data over the user's own document or the installed app's
+  Korean UI, the same exception as `display_ko`. What is left is a short allowlist of
+  string rows in `check.mjs`, each carrying a reason and each required to keep
+  matching a real line — a row that stops firing fails the gate instead of quietly
+  widening. `src/**` and `messages/**` stay out of this scan because their Korean is
+  the product's own locale data, owned by `docs:language` and the locale contracts.
 - **`cli-output-language.contract.test.ts` — the strings the CLI prints.**
   `source:language` reads *comments*, so a Korean string literal was invisible to it:
   measured 2026-08-25, the CLI carried Korean in 140 lines across 23 files while that
@@ -1209,12 +1224,15 @@ direct-download release secrets, signs the app, packages the DMG, notarizes/stap
 it, verifies the checksum/mount/signature/staple
 contract, copy-and-launch smokes the DMG app from a temporary install folder,
 records the generated DMG filename, byte size, and SHA-256 value in the GitHub
-Actions step summary, stages the four release assets into one flat folder with
-`node scripts/stage-macos-release-assets.mjs` so the workflow artifact has a
-root we chose rather than a least-common-ancestor the download side cannot
-guess, uploads that folder as the workflow artifact, attaches both DMGs plus
-`.sha256` files, both updater archives plus `.sig` files, and `latest.json` to a
-draft GitHub Release, verifies those draft assets with
+Actions step summary, stages the five release assets into one flat folder with
+`node scripts/stage-macos-release-assets.mjs --require-dsym` so the workflow
+artifact has a root we chose rather than a least-common-ancestor the download
+side cannot guess (the fifth asset is the zipped `ontology-atlas.dSYM`; the
+shipped binary is stripped, so without it a crash report from that build
+names only addresses, and `--require-dsym` fails the run instead of shipping
+symbol-less), uploads that folder as the workflow artifact, attaches both DMGs
+plus `.sha256` files, both updater archives plus `.sig` files, both `.dSYM.zip`
+symbol bundles, and `latest.json` to a draft GitHub Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --allow-draft --require-updater`,
 publishes the release as stable, then runs
 `pnpm desktop:verify-download -- --tag="${RELEASE_TAG}" --require-updater` so the same CI run
