@@ -67,15 +67,31 @@ Turn 1: 9 concepts / 8 relations. Turn 2: 13 concepts / 14 relations. Turn 3
 (after the fix): 1 project, 1 domain, 4 capabilities, 4 elements, 9 relations.
 Nothing about the input changed.
 
-This compounds finding 1 for stateless sessions: acceptance binds to a plan
-digest, and a fresh session regenerates a different plan with a different digest,
-so an approval given in one invocation cannot match the next. Inside one
-continuous conversation — the in-app chat — the digest survives and this does not
-appear. The app tells people to paste the instruction into the tool they already
-use, and for several such tools every invocation is a fresh session.
+**This entry originally drew the wrong conclusion, and the correction matters
+more than the observation.** It said acceptance could never match across
+sessions because a fresh session regenerates a different digest. That is not how
+the digest works: it is a pure function of the proposal the caller submits
+(`mcp/src/construction-lifecycle.mjs`, `planDigest` over the canonical
+`buildWritePlan(proposal)`), with no timestamp and nothing server-authored in it.
+A proposal carried back **verbatim** reproduces the digest the person accepted.
+Acceptance does not expire; a fresh session simply re-authors the proposal by
+default and so invalidates its own approval. Three plans from one repository is
+ordinary model variance, and the server treats each as the distinct plan it is.
 
-**Not fixed.** Recorded here because the remedy is a product decision, not a
-wording change.
+**What is genuinely out of reach for a lone agent is the other half.** Writing
+needs a `constructionQualification:v1` packet whose evaluator is not its builder;
+the server fails closed on `maker-self-evaluation` when the two ids match, and
+the lifecycle instructs an agent that cannot run an independent lane to stop and
+ask for a handoff rather than fabricate one. That is a boundary this product
+chose and paid for, not a defect.
+
+**Partly fixed.** The instruction now tells the agent to save the exact proposal
+it showed, names the independent-evaluation lane as what writing additionally
+needs, and tells it to stop rather than chase `canWrite` — which the first repair
+of that instruction had wrongly told it to do. What remains is a product
+question, deliberately not answered here: whether to offer a supported
+session-per-lane relay so a person using one-shot invocations can finish, using
+the handoff helper the bootstrap skill already carries.
 
 ### 3. Pointing Atlas at a code repository shows no code
 
@@ -100,7 +116,30 @@ Searching the page for any post-install instruction — opening a folder,
 connecting an agent, registering a server, running a command — returns nothing.
 It ends on `MIT licensed · Local-first · Next.js · TypeScript · Canvas 2D · MCP`.
 
-**Not fixed.**
+**This entry was filed without checking whether the absence was deliberate. It
+was.** Decision (83), 2026-08-19, removed the install section from the gateway
+entirely, on the owner's own reading of the finished screen — *"the last one can
+go, it's all at the top anyway"* — and the record is signed by the owner, having
+been shown the exact list of honesty facts that would leave the screen with it.
+Its applied rule was *removal, not reduction*: what the owner judged unnecessary
+does not come back in smaller form.
+
+So this is not a defect report. It is a proposal to reopen a closed decision, and
+it should have been written as one.
+
+That record also fixes the terms of any reversal, and neither is met:
+
+- **Its falsifiers**: a question about signing, notarization or checksums; a
+  report of dropping out at the Gatekeeper or SmartScreen step; a visitor asking
+  where the source is. None observed — this repository has no open issues.
+- **Its review trigger**: when the first ten people have actually finished an
+  install, walk this journey again.
+- **Its prescribed remedy if a falsifier fires**: not the install section
+  returning, but a proof line in the colophon. A reader acting on this entry
+  should build that, not what this entry originally implied.
+
+**Deliberately not fixed**, and it should stay that way until one of those
+observations exists.
 
 ## What the product did well
 

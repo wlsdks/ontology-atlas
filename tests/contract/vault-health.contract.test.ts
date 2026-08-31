@@ -1,7 +1,10 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { VAULT_HEALTH_CASES } from '../fixtures/vault-health-cases.mjs';
 import {
+  UNAVAILABLE_CHECKS,
   capabilitiesWithoutImplementationEvidence,
   computeVaultHealth,
 } from '@/entities/knowledge-graph/lib/vault-health';
@@ -150,5 +153,49 @@ describe('vault-health contract — src lib mirrors the MCP engine health verdic
       'capabilities/no-pointer',
       'capabilities/raw-elements-path',
     ]);
+  });
+});
+
+/**
+ * **Between them, the browser's checks and its declared gaps must account for
+ * every check the command reports.**
+ *
+ * The parity above pins this mirror against the compiled-graph engine, and it
+ * holds. The command reports more: the MCP tool layer adds frontmatter
+ * validation and a project meaning assessment on top of the engine's verdict, and
+ * both can flip its status. On this repository's own vault the command answers
+ * `needs_attention` on the strength of the second one while every check this
+ * mirror runs passes — so a screen reporting only these six, and saying nothing
+ * about the rest, tells a person the opposite of what the command says.
+ *
+ * Re-deriving meaning assessment here would be a second implementation of a
+ * semantic judgement, which is the drift this file's subject was written against.
+ * So the mirror names what it does not run, and this asserts the naming stays
+ * complete — reading the extra ids from the server source rather than from a
+ * second hand-maintained list.
+ */
+describe('vault health — 안 돌리는 검사는 이름으로 남는다', () => {
+  it('브라우저가 도는 검사 + 안 돈다고 밝힌 검사 = 명령이 보고하는 검사', () => {
+    const serverSource = readFileSync(join(process.cwd(), 'mcp', 'src', 'index.js'), 'utf8');
+    // The two the tool layer attaches on top of the engine's six.
+    const attachedByToolLayer = ['vault_validation', 'meaning_assessment'].filter((id) =>
+      serverSource.includes(`id: '${id}'`),
+    );
+    expect(
+      attachedByToolLayer,
+      'the server must still attach both checks for this gap to be the real one',
+    ).toEqual(['vault_validation', 'meaning_assessment']);
+
+    const declared = UNAVAILABLE_CHECKS.map((check) => check.id).sort();
+    expect(declared).toEqual([...attachedByToolLayer].sort());
+  });
+
+  it('안 돈다고 밝힌 검사는 어디서 돌리는지도 말한다 — 진단만 남기지 않는다', () => {
+    for (const check of UNAVAILABLE_CHECKS) {
+      expect(check.reason.trim().length, `${check.id} needs a reason`).toBeGreaterThan(0);
+      expect(check.where.trim().length, `${check.id} needs somewhere to run it`).toBeGreaterThan(0);
+      // A command carrying a placeholder nobody can fill in is not a remedy.
+      expect(check.hint.trim().length, `${check.id} needs the placeholder hint`).toBeGreaterThan(0);
+    }
   });
 });

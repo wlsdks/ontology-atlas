@@ -27,6 +27,39 @@
  * relation_recommendations · components), not the full engine API.
  */
 
+import { ATLAS_CLI, ATLAS_CLI_HINT_EN } from '@/shared/config/cli-invocation';
+
+/**
+ * Checks the CLI reports that this browser mirror **does not run**.
+ *
+ * This file mirrors the compiled-graph engine, which answers six checks. The
+ * health command answers eight: the MCP tool layer adds
+ * frontmatter validation and a project meaning assessment on top of the engine's
+ * verdict. Re-deriving the second one here would be a second implementation of
+ * meaning assessment — a semantic judgement rather than a graph count — which is
+ * exactly the drift this file's header was written against.
+ *
+ * So the two are named rather than silently missing. A surface that does not run
+ * every check must not imply its list is the whole list: on this repository's own
+ * vault the CLI answers `needs_attention` on the strength of one of them while
+ * every check this mirror runs passes, so a screen reporting only these six would
+ * be telling a person the opposite of what the command says.
+ */
+export const UNAVAILABLE_CHECKS = [
+  {
+    id: 'vault_validation',
+    reason: 'the MCP tool layer runs it, not the compiled-graph engine this mirrors',
+    where: `${ATLAS_CLI} validate`,
+    hint: ATLAS_CLI_HINT_EN,
+  },
+  {
+    id: 'meaning_assessment',
+    reason: 'asks whether a project\'s competency answers are finalized, which is a semantic judgement rather than a graph count',
+    where: `${ATLAS_CLI} health`,
+    hint: ATLAS_CLI_HINT_EN,
+  },
+];
+
 /** Minimal vault-doc shape — a subset of `VaultDoc` (slug + frontmatter). */
 export interface VaultHealthDoc {
   slug: string;
@@ -49,6 +82,16 @@ interface VaultHealthCheck {
   count: number;
 }
 
+/** A check this surface knows about and does not run, with where it can be run. */
+interface UnavailableVaultHealthCheck {
+  id: string;
+  reason: string;
+  /** A runnable command, not a bare binary name — there is no npm package. */
+  where: string;
+  /** How to fill in the placeholder `where` carries. A command nobody can run is not a remedy. */
+  hint: string;
+}
+
 /** A capability/element whose `domain:` never links back (missing containment). */
 interface MissingContainmentTarget {
   /** full node slug (e.g. `capabilities/invoice`) */
@@ -60,6 +103,12 @@ interface MissingContainmentTarget {
 export interface VaultHealthResult {
   status: VaultHealthStatus;
   checks: VaultHealthCheck[];
+  /**
+   * What this verdict did not look at. Empty would mean the list is complete;
+   * it is not, and saying so is the difference between a scoped answer and a
+   * wrong one.
+   */
+  unavailableChecks: readonly UnavailableVaultHealthCheck[];
   summary: {
     nodes: number;
     edges: number;
@@ -529,6 +578,7 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
   return {
     status,
     checks,
+    unavailableChecks: UNAVAILABLE_CHECKS,
     summary: {
       nodes: graph.nodes.length,
       edges: graph.edges.length,

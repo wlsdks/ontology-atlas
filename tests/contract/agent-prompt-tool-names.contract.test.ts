@@ -141,6 +141,45 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
     }
   });
 
+  /**
+   * **Do not send a single-context agent after a state it cannot honestly reach.**
+   *
+   * Writing needs a qualification packet whose evaluator is not its builder; the
+   * server fails closed on `maker-self-evaluation` when the two ids match, and the
+   * lifecycle tells an agent that cannot run an independent lane to stop and ask
+   * for a handoff. An instruction that says "keep going until canWrite is true"
+   * leaves such an agent looping or inventing the second actor — and the first
+   * repair of this prompt said exactly that.
+   *
+   * The independence rule is read from the server rather than restated, so this
+   * fails if that boundary ever moves.
+   */
+  it("혼자서는 닿을 수 없는 상태를 쫓으라고 시키지 않는다", () => {
+    const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
+    const source = readFileSync(MCP_INDEX, "utf8");
+    expect(
+      source.includes("maker-independence") || source.includes("source-hidden"),
+      "the server must still require an evaluator distinct from the builder",
+    ).toBe(true);
+
+    expect(prompt).not.toMatch(/keep following it until canWrite is true/i);
+    expect(prompt).toMatch(/independent evaluation/i);
+    expect(prompt).toMatch(/do not fabricate an evaluator/i);
+    expect(prompt).toMatch(/proposal, and stop\./i);
+  });
+
+  /**
+   * The digest is a pure function of the submitted proposal, so a proposal carried
+   * back verbatim reproduces the digest the human accepted. A fresh session that
+   * re-authors instead invalidates its own approval, which is what made the
+   * walkthrough's three turns produce three different plans.
+   */
+  it("사람이 본 그 제안을 그대로 보관하라고 말한다", () => {
+    const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
+    expect(prompt).toMatch(/save the exact proposal/i);
+    expect(prompt).toMatch(/verbatim reproduces the same\s+digest/i);
+  });
+
   it("analyze 프롬프트는 승인만으로 쓰기가 되는 것처럼 말하지 않는다", () => {
     // The exact sentence that produced the dead end, and the shape of any successor.
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
