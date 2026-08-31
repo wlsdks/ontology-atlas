@@ -33,6 +33,22 @@
 - README describes release-candidate status by tag rather than as an absolute,
   and the MCP and CLI changelogs restate the current 36-tool and 58-command
   surfaces.
+- A crash census of the desktop shell found 27 panic-capable expressions and
+  closed the twelve that could abort the app (a synchronous Tauri command
+  runs on the macOS main thread, where a panic ends in SIGABRT): the git
+  status parser, frontmatter unquoting, one C-string conversion, and the
+  panic hook's own stderr write. A panic before the log plugin exists is
+  appended to `panic.log` in the app's log directory.
+- A crash census of the WebView closed three silent failures (an agent turn
+  that never released the panel, a bare `JSON.parse` in the evidence pack,
+  a render-time `localStorage` read) and mounted error boundaries around the
+  map canvas, the vault agent panel, and the ACP chat panel, so one widget's
+  render crash no longer blanks the route. Window errors, unhandled
+  rejections, and boundary catches are forwarded to the app log through the
+  new `log_webview_error` command.
+- The static-artifact size gate widens to 64 MiB total and 8 MiB per chunk by
+  owner decision: it catches a stray dependency or a duplicated bundle, not
+  documented growth. Recorded in the decision ledger with its falsifier.
 
 ## 2026-08-31 · Rust dependency evidence stays exact, bounded, and review-only
 
