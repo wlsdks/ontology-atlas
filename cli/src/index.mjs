@@ -216,7 +216,7 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15: wraps the M
   ontology-atlas node <slug> [vault]          One node deep dive: header · lineage · incoming/outgoing edges
        --limit N --types A,B --no-external --no-unresolved --json
                                               ${COLORS.dim}hotspot edge group + relation/ref filter${COLORS.reset}
-  ontology-atlas similar "<title>" [vault]    Find similar nodes in a vault (duplicate avoidance, pairs with /ontology-extract)
+  ontology-atlas similar "<title>" [vault]    Find similar nodes in a vault (check before adding, so you do not add a duplicate)
        --slug X --kind K --limit N --json     ${COLORS.dim}by slug / kind filter / N results / machine${COLORS.reset}
   ontology-atlas rename <old> <new>           Atomic rename: moves .md, redirects every backlink
        --confirm --overwrite                  ${COLORS.dim}default dry-run; --overwrite replaces existing target${COLORS.reset}
@@ -617,7 +617,7 @@ async function runInit(targetArg, opts = {}) {
     return 1;
   }
 
-  const codexSetupCommand = [
+  const codexSetupArgv = [
     'codex',
     'mcp',
     'add',
@@ -629,7 +629,21 @@ async function runInit(targetArg, opts = {}) {
     '--',
     serverCommand.command,
     ...serverCommand.args,
-  ].map(shellQuote).join(' ');
+  ].map(shellQuote);
+  // Joined with backslash-newline at the `--env` / `--` boundaries rather than
+  // on one line. Measured 2026-08-31: the single-line form reached 354 columns
+  // and wrapped into five ragged lines in an 80-column terminal, so the one
+  // thing it exists for — being copied — was the thing it could not survive.
+  // The continuation form is a single POSIX command either way.
+  const codexSetupCommand = codexSetupArgv
+    .reduce((lines, token) => {
+      if (token === '--env' || token === '--') lines.push([token]);
+      else if (lines.length === 0) lines.push([token]);
+      else lines[lines.length - 1].push(token);
+      return lines;
+    }, [])
+    .map((line) => line.join(' '))
+    .join(' \\\n         ');
   // A CLI self-invocation is already in runnable form, so it is not re-quoted —
   // quoting would turn the whole `node /path` into one token and break execution.
   const analyzeCommand = [CLI, ...['analyze', '.', '--vault', cwdVaultArg].map(shellQuote)]
@@ -659,11 +673,11 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}${CLI} validate${COLORS.reset}                    ${COLORS.dim}# frontmatter integrity${COLORS.reset}
        ${COLORS.cyan}${CLI} mcp-verify${COLORS.reset}                  ${COLORS.dim}# server + ${MCP_TOOL_COUNT}-tool MCP + graph smoke${COLORS.reset}
 
-  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended: agent-less, 1 line):
+  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (preview first, then pick):
        ${COLORS.cyan}${analyzeCommand}${COLORS.reset}     ${COLORS.dim}# preview candidates only${COLORS.reset}
-       ${COLORS.cyan}${bootstrapCommand}${COLORS.reset}   ${COLORS.dim}# review candidates, write 0${COLORS.reset}
-       ${COLORS.dim}CLI bootstrap never promotes semantic candidates without an exact qualified plan.${COLORS.reset}
-       ${COLORS.dim}Use a connected agent's ontology-bootstrap flow for review → qualification → human acceptance.${COLORS.reset}
+       ${COLORS.cyan}${bootstrapCommand}${COLORS.reset}   ${COLORS.dim}# review candidates, writes nothing${COLORS.reset}
+       ${COLORS.dim}Then run /atlas-grow in your agent: it proposes candidates with${COLORS.reset}
+       ${COLORS.dim}evidence and writes only the ones you pick.${COLORS.reset}
        ${COLORS.dim}--threshold N filters weak import signals from the preview.${COLORS.reset}
 
   ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Or add your first node by hand:${COLORS.reset}
@@ -688,7 +702,8 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        from the folder and confirm ${COLORS.bold}ontology-atlas${COLORS.reset} appears before any write.
        For a global Codex config instead, run:
        ${COLORS.cyan}${codexSetupCommand}${COLORS.reset}
-       ${COLORS.dim}Codex can store MCP servers globally too, so the command is optional when the repo-local config is enough.${COLORS.reset}
+       ${COLORS.dim}Codex can also store MCP servers globally, so this is optional${COLORS.reset}
+       ${COLORS.dim}when the repo-local config is enough.${COLORS.reset}
 
   ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}Tell your agent the vault is here${COLORS.reset}${vaultIsRepoRoot ? ' (already done — this folder is the vault)' : ':'}${vaultIsRepoRoot ? '' : `
        The server hands every connected agent a manual for its tools. What it
@@ -721,12 +736,14 @@ async function runQuickStart({ target, cwdVaultArg }) {
 
   if (bootstrapCode === 3) {
     stdout.write(`
-${COLORS.yellow}${COLORS.bold}quick start review ready${COLORS.reset} — vault scaffolded; semantic writes are blocked until an exact qualified plan is accepted.
+${COLORS.yellow}${COLORS.bold}quick start review ready${COLORS.reset} — vault scaffolded; the CLI itself writes no meaning.
 
 ${COLORS.bold}Next:${COLORS.reset}
-  ${COLORS.dim}1.${COLORS.reset} Review the printed candidates and connect an agent with ontology-bootstrap.
-  ${COLORS.dim}2.${COLORS.reset} Obtain independent constructionQualification:v1 + human acceptance.
-  ${COLORS.dim}3.${COLORS.reset} Write only the returned exact writePlan.
+  ${COLORS.dim}1.${COLORS.reset} Review the printed candidates.
+  ${COLORS.dim}2.${COLORS.reset} Run /atlas-grow in your agent: it proposes candidates with evidence
+     and writes only the ones you pick, a few at a time.
+  ${COLORS.dim}3.${COLORS.reset} Landing a whole plan at once instead needs a qualification packet whose
+     evaluator is not its builder. That path is not required to build a vault.
 `);
     return bootstrapCode;
   }
