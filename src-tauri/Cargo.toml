@@ -78,7 +78,19 @@ keyring = { version = "3", features = ["windows-native"] }
 # `panic = "abort"` saves 1.7 MB and changes what a bug costs: today a panic inside one command fails
 # that command and leaves the window standing, and with abort it takes the whole app down. For a
 # workbench holding an owner's unsaved judgement that is the wrong trade at any size.
+#
+# `debug`/`split-debuginfo`/`strip` together are what makes a crash report readable without shipping
+# a byte more to the owner. Four SIGABRTs in four days produced reports that named only addresses,
+# because a stripped binary with no dSYM has nothing to symbolicate against. Line tables are the
+# cheapest debug info that still yields file and line; `packed` collects them into a
+# `ontology-atlas.dSYM` bundle beside the binary, which CI keeps as a release asset; `strip` then
+# removes them from the binary itself. Measured on 2026-08-31: the shipped binary went from
+# 8,816,672 to 8,800,144 bytes and still carries no symbol table and no `__DWARF` segment, while a
+# 46 MB dSYM (9.7 MB zipped) now sits beside it with a matching UUID — `atos` resolves an address
+# in the stripped binary to file and line against it.
 [profile.release]
 codegen-units = 1
 lto = true
+debug = "line-tables-only"
+split-debuginfo = "packed"
 strip = true

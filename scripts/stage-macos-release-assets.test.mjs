@@ -1,10 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
+  DSYM_BUNDLE_NAME,
   artifactNameForArch,
+  dsymArchiveName,
   parseDmgName,
   stageReleaseAssets,
   updaterArchiveName,
@@ -150,4 +160,46 @@ test("the artifact folder name carries the architecture", () => {
     arch: "x64",
   });
   assert.equal(parseDmgName("Ontology Atlas.dmg"), null);
+});
+
+/** What Cargo leaves beside the binary under `split-debuginfo = "packed"`. */
+function fakeDsym(root) {
+  const dwarf = join(root, DSYM_BUNDLE_NAME, "Contents", "Resources", "DWARF");
+  mkdirSync(dwarf, { recursive: true });
+  writeFileSync(join(dwarf, "ontology-atlas"), "debug map");
+}
+
+test("the dSYM ships as its own zip, never inside the app", () => {
+  // The shipped binary stays stripped. Without this asset a crash report from a release build
+  // names addresses and nothing else — which is exactly what four unreadable SIGABRT reports
+  // cost in the week before 1.0.0.
+  const { root, bundleDir, outDir } = fakeBundle("1.0.0-rc.2", "aarch64");
+  fakeDsym(root);
+  try {
+    const staged = stageReleaseAssets({ bundleDir, outDir, expectArch: "aarch64" });
+    const expected = dsymArchiveName("1.0.0-rc.2", "aarch64");
+    assert.equal(staged.dsym, expected);
+    assert.ok(staged.files.includes(expected));
+    assert.deepEqual(readdirSync(outDir).sort(), staged.files.slice().sort());
+    assert.ok(statSync(join(outDir, expected)).size > 0);
+    // The DMG must not gain a symbol file; the archive is a sibling asset only.
+    assert.equal(existsSync(join(outDir, DSYM_BUNDLE_NAME)), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a build with no dSYM still stages, and --require-dsym refuses it", () => {
+  const { root, bundleDir, outDir } = fakeBundle("1.0.0", "aarch64");
+  try {
+    const staged = stageReleaseAssets({ bundleDir, outDir });
+    assert.equal(staged.dsym, null);
+    assert.equal(staged.files.length, 4);
+    assert.throws(
+      () => stageReleaseAssets({ bundleDir, outDir, requireDsym: true }),
+      /dSYM is missing/,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

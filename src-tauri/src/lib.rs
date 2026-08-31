@@ -180,11 +180,23 @@ const WEBVIEW_VERIFY_MARKER_INTERVAL_MS: u64 = 500;
 /// Type alias for the default watcher type of notify-debouncer-full — for State storage.
 type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
 
+/// The live watcher plus the canonical root it was built for. Keeping the root beside the debouncer
+/// is what lets a repeated call for the same folder be answered without building a second FSEvents
+/// stream — the frontend effect re-runs often, and each rebuild used to tear one down on the main
+/// thread.
+struct VaultWatch {
+    root: PathBuf,
+    // Never read after it is stored: holding it *is* the behaviour, because dropping a debouncer
+    // stops the watcher.
+    #[allow(dead_code)]
+    debouncer: VaultDebouncer,
+}
+
 /// live-tauri — State keeping the vault file watcher alive for the app's lifetime. start_vault_watch
 /// must place the debouncer here so it does not drop and continues monitoring.
 #[derive(Default)]
 struct VaultWatcherState {
-    debouncer: Mutex<Option<VaultDebouncer>>,
+    watch: Mutex<Option<VaultWatch>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -2840,15 +2852,34 @@ fn schedule_show_main_window(app: AppHandle) {
 /// file changes, debounced by 500ms so one editor's burst of writes arrives as a single event.
 ///
 /// The screen listens and refreshes immediately, which is what the app has over the web surface:
-/// no five-second polling gap. The debouncer is held in `State` so it lives as long as the app —
-/// calling this again replaces and drops the previous one.
+/// no five-second polling gap. The debouncer is held in `State` so it lives as long as the app.
+///
+/// Two properties matter more than they look. The command is idempotent per canonical root: the
+/// frontend effect re-runs whenever its dependencies change, and rebuilding the watcher each time
+/// meant a fresh FSEvents stream several times a minute for one unchanged folder. And when a
+/// different root does replace the previous watcher, the old debouncer is dropped on a background
+/// thread — FSEvents teardown joins the watcher's own run loop, and doing that on the main thread
+/// is exactly the kind of blocking a UI thread must not do. The command is `async` so Tauri runs
+/// it on the async runtime rather than the main thread; the state lock is never held across an
+/// await because there is none.
 #[tauri::command]
-fn start_vault_watch(
+async fn start_vault_watch(
     app: AppHandle,
     root_path: String,
     state: State<'_, VaultWatcherState>,
 ) -> Result<(), String> {
     let canonical = canonical_root(&root_path)?;
+    let mut watch = state
+        .watch
+        .lock()
+        .map_err(|_| "vault watcher state poisoned".to_string())?;
+    if watch
+        .as_ref()
+        .is_some_and(|existing| existing.root == canonical)
+    {
+        log::debug!("vault watcher reused at {}", canonical.display());
+        return Ok(());
+    }
     let app_handle = app.clone();
     let mut debouncer = new_debouncer(
         Duration::from_millis(500),
@@ -2884,10 +2915,16 @@ fn start_vault_watch(
         .watch(&canonical, RecursiveMode::Recursive)
         .map_err(|err| err.to_string())?;
     log::info!("vault watcher started at {}", canonical.display());
-    *state
-        .debouncer
-        .lock()
-        .map_err(|_| "vault watcher state poisoned".to_string())? = Some(debouncer);
+    let previous = watch.replace(VaultWatch {
+        root: canonical,
+        debouncer,
+    });
+    drop(watch);
+    if let Some(previous) = previous {
+        // Off the calling thread on purpose: dropping a debouncer stops the FSEvents stream and
+        // joins the watcher thread, and neither has a bounded cost the UI thread can afford.
+        std::thread::spawn(move || drop(previous));
+    }
     Ok(())
 }
 
@@ -2973,7 +3010,42 @@ fn disable_webview_frame_rate_cap(window: &tauri::WebviewWindow) {
     });
 }
 
+/// One line naming where the process died. The release binary is stripped, so a macOS crash report
+/// carries nothing but addresses; this is written before the panic unwinds and is the only record
+/// that survives.
+fn format_panic_report(thread_name: &str, location: &str, message: &str) -> String {
+    format!("panic in thread '{thread_name}' at {location}: {message}")
+}
+
+/// Installs a panic hook that records the panic through the app log *and* stderr, then defers to the
+/// hook that was already installed so Rust's own default output is not lost.
+///
+/// Registered before the Tauri builder runs. `log::error!` resolves its logger at call time, so a
+/// panic after the log plugin initializes still reaches the rotating file in the OS log directory.
+fn install_panic_logger() {
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let message = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(|text| (*text).to_string())
+            .or_else(|| info.payload().downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "unknown panic payload".to_string());
+        let location = info
+            .location()
+            .map(|at| format!("{}:{}:{}", at.file(), at.line(), at.column()))
+            .unwrap_or_else(|| "unknown location".to_string());
+        let thread = std::thread::current();
+        let thread_name = thread.name().unwrap_or("unnamed").to_string();
+        let report = format_panic_report(&thread_name, &location, &message);
+        log::error!("{report}");
+        eprintln!("{report}");
+        previous(info);
+    }));
+}
+
 pub fn run() {
+    install_panic_logger();
     let verify_webview = std::env::var_os(WEBVIEW_VERIFY_ENV).is_some();
     let mut context = tauri::generate_context!();
     let isolated_window_count =
@@ -3038,6 +3110,9 @@ pub fn run() {
                     tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stderr),
                 ])
                 .level(log::LevelFilter::Info)
+                // A crash report is named in local time and the log was written in UTC, so matching
+                // one to the other meant converting timestamps by hand before reading a single line.
+                .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
                 .max_file_size(APP_LOG_MAX_FILE_BYTES)
                 .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
                 .build(),
@@ -4653,6 +4728,27 @@ mod window_geometry_tests {
             result.geometry.y + result.geometry.height
                 <= REFERENCE_14_INCH.y + REFERENCE_14_INCH.height,
             "a recentred window must not hang off the bottom"
+        );
+    }
+}
+
+#[cfg(test)]
+mod panic_report_tests {
+    use super::format_panic_report;
+
+    #[test]
+    fn panic_report_names_thread_location_and_message() {
+        assert_eq!(
+            format_panic_report("main", "src/lib.rs:12:5", "index out of bounds"),
+            "panic in thread 'main' at src/lib.rs:12:5: index out of bounds"
+        );
+    }
+
+    #[test]
+    fn panic_report_keeps_the_unknown_placeholders_readable() {
+        assert_eq!(
+            format_panic_report("unnamed", "unknown location", "unknown panic payload"),
+            "panic in thread 'unnamed' at unknown location: unknown panic payload"
         );
     }
 }

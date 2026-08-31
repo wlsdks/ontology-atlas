@@ -303,8 +303,11 @@ jobs:
       # creating an extra layer of `dmg/`·`macos/`, and the downloader has never chosen that depth,
       # so they cannot know it. Here we also re-attach the updater archive name using the same
       # rule as the DMG (Tauri outputs two arches with the same name + space).
+      # `--require-dsym` because the shipped binary is stripped: without the symbol bundle beside
+      # it, a crash report from this build names addresses and nothing else. A release that
+      # silently lost its symbols looks exactly like one that kept them, so it fails here instead.
       - name: Stage release assets
-        run: node scripts/stage-macos-release-assets.mjs --arch="${TAURI_ARCH}"
+        run: node scripts/stage-macos-release-assets.mjs --arch="${TAURI_ARCH}" --require-dsym
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -571,6 +574,7 @@ jobs:
             release-assets/*/*.sha256
             release-assets/*/*.app.tar.gz
             release-assets/*/*.app.tar.gz.sig
+            release-assets/*/*.dSYM.zip
             release-assets/windows/*.exe
             release-assets/windows/*.exe.sha256
             release-assets/latest.json

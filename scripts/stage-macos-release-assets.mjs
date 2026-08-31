@@ -35,6 +35,7 @@
  * diverge.
  */
 
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -53,6 +54,41 @@ export function artifactNameForArch(arch) {
 /** Same rule as the DMG. The architecture must be in the name for both to survive one release. */
 export function updaterArchiveName(version, arch) {
   return `ontology-atlas_${version}_${arch}.app.tar.gz`;
+}
+
+/** The debug-info bundle Cargo writes beside the binary under `split-debuginfo = "packed"`. */
+export const DSYM_BUNDLE_NAME = "ontology-atlas.dSYM";
+
+/**
+ * The symbol archive's name. Architecture is in the name for the same reason the DMG carries it:
+ * one release holds both, and a crash report can only be symbolicated against the dSYM of the
+ * build the reporter actually ran.
+ */
+export function dsymArchiveName(version, arch) {
+  return `Ontology-Atlas-${version}-${arch}.dSYM.zip`;
+}
+
+/**
+ * Zips the dSYM bundle so the shipped app keeps no symbols while a crash report stays readable.
+ *
+ * The release binary is stripped, so `.ips` reports name addresses and nothing else. The dSYM is
+ * what turns those addresses back into file and line — it is never inside the `.app`, only beside
+ * it in the release, for whoever is holding the crash report.
+ */
+function stageDsymArchive(dsymDir, outDir, archiveName) {
+  const bundle = path.join(dsymDir, DSYM_BUNDLE_NAME);
+  if (!fs.existsSync(bundle)) {
+    return null;
+  }
+  const target = path.resolve(outDir, archiveName);
+  // `-r` because a dSYM is a directory; `-q` keeps the release log about assets, not file lists.
+  const zipped = spawnSync("zip", ["-q", "-r", target, DSYM_BUNDLE_NAME], { cwd: dsymDir });
+  if (zipped.error || zipped.status !== 0) {
+    throw new Error(
+      `${bundle} could not be zipped: ${zipped.error?.message ?? `zip exited with ${zipped.status}`}`,
+    );
+  }
+  return archiveName;
 }
 
 /** `ontology-atlas_1.0.0-rc.2_aarch64.dmg` → `{ version, arch }`. */
@@ -87,10 +123,17 @@ function exactlyOneFile(dir, matches, label) {
  * Passing `expectArch` cross-checks the architecture the DMG names — if the build
  * output disagrees with the matrix, it stops here. Letting it through ships users
  * the app for another architecture.
+ *
+ * The dSYM rides along when Cargo produced one, and `requireDsym` turns its absence into a
+ * failure: a release whose symbols were silently dropped looks identical to one that kept them,
+ * and the difference only surfaces months later, in front of a crash report nobody can read.
  */
-export function stageReleaseAssets({ bundleDir, outDir, expectArch } = {}) {
+export function stageReleaseAssets({ bundleDir, outDir, expectArch, dsymDir, requireDsym } = {}) {
   const bundle = bundleDir ?? DEFAULT_BUNDLE_DIR;
   const out = outDir ?? STAGING_DIR;
+  // Cargo writes the dSYM beside the binary, one level above the bundle folder. Derived rather
+  // than configured, so the symbols always belong to the build that produced this DMG.
+  const symbols = dsymDir ?? path.dirname(bundle);
   const dmgDir = path.join(bundle, "dmg");
   const macosDir = path.join(bundle, "macos");
 
@@ -140,12 +183,25 @@ export function stageReleaseAssets({ bundleDir, outDir, expectArch } = {}) {
     fs.copyFileSync(from, path.join(out, to));
   }
 
+  const files = copies.map(([, to]) => to);
+  const dsym = stageDsymArchive(symbols, out, dsymArchiveName(parsed.version, parsed.arch));
+  if (dsym) {
+    files.push(dsym);
+  } else if (requireDsym) {
+    throw new Error(
+      `${path.join(symbols, DSYM_BUNDLE_NAME)} is missing — the release binary is stripped, so ` +
+        "without it a crash report from this build names only addresses. Check " +
+        "`[profile.release]` in src-tauri/Cargo.toml (`debug` and `split-debuginfo`).",
+    );
+  }
+
   return {
     outDir: out,
     version: parsed.version,
     arch: parsed.arch,
     artifactName: artifactNameForArch(parsed.arch),
-    files: copies.map(([, to]) => to),
+    dsym,
+    files,
   };
 }
 
@@ -158,6 +214,8 @@ function parseArgs(argv) {
     bundleDir: flag("bundle-dir"),
     outDir: flag("out"),
     expectArch: flag("arch") || process.env.TAURI_ARCH || undefined,
+    dsymDir: flag("dsym-dir"),
+    requireDsym: argv.includes("--require-dsym"),
   };
 }
 
