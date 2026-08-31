@@ -116,7 +116,30 @@ Searching the page for any post-install instruction — opening a folder,
 connecting an agent, registering a server, running a command — returns nothing.
 It ends on `MIT licensed · Local-first · Next.js · TypeScript · Canvas 2D · MCP`.
 
-**Not fixed.**
+**This entry was filed without checking whether the absence was deliberate. It
+was.** Decision (83), 2026-08-19, removed the install section from the gateway
+entirely, on the owner's own reading of the finished screen — *"the last one can
+go, it's all at the top anyway"* — and the record is signed by the owner, having
+been shown the exact list of honesty facts that would leave the screen with it.
+Its applied rule was *removal, not reduction*: what the owner judged unnecessary
+does not come back in smaller form.
+
+So this is not a defect report. It is a proposal to reopen a closed decision, and
+it should have been written as one.
+
+That record also fixes the terms of any reversal, and neither is met:
+
+- **Its falsifiers**: a question about signing, notarization or checksums; a
+  report of dropping out at the Gatekeeper or SmartScreen step; a visitor asking
+  where the source is. None observed — this repository has no open issues.
+- **Its review trigger**: when the first ten people have actually finished an
+  install, walk this journey again.
+- **Its prescribed remedy if a falsifier fires**: not the install section
+  returning, but a proof line in the colophon. A reader acting on this entry
+  should build that, not what this entry originally implied.
+
+**Deliberately not fixed**, and it should stay that way until one of those
+observations exists.
 
 ## What the product did well
 
