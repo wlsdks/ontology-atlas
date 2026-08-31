@@ -198,62 +198,94 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       abortRef.current = controller;
       const execute = createToolExecutor(port);
 
-      const result = await runTurn(
-        {
-          adapter,
-          tools: AGENT_TOOLS,
-          system: systemPrompt,
-          // The address path has no default model — only that computer knows what is
-          // installed on it. The name the user chose in settings arrives here.
-          model: args.localEndpoint?.model || adapter.defaultModel,
-          notices: args.notices,
-          execute,
-          async send({ body, scope, question, model }) {
-            const echo = await llmChat({
-              provider,
-              vaultPath,
-              model,
-              question,
-              body,
-              scope,
-              baseUrl: args.localEndpoint?.baseUrl ?? null,
-            });
-            if (!echo) throw new Error('데스크톱 앱에서만 보낼 수 있어요.');
-            return echo;
+      // ⚠️ **Everything from here down runs inside try/finally.** `runTurn` reaches the
+      // network, the Tauri bridge and the tool executor; any of the three can reject.
+      // Without this the reset below was simply skipped and the panel stayed
+      // "running" forever — the send button dead, the elapsed clock counting up, and
+      // the only escape a reload. A failed turn is a turn that ended.
+      try {
+        const result = await runTurn(
+          {
+            adapter,
+            tools: AGENT_TOOLS,
+            system: systemPrompt,
+            // The address path has no default model — only that computer knows what is
+            // installed on it. The name the user chose in settings arrives here.
+            model: args.localEndpoint?.model || adapter.defaultModel,
+            notices: args.notices,
+            execute,
+            async send({ body, scope, question, model }) {
+              const echo = await llmChat({
+                provider,
+                vaultPath,
+                model,
+                question,
+                body,
+                scope,
+                baseUrl: args.localEndpoint?.baseUrl ?? null,
+              });
+              if (!echo) throw new Error('데스크톱 앱에서만 보낼 수 있어요.');
+              return echo;
+            },
           },
-        },
-        turn,
-        {
-          signal: controller.signal,
-          onProgress: (next) =>
-            setTurns((current) =>
-              current.map((existing) => (existing.id === next.id ? next : existing)),
-            ),
-        },
-      );
+          turn,
+          {
+            signal: controller.signal,
+            onProgress: (next) =>
+              setTurns((current) =>
+                current.map((existing) => (existing.id === next.id ? next : existing)),
+              ),
+          },
+        );
 
-      setTurns((current) =>
-        current.map((existing) => (existing.id === result.turn.id ? result.turn : existing)),
-      );
-      setRunning(false);
-      setElapsedSeconds(null);
-      setRunStartedAt(null);
-      abortRef.current = null;
+        setTurns((current) =>
+          current.map((existing) => (existing.id === result.turn.id ? result.turn : existing)),
+        );
+        setRunning(false);
+        setElapsedSeconds(null);
+        setRunStartedAt(null);
+        abortRef.current = null;
 
-      if (result.writeIntents.length > 0) {
-        const built = await buildProposal({
-          intents: result.writeIntents,
-          port,
-          readNodesThisTurn: result.readSlugs,
-          vaultIsGit: args.vaultIsGit,
-          locale: args.locale,
-          labels: args.proposalLabels,
-          // This draft was written by this provider's model — a web screen does not
-          // make it something a person wrote (ledger 2026-07-31). The same name the
-          // audit log already records is passed straight through.
-          agentName: provider,
-        });
-        if (built) setProposal(built);
+        if (result.writeIntents.length > 0) {
+          const built = await buildProposal({
+            intents: result.writeIntents,
+            port,
+            readNodesThisTurn: result.readSlugs,
+            vaultIsGit: args.vaultIsGit,
+            locale: args.locale,
+            labels: args.proposalLabels,
+            // This draft was written by this provider's model — a web screen does not
+            // make it something a person wrote (ledger 2026-07-31). The same name the
+            // audit log already records is passed straight through.
+            agentName: provider,
+          });
+          if (built) setProposal(built);
+        }
+      } catch (error) {
+        // Not swallowed: the console keeps the stack, the panel gets a sentence.
+        console.error('[vault-agent] turn failed', error);
+        setTurns((current) =>
+          current.map((existing) =>
+            existing.id === turn.id
+              ? {
+                  ...existing,
+                  status: 'failed',
+                  events: [
+                    ...existing.events,
+                    { kind: 'notice', code: 'failed', text: args.notices.failed },
+                  ],
+                }
+              : existing,
+          ),
+        );
+      } finally {
+        // Idempotent on the success path, where these already ran before the proposal
+        // was built — repeating them keeps that ordering identical while guaranteeing
+        // the running flag and the elapsed timer are released on every exit.
+        setRunning(false);
+        setElapsedSeconds(null);
+        setRunStartedAt(null);
+        abortRef.current = null;
       }
     },
     [args, port, systemPrompt],

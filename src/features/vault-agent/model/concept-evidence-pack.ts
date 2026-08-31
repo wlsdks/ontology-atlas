@@ -176,8 +176,28 @@ function compactConceptEvidenceRow(
   };
 }
 
+/**
+ * The shape returned when the pack cannot be read at all: the JSON string is still
+ * handed back verbatim (the model may still make sense of it) while nothing is
+ * claimed about what it delivered. Identical to a pack whose `concepts` array is
+ * missing, which is what an unreadable pack effectively is.
+ */
+function unreadableConceptEvidence(content: string): PackedConceptEvidence {
+  return { content, deliveredSlugs: [], vaultChars: 0, omittedCount: 0 };
+}
+
 function packedConceptEvidence(content: string): PackedConceptEvidence {
-  const payload = JSON.parse(content) as Record<string, unknown>;
+  // ⚠️ This parses a string this module just serialised, so a throw here means the
+  // budget loop produced something malformed — a defect, but never one worth
+  // throwing into the ACP tool pipeline, where it surfaces as the whole turn dying
+  // instead of one tool result being thin.
+  let payload: Record<string, unknown>;
+  try {
+    payload = JSON.parse(content) as Record<string, unknown>;
+  } catch {
+    return unreadableConceptEvidence(content);
+  }
+  if (!payload || typeof payload !== 'object') return unreadableConceptEvidence(content);
   const rows = Array.isArray(payload.concepts)
     ? (payload.concepts as Array<Record<string, unknown>>)
     : [];

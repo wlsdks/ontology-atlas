@@ -2166,6 +2166,12 @@
     "proofHealthOpenQueue": "Open in Do next"
   },
   "topology": {
+    "widgetError": {
+      "mapTitle": "The map could not be drawn.",
+      "panelTitle": "This panel could not be opened.",
+      "body": "The rest of the screen still works. Try again, and reload the window if it keeps happening.",
+      "retry": "Try again"
+    },
     "documentTitle": "Map",
     "srHeading": "Map",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",

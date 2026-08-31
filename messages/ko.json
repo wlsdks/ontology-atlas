@@ -2166,6 +2166,12 @@
     "proofHealthOpenQueue": "할 일에서 보기"
   },
   "topology": {
+    "widgetError": {
+      "mapTitle": "지도를 그리지 못했어요.",
+      "panelTitle": "이 패널을 열지 못했어요.",
+      "body": "화면의 나머지는 그대로 쓸 수 있어요. 다시 시도하고, 계속 이러면 창을 새로 고치세요.",
+      "retry": "다시 시도"
+    },
     "documentTitle": "지도",
     "srHeading": "지도",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",

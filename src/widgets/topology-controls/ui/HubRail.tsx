@@ -41,14 +41,26 @@ export function HubRail({
   stripNamePrefix,
 }: HubRailProps) {
   const t = useTranslations('topologyWidgets.hubRail');
+  // ⚠️ Both accesses are wrapped because `localStorage` **throws rather than
+  // returning null** when storage is disabled — the installed app's WKWebView does
+  // exactly that under some privacy settings. An unguarded read sits in a `useState`
+  // initializer, so the throw happened during render and took the whole map down with
+  // it. Storage we cannot read means "the user has not expanded it": closed.
   const [open, setOpen] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem(RAIL_OPEN_KEY) === '1';
+    try {
+      return window.localStorage.getItem(RAIL_OPEN_KEY) === '1';
+    } catch {
+      return false;
+    }
   });
   const setOpenPersisted = useCallback((next: boolean) => {
     setOpen(next);
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return;
+    try {
       window.localStorage.setItem(RAIL_OPEN_KEY, next ? '1' : '0');
+    } catch {
+      // The rail still opens; only the memory of it is lost.
     }
   }, []);
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
