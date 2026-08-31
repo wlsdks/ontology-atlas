@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### Changed — command count restated (2026-08-31)
+
+- The developer-facing CLI documents 58 commands and the installed `mcp-verify`
+  path recognizes the 36-tool MCP surface; `pnpm docs:surface:check` is the
+  count authority. Earlier lines below that say 52 commands or 33 tools
+  describe the surface at the time they were written and are kept as history.
+
 ### Added — project-scoped agent handoff
 
 - `agent-brief --project <slug>` now selects one explicit project containment
