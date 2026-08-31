@@ -32,6 +32,9 @@ Either way, **measurement before further investment**.
 | [`FINDINGS-2026-08-31-metric-split.md`](FINDINGS-2026-08-31-metric-split.md) | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, not a comparison. |
 | [`results/2026-08-31-gb-r3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. |
 | [`results/2026-08-31-gb-r3-regrade-summary.md`](results/2026-08-31-gb-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. |
+| [`FINDINGS-2026-08-31-screening-grade.md`](FINDINGS-2026-08-31-screening-grade.md) | A first read of those 24 answers by a model. Atlas won the two boundary questions and lost the orientation question. A screening pass, not a verdict. |
+| [`results/2026-08-31-gb-r3-blind-packet.md`](results/2026-08-31-gb-r3-blind-packet.md) | The 24 answers with ids instead of side labels, shuffled, ready for a person to grade. |
+| [`results/2026-08-31-gb-r3-screening-grades.md`](results/2026-08-31-gb-r3-screening-grades.md) | The screening grades, per cell, with a note on each. |
 | [`results/2026-08-31-change-r7-summary.md`](results/2026-08-31-change-r7-summary.md) | Four-cell change-flow result with direct Git and Atlas update receipts. |
 | [`results/2026-05-template.md`](results/2026-05-template.md) | Empty matrix (task × agent × mode). Fill in after each measurement run. |
 
@@ -111,6 +114,28 @@ for it. Every summary therefore ends with the exact word behind each miss. Do
 not add synonyms to that list after seeing which answers they would rescue —
 that is tuning the ruler to the result you wanted. Send boundary judgement to
 blind human grading instead.
+
+#### Grade the answers by hand
+
+A score counts words. It cannot tell whether an answer was true, whether the
+boundary was right, or whether the next step was worth taking. Only reading the
+answers does that — and a reader who knows which side wrote each one will find
+what they expect.
+
+```bash
+pnpm benchmark:blind-set --run-id=2026-08-31-gb-r3
+```
+
+This writes a packet where each answer carries an opaque id in a shuffled order,
+plus a key that maps the ids back. Grade the packet, save the grades, then open
+the key. The shuffle is seeded from the run id, so two people grading the same
+run get the same packet in the same order and their grades line up cell by cell.
+
+One limit it cannot remove: an answer written with a vault names its concepts and
+an answer written without one does not, so a grader can often tell the sides
+apart from the wording. The shuffle protects against grading in a convenient
+order and against scoring the label instead of the answer. It is not a claim that
+the grader cannot guess.
 
 #### Re-score a saved run without running anything
 
