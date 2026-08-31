@@ -4798,6 +4798,54 @@ await test("query_ontology health/workspace_brief — meaning assessment cannot 
   }
 });
 
+await test("query_ontology health — authored answers without a finalize receipt ask for the receipt, not for authoring", async () => {
+  // The third state (measured 2026-08-31 on this repository's own dogfood
+  // vault): all five competency answers are written in the project document,
+  // but no finalize receipt exists in this vault's sidecar. The gap id stays
+  // `competency_not_authored` (decision 2026-08-17 (28) named the missing
+  // receipt that way, and the id is read by agents), but the instruction must
+  // change: a person who already wrote the answers must not be told to write
+  // them. The only missing step is calling finalize_project_meaning.
+  const answer = (text) => ({
+    status: "answered",
+    answer: text,
+    witnesses: { concepts: [], relations: [], evidence: [], paths: [] },
+  });
+  const authoredSection = renderProjectCompetencyMarkdown({
+    scope: answer("The project scope answer."),
+    domains: answer("The domains answer."),
+    abilities: answer("The abilities answer."),
+    evidence: answer("The evidence answer."),
+    impact: answer("The impact answer."),
+  });
+  const root = makeVault([
+    {
+      slug: "project",
+      content: `---\nkind: project\ntitle: Project\ndomains: [domains/core]\n---\n\n## Definition\n\nA project.\n\n${authoredSection}`,
+    },
+    { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
+    { slug: "capabilities/run", content: "---\nkind: capability\ntitle: Run\ndomain: domains/core\nelements: [elements/worker]\n---\n" },
+    { slug: "elements/worker", content: "---\nkind: element\ntitle: Worker\ndomain: domains/core\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", { operation: "health" }),
+    ]);
+    const health = getCallParsed(responses, 2);
+    const meaningCheck = health.checks.find((check) => check.id === "meaning_assessment");
+    assert.equal(meaningCheck?.status, "warn");
+    assert.match(meaningCheck?.message ?? "", /competency_not_authored/);
+    assert.match(meaningCheck?.message ?? "", /no finalize receipt/);
+    assert.match(meaningCheck?.message ?? "", /finalize_project_meaning/);
+    // The wrong instruction for this state: the section exists and parses, so
+    // the message must not send the author back to writing it.
+    assert.doesNotMatch(meaningCheck?.message ?? "", /Fill in/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("query_ontology health/workspace_brief — clean projectless graph stays healthy", async () => {
   const root = makeVault([
     { slug: "domains/core", content: "---\nkind: domain\ntitle: Core\ncapabilities: [capabilities/run]\n---\n" },
