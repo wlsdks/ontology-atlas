@@ -2,6 +2,13 @@
  * Turns evidence Atlas already computes into findings that survive being
  * re-run.
  *
+ * It lives in the CLI because the CLI is its only consumer. Every other command
+ * reaches MCP through `callMcpTool`, never by importing its internals, and the
+ * package contract enforces that — the first draft of this module sat in
+ * `mcp/src/` and the gate caught the import across the boundary. If a second
+ * surface ever needs these findings, that is the moment to decide where they
+ * belong, with the parity obligation that comes with two copies.
+ *
  * The screen this feeds does not need another count. It needs to answer "what
  * is worse than last time, and what should I look at first" — and that question
  * is unanswerable unless two runs can be compared. Comparing prose cannot do it:

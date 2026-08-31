@@ -21,7 +21,7 @@ import {
   diffFindings,
   parseFindings,
   renderAnalysis,
-} from '../../../mcp/src/analysis-findings.mjs';
+} from '../lib/analysis-findings.mjs';
 import { COLORS } from '../lib/colors.mjs';
 
 const CLI_ENTRY = resolve(dirname(fileURLToPath(import.meta.url)), '../index.mjs');
