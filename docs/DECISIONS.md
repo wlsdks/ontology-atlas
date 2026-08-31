@@ -40,6 +40,176 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — An authored vault is told to finalize, not to author
+
+**Convened**: solo pass (agent-prepared for owner review on the PR) ·
+**Trigger**: the decision gate names any `mcp/src/index.js` edit a public
+contract change. This change edits one health hint string; no tool, gap id,
+nextAction id, or schema changes.
+
+**Prior decision**: 2026-08-17 (28) stands and is cited, not overturned. It
+named the missing finalize receipt `competency_not_authored` and ruled that the
+wording must never assert the section is missing, because a vault can have the
+section and only lack the receipt, and it named this repository as such a
+vault. The dogfood vault then hit exactly that case: all five competency
+answers were written in `docs/ontology/ontology-atlas.md`, no receipt existed
+in the gitignored sidecar, and `health` answered with a hint that starts from
+filling in the section.
+
+**Decision**:
+
+1. When the `## Competency answers` section parses, the `health` and
+   `workspace_brief` message says the finalize receipt is missing and asks only
+   for `finalize_project_meaning`. The write-the-answers hint remains for a
+   section that is absent or does not parse.
+2. The gap id stays `competency_not_authored` and the nextAction id stays
+   `author_competency_answers`. Agents branch on those ids; renaming one or
+   adding a distinct `competency_not_finalized` id is a real contract change
+   that needs its own convened decision, and this record does not make it.
+3. Gate: a new integration test in `mcp/src/integration.test.mjs` fails on the
+   old "Fill in the section" instruction when the message split is reverted
+   (probed red 2026-08-31).
+
+**Accountable**: jinan (to confirm on PR review).
+
+**Recorded dissent**: one gap id for two different situations means an agent
+that branches on `competency_not_authored` alone still cannot tell "never
+written" from "written but not finalized" without reading prose; the honest id
+fix is a distinct gap id.
+**Falsifier**: an agent or person is observed misrouting on the id alone,
+treating an authored-but-unfinalized project as unwritten while ignoring the
+message. Then add the distinct id through a convened decision and version it.
+**Revisit**: on the first observed misroute, or when the meaningAssessment
+contract next changes for another reason.
+
+**Status**: standing; refines 2026-08-17 (28) within its own wording rule.
+
+## 2026-08-31 — PO Council: the relay does not ship into `init`, and `init` stops naming what it did not install
+
+**Convened because**: the owner asked for item 9, shipping the independent
+evaluation relay into `init`, and set two requirements: it must be genuinely
+easy to use and the capability must stay powerful.
+
+| PO | Verdict | Owned score |
+|---|---|---|
+| Evidence | Do not build | Problem insight 2 · User moment 2 |
+| Craft | Do not build (changed from *shape a slice* in Round 2) | Verification 3 |
+| Steward | Do not build | Ontology value 2 · Agent value 1 |
+| Wedge | Do not build | Differentiation 1 |
+| Leverage | Do not build | appetite cannot be met |
+
+**Rubric total**: 11/24 (fatal zeros: none). Five seats to zero.
+
+**Procedural finding, raised by Steward and uncontested**: item 9 is the
+verbatim remedy clause of the standing 2026-08-31 record "A refusal names the
+path that stays open, or it is a dead end". That clause fires only if a solo
+user completes through the recovery routing **and produces a junk vault**. The
+only observation available points the other way: the run recorded in PR #1343
+validated clean and reported `needs_evidence` honestly. The ledger contract
+forbids quietly executing a conditional remedy whose condition is unmet, so
+this council could either wait for the observation or overturn the record on
+the merits. It did neither, because it declined to build at all; the record
+stands and its falsifier remains unobserved and unclaimed.
+
+**The premise was false.** Item 9 existed to route around the belief that a
+person with one coding agent cannot supply an evaluator. The contract does not
+say that. `ACTOR_SCHEMA.authority` is a free string, and `'human'` is required
+only of `purposeAuthority.owners` and `acceptance.authority`. Exactly two actor
+separations exist: `builder.id !== evaluator.id` and
+`acceptance.decidedBy !== builder.id`. **No rule separates the evaluator from
+the purpose-authority owner.** So a person whose agent is the builder can be
+the evaluator, the owner, and the acceptor, and all four rules pass with no
+code change. The stricter separation lives in `SKILL.md` prose, which is where
+the 2026-08-29 record deliberately put it. The obstacle item 9 was built to
+work around is not in the contract.
+
+**The qualified path leaves no trace.** `construction-lifecycle.mjs` releases
+`writePlan: clone(reviewPlan)`, the same rows already shown, written by the
+same `add_concepts`; `schema.mjs` carries no qualification field at all. A
+qualified vault and an incremental one are byte-indistinguishable on disk. The
+packet has a viewer, a file picker inside the review panel, and no reader: it
+is session-scoped, auto-discovered by nothing, and linked to no uid. Provenance
+that is not attached to the thing it vouches for is not provenance.
+
+**On the owner's two requirements, measured rather than asserted.** Counting
+mandatory human decision round-trips from the primary text, the relay needs 2
+and the incremental path needs 3 for the twelve nodes PR #1343 actually
+produced. **The relay wins on count and still fails on ease**, because neither
+of its decisions is revisable: the competency-question set must be approved
+before any evidence exists, and the plan acceptance is terminal and bound to
+one digest. The ordinary human answer, "I like eight of these twelve", costs a
+restart at step 8 and a re-run of both lanes, measured at roughly 465 seconds.
+Two irreversible decisions are harder than three reversible ones, so no
+reduction in step count could rescue it. On power: the relay's own successful
+run released 5 concepts and 5 relations past its 40-minute target, against 12
+nodes and 19 relations from the ungated incremental run.
+
+**Decision**: item 9 is not built. Nothing about the relay ships into `init`,
+in any form, including a pointer. What ships instead is the smallest slice all
+five seats reached independently, and it is repair rather than capability:
+**`init` describes only what it installed.** Three surfaces named things the
+person does not have. `cli/src/index.mjs` sent every new user to an
+`ontology-bootstrap` flow that `init` has never installed, in two separate
+output paths; `cli/templates/vault/README.md` named the retired Studio surface,
+inside a file that lands in the vault where agents read it too. A contract test
+reads the shipped template rather than a fixed list, so the set of nameable
+skills follows what `init` actually installs. It found a third occurrence no
+seat had noticed.
+
+**Applied rule**: smallest slice; a product may not name a destination it did
+not give the person.
+
+**Accountable**: jinan (to confirm on PR review)
+
+**Recorded dissent** — Wedge, and it is the strongest losing argument in the
+council: the 2026 field converged on writing agent memory freely and auditing
+later, and its own best published number indicts it, with auto-extracted graph
+memory scoring 83% against 92% for an agent simply reading files. On that
+reading unreviewed agent memory is a liability wearing an asset's name, nobody
+shipping a pre-write gate is a market-wide blind spot rather than absence of
+demand, and provenance refusal is the only accumulation Atlas has that a
+competitor cannot retrofit. Declining to ship the discipline spends the wedge
+before it exists. The council's answer is that this is right about the strategy
+and wrong about this instrument: a gate that accepted a forged human on
+2026-08-29, whose schema pins every access boundary to `const: false` and so
+cannot record an honest confession, is a costume of the discipline rather than
+an implementation of it.
+
+**Falsifier**: a competitor ships a review or provenance gate ahead of writes
+and it wins adoption; or an inbound report arrives asking how to prove a
+vault's trustworthiness to someone who did not build it. Either observation
+means the discipline was wanted and the council mistook a bad instrument for a
+bad idea.
+
+**Pre-registration, adopted from Leverage, so the measurements that follow
+cannot become ritual**: if judging the PR #1343 vault returns junk, the
+first-run work stops and a construction-quality slice opens; if sound, the
+batch-provenance item enters the queue. If blind grading of `gb-r3` returns
+another gap inside the 0.083 noise floor after the handoff defect is fixed, the
+claim cannot be rescued at this vault size and the next cycle goes entirely to
+first-run experience; if it returns a delta, the landing page finally gets a
+sentence it can insure.
+
+**Slice**: IN the three naming repairs, the attention stack in step 2, the
+354-column `codex mcp add` line, and a gate that reads the shipped template ·
+OUT the relay in every form, any weakening of builder/evaluator separation, and
+Steward's read-only self-check, which its own author withdrew once the obstacle
+it routed around turned out not to exist · appetite one day.
+
+**Carried forward, not decided here**: three seats converged independently on
+human-as-evaluator, batch-as-unit-of-trust, and a provenance stamp on what the
+person actually picked. Craft's inversion belongs with it: the helper runs in
+70 milliseconds while a human spent 1,302 seconds on repeated shape discovery,
+so a future instrument should **emit** a scaffold from the review plan the
+server already holds rather than validate a hand-authored packet. That is a new
+item and needs its own pass. It must not be carried as a mutation of item 9,
+which would inherit an unfired remedy clause.
+
+**Review**: when the PR #1343 falsifier is claimed, or on the first inbound
+report about first-run breakage or about proving a vault to a third party.
+
+**Status**: valid
+
 ## 2026-08-31 — The install-count review triggers have not fired; here is the number and how to re-read it
 
 **Convened**: observation record, no verdict sought · **Trigger**: several

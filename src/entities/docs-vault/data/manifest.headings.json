@@ -6943,6 +6943,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-08-31 — An authored vault is told to finalize, not to author",
+      "slug": "2026-08-31-an-authored-vault-is-told-to-finalize-not-to-author"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — PO Council: the relay does not ship into `init`, and `init` stops naming what it did not install",
+      "slug": "2026-08-31-po-council-the-relay-does-not-ship-into-init-and-init-stops-naming-what-it-did-not-install"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-31 — The install-count review triggers have not fired; here is the number and how to re-read it",
       "slug": "2026-08-31-the-install-count-review-triggers-have-not-fired-here-is-the-number-and-how-to-re-read-it"
     },
