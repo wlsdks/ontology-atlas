@@ -36,18 +36,127 @@ checks the fixed task's required slugs, paths, and bounded-unknown signal.
 cell** means the process and arm-integrity checks passed. Neither is a human
 semantic verdict.
 
-For the lifecycle matrix, blind-review each final answer against the source and
-prepared vault, recording:
+For the lifecycle matrix, a person reads each answer and scores it. This section
+is the whole specification. If something here is ambiguous, that is a defect in
+this section, not a judgement call for the grader.
 
-- factual correctness and unsupported rationale;
-- path and concept citation accuracy;
-- boundary/impact fidelity and explicit unknown handling;
-- usefulness of the next handoff action;
-- any control leak, MCP setup failure, or source/key contamination.
+### The material
 
-Do not turn MCP calls, tokens, or elapsed time into a quality score. They remain
-diagnostics, and construction/maintenance cost is a separate long-term ROI
-measurement.
+Build the packet with `pnpm benchmark:blind-set --run-id=<run>`. It gives every
+answer an opaque id and shuffles the order, so nobody grades in a convenient
+sequence or scores the label instead of the answer. Grade against:
+
+- the codebase the question was about;
+- the curated concept vault, which some answering agents could read and some
+  could not.
+
+**What you will not have:** the vault-reading agents also queried a live server,
+and those tool responses are not saved. An answer may cite reported metadata you
+cannot see. That is a gap in the packet, not a fault in the answer — see
+*Unverifiable* below.
+
+### The five things you record
+
+| # | Name | Out of | The question it answers |
+|---:|---|---:|---|
+| 1 | Correct | **3** | Did it get the question right? |
+| 2 | Citations | **2** | Does what it points at exist, and say what it claims? |
+| 3 | Boundary | **2** | Did it name who owns this, and what is outside? |
+| 4 | Next step | **2** | Could someone act on this without asking again? |
+| 5 | Unsupported / Unverifiable | counts | What could not stand — and which kind. |
+
+**Always write a score with its maximum.** `2 / 3`, never `2`. A number without
+its scale is not a result. (These maxima are the lifecycle matrix's own; the
+`D-a` and `D-b` axes further down belong to the older D tasks and use different
+ones. Never mix the two sets in one table.)
+
+### 1. Correct — out of 3
+
+| Score | Meaning |
+|---:|---|
+| **3** | Everything the question asked for is present and accurate. No false claim. |
+| **2** | The main answer is right, with a minor omission or one borderline sub-item. |
+| **1** | It addresses the question but misses material content, or states something confidently wrong. |
+| **0** | Wrong, evasive, or a non-answer such as "I'd need more context". |
+
+*A real 3, on "should reconciliation move into checkout":* it answered no, gave
+both exclusions, and quoted the recorded relation and its stored reason.
+
+*A real 1, on "what does an acknowledgement change touch":* it named the right
+domain, then listed *"coordinate"* and *"read"* as that domain's capabilities —
+they are permission levels belonging to a different domain, reused as capability
+names.
+
+### 2. Citations — out of 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Every path and concept it cites exists, and each supports the claim attached to it. |
+| **1** | Everything cited exists, but at least one does not support the claim made from it. |
+| **0** | It cites a path or concept that does not exist. |
+
+Score only what you can actually check against the material you have. **Never
+deduct for a citation you cannot see** — that belongs in *Unverifiable*.
+
+### 3. Boundary — out of 2
+
+| Score | Meaning |
+|---:|---|
+| **2** | Names the responsibility that owns the work **and** what is outside it. |
+| **1** | Names the owner correctly but never says what is excluded. |
+| **0** | Puts the work in the wrong place, or states an exclusion that is not true. |
+
+*A real 2:* "Permission evaluation belongs in Access Control … deciding who may
+read, coordinate, or administer an incident is explicitly outside it." Owner
+named, exclusion named. Whether it said *excludes* or *explicitly outside* makes
+no difference here — that is wording, and wording is not scored.
+
+### 4. Next step — out of 2
+
+One question decides it: **could a second person or agent act on this without
+coming back to ask?**
+
+| Score | Meaning |
+|---:|---|
+| **2** | A specific action against specific files, or a specific decision that has to be made first. |
+| **1** | Actionable but generic, or it restates the answer instead of moving past it. |
+| **0** | No usable next step. |
+
+*A real 1:* "Read README.md, docs/SYSTEM-MAP.md, apps/web, packages/realtime in
+that order" — the answer had already said that. It repeats rather than advances.
+
+### 5. Unsupported and Unverifiable — counts, never scores
+
+Two different things, and collapsing them breaks the measurement.
+
+| Count | What goes in it | Does it lower a score? |
+|---|---|---|
+| **Unsupported** | Claims the material **contradicts**, and paths or concepts that do not exist. | It is a named defect. Report it; do not subtract it from an axis. |
+| **Unverifiable** | Claims you cannot check because they rest on tool responses the packet does not contain. | **No. Never.** |
+
+Report both as counts. Never average either into a total: one invented claim is
+a specific defect worth naming, not a fraction of a point.
+
+> **Why the split exists.** The first independent grading of `2026-08-31-gb-r3`
+> returned 17 unsupported claims against the vault side and `citations 1/2` on
+> nearly every one of its answers — while its own notes called those same answers
+> *"correct"*, *"fully establish the boundary"*, and *"decisively"* right. It was
+> penalising claims it had never been given the evidence for. Separating the two
+> counts moved citation agreement between graders from 33% to 96% and the vault
+> side's unsupported count from 17 to 0. **A score and its own note disagreeing
+> that consistently is the signal that a criterion is broken, not an answer.**
+
+### What never affects a score
+
+- **Which vocabulary an answer used.** Some name vault concepts, some describe
+  the same idea in ordinary words. Grade what the answer establishes about the
+  codebase.
+- **Tool calls, tokens, elapsed time.** Diagnostics, like a stack trace. A cell
+  is never won or lost on them.
+- **Build and upkeep cost.** A separate measurement, deliberately not folded in.
+
+Record separately, as invalidating rather than scoring a cell: any control leak,
+server setup failure, or answer-key contamination.
 
 ## End-to-end change-flow scoring
 

@@ -98,6 +98,110 @@ the first observation of whether anyone re-ran it.
 
 **Status**: valid
 
+## 2026-08-31 — The static budget is raised once; the next time, move the ledgers out
+
+**Convened**: solo pass · **Trigger**: the desktop static-asset gate measured
+7.81 MiB against an 8 MiB ceiling — 97.6% — during a routine rebuild and install
+of the current app.
+
+**Measured before deciding**: the ceiling was not being approached by product
+code. `src/entities/docs-vault/data/content.json` is 4.53 MiB, of which
+`DECISIONS` is 2.84 MiB and `CHANGELOG` is 1.14 MiB. Those two files are
+append-only by charter, so this input rises monotonically and reaches any
+ceiling eventually. The same documents already ship as plain Markdown in
+`out/docs-vault/` (5.4 MiB), which this gate does not count, so the bundle
+carries a second copy of documents the app can already fetch. The whole macOS
+bundle is 87.89 MiB, so a 2 MiB change in the static portion is not what
+constrains this product.
+
+**Decision**: raise `nextStaticBytes` to 10 MiB, with the measurement and the
+structural fix written into the constant's own comment. If the gate goes red
+again, stop bundling the two ledgers and read them from the static copy on
+demand instead of raising the number a second time.
+
+**Applied rule**: smallest slice that unblocks, with the real fix named rather
+than deferred silently.
+
+**Rejected**: raising it without recording why. A budget answered by moving the
+line stops being a budget, and the next person sees only a bigger number with no
+account of how it got there.
+
+**Signature**: Stark
+
+**Recorded dissent**: the ledgers should have been unbundled now rather than
+recorded as a follow-up, because a gate raised once is usually raised twice.
+
+**Falsifier**: the gate goes red again and the response is another increase. If
+that happens the dissent was right and the ceiling should be reverted to 8 MiB
+until the ledgers are unbundled.
+
+**Review**: at the next red reading of `pnpm desktop:perf`.
+
+**Status**: valid
+
+## 2026-08-31 — A score only one side can earn is reported, never quoted as a gap
+
+**Convened**: solo pass · **Trigger**: `README.md` quoted the paired lifecycle
+pilot's coverage gap as evidence for what Atlas is trying to earn. Reading the
+runner showed the score was a literal word match over a list of required items,
+and that 14 of the 19 items were Atlas concept names. Those names exist only
+inside the prepared vault, so the side without a vault could not score them
+under any answer.
+
+**Measured**: the 24 saved answers of `2026-08-31-gb-r3` were scored again with
+nothing re-run. All four published averages came back exactly (0.25 / 0.875 /
+0.2834 / 0.7389), so the re-score reads the same answers. Separating the part
+both sides could earn from the part only Atlas could moved the comparable gap
+from +0.625 and +0.4555 down to **+0.25 in both subjects**. In all 12 control
+cells the side without Atlas named 100% of the source paths; every other miss
+was an Atlas concept name, except the single word `excludes` in the two boundary
+questions — and there the brownfield control had written "explicitly outside
+it", which is the same boundary correctly stated and scored zero. Evidence:
+[the correction](benchmark/FINDINGS-2026-08-31-metric-split.md) and
+[the re-scored matrix](benchmark/results/2026-08-31-gb-r3-regrade-summary.md).
+
+**Decision**: required items are sorted into an Atlas concept name, a source
+path, or an ordinary phrase. Summaries report the comparable score and the
+Atlas-name score in separate columns and print the word behind every miss. The
+old combined number survives only so past runs still reproduce, and is labelled
+not for quoting. The sorting is checked rather than trusted: the runner refuses
+to start unless every concept name is a real entry in that subject's vault and
+absent from the source tree, and every path exists on disk. `--dry-run`, which
+printed `definitions valid` while calling nothing that could fail, now runs the
+checks and exits non-zero; both new checks were planted red and restored green.
+
+**Applied rule**: charter first. An honest measurement is this product's
+strongest asset, so a number that cannot be a comparison is reported as what it
+is rather than narrowed away or deleted. The Atlas-name column stays visible:
+returning a name that can be looked up again is a genuine property of the vault.
+
+**Rejected**: adding *outside*, *not part of* and similar synonyms to the
+boundary word list. Rejected because those synonyms were chosen after seeing
+which control answers they would rescue, which is tuning the ruler to the
+preferred result. Boundary judgement goes to blind human grading instead.
+
+**Signature**: Stark
+
+**Recorded dissent**: the split understates Atlas. A concept name is the unit
+that makes a handoff addressable across sessions and tools, so scoring it is
+scoring the product's actual contribution, and moving it into a non-comparable
+column hides the one thing Atlas uniquely supplies.
+
+**Falsifier**: if blind human grading of these same 24 answers finds the Atlas
+side materially better on correctness, boundary fidelity, citation accuracy, or
+usefulness of the handoff, then the combined score pointed the right way and the
+dissent won on substance while losing on method.
+
+**Review**: when blind human grading of `2026-08-31-gb-r3` is recorded, and
+again on the first unfamiliar-repository run.
+
+**Follow-on obligations**: `README.md` was restated in the same change. The
+Atlas side's own concept-name score was 0.8333 greenfield and 0.5695 brownfield
+— it repeatedly answered without the names it had just read — which is a product
+bug to fix, not a scoring artifact.
+
+**Status**: valid
+
 ## 2026-08-31 — Current exact handoff passes one read-only coding lane; cross-repository speed remains unearned
 
 **Trigger**: independent review invalidated the preceding performance evidence

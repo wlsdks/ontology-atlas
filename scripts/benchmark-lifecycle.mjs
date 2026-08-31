@@ -13,6 +13,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -39,6 +40,34 @@ const OUTPUT_SCHEMA = {
     unknowns: { type: 'array', items: { type: 'string' } },
   },
 };
+
+// Required evidence is sorted by who could possibly have written it, because one
+// blended score hides which half of a gap is a real comparison.
+//
+// `vocabulary` items are Atlas concept names such as `capabilities/checkout`.
+// They exist only inside the prepared vault, so the side without a vault scores
+// zero on them however good its answer is. A gap here says the Atlas side
+// returned a name that can be looked up again; it does not say the answer was
+// better.
+//
+// `path` and `phrase` items are things either side could write: a source path is
+// on disk for both, and either can say a thing is excluded. Only these two can
+// be compared.
+//
+// The sorting is derived here and then proved in `validateDefinitions`, so no
+// token can be filed into the flattering class by hand.
+const VAULT_KINDS = Object.freeze(['projects', 'domains', 'capabilities', 'elements']);
+
+export function classifyEvidence(token) {
+  if (VAULT_KINDS.some((kind) => token.startsWith(`${kind}/`))) return 'vocabulary';
+  return token.includes('/') ? 'path' : 'phrase';
+}
+
+function groupRequired(task) {
+  const grouped = { vocabulary: [], path: [], phrase: [] };
+  for (const token of task.required) grouped[classifyEvidence(token)].push(token);
+  return grouped;
+}
 
 const TASKS = Object.freeze({
   greenfield: Object.freeze([
@@ -147,7 +176,7 @@ const CASES = Object.freeze([
             'capabilities/inventory-sync': 'Checkout depends on trustworthy sellable availability before it confirms a purchase.',
           },
         },
-        body: '## Definition\nAuthorize a purchase and produce an order confirmation.\n\n## Boundaries\n- Includes turning a reviewed cart into a confirmed order.\n- Excludes inventory reconciliation itself and interface preference changes.\n\n## Handoff\nRead the checkout entrypoint first, then inspect the inventory capability before changing the boundary.',
+        body: '## Definition\nAuthorize a purchase and produce an order confirmation.\n\n## Boundaries\n- Includes turning a reviewed cart into a confirmed order.\n- Excludes inventory reconciliation itself and interface preference changes.',
       }),
       node({
         slug: 'capabilities/inventory-sync',
@@ -216,7 +245,7 @@ const CASES = Object.freeze([
             'capabilities/acknowledgement-tracking': 'Acknowledgement state is meaningful only after a decision has been published to responders.',
           },
         },
-        body: '## Definition\nPublish an operational decision and distribute it to active responders.\n\n## Boundaries\n- Includes decision publication and distribution.\n- Excludes workspace permission evaluation and member authority.\n\n## Handoff\nStart with the realtime package, then check acknowledgement tracking; do not infer a complete runtime blast radius from this relation.',
+        body: '## Definition\nPublish an operational decision and distribute it to active responders.\n\n## Boundaries\n- Includes decision publication and distribution.\n- Excludes workspace permission evaluation and member authority.\n\n## Uncertainty\nThe recorded dependency states a product relationship. It does not establish a complete runtime blast radius.',
       }),
       node({
         slug: 'capabilities/acknowledgement-tracking',
@@ -290,6 +319,8 @@ function parseArgs(argv) {
   return {
     bypass: args.has('--bypass'),
     dryRun: args.has('--dry-run'),
+    regrade: args.has('--regrade'),
+    explicitRunId: Boolean(runIdValue),
     runId,
     repeat,
     cases: selectedCases,
@@ -328,18 +359,39 @@ export function scoreFinalAnswer(finalValue, task) {
       && Array.isArray(finalValue.unknowns),
   );
   const haystack = valid ? JSON.stringify(finalValue).toLowerCase() : '';
-  const matched = task.required.filter((value) => haystack.includes(value.toLowerCase()));
-  const missing = task.required.filter((value) => !haystack.includes(value.toLowerCase()));
+  const cover = (tokens) => {
+    const matched = tokens.filter((value) => haystack.includes(value.toLowerCase()));
+    const missing = tokens.filter((value) => !haystack.includes(value.toLowerCase()));
+    return {
+      matched: matched.length,
+      total: tokens.length,
+      missing,
+      coverage: tokens.length === 0 ? null : Number((matched.length / tokens.length).toFixed(4)),
+    };
+  };
+  const grouped = groupRequired(task);
+  const all = cover(task.required);
+  const vocabulary = cover(grouped.vocabulary);
+  const comparable = cover([...grouped.path, ...grouped.phrase]);
   const foundForbidden = task.forbidden.filter((value) => haystack.includes(value.toLowerCase()));
   const anyRequired = task.requiredAny.length === 0
     || task.requiredAny.some((value) => haystack.includes(value.toLowerCase()));
   return {
     valid,
-    required: { matched: matched.length, total: task.required.length, missing },
+    required: { matched: all.matched, total: all.total, missing: all.missing },
     requiredAny: { passed: anyRequired, candidates: task.requiredAny },
     forbidden: { found: foundForbidden, total: task.forbidden.length },
-    coverage: task.required.length === 0 ? 1 : Number((matched.length / task.required.length).toFixed(4)),
-    pass: valid && missing.length === 0 && anyRequired && foundForbidden.length === 0,
+    coverage: all.coverage ?? 1,
+    vocabularyCoverage: vocabulary.coverage,
+    comparableCoverage: comparable.coverage,
+    breakdown: {
+      vocabulary,
+      path: cover(grouped.path),
+      phrase: cover(grouped.phrase),
+      comparable,
+      unknownSignal: anyRequired,
+    },
+    pass: valid && all.missing.length === 0 && anyRequired && foundForbidden.length === 0,
   };
 }
 
@@ -488,10 +540,17 @@ function runCell({ caseDefinition, mode, task, iteration, scratchRoot, outputRoo
 }
 
 function median(values) {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
+  const numeric = values.filter((value) => Number.isFinite(value));
+  if (numeric.length === 0) return null;
+  const sorted = [...numeric].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+function mean(values) {
+  const numeric = values.filter((value) => Number.isFinite(value));
+  if (numeric.length === 0) return null;
+  return Number((numeric.reduce((sum, value) => sum + value, 0) / numeric.length).toFixed(4));
 }
 
 function summarizeRows(rows, caseId, mode) {
@@ -502,12 +561,19 @@ function summarizeRows(rows, caseId, mode) {
     cells: selected.length,
     contentPasses: selected.filter((row) => row.grade.pass).length,
     usableCells: selected.filter((row) => row.usable).length,
-    coverage: selected.length === 0 ? null : Number((selected.reduce((sum, row) => sum + row.grade.coverage, 0) / selected.length).toFixed(4)),
+    coverage: mean(selected.map((row) => row.grade.coverage)),
+    vocabularyCoverage: mean(selected.map((row) => row.grade.vocabularyCoverage)),
+    comparableCoverage: mean(selected.map((row) => row.grade.comparableCoverage)),
+    unknownSignals: selected.filter((row) => row.grade.breakdown?.unknownSignal).length,
     medianDurationMs: median(selected.map((row) => row.durationMs)),
     medianShellCalls: median(selected.map((row) => row.shellCalls)),
     medianMcpCalls: median(selected.map((row) => row.mcpCalls)),
     processFailures: selected.filter((row) => !row.usable).length,
   };
+}
+
+function delta(on, off) {
+  return on != null && off != null ? Number((on - off).toFixed(4)) : null;
 }
 
 function buildSummary({ rows, cases, repeat, modes }) {
@@ -517,7 +583,9 @@ function buildSummary({ rows, cases, repeat, modes }) {
     const on = arms.find((row) => row.caseId === id && row.mode === 'on');
     return {
       caseId: id,
-      coverageDelta: off?.coverage != null && on?.coverage != null ? Number((on.coverage - off.coverage).toFixed(4)) : null,
+      coverageDelta: delta(on?.coverage, off?.coverage),
+      comparableDelta: delta(on?.comparableCoverage, off?.comparableCoverage),
+      vocabularyDelta: delta(on?.vocabularyCoverage, off?.vocabularyCoverage),
       passDelta: off && on ? on.contentPasses - off.contentPasses : null,
       durationDeltaMs: off?.medianDurationMs != null && on?.medianDurationMs != null ? on.medianDurationMs - off.medianDurationMs : null,
     };
@@ -525,25 +593,112 @@ function buildSummary({ rows, cases, repeat, modes }) {
   return { repeat, modes, arms, paired };
 }
 
-function renderSummary({ date, summary, rows }) {
+function renderSummary({ date, summary, rows, title = 'Greenfield/brownfield lifecycle benchmark', preamble = [] }) {
   const lines = [
-    `# Greenfield/brownfield lifecycle benchmark — ${date}`,
+    `# ${title} — ${date}`,
     '',
-    'This is a paired Codex measurement of a prepared Atlas vault. `off` has no vault, MCP, or answer key in the subject workspace; `on` has the same source plus a validated curated vault and Atlas MCP. Machine coverage is not a semantic quality certificate; inspect the saved transcripts before making a product claim.',
+    'Two sides answer the same questions about the same source code. `off` has no Atlas vault, no MCP server, and no answer key in its workspace; `on` has the identical source plus a checked Atlas vault and the read-only Atlas MCP server. These scores count whether an answer contained the things it should have named. They do not judge whether the answer was true or useful — read the saved answers before making any claim about the product.',
+    ...preamble,
     '',
     `Runs per cell: **${summary.repeat}**`,
     '',
-    '| Subject | Arm | Cells | Content passes | Usable cells | Required coverage | Median duration | Median shell | Median MCP | Process failures |',
-    '|---|---|---:|---:|---:|---:|---:|---:|---:|',
+    '| Subject | Side | Cells | Content passes | Usable cells | Blended | Comparable (both sides) | Atlas names (Atlas side only) | Median duration | Median shell | Median MCP | Process failures |',
+    '|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|',
   ];
   for (const arm of summary.arms) {
-    lines.push(`| ${arm.caseId} | ${arm.mode} | ${arm.cells} | ${arm.contentPasses} | ${arm.usableCells} | ${arm.coverage ?? '—'} | ${arm.medianDurationMs ?? '—'} ms | ${arm.medianShellCalls ?? '—'} | ${arm.medianMcpCalls ?? '—'} | ${arm.processFailures} |`);
+    lines.push(`| ${arm.caseId} | ${arm.mode} | ${arm.cells} | ${arm.contentPasses} | ${arm.usableCells} | ${arm.coverage ?? '—'} | ${arm.comparableCoverage ?? '—'} | ${arm.vocabularyCoverage ?? '—'} | ${arm.medianDurationMs == null ? '—' : `${arm.medianDurationMs} ms`} | ${arm.medianShellCalls ?? '—'} | ${arm.medianMcpCalls ?? '—'} | ${arm.processFailures} |`);
   }
-  lines.push('', '## Paired deltas', '', '| Subject | ON coverage − OFF | ON passes − OFF | ON duration − OFF |', '|---|---:|---:|---:|');
-  for (const row of summary.paired) lines.push(`| ${row.caseId} | ${row.coverageDelta ?? '—'} | ${row.passDelta ?? '—'} | ${row.durationDeltaMs ?? '—'} ms |`);
-  lines.push('', '## Interpretation boundary', '', '- A positive coverage delta is a lead, not proof of business meaning.', '- A zero or negative delta is a valid result and should redirect the next slice.', '- Bootstrap/maintenance cost, source-hidden handoff, citation truth, and human semantic grading remain separate measurements.', '- A cell with failed arm integrity is a setup failure, not evidence for or against Atlas.', '', '## Cells', '', '| Subject | Task | Arm | Iteration | Coverage | Content pass | Integrity | Usable | Status | Transcript |', '|---|---|---|---:|---:|---|---|---|---:|---|');
-  for (const row of rows) lines.push(`| ${row.caseId} | ${row.taskId} | ${row.mode} | ${row.iteration} | ${row.grade.coverage} | ${row.grade.pass ? 'yes' : 'no'} | ${row.integrity.passed ? 'yes' : `no (${row.integrity.reason})`} | ${row.usable ? 'yes' : 'no'} | ${row.status ?? '—'} | [raw transcript](${row.transcript}) |`);
+  lines.push('', '## Paired gaps', '', '| Subject | Comparable gap | Atlas-name gap | Blended gap | ON passes − OFF | ON duration − OFF |', '|---|---:|---:|---:|---:|---:|');
+  for (const row of summary.paired) lines.push(`| ${row.caseId} | ${row.comparableDelta ?? '—'} | ${row.vocabularyDelta ?? '—'} | ${row.coverageDelta ?? '—'} | ${row.passDelta ?? '—'} | ${row.durationDeltaMs == null ? '—' : `${row.durationDeltaMs} ms`} |`);
+  lines.push(
+    '',
+    '## How to read this',
+    '',
+    '- **Only the comparable column compares the two sides.** It scores source paths and boundary words, which either side could have written.',
+    '- **The Atlas-name column is not a comparison.** It scores Atlas concept names, which live only in the vault, so the control side scores zero on it no matter how good its answer is. What it does show is worth showing: a name like `capabilities/checkout` can be looked up again next session by a person or an agent, and the phrase "the checkout feature" cannot.',
+    '- The blended column exists only so earlier published runs still reproduce. Do not quote it.',
+    '- **Boundary words are matched literally.** An answer that says "explicitly outside" instead of "excludes" scores zero for it, so a gap that rests on one word is a wording difference until a human grader says otherwise. The table at the end names the word behind every miss.',
+    '- A positive comparable gap is a lead, not proof that the meaning layer helped.',
+    '- A gap of zero, or a negative one, is a real result and should redirect the next slice.',
+    '- Build and upkeep cost, the source-hidden handoff, whether citations are true, and human grading of meaning are separate measurements. None of them is folded into these numbers.',
+    '- A cell that failed its setup check is a broken run, not evidence for or against Atlas.',
+    '',
+    '## Cells',
+    '',
+    '| Subject | Task | Side | Iteration | Blended | Comparable | Atlas names | Said what it did not know | Content pass | Setup | Usable | Status | Transcript |',
+    '|---|---|---|---:|---:|---:|---:|---|---|---|---|---:|---|',
+  );
+  for (const row of rows) lines.push(`| ${row.caseId} | ${row.taskId} | ${row.mode} | ${row.iteration} | ${row.grade.coverage} | ${row.grade.comparableCoverage ?? '—'} | ${row.grade.vocabularyCoverage ?? '—'} | ${row.grade.breakdown?.unknownSignal ? 'yes' : 'no'} | ${row.grade.pass ? 'yes' : 'no'} | ${row.integrity.passed ? 'yes' : `no (${row.integrity.reason})`} | ${row.usable ? 'yes' : 'no'} | ${row.status ?? '—'} | [raw transcript](${row.transcript}) |`);
+  lines.push(...renderMissedEvidence(rows));
   return `${lines.join('\n')}\n`;
+}
+
+// Every point of a delta is a specific token an arm did not write. Printing them
+// stops a reader — including us — from reading a coverage number as a verdict
+// without checking which word decided it.
+function renderMissedEvidence(rows) {
+  const tally = new Map();
+  for (const row of rows) {
+    for (const token of row.grade.required?.missing ?? []) {
+      const key = `${row.caseId}:${row.mode}:${token}`;
+      const entry = tally.get(key) ?? { caseId: row.caseId, mode: row.mode, token, cells: 0 };
+      entry.cells += 1;
+      tally.set(key, entry);
+    }
+  }
+  if (tally.size === 0) return [];
+  const ordered = [...tally.values()].sort((a, b) => (
+    a.caseId.localeCompare(b.caseId) || a.mode.localeCompare(b.mode) || b.cells - a.cells || a.token.localeCompare(b.token)
+  ));
+  return [
+    '',
+    '## Which word decided each miss',
+    '',
+    'Every point of a gap is one specific thing a side did not write. `phrase` rows are the fragile ones: they are matched as literal words, so an answer that states the same boundary in other words scores zero. Send boundary judgement to blind human grading before reading a phrase gap as a difference in quality.',
+    '',
+    '| Subject | Side | What was missing | Kind | Cells |',
+    '|---|---|---|---|---:|',
+    ...ordered.map((entry) => `| ${entry.caseId} | ${entry.mode} | \`${entry.token}\` | ${classifyEvidence(entry.token)} | ${entry.cells} |`),
+  ];
+}
+
+// The benchmark's vault is written by this file, so nothing stops it from
+// inventing a section the product never produces — and then measuring the
+// invention. Comparing its headings against the vault this repository actually
+// keeps is the cheapest way to notice.
+//
+// This caught a real one: two capability bodies carried a `## Handoff` section
+// naming what to read first, a shape no node in `docs/ontology/` uses. On the
+// discount question the agent followed that order to the inventory capability,
+// which the change never touches, and the benchmark recorded it as Atlas
+// steering the agent wrong. It was the fixture talking.
+export function fixtureHeadings() {
+  const headings = new Set();
+  for (const entry of CASES) {
+    for (const node of entry.nodes) {
+      for (const line of node.body.split('\n')) {
+        if (line.startsWith('## ')) headings.add(line.slice(3).trim());
+      }
+    }
+  }
+  return headings;
+}
+
+export function vaultHeadings(vaultRoot = join(REPO_ROOT, 'docs/ontology')) {
+  const headings = new Set();
+  const walk = (directory) => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const target = join(directory, entry.name);
+      if (entry.isDirectory()) walk(target);
+      else if (entry.name.endsWith('.md')) {
+        for (const line of readFileSync(target, 'utf8').split('\n')) {
+          if (line.startsWith('## ')) headings.add(line.slice(3).trim());
+        }
+      }
+    }
+  };
+  if (existsSync(vaultRoot)) walk(vaultRoot);
+  return headings;
 }
 
 export function validateDefinitions() {
@@ -551,15 +706,151 @@ export function validateDefinitions() {
   for (const entry of CASES) {
     if (!existsSync(join(FIXTURE_ROOT, entry.fixture))) errors.push(`${entry.id}: missing fixture`);
     if (TASKS[entry.id].length === 0) errors.push(`${entry.id}: no tasks`);
+    const vaultSlugs = new Set(entry.nodes.map((node) => node.slug));
     for (const task of TASKS[entry.id]) {
       if (task.required.length === 0) errors.push(`${task.id}: no required evidence`);
       if (!task.prompt || !task.axis) errors.push(`${task.id}: incomplete task`);
+      for (const token of task.required) {
+        const kind = classifyEvidence(token);
+        const onDisk = existsSync(join(FIXTURE_ROOT, entry.fixture, token));
+        if (kind === 'vocabulary') {
+          // An Atlas concept name has to be a real entry in this subject's vault
+          // and absent from the source tree. That is what turns "the side
+          // without a vault cannot score this" into a fact, not an assumption.
+          if (!vaultSlugs.has(token)) {
+            errors.push(`${task.id}: "${token}" is scored as an Atlas concept name, but the ${entry.id} vault has no such entry. Add it to the vault or score something both sides can write.`);
+          }
+          if (onDisk) {
+            errors.push(`${task.id}: "${token}" is scored as an Atlas concept name, but it also exists in the ${entry.fixture} source tree, so the side without a vault could reach it. It is not Atlas-only.`);
+          }
+        } else if (kind === 'path') {
+          if (!onDisk) {
+            errors.push(`${task.id}: "${token}" is scored as a source path, but it does not exist in the ${entry.fixture} fixture. Neither side can name a file that is not there.`);
+          }
+        } else if (vaultSlugs.has(token)) {
+          errors.push(`${task.id}: "${token}" is an entry in the ${entry.id} vault, so it cannot be scored as an ordinary phrase both sides could write.`);
+        }
+      }
     }
     for (const entryNode of entry.nodes) {
       if (!entryNode.slug || !entryNode.kind || !entryNode.title || !entryNode.body) errors.push(`${entry.id}: incomplete node`);
     }
   }
+  const realHeadings = vaultHeadings();
+  if (realHeadings.size > 0) {
+    for (const heading of [...fixtureHeadings()].sort()) {
+      if (!realHeadings.has(heading)) {
+        errors.push(`the prepared vault uses a "## ${heading}" section that no node in docs/ontology/ uses. Either the fixture is inventing a shape this product does not produce, or the real vault should adopt it — decide which before measuring with it.`);
+      }
+    }
+  }
   return errors;
+}
+
+const TRANSCRIPT_STDERR_MARKER = '\n[stderr]\n';
+
+// A saved transcript is the answer on stdout followed by the captured log. Codex
+// wrote the final structured answer to stdout, so re-grading reads exactly the
+// object the original run scored and never the reasoning log around it.
+export function parseTranscriptAnswer(transcript) {
+  const stdout = transcript.split(TRANSCRIPT_STDERR_MARKER)[0].trim();
+  if (!stdout) return { value: null, error: 'transcript has no stdout section' };
+  try {
+    return { value: JSON.parse(stdout), error: null };
+  } catch (error) {
+    return { value: null, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+// The coverage each side published, recovered from the run's own summary. If a
+// re-grade cannot reproduce those numbers it is reading different answers, and
+// its new columns mean nothing.
+export function readPublishedCoverage(summaryMarkdown) {
+  const published = new Map();
+  for (const line of summaryMarkdown.split('\n')) {
+    const match = line.match(/^\|\s*(\w+)\s*\|\s*(off|on)\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*([\d.]+)\s*\|/);
+    if (match) published.set(`${match[1]}:${match[2]}`, Number(match[3]));
+  }
+  return published;
+}
+
+export function regradeRun({ runId, outputRoot, cases = CASES, modes = MODES }) {
+  const taskById = new Map(cases.flatMap((entry) => TASKS[entry.id].map((task) => [`${entry.id}:${task.id}`, task])));
+  const pattern = new RegExp(`^${runId}-(\\w+)-(\\w+)-(off|on)-r(\\d+)\\.txt$`);
+  const rows = [];
+  for (const filename of readdirSync(outputRoot).sort()) {
+    const match = filename.match(pattern);
+    if (!match) continue;
+    const [, caseId, taskId, mode, iteration] = match;
+    const task = taskById.get(`${caseId}:${taskId}`);
+    if (!task || !modes.includes(mode)) continue;
+    const transcript = readFileSync(join(outputRoot, filename), 'utf8');
+    const { value, error } = parseTranscriptAnswer(transcript);
+    const mcpCalls = (transcript.match(/mcp: ontology-atlas\/[^\s)]+ \(completed\)/g) ?? []).length;
+    const failedMcpCalls = (transcript.match(/mcp: ontology-atlas\/[^\s)]+ \((?:failed|error)\)/g) ?? []).length;
+    const integrity = mode === 'on'
+      ? { passed: mcpCalls > 0 && failedMcpCalls === 0, reason: mcpCalls > 0 ? (failedMcpCalls ? 'MCP call failed' : 'MCP observed') : 'MCP arm was not exercised' }
+      : { passed: mcpCalls === 0 && failedMcpCalls === 0, reason: mcpCalls === 0 ? 'No MCP exposed' : 'MCP leaked into control arm' };
+    rows.push({
+      caseId,
+      mode,
+      taskId,
+      axis: task.axis,
+      iteration: Number(iteration),
+      status: null,
+      durationMs: null,
+      shellCalls: (transcript.match(/^exec$/gm) ?? []).length,
+      mcpCalls,
+      failedMcpCalls,
+      grade: scoreFinalAnswer(value, task),
+      parseError: error,
+      integrity,
+      usable: !error && integrity.passed,
+      transcript: filename,
+    });
+  }
+  if (rows.length === 0) throw new Error(`no saved transcripts for --run-id=${runId} in ${outputRoot}`);
+  const summary = buildSummary({ rows, cases, repeat: Math.max(...rows.map((row) => row.iteration)), modes });
+  const originalPath = join(outputRoot, `${runId}-summary.md`);
+  const published = existsSync(originalPath) ? readPublishedCoverage(readFileSync(originalPath, 'utf8')) : new Map();
+  const reproduction = summary.arms.map((arm) => {
+    const expected = published.get(`${arm.caseId}:${arm.mode}`);
+    return {
+      arm: `${arm.caseId}:${arm.mode}`,
+      published: expected ?? null,
+      recomputed: arm.coverage,
+      reproduced: expected == null ? null : Math.abs(expected - arm.coverage) < 0.0005,
+    };
+  });
+  return { summary, rows, reproduction };
+}
+
+function renderRegrade({ runId, summary, rows, reproduction }) {
+  const checked = reproduction.filter((row) => row.reproduced != null);
+  const failed = checked.filter((row) => !row.reproduced);
+  const preamble = [
+    '',
+    `**This file re-scores the answers already saved for \`${runId}\`. Nothing was re-run: no Codex process started, no fixture was rebuilt, and no answer changed.** Only the scoring is new. The single score published for that run is split in two — the part both sides could earn, and the part only the Atlas side could.`,
+    '',
+    '### Does this read the same answers the run scored?',
+    '',
+    checked.length === 0
+      ? 'The original summary was not found beside the transcripts, so the published score could not be re-derived. Treat the split below as unchecked.'
+      : failed.length === 0
+        ? `Yes. All ${checked.length} published averages came back exactly from the saved answers, so the split below is a different reading of the same run — not a different run.`
+        : `**No. ${failed.length} of ${checked.length} published averages did not come back.** Treat the split below as unverified until that is explained.`,
+    '',
+    '| Side | Published score | Recomputed | Same |',
+    '|---|---:|---:|---|',
+    ...reproduction.map((row) => `| ${row.arm} | ${row.published ?? '—'} | ${row.recomputed ?? '—'} | ${row.reproduced == null ? 'not published' : row.reproduced ? 'yes' : 'no'} |`),
+  ];
+  return renderSummary({
+    date: runId,
+    summary,
+    rows,
+    title: 'Lifecycle benchmark, re-scored with the two halves separated',
+    preamble,
+  });
 }
 
 export async function runBenchmark(options) {
@@ -589,7 +880,33 @@ export async function runBenchmark(options) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   process.stdout.write(`[lifecycle] cases=${options.cases.map(({ id }) => id).join(',')} modes=${options.modes.join(',')} repeat=${options.repeat}\n`);
+  if (options.regrade) {
+    if (!options.explicitRunId) {
+      process.stderr.write('[lifecycle] --regrade needs --run-id=<saved run> so it re-scores an existing matrix\n');
+      process.exitCode = 2;
+      return;
+    }
+    const result = regradeRun(options);
+    const outputPath = join(options.outputRoot, `${options.runId}-regrade-summary.md`);
+    writeFileSync(outputPath, renderRegrade({ runId: options.runId, ...result }), 'utf8');
+    for (const row of result.reproduction) {
+      process.stdout.write(`  ${row.arm}: published=${row.published ?? '—'} recomputed=${row.recomputed} reproduced=${row.reproduced == null ? 'not published' : row.reproduced}\n`);
+    }
+    process.stdout.write(`[lifecycle] re-graded ${result.rows.length} saved cells; no Codex process spawned\n`);
+    process.stdout.write(`[lifecycle] summary: ${outputPath}\n`);
+    if (result.reproduction.some((row) => row.reproduced === false)) process.exitCode = 1;
+    return;
+  }
   if (options.dryRun) {
+    // This used to print "definitions valid" while calling nothing that could
+    // fail, so the dry run was a permanently green gate.
+    const errors = validateDefinitions();
+    if (errors.length) {
+      for (const error of errors) process.stderr.write(`[lifecycle] ${error}\n`);
+      process.stderr.write(`[lifecycle] ${errors.length} invalid definition(s); no Codex process spawned\n`);
+      process.exitCode = 1;
+      return;
+    }
     process.stdout.write(`[lifecycle] definitions valid; cells=${benchmarkPlan(options).length}; no Codex process spawned\n`);
     return;
   }

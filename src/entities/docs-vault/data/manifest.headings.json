@@ -2390,6 +2390,137 @@
       "slug": "next-falsifiable-slice"
     }
   ],
+  "benchmark/FINDINGS-2026-08-31-metric-split": [
+    {
+      "depth": 1,
+      "text": "Most of the published gap was our own vocabulary — 2026-08-31",
+      "slug": "most-of-the-published-gap-was-our-own-vocabulary-2026-08-31"
+    },
+    {
+      "depth": 2,
+      "text": "What was re-scored",
+      "slug": "what-was-re-scored"
+    },
+    {
+      "depth": 2,
+      "text": "What was wrong with the original score",
+      "slug": "what-was-wrong-with-the-original-score"
+    },
+    {
+      "depth": 2,
+      "text": "The two halves, separated",
+      "slug": "the-two-halves-separated"
+    },
+    {
+      "depth": 2,
+      "text": "What we can and cannot say now",
+      "slug": "what-we-can-and-cannot-say-now"
+    },
+    {
+      "depth": 2,
+      "text": "What changed in the harness",
+      "slug": "what-changed-in-the-harness"
+    },
+    {
+      "depth": 2,
+      "text": "What has to happen next",
+      "slug": "what-has-to-happen-next"
+    },
+    {
+      "depth": 2,
+      "text": "The rule this produces",
+      "slug": "the-rule-this-produces"
+    }
+  ],
+  "benchmark/FINDINGS-2026-08-31-screening-grade": [
+    {
+      "depth": 1,
+      "text": "Reading the 24 answers — 2026-08-31",
+      "slug": "reading-the-24-answers-2026-08-31"
+    },
+    {
+      "depth": 2,
+      "text": "How this was done, and what it cannot be",
+      "slug": "how-this-was-done-and-what-it-cannot-be"
+    },
+    {
+      "depth": 2,
+      "text": "What the reading found",
+      "slug": "what-the-reading-found"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas won where the question was about something recorded",
+      "slug": "atlas-won-where-the-question-was-about-something-recorded"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas lost the orientation question — and the cause was our own fixture",
+      "slug": "atlas-lost-the-orientation-question-and-the-cause-was-our-own-fixture"
+    },
+    {
+      "depth": 3,
+      "text": "The fixture defect was real, and fixing it was right anyway",
+      "slug": "the-fixture-defect-was-real-and-fixing-it-was-right-anyway"
+    },
+    {
+      "depth": 3,
+      "text": "Re-running exposed something larger",
+      "slug": "re-running-exposed-something-larger"
+    },
+    {
+      "depth": 3,
+      "text": "The only made-up claim came from the side without Atlas",
+      "slug": "the-only-made-up-claim-came-from-the-side-without-atlas"
+    },
+    {
+      "depth": 2,
+      "text": "What this does not settle",
+      "slug": "what-this-does-not-settle"
+    },
+    {
+      "depth": 2,
+      "text": "What to do about it",
+      "slug": "what-to-do-about-it"
+    }
+  ],
+  "benchmark/FINDINGS-2026-08-31-two-graders": [
+    {
+      "depth": 1,
+      "text": "The difference is smaller than the ruler — 2026-08-31-gb-r3",
+      "slug": "the-difference-is-smaller-than-the-ruler-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "The result",
+      "slug": "the-result"
+    },
+    {
+      "depth": 2,
+      "text": "Measure the floor at the size of the claim",
+      "slug": "measure-the-floor-at-the-size-of-the-claim"
+    },
+    {
+      "depth": 2,
+      "text": "What the readings do agree on",
+      "slug": "what-the-readings-do-agree-on"
+    },
+    {
+      "depth": 2,
+      "text": "The criterion that had to be fixed first",
+      "slug": "the-criterion-that-had-to-be-fixed-first"
+    },
+    {
+      "depth": 2,
+      "text": "A finding hiding inside that fix",
+      "slug": "a-finding-hiding-inside-that-fix"
+    },
+    {
+      "depth": 2,
+      "text": "What still outranks all of this",
+      "slug": "what-still-outranks-all-of-this"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -2415,6 +2546,26 @@
       "depth": 3,
       "text": "Lifecycle benchmark: greenfield versus brownfield",
       "slug": "lifecycle-benchmark-greenfield-versus-brownfield"
+    },
+    {
+      "depth": 4,
+      "text": "The score comes in two halves — only one of them is a comparison",
+      "slug": "the-score-comes-in-two-halves-only-one-of-them-is-a-comparison"
+    },
+    {
+      "depth": 4,
+      "text": "Grade the answers by hand",
+      "slug": "grade-the-answers-by-hand"
+    },
+    {
+      "depth": 4,
+      "text": "Have a second grader read the same packet",
+      "slug": "have-a-second-grader-read-the-same-packet"
+    },
+    {
+      "depth": 4,
+      "text": "Re-score a saved run without running anything",
+      "slug": "re-score-a-saved-run-without-running-anything"
     },
     {
       "depth": 3,
@@ -3008,6 +3159,192 @@
       "slug": "cells"
     }
   ],
+  "benchmark/results/2026-08-31-gb-r3-blind-packet": [
+    {
+      "depth": 1,
+      "text": "Grading packet — 2026-08-31-gb-r3",
+      "slug": "grading-packet-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "C01  (question B1)",
+      "slug": "c01-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C02  (question G2)",
+      "slug": "c02-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C03  (question B2)",
+      "slug": "c03-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C04  (question B1)",
+      "slug": "c04-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C05  (question G2)",
+      "slug": "c05-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C06  (question B1)",
+      "slug": "c06-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C07  (question B2)",
+      "slug": "c07-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C08  (question B2)",
+      "slug": "c08-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C09  (question B1)",
+      "slug": "c09-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C10  (question G1)",
+      "slug": "c10-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C11  (question G2)",
+      "slug": "c11-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C12  (question B2)",
+      "slug": "c12-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C13  (question B1)",
+      "slug": "c13-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C14  (question B1)",
+      "slug": "c14-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C15  (question G1)",
+      "slug": "c15-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C16  (question G1)",
+      "slug": "c16-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C17  (question G2)",
+      "slug": "c17-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C18  (question B2)",
+      "slug": "c18-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C19  (question G1)",
+      "slug": "c19-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C20  (question G1)",
+      "slug": "c20-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C21  (question G2)",
+      "slug": "c21-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C22  (question G1)",
+      "slug": "c22-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C23  (question B2)",
+      "slug": "c23-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C24  (question G2)",
+      "slug": "c24-question-g2"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-r3-regrade-summary": [
+    {
+      "depth": 1,
+      "text": "Lifecycle benchmark, re-scored with the two halves separated — 2026-08-31-gb-r3",
+      "slug": "lifecycle-benchmark-re-scored-with-the-two-halves-separated-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 3,
+      "text": "Does this read the same answers the run scored?",
+      "slug": "does-this-read-the-same-answers-the-run-scored"
+    },
+    {
+      "depth": 2,
+      "text": "Paired gaps",
+      "slug": "paired-gaps"
+    },
+    {
+      "depth": 2,
+      "text": "How to read this",
+      "slug": "how-to-read-this"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    },
+    {
+      "depth": 2,
+      "text": "Which word decided each miss",
+      "slug": "which-word-decided-each-miss"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-r3-screening-grades": [
+    {
+      "depth": 1,
+      "text": "Screening grades — 2026-08-31-gb-r3",
+      "slug": "screening-grades-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "What the numbers mean",
+      "slug": "what-the-numbers-mean"
+    },
+    {
+      "depth": 2,
+      "text": "Averages",
+      "slug": "averages"
+    },
+    {
+      "depth": 2,
+      "text": "Correctness by question (out of 3)",
+      "slug": "correctness-by-question-out-of-3"
+    },
+    {
+      "depth": 2,
+      "text": "Note on every cell",
+      "slug": "note-on-every-cell"
+    }
+  ],
   "benchmark/results/2026-08-31-gb-r3-summary": [
     {
       "depth": 1,
@@ -3030,6 +3367,100 @@
       "slug": "cells"
     }
   ],
+  "benchmark/results/2026-08-31-gb-r4-fixed-blind-packet": [
+    {
+      "depth": 1,
+      "text": "Grading packet — 2026-08-31-gb-r4-fixed",
+      "slug": "grading-packet-2026-08-31-gb-r4-fixed"
+    },
+    {
+      "depth": 2,
+      "text": "C01  (question G1)",
+      "slug": "c01-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C02  (question B2)",
+      "slug": "c02-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C03  (question G1)",
+      "slug": "c03-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C04  (question G2)",
+      "slug": "c04-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C05  (question B2)",
+      "slug": "c05-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C06  (question G1)",
+      "slug": "c06-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C07  (question B1)",
+      "slug": "c07-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C08  (question G2)",
+      "slug": "c08-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C09  (question G2)",
+      "slug": "c09-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C10  (question B1)",
+      "slug": "c10-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C11  (question B2)",
+      "slug": "c11-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C12  (question B1)",
+      "slug": "c12-question-b1"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-r4-fixed-summary": [
+    {
+      "depth": 1,
+      "text": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-r4-fixed",
+      "slug": "greenfieldbrownfield-lifecycle-benchmark-2026-08-31-gb-r4-fixed"
+    },
+    {
+      "depth": 2,
+      "text": "Paired gaps",
+      "slug": "paired-gaps"
+    },
+    {
+      "depth": 2,
+      "text": "How to read this",
+      "slug": "how-to-read-this"
+    },
+    {
+      "depth": 2,
+      "text": "Cells",
+      "slug": "cells"
+    },
+    {
+      "depth": 2,
+      "text": "Which word decided each miss",
+      "slug": "which-word-decided-each-miss"
+    }
+  ],
   "benchmark/rubric": [
     {
       "depth": 1,
@@ -3045,6 +3476,46 @@
       "depth": 2,
       "text": "Lifecycle matrix scoring",
       "slug": "lifecycle-matrix-scoring"
+    },
+    {
+      "depth": 3,
+      "text": "The material",
+      "slug": "the-material"
+    },
+    {
+      "depth": 3,
+      "text": "The five things you record",
+      "slug": "the-five-things-you-record"
+    },
+    {
+      "depth": 3,
+      "text": "1. Correct — out of 3",
+      "slug": "1-correct-out-of-3"
+    },
+    {
+      "depth": 3,
+      "text": "2. Citations — out of 2",
+      "slug": "2-citations-out-of-2"
+    },
+    {
+      "depth": 3,
+      "text": "3. Boundary — out of 2",
+      "slug": "3-boundary-out-of-2"
+    },
+    {
+      "depth": 3,
+      "text": "4. Next step — out of 2",
+      "slug": "4-next-step-out-of-2"
+    },
+    {
+      "depth": 3,
+      "text": "5. Unsupported and Unverifiable — counts, never scores",
+      "slug": "5-unsupported-and-unverifiable-counts-never-scores"
+    },
+    {
+      "depth": 3,
+      "text": "What never affects a score",
+      "slug": "what-never-affects-a-score"
     },
     {
       "depth": 2,
@@ -6417,6 +6888,16 @@
       "depth": 2,
       "text": "2026-08-31 — An analysis is a dated record beside the vault, not a concept inside it",
       "slug": "2026-08-31-an-analysis-is-a-dated-record-beside-the-vault-not-a-concept-inside-it"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — The static budget is raised once; the next time, move the ledgers out",
+      "slug": "2026-08-31-the-static-budget-is-raised-once-the-next-time-move-the-ledgers-out"
+    },
+    {
+      "depth": 2,
+      "text": "2026-08-31 — A score only one side can earn is reported, never quoted as a gap",
+      "slug": "2026-08-31-a-score-only-one-side-can-earn-is-reported-never-quoted-as-a-gap"
     },
     {
       "depth": 2,
