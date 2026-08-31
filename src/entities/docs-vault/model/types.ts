@@ -66,6 +66,16 @@ export interface VaultManifest {
   walkTruncated?: boolean;
   /** Directories skipped whole as cache or dependencies — the evidence for why they are missing. */
   prunedDirs?: string[];
+  /**
+   * Source files the walk passed over without reading. Present only when there
+   * were any, so a documents folder's manifest is unchanged.
+   *
+   * This is the whole of what the app knows about code in the chosen folder, and
+   * it exists for one screen: the first-run card could not tell a codebase from a
+   * documents folder, so in a repository of five TypeScript files it opened by
+   * announcing it had "found 1 documents".
+   */
+  sourceFileCount?: number;
   docs: VaultDoc[];
   backlinksDetail: Record<string, VaultBacklinkEntry[]>;
   tags: Record<string, string[]>;

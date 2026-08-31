@@ -5250,6 +5250,7 @@ function HomePageImpl() {
                        * already has something, the first step is that something.
                        */
                       docsFoundCount={bootstrapPlan?.elements.length ?? 0}
+                      sourceFileCount={vault.manifest?.sourceFileCount ?? 0}
                       onStartFromDocs={
                         bootstrapPlan && bootstrapPlan.elements.length > 0
                           ? () => setBootstrapOpen(true)

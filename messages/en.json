@@ -2596,8 +2596,8 @@
       },
       "analyze": {
         "title": "Let AI draft the map from your code",
-        "bodyAgent": "It reads this folder and proposes the projects, domains and capabilities it finds. The instruction tells it to propose first and write nothing until you approve.",
-        "bodyCopy": "Copy the instruction and paste it into the AI tool you already use. The instruction tells it to propose first and write nothing until you approve.",
+        "bodyAgent": "It reads this folder and proposes the projects, domains and capabilities it finds. Nothing is written until you approve. What it writes is Markdown in this folder, never your code.",
+        "bodyCopy": "Copy the instruction and paste it into the AI tool you already use. Nothing is written until you approve. What it writes is Markdown in this folder, never your code.",
         "ctaAgent": "Ask the agent",
         "ctaCopy": "Copy the instruction",
         "ctaCopied": "Copied. Paste it into your tool",

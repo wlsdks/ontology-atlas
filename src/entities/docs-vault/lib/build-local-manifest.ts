@@ -89,6 +89,28 @@ interface WalkEntry {
 const IMAGE_EXT = /\.(png|jpe?g|gif|webp|svg|avif|bmp)$/i;
 
 /**
+ * Source files, counted but never read.
+ *
+ * The walk already visits every entry and drops whatever is not Markdown or an
+ * image, so this is a comparison on a name the loop is holding anyway — no extra
+ * directory read, no file opened, nothing transmitted.
+ *
+ * It exists because the app could not tell a code repository from a documents
+ * folder and said so out loud: pointed at a repository with five TypeScript
+ * files, the first-run card announced it had "found 1 documents" and offered to
+ * map them (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
+ * The count is the smallest fact that lets the card stop leading with the wrong
+ * one.
+ *
+ * The list is deliberately short and popular rather than exhaustive. A missing
+ * extension makes a folder look less like code than it is, which costs one Skip;
+ * a wrong extension would cost the same in the other direction. Neither is a
+ * dead end, because the steps are a sequence with a skip on every one.
+ */
+const SOURCE_EXT =
+  /\.(m?[jt]sx?|vue|svelte|dart|py|go|rs|java|kt|swift|rb|php|cs|c|cc|cpp|h|hpp|scala|ex|exs|sh)$/i;
+
+/**
  * The walk's boundary — **a vault is a document folder, not an arbitrary directory.**
  *
  * Measured 2026-07-29: picking the **repository root** as the vault killed the
@@ -131,6 +153,11 @@ export interface WalkResult {
   truncated: boolean;
   /** Relative paths of directories skipped whole as cache or dependencies. */
   prunedDirs: string[];
+  /**
+   * How many source files the walk passed over. Not read, not stored — only
+   * counted, so the first-run card can tell a codebase from a documents folder.
+   */
+  sourceFileCount: number;
 }
 
 async function walkInto(
@@ -173,12 +200,14 @@ async function walkInto(
       acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'md' });
     } else if (IMAGE_EXT.test(name)) {
       acc.entries.push({ handle: handle as FileSystemFileHandle, relativePath: relative, kind: 'image' });
+    } else if (SOURCE_EXT.test(name)) {
+      acc.sourceFileCount += 1;
     }
   }
 }
 
 export async function walkVault(root: FileSystemDirectoryHandle): Promise<WalkResult> {
-  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [] };
+  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [], sourceFileCount: 0 };
   await walkInto(root, '', 0, acc);
   return acc;
 }
@@ -187,7 +216,7 @@ async function walk(
   root: FileSystemDirectoryHandle,
   prefix = '',
 ): Promise<WalkEntry[]> {
-  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [] };
+  const acc: WalkResult = { entries: [], truncated: false, prunedDirs: [], sourceFileCount: 0 };
   await walkInto(root, prefix, 0, acc);
   return acc.entries;
 }
@@ -395,7 +424,7 @@ function buildMdEntry(
 function aggregateBuild(
   entries: BuiltVaultEntry[],
   rootName: string,
-  walkInfo?: { truncated: boolean; prunedDirs: string[] },
+  walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
 ): LocalVaultBuild {
   const docs: VaultDoc[] = [];
   const fileHandles = new Map<string, FileSystemFileHandle>();
@@ -494,6 +523,9 @@ function aggregateBuild(
     // (incremental build, snapshots).
     ...(walkInfo?.truncated ? { walkTruncated: true } : {}),
     ...(walkInfo?.prunedDirs.length ? { prunedDirs: walkInfo.prunedDirs } : {}),
+    // Same rule as the two fields above: emitted only when there is something to
+    // say, so a documents folder's manifest is unchanged by this addition.
+    ...(walkInfo?.sourceFileCount ? { sourceFileCount: walkInfo.sourceFileCount } : {}),
     docs,
     backlinksDetail,
     tags,
@@ -511,12 +543,13 @@ function aggregateBuild(
 async function collectEntries(
   root: FileSystemDirectoryHandle,
   /** Carries the walk's boundary facts through to the manifest, so it stays visible. */
-  walkInfo?: { truncated: boolean; prunedDirs: string[] },
+  walkInfo?: { truncated: boolean; prunedDirs: string[]; sourceFileCount?: number },
 ): Promise<BuiltVaultEntry[]> {
   const walked = await walkVault(root);
   if (walkInfo) {
     walkInfo.truncated = walked.truncated;
     walkInfo.prunedDirs = walked.prunedDirs;
+    walkInfo.sourceFileCount = walked.sourceFileCount;
   }
   const files = walked.entries;
   const entries: BuiltVaultEntry[] = [];
@@ -544,7 +577,7 @@ async function collectEntries(
 export async function buildLocalManifestWithEntries(
   root: FileSystemDirectoryHandle,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
-  const walkInfo = { truncated: false, prunedDirs: [] as string[] };
+  const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
   const entries = await collectEntries(root, walkInfo);
   return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }
@@ -557,7 +590,7 @@ export async function buildLocalManifestWithEntries(
 export async function buildLocalManifest(
   root: FileSystemDirectoryHandle,
 ): Promise<LocalVaultBuild> {
-  const walkInfo = { truncated: false, prunedDirs: [] as string[] };
+  const walkInfo = { truncated: false, prunedDirs: [] as string[], sourceFileCount: 0 };
   const entries = await collectEntries(root, walkInfo);
   return aggregateBuild(entries, root.name, walkInfo);
 }
@@ -583,7 +616,30 @@ export async function rebuildLocalManifestIncremental(
    */
   providedStamps?: Map<string, number> | null,
 ): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
-  const files = await walk(root);
+  /*
+   * **The counters have to survive this path too, or the screen changes under
+   * the person standing on it.**
+   *
+   * This used to call the entries-only `walk()` and hand `aggregateBuild` no
+   * walk info, so an incremental rebuild produced a manifest with no
+   * `sourceFileCount`. The first-run card reads that number to decide whether
+   * to open with the code step, and its absence reads as zero — so the card
+   * silently reordered from "draft the map from your code" to "start from the
+   * documents in this folder" while it was still on screen.
+   *
+   * The trigger is this feature's own happy path: the person copies the
+   * instruction, their agent writes an approved document into the folder, the
+   * mtime fingerprint changes, and the refresh runs incrementally.
+   * `walkTruncated` and `prunedDirs` were being dropped here for the same
+   * reason and are restored with it.
+   */
+  const walked = await walkVault(root);
+  const files = walked.entries;
+  const walkInfo = {
+    truncated: walked.truncated,
+    prunedDirs: walked.prunedDirs,
+    sourceFileCount: walked.sourceFileCount,
+  };
   const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
   /*
    * **Do not drag file bodies across the bridge just to learn an mtime** (measured 2026-08-09).
@@ -662,5 +718,5 @@ export async function rebuildLocalManifestIncremental(
     const raw = await file.text();
     entries.push(buildMdEntry(entry, raw, file.lastModified));
   }
-  return { build: aggregateBuild(entries, root.name), entries };
+  return { build: aggregateBuild(entries, root.name, walkInfo), entries };
 }
