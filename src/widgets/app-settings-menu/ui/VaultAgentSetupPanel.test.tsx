@@ -144,7 +144,7 @@ describe('VaultAgentSetupPanel', () => {
     expect(screen.getByText('밖의 도구를 잇는 자리예요')).toBeInTheDocument();
     expect(
       screen.getByText(
-        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. Atlas 안의 관문 있는 Claude Agent 대화는 별도 화면입니다.',
+        '이 패널은 Claude Code·Codex·Cursor를 각자의 앱이나 터미널에서 쓰도록 연결하며 여기서 대화를 열지는 않아요. 폴더 밖을 건드리기 전에 먼저 묻는 앱 안 Claude Agent 대화는 별도 화면입니다.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('더 확인하려면')).toBeInTheDocument();

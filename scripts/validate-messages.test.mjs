@@ -319,47 +319,8 @@ describe('i18n message catalog', () => {
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
 
-  it('keeps Korean live activity chip readable without internal status jargon', async () => {
-    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
-    const live = ko.liveActivity;
-    const visibleCopy = [
-      live.live,
-      live.triggerTitle,
-      live.changed,
-      live.summaryTitle,
-      live.summaryBody,
-      live.summaryZero,
-      live.summaryCount,
-      live.summaryNotTracking,
-      live.summaryAction,
-      live.agentTitle,
-      live.agentMissing,
-      live.agentInvalid,
-      live.agentStaleAudit,
-      live.agentEvidence,
-      live.agentSource,
-      live.agentReviewMode,
-      live.agentReviewTarget,
-      live.agentChipTracking,
-      live.agentChipMissing,
-      live.agentChipInvalid,
-      live.agentChipStale,
-      live.agentChipCurrent,
-      live.close,
-    ].join('\n');
-
-    assert.equal(live.live, '실시간');
-    assert.equal(live.agentTitle, 'AI 작업 상태');
-    assert.equal(live.agentChipTracking, '추적 중');
-    assert.equal(live.agentChipStale, '오래됨');
-    assert.match(live.triggerTitle, /개념/);
-    assert.doesNotMatch(live.triggerTitle, /온톨로지/);
-    assert.match(live.triggerTitle, /AI 작업 상태/);
-    assert.doesNotMatch(
-      visibleCopy,
-      /\bLive\b|ontology node|agent heartbeat|Agent heartbeat|\bagent\b|\bfresh\b|\bfocus\b|\bnode\b|\btracking\b|\binvalid\b|\bstale\b|\bsource\b|\breview\b|\btarget\b/,
-    );
-  });
+  // (Removed 2026-09-01) The liveActivity namespace had no renderer anywhere in src/
+  // or app/ and was deleted from both catalogs; this block was its last reader.
 
   it('keeps the topology overview agent handoff brief readable (분석 패널 완전 소멸 2단계 — TopologyAnalysisBar 삭제 후 INDEX 푸터 인계 메뉴가 유일한 소비처)', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));

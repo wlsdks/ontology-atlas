@@ -129,36 +129,12 @@ const TOLERATED: Readonly<Record<string, readonly string[]>> = {
   // until the severity-3 pass made it say "this list" instead). Replacing the
   // rest needs one decision about what the concept is called everywhere, which
   // is larger than a copy pass.
-  관문: [
-    'docsVault.agentSetup.boundaryDesc',
-    'download.agentsSub',
-    'download.col1Body',
-    'guidedTour.steps.agentsWhat.body',
-    'nav.settingsMenu.runtimes.guardedExplainerNone',
-    'nav.settingsMenu.runtimes.intro',
-    'nav.settingsMenu.runtimes.unknownExplainer',
-  ],
-
-  // The same concept in its other register, all three inside the docs library's
-  // "what this folder is" modal.
-  게이트: [
-    'docsVault.desktopWelcome.contractAgentBody',
-    'docsVault.sourceContract.agentCopyGateAriaLabel',
-    'docsVault.sourceContract.modalSubtitle',
-  ],
-
-  // Ordinary Korean for a rule violation, and the architecture screen means a
-  // rule violation. Two of these now name the rule, so the reader is told what
-  // was violated; the bare ones are short status words in the same panel.
-  위반: [
-    'architecture.dependencyUsagesValue',
-    'architecture.legendViolated',
-    'architecture.recordCounts',
-    'architecture.recordStatus.violated',
-    'architecture.roleLedgerClean',
-    'architecture.roleLedgerViolated',
-    'architecture.roleLedgerViolatedAtLeast',
-  ],
+  // Emptied on 2026-09-01: the concept once called 관문/게이트 is now written as what it
+  // does ("asks before writing / before touching anything outside the folder"), and the
+  // architecture screen says which rule a connection broke instead of the bare word.
+  관문: [],
+  게이트: [],
+  위반: [],
 };
 
 describe('카탈로그 전체 — 내부에서 만든 말이 화면에 닿지 않는다', () => {
@@ -376,13 +352,7 @@ export function unglossedAcronyms(messages: Json): string[] {
 const UNGLOSSED_BASELINE: readonly string[] = [
   'footer/MCP', // the technology list in the footer
   'gatewayNav/CLI', // the name of a guide page
-  // No renderer: `src/**` and `app/**` contain no `useTranslations('liveActivity')`
-  // and no reference to any of its 58 child keys (swept key by key, 2026-08-31).
-  // It is not deletable from here either: `scripts/validate-messages.test.mjs`
-  // reads `ko.liveActivity` and asserts on 23 of those keys, so removing the
-  // namespace and that test block is one change, not two.
-  'liveActivity/MCP',
-  'metadata/MCP', // search-engine descriptions, never drawn on a screen
+    'metadata/MCP', // search-engine descriptions, never drawn on a screen
   'projectPages/CLI', // a two-character column label beside the command itself
   'settings/MCP', // one of three example tags in a placeholder
 ];
