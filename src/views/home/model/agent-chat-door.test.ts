@@ -1,6 +1,10 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { agentChatDoor, type AgentChatDoorInput } from './agent-chat-door';
+import { parseHomeRouteState } from './url-state';
+
+const homePageSource = readFileSync('src/views/home/ui/HomePage.tsx', 'utf8');
 
 /** **Every combination** of the four inputs — 16. The invariant is held
  *  exhaustively, not by sampling. */
@@ -77,6 +81,49 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
         hasAskIntent: true,
       }),
     ).toEqual({ runtime: false, key: true, open: true });
+  });
+
+  it('전체 그래프 흐름 요청도 설치된 코딩 에이전트의 같은 창으로 간다', () => {
+    const route = parseHomeRouteState(new URLSearchParams('ask=business-flow'));
+
+    expect(route.askBusinessFlow).toBe(true);
+    expect(
+      agentChatDoor({
+        hasRuntime: true,
+        runtimeOpen: false,
+        keyOpen: false,
+        hasAskIntent: route.askBusinessFlow,
+      }),
+    ).toEqual({ runtime: true, key: false, open: true });
+    // INDEX and the first-run card must yield on the arrival frame too; otherwise
+    // the correct door opens into a squeezed map before its derived prefill exists.
+    expect(homePageSource).toMatch(
+      /const agentDockRequestedOpen\s*=\s*[\s\S]{0,260}routeState\.askBusinessFlow/,
+    );
+    // Ownership is not visibility: the ACP frame itself is stateful so it can animate
+    // its width. The route handoff must enter the same open function as a button, and
+    // that function must drive both the width and Surface `open` bindings.
+    expect(homePageSource).toMatch(
+      /const routeAskDockRequestRef[\s\S]{0,1800}openVaultAgent\(\);/,
+    );
+    expect(homePageSource).toMatch(
+      /if \(agentChatUsesRuntime\)[\s\S]{0,220}setAcpDockFrameOpen\(true\)/,
+    );
+    expect(homePageSource).toContain(
+      'width: acpDockFrameOpen ? `${chatWidth.width}px` : "0px"',
+    );
+    expect(homePageSource).toContain('open={acpDockFrameOpen}');
+  });
+
+  it('흐름 요청은 두 대화 갈래 모두 입력칸에만 앉고 자동 전송 경로에는 들어가지 않는다', () => {
+    expect(
+      homePageSource.match(
+        /prefillRequest=\{vaultAgentPrefill \?\? askPrefill\}/g,
+      ),
+    ).toHaveLength(2);
+    expect(homePageSource).not.toMatch(
+      /openingRequest=\{[^}]*askPrefill[^}]*\}/,
+    );
   });
 
   it('아무도 안 열었으면 아무것도 안 뜬다', () => {

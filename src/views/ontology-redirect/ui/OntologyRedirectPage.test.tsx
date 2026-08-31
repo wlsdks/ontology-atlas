@@ -66,4 +66,26 @@ describe("OntologyRedirectPage", () => {
       "/topology/?index=expanded&p=capability%3Amcp-server",
     );
   });
+
+  it("preserves the whole-graph business-flow request and its insights return marker", () => {
+    mocks.searchParams = new URLSearchParams(
+      "ask=business-flow&via=insights:flow",
+    );
+    render(<OntologyRedirectPage />);
+
+    expect(mocks.replace).toHaveBeenCalledWith(
+      "/topology/?index=expanded&via=insights%3Aflow&ask=business-flow",
+    );
+  });
+
+  it("preserves a node-scoped ask kind for HomePage to validate", () => {
+    mocks.searchParams = new URLSearchParams(
+      "node=capability:mcp-server&ask=missing-definition",
+    );
+    render(<OntologyRedirectPage />);
+
+    expect(mocks.replace).toHaveBeenCalledWith(
+      "/topology/?index=expanded&p=capability%3Amcp-server&ask=missing-definition",
+    );
+  });
 });

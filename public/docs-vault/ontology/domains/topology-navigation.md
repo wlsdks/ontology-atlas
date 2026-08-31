@@ -14,7 +14,7 @@ created_by: human
 canvas-2D graph browsing surface (map, search, index panel): The product's primary entry point for visually navigating the entire vault.
 
 ## Evidence
-- docs/ARCHITECTURE.md: "the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights" (risky-citation warning: cross-verify by citing with AGENTS.md)
+- docs/ARCHITECTURE.md: "the current route model converges browsing on Topology, writing on Workshop, maintenance on the six-tab Insights page: five measured questions plus Flow" (risky-citation warning: cross-verify by citing with AGENTS.md)
 - AGENTS.md: Routes ("`/topology` is the map's address, not `/`")
 
 ## Inclusions / Exclusions

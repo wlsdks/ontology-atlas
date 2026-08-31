@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../../model";
+import { normalizeForMatch } from "@/shared/lib/node-name-match";
 import { buildOntologyTree } from "./build-tree";
 import {
   countMatchingTreeNodes,
@@ -10,9 +11,15 @@ import {
 } from "./filter-tree";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
-const node = (id: string, title: string, kind = "capability"): KnowledgeGraphNode => ({
+const node = (
+  id: string,
+  title: string,
+  kind = "capability",
+  names: Pick<KnowledgeGraphNode, "display" | "displayLocales"> = {},
+): KnowledgeGraphNode => ({
   id,
   title,
+  ...names,
   kind,
   projectIds: [],
   evidenceIds: [],
@@ -164,6 +171,36 @@ describe("knowledgeNodeMatchesQuery", () => {
     expect(knowledgeNodeMatchesQuery(n, "zzz")).toBe(false);
     expect(knowledgeNodeMatchesQuery(n, "")).toBe(false);
   });
+
+  it("화면의 display 이름을 정확히 또는 부분 입력하면 찾는다", () => {
+    const localized = node("capability:place-order", "Place Order", "capability", {
+      display: "주문 접수",
+      displayLocales: { ko: "주문 접수", en: "Order Intake" },
+    });
+
+    expect(knowledgeNodeMatchesQuery(localized, normalizeForMatch("주문 접수"))).toBe(true);
+    expect(knowledgeNodeMatchesQuery(localized, normalizeForMatch("접수"))).toBe(true);
+  });
+
+  it("현재 화면 언어와 무관하게 display_ko 와 display_en 이름을 찾는다", () => {
+    const localized = node("capability:payments", "Payment Processing", "capability", {
+      display: "결제 처리",
+      displayLocales: { ko: "결제 처리", en: "Payments" },
+    });
+
+    expect(knowledgeNodeMatchesQuery(localized, normalizeForMatch("결제 처리"))).toBe(true);
+    expect(knowledgeNodeMatchesQuery(localized, normalizeForMatch("payments"))).toBe(true);
+  });
+
+  it("표시 이름이 있어도 canonical title 과 id/slug 검색을 보존한다", () => {
+    const localized = node("capability:place-order", "Place Order", "capability", {
+      display: "주문 접수",
+      displayLocales: { ko: "주문 접수", en: "Order Intake" },
+    });
+
+    expect(knowledgeNodeMatchesQuery(localized, normalizeForMatch("place order"))).toBe(true);
+    expect(knowledgeNodeMatchesQuery(localized, normalizeForMatch("place-order"))).toBe(true);
+  });
 });
 
 describe("countMatchingTreeNodes", () => {
@@ -193,6 +230,47 @@ describe("countMatchingTreeNodes", () => {
 
   it("매치 없음 → 0", () => {
     expect(countMatchingTreeNodes(tree.roots, "xyzqwerty")).toBe(0);
+  });
+
+  it("표시 이름 검색도 필터와 같은 matcher 로 세고 부모 chain 은 count 에 넣지 않는다", () => {
+    const localizedNodes = [
+      node("project:shop", "Shop", "project", {
+        display: "상점",
+        displayLocales: { ko: "상점", en: "Shop" },
+      }),
+      withParent(node("domain:orders", "Orders", "domain", {
+        display: "주문",
+        displayLocales: { ko: "주문", en: "Orders" },
+      })),
+      withParent(node("capability:place-order", "Place Order", "capability", {
+        display: "주문 접수",
+        displayLocales: { ko: "주문 접수", en: "Order Intake" },
+      })),
+      withParent(node("domain:payments", "Payments", "domain", {
+        display: "결제",
+        displayLocales: { ko: "결제", en: "Payments" },
+      })),
+    ];
+    const localizedEdges = [
+      { id: "e-project-orders", from: "project:shop", to: "domain:orders", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+      { id: "e-orders-intake", from: "domain:orders", to: "capability:place-order", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+      { id: "e-project-payments", from: "project:shop", to: "domain:payments", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    ];
+    const localizedTree = buildOntologyTree(localizedNodes, localizedEdges);
+
+    const exact = filterTreeByQuery(localizedTree.roots, "주문 접수");
+    expect(exact).toHaveLength(1);
+    expect(exact[0]?.node.id).toBe("project:shop");
+    expect(exact[0]?.children.map((child) => child.node.id)).toEqual(["domain:orders"]);
+    expect(exact[0]?.children[0]?.children[0]?.node.id).toBe("capability:place-order");
+
+    const normalizedPartial = normalizeForMatch("주문");
+    const directMatchCount = localizedNodes.filter((candidate) =>
+      knowledgeNodeMatchesQuery(candidate, normalizedPartial),
+    ).length;
+    expect(directMatchCount).toBe(2);
+    expect(countMatchingTreeNodes(localizedTree.roots, "주문")).toBe(directMatchCount);
+    expect(countMatchingTreeNodes(localizedTree.roots, "Order Intake")).toBe(1);
   });
 });
 

@@ -81,7 +81,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4174,
+      "wordCount": 4187,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "../AGENTS",
@@ -841,8 +841,8 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 38378,
-      "updatedAt": "2026-08-29",
+      "wordCount": 38393,
+      "updatedAt": "2026-08-31",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -870,7 +870,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13325,
+      "wordCount": 13330,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -881,8 +881,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-29 (replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench, source-derived conformance, a",
-      "wordCount": 24666,
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
+      "wordCount": 24850,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "slug",
@@ -985,8 +985,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "After the folder has grown, you answered \"what should I fix now\" via CLI. There is a screen that does the same thing: \"Analysis\" in the left rail, at /ontology/insights. The screen describes its own purpose like this: This screen is a maintenance board for the person tending the map and the AI agent. If the map is \"wha",
-      "wordCount": 1396,
-      "updatedAt": "2026-08-23",
+      "wordCount": 1542,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -2301,9 +2301,9 @@
         "created_by": "human"
       },
       "headings": [],
-      "excerpt": "canvas-2D graph browsing surface (map, search, index panel): The product's primary entry point for visually navigating the entire vault. docs/ARCHITECTURE.md: \"the current route model converges browsing on Topology, writing on Workshop, maintenance on five-question Insights\" (risky-citation warning: cross-verify by cit",
-      "wordCount": 88,
-      "updatedAt": "2026-08-23",
+      "excerpt": "canvas-2D graph browsing surface (map, search, index panel): The product's primary entry point for visually navigating the entire vault. docs/ARCHITECTURE.md: \"the current route model converges browsing on Topology, writing on Workshop, maintenance on the six-tab Insights page: five measured questions plus Flow\" (risky",
+      "wordCount": 95,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -2987,9 +2987,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Five-question maintenance dashboard. docs/ARCHITECTURE.md: \"maintenance on five-question Insights\".",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Six-tab maintenance board: five measured questions plus Flow. In the installed app, the Flow handoff opens the existing agent dock with a visible, person-owned prefilled request; a verified ACP runtime is used when available, otherwise the key-backed agent panel is used. The web copy action stays explicit. docs/ARCHITE",
+      "wordCount": 59,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -3564,8 +3564,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "[v11 Codebase-centered identity, 2026-08-25] — Ontology Atlas is a codebase ontology workbench. Its plain-language promise is: understand what your codebase builds, why it is structured that way, and what a change will affect. It is neither a general-purpose ontology editor nor a structural code index. Product and busi",
-      "wordCount": 6339,
-      "updatedAt": "2026-08-25",
+      "wordCount": 6344,
+      "updatedAt": "2026-08-31",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC",
         "CODEBASE-ONTOLOGY-POSITIONING"

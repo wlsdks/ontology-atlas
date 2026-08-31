@@ -162,8 +162,8 @@ interface InsightsBadgeInput {
 }
 
 /**
- * What a tab badge counts. This is a repeating slot, so **all five must use the
- * same unit**. Freshness used to put a window length ("12 weeks") here; that slot
+ * What a tab badge counts. This is a repeating slot, so every populated badge must
+ * use the same unit. Freshness used to put a window length ("12 weeks") here; that slot
  * is now left empty, because a length is not a count and the tab body already says
  * how many weeks its window is. Leaving a slot empty and filling it with a
  * different unit are not the same thing — only the latter breaks the slot's meaning.
@@ -188,7 +188,7 @@ const INSIGHTS_TAB_BADGE: Record<
  *
  * **One question per tab**: to do (what needs work now) · composition (what exists,
  * how much) · connections (what is central) · boundaries (how entangled the domains
- * are) · freshness (what moved). The former `structure` tab stacked the first three
+ * are) · freshness (what moved) · flow (what this product is and how it moves). The former `structure` tab stacked the first three
  * questions into one column and grew to 2.2× the viewport — answering one question
  * meant scrolling past two unrelated screens.
  *

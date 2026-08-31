@@ -74,8 +74,8 @@ the same local markdown graph:
   source evidence.
 - **Workshop** — one typed relation write at a time, backed by frontmatter or a
   read-only MCP packet.
-- **Insights** — five maintenance questions with one active panel and a
-  tab-scoped agent handoff.
+- **Insights** — five measured maintenance questions plus the Flow handoff,
+  with one active panel and a tab-scoped agent handoff.
 
 The retired tree/ego hub and ERD Builder are not alternate modes. Headers,
 cards, and navigation preserve the selected concept while moving between
@@ -1187,8 +1187,8 @@ a hidden draft canvas. `/ontology/edit` is only a compatibility redirect to
 this surface.
 
 Insights is a maintenance board, not a generic analytics dashboard. Its exact
-five questions are **Do next / Composition / Connections / Boundaries /
-Freshness**. `?tab=` restores the selected question, `TabBar` exposes one
+six tabs are five measured questions — **Do next / Composition / Connections /
+Boundaries / Freshness** — plus the agent-written **Flow** question. `?tab=` restores the selected question, `TabBar` exposes one
 selected tab, and only the matching `tabpanel` is visible. The first viewport
 should answer the selected question with real graph data; the bottom handoff
 row copies the matching MCP/CLI action without making raw query syntax the

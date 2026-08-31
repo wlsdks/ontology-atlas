@@ -158,8 +158,11 @@ const RULES = [
   },
   {
     command: 'pnpm design:ontology',
-    reason: 'ontology workbench design surface guard changed',
-    matches: [/^scripts\/check-ontology-design-surface\.(?:mjs|test\.mjs)$/],
+    reason: 'ontology workbench design surface or its guard changed',
+    matches: [
+      /^scripts\/check-ontology-design-surface\.(?:mjs|test\.mjs)$/,
+      /^src\/views\/ontology-insights\//,
+    ],
   },
   {
     command: 'pnpm test:desktop:bridge',

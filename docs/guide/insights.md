@@ -9,9 +9,11 @@ The screen describes its own purpose like this:
 If the map is "what exists now," this is **"what is less done now."**
 And the header emphasizes one thing: "All numbers are automatically calculated from documents." This means no numbers are manually entered anywhere.
 
-## 1. Divided into five branches
+## 1. Five measured branches plus Flow
 
-The five tabs at the top each answer a different question.
+The six tabs at the top each answer a different question. The first five are
+computed from the graph; Flow gives an agent one visible request to explain the
+product from the ontology without reading source code.
 
 | Tab | Question Answered |
 |---|---|
@@ -20,8 +22,11 @@ The five tabs at the top each answer a different question.
 | "Connections" | Which relationships are skewed towards which nature, where is the hub |
 | "Boundaries" | How much domains are leaking into each other |
 | "Freshness" | Where hasn't been touched for a long time |
+| "Flow" | What this product is and how its domains and capabilities form one business flow |
 
-The number next to the tab name is the size of that branch. If the number next to "To-Do" is not 0, that is the count of today's tasks.
+The number next to a measured tab name is the size of that branch. If the number
+next to "To-Do" is not 0, that is the count of today's tasks. Freshness and Flow
+have no badge because neither has one honest count.
 
 ## 2. "First things first today": The three items for the day
 
@@ -124,7 +129,16 @@ and the vertical lines come into the target.
 
 For each domain, we draw a heatstrip of updates over the last 12 weeks and provide a list of "recently updated" items and a count of "not updated for 90+ days." The first thing to rot in a vault is **areas no one opens**, so this tab names them.
 
-## 6. Handing over the entire screen to the agent
+## 6. Asking for the business flow
+
+Flow shows the exact prompt before anything leaves the screen. In the installed
+app, "Draw business flow" returns to the map, opens the existing agent panel,
+and prefills the composer without sending. In a browser, the page says that it
+cannot start a local process and offers "Copy request" instead. Every requested
+paragraph must cite ontology node slugs so a person can open and challenge the
+answer.
+
+## 7. Handing over the entire screen to the agent
 
 There is a line at the bottom labeled "For AI Agent · Agent Handoff," and clicking "Copy Next Action" on the right copies the next action for this entire board into a single line.
 
@@ -137,7 +151,9 @@ query_ontology({operation:"maintenance_plan"}) → Execute per item → Re-verif
 ## Summary
 
 - The analysis is the **maintenance board**. The map shows "what exists," while this section shows "what has been less addressed."
-- Five tabs: Todo · Composition · Connections · Boundaries · Freshness. The number next to the name indicates size.
+- Six tabs: Todo · Composition · Connections · Boundaries · Freshness · Flow.
+  The first five are measured maintenance questions; Flow is a visible,
+  reviewable agent request and never sends on its own.
 - "What to see first today" selects that day's items **with reasons**, and each line provides links to the map, original text, studio, and agent commands.
 - What is copied is not just a single command line, but the **preview → execute → confirm → re-evaluate procedure**.
 - In read-only folders, commands to skip appear instead of fix commands.

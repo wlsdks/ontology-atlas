@@ -179,7 +179,7 @@ export function SearchHint({
               type="button"
               onClick={onToggleExpandAll}
               aria-pressed={allExpanded}
-              aria-label={t(allExpanded ? 'collapseAllAriaLabel' : 'expandAllAriaLabel')}
+              aria-label={`${t(allExpanded ? 'collapseAllLabel' : 'expandAllLabel')} — ${t(allExpanded ? 'collapseAllAriaLabel' : 'expandAllAriaLabel')}`}
               title={t(allExpanded ? 'collapseAllTitle' : 'expandAllTitle')}
               data-testid="topology-expand-all"
               data-utility-action-token-contract="support-surface-family"

@@ -790,6 +790,9 @@ For Markdown changes, that selector includes `pnpm docs:language`. For source,
 test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments
 from regressing while preserving typed Korean locale data and runtime strings.
+Changes under the Insights surface also select `pnpm design:ontology`; that gate
+protects the exact five measured maintenance tabs plus the Flow handoff tab,
+one active panel, and the matching agent handoff.
 
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before

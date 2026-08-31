@@ -68,7 +68,7 @@ to both sides and grading without it is impossible.
 - `docs/SYSTEM-MAP.md` states: “The policy package evaluates workspace permissions.”
 - `README.md` defines Coordination as publishing decisions and seeing acknowledgements.
 - `README.md` separately defines Access Control as deciding who may read, coordinate, or administer an incident.
-- `packages/policy/package.json` identifies the owning package as `@relay/policy`. 
+- `packages/policy/package.json` identifies the owning package as `@relay/policy`.
 
 **Next step proposed**: The receiving agent should verify the concrete `@relay/policy` API and its consumers, then confirm that Coordination calls that boundary without embedding permission rules. This checkout contains only package manifests and product documents, so implementation, call sites, and tests are not available to verify here.
 
@@ -460,4 +460,3 @@ to both sides and grading without it is impossible.
 
 **Stated as unknown**:
 - The available files do not record a more specific API, event, or test suite for the checkout-to-inventory interaction.
-

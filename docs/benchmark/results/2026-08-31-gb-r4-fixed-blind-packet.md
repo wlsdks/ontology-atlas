@@ -250,4 +250,3 @@ to both sides and grading without it is impossible.
 **Stated as unknown**:
 - Atlas reports source currentness as not measured/source unbound and dependency completeness as unknown.
 - No implementation code or focused tests are present at the recorded anchors, so runtime blast radius cannot be established.
-

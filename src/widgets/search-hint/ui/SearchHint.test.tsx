@@ -101,6 +101,7 @@ describe("SearchHint", () => {
     );
     const action = screen.getByTestId("topology-expand-all");
     expect(action).toHaveAttribute("aria-pressed", "false");
+    expect(action).toHaveAccessibleName(/Expand all/);
     fireEvent.click(action);
     expect(onToggleExpandAll).toHaveBeenCalledTimes(1);
 
@@ -115,6 +116,7 @@ describe("SearchHint", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getByTestId("topology-expand-all")).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("topology-expand-all")).toHaveAccessibleName(/Collapse all/);
   });
 
   it("keeps compact focus density icon-first while preserving action token markers", () => {
