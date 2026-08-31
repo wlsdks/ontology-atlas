@@ -3669,6 +3669,12 @@ function HomePageImpl() {
       combo: { key: "d" },
       onFire: () => {
         if (shortcutsSuppressed) return;
+        // The documents drawer is a full-width overlay. With the agent dock open, a stray
+        // physical D (under a Korean layout that key types ㅇ) covered the chat that had just
+        // opened, and the person saw the drawer where the answer should have been
+        // (installed app, 2026-08-31). The dock is not a modal, so the other shortcuts stay
+        // live; only the one that would paint over the conversation goes quiet.
+        if (agentDockOpen) return;
         setDocsDrawerOpen((v) => !v);
       },
     },
