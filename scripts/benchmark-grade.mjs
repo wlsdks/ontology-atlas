@@ -39,7 +39,7 @@ export const GRADE_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['id', 'correct', 'citations', 'boundary', 'nextStep', 'unsupported', 'note'],
+        required: ['id', 'correct', 'citations', 'boundary', 'nextStep', 'unsupported', 'unverifiable', 'note'],
         properties: {
           id: { type: 'string' },
           correct: { type: 'integer', minimum: 0, maximum: 3 },
@@ -47,6 +47,7 @@ export const GRADE_SCHEMA = {
           boundary: { type: 'integer', minimum: 0, maximum: 2 },
           nextStep: { type: 'integer', minimum: 0, maximum: 2 },
           unsupported: { type: 'integer', minimum: 0 },
+          unverifiable: { type: 'integer', minimum: 0 },
           note: { type: 'string' },
         },
       },
@@ -99,9 +100,24 @@ export function gradingPrompt(cellCount) {
     'Read the sources and the vault before scoring, and check every path and',
     'concept an answer cites against them.',
     '',
+    'What you do NOT have: some of these agents could also query a live server',
+    'over the vault, and those tool responses are not in this packet. An answer',
+    'may therefore cite reported metadata you cannot see — currentness, impact',
+    'status, completeness or source-binding flags. That is a gap in this packet,',
+    'not a fault in the answer.',
+    '',
     'Score every id on correct (0-3), citations (0-2), boundary (0-2) and',
-    'nextStep (0-2), and count unsupported claims. Put the one thing that decided',
-    'the correct score in note, in one sentence.',
+    'nextStep (0-2), and split what you cannot confirm into two counts:',
+    '',
+    '- unsupported: claims the material you have contradicts, and paths or',
+    '  concepts that do not exist in it. These are faults.',
+    '- unverifiable: claims you simply cannot check because they rest on the tool',
+    '  responses above. These are not faults, and must not lower any score.',
+    '',
+    'Score citations only on paths and concept names you can actually check',
+    'against the material you have. Do not deduct for a citation you cannot see.',
+    '',
+    'Put the one thing that decided the correct score in note, in one sentence.',
     '',
     'Some answers name vault concepts and some describe the same idea in ordinary',
     'words. That difference is not itself a quality difference — grade what the',
@@ -110,6 +126,27 @@ export function gradingPrompt(cellCount) {
     'Return exactly one JSON object matching the provided output schema. Do not',
     'edit any file.',
   ].join('\n');
+}
+
+// A grader that reads the same answers twice does not return the same scores.
+// Until that spread is measured, a difference between two sides cannot be told
+// apart from the grader changing its mind, so repeats are the default and the
+// spread is reported next to every average.
+export function summarizeRepeats(runs) {
+  const ids = Object.keys(runs[0] ?? {}).filter((id) => runs.every((run) => id in run)).sort();
+  const perAxis = AXES.map(({ key, max, label }) => {
+    const means = runs.map((run) => Number((ids.reduce((sum, id) => sum + run[id][key], 0) / ids.length).toFixed(3)));
+    return {
+      key,
+      label,
+      max,
+      means,
+      spread: Number((Math.max(...means) - Math.min(...means)).toFixed(3)),
+      cellsThatMoved: ids.filter((id) => new Set(runs.map((run) => run[id][key])).size > 1).length,
+      cells: ids.length,
+    };
+  });
+  return { ids, runs: runs.length, perAxis };
 }
 
 export function compareGradings(mine, theirs) {
@@ -175,11 +212,22 @@ export function runGrader({ runId, resultRoot, keep = false }) {
       throw new Error(`the grader returned ${parsed.grades.length} grades for ${cellCount} answers`);
     }
     const byId = Object.fromEntries(parsed.grades.map((row) => [row.id, row]));
-    writeFileSync(join(resultRoot, `${runId}-independent-grades.json`), `${JSON.stringify(byId, null, 1)}\n`, 'utf8');
     return { byId, cellCount, durationMs, status: result.status };
   } finally {
     if (!keep) rmSync(scratchRoot, { recursive: true, force: true });
   }
+}
+
+export function runGraderRepeats({ runId, resultRoot, repeat }) {
+  const runs = [];
+  for (let index = 1; index <= repeat; index += 1) {
+    const { byId, cellCount } = runGrader({ runId, resultRoot });
+    writeFileSync(join(resultRoot, `${runId}-independent-grades-r${index}.json`), `${JSON.stringify(byId, null, 1)}\n`, 'utf8');
+    runs.push(byId);
+    process.stdout.write(`[grade] run ${index}/${repeat}: scored ${Object.keys(byId).length}/${cellCount}\n`);
+  }
+  writeFileSync(join(resultRoot, `${runId}-independent-grades.json`), `${JSON.stringify(runs.at(-1), null, 1)}\n`, 'utf8');
+  return { runs, summary: summarizeRepeats(runs) };
 }
 
 function main() {
@@ -196,9 +244,18 @@ function main() {
     process.exitCode = 2;
     return;
   }
-  const { byId, cellCount, durationMs } = runGrader({ runId, resultRoot });
-  process.stdout.write(`[grade] independent grader scored ${Object.keys(byId).length}/${cellCount} answers in ${(durationMs / 1000).toFixed(1)}s\n`);
-  process.stdout.write(`[grade] grades: ${join(resultRoot, `${runId}-independent-grades.json`)}\n`);
+  const repeatValue = Number(argv.find((arg) => arg.startsWith('--repeat='))?.slice('--repeat='.length) ?? 3);
+  const repeat = Number.isFinite(repeatValue) ? Math.max(1, Math.floor(repeatValue)) : 3;
+  const { summary } = runGraderRepeats({ runId, resultRoot, repeat });
+  process.stdout.write('[grade] the same grader, the same answers, once per run:\n');
+  for (const axis of summary.perAxis) {
+    process.stdout.write(`  ${axis.label.padEnd(11)}/${axis.max}  means=${axis.means.join(', ')}  spread=${axis.spread}  moved=${axis.cellsThatMoved}/${axis.cells}\n`);
+  }
+  if (repeat > 1) {
+    const worst = summary.perAxis.reduce((a, b) => (b.spread > a.spread ? b : a));
+    process.stdout.write(`[grade] noise floor: re-reading the same answers moves ${worst.label} by up to ${worst.spread}. A difference smaller than that is not a difference.\n`);
+  }
+  process.stdout.write(`[grade] grades: ${join(resultRoot, `${runId}-independent-grades.json`)} (plus one file per run)\n`);
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();
