@@ -50,7 +50,7 @@ https://github.com/wlsdks/ontology-atlas/blob/main/docs/ONTOLOGY-ATLAS-SPEC.md#2
 ## Get started in 5 minutes
 
 1. Open \`project.md\` and write your project's name and description.
-2. Create new nodes through the workbench Studio, MCP \`add_concept\`, or the
+2. Create new nodes through the map's editor, MCP \`add_concept\`, or the
    source-checkout CLI. These writers mint the immutable UID; do not copy a
    starter file and its identity. After setting \`$ATLAS\` as shown below:
    \`\`\`bash

@@ -463,8 +463,15 @@ await test('init --quick-start — scaffolds, previews candidates, and ends with
 
     // compact next-steps block, not the long 6-step default block.
     assert.match(clean, /quick start review ready/);
-    assert.match(clean, /semantic writes are blocked/);
-    assert.match(clean, /constructionQualification:v1/);
+    // Assert the two promises, not the sentences that carried them. The block
+    // used to say "semantic writes are blocked" and name
+    // `constructionQualification:v1` to a first-time user; a 2026-08-31 council
+    // judged both as implementation vocabulary in a first-run surface, and the
+    // same block was naming a skill `init` does not install. What must survive
+    // any rewording is that the CLI does not write meaning on its own, and that
+    // landing a whole plan needs an evaluator who is not the builder.
+    assert.match(clean, /writes no meaning|writes nothing|does not write/i);
+    assert.match(clean, /evaluator is not its builder|independently identified/i);
     assert.equal((clean.match(/^\s*\d\.\s/gm) || []).length, 3, `expected exactly 3 next-step lines:\n${clean}`);
     assert.doesNotMatch(clean, /quick start done/);
 
