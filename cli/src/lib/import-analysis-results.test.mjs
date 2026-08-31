@@ -6,8 +6,8 @@ import { assertInferImportsResult } from './import-analysis-results.mjs';
 function coverageFixture() {
   return {
     contract: 'importScanCoverage:v1',
-    supportedLanguages: ['go', 'javascript', 'python', 'typescript'],
-    supportedExtensions: ['.go', '.js', '.py', '.ts'],
+    supportedLanguages: ['go', 'javascript', 'python', 'rust', 'typescript'],
+    supportedExtensions: ['.go', '.js', '.py', '.rs', '.ts'],
     detectedUnsupportedLanguages: [],
     allDetectedLanguagesSupported: true,
     zeroEdgesMeaning: 'no_supported_static_import_edges_observed',
@@ -592,7 +592,7 @@ describe('import-analysis-results', () => {
           unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }],
           moduleEdges: [],
         }),
-      /infer_imports\.unresolved\[0\]\.reason must be one of empty, relative-not-found, alias-not-found/,
+      /infer_imports\.unresolved\[0\]\.reason must be one of empty, relative-not-found, alias-not-found, unsupported-static-form/,
     );
   });
 

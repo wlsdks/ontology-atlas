@@ -333,8 +333,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The canonical current execution order. When a user specifies a task ID, only that item is decomposed and implemented. Completion markers are first recorded in the evidence table of the active track below; the feature's current status is handled by docs/FEATURES.md, decision rationale by docs/DECISIONS.md, and user-visi",
-      "wordCount": 7087,
-      "updatedAt": "2026-08-23",
+      "wordCount": 7117,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -733,8 +733,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. Compact age",
-      "wordCount": 85374,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; the app version reached v1.0.0 on 2026-07-27, so a release tag now carries the semver promise instead. inferimport",
+      "wordCount": 85540,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -774,7 +774,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 226470,
+      "wordCount": 227156,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -870,7 +870,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13330,
+      "wordCount": 13368,
       "updatedAt": "2026-08-31",
       "linksOut": []
     },
@@ -882,7 +882,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
-      "wordCount": 24850,
+      "wordCount": 24826,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "slug",
@@ -1712,8 +1712,8 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3222,
-      "updatedAt": "2026-08-30",
+      "wordCount": 3138,
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {
@@ -3491,7 +3491,7 @@
       "headings": [],
       "excerpt": "This folder is Ontology Atlas described in its own data format (dogfooding). Every .md file here is one node of the product's meaning model: the same project / domain / capability / element graph the app draws and the MCP server serves to AI agents. If you are an agent reading this: this vault is the shared mental mode",
       "wordCount": 927,
-      "updatedAt": "2026-08-25",
+      "updatedAt": "2026-08-31",
       "linksOut": []
     },
     {

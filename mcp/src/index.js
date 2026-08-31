@@ -683,13 +683,13 @@ const IMPORT_SCAN_COVERAGE_OUTPUT_SCHEMA = Object.freeze({
     supportedLanguages: {
       type: 'array',
       uniqueItems: true,
-      items: { type: 'string', enum: ['go', 'javascript', 'python', 'typescript'] },
+      items: { type: 'string', enum: ['go', 'javascript', 'python', 'rust', 'typescript'] },
     },
     supportedExtensions: { type: 'array', uniqueItems: true, items: NON_BLANK_STRING_SCHEMA },
     detectedUnsupportedLanguages: {
       type: 'array',
       uniqueItems: true,
-      items: { type: 'string', enum: ['c', 'rust'] },
+      items: { type: 'string', enum: ['c'] },
     },
     allDetectedLanguagesSupported: { type: 'boolean' },
     zeroEdgesMeaning: {
@@ -4889,8 +4889,8 @@ const TOOLS = [
   {
     name: 'infer_imports',
     description:
-      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages and bounded src/source-layout Python packages. A valid root Go module additionally exposes typed local package-import evidence; it stays separate from legacy file edges and never self-approves a semantic relation. ' +
-      'Structured `coverage` names the supported languages and, when Cargo is detected, states that Rust use/mod and macro dependency graphs are unsupported; zero edges never proves that a Rust repository has no dependencies. ' +
+      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. It also walks bounded root Python packages, bounded src/source-layout Python packages, and deterministic Rust use/file-module/literal-include dependencies. A valid root Go module additionally exposes typed local package-import evidence; it stays separate from legacy file edges and never self-approves a semantic relation. ' +
+      'Structured `coverage` names the supported languages; Rust support is bounded static text evidence and does not expand macros, evaluate cfg, resolve symbols, or prove runtime impact. ' +
       'side effect 0 (vault frontmatter NOT modified). `moduleEdges` are source-backed review candidates, never self-approving semantic `depends_on` relations. ' +
       'When you know an implementation file, set `focusPath` (or `reviewMode:"focus"`) before considering `full`: Atlas returns bounded exact incoming/outgoing static import receipts, counts, and a cursor without requiring a vault. This focused source boundary is not runtime impact or a semantic relation. ' +
       'Omit `reviewMode` for size-safe automatic delivery: scans whose estimated full MCP result is at most 128 KiB keep the complete response; larger reconciled scans return exactly one compact, non-writing `nextRelationReview:v1` packet plus a delivery receipt and stateless cursor. Use `reviewMode:"next"` to request that bounded packet explicitly. `reviewMode:"full"` preserves the complete shape, but a result over 128 KiB additionally requires `allowLargeResponse:true`; this second confirmation prevents coding agents from accidentally opting into a multi-megabyte response. Oversized raw scans without a loadable reconciliation vault fail with an actionable error instead of emitting an unbounded default response. Every compact candidate carries `absentEndpoints`. If an endpoint is missing, `nextCalls` is empty and `endpointModelling` separates an evidence-only analysis call from the complete `rootPath + proposal` validation contract, source-bound drafts, and queue resume. It never calls `get_concepts` or `relation_check` on a missing slug, never claims the analysis call created an endpoint, and never promotes a path-derived slug into a business kind or definition. ' +
@@ -5875,7 +5875,7 @@ const TOOLS = [
       '  - README.rst + bounded static setup.py → Python project/package evidence without execution\n' +
       '  - root Python packages plus at most 12 import-connected implementation boundaries → direct modules plus up to 2 exact security/policy/risk file anchors; unused files are not mirrored and no capability is inferred from imports\n' +
       '  - bounded root Cargo package or repo-contained literal direct workspace members → typed feature declaration + literal cfg/cfg_attr source provenance; predicates are not evaluated and no runtime/import/semantic dependency is inferred\n' +
-      '  - a complete proposal may select at most 4 additional exact TypeScript, JavaScript, or Python file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
+      '  - a complete proposal may select at most 4 additional exact TypeScript, JavaScript, Python, or Rust file endpoints already observed by infer_imports for distinct navigation roles; exact dependency direction is validated and these files never become automatic candidates\n\n' +
       '  - an element proposal may keep an ordinary citation and append reviewed `navigation:primary|supporting|test:<path>#<symbol>` evidence strings (limits 1/1/3); the server verifies only those named current files, renders human-readable Evidence bullets, and rejects missing, ambiguous, unsafe, or task-inferred coordinates without treating them as behavior proof\n\n' +
       'Optionally pass a complete `proposal` to validate project/domain/capability/element definitions, ' +
       'typed relations, citations, risk controls, domain placement, implementation paths, confidence, ' +
