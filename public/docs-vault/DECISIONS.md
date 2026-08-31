@@ -40,6 +40,64 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-08-31 — An analysis is a dated record beside the vault, not a concept inside it
+
+**Convened**: solo pass (`/po-pass`, 21/24, no fatal zero, verdict *shape a
+slice*) · **Trigger**: the owner asked why the analysis surface reports how much
+is there rather than what is weak, and asked for results kept in a tab,
+re-runnable, and diffable against last time.
+
+**Prior decisions read, and one of them contested**: `FlowTab` holds that an
+analysis answer belongs in the conversation that produced it — *"there is no
+result pane here"* — because the permission trail and the follow-up questions
+live there, and decision (21) added *"no persistence"* to the endcap slice.
+Keeping a result on screen contests both. This record does not overturn them:
+the slice below writes a file and adds no result pane, so the standing position
+stands until a council decides otherwise.
+
+**Decision**: `ontology-atlas analysis` writes a dated findings record and
+compares it with the previous one. Three boundaries hold it:
+
+1. **It derives nothing itself.** It runs this CLI's own `health`, `validate`,
+   and `architecture`. A second implementation of "what counts as a problem" is
+   how this surface once told people to fix 83 things that could not be fixed
+   (2026-08-16 (16)).
+2. **Identity is not wording.** Each finding's id is built from the check and the
+   thing it points at. Two runs can therefore be compared at all; prose cannot
+   be, because the same problem described twice is two paragraphs.
+3. **It is not reviewed meaning.** The record carries no `kind:` and sits beside
+   the vault, not inside it. Inside, `validate` warns `missing-kind` on every
+   record and is right to — a `kind:`-less file in a vault folder is usually a
+   mistake, and teaching it an exception is a vault-contract change.
+
+**Public contract change**: one new CLI command, `analysis`. The count moves 57
+→ 58 across `cli/package.json`, the generated MCP surface, and the three
+documents that state it.
+
+**Applied rule**: smallest slice; no model call, no new kind, no new route, no
+new MCP tool. Deterministic evidence only.
+
+**Rejected**: writing the record inside the vault so the app could read it
+today. That buys an in-app tab at the price of the vault contract, and the app
+cannot show these findings anyway — the CLI's health emits eight checks and the
+browser computes six, and the two missing ones include the only finding open on
+this repository.
+
+**Signature**: Stark
+
+**Recorded dissent**: a record the app cannot open is a file nobody will read.
+The value the owner asked for was a tab, and this delivers a command; a
+developer who has to run a CLI to learn what is weak will not run it twice.
+
+**Falsifier**: the command is run once and never again. If the second run does
+not happen within the next round of work, the dissent was right and the surface —
+not the record — was the thing worth building.
+
+**Review**: when the vault-contract question is put to `/design-council`, and at
+the first observation of whether anyone re-ran it.
+
+**Status**: valid
+
 ## 2026-08-31 — Current exact handoff passes one read-only coding lane; cross-repository speed remains unearned
 
 **Trigger**: independent review invalidated the preceding performance evidence
