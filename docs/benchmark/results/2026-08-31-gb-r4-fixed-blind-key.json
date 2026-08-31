@@ -1,0 +1,86 @@
+{
+ "C01": {
+  "file": "2026-08-31-gb-r4-fixed-greenfield-G1-on-r1.txt",
+  "side": "on",
+  "subject": "greenfield",
+  "task": "G1",
+  "iteration": 1
+ },
+ "C02": {
+  "file": "2026-08-31-gb-r4-fixed-brownfield-B2-on-r3.txt",
+  "side": "on",
+  "subject": "brownfield",
+  "task": "B2",
+  "iteration": 3
+ },
+ "C03": {
+  "file": "2026-08-31-gb-r4-fixed-greenfield-G1-on-r2.txt",
+  "side": "on",
+  "subject": "greenfield",
+  "task": "G1",
+  "iteration": 2
+ },
+ "C04": {
+  "file": "2026-08-31-gb-r4-fixed-greenfield-G2-on-r2.txt",
+  "side": "on",
+  "subject": "greenfield",
+  "task": "G2",
+  "iteration": 2
+ },
+ "C05": {
+  "file": "2026-08-31-gb-r4-fixed-brownfield-B2-on-r1.txt",
+  "side": "on",
+  "subject": "brownfield",
+  "task": "B2",
+  "iteration": 1
+ },
+ "C06": {
+  "file": "2026-08-31-gb-r4-fixed-greenfield-G1-on-r3.txt",
+  "side": "on",
+  "subject": "greenfield",
+  "task": "G1",
+  "iteration": 3
+ },
+ "C07": {
+  "file": "2026-08-31-gb-r4-fixed-brownfield-B1-on-r1.txt",
+  "side": "on",
+  "subject": "brownfield",
+  "task": "B1",
+  "iteration": 1
+ },
+ "C08": {
+  "file": "2026-08-31-gb-r4-fixed-greenfield-G2-on-r1.txt",
+  "side": "on",
+  "subject": "greenfield",
+  "task": "G2",
+  "iteration": 1
+ },
+ "C09": {
+  "file": "2026-08-31-gb-r4-fixed-greenfield-G2-on-r3.txt",
+  "side": "on",
+  "subject": "greenfield",
+  "task": "G2",
+  "iteration": 3
+ },
+ "C10": {
+  "file": "2026-08-31-gb-r4-fixed-brownfield-B1-on-r3.txt",
+  "side": "on",
+  "subject": "brownfield",
+  "task": "B1",
+  "iteration": 3
+ },
+ "C11": {
+  "file": "2026-08-31-gb-r4-fixed-brownfield-B2-on-r2.txt",
+  "side": "on",
+  "subject": "brownfield",
+  "task": "B2",
+  "iteration": 2
+ },
+ "C12": {
+  "file": "2026-08-31-gb-r4-fixed-brownfield-B1-on-r2.txt",
+  "side": "on",
+  "subject": "brownfield",
+  "task": "B1",
+  "iteration": 2
+ }
+}

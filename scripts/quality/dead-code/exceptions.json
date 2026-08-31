@@ -92,6 +92,30 @@
       "witness": "codex"
     },
     {
+      "key": "frontend:runtime:binaries:scripts/benchmark-grade.mjs:codex",
+      "reason": "The independent grader invokes the external Codex executable intentionally, so a second reader with no memory of this repository's conversation can score a saved packet.",
+      "consumer": "scripts/benchmark-grade.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "scripts:runtime:binaries:scripts/benchmark-grade.mjs:codex",
+      "reason": "The independent grader invokes the external Codex executable intentionally, so a second reader with no memory of this repository's conversation can score a saved packet.",
+      "consumer": "scripts/benchmark-grade.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "scripts:verification:binaries:scripts/benchmark-grade.mjs:codex",
+      "reason": "The independent grader invokes the external Codex executable intentionally, so a second reader with no memory of this repository's conversation can score a saved packet.",
+      "consumer": "scripts/benchmark-grade.mjs",
+      "witness": "codex"
+    },
+    {
+      "key": "frontend:verification:binaries:scripts/benchmark-grade.mjs:codex",
+      "reason": "The independent grader invokes the external Codex executable intentionally, so a second reader with no memory of this repository's conversation can score a saved packet.",
+      "consumer": "scripts/benchmark-grade.mjs",
+      "witness": "codex"
+    },
+    {
       "key": "scripts:runtime:binaries:scripts/deploy-macos-app-local.mjs:pgrep",
       "reason": "Local macOS deployment uses the system process inspector intentionally.",
       "consumer": "scripts/deploy-macos-app-local.mjs",
