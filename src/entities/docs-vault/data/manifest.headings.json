@@ -2432,6 +2432,48 @@
       "slug": "the-rule-this-produces"
     }
   ],
+  "benchmark/FINDINGS-2026-08-31-screening-grade": [
+    {
+      "depth": 1,
+      "text": "Reading the 24 answers — 2026-08-31",
+      "slug": "reading-the-24-answers-2026-08-31"
+    },
+    {
+      "depth": 2,
+      "text": "How this was done, and what it cannot be",
+      "slug": "how-this-was-done-and-what-it-cannot-be"
+    },
+    {
+      "depth": 2,
+      "text": "What the reading found",
+      "slug": "what-the-reading-found"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas won where the question was about something recorded",
+      "slug": "atlas-won-where-the-question-was-about-something-recorded"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas lost the orientation question, and the reason is worth knowing",
+      "slug": "atlas-lost-the-orientation-question-and-the-reason-is-worth-knowing"
+    },
+    {
+      "depth": 3,
+      "text": "The only made-up claim came from the side without Atlas",
+      "slug": "the-only-made-up-claim-came-from-the-side-without-atlas"
+    },
+    {
+      "depth": 2,
+      "text": "What this does not settle",
+      "slug": "what-this-does-not-settle"
+    },
+    {
+      "depth": 2,
+      "text": "What to do about it",
+      "slug": "what-to-do-about-it"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -2462,6 +2504,11 @@
       "depth": 4,
       "text": "The score comes in two halves — only one of them is a comparison",
       "slug": "the-score-comes-in-two-halves-only-one-of-them-is-a-comparison"
+    },
+    {
+      "depth": 4,
+      "text": "Grade the answers by hand",
+      "slug": "grade-the-answers-by-hand"
     },
     {
       "depth": 4,
@@ -3060,6 +3107,133 @@
       "slug": "cells"
     }
   ],
+  "benchmark/results/2026-08-31-gb-r3-blind-packet": [
+    {
+      "depth": 1,
+      "text": "Grading packet — 2026-08-31-gb-r3",
+      "slug": "grading-packet-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "C01  (question B1)",
+      "slug": "c01-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C02  (question G2)",
+      "slug": "c02-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C03  (question B2)",
+      "slug": "c03-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C04  (question B1)",
+      "slug": "c04-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C05  (question G2)",
+      "slug": "c05-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C06  (question B1)",
+      "slug": "c06-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C07  (question B2)",
+      "slug": "c07-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C08  (question B2)",
+      "slug": "c08-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C09  (question B1)",
+      "slug": "c09-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C10  (question G1)",
+      "slug": "c10-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C11  (question G2)",
+      "slug": "c11-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C12  (question B2)",
+      "slug": "c12-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C13  (question B1)",
+      "slug": "c13-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C14  (question B1)",
+      "slug": "c14-question-b1"
+    },
+    {
+      "depth": 2,
+      "text": "C15  (question G1)",
+      "slug": "c15-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C16  (question G1)",
+      "slug": "c16-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C17  (question G2)",
+      "slug": "c17-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C18  (question B2)",
+      "slug": "c18-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C19  (question G1)",
+      "slug": "c19-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C20  (question G1)",
+      "slug": "c20-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C21  (question G2)",
+      "slug": "c21-question-g2"
+    },
+    {
+      "depth": 2,
+      "text": "C22  (question G1)",
+      "slug": "c22-question-g1"
+    },
+    {
+      "depth": 2,
+      "text": "C23  (question B2)",
+      "slug": "c23-question-b2"
+    },
+    {
+      "depth": 2,
+      "text": "C24  (question G2)",
+      "slug": "c24-question-g2"
+    }
+  ],
   "benchmark/results/2026-08-31-gb-r3-regrade-summary": [
     {
       "depth": 1,
@@ -3090,6 +3264,28 @@
       "depth": 2,
       "text": "Which word decided each miss",
       "slug": "which-word-decided-each-miss"
+    }
+  ],
+  "benchmark/results/2026-08-31-gb-r3-screening-grades": [
+    {
+      "depth": 1,
+      "text": "Screening grades — 2026-08-31-gb-r3",
+      "slug": "screening-grades-2026-08-31-gb-r3"
+    },
+    {
+      "depth": 2,
+      "text": "Averages",
+      "slug": "averages"
+    },
+    {
+      "depth": 2,
+      "text": "Correctness by question",
+      "slug": "correctness-by-question"
+    },
+    {
+      "depth": 2,
+      "text": "Note on every cell",
+      "slug": "note-on-every-cell"
     }
   ],
   "benchmark/results/2026-08-31-gb-r3-summary": [

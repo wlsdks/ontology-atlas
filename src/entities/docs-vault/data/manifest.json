@@ -385,6 +385,24 @@
       ]
     },
     {
+      "slug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+      "path": "docs/benchmark/FINDINGS-2026-08-31-screening-grade.md",
+      "title": "Reading the 24 answers — 2026-08-31",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "A screening pass, not a verdict. Read the scoring correction first: it showed that the machine score could not compare the two sides, and that only a person reading the answers could. This is a first read of those answers by a model, which is weaker evidence than the human grading the rubric asks for and does not repla",
+      "wordCount": 1058,
+      "updatedAt": "2026-08-31",
+      "linksOut": [
+        "benchmark/FINDINGS-2026-08-31-metric-split",
+        "benchmark/results/2026-08-31-gb-r3-blind-packet",
+        "benchmark/results/2026-08-31-gb-r3-screening-grades",
+        "../tests/fixtures/meaning-corpus/commerce-fsd/docs/PRODUCT",
+        "benchmark/FINDINGS-2026-08-25"
+      ]
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -392,7 +410,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
-      "wordCount": 2479,
+      "wordCount": 2728,
       "updatedAt": "2026-08-31",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-25",
@@ -403,6 +421,9 @@
         "benchmark/FINDINGS-2026-08-31-metric-split",
         "benchmark/results/2026-08-31-gb-r3-summary",
         "benchmark/results/2026-08-31-gb-r3-regrade-summary",
+        "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "benchmark/results/2026-08-31-gb-r3-blind-packet",
+        "benchmark/results/2026-08-31-gb-r3-screening-grades",
         "benchmark/results/2026-08-31-change-r7-summary",
         "benchmark/results/2026-05-template"
       ]
@@ -566,6 +587,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/results/2026-08-31-gb-r3-blind-packet",
+      "path": "docs/benchmark/results/2026-08-31-gb-r3-blind-packet.md",
+      "title": "Grading packet — 2026-08-31-gb-r3",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Each answer below is identified only by an opaque id, and the order is shuffled. Which side wrote which answer is withheld until the grades are saved. For every answer record: correctness, any claim the source does not support, whether the cited paths and concepts exist, whether the boundary is right, and whether the n",
+      "wordCount": 5520,
+      "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/results/2026-08-31-gb-r3-regrade-summary",
       "path": "docs/benchmark/results/2026-08-31-gb-r3-regrade-summary.md",
       "title": "Lifecycle benchmark, re-scored with the two halves separated — 2026-08-31-gb-r3",
@@ -576,6 +609,20 @@
       "wordCount": 1610,
       "updatedAt": "2026-08-31",
       "linksOut": []
+    },
+    {
+      "slug": "benchmark/results/2026-08-31-gb-r3-screening-grades",
+      "path": "docs/benchmark/results/2026-08-31-gb-r3-screening-grades.md",
+      "title": "Screening grades — 2026-08-31-gb-r3",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "This is a model-graded screening pass, not the human grading the rubric asks for. It was produced by the same assistant that built the scoring split. It read the shuffled packet in 2026-08-31-gb-r3-blind-packet.md and saved these grades before opening the key. Two limits are structural and cannot be argued away: the gr",
+      "wordCount": 1416,
+      "updatedAt": "2026-08-31",
+      "linksOut": [
+        "benchmark/rubric"
+      ]
     },
     {
       "slug": "benchmark/results/2026-08-31-gb-r3-summary",
@@ -3690,6 +3737,11 @@
     ],
     "benchmark/FINDINGS-2026-08-31-metric-split": [
       {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "# Reading the 24 answers — 2026-08-31 > A screening pass, not a verdict. Read > **[the scoring correction]** first: it showed > that the machine score could not compare the two sides, and that only a person > reading the answers",
+        "linkText": "the scoring correction"
+      },
+      {
         "fromSlug": "benchmark/README",
         "context": "ge-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | **[`FINDINGS-2026-08-31-metric-split.md`]** | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, n",
         "linkText": "`FINDINGS-2026-08-31-metric-split.md`"
@@ -3708,7 +3760,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`results/2026-08-31-cha",
+        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`FINDINGS-2026-08-31-sc",
         "linkText": "`results/2026-08-31-gb-r3-regrade-summary.md`"
       },
       {
@@ -3845,7 +3897,7 @@
       },
       {
         "fromSlug": "benchmark/README",
-        "context": "b-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | **[`results/2026-08-31-change-r7-summary.md`]** | Four-cell change-flow result with direct Git and Atlas update receipts. | | [`results/2026-05-template.md`](results/2",
+        "context": "ng-grades.md`](results/2026-08-31-gb-r3-screening-grades.md) | The screening grades, per cell, with a note on each. | | **[`results/2026-08-31-change-r7-summary.md`]** | Four-cell change-flow result with direct Git and Atlas update receipts. | | [`results/2026-05-template.md`](results/2",
         "linkText": "`results/2026-08-31-change-r7-summary.md`"
       }
     ],
@@ -3894,9 +3946,57 @@
         "linkText": "`rubric.md`"
       },
       {
+        "fromSlug": "benchmark/results/2026-08-31-gb-r3-screening-grades",
+        "context": "rding alone. Read this as a pointer to where to > look, and replace it when a person grades the same packet. Criteria: **[`rubric.md`]**. Correctness 0–3; citations, boundary and next step 0–2; unsupported claims counted, lower is better. | Cell | Subject",
+        "linkText": "`rubric.md`"
+      },
+      {
         "fromSlug": "benchmark/tasks",
         "context": "the vault body and nowhere in the source, so an agent that only greps has to invent one. Score with the D-only axes in **[`rubric.md`]**. ### D1 — Documented exclusion **Prompt:** > A request came in to make our MCP server do code symbol search too. Shou",
         "linkText": "`rubric.md`"
+      }
+    ],
+    "benchmark/results/2026-08-31-gb-r3-blind-packet": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "ffled order, the grades were written down, and only then was the key opened. The packet and the key are both committed (**[packet]**, [grades](results/2026-08-31-gb-r3-screening-grades.md)), so anyone can grade the same answers and compare. Two limits",
+        "linkText": "packet"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "y a model. Atlas won the two boundary questions and lost the orientation question. A screening pass, not a verdict. | | **[`results/2026-08-31-gb-r3-blind-packet.md`]** | The 24 answers with ids instead of side labels, shuffled, ready for a person to grade. | | [`results/2026-08-31-gb-r3",
+        "linkText": "`results/2026-08-31-gb-r3-blind-packet.md`"
+      }
+    ],
+    "benchmark/results/2026-08-31-gb-r3-screening-grades": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "then was the key opened. The packet and the key are both committed ([packet](results/2026-08-31-gb-r3-blind-packet.md), **[grades]**), so anyone can grade the same answers and compare. Two limits are structural: - **The grader is not a person.** It i",
+        "linkText": "grades"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "-31-gb-r3-blind-packet.md) | The 24 answers with ids instead of side labels, shuffled, ready for a person to grade. | | **[`results/2026-08-31-gb-r3-screening-grades.md`]** | The screening grades, per cell, with a note on each. | | [`results/2026-08-31-change-r7-summary.md`](results/2026-08-",
+        "linkText": "`results/2026-08-31-gb-r3-screening-grades.md`"
+      }
+    ],
+    "../tests/fixtures/meaning-corpus/commerce-fsd/docs/PRODUCT": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "rief.** The source is four one-line files; all the meaning lives in the subject's own README and product document — **[`tests/fixtures/meaning-corpus/commerce-fsd/docs/PRODUCT.md`]** — which both sides read. So this compares a vault against good product prose, not a vault against code. That is the",
+        "linkText": "`tests/fixtures/meaning-corpus/commerce-fsd/docs/PRODUCT.md`"
+      }
+    ],
+    "benchmark/FINDINGS-2026-08-25": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "des read. So this compares a vault against good product prose, not a vault against code. That is the same condition **[the 2026-08-25 findings]** named on this repository, and it is still not resolved. - **Twelve answers per side on two tiny subjects** cannot est",
+        "linkText": "the 2026-08-25 findings"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "agents prefer raw grep, maybe the value is elsewhere. Either way, **measurement before further investment**. > **Read **[`FINDINGS-2026-08-25.md`]** first.** It records > what the first real run measured, why three earlier attempts measured nothing, > and the one rule",
+        "linkText": "`FINDINGS-2026-08-25.md`"
       }
     ],
     "benchmark/results/2026-08-31-gb-r3-summary": [
@@ -3911,13 +4011,6 @@
         "linkText": "`results/2026-08-31-gb-r3-summary.md`"
       }
     ],
-    "benchmark/FINDINGS-2026-08-25": [
-      {
-        "fromSlug": "benchmark/README",
-        "context": "agents prefer raw grep, maybe the value is elsewhere. Either way, **measurement before further investment**. > **Read **[`FINDINGS-2026-08-25.md`]** first.** It records > what the first real run measured, why three earlier attempts measured nothing, > and the one rule",
-        "linkText": "`FINDINGS-2026-08-25.md`"
-      }
-    ],
     "benchmark/tasks": [
       {
         "fromSlug": "benchmark/README",
@@ -3930,6 +4023,13 @@
         "fromSlug": "benchmark/README",
         "context": "26-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. | | **[`FINDINGS-2026-08-31-change-flow.md`]** | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | [`FINDINGS-",
         "linkText": "`FINDINGS-2026-08-31-change-flow.md`"
+      }
+    ],
+    "benchmark/FINDINGS-2026-08-31-screening-grade": [
+      {
+        "fromSlug": "benchmark/README",
+        "context": "b-r3-regrade-summary.md) | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | **[`FINDINGS-2026-08-31-screening-grade.md`]** | A first read of those 24 answers by a model. Atlas won the two boundary questions and lost the orientation question.",
+        "linkText": "`FINDINGS-2026-08-31-screening-grade.md`"
       }
     ],
     "benchmark/results/2026-05-template": [
@@ -5500,11 +5600,25 @@
                 "title": "Greenfield/brownfield lifecycle benchmark — 2026-08-31-gb-pilot-r2"
               },
               {
+                "name": "2026-08-31-gb-r3-blind-packet",
+                "path": "benchmark/results/2026-08-31-gb-r3-blind-packet",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-r3-blind-packet",
+                "title": "Grading packet — 2026-08-31-gb-r3"
+              },
+              {
                 "name": "2026-08-31-gb-r3-regrade-summary",
                 "path": "benchmark/results/2026-08-31-gb-r3-regrade-summary",
                 "type": "doc",
                 "slug": "benchmark/results/2026-08-31-gb-r3-regrade-summary",
                 "title": "Lifecycle benchmark, re-scored with the two halves separated — 2026-08-31-gb-r3"
+              },
+              {
+                "name": "2026-08-31-gb-r3-screening-grades",
+                "path": "benchmark/results/2026-08-31-gb-r3-screening-grades",
+                "type": "doc",
+                "slug": "benchmark/results/2026-08-31-gb-r3-screening-grades",
+                "title": "Screening grades — 2026-08-31-gb-r3"
               },
               {
                 "name": "2026-08-31-gb-r3-summary",
@@ -5542,6 +5656,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-08-31-metric-split",
             "title": "Most of the published gap was our own vocabulary — 2026-08-31"
+          },
+          {
+            "name": "FINDINGS-2026-08-31-screening-grade",
+            "path": "benchmark/FINDINGS-2026-08-31-screening-grade",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+            "title": "Reading the 24 answers — 2026-08-31"
           },
           {
             "name": "README",
