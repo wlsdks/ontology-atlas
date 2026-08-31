@@ -2078,7 +2078,7 @@ export function toolsListSchemaFailure(tools) {
     !sameArray(importCoverageSchema.properties?.contract?.enum, ['importScanCoverage:v1']) ||
     !sameArray(
       importCoverageSchema.properties?.detectedUnsupportedLanguages?.items?.enum,
-      ['c', 'rust'],
+      ['c'],
     ) ||
     importCoverageSchema.properties?.allDetectedLanguagesSupported?.type !== 'boolean' ||
     Object.hasOwn(importCoverageSchema.properties ?? {}, 'completeForDetectedLanguages') ||
@@ -6507,12 +6507,12 @@ function importScanCoverageFailure(coverage) {
   ) {
     return 'import scan coverage boundary drift';
   }
-  if (!sameArray(coverage.supportedLanguages, ['go', 'javascript', 'python', 'typescript'])) {
+  if (!sameArray(coverage.supportedLanguages, ['go', 'javascript', 'python', 'rust', 'typescript'])) {
     return 'import scan coverage supported-language enum drift';
   }
   if (
     new Set(coverage.detectedUnsupportedLanguages).size !== coverage.detectedUnsupportedLanguages.length ||
-    coverage.detectedUnsupportedLanguages.some((language) => !['c', 'rust'].includes(language))
+    coverage.detectedUnsupportedLanguages.some((language) => language !== 'c')
   ) {
     return 'import scan coverage unsupported-language enum drift';
   }
@@ -6521,12 +6521,6 @@ function importScanCoverageFailure(coverage) {
     coverage.allDetectedLanguagesSupported !== false
   ) {
     return 'import scan coverage overclaims C support';
-  }
-  if (
-    coverage.detectedUnsupportedLanguages.includes('rust') &&
-    coverage.allDetectedLanguagesSupported !== false
-  ) {
-    return 'import scan coverage overclaims Rust support';
   }
   return null;
 }

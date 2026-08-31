@@ -1,7 +1,12 @@
 const EDGE_KINDS = new Set(['static', 'dynamic', 'require', 'reexport', 'side']);
 const SOURCE_ROLES = ['production', 'test', 'unknown'];
 const IMPORT_USAGES = ['value', 'type_only', 'unknown'];
-const UNRESOLVED_REASONS = new Set(['empty', 'relative-not-found', 'alias-not-found']);
+const UNRESOLVED_REASONS = new Set([
+  'empty',
+  'relative-not-found',
+  'alias-not-found',
+  'unsupported-static-form',
+]);
 const GO_PACKAGE_IMPORT_KINDS = new Set(['static', 'side']);
 const GO_PACKAGE_IMPORT_SOURCE_QUALIFICATION =
   'observed_bounded_go_package_imports_not_runtime_or_semantic_impact';
@@ -266,7 +271,7 @@ function assertCoverage(value, path) {
     'limitations',
   ], path);
   if (value.contract !== 'importScanCoverage:v1') throw new Error(`${path}.contract must be importScanCoverage:v1`);
-  const supportedLanguages = ['go', 'javascript', 'python', 'typescript'];
+  const supportedLanguages = ['go', 'javascript', 'python', 'rust', 'typescript'];
   assertUniqueStringArray(value.supportedLanguages, supportedLanguages, `${path}.supportedLanguages`);
   if (
     value.supportedLanguages.length !== supportedLanguages.length ||
@@ -275,7 +280,7 @@ function assertCoverage(value, path) {
     throw new Error(`${path}.supportedLanguages must exactly match the public language contract`);
   }
   assertUniqueStringArray(value.supportedExtensions, null, `${path}.supportedExtensions`);
-  assertUniqueStringArray(value.detectedUnsupportedLanguages, ['c', 'rust'], `${path}.detectedUnsupportedLanguages`);
+  assertUniqueStringArray(value.detectedUnsupportedLanguages, ['c'], `${path}.detectedUnsupportedLanguages`);
   if (typeof value.allDetectedLanguagesSupported !== 'boolean') {
     throw new Error(`${path}.allDetectedLanguagesSupported must be a boolean`);
   }

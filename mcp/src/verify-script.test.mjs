@@ -279,14 +279,13 @@ function verifiedRustConfigurationEvidence() {
   };
 }
 
-function verifiedImportScanCoverage({ c = false, rust = false } = {}) {
+function verifiedImportScanCoverage({ c = false } = {}) {
   const detectedUnsupportedLanguages = [
     ...(c ? ['c'] : []),
-    ...(rust ? ['rust'] : []),
   ];
   return {
     contract: 'importScanCoverage:v1',
-    supportedLanguages: ['go', 'javascript', 'python', 'typescript'],
+    supportedLanguages: ['go', 'javascript', 'python', 'rust', 'typescript'],
     supportedExtensions: ['.js', '.py', '.ts'],
     detectedUnsupportedLanguages,
     allDetectedLanguagesSupported: detectedUnsupportedLanguages.length === 0,
@@ -2113,7 +2112,7 @@ describe('verify.mjs first-contact gates', () => {
                 contract: { enum: ['importScanCoverage:v1'] },
                 detectedUnsupportedLanguages: {
                   type: 'array',
-                  items: { enum: ['c', 'rust'] },
+                  items: { enum: ['c'] },
                 },
                 allDetectedLanguagesSupported: { type: 'boolean' },
                 zeroEdgesMeaning: {
@@ -8943,7 +8942,7 @@ Continue.`;
     );
   });
 
-  it('rejects Rust evidence that permits writes or hides unsupported import coverage', () => {
+  it('rejects Rust evidence that permits writes and C coverage that overclaims support', () => {
     const unsafeConfiguration = verifiedRustConfigurationEvidence();
     unsafeConfiguration.writePolicy.writeAllowed = true;
     assert.equal(
@@ -8958,21 +8957,6 @@ Continue.`;
         configurationEvidence: unsafeConfiguration,
       }),
       'analyze_repo_structure Rust configuration evidence write policy is not fail-closed',
-    );
-
-    const lyingCoverage = verifiedImportScanCoverage({ rust: true });
-    lyingCoverage.allDetectedLanguagesSupported = true;
-    assert.equal(
-      inferImportsFailure({
-        rootPath: '/repo',
-        filesScanned: 0,
-        edges: [],
-        externalImports: [],
-        unresolved: [],
-        moduleEdges: [],
-        coverage: lyingCoverage,
-      }),
-      'infer_imports import scan coverage overclaims Rust support',
     );
 
     const lyingCCoverage = verifiedImportScanCoverage({ c: true });

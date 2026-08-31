@@ -1011,6 +1011,23 @@ test('Cargo targets and declared Rust modules stay bounded implementation eviden
     );
     assert.equal(paths.includes('src/heading_leak.rs'), false);
     assert.equal(paths.includes('src/raw_leak.rs'), false);
+    assert.deepEqual(
+      result.suggestedRelations
+        .filter((row) => row.type === 'depends_on')
+        .map((row) => [row.from, row.to, row.why]),
+      [
+        [
+          'elements/lib',
+          'elements/internal',
+          'proposal-only: bounded production value-import evidence; runtime impact is not asserted',
+        ],
+        [
+          'elements/lib',
+          'elements/transport',
+          'proposal-only: bounded production value-import evidence; runtime impact is not asserted',
+        ],
+      ],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

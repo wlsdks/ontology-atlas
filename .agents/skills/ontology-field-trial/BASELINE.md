@@ -9,6 +9,71 @@ which is all a comparison needs.
 
 ---
 
+## 2026-08-31 — bounded Rust dependency coverage replay
+
+**Subject**: the same unfamiliar dual MIT/Apache-2.0 optical-record Rust
+library and pinned revision as the preceding construction row. This was a
+frozen-candidate replay against the new bounded Rust import receipt, not a new
+cold construction-speed baseline.
+
+### Construction and runtime evidence
+
+| measurement | result |
+|---|---:|
+| approved release | **5 concepts · 5 relations · 11 accepted gaps** |
+| approval → successful finalizer | **351.086 s** |
+| 5,000-file Rust scan median, 5 warm runs | **205.59 ms** |
+| slowest observed warm run | **209.94 ms** |
+| scan result | **5,000 files · 5,000 external import receipts** |
+
+The analyzer revalidated the unchanged plan and source digests after owner
+approval, and the release helper emitted exactly one five-row concept batch and
+one five-row relation batch. The written vault validated with zero problems,
+compiled with zero unresolved edges or issues, connected to the pinned source,
+and finalized with the eleven accepted evidence gaps still visible. The
+persisted graph resolved the project/domain/element containment path, the
+capability/element path, and the direct entrypoint/resampling dependency path.
+
+The scan benchmark used 5,001 physical `.rs` files with `maxFiles: 5000`; one
+warmup was excluded. The five measured samples were **203.19, 205.05, 205.59,
+205.98, and 209.94 ms**. This is a local deterministic fixture measurement,
+not a cross-machine latency promise.
+
+### Persisted-vault-only handoff
+
+A fresh reader received a sidecar-free vault copy and an intentionally empty
+repository root.
+
+- Full answers: **1** (`q3`).
+- Partial answers: **5** (`q1`, `q2`, `q4`, `q5`, `q6`).
+- `q4` now identifies `src/lib.rs` and serde as important direct source use;
+  runtime criticality and comparative importance remain unmeasured.
+- `q5` now resolves the typed entrypoint `depends_on` resampling path; runtime,
+  reverse, and transitive impact remain unmeasured.
+- Unknown / unanswered whole questions: **0 / 0**.
+
+### Accuracy and correction history
+
+The source-aware auditor verified **38/38 sealed pre-write claims**, **83/83
+citations**, **19/19 path occurrences**, and **4/4 unique paths**. The first
+persisted reader then over-attributed one empty-root phase observation to the
+node bodies: independent audit **21/22**. A second pass corrected that but still
+classified two business-impact absences as node-authored: **23/25**. The
+immutable third pass separated node-authored facts, phase observations, and
+reader qualifications and passed **27/27 (100%)**, with **8/8 typed paths**, no
+contradictions, no unsupported impact promotion, and no missing qualifier.
+
+### What this run changes
+
+The named q4/q5 coverage improved without promoting static syntax to runtime or
+business impact. The final corrected handoff holds 100% claim and path accuracy,
+but the first persisted read did not. Therefore this row advances bounded Rust
+coverage and the audited correction protocol; it does **not** advance the clean
+first-pass accuracy baseline. The council falsifier remains visible: Rust stays
+read-only coverage, never inferred importance or impact.
+
+---
+
 ## 2026-08-31 — optical-record interchange construction and persisted handoff
 
 **Subject**: an unfamiliar dual MIT/Apache-2.0 Rust library for reading,

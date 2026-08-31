@@ -13,9 +13,8 @@
 //   capabilities/mcp-server       → capabilities/vault-ontology
 //
 // The scanner missed them not because the relations are absent but because it
-// **cannot see them**. `acp-runtime` is implemented in `src-tauri/src/acp.rs` —
-// Rust, and `.rs` is not in the scanner's extension list (`.ts .js .py .go` …).
-// The other two are spawn relations, which no import can express.
+// **cannot see them**. Native C endpoints remain outside the scanner's extension
+// list. Process-spawn relations likewise cannot be expressed by an import.
 //
 // **Reporting "did not see" as "does not exist" makes an agent delete correct
 // relations.** This repository's CodeGraph rule already says the same thing:
@@ -48,14 +47,14 @@ test('못 읽는 언어가 한쪽에라도 끼면 「판정 못 함」이다', (
     compiledEdges: [vaultEdge('capabilities/acp-runtime', 'capabilities/mcp-server')],
     nodeSlugs: ['capabilities/acp-runtime', 'capabilities/mcp-server'],
     pathBySlug: {
-      'capabilities/acp-runtime': 'src-tauri/src/acp.rs',
+      'capabilities/acp-runtime': 'native/acp.c',
       'capabilities/mcp-server': 'mcp/src/index.js',
     },
   });
   assert.equal(
     out.inVaultNotInCode.length,
     0,
-    'Rust 구현을 못 읽었다는 이유로 맞는 관계가 「오래됐다」로 가면 에이전트가 지운다',
+    '읽지 못하는 C 구현을 이유로 맞는 관계가 「오래됐다」로 가면 에이전트가 지운다',
   );
   assert.equal(out.notJudgeableByImports.length, 1);
   assert.deepEqual(out.notJudgeableByImports[0].unreadable, ['capabilities/acp-runtime']);
@@ -66,7 +65,7 @@ test('왜 못 봤는지를 같이 말한다 — 「모른다」만으로는 다�
     moduleEdges: [],
     compiledEdges: [vaultEdge('capabilities/a', 'capabilities/b')],
     nodeSlugs: ['capabilities/a', 'capabilities/b'],
-    pathBySlug: { 'capabilities/a': 'src-tauri/src/a.rs', 'capabilities/b': 'src/b.ts' },
+    pathBySlug: { 'capabilities/a': 'native/a.c', 'capabilities/b': 'src/b.ts' },
   });
   assert.equal(out.notJudgeableByImports[0].reason, 'endpoint_language_not_scanned');
 });
