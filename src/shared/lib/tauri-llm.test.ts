@@ -84,8 +84,8 @@ describe('tauri-llm 웹 강등', () => {
   });
 
   it('Rust 의 Err(String) 을 사용자 한 줄로 접는다', () => {
-    // 러스트는 이제 코드만 보낸다 (`src-tauri/src/errors.rs`). 문장은 읽는 사람의
-    // 언어를 아는 이쪽에서 고른다.
+    // Rust now sends only the code (`src-tauri/src/errors.rs`). The sentence is chosen
+    // here, the one side that knows the reader's language.
     const lookup = (code: string) => (code === 'no-response' ? '답을 받지 못했어요.' : undefined);
     expect(llmChatErrorMessage('no-response', lookup)).toBe('답을 받지 못했어요.');
     expect(llmChatErrorMessage('request-failed: broken pipe', lookup)).toBe('broken pipe');

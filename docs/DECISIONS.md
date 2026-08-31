@@ -47,10 +47,10 @@ things I cannot see a reason for"; option "one list" chosen, with the ask that
 analysis items hand off to the in-app agent) · **Trigger**: a removed surface
 element retired the only consumer of a design ramp step.
 
-**Decision**: 분석 → 할 일 renders one flat list titled by one count. The
+**Decision**: the analysis screen's Do-next tab renders one flat list titled by one count. The
 readiness meter, the repair-queue counter band, the activity digest and the
 agent footer are removed; every item keeps its computed source and gains, where
-the chat can take it, a primary "AI에게 맡기기" action through the existing ask
+the chat can take it, a primary hand-it-to-the-AI action through the existing ask
 deep link (missing definition, missing domain, and missing relations for
 orphan, island and containment rows). Blocked documents join the list by name
 with the failed check in plain words. `--color-indigo-a58` had exactly one

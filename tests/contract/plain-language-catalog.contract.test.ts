@@ -129,7 +129,7 @@ const TOLERATED: Readonly<Record<string, readonly string[]>> = {
   // until the severity-3 pass made it say "this list" instead). Replacing the
   // rest needs one decision about what the concept is called everywhere, which
   // is larger than a copy pass.
-  // Emptied on 2026-09-01: the concept once called 관문/게이트 is now written as what it
+  // Emptied on 2026-09-01: the concept once named by the internal gate words is now written as what it
   // does ("asks before writing / before touching anything outside the folder"), and the
   // architecture screen says which rule a connection broke instead of the bare word.
   관문: [],

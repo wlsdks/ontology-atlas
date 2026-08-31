@@ -908,8 +908,8 @@ describe("AtlasGitPanel — 원격 세 동작 (Fetch · Pull · Push)", () => {
   });
 
   it("fetch 가 돌려준 코드를 읽는 사람의 말로 바꿔 적는다", async () => {
-    // 러스트는 문장을 쓰지 않는다. 문장을 고르는 자리는 읽는 사람의 언어를 아는
-    // 이쪽 하나뿐이고, 앞선 걸음/뒤진 걸음 수도 이미 이쪽이 들고 있다.
+    // Rust writes no sentence. The only place that picks one knows the reader's
+    // language, and it already holds the ahead/behind counts too.
     installDesktopGit();
     renderPanel(<AtlasGitPanel vaultPath="/repo/vault" />);
     fireEvent.click(await screen.findByTestId("atlas-git-remote-fetch"));
