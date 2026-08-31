@@ -63,6 +63,18 @@ separate approval tool or writer token.
 Always obtain explicit user approval for the exact plan and visible gaps.
 Unknown is a valid result; invented completeness is not.`;
 
+// What a blocked caller can still do. The bulk `writePlan` is gated on an
+// independent evaluation, but ordinary vault writing is not: `add_concepts` and
+// `add_relation` carry no qualification check. A caller that reads only "packet
+// required" has no action left, so this sentence names the path that stays open
+// rather than leaving the person to read the server source or give up. It names
+// tools rather than a skill because a skill ships only for some clients.
+const INCREMENTAL_WRITE_RECOVERY =
+  'If you cannot run an independent evaluation lane, leave the bulk plan unwritten and ' +
+  'grow the vault a few concepts at a time instead: show the person a short batch with ' +
+  'its evidence, then write what they approve with `add_concepts` and `add_relation`, ' +
+  'which this gate does not govern. Do not fabricate an evaluator to reach the bulk plan.';
+
 const MANDATORY_AXES = Object.freeze([
   'semantic',
   'structural',
@@ -469,8 +481,8 @@ export function evaluateConstructionLifecycle({
       }),
       reviewPlan: clone(reviewPlan),
       nextAction: blockedBeforeQualification
-        ? 'Repair mandatory proposal warnings before qualification, then submit the corrected proposal for a new review plan.'
-        : 'Complete the constructionQualification:v1 packet for this exact review plan.',
+        ? `Repair mandatory proposal warnings before qualification, then submit the corrected proposal for a new review plan. ${INCREMENTAL_WRITE_RECOVERY}`
+        : `Complete the constructionQualification:v1 packet for this exact review plan. ${INCREMENTAL_WRITE_RECOVERY}`,
     };
   }
 

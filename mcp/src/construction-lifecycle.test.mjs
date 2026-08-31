@@ -207,6 +207,40 @@ test('mandatory proposal warnings block the first review before qualification wo
   assert.match(preview.nextAction, /Repair mandatory proposal warnings before qualification/);
 });
 
+/**
+ * A refusal is the only thing a blocked caller gets to read, so it has to name an
+ * action rather than a noun. This one used to end at "Complete the
+ * constructionQualification:v1 packet", which describes what is missing and never
+ * what is available: the bulk `writePlan` is gated on an independent evaluation,
+ * but `add_concepts` and `add_relation` are not. A person with one coding agent
+ * therefore stalled with a legitimate, ungated path installed on their own disk
+ * and unnamed. A recorded field trial watched exactly that happen on three
+ * unfamiliar repositories, where the builder stopped at `canWrite:false` with zero
+ * semantic writes.
+ *
+ * Naming the open path must not soften the closed one, so both halves are asserted
+ * together: the gate still reports not-qualified with no `writePlan`, and it still
+ * refuses a fabricated evaluator.
+ */
+test('a stalled lifecycle names the path that stays open without opening the gated one', () => {
+  const stalled = evaluate(null);
+
+  assert.equal(stalled.qualificationStatus, 'not_qualified');
+  assert.equal('writePlan' in stalled, false, 'the bulk plan must stay closed');
+
+  assert.match(
+    stalled.nextAction,
+    /add_concepts/,
+    'a blocked caller must be told which write path is still open',
+  );
+  assert.match(stalled.nextAction, /a few concepts at a time/);
+  assert.match(
+    stalled.nextAction,
+    /Do not fabricate an evaluator/,
+    'offering a recovery must not read as permission to fake the gated one',
+  );
+});
+
 test('a digest-bound qualified packet releases exactly the reviewed rows', () => {
   const result = evaluate(qualification());
 

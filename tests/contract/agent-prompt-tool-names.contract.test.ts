@@ -94,10 +94,23 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
      * themselves — delete it and our prompt becomes a translation of somebody else's.
      */
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
-    // Whitespace-tolerant: the instruction is hard-wrapped, and a line break
-    // falling between "Do" and "not" is not a change of meaning.
-    expect(prompt).toMatch(/do\s+not call add_concept/i);
-    expect(prompt).toMatch(/approv(al|ed)/i);
+
+    // Assert the invariant, not one sentence carrying it. This used to match a
+    // blanket "do not call add_concept", which was a stricter rule than the
+    // server's own: the bulk `writePlan` is gated, ordinary writing is not, and
+    // that blanket ban is what left a solo installer with no move at all. The
+    // arbitration contract survives that correction and is what must not be
+    // deletable — both paths write only what a person approved first.
+    expect(
+      prompt,
+      "the bulk plan must stay unwritten while the server says canWrite is false",
+    ).toMatch(/not write the proposal wholesale[\s\S]{0,80}canWrite is\s+false/i);
+    expect(
+      prompt,
+      "the incremental path must write only what the person approved",
+    ).toMatch(/write what they\s+approve/i);
+    expect(prompt).toMatch(/human review/i);
+    expect(prompt).toMatch(/approv(al|ed|e)/i);
   });
 
   it("경로를 모르면 그 사실을 문장으로 말한다 — 빈 자리를 남기지 않는다", () => {
@@ -153,8 +166,16 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
    *
    * The independence rule is read from the server rather than restated, so this
    * fails if that boundary ever moves.
+   *
+   * **Stopping was only half the repair.** The first fix made the agent stop
+   * honestly, which is where a real installer then sat: told what was missing and
+   * never what was available. The bulk `writePlan` is gated, but `add_concepts`
+   * and `add_relation` are not, and the shipped growth path uses exactly those.
+   * So the prompt must both refuse the unreachable state *and* name the path that
+   * stays open. The write tools are read from the server's own tool list, so this
+   * fails if that boundary ever moves too.
    */
-  it("혼자서는 닿을 수 없는 상태를 쫓으라고 시키지 않는다", () => {
+  it("혼자서는 닿을 수 없는 상태를 쫓지 않고, 열려 있는 길을 말한다", () => {
     const prompt = buildAgentAnalyzePrompt({ vaultPath: "/tmp/vault" });
     const source = readFileSync(MCP_INDEX, "utf8");
     expect(
@@ -165,7 +186,17 @@ describe("복사 지시문 — 실재하는 것만 부른다", () => {
     expect(prompt).not.toMatch(/keep following it until canWrite is true/i);
     expect(prompt).toMatch(/independent evaluation/i);
     expect(prompt).toMatch(/do not fabricate an evaluator/i);
-    expect(prompt).toMatch(/proposal, and stop\./i);
+    expect(prompt).toMatch(/stop pursuing the\s+whole plan/i);
+
+    expect(
+      source.includes("'add_concepts'") || source.includes('"add_concepts"'),
+      "the incremental path the prompt offers must still be a tool the server serves",
+    ).toBe(true);
+    expect(
+      prompt,
+      "an agent that cannot run the evaluation lane must be given the ungated path, not left at a dead end",
+    ).toMatch(/a few concepts at a time/i);
+    expect(prompt).toMatch(/not gated on the qualification/i);
   });
 
   /**
