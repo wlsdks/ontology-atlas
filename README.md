@@ -164,9 +164,13 @@ roadmap promise. It summarizes current product behavior documented in the
 - **Export to standard graph formats.** JSON-LD and GraphML come off the same
   deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
   Cytoscape, NetworkX, or Neo4j without a converter of your own.
-- **Scaffolded vaults carry their own agent skills.** A connected coding agent
-  finds review / grow / absorb procedures in its command menu with no extra
-  setup, because `init` wrote them into the vault.
+- **Scaffolding puts the agent's procedures where the agent runs.** `init`
+  installs review / grow / absorb skills into the repository root's
+  `.claude/skills/`, so a coding agent started in that repository finds them in
+  its command menu with no extra setup. It also prints the one sentence the MCP
+  server cannot say — that this repository has a reviewed ontology and when to
+  read it — for you to paste into your own `CLAUDE.md` or `AGENTS.md`. Atlas
+  does not edit files you wrote.
 - **The hosted web app as a gateway** — a static export that opens your local
   folder through the File System Access API, with nothing installed.
 
