@@ -188,7 +188,13 @@ jobs:
       # into the same "dependencies missing" message — which is what happened on
       # the first run after these suites were wired into CI. `Unit · Contract`
       # and `MCP` already install it for the same reason.
+      # `if: always()` matches the step below rather than the job's default. Without
+      # it, a red `Vault path drift` skips this install, the always-run suites below
+      # still execute, and all nineteen collapse into the same ERR_MODULE_NOT_FOUND
+      # the comment above describes. The log then shows a wall of "dependencies
+      # missing" with the one real failure buried above it.
       - name: Install MCP dependencies
+        if: always()
         run: pnpm --dir mcp install --frozen-lockfile
 
       - name: Node test suites outside vitest
@@ -316,7 +322,11 @@ jobs:
       # Contract tests in this job launch the real source MCP server. The root
       # install intentionally skips mcp/node_modules, so without this lockfile
       # install those probes exit at startup with ERR_MODULE_NOT_FOUND.
+      # Same reason as the `Node test suites` job: the step that needs this install
+      # runs on `always()`, so the install has to as well, or its failure is
+      # reported as a missing module instead.
       - name: Install MCP dependencies
+        if: always()
         run: pnpm --dir mcp install --frozen-lockfile
 
       # This analyzer loads scope adapters for the root, scripts, CLI, and MCP.
