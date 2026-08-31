@@ -84,6 +84,11 @@ export interface VaultStartStepsProps {
   onCreateNode: (kind: "project" | "domain") => void;
   /** How many documents were found in this folder that are not yet on the map. Above 0, a step is added. */
   docsFoundCount?: number;
+  /**
+   * Source files the folder walk passed over. The only thing this card knows
+   * about code, and it decides which step opens.
+   */
+  sourceFileCount?: number;
   onStartFromDocs?: (() => void) | null;
   /** The last step has been passed — dismiss the card. */
   onFinish?: () => void;
@@ -107,6 +112,7 @@ export function VaultStartSteps({
   scaffolding = false,
   onCreateNode,
   docsFoundCount = 0,
+  sourceFileCount = 0,
   onStartFromDocs = null,
   onFinish,
   indexExpanded = false,
@@ -127,18 +133,46 @@ export function VaultStartSteps({
   const hasDocs = docsFoundCount > 0 && onStartFromDocs !== null;
 
   /**
-   * The **order** of the steps. With documents present, that is the first step — an
-   * empty folder's priority (connecting an agent) was the order for an empty folder's
-   * context, and for someone who already has something, the first step is what they have.
+   * Whether this folder is a codebase rather than a folder of documents.
+   *
+   * A plain comparison, on purpose. A threshold constant here would be a number
+   * nobody can defend and everybody wants to tune, and the cost of being wrong is
+   * one Skip — these steps are a sequence, not a fork, so a misread folder never
+   * becomes a dead end.
+   */
+  const codeDominant = sourceFileCount > docsFoundCount;
+
+  /**
+   * The **order** of the steps, decided by what the folder actually holds.
+   *
+   * The rule was already written here — *for someone who already has something,
+   * the first step is what they have* — but the only thing the card could see was
+   * Markdown. Pointed at a repository of five TypeScript files, it opened by
+   * announcing it had "found 1 documents" and offering to map them, while the step
+   * that reads code sat third
+   * (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3). What a
+   * codebase's owner has is code, so `analyze` opens there.
+   *
+   * `analyze` may lead without a connected agent because it degrades on its own:
+   * with no runner it hands over the instruction to paste rather than disabling
+   * itself. Connecting stays available as the step right behind it.
    */
   const steps = useMemo<StartStepId[]>(
-    () => [
-      ...(hasDocs ? (["docs"] as StartStepId[]) : []),
-      "agent",
-      "analyze",
-      onScaffoldStarter ? "starter" : "manual",
-    ],
-    [hasDocs, onScaffoldStarter],
+    () =>
+      codeDominant
+        ? [
+            "analyze",
+            "agent",
+            ...(hasDocs ? (["docs"] as StartStepId[]) : []),
+            onScaffoldStarter ? "starter" : "manual",
+          ]
+        : [
+            ...(hasDocs ? (["docs"] as StartStepId[]) : []),
+            "agent",
+            "analyze",
+            onScaffoldStarter ? "starter" : "manual",
+          ],
+    [codeDominant, hasDocs, onScaffoldStarter],
   );
 
   const current = steps[Math.min(index, steps.length - 1)];

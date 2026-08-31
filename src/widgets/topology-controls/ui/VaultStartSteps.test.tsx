@@ -168,6 +168,56 @@ describe("첫 걸음 — 이 폴더에 문서가 있으면 그것이 첫 걸음�
 });
 
 /**
+ * **A codebase's owner has code, so that is the first step.**
+ *
+ * The rule above — the first step is what they have — could only see Markdown.
+ * A first-run walkthrough pointed the app at a repository of five TypeScript
+ * files and one README, and the card opened by announcing it had "found 1
+ * documents" and offering to map them, with the step that reads code sitting
+ * third (`docs/audits/USER-WALKTHROUGH-FIRST-RUN-2026-08-31.md`, finding 3).
+ */
+describe("첫 걸음 — 코드가 더 많으면 코드가 첫 걸음이다", () => {
+  it("소스가 문서보다 많으면 코드를 읽는 걸음이 맨 앞에 온다", () => {
+    renderSteps({ docsFoundCount: 1, sourceFileCount: 5, onStartFromDocs: vi.fn(), onScaffoldStarter: vi.fn() });
+    expect(card().dataset.step).toBe("analyze");
+    // The documents step is not dropped, only demoted: one README is still worth mapping.
+    expect(card().dataset.stepTotal).toBe("4");
+  });
+
+  it("연결된 에이전트가 없어도 코드 걸음이 앞설 수 있다 — 붙여넣을 지시를 대신 준다", () => {
+    // It may lead precisely because it degrades on its own rather than disabling itself.
+    renderSteps({ docsFoundCount: 1, sourceFileCount: 5, onStartFromDocs: vi.fn(), onScaffoldStarter: vi.fn() });
+    expect(card().dataset.step).toBe("analyze");
+    expect(screen.getByTestId("start-step-cta-analyze")).toBeEnabled();
+  });
+
+  it("문서가 더 많으면 순서는 그대로다 — 문서 폴더의 경험을 바꾸지 않는다", () => {
+    renderSteps({ docsFoundCount: 12, sourceFileCount: 2, onStartFromDocs: vi.fn(), onScaffoldStarter: vi.fn() });
+    expect(card().dataset.step).toBe("docs");
+  });
+
+  it("같은 수면 문서가 이긴다 — 애매하면 지금까지의 순서를 유지한다", () => {
+    renderSteps({ docsFoundCount: 3, sourceFileCount: 3, onStartFromDocs: vi.fn(), onScaffoldStarter: vi.fn() });
+    expect(card().dataset.step).toBe("docs");
+  });
+
+  it("코드만 있고 문서가 없으면 걸음이 셋이고 첫째가 코드다", () => {
+    renderSteps({ docsFoundCount: 0, sourceFileCount: 9, onScaffoldStarter: vi.fn() });
+    expect(card().dataset.step).toBe("analyze");
+    expect(card().dataset.stepTotal).toBe("3");
+  });
+
+  it("어느 순서에서도 모든 걸음은 건너뛸 수 있다 — 잘못 읽어도 막다른 길이 아니다", () => {
+    renderSteps({ docsFoundCount: 1, sourceFileCount: 5, onStartFromDocs: vi.fn(), onScaffoldStarter: vi.fn() });
+    expect(card().dataset.step).toBe("analyze");
+    fireEvent.click(screen.getByTestId("start-step-skip"));
+    expect(card().dataset.step).toBe("agent");
+    fireEvent.click(screen.getByTestId("start-step-skip"));
+    expect(card().dataset.step).toBe("docs");
+  });
+});
+
+/**
  * ⚠️ **Reversed on 2026-08-25** (owner: *"from the user's side it is not actually centred"*).
  *
  * This block used to require the opposite: with INDEX open, the wrapper had to add left padding the
