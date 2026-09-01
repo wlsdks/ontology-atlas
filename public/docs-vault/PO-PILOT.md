@@ -63,7 +63,14 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 |---:|---|---|---|---|---|---|---|---|---:|---:|---|---|
 | 1 | 2026-09-01 | Replace self-graded routing with an Atlas outcome contract and measured sunset | one-way | review | explain | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
 | 2 | 2026-09-01 | Replace stacked design ceremony with fact-derived proof routing | two-way | solo | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
-| 3 | 2026-09-02 | Human review marks move to the call path; drift is detected, not trusted | one-way | review | correct | public-contract | truth=affected;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 3 | 2026-09-01 | Scope semantic evidence trust to the sections the agent can actually read | one-way | review | handoff | public-contract | truth=affected;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 4 | 2026-09-02 | Human review marks move to the call path; drift is detected, not trusted | one-way | review | correct | public-contract | truth=affected;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 5 | 2026-09-02 | Make FDE project-owned or unavailable in construction qualification | one-way | review | judge | public-contract | truth=affected;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 2 | verification-strengthened | po-evidence+po-steward |
+| 6 | 2026-09-02 | Align reviewed concept bodies with canonical persisted full reads | one-way | review | handoff | public-contract | truth=unchanged;transfer=affected;agent-write=affected;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 7 | 2026-09-02 | Split mixed semantic evidence into typed candidate and review units | one-way | review | handoff | public-contract | truth=affected;transfer=unchanged;agent-write=affected;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 8 | 2026-09-02 | Share the fixed semantic excerpt budget across every selected safe section | one-way | review | handoff | public-contract | truth=affected;transfer=unchanged;agent-write=affected;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 9 | 2026-09-02 | Preserve exact repository case in semantic source addresses | one-way | review | handoff | public-contract | truth=affected;transfer=unchanged;agent-write=affected;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 10 | 2026-09-02 | Bind local app deployment to one exact bundle and its installed MCP behavior | one-way | review | handoff | public-contract | truth=affected;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 2 | redirected | po-evidence+po-steward |
 
 ## Outcome updates
 
@@ -73,4 +80,16 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 1 | 2026-09-01 | pass | pending | no | pending |
 | 2 | 2026-09-01 | pending | pending | pending | pending |
 | 2 | 2026-09-01 | pass | pending | no | held |
-| 3 | 2026-09-02 | pass | pending | no | pending |
+| 3 | 2026-09-01 | pending | yes | no | pending |
+| 4 | 2026-09-02 | pass | pending | no | pending |
+| 5 | 2026-09-02 | pass | yes | no | pending |
+| 6 | 2026-09-02 | pass | yes | no | pending |
+| 7 | 2026-09-02 | pending | yes | no | pending |
+| 7 | 2026-09-02 | fail-caught | yes | no | reopened |
+| 8 | 2026-09-02 | pending | yes | no | pending |
+| 8 | 2026-09-02 | pending | yes | no | held |
+| 9 | 2026-09-02 | pending | yes | no | pending |
+| 8 | 2026-09-02 | pass | yes | no | held |
+| 9 | 2026-09-02 | pass | yes | no | held |
+| 10 | 2026-09-02 | pending | yes | no | pending |
+| 10 | 2026-09-02 | pass | yes | no | held |

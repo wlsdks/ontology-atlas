@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+### Changed — project-owned FDE qualification and claim-local semantic evidence (2026-09-02)
+
+- Construction qualification still accepts `fde` for compatible packets, but
+  requires only executive, employee, and agent audiences. FDE is unusable
+  without the exact project decision, named meaning owner, declared purpose
+  source, current authority witness, supported claim, and verified citation.
+  The four-case breadth floor now runs inside the evaluator as well as the MCP
+  input schema.
+- reStructuredText semantic evidence and its risk scan now use the same bounded
+  title/purpose/architecture/ability sections, so an unrelated peer section
+  cannot downgrade a claim the agent never received.
+- A README that mixes current abilities with future, negated, or deprecated
+  policy now keeps the exact current excerpt candidate-eligible and emits the
+  removed policy as bounded line-scoped `reviewRequiredEvidence`. Review units
+  stay visible but cannot support proposal claims; hostile content and any
+  over-bound split still fail closed at the whole-row trust level.
+- Proposal validation blocks definitions, boundaries, relation rationales, and
+  completed competency answers that rely on a review unit without a different
+  claim-aligned current semantic source. Partial answers may carry the unit only
+  as an explicit unresolved gap.
+- Review-unit claim matching excludes ordinary grammar and review boilerplate,
+  so words such as `and`, `for`, or `this` cannot attach an unrelated CommonJS
+  warning to a current timeout or scheduling claim. Distinctive claim overlap
+  such as a deprecated checkout ability still fails closed.
+- The existing 1,200-character excerpt budget is shared across every selected
+  safe section before unused capacity returns by semantic priority and source
+  order, so later current abilities cannot be silently starved by one long
+  prelude or API section. Document, heading, and excerpt caps are unchanged.
+- One exact current semantic unit plus one matching implementation witness may
+  produce only a sub-0.8 capability review proposal; the path is not a second
+  semantic authority and cannot establish a domain, ownership, completeness,
+  an answered competency, qualification, or write.
+- Root and workspace semantic-document paths now preserve the unique exact case
+  returned by repository directory entries. Lowercase `readme.md` can no longer
+  be persisted as synthetic `README.md` on a case-insensitive filesystem.
+  Ambiguous folds, non-files, missing paths, and symlink escapes fail closed;
+  package contracts still require exact conventional spelling.
+- Analyzer review/write plan bodies now use the parser's canonical full-body
+  representation. After persistence, an exact full read matches the accepted
+  body byte-for-byte; clients must verify that equality before source connection
+  or finalization rather than trimming transport drift away.
+
 ### Changed — surface count restated (2026-08-31)
 
 - The MCP surface is 36 tools (20 read and 16 write); `pnpm docs:surface:check`

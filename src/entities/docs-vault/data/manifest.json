@@ -746,8 +746,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; a released entry also names its tag. v1.0.0 shipped on 2026-09-01 after nineteen release candidates. Versioning ba",
-      "wordCount": 87609,
-      "updatedAt": "2026-09-01",
+      "wordCount": 88617,
+      "updatedAt": "2026-09-02",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
         "slug",
@@ -786,7 +786,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 233751,
+      "wordCount": 238133,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -882,8 +882,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 14916,
-      "updatedAt": "2026-09-01",
+      "wordCount": 15156,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -894,8 +894,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
-      "wordCount": 24826,
-      "updatedAt": "2026-08-31",
+      "wordCount": 25104,
+      "updatedAt": "2026-09-02",
       "linksOut": [
         "slug",
         "project:slug",
@@ -1189,8 +1189,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: executable public input contract for the existing analyzerepostructure MCP tool. The evaluator is implemented by mcp/src/construction-qualification.mjs and the write-eligibility lifecycle by mcp/src/construction-lifecycle.mjs. It adds no vault kind, frontmatter field, new MCP tool, or UI surface. A vault can co",
-      "wordCount": 1114,
-      "updatedAt": "2026-08-15",
+      "wordCount": 1433,
+      "updatedAt": "2026-09-02",
       "linksOut": [
         "FOUNDATIONS",
         "ONTOLOGY-ATLAS-SPEC",
@@ -1438,6 +1438,8 @@
         "display_en": "Construction Qualification Review",
         "domain": "domains/project-portfolio",
         "elements": [
+          "elements/construction-qualification-evaluator",
+          "elements/meaning-proposal-evaluator",
           "elements/project-detail",
           "elements/qualification-handoff-helper"
         ],
@@ -1445,13 +1447,15 @@
         "created_by": "agent:unknown",
         "relation_notes": {
           "elements/project-detail": "Construction qualification is opened and judged inside the existing project-detail workbench.",
-          "elements/qualification-handoff-helper": "Construction qualification uses this private source-checkout helper to preserve exact candidate, evidence, actor, approval, and release boundaries without writing a vault."
+          "elements/qualification-handoff-helper": "Construction qualification uses this private source-checkout helper to preserve exact candidate, evidence, actor, approval, and release boundaries without writing a vault.",
+          "elements/construction-qualification-evaluator": "Construction qualification delegates categorical CQ, evidence, audience-authority, axis, and acceptance judgment to this pure evaluator.",
+          "elements/meaning-proposal-evaluator": "Construction review receives its validated canonical review plan and exact concept bodies from this proposal evaluator."
         }
       },
       "headings": [],
       "excerpt": "Read conclusions first in project details for verified ontology construction artifacts, then unfold digest-bound evidence and exact plans when needed to make judgments. Malformed inputs, different projects, or digest/plan mismatches do not appear as normal judgments but close with failure; files are not saved outside t",
-      "wordCount": 154,
-      "updatedAt": "2026-08-30",
+      "wordCount": 262,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -1715,6 +1719,7 @@
         "title": "MCP Server",
         "domain": "domains/agent-integration",
         "elements": [
+          "elements/installed-mcp-identity-gate",
           "elements/task-scoped-agent-brief-projection"
         ],
         "path": "mcp/src",
@@ -1724,15 +1729,16 @@
         ],
         "relation_notes": {
           "capabilities/vault-ontology": "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.",
-          "elements/task-scoped-agent-brief-projection": "The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs."
+          "elements/task-scoped-agent-brief-projection": "The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs.",
+          "elements/installed-mcp-identity-gate": "The MCP server capability relies on this gate to prove the compiled, signed, and installed sidecar preserves exact source-address semantics."
         },
         "display_ko": "AI 연결 서버",
         "display_en": "AI Connection Server"
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3189,
-      "updatedAt": "2026-09-01",
+      "wordCount": 3219,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -1847,12 +1853,15 @@
         ],
         "relation_notes": {
           "capabilities/vault-ontology": "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify."
-        }
+        },
+        "elements": [
+          "elements/semantic-evidence-selector"
+        ]
       },
       "headings": [],
       "excerpt": "The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP agentbrief read the same state, recen",
-      "wordCount": 970,
-      "updatedAt": "2026-08-30",
+      "wordCount": 1022,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -2064,18 +2073,20 @@
         "elements": [
           "elements/agents-destination",
           "elements/concurrent-ledger-conflict-resolver",
+          "elements/installed-mcp-identity-gate",
           "elements/vault-agent-panel"
         ],
         "created_by": "human",
         "relation_notes": {
           "capabilities/acp-runtime": "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.",
-          "capabilities/agent-work-visibility": "Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs."
+          "capabilities/agent-work-visibility": "Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs.",
+          "elements/installed-mcp-identity-gate": "The installed MCP identity gate is the concrete local delivery control that keeps the agent-integration domain bound to the exact app bundle and source evidence it ships."
         }
       },
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-08-29",
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -2539,6 +2550,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/construction-qualification-evaluator",
+      "path": "docs/ontology/elements/construction-qualification-evaluator.md",
+      "title": "Construction Qualification Evaluator",
+      "tags": [],
+      "frontmatter": {
+        "uid": "899d10d4-289c-4b79-a3f1-c3a9304ef24b",
+        "slug": "elements/construction-qualification-evaluator",
+        "kind": "element",
+        "title": "Construction Qualification Evaluator",
+        "domain": "domains/project-portfolio",
+        "path": "mcp/src/construction-qualification.mjs",
+        "created_by": "agent:codex"
+      },
+      "headings": [],
+      "excerpt": "The construction qualification evaluator is the pure categorical policy engine for constructionQualification:v1. It validates purpose authority, independent actors, motivating scenarios, human-approved competency questions, current witnesses, exact claims and citations, target coverage, source-hidden execution, seven i",
+      "wordCount": 154,
+      "updatedAt": "2026-09-02",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/design-proof-router",
       "path": "docs/ontology/elements/design-proof-router.md",
       "title": "Design Proof Router",
@@ -2867,6 +2898,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/installed-mcp-identity-gate",
+      "path": "docs/ontology/elements/installed-mcp-identity-gate.md",
+      "title": "Installed MCP Identity Gate",
+      "tags": [],
+      "frontmatter": {
+        "uid": "4b2f5668-0f0d-4478-9f07-8efa13a80351",
+        "slug": "elements/installed-mcp-identity-gate",
+        "kind": "element",
+        "title": "Installed MCP Identity Gate",
+        "domain": "domains/agent-integration",
+        "path": "scripts/deploy-macos-app-local.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "Installed MCP identity gate is the local delivery check that binds the copied macOS app to the exact built bundle and verifies the bundled MCP still preserves repository source-path case before and after first launch. scripts/lib/macos-app-bundle-identity.mjs scripts/deploy-macos-app-local.mjs scripts/verify-mcp-binary",
+      "wordCount": 161,
+      "updatedAt": "2026-09-02",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/knowledge-graph",
       "path": "docs/ontology/elements/knowledge-graph.md",
       "title": "Knowledge Graph",
@@ -2906,6 +2957,26 @@
       "excerpt": "File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.",
       "wordCount": 11,
       "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/meaning-proposal-evaluator",
+      "path": "docs/ontology/elements/meaning-proposal-evaluator.md",
+      "title": "Meaning Proposal Evaluator",
+      "tags": [],
+      "frontmatter": {
+        "uid": "c048a18a-3730-436e-a806-fa01231d648e",
+        "slug": "elements/meaning-proposal-evaluator",
+        "kind": "element",
+        "title": "Meaning Proposal Evaluator",
+        "domain": "domains/project-portfolio",
+        "path": "mcp/src/meaning-evaluation.mjs",
+        "created_by": "agent:codex"
+      },
+      "headings": [],
+      "excerpt": "The meaning proposal evaluator validates proposed project, domain, capability, element, relation, and competency meaning against bounded repository analysis, then derives the exact non-writing review plan and any later released write plan. A Definition, Includes, Excludes, relation rationale, or answered competency tha",
+      "wordCount": 200,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -3328,6 +3399,26 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/semantic-evidence-selector",
+      "path": "docs/ontology/elements/semantic-evidence-selector.md",
+      "title": "Semantic Evidence Selector",
+      "tags": [],
+      "frontmatter": {
+        "uid": "97a10b3b-6099-4120-8ed8-38c856e40896",
+        "slug": "elements/semantic-evidence-selector",
+        "kind": "element",
+        "title": "Semantic Evidence Selector",
+        "domain": "domains/project-portfolio",
+        "path": "mcp/src/analyze/semantic-evidence.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The bounded analyzer role that selects claim-relevant Markdown and reStructuredText sections, keeps current claim units separate from review-only policy units, and assigns trust only over the exact model-visible text. Prefer document-title, purpose, architecture, and ability sections, with a bounded eligible-section fa",
+      "wordCount": 263,
+      "updatedAt": "2026-09-02",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/shortcut-sheet",
       "path": "docs/ontology/elements/shortcut-sheet.md",
       "title": "Shortcut Sheet",
@@ -3597,7 +3688,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 643,
+      "wordCount": 1052,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "DECISIONS"
@@ -4248,6 +4339,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/elements/installed-mcp-identity-gate",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/elements/task-scoped-agent-brief-projection",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4401,6 +4497,20 @@
         "linkText": "domains/codebase-architecture"
       }
     ],
+    "ontology/elements/construction-qualification-evaluator": [
+      {
+        "fromSlug": "ontology/capabilities/construction-review",
+        "context": "frontmatter · **[elements/construction-qualification-evaluator]**",
+        "linkText": "elements/construction-qualification-evaluator"
+      }
+    ],
+    "ontology/elements/meaning-proposal-evaluator": [
+      {
+        "fromSlug": "ontology/capabilities/construction-review",
+        "context": "frontmatter · **[elements/meaning-proposal-evaluator]**",
+        "linkText": "elements/meaning-proposal-evaluator"
+      }
+    ],
     "ontology/elements/project-detail": [
       {
         "fromSlug": "ontology/capabilities/construction-review",
@@ -4447,6 +4557,16 @@
         "linkText": "domains/project-portfolio"
       },
       {
+        "fromSlug": "ontology/elements/construction-qualification-evaluator",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/meaning-proposal-evaluator",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
         "fromSlug": "ontology/elements/project",
         "context": "frontmatter · **[domains/project-portfolio]**",
         "linkText": "domains/project-portfolio"
@@ -4473,6 +4593,11 @@
       },
       {
         "fromSlug": "ontology/elements/qualification-handoff-helper",
+        "context": "frontmatter · **[domains/project-portfolio]**",
+        "linkText": "domains/project-portfolio"
+      },
+      {
+        "fromSlug": "ontology/elements/semantic-evidence-selector",
         "context": "frontmatter · **[domains/project-portfolio]**",
         "linkText": "domains/project-portfolio"
       },
@@ -4701,6 +4826,18 @@
         "linkText": "capabilities/vault-sample-source"
       }
     ],
+    "ontology/elements/installed-mcp-identity-gate": [
+      {
+        "fromSlug": "ontology/capabilities/mcp-server",
+        "context": "frontmatter · **[elements/installed-mcp-identity-gate]**",
+        "linkText": "elements/installed-mcp-identity-gate"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[elements/installed-mcp-identity-gate]**",
+        "linkText": "elements/installed-mcp-identity-gate"
+      }
+    ],
     "ontology/elements/task-scoped-agent-brief-projection": [
       {
         "fromSlug": "ontology/capabilities/mcp-server",
@@ -4752,6 +4889,13 @@
         "fromSlug": "ontology/domains/project-portfolio",
         "context": "frontmatter · **[elements/project-editor]**",
         "linkText": "elements/project-editor"
+      }
+    ],
+    "ontology/elements/semantic-evidence-selector": [
+      {
+        "fromSlug": "ontology/capabilities/project-source-evidence",
+        "context": "frontmatter · **[elements/semantic-evidence-selector]**",
+        "linkText": "elements/semantic-evidence-selector"
       }
     ],
     "ontology/elements/acp-ontology-write-review": [
@@ -6375,6 +6519,13 @@
                 "title": "Concurrent Ledger Conflict Resolver"
               },
               {
+                "name": "construction-qualification-evaluator",
+                "path": "ontology/elements/construction-qualification-evaluator",
+                "type": "doc",
+                "slug": "ontology/elements/construction-qualification-evaluator",
+                "title": "Construction Qualification Evaluator"
+              },
+              {
                 "name": "design-proof-router",
                 "path": "ontology/elements/design-proof-router",
                 "type": "doc",
@@ -6480,6 +6631,13 @@
                 "title": "Home"
               },
               {
+                "name": "installed-mcp-identity-gate",
+                "path": "ontology/elements/installed-mcp-identity-gate",
+                "type": "doc",
+                "slug": "ontology/elements/installed-mcp-identity-gate",
+                "title": "Installed MCP Identity Gate"
+              },
+              {
                 "name": "knowledge-graph",
                 "path": "ontology/elements/knowledge-graph",
                 "type": "doc",
@@ -6492,6 +6650,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/local-fs-handle",
                 "title": "Local Fs Handle"
+              },
+              {
+                "name": "meaning-proposal-evaluator",
+                "path": "ontology/elements/meaning-proposal-evaluator",
+                "type": "doc",
+                "slug": "ontology/elements/meaning-proposal-evaluator",
+                "title": "Meaning Proposal Evaluator"
               },
               {
                 "name": "native-tray-control",
@@ -6632,6 +6797,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/search-palette",
                 "title": "Search Palette"
+              },
+              {
+                "name": "semantic-evidence-selector",
+                "path": "ontology/elements/semantic-evidence-selector",
+                "type": "doc",
+                "slug": "ontology/elements/semantic-evidence-selector",
+                "title": "Semantic Evidence Selector"
               },
               {
                 "name": "shortcut-sheet",

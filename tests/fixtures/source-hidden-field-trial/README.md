@@ -5,7 +5,7 @@ or a real repository result. It closes the fixture gap without introducing a
 public MCP field, a vault write path, or a quality score.
 
 The question set is fixed before the build phase and contains 20 questions
-across executive, employee, FDE, and agent audiences. The recorded specimen
+across executive, employee, and agent audiences. The recorded specimen
 keeps the four measurements separate:
 
 1. `build` — elapsed build cost, meaningful node/relation observations, and
@@ -25,4 +25,3 @@ Run the focused contract:
 ```bash
 node --test mcp/src/source-hidden-field-trial.test.mjs
 ```
-

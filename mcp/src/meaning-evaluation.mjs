@@ -67,6 +67,71 @@ const MEANING_AUTHORITY_STOP_WORDS = new Set([
   'user',
   'workflow',
 ]);
+const REVIEW_UNIT_AUTHORITY_STOP_WORDS = new Set([
+  'and',
+  'are',
+  'but',
+  'candidate',
+  'claim',
+  'could',
+  'current',
+  'did',
+  'does',
+  'for',
+  'from',
+  'had',
+  'has',
+  'have',
+  'how',
+  'into',
+  'issue',
+  'its',
+  'line',
+  'local',
+  'may',
+  'not',
+  'only',
+  'open',
+  'other',
+  'our',
+  'over',
+  'package',
+  'please',
+  'question',
+  'regard',
+  'review',
+  'should',
+  'source',
+  'text',
+  'than',
+  'that',
+  'the',
+  'their',
+  'them',
+  'then',
+  'there',
+  'these',
+  'they',
+  'thi',
+  'through',
+  'under',
+  'unit',
+  'use',
+  'was',
+  'were',
+  'what',
+  'when',
+  'where',
+  'which',
+  'while',
+  'who',
+  'will',
+  'with',
+  'without',
+  'would',
+  'you',
+  'your',
+]);
 const COMPETENCY_WITNESS_KEYS = Object.freeze([
   'concepts',
   'relations',
@@ -991,6 +1056,41 @@ function validateCompetencyAnswers({
         ));
       }
     }
+    if (row.status === 'answered') {
+      const matchedReviewSources = witnesses.evidence.filter((source) =>
+        matchingReviewRequiredEvidence(
+          evidenceBySource.get(source),
+          row.answer,
+        ).length > 0,
+      );
+      if (matchedReviewSources.length > 0) {
+        const matchedSet = new Set(matchedReviewSources);
+        const independentlyConfirmed = witnesses.evidence.some((source) => {
+          if (matchedSet.has(source)) return false;
+          const evidence = evidenceBySource.get(source);
+          return (
+            evidence?.trust === 'candidate-evidence' &&
+            semanticUnitSupportsClaim(row.answer, evidence.excerpt)
+          );
+        });
+        findings.push(finding(
+          'review-required-unit-competency',
+          'warning',
+          path,
+          'The answered competency overlaps line-scoped review-required evidence; that unit is counterevidence, not answer authority.',
+          matchedReviewSources,
+        ));
+        if (!independentlyConfirmed) {
+          findings.push(finding(
+            'review-required-unit-competency-unconfirmed',
+            'error',
+            path,
+            'The answered competency relies on line-scoped review-required evidence without an independent claim-aligned current semantic source. Mark it partial or provide current corroboration.',
+            matchedReviewSources,
+          ));
+        }
+      }
+    }
     for (const [index, sourcePath] of witnesses.paths.entries()) {
       if (!repositoryPathExists(analysis.rootPath, sourcePath)) {
         findings.push(finding(
@@ -1126,6 +1226,7 @@ function validateCitationsAndConfidence({
   findings,
   label,
 }) {
+  const reviewUnitMatches = [];
   if (!Array.isArray(row.evidence) || row.evidence.length === 0) {
     findings.push(finding(
       'missing-citation',
@@ -1167,6 +1268,13 @@ function validateCitationsAndConfidence({
       } else if (semantic) {
         safeSources.push(source);
       }
+      const matchedUnits = matchingReviewRequiredEvidence(
+        semantic,
+        proposalAuthorityClaim(row),
+      );
+      if (matchedUnits.length > 0) {
+        reviewUnitMatches.push({ source, units: matchedUnits });
+      }
     }
     const usesRiskyEvidence = row.evidence.some(
       (source) => evidenceBySource.get(source)?.trust === 'claim-review-required',
@@ -1179,6 +1287,34 @@ function validateCitationsAndConfidence({
         `Risky ${label} evidence has no independent current-state corroboration.`,
         row.evidence,
       ));
+    }
+    if (reviewUnitMatches.length > 0) {
+      const matchedSources = new Set(reviewUnitMatches.map(({ source }) => source));
+      const claim = proposalAuthorityClaim(row);
+      const independentCurrentSources = row.evidence.filter((source) => {
+        if (matchedSources.has(source)) return false;
+        const evidence = evidenceBySource.get(source);
+        return (
+          evidence?.trust === 'candidate-evidence' &&
+          semanticUnitSupportsClaim(claim, evidence.excerpt)
+        );
+      });
+      if (independentCurrentSources.length === 0) {
+        findings.push(finding(
+          'review-required-unit-citation',
+          'warning',
+          path,
+          `The ${label} overlaps line-scoped review-required evidence; that unit is counterevidence, not claim authority.`,
+          [...matchedSources],
+        ));
+        findings.push(finding(
+          'review-required-unit-unconfirmed',
+          'error',
+          path,
+          `The ${label} relies on line-scoped review-required evidence without an independent claim-aligned current semantic source.`,
+          [...matchedSources],
+        ));
+      }
     }
   }
   if (
@@ -1193,6 +1329,48 @@ function validateCitationsAndConfidence({
       'confidence must be a number between 0 and 1.',
     ));
   }
+}
+
+function proposalAuthorityClaim(row) {
+  return [
+    row?.title,
+    row?.definition,
+    ...(Array.isArray(row?.includes) ? row.includes : []),
+    ...(Array.isArray(row?.excludes) ? row.excludes : []),
+    row?.why,
+    row?.answer,
+  ].filter(nonEmpty).join('\n');
+}
+
+function matchingReviewRequiredEvidence(evidence, claim) {
+  if (!evidence || !nonEmpty(claim)) return [];
+  return (evidence.reviewRequiredEvidence ?? []).filter(
+    (unit) => semanticUnitSupportsClaim(claim, unit?.excerpt),
+  );
+}
+
+function semanticUnitSupportsClaim(claim, evidenceText) {
+  const claimTokens = reviewUnitAuthorityTokens(claim);
+  const evidenceTokens = reviewUnitAuthorityTokens(evidenceText);
+  if (claimTokens.size === 0 || evidenceTokens.size === 0) return false;
+  const requiredOverlap = Math.min(
+    MEANING_AUTHORITY_MIN_TERM_OVERLAP,
+    claimTokens.size,
+    evidenceTokens.size,
+  );
+  let overlap = 0;
+  for (const token of claimTokens) {
+    if (evidenceTokens.has(token)) overlap += 1;
+  }
+  return overlap >= requiredOverlap;
+}
+
+function reviewUnitAuthorityTokens(value) {
+  return new Set(
+    [...meaningAuthorityTokens(value)].filter(
+      (token) => !REVIEW_UNIT_AUTHORITY_STOP_WORDS.has(token),
+    ),
+  );
 }
 
 function navigationFindingCode(code) {
@@ -1346,9 +1524,14 @@ function buildConceptBody(concept, relations, competencyAnswers = null) {
     ].join('\n')).join('\n')]);
   }
   const rendered = sections.map(([heading, body]) => `## ${heading}\n\n${body}`).join('\n\n');
-  return competencyAnswers
+  const body = competencyAnswers
     ? `${rendered}\n\n${renderProjectCompetencyMarkdown(competencyAnswers)}`
     : `${rendered}\n`;
+  // `parseFrontmatter(buildMarkdown({ body })).body` is the public canonical
+  // body representation: the Markdown separator contributes exactly one
+  // leading newline. Plans use that same representation so reviewed bytes,
+  // writer input, and a later full-body read stay identical.
+  return `\n${body}`;
 }
 
 function normalizeCompetencyAnswers(answers) {

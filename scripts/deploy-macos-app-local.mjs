@@ -3,7 +3,13 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import {
+  compareMacosAppBundleIdentity,
+  measureMacosAppBundleIdentity,
+} from "./lib/macos-app-bundle-identity.mjs";
+import { MCP_BINARY_NAME } from "./lib/mcp-binary.mjs";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
+import { verifyMcpExactCase } from "./verify-mcp-binary.mjs";
 
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
@@ -198,6 +204,44 @@ function run(command, args, { allowFailure = false } = {}) {
   return result.status ?? 0;
 }
 
+function requireInstalledBundleIdentity(expected, installPath, phase) {
+  const comparison = compareMacosAppBundleIdentity(expected, installPath);
+  if (!comparison.match) {
+    console.error(
+      `[desktop-deploy-app] ${phase} bundle identity mismatch: ` +
+        `${comparison.expectedDigest} != ${comparison.actualDigest}`,
+    );
+    for (const mismatch of comparison.mismatches.slice(0, 20)) {
+      console.error(`  - ${mismatch}`);
+    }
+    if (comparison.mismatches.length > 20) {
+      console.error(`  - +${comparison.mismatches.length - 20} more mismatch(es)`);
+    }
+    process.exit(1);
+  }
+  console.log(
+    `[desktop-deploy-app] ${phase} bundle identity ${comparison.actualDigest} ` +
+      `(${expected.entries.length} entries)`,
+  );
+}
+
+async function requireInstalledMcpExactCase(installPath, phase) {
+  const binaryPath = path.join(installPath, "Contents", "MacOS", MCP_BINARY_NAME);
+  try {
+    const result = await verifyMcpExactCase({ binaryPath });
+    console.log(
+      `[desktop-deploy-app] ${phase} installed MCP exact-case source address: ` +
+        `readme.md ${result.lowercaseAddresses}, README.md ${result.uppercaseAddresses}`,
+    );
+  } catch (error) {
+    console.error(
+      `[desktop-deploy-app] ${phase} installed MCP exact-case probe failed: ` +
+        `${error instanceof Error ? error.message : String(error)}`,
+    );
+    process.exit(1);
+  }
+}
+
 function sleepSync(ms) {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
@@ -235,7 +279,7 @@ function forceKillInstalledProcess(installPath) {
   }
 }
 
-function main() {
+async function main() {
   const options = parseDeployMacosAppArgs(process.argv.slice(2));
   const plan = buildDeployMacosAppPlan(options);
 
@@ -245,6 +289,7 @@ function main() {
     console.error("[desktop-deploy-app] run without --skip-build or build the app first.");
     process.exit(1);
   }
+  const builtIdentity = measureMacosAppBundleIdentity(options.builtAppPath);
 
   if (options.visualEvidence || options.requireScreenshot) {
     fs.mkdirSync(path.dirname(options.screenshotPath), { recursive: true });
@@ -268,6 +313,8 @@ function main() {
   }
   run(plan.removeInstalled[0], plan.removeInstalled[1]);
   run(plan.copyInstalled[0], plan.copyInstalled[1]);
+  requireInstalledBundleIdentity(builtIdentity, options.installPath, "post-copy");
+  await requireInstalledMcpExactCase(options.installPath, "post-copy");
   const verifyStatus = run(plan.verify[0], plan.verify[1], {
     allowFailure: plan.fallbackVerify !== null,
   });
@@ -280,6 +327,8 @@ function main() {
     );
     run(plan.fallbackVerify[0], plan.fallbackVerify[1]);
   }
+  requireInstalledBundleIdentity(builtIdentity, options.installPath, "post-launch");
+  await requireInstalledMcpExactCase(options.installPath, "post-launch");
   const evidence = summarizeDeployMacosAppEvidence(options, { usedFallback });
 
   console.log(
@@ -288,5 +337,5 @@ function main() {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
+  await main();
 }

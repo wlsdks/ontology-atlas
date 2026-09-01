@@ -16,6 +16,16 @@ export const CONSTRUCTION_QUALIFICATION_AUDIENCES = Object.freeze([
   'agent',
 ]);
 
+export const CONSTRUCTION_QUALIFICATION_REQUIRED_AUDIENCES = Object.freeze([
+  'executive',
+  'employee',
+  'agent',
+]);
+
+export const FDE_AUDIENCE_AUTHORITY_WITNESS_KIND = 'audience-authority:fde';
+export const FDE_AUDIENCE_AUTHORITY_DECISION = 'audience:fde';
+const CONSTRUCTION_QUALIFICATION_MIN_CASES = 4;
+
 export const CONSTRUCTION_QUALITY_AXES = Object.freeze([
   'semantic',
   'structural',
@@ -111,7 +121,9 @@ export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
     },
     scenarios: {
       type: 'array',
-      minItems: 4,
+      description:
+        'At least four decision scenarios across the required executive, employee, and agent audiences. FDE is optional and usable only when purpose authority declares audience:fde and current project-owned audience-authority:fde evidence is carried through its CQ, claim, and verified citation.',
+      minItems: CONSTRUCTION_QUALIFICATION_MIN_CASES,
       maxItems: 100,
       items: {
         type: 'object',
@@ -128,7 +140,9 @@ export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
     },
     competencyQuestions: {
       type: 'array',
-      minItems: 4,
+      description:
+        'At least four human-approved CQs. Every present FDE CQ must be owned by a named project meaning owner and require current audience-authority:fde evidence from a declared purpose source with an exact verified claim citation.',
+      minItems: CONSTRUCTION_QUALIFICATION_MIN_CASES,
       maxItems: 200,
       items: {
         type: 'object',
@@ -238,7 +252,7 @@ export const CONSTRUCTION_QUALIFICATION_INPUT_SCHEMA = Object.freeze({
     },
     cqResults: {
       type: 'array',
-      minItems: 4,
+      minItems: CONSTRUCTION_QUALIFICATION_MIN_CASES,
       maxItems: 200,
       items: {
         type: 'object',
@@ -577,6 +591,17 @@ function validatePurposeAuthority(packet, findings) {
 
 function validateScenarios(packet, findings) {
   const scenarios = mapUnique(packet.scenarios, 'id', findings, 'scenarios');
+  if (
+    Array.isArray(packet.scenarios)
+    && packet.scenarios.length < CONSTRUCTION_QUALIFICATION_MIN_CASES
+  ) {
+    addFinding(
+      findings,
+      'insufficient-scenarios',
+      'scenarios',
+      `Qualification needs at least ${CONSTRUCTION_QUALIFICATION_MIN_CASES} decision scenarios.`,
+    );
+  }
   const observedAudiences = new Set();
   for (const [id, row] of scenarios) {
     if (!CONSTRUCTION_QUALIFICATION_AUDIENCES.includes(row.audience)) {
@@ -590,7 +615,7 @@ function validateScenarios(packet, findings) {
       }
     }
   }
-  for (const audience of CONSTRUCTION_QUALIFICATION_AUDIENCES) {
+  for (const audience of CONSTRUCTION_QUALIFICATION_REQUIRED_AUDIENCES) {
     if (!observedAudiences.has(audience)) {
       addFinding(
         findings,
@@ -610,7 +635,22 @@ function validateQuestions(packet, scenarios, findings) {
     findings,
     'competencyQuestions',
   );
+  if (
+    Array.isArray(packet.competencyQuestions)
+    && packet.competencyQuestions.length < CONSTRUCTION_QUALIFICATION_MIN_CASES
+  ) {
+    addFinding(
+      findings,
+      'insufficient-competency-questions',
+      'competencyQuestions',
+      `Qualification needs at least ${CONSTRUCTION_QUALIFICATION_MIN_CASES} competency questions.`,
+    );
+  }
   const audienceCoverage = new Set();
+  const purposeDecisions = new Set(packet.purposeAuthority?.decisions ?? []);
+  const purposeOwnerIds = new Set(
+    (packet.purposeAuthority?.owners ?? []).map(({ id }) => id),
+  );
   for (const [id, row] of questions) {
     const path = `competencyQuestions.${id}`;
     const scenario = scenarios.get(row.scenarioId);
@@ -634,6 +674,24 @@ function validateQuestions(packet, scenarios, findings) {
         `${path}.owner`,
         'Every CQ needs a named human meaning owner.',
       );
+    }
+    if (row.audience === 'fde') {
+      if (!purposeDecisions.has(FDE_AUDIENCE_AUTHORITY_DECISION)) {
+        addFinding(
+          findings,
+          'fde-audience-authority-decision-missing',
+          'purposeAuthority.decisions',
+          `Using an FDE audience requires the exact project-owned ${FDE_AUDIENCE_AUTHORITY_DECISION} decision.`,
+        );
+      }
+      if (!purposeOwnerIds.has(row.owner?.id)) {
+        addFinding(
+          findings,
+          'fde-audience-authority-owner-unbound',
+          `${path}.owner`,
+          'Every FDE CQ must be owned by a named project meaning owner.',
+        );
+      }
     }
     if (
       !isRecord(row.revision)
@@ -726,7 +784,11 @@ function validateQuestions(packet, scenarios, findings) {
       }
     }
   }
-  for (const audience of CONSTRUCTION_QUALIFICATION_AUDIENCES) {
+  const requiredQuestionAudiences = new Set([
+    ...CONSTRUCTION_QUALIFICATION_REQUIRED_AUDIENCES,
+    ...[...scenarios.values()].map(({ audience }) => audience),
+  ]);
+  for (const audience of requiredQuestionAudiences) {
     if (!audienceCoverage.has(audience)) {
       addFinding(
         findings,
@@ -951,7 +1013,19 @@ function validateAxisResults(packet, witnesses, diagnostics, findings) {
 
 function validateCqResults(packet, questions, witnesses, claims, findings) {
   const results = mapUnique(packet.cqResults, 'cqId', findings, 'cqResults');
+  if (
+    Array.isArray(packet.cqResults)
+    && packet.cqResults.length < CONSTRUCTION_QUALIFICATION_MIN_CASES
+  ) {
+    addFinding(
+      findings,
+      'insufficient-cq-results',
+      'cqResults',
+      `Qualification needs at least ${CONSTRUCTION_QUALIFICATION_MIN_CASES} CQ results.`,
+    );
+  }
   const normalized = [];
+  const purposeSourceRefs = new Set(packet.purposeAuthority?.sourceRefs ?? []);
   for (const [id, question] of questions) {
     const row = results.get(id);
     if (!row) {
@@ -1042,9 +1116,90 @@ function validateCqResults(packet, questions, witnesses, claims, findings) {
       : quantifier === 'exists'
         ? covered.length > 0
         : uncovered.length === 0;
+    let audienceAuthorityReady = true;
+    if (question.audience === 'fde') {
+      if (!(question.requiredWitnessKinds ?? []).includes(FDE_AUDIENCE_AUTHORITY_WITNESS_KIND)) {
+        audienceAuthorityReady = false;
+        addFinding(
+          findings,
+          'fde-audience-authority-not-required',
+          `competencyQuestions.${id}.requiredWitnessKinds`,
+          `Every FDE CQ must require ${FDE_AUDIENCE_AUTHORITY_WITNESS_KIND}.`,
+        );
+      }
+      const carriedAuthorityRefs = row.witnessRefs.filter(
+        (ref) => witnesses.get(ref)?.kind === FDE_AUDIENCE_AUTHORITY_WITNESS_KIND,
+      );
+      if (carriedAuthorityRefs.length === 0) {
+        audienceAuthorityReady = false;
+        addFinding(
+          findings,
+          'fde-audience-authority-not-carried',
+          `cqResults.${id}.witnessRefs`,
+          'An FDE CQ result must carry project-owned audience authority evidence.',
+        );
+      }
+      const currentAuthorityRefs = carriedAuthorityRefs.filter(
+        (ref) => witnesses.get(ref)?.current === true,
+      );
+      if (carriedAuthorityRefs.length > 0 && currentAuthorityRefs.length === 0) {
+        audienceAuthorityReady = false;
+        addFinding(
+          findings,
+          'fde-audience-authority-not-current',
+          `cqResults.${id}.witnessRefs`,
+          'FDE audience authority must be current.',
+        );
+      }
+      const projectOwnedAuthorityRefs = currentAuthorityRefs.filter(
+        (ref) => purposeSourceRefs.has(witnesses.get(ref)?.provenance?.sourceRef),
+      );
+      if (currentAuthorityRefs.length > 0 && projectOwnedAuthorityRefs.length === 0) {
+        audienceAuthorityReady = false;
+        addFinding(
+          findings,
+          'fde-audience-authority-source-unbound',
+          `cqResults.${id}.witnessRefs`,
+          'FDE audience authority must come from a source declared by project purpose authority.',
+        );
+      }
+      const authorityClaimIds = row.claimIds.filter((claimId) => {
+        const claim = claims.get(claimId);
+        return claim?.status === 'supported'
+          && claim.witnessRefs.some((ref) => projectOwnedAuthorityRefs.includes(ref));
+      });
+      if (projectOwnedAuthorityRefs.length > 0 && authorityClaimIds.length === 0) {
+        audienceAuthorityReady = false;
+        addFinding(
+          findings,
+          'fde-audience-authority-claim-missing',
+          `cqResults.${id}.claimIds`,
+          'An FDE CQ needs a supported claim carrying the exact audience-authority witness.',
+        );
+      }
+      const citationVerified = authorityClaimIds.some((claimId) => (
+        packet.citationChecks.some((check) => (
+          check.claimId === claimId
+          && projectOwnedAuthorityRefs.includes(check.witnessRef)
+          && check.status === 'verified'
+        ))
+      ));
+      if (authorityClaimIds.length > 0 && !citationVerified) {
+        audienceAuthorityReady = false;
+        addFinding(
+          findings,
+          'fde-audience-authority-citation-missing',
+          'citationChecks',
+          'FDE audience authority must have an exact verified claim citation.',
+        );
+      }
+    }
     let status;
     if (row.status === 'answered') {
-      status = coverageSatisfied && requiredWitnessesPresent && claimsSupported
+      status = coverageSatisfied
+        && requiredWitnessesPresent
+        && claimsSupported
+        && audienceAuthorityReady
         ? 'passed'
         : 'failed';
     } else if (row.status === 'partial') {

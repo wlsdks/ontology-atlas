@@ -17,6 +17,7 @@ import {
   packageContractPathIssue,
   pathResolvesInsideRoot,
   pushSkippedOnce,
+  resolveExistingSourceCase,
 } from './scan-guards.mjs';
 import {
   extractPythonPyprojectPackageContract,
@@ -166,9 +167,13 @@ export function detectProject(rootPath, skipped = []) {
 }
 
 function detectReadmeH1(rootPath) {
+  const seen = new Set();
   for (const cand of ['README.md', 'readme.md', 'README.rst', 'readme.rst', 'README']) {
-    const path = join(rootPath, cand);
-    if (!existsSync(path)) continue;
+    const source = resolveExistingSourceCase(rootPath, cand);
+    if (!source || seen.has(source)) continue;
+    seen.add(source);
+    const path = join(rootPath, source);
+    if (!pathResolvesInsideRoot(rootPath, path)) continue;
     try {
       const lines = readFileSync(path, 'utf-8').split(/\r?\n/);
       let fence = null;
@@ -185,7 +190,7 @@ function detectReadmeH1(rootPath) {
         if (
           line.trim() &&
           isHeadingAdornment(nextLine) &&
-          (cand.toLowerCase().endsWith('.rst') || nextLine.startsWith('='))
+          (source.toLowerCase().endsWith('.rst') || nextLine.startsWith('='))
         ) {
           const title = cleanHeadingLabel(line);
           if (title) return title;
@@ -301,10 +306,14 @@ function parseSimpleFrontmatter(text) {
 }
 
 export function detectDomainsFromReadme(rootPath) {
+  const seen = new Set();
   const candidates = ['README.md', 'readme.md', 'README'];
   for (const cand of candidates) {
-    const p = join(rootPath, cand);
-    if (!existsSync(p)) continue;
+    const source = resolveExistingSourceCase(rootPath, cand);
+    if (!source || seen.has(source)) continue;
+    seen.add(source);
+    const p = join(rootPath, source);
+    if (!pathResolvesInsideRoot(rootPath, p)) continue;
     try {
       const text = readFileSync(p, 'utf-8');
       const lines = text.split(/\r?\n/);
@@ -362,7 +371,7 @@ export function detectDomainsFromReadme(rootPath) {
         domains.push({
           slug,
           title,
-          evidence: { source: cand, line: i + 1 },
+          evidence: { source, line: i + 1 },
         });
         if (domains.length >= 12) break; // sanity cap
       }

@@ -41,7 +41,8 @@
 //       competencyQuestions: [{ id, type, question, priority, requiredWitnesses }],
 //       qualityGates,
 //     },
-//     semanticEvidence: [{ source, role, title, headings, excerpt, trust, riskFlags }],
+//     semanticEvidence: [{ source, role, title, headings, excerpt, trust,
+//       riskFlags, reviewRequiredEvidence? }],
 //     suggestedRelations: [{ from, to, type }],
 //     skipped: [{ path, reason }],
 //   }

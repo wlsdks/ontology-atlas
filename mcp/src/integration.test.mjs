@@ -844,6 +844,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       analyzeRepo?.outputSchema?.properties?.semanticEvidence?.items?.properties?.role?.enum?.includes("package-contract"),
       "semantic evidence schema must admit the package-contract role emitted by analysis",
     );
+    const reviewRequiredEvidenceSchema = analyzeRepo?.outputSchema?.properties
+      ?.semanticEvidence?.items?.properties?.reviewRequiredEvidence;
+    assert.equal(reviewRequiredEvidenceSchema?.maxItems, 4);
+    assert.deepEqual(reviewRequiredEvidenceSchema?.items?.required, [
+      "heading",
+      "startLine",
+      "endLine",
+      "excerpt",
+      "riskFlags",
+    ]);
+    assert.deepEqual(
+      reviewRequiredEvidenceSchema?.items?.properties?.riskFlags?.items?.enum,
+      ["future-state-claim", "negated-claim", "deprecated-state"],
+    );
+    assert.equal(reviewRequiredEvidenceSchema?.items?.additionalProperties, false);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.required, ["from", "to", "type"]);
     assert.equal(analyzeRepo?.outputSchema?.properties?.suggestedRelations?.items?.additionalProperties, false);
     const inferImports = findTool("infer_imports");

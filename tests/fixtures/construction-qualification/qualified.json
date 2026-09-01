@@ -34,8 +34,8 @@
       "expectedOutcome": "Explain the operator role and the handoff process without reading code."
     },
     {
-      "id": "scenario:fde-impact",
-      "audience": "fde",
+      "id": "scenario:agent-impact",
+      "audience": "agent",
       "trigger": "Inventory availability semantics change.",
       "decision": "Choose the implementation and verification boundary.",
       "expectedOutcome": "Trace affected capabilities, paths, and verification evidence."
@@ -106,14 +106,14 @@
       ]
     },
     {
-      "id": "cq:fde-impact",
-      "scenarioId": "scenario:fde-impact",
-      "audience": "fde",
+      "id": "cq:agent-impact",
+      "scenarioId": "scenario:agent-impact",
+      "audience": "agent",
       "question": "For each affected capability, where is the implementation and how is the change verified?",
-      "owner": { "id": "human:fde-owner", "authority": "human" },
+      "owner": { "id": "human:agent-workflow-owner", "authority": "human" },
       "revision": {
         "version": 1,
-        "approvedBy": "human:fde-owner",
+        "approvedBy": "human:agent-workflow-owner",
         "approvedAt": "2026-08-09T00:00:00.000Z"
       },
       "expectedAnswer": {
@@ -127,7 +127,7 @@
         "response": "Keep impact partial until implementation and verification paths are current."
       },
       "examples": [
-        { "id": "example:fde-bounded-impact", "expectedStatus": "answered" }
+        { "id": "example:agent-bounded-impact", "expectedStatus": "answered" }
       ],
       "counterexamples": [
         { "id": "counterexample:transitive-assumption", "mustReject": "An undeclared transitive dependency is asserted as impact." }
@@ -167,8 +167,8 @@
     { "id": "w:risk-relation", "kind": "relation", "current": true, "provenance": { "sourceRef": "ontology:checkout-relations", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
     { "id": "w:employee-role", "kind": "concept", "current": true, "provenance": { "sourceRef": "ontology:operator-role", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
     { "id": "w:employee-process", "kind": "source_span", "current": true, "provenance": { "sourceRef": "docs/operations.md#incident-handoff", "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } },
-    { "id": "w:fde-relation", "kind": "relation", "current": true, "provenance": { "sourceRef": "ontology:checkout-inventory-impact", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
-    { "id": "w:fde-path", "kind": "path", "current": true, "provenance": { "sourceRef": "src/checkout/inventory.ts", "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } },
+    { "id": "w:agent-impact-relation", "kind": "relation", "current": true, "provenance": { "sourceRef": "ontology:checkout-inventory-impact", "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" } },
+    { "id": "w:agent-impact-path", "kind": "path", "current": true, "provenance": { "sourceRef": "src/checkout/inventory.ts", "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" } },
     { "id": "w:validation", "kind": "validation", "current": true, "provenance": { "sourceRef": "receipt:validation-2026-08-09", "digest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd" } },
     { "id": "w:agent-source", "kind": "source_span", "current": true, "provenance": { "sourceRef": "handoff:agent-safe-action", "digest": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" } },
     { "id": "w:source-hidden-task", "kind": "task_result", "current": true, "provenance": { "sourceRef": "evaluation:source-hidden-run-1", "digest": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" } },
@@ -198,13 +198,13 @@
       ]
     },
     {
-      "cqId": "cq:fde-impact",
+      "cqId": "cq:agent-impact",
       "status": "answered",
-      "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"],
-      "claimIds": ["claim:fde"],
+      "witnessRefs": ["w:agent-impact-relation", "w:agent-impact-path", "w:validation"],
+      "claimIds": ["claim:agent-impact"],
       "targetResults": [
-        { "target": "capability:checkout", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"], "claimIds": ["claim:fde"] },
-        { "target": "capability:inventory", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"], "claimIds": ["claim:fde"] }
+        { "target": "capability:checkout", "witnessRefs": ["w:agent-impact-relation", "w:agent-impact-path", "w:validation"], "claimIds": ["claim:agent-impact"] },
+        { "target": "capability:inventory", "witnessRefs": ["w:agent-impact-relation", "w:agent-impact-path", "w:validation"], "claimIds": ["claim:agent-impact"] }
       ]
     },
     {
@@ -221,25 +221,25 @@
   "claims": [
     { "id": "claim:outcome", "statement": "Checkout trust is the bounded product outcome at risk.", "status": "supported", "witnessRefs": ["w:outcome", "w:risk-relation"], "proposalRefs": ["concept:northstar-commerce"] },
     { "id": "claim:employee", "statement": "The operator role owns the incident handoff process boundary.", "status": "supported", "witnessRefs": ["w:employee-role", "w:employee-process"], "proposalRefs": ["competency:cq:employee-process"] },
-    { "id": "claim:fde", "statement": "Checkout and inventory are the affected capabilities with a current implementation and validation boundary.", "status": "supported", "witnessRefs": ["w:fde-relation", "w:fde-path", "w:validation"], "proposalRefs": ["competency:cq:fde-impact"] },
+    { "id": "claim:agent-impact", "statement": "Checkout and inventory are the affected capabilities with a current implementation and validation boundary.", "status": "supported", "witnessRefs": ["w:agent-impact-relation", "w:agent-impact-path", "w:validation"], "proposalRefs": ["competency:cq:agent-impact"] },
     { "id": "claim:agent", "statement": "Validation and preflight are the next evidence-authorized actions.", "status": "supported", "witnessRefs": ["w:agent-source", "w:source-hidden-task"], "proposalRefs": ["competency:cq:agent-next-action"] }
   ],
   "citationChecks": [
     { "claimId": "claim:outcome", "witnessRef": "w:outcome", "status": "verified" },
     { "claimId": "claim:employee", "witnessRef": "w:employee-process", "status": "verified" },
-    { "claimId": "claim:fde", "witnessRef": "w:fde-path", "status": "verified" },
+    { "claimId": "claim:agent-impact", "witnessRef": "w:agent-impact-path", "status": "verified" },
     { "claimId": "claim:agent", "witnessRef": "w:agent-source", "status": "verified" }
   ],
   "sourceHiddenTask": {
     "status": "passed",
     "evaluatorId": "agent:evaluator",
-    "claimIds": ["claim:outcome", "claim:employee", "claim:fde", "claim:agent"]
+    "claimIds": ["claim:outcome", "claim:employee", "claim:agent-impact", "claim:agent"]
   },
   "axisResults": [
     { "axis": "semantic", "status": "passed", "evidenceRefs": ["w:definition", "w:boundary"], "findingIds": [] },
     { "axis": "structural", "status": "passed", "evidenceRefs": ["w:validation"], "findingIds": [] },
-    { "axis": "functional", "status": "passed", "evidenceRefs": ["w:outcome", "w:employee-process", "w:fde-path", "w:agent-source"], "findingIds": [] },
-    { "axis": "evidence_provenance", "status": "passed", "evidenceRefs": ["w:outcome", "w:employee-process", "w:fde-path", "w:agent-source"], "findingIds": [] },
+    { "axis": "functional", "status": "passed", "evidenceRefs": ["w:outcome", "w:employee-process", "w:agent-impact-path", "w:agent-source"], "findingIds": [] },
+    { "axis": "evidence_provenance", "status": "passed", "evidenceRefs": ["w:outcome", "w:employee-process", "w:agent-impact-path", "w:agent-source"], "findingIds": [] },
     { "axis": "pragmatic", "status": "passed", "evidenceRefs": ["w:source-hidden-task"], "findingIds": [] },
     { "axis": "maintainability", "status": "passed", "evidenceRefs": ["w:regression"], "findingIds": [] },
     { "axis": "interoperability", "status": "passed", "evidenceRefs": ["w:round-trip"], "findingIds": [] }
@@ -248,8 +248,8 @@
   "regression": {
     "baselineQualificationId": "qualification:northstar-commerce:v0",
     "status": "passed",
-    "priorCqIds": ["cq:executive-risk", "cq:employee-process", "cq:fde-impact", "cq:agent-next-action"],
-    "rerunCqIds": ["cq:executive-risk", "cq:employee-process", "cq:fde-impact", "cq:agent-next-action"],
+    "priorCqIds": ["cq:executive-risk", "cq:employee-process", "cq:agent-impact", "cq:agent-next-action"],
+    "rerunCqIds": ["cq:executive-risk", "cq:employee-process", "cq:agent-impact", "cq:agent-next-action"],
     "evidenceRefs": ["w:regression"]
   },
   "resourceUse": {

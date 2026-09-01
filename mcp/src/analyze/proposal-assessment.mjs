@@ -32,7 +32,11 @@ export function buildProposalAssessment(result) {
   const productionBoundaryCount = extractionContract.qualityGates.typedRelationsProposed
     - suggestedRelations.filter((relation) => relation.type === 'contains').length;
   const trustedEvidence = semanticEvidence.filter((row) => row.trust === 'candidate-evidence');
-  const riskEvidence = semanticEvidence.filter((row) => row.riskFlags.length > 0);
+  const riskEvidence = semanticEvidence.filter(
+    (row) =>
+      row.riskFlags.length > 0 ||
+      (row.reviewRequiredEvidence?.length ?? 0) > 0,
+  );
   const digestInput = {
     framework: result.framework,
     project,

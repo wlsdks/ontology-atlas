@@ -3,8 +3,48 @@
 // the requested root, manifest size/existence checks, and the deduplicated
 // `skipped` rows every walker appends to.
 
-import { statSync, realpathSync } from 'node:fs';
-import { relative, isAbsolute, sep } from 'node:path';
+import { readdirSync, statSync, realpathSync } from 'node:fs';
+import { join, relative, isAbsolute, sep } from 'node:path';
+
+export function selectExactCaseEntry(entries, requested) {
+  if (entries.includes(requested)) return requested;
+  const folded = requested.toLocaleLowerCase('en-US');
+  const matches = entries.filter(
+    (entry) => entry.toLocaleLowerCase('en-US') === folded,
+  );
+  return matches.length === 1 ? matches[0] : null;
+}
+
+export function resolveExistingSourceCase(rootPath, source) {
+  if (
+    typeof source !== 'string' ||
+    !source ||
+    isAbsolute(source)
+  ) {
+    return null;
+  }
+  const segments = source.split('/');
+  if (
+    segments.length === 0 ||
+    segments.some((segment) => !segment || segment === '.' || segment === '..')
+  ) {
+    return null;
+  }
+  let cursor = rootPath;
+  const resolved = [];
+  try {
+    for (const segment of segments) {
+      const selected = selectExactCaseEntry(readdirSync(cursor), segment);
+      if (!selected) return null;
+      resolved.push(selected);
+      cursor = join(cursor, selected);
+    }
+    if (!statSync(cursor).isFile()) return null;
+  } catch {
+    return null;
+  }
+  return resolved.join('/');
+}
 
 export function packageContractPathIssue(rootPath, path, source, maxBytes) {
   if (!pathResolvesInsideRoot(rootPath, path)) {

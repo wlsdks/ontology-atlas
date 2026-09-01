@@ -32,6 +32,7 @@ import {
   packageContractPathIssue,
   pathResolvesInsideRoot,
   pushSkippedOnce,
+  resolveExistingSourceCase,
 } from './scan-guards.mjs';
 import {
   extractCargoPackageContract,
@@ -39,6 +40,19 @@ import {
   extractPythonPyprojectPackageContract,
   extractPythonSetupPackageContract,
 } from './package-contracts.mjs';
+
+const SEMANTIC_REVIEW_REQUIRED_MAX_ITEMS = 4;
+const SEMANTIC_REVIEW_REQUIRED_MAX_EXCERPT = 400;
+const SEMANTIC_REVIEW_REQUIRED_MAX_TOTAL_EXCERPT = 800;
+const HOSTILE_SEMANTIC_RISK_FLAGS = new Set([
+  'instruction-injection',
+  'ontology-write-instruction',
+]);
+const POLICY_SEMANTIC_RISK_FLAGS = new Set([
+  'future-state-claim',
+  'negated-claim',
+  'deprecated-state',
+]);
 
 export function collectSemanticEvidence(rootPath, skipped = []) {
   const candidates = discoverSemanticEvidenceCandidates(rootPath, skipped);
@@ -120,6 +134,7 @@ export function collectSemanticEvidence(rootPath, skipped = []) {
         title: extracted.title || humanize(basename(source).replace(/\.md$/i, '')),
         headings: extracted.headings,
         excerpt: extracted.excerpt,
+        _reviewRequiredEvidence: extracted.reviewRequiredEvidence,
         _riskText: extracted.riskText,
         _score: pathScore + semanticContentScore(extracted),
       });
@@ -170,6 +185,9 @@ export function collectSemanticEvidence(rootPath, skipped = []) {
       excerpt: row.excerpt,
       trust: semanticEvidenceTrust(riskFlags),
       riskFlags,
+      ...(row._reviewRequiredEvidence?.length > 0
+        ? { reviewRequiredEvidence: row._reviewRequiredEvidence }
+        : {}),
     };
   });
 }
@@ -227,9 +245,14 @@ function semanticEvidenceTrust(riskFlags) {
 function discoverSemanticEvidenceCandidates(rootPath, skipped = []) {
   const bySource = new Map();
   for (const [source, role] of SEMANTIC_EVIDENCE_SEEDS) {
-    if (existsSync(join(rootPath, source))) {
-      bySource.set(source, { source, role, pathScore: 100 });
-    }
+    const resolvedSource = resolveExistingSourceCase(rootPath, source);
+    if (!resolvedSource) continue;
+    if (role === 'package-contract' && resolvedSource !== source) continue;
+    bySource.set(resolvedSource, {
+      source: resolvedSource,
+      role,
+      pathScore: 100,
+    });
   }
   discoverWorkspaceSemanticEvidenceCandidates(rootPath, bySource, skipped);
   let filesSeen = 0;
@@ -336,7 +359,8 @@ function discoverWorkspaceSemanticEvidenceCandidates(rootPath, bySource, skipped
     }
     for (const entry of considered) {
       const packageSource = `${folder}/${entry}/package.json`;
-      if (existsSync(join(rootPath, packageSource))) {
+      const resolvedPackageSource = resolveExistingSourceCase(rootPath, packageSource);
+      if (resolvedPackageSource === packageSource) {
         bySource.set(packageSource, {
           source: packageSource,
           role: 'package-contract',
@@ -344,9 +368,10 @@ function discoverWorkspaceSemanticEvidenceCandidates(rootPath, bySource, skipped
         });
       }
       const readmeSource = `${folder}/${entry}/README.md`;
-      if (existsSync(join(rootPath, readmeSource))) {
-        bySource.set(readmeSource, {
-          source: readmeSource,
+      const resolvedReadmeSource = resolveExistingSourceCase(rootPath, readmeSource);
+      if (resolvedReadmeSource) {
+        bySource.set(resolvedReadmeSource, {
+          source: resolvedReadmeSource,
           role: 'product-capabilities',
           pathScore: 75,
         });
@@ -410,6 +435,7 @@ function extractSemanticDocument(text) {
     lineIndex: -1,
     prose: [],
     excluded: false,
+    isDocumentTitle: false,
   };
   const sections = [rootSection];
   const headingStack = [rootSection];
@@ -464,7 +490,8 @@ function extractSemanticDocument(text) {
         : headingValue)
         .trim();
       if (!value) continue;
-      if (level === 1 && !title) title = value;
+      const isDocumentTitle = level === 1 && !title;
+      if (isDocumentTitle) title = value;
       while (
         headingStack.length > 1 &&
         headingStack[headingStack.length - 1].heading.level >= level
@@ -477,6 +504,7 @@ function extractSemanticDocument(text) {
         parent,
         lineIndex,
         prose: [],
+        isDocumentTitle,
         excluded:
           parent.excluded || isExcludedSemanticSection(value),
       };
@@ -550,48 +578,188 @@ function extractSemanticDocument(text) {
   const orderedSections = [...selectedSections].sort(
     (a, b) => a.lineIndex - b.lineIndex,
   );
-  const sectionTextRows = orderedSections.map((section) => ({
+  const completeSectionTextRows = semanticSectionTextRows(orderedSections);
+  const completeHeadings = semanticHeadingSelection(sections, orderedSections);
+  const completeExcerpt = buildSemanticExcerpt(completeSectionTextRows);
+  const completeRiskFlags = scanSemanticEvidenceRisks({
+    headings: completeHeadings,
+    excerpt: completeExcerpt,
+  });
+  if (
+    completeRiskFlags.some((flag) => HOSTILE_SEMANTIC_RISK_FLAGS.has(flag)) ||
+    !completeRiskFlags.some((flag) => POLICY_SEMANTIC_RISK_FLAGS.has(flag))
+  ) {
+    return {
+      title,
+      headings: completeHeadings,
+      excerpt: completeExcerpt,
+    };
+  }
+
+  const reviewRequiredEvidence = [];
+  const reviewedRows = new Set();
+  const safeSections = orderedSections.map((section) => ({
+    ...section,
+    prose: [...section.prose],
+  }));
+  let reviewExcerptLength = 0;
+  let reviewSplitFits = true;
+  while (reviewSplitFits) {
+    const nonEmptySafeSections = safeSections.filter(
+      (section) => section.prose.length > 0,
+    );
+    if (nonEmptySafeSections.length === 0) break;
+    const safeSelection = buildSemanticExcerptSelection(
+      semanticSectionTextRows(nonEmptySafeSections),
+    );
+    const safeHeadings = semanticHeadingSelection(
+      sections,
+      nonEmptySafeSections,
+      true,
+    );
+    const visibleRiskFlags = scanSemanticEvidenceRisks({
+      headings: safeHeadings,
+      excerpt: safeSelection.excerpt,
+    });
+    if (visibleRiskFlags.some((flag) => HOSTILE_SEMANTIC_RISK_FLAGS.has(flag))) {
+      reviewSplitFits = false;
+      break;
+    }
+    if (!visibleRiskFlags.some((flag) => POLICY_SEMANTIC_RISK_FLAGS.has(flag))) {
+      if (reviewRequiredEvidence.length === 0 || !safeSelection.excerpt) break;
+      return {
+        title,
+        headings: safeHeadings,
+        excerpt: safeSelection.excerpt,
+        reviewRequiredEvidence: reviewRequiredEvidence.sort(
+          (a, b) => a.startLine - b.startLine,
+        ),
+      };
+    }
+
+    const newlyRiskyRows = new Set();
+    for (const { section, text } of safeSelection.sectionSelections) {
+      for (const { row, visibleText } of visibleSemanticProseRows(section, text)) {
+        const visiblePolicyRisks = scanSemanticEvidenceRisks({
+          headings: section.heading ? [section.heading.value] : [],
+          excerpt: visibleText,
+        }).filter((flag) => POLICY_SEMANTIC_RISK_FLAGS.has(flag));
+        if (visiblePolicyRisks.length === 0 || reviewedRows.has(row)) continue;
+        const exactRiskFlags = scanSemanticEvidenceRisks({
+          headings: section.heading ? [section.heading.value] : [],
+          excerpt: row.text,
+        }).filter((flag) => POLICY_SEMANTIC_RISK_FLAGS.has(flag));
+        reviewExcerptLength += row.text.length;
+        if (
+          reviewRequiredEvidence.length >= SEMANTIC_REVIEW_REQUIRED_MAX_ITEMS ||
+          row.text.length > SEMANTIC_REVIEW_REQUIRED_MAX_EXCERPT ||
+          reviewExcerptLength > SEMANTIC_REVIEW_REQUIRED_MAX_TOTAL_EXCERPT
+        ) {
+          reviewSplitFits = false;
+          break;
+        }
+        reviewedRows.add(row);
+        newlyRiskyRows.add(row);
+        reviewRequiredEvidence.push({
+          heading: section.heading?.value ?? title ?? 'Document prelude',
+          startLine: row.lineIndex + 1,
+          endLine: row.lineIndex + 1,
+          excerpt: row.text,
+          riskFlags: exactRiskFlags,
+        });
+      }
+      if (!reviewSplitFits) break;
+    }
+    if (!reviewSplitFits || newlyRiskyRows.size === 0) break;
+    for (const section of safeSections) {
+      section.prose = section.prose.filter((row) => !newlyRiskyRows.has(row));
+    }
+  }
+
+  return {
+    title,
+    headings: completeHeadings,
+    excerpt: completeExcerpt,
+  };
+}
+
+function semanticSectionTextRows(sections) {
+  return sections.map((section) => ({
     section,
     text: section.prose.map((row) => row.text).join(' '),
   }));
-  const requiredSections = ['purpose', 'architecture', 'ability']
-    .map((category) =>
-      sectionTextRows.find(
-        ({ section }) => semanticSectionCategory(section) === category,
-      ),
-    )
-    .filter(Boolean);
+}
+
+function buildSemanticExcerpt(sectionTextRows) {
+  return buildSemanticExcerptSelection(sectionTextRows).excerpt;
+}
+
+function buildSemanticExcerptSelection(sectionTextRows) {
   const proseBudget = Math.max(
     0,
     SEMANTIC_EVIDENCE_MAX_EXCERPT - Math.max(0, sectionTextRows.length - 1),
   );
-  const reserveLength = requiredSections.length > 0
-    ? Math.floor(proseBudget / requiredSections.length)
+  const baseLength = sectionTextRows.length > 0
+    ? Math.floor(proseBudget / sectionTextRows.length)
     : 0;
-  const reservedLengths = new Map(
-    requiredSections.map(({ section, text }) => [
+  const selectedLengths = new Map(
+    sectionTextRows.map(({ section, text }) => [
       section,
-      Math.min(reserveLength, text.length),
+      Math.min(baseLength, text.length),
     ]),
   );
   let remainingBudget = proseBudget;
-  for (const length of reservedLengths.values()) remainingBudget -= length;
-  const selectedProse = sectionTextRows
+  for (const length of selectedLengths.values()) remainingBudget -= length;
+  for (const { section, text } of [...sectionTextRows].sort(
+    (a, b) =>
+      semanticSectionPriority(b.section) - semanticSectionPriority(a.section) ||
+      a.section.lineIndex - b.section.lineIndex,
+  )) {
+    if (remainingBudget <= 0) break;
+    const selectedLength = selectedLengths.get(section) ?? 0;
+    const extraLength = Math.min(
+      Math.max(0, text.length - selectedLength),
+      remainingBudget,
+    );
+    selectedLengths.set(section, selectedLength + extraLength);
+    remainingBudget -= extraLength;
+  }
+  const sectionSelections = sectionTextRows
     .map(({ section, text }) => {
-      const reservedLength = reservedLengths.get(section) ?? 0;
-      const extraLength = Math.min(
-        Math.max(0, text.length - reservedLength),
-        Math.max(0, remainingBudget),
-      );
-      remainingBudget -= extraLength;
-      return truncateSemanticExcerptAtBoundary(text, reservedLength + extraLength);
+      return {
+        section,
+        text: truncateSemanticExcerptAtBoundary(
+          text,
+          selectedLengths.get(section) ?? 0,
+        ),
+      };
     })
-    .filter(Boolean)
+    .filter(({ text }) => Boolean(text));
+  const excerpt = sectionSelections
+    .map(({ text }) => text)
     .join(' ')
     .slice(0, SEMANTIC_EVIDENCE_MAX_EXCERPT)
     .trim();
 
-  const titleSection = sections.find(
+  return { excerpt, sectionSelections };
+}
+
+function visibleSemanticProseRows(section, selectedText) {
+  const visible = [];
+  let offset = 0;
+  for (const row of section.prose) {
+    if (offset >= selectedText.length) break;
+    const visibleLength = Math.min(row.text.length, selectedText.length - offset);
+    if (visibleLength > 0) {
+      visible.push({ row, visibleText: row.text.slice(0, visibleLength) });
+    }
+    offset += row.text.length + 1;
+  }
+  return visible;
+}
+
+function semanticHeadingSelection(allSections, selectedSections, selectedTitleOnly = false) {
+  const titleSection = (selectedTitleOnly ? selectedSections : allSections).find(
     (section) => section.heading?.level === 1 && !section.excluded,
   );
   const prioritizedHeadingSections = [
@@ -605,26 +773,12 @@ function extractSemanticDocument(text) {
     seenHeadingSections.add(section);
     headingSelection.push(section);
   }
-  for (const section of sections) {
-    if (
-      section.heading &&
-      !section.excluded &&
-      !seenHeadingSections.has(section)
-    ) {
-      seenHeadingSections.add(section);
-      headingSelection.push(section);
-    }
-  }
   const headings = headingSelection
     .slice(0, SEMANTIC_EVIDENCE_MAX_HEADINGS)
     .sort((a, b) => a.lineIndex - b.lineIndex)
     .map((section) => section.heading.value);
 
-  return {
-    title,
-    headings,
-    excerpt: selectedProse,
-  };
+  return headings;
 }
 
 function truncateSemanticExcerptAtBoundary(text, maxLength) {
@@ -693,7 +847,7 @@ function semanticSectionCategory(section) {
   const namedCategory = semanticHeadingCategory(section.heading?.value ?? '');
   if (namedCategory) return namedCategory;
   const heading = normalizeSemanticHeading(section.heading?.value ?? '');
-  if (!heading || section.heading?.level === 1) return 'purpose';
+  if (!heading || section.isDocumentTitle) return 'purpose';
   return null;
 }
 

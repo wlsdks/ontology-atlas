@@ -29,7 +29,11 @@ exact review-plan and current source SHA-256 digests returned by
 1. the intended outcome, decisions, scope, non-goals, portable source refs, and
    named human meaning owners;
 2. a named builder and a separately identified evaluator;
-3. motivating decision scenarios for executive, employee, FDE, and agent users;
+3. at least four motivating decision scenarios across executive, employee, and
+   agent users; FDE is optional and may be used only when purpose authority
+   declares the exact `audience:fde` decision, its CQ owner is a named project
+   meaning owner, and a current `audience-authority:fde` witness from a declared
+   purpose source reaches a supported claim and its exact verified citation;
 4. atomic competency questions, each with a human owner, approved revision,
    expected answer shape and quantifier, target set, required witness kinds,
    explicit unknown/refusal behavior, exemplar, and counterexample;
@@ -52,6 +56,33 @@ The canonical field shape is the executable fixture
 [`tests/fixtures/construction-qualification/qualified.json`](../tests/fixtures/construction-qualification/qualified.json).
 Future producers must emit that shape rather than inventing a parallel receipt.
 
+The analyzer packet keeps claim admission separate from policy review. A
+semantic row's `excerpt`, `headings`, `trust`, and top-level `riskFlags` describe
+the exact unit that may support a proposal. When the same selected document also
+contains bounded future, negated, or deprecated prose, additive
+`reviewRequiredEvidence` records retain the heading, one-based line span,
+excerpt, and risk flags as counterevidence. Those records may inform uncertainty
+or a review gap, but cannot establish a Definition, Includes, Excludes,
+capability, competency answer, or write. Hostile content never enters this split;
+it keeps the existing whole-row untrusted state. The proposal validator rejects
+claims and `answered` competency text that overlap a review unit without a
+different claim-aligned current semantic source. Partial/visible-gap answers may
+retain that unit only as unresolved counterevidence.
+
+Within the unchanged 1,200-character excerpt, every selected safe section gets
+a deterministic initial share; unused short-section capacity returns by
+semantic priority and source order. A single exact current candidate unit plus a
+matching implementation witness may form only a capability proposal below
+`0.8` confidence. The implementation witness is not another semantic authority
+and cannot establish a domain, ownership, completeness, an `answered`
+competency, qualification, approval, or write.
+
+Repository-relative semantic source addresses use the unique exact case of each
+directory entry before plan hashing. Exact matches win; ambiguous case folds,
+missing entries, non-files, and repository escapes are inadmissible. Package
+contracts retain exact conventional names. Any corrected address changes the
+plan bytes and requires fresh qualification and acceptance.
+
 ## Runtime lifecycle
 
 The existing read-only tool enforces one sequence:
@@ -69,9 +100,13 @@ The existing read-only tool enforces one sequence:
    tool with the unchanged proposal plus the qualification packet.
 4. Only an admissible, current packet returns
    `constructionLifecycle.writeEligibility: executable`, `canWrite: true`, and
-   `writePlan`. That plan is an exact clone of the reviewed rows. Any source or
-   plan change invalidates the acceptance.
-5. After the batch writers, the agent validates and compiles the vault, connects
+   `writePlan`. That plan is an exact clone of the reviewed rows, and each
+   generated concept body uses the parser's canonical full-body representation.
+   Any source or plan change invalidates the acceptance.
+5. After the batch writers, the agent full-reads every released concept and
+   requires byte equality with `writePlan.concepts[].body`. Trimming or semantic
+   equivalence cannot approve transport drift.
+6. Only after body equality passes, the agent validates and compiles the vault, connects
    the project source, and runs `finalize_project_meaning`. Post-write failure is
    repaired forward; it is not reported as a successful construction.
 

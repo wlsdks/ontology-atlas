@@ -10,6 +10,7 @@ import {
   validateMeaningProposalAgainstAnalysis,
 } from './meaning-evaluation.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
+import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtureRoot = join(here, '../../tests/fixtures/meaning-corpus/commerce-fsd');
@@ -190,6 +191,31 @@ test('repository proposal passes only when definitions, citations, domains, and 
   assert.equal(result.canWrite, true);
   assert.equal(result.summary.errors, 0);
   assert.ok(Object.values(result.gates).every(Boolean));
+});
+
+test('repository write-plan bodies round-trip through the canonical vault parser byte-exactly', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.canWrite, true);
+  assert.ok(result.writePlan.concepts.length > 0, 'the round-trip gate must stay non-idle');
+  for (const concept of result.writePlan.concepts) {
+    assert.match(concept.body, /^\n## Definition\n/);
+    const persisted = buildMarkdown({
+      frontmatter: {
+        slug: concept.slug,
+        kind: concept.kind,
+        title: concept.title,
+      },
+      body: concept.body,
+    });
+    assert.equal(
+      parseFrontmatter(persisted).body,
+      concept.body,
+      concept.slug,
+    );
+  }
 });
 
 test('repository proposal requires typed competency witnesses before claiming a complete answer', () => {
@@ -729,6 +755,134 @@ test('repository proposal accepts a trusted semantic source as independent corro
   assert.equal(result.gates.riskyEvidenceControlled, true);
   assert.ok(result.findings.some((row) => row.code === 'risky-citation'));
   assert.ok(!result.findings.some((row) => row.code === 'risky-citation-unconfirmed'));
+});
+
+test('a line-scoped review unit cannot become sole concept authority through its safe source row', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const readmeEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'README.md',
+  );
+  readmeEvidence.excerpt =
+    'Northstar Commerce helps merchants coordinate reviewed records.';
+  readmeEvidence.trust = 'candidate-evidence';
+  readmeEvidence.riskFlags = [];
+  readmeEvidence.reviewRequiredEvidence = [
+    {
+      heading: 'Deprecated checkout',
+      startLine: 40,
+      endLine: 40,
+      excerpt: 'Checkout turns a reviewed cart into a confirmed order, but this ability is deprecated.',
+      riskFlags: ['deprecated-state'],
+    },
+  ];
+  proposal.capabilities[0].evidence = ['README.md'];
+
+  const unconfirmed = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.ok(unconfirmed.findings.some((row) =>
+    row.code === 'review-required-unit-citation'
+      && row.path === 'concepts[2]'));
+  assert.ok(unconfirmed.findings.some((row) =>
+    row.code === 'review-required-unit-unconfirmed'
+      && row.path === 'concepts[2]'));
+
+  proposal.capabilities[0].evidence = ['README.md', 'docs/PRODUCT.md'];
+  const independentlyConfirmed = validateMeaningProposalAgainstAnalysis(
+    analysis,
+    proposal,
+  );
+
+  assert.equal(independentlyConfirmed.findings.some((row) =>
+    row.code === 'review-required-unit-citation'
+      && row.path === 'concepts[2]'), false);
+  assert.equal(independentlyConfirmed.findings.some((row) =>
+    row.code === 'review-required-unit-unconfirmed'
+      && row.path === 'concepts[2]'), false);
+});
+
+test('a line-scoped review unit cannot be the sole authority for an answered competency', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const readmeEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'README.md',
+  );
+  readmeEvidence.excerpt =
+    'Northstar Commerce helps merchants coordinate reviewed records.';
+  readmeEvidence.trust = 'candidate-evidence';
+  readmeEvidence.riskFlags = [];
+  readmeEvidence.reviewRequiredEvidence = [
+    {
+      heading: 'Deprecated checkout',
+      startLine: 40,
+      endLine: 40,
+      excerpt: 'Checkout turns a reviewed cart into a confirmed order, but this ability is deprecated.',
+      riskFlags: ['deprecated-state'],
+    },
+  ];
+  proposal.competencyAnswers.abilities.answer =
+    'Checkout turns a reviewed cart into a confirmed order.';
+  proposal.competencyAnswers.abilities.witnesses.evidence = ['README.md'];
+
+  const answered = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.ok(answered.findings.some((row) =>
+    row.code === 'review-required-unit-competency'
+      && row.path === 'competencyAnswers.abilities'));
+  assert.ok(answered.findings.some((row) =>
+    row.code === 'review-required-unit-competency-unconfirmed'
+      && row.path === 'competencyAnswers.abilities'));
+
+  proposal.competencyAnswers.abilities.status = 'partial';
+  proposal.competencyAnswers.abilities.gap =
+    'The deprecated statement remains review-required and lacks current corroboration.';
+  const partial = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(partial.findings.some((row) =>
+    row.code === 'review-required-unit-competency-unconfirmed'
+      && row.path === 'competencyAnswers.abilities'), false);
+});
+
+test('ordinary prose overlap cannot tie a current ability to an unrelated review unit', () => {
+  const analysis = analyzeRepoStructure(fixtureRoot);
+  const proposal = completeTypedRepositoryProposal();
+  const readmeEvidence = analysis.semanticEvidence.find(
+    (row) => row.source === 'README.md',
+  );
+  readmeEvidence.excerpt =
+    'Task Timeouts bound task duration and surface a TimeoutError for queued work.';
+  readmeEvidence.trust = 'candidate-evidence';
+  readmeEvidence.riskFlags = [];
+  readmeEvidence.reviewRequiredEvidence = [
+    {
+      heading: 'Install',
+      startLine: 12,
+      endLine: 12,
+      excerpt:
+        'This package is native ESM and no longer provides a CommonJS export. If your project uses CommonJS, you will have to convert to ESM. Please do not open issues for questions regarding CommonJS and ESM.',
+      riskFlags: ['deprecated-state'],
+    },
+  ];
+  proposal.capabilities[0] = {
+    ...proposal.capabilities[0],
+    title: 'Task Timeouts',
+    definition:
+      'Task Timeouts is a review-candidate ability to bound task duration and surface a TimeoutError for queued work.',
+    includes: [
+      'The current evidence names global and per-task timeout handling.',
+    ],
+    excludes: [
+      'The source distinguishes these local task timeouts from a durable server job queue.',
+    ],
+    evidence: ['README.md', 'src/features/checkout'],
+    confidence: 0.77,
+  };
+
+  const result = validateMeaningProposalAgainstAnalysis(analysis, proposal);
+
+  assert.equal(result.findings.some((row) =>
+    row.path === 'concepts[2]'
+      && row.code.startsWith('review-required-unit-')), false);
 });
 
 test('repository proposal validates the complete approved graph and returns an exact write plan', () => {

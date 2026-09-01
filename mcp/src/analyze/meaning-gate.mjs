@@ -625,7 +625,7 @@ export function buildMeaningGate({
     }
   }
   const hasPolicyEvidenceRisk = semanticEvidence.some((row) =>
-    row.riskFlags.some((risk) =>
+    semanticEvidenceRiskFlags(row).some((risk) =>
       ['future-state-claim', 'negated-claim', 'deprecated-state'].includes(risk),
     ),
   );
@@ -696,7 +696,7 @@ export function buildExtractionContract({
       implementationEvidenceAvailable: observedImplementationEvidence > 0,
       semanticEvidenceAvailable: semanticEvidence.length > 0,
       semanticEvidenceReviewRequired: semanticEvidence.filter(
-        (row) => row.riskFlags.length > 0,
+        (row) => semanticEvidenceRiskFlags(row).length > 0,
       ).length,
       typedRelationsProposed: suggestedRelations.length,
       provenanceAttached:
@@ -716,6 +716,15 @@ export function buildExtractionContract({
     nextStep:
       'Use semanticEvidence to propose defined domains and capabilities; answer each competency question with answer/status/witnesses, keep unsupported claims as partial or visible-gap, and write only after every witness resolves.',
   };
+}
+
+function semanticEvidenceRiskFlags(row) {
+  return uniqueStrings([
+    ...(row?.riskFlags ?? []),
+    ...(row?.reviewRequiredEvidence ?? []).flatMap(
+      (evidence) => evidence?.riskFlags ?? [],
+    ),
+  ]);
 }
 
 function formatOntologyEvidence(evidence) {
