@@ -132,6 +132,31 @@ export const WRITER_CASES = [
       '---\n\n',
   },
   {
+    /*
+     * Bug sweep 2026-09-01: an unquoted 'true' or '2026' re-read as a
+     * boolean/number, and consumers gating on typeof string (buildMdEntry's
+     * title, readDisplayLocales) silently dropped the value after one round
+     * trip. Strings the reader would re-type are now written quoted.
+     */
+    name: 'quotes strings the reader would re-type as boolean or number',
+    input: {
+      frontmatter: {
+        title: 'true',
+        display_ko: '2026',
+        note: 'false',
+        version: '1.0.1',
+      },
+      body: '',
+    },
+    expected:
+      '---\n' +
+      'title: "true"\n' +
+      'display_ko: "2026"\n' +
+      'note: "false"\n' +
+      'version: 1.0.1\n' +
+      '---\n\n',
+  },
+  {
     name: 'normalizes leading body newlines',
     input: {
       frontmatter: { kind: 'project', title: 'Sample' },
