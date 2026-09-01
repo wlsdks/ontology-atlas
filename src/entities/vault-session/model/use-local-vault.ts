@@ -554,6 +554,24 @@ async function readAgentActivityStatus(
  * to prevent. The inputs are small parsed sidecar summaries with no cycles, so a recursive
  * compare costs far less than one wasted render. Exported for its regression test only.
  */
+/**
+ * Blanks the volatile age fields before a no-change compare. `ageMs` and
+ * `refreshRequest.previousAgeMs` embed `Date.now()` at parse time, so with a
+ * heartbeat file present two consecutive poll ticks were never structurally
+ * equal and the "nothing changed means state is not touched" guard was defeated
+ * — the whole app re-rendered every 1.5–5s during any agent session (bug sweep
+ * 2026-09-01). `stale` still participates, so the one meaningful age transition
+ * still reaches state. Nothing on screen reads `ageMs` directly.
+ */
+export function comparableAgentActivityStatus(status: AgentActivityStatus): AgentActivityStatus {
+  if (status.ageMs === null && status.refreshRequest.previousAgeMs === null) return status;
+  return {
+    ...status,
+    ageMs: null,
+    refreshRequest: { ...status.refreshRequest, previousAgeMs: null },
+  };
+}
+
 export function structurallyEqualStatus(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
@@ -1069,8 +1087,17 @@ export function useLocalVaultInternal() {
           setState((s) => {
             const same =
               structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
-              structurallyEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
+              // Volatile age fields are excluded — they advance on every parse
+              // and defeated this guard whenever a heartbeat file existed.
+              structurallyEqualStatus(
+                comparableAgentActivityStatus(s.agentActivityStatus),
+                comparableAgentActivityStatus(sidecars.agentActivityStatus),
+              ) &&
+              // Length alone misses an append once the log reaches its 50-entry
+              // read cap (tail replaced at identical length) — compare the last
+              // entry too.
               s.agentActivityLog.length === sidecars.agentActivityLog.length &&
+              structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
               s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
               s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;
             return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
