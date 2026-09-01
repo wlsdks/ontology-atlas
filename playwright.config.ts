@@ -6,6 +6,13 @@ const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://127.0.0.1:3100';
 const webServerOrigin = new URL(baseURL).origin;
 const webServerPort = new URL(baseURL).port || '3100';
 
+export function resolvePlaywrightWorkers(
+  env: Record<string, string | undefined>,
+): number {
+  const isCI = env.CI === 'true' || env.CI === '1';
+  return isCI && env.PLAYWRIGHT_STATIC === '1' ? 2 : 1;
+}
+
 export default defineConfig({
   testDir: './tests/e2e',
   // Relative to dev (Turbopack), the first route entry waits for on-demand compilation —
@@ -17,13 +24,13 @@ export default defineConfig({
     timeout: 15_000,
   },
   fullyParallel: false,
-  workers: 1,
-  // CI faces dev (Turbopack) as a cold start — running the full suite sequentially causes
-  // StrictMode double mount/hydration duplicate renders and on-demand re-compilations,
-  // leading to sporadic timing failures in this specific spec (not a product defect — individual runs
-  // all pass; it's a dev-only artifact absent in static exports). Retries absorb environmental variance
-  // but leave flakiness in the report rather than hiding it. True regressions fail even after retries.
-  // Local runs (retries 0) expose flakiness directly.
+  // Local/dev remains sequential because Turbopack compiles routes on demand. CI's read-only
+  // static export has no compilation race or shared writable state, so it uses both runner CPUs.
+  // Pre-enable proof (2026-09-01): the same slowest 107-test shard passed with zero retries
+  // in 4.4 minutes locally at two workers; its preceding one-worker GitHub run took 9.7 minutes.
+  workers: resolvePlaywrightWorkers(process.env),
+  // CI retries absorb runner variance but remain visible in the report; true regressions fail
+  // after every attempt. Local runs keep retries at zero so flakiness is exposed directly.
   retries: process.env.CI ? 2 : 0,
   reporter: [['list']],
   /**

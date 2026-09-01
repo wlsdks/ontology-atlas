@@ -77,6 +77,15 @@ skip.
 | Playwright suite | Exact source-to-spec mappings run those specs once on shard 1. An unmapped rendered input (`app/`, TSX/CSS, messages, public assets) fails closed to the three-shard PR smoke project. Pure TypeScript relies on affected unit evidence unless it has an explicit browser mapping. | Playwright/Next/PostCSS configuration, shared browser helpers, unknown paths, planner changes, and `main` run every project across three shards. |
 | Static export / web surface | These required jobs activate independently only for their declared owners. Their specs are removed from the general targeted list, so the same evidence is not run twice. | Every globally exhaustive plan runs both. |
 
+The browser suite keeps local and dev-server runs at one worker because
+Turbopack compiles routes on demand. Under both `CI` and
+`PLAYWRIGHT_STATIC=1`, each read-only static-export shard uses the two CPUs on
+its runner. This changes scheduling, not test selection: a pre-enable proof ran
+the same slowest 107-test shard with zero retries and 107/107 passes in 4.4
+minutes at two workers; the preceding one-worker GitHub run required 9.7
+minutes for those tests. The contract proves both directions so enabling CI
+without the static-export boundary is RED.
+
 Generated docs-vault output is not treated as an independent runtime change;
 its authored source still selects freshness and documentation evidence.
 Deleted paths participate in classification but are never interpolated into a
@@ -129,6 +138,26 @@ maps every planner/executor/workflow/setup surface to `pnpm test:ci:impact`, the
 full CI registry includes that test, and planner changes force exhaustive
 self-verification. A new top-level namespace therefore fails closed before its
 first test mapping exists instead of silently leaving the detector idle.
+
+### Static CI worker gate probe (2026-09-01)
+
+**Property:** two Playwright workers are licensed only when both CI and the
+read-only static export are active; local and dev-server runs remain at one.
+
+**Inventory:** `playwright.config.ts` contains the repository's only Playwright
+worker setting. The E2E lane executor sets `PLAYWRIGHT_STATIC=1` for every CI
+browser command, while ordinary local commands and the dev web server do not.
+
+**RED → GREEN:** the static-export predicate was removed while retaining the CI
+predicate. The real configuration contract failed exactly on the CI-without-
+static case (`2` received, `1` expected). Restoring the predicate returned all
+28 suite-split assertions to GREEN.
+
+**Idle and automatic wiring:** the contract calls the exported resolver with
+five positive and negative environment combinations and imports the live
+configuration, so an empty scan cannot pass. Every Playwright invocation loads
+that configuration automatically, and `playwright.config.ts` changes promote
+the browser boundary to its exhaustive three-shard sweep.
 
 ## Quick Matrix
 
