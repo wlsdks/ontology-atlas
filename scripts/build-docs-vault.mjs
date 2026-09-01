@@ -252,7 +252,15 @@ const NOT_PRODUCT_DOCS = new Set(['analyses']);
 
 async function walk(dir) {
   const out = [];
-  const entries = await readdir(dir, { withFileTypes: true });
+  // Sorted by name — readdir order is filesystem-enumeration order, which
+  // happens to be byte-sorted on APFS and fresh ext4 checkouts but is not
+  // guaranteed anywhere. Without the sort, content.json key order and the
+  // manifest's insertion-ordered maps depend on the machine, so "same source
+  // regenerates to the same bytes" (this script's stated contract) could
+  // report stale on a current tree (bug sweep 2026-09-01).
+  const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+    a.name < b.name ? -1 : a.name > b.name ? 1 : 0,
+  );
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
     if (entry.isDirectory() && NOT_PRODUCT_DOCS.has(entry.name)) continue;
