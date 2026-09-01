@@ -31,6 +31,28 @@ describe('remove-relation — 관계 하나를 정확히 덜어낸다', () => {
     assert.deepEqual(plan.next, []);
   });
 
+  it('hand-authored depends_on: aliases read as the dependencies edge family', () => {
+    // Bug sweep 2026-09-01: the remover read only the literal canonical key, so a
+    // doc carrying `depends_on: [x]` answered "this document has no dependencies"
+    // for an edge the map plainly renders. The MCP remover already folds the alias.
+    const plan = planRemoval({ depends_on: ['capabilities/x'] }, 'depends_on', 'capabilities/x');
+    assert.equal(plan.found, true);
+    assert.equal(plan.key, 'dependencies');
+    assert.deepEqual(plan.next, []);
+    assert.deepEqual(plan.aliasKeys, ['depends_on']);
+  });
+
+  it('refs split across dependencies: and depends_on: are one deduped family', () => {
+    const plan = planRemoval(
+      { dependencies: ['capabilities/a'], depends_on: ['capabilities/b', 'capabilities/a'] },
+      'depends_on',
+      'capabilities/b',
+    );
+    assert.equal(plan.found, true);
+    assert.deepEqual(plan.next, ['capabilities/a']);
+    assert.deepEqual(plan.aliasKeys, ['depends_on']);
+  });
+
   it('domain 은 배열이 아니라 하나짜리 값이다', () => {
     const plan = planRemoval({ domain: 'domains/core' }, 'domain', 'domains/core');
     assert.equal(plan.found, true);

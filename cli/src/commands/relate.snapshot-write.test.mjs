@@ -164,3 +164,36 @@ test('relate는 관계 배열을 읽은 뒤 사람이 source를 삭제하면 con
     assert.equal(existsSync(join(root, '.ontology-atlas', 'activity.jsonl')), false, '거절된 write를 활동 로그에 남겼다');
   });
 });
+
+test('relate consolidates a hand-authored depends_on: alias instead of splitting the edge family', { concurrency: false }, async () => {
+  // Bug sweep 2026-09-01: reading only the canonical key appended a second
+  // `dependencies:` array beside `depends_on:` — one edge type split across two
+  // keys that MCP would have folded.
+  await withVault(async ({ root, source }) => {
+    writeFileSync(
+      source,
+      `---\nuid: ${SOURCE_UID}\nslug: a\nkind: capability\ntitle: Agent source\ndepends_on: [c]\n---\n\n# Agent source\n`,
+      'utf-8',
+    );
+    writeFileSync(
+      join(root, 'c.md'),
+      documentFor({ uid: '00000000-0000-4000-8000-000000000003', slug: 'c', title: 'C' }),
+      'utf-8',
+    );
+    const check = {
+      ...relationCheck(),
+      relation: 'depends_on',
+      proposedAction: { tool: 'add_relation', args: { from: 'a', to: 'b', type: 'depends_on' } },
+    };
+    const result = await captureCommand(() =>
+      runRelate(['a', 'b', 'depends_on', root, '--json', '--why', 'a needs b'], {
+        runRelationCheckQuery: async () => check,
+      }),
+    );
+    assert.equal(result.code, 0, `stdout: ${result.stdout}\nstderr: ${result.stderr}`);
+    const { frontmatter } = readDocFrontmatter(root, 'a');
+    assert.deepEqual(frontmatter.dependencies, ['b', 'c']);
+    assert.equal(frontmatter.depends_on, undefined, 'the alias key must be consolidated away');
+  });
+});
+

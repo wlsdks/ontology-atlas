@@ -46,6 +46,31 @@ const RELATION_KEY = Object.freeze({
   domain: 'domain',
 });
 
+// Legal authoring aliases per canonical key (mcp/src/vault.mjs
+// NEIGHBOR_KEY_ALIASES). Reading only the canonical key appended a second
+// array under `dependencies:` beside a hand-authored `depends_on:` — one edge
+// type split across two keys that MCP would have folded (bug sweep 2026-09-01).
+const LEGACY_KEYS = Object.freeze({ dependencies: ['depends_on'] });
+
+/** Refs under the canonical key plus its authoring aliases. */
+export function relationRefsFor(frontmatter, key) {
+  const refs = [];
+  for (const k of [key, ...(LEGACY_KEYS[key] ?? [])]) {
+    const value = frontmatter[k];
+    if (Array.isArray(value)) refs.push(...value);
+  }
+  return refs;
+}
+
+/** Writes the canonical key and deletes any alias key it consolidated. */
+export function relationKeyPatch(frontmatter, key, nextRefs) {
+  const patch = { [key]: nextRefs };
+  for (const legacy of LEGACY_KEYS[key] ?? []) {
+    if (frontmatter[legacy] !== undefined) patch[legacy] = null;
+  }
+  return patch;
+}
+
 const DEFAULT_RUNTIME = Object.freeze({
   runRelationCheckQuery,
   renderRelationCheckResult,
@@ -204,22 +229,18 @@ function writeRelation(rootPath, { from, to, relation, why = null }, runtime) {
   if (key === 'domain') {
     return runtime.writeFrontmatterKey(rootPath, from, 'domain', to, { expectedRevision: revision });
   }
-  const existing = Array.isArray(frontmatter[key]) ? frontmatter[key] : [];
+  const existing = relationRefsFor(frontmatter, key);
   const next = normalizeRelationRefs([...existing, to]);
+  const patch = relationKeyPatch(frontmatter, key, next);
   // --why: the relation and its rationale in one write (mirrors MCP add_relation's why).
   if (typeof why === 'string' && why.trim()) {
     const notes = frontmatter.relation_notes && typeof frontmatter.relation_notes === 'object'
       ? { ...frontmatter.relation_notes }
       : {};
     notes[to] = why.trim();
-    return runtime.writeFrontmatterKeys(
-      rootPath,
-      from,
-      { [key]: next, relation_notes: notes },
-      { expectedRevision: revision },
-    );
+    patch.relation_notes = notes;
   }
-  return runtime.writeFrontmatterKey(rootPath, from, key, next, { expectedRevision: revision });
+  return runtime.writeFrontmatterKeys(rootPath, from, patch, { expectedRevision: revision });
 }
 
 function parseArgs(args) {
