@@ -203,10 +203,14 @@ The fifteen canonical Don'ts live in `docs/DESIGN-SYSTEM.md`, section
 and `tests/contract/design-donts-parity.contract.test.ts` reconciles `dont:`
 markers. Sentences may be rewritten or translated; marker slugs may not drift.
 
-## Changing the specification requires `design-system`
+## Changing the specification requires `design-contract`
 
-Changes to any file below convene the `design-system` seat. This list is both the
-human rule and the machine input read by `scripts/lib/design-spec-census.mjs`:
+When a change alters the specification in any file below, declare
+`design-contract` to `pnpm design:route`. The router selects `design-system`
+plus a contrasting seat, a system audit, and a gate probe. File presence alone
+does not convene a council; the census below detects changed vocabulary and
+values. This list is both the human rule and the machine input read by
+`scripts/lib/design-spec-census.mjs`:
 
 - `src/shared/ui/control-class.ts` — cva axes, options, defaults, and field/control value layers
 - `src/shared/ui/controls.tsx` — interactive primitives
@@ -315,11 +319,19 @@ once reached 63.4 KB, 43% gate archaeology. Keep rules here and history there.
 - Never ship stacked floating panels, popup soup, tokenless positioning,
   non-blocking modals, or drag-only discovery. New transient surfaces dismiss or
   recede unrelated ones.
-- Meaningful UI needs Design Guardian evidence: attention winner, typed fact,
-  token contract, motion state, screenshot/WebView evidence, and whether an
-  installed-app proof is required.
+- Every rendered design class goes through `pnpm design:route` and its Computer
+  Use render loop: baseline, one coherent visual slice, fresh accessibility tree
+  and screenshot, correction, then the next slice. A whole screen built from
+  imagination and inspected only at the end is invalid. The router adds
+  geometry, responsive, motion, map, journey, or installed-app instruments only
+  for the failure modes that changed.
 
 ## Motion
+
+A routed `motion` change is not complete without a real macOS screen recording
+through `/motion-verify`, plus a Computer Use capture that binds the recording
+to the reviewed app/window. Static screenshots and headless frame sequences are
+diagnostic fallback only.
 
 - Prefer colour and opacity transitions; minimize transform.
 - Use three semantic durations: `--motion-fast` 120ms for feedback,

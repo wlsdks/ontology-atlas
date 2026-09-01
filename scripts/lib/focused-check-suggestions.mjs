@@ -457,6 +457,21 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:design-gates',
+    reason: 'Atlas design proof routing, iterative Computer Use contract, motion evidence, or selected-seat council policy changed',
+    matches: [
+      /^scripts\/(?:lib\/design-proof-router|design-proof-router)\.mjs$/,
+      /^scripts\/(?:lib\/design-spec-census|check-decision-record)\.mjs$/,
+      /^tests\/contract\/design-(?:proof-router|council|spec-ledger)\.contract\.test\.ts$/,
+      /^docs\/PRODUCT-DESIGN-OPERATING-SYSTEM\.md$/,
+      /^\.(?:claude|agents)\/skills\/(?:design-(?:audit|build|council|directions|system-audit)|motion-verify|responsive-sweep|map-perf|user-walkthrough)\/SKILL\.md$/,
+      /^\.(?:claude|agents)\/agents\/(?:chief|design-(?:lead|system|interaction|motion|infoviz|workbench|responsive|handoff|guardian))\.md$/,
+      /^\.claude\/rules\/design\.md$/,
+      /^AGENTS\.md$/,
+      /^package\.json$/,
+    ],
+  },
+  {
     /*
      * **The script that decides what CI runs had no suggestion mapping of its own**
      * (2026-08-08). `pnpm checks:changed -- scripts/classify-change.mjs` returned "no

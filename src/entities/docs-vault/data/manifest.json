@@ -774,7 +774,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 230399,
+      "wordCount": 231530,
       "updatedAt": "2026-09-01",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -3556,7 +3556,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 531,
+      "wordCount": 591,
       "updatedAt": "2026-09-01",
       "linksOut": [
         "DECISIONS"
@@ -3569,12 +3569,10 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Design gate for Ontology Atlas product work. Use this with PRODUCT-OWNER-OPERATING-SYSTEM.md: PO decides whether the slice matters; this document decides whether the slice is designed well enough to ship. A slice here is one shippable piece of work — small enough to build, and small enough to prove, in one pass. Ontolo",
-      "wordCount": 11170,
-      "updatedAt": "2026-08-23",
-      "linksOut": [
-        "PRODUCT-OWNER-OPERATING-SYSTEM"
-      ]
+      "excerpt": "Atlas-specific design routing. The PO pass decides whether a product slice is worth doing. This system derives which design work and runtime evidence that slice needs. It does not grade taste and it does not make every UI edit hold a council. Atlas exists so a person can recover understanding after agents change code f",
+      "wordCount": 2282,
+      "updatedAt": "2026-09-01",
+      "linksOut": []
     },
     {
       "slug": "PRODUCT-DIRECTION",
@@ -3920,13 +3918,6 @@
         "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
         "context": "and integration round trip are contract specimens, not evidence that Atlas has qualified three real products. `O1.5` in **[`BACKLOG.md`]** owns that independent field qualification. ## Product disclosure boundary There is no new UI in this slice. When `U1.",
         "linkText": "`BACKLOG.md`"
-      }
-    ],
-    "PRODUCT-OWNER-OPERATING-SYSTEM": [
-      {
-        "fromSlug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
-        "context": "# Product Design Operating System > Design gate for Ontology Atlas product work. Use this with > **[`PRODUCT-OWNER-OPERATING-SYSTEM.md`]**: > PO decides whether the slice matters; this document decides whether the slice > is designed well enough to ship. A *",
-        "linkText": "`PRODUCT-OWNER-OPERATING-SYSTEM.md`"
       }
     ],
     "CODEBASE-ONTOLOGY-POSITIONING": [

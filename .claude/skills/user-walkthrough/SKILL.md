@@ -5,9 +5,10 @@ description: Walk one complete journey against the running build with a declared
 
 # User walkthrough
 
-Screen reviews do not prove the continuous north-star path: link → installed app
-→ agent cites the user's own vault nodes in under five minutes. Walk that whole
-path as one task.
+Screen reviews do not prove a journey. When `pnpm design:route` includes this
+skill, walk its declared scope: the changed path for a local journey change, the
+agent-handoff path for a handoff change, or the continuous north-star path for a
+new surface.
 
 ## Authority and limit
 
@@ -79,6 +80,11 @@ population is the product's actual agent user.
 **B. Human journey is a usability inspection.** Use the knowledge profile and a
 running static export or installed app to complete the task end to end. It still
 cannot prove desire.
+
+For every human journey, use the computer-use capability to open the actual app/window and
+capture the accessibility tree and screenshot at the changed or failed step.
+Record the saved path and visible control that owned the next action. Browser
+automation alone does not satisfy the design evidence contract.
 
 ## Where results go
 

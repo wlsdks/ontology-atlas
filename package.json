@@ -89,6 +89,8 @@
     "po:route": "node scripts/po-risk-router.mjs",
     "po:pilot": "node scripts/po-pilot.mjs",
     "test:po": "vitest run tests/contract/po-council.contract.test.ts",
+    "design:route": "node scripts/design-proof-router.mjs",
+    "test:design-gates": "vitest run tests/contract/design-proof-router.contract.test.ts tests/contract/design-council.contract.test.ts tests/contract/design-spec-ledger.contract.test.ts tests/contract/design-build-recipe.contract.test.ts",
     "agents:check": "node cli/src/index.mjs agent-files --english-only && pnpm test:agent-skills",
     "test:agent-skills": "node --test .agents/skills/ontology-bootstrap/scripts/*.test.mjs",
     "test:vault:validate": "node --test scripts/validate-vault-script.test.mjs",

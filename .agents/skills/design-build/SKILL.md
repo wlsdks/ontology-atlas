@@ -29,23 +29,43 @@ Before proposing a dimension, colour, or spacing value:
 The existing height family begins at `--control-h-`. A value invented without
 searching does not extend the system; it creates another one.
 
-## 0-A. Specification changes require `design-system`
+## 0-A. Route specification changes
 
-Convene `design-system` when changing:
+Declare `design-contract` to `pnpm design:route` when changing:
 
 - `src/shared/ui/control-class.ts` axes, options, or defaults;
 - `src/shared/ui/controls.tsx` or `surface.tsx` primitive guarantees;
 - type, leading, radius, shadow, or colour ramps in `app/globals.css`;
 - the “Fixed scale contract” in `.claude/rules/design.md`.
 
-During a 244-control normalization the author alone chose eight tones, seven
+The router selects `design-system` plus a contrasting seat, a design-system
+audit, and `/gate-probe`. During a 244-control normalization the author alone chose eight tones, seven
 shapes, three axes, and their values. Chip sizes fell from fifty to three but one
 screen retained 8–9 heights. A one-author specification is taste, not a system.
 
 ## 0. Choose the shape before building
 
-Run `/design-directions` first for any non-obvious visual, layout, interaction,
-or motion decision. Skip it for a value change inside an already selected shape.
+Run `pnpm design:route` with every observable change class. Run
+`/design-directions` only when its result says `directions=yes`; value changes
+inside a selected shape do not pay for divergence.
+
+## 0-B. Render while building
+
+When the route includes `computer-use-loop`, do not finish a whole screen from
+code or imagination before looking at it.
+
+1. Capture the exact baseline state through the computer-use capability.
+2. Implement one coherent visual slice: one hierarchy, state, or interaction.
+3. Render it in the actual browser, WebView, or installed app.
+4. Request a fresh Computer Use accessibility tree and screenshot; inspect both.
+5. If pixels or the tree expose a geometry question, measure the DOM's computed
+   styles and rects in the browser.
+6. Fix the observed defect before starting the next slice, then repeat.
+
+Keep baseline, material checkpoint, and final screenshot paths. A material
+checkpoint is the smallest visual result that can be judged on its own, not
+every CSS line. Browser automation localizes DOM geometry; it does not replace
+the actual-window Computer Use evidence.
 
 ## 1. Controls
 
@@ -163,15 +183,18 @@ Always begin with:
 
 ```bash
 pnpm checks:changed
+pnpm design:route -- --change=<every-observed-class>
 ```
 
-| Change | Instrument |
-|---|---|
-| any UI | `/design-audit` |
-| motion | `/motion-verify`; no recording means no approval |
-| breakpoint layout | `/responsive-sweep` |
-| graph readability | `node scripts/measure-graph-readability.mjs` |
-| token contrast | `node scripts/measure-contrast.mjs` |
+Run only the proof packet the router returns. Every rendered design class
+includes the completed Computer Use render loop above; the final proof points
+to its baseline, material checkpoints, and final state.
+
+`motion` always includes `/motion-verify` against a real macOS screen recording.
+Static screenshots, duration tokens, and headless frames do not replace it.
+`responsive` measures affected bands; `topology-gesture` uses `/map-perf`;
+`desktop-shell` proves the touched installed-app state. Combine facts when more
+than one failure mode changed.
 
 ## 6. Gates that will stop the change
 

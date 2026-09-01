@@ -10,12 +10,18 @@ frames hide between them. Record the real macOS display, extract uniform frames,
 inspect a phase strip, then measure adjacent-frame change. This method found the
 spotlight ring's speed and braided-orbit defects in 2026-07-23.
 
+Run whenever `pnpm design:route` includes `motion-verify`. This is the completion
+proof for temporal output, not an optional craft review.
+
 ## Preconditions
 
-- The surface is visible on a real monitor. Headless mode cannot be screen-recorded;
-  use sequential Playwright screenshots only as a fallback.
+- The surface is visible on a real monitor. Headless sequential screenshots may
+  diagnose a defect but cannot approve motion; if recording is unavailable,
+  report the proof as deferred.
 - `ffmpeg` is available at `/opt/homebrew/bin/ffmpeg`.
 - Put recordings and frames in an external session scratch directory.
+- Capture the same app/window/state through the computer-use capability so the accessibility
+  owner and screenshot bind the recording to the reviewed surface.
 
 ## 1. Prepare a deterministic state
 
@@ -94,6 +100,8 @@ print(f"mean={mean:.3f} cv={sd/mean:.2f} min={min(diffs):.3f} stalls={len(stalls
 
 ## Report
 
-State recording duration and fps, crop target, stalls and cv, the visual phase-
-strip finding, and before/after values when tuned. Keep raw frames in scratch, not
-the repository.
+State app/window/route, Computer Use screenshot path and accessibility owner,
+recording duration and fps, crop target, stalls and cv, the visual phase-strip
+finding, reduced-motion result, and before/after values when tuned. Keep raw
+recordings and frames in scratch, not the repository. No recording means no
+motion approval.

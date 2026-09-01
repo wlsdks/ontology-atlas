@@ -1,6 +1,6 @@
 ---
 name: design-directions
-description: Sketch three or four structurally different UI directions in text before code, include the status quo, and let the owner choose one before the design council reviews it.
+description: When Atlas design routing finds a structural commitment, sketch three different directions in text before code, including the status quo, and let the owner choose one.
 ---
 
 # Design directions before implementation
@@ -17,9 +17,8 @@ Prototyping Leads to Better Design Results, More Divergence, and Increased
 Self-Efficacy” (ACM TOCHI 2010), found parallel alternatives superior to serial
 iteration on quality, divergence, and self-efficacy.
 
-`/design-council` is serial critique of one built thing. This skill cheaply
-creates the alternatives before that review. A 2026-08-03 council spent two
-rounds reaching two shapes that could have been sketched in three lines first.
+`/design-council` reviews one built direction. This skill cheaply creates the
+alternatives before that review when the route identifies a structural choice.
 
 ## Ownership
 
@@ -46,16 +45,18 @@ Different values inside the same shape are adjustments, not directions.
 
 ## When
 
-Run before any non-trivial visual, layout, interaction, or motion change and
-before `/design-council`. Skip token swaps, copy edits, spacing nudges, and other
-value changes inside an already selected shape.
+Run only when `pnpm design:route` returns `directions=yes`: a new surface,
+information architecture, primary interaction model, or primary attention
+model. Do not invoke it for generic “non-trivial” work, token swaps, copy edits,
+spacing/layout fixes inside a selected shape, responsive repairs, or motion
+tuning.
 
 ## Rules
 
 1. Use text and ASCII only—no code, build, or screenshot. A built option wins by
    sunk cost.
-2. Produce three or four directions. Two is a forced binary; five makes choosing
-   the task.
+2. Produce exactly three directions. Two is a forced binary; more turns choosing
+   into the task.
 3. One direction is **the status quo**. “Change nothing” must be able to win.
 4. Each direction states the observation that would prove it wrong.
 5. Do not propose a forbidden pattern. Request a rule change separately.
@@ -80,7 +81,7 @@ value changes inside an already selected shape.
 **Cost**: <what is lost>
 **Wrong if**: <observable falsifier>
 
-### C. … / D. …
+### C. …
 
 **Existing measurements**: <numbers or none>
 **Recommendation**: <one direction and why; the owner still chooses>
@@ -90,10 +91,10 @@ value changes inside an already selected shape.
 
 1. Record the selected direction in one implementation-grade sentence.
 2. Implement only that sentence and retain rejected directions as history.
-3. Convene `/design-council` when the selected change is expensive or difficult
-   to reverse; it reviews the chosen direction rather than selecting one.
-4. Finish with `/design-audit`, plus `/motion-verify` or `/responsive-sweep` when
-   those axes changed.
+3. Convene `/design-council` only when the same route says it is required; it
+   reviews the chosen built direction rather than selecting one.
+4. Run only the route's proof packet. Every rendered result includes an Orca
+   Computer Use capture; motion includes a real screen recording.
 
 ## Failure modes
 

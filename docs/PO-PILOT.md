@@ -62,6 +62,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | # | Date | Decision | Door | Route | Atlas outcome | Changes | Boundaries | Risk | First | Rebuttal | Delta | Unique contribution |
 |---:|---|---|---|---|---|---|---|---|---:|---:|---|---|
 | 1 | 2026-09-01 | Replace self-graded routing with an Atlas outcome contract and measured sunset | one-way | review | explain | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 2 | 2026-09-01 | Replace stacked design ceremony with fact-derived proof routing | two-way | solo | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 
 ## Outcome updates
 
@@ -69,3 +70,5 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 |---:|---|---|---|---|---|
 | 1 | 2026-09-01 | pending | pending | pending | pending |
 | 1 | 2026-09-01 | pass | pending | no | pending |
+| 2 | 2026-09-01 | pending | pending | pending | pending |
+| 2 | 2026-09-01 | pass | pending | no | held |
