@@ -9,7 +9,8 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react';
-import { Link } from '@/i18n/navigation';
+import { Link, useRouter } from '@/i18n/navigation';
+import { getTopologyProjectHref } from '@/entities/project';
 import { useSearchParams } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
@@ -197,6 +198,7 @@ function DocsVaultContent() {
     searchParams?.get('sample') === 'dogfood' ? 'dogfood' : null;
   const queryDogfood = searchParams?.get('dogfood') ?? null;
   const localVault = useLocalVault();
+  const router = useRouter();
   const hydrated = useHydrated();
   const installedShell = hydrated && isDesktopShell();
   const localWinsInitialSource =
@@ -228,8 +230,11 @@ function DocsVaultContent() {
       }),
     [insightsReturnTab, insightsReviewId],
   );
+  // The map contract: every link promising the map targets /topology. `/?p=`
+  // hard-navigated to the locale-less root, whose redirect dropped the query
+  // (bug sweep 2026-09-01).
   const getProjectHref = useCallback(
-    (slug: string) => `/?p=${encodeURIComponent(slug)}`,
+    (slug: string) => getTopologyProjectHref(slug),
     [],
   );
   const [selectedSlug, setSelectedSlug] = useState<string | null>(querySlug);
@@ -1850,12 +1855,15 @@ function DocsVaultContent() {
         label: t('commands.projectsList'),
         icon: '←',
         onRun: () => {
-          if (typeof window !== 'undefined')
-            window.location.href = projectsListHref;
+          // Locale-aware navigation — the static export has no root
+          // `/projects/` route, so the old locale-less hard navigation landed
+          // on the exported 404 page (bug sweep 2026-09-01).
+          router.push(projectsListHref);
         },
       },
     ];
   }, [
+    router,
     view,
     source,
     installedShell,
