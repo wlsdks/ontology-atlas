@@ -57,12 +57,9 @@
     },
     {
       "key": "frontend:runtime:devDependencies:package.json:@typescript/native",
-      "reason": "The macOS Knip graph cannot observe the intentionally retained native TypeScript compiler during the TypeScript 6 compatibility window.",
+      "reason": "Knip cannot observe the intentionally retained native TypeScript compiler during the TypeScript 6 compatibility window.",
       "consumer": "docs/TECH-STACK.md",
-      "witness": "@typescript/native",
-      "platforms": [
-        "darwin"
-      ]
+      "witness": "@typescript/native"
     },
     {
       "key": "cli:runtime:dependencies:package.json:ontology-atlas-mcp",

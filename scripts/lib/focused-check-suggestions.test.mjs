@@ -113,6 +113,8 @@ describe('focused check suggestions', () => {
     const paths = [
       'src/shared/lib/example.ts',
       'scripts/quality/dead-code/check.mjs',
+      'scripts/quality/dead-code/baseline.json',
+      'scripts/quality/dead-code/exceptions.json',
       'cli/src/lib/example.mjs',
       'mcp/src/example.mjs',
       'mcp/scripts/verify.mjs',

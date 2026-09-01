@@ -63,7 +63,7 @@ const RULES = [
     reason: 'dead-code analyzer scope, configuration, package, or implementation changed',
     matches: [
       /^(?:app|src)\/.+\.(?:[cm]?[jt]sx?|css)$/,
-      /^scripts\/(?:quality\/dead-code\/|.+\.(?:mjs|js))$/,
+      /^scripts\/(?:quality\/dead-code\/.+|.+\.(?:mjs|js))$/,
       /^cli\/(?:src\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
       /^mcp\/(?:src\/|scripts\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
       /^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|next\.config\.ts|tsconfig(?:\.[^/]+)?\.json|vitest\.config\.ts|playwright\.config\.ts|postcss\.config\.mjs)$/,
