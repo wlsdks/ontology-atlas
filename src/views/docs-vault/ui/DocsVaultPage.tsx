@@ -70,6 +70,8 @@ import {
   type SimilarNodeMatch,
 } from '@/shared/lib/similar-node-title';
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
+import { useReviewQueue } from '../lib/use-review-queue';
+import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
@@ -114,6 +116,7 @@ import {
   loadStaticVaultHeadings,
   resolveStaticVaultSource,
   type StaticVaultHeadings,
+  reviewDigest,
 } from '@/entities/docs-vault';
 import type { VaultCommand } from '@/widgets/docs-vault';
 
@@ -1452,6 +1455,84 @@ function DocsVaultContent() {
   // The cache is keyed by mtime, so after a polling diff rebuild only changed documents are re-read.
   const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } =
     useDocsBodyIndex({ docs: collectionDocs, getDocContent });
+  // What a person still has to look at. Built from the whole folder rather than
+  // the active collection filter: a node reserved for a person does not stop
+  // waiting because the list is currently showing something else.
+  const reviewQueue = useReviewQueue({
+    docs: manifest.docs,
+    getDocContent,
+    bundledContent: source === 'local' ? undefined : staticVault.content,
+  });
+  const selectedReviewRow = useMemo(
+    () => reviewQueue.find((row) => row.slug === selectedSlug),
+    [reviewQueue, selectedSlug],
+  );
+  const [reviewBusy, setReviewBusy] = useState(false);
+  /**
+   * The person's own write. It goes through the same conflict-guarded
+   * `updateFrontmatter` every other human edit uses — the MCP server refuses this
+   * write precisely so that it happens here, where a click proves a person.
+   *
+   * Confirming records **what** was approved, not only that it was: the digest is
+   * computed from the file as it is at this moment, so a later edit by anything —
+   * an agent, another tool, a text editor — reads as changed without needing that
+   * writer's cooperation.
+   */
+  const handleReviewWrite = useCallback(
+    async (intent: 'confirm' | 'release') => {
+      if (!selectedDoc || !getDocContent) return;
+      setReviewBusy(true);
+      try {
+        const patch: Record<string, string | null> =
+          intent === 'release'
+            ? {
+                review_state: null,
+                review_note: null,
+                // A node confirmed earlier and reserved later keeps its old
+                // receipt; clearing only the state left `reviewedBy` beside
+                // `state: null`, which reads as an approval nobody holds
+                // (Codex review, 2026-09-02).
+                reviewed_by: null,
+                reviewed_at: null,
+                reviewed_digest: null,
+              }
+            : {
+                review_state: 'confirmed',
+                // The reader's own calendar day, not UTC's. Measured 2026-09-02
+                // at 01:30 KST: `toISOString()` stamped 2026-09-01, so a person
+                // who had just pressed the button saw their review dated
+                // yesterday. `sv-SE` is the ISO-shaped locale, so this is the
+                // same `YYYY-MM-DD` shape without a manual pad.
+                reviewed_at: new Date().toLocaleDateString('sv-SE'),
+                reviewed_digest: await reviewDigest(
+                  selectedDoc.frontmatter,
+                  parseFrontmatter(await getDocContent(selectedDoc.slug)).body,
+                ),
+                // A reservation is answered by the act of confirming; leaving the
+                // question behind it would keep asking something already decided.
+                review_note: null,
+              };
+        await localVault.updateFrontmatter(selectedDoc.slug, patch, {
+          expectedMtime: selectedDoc.mtime,
+        });
+      } catch (err) {
+        // **A rethrow into `void` is a silent failure** (Codex review,
+        // 2026-09-02). Both callers discard this promise, so a read, permission,
+        // crypto, or write error left the screen looking as if the review had
+        // landed. The person is told here, where the failure is known, and the
+        // error still reaches the console for a developer.
+        if (err instanceof VaultConflictError) {
+          toast.show(t('dialog.vaultConflict'), 'error');
+        } else {
+          toast.show(t('review.writeFailed'), 'error');
+        }
+        console.error('[docs-vault] review write failed', err);
+      } finally {
+        setReviewBusy(false);
+      }
+    },
+    [selectedDoc, getDocContent, localVault, toast, t],
+  );
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
     () => ({
       all: manifest.docs.length,
@@ -1934,6 +2015,7 @@ function DocsVaultContent() {
 
   const sidebarBody = (
     <DocsSidebarBody
+      reviewQueue={reviewQueue}
       pinnedSlugs={collectionPinnedSlugs}
       recentSlugs={collectionRecentSlugs}
       selectedSlug={selectedSlug}
@@ -2566,7 +2648,21 @@ function DocsVaultContent() {
                             agentActivityStatus={localVault.agentActivityStatus}
                             selfEditTimestamps={localVault.selfEditTimestamps}
                           />
-                        <DocMetaBar doc={selectedDoc} />
+                        <DocMetaBar
+                          doc={selectedDoc}
+                          {...(selectedReviewRow ? { reviewRow: selectedReviewRow } : {})}
+                          {...(canEditCurrent && getDocContent
+                            ? {
+                                review: {
+                                  reserved:
+                                    selectedDoc.frontmatter.review_state === 'human_decides',
+                                  busy: reviewBusy,
+                                  onConfirm: () => void handleReviewWrite('confirm'),
+                                  onRelease: () => void handleReviewWrite('release'),
+                                },
+                              }
+                            : {})}
+                        />
                         <DocsVaultViewer
                           key={`${source}:${selectedDoc.slug}`}
                           doc={selectedDoc}

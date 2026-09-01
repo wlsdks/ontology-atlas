@@ -2578,6 +2578,58 @@
       "slug": "what-still-outranks-all-of-this"
     }
   ],
+  "benchmark/FINDINGS-2026-09-02-review-marks": [
+    {
+      "depth": 1,
+      "text": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)",
+      "slug": "findings-can-a-frontmatter-review-mark-constrain-an-agent-2026-09-02"
+    },
+    {
+      "depth": 2,
+      "text": "What was asked",
+      "slug": "what-was-asked"
+    },
+    {
+      "depth": 2,
+      "text": "Method",
+      "slug": "method"
+    },
+    {
+      "depth": 2,
+      "text": "Results",
+      "slug": "results"
+    },
+    {
+      "depth": 2,
+      "text": "Two findings the probe was not looking for",
+      "slug": "two-findings-the-probe-was-not-looking-for"
+    },
+    {
+      "depth": 2,
+      "text": "What this measured, and what it did not",
+      "slug": "what-this-measured-and-what-it-did-not"
+    },
+    {
+      "depth": 2,
+      "text": "Conclusion carried into the decision",
+      "slug": "conclusion-carried-into-the-decision"
+    },
+    {
+      "depth": 2,
+      "text": "Adversarial review of the implementation (2026-09-02, Codex)",
+      "slug": "adversarial-review-of-the-implementation-2026-09-02-codex"
+    },
+    {
+      "depth": 3,
+      "text": "Still open after that review",
+      "slug": "still-open-after-that-review"
+    },
+    {
+      "depth": 3,
+      "text": "Examined and found correct",
+      "slug": "examined-and-found-correct"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -6965,6 +7017,11 @@
       "depth": 2,
       "text": "기록 형식",
       "slug": "기록-형식"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — A documented convention is a courtesy, not a boundary: human review moves to the call path, and drift is detected rather than trusted",
+      "slug": "2026-09-02-a-documented-convention-is-a-courtesy-not-a-boundary-human-review-moves-to-the-call-path-and-drift-is-detected-rather-than-trusted"
     },
     {
       "depth": 2,

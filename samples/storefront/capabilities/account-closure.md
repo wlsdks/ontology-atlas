@@ -9,6 +9,8 @@ description: "When a shopper taps the close-account button, the account locks an
 domain: domains/customer
 dependencies: [capabilities/order-lookup]
 elements: []
+review_state: human_decides
+review_note: "How long payment records stay after closure is a legal retention call, not something the source can answer."
 ---
 
 # Account Closure

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-08-29",
+  "generatedAt": "2026-09-02",
   "docs": [
     {
       "slug": "architecture/storefront-services",
@@ -80,12 +80,14 @@
         "dependencies": [
           "capabilities/order-lookup"
         ],
-        "elements": []
+        "elements": [],
+        "review_state": "human_decides",
+        "review_note": "How long payment records stay after closure is a legal retention call, not something the source can answer."
       },
       "headings": [],
       "excerpt": "When a shopper taps the close-account button, the account locks and personal data is erased, while order and payment records stay for the legally required period. Closure is deciding what to erase and what to keep, and the erasing waits for live orders and refunds to finish first.",
       "wordCount": 51,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -190,12 +192,16 @@
         ],
         "elements": [
           "elements/cart-session"
-        ]
+        ],
+        "review_state": "confirmed",
+        "reviewed_by": "dana",
+        "reviewed_at": "2026-08-20",
+        "reviewed_digest": "35a595417e7295a4803263108087de2f"
       },
       "headings": [],
       "excerpt": "Holds what a shopper intends to buy without committing them or the store to anything, and survives the tab being closed. Adding to the cart does not hold stock; that only happens when payment begins, so an item can sell out while it sits here.",
       "wordCount": 48,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -1117,12 +1123,16 @@
         ],
         "elements": [
           "elements/refund-record"
-        ]
+        ],
+        "review_state": "confirmed",
+        "reviewed_by": "dana",
+        "reviewed_at": "2026-08-20",
+        "reviewed_digest": "7cbd27546f035f35ebcb16888c8e27da"
       },
       "headings": [],
-      "excerpt": "Sends settled money back after the fact, in the amount and to the method the original payment used. When the original path no longer works, points go back first because they are certain and instant, and what cannot be returned is escalated honestly instead of faked.",
-      "wordCount": 49,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Sends settled money back after the fact, in the amount and to the method the original payment used. When the original path no longer works, points go back first because they are certain and instant, and what cannot be returned is escalated honestly instead of faked. A refund may cover part of an order. The remaining li",
+      "wordCount": 88,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {

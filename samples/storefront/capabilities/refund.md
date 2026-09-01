@@ -9,8 +9,18 @@ description: "Sends settled money back after the fact, in the amount and to the 
 domain: domains/payment
 dependencies: [capabilities/payment-cancel]
 elements: [elements/refund-record]
+review_state: confirmed
+reviewed_by: dana
+reviewed_at: 2026-08-20
+reviewed_digest: 7cbd27546f035f35ebcb16888c8e27da
 ---
 
 # Refund Processing
 
 Sends settled money back after the fact, in the amount and to the method the original payment used. When the original path no longer works, points go back first because they are certain and instant, and what cannot be returned is escalated honestly instead of faked.
+
+## Partial refunds
+
+A refund may cover part of an order. The remaining lines keep their original
+payment state, and the record carries both amounts so a later reconciliation can
+tell a partial refund from a failed full one.

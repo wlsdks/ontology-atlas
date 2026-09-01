@@ -55,6 +55,7 @@ function renderSidebar(
   const view = render(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
       <DocsSidebarBody
+        reviewQueue={[]}
         pinnedSlugs={[]}
         recentSlugs={[]}
         selectedSlug={null}
@@ -155,7 +156,8 @@ describe("DocsSidebarBody — #22 아이콘 행: 검색 토글 + 카운트", () 
     render(
       <NextIntlClientProvider locale="ko" messages={koMessages}>
         <DocsSidebarBody
-          pinnedSlugs={[]}
+          reviewQueue={[]}
+        pinnedSlugs={[]}
           recentSlugs={[]}
           selectedSlug={null}
           docsBySlug={new Map()}

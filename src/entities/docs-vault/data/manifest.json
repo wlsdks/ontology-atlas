@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-01",
+  "generatedAt": "2026-09-02",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -428,6 +428,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/FINDINGS-2026-09-02-review-marks",
+      "path": "docs/benchmark/FINDINGS-2026-09-02-review-marks.md",
+      "title": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "A pre-implementation probe for the proposed human-judgment layer: before adding any schema field, MCP contract, or screen, measure whether a plain-Markdown review mark actually changes agent behaviour. Nothing in the product was changed to run this. The marks were hand-authored, exactly as an FDE with a text editor wou",
+      "wordCount": 1550,
+      "updatedAt": "2026-09-02",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/README",
       "path": "docs/benchmark/README.md",
       "title": "Benchmark — does the ontology actually help AI agents?",
@@ -774,8 +786,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 232339,
-      "updatedAt": "2026-09-01",
+      "wordCount": 233751,
+      "updatedAt": "2026-09-02",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
         "benchmark/results/2026-08-31-gb-r3-regrade-summary",
@@ -1346,12 +1358,14 @@
         "domain": "domains/onboarding-and-shell",
         "elements": [],
         "path": "src/features/app-update",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "review_state": "human_decides",
+        "review_note": "Does this belong with onboarding-and-shell, or in a distribution domain beside desktop-download-decision? The two share one release gate (scripts/check-hosted-download-surface.mjs imports validateHostedUpdaterManifest), so splitting this one alone would put both halves of that gate in different domains."
       },
       "headings": [],
       "excerpt": "The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types. Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings,",
       "wordCount": 260,
-      "updatedAt": "2026-08-24",
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -3583,8 +3597,8 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 591,
-      "updatedAt": "2026-09-01",
+      "wordCount": 643,
+      "updatedAt": "2026-09-02",
       "linksOut": [
         "DECISIONS"
       ]
@@ -5808,6 +5822,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-08-31-two-graders",
             "title": "The difference is smaller than the ruler — 2026-08-31-gb-r3"
+          },
+          {
+            "name": "FINDINGS-2026-09-02-review-marks",
+            "path": "benchmark/FINDINGS-2026-09-02-review-marks",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-09-02-review-marks",
+            "title": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)"
           },
           {
             "name": "README",

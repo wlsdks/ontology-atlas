@@ -25,6 +25,9 @@ import { join, relative, dirname, resolve, sep } from 'node:path';
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
 import {
   NODE_ELIGIBILITY_GATE,
+  REVIEW_NOTE_KEY,
+  REVIEW_STATE_HUMAN_DECIDES,
+  REVIEW_STATE_KEY,
   flatSlugIssue,
   generateNodeUid,
   inspectMergedUids,
@@ -1952,8 +1955,59 @@ function createMissingParents(path, createdDirectories) {
   }
 }
 
+/**
+ * `review_state: human_decides` on the document at `filePath`, as a refusal
+ * sentence — or null when the file is absent, unparseable, or unreserved.
+ *
+ * Absent is not reserved: a plan that creates a file cannot be stepping on a
+ * person's reservation. Unparseable is not reserved either; a file this module
+ * cannot read has a different problem, and inventing a reservation for it would
+ * block writes nobody reserved.
+ */
+function reservedForHumanIssue(filePath) {
+  if (typeof filePath !== 'string' || !existsSync(filePath)) return null;
+  let frontmatter;
+  try {
+    frontmatter = parseFrontmatter(readFileSync(filePath, 'utf8')).frontmatter ?? {};
+  } catch {
+    return null;
+  }
+  if (frontmatter[REVIEW_STATE_KEY] !== REVIEW_STATE_HUMAN_DECIDES) return null;
+  const note = frontmatter[REVIEW_NOTE_KEY];
+  const slug = typeof frontmatter.slug === 'string' ? frontmatter.slug : filePath;
+  return (
+    `Refused: ${slug} carries ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES}, so it is reserved for a person` +
+    ' and this change would rewrite it.' +
+    (note ? ` What they have to decide: ${note}` : '') +
+    ' Report it and let the person decide; only they release the reservation.'
+  );
+}
+
 export function applyAllOrNothing(plan, options = {}) {
   if (!Array.isArray(plan) || plan.length === 0) return { applied: 0 };
+
+  /*
+   * ⓿ **Every file the plan touches, not only the one the tool named**
+   * (Codex review, 2026-09-02).
+   *
+   * Each write tool checked its own operand for `review_state: human_decides`
+   * and stopped there. But rename, reclassify, and merge redirect backlinks,
+   * which emits writes to **documents nobody named** — so a reserved node could
+   * be rewritten as collateral by an operation aimed at its neighbour, and the
+   * refusal that guarded the front door never saw it.
+   *
+   * Guarding here rather than in each handler is the point: this is the one
+   * place every multi-file plan passes through, so a tool added later inherits
+   * the refusal instead of having to remember it. The check reads the file as it
+   * is now, refuses the whole plan, and writes nothing — a partially applied
+   * plan around a reserved document would be worse than either outcome.
+   */
+  if (options.allowReservedTargets !== true) {
+    for (const entry of plan) {
+      const reserved = reservedForHumanIssue(entry.path);
+      if (reserved) throw new Error(reserved);
+    }
+  }
 
   /*
    * ⓪ **A plan that writes and then deletes the same file drops the delete.**

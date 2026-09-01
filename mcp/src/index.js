@@ -208,6 +208,15 @@ import {
   localeLabelCodes,
   agentCreatedBy,
   CREATED_BY_KEY,
+  HUMAN_ONLY_REVIEW_KEYS,
+  REVIEW_NOTE_KEY,
+  REVIEW_STATE_CONFIRMED,
+  REVIEW_STATE_HUMAN_DECIDES,
+  REVIEW_STATE_KEY,
+  REVIEW_STATES,
+  REVIEWED_AT_KEY,
+  REVIEWED_BY_KEY,
+  reviewCurrentness,
   NODE_UID_PATTERN,
   flatSlugIssue,
   mergeNodeIdentityHistory,
@@ -7416,6 +7425,7 @@ function getConcept({ slug, uid, body }, context = {}) {
       describes: doc.frontmatter.describes || [],
     },
     outgoingEdges,
+    review: describeReview(doc),
     // In a read-modify-write flow the caller passes this straight through as the
     // `expected_mtime` of a later patch_concept / delete_concept, which is what
     // makes external-change detection work. Filesystem mtime, in ms.
@@ -7734,6 +7744,147 @@ function requireValidFrontmatterPatch(frontmatter) {
         'Patching an existing node is not authorship; leave the field as it is (or absent, which means unknown).',
     );
   }
+  requireAgentWritableReviewFields(frontmatter);
+}
+
+/**
+ * The human-judgment half of a patch, on the one call path that is provably an
+ * agent (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`).
+ *
+ * Measured, with the rule written in the vault's own `AGENTS.md`: one of three
+ * model tiers deleted a live `review_state: human_decides` and replaced it with
+ * `review_state: confirmed` plus a `reviewed_by` name it had never been given.
+ * A documented convention is honoured in proportion to model capability, so the
+ * refusal has to live here, where the call path — not the prompt — decides.
+ *
+ * ⚠️ **What this is not.** It is a lane guard, not authentication. It decides
+ * who may write *through this server*; an agent with ordinary file tools edits
+ * the Markdown directly and never meets it, and the binding is an unkeyed hash
+ * anyone can recompute. So a stamp here means "no Atlas write tool produced
+ * this", never "a person did" — and nothing in this product may say otherwise
+ * (Codex review, 2026-09-02). What survives regardless is the Git diff: every
+ * such edit is visible, attributable, and revertable, which is the same trust
+ * model `forbidden.md` already uses for declarative extensions.
+ *
+ * The asymmetry is deliberate and is the whole mechanism:
+ *
+ *   - **Raising is allowed.** An agent that cannot settle a question may write
+ *     `review_state: human_decides` and a `review_note`. That is the behaviour
+ *     the product wants, and refusing it would leave an agent with no way to
+ *     hand work back.
+ *   - **Clearing and confirming are refused.** Both assert that a person acted.
+ *     Nothing in the file afterwards distinguishes an agent-typed `confirmed`
+ *     from a person-typed one, which is exactly why this cannot be a default an
+ *     instruction can override.
+ *
+ * This gate covers writes that come through this server. It cannot reach a
+ * direct file edit, and it is not described anywhere as if it could — the
+ * durable half of the design is `reviewDigest`, which needs no cooperation.
+ */
+function requireAgentWritableReviewFields(frontmatter) {
+  for (const key of HUMAN_ONLY_REVIEW_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(frontmatter, key)) continue;
+    throw new Error(
+      `frontmatter.${key} records a person's review, so Atlas write tools do not set it — ` +
+        'an agent writing it would be asserting the review, not recording it. ' +
+        `If you cannot settle this node yourself, set ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES} with a ${REVIEW_NOTE_KEY} instead.`,
+    );
+  }
+  if (!Object.prototype.hasOwnProperty.call(frontmatter, REVIEW_STATE_KEY)) return;
+  const state = frontmatter[REVIEW_STATE_KEY];
+  if (state === REVIEW_STATE_HUMAN_DECIDES) return;
+  if (state === null || state === undefined || state === '') {
+    throw new Error(
+      `frontmatter.${REVIEW_STATE_KEY} cannot be cleared from this path — a reservation is released by the person who made it. ` +
+        'Report the node instead; leaving it in place is the correct outcome of an agent turn.',
+    );
+  }
+  if (state === REVIEW_STATE_CONFIRMED) {
+    throw new Error(
+      `frontmatter.${REVIEW_STATE_KEY}: ${REVIEW_STATE_CONFIRMED} states that a person judged this node, so Atlas write tools do not set it. ` +
+        `Set ${REVIEW_STATE_HUMAN_DECIDES} with a ${REVIEW_NOTE_KEY} if you want a person to look at it.`,
+    );
+  }
+  throw new Error(
+    `frontmatter.${REVIEW_STATE_KEY} must be ${REVIEW_STATE_HUMAN_DECIDES} on this path (${REVIEW_STATES.join(' | ')} are the only values).`,
+  );
+}
+
+/**
+ * The node itself is reserved — refuse the whole write, not just its review keys.
+ *
+ * A reservation that only protected its own frontmatter would be worthless: the
+ * meaning a person reserved lives in the body and the relations, and an agent
+ * rewriting those while leaving the marker intact is the failure this exists to
+ * stop. Every write tool that names an existing node runs this before touching
+ * disk, so the refusal cannot be reached by choosing a different tool.
+ */
+/**
+ * The node as it is on disk, or `null` when it is not there yet.
+ *
+ * A missing file is not an error here: the reservation guard asks "is this node
+ * reserved", and a node that does not exist cannot be. Its own write path
+ * reports the missing file with the message that fits that operation.
+ */
+function readDocIfPresent(slug) {
+  try {
+    return readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, slug));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * What a person has ruled on this node — the half a following agent has to be
+ * able to retrieve, or the reservation is only a screen decoration.
+ *
+ * `currentness` is the answer the call-path gate cannot give, because a direct
+ * file edit never passes through this server. It is recomputed from the file on
+ * every read, so an approval that no longer describes its node says so without
+ * anyone having noticed the change or cooperated in reporting it.
+ *
+ * **`digestNow` was here and was removed** (Codex review, 2026-09-02). It was
+ * returned so a human-proving path could bind an approval with the same function
+ * this server checks it with. But this server's caller *is* the agent, and the
+ * binding is an unkeyed hash: handing over the value that makes a stamp look
+ * current is handing over the forgery. The app computes its own through the
+ * contract-tested twin, and nothing else needs it.
+ */
+function describeReview(doc) {
+  const frontmatter = doc?.frontmatter ?? {};
+  const state = frontmatter[REVIEW_STATE_KEY] ?? null;
+  const note = frontmatter[REVIEW_NOTE_KEY] ?? null;
+  const currentness = reviewCurrentness(frontmatter, doc?.body ?? '');
+  return {
+    state,
+    ...(note ? { note } : {}),
+    ...(frontmatter[REVIEWED_BY_KEY] ? { reviewedBy: frontmatter[REVIEWED_BY_KEY] } : {}),
+    ...(frontmatter[REVIEWED_AT_KEY] ? { reviewedAt: frontmatter[REVIEWED_AT_KEY] } : {}),
+    currentness,
+    ...(state === REVIEW_STATE_HUMAN_DECIDES
+      ? {
+          agentGuidance:
+            'A person reserved this node. Do not write it — report it and let them decide. Atlas write tools refuse it.',
+        }
+      : {}),
+    ...(currentness === 'changed-since-review'
+      ? {
+          agentGuidance:
+            'This node changed after a person confirmed it, so the approval no longer describes what is here. Treat the meaning as unreviewed and say so.',
+        }
+      : {}),
+  };
+}
+
+function requireNodeNotReservedForHuman(doc, operation) {
+  const state = doc?.frontmatter?.[REVIEW_STATE_KEY];
+  if (state !== REVIEW_STATE_HUMAN_DECIDES) return;
+  const note = doc?.frontmatter?.[REVIEW_NOTE_KEY];
+  throw new Error(
+    `${operation} refused: ${doc?.slug ?? 'this node'} carries ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES}, so it is reserved for a person.` +
+      (note ? ` What they have to decide: ${note}` : '') +
+      ' Report it and let the person decide; only they release the reservation.',
+  );
 }
 
 /**
@@ -8045,6 +8196,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   }
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relation');
   // Both endpoints are verified to exist in the vault. Without this a dangling
   // reference is silently appended to a frontmatter array when an agent sends a
   // typo or a hallucinated slug; now it surfaces as a clean error. Beyond direct
@@ -8207,6 +8359,7 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
   if (!key) throw new Error(formatAllowedValueError('type', type, RELATION_TYPES));
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'remove_relation');
   if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
   if (!canonicalTo) throw new Error(missingSlugMessage('Target slug does not exist in vault', to));
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
@@ -8263,6 +8416,7 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalOldTo = resolveExistingVaultSlug(oldTo);
   const canonicalNewTo = resolveExistingVaultSlug(newTo);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'replace_relation');
   if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
   if (!canonicalOldTo) throw new Error(missingSlugMessage('Old target slug does not exist in vault', oldTo));
   if (!canonicalNewTo) throw new Error(missingSlugMessage('New target slug does not exist in vault', newTo));
@@ -8477,6 +8631,7 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
       throw new Error('title must be a non-empty string.');
     }
   }
+  requireNodeNotReservedForHuman(readDocIfPresent(slug), 'patch_concept');
   const { filePath, mintedUid } = updateDoc(VAULT_ROOT, slug, {
     frontmatter,
     body,
@@ -11081,6 +11236,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (!diskOldSlug) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }
+  requireNodeNotReservedForHuman(readDocIfPresent(diskOldSlug), 'rename_concept');
   const canonicalTarget = canonicalDiskSlug(VAULT_ROOT, newSlug);
   if (canonicalTarget && canonicalTarget !== newSlug) {
     throw new Error(
@@ -11094,6 +11250,14 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     throw new Error(
       `Target slug already exists: "${newSlug}". Pass overwrite: true to replace it.`,
     );
+  }
+  // **The destination is a write too** (Codex review, 2026-09-02). Guarding only
+  // the source left `overwrite: true` as a door: the reserved document at the
+  // destination was read, then replaced with the source's bytes, and its
+  // reservation went with it. A refusal that covers the operand but not the
+  // casualty is not a refusal.
+  if (targetExists) {
+    requireNodeNotReservedForHuman(readDocIfPresent(newSlug), 'rename_concept');
   }
 
   const sourcePath = slugToPath(VAULT_ROOT, diskOldSlug);
@@ -11230,6 +11394,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     throw new Error(`domain is required when reclassifying to kind "${newKind}".`);
   }
   const canonicalOld = resolveExistingVaultSlug(slug);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalOld ?? slug), 'reclassify_concept');
   if (!canonicalOld) throw new Error(missingSlugMessage('Source slug does not exist in vault', slug));
   const canonicalNew = newSlug || canonicalOld;
   if (canonicalNew !== canonicalOld && vaultSlugExists(VAULT_ROOT, canonicalNew)) throw new Error(`Target slug already exists: "${canonicalNew}".`);
@@ -11330,7 +11495,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   if (!diskFromSlug) {
     throw new Error(missingSlugMessage('fromSlug does not exist in vault', fromSlug));
   }
+  requireNodeNotReservedForHuman(readDocIfPresent(diskFromSlug), 'merge_concepts');
   const diskIntoSlug = canonicalDiskSlug(VAULT_ROOT, intoSlug);
+  requireNodeNotReservedForHuman(readDocIfPresent(diskIntoSlug), 'merge_concepts');
   if (!diskIntoSlug) {
     throw new Error(missingSlugMessage('intoSlug does not exist in vault', intoSlug));
   }
@@ -11447,6 +11614,30 @@ const ABSORB_BACKUP_SUFFIX = '.pre-absorb.bak';
 // path; core plan logic lives in ./absorb.mjs (mirrored at
 // cli/src/lib/absorb.mjs, kept in lock-step by
 // tests/contract/absorb.contract.test.ts).
+/**
+ * `review_state: human_decides` on the file `absorb_document` was pointed at.
+ *
+ * Absorption is the one write path whose target is named by absolute path rather
+ * than by slug, so it never reaches the slug-based guard or the plan guard. A
+ * file that is not a reserved node returns null and absorption proceeds.
+ */
+function reservedSourceIssue(absolutePath) {
+  let frontmatter;
+  try {
+    frontmatter = parseFrontmatter(readFileSync(absolutePath, 'utf-8')).frontmatter ?? {};
+  } catch {
+    return null;
+  }
+  if (frontmatter[REVIEW_STATE_KEY] !== REVIEW_STATE_HUMAN_DECIDES) return null;
+  const note = frontmatter[REVIEW_NOTE_KEY];
+  const slug = typeof frontmatter.slug === 'string' ? frontmatter.slug : absolutePath;
+  return (
+    `${slug} carries ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES}, so it is reserved for a person and absorbing it would rewrite it` +
+    (note ? ` — what they have to decide: ${note}` : '') +
+    '. Report it and let the person decide.'
+  );
+}
+
 function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = false }) {
   requireNonBlankString(filePath, 'filePath');
   requireOptionalBoolean(confirm, 'confirm');
@@ -11471,6 +11662,11 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     ...(existsSync(backupPath)
       ? [`backup already exists and would be overwritten: ${backupPath}`]
       : []),
+    // **Absorption rewrites its source**, and a source can be a vault node a
+    // person reserved (Codex review, 2026-09-02). It does not go through the
+    // multi-file plan guard, so the refusal has to be stated here. A backup
+    // makes the rewrite recoverable; it does not make it permitted.
+    ...(reservedSourceIssue(abs) ? [reservedSourceIssue(abs)] : []),
   ];
   const raw = readFileSync(abs, 'utf-8');
   const sourceLabel = basename(abs).replace(/\.md$/i, '');
@@ -11516,6 +11712,16 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     };
   }
 
+  // **The dry-run branch reports; this branch blocks.** `blockedReasons` is
+  // assembled above for the preview and never consulted here — each condition is
+  // re-thrown on the write path individually. A refusal added to the list alone
+  // would read as enforced and write anyway, which is how this one was found
+  // (Codex review, 2026-09-02: the first fix landed in the list and the test
+  // still recorded `ok: true, dryRun: false`).
+  const reservedSource = reservedSourceIssue(abs);
+  if (reservedSource) {
+    throw new Error(`absorb_document blocked: ${reservedSource}`);
+  }
   if (outsideRepo && !allowOutsideRepo) {
     throw new Error(
       `absorb_document blocked: source file is outside repoRoot (${canonicalRepoRoot}): ${abs}. ` +
@@ -11633,6 +11839,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   slug = diskSlug;
   filePath = slugToPath(VAULT_ROOT, slug);
   const sourceDoc = readDoc(VAULT_ROOT, filePath);
+  requireNodeNotReservedForHuman(sourceDoc, 'delete_concept');
   // Ambiguous-tail referrers included: a doc whose ref merely *could* mean this
   // node still blocks an un-forced delete (bug sweep 2026-09-01).
   const backlinks = findBacklinks(VAULT_ROOT, slug, { includeAmbiguousTailRefs: true });
