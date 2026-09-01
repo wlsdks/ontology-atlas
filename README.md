@@ -802,6 +802,11 @@ explains the workflow; [development checks](docs/DEVELOPMENT-CHECKS.md) owns the
 full gate reference, and [map testability](docs/MAP-TESTABILITY.md) owns canvas
 performance, readability, contrast, and browser instrumentation.
 
+CI follows the same focused-first boundary: it classifies the diff before any
+Playwright dependency or browser setup, keeps all five branch-protected E2E
+statuses visible, and reserves the full browser sweep for rendered-surface
+changes and every push to `main`.
+
 For Markdown changes, that selector includes `pnpm docs:language`. For source,
 test, configuration, and historical-prototype changes, it includes
 `pnpm source:language`. Together they keep English canonical prose and comments

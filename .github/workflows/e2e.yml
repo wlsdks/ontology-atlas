@@ -26,9 +26,11 @@
 # **due to fixed costs, returns diminish quickly.** Choose 3 (543 → 200s, 63% reduction).
 # If there is a reason to slice finer later, just extend the `shard` array and update `/3` accordingly.
 #
-# The five jobs do not wait for each other — the classification (`classify-change.mjs`) script
-# uses only node built-ins, so running it separately per job costs 0s. If you group front-end jobs
-# with `needs:`, that job's setup time serializes in front of the whole thing.
+# Change classification is a separate, checkout-only job. It adds a few seconds in
+# front of rendered-surface changes, but it prevents five required checks from each
+# installing pnpm, Chromium, system libraries, and the app before discovering there
+# is nothing to test. The protected check names still start on every PR; they fail
+# closed if classification fails and otherwise skip only the expensive steps.
 name: E2E smoke
 
 on:
@@ -48,6 +50,26 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  changes:
+    name: E2E change scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      runtime: ${{ steps.classify.outputs.runtime }}
+      browser: ${{ steps.classify.outputs.browser }}
+      e2e: ${{ steps.classify.outputs.e2e }}
+    steps:
+      # Change classification uses `git merge-base`, so a shallow checkout would
+      # fail open into the full suite and erase the intended scope boundary.
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Classify change
+        id: classify
+        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
+
   # ── Static export only layer — cannot catch with dev ──────────────────────────
   #
   # Measured 2026-07-28: same-route navigation in the workshop (browse · create transition)
@@ -57,7 +79,13 @@ jobs:
   # suite targets dev, without this job, regressions of this class would pass green forever.
   static-export:
     name: Playwright (static export)
+    needs: changes
+    # Keep this branch-protected status alive when classification fails, so the
+    # missing verdict becomes RED rather than a skipped-success bypass.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    env:
+      RUN_PLAYWRIGHT: ${{ github.event_name != 'pull_request' || needs.changes.outputs.runtime == 'true' || needs.changes.outputs.browser == 'true' }}
     # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
     # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
     # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
@@ -65,25 +93,29 @@ jobs:
     # needed for retries.
     timeout-minutes: 30
     steps:
-      # fetch-depth: 0 is required — change classification uses `git merge-base`. With a shallow clone,
-      # the base cannot be found, opening "run all" and rendering the gate meaningless. Checkout cannot
-      # be placed inside a composite action — local actions must already exist in the workspace to load.
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
+      - name: Require change classification
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::E2E change classification failed; refusing to turn a missing verdict into a green required check"
+          exit 1
 
-      - uses: ./.github/actions/setup-playwright
-        id: setup
+      - name: Checkout
+        if: env.RUN_PLAYWRIGHT == 'true'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Playwright
+        if: env.RUN_PLAYWRIGHT == 'true'
+        uses: ./.github/actions/setup-playwright
 
       - name: Static export e2e (studio navigation)
-        if: >-
-          steps.setup.outputs.runtime == 'true'
-          || steps.setup.outputs.browser == 'true'
-          || github.event_name != 'pull_request'
+        if: env.RUN_PLAYWRIGHT == 'true'
         run: pnpm test:e2e:static
         env:
           CI: true
+
+      - name: Skip Playwright setup
+        if: env.RUN_PLAYWRIGHT != 'true'
+        run: echo "No runtime change — skipped Playwright dependencies, browser, build, and test"
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -103,7 +135,11 @@ jobs:
   # it always runs**, and on main push, it always runs even if the classifier cannot find a comparison base.
   web-smoke:
     name: Playwright (web surface)
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    env:
+      RUN_PLAYWRIGHT: ${{ github.event_name != 'pull_request' || needs.changes.outputs.runtime == 'true' || needs.changes.outputs.browser == 'true' }}
     # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
     # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
     # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
@@ -111,27 +147,31 @@ jobs:
     # needed for retries.
     timeout-minutes: 30
     steps:
-      # fetch-depth: 0 is required — change classification uses `git merge-base`. With a shallow clone,
-      # the base cannot be found, opening "run all" and rendering the gate meaningless. Checkout cannot
-      # be placed inside a composite action — local actions must already exist in the workspace to load.
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
+      - name: Require change classification
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::E2E change classification failed; refusing to turn a missing verdict into a green required check"
+          exit 1
 
-      - uses: ./.github/actions/setup-playwright
-        id: setup
+      - name: Checkout
+        if: env.RUN_PLAYWRIGHT == 'true'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Playwright
+        if: env.RUN_PLAYWRIGHT == 'true'
+        uses: ./.github/actions/setup-playwright
 
       # The deployed web is the static export (deploy-pages) — smoke also targets it.
       # When targeting dev, on-demand compilation took dozens of seconds for the first request.
       - name: Web surface smoke
-        if: >-
-          steps.setup.outputs.runtime == 'true'
-          || steps.setup.outputs.browser == 'true'
-          || github.event_name != 'pull_request'
+        if: env.RUN_PLAYWRIGHT == 'true'
         run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts
         env:
           CI: true
+
+      - name: Skip Playwright setup
+        if: env.RUN_PLAYWRIGHT != 'true'
+        run: echo "No runtime change — skipped Playwright dependencies, browser, build, and test"
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -167,11 +207,15 @@ jobs:
   # Jobs are split so that if the web breaks, you do not need to dig through logs; just seeing the job name tells you.
   #
   # Changes that do not affect rendered pages (agent brief · docs · workflows)
-  # do not launch a browser. The job still ends green, so merge is not blocked —
-  # only the step is skipped.
+  # keep all three required shard statuses, but do not checkout the app or run
+  # Playwright setup. This avoids required-check deadlock without paying browser cost.
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/3)
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
+    env:
+      RUN_PLAYWRIGHT: ${{ github.event_name != 'pull_request' || needs.changes.outputs.browser == 'true' }}
     # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
     # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
     # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
@@ -185,16 +229,19 @@ jobs:
       matrix:
         shard: [1, 2, 3]
     steps:
-      # fetch-depth: 0 is required — change classification uses `git merge-base`. With a shallow clone,
-      # the base cannot be found, opening "run all" and rendering the gate meaningless. Checkout cannot
-      # be placed inside a composite action — local actions must already exist in the workspace to load.
-      - name: Checkout
-        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
-        with:
-          fetch-depth: 0
+      - name: Require change classification
+        if: needs.changes.result != 'success'
+        run: |
+          echo "::error::E2E change classification failed; refusing to turn a missing verdict into a green required check"
+          exit 1
 
-      - uses: ./.github/actions/setup-playwright
-        id: setup
+      - name: Checkout
+        if: env.RUN_PLAYWRIGHT == 'true'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - name: Setup Playwright
+        if: env.RUN_PLAYWRIGHT == 'true'
+        uses: ./.github/actions/setup-playwright
 
       # PR gets PR gate (smoke) only — except PRs fixing e2e infrastructure itself and main
       # pushes run all (smoke + post-merge) without project filters.
@@ -206,15 +253,15 @@ jobs:
       # causing three shards each to run all 348 tests for 27 minutes and still turn red (#1178 first run
       # measured). env values are single-line expressions, so this trap is avoided.
       - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
-        if: steps.setup.outputs.browser == 'true'
+        if: env.RUN_PLAYWRIGHT == 'true'
         run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test $PLAYWRIGHT_PROJECT_ARGS --shard=${{ matrix.shard }}/3
         env:
           CI: true
-          PLAYWRIGHT_PROJECT_ARGS: ${{ (github.event_name == 'pull_request' && steps.setup.outputs.e2e != 'true') && '--project=smoke' || '' }}
+          PLAYWRIGHT_PROJECT_ARGS: ${{ (github.event_name == 'pull_request' && needs.changes.outputs.e2e != 'true') && '--project=smoke' || '' }}
 
-      - name: Skip note
-        if: steps.setup.outputs.browser != 'true'
-        run: echo "브라우저가 의존하는 경로 변경 없음 — 전체 Playwright 생략(웹 스모크는 별도 잡에서 판정)"
+      - name: Skip Playwright setup
+        if: env.RUN_PLAYWRIGHT != 'true'
+        run: echo "No browser-dependent change — skipped Playwright dependencies, browser, build, and test"
 
       - name: Upload Playwright report on failure
         if: failure()
