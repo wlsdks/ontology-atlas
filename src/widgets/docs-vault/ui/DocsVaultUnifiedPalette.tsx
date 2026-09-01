@@ -453,6 +453,9 @@ export function DocsVaultUnifiedPalette({
   };
 
   const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Mid-composition keystrokes belong to the IME — the commit-Enter of a
+    // Korean syllable must not run the active row (bug sweep 2026-09-01).
+    if (e.nativeEvent.isComposing) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (rows.length === 0) return;

@@ -269,6 +269,14 @@ function SearchPaletteDialog({
   // Keyboard handling
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
+      /*
+       * Mid-composition keystrokes belong to the IME (same rule as
+       * use-typing-shortcut). Without this, the Enter a Korean/Japanese/Chinese
+       * user presses to COMMIT the syllable selected a row and closed the
+       * palette, navigating to whatever happened to be active (bug sweep
+       * 2026-09-01).
+       */
+      if (e.isComposing) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
