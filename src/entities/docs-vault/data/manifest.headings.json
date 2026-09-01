@@ -3797,6 +3797,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 · v1.0.1: the post-release bug sweep lands",
+      "slug": "2026-09-01-v101-the-post-release-bug-sweep-lands"
+    },
+    {
+      "depth": 2,
       "text": "2026-08-31 · Installed-app crashes leave a trace, and the chat's first suggestions say what they ask",
       "slug": "2026-08-31-installed-app-crashes-leave-a-trace-and-the-chats-first-suggestions-say-what-they-ask"
     },
