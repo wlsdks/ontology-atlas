@@ -1498,14 +1498,19 @@
         "display_ko": "조립 순서 핸드오프",
         "display_en": "Design Build Handoff",
         "domain": "domains/design-system",
-        "elements": [],
+        "elements": [
+          "elements/design-proof-router"
+        ],
         "path": ".claude/skills/design-build/SKILL.md",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "relation_notes": {
+          "elements/design-proof-router": "Design Build Handoff uses the router to turn observable Atlas UI change facts into the smallest required rendered-proof bundle."
+        }
       },
       "headings": [],
-      "excerpt": "The first guide an agent reads when starting to build a screen. \"From command to screen, in the same order\": it prescribes which component to pick, where to get values from, and what to measure after building everything, in sequence. The agent does not assemble things differently each time. You can see which gate catch",
-      "wordCount": 279,
-      "updatedAt": "2026-08-23",
+      "excerpt": "The entry contract that routes an Atlas UI change from observable change facts to the smallest proof bundle before implementation begins. It keeps design work tied to what changed, what a person must be able to judge again, and which rendered evidence can prove that outcome. A person can inspect what an agent actually ",
+      "wordCount": 339,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -2517,6 +2522,28 @@
       "excerpt": "A fail-closed repository helper for concurrent worktrees. It semantically merges only complete dated records prepended to the append-only CHANGELOG and DECISIONS ledgers, refuses historical or unrelated conflicts, rebuilds deterministic docs-vault artifacts, and stages the verified result without continuing the Git ope",
       "wordCount": 41,
       "updatedAt": "2026-08-29",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/design-proof-router",
+      "path": "docs/ontology/elements/design-proof-router.md",
+      "title": "Design Proof Router",
+      "tags": [],
+      "frontmatter": {
+        "uid": "778665c5-7273-436f-a192-e3519f8f8352",
+        "slug": "elements/design-proof-router",
+        "kind": "element",
+        "title": "Design Proof Router",
+        "display_en": "Design Proof Router",
+        "display_ko": "디자인 증거 라우터",
+        "domain": "domains/design-system",
+        "path": "scripts/lib/design-proof-router.mjs",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The Design Proof Router is the deterministic source-checkout classifier behind pnpm design:route. It translates one or more observable Atlas UI change classes into the smallest required proof bundle: build and audit skills, rendered-window instruments, specialist seats, and concrete artifacts. scripts/lib/design-proof-",
+      "wordCount": 116,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -4463,6 +4490,11 @@
         "linkText": "domains/design-system"
       },
       {
+        "fromSlug": "ontology/elements/design-proof-router",
+        "context": "frontmatter · **[domains/design-system]**",
+        "linkText": "domains/design-system"
+      },
+      {
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/design-system]**",
         "linkText": "domains/design-system"
@@ -4533,6 +4565,13 @@
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/local-vault-management]**",
         "linkText": "domains/local-vault-management"
+      }
+    ],
+    "ontology/elements/design-proof-router": [
+      {
+        "fromSlug": "ontology/capabilities/design-build-handoff",
+        "context": "frontmatter · **[elements/design-proof-router]**",
+        "linkText": "elements/design-proof-router"
       }
     ],
     "ontology/elements/download": [
@@ -6313,6 +6352,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/concurrent-ledger-conflict-resolver",
                 "title": "Concurrent Ledger Conflict Resolver"
+              },
+              {
+                "name": "design-proof-router",
+                "path": "ontology/elements/design-proof-router",
+                "type": "doc",
+                "slug": "ontology/elements/design-proof-router",
+                "title": "Design Proof Router"
               },
               {
                 "name": "docs-quick-drawer",
