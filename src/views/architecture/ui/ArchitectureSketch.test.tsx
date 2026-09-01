@@ -5,12 +5,23 @@ import { buildArchitectureLayout, parseArchitectureProfile } from '@/entities/ar
 import { HEXAGONAL_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { buildArchitectureGraph } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
+import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
 import { ArchitectureSketch } from './ArchitectureSketch';
 
-function draw(ledgers: Record<string, RoleLedger> = {}, violatedPairs = new Set<string>()) {
+const OBSERVED_TRAFFIC: ArchitectureRoleEdge[] = [
+  { fromRole: 'adapter', toRole: 'application', count: 12 },
+  { fromRole: 'application', toRole: 'port', count: 7 },
+  { fromRole: 'port', toRole: 'domain', count: 4 },
+];
+
+function draw(
+  ledgers: Record<string, RoleLedger> = {},
+  violatedPairs = new Set<string>(),
+  traffic: readonly ArchitectureRoleEdge[] = [],
+) {
   const graph = buildArchitectureGraph(
     buildArchitectureLayout(parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER as never)),
-    [],
+    traffic,
   );
   return render(
     <ArchitectureSketch
@@ -27,6 +38,9 @@ function draw(ledgers: Record<string, RoleLedger> = {}, violatedPairs = new Set<
         ledger.state === 'clean' ? 'no violations out' : `${ledger.violated} violated`
       }
       ledgerImportsLabel={(count) => `${count} imports out`}
+      contractTrackLabel="Contract"
+      observationTrackLabel="Observation"
+      observationMissingLabel="Not inspected"
       selected={null}
       onSelect={() => {}}
       roleLabel={(id) => id}
@@ -83,7 +97,7 @@ describe('the run control', () => {
      * at 2520ms, 20520ms and 38520ms and a "run" took forty seconds to cross four boxes. A stagger
      * counts places in a queue; a queue place is a small integer.
      */
-    const { container } = draw();
+    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
     fireEvent.click(screen.getByTestId('architecture-graph-run'));
     const steps = [...container.querySelectorAll('[data-edge-kind]')].map((edge) =>
       Number((edge as HTMLElement).style.getPropertyValue('--architecture-run-step')),
@@ -97,11 +111,26 @@ describe('the run control', () => {
 
   it('cannot be pressed again while the flow is playing', () => {
     /* Without this the presses stacked, and nothing on the control said a run was under way. */
-    draw();
+    draw({}, new Set(), OBSERVED_TRAFFIC);
     const button = screen.getByTestId('architecture-graph-run');
     expect(button).not.toBeDisabled();
     fireEvent.click(button);
     expect(button).toBeDisabled();
+  });
+
+  it('makes the measured role sequence visible even when adjacent edge travel is short', () => {
+    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
+    expect(container.querySelector('[data-testid^="architecture-observation-pulse-"]')).toBeNull();
+
+    fireEvent.click(screen.getByTestId('architecture-graph-run'));
+
+    const pulses = [
+      ...container.querySelectorAll('[data-testid^="architecture-observation-pulse-"]'),
+    ];
+    expect(pulses).toHaveLength(3);
+    expect(pulses.every((pulse) => pulse.classList.contains('architecture-observation-pulse'))).toBe(
+      true,
+    );
   });
 
   it('takes the running class off every stroke once the flow ends', () => {
@@ -113,10 +142,16 @@ describe('the run control', () => {
     /* ⚠️ Scope every query to this render's own container. `document.querySelectorAll` also
        reaches the trees the earlier cases left mounted, and those pressed run and never ended —
        so a global query reports the class still present no matter what this case does. */
-    const { container } = draw();
+    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
     fireEvent.click(screen.getByTestId('architecture-graph-run'));
-    const edges = [...container.querySelectorAll('[data-edge-kind][data-edge-drawn="true"]')];
-    expect(edges.every((e) => e.classList.contains('architecture-flow-running'))).toBe(true);
+    const trafficEdges = [
+      ...container.querySelectorAll('[data-edge-kind="traffic"][data-edge-drawn="true"]'),
+    ];
+    const contractEdges = [
+      ...container.querySelectorAll('[data-edge-kind="permitted"][data-edge-drawn="true"]'),
+    ];
+    expect(trafficEdges.every((e) => e.classList.contains('architecture-flow-running'))).toBe(true);
+    expect(contractEdges.some((e) => e.classList.contains('architecture-flow-running'))).toBe(false);
     /* `bubbles: true` is required: React listens at the root, and Testing Library's default
        initialiser for an animation event does not bubble, so the handler would never run. */
     /* `bubbles: true` is required: React listens at the root, and Testing Library's default
@@ -129,7 +164,7 @@ describe('the run control', () => {
      * behaved correctly. Firing exactly one event per stroke also keeps the count honest: firing
      * both names would drive the counter past zero and hide a miscount.
      */
-    for (const edge of edges) {
+    for (const edge of trafficEdges) {
       act(() => {
         edge.dispatchEvent(new Event('webkitAnimationEnd', { bubbles: true }));
       });
@@ -161,6 +196,7 @@ describe('the role ledger', () => {
   it('draws no ledger line and keeps the short box when no record was measured', () => {
     const { container } = draw();
     expect(container.querySelector('[data-testid^="architecture-role-ledger-"]')).toBeNull();
+    expect(screen.queryByTestId('architecture-graph-run')).toBeNull();
     const box = container.querySelector('[data-testid="architecture-graph-box-domain"]');
     expect(box?.getAttribute('data-box-height')).toBe('72');
   });
@@ -194,5 +230,49 @@ describe('the role ledger', () => {
     const line = container.querySelector('[data-testid="architecture-role-ledger-domain"]');
     expect(line?.textContent?.startsWith('⊘')).toBe(true);
     expect(line?.getAttribute('class') ?? '').not.toMatch(/red|green|amber|emerald/);
+  });
+});
+
+describe('the evidence split plane', () => {
+  it('expands into aligned contract and observation lanes only when the full role set fits', () => {
+    const geometry: Record<string, number> = {
+      clientWidth: 1600,
+      scrollWidth: 1600,
+      clientHeight: 700,
+      scrollHeight: 700,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ]),
+    );
+    try {
+      for (const [key, value] of Object.entries(geometry)) {
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get: () => value,
+        });
+      }
+      const { container } = draw();
+      const graph = screen.getByTestId('architecture-graph');
+      expect(graph).toHaveAttribute('data-box-width-mode', 'roomy');
+      expect(graph).toHaveAttribute('data-architecture-axis', 'across');
+      expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(4);
+      expect(screen.getAllByTestId(/^architecture-delta-connector-/)).toHaveLength(4);
+      expect(screen.getByTestId('architecture-graph-box-domain')).toHaveAttribute(
+        'data-box-height',
+        '84',
+      );
+      expect(screen.getByTestId('architecture-role-observation-domain')).toHaveTextContent(
+        'Not inspected',
+      );
+      expect(container.querySelector('[data-testid="architecture-graph-run"]')).toBeNull();
+    } finally {
+      for (const [key, descriptor] of Object.entries(originals)) {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
   });
 });

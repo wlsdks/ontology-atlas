@@ -41,6 +41,9 @@ describe('architecture profile read model', () => {
     expect(prompt).toContain('"profileSlug":"atlas-web"');
     expect(prompt).toContain('architectureChangePlan:v1');
     expect(prompt).toContain('Do not treat unknown as compliant');
+    expect(prompt).toContain('current observation receipt for this revision');
+    expect(prompt).toContain('reviewed profile remains architecture intent');
+    expect(prompt).not.toContain('source of truth for this run');
     expect(prompt).toContain('CLI fallback unavailable from this surface');
     expect(prompt).not.toContain('/absolute/path');
   });

@@ -6,19 +6,15 @@ import {
   Boxes,
   ChevronLeft,
   ChevronRight,
-  CircleHelp,
   FileCode2,
   Footprints,
   PanelRight,
-  ShieldAlert,
   ShieldCheck,
   X,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { Link } from '@/i18n/navigation';
 import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
-import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
@@ -26,20 +22,25 @@ import {
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import type { ArchitectureRecord, ArchitectureRecordStatus } from '@/entities/architecture-record';
+import type { ArchitectureRecord } from '@/entities/architecture-record';
+import type { AcpTurnActivity } from '@/features/acp-session';
 import type { RoleConcept } from '../model/role-concepts';
 import type { RoleSourceModule } from '../model/source-modules';
+import type {
+  ArchitectureAgentRequest,
+  ArchitectureAgentRoute,
+} from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-import { badgeClass } from '@/shared/ui/badge-class';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
-import { Button, EmptyState, RowButton, Surface, buttonVariants } from '@/shared/ui';
+import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
-import { useDraftHandoffRoute } from '../model/use-draft-handoff-route';
 import { ArchitectureFlow } from './ArchitectureFlow';
+import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
+import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
 import { ArchitectureRules } from './ArchitectureRules';
 import { buildArchitectureGraph } from '../model/graph-layout';
 
@@ -78,7 +79,14 @@ function buildArchitectureHref(
   view: { stage: Mode; role: string | null; stageOpen: boolean },
   pathname: string,
 ): string {
-  const query = new URLSearchParams();
+  /* Preserve orthogonal route flags (`guides=off`, test fixtures, future view options). This
+     component owns only `stage` and `role`; rebuilding the whole query made opening an overlay
+     silently erase the caller's state. */
+  const query = new URLSearchParams(
+    typeof window === 'undefined' ? undefined : window.location.search,
+  );
+  query.delete('stage');
+  query.delete('role');
   /*
    * ⚠️ The stage parameter says the panel is open, not merely which stage is selected. A bare
    * address means the drawing has the frame to itself, which is the state this screen opens in.
@@ -114,26 +122,6 @@ function readArchitectureAddress(): { stage: Mode; role: string | null; stageOpe
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 
-/*
- * Receipt-status ink (2026-08-27 council, point 5): the three verdicts wear the existing signal
- * families — success emerald, error red, amber for unknown — and nothing else. The counts always
- * ride beside the verdict; a bare status word is a lie by omission.
- */
-const RECORD_TONE_CLASS: Record<ArchitectureRecordStatus, string> = {
-  conforms:
-    'border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]',
-  violated:
-    'border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a12)] text-[color:var(--color-danger-text)]',
-  unknown:
-    'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-};
-
-const RECORD_STATUS_ICON: Record<ArchitectureRecordStatus, typeof ShieldCheck> = {
-  conforms: ShieldCheck,
-  violated: ShieldAlert,
-  unknown: CircleHelp,
-};
-
 export function ArchitectureWorkbench({
   profiles,
   handoffContexts = {},
@@ -142,6 +130,10 @@ export function ArchitectureWorkbench({
   sourceUnavailableReason = 'browser',
   recordsByProfile = {},
   conceptsByProfile = {},
+  agentRoute = 'clipboard',
+  agentLabel = null,
+  onAgentRequest,
+  agentActivity = null,
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -155,10 +147,12 @@ export function ArchitectureWorkbench({
   recordsByProfile?: Readonly<Record<string, ArchitectureRecord | undefined>>;
   /** Per profile slug, the reviewed concepts joined into each role (the click-open detail). */
   conceptsByProfile?: Readonly<Record<string, Record<string, RoleConcept[]>>>;
+  agentRoute?: ArchitectureAgentRoute;
+  agentLabel?: string | null;
+  onAgentRequest?: (request: ArchitectureAgentRequest) => void;
+  agentActivity?: AcpTurnActivity | null;
 }) {
   const t = useTranslations('architecture');
-  const draftHandoff = useDraftHandoffRoute();
-  const draftRoute = draftHandoff.route;
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
   /*
@@ -177,6 +171,7 @@ export function ArchitectureWorkbench({
    * space beside the canvas. Choosing a stage opens it; choosing the open one again closes it.
    */
   const [stageOpen, setStageOpen] = useState(() => readArchitectureAddress().stageOpen);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   /*
    * ⚠️ **At workbench width the screen stops being a document.** Everything that used to sit in a
    * second grid row — the applied scopes, the pattern and its rules, the receipt, the chosen
@@ -236,6 +231,7 @@ export function ArchitectureWorkbench({
    */
 
   function openInspector(kind: 'role' | 'rules') {
+    setEvidenceOpen(false);
     setInspector(kind);
     if (!stageOpen) return;
     /*
@@ -362,6 +358,15 @@ export function ArchitectureWorkbench({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [inspectorOpen, mode, stageOpen, stepWalk, walking]);
+
+  useEffect(() => {
+    if (!evidenceOpen) return undefined;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setEvidenceOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [evidenceOpen]);
 
 
 
@@ -549,7 +554,7 @@ export function ArchitectureWorkbench({
           title={t('noProfiles')}
           titleAs="h1"
           description={
-            draftRoute === 'clipboard'
+            agentRoute === 'clipboard'
               ? `${t('noProfilesBody')} ${t('draftNoAgentBody')}`
               : t('noProfilesBody')
           }
@@ -600,23 +605,27 @@ export function ArchitectureWorkbench({
            */
           action={(
             <div className="flex flex-wrap items-center justify-center gap-2">
-              {draftRoute === 'clipboard' ? null : (
-                <Link
-                  href="/topology/"
-                  className={cn(buttonVariants({ variant: 'primary', size: 'md' }))}
-                  data-testid="architecture-draft-from-code"
-                  /*
-                   * Written synchronously before the navigation, so the sentence is already in
-                   * session storage by the time the map mounts and consumes it. It stays an anchor
-                   * because the act really is a navigation — the agent dock lives on the map.
-                   */
-                  onClick={() => queueAgentChatIntent(draftHandoff.runtimeId, buildArchitectureDraftPrompt(null))}
+              {agentRoute === 'agent' ? (
+                <Button
+                  variant="primary"
+                  size="md"
+                  disabled={!onAgentRequest}
+                  data-testid="architecture-draft-with-agent"
+                  onClick={() =>
+                    onAgentRequest?.({ kind: 'draft', prompt: buildArchitectureDraftPrompt(null) })
+                  }
                 >
-                  {t('draftFromCode')}
-                </Link>
-              )}
+                  <Bot size={ICON_SIZE.sm} aria-hidden />
+                  {t('draftWithAgent', { agent: agentLabel ?? t('connectedAgent') })}
+                </Button>
+              ) : agentRoute === 'checking' ? (
+                <Button variant="primary" size="md" disabled data-testid="architecture-agent-checking">
+                  <Bot size={ICON_SIZE.sm} aria-hidden />
+                  {t('checkingAgent')}
+                </Button>
+              ) : null}
               <Button
-                variant={draftRoute === 'clipboard' ? 'primary' : 'outline'}
+                variant={agentRoute === 'clipboard' ? 'primary' : 'outline'}
                 size="md"
                 disabled={draftCopyState === 'pending'}
                 data-testid="architecture-copy-draft-handoff"
@@ -684,7 +693,30 @@ export function ArchitectureWorkbench({
           : []),
       ].join(' · ')
     : null;
-  const RecordStatusIcon = conformance ? RECORD_STATUS_ICON[conformance.status] : CircleHelp;
+  const observationTitle = agentActivity
+    ? t(`agentActivity.${agentActivity.state}`)
+    : record && measured
+      ? t('observationRecorded')
+      : t('sourceCheckRequired');
+  const observationBody = agentActivity
+    ? agentActivity.toolName ?? agentActivity.summary ?? t('agentActivity.waiting')
+    : record && measured
+      ? `${
+          measured.source.kind === 'git'
+            ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
+            : t('recordCheckedFolder', { date: recordDate })
+        }${recordDirty ? ` ${t('recordDirty')}` : ''}`
+      : t('sourceCheckNext');
+  const observationNote = agentActivity
+    ? t('agentActivity.volatile')
+    : record && measured
+      ? t('recordCannotConfirm')
+      : undefined;
+  const deltaTitle =
+    conformance && recordCounts
+      ? `${t(`recordStatus.${conformance.status}`)} · ${recordCounts}`
+      : t('deltaUnknown');
+  const deltaStatus = conformance?.status ?? 'missing';
   /* Unique placements: one module two globs both reach is one module, not two. */
   const moduleTotal = selectedModules
     ? new Set(Object.values(selectedModules).flat().map((module) => module.path)).size
@@ -719,6 +751,7 @@ export function ArchitectureWorkbench({
   }
 
   function changeMode(nextMode: Mode) {
+    setEvidenceOpen(false);
     const scroller = layoutScrollRef.current;
     const maxScrollTop = scroller
       ? Math.max(0, scroller.scrollHeight - scroller.clientHeight)
@@ -770,21 +803,6 @@ export function ArchitectureWorkbench({
               <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
                 {selected.title}
               </span>
-              {/*
-                ⚠️ **The drawing says what kind of drawing it is, at rest.** The pattern heading is
-                the answer to the owner's own question — *is this really architecture?* — and the
-                2026-08-28 record put it first for that reason. The dock moved it below a fold that
-                is closed by default, so the name comes back up here, where it costs one phrase
-                (judged 2026-08-30).
-              */}
-              {selected.patterns.length === 0 ? null : (
-                <span
-                  className="text-body text-[color:var(--color-text-quaternary)]"
-                  data-testid="architecture-header-pattern"
-                >
-                  {selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · ')}
-                </span>
-              )}
             </div>
             <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
               {t('description')}
@@ -839,81 +857,81 @@ export function ArchitectureWorkbench({
           data-architecture-mode={mode}
         >
           {/*
-            ⚠️ **What the receipt says stays on the canvas; why it says it moved into the dock.**
-            The status used to live in the second row with the rules, and that row is a dock now —
-            a verdict nobody has opened is a verdict nobody reads, and "unknown is not compliant"
-            is exactly the sentence this screen may not hide. So the stamp sits beside the drawing
-            at every width, and the button beside it opens the rules that explain it.
+            The provenance explanation is available in one press, but it does not own a permanent
+            150px band above the architecture. The rail keeps the three authorities visible at a
+            glance; the full plane opens over the canvas below.
           */}
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 xl:mb-2">
-          {record && conformance && measured ? (
-            <div
-              /* One row, not a stacked block: on the canvas this is a caption strip beside the
-                 drawing, and three stacked lines cost the chain 46px of the height it needs. */
-              className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1"
-              data-testid="architecture-record-status"
-              data-architecture-record-status={conformance.status}
-            >
-              <span
-                className={badgeClass({
-                  shape: 'pill',
-                  className: RECORD_TONE_CLASS[conformance.status],
-                })}
-                data-testid="architecture-record-pill"
+          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
+              <ArchitectureEvidenceRail
+                ariaLabel={evidenceOpen ? t('evidenceClose') : t('evidenceOpen')}
+                expanded={evidenceOpen}
+                onToggle={() => {
+                  const next = !evidenceOpen;
+                  setEvidenceOpen(next);
+                  if (!next) return;
+                  setInspector(null);
+                  if (stageOpen) {
+                    setStageOpen(false);
+                    writeArchitectureAddress({ stage: mode, role: selectedRole, stageOpen: false });
+                  }
+                }}
+                contractLabel={t('contractLabel')}
+                contractTitle={t('contractReviewed')}
+                observationLabel={t('observationLabel')}
+                observationTitle={observationTitle}
+                observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
+                deltaLabel={t('deltaLabel')}
+                deltaTitle={deltaTitle}
+                deltaStatus={deltaStatus}
+              />
+              <Button
+                variant={agentRoute === 'agent' ? 'primary' : 'outline'}
+                size="sm"
+                className="ml-auto shrink-0"
+                disabled={agentRoute === 'checking' || copyState === 'pending'}
+                data-testid="architecture-agent-action"
+                data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
+                onClick={() => {
+                  if (agentRoute === 'agent') {
+                    const kind: ArchitectureAgentRequest['kind'] = !record
+                      ? 'verify'
+                      : conformance?.status === 'conforms'
+                        ? 'change'
+                        : 'verify';
+                    setInspector(null);
+                    setEvidenceOpen(false);
+                    setStageOpen(false);
+                    writeArchitectureAddress({ stage: mode, role: selectedRole, stageOpen: false });
+                    onAgentRequest?.({ kind, prompt: handoff });
+                    return;
+                  }
+                  void copyHandoff();
+                }}
               >
-                <RecordStatusIcon size={ICON_SIZE.sm} aria-hidden />
-                {t(`recordStatus.${conformance.status}`)} · {recordCounts}
+                <Bot size={ICON_SIZE.sm} aria-hidden />
+                {agentRoute === 'checking'
+                  ? t('checkingAgent')
+                  : agentRoute === 'clipboard'
+                    ? copyState === 'pending'
+                      ? t('copyingHandoff')
+                      : copyState === 'copied'
+                        ? t('copiedHandoff')
+                        : copyState === 'error'
+                          ? t('copyHandoffError')
+                          : t('copyAgentTask')
+                    : conformance?.status === 'conforms'
+                      ? t('planChangeWithAgent', { agent: agentLabel ?? t('connectedAgent') })
+                      : conformance
+                        ? t('reviewDeltaWithAgent', { agent: agentLabel ?? t('connectedAgent') })
+                        : t('inspectWithAgent', { agent: agentLabel ?? t('connectedAgent') })}
+              </Button>
+              <span className="sr-only" role="status" aria-live="polite">
+                {agentRoute === 'clipboard' && copyState === 'copied'
+                  ? t('copiedHandoff')
+                  : agentRoute === 'clipboard' && copyState === 'error'
+                    ? t('copyHandoffError')
+                    : ''}
               </span>
-              <p
-                className="text-caption text-[color:var(--color-text-tertiary)]"
-                data-testid="architecture-record-stamp"
-              >
-                {measured.source.kind === 'git'
-                  ? t('recordCheckedGit', { date: recordDate, sha: measured.source.revision })
-                  : t('recordCheckedFolder', { date: recordDate })}
-                {recordDirty ? ` ${t('recordDirty')}` : ''}
-              </p>
-              <p
-                className="text-caption text-[color:var(--color-text-quaternary)]"
-                data-testid="architecture-record-cannot-confirm"
-              >
-                {t('recordCannotConfirm')}
-              </p>
-            </div>
-          ) : (
-            /*
-             * ⚠️ **A warning with no next step is a dead end** (fresh-eyes walkthrough,
-             * 2026-08-28: *"`Source check required` is a dead-end warning. Non-interactive
-             * span, no tooltip, no next step."*). The pill named an absence and stopped
-             * there, while the only sentence explaining it sat far below in the Understand
-             * stage. The line beneath the pill now names the one command that writes the
-             * missing record and the stage that hands the same job to an agent.
-             *
-             * Deliberately not a button: this screen never measures anything — conformance
-             * comes only from `inspect_architecture` or `atlas architecture` — and a control
-             * that looked like it could scan would be a worse lie than the silence it
-             * replaced.
-             */
-            <div
-              className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1"
-              data-testid="architecture-source-check"
-            >
-              <span className={badgeClass({
-                shape: 'pill',
-                className: 'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-              })}>
-                <CircleHelp size={ICON_SIZE.sm} aria-hidden />
-                {t('sourceCheckRequired')}
-              </span>
-              <p
-                className="break-keep text-caption text-[color:var(--color-text-tertiary)]"
-                data-testid="architecture-source-check-next"
-              >
-                {t('sourceCheckNext')}
-              </p>
-            </div>
-            )}
-            <div className="ml-auto flex shrink-0 items-center gap-2">
               {/*
                 ⚠️ **A walk, not a tour with a camera.** The reference flies its viewport from step
                 to step; this canvas holds one scale by contract, so the walk moves the selection
@@ -940,8 +958,8 @@ export function ArchitectureWorkbench({
                 <PanelRight size={ICON_SIZE.sm} aria-hidden />
                 {t('inspectorTitle')}
               </Button>
-            </div>
           </div>
+          <div className="relative flex min-h-0 flex-1">
               {/* The policy sentence is the section description above; do not print it twice. */}
               <ArchitectureFlow
                 profile={selected}
@@ -981,6 +999,9 @@ export function ArchitectureWorkbench({
                           })
                 }
                 ledgerImportsLabel={(count) => t('roleLedgerImports', { count })}
+                contractTrackLabel={t('contractTrackLabel')}
+                observationTrackLabel={t('observationTrackLabel')}
+                observationMissingLabel={t('observationMissingShort')}
                 selected={selectedRole}
                 onSelect={(id) => {
                   const next = selectedRole === id ? null : id;
@@ -1008,6 +1029,54 @@ export function ArchitectureWorkbench({
                 hiddenBelowLabel={(count) => t('hiddenBelow', { count })}
                 runLabel={t('runFlow')}
               />
+              <Surface
+                open={evidenceOpen}
+                as="aside"
+                motion="chrome"
+                origin="top center"
+                id="architecture-evidence-overlay"
+                aria-label={t('evidenceOverlayTitle')}
+                data-testid="architecture-evidence-overlay"
+                className="absolute inset-x-2 top-2 z-20 max-h-[calc(100%-1rem)] overflow-y-auto rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-2 shadow-[var(--shadow-elevation-3)] md:inset-x-3 md:top-3"
+              >
+                <div className="mb-2 flex items-center justify-between gap-3 px-1">
+                  <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                    {t('evidenceOverlayTitle')}
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setEvidenceOpen(false)}
+                    aria-label={t('evidenceClose')}
+                    data-testid="architecture-evidence-close"
+                  >
+                    <span className="text-caption text-[color:var(--color-text-quaternary)]">
+                      {t('inspectorEscHint')}
+                    </span>
+                    <X size={ICON_SIZE.sm} aria-hidden />
+                  </Button>
+                </div>
+                <ArchitectureEvidencePlane
+                  ariaLabel={t('evidencePlaneAria')}
+                  contractLabel={t('contractLabel')}
+                  contractTitle={t('contractReviewed')}
+                  contractBody={t('contractBody', {
+                    pattern: selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · '),
+                    roles: selected.roles.length,
+                    evidence: selected.evidence.length,
+                  })}
+                  observationLabel={t('observationLabel')}
+                  observationTitle={observationTitle}
+                  observationBody={observationBody}
+                  observationNote={observationNote}
+                  observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
+                  deltaLabel={t('deltaLabel')}
+                  deltaTitle={deltaTitle}
+                  deltaBody={conformance ? t('deltaMeasuredBody') : t('deltaUnknownBody')}
+                  deltaStatus={deltaStatus}
+                />
+              </Surface>
+          </div>
         </div>
 
         {/*

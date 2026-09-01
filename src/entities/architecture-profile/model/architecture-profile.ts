@@ -261,7 +261,7 @@ export function buildArchitectureAgentPrompt(
     `Start from the reviewed architecture profile ${profile.slug}.`,
     `Call inspect_architecture with ${JSON.stringify(inspectArguments)} before opening implementation files.`,
     cliFallback,
-    'This UI does not embed a current conformance receipt; the first inspection is the source of truth for this run.',
+    'The visible receipt may be stale. This inspection is the current observation receipt for this revision; the reviewed profile remains architecture intent.',
     'Report the selected scope, declared pattern axes, role mappings, observed dependency coverage, violations, and unknowns.',
     `Apply dependency rules only to the profile's declared import usages: ${profile.dependencyUsages.join(', ')}.`,
     'Do not treat unknown as compliant, and do not infer a named pattern from folder names.',

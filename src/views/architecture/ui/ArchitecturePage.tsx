@@ -1,16 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
   deriveArchitectureProfiles,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import { useDataSourceMode, VaultSourceHydrationBoundary } from '@/entities/vault-session';
+import {
+  useAgentServer,
+  useDataSourceMode,
+  VaultSourceHydrationBoundary,
+} from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
+import {
+  type AcpTurnActivity,
+  runtimeOwnsWriteGate,
+  vaultMcpServers,
+  vaultSelfReadSlot,
+} from '@/features/acp-session';
+import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
@@ -24,7 +35,19 @@ import {
   type SourceDirEntry,
 } from '../model/source-modules';
 import { useArchitectureRecords } from '../model/use-architecture-record';
-import { ArchitectureWorkbench } from './ArchitectureWorkbench';
+import {
+  ArchitectureWorkbench,
+} from './ArchitectureWorkbench';
+import {
+  ArchitectureAgentDock,
+  type ArchitectureAgentOpeningRequest,
+} from './ArchitectureAgentDock';
+import {
+  resolveArchitectureAgentRoute,
+  selectArchitectureAgentRuntimes,
+  type ArchitectureAgentRequest,
+  type ArchitectureAgentRuntime,
+} from '../model/architecture-agent';
 
 /* The runtime never changes inside a session, so the store is a constant read. Same shape as
    `DocsVaultPage`; two surfaces answering "am I the installed app?" differently would be a
@@ -61,12 +84,91 @@ async function verifiedAtlasCliEntry(sourceRoot: string): Promise<string | null>
 export function ArchitecturePage() {
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
+  const agentServer = useAgentServer();
+  const acpBridgeAvailable = useSyncExternalStore(
+    subscribeDesktopRuntime,
+    isAcpBridgeAvailable,
+    readServerDesktopRuntime,
+  );
   const { manifest: staticManifest } = useStaticVaultSource();
   const docs = useMemo(
     () => mode === 'static' ? staticManifest.docs : localVault.manifest?.docs ?? EMPTY_DOCS,
     [localVault.manifest, mode, staticManifest.docs],
   );
   const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
+  const gitVaultPath = localVault.handle ? getTauriVaultRootPath(localVault.handle) ?? null : null;
+  const knownSlugs = useMemo(() => new Set(docs.map((doc) => doc.slug)), [docs]);
+  const [acpRuntimes, setAcpRuntimes] = useState<ArchitectureAgentRuntime[]>([]);
+  const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
+  const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
+  const [agentActivity, setAgentActivity] = useState<AcpTurnActivity | null>(null);
+  const [agentOpeningRequest, setAgentOpeningRequest] =
+    useState<ArchitectureAgentOpeningRequest | null>(null);
+
+  useEffect(() => {
+    if (!acpBridgeAvailable) return;
+    let cancelled = false;
+    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
+      if (cancelled) return;
+      const usable = selectArchitectureAgentRuntimes(list);
+      setAcpRuntimes(usable);
+      setAcpRuntimeId((current) =>
+        current && usable.some((runtime) => runtime.id === current)
+          ? current
+          : (usable[0]?.id ?? null),
+      );
+    };
+
+    void detectAcpRuntimes()
+      .then((fast) => {
+        apply(fast);
+        return detectAcpRuntimes({ probeLogin: true });
+      })
+      .then(apply)
+      .catch(() => apply(null))
+      .finally(() => {
+        if (!cancelled) setRuntimeCheckComplete(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [acpBridgeAvailable]);
+
+  const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
+  const acpMcpServers = useMemo(() => {
+    const registration =
+      vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
+        ? {
+            command: localVault.agentConfigStatus?.codexRegisteredCommand ?? null,
+            validForCurrentVault: localVault.agentConfigStatus?.codexConfigValid === true,
+          }
+        : null;
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+    });
+  }, [
+    acpRuntimeId,
+    agentServer.launch,
+    gitVaultPath,
+    localVault.agentConfigStatus?.codexConfigValid,
+    localVault.agentConfigStatus?.codexRegisteredCommand,
+  ]);
+  const agentRoute = resolveArchitectureAgentRoute({
+    bridgeAvailable: acpBridgeAvailable,
+    runtimeCheckComplete,
+    serverCheckComplete: agentServer.launch !== null || agentServer.reason !== null,
+    runtime: acpRuntime,
+    vaultRoot: gitVaultPath,
+    serverReady: agentServer.launch !== null,
+  });
+  const startAgent = useCallback((request: ArchitectureAgentRequest) => {
+    setAgentOpeningRequest((current) => ({
+      text: request.prompt,
+      nonce: (current?.nonce ?? 0) + 1,
+    }));
+    setAgentOpen(true);
+  }, []);
   /* The click-open meaning layer: reviewed concepts joined into roles, real on every surface. */
   const conceptsByProfile = useMemo(() => {
     const out: Record<string, Record<string, RoleConcept[]>> = {};
@@ -165,15 +267,35 @@ export function ArchitecturePage() {
 
   return (
     <VaultSourceHydrationBoundary>
-      <ArchitectureWorkbench
-        profiles={profiles}
-        handoffContexts={handoffContexts}
-        sourceModulesByProfile={sourceModulesByProfile}
-        sourceListingCapable={sourceListingCapable}
-        sourceUnavailableReason={sourceUnavailableReason}
-        recordsByProfile={recordsByProfile}
-        conceptsByProfile={conceptsByProfile}
-      />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <ArchitectureWorkbench
+          profiles={profiles}
+          handoffContexts={handoffContexts}
+          sourceModulesByProfile={sourceModulesByProfile}
+          sourceListingCapable={sourceListingCapable}
+          sourceUnavailableReason={sourceUnavailableReason}
+          recordsByProfile={recordsByProfile}
+          conceptsByProfile={conceptsByProfile}
+          agentRoute={agentRoute}
+          agentLabel={acpRuntime?.label ?? null}
+          onAgentRequest={agentRoute === 'agent' ? startAgent : undefined}
+          agentActivity={agentActivity}
+        />
+        {acpRuntime && gitVaultPath ? (
+          <ArchitectureAgentDock
+            open={agentOpen}
+            runtime={acpRuntime}
+            runtimes={acpRuntimes}
+            onRuntimeChange={setAcpRuntimeId}
+            vaultRoot={gitVaultPath}
+            mcpServers={acpMcpServers}
+            openingRequest={agentOpeningRequest}
+            knownSlugs={knownSlugs}
+            onTurnActivityChange={setAgentActivity}
+            onClose={() => setAgentOpen(false)}
+          />
+        ) : null}
+      </div>
     </VaultSourceHydrationBoundary>
   );
 }

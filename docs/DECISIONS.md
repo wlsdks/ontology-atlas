@@ -27543,3 +27543,141 @@ widen the specific change class rather than restore universal ceremony.
 **Accountable**: jinan
 
 **Status**: implemented · RED/GREEN gate probes and all 23 changed-path checks passed
+
+---
+
+## 2026-09-02 — Architecture becomes an evidence-bound AI decision loop inside its own workbench
+
+**Pre-review decision**: rebuild the existing `/architecture` destination as an
+AI-guided living architecture workbench. Its first screen should explain the
+purpose of the surface, distinguish reviewed declarations from source
+observations and unknowns, and start the context-appropriate Draft, Change, or
+Verify agent step without sending the person to Map or asking them to interpret
+and paste an opaque prompt. A structural visual direction and any library choice
+remained deliberately undecided before review.
+
+**Atlas outcome**: `orient` — when the codebase owner opens Architecture with
+zero or one profile, they can identify what is human-approved, what a revision-
+stamped inspection observed, what remains unknown, and which agent-assisted
+decision comes next.
+
+**Evidence state**: observed. The owner said the surface was hard to use, did
+not explain what it was trying to do, and did not show how ACP creates an
+architecture from inside the tab. Current browser and installed-app captures
+confirmed the same failure: Plan leaves the architecture drawing unchanged and
+ends in a long English handoff plus a copy button; the zero-profile path either
+navigates to Map with a queued sentence or falls back to the clipboard.
+
+**Change signals**: `positioning`, `substantial-investment`;
+`truth=unchanged; transfer=unchanged; agent-write=unchanged;
+human-correction=affected`.
+
+**Computed route**: one-way · meaning risk · `po-evidence` plus `po-steward`.
+The affected human-correction boundary outranked the positioning and scope
+signals.
+
+**Primary Atlas risk**: a visually impressive builder could make an agent
+proposal, a stale measurement, or an unsupported source gap read as accepted
+architecture truth.
+
+**Confidence**: high for the observed orientation and in-tab handoff failure;
+unknown for any particular renderer, motion language, or structural direction.
+
+**Accountable owner**: jinan. The owner requested the reconstruction and
+delegated research and implementation; the structural direction remains an
+explicit owner selection before code.
+
+**Recovery proof**: given `/architecture` with an eligible connected ACP runtime
+and either (a) no profile or (b) one reviewed profile without a current receipt,
+without Map, source files, terminal, docs, or a copied prompt, the owner can
+explain that Architecture compares human-reviewed implementation roles and
+rules with source-derived inspection receipts; distinguish declared, observed,
+violated, and unknown facts; cite the visible profile and receipt provenance;
+and start the correct in-tab agent step. Fail on guessing, route switching,
+prompt copying, a write before human naming and approval, or motion that presents
+inferred, stale, or unsupported evidence as current or accepted.
+
+**Decision**: build and verify one in-tab `Draft → human name/approve → Change →
+Verify` loop. An eligible ACP runtime may receive the task in this route, but the
+app does not inspect source, infer a pattern or rule, approve meaning, or write a
+profile itself. Markdown and Git remain canonical. The durable handoff is the
+accepted `architecture/<profile>.md` plus a revision-stamped typed inspection
+receipt; canvas state, animation state, and chat prose remain projections.
+Without a receipt, observations remain Unknown. Motion may reveal a reviewed
+rule or replay a measured import crossing only when its source and revision are
+visible; it may not imply runtime causality or continuous current knowledge.
+
+**Decision delta**: evidence-bounded. The requested high-craft 2D and motion
+investment remains in scope, but it must earn itself by restoring the recovery
+proof. No new renderer or dependency is approved by this decision.
+
+**Review footprint**: two independent first positions (`po-evidence`,
+`po-steward`) · zero rebuttal turns · no independence limitation.
+
+**Dissent and falsifier**: the observed defect may be repaired by only an in-tab
+ACP bridge and explicit evidence labels; a broad visual rebuild could obscure
+the already-correct profile/receipt model. Stop or narrow if the bounded opening
+and action slice passes source-hidden recovery without a richer 2D system. Reopen
+if five source-hidden sessions cannot distinguish declaration, observation, and
+Unknown; if three of five drafts are discarded or substantially renamed; if any
+write precedes human naming/approval; or if animation causes stale or unsupported
+evidence to be read as accepted truth.
+
+**Revisit**: after the zero-profile Draft journey and the one-profile
+Verify-to-receipt journey have both been recorded, or immediately on any
+falsifier.
+
+**Outcome**: pending structural direction selection, implementation, and
+runtime recovery proof.
+
+---
+
+## 2026-09-02 — Architecture aligns human contract, delta, and agent observation in one plane
+
+**Selected direction**: B, Evidence-to-contract split plane. At each role's
+stable coordinate, the upper track is the human-reviewed contract, the lower
+track is revision-stamped source observation, and the delta between them names
+violations, unmapped evidence, or an inspection that has not happened. The next
+contextual action opens the existing guarded ACP conversation inside
+`/architecture`; it never navigates to Map as the primary path and never asks the
+person to interpret an opaque prompt before starting.
+
+**Owner selection**: after the three routed directions were presented with B as
+the recommendation and B as the only requested next action, the owner resumed
+the goal by asking the work to proceed. Implementation proceeds as B. The owner may still
+interrupt and overturn it while the build is in progress.
+
+**What is not combined**: A's unchanged canvas-plus-prose-dock hierarchy is
+rejected because the observed failure already falsified it. C's scenario reel is
+rejected because it makes a change timeline precede everyday architecture
+orientation and depends on ordered plan events that are not guaranteed. B does
+not borrow C's reel.
+
+**Implementation boundary**: reuse the current SVG/React renderer and installed
+Framer Motion dependency. Do not add React Flow, ELK, Sprotty, D2, or another
+renderer. Public tools informed the separation of model, view, step, and rule
+verification; their layouts, assets, wording, and motion signatures are not
+copied. The app continues to hand a bounded task to the agent rather than
+calling MCP or inferring architecture itself.
+
+**Motion contract**: reviewed permissions do not move like observed traffic.
+Contract transitions reveal or focus a static rule. Only a stamped observation
+receipt may produce directional traffic motion, and its revision stays visible.
+Violation and Unknown remain legible as shape and text in the reduced-motion
+equivalent. No ambient loop, glow, autonomous camera, or decorative particle
+field is introduced.
+
+**Measured falsifier**: the current SVG envelope occupies about 24.5% of the
+1440-wide flow area, 17.9% at 1920, and 13.2% at 2560. The selected direction is
+wrong if the final plane still loses meaning density as width grows; if a
+source-hidden reader cannot distinguish contract, observation, and Delta in 45
+seconds; if the in-tab ACP action duplicates or weakens the existing write gate;
+or if a stale, unsupported, or missing receipt animates as current evidence.
+
+**Verification**: baseline, material checkpoint, and final actual-window
+captures; full responsive matrix; graph readability and contrast; a real macOS
+motion recording plus reduced-motion result; zero-profile Draft and one-profile
+Verify walkthroughs; selected-seat Design Council; and remeasurement of any
+last-mile correction.
+
+**Status**: selected · implementation and recovery proof pending

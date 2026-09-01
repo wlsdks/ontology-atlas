@@ -254,10 +254,32 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
       });
     expect(await travel(), where).toBeLessThanOrEqual(1);
 
-    /* The dock is closed, and what the receipt says is on the canvas anyway. */
+    /* The dock is closed, and the one-line evidence rail keeps the receipt verdict visible. */
     const dock = page.getByTestId('architecture-inspector');
     await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'false');
+    const evidenceRail = page.getByTestId('architecture-evidence-rail');
+    await expect(evidenceRail, where).toBeVisible();
+    await expect(evidenceRail, where).toContainText(/Inspection receipt|Source check required/);
+
+    /* Full provenance is an on-canvas overlay now; opening it never changes canvas geometry. */
+    const canvasBeforeEvidence = await page
+      .getByTestId('architecture-flow-panel')
+      .evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      });
+    await evidenceRail.click();
     await expect(page.getByTestId('architecture-record-status'), where).toBeVisible();
+    const canvasWithEvidence = await page
+      .getByTestId('architecture-flow-panel')
+      .evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+      });
+    expect(canvasWithEvidence, `${where} evidence overlay reflowed the canvas`).toEqual(
+      canvasBeforeEvidence,
+    );
+    await page.getByTestId('architecture-evidence-close').click();
 
     /* Clicking a role opens the dock, and the dock leads with that role's own answer. */
     await page.locator('[data-testid="architecture-graph-box-widgets"]').click();

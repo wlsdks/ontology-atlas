@@ -2,18 +2,6 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-/*
- * The desktop bridge is a Tauri capability; jsdom has none. Both branches are driven from here so
- * the zero-agent path and the ready-agent path are each measured, rather than only whichever one
- * the test environment happens to produce.
- */
-let bridgeAvailable = false;
-let detectedRuntimes: Array<{ id: string; state: string }> = [];
-vi.mock('@/shared/lib/tauri-acp', () => ({
-  isAcpBridgeAvailable: () => bridgeAvailable,
-  detectAcpRuntimes: async () => (bridgeAvailable ? detectedRuntimes : null),
-}));
-
 import en from '../../../../messages/en.json';
 import {
   parseArchitectureProfile,
@@ -25,7 +13,6 @@ import {
   HEXAGONAL_PROFILE_FRONTMATTER,
 } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { ArchitectureWorkbench } from './ArchitectureWorkbench';
-import { consumeQueuedAgentChatIntent } from '@/shared/lib/agent-chat-intent';
 
 function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
   const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
@@ -90,6 +77,11 @@ function renderWithRecord(record: ReturnType<typeof buildRecord>) {
   );
 }
 
+function openEvidence() {
+  fireEvent.click(screen.getByTestId('architecture-evidence-rail'));
+  return screen.getByTestId('architecture-evidence-overlay');
+}
+
 /*
  * ⚠️ **The empty state is what a real user actually sees, and it is not reachable from a browser.**
  * Both bundled samples carry a profile by contract, and `useDataSourceMode` needs a real folder
@@ -104,18 +96,21 @@ beforeEach(() => {
 });
 
 describe('ArchitectureWorkbench — nothing recorded yet', () => {
-  function renderEmpty() {
+  function renderEmpty(
+    agent: Pick<
+      React.ComponentProps<typeof ArchitectureWorkbench>,
+      'agentRoute' | 'agentLabel' | 'onAgentRequest'
+    > = {},
+  ) {
     return render(
       <NextIntlClientProvider locale="en" messages={en}>
-        <ArchitectureWorkbench profiles={[]} />
+        <ArchitectureWorkbench profiles={[]} {...agent} />
       </NextIntlClientProvider>,
     );
   }
 
   beforeEach(() => {
     window.sessionStorage.clear();
-    bridgeAvailable = false;
-    detectedRuntimes = [];
   });
 
   /*
@@ -131,41 +126,33 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
     await waitFor(() =>
       expect(screen.getByTestId('architecture-copy-draft-handoff')).toBeInTheDocument(),
     );
-    expect(screen.queryByTestId('architecture-draft-from-code')).toBeNull();
+    expect(screen.queryByTestId('architecture-draft-with-agent')).toBeNull();
     expect(screen.getByText(/No agent is connected/)).toBeInTheDocument();
   });
 
-  it('hands the drafting task to the agent when one can actually be started', async () => {
-    bridgeAvailable = true;
-    detectedRuntimes = [{ id: 'claude-acp', state: 'ready' }];
-    renderEmpty();
+  it('starts the drafting task inside Architecture when a guarded agent is available', () => {
+    const onAgentRequest = vi.fn();
+    renderEmpty({ agentRoute: 'agent', agentLabel: 'Claude Code', onAgentRequest });
 
-    const button = await screen.findByTestId('architecture-draft-from-code');
+    const button = screen.getByTestId('architecture-draft-with-agent');
     fireEvent.click(button);
 
-    const queued = consumeQueuedAgentChatIntent();
-    expect(queued, 'the click must leave a task behind, not just a destination').toBeDefined();
-    /*
-     * ⚠️ The runner must be named. Queuing null navigated and opened nothing in the installed app:
-     * a runner that is startable on this machine is not one the map has selected, and on a fresh
-     * mount there is no selection to fall back to, so the sentence was consumed and discarded.
-     */
-    expect(queued?.runtimeId).toBe('claude-acp');
-    expect(queued?.prompt).toContain('Draft a first architecture profile');
+    expect(onAgentRequest).toHaveBeenCalledWith({
+      kind: 'draft',
+      prompt: expect.stringContaining('Draft a first architecture profile'),
+    });
+    expect(window.location.pathname).toBe('/ko/architecture/');
   });
 
   /*
    * `login-needed` is present but will die with an authentication error once a conversation opens —
    * the exact failure that state exists to stop. It must not read as a reachable agent.
    */
-  it('does not offer the agent door to a runner that is only installed, not usable', async () => {
-    bridgeAvailable = true;
-    detectedRuntimes = [{ id: 'claude-acp', state: 'login-needed' }];
-    renderEmpty();
-    await waitFor(() =>
-      expect(screen.getByTestId('architecture-copy-draft-handoff')).toBeInTheDocument(),
-    );
-    expect(screen.queryByTestId('architecture-draft-from-code')).toBeNull();
+  it('keeps the guarded agent action inert while runtime verification is still pending', () => {
+    renderEmpty({ agentRoute: 'checking' });
+    expect(screen.getByTestId('architecture-agent-checking')).toBeDisabled();
+    expect(screen.queryByTestId('architecture-draft-with-agent')).toBeNull();
+    expect(screen.getByTestId('architecture-copy-draft-handoff')).toBeInTheDocument();
   });
 
   /*
@@ -180,22 +167,85 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
 });
 
 describe('ArchitectureWorkbench', () => {
+  it('projects live ACP inspection into the observation lane without calling it a receipt', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench
+          profiles={[profile]}
+          agentActivity={{
+            state: 'verifying',
+            summary: 'Inspect the current source',
+            ontologySlug: null,
+            toolName: 'inspect_architecture',
+          }}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    openEvidence();
+    const observation = screen.getByTestId('architecture-source-check');
+    expect(observation).toHaveTextContent('Agent is inspecting source');
+    expect(observation).toHaveTextContent('inspect_architecture');
+    expect(observation).toHaveTextContent('not an inspection receipt yet');
+    expect(screen.getAllByTestId('architecture-observation-motion')).toHaveLength(2);
+  });
+
+  it('starts an in-tab inspection from the evidence plane instead of navigating to Map', () => {
+    const onAgentRequest = vi.fn();
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench
+          profiles={[profile]}
+          agentRoute="agent"
+          agentLabel="Claude Code"
+          onAgentRequest={onAgentRequest}
+        />
+      </NextIntlClientProvider>,
+    );
+
+    fireEvent.click(screen.getByTestId('architecture-agent-action'));
+    expect(onAgentRequest).toHaveBeenCalledWith({
+      kind: 'verify',
+      prompt: expect.stringContaining('Call inspect_architecture'),
+    });
+    expect(window.location.pathname).toBe('/ko/architecture/');
+  });
+
+  it('opens the evidence overlay without erasing unrelated route state', () => {
+    window.history.replaceState({}, '', '/ko/architecture/?guides=off&fixture=storefront');
+    renderWorkbench();
+
+    openEvidence();
+
+    expect(window.location.search).toBe('?guides=off&fixture=storefront');
+    expect(screen.getByTestId('architecture-evidence-rail')).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+  });
+
   it('opens with a scoped living blueprint instead of an ontology graph', () => {
     renderWorkbench();
     expect(screen.getByRole('heading', { name: 'Architecture' })).toBeInTheDocument();
     expect(screen.getAllByText('Atlas Web Workbench')).toHaveLength(2);
-    /*
-     * Three on purpose, and the header is the one that matters: the dock is closed by default now,
-     * so the pattern heading and the scope rail's caption are both behind a click. The drawing has
-     * to name what kind of drawing it is without one (2026-08-30).
-     */
-    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(3);
-    expect(screen.getByTestId('architecture-header-pattern')).toHaveTextContent(
-      'Feature-Sliced Design',
+    expect(screen.getByTestId('architecture-evidence-rail')).toHaveAttribute(
+      'aria-expanded',
+      'false',
     );
+    openEvidence();
+    /* The on-demand evidence plane owns the pattern identity; the header no longer repeats it. */
+    expect(screen.getAllByText(/Feature-Sliced Design/)).toHaveLength(3);
+    const evidencePlane = screen.getByTestId('architecture-evidence-plane');
+    expect(evidencePlane).toHaveTextContent('Human contract');
+    expect(evidencePlane).toHaveTextContent('Reviewed structure');
+    expect(evidencePlane).toHaveTextContent('Source observation');
+    expect(evidencePlane).toHaveTextContent('Delta');
+    expect(evidencePlane).toHaveTextContent('Unknown until inspection');
     expect(screen.getByTestId('architecture-graph-box-routing')).toBeInTheDocument();
     expect(screen.getByTestId('architecture-graph-box-shared')).toBeInTheDocument();
-    expect(screen.getByText('Source check required')).toBeInTheDocument();
+    expect(screen.getAllByText('Source check required').length).toBeGreaterThanOrEqual(2);
     expect(
       screen.getByText(
         'Rules apply to value imports; type-only imports stay visible without counting as violations.',
@@ -426,7 +476,7 @@ describe('ArchitectureWorkbench', () => {
     const box = screen.getByTestId('architecture-graph-box-features');
     const boxClassName = box.className;
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
     expect(screen.getByText('Architecture-first agent plan')).toBeInTheDocument();
     expect(screen.getByText(/inspect_architecture/)).toBeInTheDocument();
     expect(screen.getByTestId('architecture-graph-box-features')).toBe(box);
@@ -450,7 +500,7 @@ describe('ArchitectureWorkbench', () => {
     });
     scroller.scrollTop = 300;
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
 
     expect(scroller).toHaveAttribute('data-architecture-scroll-reanchor', 'mode-end');
     await waitFor(() => expect(scroller.scrollTop).toBe(400));
@@ -464,24 +514,34 @@ describe('ArchitectureWorkbench', () => {
       vaultRoot: '/Users/dana/Atlas Source/docs/ontology',
       cliEntry: '/Users/dana/Atlas Source/cli/src/index.mjs',
     });
-    fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
     fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('architectureChangePlan:v1'));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("--profile 'atlas-web' --json"));
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
     );
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Copied. Paste it into your agent' }))
-      .toHaveAttribute('data-architecture-copy-state', 'copied'));
+    await waitFor(() => {
+      const buttons = screen.getAllByRole('button', { name: 'Copied. Paste it into your agent' });
+      expect(buttons).toHaveLength(2);
+      for (const button of buttons) {
+        expect(button).toHaveAttribute('data-architecture-copy-state', 'copied');
+      }
+    });
   });
 
   it('keeps a retryable clipboard error on screen', async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
     renderWorkbench();
-    fireEvent.click(screen.getByRole('radio', { name: 'Plan' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
     fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Could not copy. Try again' }))
-      .toHaveAttribute('data-architecture-copy-state', 'error'));
+    await waitFor(() => {
+      const buttons = screen.getAllByRole('button', { name: 'Could not copy. Try again' });
+      expect(buttons).toHaveLength(2);
+      for (const button of buttons) {
+        expect(button).toHaveAttribute('data-architecture-copy-state', 'error');
+      }
+    });
   });
 });
 
@@ -496,6 +556,7 @@ describe('ArchitectureWorkbench', () => {
 describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   it('renders a git receipt as a dated stamp with counts beside the verdict, never a bare status', () => {
     renderWithRecord(buildRecord());
+    openEvidence();
     const pill = screen.getByTestId('architecture-record-pill');
     // The verdict and its accounting are one line: N violations · M edges unmapped · type-only labelled.
     expect(pill).toHaveTextContent('Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges');
@@ -512,6 +573,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
 
   it('marks a dirty git measurement as taken with uncommitted edits', () => {
     renderWithRecord(buildRecord({ source: { kind: 'git', revision: 'a8df66d', dirty: true } }));
+    openEvidence();
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
       'Checked 2026-08-27 at commit a8df66d with uncommitted edits',
     );
@@ -527,6 +589,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
         excludedByUsage: undefined,
       }),
     );
+    openEvidence();
     const stamp = screen.getByTestId('architecture-record-stamp');
     expect(stamp).toHaveTextContent('Checked 2026-08-27 against a content fingerprint of the source folder');
     expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
@@ -538,14 +601,17 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
 
   it('wears the existing signal tone families: error for violated, success for conforms, amber for unknown', () => {
     const { unmount } = renderWithRecord(buildRecord());
+    openEvidence();
     expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-danger');
     unmount();
 
     const conforming = renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
+    openEvidence();
     expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-success');
     conforming.unmount();
 
     renderWithRecord(buildRecord({ status: 'unknown', violationCount: 0 }));
+    openEvidence();
     expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-amber-source');
   });
 
@@ -565,8 +631,15 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
    */
   it('tells the reader what produces the missing measurement, without offering to run it', () => {
     renderWorkbench();
+    openEvidence();
     expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
       'atlas architecture --record',
+    );
+    expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
+      '.ontology-atlas/architecture/profile-slug.json',
+    );
+    expect(screen.getByTestId('architecture-source-check-next')).toHaveTextContent(
+      'never changes the reviewed structure',
     );
     expect(
       screen.getByTestId('architecture-source-check').querySelector('button, a'),
