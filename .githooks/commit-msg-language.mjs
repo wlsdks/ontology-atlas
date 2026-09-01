@@ -9,8 +9,9 @@
 
 import { readFileSync } from 'node:fs';
 
-// Includes the Jamo blocks (U+1100-11FF, U+3130-318F — "ㅋㅋ"/"ㄴㄴ" —
-// U+A960-A97F, U+D7B0-D7FF) and halfwidth Kana/Hangul (U+FF65-FFDC): the
+// Includes the Jamo blocks (U+1100-11FF; U+3130-318F, the compatibility jamo
+// used for laughter shorthand; U+A960-A97F; U+D7B0-D7FF) and halfwidth
+// Kana/Hangul (U+FF65-FFDC): the
 // repo's own markdown-language HANGUL class already counts them, and a
 // jamo-only Korean subject used to pass this gate (bug sweep 2026-09-01).
 // Mirror: cli/src/lib/agent-files.mjs NON_ENGLISH_SCRIPT_RE.

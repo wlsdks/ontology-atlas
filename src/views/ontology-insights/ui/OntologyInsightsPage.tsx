@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
   buildInsightsReturnMarker,
@@ -51,15 +51,17 @@ import {
   buildDoNextQueue,
   fillHandoffTemplate,
   withDoNextVerification,
-  type DoNextHandoffProse,
 } from "../lib/do-next-queue";
 import { buildDuplicatePairs, type DuplicatePairRow } from "../lib/duplicate-pairs";
 import {
   buildDomainChoices,
   buildMeaningGapRows,
   type MeaningGapRow,
-  type MeaningGapProse,
 } from "../lib/meaning-gap-rows";
+import {
+  insightsHandoffProse,
+  type InsightsHandoffProse,
+} from "../lib/handoff-prose";
 import { resolveSessionAbilities } from "../lib/session-abilities";
 import type { QueueSectionKey } from "../lib/queue-work-groups";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
@@ -167,14 +169,13 @@ const RECENT_UPDATES_LIMIT = 8;
 const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
 
 /**
- * Each tab's question, transposed into an execution plan for the agent. The
- * message key per tab — the strings themselves are user-facing clipboard copy
- * and live in the locale files (read via `t.raw`, so the MCP-call braces
- * survive ICU untouched). They used to be hardcoded Korean, so an
- * English-locale user copied Korean operating instructions (bug sweep
- * 2026-09-01).
+ * Each tab's question, transposed into an execution plan for the agent — the
+ * prose key per tab. The strings live in `../lib/handoff-prose` as typed
+ * locale data (their MCP-call braces cannot enter the ICU message catalog).
+ * They used to be hardcoded Korean, so an English-locale user copied Korean
+ * operating instructions (bug sweep 2026-09-01).
  */
-const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, string> = {
+const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
   "do-next": "tabDoNext",
   composition: "tabComposition",
   connections: "tabConnections",
@@ -229,38 +230,10 @@ const INSIGHTS_TAB_BADGE: Record<
  */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
-  // Locale-resolved handoff prose. `t.raw` hands back the template verbatim —
-  // ICU would otherwise treat every MCP-call `{…}` as an argument.
-  const handoffRaw = useCallback(
-    (key: string): string => String(t.raw(`handoffProse.${key}`)),
-    [t],
-  );
-  const handoffProse = useMemo<DoNextHandoffProse>(
-    () => ({
-      verificationGate: handoffRaw("verificationGate"),
-      createDocFirst: handoffRaw("createDocFirst"),
-      doNextUpdate: handoffRaw("doNextUpdate"),
-      doNextUpdateProof: handoffRaw("doNextUpdateProof"),
-      doNextNewDocProof: handoffRaw("doNextNewDocProof"),
-      orphanRelate: handoffRaw("orphanRelate"),
-      orphanFindNeighbors: handoffRaw("orphanFindNeighbors"),
-      orphanProof: handoffRaw("orphanProof"),
-      promotionNewDoc: handoffRaw("promotionNewDoc"),
-      promotionDocumented: handoffRaw("promotionDocumented"),
-      promotionProof: handoffRaw("promotionProof"),
-    }),
-    [handoffRaw],
-  );
-  const meaningGapProse = useMemo<MeaningGapProse>(
-    () => ({
-      verificationGate: handoffRaw("verificationGate"),
-      missingDefinition: handoffRaw("missingDefinition"),
-      missingDefinitionProof: handoffRaw("missingDefinitionProof"),
-      missingDomain: handoffRaw("missingDomain"),
-      missingDomainProof: handoffRaw("missingDomainProof"),
-    }),
-    [handoffRaw],
-  );
+  // Locale-resolved handoff prose — typed locale data in code, not messages:
+  // the templates embed literal MCP-call braces the ICU catalog gate rejects.
+  const locale = useLocale();
+  const handoffProse = useMemo(() => insightsHandoffProse(locale), [locale]);
   const kindLabel = useOntologyKindLabel();
   const edgeTypeLabel = useEdgeTypeLabel();
   const searchParams = useSearchParams();
@@ -427,11 +400,11 @@ export function OntologyInsightsPage() {
   );
   const duplicateHandoff = (row: DuplicatePairRow): string =>
     withDoNextVerification(
-      fillHandoffTemplate(handoffRaw("duplicate"), {
+      fillHandoffTemplate(handoffProse.duplicate, {
         dissolve: row.dissolveSlug,
         keep: row.keepSlug,
       }),
-      fillHandoffTemplate(handoffRaw("duplicateProof"), { keep: row.keepSlug }),
+      fillHandoffTemplate(handoffProse.duplicateProof, { keep: row.keepSlug }),
       handoffProse.verificationGate,
     );
 
@@ -488,9 +461,9 @@ export function OntologyInsightsPage() {
     () =>
       buildMeaningGapRows(nodes, conceptFacts, {
         perKindLimit: DO_NEXT_PER_KIND_LIMIT,
-        prose: meaningGapProse,
+        prose: handoffProse,
       }),
-    [nodes, conceptFacts, meaningGapProse],
+    [nodes, conceptFacts, handoffProse],
   );
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
 
@@ -569,8 +542,8 @@ export function OntologyInsightsPage() {
   const cycleHandoff = (cycle: DependencyCycle): string => {
     const closed = [...cycle.nodeIds.map(cycleMcpRef), cycleMcpRef(cycle.nodeIds[0])].join(" → ");
     return withDoNextVerification(
-      fillHandoffTemplate(handoffRaw("cycle"), { cycle: closed }),
-      handoffRaw("cycleProof"),
+      fillHandoffTemplate(handoffProse.cycle, { cycle: closed }),
+      handoffProse.cycleProof,
       handoffProse.verificationGate,
     );
   };
@@ -1229,7 +1202,7 @@ export function OntologyInsightsPage() {
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}
-          payload={handoffRaw(HANDOFF_PAYLOAD_KEY[tab] ?? HANDOFF_PAYLOAD_KEY[DEFAULT_INSIGHTS_TAB])}
+          payload={handoffProse[HANDOFF_PAYLOAD_KEY[tab] ?? HANDOFF_PAYLOAD_KEY[DEFAULT_INSIGHTS_TAB]]}
           copyLabel={t("handoffCopy")}
           copiedLabel={t("agentCopied")}
         />

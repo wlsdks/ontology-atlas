@@ -73,7 +73,7 @@ observed in a real vault.
 **Review**: reopen if the mcp-verify suite or a field vault shows a write the
 old contract accepted and a person actually wanted.
 
-**Status**: 유효
+**Status**: standing
 
 ## 2026-09-01 — Inside-the-vault auto-allow narrows to read-only tool kinds
 

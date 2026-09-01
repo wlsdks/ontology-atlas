@@ -1536,33 +1536,6 @@
         "noVaultTitle": "먼저 폴더를 여세요",
         "noVaultBody": "설명할 온톨로지가 아직 없습니다.",
         "request": "이 온톨로지만 읽고 이 제품의 비즈니스 흐름을 설명해줘. 소스 코드는 읽지 마.\n\n1) 이 제품이 무엇이고 누가 쓰는지 한 문단.\n2) 도메인마다 한 문단씩, 무엇을 책임지고 어떤 capability 를 갖는지.\n3) 이것들이 어떻게 이어져 하나의 흐름이 되는지 한 문단.\n\n규칙:\n- 모든 문단은 근거가 된 노드 슬러그를 적어. 내가 열어서 반박할 수 있어야 해.\n- 요약 목록으로 답을 닫지 말고 get_concept 로 본문 전체를 읽어 (body 를 full 로).\n- 어떤 답변이 partial 이나 visible-gap 이면 그 한정을 끝까지 달고 가. 특히 제외 항목은 온톨로지가 범위를 partial 로 적어놨으면 확정된 사실처럼 쓰지 마.\n- capability 의 제외는 그 capability 에만 해당해. 제품 전체 범위로 넓히지 마.\n- 온톨로지가 답할 수 없으면 그렇게 말하고 왜인지 적어. 코드를 뒤져 메우지 마."
-      },
-      "handoffProse": {
-        "verificationGate": "query_ontology({operation:\"health\"}) 로 변경 결과 재확인",
-        "createDocFirst": "이 개념은 아직 온톨로지 폴더에 \"%ref%\" 라는 참조로만 적혀 있어요(문서 없음) → add_concept({slug:\"%ref%\", kind:\"%kind%\"}) 로 문서부터 만들기",
-        "doNextUpdate": "query_ontology({operation:\"blast_radius\", slug:\"%ref%\"}) 로 영향권 확인 → 문서 내용 검토 후 patch_concept({slug:\"%ref%\", …}) 로 갱신",
-        "doNextUpdateProof": "get_concept({slug:\"%ref%\"}) 로 갱신된 원문 확인",
-        "doNextNewDocProof": "get_concept({slug:\"%ref%\"}) 로 새 문서 확인",
-        "orphanRelate": "add_relation({from:\"%ref%\", to:\"«대상»\", type:\"relates\", why:\"«근거 한 줄»\"})",
-        "orphanFindNeighbors": "find_neighbors({slug:\"%ref%\"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:\"%ref%\", to:\"«대상»\", type:\"relates\", why:\"«근거 한 줄»\"})",
-        "orphanProof": "find_neighbors({slug:\"%ref%\"}) 로 새 관계 확인",
-        "promotionNewDoc": "승격이 맞으면 그 문서의 kind 를 상향",
-        "promotionDocumented": "query_ontology({operation:\"node_profile\", slug:\"%ref%\"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설",
-        "promotionProof": "query_ontology({operation:\"node_profile\", slug:\"%ref%\"}) 로 kind와 fan-in 재확인",
-        "missingDefinition": "patch_concept({slug:\"%ref%\", frontmatter:{description:\"«이 개념을 한 문장으로»\"}}) 로 뜻을 적기",
-        "missingDefinitionProof": "get_concept({slug:\"%ref%\"}) 로 적힌 문장 확인",
-        "missingDomain": "patch_concept({slug:\"%ref%\", frontmatter:{domain:\"«영역 이름»\"}}) 로 소속을 적기",
-        "missingDomainProof": "get_concept({slug:\"%ref%\"}) 로 소속 확인",
-        "duplicate": "merge_concepts({fromSlug:\"%dissolve%\", intoSlug:\"%keep%\"}) 로 합칠 결과 미리보기 → 같은 뜻이 맞으면 같은 호출에 confirm:true 를 더해 실행",
-        "duplicateProof": "get_concept({slug:\"%keep%\"}) 로 합쳐진 원문 확인",
-        "cycle": "의존 사이클: %cycle%. query_ontology({operation:\"cycles\"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정",
-        "cycleProof": "query_ontology({operation:\"cycles\"}) 로 사이클 해소 확인",
-        "tabDoNext": "query_ontology({operation:\"maintenance_plan\"}) → 항목별 실행 → query_ontology({operation:\"health\"}) 로 재확인",
-        "tabComposition": "list_kinds({}) → query_ontology({operation:\"overview\"}) → 빈 정의는 validate_vault({}) 의 warnings 로 확인",
-        "tabConnections": "query_ontology({operation:\"centrality\"}) → query_ontology({operation:\"blast_radius\", slug:\"«hub-slug»\"})",
-        "tabBoundaries": "query_ontology({operation:\"domain_matrix\"}) → 교차 예시는 query_ontology({operation:\"match_edges\"})",
-        "tabFreshness": "query_ontology({operation:\"maintenance_plan\"}) → find_orphans({}) → query_ontology({operation:\"growth_plan\"})",
-        "tabFlow": "list_concepts({summary:true}) → get_concepts({body:\"full\"}) 로 project 와 domain 본문 → 문단마다 슬러그 인용"
       }
     }
   },

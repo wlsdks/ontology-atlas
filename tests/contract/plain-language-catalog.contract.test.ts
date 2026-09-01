@@ -237,8 +237,6 @@ const INTENTIONALLY_ENGLISH = new Set([
   'settings.projectForm.fields.tagsPlaceholder', // example tags
   'settings.ai.providerGemini', // a product name
   'settings.ai.localBaseUrlPlaceholder', // a URL
-  'ontologyPages.insights.handoffProse.tabConnections', // an MCP call chain an agent runs
-  'ontologyPages.insights.handoffProse.tabFreshness', // an MCP call chain an agent runs
 ]);
 
 /**
