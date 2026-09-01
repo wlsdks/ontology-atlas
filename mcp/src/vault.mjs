@@ -1760,9 +1760,6 @@ function buildRefIndex(docs) {
   return { slugs, resolve, resolveCandidates };
 }
 
-function buildRefResolver(docs) {
-  return buildRefIndex(docs).resolve;
-}
 
 /**
  * Applies a multi-file vault write **all-or-nothing**.
