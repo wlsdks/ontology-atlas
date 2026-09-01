@@ -61,7 +61,7 @@ function rejectingTransport() {
 }
 
 /** The shape of a permission request as actually received in measurement (2026-08-16). */
-function permissionRequest(filePath: string, id = 7) {
+function permissionRequest(filePath: string, id = 7, kind = 'edit') {
   return {
     jsonrpc: '2.0',
     id,
@@ -91,7 +91,7 @@ function permissionRequest(filePath: string, id = 7) {
       toolCall: {
         toolCallId: 'tool-1',
         title: `Write ${filePath}`,
-        kind: 'edit',
+        kind,
         rawInput: { file_path: filePath },
       },
     },
@@ -137,16 +137,46 @@ describe('ACP 클라이언트 — 우리가 선언한 것만 답한다', () => {
 });
 
 describe('ACP 클라이언트 — 권한 정책', () => {
-  it('볼트 안이면 앱이 대신 허용한다 (매번 물으면 대화가 성립하지 않는다)', async () => {
+  it('볼트 안 **읽기**는 앱이 대신 허용한다 (매번 물으면 대화가 성립하지 않는다)', async () => {
     const t = fakeTransport();
     const askUser = vi.fn(async () => null);
     createAcpClient(t.transport, { verdict: insideVault, askUser });
 
-    t.emit(permissionRequest('/vault/notes.md'));
+    t.emit(permissionRequest('/vault/notes.md', 7, 'read'));
     await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
 
     expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'allow' });
     expect(askUser).not.toHaveBeenCalled();
+  });
+
+  it('볼트 안이라도 **편집**은 묻는다 — 경로가 안전하다는 것이 변경을 봤다는 뜻은 아니다', async () => {
+    /*
+     * Caught in the 2026-09-01 review. Path containment auto-allowed the agent's own edit tool
+     * on vault Markdown, so frontmatter/relations could be rewritten with no card while the
+     * Atlas write path dutifully asked — a gate on one door of the same file.
+     */
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => null);
+    createAcpClient(t.transport, { verdict: insideVault, askUser });
+
+    t.emit(permissionRequest('/vault/capabilities/auth.md', 7, 'edit'));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
+
+    expect(askUser).toHaveBeenCalledTimes(1);
+    expect(outcomeOf(t.sent, 7)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  it('종류를 밝히지 않은 도구는 볼트 안이라도 묻는다 — 모르는 것은 닫힌 쪽으로 떨어진다', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => null);
+    createAcpClient(t.transport, { verdict: insideVault, askUser });
+
+    const request = permissionRequest('/vault/notes.md', 7);
+    (request.params.toolCall as Record<string, unknown>).kind = undefined;
+    t.emit(request);
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 7)).toBeTruthy());
+
+    expect(askUser).toHaveBeenCalledTimes(1);
   });
 
   it('판정이 실패해도 **답은 나간다** — 상대를 영원히 기다리게 하지 않는다', async () => {

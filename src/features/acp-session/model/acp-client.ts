@@ -401,12 +401,21 @@ export function createAcpClient(
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }
-    if (!ontologyWrite && verdict === 'allow-inside-vault' && allowOnce) {
+    /*
+     * A non-Atlas tool is auto-allowed only when it stays inside the vault AND declares a
+     * read-only kind. Path containment alone says nothing about writing: an agent's built-in
+     * edit tool aimed at vault Markdown can rewrite frontmatter, relations, and uids, so it
+     * must reach the permission card exactly like an Atlas write — otherwise the typed change
+     * review guards one door while the same file's other door stands open. An unknown or
+     * missing kind fails closed to asking. Decision: 2026-09-01, refining 2026-08-16 (2) §3.
+     */
+    const readOnlyKind = request.toolKind === 'read' || request.toolKind === 'search';
+    if (atlasMode === null && readOnlyKind && verdict === 'allow-inside-vault' && allowOnce) {
       write({ jsonrpc: '2.0', id, result: selected(allowOnce.optionId) });
       return;
     }
 
-    // An Atlas write, access outside the vault, or a generic tool with an unknown path: ask the person.
+    // An Atlas write, any non-read tool, access outside the vault, or an unknown path: ask the person.
     let chosen: string | null = null;
     try {
       chosen = await handlers.askUser(
