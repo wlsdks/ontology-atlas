@@ -18,6 +18,8 @@ import {
   type VaultManifest,
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
+  computeRenameRefContext,
+  rewriteRenamedDocRefs,
 } from '@/entities/docs-vault';
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,
@@ -1396,42 +1398,45 @@ export function useLocalVaultInternal() {
 
       // --- optional cascading backlink rewrite
       if (opts.rewriteBacklinks && state.manifest) {
-        // Recover the slugs citing this document from the manifest's linksOut.
-        const referrers = state.manifest.docs
-          .filter(
-            (d) => d.slug !== oldSlug && d.linksOut.includes(oldSlug),
-          )
-          .map((d) => d.slug);
-        // Read each referrer's raw text and rewrite both `[[oldSlug...]]` and
-        // `(...oldSlug.md...)` forms, checking boundaries so a longer slug is not clipped.
-        const escaped = oldSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // [[oldSlug]] / [[oldSlug|..]] / [[oldSlug#..]]
-        const wikiRe = new RegExp(
-          `(\\[\\[)(${escaped})(\\||#|\\]\\])`,
-          'g',
+        /*
+         * ⚠️ **Frontmatter relations are the primary graph** (bug sweep
+         * 2026-09-01). This block used to rewrite only body `[[wikilink]]` /
+         * `](x.md)` forms and select referrers from body-only `linksOut`, so a
+         * rename orphaned every frontmatter relation (`dependencies:`,
+         * `capabilities:`, …) to the renamed node — backlinks vanished and the
+         * graph minted a phantom stub under the old name, unlike MCP
+         * `rename_concept`. `rewriteRenamedDocRefs` now applies the same key
+         * family and tail rules as the MCP rewrite, and every doc is scanned
+         * (reads are free; only actual changes ask for write permission), which
+         * also catches referrers `linksOut` missed — a same-directory relative
+         * link was previously detected but left dangling by the full-slug regex.
+         */
+        const { canRewriteTail } = computeRenameRefContext(
+          state.manifest.docs.map((d) => d.slug),
+          oldSlug,
         );
-        // [text](path/oldSlug.md...) — a relative path ending in oldSlug.md.
-        const mdRe = new RegExp(
-          `(\\]\\([^)]*?)(${escaped})(\\.md)`,
-          'g',
-        );
-        for (const ref of referrers) {
-          const fh = state.fileHandles.get(ref);
+        for (const doc of state.manifest.docs) {
+          if (doc.slug === oldSlug) continue;
+          const fh = state.fileHandles.get(doc.slug);
           if (!fh) continue;
           try {
-            const perm = await verifyHandlePermission(fh, 'readwrite', {
-              ask: true,
-            });
-            if (perm !== 'granted') continue;
             const srcFile = await fh.getFile();
             const srcText = await srcFile.text();
-            const nextText = srcText
-              .replace(wikiRe, `$1${newSlug}$3`)
-              .replace(mdRe, `$1${newSlug}$3`);
+            const nextText = rewriteRenamedDocRefs(srcText, {
+              oldSlug,
+              newSlug,
+              referrerSlug: doc.slug,
+              canRewriteTail,
+            });
             if (nextText !== srcText) {
+              const perm = await verifyHandlePermission(fh, 'readwrite', {
+                ask: true,
+              });
+              if (perm !== 'granted') continue;
               const w = await fh.createWritable();
               await w.write(nextText);
               await w.close();
+              markSelfWrite(doc.slug);
             }
           } catch {
             /* Best effort — skip a file that fails. */
