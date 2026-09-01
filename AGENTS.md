@@ -83,31 +83,30 @@ routing only: when to open a gate, not how it runs.
   `pnpm po:route`; it derives door and risk. Log pilot outcomes in
   `docs/PO-PILOT.md`; `pnpm po:pilot -- --check` owns the sunset.
 - **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
-  the PO pass, for UI, visual design, interaction, graph readability,
-  responsive layout and macOS workbench work:
-  `/design-directions` before the code when the shape is not yet settled,
-  `/design-build` to write it, `/design-audit` after it, and
-  `/design-system-audit` before a release or an inconsistent-screen
-  investigation. Public references are principle sources; never copy their
-  assets or wording. A new design rule needs lint enforcement, an inventory and
-  a probe, and its values live only in `docs/DESIGN-SYSTEM.md`.
-- **Browser measurement** — the design and craft seats read rendered geometry
-  through the `chrome-devtools` server, declared in `.mcp.json` and
-  `.codex/config.toml` alike because the two brief trees are byte identical. A
-  seat may only name a server its own tree's config declares; a personal agent
-  config is not this repository's contract, and `pnpm agents:check` enforces it.
+  the PO pass, for UI, interaction, topology, responsive, motion, and macOS
+  workbench work. Run `pnpm design:route`; it selects `/design-directions`,
+  `/design-audit`, `/design-system-audit`, council, and exact proof.
+  `/design-build` writes the shape. New rules need lint, inventory, and
+  `/gate-probe`; values live only in `docs/DESIGN-SYSTEM.md`.
+- **Rendered evidence** — every rendered route uses Computer Use while building:
+  baseline; one coherent slice; fresh screenshot and accessibility tree in the
+  actual browser/WebView/app; correction; repeat. Never invent the whole screen
+  and inspect only at the end. DOM geometry complements, never replaces, the
+  actual-window capture. Motion also requires a real macOS recording through
+  `/motion-verify`; static frames cannot approve it. Repository-declared
+  geometry tooling stays mirrored; `pnpm agents:check` enforces parity.
 - **Councils** — `/po-council` pairs Evidence with the derived-risk specialist
   and tests recovery proof; `chief` rebuts only material conflict.
-  `/design-council` owns visual work, with `design-guardian` as editor/decider
-  before and after meaningful Relief or Topology work.
+  `/design-council` runs only for routed structural commitments, with selected
+  seats and `design-guardian` deciding. Cross-critique needs material conflict.
 - **Decision ledger** — `docs/DECISIONS.md` is append-only. Read it before a
   pass or council; cite a standing decision or overturn it explicitly, keeping
   the losing dissent and a falsifier. Never silently re-decide.
 - **Gate probe** — `/gate-probe` whenever a gate changes. A permanently green
   gate is not evidence.
 - **Journey and motion** — `/user-walkthrough` names observable UX patterns,
-  never invented user feelings. `/responsive-sweep`, `/motion-verify` and
-  `/map-perf` when their stated surface applies.
+  never invented user feelings. `/responsive-sweep`, `/motion-verify`, and
+  `/map-perf` run at the scope returned by `design:route`.
 - **Ontology and parallel work** — `/ontology-bootstrap` for a starter vault,
   `/ontology-sync` after a meaningful code change, `/ontology-extract` for
   prose, `/ontology-absorb-confluence` for a wiki page the user's own

@@ -5,6 +5,10 @@ description: Measure topology-map drag, pan, and zoom with a deterministic harne
 
 # Map performance
 
+Run when `pnpm design:route` includes `map-perf`. It proves the changed topology
+gesture's work cost; add the separate `motion` change fact when temporal output
+also changed.
+
 This skill exists because a 2026-07-31 node-drag report was dismissed six times
 while the measurement was actually panning the background. The two gestures look
 the same from outside.
@@ -93,4 +97,7 @@ Barnes–Hut. Cost grows roughly quadratically.
 
 The harness measures Chrome, while the installed app uses WKWebView. After the
 fix is clear in Chrome, measure once more in the installed app according to
-`.claude/rules/surfaces.md`.
+`.claude/rules/surfaces.md` when the route includes desktop-shell. In every
+case, use the computer-use capability to capture the reviewed app/window, accessibility
+owner, and visible gesture state. The capture proves target/state identity; it
+does not replace the work measurement or a routed motion recording.

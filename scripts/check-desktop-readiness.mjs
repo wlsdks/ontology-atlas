@@ -1519,6 +1519,7 @@ const agentDesignGateChecks = [
     "AGENTS mandatory design gate",
     agentsDoc.includes("docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md") &&
       /design gate/i.test(agentsDoc) &&
+      /pnpm design:route/.test(agentsDoc) &&
       // Strip markdown emphasis before matching — AGENTS.md writes `Runs *after* the PO
       // pass`. The old regex required a contiguous string and **broke on a single
       // asterisk** (CI, 2026-07-31). The invariant (the design gate comes after the PO
@@ -1527,23 +1528,33 @@ const agentDesignGateChecks = [
       /after\s+the PO pass/i.test(agentsDoc.replace(/[*_`]/g, "")),
   ],
   [
-    "design council",
+    "fact-derived selected-seat design council",
+    /pnpm design:route/.test(productDesignDoc) &&
     /Design Council/.test(productDesignDoc) &&
       /No-Human-Designer Working Mode/.test(productDesignDoc) &&
-      /Lead Product Designer/.test(productDesignDoc),
+      /No seat always attends/.test(productDesignDoc) &&
+      /Five consecutive no-delta councils/.test(productDesignDoc),
   ],
   [
     "allowed reference policy",
     /Reference Permission Test/.test(productDesignDoc) &&
-      /Do not copy/.test(productDesignDoc) &&
-      /Public/.test(productDesignDoc) &&
-      /Principle/.test(productDesignDoc),
+      /copy/i.test(productDesignDoc) &&
+      /public/i.test(productDesignDoc) &&
+      /principle/i.test(productDesignDoc),
   ],
   [
-    "live reference review loop",
-    /Live Reference Review Loop/.test(productDesignDoc) &&
-      /Reference source packet/.test(productDesignDoc) &&
-      /Source -> Atlas rule -> verifier/.test(productDesignDoc),
+    "iterative real-window evidence",
+    /computer-use-loop/.test(productDesignDoc) &&
+      /baseline/.test(productDesignDoc) &&
+      /material checkpoint/.test(productDesignDoc) &&
+      /Do not build a whole UI from imagination/.test(productDesignDoc) &&
+      /accessibility tree/.test(productDesignDoc),
+  ],
+  [
+    "recorded motion evidence",
+    /\/motion-verify/.test(productDesignDoc) &&
+      /real macOS screen/.test(productDesignDoc) &&
+      /Static screenshots/.test(productDesignDoc),
   ],
   [
     "graph engine fit gate",
@@ -1560,7 +1571,8 @@ const agentDesignGateChecks = [
     "installed app proof",
     /installed macOS app proof/i.test(productDesignDoc) &&
       /WebView marker/.test(productDesignDoc) &&
-      /Computer Use/.test(productDesignDoc),
+      /Computer Use/.test(productDesignDoc) &&
+      /desktop-shell/.test(productDesignDoc),
   ],
   [
     "Relief surface rules",
@@ -1574,7 +1586,7 @@ const missingAgentDesignGate = agentDesignGateChecks
   .map(([label]) => label);
 
 if (missingAgentDesignGate.length === 0) {
-  pass("agent guide requires the Product Design gate, design council, graph engine fit gate, allowed reference policy, and installed-app proof for Relief work");
+  pass("agent guide derives design proof from change facts, iterates through real-window evidence, records motion, limits council, and preserves Atlas topology/desktop boundaries");
 } else {
   fail(
     `AGENTS.md and docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md must keep the Relief design gate enforceable: missing ${missingAgentDesignGate.join(", ")}`,

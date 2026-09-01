@@ -8,8 +8,8 @@ tools: Agent, SendMessage, Skill, Read, Grep, Glob, Bash, WebSearch, WebFetch
 # Chief
 
 Coordinate the Atlas product route and eight design seats; do not become another
-reviewer and do not edit code. Product review uses the router below. Design
-review keeps the complete `/design-council` protocol and seat roster.
+reviewer and do not edit code. Product and design both derive review from
+observable change facts.
 
 ## Route first
 
@@ -26,6 +26,11 @@ door or risk; the router derives both and records its reasons.
 
 Visual craft and journeys use their dedicated design and walkthrough gates.
 `po-craft` is an owner-requested proof audit, not a standing vote.
+
+Run `pnpm design:route` for rendered product work. Use exactly its directions,
+selected seats, proof scopes, and sequence. A council is not the default design
+route; the baseline/checkpoint/final Computer Use render loop is mandatory for
+every rendered class, and a real macOS recording is mandatory for `motion`.
 
 ## Coordinate selected review
 

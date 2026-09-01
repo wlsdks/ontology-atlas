@@ -6,30 +6,43 @@ title: Design Build Handoff
 display_ko: 조립 순서 핸드오프
 display_en: Design Build Handoff
 domain: domains/design-system
-elements: []
+elements: [elements/design-proof-router]
 path: .claude/skills/design-build/SKILL.md
 created_by: "agent:unknown"
+relation_notes: { elements/design-proof-router: Design Build Handoff uses the router to turn observable Atlas UI change facts into the smallest required rendered-proof bundle. }
 ---
 
 # Design Build Handoff
 
-The **first guide** an agent reads when starting to build a screen. "From command to screen, in the same order": it prescribes which component to pick, where to get values from, and what to measure after building everything, in sequence.
+The entry contract that routes an Atlas UI change from observable change facts to the smallest proof bundle before implementation begins. It keeps design work tied to what changed, what a person must be able to judge again, and which rendered evidence can prove that outcome.
 
-## User Outcomes
-- The agent does not assemble things differently each time.
-- You can see **which gate catches** a spec violation in the same document.
+## Human Outcome
 
-## Why this is core to this system
-Diagnosis from the 2026-08-03 census: *"What was blocking progress wasn't model preference, but the lack of reusable components and unrecorded task order."* Components were prepared in three rounds by 2026-08-15; what remains is this guide.
+- A person can inspect what an agent actually built instead of reconstructing it from code or trusting an agent's description.
+- Ordinary local changes stay lightweight, while hard-to-reverse structure receives the specialist review it needs.
+- Motion is judged as motion, not inferred from static frames.
 
-## Known Defects (measured 2026-08-15, under repair)
-Negative results in assembly tests: five new components approved on the same day (`Input` · `Textarea` · `Checkbox` · `SegmentedControl` · `Select`) were **not listed** in this guide's routing table. Agents following instructions strictly either hit a "shape not found in those eight → stop and recount" error or use raw `<input>` elements when building forms.
+## Operating Contract
 
-**When approving components, update the guide simultaneously**: Do not rely on humans to remember the pair; make it a gate (attach to `design-spec-census`, so if the spec file exports a new component but the guide doesn't know its name, it fails).
+1. Run `pnpm design:route -- --change-class <class>` with the observable change class or classes.
+2. For every rendered class, capture the exact baseline, implement one coherent visual slice, render the real browser, WebView, or app, then inspect a fresh Computer Use screenshot and accessibility tree before continuing.
+3. Add DOM, computed-style, and rendered-rect measurements when geometry or occlusion needs localization. The accessibility tree is not a substitute for DOM geometry, and neither replaces actual-window pixels.
+4. Correct the observed defect before the next slice and retain the final capture. Building a whole UI from imagination and inspecting only at the end does not satisfy this contract.
+5. For motion, use a real macOS screen recording through the motion-verification protocol, including uniform 30fps frames, a visual phase strip, frame-to-frame pixel-diff statistics, and reduced-motion proof.
+6. Convene a design council only for hard-to-reverse structural commitments or design-contract changes, and seat only the specialists selected by the router.
+
+## Evidence
+
+- `scripts/lib/design-proof-router.mjs`: observable change classes and deterministic proof routing
+- `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`: owner-facing operating contract
+- `.agents/skills/design-build/SKILL.md`: capability-based build sequence
+- `tests/contract/design-proof-router.contract.test.ts`: routing and fail-closed contract
 
 ## Extraction Boundary
-**extractable.** Line 211 contains only three app-specific terms, so they can be translated as-is. However, since the gate names referenced in this document follow the boundaries of `design-gate-ratchets` (atlas-bound), the extraction should read "enable after bootstrap" instead.
+
+**extractable in protocol, Atlas-specific in routing data.** The capture-measure-correct loop applies across repositories, but the current change classes, specialist seats, topology instruments, and council thresholds encode Atlas surfaces and must be re-censused before reuse elsewhere.
 
 ## Copy Contract
+
 `.claude/skills/design-build/SKILL.md` ↔ `.agents/skills/design-build/SKILL.md`
-Both sets must be byte-identical (`skill-copy` in `pnpm agents:check`). Do not create a third copy.
+Both copies must remain byte-identical; repository checks enforce the mirror.

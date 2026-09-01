@@ -1297,6 +1297,34 @@ describe('focused check suggestions', () => {
     }
   });
 
+  it('routes every active design policy surface to the fact-derived proof contracts', () => {
+    const paths = [
+      'scripts/lib/design-proof-router.mjs',
+      'scripts/design-proof-router.mjs',
+      'scripts/lib/design-spec-census.mjs',
+      'scripts/check-decision-record.mjs',
+      'tests/contract/design-proof-router.contract.test.ts',
+      'tests/contract/design-spec-ledger.contract.test.ts',
+      'tests/contract/design-council.contract.test.ts',
+      'docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md',
+      '.claude/skills/design-build/SKILL.md',
+      '.agents/skills/motion-verify/SKILL.md',
+      '.claude/agents/design-guardian.md',
+      '.agents/agents/design-motion.md',
+      '.claude/rules/design.md',
+      'AGENTS.md',
+      'package.json',
+    ];
+
+    assert.ok(paths.length > 0, 'the design policy path inventory must not be empty');
+    for (const path of paths) {
+      assert.ok(
+        commandNames(suggestFocusedChecks([path])).includes('pnpm test:design-gates'),
+        `${path} must recommend the design gate contracts`,
+      );
+    }
+  });
+
   it('suggests docs contracts when the shared package contract test changes', () => {
     const result = suggestFocusedChecks([
       'scripts/check-package-contracts.mjs',

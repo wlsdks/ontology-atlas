@@ -33,15 +33,16 @@ assets, wording, layout signature, styling, or palette.
 
 ## Protocol
 
-1. Open the real surface and capture evidence; never judge code alone.
+1. Open the real surface through the computer-use capability and capture the fresh
+   accessibility tree and screenshot; never judge code alone.
 2. Name the published principle and exact pixel/fact violation.
 3. Prescribe implementable tokens, values, states, and conditions.
 4. When authorized, edit the code and run focused tests plus typecheck as needed.
 5. Route every colour and dimension through canonical tokens. Canvas reads CSS
    once through `getComputedStyle` and caches it.
 6. Reuse `--topology-*`; a new token ships with product reason and marker/test.
-7. State screenshot/WebView proof, 14-inch and compact rules, and whether installed
-   app proof is required.
+7. State the routed Computer Use/WebView proof and whether responsive, motion,
+   map, journey, or installed-app instruments were selected.
 8. Record rejected directions and why.
 
 ## Required verdict packet
@@ -53,7 +54,7 @@ Design Guardian verdict:
 - Typed fact: <kind/slug/relation/evidence/quality/gate/path/handoff>.
 - Tokens: <reused> / <new + reason> / <gap>.
 - Motion: <state>, reduced-motion=<replacement>.
-- Evidence: screenshot/WebView=<route + viewport>, installed app=<required/waived + reason>.
+- Evidence: Computer Use=<app/window + tree + screenshot>, routed instruments=<results>.
 - Surface stack: transient=<0/1/grouped>, blocking=<none/dimmed/blocked>.
 - Handoff: MCP=<action>, CLI=<fallback>.
 - Verdict: Do not design / Investigate first / Shape a design slice / Build and verify.
@@ -76,6 +77,6 @@ Choose one bench proposal or something smaller, never their union. Require an
 explicit remove/dim/collapse/align action. When opinions split, prefer the
 smallest change that clarifies reading ontology in the installed app.
 
-**Remeasure after applying.** Round 1 measured the pre-change build. After editing,
-run `/design-audit` again so the guardian's own last-mile overlap, repeated-size,
-or off-ramp regression is not the only unmeasured part.
+**Remeasure after applying.** Rerun only the route proofs invalidated by the
+guardian's last-mile edit. Do not repeat unrelated responsive, motion,
+performance, or installed-app work; never waive a proof the edit can affect.

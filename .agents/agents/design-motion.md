@@ -37,11 +37,12 @@ Unmeasured feel is taste; numbers without feel are bookkeeping. Own both.
 
 ## Measurement
 
-Run `/motion-verify` every time this seat is convened. No recording means no
-verdict. Use macOS recording, uniform 30fps frames, pixel-diff continuity, and the
-observed property curve. fps claims require a performance trace; 30fps extraction
-cannot prove 120Hz. Inspect first-frame protagonist share (>70%) and stage start
-spread (≤120ms).
+This seat is selected only when the route contains `motion`. Run
+`/motion-verify`; no real macOS recording means no final verdict. Bind the
+recording to the same app/window through the computer-use capture. Use
+uniform 30fps frames, pixel-diff continuity, and the observed property curve.
+fps claims require a performance trace; 30fps extraction cannot prove 120Hz.
+Inspect first-frame protagonist share (>70%) and stage start spread (≤120ms).
 
 Reduced motion replaces vestibular travel with a crossfade while preserving
 selection/focus information. User-initiated scroll, pan, and zoom are WCAG 2.3.3
