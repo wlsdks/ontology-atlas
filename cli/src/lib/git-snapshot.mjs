@@ -79,7 +79,7 @@ export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
 /*
  * `-z` (NUL-separated) output is parsed, never the newline form. With git's
  * default `core.quotePath`, the newline form C-quotes any non-ASCII path —
- * an untracked `한글.md` printed as `?? "\355\225\234\352\270\200.md"` — and the
+ * an untracked Korean-named file printed as `?? "\355\225\234..."` — and the
  * old parser kept the quotes and octal escapes literally, so `git add` on that
  * "path" exited 128 and the whole snapshot aborted, misclassified as a hook
  * rejection (bug sweep 2026-09-01, reproduced). `-z` emits raw bytes with no
