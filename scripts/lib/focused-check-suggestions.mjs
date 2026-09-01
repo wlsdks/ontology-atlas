@@ -1032,9 +1032,15 @@ export function normalizeChangedPath(path) {
   return String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
-export function suggestFocusedChecks(paths = []) {
+export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
-  const staticCommands = rulesToSuggestions(RULES, normalizedPaths);
+  // Deleted paths participate in RULE matching only — the per-file direct
+  // suggestions below embed paths into file-reading commands, which a deleted
+  // path would kill (measured 2026-08-21), while a rule command is global.
+  const normalizedDeleted = [...new Set(deletedPaths.map(normalizeChangedPath).filter(Boolean))]
+    .filter((path) => !normalizedPaths.includes(path));
+  const rulePaths = [...normalizedPaths, ...normalizedDeleted];
+  const staticCommands = rulesToSuggestions(RULES, rulePaths);
   const withSourceLanguage = prependSuggestions(
     staticCommands,
     directSourceLanguageSuggestions(normalizedPaths),
@@ -1071,8 +1077,13 @@ export function suggestFocusedChecks(paths = []) {
     directFocusedCheckTestSuggestions(normalizedPaths),
     'pnpm test:checks:changed',
   );
-  const escalations = rulesToSuggestions(ESCALATIONS, normalizedPaths);
-  return { paths: normalizedPaths, commands: withFocusedCheckDirect, escalations };
+  const escalations = rulesToSuggestions(ESCALATIONS, rulePaths);
+  return {
+    paths: normalizedPaths,
+    deletedPaths: normalizedDeleted,
+    commands: withFocusedCheckDirect,
+    escalations,
+  };
 }
 
 function directSourceLanguageSuggestions(paths) {

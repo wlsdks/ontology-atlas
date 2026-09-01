@@ -1493,3 +1493,34 @@ describe('agent-file surface', () => {
     }
   });
 });
+
+describe('deleted paths participate in rule matching without reaching file-reading commands', () => {
+  // Bug sweep 2026-09-01: deletions were dropped before ALL matching, so a
+  // deletion-only change printed "nothing to run" and exited 0 — deleting a
+  // route file suggested no decisions:check, a vault doc no docs-vault:check.
+  it('a deleted vault doc still suggests the docs-vault and ledger checks', () => {
+    const suggestions = suggestFocusedChecks([], {
+      deletedPaths: ['docs/ontology/capabilities/gone.md'],
+    });
+    const commands = suggestions.commands.map((c) => c.command);
+    assert.ok(commands.includes('pnpm docs-vault:check'), commands.join('\n'));
+    assert.deepEqual(suggestions.deletedPaths, ['docs/ontology/capabilities/gone.md']);
+  });
+
+  it('a deleted route file still suggests decisions:check', () => {
+    const suggestions = suggestFocusedChecks([], {
+      deletedPaths: ['app/[locale]/foo/page.tsx'],
+    });
+    const commands = suggestions.commands.map((c) => c.command);
+    assert.ok(commands.includes('pnpm decisions:check'), commands.join('\n'));
+  });
+
+  it('no per-file command embeds a deleted path', () => {
+    const suggestions = suggestFocusedChecks([], {
+      deletedPaths: ['src/views/gone/ui/GonePage.tsx'],
+    });
+    for (const c of suggestions.commands) {
+      assert.ok(!c.command.includes('GonePage'), c.command);
+    }
+  });
+});
