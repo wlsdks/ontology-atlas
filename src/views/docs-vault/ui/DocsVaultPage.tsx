@@ -71,6 +71,7 @@ import {
 } from '@/shared/lib/similar-node-title';
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useReviewQueue } from '../lib/use-review-queue';
+import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
@@ -115,6 +116,7 @@ import {
   loadStaticVaultHeadings,
   resolveStaticVaultSource,
   type StaticVaultHeadings,
+  reviewDigest,
 } from '@/entities/docs-vault';
 import type { VaultCommand } from '@/widgets/docs-vault';
 
@@ -1465,6 +1467,53 @@ function DocsVaultContent() {
     () => reviewQueue.find((row) => row.slug === selectedSlug),
     [reviewQueue, selectedSlug],
   );
+  const [reviewBusy, setReviewBusy] = useState(false);
+  /**
+   * The person's own write. It goes through the same conflict-guarded
+   * `updateFrontmatter` every other human edit uses — the MCP server refuses this
+   * write precisely so that it happens here, where a click proves a person.
+   *
+   * Confirming records **what** was approved, not only that it was: the digest is
+   * computed from the file as it is at this moment, so a later edit by anything —
+   * an agent, another tool, a text editor — reads as changed without needing that
+   * writer's cooperation.
+   */
+  const handleReviewWrite = useCallback(
+    async (intent: 'confirm' | 'release') => {
+      if (!selectedDoc || !getDocContent) return;
+      setReviewBusy(true);
+      try {
+        const patch: Record<string, string | null> =
+          intent === 'release'
+            ? { review_state: null, review_note: null }
+            : {
+                review_state: 'confirmed',
+                // The reader's own calendar day, not UTC's. Measured 2026-09-02
+                // at 01:30 KST: `toISOString()` stamped 2026-09-01, so a person
+                // who had just pressed the button saw their review dated
+                // yesterday. `sv-SE` is the ISO-shaped locale, so this is the
+                // same `YYYY-MM-DD` shape without a manual pad.
+                reviewed_at: new Date().toLocaleDateString('sv-SE'),
+                reviewed_digest: await reviewDigest(
+                  selectedDoc.frontmatter,
+                  parseFrontmatter(await getDocContent(selectedDoc.slug)).body,
+                ),
+                // A reservation is answered by the act of confirming; leaving the
+                // question behind it would keep asking something already decided.
+                review_note: null,
+              };
+        await localVault.updateFrontmatter(selectedDoc.slug, patch, {
+          expectedMtime: selectedDoc.mtime,
+        });
+      } catch (err) {
+        if (err instanceof VaultConflictError) toast.show(t('dialog.vaultConflict'), 'error');
+        throw err;
+      } finally {
+        setReviewBusy(false);
+      }
+    },
+    [selectedDoc, getDocContent, localVault, toast, t],
+  );
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
     () => ({
       all: manifest.docs.length,
@@ -2583,6 +2632,17 @@ function DocsVaultContent() {
                         <DocMetaBar
                           doc={selectedDoc}
                           {...(selectedReviewRow ? { reviewRow: selectedReviewRow } : {})}
+                          {...(canEditCurrent && getDocContent
+                            ? {
+                                review: {
+                                  reserved:
+                                    selectedDoc.frontmatter.review_state === 'human_decides',
+                                  busy: reviewBusy,
+                                  onConfirm: () => void handleReviewWrite('confirm'),
+                                  onRelease: () => void handleReviewWrite('release'),
+                                },
+                              }
+                            : {})}
                         />
                         <DocsVaultViewer
                           key={`${source}:${selectedDoc.slug}`}

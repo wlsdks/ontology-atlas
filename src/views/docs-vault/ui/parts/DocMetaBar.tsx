@@ -24,6 +24,7 @@ const actionLinkClass = controlClass({
 export function DocMetaBar({
   doc,
   reviewRow,
+  review,
 }: {
   doc: VaultDoc;
   /**
@@ -34,6 +35,21 @@ export function DocMetaBar({
    * two call sites hashing separately is two chances to answer differently.
    */
   reviewRow?: ReviewQueueRow;
+  /**
+   * The person's own two actions on this document, present only when a writable
+   * local folder is loaded.
+   *
+   * This is the path the MCP server refuses to let an agent take: a click in a
+   * surface a person opened is what "a path that proves a person" means here.
+   * Absent on the bundled sample, where nothing can be written at all.
+   */
+  review?: {
+    /** True while this document carries `review_state: human_decides`. */
+    reserved: boolean;
+    busy: boolean;
+    onConfirm: () => void;
+    onRelease: () => void;
+  };
 }) {
   const t = useTranslations("vaultWidgets.parts.meta");
   const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
@@ -147,6 +163,27 @@ export function DocMetaBar({
                 ? tReview("changedBy", { name: reviewRow.reviewedBy })
                 : tReview("changedPlain")}
           </span>
+        ) : null}
+        {review ? (
+          // One action, chosen by the state the document is already in. Offering
+          // both at once would ask a person to classify their own click before
+          // making it, and the two are not alternatives: releasing a reservation
+          // is the end of a decision, confirming is the end of a reading.
+          <button
+            type="button"
+            data-testid="doc-review-action"
+            disabled={review.busy}
+            onClick={review.reserved ? review.onRelease : review.onConfirm}
+            className={controlClass({
+              shape: "chip",
+              size: "sm",
+              tone: "muted",
+              hoverSurface: "lift",
+              className: "min-h-7 font-mono",
+            })}
+          >
+            {review.reserved ? tReview("actionRelease") : tReview("actionConfirm")}
+          </button>
         ) : null}
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-mono tabular-nums">

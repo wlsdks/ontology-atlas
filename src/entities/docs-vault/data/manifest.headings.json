@@ -7005,6 +7005,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-02 — A documented convention is a courtesy, not a boundary: human review moves to the call path, and drift is detected rather than trusted",
+      "slug": "2026-09-02-a-documented-convention-is-a-courtesy-not-a-boundary-human-review-moves-to-the-call-path-and-drift-is-detected-rather-than-trusted"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 — Pull-request CI follows impact; default-branch truth stays exhaustive",
       "slug": "2026-09-01-pull-request-ci-follows-impact-default-branch-truth-stays-exhaustive"
     },

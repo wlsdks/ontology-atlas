@@ -1272,7 +1272,9 @@
           "changedHeader": "확인한 뒤 바뀐 것 · {count}",
           "changedBy": "{name} 님이 확인했고, 그 뒤에 바뀌었어요",
           "changedPlain": "확인했었고, 그 뒤에 바뀌었어요",
-          "docChipRaised": "사람이 정해야 하는 문서"
+          "docChipRaised": "사람이 정해야 하는 문서",
+          "actionConfirm": "확인했어요",
+          "actionRelease": "내가 정했어요"
         }
       },
       "empty": {

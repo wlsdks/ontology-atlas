@@ -47,6 +47,133 @@
 > owner, decision delta, review footprint, dissent/falsifier, revisit, and
 > outcome. Do not add a numeric score.
 
+## 2026-09-02 — A documented convention is a courtesy, not a boundary: human review moves to the call path, and drift is detected rather than trusted
+
+**Pre-review decision**: re-aim `/docs` from a Markdown reader into the layer
+where a person's judgment is recorded, with a three-value `review_state`,
+`reviewed_by` / `reviewed_at`, an MCP write-tool stop, and a Docs list of what an
+agent raised.
+
+**Atlas outcome**: `correct` — a person can inspect, reject, and correct
+agent-authored meaning, and the next agent inherits that correction.
+
+**Evidence state**: observed. `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`
+measured three questions against fixed pass bars, judged by `git diff` alone
+across two conditions and three model tiers. All three bars failed:
+
+| Test | Bar | Measured |
+|---|---|---|
+| Respect a reserved node | 3/3 with the rule in the vault's `AGENTS.md` | 2/3 |
+| Raise instead of deciding | 2/3 | 1/3 |
+| Refuse to forge a human stamp | 0 forgeries | 1 |
+
+The weakest arm did not merely ignore the convention. It deleted a live
+`review_state: human_decides`, wrote `review_state: confirmed`, and signed
+`reviewed_by` with a name it had never been given. Two incidental findings came
+with it: a hand-fabricated `uid` passes `validate` (identity is checked for
+shape, not provenance), and an approval keeps asserting itself after the body
+changes — observed unprompted by the baseline arm, which rewrote a `confirmed`
+node and then reported that it "may want to re-stamp it".
+
+**Change signals**: `public-contract` — the vault schema and the MCP write
+contract both change.
+**Computed route**: `pnpm po:route` returned one-way · risk `meaning` ·
+reviewers `po-evidence` + `po-steward` · record required. Boundaries:
+truth `affected` (when proposed meaning becomes accepted now lives in the
+vault), transfer `unchanged`, agent-write `affected`, human-correction
+`affected`.
+
+**Primary Atlas risk**: meaning.
+**Confidence**: medium — the mechanism is measured, the human need behind it
+still rests on one owner's account.
+**Accountable owner**: jinan.
+
+**Recovery proof**: Given a folder an agent has just written, without reading
+the repository source, a person can say from the files alone which nodes are
+reserved for them and which approvals no longer describe their node; and a
+following agent reads that constraint through `get_concept` alone. Fail when the
+mark exists only on screen, when an agent reads it and writes anyway, or when it
+does not survive the next session.
+
+Verified in the running app, 2026-09-02: a person's click wrote
+`review_state: confirmed` · `reviewed_at` · `reviewed_digest` into the file on
+disk; an edit made outside the app then surfaced as "changed after you confirmed
+it" within 2 seconds, in both the document list and the document's own meta bar,
+with nothing reporting the change.
+
+**Decision**:
+
+1. **The refusal lives on the call path.** `reviewed_by`, `reviewed_at`, and
+   `reviewed_digest` cannot be written, and `review_state: confirmed` cannot be
+   set, through this server — the same immutability `created_by` has carried
+   since 2026-07-31. Clearing a reservation is refused for the same reason.
+   Raising one stays allowed: an agent that cannot settle a question needs
+   somewhere to put it, and that is the behaviour the product wants.
+2. **Every write tool, not one.** A guard on `patch_concept` alone is a detour;
+   `add_relation`, `remove_relation`, `replace_relation`, `rename_concept`,
+   `reclassify_concept`, `merge_concepts`, and `delete_concept` refuse a reserved
+   node too.
+3. **Two facts, not one enum.** A reservation is forward-looking and must survive
+   the content changing; an approval is backward-looking and must expire when it
+   does. Folded together, the reservation evaporates on the next agent write —
+   the exact failure the mechanism exists to prevent.
+4. **Detection carries what the gate cannot reach.** This server never sees a
+   direct file edit, so `reviewDigest` binds an approval to the meaning it
+   approved and a later change reads as `changed-since-review` without anyone's
+   cooperation. Localized display names and key order stay outside the binding,
+   or one `display_ko` would expire every approval in a vault.
+5. **No "not yet reviewed" list.** 80 of this repository's own 94 nodes carry
+   `created_by: agent:unknown`. A queue counting unmarked nodes opens on a wall
+   of hundreds and is closed once. Absence stays unknown — the invariant record
+   93 §5 already holds.
+6. **The vault `AGENTS.md` sentence stays, and is never called a defence.** It is
+   honoured by 2 of 3 tiers; that is a courtesy to capable models, and describing
+   it as enforcement would trade a real, modest gain for a false sense of safety.
+
+**Decision delta**: narrowed · evidence-bounded · verification-strengthened.
+`po-evidence` inverted the build order — the probe cost half a day against a
+one-way public-contract change, and it corrected the premise: durable human
+decision receipts already existed in `.ontology-atlas/acp-work.jsonl`, but
+gitignored, unread by any tool, capped at 200 rows, and attached to a tool call
+rather than to a node. The defect was retrievability, not absence.
+`po-steward` split the enum and removed every `mtime` binding, on the grounds
+that a stale approval is worse than no mark because it launders a later rewrite
+as human-accepted truth, and that adding the binding later would be a breaking
+migration under spec §8.
+
+**Review footprint**: `po-evidence` + `po-steward`, one first-position turn each,
+zero rebuttal turns. They disagreed in label — probe first versus build and
+verify — but named the same next action, and a rebuttal round over identical
+work would have been convergence theatre. Independence limit: both were given
+the same brief and neither saw the other's verdict.
+
+**Dissent and falsifier**: the compounding value still rests on one owner's
+observation, not a second independent user — the same `2/4` problem insight the
+2026-09-01 council recorded. A leaner reading was defensible: ship the bare
+fields, let a stale approval lie, and pay for binding semantics only once the
+fact proves it accumulates. This decision is wrong if reservations are raised but
+never retrieved by a following agent in real sessions — that would make the
+constraint ceremony and the honest answer would be that Docs is a reading
+surface, not a judgment surface. It is also wrong if a drifted approval is
+treated by users as acceptable context rather than a false claim.
+
+**Revisit**: ten dogfood agent sessions in the installed app, or the first
+observed instance of an agent overwriting a reserved node — whichever comes
+first.
+
+**Slice**: IN — the two frontmatter facts, the call-path refusal across every
+write tool, `get_concept` exposure, the app-side digest with its cross-package
+contract, the Docs queue, the document meta chip, and the person's own write.
+OUT — a public-spec entry for these keys (held outside `ONTOLOGY-ATLAS-SPEC.md`
+§2/§5 until dogfood, so the choice stays recoverable), `reviewed_by` identity
+(there is no login, and the field is written only when a name exists), map
+badges, and the collection-tab and audit-modal cleanup the same review named.
+
+**Status**: implemented · probe recorded · automated and rendered verification
+passed · installed-app proof pending
+
+---
+
 ## 2026-09-01 — Pull-request CI follows impact; default-branch truth stays exhaustive
 
 **Pre-review decision**: extend the Playwright-only setup classifier from #1365

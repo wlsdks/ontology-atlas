@@ -1272,7 +1272,9 @@
           "changedHeader": "Changed after you confirmed it · {count}",
           "changedBy": "{name} confirmed it, and it changed afterwards",
           "changedPlain": "Confirmed once, and it changed afterwards",
-          "docChipRaised": "A person has to decide this"
+          "docChipRaised": "A person has to decide this",
+          "actionConfirm": "I checked this",
+          "actionRelease": "I decided this"
         }
       },
       "empty": {
