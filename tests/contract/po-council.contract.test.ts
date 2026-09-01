@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -410,6 +410,53 @@ describe('Atlas PO pilot can decide its sunset', () => {
       phase: 'collecting',
       metrics: { eligibleDecisions: expect.any(Number) },
     });
+  });
+
+  it('--check never fails a pull request from the calendar alone', () => {
+    /*
+     * 2026-09-01 review: the gates lane runs `po:pilot -- --check` on every PR,
+     * and `decision-required` arrives purely from a date. The old code returned
+     * 1 for it before the check branch was consulted, so 21 days after the
+     * pilot started every PR would have gone red with no relation to its
+     * content. CI mode gates on register validity, an unsupported keep, and a
+     * safety stop; a due decision prints as DUE and stays the owner's reminder.
+     */
+    const farPastDeadline = '2027-01-01';
+    const check = spawnSync(
+      process.execPath,
+      [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`],
+      { cwd: ROOT, encoding: 'utf8' },
+    );
+    expect(check.status, check.stderr).toBe(0);
+    expect(check.stderr).toMatch(/DUE:/);
+    expect(check.stderr).not.toMatch(/FAIL:/);
+
+    // The owner-facing full mode keeps failing loudly at the same date.
+    const full = spawnSync(process.execPath, [PILOT_CLI, `--as-of=${farPastDeadline}`], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    expect(full.status).toBe(1);
+    expect(full.stderr).toMatch(/FAIL:/);
+  });
+
+  it('accepts the YAML forms the shared frontmatter parser accepts', () => {
+    /*
+     * 2026-09-01 review: the private line-split parser threw on a comment line,
+     * a block scalar, or a block list — so an innocuous owner edit to the
+     * register bricked the required gates lane on every PR. Parsing now goes
+     * through scripts/lib/parse-frontmatter.mjs; register strictness (required
+     * keys, dates, enum, duplicate keys) stays local.
+     */
+    const source = read(PILOT);
+    const close = source.indexOf('\n---\n', 4);
+    const withBenignForms = `${source.slice(0, close)}\n# owner note comment\nnote: |-\n  two lines the owner\n  wrote for context\nowners:\n  - stark\n${source.slice(close)}`;
+    const parsed = parsePoPilot(withBenignForms);
+    expect(parsed.metadata.outcome).toBeDefined();
+
+    // The local strictness survives the delegation.
+    const withDuplicate = `${source.slice(0, close)}\noutcome: keep\n${source.slice(close)}`;
+    expect(() => parsePoPilot(withDuplicate)).toThrow(/duplicate frontmatter key/);
   });
 });
 

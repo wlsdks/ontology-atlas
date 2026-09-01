@@ -54,11 +54,29 @@ export function runPoPilot(argv, io = console) {
     const result = evaluatePoPilot(pilot, args.asOf);
     const failures = pilotCheckFailures(result);
     io.log(args.json ? JSON.stringify(result, null, 2) : formatPoPilot(result));
+    /*
+     * --check is the CI mode and gates on what a pull request can answer for:
+     * the register's validity, an unsupported keep, and a live safety stop.
+     * The calendar is not on that list (2026-09-01 review): `decision-required`
+     * arrives purely from a date, and the old code returned 1 for it before the
+     * check branch was ever consulted — 21 days after the pilot started, every
+     * PR in the repository would have failed its required gate with no relation
+     * to its content. A due decision is the owner's reminder, printed here as
+     * DUE, never a per-PR failure.
+     */
+    if (args.check) {
+      const gating = ['invalid-keep', 'premature-keep', 'safety-stop'].includes(result.phase);
+      if (gating && failures.length > 0) {
+        for (const failure of failures) io.error(`[po-pilot] FAIL: ${failure}`);
+        return 1;
+      }
+      for (const failure of failures) io.error(`[po-pilot] DUE: ${failure}`);
+      return 0;
+    }
     if (failures.length > 0) {
       for (const failure of failures) io.error(`[po-pilot] FAIL: ${failure}`);
       return 1;
     }
-    if (args.check && result.phase === 'invalid-keep') return 1;
     return 0;
   } catch (error) {
     io.error(error.message.startsWith('[po-pilot]') ? error.message : `[po-pilot] ${error.message}`);
