@@ -437,4 +437,27 @@ export const CASES = [
       body: "",
     },
   },
+  {
+    // 2026-09-01 review: the serializer writes booleans and numbers unquoted,
+    // but the read side returned them as strings — `draft: false` came back as
+    // the truthy string 'false' after one round trip, with the type depending
+    // on nesting depth in the same file. Top-level scalars are typed like
+    // nested ones.
+    name: "top-level booleans and numbers are typed, matching nested members",
+    input: "---\ndraft: false\ncount: 2\nratio: 0.8\nmeta: { flag: false }\n---\n",
+    expected: {
+      frontmatter: { draft: false, count: 2, ratio: 0.8, meta: { flag: false } },
+      body: "",
+    },
+  },
+  {
+    // Quoting is how an author forces text: a quoted 'false' or '2' stays a
+    // string, and date-like or version-like values never coerce.
+    name: "quoted scalars stay strings; date/version-like values stay strings",
+    input: '---\nliteral: "false"\nversion: 1.0.0\ncreated: 2026-08-31\n---\n',
+    expected: {
+      frontmatter: { literal: "false", version: "1.0.0", created: "2026-08-31" },
+      body: "",
+    },
+  },
 ];

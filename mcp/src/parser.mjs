@@ -164,7 +164,7 @@ export function parseFrontmatter(input) {
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
-    const scalar = unquote(value);
+    const scalar = parseTopLevelScalar(value);
     if (assignParsedKey(frontmatter, key, scalar, diagnostics, i + 2)) {
       pushGraphArrayDiagnostic(diagnostics, key, i + 2, scalar);
     }
@@ -262,6 +262,27 @@ function parseScalar(value) {
   if (v === 'false') return false;
   if (v !== '' && !Number.isNaN(Number(v))) return Number(v);
   return v;
+}
+
+/*
+ * Top-level scalars are typed like nested ones (2026-09-01 review). The
+ * serializer writes booleans and numbers unquoted, so reading them back as
+ * strings inverted any consumer branching on the field after one round trip —
+ * `draft: false` came back as the truthy string 'false', with the type
+ * depending on nesting depth in the same file. A quoted scalar stays a string:
+ * quoting is how an author forces text.
+ */
+function parseTopLevelScalar(value) {
+  const trimmed = value.trim();
+  const quote = trimmed[0];
+  if (
+    (quote === '"' || quote === "'") &&
+    trimmed.length >= 2 &&
+    trimmed[trimmed.length - 1] === quote
+  ) {
+    return unquote(value);
+  }
+  return parseScalar(value);
 }
 
 function unquote(value) {
