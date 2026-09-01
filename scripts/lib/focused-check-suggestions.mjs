@@ -386,6 +386,17 @@ const RULES = [
     ],
   },
   {
+    // The report is the instrument the hook falsifiers are written against, so
+    // it is covered by path like the hooks themselves rather than by a name
+    // somebody has to remember.
+    command: 'pnpm test:harness:report',
+    reason: 'the harness report, or the hook state it reads, changed',
+    matches: [
+      /^scripts\/harness-report(?:\.test)?\.mjs$/,
+      /^\.claude\/hooks\/(?:fast-sensor|stamp-verification|remind-verify-on-stop)\.sh$/,
+    ],
+  },
+  {
     command: 'pnpm test:claude:hooks',
     reason: 'agent hook wiring, a guard, or the commit-message gate changed',
     /*
