@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import playwrightConfig from '../../playwright.config';
+import playwrightConfig, { resolvePlaywrightWorkers } from '../../playwright.config';
 import { POST_MERGE_SPECS } from '../e2e/post-merge-specs';
 
 /**
@@ -105,6 +105,20 @@ describe('Playwright 프로젝트가 그 목록에서 나온다', () => {
     const postMerge = projects.find((p) => p.name === 'post-merge');
     expect(postMerge?.testMatch).toEqual(globs);
     expect(smoke?.testIgnore).toEqual(globs);
+  });
+});
+
+describe('정적 export CI만 runner의 두 CPU를 쓴다', () => {
+  it('CI와 정적 export가 함께 선언될 때만 worker를 둘로 늘린다', () => {
+    expect(resolvePlaywrightWorkers({ CI: 'true', PLAYWRIGHT_STATIC: '1' })).toBe(2);
+    expect(resolvePlaywrightWorkers({ CI: '1', PLAYWRIGHT_STATIC: '1' })).toBe(2);
+    expect(resolvePlaywrightWorkers({ CI: 'true' })).toBe(1);
+    expect(resolvePlaywrightWorkers({ PLAYWRIGHT_STATIC: '1' })).toBe(1);
+    expect(resolvePlaywrightWorkers({ CI: 'false', PLAYWRIGHT_STATIC: '1' })).toBe(1);
+  });
+
+  it('보통의 test process는 로컬·dev용 단일 worker를 유지한다', () => {
+    expect(playwrightConfig.workers).toBe(1);
   });
 });
 
