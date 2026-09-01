@@ -9316,6 +9316,47 @@ await test("absorb_document — repo boundary, symlink escape, explicit opt-in, 
   }
 });
 
+await test("absorb_document — 실패한 confirm 은 볼트도 원문도 바꾸지 않는다 (all-or-nothing)", async () => {
+  // Caught in the 2026-09-01 review: the confirm path wrote sections in a bare
+  // loop, so a mid-loop failure left a half-absorbed vault and the retry minted
+  // -2-suffixed duplicates. The write must be one unit like rename/merge.
+  if (process.platform === "win32") return; // chmod-based fault injection
+  const repoRoot = mkdtempSync(join(tmpdir(), "ontology-atlas-absorb-atomic-"));
+  const vault = join(repoRoot, "vault");
+  mkdirSync(vault);
+  const source = [
+    "# Agent Guide",
+    "",
+    "## Security Policy",
+    "",
+    "Always review destructive changes before applying them.",
+    "",
+    "## Review Policy",
+    "",
+    "Never merge without a second review of the diff.",
+    "",
+  ].join("\n");
+  const sourcePath = join(repoRoot, "AGENTS.md");
+  writeFileSync(sourcePath, source, "utf-8");
+  chmodSync(vault, 0o555); // every section write fails — the strictest partial-failure shape
+  try {
+    const { responses } = await rpc(vault, [
+      ...INIT_REQUESTS,
+      callTool(2, "absorb_document", { filePath: sourcePath, confirm: true }),
+    ], 2500, { OATLAS_REPO_ROOT: repoRoot });
+    assert.equal(isErrorResponse(responses, 2), true, "confirm on a read-only vault must fail");
+    const text = responses.find((row) => row.id === 2).result.content[0].text;
+    assert.match(text, /rolled back|unchanged/i, `실패가 원상복구를 말하지 않는다: ${text}`);
+    chmodSync(vault, 0o755);
+    assert.deepEqual(readdirSync(vault), [], "실패한 confirm 이 노드를 남겼다");
+    assert.equal(readFileSync(sourcePath, "utf-8"), source, "실패한 confirm 이 원문을 건드렸다");
+    assert.equal(existsSync(`${sourcePath}.pre-absorb.bak`), false, "실패한 confirm 이 백업을 남겼다");
+  } finally {
+    chmodSync(vault, 0o755);
+    rmSync(repoRoot, { recursive: true, force: true });
+  }
+});
+
 await test("git_status/git_snapshot — validated dry-run and vault-only local commit", async () => {
   const root = makeVault([
     { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },

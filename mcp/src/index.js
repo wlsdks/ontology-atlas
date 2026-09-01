@@ -115,6 +115,7 @@ import {
   updateDoc,
   vaultSlugExists,
   writeDoc,
+  writeFileAtomically,
 } from './vault.mjs';
 import {
   CONSTRUCTION_RULES_EN,
@@ -123,7 +124,7 @@ import {
   META_MODEL_RULES_EN,
 } from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent, resolveAgentName } from './activity-log.mjs';
-import { writeFileSync } from 'node:fs';
+import { unlinkSync, writeFileSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import {
@@ -11471,28 +11472,72 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     );
   }
 
+  /*
+   * All-or-nothing (2026-09-01 review): rename/merge/reclassify apply their
+   * multi-file writes as one unit, and absorption has the same shape — N new
+   * node files plus one source rewrite. Writing sections in a bare loop meant a
+   * mid-loop failure (a slug created concurrently, EACCES, ENOSPC) left a
+   * half-absorbed vault, and the retry re-planned around the already-landed
+   * files into `-2`-suffixed duplicates. writeDoc still performs each write
+   * (slug/identity validation, uid minting, the growth gate); the pre-check
+   * refuses before anything lands and the rollback removes what this call
+   * created — every written file is new, so unlink restores the vault.
+   */
+  const absorbSections = plan.sections.filter((section) => section.action === 'absorb');
+  for (const section of absorbSections) {
+    if (existsSync(slugToPath(VAULT_ROOT, section.targetSlug))) {
+      throw new Error(
+        `absorb_document refused before writing anything: "${section.targetSlug}" already exists ` +
+          '(created since the dry-run). The vault is unchanged — run the dry-run again and re-confirm.',
+      );
+    }
+  }
   const written = [];
-  for (const section of plan.sections) {
-    if (section.action !== 'absorb') continue;
-    const fm = buildFrontmatter({
-      slug: section.targetSlug,
-      kind: 'document',
-      title: section.targetTitle,
-      role: 'policy',
-      source: relative(VAULT_ROOT, abs),
-      // Absorption is a write through this server too — same stamp, same identity source.
-      [CREATED_BY_KEY]: agentProvenance(),
-    });
-    const body = `# ${section.targetTitle}\n\n${section.body}\n`;
-    const writtenPath = writeDoc(VAULT_ROOT, section.targetSlug, { frontmatter: fm, body });
-    written.push({ slug: section.targetSlug, filePath: writtenPath });
+  try {
+    for (const section of absorbSections) {
+      const fm = buildFrontmatter({
+        slug: section.targetSlug,
+        kind: 'document',
+        title: section.targetTitle,
+        role: 'policy',
+        source: relative(VAULT_ROOT, abs),
+        // Absorption is a write through this server too — same stamp, same identity source.
+        [CREATED_BY_KEY]: agentProvenance(),
+      });
+      const body = `# ${section.targetTitle}\n\n${section.body}\n`;
+      const writtenPath = writeDoc(VAULT_ROOT, section.targetSlug, { frontmatter: fm, body });
+      written.push({ slug: section.targetSlug, filePath: writtenPath });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const rollbackFailures = [];
+    for (const entry of written) {
+      try {
+        unlinkSync(entry.filePath);
+      } catch (rollbackError) {
+        rollbackFailures.push(`${entry.filePath} (${rollbackError?.code ?? rollbackError})`);
+      }
+    }
+    if (rollbackFailures.length > 0) {
+      // Saying "I do not know" beats saying "it is fine" — name what was left behind.
+      throw new Error(
+        `absorb_document failed mid-write AND rollback could not remove ${rollbackFailures.length} file(s):\n  ` +
+          `${rollbackFailures.join('\n  ')}\nRemove them by hand before retrying. Original error: ${message}`,
+      );
+    }
+    throw new Error(
+      `absorb_document failed before completing; every section written by this call was rolled back ` +
+        `and the vault is unchanged. Original error: ${message}`,
+    );
   }
 
   // Backup *after* the vault writes succeed — if a write throws above, the
   // original source file is left untouched and the caller can retry safely.
   copyFileSync(abs, backupPath);
   const pointer = buildSlimPointer(plan);
-  writeFileSync(abs, pointer, 'utf-8');
+  // Atomic replace: a bare writeFileSync truncates the user's document first,
+  // so a death between truncate and write destroyed the very file being absorbed.
+  writeFileAtomically(abs, pointer);
 
   return {
     ok: true,
