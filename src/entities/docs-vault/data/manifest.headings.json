@@ -3797,6 +3797,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 · v1.0.2: the full-codebase sweep hardens every write path",
+      "slug": "2026-09-01-v102-the-full-codebase-sweep-hardens-every-write-path"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 · v1.0.1: the post-release bug sweep lands",
       "slug": "2026-09-01-v101-the-post-release-bug-sweep-lands"
     },
