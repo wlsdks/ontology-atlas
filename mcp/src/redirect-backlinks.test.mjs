@@ -326,6 +326,26 @@ test("findBacklinks 는 ambiguous tail 을 exact target backlink 로 오인하�
   rmSync(root, { recursive: true, force: true });
 });
 
+test("findBacklinks — includeAmbiguousTailRefs opts candidate referrers in, marked", () => {
+  // delete_concept's safety gate uses this: a doc whose ref only *could* mean
+  // the target must still block an un-forced delete (bug sweep 2026-09-01).
+  const root = makeVault();
+  writeMd(root, "capabilities/shared-name", "---\nkind: capability\n---\n");
+  writeMd(root, "elements/shared-name", "---\nkind: element\n---\n");
+  writeMd(root, "domain", "---\nkind: domain\ncapabilities: [shared-name]\n---\n");
+  writeMd(root, "project", "---\nkind: project\nelements: [elements/shared-name]\n---\n");
+
+  const backlinks = findBacklinks(root, "elements/shared-name", {
+    includeAmbiguousTailRefs: true,
+  });
+  assert.deepEqual(backlinks.map((row) => row.slug).sort(), ["domain", "project"]);
+  const domainRow = backlinks.find((row) => row.slug === "domain");
+  assert.equal(domainRow.ambiguousTail, true);
+  const projectRow = backlinks.find((row) => row.slug === "project");
+  assert.equal(projectRow.ambiguousTail, undefined);
+  rmSync(root, { recursive: true, force: true });
+});
+
 test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건드리지 않는다", () => {
   // Measured regression (2026-08-01, while flattening the dogfood vault): the
   // rename `elements/src/widgets/docs-vault` → `elements/docs-vault-widget`

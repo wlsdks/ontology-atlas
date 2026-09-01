@@ -108,6 +108,7 @@ import {
   normalizeRelationRefs,
   readDoc,
   applyAllOrNothing,
+  canonicalDiskSlug,
   redirectBacklinks,
   slugToPath,
   patchFrontmatter,
@@ -1442,6 +1443,9 @@ const BACKLINK_ROW_OUTPUT_SCHEMA = Object.freeze({
     mtime: { type: 'number', minimum: 0 },
     matchedKeys: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
     matchedInBody: { type: 'boolean' },
+    // Set when the referrer names an ambiguous tail that only *could* mean this
+    // node — delete_concept widens its safety check to these rows.
+    ambiguousTail: { type: 'boolean' },
   },
   required: ['uid', 'slug', 'kind', 'title', 'mtime'],
   additionalProperties: false,
@@ -8327,7 +8331,12 @@ function assertGraphNodeEndpoint(canonicalSlug, role) {
 
 function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
-  if (vaultSlugExists(VAULT_ROOT, slug)) return slug;
+  // Canonicalize letter case to the on-disk spelling before returning. On macOS
+  // and Windows `existsSync` accepts a wrong-case slug, but every backlink and
+  // relation match downstream is a case-sensitive string comparison — returning
+  // the caller's spelling here made writes target refs that no document uses.
+  const canonicalCase = canonicalDiskSlug(VAULT_ROOT, slug);
+  if (canonicalCase) return canonicalCase;
   const vaultDocs = docs ?? loadVaultDocs(VAULT_ROOT);
   const tailMatches = [];
   const frontmatterMatches = [];
@@ -11053,8 +11062,21 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
         `(for example "${newSlug}-tmp"), then to "${newSlug}".`,
     );
   }
-  if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
+  // Resolve the caller's spelling to the on-disk one before anything else. A
+  // wrong-case oldSlug passes `existsSync` on macOS/Windows while every backlink
+  // match below is case-sensitive — reproduced: rename deleted the document,
+  // redirected 0 backlinks, and reported success (bug sweep 2026-09-01).
+  const diskOldSlug = canonicalDiskSlug(VAULT_ROOT, oldSlug);
+  if (!diskOldSlug) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
+  }
+  const canonicalTarget = canonicalDiskSlug(VAULT_ROOT, newSlug);
+  if (canonicalTarget && canonicalTarget !== newSlug) {
+    throw new Error(
+      `Target slug "${newSlug}" collides with existing "${canonicalTarget}" — the names ` +
+        'differ only in letter case, which is the same file on macOS and Windows. ' +
+        'Choose a different name or rename that document out of the way first.',
+    );
   }
   const targetExists = vaultSlugExists(VAULT_ROOT, newSlug);
   if (!overwrite && targetExists) {
@@ -11063,7 +11085,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     );
   }
 
-  const sourcePath = slugToPath(VAULT_ROOT, oldSlug);
+  const sourcePath = slugToPath(VAULT_ROOT, diskOldSlug);
   const targetPath = slugToPath(VAULT_ROOT, newSlug);
   const sourceDoc = readDoc(VAULT_ROOT, sourcePath);
   const targetDoc = overwrite && targetExists ? readDoc(VAULT_ROOT, targetPath) : null;
@@ -11076,7 +11098,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
 
   // Source mtime conflict guard — compare against `expected` right after the read.
   if (typeof expected_mtime === 'number' && sourceDoc.mtime !== expected_mtime) {
-    throw new VaultConflictError(oldSlug, expected_mtime, sourceDoc.mtime);
+    throw new VaultConflictError(diskOldSlug, expected_mtime, sourceDoc.mtime);
   }
 
   // Step 1 — dry-run preview of every backlink rewrite.
@@ -11084,7 +11106,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   // Planning backlink rewrites for that stale target inverts the order: right
   // after the source is written, the stale target overwrites it again.
   const replacedSlugs = overwrite ? [newSlug] : [];
-  const preview = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, {
+  const preview = redirectBacklinks(VAULT_ROOT, diskOldSlug, newSlug, {
     dryRun: true,
     excludeSlugs: replacedSlugs,
   });
@@ -11095,7 +11117,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       dryRun: true,
       ...destructivePreviewState({ dryRun: true, wouldChange: true }),
       uid: sourceDoc.frontmatter.uid,
-      oldSlug,
+      oldSlug: diskOldSlug,
       newSlug,
       sourcePath,
       targetPath,
@@ -11120,10 +11142,15 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
    * failure it rolls back — as long as the process lives, the vault is as it started.
    */
   const nextFrontmatter = { ...sourceDoc.frontmatter };
-  if (typeof nextFrontmatter.slug === 'string') {
+  // Update `slug:` only when it mirrors the file slug. A differing value is a
+  // user-facing alias (the dogfood vault's `project.md` carries
+  // `slug: ontology-atlas`) that other documents reference by that spelling;
+  // overwriting it with newSlug severed every alias-form ref while
+  // backlinkUpdates reported nothing (bug sweep 2026-09-01).
+  if (typeof nextFrontmatter.slug === 'string' && nextFrontmatter.slug.trim() === diskOldSlug) {
     nextFrontmatter.slug = newSlug;
   }
-  const result = redirectBacklinks(VAULT_ROOT, oldSlug, newSlug, {
+  const result = redirectBacklinks(VAULT_ROOT, diskOldSlug, newSlug, {
     dryRun: false,
     deferWrite: true,
     excludeSlugs: replacedSlugs,
@@ -11155,7 +11182,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     dryRun: false,
     ...destructivePreviewState({ dryRun: false, wouldChange: false }),
     uid: sourceDoc.frontmatter.uid,
-    oldSlug,
+    oldSlug: diskOldSlug,
     newSlug,
     sourcePath,
     targetPath,
@@ -11233,7 +11260,12 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     backlinkUpdates: publicBacklinkUpdates(backlinkUpdates),
   };
   if (!confirm) return base;
-  const nextFrontmatter = { ...sourceDoc.frontmatter, slug: canonicalNew, kind: newKind };
+  const nextFrontmatter = { ...sourceDoc.frontmatter, kind: newKind };
+  // Same alias rule as rename_concept: only a `slug:` mirroring the file slug
+  // follows the move; a differing value is a referenced user-facing alias.
+  if (typeof nextFrontmatter.slug !== 'string' || nextFrontmatter.slug.trim() === canonicalOld) {
+    nextFrontmatter.slug = canonicalNew;
+  }
   if (domain === null || !['capability', 'element'].includes(newKind)) delete nextFrontmatter.domain;
   else if (domain !== undefined) nextFrontmatter.domain = domain;
   // One plan, for the same reason as rename: this tool also creates a file,
@@ -11280,12 +11312,25 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   if (fromSlug === intoSlug) {
     throw new Error('fromSlug and intoSlug are identical.');
   }
-  if (!vaultSlugExists(VAULT_ROOT, fromSlug)) {
+  // Operate on the disk's spelling, not the caller's — a wrong-case slug passes
+  // `existsSync` on macOS/Windows while backlink matching is case-sensitive, so
+  // the merge would delete the source and redirect nothing (bug sweep 2026-09-01).
+  const diskFromSlug = canonicalDiskSlug(VAULT_ROOT, fromSlug);
+  if (!diskFromSlug) {
     throw new Error(missingSlugMessage('fromSlug does not exist in vault', fromSlug));
   }
-  if (!vaultSlugExists(VAULT_ROOT, intoSlug)) {
+  const diskIntoSlug = canonicalDiskSlug(VAULT_ROOT, intoSlug);
+  if (!diskIntoSlug) {
     throw new Error(missingSlugMessage('intoSlug does not exist in vault', intoSlug));
   }
+  if (diskFromSlug === diskIntoSlug) {
+    throw new Error(
+      `fromSlug and intoSlug name the same document on disk ("${diskFromSlug}") — ` +
+        'the spellings differ only in letter case.',
+    );
+  }
+  fromSlug = diskFromSlug;
+  intoSlug = diskIntoSlug;
 
   const fromPath = slugToPath(VAULT_ROOT, fromSlug);
   const fromDoc = readDoc(VAULT_ROOT, fromPath);
@@ -11565,12 +11610,21 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   // Existence check, so a dry run never falsely reports "deletable". (deleteDoc
   // throws again at the real delete step, but the dry-run path never reaches
   // deleteDoc, hence the separate check.)
-  const filePath = slugToPath(VAULT_ROOT, slug);
-  if (!existsSync(filePath)) {
+  let filePath = slugToPath(VAULT_ROOT, slug);
+  // Resolve to the disk's spelling before the backlink safety check — a
+  // wrong-case slug passes `existsSync` on macOS/Windows while `findBacklinks`
+  // matches case-sensitively, so a referenced node was deletable without force
+  // and without a warning (bug sweep 2026-09-01).
+  const diskSlug = canonicalDiskSlug(VAULT_ROOT, slug);
+  if (!diskSlug) {
     throw new Error(missingSlugMessage('Doc not found', slug));
   }
+  slug = diskSlug;
+  filePath = slugToPath(VAULT_ROOT, slug);
   const sourceDoc = readDoc(VAULT_ROOT, filePath);
-  const backlinks = findBacklinks(VAULT_ROOT, slug);
+  // Ambiguous-tail referrers included: a doc whose ref merely *could* mean this
+  // node still blocks an un-forced delete (bug sweep 2026-09-01).
+  const backlinks = findBacklinks(VAULT_ROOT, slug, { includeAmbiguousTailRefs: true });
 
   if (!confirm) {
     const blockedReasons =
