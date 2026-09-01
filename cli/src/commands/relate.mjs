@@ -24,6 +24,7 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { normalizeRelationRefs, readDocFrontmatter, writeFrontmatterKey, writeFrontmatterKeys } from '../lib/write-vault.mjs';
 import {
   formatUnknownFlagError,
+  parseRawRequiredFlagValue,
   parseVaultFlag,
   resolveTrailingVaultArg,
 } from '../lib/cli-args.mjs';
@@ -253,7 +254,10 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--dry-run') flags.dryRun = true;
-    else if (a === '--why') flags.why = args[++i] ?? null;
+    // Flag-like next tokens are rejected, like every other value flag here —
+    // `--why --dry-run` used to consume `--dry-run` as the rationale and turn a
+    // requested preview into a real vault write (bug sweep 2026-09-01).
+    else if (a === '--why') flags.why = parseRawRequiredFlagValue('--why', args[++i]);
     else if (a.startsWith('--why=')) flags.why = a.slice('--why='.length);
     else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);

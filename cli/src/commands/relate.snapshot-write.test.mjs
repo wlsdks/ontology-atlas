@@ -197,3 +197,18 @@ test('relate consolidates a hand-authored depends_on: alias instead of splitting
   });
 });
 
+test('relate --why refuses a flag-like value — a preview must never become a write', { concurrency: false }, async () => {
+  // `--why --dry-run` used to consume `--dry-run` as the rationale: the user
+  // asked for a preview and got a real vault write with that literal persisted.
+  await withVault(async ({ root, source }) => {
+    const before = readFileSync(source, 'utf-8');
+    const result = await captureCommand(() =>
+      runRelate(['a', 'b', 'depends_on', root, '--why', '--dry-run'], {
+        runRelationCheckQuery: async () => relationCheck(),
+      }),
+    );
+    assert.notEqual(result.code, 0, 'flag-like --why value must be rejected');
+    assert.match(stripAnsi(result.stderr), /--why requires a value/i);
+    assert.equal(readFileSync(source, 'utf-8'), before, 'nothing may be written');
+  });
+});
