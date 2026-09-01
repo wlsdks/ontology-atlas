@@ -17,7 +17,7 @@ import type { MeaningGapProse } from "./meaning-gap-rows";
  * `fillHandoffTemplate`.
  */
 
-export type HandoffLocale = "en" | "ko";
+type HandoffLocale = "en" | "ko";
 
 export interface InsightsHandoffProse extends DoNextHandoffProse, MeaningGapProse {
   duplicate: string;
