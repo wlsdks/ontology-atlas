@@ -2322,9 +2322,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The ACP permission boundary that lets Atlas read tools continue automatically but pauses every Atlas write tool on a typed change review. It offers allowonce or rejectonce and deliberately hides allowalways for semantic writes.",
-      "wordCount": 34,
-      "updatedAt": "2026-08-23",
+      "excerpt": "The ACP permission boundary that lets Atlas read tools continue automatically but pauses every Atlas write tool on a typed change review. It offers allowonce or rejectonce and deliberately hides allowalways for semantic writes. Since 2026-09-01 the same boundary also stops a non-Atlas tool whose declared kind is not re",
+      "wordCount": 91,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
