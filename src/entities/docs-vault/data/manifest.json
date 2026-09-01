@@ -1358,12 +1358,14 @@
         "domain": "domains/onboarding-and-shell",
         "elements": [],
         "path": "src/features/app-update",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "review_state": "human_decides",
+        "review_note": "Does this belong with onboarding-and-shell, or in a distribution domain beside desktop-download-decision? The two share one release gate (scripts/check-hosted-download-surface.mjs imports validateHostedUpdaterManifest), so splitting this one alone would put both halves of that gate in different domains."
       },
       "headings": [],
       "excerpt": "The ability to automatically or manually check for new versions in the desktop shell, download and install signed archives, and relaunch the app. The installed app reads only one Pages manifest URL that remains constant across release types. Inclusions: desktop-shell 24-hour automatic checks, manual checks in settings,",
       "wordCount": 260,
-      "updatedAt": "2026-08-24",
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {

@@ -8,6 +8,8 @@ domain: domains/onboarding-and-shell
 elements: []
 path: src/features/app-update
 created_by: "agent:unknown"
+review_state: human_decides
+review_note: "Does this belong with onboarding-and-shell, or in a distribution domain beside desktop-download-decision? The two share one release gate (scripts/check-hosted-download-surface.mjs imports validateHostedUpdaterManifest), so splitting this one alone would put both halves of that gate in different domains."
 ---
 
 ## Definition
