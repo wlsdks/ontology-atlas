@@ -274,11 +274,19 @@ async function defaultVerifyGenerated({ root }) {
 
 function assertNoUntrackedOrUnstagedDocs(root, unmerged) {
   const conflictSet = new Set(unmerged);
+  // Every builder input is guarded, not just docs/ — the regeneration also
+  // reads samples/storefront/**.md into the staged generated output
+  // (sample-storefront.*.json), so an unstaged storefront edit was silently
+  // baked into the conflict resolution, violating the "regenerate only from
+  // byte-identical committed inputs" contract (bug sweep 2026-09-01). Deleted
+  // inputs count too (diff-filter D): a removed doc changes the output as
+  // surely as an edited one.
+  const inputPathspecs = ['docs', 'samples/storefront'];
   const untrackedDocs = splitNul(
-    gitOutput(root, ['ls-files', '--others', '--exclude-standard', '-z', '--', 'docs']),
+    gitOutput(root, ['ls-files', '--others', '--exclude-standard', '-z', '--', ...inputPathspecs]),
   ).filter((filePath) => filePath.endsWith('.md'));
   const unstagedDocs = splitNul(
-    gitOutput(root, ['diff', '--name-only', '--diff-filter=ACMR', '-z', '--', 'docs']),
+    gitOutput(root, ['diff', '--name-only', '--diff-filter=ACMRD', '-z', '--', ...inputPathspecs]),
   ).filter((filePath) => filePath.endsWith('.md') && !conflictSet.has(filePath));
   const unsafe = [...new Set([...untrackedDocs, ...unstagedDocs])];
   if (unsafe.length > 0) {
