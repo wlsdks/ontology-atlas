@@ -47,12 +47,18 @@ import {
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import { buildImpactRanking } from "../lib/impact-ranking";
-import { buildDoNextQueue, withDoNextVerification } from "../lib/do-next-queue";
+import {
+  buildDoNextQueue,
+  fillHandoffTemplate,
+  withDoNextVerification,
+  type DoNextHandoffProse,
+} from "../lib/do-next-queue";
 import { buildDuplicatePairs, type DuplicatePairRow } from "../lib/duplicate-pairs";
 import {
   buildDomainChoices,
   buildMeaningGapRows,
   type MeaningGapRow,
+  type MeaningGapProse,
 } from "../lib/meaning-gap-rows";
 import { resolveSessionAbilities } from "../lib/session-abilities";
 import type { QueueSectionKey } from "../lib/queue-work-groups";
@@ -160,16 +166,23 @@ const RECENT_UPDATES_LIMIT = 8;
  */
 const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
 
-/** Each tab's question, transposed into an execution plan for the agent. */
-const HANDOFF_PAYLOAD: Record<InsightsTab, string> = {
-  "do-next": 'query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인',
-  composition: 'list_kinds({}) → query_ontology({operation:"overview"}) → 빈 정의는 validate_vault({}) 의 warnings 로 확인',
-  connections: 'query_ontology({operation:"centrality"}) → query_ontology({operation:"blast_radius", slug:"<hub-slug>"})',
-  boundaries: 'query_ontology({operation:"domain_matrix"}) → 교차 예시는 query_ontology({operation:"match_edges"})',
-  freshness: 'query_ontology({operation:"maintenance_plan"}) → find_orphans({}) → query_ontology({operation:"growth_plan"})',
+/**
+ * Each tab's question, transposed into an execution plan for the agent. The
+ * message key per tab — the strings themselves are user-facing clipboard copy
+ * and live in the locale files (read via `t.raw`, so the MCP-call braces
+ * survive ICU untouched). They used to be hardcoded Korean, so an
+ * English-locale user copied Korean operating instructions (bug sweep
+ * 2026-09-01).
+ */
+const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, string> = {
+  "do-next": "tabDoNext",
+  composition: "tabComposition",
+  connections: "tabConnections",
+  boundaries: "tabBoundaries",
+  freshness: "tabFreshness",
   // The only payload whose output is prose. It reads bodies rather than running an
   // operation, because a narrative rests on what the nodes say, not on a count.
-  flow: 'list_concepts({summary:true}) → get_concepts({body:"full"}) 로 project 와 domain 본문 → 문단마다 슬러그 인용',
+  flow: "tabFlow",
 };
 
 interface InsightsBadgeInput {
@@ -216,6 +229,38 @@ const INSIGHTS_TAB_BADGE: Record<
  */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
+  // Locale-resolved handoff prose. `t.raw` hands back the template verbatim —
+  // ICU would otherwise treat every MCP-call `{…}` as an argument.
+  const handoffRaw = useCallback(
+    (key: string): string => String(t.raw(`handoffProse.${key}`)),
+    [t],
+  );
+  const handoffProse = useMemo<DoNextHandoffProse>(
+    () => ({
+      verificationGate: handoffRaw("verificationGate"),
+      createDocFirst: handoffRaw("createDocFirst"),
+      doNextUpdate: handoffRaw("doNextUpdate"),
+      doNextUpdateProof: handoffRaw("doNextUpdateProof"),
+      doNextNewDocProof: handoffRaw("doNextNewDocProof"),
+      orphanRelate: handoffRaw("orphanRelate"),
+      orphanFindNeighbors: handoffRaw("orphanFindNeighbors"),
+      orphanProof: handoffRaw("orphanProof"),
+      promotionNewDoc: handoffRaw("promotionNewDoc"),
+      promotionDocumented: handoffRaw("promotionDocumented"),
+      promotionProof: handoffRaw("promotionProof"),
+    }),
+    [handoffRaw],
+  );
+  const meaningGapProse = useMemo<MeaningGapProse>(
+    () => ({
+      verificationGate: handoffRaw("verificationGate"),
+      missingDefinition: handoffRaw("missingDefinition"),
+      missingDefinitionProof: handoffRaw("missingDefinitionProof"),
+      missingDomain: handoffRaw("missingDomain"),
+      missingDomainProof: handoffRaw("missingDomainProof"),
+    }),
+    [handoffRaw],
+  );
   const kindLabel = useOntologyKindLabel();
   const edgeTypeLabel = useEdgeTypeLabel();
   const searchParams = useSearchParams();
@@ -382,8 +427,12 @@ export function OntologyInsightsPage() {
   );
   const duplicateHandoff = (row: DuplicatePairRow): string =>
     withDoNextVerification(
-      `merge_concepts({fromSlug:"${row.dissolveSlug}", intoSlug:"${row.keepSlug}"}) 로 합칠 결과 미리보기 → 같은 뜻이 맞으면 같은 호출에 confirm:true 를 더해 실행`,
-      `get_concept({slug:"${row.keepSlug}"}) 로 합쳐진 원문 확인`,
+      fillHandoffTemplate(handoffRaw("duplicate"), {
+        dissolve: row.dissolveSlug,
+        keep: row.keepSlug,
+      }),
+      fillHandoffTemplate(handoffRaw("duplicateProof"), { keep: row.keepSlug }),
+      handoffProse.verificationGate,
     );
 
   const freshness = useMemo(
@@ -404,8 +453,12 @@ export function OntologyInsightsPage() {
   // lost; the full list is carried by the handoff payload rather than the screen
   // (the tab ≤ 1.3× viewport contract).
   const doNextQueue = useMemo(
-    () => buildDoNextQueue(nodes, edges, docFreshnessIndex, { perKindLimit: DO_NEXT_PER_KIND_LIMIT }),
-    [nodes, edges, docFreshnessIndex],
+    () =>
+      buildDoNextQueue(nodes, edges, docFreshnessIndex, {
+        perKindLimit: DO_NEXT_PER_KIND_LIMIT,
+        prose: handoffProse,
+      }),
+    [nodes, edges, docFreshnessIndex, handoffProse],
   );
 
   // What this session can actually do right now — the only input to the "mine first"
@@ -432,8 +485,12 @@ export function OntologyInsightsPage() {
   // document never appears here.
   const conceptFacts = useVaultConceptFacts();
   const meaningGapResult = useMemo(
-    () => buildMeaningGapRows(nodes, conceptFacts, { perKindLimit: DO_NEXT_PER_KIND_LIMIT }),
-    [nodes, conceptFacts],
+    () =>
+      buildMeaningGapRows(nodes, conceptFacts, {
+        perKindLimit: DO_NEXT_PER_KIND_LIMIT,
+        prose: meaningGapProse,
+      }),
+    [nodes, conceptFacts, meaningGapProse],
   );
   const domainChoices = useMemo(() => buildDomainChoices(nodes), [nodes]);
 
@@ -512,8 +569,9 @@ export function OntologyInsightsPage() {
   const cycleHandoff = (cycle: DependencyCycle): string => {
     const closed = [...cycle.nodeIds.map(cycleMcpRef), cycleMcpRef(cycle.nodeIds[0])].join(" → ");
     return withDoNextVerification(
-      `의존 사이클: ${closed}. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정`,
-      'query_ontology({operation:"cycles"}) 로 사이클 해소 확인',
+      fillHandoffTemplate(handoffRaw("cycle"), { cycle: closed }),
+      handoffRaw("cycleProof"),
+      handoffProse.verificationGate,
     );
   };
 
@@ -1171,7 +1229,7 @@ export function OntologyInsightsPage() {
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}
-          payload={HANDOFF_PAYLOAD[tab] ?? HANDOFF_PAYLOAD[DEFAULT_INSIGHTS_TAB]}
+          payload={handoffRaw(HANDOFF_PAYLOAD_KEY[tab] ?? HANDOFF_PAYLOAD_KEY[DEFAULT_INSIGHTS_TAB])}
           copyLabel={t("handoffCopy")}
           copiedLabel={t("agentCopied")}
         />

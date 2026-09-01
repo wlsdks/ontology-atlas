@@ -1536,6 +1536,33 @@
         "noVaultTitle": "Open a folder first",
         "noVaultBody": "There is no vault to explain yet.",
         "request": "Read only this vault and explain this product's business flow. Do not read the source code.\n\n1) One paragraph on what this product is and who uses it.\n2) One paragraph per domain: what it is responsible for and which capabilities it holds.\n3) One paragraph on how these join into a single flow.\n\nRules:\n- Every paragraph names the node slugs it rests on, so I can open them and disagree.\n- Do not close an answer on a summary row; read bodies with get_concept with the body read in full.\n- If an answer is partial or a visible gap, carry that qualifier all the way through. In particular, do not state exclusions as settled fact when the vault records scope as partial.\n- A capability's excludes bound that capability only. Do not widen them to project scope.\n- When the vault cannot answer, say so and say why. Do not fill the gap from code."
+      },
+      "handoffProse": {
+        "verificationGate": "query_ontology({operation:\"health\"}) to re-check the result",
+        "createDocFirst": "This concept exists in the vault only as the reference \"%ref%\" (no document yet) → create its document first with add_concept({slug:\"%ref%\", kind:\"%kind%\"})",
+        "doNextUpdate": "query_ontology({operation:\"blast_radius\", slug:\"%ref%\"}) to see the impact area → review the document, then update it with patch_concept({slug:\"%ref%\", …})",
+        "doNextUpdateProof": "get_concept({slug:\"%ref%\"}) to confirm the updated text",
+        "doNextNewDocProof": "get_concept({slug:\"%ref%\"}) to confirm the new document",
+        "orphanRelate": "add_relation({from:\"%ref%\", to:\"<target>\", type:\"relates\", why:\"<one-line reason>\"})",
+        "orphanFindNeighbors": "find_neighbors({slug:\"%ref%\"}) to find candidates → pre-check with relation_check → add_relation({from:\"%ref%\", to:\"<target>\", type:\"relates\", why:\"<one-line reason>\"})",
+        "orphanProof": "find_neighbors({slug:\"%ref%\"}) to confirm the new relation",
+        "promotionNewDoc": "if the promotion is right, raise that document's kind",
+        "promotionDocumented": "query_ontology({operation:\"node_profile\", slug:\"%ref%\"}) to check fan-in → if the promotion is right, raise the kind with patch_concept or create the parent concept with add_concept",
+        "promotionProof": "query_ontology({operation:\"node_profile\", slug:\"%ref%\"}) to re-check kind and fan-in",
+        "missingDefinition": "patch_concept({slug:\"%ref%\", frontmatter:{description:\"<this concept in one sentence>\"}}) to write its meaning",
+        "missingDefinitionProof": "get_concept({slug:\"%ref%\"}) to confirm the sentence",
+        "missingDomain": "patch_concept({slug:\"%ref%\", frontmatter:{domain:\"<domain name>\"}}) to record where it belongs",
+        "missingDomainProof": "get_concept({slug:\"%ref%\"}) to confirm the domain",
+        "duplicate": "merge_concepts({fromSlug:\"%dissolve%\", intoSlug:\"%keep%\"}) to preview the merge → if they mean the same thing, run the same call again with confirm:true",
+        "duplicateProof": "get_concept({slug:\"%keep%\"}) to confirm the merged text",
+        "cycle": "Dependency cycle: %cycle%. query_ontology({operation:\"cycles\"}) to confirm → decide which direction to cut → fix dependencies with patch_concept",
+        "cycleProof": "query_ontology({operation:\"cycles\"}) to confirm the cycle is gone",
+        "tabDoNext": "query_ontology({operation:\"maintenance_plan\"}) → work through the items → re-check with query_ontology({operation:\"health\"})",
+        "tabComposition": "list_kinds({}) → query_ontology({operation:\"overview\"}) → check empty definitions via validate_vault({}) warnings",
+        "tabConnections": "query_ontology({operation:\"centrality\"}) → query_ontology({operation:\"blast_radius\", slug:\"<hub-slug>\"})",
+        "tabBoundaries": "query_ontology({operation:\"domain_matrix\"}) → cross-domain examples via query_ontology({operation:\"match_edges\"})",
+        "tabFreshness": "query_ontology({operation:\"maintenance_plan\"}) → find_orphans({}) → query_ontology({operation:\"growth_plan\"})",
+        "tabFlow": "list_concepts({summary:true}) → get_concepts({body:\"full\"}) for the project and domain bodies → cite slugs in every paragraph"
       }
     }
   },

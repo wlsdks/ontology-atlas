@@ -2,6 +2,26 @@ import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildDoNextQueue } from "./do-next-queue";
 
+// English prose fixture — mirrors messages/en.json handoffProse (tests assert
+// only on the locale-free MCP-call substrings).
+const PROSE = {
+  verificationGate: 'query_ontology({operation:"health"}) to re-check the result',
+  createDocFirst:
+    'This concept exists in the vault only as the reference "%ref%" (no document yet) → create its document first with add_concept({slug:"%ref%", kind:"%kind%"})',
+  doNextUpdate:
+    'query_ontology({operation:"blast_radius", slug:"%ref%"}) to see the impact area → review the document, then update it with patch_concept({slug:"%ref%", …})',
+  doNextUpdateProof: 'get_concept({slug:"%ref%"}) to confirm the updated text',
+  doNextNewDocProof: 'get_concept({slug:"%ref%"}) to confirm the new document',
+  orphanRelate: 'add_relation({from:"%ref%", to:"<target>", type:"relates", why:"<one-line reason>"})',
+  orphanFindNeighbors:
+    'find_neighbors({slug:"%ref%"}) to find candidates → pre-check with relation_check → add_relation({from:"%ref%", to:"<target>", type:"relates", why:"<one-line reason>"})',
+  orphanProof: 'find_neighbors({slug:"%ref%"}) to confirm the new relation',
+  promotionNewDoc: "if the promotion is right, raise that document's kind",
+  promotionDocumented:
+    'query_ontology({operation:"node_profile", slug:"%ref%"}) to check fan-in → if the promotion is right, raise the kind with patch_concept or create the parent concept with add_concept',
+  promotionProof: 'query_ontology({operation:"node_profile", slug:"%ref%"}) to re-check kind and fan-in',
+};
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-07-21T12:00:00Z");
 
@@ -31,7 +51,7 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
     const spokes = Array.from({ length: 5 }, (_, i) => n(`element:s${i}`, "element", `elements/s${i}`));
     const edges = spokes.map((s) => e(s.id, hub.id));
     const fresh = new Map([["capabilities/hub", iso(60)]]);
-    const queue = buildDoNextQueue([hub, ...spokes], edges, fresh, { now: NOW });
+    const queue = buildDoNextQueue([hub, ...spokes], edges, fresh, { now: NOW, prose: PROSE });
     const hubRow = queue.rows.find((r) => r.rowKind === "neglected-hub");
     expect(hubRow).toMatchObject({ nodeId: "capability:hub", degree: 5, agoDays: 60 });
     expect(hubRow?.handoffPayload).toContain('blast_radius');
@@ -49,14 +69,14 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
       ...spokes.map((s) => e(s.id, unknown.id)),
     ];
     const fresh = new Map([["capabilities/hub", iso(3)]]);
-    const queue = buildDoNextQueue([hub, unknown, ...spokes], edges, fresh, { now: NOW });
+    const queue = buildDoNextQueue([hub, unknown, ...spokes], edges, fresh, { now: NOW, prose: PROSE });
     expect(queue.counts.neglectedHub).toBe(0);
   });
 
   it("고아·승격은 지도 health 칩과 같은 entities 신호를 재사용하고, 핸드오프는 vault slug 를 쓴다", () => {
     const orphan = n("element:alone", "element", "elements/alone", "Alone");
     const other = n("capability:c", "capability", "capabilities/c");
-    const queue = buildDoNextQueue([orphan, other], [], new Map(), { now: NOW });
+    const queue = buildDoNextQueue([orphan, other], [], new Map(), { now: NOW, prose: PROSE });
     const orphanRows = queue.rows.filter((r) => r.rowKind === "orphan");
     expect(orphanRows.map((r) => r.nodeId)).toContain("element:alone");
     const row = orphanRows.find((r) => r.nodeId === "element:alone");
@@ -73,19 +93,19 @@ describe("buildDoNextQueue (S5 — 할 일 큐)", () => {
       n(`element:s${i}`, "element", `elements/s${i}`),
     );
     const edges = spokes.map((spoke) => e(spoke.id, hub.id));
-    const queue = buildDoNextQueue([hub, ...spokes], edges, new Map(), { now: NOW });
+    const queue = buildDoNextQueue([hub, ...spokes], edges, new Map(), { now: NOW, prose: PROSE });
     const promotion = queue.rows.find(
       (row) => row.rowKind === "promotion" && row.nodeId === hub.id,
     );
 
     expect(promotion?.handoffPayload).toContain('operation:"node_profile"');
-    expect(promotion?.handoffPayload).toMatch(/신설.*node_profile.*health/);
+    expect(promotion?.handoffPayload).toMatch(/add_concept.*node_profile.*health/);
     expect(promotion?.handoffPayload).toContain('operation:"health"');
   });
 
   it("유형별 perKindLimit 로 자르되 counts 는 전체를 정직하게 보고한다", () => {
     const orphans = Array.from({ length: 8 }, (_, i) => n(`element:o${i}`, "element", `elements/o${i}`));
-    const queue = buildDoNextQueue(orphans, [], new Map(), { now: NOW, perKindLimit: 3 });
+    const queue = buildDoNextQueue(orphans, [], new Map(), { now: NOW, perKindLimit: 3, prose: PROSE });
     expect(queue.rows.filter((r) => r.rowKind === "orphan")).toHaveLength(3);
     expect(queue.counts.orphan).toBe(8);
     expect(queue.activeRowIds.filter((id) => id.startsWith("orphan:"))).toHaveLength(8);
