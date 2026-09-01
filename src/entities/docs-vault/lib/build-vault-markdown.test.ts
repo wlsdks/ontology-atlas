@@ -89,3 +89,15 @@ describe("buildNewNodeDoc", () => {
     expect(() => buildNewNodeDoc({ title: "   ", kind: "capability" })).toThrow();
   });
 });
+
+describe("quoteYamlScalar — 타입 재해석 방어 (2026-09-01 리뷰)", () => {
+  it("boolean/number 모양의 title 은 quote 되어 문자열로 남는다", () => {
+    // The other three frontmatter writers gained this guard when top-level
+    // scalars became typed; without it here a web-created '2026' read back as
+    // a number and dropped out of every typeof === 'string' consumer.
+    const md2026 = buildVaultMarkdown({ kind: "domain", title: "2026", slug: "domains/y2026" });
+    expect(md2026).toContain('title: "2026"');
+    const mdTrue = buildVaultMarkdown({ kind: "domain", title: "true", slug: "domains/t" });
+    expect(mdTrue).toContain('title: "true"');
+  });
+});

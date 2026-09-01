@@ -32,6 +32,15 @@ export function generateNodeUid(uid?: string): string {
  * `\n` and the reader unfolds them.
  */
 function quoteYamlScalar(v: string): string {
+  // Boolean- and number-shaped strings must be quoted or the reader re-types
+  // them (2026-09-01 review): the other three writers gained this guard when
+  // top-level scalars became typed, and this fourth one — the very function
+  // whose comment says four places must agree — did not, so a concept titled
+  // '2026' created from the web read back as the number 2026 and dropped out
+  // of every `typeof title === 'string'` consumer.
+  if (v === 'true' || v === 'false' || (v !== '' && !Number.isNaN(Number(v)))) {
+    return `"${v}"`;
+  }
   if (!/[:,#[\]{}"'&|*!%@`\n\t]|^\s|\s$/.test(v)) return v;
   const escaped = v
     .replace(/\\/g, '\\\\')

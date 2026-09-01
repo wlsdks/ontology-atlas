@@ -6,6 +6,7 @@ import {
   PO_RISK_ROUTES,
   routePoDecision,
 } from './po-risk-router.mjs';
+import { parseFrontmatter as parseSharedFrontmatter } from './parse-frontmatter.mjs';
 
 const PO_PILOT_RUN_COLUMNS = Object.freeze([
   '#',
@@ -70,24 +71,38 @@ const integer = (value, label, minimum = 0) => {
 };
 
 const parseFrontmatter = (source) => {
+  /*
+   * Delegates to the shared frontmatter parser (2026-09-01 review). The private
+   * line-split copy this replaces threw on valid YAML the six sibling scripts
+   * already accept — a comment line, a block scalar, a block list — so an
+   * innocuous owner edit to the register turned the required gates lane red on
+   * every PR. The shared parser also carries the __proto__ and block-scalar
+   * hardening this file's copy never received. What stays local is the register
+   * strictness the shared parser deliberately does not impose: required keys,
+   * date shapes, the outcome enum, and duplicate top-level keys.
+   */
   if (!source.startsWith('---\n')) fail('frontmatter is required');
   const close = source.indexOf('\n---\n', 4);
   if (close < 0) fail('frontmatter is not closed');
-  const entries = source
-    .slice(4, close)
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => {
-      const separator = line.indexOf(':');
-      if (separator < 1) fail(`invalid frontmatter line: ${line}`);
-      return [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
-    });
   const seen = new Set();
-  for (const [key] of entries) {
+  for (const line of source.slice(4, close).split('\n')) {
+    const key = /^([A-Za-z0-9_-]+)\s*:/.exec(line)?.[1];
+    if (!key) continue;
     if (seen.has(key)) fail(`duplicate frontmatter key ${key}`);
     seen.add(key);
   }
-  const raw = Object.fromEntries(entries);
+  const parsed = parseSharedFrontmatter(source);
+  if (Array.isArray(parsed.diagnostics) && parsed.diagnostics.length > 0) {
+    fail(`invalid frontmatter: ${parsed.diagnostics[0].message}`);
+  }
+  const raw = {};
+  for (const [key, value] of Object.entries(parsed.frontmatter)) {
+    // The validators below judge the written text, so scalars flow as strings
+    // regardless of the shared parser's typing.
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      raw[key] = String(value);
+    }
+  }
 
   const required = [
     'started',

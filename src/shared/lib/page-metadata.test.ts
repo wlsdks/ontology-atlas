@@ -49,3 +49,27 @@ describe('buildPageMetadata', () => {
     expect(Object.keys(alternates.languages).sort()).toEqual(['en', 'ko', 'x-default']);
   });
 });
+
+describe('buildPageMetadata — file-convention images', () => {
+  it('omits the images key entirely so a directory opengraph-image can win', () => {
+    /*
+     * 2026-09-01 review: Next treats an OWN `images` property on the leaf
+     * metadata as authoritative over the file-convention image, and the value
+     * arrives through `{...base.openGraph}` spreads even when the page omits
+     * it deliberately. So the flag must remove the key, not blank it — every
+     * project share was carrying the generic site card instead of its
+     * generated per-slug 1200×630.
+     */
+    const meta = buildPageMetadata({
+      locale: 'en',
+      path: 'project/reactor',
+      title: 'Reactor',
+      description: 'A project page with its own generated card.',
+      hasFileConventionImage: true,
+    });
+    expect(Object.hasOwn(meta.openGraph as object, 'images')).toBe(false);
+    expect(Object.hasOwn(meta.twitter as object, 'images')).toBe(false);
+    // The spreads on the project page must not resurrect the key either.
+    expect(Object.hasOwn({ ...(meta.openGraph as object) }, 'images')).toBe(false);
+  });
+});

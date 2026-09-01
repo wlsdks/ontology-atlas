@@ -29,6 +29,16 @@ export interface PageMetadataInput {
   description: string;
   /** Only when the page has its own OG image; otherwise the site OG image is used. */
   ogImage?: string;
+  /**
+   * Set when the page's directory carries an `opengraph-image.tsx` file
+   * convention. Next injects that generated image itself, and a leaf `images`
+   * value — including one arriving through an object spread — OVERRIDES it
+   * (`resolve-metadata` treats an own `images` property as authoritative). So
+   * the builder must omit the key entirely, not set it to anything
+   * (2026-09-01 review: every project share carried the generic site card
+   * while the page's own comment claimed the per-slug card would win).
+   */
+  hasFileConventionImage?: boolean;
 }
 
 /**
@@ -55,6 +65,7 @@ export function buildPageMetadata({
   title,
   description,
   ogImage,
+  hasFileConventionImage,
 }: PageMetadataInput): Metadata {
   const canonical = absolute(locale, path);
 
@@ -77,13 +88,13 @@ export function buildPageMetadata({
       title,
       description,
       locale: OG_LOCALE[locale] ?? locale,
-      images: [ogImage ? { url: ogImage } : SITE_OG_IMAGE],
+      ...(hasFileConventionImage ? {} : { images: [ogImage ? { url: ogImage } : SITE_OG_IMAGE] }),
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: [ogImage ?? SITE_OG_IMAGE.url],
+      ...(hasFileConventionImage ? {} : { images: [ogImage ?? SITE_OG_IMAGE.url] }),
     },
   };
 }

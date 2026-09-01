@@ -57,6 +57,9 @@ export async function generateMetadata({
     path: `project/${slug}`,
     title,
     description,
+    // opengraph-image.tsx beside this file generates the per-slug card; the
+    // builder must not put an `images` key anywhere the spreads below carry.
+    hasFileConventionImage: true,
   });
 
   // Tags, stack, and category are folded into keywords to strengthen the SEO signal. Deduplicated.

@@ -13,6 +13,7 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
 
 import {
+  CI_PLANNER_SURFACE_PATTERNS,
   normalizeChangedPath,
   suggestFocusedChecks,
 } from './lib/focused-check-suggestions.mjs';
@@ -76,13 +77,9 @@ const GENERATED = [
   /^src\/entities\/docs-vault\/data\//,
 ];
 
-const PLANNER_SURFACE = [
-  /^scripts\/classify-change(?:\.test)?\.mjs$/,
-  /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
-  /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
-  /^scripts\/suggest-focused-checks(?:\.test)?\.mjs$/,
-  /^\.github\/workflows\/(?:checks|e2e)\.yml$/,
-];
+// One source of truth with the advisor's own planner rule — a hand-copied pair
+// disagreed about setup-playwright/action.yml until the 2026-09-01 review.
+const PLANNER_SURFACE = CI_PLANNER_SURFACE_PATTERNS;
 
 const ROOT_ALL_LANE_INPUTS = [
   /^package\.json$/,
@@ -126,6 +123,14 @@ const ROOT_VITEST_INPUTS = [
 const BROWSER_INPUTS = [
   /^app\//,
   /^src\/.*\.(?:tsx|css)$/,
+  /*
+   * Plain .ts inside a `ui/` segment is rendering code by FSD convention —
+   * pointer handlers, canvas renderers, layout math — and the "pure TypeScript
+   * relies on affected units" rule below it does not hold there (2026-09-01
+   * review: a rewrite of the map's pan/zoom handlers planned zero browser
+   * evidence). Model/lib .ts stays with affected Vitest, as designed.
+   */
+  /^src\/.*\/ui\/.*\.ts$/,
   /^messages\//,
   /^public\//,
   /^assets\//,
@@ -333,8 +338,12 @@ function gatesPlan({ suggestions, full }) {
       .filter((row) => commandLane(row.command) === 'gates')
       .map((row) => row.command),
   );
+  // smoke:onboarding and smoke:memory-loop spawn the source MCP server
+  // (2026-09-01 review: without them here, a PR touching those scripts got a
+  // gates lane that died on missing mcp/node_modules — a false red no rerun
+  // fixes, because checks.yml gates `pnpm --dir mcp install` on this flag).
   const needsMcp = commands.some((command) =>
-    /^pnpm (?:test:(?:architecture|claude:hooks)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk))\b/.test(
+    /^pnpm (?:test:(?:architecture|claude:hooks)|dogfood:(?:agent|brief|graph-db|health|maintenance|status|verify|walk)|smoke:(?:onboarding|memory-loop))\b/.test(
       command,
     ),
   );

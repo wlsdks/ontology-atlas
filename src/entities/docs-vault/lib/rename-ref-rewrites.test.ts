@@ -113,3 +113,42 @@ describe('rewriteRenamedDocRefs — body links', () => {
     expect(rewriteRenamedDocRefs(raw, args)).toBe(raw);
   });
 });
+
+describe('rewriteRenamedDocRefs — 2026-09-01 review regressions', () => {
+  it('rewrites broader and depends_on refs like the rest of the key family', () => {
+    const raw =
+      '---\nkind: capability\nbroader: [capabilities/auth]\ndepends_on: [capabilities/auth]\n---\n';
+    const next = rewriteRenamedDocRefs(raw, {
+      oldSlug: 'capabilities/auth',
+      newSlug: 'capabilities/authn',
+      referrerSlug: 'capabilities/leaf',
+      canRewriteTail: true,
+    });
+    expect(next).toContain('broader: [capabilities/authn]');
+    expect(next).toContain('depends_on: [capabilities/authn]');
+  });
+
+  it('resolves nested-vault wikilinks before rewriting, both directions', () => {
+    // Inside the nested ontology/ vault, [[capabilities/y]] means
+    // ontology/capabilities/y — the raw form must be rewritten when the NESTED
+    // doc is renamed, and left alone when a root-level doc of the same written
+    // name is renamed.
+    const nestedBody = '---\nkind: document\n---\n\nsee [[capabilities/y]] and [[capabilities/y|the y]].\n';
+    const nestedRename = rewriteRenamedDocRefs(nestedBody, {
+      oldSlug: 'ontology/capabilities/y',
+      newSlug: 'ontology/capabilities/z',
+      referrerSlug: 'ontology/elements/a',
+      canRewriteTail: false,
+    });
+    expect(nestedRename).toContain('[[capabilities/z]]');
+    expect(nestedRename).toContain('[[capabilities/z|the y]]');
+
+    const rootRename = rewriteRenamedDocRefs(nestedBody, {
+      oldSlug: 'capabilities/y',
+      newSlug: 'capabilities/z',
+      referrerSlug: 'ontology/elements/a',
+      canRewriteTail: false,
+    });
+    expect(rootRename, 'a nested link to a different node must not be redirected').toBe(nestedBody);
+  });
+});
