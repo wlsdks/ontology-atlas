@@ -131,7 +131,7 @@ describe('워크플로 분기가 살아 있다', () => {
       "github.event_name == 'pull_request'",
     );
     expect(envLine!, 'e2e 인프라 예외가 지워졌다 — 스펙을 고친 PR 이 자기 빨강을 못 본다').toContain(
-      "steps.setup.outputs.e2e != 'true'",
+      "needs.changes.outputs.e2e != 'true'",
     );
   });
 

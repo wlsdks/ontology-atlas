@@ -22,6 +22,52 @@
 
 ---
 
+## 2026-09-01 · v1.0.2: the full-codebase sweep hardens every write path
+
+A second patch release the same day: a full review of every surface (MCP, CLI,
+web, map, guard scripts) confirmed 53 defects, and the fixes land here with
+regression tests (#1361). The user-visible core:
+
+- **Vault writes stop corrupting edge cases.** A multiline description whose
+  first line is indented can no longer change a node's own `kind` on the next
+  read; renaming with the wrong letter case (macOS/Windows) now redirects
+  backlinks instead of severing them all while reporting success; merging two
+  concepts never writes a self-referencing edge; and two same-named documents
+  no longer resolve each other's backlinks, paths, or delete checks
+  arbitrarily.
+- **Renaming on the web now rewrites frontmatter relations**, the same way the
+  MCP rename always did: no more orphaned `dependencies:` refs and phantom
+  stubs under the old name, and same-folder relative links follow the move too.
+- **Agent proposals honor exactly what was approved.** An unchecked change can
+  no longer ride into the file inside a later change, approving several changes
+  to one document applies them all instead of failing halfway, and a failed
+  apply shows an error on the card instead of silently returning to pending.
+- **Korean file names work end to end**: the CLI snapshot, the web git panel,
+  and the desktop git panel all read raw paths now, so one Hangul-named file no
+  longer aborts a vault commit with a misleading hook error.
+- **The CLI keeps its contracts**: `depends_on:` aliases merge instead of
+  splitting an edge across two keys, `--why` refuses to swallow a following
+  flag (a dry run stays a dry run), `validate --json` fails on unreadable
+  files like the text mode, destructive commands resolve the same vault as
+  their read siblings, and a failed `absorb --write` rolls back cleanly so a
+  retry cannot duplicate sections.
+- **Deep links survive the locale hop.** Opening `/?p=…` keeps the selection;
+  project wikilinks in the docs viewer and the command palette's projects entry
+  navigate locale-aware instead of landing on the 404 page.
+- **The map stops burning idle CPU**: a clicked node no longer pins the render
+  loop awake at 60fps while the mouse rests, wheel input wakes the ambient
+  animations again, zooming mid-drag cannot jump the camera, and the agent
+  heartbeat file no longer re-renders the whole app every few seconds.
+- **Smaller fixes with sharp edges**: Escape in the editor's @-mention box no
+  longer closes the editor, IME users' commit-Enter no longer activates palette
+  rows, insights agent handoffs copy in the viewer's language, a duplicated
+  project gets its own map slot, the recent-folders list on the web can hold
+  more than one entry, and BOM-prefixed files are validated instead of passing
+  silently.
+- **The repo's own guards close their blind spots**: route moves, deletion-only
+  changes, and nested agent files now trip the checks that watch them, and
+  regenerated docs output is byte-deterministic across machines.
+
 ## 2026-09-01 · v1.0.1: the post-release bug sweep lands
 
 The first patch release under the versioning baseline above. A full-codebase
