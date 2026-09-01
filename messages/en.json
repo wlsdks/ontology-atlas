@@ -3380,6 +3380,7 @@
       "appliedNoSnapshot": "Applied",
       "cancelled": "Cancelled. Not one file changed.",
       "conflict": "This document just changed: nothing was written. Please ask again.",
+      "failed": "The apply failed: {message} Files may have partially changed — check the document, then ask again.",
       "unreadWarning": "This would change a file the agent did not read in this conversation. Expand it and check.",
       "showOnMap": "Show on the map",
       "expandHint": "What changes",

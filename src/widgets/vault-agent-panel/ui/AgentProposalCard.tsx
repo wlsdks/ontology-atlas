@@ -40,6 +40,7 @@ export interface AgentProposalLabels {
   appliedNoSnapshot: string;
   cancelled: string;
   conflict: string;
+  failed: (message: string) => string;
   unreadWarning: string;
   showOnMap: string;
   expandHint: string;
@@ -157,7 +158,9 @@ export function AgentProposalCard({
               : labels.appliedNoSnapshot
             : proposal.status === 'conflict'
               ? labels.conflict
-              : labels.cancelled}
+              : proposal.status === 'failed'
+                ? labels.failed(proposal.applyErrorMessage ?? '')
+                : labels.cancelled}
           {proposal.status === 'applied' ? (
             <>
               {' '}
