@@ -8271,6 +8271,23 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   if (!relationExists(doc, oldKey, canonicalOldTo)) throw new Error(`Relation does not exist: ${canonicalFrom} --${oldType}--> ${canonicalOldTo}.`);
   const oldRelation = { to: canonicalOldTo, type: oldType, key: oldKey };
   const newRelation = { to: canonicalNewTo, type: newType, key: newKey };
+  // Rationale resolution happens before the dry-run return so the "every new
+  // depends_on carries a why" contract (schema.mjs) holds here too — converting
+  // an edge to depends_on used to slip through with no why and no prior note to
+  // inherit (bug sweep 2026-09-01).
+  const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? { ...doc.frontmatter.relation_notes } : {};
+  const oldNoteKeys = matchingRelationNoteKeys(notes, canonicalOldTo);
+  const priorWhy = oldNoteKeys
+    .map((key) => notes[key])
+    .find((value) => typeof value === 'string');
+  const nextWhy = typeof why === 'string' && why.trim() ? why.trim() : priorWhy;
+  if (newType === 'depends_on' && !nextWhy) {
+    throw new Error(
+      'why is required and must be nonblank when converting a relation to depends_on ' +
+        `(${canonicalFrom} --${oldType}--> ${canonicalOldTo} carries no relation note to inherit). ` +
+        'One sentence: why does the source depend on the target?',
+    );
+  }
   const dryRun = !confirm;
   const base = {
     ok: false,
@@ -8296,13 +8313,7 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
     const starting = oldKey === newKey ? patch[newKey] : relationRefsFor(doc, newKey);
     Object.assign(patch, relationKeyPatch(doc, newKey, normalizeRelationRefs([...starting, canonicalNewTo])));
   }
-  const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? { ...doc.frontmatter.relation_notes } : {};
-  const oldNoteKeys = matchingRelationNoteKeys(notes, canonicalOldTo);
-  const priorWhy = oldNoteKeys
-    .map((key) => notes[key])
-    .find((value) => typeof value === 'string');
   for (const noteKey of oldNoteKeys) delete notes[noteKey];
-  const nextWhy = typeof why === 'string' && why.trim() ? why.trim() : priorWhy;
   if (nextWhy) notes[canonicalNewTo] = nextWhy;
   patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
   patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });

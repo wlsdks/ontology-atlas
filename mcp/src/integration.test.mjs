@@ -9664,6 +9664,38 @@ await test("replace_relation — atomically replaces target/type and rationale",
   }
 });
 
+await test("replace_relation — converting to depends_on demands a why when none can be inherited", async () => {
+  // add_relation hard-requires a nonblank why for every new depends_on edge;
+  // replace_relation used to bypass that contract when converting an edge that
+  // carried no prior relation note (bug sweep 2026-09-01).
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\nrelates: [capabilities/b]\n---\n" },
+    { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "replace_relation", {
+        from: "capabilities/a", oldTo: "capabilities/b", oldType: "relates",
+        newTo: "capabilities/b", newType: "depends_on", confirm: true,
+      }),
+      callTool(3, "replace_relation", {
+        from: "capabilities/a", oldTo: "capabilities/b", oldType: "relates",
+        newTo: "capabilities/b", newType: "depends_on", why: "Uses b's session store", confirm: true,
+      }),
+      callTool(4, "get_concept", { slug: "capabilities/a" }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(getCallText(responses, 2), /why is required/i);
+    assert.equal(isErrorResponse(responses, 3), false);
+    const a = getCallParsed(responses, 4);
+    assert.deepEqual(a.frontmatter.dependencies, ["capabilities/b"]);
+    assert.equal(a.frontmatter.relation_notes["capabilities/b"], "Uses b's session store");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("relation writes — canonicalize stored tail aliases without duplicate or false missing errors", async () => {
   const root = makeVault([
     {
