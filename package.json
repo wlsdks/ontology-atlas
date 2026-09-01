@@ -155,6 +155,8 @@
     "test:ci:impact": "node --test scripts/classify-change.test.mjs scripts/run-ci-lane.test.mjs",
     "test:i18n:messages": "node --test scripts/validate-messages.test.mjs",
     "test:claude:hooks": "node --test scripts/claude-hooks.test.mjs",
+    "harness:report": "node scripts/harness-report.mjs",
+    "test:harness:report": "node --test scripts/harness-report.test.mjs",
     "test:dogfood:compile-fix": "node --test scripts/dogfood-compile-fix.test.mjs",
     "dogfood:health": "node scripts/lib/check-mcp-source-dependencies.mjs && node cli/src/index.mjs health docs/ontology --json",
     "dogfood:agent": "node cli/src/index.mjs agent-brief docs/ontology --json",

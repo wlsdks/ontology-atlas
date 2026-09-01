@@ -42,11 +42,11 @@ available to both agent trees; `AGENTS.md` owns invocation triggers and
 
 `.claude/settings.json` owns Claude permissions and hooks, and both are
 inventoried agent files. Four mirror `.codex/hooks/`: block npm publishing,
-unsafe Git, hand-editing generated files, and inject a vault census at session
-start. Five are Claude-only (`report-agent-file-drift.sh`, `fast-sensor.sh`,
-`stamp-verification.sh`, `remind-verify-on-stop.sh`); `block-secret-read.sh`
-is Codex-only. Each header says why. Change hook wiring with
-`pnpm test:claude:hooks`.
+unsafe Git, hand-editing generated files, and the vault census (also at
+PreCompact). Four are Claude-only (`report-agent-file-drift.sh`,
+`fast-sensor.sh`, `stamp-verification.sh`, `remind-verify-on-stop.sh`);
+`block-secret-read.sh` is Codex-only. Headers say why. Change wiring with
+`pnpm test:claude:hooks`; judge sensors with `pnpm harness:report`.
 
 ## Synchronization
 
