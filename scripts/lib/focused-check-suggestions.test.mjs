@@ -1269,11 +1269,13 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('routes every active PO policy surface to the executable risk-router contract', () => {
-    const command = 'pnpm exec vitest run tests/contract/po-council.contract.test.ts';
+  it('routes every active PO policy surface to the outcome-router and sunset contracts', () => {
+    const commands = ['pnpm test:po', 'pnpm po:pilot -- --check'];
     const paths = [
       'scripts/lib/po-risk-router.mjs',
       'scripts/po-risk-router.mjs',
+      'scripts/lib/po-pilot.mjs',
+      'scripts/po-pilot.mjs',
       'scripts/check-decision-record.mjs',
       'tests/contract/po-council.contract.test.ts',
       'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md',
@@ -1288,7 +1290,10 @@ describe('focused check suggestions', () => {
 
     assert.ok(paths.length > 0, 'the PO policy path inventory must not be empty');
     for (const path of paths) {
-      assert.ok(commandNames(suggestFocusedChecks([path])).includes(command), `${path} must recommend ${command}`);
+      const suggested = commandNames(suggestFocusedChecks([path]));
+      for (const command of commands) {
+        assert.ok(suggested.includes(command), `${path} must recommend ${command}`);
+      }
     }
   });
 

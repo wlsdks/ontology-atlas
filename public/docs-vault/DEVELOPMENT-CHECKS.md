@@ -81,7 +81,8 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Graph hot-path perf | `pnpm perf:graph:check` | `pnpm perf:graph:scale` |
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
-| Atlas product-risk routing | `pnpm po:route -- --help` | `pnpm exec vitest run tests/contract/po-council.contract.test.ts` replays the known one-way and reversible controls |
+| Atlas product outcome and risk routing | `pnpm po:route -- --help` | `pnpm test:po` replays derived change/boundary routes and the known one-way and reversible controls |
+| Atlas PO pilot sunset | `pnpm po:pilot -- --check` | Plant a pending due pilot or unsupported `keep`; the command must fail with the rejected metric, while the live collecting register stays green |
 | Decision ledger triggers | `pnpm decisions:check` | `pnpm exec vitest run tests/contract/design-spec-ledger.contract.test.ts` |
 | Copy that names the reader's surface | `pnpm exec vitest run tests/contract/surface-naming-ratchet.contract.test.ts` | `pnpm test:contracts` |
 | Markdown table shape (rows vs their header) | `pnpm exec vitest run tests/contract/markdown-table-shape.contract.test.ts` | `pnpm test:contracts` |
@@ -102,9 +103,10 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 ### Decision-ledger gate (`pnpm decisions:check`)
 
 Fails when a change trips a mechanical significant-decision trigger without
-appending to `docs/DECISIONS.md` in the same change. Classify that decision with
-`pnpm po:route -- --help`; a `review` route uses Evidence plus the selected
-Atlas-risk specialist. Three triggers:
+appending to `docs/DECISIONS.md` in the same change. Supply its evidence,
+human-recovery outcome, and change/boundary facts to `pnpm po:route -- --help`;
+the command derives the door and risk. A `review` route uses Evidence plus the
+selected Atlas-risk specialist. Three triggers:
 
 1. **New surface / surface removal** — `app/[locale]/**/page.tsx` added or deleted.
 2. **Public contract change** — `cli/src/lib/cli-commands.mjs` or `mcp/src/index.js` edited.

@@ -42,7 +42,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ── Job 1: Nine fast gates (observed sum ≈100s) ──────────────────────────
+  # ── Job 1: Fast gates (observed sum ≈100s) ───────────────────────────────
   gates:
     name: Types · Lint · Docs
     runs-on: ubuntu-latest
@@ -81,6 +81,13 @@ jobs:
       - name: Decision record
         if: github.event_name == 'pull_request'
         run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
+
+      # This time-based gate is intentionally always wired. While collecting it
+      # validates the typed register; at the 14/21-day or 20-decision boundary it
+      # refuses to let a pending or unsupported `keep` become permanent by inertia.
+      - name: Atlas PO pilot sunset
+        if: always()
+        run: pnpm po:pilot -- --check
 
       - name: Typecheck
         run: pnpm exec tsc --noEmit

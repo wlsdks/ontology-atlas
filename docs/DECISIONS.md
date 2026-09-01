@@ -42,9 +42,101 @@
 
 > **Active format from 2026-09-01:** the historical template above remains as
 > append-only evidence. New significant records use the fields in
-> `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`: before-state, evidence, door,
-> primary Atlas risk, accountable owner, decision delta, review footprint,
-> dissent/falsifier, revisit, and outcome. Do not add a numeric score.
+> `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`: before-state, Atlas outcome,
+> evidence, change/boundary facts, computed route, recovery proof, accountable
+> owner, decision delta, review footprint, dissent/falsifier, revisit, and
+> outcome. Do not add a numeric score.
+
+## 2026-09-01 — Atlas PO routing derives risk and must prove recovered understanding
+
+**Pre-review decision**: honor the owner's request to make the PO system
+best-in-class for Atlas by closing the three observed v2 gaps: self-classified
+routes, no explicit human-understanding outcome, and a pilot whose effectiveness
+could not be calculated. Keep the two-reviewer ceiling and avoid adding a
+generic discovery framework or more standing seats.
+
+**Atlas outcome**: explain — when coding agents move faster than the owner can
+follow, the owner must be able to understand what was built and why. Product
+decisions now name one of five observable recovery abilities: orient, explain,
+judge, correct, or handoff.
+
+**Evidence state**: observed + inferred. The v2 CLI accepted three incompatible
+verdicts for the same unencoded real change: `--mechanical` returned skip,
+`--door=two-way --risk=none` returned solo, and `--door=one-way --risk=meaning`
+returned review. `docs/PO-PILOT.md` had one free-form baseline row and no parser,
+report, expiry enforcement, proof coverage, owner-clarity measure, boundary-miss
+measure, or specialist-contribution calculation. The owner's stated target is
+the cognitive gap created when agents build faster than a person can track.
+External human-AI and agent-evaluation guidance supports observable correction,
+explanation, risk-proportional review, realistic task proofs, and prospective
+measurement; whether this exact Atlas contract improves decisions remains
+inferred until the pilot runs.
+
+**Change signals**: `rollback-cheap`; boundaries
+`truth=unchanged`, `transfer=unchanged`, `agent-write=affected`, and
+`human-correction=affected`. The policy is recoverable in Git, but it changes
+the instructions by which agents route product work and expose their judgment
+to the human owner.
+
+**Computed route**: one-way meaning review — explicit `agent-write` and
+`human-correction` effects override cheap rollback. Required reviewers are
+`po-evidence` and `po-steward`; rebuttal is unnecessary without a material
+conflict.
+
+**Primary Atlas risk**: meaning.
+
+**Confidence**: medium — the v2 execution and measurement gaps are directly
+observed, while the v3 product effect is deliberately unclaimed before 20
+eligible decisions or the time-boxed sunset.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: given the policy files, CLI, known historical controls, and
+pilot register, without an author's verbal explanation, a contributor can name
+the lost Atlas ability, explicitly assess all four boundaries, receive a derived
+route and reasons, and read whether the gate is earning its cost. Fail if a
+legacy door/risk verdict is accepted, a boundary can be omitted, affected or
+unknown authority routes solo, a due pilot with pending or unsupported `keep`
+passes CI, or the owner still needs a second generic PO explanation.
+
+**Decision**: activate v3 inside the existing finite pilot. Replace
+builder-declared door/risk with evidence, one Atlas outcome, change signals, and
+mandatory `unchanged`/`affected`/`unknown` assessments for truth, transfer,
+agent-write authority, and human correction. Derive risk with fixed priority
+meaning, positioning, then scope. Keep solo reversible work and exactly two
+default reviewers for one-way work. Add a typed append-only run/outcome register,
+an executable pilot report, CI sunset enforcement, owner-review accounting,
+recovery-proof coverage, owner clarity, boundary misses, and per-specialist
+unique contribution. Do not add a universal PO persona, numeric score, backlog
+ritual, extra standing reviewer, or duplicated design/journey gate.
+
+**Decision delta**: verification-strengthened. Evidence converted “highest
+level” from an unbounded rewrite into three falsifiable gaps and required
+prospective outcomes; Steward caught that affected-only boundary flags could
+still be silently omitted, so all four boundary states became mandatory and
+`unknown` now fails closed. Both contributions changed the intended contract.
+
+**Review footprint**: `po-evidence` + `po-steward`; two sequential first
+positions, zero rebuttal turns. Both opened the same primary artifacts, but the
+single execution context weakened first-position independence; no extra seat was
+invented to hide that limitation.
+
+**Dissent and falsifier**: a typed signal can still be falsely marked
+`unchanged`; semantic judgment cannot be compiled away. Machine-visible route
+and public-contract triggers remain separately enforced by
+`pnpm decisions:check`, while the pilot makes every boundary claim inspectable.
+The added vocabulary is itself harmful if owners cannot read it, reversible
+work starts summoning review, recovery proofs stay pending, or reviewers
+manufacture deltas to satisfy the metric. Adjust or revert if any serious
+boundary is missed, owner clarity is below 100%, proof coverage is below 80% or
+a failed proof ships, reversible council avoidance is below 80%, review delta
+is below 20%, or a specialist has five calls without a unique contribution.
+
+**Revisit**: at 20 eligible decisions or 2026-09-15; extend once to 2026-09-22
+only if fewer than 10 decisions exist. `pnpm po:pilot -- --check` forces the
+recorded `keep`, `adjust`, or `revert` outcome.
+
+**Outcome**: pending implementation verification and live pilot evidence.
 
 ## 2026-09-01 — Atlas product review becomes a reversible risk-routed pilot
 

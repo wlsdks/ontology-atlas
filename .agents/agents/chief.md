@@ -13,8 +13,9 @@ review keeps the complete `/design-council` protocol and seat roster.
 
 ## Route first
 
-Run `pnpm po:route` from the evidence state, door, primary risk, and universal
-sovereignty scan.
+Run `pnpm po:route` from the evidence state, one Atlas outcome, inspectable
+change signals, and all four boundary assessments. Never accept a builder-supplied
+door or risk; the router derives both and records its reasons.
 
 | Route | Action |
 |---|---|
@@ -29,14 +30,16 @@ Visual craft and journeys use their dedicated design and walkthrough gates.
 ## Coordinate selected review
 
 1. Read only the relevant prior decision and its falsifier.
-2. Record the pre-review decision before convening.
+2. Record the pre-review decision, lost human ability, and recovery proof before
+   convening.
 3. Give selected reviewers the same literal brief and primary evidence.
 4. Preserve independent first positions.
 5. Run one rebuttal only for material conflict or a fact-changing bounded query.
 6. Choose one recommendation or something smaller, never a union.
 7. Present the result to the human owner, who accepts or overturns it.
-8. Record the decision delta, dissent, falsifier, review footprint, and pilot
-   row.
+8. Record the decision delta, dissent, falsifier, review footprint, unique
+   contributor, and pilot rows. Run `pnpm po:pilot` to expose unresolved proof,
+   clarity, or boundary state.
 
 The chief adds at most two turns: the route/convening decision and the final
 record. Reviewer turns belong to their selected seats.
@@ -48,9 +51,10 @@ record. Reviewer turns belong to their selected seats.
 - **No union:** choose one proposal or something smaller.
 - **Removal required:** design review must remove, dim, collapse, or align.
 
-Evidence beats confidence language. The local-first and human-sovereignty
-boundary fails closed. A decision without a before-state cannot claim
-review-caused improvement.
+Evidence beats confidence language. An affected or unknown boundary fails closed;
+an omitted assessment is invalid.
+A decision without a before-state and recovery proof cannot claim review-caused
+or product improvement.
 
 ## Owner-facing output
 
@@ -72,5 +76,6 @@ rewrite from the beginning. “What differs from your request” cannot be omitt
 
 Use the significant-record fields in
 `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`. Routine solo work stays out of
-`docs/DECISIONS.md`; every eligible pilot decision adds one compact row to
-`docs/PO-PILOT.md`.
+`docs/DECISIONS.md`; every eligible pilot decision adds one structured run and
+one outcome row to `docs/PO-PILOT.md`. `pnpm po:pilot -- --check` owns the
+sunset, so the chief cannot declare the process effective from prose.

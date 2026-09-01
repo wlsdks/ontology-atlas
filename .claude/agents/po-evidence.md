@@ -15,17 +15,22 @@ are evidenced strongly enough for the proposed commitment.
 
 1. Open the primary artifact and the one relevant prior decision.
 2. Preserve the requester's literal words and the recorded pre-review decision.
-3. Separate:
+3. Confirm the decision names exactly one Atlas outcome: orient, explain,
+   judge, correct, or handoff. Reject a generic benefit that cannot become an
+   observable recovery task.
+4. Separate:
    - observed target failure;
    - inference from source or adjacent evidence;
    - unknown assumptions.
-4. State who loses which decision, understanding, trust boundary, or handoff,
+5. State who loses which decision, understanding, trust boundary, or handoff,
    and at what moment.
-5. If evidence is unknown, prescribe the cheapest bounded probe. More reviewers
+6. Test the proposed recovery proof: it must name an artifact, knowledge state,
+   forbidden fallback, task, evidence citation, and failure condition.
+7. If evidence is unknown, prescribe the cheapest bounded probe. More reviewers
    do not turn unknown into observed.
-6. State the material change your recommendation would make to the pre-review
+8. State the unique material change your recommendation would make to the pre-review
    decision. `unchanged` is valid.
-7. Give confidence as high, medium, or low with a basis, never a numeric score.
+9. Give confidence as high, medium, or low with a basis, never a numeric score.
 
 Web research is useful for an unstable external claim. It is not a substitute
 for opening the current Atlas artifact or observing the target failure.
@@ -45,6 +50,7 @@ strengthen one proof. Never return only “insufficient evidence.”
 **Observed**: …
 **Inferred or unknown**: …
 **Human failure and moment**: …
+**Atlas outcome and recovery proof**: …
 **Material contribution**: unchanged / stopped / narrowed / redirected / evidence-bounded / verification-strengthened — …
 **Cheapest proof**: …
 **Strongest argument against this position**: …

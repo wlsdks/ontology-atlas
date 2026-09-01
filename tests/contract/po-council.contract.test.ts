@@ -4,17 +4,26 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  PO_BOUNDARY_SIGNALS,
+  PO_CHANGE_SIGNALS,
+  PO_OUTCOMES,
   PO_REVIEW_RECORD_FIELDS,
   PO_RISK_ROUTES,
   PO_SOLO_FIELDS,
   routePoDecision,
 } from '../../scripts/lib/po-risk-router.mjs';
+import {
+  evaluatePoPilot,
+  parsePoPilot,
+  pilotCheckFailures,
+} from '../../scripts/lib/po-pilot.mjs';
+import { parsePoRouteArgs } from '../../scripts/po-risk-router.mjs';
 
 /**
- * The active PO gate is a risk router, not a prose scorecard. These contracts
- * replay decisions that the old process handled well or expensively, prove the
- * local-first/human-sovereignty brake cannot self-exempt, and bind the written
- * templates to the executable policy.
+ * The active PO gate derives its route from inspectable change signals rather
+ * than accepting a builder's door/risk verdict. These contracts replay real
+ * decisions, prove the local-first/human-sovereignty brake cannot self-exempt,
+ * and make the finite pilot capable of deciding its own sunset.
  */
 
 const ROOT = process.cwd();
@@ -25,8 +34,19 @@ const PASS_MIRROR = '.agents/skills/po-pass/SKILL.md';
 const COUNCIL_SKILL = '.claude/skills/po-council/SKILL.md';
 const COUNCIL_MIRROR = '.agents/skills/po-council/SKILL.md';
 const CLI = 'scripts/po-risk-router.mjs';
+const PILOT_CLI = 'scripts/po-pilot.mjs';
 
 const RISK_NAMES = ['meaning', 'positioning', 'scope'] as const;
+type BoundaryState = 'unchanged' | 'affected' | 'unknown';
+const UNCHANGED_BOUNDARIES = Object.fromEntries(
+  Object.keys(PO_BOUNDARY_SIGNALS).map((name) => [name, 'unchanged']),
+) as Record<string, BoundaryState>;
+const boundaries = (
+  overrides: Partial<Record<string, BoundaryState>> = {},
+): Record<string, BoundaryState> => ({
+  ...UNCHANGED_BOUNDARIES,
+  ...overrides,
+}) as Record<string, BoundaryState>;
 const SPECIALISTS = Object.values(PO_RISK_ROUTES).map((route) => route.reviewer);
 const ACTIVE_AGENTS = ['chief', 'po-evidence', ...SPECIALISTS, 'po-craft'] as const;
 const ACTIVE_FILES = [
@@ -37,7 +57,9 @@ const ACTIVE_FILES = [
   COUNCIL_SKILL,
   COUNCIL_MIRROR,
   CLI,
+  PILOT_CLI,
   'scripts/lib/po-risk-router.mjs',
+  'scripts/lib/po-pilot.mjs',
   ...ACTIVE_AGENTS.flatMap((name) => [`.claude/agents/${name}.md`, `.agents/agents/${name}.md`]),
 ] as const;
 
@@ -55,15 +77,19 @@ function fieldsInTemplate(path: string, anchor: string): string[] {
 }
 
 describe('Atlas PO risk routing', () => {
-  it('keeps a small, distinct specialist map and a two-reviewer ceiling', () => {
+  it('keeps a small Atlas outcome set, distinct specialist map, and two-reviewer ceiling', () => {
+    expect(Object.keys(PO_OUTCOMES)).toEqual(['orient', 'explain', 'judge', 'correct', 'handoff']);
     expect(Object.keys(PO_RISK_ROUTES)).toEqual(RISK_NAMES);
     expect(new Set(SPECIALISTS).size).toBe(SPECIALISTS.length);
 
     for (const risk of RISK_NAMES) {
+      const signal = Object.entries(PO_CHANGE_SIGNALS).find(([, contract]) => contract.risk === risk)?.[0];
+      expect(signal, `${risk} must have a one-way change signal`).toBeTruthy();
       const result = routePoDecision({
-        door: 'one-way',
         evidence: 'observed',
-        primaryRisk: risk,
+        outcome: 'judge',
+        changes: [signal!],
+        boundaries: boundaries(),
       });
       expect(result.reviewers).toEqual(['po-evidence', PO_RISK_ROUTES[risk].reviewer]);
       expect(result.reviewers).toHaveLength(2);
@@ -77,27 +103,54 @@ describe('Atlas PO risk routing', () => {
       {
         name: 'unsupported OS URL scheme',
         input: {
-          door: 'one-way',
           evidence: 'unknown',
-          primaryRisk: 'meaning',
-          sovereigntyAffected: true,
+          outcome: 'correct',
+          changes: ['public-contract'],
+          boundaries: boundaries({ 'human-correction': 'affected' }),
         },
-        expected: { route: 'review', reviewers: ['po-evidence', 'po-steward'], nextAction: 'evidence-first-review' },
+        expected: {
+          door: 'one-way',
+          primaryRisk: 'meaning',
+          route: 'review',
+          reviewers: ['po-evidence', 'po-steward'],
+          nextAction: 'evidence-first-review',
+        },
       },
       {
         name: 'unmeasured ACP transport replacement',
-        input: { door: 'two-way', evidence: 'unknown', primaryRisk: 'none' },
-        expected: { route: 'solo', reviewers: [], nextAction: 'probe-first' },
+        input: {
+          evidence: 'unknown',
+          outcome: 'handoff',
+          changes: ['rollback-cheap'],
+          boundaries: boundaries(),
+        },
+        expected: { door: 'two-way', route: 'solo', reviewers: [], nextAction: 'probe-first' },
       },
       {
         name: 'first-contact positioning',
-        input: { door: 'one-way', evidence: 'inferred', primaryRisk: 'positioning' },
-        expected: { route: 'review', reviewers: ['po-evidence', 'po-wedge'], nextAction: 'evidence-first-review' },
+        input: {
+          evidence: 'inferred',
+          outcome: 'orient',
+          changes: ['positioning'],
+          boundaries: boundaries(),
+        },
+        expected: {
+          door: 'one-way',
+          primaryRisk: 'positioning',
+          route: 'review',
+          reviewers: ['po-evidence', 'po-wedge'],
+          nextAction: 'evidence-first-review',
+        },
       },
       {
         name: 'reversible craft change',
-        input: { door: 'two-way', evidence: 'observed', primaryRisk: 'none' },
-        expected: { route: 'solo', reviewers: [], nextAction: 'build-and-verify' },
+        input: {
+          evidence: 'observed',
+          outcome: 'orient',
+          changes: ['rollback-cheap'],
+          boundaries: boundaries(),
+        },
+        expected: { door: 'two-way', route: 'solo', reviewers: [], nextAction: 'build-and-verify' },
       },
     ] as const;
 
@@ -107,43 +160,255 @@ describe('Atlas PO risk routing', () => {
     }
   });
 
-  it('keeps maintenance cheap but makes the sovereignty brake fail closed', () => {
+  it('derives the route and makes objective boundary signals fail closed', () => {
     expect(routePoDecision({ mechanical: true })).toMatchObject({
+      door: 'mechanical',
       route: 'skip',
       record: false,
       reviewers: [],
     });
-    expect(() => routePoDecision({ mechanical: true, sovereigntyAffected: true })).toThrow(
-      'mechanical work cannot change local-first or human-sovereignty boundaries',
+    expect(() => routePoDecision({ mechanical: true, boundaries: boundaries({ truth: 'affected' }) })).toThrow(
+      'mechanical work cannot carry product or sovereignty change signals',
     );
     expect(() =>
-      routePoDecision({ door: 'one-way', evidence: 'observed', primaryRisk: 'none' }),
-    ).toThrow('one-way decisions require one primary Atlas risk');
+      routePoDecision({ mechanical: true, evidence: 'observed', outcome: 'explain' }),
+    ).toThrow('mechanical work cannot carry product or sovereignty change signals');
+    expect(() =>
+      routePoDecision({ evidence: 'observed', outcome: 'explain', boundaries: boundaries() }),
+    ).toThrow(
+      'at least one change or boundary signal is required',
+    );
+    expect(() =>
+      routePoDecision({
+        evidence: 'observed',
+        outcome: 'explain',
+        changes: ['rollback-cheap'],
+        boundaries: { truth: 'unchanged' },
+      }),
+    ).toThrow('all four boundary assessments are required');
+    expect(() =>
+      routePoDecision({
+        door: 'two-way',
+        evidence: 'observed',
+        outcome: 'explain',
+        primaryRisk: 'none',
+        changes: ['rollback-cheap'],
+        boundaries: boundaries(),
+      } as never),
+    ).toThrow('door and primaryRisk are derived');
 
     expect(
       routePoDecision({
-        door: 'one-way',
         evidence: 'observed',
-        primaryRisk: 'scope',
-        sovereigntyAffected: true,
+        outcome: 'correct',
+        changes: ['rollback-cheap', 'surface-inventory'],
+        boundaries: boundaries({ 'agent-write': 'unknown' }),
       }),
     ).toMatchObject({
+      door: 'one-way',
       primaryRisk: 'meaning',
       reviewers: ['po-evidence', 'po-steward'],
     });
+
+    expect(Object.keys(PO_BOUNDARY_SIGNALS)).toEqual([
+      'truth',
+      'transfer',
+      'agent-write',
+      'human-correction',
+    ]);
   });
 
   it('routes the command-line entrypoint through the same policy', () => {
     const output = execFileSync(
       process.execPath,
-      [CLI, '--door=one-way', '--evidence=inferred', '--risk=positioning', '--json'],
+      [
+        CLI,
+        '--evidence=inferred',
+        '--outcome=orient',
+        '--change=positioning',
+        '--boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged',
+        '--json',
+      ],
       { cwd: ROOT, encoding: 'utf8' },
     );
     expect(JSON.parse(output)).toMatchObject({
+      policyVersion: 3,
+      door: 'one-way',
+      outcome: 'orient',
+      primaryRisk: 'positioning',
       route: 'review',
       record: true,
       reviewers: ['po-evidence', 'po-wedge'],
       rebuttal: 'only-on-material-conflict',
+    });
+    expect(() =>
+      parsePoRouteArgs(['--evidence=observed', '--evidence=unknown']),
+    ).toThrow('evidence was supplied more than once');
+    expect(() => parsePoRouteArgs(['--outcome=orient', '--outcome=judge'])).toThrow(
+      'outcome was supplied more than once',
+    );
+  });
+});
+
+describe('Atlas PO pilot can decide its sunset', () => {
+  const run = (id: number, overrides: Record<string, unknown> = {}) => ({
+    id,
+    date: '2026-09-01',
+    decision: `decision-${id}`,
+    door: 'two-way',
+    route: 'solo',
+    outcome: 'explain',
+    risk: 'none',
+    firstTurns: 0,
+    rebuttalTurns: 0,
+    delta: 'unchanged',
+    uniqueContributors: [],
+    ...overrides,
+  });
+
+  const update = (runId: number, overrides: Record<string, unknown> = {}) => ({
+    runId,
+    date: '2026-09-01',
+    proof: 'pass',
+    ownerClear: 'yes',
+    boundaryMiss: 'no',
+    laterResult: 'held',
+    ...overrides,
+  });
+
+  const pilot = (runs: ReturnType<typeof run>[], outcome = 'pending') => ({
+    metadata: {
+      started: '2026-09-01',
+      decisionTarget: 20,
+      decisionDeadline: '2026-09-15',
+      sparseExtensionDeadline: '2026-09-22',
+      outcome,
+    },
+    runs,
+    updates: runs.map((row) => update(row.id)),
+  });
+
+  it('parses a non-idle, typed register from the human-readable pilot document', () => {
+    const source = read(PILOT);
+    const parsed = parsePoPilot(source);
+    expect(parsed.runs.length, 'the structured pilot inventory must not be empty').toBeGreaterThan(0);
+    expect(parsed.updates.length).toBeGreaterThanOrEqual(parsed.runs.length);
+    expect(parsed.metadata.outcome).toBe('pending');
+
+    expect(() =>
+      parsePoPilot(
+        source.replace(
+          '| verification-strengthened | po-evidence+po-steward |',
+          '| unchanged | po-evidence+po-steward |',
+        ),
+      ),
+    ).toThrow('unchanged review cannot claim a unique contribution');
+    expect(() =>
+      parsePoPilot(source.replace('outcome: pending', 'outcome: pending\noutcome: keep')),
+    ).toThrow('duplicate frontmatter key outcome');
+    expect(() =>
+      parsePoPilot(
+        source.replace(
+          '| 1 | 2026-09-01 | pass | pending | no | pending |',
+          '| 1 | 2026-09-01 | n/a | pending | no | pending |',
+        ),
+      ),
+    ).toThrow('recovery proof must be one of pending, pass, fail-caught, fail-shipped');
+  });
+
+  it('keeps a sparse pilot collecting through its single extension, then requires a decision', () => {
+    const rows = Array.from({ length: 9 }, (_, index) => run(index + 1));
+    expect(evaluatePoPilot(pilot(rows), '2026-09-15')).toMatchObject({ phase: 'collecting-extension' });
+    const due = evaluatePoPilot(pilot(rows), '2026-09-22');
+    expect(due).toMatchObject({ phase: 'decision-required', dueReason: 'sparse-extension-deadline' });
+    expect(pilotCheckFailures(due)).toContain('pilot outcome is still pending');
+  });
+
+  it('refuses to keep the process before its declared evidence window closes', () => {
+    const premature = evaluatePoPilot(pilot([run(1)], 'keep'), '2026-09-01');
+    expect(premature).toMatchObject({ phase: 'premature-keep' });
+    expect(pilotCheckFailures(premature)).toContain('keep was declared before the pilot became due');
+  });
+
+  it('allows keep only when review utility, council avoidance, proof, clarity, and boundaries pass', () => {
+    const rows = Array.from({ length: 20 }, (_, index) => {
+      const id = index + 1;
+      if (id > 4) return run(id);
+      return run(id, {
+        door: 'one-way',
+        route: 'review',
+        risk: id === 1 ? 'meaning' : id === 2 ? 'positioning' : 'scope',
+        firstTurns: 2,
+        delta: id === 1 ? 'verification-strengthened' : 'unchanged',
+        uniqueContributors: id === 1 ? ['po-steward'] : [],
+      });
+    });
+    const accepted = evaluatePoPilot(pilot(rows, 'keep'), '2026-09-10');
+    expect(accepted).toMatchObject({ phase: 'kept', accepted: true });
+    expect(accepted.metrics).toMatchObject({
+      materialDeltaRate: 0.25,
+      reversibleCouncilAvoidanceRate: 1,
+      proofResolvedRate: 1,
+      ownerClearRate: 1,
+      boundaryMisses: 0,
+    });
+    expect(pilotCheckFailures(accepted)).toEqual([]);
+  });
+
+  it('refuses a premature or unsupported keep instead of becoming permanent by inertia', () => {
+    const rows = Array.from({ length: 20 }, (_, index) =>
+      run(index + 1, {
+        door: 'one-way',
+        route: 'review',
+        risk: 'meaning',
+        firstTurns: 2,
+      }),
+    );
+    const candidate = pilot(rows, 'keep');
+    candidate.updates[0] = update(1, {
+      proof: 'fail-shipped',
+      ownerClear: 'no',
+      boundaryMiss: 'yes',
+      laterResult: 'reversed',
+    });
+    const rejected = evaluatePoPilot(candidate, '2026-09-10');
+    expect(rejected).toMatchObject({ phase: 'invalid-keep', accepted: false });
+    expect(pilotCheckFailures(rejected)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/material decision delta/i),
+        expect.stringMatching(/reversible council avoidance/i),
+        expect.stringMatching(/recovery proof/i),
+        expect.stringMatching(/owner clarity/i),
+        expect.stringMatching(/boundary miss/i),
+        expect.stringMatching(/specialist.*five calls/i),
+      ]),
+    );
+  });
+
+  it('stops immediately when a failed proof ships or a serious boundary miss is recorded', () => {
+    const candidate = pilot([run(1)]);
+    candidate.updates[0] = update(1, {
+      proof: 'fail-shipped',
+      ownerClear: 'no',
+      boundaryMiss: 'yes',
+      laterResult: 'reversed',
+    });
+    const stopped = evaluatePoPilot(candidate, '2026-09-01');
+    expect(stopped).toMatchObject({ phase: 'safety-stop', accepted: false });
+    expect(pilotCheckFailures(stopped)).toEqual([
+      'a failed recovery proof shipped before the pilot was adjusted or reverted',
+      'a serious boundary miss requires the pilot to be adjusted or reverted',
+    ]);
+  });
+
+  it('wires the pilot command to the same parser and evaluator', () => {
+    const output = execFileSync(process.execPath, [PILOT_CLI, '--json', '--as-of=2026-09-01'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+    });
+    expect(JSON.parse(output)).toMatchObject({
+      phase: 'collecting',
+      metrics: { eligibleDecisions: expect.any(Number) },
     });
   });
 });
@@ -186,9 +451,12 @@ describe('Atlas PO policy stays executable and mirrored', () => {
   });
 
   it('starts the finite pilot with an actual measured row', () => {
-    const pilot = read(PILOT);
-    for (const label of ['Window:', 'Cost:', 'Delta:']) expect(pilot).toContain(label);
-    expect([...pilot.matchAll(/^\|\s*\d+\s*\|/gm)].length).toBeGreaterThan(0);
-    expect(pilot).toMatch(/20 eligible decisions or 14 days/i);
+    const pilot = parsePoPilot(read(PILOT));
+    expect(pilot.metadata).toMatchObject({
+      decisionTarget: 20,
+      decisionDeadline: '2026-09-15',
+      sparseExtensionDeadline: '2026-09-22',
+    });
+    expect(pilot.runs.length).toBeGreaterThan(0);
   });
 });

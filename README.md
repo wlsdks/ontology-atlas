@@ -866,9 +866,10 @@ maps a changed MCP source with a real sibling test to that direct test and the
 full MCP unit gate. [Development checks](docs/DEVELOPMENT-CHECKS.md) records the
 exact-navigation RED→GREEN probes and escalation path, including the dogfood
 vault's automatically wired section-shape ratchet. For product decisions,
-`pnpm po:route -- --help` selects maintenance checks, a reversible solo pass,
-or Evidence plus one Atlas-risk specialist; its known-control contract is
-`pnpm exec vitest run tests/contract/po-council.contract.test.ts`.
+`pnpm po:route -- --help` derives maintenance, solo, or two-reviewer handling
+from change facts and one human-recovery outcome; it does not accept a
+self-declared door or risk. `pnpm test:po` replays known controls, and
+`pnpm po:pilot -- --check` measures the finite pilot and forces its sunset.
 
 ## License
 

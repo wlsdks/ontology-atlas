@@ -1,103 +1,143 @@
 # ATLAS PRODUCT DECISION SYSTEM
 
-> Pilot policy from 2026-09-01. It replaces the active numeric score and the
-> default full-roster council for the next 20 eligible decisions. Git keeps
-> the previous policy recoverable; the decision ledger keeps its history.
+> Version 3, active as a finite pilot from 2026-09-01. It keeps the v2
+> two-reviewer ceiling but removes the builder's ability to declare their own
+> door and risk. Git preserves both prior systems; `docs/PO-PILOT.md` decides
+> whether this one earns a permanent place.
 
-Atlas does not need a universal product-management framework. It needs a small
-decision system for one product promise:
+Atlas does not need a universal product-management framework. It needs a product
+owner for one unusual failure: coding agents can change a codebase faster than
+its owner can reconstruct what was built, why, and whether it should be trusted.
 
-> After people and coding agents change a codebase, Atlas keeps its product
-> meaning inspectable, correctable, and reusable without taking authority away
-> from the person who owns the code.
+The Atlas PO protects this promise:
 
-The product gate exists to protect that promise. It is not a grade, a backlog
-ritual, or permission for an agent to approve its own work.
+> After people and coding agents change a codebase, Atlas lets its owner recover
+> enough product meaning to orient, explain, judge, correct, and hand off the
+> work without surrendering authority to the agent.
 
-## The one product question
+The gate is not a grade, backlog ritual, or permission for an agent to approve
+its own work. It is a small decision contract around that promise.
 
-Before product work, ask:
+## The five Atlas outcomes
 
-> Which decision, understanding, trust boundary, or handoff does a person lose
-> today, and what is the smallest observable change that gives it back?
+Every non-mechanical product decision names one primary human outcome. These are
+the only universal product outcomes in this gate.
 
-Start with a witnessed failure, not the requested feature. A request for a
-route, panel, library, schema field, animation, or agent tool is a proposed
-solution until the failure remains true without that noun.
+| Outcome | Observable ability Atlas gives back |
+|---|---|
+| `orient` | a person can find the right product or implementation starting point |
+| `explain` | a person can explain what exists and why it has that shape |
+| `judge` | a person can judge evidence, uncertainty, and likely impact |
+| `correct` | a person can inspect, reject, or correct agent-authored meaning |
+| `handoff` | the next person or agent can reuse accepted meaning and its verification path |
+
+Ask:
+
+> Who loses which one of these abilities, at what moment, and what is the
+> smallest observable change that gives it back?
+
+A route, panel, library, schema field, animation, or agent tool is still a
+proposed solution. The failure statement must survive removal of that noun.
+Ordinary maintenance has no invented Atlas outcome and skips this gate.
+
+## Evidence before commitment
 
 Evidence has three states:
 
 - **observed** — a user report, installed-app walk, runtime result, source-hidden
-  trial, or inspectable artifact shows the failure;
-- **inferred** — source, a prior decision, or a related measurement supports the
-  claim, but the target failure has not been watched;
-- **unknown** — the claim is plausible and untested.
+  trial, or inspectable artifact shows the target failure;
+- **inferred** — source, a prior decision, or adjacent evidence supports it, but
+  the target failure has not been watched;
+- **unknown** — plausible and untested.
 
-Unknown evidence cannot be converted into certainty by adding reviewers. Use a
-small probe or stop.
+Unknown evidence routes to the cheapest bounded probe. Extra reviewers cannot
+convert it into observation.
 
-## Route by reversibility
+## Route from facts, not verdicts
 
-Run `pnpm po:route -- --help` for the executable route. There are three paths.
+Run `pnpm po:route -- --help`. The builder supplies an evidence state, one Atlas
+outcome, inspectable change signals, and an explicit state for all four Atlas
+boundaries. The router derives the door, primary risk, and reviewer pair. It
+does not accept `--door` or `--risk`.
 
-### 1. Mechanical — skip the PO gate
+### Mechanical maintenance
 
-Typos, dependency bumps, CI plumbing, lint configuration, test fixtures, and
-equivalent maintenance go directly to their technical checks. A change that
-alters local-first behavior or human authority is never mechanical.
+Typos, dependency bumps, CI plumbing, lint configuration, isolated test
+fixtures, and equivalent maintenance use technical checks only:
 
 ```bash
 pnpm po:route -- --mechanical
 ```
 
-### 2. Two-way door — one accountable solo pass
+Mechanical work cannot carry a product or sovereignty signal. If it does, the
+router refuses the classification instead of silently upgrading or skipping it.
 
-A two-way door is cheap to undo, does not change a public contract or source of
-truth, and cannot silently weaken human approval. The builder writes the compact
-pass below, chooses a bounded proof, and proceeds. Unknown evidence means
-`probe-first`, not a council.
+### Change signals
 
-```bash
-pnpm po:route -- --door=two-way --evidence=observed --risk=none
-```
-
-### 3. One-way door — two independent reviewers
-
-A one-way door is difficult to reverse because it changes a public contract,
-the product category, a first impression, a source-of-truth or authority
-boundary, the user-facing surface inventory, or a substantial investment. It
-gets `po-evidence` plus one specialist selected by the primary Atlas risk.
-
-| Primary Atlas risk | Specialist | Use when the decision changes |
+| Signal | Derived route | Why |
 |---|---|---|
-| `meaning` | `po-steward` | durable meaning, evidence truth, local-first storage or transfer, canonical files, agent-write authority, human approval, or next-agent handoff |
-| `positioning` | `po-wedge` | category, product direction, first-contact words, launch claims, or one-shot reputation |
-| `scope` | `po-leverage` | a new or removed surface, an expensive slice, or a difficult rollback boundary |
+| `rollback-cheap` | two-way solo | internal, cheap to undo, and no one-way fact is present |
+| `public-contract` | one-way · meaning | public MCP, CLI, vault, or source-of-truth behavior changes |
+| `positioning` | one-way · positioning | category, direction, first-contact words, launch claim, or reputation changes |
+| `surface-inventory` | one-way · scope | a user-facing surface is added or removed |
+| `substantial-investment` | one-way · scope | the slice is expensive or difficult to unwind |
+
+The universal Atlas boundary has four explicit assessments:
+
+| Boundary | Ask whether the change affects |
+|---|---|
+| `truth` | where canonical truth lives or when proposed meaning becomes accepted |
+| `transfer` | what leaves the machine or crosses a trust boundary |
+| `agent-write` | what an agent may write or approve |
+| `human-correction` | whether a person can inspect, reject, and correct the change |
+
+Every non-mechanical pass records each boundary as `unchanged`, `affected`, or
+`unknown`; omission is an error. `affected` and `unknown` are one-way `meaning`
+signals and override `rollback-cheap`. When several one-way risks coexist, the fixed priority is
+meaning, then positioning, then scope; this preserves the sovereignty brake
+without unioning every specialist into a committee. The record keeps every
+signal and the router's reasons, so the owner can challenge the facts.
+
+Examples:
 
 ```bash
-pnpm po:route -- --door=one-way --evidence=inferred --risk=positioning
+pnpm po:route -- --evidence=unknown --outcome=handoff --change=rollback-cheap \
+  --boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged
+pnpm po:route -- --evidence=inferred --outcome=orient --change=positioning \
+  --boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged
+pnpm po:route -- --evidence=observed --outcome=correct \
+  --change=public-contract \
+  --boundary=truth:unchanged,transfer:unchanged,agent-write:affected,human-correction:affected
 ```
 
-Name one primary risk. Do not union every specialist into a committee. The human
-owner may explicitly ask for more review, but that is an exception recorded in
-the review footprint, not the default route.
+### Resulting paths
 
-## Universal boundary scan
+- `skip`: maintenance checks only.
+- `solo`: one accountable pass. Unknown evidence means `probe-first`.
+- `review`: `po-evidence` plus exactly one risk specialist. Meaning selects
+  `po-steward`, positioning selects `po-wedge`, and scope selects `po-leverage`.
 
-Every non-mechanical pass answers one binary question:
+The human owner may request extra review. Record a two-way exception as
+`owner-review` in the pilot; it counts against council avoidance but does not
+widen the default router.
 
-> Does this change where canonical truth lives, what leaves the machine, what an
-> agent may write, or whether a person can inspect, reject, and correct it?
+## Recovery proof
 
-If yes, it is a one-way `meaning` decision and Steward review is mandatory. The
-builder cannot self-declare an exemption. This is the Atlas-specific safeguard
-that remains universal.
+Every non-mechanical pass defines one proof before implementation:
 
-Shared meaning and agent handoff are otherwise conditional. A visual alignment,
-copy correction, or ordinary interaction change does not need to invent
-ontology value. Route visual craft through the product-design gates and a full
-journey through `/user-walkthrough`; the PO review consumes that evidence rather
-than repeating it.
+```text
+Given <Atlas artifact and knowledge state>, without <forbidden fallback>,
+<actor> can <orient/explain/judge/correct/handoff task> and cite <evidence>.
+Fail when <observable condition>.
+```
+
+Use source-hidden proof when the claim is that Atlas itself carries the
+understanding. Use the real runtime when the claim is interaction or control.
+Do not use a green unit test as proof of human comprehension, and do not ask a
+PO reviewer to repeat browser, motion, responsive, design, or journey gates.
+
+This proof is the product contract. The router only determines how much
+independent judgment it needs.
 
 ## Compact solo pass
 
@@ -107,131 +147,117 @@ Keep this to one screen:
 ## Atlas product pass — <decision>
 
 **Prior decision**: <standing record or none; falsifier observed or not>
-**Failure and moment**: <who loses which decision/understanding/trust/handoff, when>
-**Evidence state**: observed / inferred / unknown — <artifact>
-**Atlas stake**: meaning / positioning / scope / none — <why>
-**Local-first and human sovereignty**: unchanged / affected — <how>
-**Door**: two-way — <rollback> / one-way — <reason>
-**Smallest proof**: <one bounded result and failure condition>
+**Human loss and moment**: <actor, lost ability, and exact moment>
+**Atlas outcome**: orient / explain / judge / correct / handoff — <observable ability>
+**Evidence state**: observed / inferred / unknown — <primary artifact>
+**Change signals**: <change signals and all four boundary assessments>
+**Computed route**: <door, risk, route, and router reasons>
+**Recovery proof**: Given …; fail when …
 **Decision**: stop / probe first / build and verify — <smallest slice>
 ```
 
-Do not append routine two-way passes to `docs/DECISIONS.md`. The pass belongs in
-the working plan or pull-request rationale. The ledger is for significant
-decisions whose motivation a future person or agent would otherwise have to
-reconstruct.
+Routine solo passes stay in the working plan or pull-request rationale, not the
+append-only decision ledger. During the pilot they still add one compact typed
+run to `docs/PO-PILOT.md`, because missing reversible cases would make the 80%
+avoidance denominator meaningless.
 
 ## Selected review protocol
 
-1. Search `docs/DECISIONS.md` narrowly for the same surface and question. Cite a
-   standing decision or explicitly overturn it; check its falsifier.
-2. Record the proposed decision before review. Without a before-state, the
-   council cannot claim it changed anything.
-3. Give the two selected reviewers the same literal request and primary
-   evidence. Their first positions are independent.
-4. A rebuttal happens only when their recommendations materially conflict or a
-   bounded factual question can change the decision. There is at most one.
-5. The accountable human owner decides. Reviewers challenge; they do not vote,
-   average scores, or manufacture approval.
-6. Record what changed, the strongest losing argument, its falsifier, and the
-   review footprint. `unchanged` is a valid decision delta and necessary data.
+One-way work gets Evidence plus the specialist returned by the router.
 
-`po-craft` remains available only when the owner explicitly wants an independent
-proof audit. It does not repeat screenshots, responsive measurement, motion
-verification, design critique, or journey work owned by their dedicated gates.
+1. Search `docs/DECISIONS.md` narrowly for the same surface and question. Cite
+   a standing decision or explicitly overturn it; check its falsifier.
+2. Record the requested words, intended decision, scope, and recovery proof
+   before review. Without a before-state, review cannot claim a causal delta.
+3. Give both reviewers the same primary evidence. Preserve independent first
+   positions. If the execution environment weakens independence, record it.
+4. Rebut only when recommendations materially conflict or one bounded fact can
+   change the decision. At most one round; otherwise record zero turns.
+5. The accountable human owner decides. Reviewers do not vote, average scores,
+   or manufacture a delta to satisfy the pilot.
+6. Record the strongest losing argument, falsifier, review footprint, unique
+   contributor, and later recovery result. `unchanged` is valid data.
+
+`po-craft` remains owner-requested proof review only. It consumes evidence from
+the dedicated design and journey gates instead of repeating them.
 
 ## Significant decision record
 
-Keep a new record to roughly one page. Historical records remain append-only.
+Keep a new record to roughly one page. Historical records stay append-only.
 
 ```md
 ## YYYY-MM-DD — <decision>
 
 **Pre-review decision**: …
+**Atlas outcome**: orient / explain / judge / correct / handoff — …
 **Evidence state**: observed / inferred / unknown
-**Door**: one-way
+**Change signals**: …
+**Computed route**: one-way — <risk, reviewers, and reasons>
 **Primary Atlas risk**: meaning / positioning / scope
 **Confidence**: high / medium / low — <basis>
 **Accountable owner**: <person who accepts or overturns the review>
+**Recovery proof**: Given …; fail when …
 **Decision**: …
-**Decision delta**: unchanged / stopped / narrowed / redirected / evidence-bounded / verification-strengthened — <why and which reviewer contributed it>
-**Review footprint**: <reviewers, first-position turns, rebuttal turns>
+**Decision delta**: unchanged / stopped / narrowed / redirected / evidence-bounded / verification-strengthened — <why and contributor>
+**Review footprint**: <reviewers, first-position turns, rebuttal turns, independence limits>
 **Dissent and falsifier**: …
 **Revisit**: …
 **Outcome**: pending / <later observed result>
 ```
 
 Route, public MCP/CLI contract, and design-spec changes still trip
-`pnpm decisions:check`. That gate proves a significant record exists; it does
-not prove the judgment was good.
+`pnpm decisions:check`. That gate proves a durable record exists; it does not
+claim the judgment was good.
 
-## Pilot and sunset
+## Measured pilot and forced sunset
 
-Use this lighter path for the next 20 eligible decisions or 14 days, whichever
-comes first. If fewer than 10 eligible decisions occur, extend once to 21 days.
-During the pilot, record review cost as reviewer and rebuttal turns, not a token
-claim. For each one-way review, record the pre-review decision, evidence state,
-confidence, fixed decision-delta category, and later reopen or reversal.
+`docs/PO-PILOT.md` is a typed, append-only run and outcome register.
+`pnpm po:pilot` calculates:
 
-Before trusting the router, replay these known controls:
+- eligible decisions and the reversible denominator;
+- review turns and material decision-delta rate;
+- reversible decisions that avoided council;
+- recovery-proof coverage and shipped proof failures;
+- owner clarity, boundary misses, reopen/reversal results; and
+- each specialist's calls and unique material contributions.
 
-- an unsupported OS URL scheme remains a one-way meaning/trust review;
-- an unmeasured internal transport replacement remains a two-way `probe-first`
-  decision rather than earning approval from a score;
-- first-contact positioning remains a one-way Evidence + Wedge review;
-- a reversible craft change stays solo and routes its proof to design checks.
+`pnpm po:pilot -- --check` runs automatically in CI. It remains green while a
+valid pilot is collecting. At 20 decisions or 14 days it requires an explicit
+`keep`, `adjust`, or `revert`; fewer than 10 decisions get one extension to 21
+days. A shipped recovery-proof failure or serious boundary miss stops the pilot
+immediately until the owner chooses `adjust` or `revert`. It refuses `keep`
+unless the declared thresholds pass. A specialist with five calls and no unique
+material contribution must leave the default map.
 
-Keep the pilot as the active daily path only if:
+The known-control contract also replays:
 
-- every known one-way control routes to the relevant independent reviewers;
-- no serious local-first, schema, reputation, or human-authority boundary is
-  missed;
-- at least 20% of escalated reviews materially stop, narrow, redirect, bound a
-  claim, or strengthen verification versus the recorded pre-review decision;
-- reversible work avoids council in at least 80% of eligible cases; and
-- the owner can read the pass and the resulting delta without another summary.
+- unsupported OS URL-scheme authority as one-way Evidence + Steward;
+- an unmeasured internal transport replacement as two-way `probe-first`;
+- first-contact positioning as one-way Evidence + Wedge; and
+- reversible visual craft as solo with its proof delegated to design gates.
 
-If these conditions fail, append the outcome and either adjust the risk map or
-return to the prior gate. Do not let the pilot become permanent by inertia. A
-specialist that produces no unique material contribution across five calls
-leaves the default route.
-
-## What was retained and removed
-
-Retained:
-
-- phenomenon before solution;
-- evidence before confidence;
-- one accountable human owner;
-- narrow reading of standing decisions, dissent, falsifier, and revisit;
-- smallest integrated slice and honest runtime proof;
-- local-first and human-sovereignty protection;
-- conditional stewardship of durable shared meaning and agent handoff.
-
-Removed from the active path:
-
-- the six-row numeric score and its pass threshold;
-- universal ontology and agent-value essays;
-- mandatory five-reviewer councils and mandatory rebuttal;
-- duplicated visual, responsive, motion, and journey inspections;
-- routine entries in the append-only decision ledger.
+The pilot measures routing and decision usefulness, not market demand. A real
+user report, field trial, or observed recovery proof remains the outcome
+authority.
 
 ## Why this shape
 
-The process is intentionally adapted to Atlas rather than copied wholesale.
-[Shape Up](https://basecamp.com/shapeup/4.1-appendix-02) says tiny teams can
-discard most formal cycle and betting machinery while retaining deliberate
-shaping and appetite. [Amazon](https://aws.amazon.com/pt/executive-insights/content/how-amazon-defines-and-operationalizes-a-day-1-culture/)
-separates reversible from irreversible decisions. [Product Talk](https://www.producttalk.org/getting-started-with-discovery/)
-grounds discovery in repeated customer contact and small tests.
-[Linear](https://linear.app/method/introduction) favors brief specs, named
-ownership, and removing work around work. [Architecture decision records](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions)
-preserve significant rationale in small, durable records. Research on
-[multi-agent debate](https://aclanthology.org/2026.findings-acl.1694/) warns
-that more homogeneous debate can cost more without improving a simple baseline;
-independent evidence and genuine viewpoint differences matter more than seat
-count.
+External practice supplies constraints, not a generic PO persona. The
+[GOV.UK service guidance](https://www.gov.uk/service-manual/measuring-success/how-to-set-performance-metrics-for-your-service)
+ties measures to a service's purpose and asks teams to design measurement while
+building, not afterward. Microsoft's validated
+[human-AI interaction guidelines](https://www.microsoft.com/en-us/research/blog/guidelines-for-human-ai-interaction-design/)
+turn broad trust language into observable correction, explanation, and control.
+The [NIST Generative AI Profile](https://nvlpubs.nist.gov/nistpubs/ai/NIST.AI.600-1.pdf)
+calls for risk-proportional independent evaluation, provenance understanding,
+and tracking human overrides and outcomes. Anthropic's
+[agent-evaluation guidance](https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents)
+recommends realistic failure-derived tasks, explicit success criteria, automated
+regression checks, production evidence, and periodic human calibration.
+GitHub's account of
+[AI-generated review overload](https://github.blog/engineering/turn-one-giant-ai-generated-pull-request-to-a-reviewable-stack/)
+supports keeping proofs and slices small enough to hold in a reviewer's head.
 
-Those sources inform the mechanics. Atlas supplies the non-negotiable product
-judgment: durable meaning stays evidence-bound and local, agents may propose but
-people remain able to inspect, reject, correct, and own it.
+Atlas applies those constraints to its own product category: the outcome is not
+more process or faster code generation. It is recovered, evidence-bound human
+understanding after agents move faster than a person can follow.
