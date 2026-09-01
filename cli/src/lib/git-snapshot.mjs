@@ -56,7 +56,7 @@ export function vaultPathspec(repoRoot, vaultRoot) {
 export function getPorcelainStatus({ repoRoot, pathspec, run = defaultRun }) {
   let out;
   try {
-    out = run(['status', '--porcelain', '--untracked-files=all', '--', pathspec], repoRoot);
+    out = run(['status', '--porcelain', '-z', '--untracked-files=all', '--', pathspec], repoRoot);
   } catch {
     return null;
   }
@@ -68,7 +68,7 @@ export function getPorcelainStatus({ repoRoot, pathspec, run = defaultRun }) {
 export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
   let out;
   try {
-    out = run(['status', '--porcelain', '--untracked-files=all'], repoRoot);
+    out = run(['status', '--porcelain', '-z', '--untracked-files=all'], repoRoot);
   } catch {
     return null;
   }
@@ -76,22 +76,32 @@ export function getFullPorcelainStatus({ repoRoot, run = defaultRun }) {
   return parsePorcelain(out);
 }
 
+/*
+ * `-z` (NUL-separated) output is parsed, never the newline form. With git's
+ * default `core.quotePath`, the newline form C-quotes any non-ASCII path —
+ * an untracked `한글.md` printed as `?? "\355\225\234\352\270\200.md"` — and the
+ * old parser kept the quotes and octal escapes literally, so `git add` on that
+ * "path" exited 128 and the whole snapshot aborted, misclassified as a hook
+ * rejection (bug sweep 2026-09-01, reproduced). `-z` emits raw bytes with no
+ * quoting; a rename record is `XY new\0orig\0` (new path first, no ` -> `).
+ */
 function parsePorcelain(out) {
-  return out
-    .split('\n')
-    .filter((line) => line.length > 0)
-    .map((line) => {
-      const index = line[0] ?? ' ';
-      const worktree = line[1] ?? ' ';
-      let rest = line.slice(3);
-      let renamedFrom = null;
-      const arrow = rest.indexOf(' -> ');
-      if (arrow !== -1) {
-        renamedFrom = rest.slice(0, arrow);
-        rest = rest.slice(arrow + 4);
-      }
-      return { index, worktree, path: rest, renamedFrom };
-    });
+  const tokens = out.split('\0');
+  const rows = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (!token) continue;
+    const index = token[0] ?? ' ';
+    const worktree = token[1] ?? ' ';
+    const path = token.slice(3);
+    let renamedFrom = null;
+    if (index === 'R' || index === 'C' || worktree === 'R' || worktree === 'C') {
+      renamedFrom = tokens[i + 1] || null;
+      i += 1;
+    }
+    rows.push({ index, worktree, path, renamedFrom });
+  }
+  return rows;
 }
 
 /** Classifies one porcelain row as 'added' | 'modified' | 'deleted' | 'renamed'. */

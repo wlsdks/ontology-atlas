@@ -359,6 +359,42 @@ test('buildChangeSummary + formatSnapshotSummary — rename keeps the previous p
   }
 });
 
+test('snapshot flow — a non-ASCII (Korean) filename survives status → add → commit', () => {
+  // Bug sweep 2026-09-01, reproduced: with git's default core.quotePath the
+  // newline porcelain form C-quoted the path (`?? "\355\225\234..."`), the
+  // parser kept the quotes/octal literally, `git add` on that "path" exited 128,
+  // and the whole snapshot aborted — for a product shipping a vault-ko template.
+  const repoRoot = initRepo();
+  try {
+    writeMd(repoRoot, 'docs/ontology/README.md', { kind: 'vault-readme' });
+    sh(['add', '.'], repoRoot);
+    sh(['commit', '-m', 'baseline'], repoRoot);
+    // Ensure the historically failing configuration is active, not inherited off.
+    sh(['config', 'core.quotePath', 'true'], repoRoot);
+
+    writeMd(repoRoot, 'docs/ontology/domains/한글-도메인.md', {
+      kind: 'domain',
+      slug: 'domains/한글-도메인',
+    });
+
+    const vaultRoot = join(repoRoot, 'docs', 'ontology');
+    const rows = getPorcelainStatus({ repoRoot, pathspec: 'docs/ontology' });
+    const added = rows.find((r) => r.path.includes('한글-도메인'));
+    assert.ok(added, `expected the Korean filename as a raw path, got: ${JSON.stringify(rows)}`);
+    assert.equal(added.path, 'docs/ontology/domains/한글-도메인.md');
+
+    const changes = buildChangeSummary(rows, { repoRoot, vaultRoot });
+    const change = changes.find((c) => c.path.includes('한글-도메인'));
+    assert.equal(change.kind, 'domain', 'frontmatter must be readable through the raw path');
+
+    addPaths({ repoRoot, paths: [added.path] });
+    commitPathspec({ repoRoot, pathspec: 'docs/ontology', message: 'ontology snapshot: +1 concept' });
+    assert.equal(sh(['status', '--porcelain'], repoRoot).trim(), '', 'repo should be clean');
+  } finally {
+    cleanup(repoRoot);
+  }
+});
+
 // ── Graceful git failure classification ───────────────────────────────────
 
 test('classifyGitError — maps common git failure stderr to clean reasons + guidance', () => {
