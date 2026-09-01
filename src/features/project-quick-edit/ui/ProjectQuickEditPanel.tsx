@@ -109,11 +109,30 @@ export function ProjectQuickEditPanel({
   const { patchProject } = useProjectMutations();
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
+  /*
+   * Re-seed on a real subject change only (bug sweep 2026-09-01). The Project
+   * object is rebuilt by every external vault refresh — an agent write, the
+   * folder-watch poll, another surface's save — and this effect used to reset
+   * `values` unconditionally on each rebuild, silently discarding whatever the
+   * user had typed into the open drawer. A different project always re-seeds;
+   * the same project re-seeds only while the buffer carries no local edits.
+   * The baseline always follows disk, so Save's dirty check compares against
+   * the latest external content (the mtime guard still protects the file).
+   */
+  const baselineRef = useRef(baseline);
+  const lastProjectSlugRef = useRef(project.slug);
   useEffect(() => {
     const next = toQuickEditValues(project);
+    const sameProject = project.slug === lastProjectSlugRef.current;
+    lastProjectSlugRef.current = project.slug;
     queueMicrotask(() => {
-      setValues(next);
+      setValues((current) => {
+        const dirty =
+          sameProject && JSON.stringify(current) !== JSON.stringify(baselineRef.current);
+        return dirty ? current : next;
+      });
       setBaseline(next);
+      baselineRef.current = next;
     });
   }, [project]);
 
