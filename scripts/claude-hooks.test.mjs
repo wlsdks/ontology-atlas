@@ -57,6 +57,9 @@ const HOOK_CONFIGS = [
       // The sensor lane, mirrored 2026-09-01 after measuring codex-cli 0.151.0
       // firing PostToolUse for edit tools and honouring a Stop-time block.
       'bash .codex/hooks/fast-sensor.sh',
+      // Twice, like the Claude side: SessionStart and PreCompact. codex-cli
+      // 0.151.0 declares PreCompact in its own hook enum and JSON schema.
+      'bash .codex/hooks/inject-ontology-summary.sh',
       'bash .codex/hooks/inject-ontology-summary.sh',
       'bash .codex/hooks/remind-verify-on-stop.sh',
       'bash .codex/hooks/stamp-verification.sh',
