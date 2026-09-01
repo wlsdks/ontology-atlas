@@ -10,6 +10,30 @@
 // module so the build script and the runtime cannot drift apart.
 
 const UNSAFE_OBJECT_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+// Graph-edge keys must be arrays — same set and diagnostic as
+// mcp/src/parser.mjs (ported in the 2026-09-01 bug sweep; this parser and the
+// TS one stayed silent while mcp diagnosed, a divergence the 4-way contract
+// fixtures did not cover).
+const GRAPH_ARRAY_KEYS = new Set([
+  "domains",
+  "capabilities",
+  "elements",
+  "dependencies",
+  "depends_on",
+  "relates",
+  "contains",
+  "describes",
+  "broader",
+]);
+
+function pushGraphArrayDiagnostic(diagnostics, key, line, value) {
+  if (!GRAPH_ARRAY_KEYS.has(key) || Array.isArray(value)) return;
+  diagnostics.push({
+    code: "malformed-frontmatter-line",
+    line,
+    message: `Frontmatter line ${line} graph relation \`${key}:\` must be an array.`,
+  });
+}
 
 function assignParsedKey(target, key, value, diagnostics, line) {
   if (UNSAFE_OBJECT_KEYS.has(key)) {
@@ -81,6 +105,7 @@ export function parseFrontmatter(input) {
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
       assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, read.value);
       i = read.next - 1;
       continue;
     }
@@ -112,10 +137,12 @@ export function parseFrontmatter(input) {
           j += 1;
         }
         assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
         i = j - 1;
         continue;
       }
       assignParsedKey(frontmatter, key, "", diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, "");
       continue;
     }
     if (value.startsWith("[") && value.endsWith("]")) {
@@ -139,10 +166,13 @@ export function parseFrontmatter(input) {
         }
       }
       assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
-    assignParsedKey(frontmatter, key, parseTopLevelScalar(value), diagnostics, i + 2);
+    const topLevelScalar = parseTopLevelScalar(value);
+    assignParsedKey(frontmatter, key, topLevelScalar, diagnostics, i + 2);
+    pushGraphArrayDiagnostic(diagnostics, key, i + 2, topLevelScalar);
   }
   const result = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;

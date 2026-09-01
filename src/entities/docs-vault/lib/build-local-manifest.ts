@@ -44,10 +44,11 @@ function frontmatterRefStrings(frontmatter: Record<string, unknown>): string[] {
     const value = frontmatter[key];
     if (Array.isArray(value)) {
       for (const item of value) if (typeof item === 'string' && item.trim()) out.push(item.trim());
-    } else if (typeof value === 'string' && value.trim()) {
-      // tolerate a scalar where an array is expected
-      out.push(value.trim());
     }
+    // A scalar at an array key is NOT tolerated here (bug sweep 2026-09-01):
+    // the graph derivation and the MCP reader both consume arrays only, so
+    // counting the scalar as a backlink made the doc footer report a referrer
+    // the map refuses to draw. The parser now diagnoses the scalar instead.
   }
   for (const key of RELATION_REF_STRING_KEYS) {
     const value = frontmatter[key];

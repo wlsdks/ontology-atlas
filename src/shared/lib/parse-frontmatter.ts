@@ -23,6 +23,37 @@ type ParsedScalar = string | number | boolean;
 
 const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
+// These frontmatter keys are graph edges, not arbitrary metadata (same set as
+// mcp/src/parser.mjs). A scalar at one of these keys parses fine and then
+// silently draws no edge — the mcp parser has diagnosed it since 2026-08 while
+// this parser stayed silent, a 3-way divergence the 4-way contract fixtures
+// did not cover (bug sweep 2026-09-01).
+const GRAPH_ARRAY_KEYS = new Set([
+  'domains',
+  'capabilities',
+  'elements',
+  'dependencies',
+  'depends_on',
+  'relates',
+  'contains',
+  'describes',
+  'broader',
+]);
+
+function pushGraphArrayDiagnostic(
+  diagnostics: FrontmatterDiagnostic[],
+  key: string,
+  line: number,
+  value: unknown,
+): void {
+  if (!GRAPH_ARRAY_KEYS.has(key) || Array.isArray(value)) return;
+  diagnostics.push({
+    code: 'malformed-frontmatter-line',
+    line,
+    message: `Frontmatter line ${line} graph relation \`${key}:\` must be an array.`,
+  });
+}
+
 function assignParsedKey(
   target: Record<string, unknown>,
   key: string,
@@ -100,6 +131,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
       assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, read.value);
       i = read.next - 1;
       continue;
     }
@@ -133,10 +165,12 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
           j += 1;
         }
         assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
         i = j - 1;
         continue;
       }
       assignParsedKey(frontmatter, key, '', diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, '');
       continue;
     }
 
@@ -146,17 +180,15 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
-      assignParsedKey(
-        frontmatter,
-        key,
-        parseInlineObject(value, diagnostics, i + 2),
-        diagnostics,
-        i + 2,
-      );
+      const inlineObject = parseInlineObject(value, diagnostics, i + 2);
+      assignParsedKey(frontmatter, key, inlineObject, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, inlineObject);
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
-    assignParsedKey(frontmatter, key, parseTopLevelScalar(value), diagnostics, i + 2);
+    const topLevelScalar = parseTopLevelScalar(value);
+    assignParsedKey(frontmatter, key, topLevelScalar, diagnostics, i + 2);
+    pushGraphArrayDiagnostic(diagnostics, key, i + 2, topLevelScalar);
   }
   const result: ParsedFrontmatter = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;

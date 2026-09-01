@@ -400,6 +400,25 @@ export const CASES = [
     },
   },
   {
+    // Bug sweep 2026-09-01: only the mcp parser diagnosed a scalar at a graph
+    // key; the TS and scripts parsers stayed silent, so `domains: payments`
+    // drew no edge on the web with zero diagnostics anywhere while MCP
+    // validate flagged it. All four must agree.
+    name: "a scalar at a graph key parses but is diagnosed — it draws no edge otherwise",
+    input: "---\nkind: capability\ndomains: payments\n---\n",
+    expected: {
+      frontmatter: { kind: "capability", domains: "payments" },
+      body: "",
+      diagnostics: [
+        {
+          code: "malformed-frontmatter-line",
+          line: 3,
+          message: "Frontmatter line 3 graph relation `domains:` must be an array.",
+        },
+      ],
+    },
+  },
+  {
     // Found in this repository's own vault, 2026-08-31, on `display_ko`.
     // `unquote` only strips a matching pair, so the opening quote survived as
     // literal text and every reader rendered the stray quote — with 0 issues.
