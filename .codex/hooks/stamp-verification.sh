@@ -15,14 +15,16 @@
 # behind this hook. A reminder heuristic should be cheap and honest about being
 # a heuristic, not a second CI.
 #
-# Mirrored at `.codex/hooks/stamp-verification.sh` since 2026-09-01: measured,
-# Codex fires PostToolUse for Bash with the same `tool_input.command` shape and
-# does have the Stop event this stamp feeds.
+# The Codex mirror. Measured 2026-09-01 (codex-cli 0.151.0): PostToolUse fires
+# for Bash with the same `tool_input.command` shape, and the Stop event this
+# stamp feeds does exist there, honouring `decision: block` and flipping
+# `stop_hook_active` on the continuation exactly as Claude Code does. The
+# earlier claim in this header that Codex had no Stop event was wrong.
 
 set -u
 
 INPUT="$(cat)"
-REPO_ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+REPO_ROOT="${CODEX_PROJECT_DIR:-$(pwd)}"
 
 REPO_ROOT="$REPO_ROOT" node --input-type=module -e '
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
