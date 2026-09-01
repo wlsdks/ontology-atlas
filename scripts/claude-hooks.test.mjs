@@ -27,8 +27,11 @@ const HOOK_CONFIGS = [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-generated-edit.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/fast-sensor.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/remind-verify-on-stop.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/stamp-verification.sh"',
     ],
     expectedPreToolMatchers: ['Bash', 'Edit|Write|MultiEdit|NotebookEdit'],
   },
@@ -557,5 +560,124 @@ describe('Codex secret read guard', () => {
     assert.match(reason, /\.env/);
     assert.match(reason, /local-first\.md/);
     assert.match(reason, /\.env\.example/);
+  });
+});
+
+// The fast-sensor lane and the Stop-time verification reminder.
+//
+// Why these tests use a fixture project directory: the hooks resolve every path
+// against CLAUDE_PROJECT_DIR, so a temp dir with the same shape exercises the
+// markdown branches and the ledger/stamp/stop protocol without touching this
+// repository. The eslint branch is exercised against the real repository once
+// (a clean file must stay silent); its RED case was proven live when the lane
+// landed (planted unused-import, 2026-09-01) and the lint lane remains the
+// authority for eslint's own verdicts.
+describe('fast-sensor lane and stop-time verification reminder', () => {
+  const SENSOR = '.claude/hooks/fast-sensor.sh';
+  const STAMP = '.claude/hooks/stamp-verification.sh';
+  const STOP = '.claude/hooks/remind-verify-on-stop.sh';
+
+  const fireHook = (hook, payload, projectDir) =>
+    spawnSync('bash', [hook], {
+      input: JSON.stringify(payload),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+    });
+
+  const editPayload = (file, sessionId = 'sess-test') => ({
+    session_id: sessionId,
+    tool_name: 'Edit',
+    tool_input: { file_path: file },
+  });
+
+  it('reports prose em-dash in a user-rendered doc and stays silent on a clean one', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'fast-sensor-'));
+    try {
+      const guide = join(dir, 'docs', 'guide');
+      await writeFile(join(dir, 'package.json'), '{}').catch(() => {});
+      const { mkdir } = await import('node:fs/promises');
+      await mkdir(guide, { recursive: true });
+      const dirty = join(guide, 'dirty.md');
+      await writeFile(dirty, 'A lead — the AI-shaped dash.\n\n```\ncode — exempt\n```\n');
+      const red = fireHook(SENSOR, editPayload(dirty), dir);
+      assert.equal(red.status, 0, red.stderr);
+      assert.match(red.stdout, /additionalContext/);
+      assert.match(red.stdout, /em-dash in user-rendered prose/);
+      // The fenced line is exempt: only line 1 is named.
+      assert.match(red.stdout, /line 1/);
+
+      const clean = join(guide, 'clean.md');
+      await writeFile(clean, 'A sentence with no dash.\n');
+      const green = fireHook(SENSOR, editPayload(clean), dir);
+      assert.equal(green.status, 0, green.stderr);
+      assert.equal(green.stdout, '');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('stays silent for a clean real source file, and never blocks', () => {
+    const result = fireHook(
+      SENSOR,
+      editPayload(join(process.cwd(), 'src/shared/lib/cn.ts'), 'sess-clean'),
+      process.cwd(),
+    );
+    assert.equal(result.status, 0, result.stderr);
+    assert.doesNotMatch(result.stdout, /"decision"/);
+  });
+
+  it('ledger + stamp + stop: unverified edits get exactly one turn-back', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'stop-reminder-'));
+    const sessionId = 'sess-stop';
+    try {
+      const { mkdir } = await import('node:fs/promises');
+      await mkdir(join(dir, 'src'), { recursive: true });
+      // The fixture has no pnpm/eslint; the sensor must still ledger the edit and stay quiet.
+      const source = join(dir, 'src', 'a.ts');
+      await writeFile(source, 'export const a = 1;\n');
+      const sensed = fireHook(SENSOR, editPayload(source, sessionId), dir);
+      assert.equal(sensed.status, 0, sensed.stderr);
+      const ledger = await readFile(join(dir, '.tmp', 'harness', `session-${sessionId}.edits`), 'utf8');
+      assert.match(ledger, /src\/a\.ts/);
+
+      // Unverified stop: one block with the exact command to run.
+      const blocked = fireHook(STOP, { session_id: sessionId }, dir);
+      assert.equal(blocked.status, 0, blocked.stderr);
+      assert.match(blocked.stdout, /"decision":\s*"block"/);
+      assert.match(blocked.stdout, /checks:changed/);
+      assert.match(blocked.stdout, /src\/a\.ts/);
+
+      // The continuation stop passes — once means once.
+      const second = fireHook(STOP, { session_id: sessionId, stop_hook_active: true }, dir);
+      assert.equal(second.stdout, '');
+
+      // A verification command newer than the edit clears the reminder entirely.
+      const stamped = fireHook(
+        STAMP,
+        { session_id: sessionId, tool_name: 'Bash', tool_input: { command: 'pnpm checks:changed -- --run src/a.ts' } },
+        dir,
+      );
+      assert.equal(stamped.status, 0, stamped.stderr);
+      const cleared = fireHook(STOP, { session_id: sessionId }, dir);
+      assert.equal(cleared.stdout, '');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('the stamp ignores non-verification commands and sessions without edits stop freely', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'stop-free-'));
+    try {
+      const stamped = fireHook(
+        STAMP,
+        { session_id: 'sess-free', tool_name: 'Bash', tool_input: { command: 'git status' } },
+        dir,
+      );
+      assert.equal(stamped.stdout, '');
+      const stop = fireHook(STOP, { session_id: 'sess-free' }, dir);
+      assert.equal(stop.stdout, '', 'a session with no source edits must stop unremarked');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
