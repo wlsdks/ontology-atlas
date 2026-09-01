@@ -688,3 +688,27 @@ describe('useLocalVaultInternal — 기존 파일 보호 (createDoc / renameDoc)
     expect(target.state.text).toBe('target content');
   });
 });
+
+describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', () => {
+  /*
+   * Caught in the 2026-09-01 review. The one-level `===` compare was permanently false for
+   * AgentActivityStatus because reviewTarget/proof/refreshRequest are fresh nested objects on
+   * every parse — so the "nothing changed means state is not touched" guard (2026-08-16) was
+   * dead and the whole app re-rendered on every poll tick again.
+   */
+  it('파싱마다 새로 만들어진 동일 내용의 nested status 를 같다고 판정한다', async () => {
+    const { structurallyEqualStatus } = await import('./use-local-vault');
+    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    expect(
+      structurallyEqualStatus(emptyAgentActivityStatus(), emptyAgentActivityStatus()),
+    ).toBe(true);
+  });
+
+  it('nested 필드 하나가 다르면 다르다고 판정한다', async () => {
+    const { structurallyEqualStatus } = await import('./use-local-vault');
+    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const changed = emptyAgentActivityStatus();
+    changed.proof.sources.mcp = 1;
+    expect(structurallyEqualStatus(emptyAgentActivityStatus(), changed)).toBe(false);
+  });
+});
