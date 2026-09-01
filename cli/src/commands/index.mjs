@@ -166,7 +166,7 @@ async function runApply(parsed) {
   if (parsed.threshold !== undefined) bootstrapArgs.push('--threshold', String(parsed.threshold));
 
   if (!parsed.json) {
-    process.stdout.write(`${COLORS.bold}index --apply${COLORS.reset} ${COLORS.dim}delegating analyzer writes to bootstrap; inferred imports stay review-only${COLORS.reset}\n\n`);
+    process.stdout.write(`${COLORS.bold}index --apply${COLORS.reset} ${COLORS.dim}delegating to bootstrap's review — the CLI writes no meaning; land approved candidates through your agent${COLORS.reset}\n\n`);
     return runBootstrap(bootstrapArgs);
   }
 

@@ -324,7 +324,7 @@ function printUsage(stream = process.stderr) {
       `  ontology-atlas bootstrap ~/my-app --vault .    # analyze another repo\n` +
       `  ontology-atlas bootstrap --threshold 3         # block weak imports\n` +
       `  ontology-atlas bootstrap --skip-imports        # nodes only (stage 1)\n` +
-      `  ontology-atlas bootstrap --reapply             # re-apply explicitly to a grown vault\n` +
+      `  ontology-atlas bootstrap --reapply             # accepted for compatibility; still review-only\n` +
       `  ontology-atlas bootstrap --json                # machine readable\n`,
   );
 }
