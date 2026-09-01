@@ -916,6 +916,11 @@ export function DocsVaultEditor({
               if (pendingMention) {
                 if (e.key === 'Escape') {
                   e.preventDefault();
+                  // Dismissing the picker must not also close the editor: the
+                  // window-level Escape handler runs requestClose (with the
+                  // discard dialog on a dirty buffer) on any Escape that
+                  // reaches it (bug sweep 2026-09-01).
+                  e.stopPropagation();
                   setPendingMention(null);
                   return;
                 }
@@ -941,6 +946,7 @@ export function DocsVaultEditor({
                 // stops the user from continuing to write.
                 if (e.key === 'Escape') {
                   e.preventDefault();
+                  e.stopPropagation();
                   setAutocomplete(null);
                 }
                 return;
@@ -971,6 +977,7 @@ export function DocsVaultEditor({
                 pickMentionTarget(pick);
               } else if (e.key === 'Escape') {
                 e.preventDefault();
+                e.stopPropagation();
                 setAutocomplete(null);
               }
             }}
