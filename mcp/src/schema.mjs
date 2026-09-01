@@ -201,7 +201,7 @@ export const REVIEW_STATE_KEY = 'review_state';
 export const REVIEW_NOTE_KEY = 'review_note';
 export const REVIEWED_BY_KEY = 'reviewed_by';
 export const REVIEWED_AT_KEY = 'reviewed_at';
-export const REVIEWED_DIGEST_KEY = 'reviewed_digest';
+const REVIEWED_DIGEST_KEY = 'reviewed_digest';
 
 /** Reserved for a person. An agent may raise this; only a person clears it. */
 export const REVIEW_STATE_HUMAN_DECIDES = 'human_decides';
@@ -225,7 +225,7 @@ export const HUMAN_ONLY_REVIEW_KEYS = Object.freeze([
   REVIEWED_DIGEST_KEY,
 ]);
 
-export const REVIEW_KEYS = Object.freeze([
+const REVIEW_KEYS = Object.freeze([
   REVIEW_STATE_KEY,
   REVIEW_NOTE_KEY,
   ...HUMAN_ONLY_REVIEW_KEYS,

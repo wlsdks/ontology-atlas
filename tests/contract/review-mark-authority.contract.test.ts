@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// @ts-expect-error — the MCP package is plain ESM with no type declarations.
 import * as schema from '../../mcp/src/schema.mjs';
 
 /**
@@ -184,6 +183,25 @@ describe('review marks — only a path that proves a person writes a human judgm
     });
     expect(result.isError).toBe(true);
     expect(result.text).toContain(RESERVED_NOTE);
+    expect(read(vault, 'capabilities/reserved.md')).toContain('The person has not decided yet.');
+  });
+
+  // A refusal that only covers one tool is a detour, not a boundary: the same
+  // agent that cannot patch a reserved node can move it, re-file it, or delete
+  // it. Each of these ran green before its guard existed.
+  it.each([
+    ['add_relation', { from: 'capabilities/reserved', to: 'capabilities/open', type: 'relates', why: 'a reason' }],
+    ['remove_relation', { from: 'capabilities/reserved', to: 'capabilities/open', type: 'relates', confirm: true }],
+    ['rename_concept', { oldSlug: 'capabilities/reserved', newSlug: 'capabilities/renamed', confirm: true }],
+    ['reclassify_concept', { slug: 'capabilities/reserved', newKind: 'document', confirm: true }],
+    ['merge_concepts', { fromSlug: 'capabilities/reserved', intoSlug: 'capabilities/open', confirm: true }],
+    ['delete_concept', { slug: 'capabilities/reserved', confirm: true, force: true }],
+  ])('refuses %s on a reserved node', (tool, args) => {
+    const vault = makeVault();
+    const result = callTool(vault, tool as string, args as Record<string, unknown>);
+    expect(result.isError).toBe(true);
+    expect(result.text).toContain('reserved for a person');
+    // The file is still there, unchanged, under its original name.
     expect(read(vault, 'capabilities/reserved.md')).toContain('The person has not decided yet.');
   });
 

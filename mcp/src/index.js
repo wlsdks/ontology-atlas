@@ -214,6 +214,10 @@ import {
   REVIEW_STATE_HUMAN_DECIDES,
   REVIEW_STATE_KEY,
   REVIEW_STATES,
+  REVIEWED_AT_KEY,
+  REVIEWED_BY_KEY,
+  reviewCurrentness,
+  reviewDigest,
   NODE_UID_PATTERN,
   flatSlugIssue,
   mergeNodeIdentityHistory,
@@ -7422,6 +7426,7 @@ function getConcept({ slug, uid, body }, context = {}) {
       describes: doc.frontmatter.describes || [],
     },
     outgoingEdges,
+    review: describeReview(doc),
     // In a read-modify-write flow the caller passes this straight through as the
     // `expected_mtime` of a later patch_concept / delete_concept, which is what
     // makes external-change detection work. Filesystem mtime, in ms.
@@ -7821,6 +7826,47 @@ function readDocIfPresent(slug) {
   }
 }
 
+/**
+ * What a person has ruled on this node — the half a following agent has to be
+ * able to retrieve, or the reservation is only a screen decoration.
+ *
+ * `currentness` is the answer the call-path gate cannot give, because a direct
+ * file edit never passes through this server. It is recomputed from the file on
+ * every read, so an approval that no longer describes its node says so without
+ * anyone having noticed the change or cooperated in reporting it.
+ *
+ * `digestNow` is the value a human-proving path records when it confirms. It is
+ * returned here so the app and the CLI bind an approval with the same function
+ * this server checks it with — a second implementation of the same hash would
+ * be a second opinion about what "unchanged" means.
+ */
+function describeReview(doc) {
+  const frontmatter = doc?.frontmatter ?? {};
+  const state = frontmatter[REVIEW_STATE_KEY] ?? null;
+  const note = frontmatter[REVIEW_NOTE_KEY] ?? null;
+  const currentness = reviewCurrentness(frontmatter, doc?.body ?? '');
+  return {
+    state,
+    ...(note ? { note } : {}),
+    ...(frontmatter[REVIEWED_BY_KEY] ? { reviewedBy: frontmatter[REVIEWED_BY_KEY] } : {}),
+    ...(frontmatter[REVIEWED_AT_KEY] ? { reviewedAt: frontmatter[REVIEWED_AT_KEY] } : {}),
+    currentness,
+    digestNow: reviewDigest(frontmatter, doc?.body ?? ''),
+    ...(state === REVIEW_STATE_HUMAN_DECIDES
+      ? {
+          agentGuidance:
+            'A person reserved this node. Do not write it — report it and let them decide. Atlas write tools refuse it.',
+        }
+      : {}),
+    ...(currentness === 'changed-since-review'
+      ? {
+          agentGuidance:
+            'This node changed after a person confirmed it, so the approval no longer describes what is here. Treat the meaning as unreviewed and say so.',
+        }
+      : {}),
+  };
+}
+
 function requireNodeNotReservedForHuman(doc, operation) {
   const state = doc?.frontmatter?.[REVIEW_STATE_KEY];
   if (state !== REVIEW_STATE_HUMAN_DECIDES) return;
@@ -8141,6 +8187,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   }
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'add_relation');
   // Both endpoints are verified to exist in the vault. Without this a dangling
   // reference is silently appended to a frontmatter array when an agent sends a
   // typo or a hallucinated slug; now it surfaces as a clean error. Beyond direct
@@ -8303,6 +8350,7 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
   if (!key) throw new Error(formatAllowedValueError('type', type, RELATION_TYPES));
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'remove_relation');
   if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
   if (!canonicalTo) throw new Error(missingSlugMessage('Target slug does not exist in vault', to));
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
@@ -8359,6 +8407,7 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalOldTo = resolveExistingVaultSlug(oldTo);
   const canonicalNewTo = resolveExistingVaultSlug(newTo);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalFrom ?? from), 'replace_relation');
   if (!canonicalFrom) throw new Error(missingSlugMessage('Source slug does not exist in vault', from));
   if (!canonicalOldTo) throw new Error(missingSlugMessage('Old target slug does not exist in vault', oldTo));
   if (!canonicalNewTo) throw new Error(missingSlugMessage('New target slug does not exist in vault', newTo));
@@ -11178,6 +11227,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
   if (!diskOldSlug) {
     throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }
+  requireNodeNotReservedForHuman(readDocIfPresent(diskOldSlug), 'rename_concept');
   const canonicalTarget = canonicalDiskSlug(VAULT_ROOT, newSlug);
   if (canonicalTarget && canonicalTarget !== newSlug) {
     throw new Error(
@@ -11327,6 +11377,7 @@ function reclassifyConcept({ slug, newKind, newSlug, domain, body, confirm = fal
     throw new Error(`domain is required when reclassifying to kind "${newKind}".`);
   }
   const canonicalOld = resolveExistingVaultSlug(slug);
+  requireNodeNotReservedForHuman(readDocIfPresent(canonicalOld ?? slug), 'reclassify_concept');
   if (!canonicalOld) throw new Error(missingSlugMessage('Source slug does not exist in vault', slug));
   const canonicalNew = newSlug || canonicalOld;
   if (canonicalNew !== canonicalOld && vaultSlugExists(VAULT_ROOT, canonicalNew)) throw new Error(`Target slug already exists: "${canonicalNew}".`);
@@ -11427,7 +11478,9 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime, ex
   if (!diskFromSlug) {
     throw new Error(missingSlugMessage('fromSlug does not exist in vault', fromSlug));
   }
+  requireNodeNotReservedForHuman(readDocIfPresent(diskFromSlug), 'merge_concepts');
   const diskIntoSlug = canonicalDiskSlug(VAULT_ROOT, intoSlug);
+  requireNodeNotReservedForHuman(readDocIfPresent(diskIntoSlug), 'merge_concepts');
   if (!diskIntoSlug) {
     throw new Error(missingSlugMessage('intoSlug does not exist in vault', intoSlug));
   }
@@ -11730,6 +11783,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   slug = diskSlug;
   filePath = slugToPath(VAULT_ROOT, slug);
   const sourceDoc = readDoc(VAULT_ROOT, filePath);
+  requireNodeNotReservedForHuman(sourceDoc, 'delete_concept');
   // Ambiguous-tail referrers included: a doc whose ref merely *could* mean this
   // node still blocks an un-forced delete (bug sweep 2026-09-01).
   const backlinks = findBacklinks(VAULT_ROOT, slug, { includeAmbiguousTailRefs: true });
