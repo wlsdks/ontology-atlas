@@ -360,8 +360,20 @@ function splitTopLevel(input: string, separator: string): string[] {
 }
 
 export function firstHeading(body: string): string | null {
-  const m = body.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : null;
+  // Fence-aware like extractHeadings (bug sweep 2026-09-01): a titleless doc
+  // whose body opens with a fenced shell block containing `# comment` used to
+  // get that comment as its manifest and graph title.
+  let inCode = false;
+  for (const line of body.split('\n')) {
+    if (line.startsWith('```')) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
+    const m = line.match(/^#\s+(.+)$/);
+    if (m) return m[1].trim();
+  }
+  return null;
 }
 
 export interface HeadingInfo {
