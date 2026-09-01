@@ -36,6 +36,23 @@ export const VALIDATE_CASES = [
     expectedOk: true,
   },
   {
+    // Bug sweep 2026-09-01: the raw-text check ran before the parser's BOM/CRLF
+    // normalization, so a Windows-authored `﻿---` file looked like "no
+    // frontmatter" and passed validate clean — while the manifest and graph
+    // treated the same bytes as a live node. All checks must apply after the
+    // same normalization the parser uses.
+    name: 'BOM + CRLF file is validated like its normalized bytes (missing-uid still caught)',
+    input: '﻿---\r\nkind: project\r\ntitle: Foo\r\n---\r\nbody',
+    expectedCodes: ['missing-uid'],
+    expectedOk: false,
+  },
+  {
+    name: 'BOM + unclosed frontmatter is still an error',
+    input: '﻿---\nkind: project\ntitle: Foo\n',
+    expectedCodes: ['unclosed-frontmatter'],
+    expectedOk: false,
+  },
+  {
     name: 'canonical kind without uid → missing-uid (error, ok=false)',
     input: '---\nkind: project\ntitle: Foo\n---\nbody',
     expectedCodes: ['missing-uid'],
