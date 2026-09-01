@@ -72,8 +72,8 @@ picks explicitly, never a return to silent path-based allow.
 
 **Review**: first sustained in-app chat usage reports after 1.0.x.
 
-**Gate**: `acp-client.test.ts` — "볼트 안이라도 **편집**은 묻는다" and the
-unknown-kind fail-closed case.
+**Gate**: `acp-client.test.ts` — the ask-before-an-inside-vault-edit case and
+the unknown-kind fail-closed case.
 
 **Status**: active; refines 2026-08-16 (2) §3.
 
