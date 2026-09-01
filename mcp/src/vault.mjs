@@ -870,6 +870,17 @@ function noteGateWrite(rootPath, slug) {
   const tail = slug.split('/').pop();
   if (tail) GATE.index.names.add(tail);
 }
+/**
+ * Drops the lazy gate index after a document leaves the vault. Additions can be
+ * folded in (`noteGateWrite`), but a removal cannot: another slug may still
+ * provide the same tail, so the only safe move is a rebuild on next use.
+ * Without this, `gateResolves` kept answering true for a deleted / renamed /
+ * merged-away slug for the rest of the session, silently suppressing the
+ * dangling-graph-reference advisory (bug sweep 2026-09-01).
+ */
+function noteGateRemoval() {
+  GATE.index = null;
+}
 
 /**
  * Speak on the first crossing, then only when the count crosses a new multiple.
@@ -1346,6 +1357,7 @@ export function deleteDoc(rootPath, slug, options = {}) {
   options.beforeDelete?.();
   assertCurrentDocSnapshot(slug, filePath, captured.raw, captured.mtime);
   unlinkSync(filePath);
+  noteGateRemoval();
   return { ...captured, filePath };
 }
 
@@ -2066,6 +2078,9 @@ export function applyAllOrNothing(plan, options = {}) {
         after: entry.op === 'write' ? entry.content : null,
       });
     }
+    // A plan that deleted a file invalidates the lazy gate index — the removed
+    // slug (or its tail) must stop resolving for the advisory channel.
+    if (done.some((step) => step.op === 'delete')) noteGateRemoval();
     return { applied: done.length };
   } catch (error) {
     const unrecovered = [];
