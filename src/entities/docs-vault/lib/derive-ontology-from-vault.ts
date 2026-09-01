@@ -268,8 +268,24 @@ function deriveOntologyFromVaultUncached(
     else if (claimed !== nodeId) aliasClaims.set(key, null);
   };
   for (const doc of manifest.docs) {
-    const docNode = deriveDocNode(doc);
-    if (docNode) {
+    const derived = deriveDocNode(doc);
+    if (derived) {
+      let docNode = derived;
+      // Non-project ids are `kind:` + slug tail, so two same-kind docs whose
+      // filenames match (capabilities/auth.md and archive/auth.md) collided
+      // and `nodes.set` silently overwrote the first — the map drew one node
+      // fewer than every count surface reported and one document became
+      // unreachable (bug sweep 2026-09-01). The later doc keeps its full-path
+      // id (slugs are unique) and the collision is surfaced as a warning; the
+      // shared tail alias resolves to neither, which the alias rule below
+      // already treats as "a guessed link is a wrong link".
+      if (nodes.has(docNode.id)) {
+        const disambiguated = `${docNode.kind}:${doc.slug}`;
+        warnings.push(
+          `two documents derive the node id "${docNode.id}"; ${doc.slug} keeps its full-path id`,
+        );
+        docNode = { ...docNode, id: disambiguated };
+      }
       nodes.set(docNode.id, docNode);
       sourceConceptCount += 1;
       sourceKindCounts[docNode.kind] = (sourceKindCounts[docNode.kind] ?? 0) + 1;
