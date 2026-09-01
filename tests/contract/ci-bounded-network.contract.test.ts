@@ -53,6 +53,15 @@ function runBlocks(source: string): string[] {
 
 const blocks = runBlocks(action);
 const playwrightInstalls = blocks.filter((block) => /playwright\s+install/.test(block));
+const PLAYWRIGHT_JOB_IDS = ['static-export', 'web-smoke', 'suite'];
+
+function jobBlock(source: string, id: string): string {
+  const lines = source.split('\n');
+  const start = lines.findIndex((line) => line === `  ${id}:`);
+  if (start < 0) return '';
+  const next = lines.findIndex((line, index) => index > start && /^  [a-z0-9-]+:\s*$/.test(line));
+  return lines.slice(start, next < 0 ? undefined : next).join('\n');
+}
 
 describe('CI 준비 스텝은 무한정 기다리지 않는다', () => {
   it('놀고 있지 않다 — 검사할 스텝을 실제로 찾았다', () => {
@@ -86,10 +95,16 @@ describe('CI 준비 스텝은 무한정 기다리지 않는다', () => {
       worstMs += attempts * timeoutMs;
     }
 
-    const jobTimeouts = [...workflow.matchAll(/^\s*timeout-minutes:\s*(\d+)\s*$/gm)].map((m) =>
-      Number(m[1]),
-    );
-    expect(jobTimeouts.length, 'e2e.yml 에서 잡 타임아웃을 못 읽었다').toBeGreaterThanOrEqual(3);
+    const jobTimeouts = PLAYWRIGHT_JOB_IDS.map((id) => {
+      const job = jobBlock(workflow, id);
+      expect(job, `${id} Playwright job 을 못 읽었다`).not.toBe('');
+      expect(job, `${id} 가 setup-playwright 를 더는 호출하지 않는다`).toContain(
+        './.github/actions/setup-playwright',
+      );
+      return Number(/^\s*timeout-minutes:\s*(\d+)\s*$/m.exec(job)?.[1] ?? 0);
+    });
+    expect(jobTimeouts.length, 'Playwright job 인벤토리가 비었다').toBeGreaterThanOrEqual(3);
+    expect(Math.min(...jobTimeouts), 'Playwright job 타임아웃을 못 읽었다').toBeGreaterThan(0);
 
     const tightestMs = Math.min(...jobTimeouts) * 60_000;
     // Half is the reference: even in the worst preparation, half the job remains for the tests.

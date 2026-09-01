@@ -12240,6 +12240,11 @@
     },
     {
       "depth": 2,
+      "text": "CI change scope — classify before Playwright setup",
+      "slug": "ci-change-scope-classify-before-playwright-setup"
+    },
+    {
+      "depth": 2,
       "text": "Quick Matrix",
       "slug": "quick-matrix"
     },

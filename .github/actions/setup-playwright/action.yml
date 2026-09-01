@@ -1,23 +1,12 @@
 name: Setup Playwright
 description: >-
-  Node · pnpm · 브라우저 캐시 · 변경 분류를 한 번에. E2E 잡 다섯이 같은 준비를
-  하므로 여기 한 곳에 둔다 — 복사본이 다섯이면 어긋나는 쪽이 기본값이다(이
-  저장소가 스킬 사본으로 이미 겪었다).
+  Set up Node, pnpm, dependencies, the browser cache, and bounded system
+  dependencies. Five E2E checks share this preparation, so it stays in one
+  local action rather than five drifting copies.
 
-  ⚠️ **체크아웃은 여기 못 넣는다.** 로컬 복합 액션은 워크스페이스에 이미 있어야
-  로드되므로, 체크아웃보다 먼저 부르면 `action.yml` 을 못 찾고 죽는다. 그래서
-  체크아웃만 각 잡의 첫 스텝으로 남고 `fetch-depth: 0` 도 거기 붙는다.
-
-outputs:
-  runtime:
-    description: shipped code(런타임)가 바뀌었나
-    value: ${{ steps.classify.outputs.runtime }}
-  browser:
-    description: 브라우저가 의존하는 경로가 바뀌었나
-    value: ${{ steps.classify.outputs.browser }}
-  e2e:
-    description: e2e 인프라(스펙·Playwright 설정) 자체가 바뀌었나
-    value: ${{ steps.classify.outputs.e2e }}
+  Checkout cannot live here: a local composite action must already exist in the
+  workspace before the runner can load it. The workflow classifies changes first
+  and checks out each protected job only when this action will run.
 
 runs:
   using: composite
@@ -92,10 +81,3 @@ runs:
         --attempts=2 --timeout-ms=90000 --best-effort
         --label="playwright install-deps chromium"
         -- pnpm exec playwright install-deps chromium
-
-    # Since it's a script using only node built-ins, running it separately per job takes 0 seconds. Grouping
-    # under `needs:` with the frontend job serializes its setup time to the front of the total.
-    - name: Classify change
-      id: classify
-      shell: bash
-      run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
