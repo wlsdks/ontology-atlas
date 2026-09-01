@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
+import { buildImpactPlan, FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
+
 const ROOT = process.cwd();
 const read = (relativePath: string) => readFileSync(join(ROOT, relativePath), "utf8");
 
@@ -25,51 +27,33 @@ describe("Unit CI can launch the source MCP used by contract tests", () => {
     expect(probes.length, "MCP dependency gate is idling without a source-server consumer").toBeGreaterThan(2);
   });
 
-  /**
-   * **An install that is skipped makes the next step lie about why it failed.**
-   *
-   * A step with no `if:` inherits `success()`, so the first red step in a job skips
-   * it. Steps marked `if: always()` keep running regardless. Put those two next to
-   * each other and a single real failure, say `Vault path drift`, silently skips the
-   * MCP install and then nineteen always-run suites all die on
-   * `ERR_MODULE_NOT_FOUND`. The log shows a wall of "dependencies missing" and the
-   * one failure worth reading scrolls off the top.
-   *
-   * So the rule is not "always install". It is that an install must run under at
-   * least the conditions of the step that needs it. A third install site is
-   * deliberately left bare: nothing after it runs on `always()`, so an ordinary
-   * short circuit there is correct and honest.
-   */
-  it("an install whose dependent step runs on always() runs on always() too", () => {
+  it("every active lane installs MCP dependencies before its executor", () => {
     const workflow = read(".github/workflows/checks.yml");
-    const steps = workflow.split(/\n(?=      - name: )/).slice(1);
-
-    const installIndexes = steps
-      .map((step, index) => (step.includes("pnpm --dir mcp install --frozen-lockfile") ? index : -1))
-      .filter((index) => index >= 0);
-
-    expect(installIndexes.length, "the MCP install steps this gate protects are gone").toBeGreaterThan(1);
-
-    for (const index of installIndexes) {
-      const next = steps[index + 1] ?? "";
-      if (!/\n\s+if: always\(\)/.test(next)) continue;
-
-      const stepName = /- name: (.+)/.exec(steps[index])?.[1] ?? "?";
-      const nextName = /- name: (.+)/.exec(next)?.[1] ?? "?";
-      expect(
-        /\n\s+if: always\(\)/.test(steps[index]),
-        `"${stepName}" is skipped when an earlier step fails, but "${nextName}" runs on always() and needs it. That combination reports a missing module instead of the real failure.`,
-      ).toBe(true);
+    const lanes = ["gates", "unit", "mcp"];
+    expect(lanes.length, "the lane inventory is empty").toBeGreaterThan(2);
+    for (const lane of lanes) {
+      const job = jobBlock(workflow, lane);
+      const installAt = job.indexOf("pnpm --dir mcp install --frozen-lockfile");
+      const runAt = job.indexOf(`node scripts/run-ci-lane.mjs --lane=${lane}`);
+      expect(installAt, `${lane} lost its conditional MCP install`).toBeGreaterThan(-1);
+      expect(runAt, `${lane} lost its executor`).toBeGreaterThan(installAt);
     }
+    expect(jobBlock(workflow, "unit")).toContain("NEED_MCP:");
   });
 
   it("installs the MCP lockfile before the full Unit + Contract suite", () => {
     const unit = jobBlock(read(".github/workflows/checks.yml"), "unit");
     const installAt = unit.indexOf("pnpm --dir mcp install --frozen-lockfile");
-    const testAt = unit.indexOf("run: pnpm test:run");
+    const testAt = unit.indexOf("node scripts/run-ci-lane.mjs --lane=unit");
+    const contractPlan = buildImpactPlan({
+      files: ["src/widgets/docs-vault/ui/DocsVaultEditor.tsx"],
+    });
 
     expect(installAt, "Unit job cannot import @modelcontextprotocol/sdk from mcp/src/index.js").toBeGreaterThan(-1);
-    expect(testAt, "Unit job no longer runs the full suite this gate protects").toBeGreaterThan(-1);
+    expect(FULL_LANE_COMMANDS.unit).toContain("pnpm test:run");
+    expect(contractPlan.lanes.unit.contract).toBe("full");
+    expect(contractPlan.lanes.unit.needsMcp).toBe(true);
+    expect(testAt, "Unit job no longer invokes the planned suite").toBeGreaterThan(-1);
     expect(installAt, "MCP dependencies must exist before contract tests spawn the server").toBeLessThan(testAt);
   });
 });

@@ -25,6 +25,7 @@ const ROOT = process.cwd();
 const read = (rel: string): string => readFileSync(join(ROOT, rel), 'utf8');
 
 const WORKFLOW = '.github/workflows/checks.yml';
+const CI_REGISTRY = 'scripts/classify-change.mjs';
 
 /** Extracts the sub-script names `docs:check` actually invokes from its definition. */
 function docsCheckSubScripts(): string[] {
@@ -42,20 +43,23 @@ describe('docs:check — 하위 검사가 전부 CI 에서 불린다', () => {
 
   it.each(docsCheckSubScripts())('%s 를 부르는 CI 스텝이 있다', (script) => {
     const workflow = read(WORKFLOW);
+    const registry = read(CI_REGISTRY);
     /**
      * Searches `run:` lines for the script **as a whole word**, so `docs:links` cannot
      * falsely pass by matching `docs:links:external`.
      */
-    const called = new RegExp(`run:\\s*pnpm\\s+${script.replace(/[:]/g, '\\:')}(?![a-z0-9:-])`, 'm');
+    const called = new RegExp(`['\"]pnpm\\s+${script.replace(/[:]/g, '\\:')}(?![a-z0-9:-])`, 'm');
     expect(
-      called.test(workflow),
-      `${script} 가 ${WORKFLOW} 의 어떤 스텝에서도 안 불린다 — ` +
+      called.test(registry),
+      `${script} 가 ${CI_REGISTRY} 의 exhaustive lane 에 없다 — ` +
         `docs:check 에 하위 검사를 더했으면 CI 스텝도 같이 만든다. ` +
-        `(스텝을 나눈 이유는 그 파일 주석에: 서버를 띄우는 검사는 mcp 잡에서만 돈다)`,
+        `(워크플로는 이 레지스트리를 실행하고, 서버를 띄우는 검사는 mcp lane 에 둔다)`,
     ).toBe(true);
+    expect(workflow).toContain('node scripts/run-ci-lane.mjs');
   });
 
   it('워크플로를 실제로 읽고 있다 (파일이 사라지면 터진다)', () => {
     expect(read(WORKFLOW)).toContain('name: Checks');
+    expect(read(CI_REGISTRY)).toContain('FULL_LANE_COMMANDS');
   });
 });

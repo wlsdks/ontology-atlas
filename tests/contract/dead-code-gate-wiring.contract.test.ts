@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { suggestFocusedChecks } from '../../scripts/lib/focused-check-suggestions.mjs';
+import { FULL_LANE_COMMANDS } from '../../scripts/classify-change.mjs';
 
 const PACKAGE = JSON.parse(readFileSync('package.json', 'utf8')) as {
   scripts: Record<string, string>;
@@ -17,11 +18,15 @@ const ANALYZER_ADAPTER = 'scripts/quality/dead-code/check.mjs';
 const COMMAND = 'pnpm knip';
 
 function jobBody(name: string): string {
-  const start = WORKFLOW.indexOf(`  ${name}:`);
+  const match = new RegExp(`^  ${name}:\\s*$`, 'm').exec(WORKFLOW);
+  const start = match?.index ?? -1;
   expect(start, `Checks workflow must define the ${name} job`).toBeGreaterThanOrEqual(0);
-  const rest = WORKFLOW.slice(start + 1);
+  const rest = WORKFLOW.slice(start + (match?.[0].length ?? 0));
   const next = rest.search(/^  [a-z][a-z0-9_-]*:/m);
-  return WORKFLOW.slice(start, next === -1 ? undefined : start + 1 + next);
+  return WORKFLOW.slice(
+    start,
+    next === -1 ? undefined : start + (match?.[0].length ?? 0) + next,
+  );
 }
 
 describe('dead-code gate wiring', () => {
@@ -68,12 +73,16 @@ describe('dead-code gate wiring', () => {
     const unit = jobBody('unit');
     const mcp = jobBody('mcp');
 
-    expect(gates).not.toContain(COMMAND);
-    expect(mcp).not.toContain(COMMAND);
-    expect(WORKFLOW.match(/run: pnpm knip/g)).toHaveLength(1);
+    expect(FULL_LANE_COMMANDS.gates).not.toContain(COMMAND);
+    expect(FULL_LANE_COMMANDS.mcp).not.toContain(COMMAND);
+    expect(FULL_LANE_COMMANDS.unit.filter((command: string) => command === COMMAND)).toHaveLength(1);
     expect(unit.indexOf('pnpm install --frozen-lockfile')).toBeGreaterThanOrEqual(0);
     expect(unit.indexOf('pnpm --dir mcp install --frozen-lockfile')).toBeGreaterThanOrEqual(0);
-    expect(unit.indexOf(COMMAND)).toBeGreaterThan(unit.indexOf('pnpm --dir mcp install --frozen-lockfile'));
+    expect(unit.indexOf('node scripts/run-ci-lane.mjs --lane=unit')).toBeGreaterThan(
+      unit.indexOf('pnpm --dir mcp install --frozen-lockfile'),
+    );
+    expect(gates).not.toContain('--lane=unit');
+    expect(mcp).not.toContain('--lane=unit');
   });
 
   it('keeps the package command discoverable in contributor docs', () => {

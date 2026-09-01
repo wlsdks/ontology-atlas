@@ -6963,6 +6963,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 — Pull-request CI follows impact; default-branch truth stays exhaustive",
+      "slug": "2026-09-01-pull-request-ci-follows-impact-default-branch-truth-stays-exhaustive"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 — Atlas PO routing derives risk and must prove recovered understanding",
       "slug": "2026-09-01-atlas-po-routing-derives-risk-and-must-prove-recovered-understanding"
     },
@@ -12240,8 +12245,13 @@
     },
     {
       "depth": 2,
-      "text": "CI change scope — classify before Playwright setup",
-      "slug": "ci-change-scope-classify-before-playwright-setup"
+      "text": "CI impact architecture — affected on pull requests, exhaustive on `main`",
+      "slug": "ci-impact-architecture-affected-on-pull-requests-exhaustive-on-main"
+    },
+    {
+      "depth": 3,
+      "text": "CI impact gate probe (2026-09-01)",
+      "slug": "ci-impact-gate-probe-2026-09-01"
     },
     {
       "depth": 2,

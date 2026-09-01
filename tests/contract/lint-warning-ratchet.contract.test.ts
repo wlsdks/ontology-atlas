@@ -4,6 +4,8 @@ import path from "node:path";
 import { ESLint } from "eslint";
 import { beforeAll, describe, expect, it } from "vitest";
 
+import { FULL_LANE_COMMANDS } from "../../scripts/classify-change.mjs";
+
 /**
  * Lint warning ratchet — **the warning count can never rise, and when it falls the cap falls with it.**
  *
@@ -160,12 +162,13 @@ describe("CI 가 이 상한을 지나간다 — 안 물린 게이트는 주석�
     .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
     .map((name) => ({ name, source: readFileSync(path.join(workflowDir, name), "utf8") }));
 
-  it("checks.yml 이 `pnpm lint` 를 스텝으로 돌린다", () => {
+  it("checks.yml invokes the exhaustive registry that contains `pnpm lint`", () => {
     const checks = workflows.find((workflow) => workflow.name === "checks.yml");
     expect(checks, ".github/workflows/checks.yml 이 없다").toBeDefined();
+    expect(FULL_LANE_COMMANDS.gates).toContain("pnpm lint");
     expect(
-      /^\s*run:\s*pnpm lint\s*$/m.test(checks!.source),
-      "checks.yml 에 `run: pnpm lint` 스텝이 없다 — 상한이 CI 경로를 안 지난다",
+      checks!.source.includes("node scripts/run-ci-lane.mjs --lane=gates"),
+      "checks.yml does not invoke the lane containing the lint warning cap",
     ).toBe(true);
   });
 

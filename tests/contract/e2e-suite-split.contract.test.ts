@@ -26,6 +26,8 @@ import { POST_MERGE_SPECS } from '../e2e/post-merge-specs';
 const ROOT = process.cwd();
 const E2E_DIR = join(ROOT, 'tests', 'e2e');
 const workflow = readFileSync(join(ROOT, '.github', 'workflows', 'e2e.yml'), 'utf8');
+const runner = readFileSync(join(ROOT, 'scripts', 'run-ci-lane.mjs'), 'utf8');
+const planner = readFileSync(join(ROOT, 'scripts', 'classify-change.mjs'), 'utf8');
 
 /**
  * Returns each `run:` block as {the folded single line, the list of continuation
@@ -80,7 +82,7 @@ describe('머지 후 스위프 목록은 실재하는 스펙만 담는다', () =
     // project filter), but the job's reason for existing ("runs on every PR") and the
     // list's claim ("post-merge") would then contradict each other silently.
     const pkg = readFileSync(join(ROOT, 'package.json'), 'utf8');
-    const invoked = [...(workflow + pkg).matchAll(/tests\/e2e\/([\w-]+\.spec\.ts)/g)].map(
+    const invoked = [...(workflow + runner + pkg).matchAll(/tests\/e2e\/([\w-]+\.spec\.ts)/g)].map(
       (m) => m[1],
     );
     expect(invoked.length, '직접 부르는 스펙을 하나도 못 찾았다 — 스캐너가 죽었다').toBeGreaterThan(0);
@@ -114,24 +116,23 @@ describe('워크플로 분기가 살아 있다', () => {
     expect(suiteBlocks.length, 'e2e.yml 에서 --shard 실행 블록을 못 찾았다').toBeGreaterThan(0);
   });
 
-  it('PR 은 smoke 프로젝트만 돈다 — 선택 변수와 그 정의가 둘 다 있다', () => {
+  it('unmapped PR paths run smoke while exact mappings stay targeted', () => {
     for (const block of suiteBlocks) {
-      expect(block.text, '프로젝트 선택 변수가 명령에서 지워졌다').toContain(
-        '$PLAYWRIGHT_PROJECT_ARGS',
+      expect(block.text, 'workflow no longer calls the browser lane executor').toContain(
+        'scripts/run-ci-lane.mjs --lane=e2e',
       );
     }
-    // The variable's definition (env) — read with the GitHub expression intact. It
-    // must be a `KEY: value` line, not a comment.
-    const envLine = workflow
-      .split('\n')
-      .find((line) => /^\s*PLAYWRIGHT_PROJECT_ARGS:/.test(line));
-    expect(envLine, 'PLAYWRIGHT_PROJECT_ARGS 정의(env)가 없다').toBeTruthy();
-    expect(envLine!, 'PR 분기(--project=smoke)가 지워졌다').toContain("'--project=smoke'");
-    expect(envLine!, 'pull_request 조건이 지워졌다').toContain(
-      "github.event_name == 'pull_request'",
+    expect(runner, 'smoke project selection disappeared from the executor').toContain(
+      'playwright test --project=smoke --shard=${shard}',
     );
-    expect(envLine!, 'e2e 인프라 예외가 지워졌다 — 스펙을 고친 PR 이 자기 빨강을 못 본다').toContain(
-      "needs.changes.outputs.e2e != 'true'",
+    expect(runner, 'targeted mode no longer receives exact spec paths').toContain(
+      '${e2e.specs.join',
+    );
+    expect(planner, 'an unmapped browser path no longer fails closed to smoke').toContain(
+      "unmappedPaths.length > 0 ? 'smoke'",
+    );
+    expect(planner, 'Playwright configuration no longer promotes to full').toContain(
+      "const E2E_FULL_INPUTS",
     );
   });
 
@@ -140,12 +141,12 @@ describe('워크플로 분기가 살아 있다', () => {
     // with shard composition and execution order, and a different spec died on the
     // 30-second timeout on each run (measured on #1178's first run). Deleting either
     // of these two pieces brings that class of failure back.
-    for (const block of suiteBlocks) {
-      expect(block.text, '빌드 없이 돈다 — 정적 서버가 낡은 out/ 을 서빙한다').toContain('pnpm build');
-      expect(block.text, 'PLAYWRIGHT_STATIC=1 이 지워졌다 — dev 온디맨드 컴파일 복귀').toContain(
-        'PLAYWRIGHT_STATIC=1',
-      );
-    }
+    expect(runner, 'build disappeared before the browser suite').toMatch(
+      /pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test/g,
+    );
+    expect(runner, 'the full main sweep disappeared').toContain(
+      'playwright test --shard=${shard}',
+    );
   });
 
   it('샤드 블록에 더 들여쓴 연속 줄이 없다 — 접힘 스칼라의 literal 함정', () => {

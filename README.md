@@ -802,10 +802,15 @@ explains the workflow; [development checks](docs/DEVELOPMENT-CHECKS.md) owns the
 full gate reference, and [map testability](docs/MAP-TESTABILITY.md) owns canvas
 performance, readability, contrast, and browser instrumentation.
 
-CI follows the same focused-first boundary: it classifies the diff before any
-Playwright dependency or browser setup, keeps all five branch-protected E2E
-statuses visible, and reserves the full browser sweep for rendered-surface
-changes and every push to `main`.
+CI follows the same focused-first boundary through one fail-closed impact plan.
+On a pull request, root tests use Vitest's affected dependency graph, contracts
+stay exact unless a shared filesystem boundary changed, MCP setup and tests are
+skipped when MCP/CLI is untouched, and mapped browser work runs only its exact
+Playwright specs. Unmapped rendered work promotes to the PR smoke suite instead
+of guessing; unknown/planner changes and every push to `main` run the exhaustive
+sweep. All eight branch-protected statuses remain visible even when their setup
+is safely skipped. [Development checks](docs/DEVELOPMENT-CHECKS.md#ci-impact-architecture--affected-on-pull-requests-exhaustive-on-main)
+owns the selection and fail-closed contract.
 
 For Markdown changes, that selector includes `pnpm docs:language`. For source,
 test, configuration, and historical-prototype changes, it includes

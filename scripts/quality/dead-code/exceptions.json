@@ -56,6 +56,15 @@
       "witness": "@tailwindcss/postcss"
     },
     {
+      "key": "frontend:runtime:devDependencies:package.json:@typescript/native",
+      "reason": "The macOS Knip graph cannot observe the intentionally retained native TypeScript compiler during the TypeScript 6 compatibility window.",
+      "consumer": "docs/TECH-STACK.md",
+      "witness": "@typescript/native",
+      "platforms": [
+        "darwin"
+      ]
+    },
+    {
       "key": "cli:runtime:dependencies:package.json:ontology-atlas-mcp",
       "reason": "The CLI resolves the installed MCP package dynamically for source-checkout verification.",
       "consumer": "cli/src/commands/mcp-verify.mjs",

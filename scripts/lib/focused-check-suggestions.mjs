@@ -4,6 +4,18 @@ import { isSupportedSourcePath } from '../quality/source-language/source-paths.m
 
 const RULES = [
   {
+    command: 'pnpm test:ci:impact',
+    reason: 'CI impact planner, executor, or workflow wiring changed',
+    matches: [
+      /^scripts\/classify-change(?:\.test)?\.mjs$/,
+      /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
+      /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
+      /^scripts\/suggest-focused-checks(?:\.test)?\.mjs$/,
+      /^\.github\/workflows\/(?:checks|e2e)\.yml$/,
+      /^\.github\/actions\/setup-playwright\/action\.yml$/,
+    ],
+  },
+  {
     command: 'pnpm test:mcp:registration',
     reason: 'MCP source-checkout registration templates changed',
     matches: [/^\.mcp\.json(?:\.example)?$/, /^\.codex\/config\.toml$/],
