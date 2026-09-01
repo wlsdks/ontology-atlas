@@ -4964,22 +4964,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // render) so the effect below can stay mount-only (`[]`) without going
   // stale — `handlers` itself isn't memoized, so it isn't a safe effect dep.
   const handleWheelRef = useRef(handlers.handleWheel);
+  // `noteInput` is declared further down; the mount-only listener reaches it
+  // through this ref (kept in sync by the effect beside noteInput's declaration).
+  const wheelNoteInputRef = useRef<() => void>(() => {});
   useEffect(() => {
-    // The native listener must go through `noteInput` like every other input
-    // path. It used to bind the unwrapped handler, so wheel input never
-    // updated lastInputMs — after the 30s ambient sleep, wheel-zooming without
-    // moving the pointer left the ambient factor at 0 and the depends-edge
-    // comets stayed frozen through the whole interaction (bug sweep
-    // 2026-09-01).
-    handleWheelRef.current = (e: WheelEvent) => {
-      noteInput();
-      handlers.handleWheel(e);
-    };
+    handleWheelRef.current = handlers.handleWheel;
   });
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const listener = (e: WheelEvent) => handleWheelRef.current(e);
+    // The native listener must go through `noteInput` like every other input
+    // path. It used to bind the raw handler, so wheel input never updated
+    // lastInputMs — after the 30s ambient sleep, wheel-zooming without moving
+    // the pointer left the ambient factor at 0 and the depends-edge comets
+    // stayed frozen through the whole interaction (bug sweep 2026-09-01).
+    const listener = (e: WheelEvent) => {
+      wheelNoteInputRef.current();
+      handleWheelRef.current(e);
+    };
     canvas.addEventListener("wheel", listener, { passive: false });
     return () => canvas.removeEventListener("wheel", listener);
   }, []);
@@ -5014,6 +5016,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // enough to guarantee it.
     lastActiveMsRef.current = lastInputMsRef.current;
   }, []);
+  useEffect(() => {
+    wheelNoteInputRef.current = noteInput;
+  }, [noteInput]);
 
   /**
    * Announcing a dead end — **silence was the defect.**
