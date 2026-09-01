@@ -182,6 +182,22 @@ describe('compileOntology', () => {
     );
   });
 
+  it('the duplicate-uid fatal message names the offending files, never "undefined"', () => {
+    const uid = withUid('shared-identity', {}).uid;
+    assert.throws(
+      () =>
+        compileOntology([
+          doc('domains/auth', { uid, kind: 'domain' }),
+          doc('capabilities/login', { uid, kind: 'capability' }),
+        ]),
+      (error) => {
+        assert.match(error.message, /capabilities\/login \+ domains\/auth/);
+        assert.doesNotMatch(error.message, /undefined/);
+        return true;
+      },
+    );
+  });
+
   it('fails when a historical merged UID collides with a live primary UID', () => {
     const authUid = withUid('domains/auth', {}).uid;
     assert.throws(
