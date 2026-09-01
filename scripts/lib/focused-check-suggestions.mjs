@@ -10,8 +10,19 @@ const RULES = [
   },
   {
     command: 'pnpm docs-vault:check',
-    reason: 'static docs-vault input or generated manifest changed',
-    matches: [/^docs\/.+\.md$/, /^src\/entities\/docs-vault\/data\/manifest\.json$/],
+    reason: 'static docs-vault input or generated output changed',
+    // Every build input and every generated output (bug sweep 2026-09-01): the
+    // storefront sample is a build input, and a hand edit to any generated
+    // file — content.json, headings, gateway-*, sample-storefront.*, the
+    // public copies — is exactly what the check exists to flag. The old list
+    // covered only docs/**.md and manifest.json, so those edits got a green
+    // advisor run before the pre-commit hook's broader grep caught them.
+    matches: [
+      /^docs\/.+\.md$/,
+      /^samples\/storefront\/.+\.md$/,
+      /^src\/entities\/docs-vault\/data\//,
+      /^public\/docs-vault\//,
+    ],
   },
   {
     command: 'pnpm test:docs-vault',
