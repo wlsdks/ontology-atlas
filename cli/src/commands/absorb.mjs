@@ -45,7 +45,15 @@ import { stampAbsorbWriteCompleted } from '../lib/telemetry.mjs';
 const ALLOWED_FLAGS = ['--vault', '--write'];
 const BACKUP_SUFFIX = '.pre-absorb.bak';
 
-export function runAbsorb(args) {
+/** Internal command-test seam, same convention as relate.mjs — CLI arguments cannot supply it. */
+const DEFAULT_RUNTIME = Object.freeze({ writeDoc });
+
+export function runAbsorb(args, runtimeOverrides = {}) {
+  const runtime = { ...DEFAULT_RUNTIME, ...runtimeOverrides };
+  return runAbsorbWithRuntime(args, runtime);
+}
+
+function runAbsorbWithRuntime(args, runtime) {
   const opts = parseArgs(args);
   if (opts.help) {
     printUsage(process.stdout);
@@ -124,17 +132,55 @@ export function runAbsorb(args) {
       continue;
     }
 
-    for (const section of plan.sections) {
-      if (section.action !== 'absorb') continue;
-      const fm = buildFrontmatter({
-        slug: section.targetSlug,
-        kind: 'document',
-        title: section.targetTitle,
-        role: 'policy',
-        source: relative(vaultPath, filePath),
-      });
-      const body = `# ${section.targetTitle}\n\n${section.body}\n`;
-      writeDoc(vaultPath, section.targetSlug, { frontmatter: fm, body });
+    /*
+     * All sections of one source file land or none do. A mid-loop failure
+     * (disk full, permission) used to leave the earlier document nodes on disk
+     * while the source/backup step below never ran — and on the promised
+     * "re-run safely", buildAbsorptionPlan saw the landed slugs as taken and
+     * re-absorbed those sections under `-2` suffixes, duplicating every node
+     * that succeeded the first time (bug sweep 2026-09-01). The files written
+     * here are new by construction (writeDoc refuses an existing slug), so the
+     * rollback is a plain unlink of exactly what this loop created.
+     */
+    const landedPaths = [];
+    try {
+      for (const section of plan.sections) {
+        if (section.action !== 'absorb') continue;
+        const fm = buildFrontmatter({
+          slug: section.targetSlug,
+          kind: 'document',
+          title: section.targetTitle,
+          role: 'policy',
+          source: relative(vaultPath, filePath),
+        });
+        const body = `# ${section.targetTitle}\n\n${section.body}\n`;
+        runtime.writeDoc(vaultPath, section.targetSlug, { frontmatter: fm, body });
+        landedPaths.push(slugToPath(vaultPath, section.targetSlug));
+      }
+    } catch (error) {
+      const unrecovered = [];
+      for (const landedPath of landedPaths.reverse()) {
+        try {
+          unlinkSync(landedPath);
+        } catch {
+          unrecovered.push(landedPath);
+        }
+      }
+      const detail = error instanceof Error ? error.message : String(error);
+      if (unrecovered.length > 0) {
+        process.stderr.write(
+          `${COLORS.red}error${COLORS.reset}  absorb write failed (${detail}) and the rollback ` +
+            `could not remove: ${unrecovered.map((p) => relative(process.cwd(), p)).join(', ')}. ` +
+            'Delete them before re-running, or the sections will be duplicated.\n',
+        );
+      } else {
+        process.stderr.write(
+          `${COLORS.red}error${COLORS.reset}  absorb write failed (${detail}). ` +
+            'Nothing from this file was kept; the source is untouched and a re-run is safe.\n',
+        );
+      }
+      exitCode = 1;
+      continue;
     }
 
     // Backup *after* the vault writes succeed — if a write throws above, the
