@@ -3797,6 +3797,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 · v1.0.3: the CI planner stops missing PRs, and the harness can be judged",
+      "slug": "2026-09-01-v103-the-ci-planner-stops-missing-prs-and-the-harness-can-be-judged"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 · v1.0.2: the full-codebase sweep hardens every write path",
       "slug": "2026-09-01-v102-the-full-codebase-sweep-hardens-every-write-path"
     },
