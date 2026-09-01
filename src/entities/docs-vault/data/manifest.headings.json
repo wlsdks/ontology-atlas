@@ -12254,6 +12254,11 @@
       "slug": "ci-impact-gate-probe-2026-09-01"
     },
     {
+      "depth": 3,
+      "text": "Static CI worker gate probe (2026-09-01)",
+      "slug": "static-ci-worker-gate-probe-2026-09-01"
+    },
+    {
       "depth": 2,
       "text": "Quick Matrix",
       "slug": "quick-matrix"
