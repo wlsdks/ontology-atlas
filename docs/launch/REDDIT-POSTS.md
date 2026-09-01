@@ -1,217 +1,156 @@
-# Reddit — launch drafts
+# Reddit — Launch Drafts
 
-Reddit responds best to *honest, problem-first* framing. Each subreddit
-has its own norms; copy below tuned per audience.
+These drafts start with the developer's review problem, not the implementation
+inventory. Rewrite the final post in the owner's natural voice before posting;
+do not mass-post the same body across communities.
 
 ## r/programming
 
-**Title**: `ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP`
+**Title**: `I built a local map for reviewing what AI coding agents changed`
 
-**Body** (400~500 words, Reddit allows long-form better than HN):
+**Body**:
 
-```markdown
-I've been building ontology-atlas to solve a specific problem: AI coding
-agents (Claude Code, Cursor, Copilot) treat each conversation as
-session-zero. They suggest code, but they don't *understand* the
-project's architecture. Existing solutions (Cursor's chats, Claude's
-projects) tie that knowledge to one vendor's memory store — your mental
-model is locked in.
+````markdown
+AI coding agents can change a codebase faster than I can review every line.
+After a long run I usually have two artifacts:
 
-The hypothesis behind this project: **the mental model belongs in your
-git repo, as plain markdown.**
+- a Git diff, exact but low-level
+- the agent's summary, concise but written by the thing that produced the work
 
-```
-my-project/
-├── project.md
-├── domains/
-│   ├── auth.md
-│   └── billing.md
-├── capabilities/
-│   ├── login.md
-│   └── checkout.md
-└── elements/
-    └── jwt-token.md
-```
+I built [Ontology Atlas](https://github.com/wlsdks/ontology-atlas) for the
+missing third artifact: a reviewable account of what the codebase means now.
 
-Each `.md` has frontmatter:
+Atlas stores a small codebase ontology beside the source: projects, domains,
+capabilities, implementation evidence, dependencies, relation rationale, and
+explicit unknowns. It is a folder of Markdown files in the repo. The desktop
+app renders the folder as a map; coding agents query and update the same files
+through MCP.
 
-```yaml
----
-uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
-slug: capabilities/login
-kind: capability
-title: Login
-domain: domains/auth
-elements:
-  - elements/jwt-token
-dependencies:
-  - capabilities/signup
----
+The intended loop is:
+
+```text
+agent changes code
+→ agent proposes the capability/boundary/evidence change
+→ person corrects, rejects, or accepts the Markdown diff
+→ the next human or agent retrieves the accepted state
 ```
 
-That's the entire schema. No DB. The frontmatter *is* the graph. You
-can edit it in Obsidian, vscode, neovim — anything that reads markdown.
+Atlas is not trying to replace Git, source search, language servers, AST
+indexes, or CodeGraph. Those answer which lines, symbols, callers, and imports
+changed. Atlas carries the product-level answer: which capability changed, why
+the boundary exists, what evidence supports it, and what remains unknown.
 
-For AI agents, there's an MCP server (`ontology-atlas-mcp`) over JSON-RPC
-stdio. It advertises its current read/write inventory at runtime. The agent gets
-`list_concepts`, `get_concept`, `find_path` (BFS), `find_orphans`,
-`add_concept`, `patch_concept`, `delete_concept`, etc.
+One synthetic end-to-end run added discount handling to checkout. Both the
+control and Atlas versions completed the code, tests, commit, push, and merge.
+The Atlas version also committed one capability record beside the code:
 
-The part I did not expect to care about: **how the server reaches your
-machine.** It ships *inside* the macOS app bundle, compiled. Nothing is
-published to npm. You download once, open a vault folder, press "Connect
-agent", and the app writes the config for you:
+> The confirmed total now accepts non-negative integer `discountCents` and
+> clamps at zero.
 
-```json
-{
-  "mcpServers": {
-    "ontology-atlas": {
-      "command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
-      "args": [],
-      "env": { "OATLAS_VAULT": "/path/to/your/vault" }
-    }
-  }
-}
-```
+That is the narrow result: a reviewed meaning record can travel with the code.
+It is **not** evidence that Atlas made the code better or the work faster. In
+that small run, Atlas was slower. I have not measured a general answer-quality
+or productivity gain.
 
-It shows you that file before writing it, then spawns the server and
-round-trips a real `get_concept` call so the green light means "your
-vault is readable", not "a process started". Prefer a terminal? A source
-checkout gives you the same CLI and server directly.
+The storage and app are local-first: no Atlas account or backend. The vault is
+plain Markdown on disk and Git remains the source of truth. The installed
+desktop app reads/writes the same `.md` files through a local native bridge;
+the hosted website is the product intro and download/demo gateway. macOS is
+signed and notarized; Windows x64 is an explicitly unsigned beta; the browser
+demo needs no install.
 
-The app is also the workbench: a canvas map of the whole vault, a
-workshop for filling in a concept's missing relations, and graph
-insights. It reads/writes the same `.md` files through a local native
-vault bridge; the hosted website is the product intro and download
-entry point.
+Demo: https://ontologyatlas.com/en/topology/
 
-**Pure local-first**: no backend, no auth, no DB, no cloud SDK in the
-bundle.
+The current video proves concept, relation, evidence, and read-only agent
+lookup. I am separately validating a post-agent review demo rather than
+pretending the existing footage shows it.
 
-Hosted demo (read-only, dogfood vault, no install): https://ontologyatlas.com/en/topology/
-Repo: https://github.com/wlsdks/ontology-atlas
-MIT licensed.
+I would value blunt feedback on the actual bet:
 
-**What I'd love criticism on**:
+1. Is a capability/boundary-level review useful before the full diff, or is a
+   good PR summary enough?
+2. What would stop this Markdown folder from becoming stale documentation?
+3. Which agent claim should never become durable meaning without stronger
+   evidence?
 
-- Is "vault frontmatter = the graph" actually different from glorified
-  Obsidian, or am I fooling myself?
-- The MCP tools list — what's missing? What's redundant?
-- The non-developer angle: would your PMs / designers / domain experts
-  actually edit markdown frontmatter? What sucks about that workflow?
-
-Korean + English docs (mixed). Solo project so far. Tear it apart.
-```
+MIT licensed. Solo-built. Korean and English UI/docs.
+````
 
 ## r/ChatGPTCoding
 
-**Title**: `Made an MCP server that lets Claude Code read your codebase architecture as a graph (markdown frontmatter)`
+**Title**: `I built a reviewable codebase map for after an AI agent finishes`
 
-**Body** (250 words, focus on AI agent angle):
-
-```markdown
-After watching Claude Code re-discover my project's architecture in
-every conversation, I built a tiny MCP server that gives it a
-*persistent* mental model of the codebase.
-
-The trick: maintain a folder of markdown files where each file is a
-"node" (project, domain, capability, element) and frontmatter is the
-schema. The MCP server advertises its current tools at runtime: list_concepts, get_concept,
-get_concepts, validate_vault, compile_ontology, query_ontology,
-analyze_repo_structure, infer_imports, add_concept, add_concepts,
-patch_concept, rename_concept, etc.
-
-When I ask Claude "what's the impact of changing auth/login?", it calls
-`find_backlinks(slug=capabilities/login)` and returns actual answers
-because the dependency graph is *in the repo*, not a vendor silo.
-
-The server ships compiled inside the macOS app — nothing on npm. Open a
-vault folder in the app, press "Connect agent", and it writes
-`.mcp.json` (Claude Code / Cursor) or `.codex/config.toml` (Codex) after
-showing you the file, then boots the server and round-trips a real
-`get_concept` call to prove the vault is readable. The config it lands
-is this shape:
-
-```json
-{
-  "mcpServers": {
-    "ontology-atlas": {
-      "command": "/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp",
-      "args": [],
-      "env": { "OATLAS_VAULT": "/abs/path/to/my-vault" }
-    }
-  }
-}
-```
-
-A source checkout works too if you'd rather run it from a terminal.
-
-There's also a Next.js workbench that renders the same vault as a map you
-can explore and edit, if you prefer working visually. But the MCP server is
-the part most relevant to AI workflows.
-
-Repo: https://github.com/wlsdks/ontology-atlas
-MIT.
-
-What MCP tools would you add? I have read/write covered but I suspect
-there are obvious gaps (e.g. semantic search, "describe this region of
-the codebase" higher-level queries). Suggestions welcome.
-```
-
-## r/LocalLLaMA
-
-**Title**: `Codebase ontology workbench, local-first (no cloud), MCP server for any agent — open source`
-
-**Body** (200 words, focus on local-first / privacy):
+**Body**:
 
 ```markdown
-For folks running local agents and wanting their codebase mental model
-to stay local: ontology-atlas is a markdown-based codebase ontology
-with a tiny MCP server.
+My problem was not that the coding agent forgot the repo. It was that the agent
+could finish a lot of code before I understood what the codebase had become.
 
-**Local-first**: Vault is just `.md` files in a folder. No cloud, no
-account, no backend — period. Static Next.js export so you can run
-the visualization offline (it's a `out/` folder you can host or open
-file://).
+The diff told me exactly which lines changed. The agent summary told me what it
+claimed to have done. Neither left a durable product-level answer for the next
+review or the next session.
 
-**MCP**: runtime-advertised read/write tools over JSON-RPC stdio. Should work with any MCP-capable
-agent (Claude Code, Continue.dev, custom). Doesn't pre-process your
-files into embeddings — agent just reads the markdown live.
+So I built [Ontology Atlas](https://github.com/wlsdks/ontology-atlas): a local,
+Git-backed map of domains, capabilities, boundaries, dependencies, code
+evidence, and unknowns. Claude Code, Codex, Cursor, or another MCP client reads
+and updates the same Markdown folder a person sees in the app.
 
-**Frontmatter is the schema**:
+The workflow I am aiming for is:
 
-```yaml
----
-uid: 71890f3e-7b5d-4c0a-8f14-123456789abc
-kind: capability
-slug: capabilities/login
-title: Login
-domain: domains/auth
-dependencies: [capabilities/signup]
----
+1. the agent changes code and runs verification;
+2. it explicitly proposes the meaning that changed;
+3. Atlas pauses writes for human review;
+4. the person corrects/rejects/approves the Markdown diff;
+5. the next agent retrieves the accepted state.
+
+This is not automatic code understanding. Source tools still own definitions,
+callers, imports, and exact diffs. Atlas owns only reviewed product meaning and
+its evidence boundary.
+
+In one small synthetic run, a checkout change added `discountCents`. The Atlas
+arm committed the code and tests plus one capability note saying the confirmed
+total now accepts a non-negative integer discount and clamps at zero. The run
+proved that the note can travel with the code; it did not prove better code or
+faster work, and Atlas was slower in that run.
+
+No Atlas account or backend; the app and MCP server operate on local Markdown.
+There is a no-install demo here:
+https://ontologyatlas.com/en/topology/
+
+For people using long-running coding agents: what do you review first when a
+turn touches many files? Would a capability/boundary delta help, or would you
+trust a PR summary and skip this layer?
 ```
 
-The map UI is optional — you can skip it entirely and just use the MCP
-server with your local agent.
+## r/LocalLLaMA — hold, do not post yet
 
-**Nothing on npm, either.** The server ships compiled inside the macOS
-app bundle, and a source checkout runs it straight from `node`. One less
-registry in your supply chain, and the config the app writes is plain
-text you read in a git diff before it lands.
+Do not post the old local-first draft merely because the vault and MCP server
+run locally. Atlas does not itself run an LLM, and the current public demo uses
+Codex. That makes the project only incidentally related to local inference.
 
-Repo: https://github.com/wlsdks/ontology-atlas
-MIT, unit and E2E suites passing locally.
+Reconsider this community only after both conditions are true:
 
-Built because I didn't want my codebase architecture trapped in a
-vendor's memory silo.
-```
+1. a real end-to-end Atlas flow has been demonstrated with a locally hosted
+   model, and the post explains what that model did; and
+2. the owner's account satisfies the community's current participation and
+   self-promotion rules.
 
-## Posting tips
+The 2026 rule update explicitly strengthened low-effort and self-promotion
+enforcement. A local storage architecture is not enough to make an otherwise
+remote-agent launch post on-topic.
 
-- Don't post all three same day — pick one Reddit + HN, wait for
-  response. Reddit cross-post detection.
-- r/programming is harder; expect 5-10 comments not 50. Quality > volume.
-- Reply to every comment within 12 hours of posting. r/programming
-  expects engagement.
-- Don't link to your own twitter / discord — Reddit auto-flags self-promo
-- Mention you're solo + open to PRs to soften "show off" tone
+## Posting notes
+
+- Reddit's current [spam policy](https://support.reddithelp.com/hc/en-us/articles/360043504051-Spam)
+  prohibits repeated unsolicited mass engagement and tells posters whose
+  contributions mainly promote their own work to be thoughtful about frequency
+  and check each community's rules. Re-check the target subreddit on posting day.
+- The [r/LocalLLaMA rule update](https://www.reddit.com/r/LocalLLaMA/comments/1su3ao4/rlocalllama_rule_updates/)
+  raises the bar on low-effort, primarily generated, and self-promotional posts.
+  Do not paste an AI-polished launch body there unchanged.
+- Post to one relevant community first. Discuss the problem and evidence in the
+  comments; do not repeat the link across unrelated communities for exposure.
+- Disclose that this is the author's project. Do not ask for votes, coordinate
+  comments, or imply customer evidence that does not exist.
+- If feedback says a PR summary is enough, ask for the exact workflow and treat
+  that as a falsifier, not an objection to talk around.

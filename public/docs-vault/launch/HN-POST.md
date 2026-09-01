@@ -1,90 +1,98 @@
-# Hacker News — Show HN draft
+# Hacker News — Show HN Draft
 
 Submission type: **Show HN**
-Category: open source / dev tool
+Category: open-source developer tool
 
-## Title (30 char range, < 80 max)
+## Title
 
+```text
+Show HN: Ontology Atlas – see what your AI agent built
 ```
-Show HN: ontology-atlas – Markdown frontmatter as a codebase ontology, for humans + AI agents
-```
 
-(80 chars exactly — under HN's 80 char limit. If too long, fallback:
-`Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP`)
+The title is 54 characters, including spaces. It names the human outcome rather
+than frontmatter, MCP, or agent memory.
 
-## URL
+## Submission URL
 
 `https://github.com/wlsdks/ontology-atlas`
 
-## Text (optional, but encouraged for Show HN)
+Use the repository, not the download landing page. The project can be tried
+without an account through the hosted demo linked below.
 
-```
-Hi HN. I built this because every "AI in your codebase" tool today
-ingests source files into an LLM context window and hopes the model
-remembers your architecture. The mental model — "what owns what, what
-depends on what, why this exists" — lives in the AI vendor's memory
-silo, or in nobody's.
+## Text
 
-ontology-atlas takes the opposite path. The mental model is a folder of
-markdown files. Frontmatter is the graph: `kind: capability`, `domain:
-auth`, `depends_on: [...]`. Humans edit it in any markdown editor. AI
-agents read and write it via a local MCP server whose current inventory is
-advertised at runtime: list, get, validate_vault, compile_ontology, query_ontology,
-analyze_repo_structure, infer_imports, add_concept, add_concepts,
-patch_concept, rename_concept, ...).
+```text
+Hi HN. I built Ontology Atlas after noticing that coding agents could change my
+codebase faster than I could keep the whole result in my head.
 
-A canvas map over the same vault, plus a workshop surface for filling in
-a concept's missing relations. Local-first by default — no backend, no
-auth, no cloud SDK anywhere in the bundle.
+I still had the Git diff, which was exact about the lines. I also had the
+agent's summary, which was a concise account from the thing that produced the
+change. What I did not have was a durable, reviewable answer to: what capability
+does the codebase have now, which boundary moved, what evidence supports that,
+and what is still unknown?
 
-The distribution decision I'd defend hardest: the macOS app carries the
-compiled MCP server inside its own bundle. One download installs both
-the surface a person reads and the server their agent talks to. Open a
-vault folder, press "Connect agent", and the app writes .mcp.json (Claude
-Code/Cursor) or .codex/config.toml (Codex) with the real absolute paths
-already filled in — then spawns the server and round-trips a get_concept
-call to prove it before showing you a green light. It shows you the file
-it is about to write first; you approve, and it lands as plain text you
-can read in a git diff. No terminal, no Node, no install step, and
-nothing published to a registry you have to trust.
-
-If you'd rather stay in a terminal, a source checkout gives you the same
-CLI and MCP server directly.
+Atlas keeps that answer as a small codebase ontology in the repository:
+projects, domains, capabilities, implementation elements, dependencies,
+rationales, evidence, and explicit unknowns. The files are Markdown. The app
+renders them as a map; Claude Code, Codex, Cursor, and other MCP clients query
+and update the same folder. A person can correct, reject, or keep the resulting
+Markdown/Git diff.
 
 Hosted demo (read-only, our own dogfood vault, no install):
 https://ontologyatlas.com/en/topology/
 
-What I'd love feedback on:
+The intended workflow is:
 
-1. Is "vault frontmatter as the canonical graph" a useful framing for
-   you? Or does it feel like just glorified Obsidian?
-2. The MCP integration — does this fit how you're using Claude Code /
-   Cursor / Continue today? What tool would you add?
-3. Non-developer angle — would your PMs, designers, domain experts
-   actually open these markdown files? What would make that easier?
-4. Shipping the MCP server inside the app instead of publishing it to a
-   registry — does that read as convenient or as a lock-in smell? The
-   vault stays plain markdown either way, so I think it's the former,
-   but I'd rather hear it now.
+  agent changes code
+  -> agent proposes what that work changed at the capability/boundary level
+  -> person reviews the semantic delta
+  -> the next human or agent starts from the accepted map
 
-The desktop app is macOS-only today (Windows in preparation). The CLI,
-the MCP server, and the browser workbench run anywhere Node 24 does.
+Atlas does not replace source search, language servers, AST indexes, or Git.
+Those remain the authority for structure and exact code changes. Atlas keeps
+the product meaning that explains why those facts matter.
 
-Built solo over the past few months. MIT licensed. Korean + English
-docs (mixed). Critique welcome.
+A concrete synthetic run added discount handling to checkout. Both the control
+and Atlas versions completed the code, tests, commit, push, and merge. The Atlas
+version additionally committed one reviewed capability record beside the code:
+"The confirmed total now accepts non-negative integer discountCents and clamps
+at zero." That is evidence of a durable meaning handoff, not evidence that Atlas
+made the code better or the work faster. In that small run, Atlas was slower.
+
+Everything is local-first: no Atlas account or backend. The desktop app carries
+the MCP server; the vault remains plain Markdown on disk. macOS is signed and
+notarized. Windows x64 is an explicitly unsigned beta. A source checkout and
+the browser workbench cover the other paths.
+
+Hosted demo, no install:
+https://ontologyatlas.com/en/topology/
+
+The current demo proves concept/relationship/evidence lookup. The post-agent
+change-review demo is the next thing I am validating, not something I am
+pretending the existing video shows.
+
+I would especially value criticism on three questions:
+
+1. After an agent finishes, is capability/boundary-level review useful before
+   you open the full code diff, or is the PR summary enough?
+2. Which claim from an agent would you refuse to let become durable meaning
+   without stronger evidence?
+3. Is a repository Markdown folder a maintainable judgment surface, or does it
+   become another document set that drifts?
+
+Solo-built, MIT licensed. Korean and English UI/docs. Critique welcome.
 ```
 
-(Word count: ~380. HN expects substantive Show HN posts, not one-liners;
-it also tolerates this length when the post is answering "how does it
-actually reach my machine".)
+## Posting and reply notes
 
-## Posting tips
-
-- **Best time**: Tue/Wed 8–10am ET (HN peak)
-- **First comment** (you, OP): Add 1–2 sentence thank-you to early
-  commenters and a *concrete* answer to the most upvoted question
-- **Don't ask for upvotes**. HN explicitly disallows.
-- **Respond fast** to the first 5 comments — they shape the thread
-- **Link to specific code paths** in your replies to demonstrate depth
-- If 4-hour mark and you're still on front page: post the demo gif as
-  a follow-up reply (don't edit OP)
+- The [Show HN guidelines](https://news.ycombinator.com/showhn.html) require
+  something people can try, recommend removing signup barriers, say not to
+  submit a landing page, and forbid asking friends to upvote. Keep the repository
+  as the submission URL and the no-install demo near the top of replies.
+- Be present to answer questions about how and why it was built. Link to the
+  exact benchmark diff, schema, or source path when a claim is challenged.
+- Do not defend `100x`, token savings, faster answers, better code, exhaustive
+  coverage, or automatic semantic detection. None is established.
+- Ask for falsifying examples, not feature requests by default: a PR summary that
+  makes Atlas unnecessary, a meaning correction Atlas cannot represent, or a
+  maintenance burden that outweighs the handoff.

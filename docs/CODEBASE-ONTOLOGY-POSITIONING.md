@@ -1,7 +1,7 @@
 # Codebase Ontology Positioning
 
 > Current product framing for launch, README copy, and prioritization.
-> Last updated: 2026-08-25.
+> Last updated: 2026-09-01.
 
 ## One-line Position
 
@@ -13,21 +13,47 @@ meaning, capability boundaries, implementation evidence, dependencies, and
 impact in Markdown beside the code. People and AI agents read and maintain the
 same ontology; Git diffs remain the judgment surface.
 
+The campaign lens is the human-comprehension gap created by agent-speed
+development:
+
+> AI agents can change a codebase faster than people can review every line.
+> Atlas shows what the codebase has become at the capability and boundary level
+> before a person accepts the work.
+
+This sharpens the motivating moment without replacing the category or the
+one-line position. It is not a `100x` claim and it does not claim faster work,
+better code, lower token use, automatic semantic detection, or exhaustive
+coverage.
+
 ## The User Problem
 
-Source code is good at showing *how* a system works. It rarely preserves the
-answers people and agents need before changing it:
+Source code is good at showing *how* a system works. After an AI agent changes
+it, a maintainer who did not follow every edit can have an exact diff and still
+be unable to state what product-level thing the codebase has become. The missing
+answers matter after one agent turn and before accepting the work, handing it
+off, or starting the next task:
 
+- which capability, boundary, dependency, or evidence claim changed
 - which domains and capabilities exist
 - which files implement which capability
 - which dependencies matter before changing a module
 - which architectural decisions were already discovered
 - which documentation is canonical and which is stale
+- which parts of the agent's account remain unsupported or unknown
 
 Without a codebase ontology, those answers remain scattered across source,
-docs, tickets, and people's heads. A person or agent must reconstruct them
-before every consequential change, and two readers can reach different answers
-without a reviewable place to reconcile them.
+docs, tickets, an agent transcript, and people's heads. A maintainer must
+reconstruct them after consequential work and again before the next change;
+two readers can reach different answers without a reviewable place to reconcile
+them.
+
+The current alternatives each retain their authority and their limit:
+
+| Surface | What it is good at | What Atlas adds |
+|---|---|---|
+| Git diff | Exact lines and files that changed | The reviewed capability, boundary, rationale, evidence, and unknown those lines now implement |
+| Producing agent's summary | A compact account of its own work | A durable claim another person can correct, reject, or accept independently of that session |
+| Source search, AST indexes, language servers, CodeGraph | Definitions, callers, imports, routes, and structural paths | The product meaning and verification path that explain why those facts matter |
 
 The minimum supported path is intentionally plain: connect Atlas MCP or run the
 Atlas CLI from Claude Code, Codex, Cursor, or another coding agent, and the agent
@@ -55,10 +81,12 @@ ontology explains a real codebase and stays current as that codebase changes.
 The core loop is:
 
 1. Open a repo and generate an ontology draft automatically.
-2. Let the agent propose mental-model changes after real code work.
-3. Let the developer review those changes like a git diff.
-4. Make the next human or agent decision visibly better because the explanation
-   is already in the repo.
+2. Let the agent implement real code work, then explicitly propose the
+   capability, boundary, dependency, evidence, or uncertainty that changed.
+3. Let the developer correct, reject, or accept that semantic delta through
+   readable Markdown and a Git diff.
+4. Let the next human or agent retrieve the accepted state rather than trust the
+   producing session's summary.
 
 That loop is the product. AI-agent continuity is one payoff; shared and
 reviewable codebase understanding is the broader outcome.
@@ -76,6 +104,12 @@ The strongest positioning is the concrete outcome:
 > Understand what your codebase builds, why it is structured that way, and what
 > a change will affect.
 
+The strongest campaign hook names the moment that makes that outcome urgent:
+
+> Agents write the code. People accumulate the cognitive debt.
+>
+> Atlas keeps what the code means reviewable before the work is accepted.
+
 This is clearer than either implementation-first or memory-first framing:
 
 > Local-first ontology graph workbench with deterministic compiler and MCP tools.
@@ -92,8 +126,8 @@ Ontology Atlas becomes a real product if a new repo can show value in one short
 loop:
 
 ```text
-init -> bootstrap -> agent answers better through MCP -> agent proposes sync
--> developer reviews diff -> next task benefits
+init -> bootstrap -> agent changes code -> agent proposes a semantic delta
+-> developer corrects/approves the Markdown diff -> next session retrieves it
 ```
 
 Target: the first visible value should appear within 10 minutes.
@@ -207,6 +241,22 @@ Near-term product implications:
 Use the plain outcome in launch copy and first-contact README text. Use
 "codebase ontology workbench" to name the category. Use "agent memory" only for
 the specific continuity benefit, never as the master identity.
+
+Campaign copy may open with the after-agent, before-acceptance comprehension
+gap, but it must resolve immediately to the review object: changed capabilities,
+boundaries, dependencies, evidence, provenance, and unknowns. The reusable
+contrast is:
+
+```text
+Git shows which lines changed.
+The producing agent says what it claims it did.
+Atlas preserves what a person reviewed the codebase to mean.
+```
+
+Do not lead with frontmatter, MCP inventory, agent forgetting, or token use.
+Those are mechanism details or benefits after the product outcome is clear.
+Never publish `100x`, speed, quality, cost, completeness, or automatic-current
+claims without a separate measurement that directly supports them.
 
 The promise is not that users can draw a better graph or model arbitrary
 knowledge. The promise is that they can see what a codebase builds, why it has

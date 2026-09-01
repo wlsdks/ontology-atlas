@@ -222,8 +222,9 @@ export function DownloadPage() {
  * Section head — eyebrow (mono caps plus an accent dot), title, subtitle.
  *
  * The title is `--text-display` (23px), correcting the hierarchy inversion where the old
- * section title (14px) was smaller than a card title (16px). The eyebrow labels (Demo,
- * Evidence, Agents, Install) are mono notation shared by both locales and are not translated.
+ * section title (14px) was smaller than a card title (16px). Eyebrow labels keep the same mono
+ * notation in both locales, while their words come from the locale catalog so the Korean page
+ * does not introduce an English label before each Korean sentence.
  *
  * With `still` it renders without the entrance choreography — the install section's stillness
  * was its consumer.
@@ -653,9 +654,9 @@ function FactsStrip({
   const subjectIsWindows = subject !== null && subject === windowsInstaller;
 
   const facts: { label: string; value: string }[] = [
-    { label: 'Version', value: version },
+    { label: t('factVersionLabel'), value: version },
     {
-      label: 'Requires',
+      label: t('factRequiresLabel'),
       value: `${subjectIsWindows ? RELEASE_MIN_WINDOWS : RELEASE_MIN_MACOS}${t('factMinOsSuffix')}`,
     },
   ];
@@ -711,7 +712,7 @@ function DemoSection() {
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro
-          eyebrow="Demo"
+          eyebrow={t('demoEyebrow')}
           title={t('demoTitle')}
           sub={t('demoSub')}
           centered
@@ -831,7 +832,7 @@ function EvidenceSection({ graph }: { graph: StageGraph }) {
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro
-          eyebrow="Evidence"
+          eyebrow={t('evidenceEyebrow')}
           title={t('evidenceTitle')}
           sub={t('evidenceSub')}
         />
@@ -933,7 +934,7 @@ function AgentSection() {
       className={cn(PAGE_GUTTER, SECTION_GAP, 'w-full scroll-mt-24')}
     >
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
-        <SectionIntro eyebrow="Agents" title={t('agentsTitle')} sub={t('agentsSub')} />
+        <SectionIntro eyebrow={t('agentsEyebrow')} title={t('agentsTitle')} sub={t('agentsSub')} />
 
         {/* The stage width uses the same token as the demo section (`--gateway-stage-max`), so the
             page states "this much is the stage" only once. At ≤1920 it is the previous 48rem; only

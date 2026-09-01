@@ -11100,6 +11100,11 @@
       "depth": 2,
       "text": "2026-08-31 — First change-flow repeat shows workflow parity, not product lift",
       "slug": "2026-08-31-first-change-flow-repeat-shows-workflow-parity-not-product-lift"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-01 — Human comprehension after agent work becomes the campaign lens, not a performance claim",
+      "slug": "2026-09-01-human-comprehension-after-agent-work-becomes-the-campaign-lens-not-a-performance-claim"
     }
   ],
   "DEMO-SCENARIO": [
@@ -13641,75 +13646,65 @@
   "launch/DEMO-GIF-STORYBOARD": [
     {
       "depth": 1,
-      "text": "30s Demo GIF — retired storyboard",
-      "slug": "30s-demo-gif-retired-storyboard"
+      "text": "Campaign Demo Storyboard — Review What the Agent Built",
+      "slug": "campaign-demo-storyboard-review-what-the-agent-built"
     },
     {
       "depth": 2,
-      "text": "Cut 1 (0–6s) — \"AI and humans editing the same vault\"",
-      "slug": "cut-1-06s-ai-and-humans-editing-the-same-vault"
+      "text": "The two questions the clip must answer",
+      "slug": "the-two-questions-the-clip-must-answer"
     },
     {
       "depth": 2,
-      "text": "Cut 2 (6–12s) — \"Frontmatter is the graph\"",
-      "slug": "cut-2-612s-frontmatter-is-the-graph"
+      "text": "Evidence-bound example",
+      "slug": "evidence-bound-example"
     },
     {
       "depth": 2,
-      "text": "Cut 3 (12–18s) — \"Topology view\"",
-      "slug": "cut-3-1218s-topology-view"
+      "text": "36-second one-take flow",
+      "slug": "36-second-one-take-flow"
     },
     {
       "depth": 2,
-      "text": "Cut 4 (18–24s) — \"AI agent reads the ontology and suggests code\"",
-      "slug": "cut-4-1824s-ai-agent-reads-the-ontology-and-suggests-code"
+      "text": "Capture contract",
+      "slug": "capture-contract"
     },
     {
       "depth": 2,
-      "text": "Cut 5 (24–30s) — \"One button click connects the agent\"",
-      "slug": "cut-5-2430s-one-button-click-connects-the-agent"
+      "text": "Copy for the clip",
+      "slug": "copy-for-the-clip"
     },
     {
       "depth": 2,
-      "text": "Recording Environment",
-      "slug": "recording-environment"
-    },
-    {
-      "depth": 2,
-      "text": "README Embed",
-      "slug": "readme-embed"
-    },
-    {
-      "depth": 2,
-      "text": "Alternative: 4-image grid",
-      "slug": "alternative-4-image-grid"
+      "text": "Exit gate before recording",
+      "slug": "exit-gate-before-recording"
     }
   ],
   "launch/HN-POST": [
     {
       "depth": 1,
-      "text": "Hacker News — Show HN draft",
+      "text": "Hacker News — Show HN Draft",
       "slug": "hacker-news-show-hn-draft"
     },
     {
       "depth": 2,
-      "text": "Title (30 char range, < 80 max)",
-      "slug": "title-30-char-range-80-max"
+      "text": "Title",
+      "slug": "title"
     },
     {
       "depth": 2,
-      "text": "URL",
-      "slug": "url"
+      "text": "Submission URL",
+      "slug": "submission-url"
     },
     {
       "depth": 2,
-      "text": "Text (optional, but encouraged for Show HN)",
-      "slug": "text-optional-but-encouraged-for-show-hn"
+      "text": "Text",
+      "slug": "text"
     },
     {
       "depth": 2,
-      "text": "Posting tips",
-      "slug": "posting-tips"
+      "text": "Posting and reply notes",
+      "slug": "posting-and-reply-notes"
     }
   ],
   "launch/README": [
@@ -13762,7 +13757,7 @@
   "launch/REDDIT-POSTS": [
     {
       "depth": 1,
-      "text": "Reddit — launch drafts",
+      "text": "Reddit — Launch Drafts",
       "slug": "reddit-launch-drafts"
     },
     {
@@ -13777,13 +13772,13 @@
     },
     {
       "depth": 2,
-      "text": "r/LocalLLaMA",
-      "slug": "rlocalllama"
+      "text": "r/LocalLLaMA — hold, do not post yet",
+      "slug": "rlocalllama-hold-do-not-post-yet"
     },
     {
       "depth": 2,
-      "text": "Posting tips",
-      "slug": "posting-tips"
+      "text": "Posting notes",
+      "slug": "posting-notes"
     }
   ],
   "launch/X-THREAD": [

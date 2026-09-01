@@ -26275,3 +26275,72 @@ construction/maintenance cost are measured.
 remain linked there and are not counted as successful product evidence.
 
 **Status**: valid · first end-to-end feasibility result recorded · general claim pending
+
+---
+
+## 2026-09-01 — Human comprehension after agent work becomes the campaign lens, not a performance claim
+
+**Trigger**: the owner described the observable failure as human cognitive
+absence after an agent produces code faster than the owner can understand what
+was built, then asked to align the README, landing page, launch copy, and core
+demo. This is a positioning decision, so a five-seat product-owner council was
+convened before editing public surfaces.
+
+**Standing decisions retained**: the 2026-08-25 codebase-ontology category and
+master promise still stand; the 2026-08-28 landing headline still stands; and
+the 2026-08-31 benchmark limits still stand. Atlas remains a local-first
+codebase ontology workbench. This decision changes the campaign lens, not the
+product category or public contract.
+
+**Evidence boundary**: one owner dogfood observation supports the phenomenon,
+and the prior public surfaces described the same product with inconsistent
+emphasis. The change-flow benchmark shows that a reviewed meaning record can
+travel with code; it does not show faster work, better code, lower token use,
+or better human decisions.
+
+| Council seat | Recommendation | Controlling judgment |
+| --- | --- | --- |
+| Evidence | Build and verify | Problem insight is `2/4`: one first-party observation, no second independent user observation. User moment is `4/4`: after agent work and before acceptance. |
+| Craft | Build and verify | Keep the current headline; rewrite the lead around a reviewable map and the acceptance moment. Verification is `3/4` until a source-hidden comprehension test passes. |
+| Steward | Build and verify | Ontology value and agent value are each `4/4`: a person judges the durable capability, boundary, evidence, and unknowns that the next agent retrieves. |
+| Wedge | Build and verify | Differentiation is `3/4`: Markdown, graphs, MCP, and summaries are reproducible; the harder asset is accumulated human-approved identity, rationale, provenance, uncertainty, and correction history. |
+| Leverage | Build and verify | Spend one working day on words and verification. Do not produce or relabel media in this slice. |
+
+**Gate result**: `20/24`, with no fatal zero and unanimous `Build and verify`.
+
+**Decision**:
+
+- Keep the master promise and landing headline. Use “human comprehension after
+  agent work, before acceptance” as the campaign lens.
+- Contrast three artifacts precisely: Git records the exact changed lines; the
+  producing agent summarizes its claim about its work; Atlas carries durable,
+  human-reviewable product meaning and its evidence boundary.
+- Align the landing lead, README, positioning guide, and HN/Reddit drafts to
+  that outcome. Keep agent-authored meaning correctable, rejectable, and
+  visibly uncertain.
+- Do not relabel the current 44-second video as post-agent review evidence. It
+  remains lookup evidence. Specify a replacement flow separately: guarded
+  semantic proposal, human decision, Markdown/Git diff, map update, and fresh
+  read-only retrieval.
+- Do not claim `100x`, token savings, faster answers, better code, general
+  quality improvement, exhaustive coverage, or automatic semantic truth from
+  the current evidence.
+- Do not claim that this campaign works until at least four of five
+  source-hidden evaluators can identify what changed and when it matters from
+  the Atlas artifact alone.
+
+**Dissent and falsifier**: the problem currently has one observed owner, not a
+market. Revert this lens to an unposted prototype/interview prompt if fewer than
+four of five evaluators can recover the changed capability and review moment;
+if users demonstrate that a PR summary is sufficient; if accepted corrections
+are not retrieved in later work; or if keeping the meaning current costs more
+than the avoided misunderstanding.
+
+**Slice**: in scope are public words, localized landing labels, launch drafts,
+and a truthful replacement-demo brief. Out of scope are recording new media,
+publishing posts, changing the ontology schema or write contract, and claiming
+adoption or measured comprehension.
+
+**Accountable**: jinan
+
+**Status**: implemented · automated and rendered verification passed · source-hidden comprehension gate pending
