@@ -418,6 +418,20 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm exec vitest run tests/contract/po-council.contract.test.ts',
+    reason: 'Atlas product-risk routing policy or its active instructions changed',
+    matches: [
+      /^scripts\/(?:lib\/po-risk-router|po-risk-router)\.mjs$/,
+      /^scripts\/check-decision-record\.mjs$/,
+      /^tests\/contract\/po-council\.contract\.test\.ts$/,
+      /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
+      /^\.(?:claude|agents)\/skills\/po-(?:pass|council)\/SKILL\.md$/,
+      /^\.(?:claude|agents)\/agents\/(?:chief|po-(?:evidence|steward|wedge|leverage|craft))\.md$/,
+      /^AGENTS\.md$/,
+      /^package\.json$/,
+    ],
+  },
+  {
     /*
      * **The script that decides what CI runs had no suggestion mapping of its own**
      * (2026-08-08). `pnpm checks:changed -- scripts/classify-change.mjs` returned "no

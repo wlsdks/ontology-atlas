@@ -774,7 +774,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 228796,
+      "wordCount": 229399,
       "updatedAt": "2026-09-01",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -870,7 +870,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13578,
+      "wordCount": 13835,
       "updatedAt": "2026-09-01",
       "linksOut": []
     },
@@ -3543,6 +3543,20 @@
       "linksOut": []
     },
     {
+      "slug": "PO-PILOT",
+      "path": "docs/PO-PILOT.md",
+      "title": "Atlas PO routing pilot",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "This temporary ledger measures the 2026-09-01 risk-routed product gate. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this table records one compact outcome per eligible product decision so the process can earn, lose, or narrow its place. Window: next 20 eligible decisions or 14 days",
+      "wordCount": 267,
+      "updatedAt": "2026-09-01",
+      "linksOut": [
+        "DECISIONS"
+      ]
+    },
+    {
       "slug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
       "path": "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "title": "Product Design Operating System",
@@ -3574,13 +3588,13 @@
     {
       "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
       "path": "docs/PRODUCT-OWNER-OPERATING-SYSTEM.md",
-      "title": "PRODUCT OWNER OPERATING SYSTEM",
+      "title": "ATLAS PRODUCT DECISION SYSTEM",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory — a project that counts what it shipped instead of asking whether anything got better. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens (lens — one fixed question to ask before passin",
-      "wordCount": 6127,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Pilot policy from 2026-09-01. It replaces the active numeric score and the default full-roster council for the next 20 eligible decisions. Git keeps the previous policy recoverable; the decision ledger keeps its history. Atlas does not need a universal product-management framework. It needs a small decision system for ",
+      "wordCount": 1542,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -3751,6 +3765,11 @@
       {
         "fromSlug": "BRAND",
         "context": "tology Atlas > The meaning, source contract, and usage rules for the pixel mascot identity. > The 2026-08-28 record in **[`DECISIONS.md`]** owns the replacement > decision; the committed PNG masters own the pixels. ## Identity Status The pixel mascot is the",
+        "linkText": "`DECISIONS.md`"
+      },
+      {
+        "fromSlug": "PO-PILOT",
+        "context": "r measures the 2026-09-01 risk-routed product gate. It is not a second decision archive. Significant rationale stays in **[`DECISIONS.md`]**; this table records one compact outcome per eligible product decision so the process can earn, lose, or narrow its plac",
         "linkText": "`DECISIONS.md`"
       }
     ],
@@ -6849,6 +6868,13 @@
         "title": "Ontology Quality Authority Map"
       },
       {
+        "name": "PO-PILOT",
+        "path": "PO-PILOT",
+        "type": "doc",
+        "slug": "PO-PILOT",
+        "title": "Atlas PO routing pilot"
+      },
+      {
         "name": "PRODUCT-DESIGN-OPERATING-SYSTEM",
         "path": "PRODUCT-DESIGN-OPERATING-SYSTEM",
         "type": "doc",
@@ -6867,7 +6893,7 @@
         "path": "PRODUCT-OWNER-OPERATING-SYSTEM",
         "type": "doc",
         "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
-        "title": "PRODUCT OWNER OPERATING SYSTEM"
+        "title": "ATLAS PRODUCT DECISION SYSTEM"
       },
       {
         "name": "README",

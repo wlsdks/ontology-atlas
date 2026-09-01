@@ -78,10 +78,10 @@ The policies live in `.claude/rules/` and each skill owns its exact protocol.
 Use the matching source, never memory and never this summary — what follows is
 routing only: when to open a gate, not how it runs.
 
-- **PO gate** — `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`, entered through
-  `/po-pass`, before any product, UX, graph, MCP, CLI, workflow or
-  macOS-shell change. Translate an offered solution into a user's observable
-  problem first. Ontology or agent value is never author-declarable N/A.
+- **PO gate** — Before product, UX, graph, MCP, CLI, workflow, or macOS work,
+  `/po-pass` names the observable failure and runs `pnpm po:route`. Local-first
+  and human sovereignty are universal; other Atlas value is conditional. Log
+  eligible pilot rows in `docs/PO-PILOT.md`.
 - **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
   the PO pass, for UI, visual design, interaction, graph readability,
   responsive layout and macOS workbench work:
@@ -96,11 +96,10 @@ routing only: when to open a gate, not how it runs.
   `.codex/config.toml` alike because the two brief trees are byte identical. A
   seat may only name a server its own tree's config declares; a personal agent
   config is not this repository's contract, and `pnpm agents:check` enforces it.
-- **Councils** — `/po-council` before expensive or hard-to-reverse work: a new
-  or removed surface, a public MCP/CLI/schema contract, positioning, or a first
-  public release. `chief` seats it and never edits code. `/design-council` for
-  visual work, with `design-guardian` accountable as editor and decider, before
-  and after meaningful Relief or Topology work.
+- **Councils** — `/po-council` pairs Evidence with one risk specialist for
+  hard-to-reverse work; `chief` routes and rebuts only material conflict.
+  `/design-council` owns visual work, with `design-guardian` as editor/decider
+  before and after meaningful Relief or Topology work.
 - **Decision ledger** — `docs/DECISIONS.md` is append-only. Read it before a
   pass or council; cite a standing decision or overturn it explicitly, keeping
   the losing dissent and a falsifier. Never silently re-decide.

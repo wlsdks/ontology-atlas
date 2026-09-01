@@ -1,180 +1,194 @@
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
+import {
+  PO_REVIEW_RECORD_FIELDS,
+  PO_RISK_ROUTES,
+  PO_SOLO_FIELDS,
+  routePoDecision,
+} from '../../scripts/lib/po-risk-router.mjs';
+
 /**
- * Keeps the PO Council executable rather than aspirational prose. The contract
- * covers lens ownership, rubric signers, model diversity, mirrored skill wiring,
- * accountable human authority, and the plain owner-facing summary.
+ * The active PO gate is a risk router, not a prose scorecard. These contracts
+ * replay decisions that the old process handled well or expensively, prove the
+ * local-first/human-sovereignty brake cannot self-exempt, and bind the written
+ * templates to the executable policy.
  */
 
 const ROOT = process.cwd();
 const PO_OS = 'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md';
-const SKILL = '.claude/skills/po-council/SKILL.md';
-const MIRROR = '.agents/skills/po-council/SKILL.md';
-const LEDGER = 'docs/DECISIONS.md';
+const PILOT = 'docs/PO-PILOT.md';
+const PASS_SKILL = '.claude/skills/po-pass/SKILL.md';
+const PASS_MIRROR = '.agents/skills/po-pass/SKILL.md';
+const COUNCIL_SKILL = '.claude/skills/po-council/SKILL.md';
+const COUNCIL_MIRROR = '.agents/skills/po-council/SKILL.md';
+const CLI = 'scripts/po-risk-router.mjs';
 
-const AGENTS = ['po-evidence', 'po-craft', 'po-steward', 'po-wedge', 'po-leverage'] as const;
-const ROWS = ['Problem insight', 'User moment', 'Differentiation', 'Ontology value', 'Agent value', 'Verification'] as const;
-const FATAL_ROWS = ['Problem insight', 'User moment', 'Ontology value', 'Agent value', 'Verification'];
-const HUMAN_LENS = 'Accountable Value Owner';
-const TIERS: Record<(typeof AGENTS)[number], string> = {
-  'po-evidence': 'opus',
-  'po-craft': 'opus',
-  'po-steward': 'opus',
-  'po-wedge': 'fable',
-  'po-leverage': 'fable',
-};
-const MAX_AGENT_BYTES = 9_000;
+const RISK_NAMES = ['meaning', 'positioning', 'scope'] as const;
+const SPECIALISTS = Object.values(PO_RISK_ROUTES).map((route) => route.reviewer);
+const ACTIVE_AGENTS = ['chief', 'po-evidence', ...SPECIALISTS, 'po-craft'] as const;
+const ACTIVE_FILES = [
+  PO_OS,
+  PILOT,
+  PASS_SKILL,
+  PASS_MIRROR,
+  COUNCIL_SKILL,
+  COUNCIL_MIRROR,
+  CLI,
+  'scripts/lib/po-risk-router.mjs',
+  ...ACTIVE_AGENTS.flatMap((name) => [`.claude/agents/${name}.md`, `.agents/agents/${name}.md`]),
+] as const;
 
 const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8');
-const agent = (name: string): string => read(`.claude/agents/${name}.md`);
 
-function documentedLenses(): string[] {
-  const doc = read(PO_OS);
-  const start = doc.indexOf('## The Atlas PO Council');
-  expect(start, 'PO OS must retain The Atlas PO Council').toBeGreaterThan(-1);
-  const section = doc.slice(start, doc.indexOf('\n## ', start + 1));
-  return [...section.matchAll(/^- ([A-Z][A-Za-z-]*(?: [A-Z][A-Za-z-]*)*): /gm)].map((match) => match[1]);
+function fieldsInTemplate(path: string, anchor: string): string[] {
+  const body = read(path);
+  const anchorAt = body.indexOf(anchor);
+  expect(anchorAt, `${path} must contain ${anchor}`).toBeGreaterThan(-1);
+  const open = body.indexOf('```md', anchorAt);
+  const close = body.indexOf('```', open + 5);
+  expect(open, `${path} must have a Markdown template after ${anchor}`).toBeGreaterThan(-1);
+  expect(close, `${path} must close the template after ${anchor}`).toBeGreaterThan(open);
+  return [...body.slice(open, close).matchAll(/^\*\*([^*]+)\*\*:/gm)].map((match) => match[1]);
 }
 
-function ownedRows(name: string): string {
-  const body = agent(name);
-  const start = body.indexOf('## Owned rubric rows');
-  expect(start, `${name} must carry an Owned rubric rows section`).toBeGreaterThan(-1);
-  const end = body.indexOf('\n## ', start + 1);
-  return body.slice(start, end === -1 ? undefined : end);
-}
+describe('Atlas PO risk routing', () => {
+  it('keeps a small, distinct specialist map and a two-reviewer ceiling', () => {
+    expect(Object.keys(PO_RISK_ROUTES)).toEqual(RISK_NAMES);
+    expect(new Set(SPECIALISTS).size).toBe(SPECIALISTS.length);
 
-describe('PO Council wiring', () => {
-  const lenses = documentedLenses();
-
-  it('loads the complete documented lens roster', () => {
-    expect(lenses.length).toBeGreaterThanOrEqual(13);
-    expect(lenses).toContain(HUMAN_LENS);
-  });
-
-  it('gives every non-human lens exactly one owner', () => {
-    for (const lens of lenses.filter((value) => value !== HUMAN_LENS)) {
-      const owners = AGENTS.filter((name) => agent(name).includes(`**${lens}**`));
-      expect(owners, `lens ${lens} must have exactly one owner`).toHaveLength(1);
+    for (const risk of RISK_NAMES) {
+      const result = routePoDecision({
+        door: 'one-way',
+        evidence: 'observed',
+        primaryRisk: risk,
+      });
+      expect(result.reviewers).toEqual(['po-evidence', PO_RISK_ROUTES[risk].reviewer]);
+      expect(result.reviewers).toHaveLength(2);
+      expect(new Set(result.reviewers).size).toBe(2);
+      expect(result.rebuttal).toBe('only-on-material-conflict');
     }
   });
 
-  it('keeps the accountable value owner human', () => {
-    for (const name of AGENTS) expect(agent(name)).not.toContain(`**${HUMAN_LENS}**`);
-    expect(read(SKILL)).toContain(HUMAN_LENS);
-  });
+  it('replays known controls instead of merely checking that a council exists', () => {
+    const cases = [
+      {
+        name: 'unsupported OS URL scheme',
+        input: {
+          door: 'one-way',
+          evidence: 'unknown',
+          primaryRisk: 'meaning',
+          sovereigntyAffected: true,
+        },
+        expected: { route: 'review', reviewers: ['po-evidence', 'po-steward'], nextAction: 'evidence-first-review' },
+      },
+      {
+        name: 'unmeasured ACP transport replacement',
+        input: { door: 'two-way', evidence: 'unknown', primaryRisk: 'none' },
+        expected: { route: 'solo', reviewers: [], nextAction: 'probe-first' },
+      },
+      {
+        name: 'first-contact positioning',
+        input: { door: 'one-way', evidence: 'inferred', primaryRisk: 'positioning' },
+        expected: { route: 'review', reviewers: ['po-evidence', 'po-wedge'], nextAction: 'evidence-first-review' },
+      },
+      {
+        name: 'reversible craft change',
+        input: { door: 'two-way', evidence: 'observed', primaryRisk: 'none' },
+        expected: { route: 'solo', reviewers: [], nextAction: 'build-and-verify' },
+      },
+    ] as const;
 
-  it('gives each scored rubric row exactly one signer', () => {
-    for (const row of ROWS) {
-      const signers = AGENTS.filter((name) => ownedRows(name).includes(row));
-      expect(signers, `rubric row ${row} must have exactly one signer`).toHaveLength(1);
+    expect(cases.length, 'the historical control inventory must not be empty').toBeGreaterThan(0);
+    for (const control of cases) {
+      expect(routePoDecision(control.input), control.name).toMatchObject(control.expected);
     }
   });
 
-  it('lets every seat research and requires an alternative when blocking', () => {
-    for (const name of AGENTS) {
-      const body = agent(name);
-      const frontmatter = body.split('---')[1] ?? '';
-      expect(frontmatter).toContain(`name: ${name}`);
-      expect(frontmatter, `${name} needs primary-source web research`).toContain('WebSearch');
-      expect(body, `${name} must prescribe an alternative`).toMatch(
-        /Alternative next action|How to create value|Deeper slice|Prescription/i,
-      );
-    }
+  it('keeps maintenance cheap but makes the sovereignty brake fail closed', () => {
+    expect(routePoDecision({ mechanical: true })).toMatchObject({
+      route: 'skip',
+      record: false,
+      reviewers: [],
+    });
+    expect(() => routePoDecision({ mechanical: true, sovereigntyAffected: true })).toThrow(
+      'mechanical work cannot change local-first or human-sovereignty boundaries',
+    );
+    expect(() =>
+      routePoDecision({ door: 'one-way', evidence: 'observed', primaryRisk: 'none' }),
+    ).toThrow('one-way decisions require one primary Atlas risk');
+
+    expect(
+      routePoDecision({
+        door: 'one-way',
+        evidence: 'observed',
+        primaryRisk: 'scope',
+        sovereigntyAffected: true,
+      }),
+    ).toMatchObject({
+      primaryRisk: 'meaning',
+      reviewers: ['po-evidence', 'po-steward'],
+    });
   });
 
-  it('keeps deliberate model diversity and fatal rows on opus', () => {
-    expect(new Set(Object.values(TIERS)).size).toBeGreaterThanOrEqual(2);
-    for (const name of AGENTS) {
-      const frontmatter = agent(name).split('---')[1] ?? '';
-      expect(frontmatter).toContain(`model: ${TIERS[name]}`);
-      expect(frontmatter).not.toContain('model: haiku');
-    }
-    for (const row of FATAL_ROWS) {
-      const signer = AGENTS.find((name) => ownedRows(name).includes(row));
-      expect(signer, `fatal row ${row} needs a signer`).toBeDefined();
-      expect(TIERS[signer!]).toBe('opus');
-    }
-  });
-
-  it('does not prescribe the retired npm entrypoint', () => {
-    for (const name of AGENTS) {
-      const folded = agent(name).replace(/\s+/g, ' ');
-      const cited = folded.match(/npx ontology-atlas/g) ?? [];
-      const taughtDead = folded.match(/npx ontology-atlas[^.]{0,80}(404|does not exist|not available|retired)/gi) ?? [];
-      expect(cited.length, `${name} must teach any npx mention as dead`).toBe(taughtDead.length);
-    }
-  });
-
-  it('keeps seat briefs within the recurring-context budget', () => {
-    for (const name of AGENTS) {
-      expect(Buffer.byteLength(agent(name), 'utf8'), `${name} exceeds ${MAX_AGENT_BYTES} bytes`).toBeLessThanOrEqual(MAX_AGENT_BYTES);
-    }
-  });
-
-  it('keeps bounded query, mirrored seat discovery, and capability branching', () => {
-    for (const path of [SKILL, MIRROR]) {
-      const body = read(path);
-      const folded = body.replace(/\s+/g, ' ');
-      expect(folded).toContain('Bounded cross-council query');
-      expect(folded).toContain('Assumption if unanswered');
-      expect(folded).toContain('../../agents/po-*.md');
-      expect(folded).toContain('Never create a third copy');
-      expect(folded).toContain('Round 1 independence was lost');
-      expect(folded).toContain('parallel subagents');
-      for (const brand of ['Claude Code', 'Codex', 'Cursor', 'Gemini']) {
-        expect(body, `${path} must branch on capability, not ${brand}`).not.toContain(brand);
-      }
-    }
-  });
-
-  it('reads prior decisions, mirrors exactly, and names every seat', () => {
-    const skill = read(SKILL);
-    expect(skill).toMatch(/Round 0 .*prior decisions/i);
-    expect(skill).toContain(LEDGER);
-    expect(read(MIRROR)).toBe(skill);
-    for (const name of AGENTS) expect(skill).toContain(name);
-    expect(skill.replace(/\s+/g, ' ')).toMatch(/never (a|the|their) union/i);
-    expect(skill).toMatch(/falsifier/i);
-  });
-
-  it('keeps the ledger append-only and falsifiable', () => {
-    const ledger = read(LEDGER);
-    expect(ledger).toMatch(/falsifier|반증 조건/i);
-    expect(ledger).toMatch(/revisit|재검토/i);
-    expect(ledger).toMatch(/append|덧붙/i);
+  it('routes the command-line entrypoint through the same policy', () => {
+    const output = execFileSync(
+      process.execPath,
+      [CLI, '--door=one-way', '--evidence=inferred', '--risk=positioning', '--json'],
+      { cwd: ROOT, encoding: 'utf8' },
+    );
+    expect(JSON.parse(output)).toMatchObject({
+      route: 'review',
+      record: true,
+      reviewers: ['po-evidence', 'po-wedge'],
+      rebuttal: 'only-on-material-conflict',
+    });
   });
 });
 
-const PLAIN_FILES = [SKILL, MIRROR, '.claude/agents/chief.md'] as const;
-const REQUIRED = ['What we decided', 'What differs from your request', 'What you need to do'];
-const BANNED = ['rubric', 'falsifier', 'signature', 'appetite'];
+describe('Atlas PO policy stays executable and mirrored', () => {
+  it('has a non-empty guarded inventory and matching agent/skill mirrors', () => {
+    expect(ACTIVE_FILES.length, 'the active PO inventory must not be empty').toBeGreaterThan(0);
+    for (const path of ACTIVE_FILES) expect(existsSync(join(ROOT, path)), `${path} must exist`).toBe(true);
 
-function summaryTemplate(path: string): string {
-  const body = read(path);
-  const anchor = body.indexOf('First — three lines');
-  expect(anchor, `${path} must contain the three-line template`).toBeGreaterThan(-1);
-  const open = body.lastIndexOf('```', anchor);
-  const close = body.indexOf('```', anchor);
-  expect(open).toBeGreaterThan(-1);
-  expect(close).toBeGreaterThan(anchor);
-  return body.slice(open, close);
-}
-
-describe('owner-facing council output stays plain', () => {
-  it.each(PLAIN_FILES)('%s requires all three lines and no internal vocabulary', (path) => {
-    const template = summaryTemplate(path);
-    for (const line of REQUIRED) expect(template).toContain(line);
-    for (const word of BANNED) expect(template.toLowerCase()).not.toContain(word);
+    expect(read(PASS_MIRROR)).toBe(read(PASS_SKILL));
+    expect(read(COUNCIL_MIRROR)).toBe(read(COUNCIL_SKILL));
+    for (const name of ACTIVE_AGENTS) {
+      expect(read(`.agents/agents/${name}.md`)).toBe(read(`.claude/agents/${name}.md`));
+    }
   });
 
-  it.each(PLAIN_FILES)('%s prevents the three lines becoming a cover page', (path) => {
-    const body = read(path).replace(/\s+/g, ' ');
-    expect(body).toContain('verdict block does not belong in the conversation');
-    expect(body).toMatch(/applies to the entire answer|language rule applies to the entire answer/i);
-    expect(body).toMatch(/clarification request[^.]{0,80}failure signal/i);
-    expect(body).toContain('cannot be omitted');
+  it('binds both written templates to fields exported by the router policy', () => {
+    expect(fieldsInTemplate(PO_OS, '## Compact solo pass')).toEqual(PO_SOLO_FIELDS);
+    expect(fieldsInTemplate(PASS_SKILL, '## 5. Write one screen')).toEqual(PO_SOLO_FIELDS);
+    expect(fieldsInTemplate(PO_OS, '## Significant decision record')).toEqual(PO_REVIEW_RECORD_FIELDS);
+    expect(fieldsInTemplate(COUNCIL_SKILL, '## Significant record')).toEqual(PO_REVIEW_RECORD_FIELDS);
+  });
+
+  it('prevents the retired score gate from returning to active instructions', () => {
+    const retiredInstructions = /\b\d{1,2}\s*\/\s*24\b|fatal zero|score all six|rubric total/i;
+    for (const path of ACTIVE_FILES) {
+      expect(read(path), `${path} contains a retired score instruction`).not.toMatch(retiredInstructions);
+    }
+  });
+
+  it('keeps owner authority and the before/after decision delta visible', () => {
+    const council = read(COUNCIL_SKILL);
+    for (const line of ['What we decided', 'What differs from your request', 'What you need to do']) {
+      expect(council).toContain(line);
+    }
+    expect(council).toMatch(/human owner\s+decides/i);
+    expect(PO_REVIEW_RECORD_FIELDS).toContain('Pre-review decision');
+    expect(PO_REVIEW_RECORD_FIELDS).toContain('Accountable owner');
+    expect(PO_REVIEW_RECORD_FIELDS).toContain('Decision delta');
+  });
+
+  it('starts the finite pilot with an actual measured row', () => {
+    const pilot = read(PILOT);
+    for (const label of ['Window:', 'Cost:', 'Delta:']) expect(pilot).toContain(label);
+    expect([...pilot.matchAll(/^\|\s*\d+\s*\|/gm)].length).toBeGreaterThan(0);
+    expect(pilot).toMatch(/20 eligible decisions or 14 days/i);
   });
 });
