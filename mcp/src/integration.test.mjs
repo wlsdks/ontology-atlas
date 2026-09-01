@@ -5155,6 +5155,70 @@ await test("add_relation — 그래프 밖 문서는 관계 끝이 될 수 없�
   }
 });
 
+await test("relation tools — depends_on 별칭 키로 쓴 엣지도 같은 엣지다 (중복 추가 없음, 제거 가능)", async () => {
+  /*
+   * Caught in the 2026-09-01 review. The read layer canonicalizes the
+   * `depends_on:` authoring alias, but the write layer read only the literal
+   * `dependencies` key: add_relation appended a duplicate under a second key,
+   * remove_relation answered "does not exist" for an edge get_concept rendered,
+   * and neighbors.dependencies contradicted outgoingEdges from the same doc.
+   */
+  const root = makeVault([
+    {
+      slug: "capabilities/payment",
+      content:
+        "---\nkind: capability\ntitle: 결제\ndomain: domains/orders\ndepends_on:\n  - capabilities/session\n---\n\n# 결제\n\n본문.\n",
+    },
+    {
+      slug: "capabilities/session",
+      content:
+        "---\nkind: capability\ntitle: 세션\ndomain: domains/orders\n---\n\n# 세션\n\n본문.\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "capabilities/payment" }),
+      callTool(3, "add_relation", {
+        from: "capabilities/payment",
+        to: "capabilities/session",
+        type: "depends_on",
+        why: "결제 쓰기 경로가 세션 검증을 지난다",
+      }),
+      callTool(4, "remove_relation", {
+        from: "capabilities/payment",
+        to: "capabilities/session",
+        type: "depends_on",
+        confirm: true,
+      }),
+      callTool(5, "get_concept", { slug: "capabilities/payment" }),
+    ]);
+
+    // The read side sees the aliased edge in BOTH shapes it serves.
+    const before = getCallParsed(responses, 2);
+    assert.deepEqual(before.neighbors.dependencies, ["capabilities/session"],
+      `neighbors 가 별칭 엣지를 못 본다: ${JSON.stringify(before.neighbors)}`);
+    assert.ok(
+      before.outgoingEdges.some((e) => e.to === "capabilities/session" && e.via === "dependencies"),
+      `outgoingEdges 에 별칭 엣지가 없다: ${JSON.stringify(before.outgoingEdges)}`,
+    );
+
+    // The same edge, so adding it again is a no-op — not a duplicate under a second key.
+    const added = getCallParsed(responses, 3);
+    assert.equal(added.alreadyExists, true, `별칭 엣지를 새 엣지로 잘못 세었다: ${JSON.stringify(added)}`);
+
+    // And it can be removed through the tool.
+    const removed = getCallParsed(responses, 4);
+    assert.equal(removed.changed, true, `별칭 엣지를 제거하지 못했다: ${JSON.stringify(removed)}`);
+
+    const after = getCallParsed(responses, 5);
+    assert.deepEqual(after.neighbors.dependencies, [], "제거 후에도 엣지가 남아 있다");
+    assert.equal(after.frontmatter.depends_on, undefined, "별칭 키가 캐노니컬 키로 접히지 않았다");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("get_concept — 그래프 밖 문서는 그렇다고 말한다", async () => {
   const root = makeVault([
     { slug: "notes/coffee-chat", content: "민수랑 결제 얘기함. 근거는 없었음.\n" },

@@ -183,7 +183,7 @@ const NEIGHBOR_KEYS = Object.freeze([
 ]);
 
 const INLINE_NEIGHBOR_KEYS = Object.freeze(['domain']);
-const NEIGHBOR_KEY_ALIASES = Object.freeze({
+export const NEIGHBOR_KEY_ALIASES = Object.freeze({
   depends_on: 'dependencies',
 });
 export const GRAPH_ARRAY_KEYS = Object.freeze([
