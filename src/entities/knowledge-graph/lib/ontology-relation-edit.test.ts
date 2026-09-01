@@ -80,6 +80,23 @@ describe('contextual relation edit plan', () => {
     });
   });
 
+  it('같은 tail 의 다른 폴더 참조는 제거에 휩쓸리지 않는다', () => {
+    // Bug sweep 2026-09-01: the slugified-tail fallback matched
+    // capabilities/search against elements/search, so removing one relation
+    // silently lost a second, different one.
+    const plan = buildOntologyRelationRemovalPlan({
+      sourceSlug: 'capabilities/contextual-editing',
+      targetSlug: 'elements/search',
+      relation: 'dependsOn',
+      frontmatter: {
+        dependencies: ['elements/search', 'capabilities/search'],
+      },
+    });
+    expect(plan.updates).toEqual({
+      dependencies: ['capabilities/search'],
+    });
+  });
+
   it('관계를 끊으면 마지막 연결의 이유도 같은 쓰기에서 걷는다', () => {
     const plan = buildOntologyRelationRemovalPlan({
       sourceSlug: 'capabilities/contextual-editing',

@@ -44,6 +44,11 @@ function matchesRef(value: string, targetSlug: string): boolean {
   const normalized = value.trim().replace(/^ontology\//, '');
   const target = targetSlug.trim().replace(/^ontology\//, '');
   if (normalized === target) return true;
+  // The tail fallback exists for bare authored refs ("search" meaning the
+  // target). Two FULL paths that differ can never alias each other — comparing
+  // tails there made removing a relation to elements/search silently strip a
+  // ref to capabilities/search from the same array (bug sweep 2026-09-01).
+  if (normalized.includes('/') && target.includes('/')) return false;
   return slugify(tail(normalized)) === slugify(tail(target));
 }
 
