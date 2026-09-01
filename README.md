@@ -820,6 +820,13 @@ Changes under the Insights surface also select `pnpm design:ontology`; that gate
 protects the exact five measured maintenance tabs plus the Flow handoff tab,
 one active panel, and the matching agent handoff.
 
+`pnpm harness:report` answers what the agent hooks actually did: how many
+sessions edited source, how many ended before verifying, and what the
+edit-time sensor caught, over a `--days=` window (14 by default, `--json` for
+a machine). It reads only local gitignored session state under `.tmp/harness/`
+and reports a `sensor-caught-nothing` verdict when the lane stopped earning its
+place, which is the falsifier those hooks were added under.
+
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before
 semantic reads and that qualification keeps explicit unknown/refusal behavior.

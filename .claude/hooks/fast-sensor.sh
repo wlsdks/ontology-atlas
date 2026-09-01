@@ -157,6 +157,41 @@ for (const p of paths) {
 }
 
 if (findings.length === 0) process.exit(0);
+
+/*
+ * Record what was caught, so the lane can be judged instead of trusted.
+ * The falsifier in the header above (remove this sensor if two weeks of use
+ * catch nothing) needs a count that exists; without this line the hook reports
+ * to the agent and forgets, and `pnpm harness:report` reads nothing.
+ * Local and gitignored: measurement of our own tooling, never vault data.
+ *
+ * NOTE: this whole block runs inside a single-quoted bash argument, so an
+ * apostrophe here terminates the script. Keep the prose apostrophe-free.
+ */
+try {
+  const dir = join(root, ".tmp", "harness");
+  mkdirSync(dir, { recursive: true });
+  appendFileSync(
+    join(dir, "findings.jsonl"),
+    findings
+      .map((finding) =>
+        JSON.stringify({
+          at: new Date().toISOString(),
+          session: sessionId || null,
+          // The first token names the check that spoke; the body can be long.
+          kind: /^eslint/.test(finding)
+            ? "eslint"
+            : /^markdown-language/.test(finding)
+              ? "markdown-language"
+              : /^em-dash/.test(finding)
+                ? "em-dash"
+                : "messages-em-dash",
+        }),
+      )
+      .join("\n") + "\n",
+  );
+} catch { /* a missed record costs a count, never the report to the agent */ }
+
 process.stdout.write(
   [
     "Fast sensor findings on the file(s) you just edited:",

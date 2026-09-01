@@ -22,6 +22,45 @@
 
 ---
 
+## 2026-09-01 · v1.0.3: the CI planner stops missing PRs, and the harness can be judged
+
+A review of main after v1.0.2 confirmed ten defects, mostly inside the
+impact-aware CI rework that shipped with it; nine are fixed here, alongside the
+first agent-hook lane that measures itself.
+
+- **Required checks stop depending on the calendar.** The PO pilot register is
+  read on every pull request, and its decision deadline (2026-09-22) would have
+  turned every required gate red from that date regardless of what the change
+  contained. CI mode now judges the register: validity, an unsupported keep, and
+  a live safety stop. A decision that has come due prints as DUE and stays the
+  owner's reminder. The register also parses through the shared frontmatter
+  reader, so an ordinary comment or block scalar in it cannot brick the lane.
+- **Four gates reach pull requests again.** The raw-color and design-toc gates,
+  the CLI command suites, and the lint warning ratchet had moved to a
+  push-to-main-only lane during the rework, so their breaches merged green and
+  reddened main afterwards. Each has a path rule again, and per-file lint runs
+  at the same zero-warning setting as the full lane.
+- **Rendering code that is not a component is no longer invisible to browser
+  evidence.** Plain TypeScript inside a `ui/` folder (pointer handlers, canvas
+  math) now plans the smoke sweep instead of relying on unit coverage that layer
+  does not have.
+- **Project pages get their own social card back.** Every project share was
+  carrying the generic site image because the shared metadata builder always
+  emitted one, which overrides the per-project generated card.
+- **Renaming a node in the browser keeps every edge.** The rewriter now covers
+  `broader` and `depends_on` refs, and resolves wikilinks the way the reader
+  resolves them, so a rename inside a nested vault no longer leaves stale links
+  or redirects a link that pointed somewhere else.
+- **A concept titled `2026` stays text.** The fourth frontmatter writer joins the
+  other three in quoting values that would otherwise read back as a number or a
+  boolean.
+- **The agent hooks report on themselves.** The edit-time sensor records what it
+  catches, and `pnpm harness:report` turns that log plus the session ledgers into
+  the numbers the hooks were added under: how much was caught, how many sessions
+  ended before verifying, and an explicit verdict when the lane has stopped
+  earning its place. The vault census now also runs before context compaction,
+  where it used to be dropped from long sessions.
+
 ## 2026-09-01 · v1.0.2: the full-codebase sweep hardens every write path
 
 A second patch release the same day: a full review of every surface (MCP, CLI,

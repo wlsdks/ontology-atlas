@@ -28,6 +28,10 @@ const HOOK_CONFIGS = [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/fast-sensor.sh"',
+      // Twice on purpose: the same census script runs at SessionStart and again
+      // at PreCompact, which is where an injected census would otherwise be
+      // dropped from a long session.
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/remind-verify-on-stop.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
@@ -617,9 +621,11 @@ describe('fast-sensor lane and stop-time verification reminder', () => {
   });
 
   it('stays silent for a clean real source file, and never blocks', () => {
+    // No session id: this case runs against the real repository, and a ledger
+    // write here would leave test state in the working tree it is measuring.
     const result = fireHook(
       SENSOR,
-      editPayload(join(process.cwd(), 'src/shared/lib/cn.ts'), 'sess-clean'),
+      editPayload(join(process.cwd(), 'src/shared/lib/cn.ts'), ''),
       process.cwd(),
     );
     assert.equal(result.status, 0, result.stderr);
@@ -676,6 +682,40 @@ describe('fast-sensor lane and stop-time verification reminder', () => {
       assert.equal(stamped.stdout, '');
       const stop = fireHook(STOP, { session_id: 'sess-free' }, dir);
       assert.equal(stop.stdout, '', 'a session with no source edits must stop unremarked');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// The findings log is what `pnpm harness:report` reads, and the hook falsifiers
+// are written against that report. A sensor that reports to the agent but keeps
+// no count cannot be retired on evidence, only on opinion.
+describe('fast sensor findings log', () => {
+  it('records one row per finding and stays silent when the file is clean', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'sensor-log-'));
+    try {
+      const { mkdir } = await import('node:fs/promises');
+      await mkdir(join(dir, 'docs', 'guide'), { recursive: true });
+      const dirty = join(dir, 'docs', 'guide', 'dirty.md');
+      await writeFile(dirty, 'A lead — the dash.\nAnother — one.\n');
+      const run = spawnSync('bash', ['.claude/hooks/fast-sensor.sh'], {
+        input: JSON.stringify({
+          session_id: 'log-test',
+          tool_name: 'Edit',
+          tool_input: { file_path: dirty },
+        }),
+        encoding: 'utf8',
+        env: { ...process.env, CLAUDE_PROJECT_DIR: dir },
+      });
+      assert.equal(run.status, 0, run.stderr);
+
+      const log = await readFile(join(dir, '.tmp', 'harness', 'findings.jsonl'), 'utf8');
+      const rows = log.trim().split('\n').map((line) => JSON.parse(line));
+      assert.equal(rows.length, 1, 'one finding for the one offending file');
+      assert.equal(rows[0].kind, 'em-dash');
+      assert.equal(rows[0].session, 'log-test');
+      assert.ok(Date.parse(rows[0].at) > 0, 'the row must carry a parseable timestamp');
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
