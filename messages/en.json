@@ -1266,7 +1266,14 @@
         "recentlyChangedHeader": "Recently changed · {count}",
         "recentlyChangedMore": "+{count} more in the list below",
         "newDocButtonLabel": "New document",
-        "newDocDisabledHint": "Open your folder to create documents: click to pick one"
+        "newDocDisabledHint": "Open your folder to create documents: click to pick one",
+        "review": {
+          "raisedHeader": "An agent could not decide · {count}",
+          "changedHeader": "Changed after you confirmed it · {count}",
+          "changedBy": "{name} confirmed it, and it changed afterwards",
+          "changedPlain": "Confirmed once, and it changed afterwards",
+          "docChipRaised": "A person has to decide this"
+        }
       },
       "empty": {
         "eyebrow": "{count} documents",

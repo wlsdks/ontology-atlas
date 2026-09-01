@@ -15,14 +15,14 @@
 
 import type { VaultDoc } from '../model/types';
 
-export const REVIEW_STATE_KEY = 'review_state';
-export const REVIEW_NOTE_KEY = 'review_note';
-export const REVIEWED_BY_KEY = 'reviewed_by';
-export const REVIEWED_AT_KEY = 'reviewed_at';
-export const REVIEWED_DIGEST_KEY = 'reviewed_digest';
+const REVIEW_STATE_KEY = 'review_state';
+const REVIEW_NOTE_KEY = 'review_note';
+const REVIEWED_BY_KEY = 'reviewed_by';
+const REVIEWED_AT_KEY = 'reviewed_at';
+const REVIEWED_DIGEST_KEY = 'reviewed_digest';
 
-export const REVIEW_STATE_HUMAN_DECIDES = 'human_decides';
-export const REVIEW_STATE_CONFIRMED = 'confirmed';
+const REVIEW_STATE_HUMAN_DECIDES = 'human_decides';
+const REVIEW_STATE_CONFIRMED = 'confirmed';
 
 const REVIEW_KEYS = [
   REVIEW_STATE_KEY,

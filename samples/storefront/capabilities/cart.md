@@ -9,6 +9,10 @@ description: "Holds what a shopper intends to buy without committing them or the
 domain: domains/order
 dependencies: [capabilities/product-detail]
 elements: [elements/cart-session]
+review_state: confirmed
+reviewed_by: dana
+reviewed_at: 2026-08-20
+reviewed_digest: 35a595417e7295a4803263108087de2f
 ---
 
 # Shopping Cart

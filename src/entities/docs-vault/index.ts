@@ -71,3 +71,5 @@ export {
   rewriteRenamedDocRefs,
 } from './lib/rename-ref-rewrites';
 export { fetchServerDocContent, buildDocsVaultAssetCandidates } from './lib/server-doc-content';
+export { buildReviewQueue } from './lib/review';
+export type { ReviewQueueRow } from './lib/review';

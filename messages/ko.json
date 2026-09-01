@@ -1266,7 +1266,14 @@
         "recentlyChangedHeader": "최근 바뀐 문서 · {count}",
         "recentlyChangedMore": "외 {count}개는 아래 목록에 있어요",
         "newDocButtonLabel": "새 문서",
-        "newDocDisabledHint": "새 문서를 만들려면 내 폴더를 여세요. 눌러서 폴더 고르기"
+        "newDocDisabledHint": "새 문서를 만들려면 내 폴더를 여세요. 눌러서 폴더 고르기",
+        "review": {
+          "raisedHeader": "에이전트가 못 정한 것 · {count}",
+          "changedHeader": "확인한 뒤 바뀐 것 · {count}",
+          "changedBy": "{name} 님이 확인했고, 그 뒤에 바뀌었어요",
+          "changedPlain": "확인했었고, 그 뒤에 바뀌었어요",
+          "docChipRaised": "사람이 정해야 하는 문서"
+        }
       },
       "empty": {
         "eyebrow": "문서 {count}개",

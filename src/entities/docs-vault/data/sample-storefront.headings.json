@@ -270,6 +270,11 @@
       "depth": 1,
       "text": "Refund Processing",
       "slug": "refund-processing"
+    },
+    {
+      "depth": 2,
+      "text": "Partial refunds",
+      "slug": "partial-refunds"
     }
   ],
   "capabilities/refund-review": [

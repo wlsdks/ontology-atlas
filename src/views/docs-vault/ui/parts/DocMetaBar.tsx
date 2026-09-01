@@ -1,12 +1,14 @@
 import { useLocale, useTranslations } from "next-intl";
-import { FileText, Network } from "lucide-react";
+import { CircleDashed, FileText, Network, UserRoundPen } from "lucide-react";
 import {
   buildTopologyDeeplinkForDoc,
+  type ReviewQueueRow,
   type VaultDoc,
 } from "@/entities/docs-vault";
 import { Link } from "@/i18n/navigation";
 import { estimateReadingMinutes } from "./reading-minutes";
 import { controlClass } from '@/shared/ui/control-class';
+import { badgeClass } from '@/shared/ui/badge-class';
 
 const actionLinkClass = controlClass({
   shape: "chip",
@@ -19,8 +21,22 @@ const actionLinkClass = controlClass({
 /**
  * The meta bar above a document body — word count, reading time, kind jump, tags, updated date.
  */
-export function DocMetaBar({ doc }: { doc: VaultDoc }) {
+export function DocMetaBar({
+  doc,
+  reviewRow,
+}: {
+  doc: VaultDoc;
+  /**
+   * This document's row in the review queue, when it has one.
+   *
+   * Passed in rather than recomputed, so the sidebar and the document cannot
+   * disagree about the same fact — the drift verdict is a hash comparison, and
+   * two call sites hashing separately is two chances to answer differently.
+   */
+  reviewRow?: ReviewQueueRow;
+}) {
   const t = useTranslations("vaultWidgets.parts.meta");
+  const tReview = useTranslations("vaultWidgets.parts.sidebar.review");
   const locale = useLocale();
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
   const readingMinutes = estimateReadingMinutes(doc.wordCount);
@@ -103,6 +119,35 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
             {inGraph ? t("recordProofLabel") : t("notOnMapLabel")}
           </span>
         )}
+        {/* The sidebar row carries this fact, and a person who arrives any other
+            way — a link, a tab left open, coming back tomorrow — would not have
+            seen it. It belongs to the document, so it is stated on the document.
+            Neutral, like the not-on-the-map chip beside it: this is a fact to act
+            on, not an alarm. */}
+        {reviewRow ? (
+          <span
+            data-testid="doc-review-chip"
+            // Geometry comes from the shared badge, not from this file. Its two
+            // older siblings above predate that primitive and are the whole of
+            // the hand-written ledger; a third would have grown it.
+            className={badgeClass({
+              shape: "tag",
+              className:
+                "min-h-7 gap-1.5 border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[color:var(--color-text-secondary)]",
+            })}
+          >
+            {reviewRow.reason === "raised" ? (
+              <UserRoundPen className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <CircleDashed className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            {reviewRow.reason === "raised"
+              ? tReview("docChipRaised")
+              : reviewRow.reviewedBy
+                ? tReview("changedBy", { name: reviewRow.reviewedBy })
+                : tReview("changedPlain")}
+          </span>
+        ) : null}
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className="font-mono tabular-nums">
             {t("wordsUnit", { count: doc.wordCount.toLocaleString(numberLocale) })}

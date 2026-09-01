@@ -21,6 +21,8 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useLocale, useTranslations } from "next-intl";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/entities/knowledge-graph";
+import type { ReviewQueueRow } from "@/entities/docs-vault";
+import { ReviewQueueSection } from "./ReviewQueueSection";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { useAdvancedMenu } from "../../lib/use-advanced-menu";
@@ -53,6 +55,7 @@ import { useRovingRadioGroup } from "@/shared/lib/use-roving-radio-group";
  * mobile visibility state of its own.
  */
 export interface DocsSidebarBodyProps {
+  reviewQueue: ReviewQueueRow[];
   pinnedSlugs: string[];
   recentSlugs: string[];
   selectedSlug: string | null;
@@ -225,6 +228,7 @@ function OrderOption({
 }
 
 export function DocsSidebarBody({
+  reviewQueue,
   pinnedSlugs,
   recentSlugs,
   selectedSlug,
@@ -571,6 +575,14 @@ export function DocsSidebarBody({
           Pinned, the Vault tree, Recent. Only the tree fills the remaining space and scrolls
           (flex-1 min-h-0). */}
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* What is waiting on a person comes before anything the map can already
+            answer. It draws nothing when both lists are empty. */}
+        <ReviewQueueSection
+          rows={reviewQueue}
+          selectedSlug={selectedSlug}
+          onSelect={onSelect}
+          t={t}
+        />
         {/* Recently changed is a quiet section inside the list, collapsed by default, rather
             than its own stack taking the top. Unlike `recentSlugs` (visited this session),
             these are documents inside a real 7-day mtime window. */}

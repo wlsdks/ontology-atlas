@@ -70,6 +70,7 @@ import {
   type SimilarNodeMatch,
 } from '@/shared/lib/similar-node-title';
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
+import { useReviewQueue } from '../lib/use-review-queue';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
@@ -1452,6 +1453,18 @@ function DocsVaultContent() {
   // The cache is keyed by mtime, so after a polling diff rebuild only changed documents are re-read.
   const { bodyIndex: docsBodyIndex, indexing: docsBodyIndexing } =
     useDocsBodyIndex({ docs: collectionDocs, getDocContent });
+  // What a person still has to look at. Built from the whole folder rather than
+  // the active collection filter: a node reserved for a person does not stop
+  // waiting because the list is currently showing something else.
+  const reviewQueue = useReviewQueue({
+    docs: manifest.docs,
+    getDocContent,
+    bundledContent: source === 'local' ? undefined : staticVault.content,
+  });
+  const selectedReviewRow = useMemo(
+    () => reviewQueue.find((row) => row.slug === selectedSlug),
+    [reviewQueue, selectedSlug],
+  );
   const collectionCounts = useMemo<Record<DocsVaultCollection, number>>(
     () => ({
       all: manifest.docs.length,
@@ -1934,6 +1947,7 @@ function DocsVaultContent() {
 
   const sidebarBody = (
     <DocsSidebarBody
+      reviewQueue={reviewQueue}
       pinnedSlugs={collectionPinnedSlugs}
       recentSlugs={collectionRecentSlugs}
       selectedSlug={selectedSlug}
@@ -2566,7 +2580,10 @@ function DocsVaultContent() {
                             agentActivityStatus={localVault.agentActivityStatus}
                             selfEditTimestamps={localVault.selfEditTimestamps}
                           />
-                        <DocMetaBar doc={selectedDoc} />
+                        <DocMetaBar
+                          doc={selectedDoc}
+                          {...(selectedReviewRow ? { reviewRow: selectedReviewRow } : {})}
+                        />
                         <DocsVaultViewer
                           key={`${source}:${selectedDoc.slug}`}
                           doc={selectedDoc}
