@@ -127,6 +127,60 @@ test("body link [[slug]] 와 (slug.md) 도 치환", () => {
   rmSync(root, { recursive: true, force: true });
 });
 
+test("body link — alias([[x|라벨]])·heading([[x#절]])·tail(md)·경로 접두 형태도 치환", () => {
+  // Caught in the 2026-09-01 review: only the bare [[slug]]/[[tail]]/(slug.md)
+  // forms were rewritten, so an alias or anchor link dangled after a confirmed
+  // rename — and pointed at a deleted file after a merge.
+  const root = makeVault();
+  writeMd(root, "capabilities/auth", "---\nkind: capability\ntitle: Auth\n---\n");
+  writeMd(
+    root,
+    "ref",
+    [
+      "---",
+      "kind: project",
+      "---",
+      "# Ref",
+      "",
+      "the [[capabilities/auth|auth capability]] and [[capabilities/auth#scope]]",
+      "tail alias [[auth|the same]] plus (auth.md) and (../capabilities/auth.md)",
+      "anchor link (capabilities/auth.md#scope) too.",
+      "",
+    ].join("\n"),
+  );
+  redirectBacklinks(root, "capabilities/auth", "capabilities/identity");
+  const after = readMd(root, "ref");
+  assert.match(after, /\[\[capabilities\/identity\|auth capability\]\]/);
+  assert.match(after, /\[\[capabilities\/identity#scope\]\]/);
+  assert.match(after, /\[\[identity\|the same\]\]/);
+  assert.match(after, /\(identity\.md\)/);
+  assert.match(after, /\(\.\.\/capabilities\/identity\.md\)/);
+  assert.match(after, /\(capabilities\/identity\.md#scope\)/);
+  assert.doesNotMatch(after, /capabilities\/auth/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("findBacklinks — alias·heading 형태의 wikilink 도 backlink 로 센다", () => {
+  const root = makeVault();
+  writeMd(root, "capabilities/auth", "---\nkind: capability\n---\n");
+  writeMd(
+    root,
+    "alias-ref",
+    "---\nkind: project\n---\nsee [[capabilities/auth|the auth capability]].\n",
+  );
+  writeMd(
+    root,
+    "heading-ref",
+    "---\nkind: project\n---\nsee [[capabilities/auth#scope]].\n",
+  );
+  const backlinks = findBacklinks(root, "capabilities/auth");
+  assert.deepEqual(
+    backlinks.map((row) => row.slug).sort(),
+    ["alias-ref", "heading-ref"],
+  );
+  rmSync(root, { recursive: true, force: true });
+});
+
 test("dryRun:true 면 디스크 변경 없음", () => {
   const root = makeVault();
   writeMd(root, "target", "---\nkind: capability\n---\n");
