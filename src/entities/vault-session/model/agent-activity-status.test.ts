@@ -195,5 +195,11 @@ describe("agent activity status", () => {
     expect(status.refreshRequest.message).toContain(
       "Do not treat the stale focus as current work until the refreshed heartbeat appears",
     );
+    // Bug sweep 2026-09-01: the message was a plain string, so the reader saw
+    // the literal text "${ATLAS_CLI} agent-activity …" instead of a runnable
+    // command. The guidance must embed the same real invocation the command does.
+    expect(status.refreshRequest.message).not.toContain("${ATLAS_CLI}");
+    expect(status.refreshRequest.message).toContain("agent-activity <vault> --show --json");
+    expect(status.refreshRequest.message).toContain("node ");
   });
 });

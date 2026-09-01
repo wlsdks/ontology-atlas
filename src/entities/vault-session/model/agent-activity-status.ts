@@ -304,7 +304,7 @@ function deriveRefreshRequest({
     previousAgeMs: ageMs,
     command: formatRefreshCommand(heartbeat),
     message:
-      "Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then `${ATLAS_CLI} agent-activity <vault> --show --json` and confirm stale: false.",
+      `Do not treat the stale focus as current work until the refreshed heartbeat appears. Run the command, then \`${ATLAS_CLI} agent-activity <vault> --show --json\` and confirm stale: false.`,
   };
 }
 
