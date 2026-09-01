@@ -39,7 +39,12 @@ function detect(): Supported {
  */
 export function LocaleRedirect() {
   useEffect(() => {
-    window.location.replace(withBasePath(`/${detect()}/`));
+    // Deciding the language changes the PATH only. Dropping the query and hash
+    // here (bug sweep 2026-09-01) made every deep link addressed to `/` —
+    // shared `/?p=…` links included — open an unselected map: the locale hop
+    // was the root cause that turned those links into silent data loss.
+    const { search, hash } = window.location;
+    window.location.replace(withBasePath(`/${detect()}/${search}${hash}`));
   }, []);
 
   return (

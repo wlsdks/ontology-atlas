@@ -7,7 +7,7 @@ import {
   type MeaningGapKind,
 } from "@/entities/knowledge-graph";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
-import { withDoNextVerification } from "./do-next-queue";
+import { fillHandoffTemplate, withDoNextVerification } from "./do-next-queue";
 
 /**
  * **Work that ends in one sentence** — it selects only the two gaps someone who does not read code
@@ -75,7 +75,17 @@ export interface DomainChoice {
   label: string;
 }
 
+/** The meaning-gap templates (`%ref%` token) plus the shared verification gate. */
+export interface MeaningGapProse {
+  verificationGate: string;
+  missingDefinition: string;
+  missingDefinitionProof: string;
+  missingDomain: string;
+  missingDomainProof: string;
+}
+
 export interface BuildMeaningGapOptions {
+  prose: MeaningGapProse;
   /** The display limit per kind. Defaults to 3 (the same rhythm as the queue card's other sections). */
   perKindLimit?: number;
 }
@@ -83,8 +93,9 @@ export interface BuildMeaningGapOptions {
 export function buildMeaningGapRows(
   nodes: readonly KnowledgeGraphNode[],
   facts: ReadonlyMap<string, ConceptDocFacts>,
-  options: BuildMeaningGapOptions = {},
+  options: BuildMeaningGapOptions,
 ): MeaningGapResult {
+  const prose = options.prose;
   const perKindLimit = options.perKindLimit ?? 3;
   const definitionRows: MeaningGapRow[] = [];
   const domainRows: MeaningGapRow[] = [];
@@ -110,8 +121,9 @@ export function buildMeaningGapRows(
         id: `missing-definition:${ownSlug}`,
         gap: "missing-definition",
         handoffPayload: withDoNextVerification(
-          `patch_concept({slug:"${agentRef}", frontmatter:{description:"<이 개념을 한 문장으로>"}}) 로 뜻을 적기`,
-          `get_concept({slug:"${agentRef}"}) 로 적힌 문장 확인`,
+          fillHandoffTemplate(prose.missingDefinition, { ref: agentRef }),
+          fillHandoffTemplate(prose.missingDefinitionProof, { ref: agentRef }),
+          prose.verificationGate,
         ),
       });
     }
@@ -121,8 +133,9 @@ export function buildMeaningGapRows(
         id: `missing-domain:${ownSlug}`,
         gap: "missing-domain",
         handoffPayload: withDoNextVerification(
-          `patch_concept({slug:"${agentRef}", frontmatter:{domain:"<영역 이름>"}}) 로 소속을 적기`,
-          `get_concept({slug:"${agentRef}"}) 로 소속 확인`,
+          fillHandoffTemplate(prose.missingDomain, { ref: agentRef }),
+          fillHandoffTemplate(prose.missingDomainProof, { ref: agentRef }),
+          prose.verificationGate,
         ),
       });
     }

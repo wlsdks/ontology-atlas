@@ -161,6 +161,80 @@ describe('proposal-applier', () => {
     expect(port.saveDoc).not.toHaveBeenCalled();
   });
 
+  /*
+   * Bug sweep 2026-09-01 — one file, several changes. The builder computes each
+   * change's `after` on the previous change's `after`, so at apply time:
+   * writing every selected `after` in sequence tripped the second write's own
+   * mtime guard (half-applied), and a deselected change whose later sibling
+   * stayed selected still reached disk inside that sibling's `after` (consent
+   * violated). The applier now writes each file once — the last selected
+   * `after` — and refuses a selection that skips an earlier same-file change.
+   */
+  it('같은 파일을 잇는 두 변경을 모두 선택하면 파일당 한 번, 마지막 after 를 쓴다', async () => {
+    const port = makePort();
+    const target = proposal();
+    target.changes[0].files[0].after = 'A1';
+    target.changes.push({
+      id: 'c2',
+      tool: 'add_relation',
+      summary: 'capabilities/payment.md 에 relates 추가',
+      selected: true,
+      expectedMtime: 100,
+      files: [
+        { path: 'capabilities/payment.md', kind: 'modify', before: 'A1', after: 'A1+A2' },
+      ],
+    });
+    const result = await applyProposal(target, port, { snapshotLabel: 'x' });
+    expect(result.status).toBe('applied');
+    expect(port.saveDoc).toHaveBeenCalledTimes(1);
+    expect(port.saveDoc).toHaveBeenCalledWith('capabilities/payment', 'A1+A2', {
+      expectedMtime: 100,
+    });
+  });
+
+  it('앞선 같은 파일 변경을 해제한 채 뒤 변경만 선택하면 쓰지 않고 실패를 알린다', async () => {
+    const port = makePort();
+    const target = proposal();
+    target.changes[0].selected = false;
+    target.changes[0].files[0].after = 'A1';
+    target.changes.push({
+      id: 'c2',
+      tool: 'add_relation',
+      summary: 'capabilities/payment.md 에 relates 추가',
+      selected: true,
+      expectedMtime: 100,
+      files: [
+        { path: 'capabilities/payment.md', kind: 'modify', before: 'A1', after: 'A1+A2' },
+      ],
+    });
+    const result = await applyProposal(target, port, { snapshotLabel: 'x' });
+    expect(result.status).toBe('failed');
+    expect(port.saveDoc).not.toHaveBeenCalled();
+    expect(port.createDoc).not.toHaveBeenCalled();
+  });
+
+  it('뒤쪽 같은 파일 변경만 해제하면 앞 변경의 after 만 쓴다', async () => {
+    const port = makePort();
+    const target = proposal();
+    target.changes[0].files[0].after = 'A1';
+    target.changes.push({
+      id: 'c2',
+      tool: 'add_relation',
+      summary: 'capabilities/payment.md 에 relates 추가',
+      selected: false,
+      expectedMtime: 100,
+      files: [
+        { path: 'capabilities/payment.md', kind: 'modify', before: 'A1', after: 'A1+A2' },
+      ],
+    });
+    const result = await applyProposal(target, port, { snapshotLabel: 'x' });
+    expect(result.status).toBe('applied');
+    expect(port.saveDoc).toHaveBeenCalledTimes(1);
+    expect(port.saveDoc).toHaveBeenCalledWith('capabilities/payment', 'A1', {
+      expectedMtime: 100,
+    });
+  });
+
   it('vault-only 에이전트는 project competency 자격을 직접 서명해 적용할 수 없다', async () => {
     const port = makePort();
     const target = proposal({

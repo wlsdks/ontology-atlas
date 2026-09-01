@@ -6968,6 +6968,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 — The 2026-09 bug sweep tightens MCP write-tool contracts, changing observable behavior",
+      "slug": "2026-09-01-the-2026-09-bug-sweep-tightens-mcp-write-tool-contracts-changing-observable-behavior"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 — Inside-the-vault auto-allow narrows to read-only tool kinds",
       "slug": "2026-09-01-inside-the-vault-auto-allow-narrows-to-read-only-tool-kinds"
     },

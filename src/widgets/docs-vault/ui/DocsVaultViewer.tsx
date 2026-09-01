@@ -19,6 +19,7 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useDelayedVisible } from '@/shared/lib/use-presence';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 import { resolveDocLink } from '../lib/resolve-doc-link';
+import { getTopologyProjectHref } from '@/entities/project';
 
 interface Props {
   doc: VaultDoc;
@@ -62,7 +63,11 @@ export function DocsVaultViewer({
   onNavigate,
   basePath = '/docs',
   getDocHref = (slug, hash) => buildDocsVaultHref({ slug, hash }),
-  getProjectHref = (slug) => `/?p=${encodeURIComponent(slug)}`,
+  // Every link that promises the map points to /topology (route contract). The
+  // old `/?p=` default hard-navigated to the locale-less root, whose redirect
+  // dropped the query — the clicked project was silently lost (bug sweep
+  // 2026-09-01).
+  getProjectHref = getTopologyProjectHref,
   getDocContent,
   bundledContent: bundledContentOverride,
   highlightQuery,
@@ -241,14 +246,16 @@ export function DocsVaultViewer({
           // A `project:` prefix routes to the public topology route, e.g. [[project:reactor]].
           if (wikiSlug && wikiSlug.startsWith('project:')) {
             const projectSlug = wikiSlug.slice('project:'.length);
+            // A locale-aware Link, not a raw anchor — the raw form triggered a
+            // full locale-less page load whose redirect discarded `?p=`.
             return (
-              <a
+              <Link
                 href={getProjectHref(projectSlug)}
                 className="prose-link text-[color:var(--color-amber-docs-a95)] decoration-[color:var(--color-amber-docs-a35)] hover:decoration-[color:var(--color-amber-docs-a100)]"
                 title={t('projectLinkTitle', { slug: projectSlug })}
               >
                 {children}
-              </a>
+              </Link>
             );
           }
           if (wikiSlug && normalizedVaultSlugs.has(wikiSlug)) {

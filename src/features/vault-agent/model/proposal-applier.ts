@@ -96,21 +96,64 @@ export async function applyProposal(
     }
   }
 
-  // ── 3. Write ────────────────────────────────────────────────────────
+  // ── 3. Write — one write per file ───────────────────────────────────
+  /*
+   * Changes touching one file form a chain: the builder computes each `after`
+   * on top of the previous change's `after`, so each card's diff is exactly
+   * that change's delta. Two consequences at apply time (bug sweep 2026-09-01):
+   *
+   *  - Writing every selected `after` in sequence made the second write fail
+   *    its own mtime guard (the first write changed the file) — a half-applied
+   *    proposal, violating this module's "zero files changed" contract.
+   *  - A deselected change whose later sibling stayed selected still reached
+   *    disk, because the later `after` embeds it — consent violated, and the
+   *    smuggled content never appeared in the selected card's diff.
+   *
+   * So: per file, the selected changes must form an unbroken prefix of that
+   * file's chain, and the last selected `after` — the composition of exactly
+   * the approved changes — is written once.
+   */
+  const chains = new Map<string, { change: ProposalChange; file: ProposalChange['files'][number] }[]>();
+  for (const change of proposal.changes) {
+    for (const file of change.files) {
+      const chain = chains.get(file.path) ?? [];
+      chain.push({ change, file });
+      chains.set(file.path, chain);
+    }
+  }
+  const writes: { path: string; kind: 'create' | 'modify'; content: string; expectedMtime?: number }[] = [];
+  for (const [path, chain] of chains) {
+    let lastSelected = -1;
+    for (let i = 0; i < chain.length; i += 1) {
+      if (chain[i].change.selected) lastSelected = i;
+    }
+    if (lastSelected === -1) continue;
+    const gap = chain.slice(0, lastSelected + 1).find((entry) => !entry.change.selected);
+    if (gap) {
+      return {
+        status: 'failed',
+        message:
+          `"${gap.change.summary}" is unchecked, but a later selected change to ${path} ` +
+          'builds on it. Select it as well, or uncheck the later change.',
+      };
+    }
+    writes.push({
+      path,
+      kind: chain[0].file.kind === 'create' ? 'create' : chain[lastSelected].file.kind,
+      content: chain[lastSelected].file.after,
+      expectedMtime: chain[0].change.expectedMtime,
+    });
+  }
   const written: string[] = [];
   try {
-    for (const change of selected) {
-      for (const file of change.files) {
-        const slug = slugOf(file.path);
-        if (file.kind === 'create') {
-          await port.createDoc(slug, file.after);
-        } else {
-          await port.saveDoc(slug, file.after, {
-            expectedMtime: change.expectedMtime,
-          });
-        }
-        written.push(file.path);
+    for (const write of writes) {
+      const slug = slugOf(write.path);
+      if (write.kind === 'create') {
+        await port.createDoc(slug, write.content);
+      } else {
+        await port.saveDoc(slug, write.content, { expectedMtime: write.expectedMtime });
       }
+      written.push(write.path);
     }
   } catch (error) {
     return { status: 'failed', message: String(error) };

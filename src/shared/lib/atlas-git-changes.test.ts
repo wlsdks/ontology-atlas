@@ -9,7 +9,7 @@ import {
 
 describe("parsePorcelainStatus", () => {
   it("parses status codes and paths", () => {
-    const rows = parsePorcelainStatus("?? docs/new.md\n M docs/edit.md\nD  docs/gone.md\n");
+    const rows = parsePorcelainStatus("?? docs/new.md\0 M docs/edit.md\0D  docs/gone.md\0");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toEqual({ index: "?", worktree: "?", path: "docs/new.md", renamedFrom: null });
     expect(rows[1]).toEqual({ index: " ", worktree: "M", path: "docs/edit.md", renamedFrom: null });
@@ -17,7 +17,7 @@ describe("parsePorcelainStatus", () => {
   });
 
   it("parses rename rows with the previous path", () => {
-    const rows = parsePorcelainStatus("R  docs/old.md -> docs/new.md\n");
+    const rows = parsePorcelainStatus("R  docs/new.md\0docs/old.md\0");
     expect(rows).toHaveLength(1);
     expect(rows[0].index).toBe("R");
     expect(rows[0].renamedFrom).toBe("docs/old.md");

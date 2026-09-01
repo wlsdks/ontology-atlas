@@ -1107,7 +1107,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // 2026-08-19: deleting the install section removed 7 anchors from the gateway
 // (the panel's primary CTA · Intel · GitHub exit · web exit · release notes ·
 // Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 11 };
+// 2026-09-01: the docs viewer's [[project:slug]] anchor became a locale-aware
+// Link (the raw form hard-navigated to the locale-less root, which dropped ?p=).
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 10 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**

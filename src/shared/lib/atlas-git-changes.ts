@@ -58,23 +58,31 @@ export interface AtlasGitKindGroup<T extends AtlasGitChangeLike = AtlasGitChange
   entries: T[];
 }
 
-/** Mirror of the CLI's parsePorcelain — `git status --porcelain` output → rows. */
+/**
+ * Mirror of the CLI's parsePorcelain — `git status --porcelain -z` output → rows.
+ *
+ * `-z` (NUL-separated, no quoting) matches the CLI, which moved off the newline
+ * form because git's default `core.quotePath` C-quotes any non-ASCII path and a
+ * Korean filename broke the whole snapshot (bug sweep 2026-09-01). A rename
+ * record is `XY new\0orig\0` — new path first, no ` -> `.
+ */
 export function parsePorcelainStatus(out: string): AtlasGitPorcelainRow[] {
-  return out
-    .split("\n")
-    .filter((line) => line.length > 0)
-    .map((line) => {
-      const index = line[0] ?? " ";
-      const worktree = line[1] ?? " ";
-      let rest = line.slice(3);
-      let renamedFrom: string | null = null;
-      const arrow = rest.indexOf(" -> ");
-      if (arrow !== -1) {
-        renamedFrom = rest.slice(0, arrow);
-        rest = rest.slice(arrow + 4);
-      }
-      return { index, worktree, path: rest, renamedFrom };
-    });
+  const tokens = out.split("\0");
+  const rows: AtlasGitPorcelainRow[] = [];
+  for (let i = 0; i < tokens.length; i += 1) {
+    const token = tokens[i];
+    if (!token) continue;
+    const index = token[0] ?? " ";
+    const worktree = token[1] ?? " ";
+    const path = token.slice(3);
+    let renamedFrom: string | null = null;
+    if (index === "R" || index === "C" || worktree === "R" || worktree === "C") {
+      renamedFrom = tokens[i + 1] || null;
+      i += 1;
+    }
+    rows.push({ index, worktree, path, renamedFrom });
+  }
+  return rows;
 }
 
 /** Mirror of the CLI's classifyChange — a porcelain row → a status. */

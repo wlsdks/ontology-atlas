@@ -135,7 +135,12 @@ function serializeFrontmatterValue(
  * ends, so an unquoted value like `'map'` reads back as `map`.
  */
 function needsQuote(s: string): boolean {
-  return /[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s);
+  if (/[:,#\[\]"'{}&|*!%@`\n\t]|^\s|\s$/.test(s)) return true;
+  // A string the reader would re-type — 'true', 'false', or a number-like
+  // value ('2026') — must be quoted, or it comes back as a boolean/number and
+  // every consumer gating on typeof string silently drops it after one round
+  // trip (bug sweep 2026-09-01). Quoting is how an author forces text.
+  return s === 'true' || s === 'false' || (s !== '' && !Number.isNaN(Number(s)));
 }
 
 /** Makes a value safe inside quotes — newlines fold to `\n`. */

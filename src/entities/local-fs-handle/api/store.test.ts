@@ -218,6 +218,37 @@ describe('local-fs-handle store', () => {
     ]);
   });
 
+  it('web FSA records with different folders both stay in the recent list', async () => {
+    // Bug sweep 2026-09-01: every web record's id is 'current', so the
+    // identity fallback deduped all vaults to one entry — opening folder B
+    // silently evicted folder A.
+    await putLocalFsHandle({
+      id: CURRENT_LOCAL_FS_HANDLE_ID,
+      handle: fakeHandle('vault-a'),
+      name: 'Vault A',
+      createdAt: 1,
+      lastAccessedAt: 1,
+    });
+    await putLocalFsHandle({
+      id: CURRENT_LOCAL_FS_HANDLE_ID,
+      handle: fakeHandle('vault-b'),
+      name: 'Vault B',
+      createdAt: 2,
+      lastAccessedAt: 2,
+    });
+    // Re-opening the same folder updates its entry instead of adding a copy.
+    await putLocalFsHandle({
+      id: CURRENT_LOCAL_FS_HANDLE_ID,
+      handle: fakeHandle('vault-a'),
+      name: 'Vault A',
+      createdAt: 1,
+      lastAccessedAt: 3,
+    });
+
+    const recent = await listRecentLocalFsHandles();
+    expect(recent.map((record) => record.name)).toEqual(['Vault A', 'Vault B']);
+  });
+
   it('Tauri 런타임에서는 저장된 desktop path record 를 handle shim 으로 복원한다', async () => {
     tauriApiMock.runtimeAvailable = true;
     await putLocalFsHandle({

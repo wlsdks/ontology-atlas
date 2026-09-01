@@ -92,6 +92,12 @@ const GRAPH_ARRAY_KEYS = [
 export function validateVaultDocument(raw: string): VaultDocumentReport {
   const issues: VaultDocumentIssue[] = [];
 
+  // The same normalization the parser applies (bug sweep 2026-09-01): a
+  // Windows-authored `﻿---` file failed `startsWith("---")`, so this
+  // validator returned ok with zero issues — missing-uid, empty-kind, even an
+  // unclosed frontmatter all skipped — while the manifest and graph treated the
+  // same bytes as a live node.
+  raw = raw.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n");
   const startsWithDelim = raw.startsWith("---");
   const closingIndex = startsWithDelim ? raw.indexOf("\n---", 3) : -1;
 

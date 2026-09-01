@@ -30,6 +30,28 @@ function makeManifest(docs: VaultDoc[]): VaultManifest {
 }
 
 describe('deriveOntologyFromVault', () => {
+  it('same-kind docs sharing a filename tail both survive as nodes', () => {
+    // Bug sweep 2026-09-01: non-project ids are kind + tail, so
+    // capabilities/auth.md and archive/auth.md (both kind: capability)
+    // collided and nodes.set silently overwrote the first — the map drew one
+    // node fewer than every count surface reported.
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'capabilities/auth',
+          frontmatter: { kind: 'capability', title: 'Auth' },
+        }),
+        makeDoc({
+          slug: 'archive/auth',
+          frontmatter: { kind: 'capability', title: 'Old auth' },
+        }),
+      ]),
+    );
+    const authNodes = result.nodes.filter((node) => node.sourceSlug?.endsWith('auth'));
+    expect(authNodes).toHaveLength(2);
+    expect(result.warnings.some((warning) => warning.includes('capability:auth'))).toBe(true);
+  });
+
   it('vault-readme 는 reader/agent 파생에 남고 topology 표면이 별도로 제외한다', () => {
     const result = deriveOntologyFromVault(
       makeManifest([

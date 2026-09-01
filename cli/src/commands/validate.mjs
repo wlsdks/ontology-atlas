@@ -301,7 +301,7 @@ export function runValidate(args) {
         2,
       ) + '\n',
     );
-    return decideExit(errorFiles, warningFiles, strict, failOn, groups);
+    return decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadable.length);
   }
 
   // Unreadable files are named **before** declaring clean. Without this line,
@@ -382,11 +382,17 @@ export function runValidate(args) {
       `(${COLORS.red}error ${errorIssues}${COLORS.reset} · ` +
       `${COLORS.yellow}warning ${warningIssues}${COLORS.reset})${modeTag}`,
   );
-  return decideExit(errorFiles, warningFiles, strict, failOn, groups);
+  return decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadable.length);
 }
 
-// Precedence: --fail-on (when present, it alone) > --strict > default (errors only).
-function decideExit(errorFiles, warningFiles, strict, failOn, groups) {
+// Precedence: unreadable files (always fatal) > --fail-on (then it alone) >
+// --strict > default (errors only).
+function decideExit(errorFiles, warningFiles, strict, failOn, groups, unreadableCount = 0) {
+  // A file that could not be opened was never validated, so no mode may
+  // certify the vault. Text mode's clean branch already exited 1 for this
+  // while --json — exactly the mode CI consumes — exited 0 (bug sweep
+  // 2026-09-01), and text mode with coexisting warnings had the same gap.
+  if (unreadableCount > 0) return 1;
   if (failOn && failOn.length > 0) {
     return groups.some((g) => failOn.includes(g.code)) ? 1 : 0;
   }

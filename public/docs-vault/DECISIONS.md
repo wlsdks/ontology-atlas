@@ -206,6 +206,41 @@ unique material contribution.
 **Outcome**: pending merge and live use. Runs and later outcomes append to
 `docs/PO-PILOT.md`; this record is not rewritten.
 
+## 2026-09-01 — The 2026-09 bug sweep tightens MCP write-tool contracts, changing observable behavior
+
+**Convened**: solo pass, owner-directed ("find every bug on main and fix them
+in order, one commit each") · **Trigger**: `decisions:check` — the sweep edits
+the public contract file `mcp/src/index.js`.
+
+**Decision**: four observable MCP contract changes land together, each closing
+a reproduced defect rather than re-deciding a surface. (1) Destructive tools
+(rename/merge/delete) resolve the caller's slug to the on-disk spelling; a
+rename target that case-collides with another document is refused with an
+explanatory error. (2) `delete_concept`'s safety gate counts ambiguous-tail
+referrers as blocking backlinks (rows marked `ambiguousTail: true` in the
+dry-run), so a possibly-referenced node needs `force`. (3) `replace_relation`
+refuses to convert an edge to `depends_on` without a `why` when no prior
+relation note can be inherited — the same contract `add_relation` already
+enforces. (4) A backlink-update row may now report a removal (`after` omitted)
+when a merge drops a would-be self-reference. No tool is added, removed, or
+renamed; read tools are unchanged except `find_backlinks` gaining the
+opt-in `includeAmbiguousTailRefs` option.
+
+**Recorded dissent**: none sought — each change restores a contract the code
+already claimed (the tool descriptions promised atomic backlink redirection
+and rationale-carrying depends_on edges; the defects made those promises
+false). The standing `find_backlinks` default (an ambiguous tail is not
+misattributed as a confirmed backlink, test-pinned 2026-08) is explicitly
+kept, not overturned — only `delete_concept` opts into the wider view.
+
+**Falsifier**: an agent workflow that legitimately needs case-variant slugs on
+one filesystem, or a bulk edge-type migration blocked by the `why` gate,
+observed in a real vault.
+**Review**: reopen if the mcp-verify suite or a field vault shows a write the
+old contract accepted and a person actually wanted.
+
+**Status**: standing
+
 ## 2026-09-01 — Inside-the-vault auto-allow narrows to read-only tool kinds
 
 **Convened**: solo pass, owner-directed ("fix in severity order") after the

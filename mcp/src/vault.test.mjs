@@ -7,6 +7,7 @@ import { nodeUidIssue } from './schema.mjs';
 
 import {
   FULL_BODY_MAX_CHARS,
+  canonicalDiskSlug,
   deleteDoc,
   describeBodyDelivery,
   detectDuplicateTitle,
@@ -34,6 +35,29 @@ beforeEach(() => {
 
 afterEach(() => {
   rmSync(root, { recursive: true, force: true });
+});
+
+describe('canonicalDiskSlug', () => {
+  it('returns an exact existing slug unchanged', () => {
+    assert.equal(canonicalDiskSlug(root, 'capabilities/auth'), 'capabilities/auth');
+    assert.equal(canonicalDiskSlug(root, 'README'), 'README');
+  });
+
+  it('resolves a wrong-case slug to the on-disk spelling, in file and directory segments', () => {
+    assert.equal(canonicalDiskSlug(root, 'capabilities/Auth'), 'capabilities/auth');
+    assert.equal(canonicalDiskSlug(root, 'Capabilities/AUTH'), 'capabilities/auth');
+    assert.equal(canonicalDiskSlug(root, 'readme'), 'README');
+  });
+
+  it('returns null for a slug that matches nothing', () => {
+    assert.equal(canonicalDiskSlug(root, 'capabilities/nope'), null);
+    assert.equal(canonicalDiskSlug(root, ''), null);
+    assert.equal(canonicalDiskSlug(root, null), null);
+  });
+
+  it('returns null for a slug escaping the vault (never throws)', () => {
+    assert.equal(canonicalDiskSlug(root, '../etc/passwd'), null);
+  });
 });
 
 describe('vaultSlugExists', () => {
@@ -133,6 +157,45 @@ describe('findPath — edge metadata (R+)', () => {
     const r = findPath(pathRoot, 'project-display', 'domains/identity');
     assert.ok(r, 'frontmatter slug alias 경로가 존재해야 한다');
     assert.deepEqual(r.hops, ['project', 'domains/identity']);
+  });
+
+  it('an ambiguous tail ref draws no edge — a path is never routed through an arbitrary match', () => {
+    // Bug sweep 2026-09-01, reproduced: with capabilities/foo.md and
+    // elements/foo.md both present, the private first-wins map attributed a
+    // `capabilities: [foo]` ref to whichever slug enumerated first, inventing a
+    // path through the wrong node. The shared index nulls the ambiguous ref.
+    writeFileSync(
+      join(pathRoot, 'capabilities', 'foo.md'),
+      '---\nslug: capabilities/foo\nkind: capability\n---\n',
+    );
+    writeFileSync(
+      join(pathRoot, 'elements', 'foo.md'),
+      '---\nslug: elements/foo\nkind: element\n---\n',
+    );
+    writeFileSync(
+      join(pathRoot, 'd1.md'),
+      '---\nslug: d1\nkind: document\ncapabilities: [foo]\n---\n',
+    );
+    assert.equal(findPath(pathRoot, 'd1', 'capabilities/foo'), null);
+    assert.equal(findPath(pathRoot, 'd1', 'elements/foo'), null);
+  });
+
+  it('an ambiguous ref keeps every candidate out of the orphan list', () => {
+    writeFileSync(
+      join(pathRoot, 'capabilities', 'foo.md'),
+      '---\nslug: capabilities/foo\nkind: capability\ndomain: identity\n---\n',
+    );
+    writeFileSync(
+      join(pathRoot, 'elements', 'foo.md'),
+      '---\nslug: elements/foo\nkind: element\n---\n',
+    );
+    writeFileSync(
+      join(pathRoot, 'd1.md'),
+      '---\nslug: d1\nkind: document\ncapabilities: [foo]\n---\n',
+    );
+    const orphanSlugs = findOrphans(pathRoot).orphans.map((row) => row.slug);
+    assert.equal(orphanSlugs.includes('capabilities/foo'), false);
+    assert.equal(orphanSlugs.includes('elements/foo'), false);
   });
 
   it('domain: inline parent 도 path edge 로 해석', () => {

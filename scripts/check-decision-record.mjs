@@ -122,9 +122,20 @@ if (!base) {
 const entries = git(["diff", "--name-status", `${base}...HEAD`])
   .split("\n")
   .filter(Boolean)
-  .map((line) => {
+  .flatMap((line) => {
     const [status, ...paths] = line.split("\t");
-    return { status: status[0], path: paths[paths.length - 1] };
+    const code = status[0];
+    // A rename (R100 with detection on by default) is a deletion of the old
+    // path plus a creation of the new one. Left as a single R entry, a pure
+    // `git mv` of a route file — a change that retires one public URL and
+    // creates another — passed the A/D surface filter with no DECISIONS.md
+    // record required (bug sweep 2026-09-01, reproduced in a scratch repo).
+    if ((code === "R" || code === "C") && paths.length === 2) {
+      const expanded = [{ status: "A", path: paths[1] }];
+      if (code === "R") expanded.push({ status: "D", path: paths[0] });
+      return expanded;
+    }
+    return [{ status: code, path: paths[paths.length - 1] }];
   });
 
 const changedPaths = new Set(entries.map((entry) => entry.path));

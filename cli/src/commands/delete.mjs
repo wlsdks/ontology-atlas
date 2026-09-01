@@ -4,10 +4,10 @@
 // Thin wrapper over MCP delete_concept.
 
 import { COLORS } from '../lib/colors.mjs';
-import { resolve } from 'node:path';
 import { formatCapturedSummary } from '../lib/captured-summary.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
+import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--confirm', '--force', '--json'];
 
@@ -24,7 +24,11 @@ export async function runDelete(args) {
     return 1;
   }
 
-  const vaultRoot = resolve(process.cwd(), vault);
+  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
+  // auto-detect), like every other vault command. The bare cwd resolve this
+  // used meant a destructive write could target a different vault than the
+  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  const vaultRoot = resolveVaultRoot(vault);
 
   if (!confirm) {
     let preview;

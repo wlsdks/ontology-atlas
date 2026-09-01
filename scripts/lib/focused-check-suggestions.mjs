@@ -10,8 +10,19 @@ const RULES = [
   },
   {
     command: 'pnpm docs-vault:check',
-    reason: 'static docs-vault input or generated manifest changed',
-    matches: [/^docs\/.+\.md$/, /^src\/entities\/docs-vault\/data\/manifest\.json$/],
+    reason: 'static docs-vault input or generated output changed',
+    // Every build input and every generated output (bug sweep 2026-09-01): the
+    // storefront sample is a build input, and a hand edit to any generated
+    // file — content.json, headings, gateway-*, sample-storefront.*, the
+    // public copies — is exactly what the check exists to flag. The old list
+    // covered only docs/**.md and manifest.json, so those edits got a green
+    // advisor run before the pre-commit hook's broader grep caught them.
+    matches: [
+      /^docs\/.+\.md$/,
+      /^samples\/storefront\/.+\.md$/,
+      /^src\/entities\/docs-vault\/data\//,
+      /^public\/docs-vault\//,
+    ],
   },
   {
     command: 'pnpm test:docs-vault',
@@ -1060,9 +1071,15 @@ export function normalizeChangedPath(path) {
   return String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
-export function suggestFocusedChecks(paths = []) {
+export function suggestFocusedChecks(paths = [], { deletedPaths = [] } = {}) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
-  const staticCommands = rulesToSuggestions(RULES, normalizedPaths);
+  // Deleted paths participate in RULE matching only — the per-file direct
+  // suggestions below embed paths into file-reading commands, which a deleted
+  // path would kill (measured 2026-08-21), while a rule command is global.
+  const normalizedDeleted = [...new Set(deletedPaths.map(normalizeChangedPath).filter(Boolean))]
+    .filter((path) => !normalizedPaths.includes(path));
+  const rulePaths = [...normalizedPaths, ...normalizedDeleted];
+  const staticCommands = rulesToSuggestions(RULES, rulePaths);
   const withSourceLanguage = prependSuggestions(
     staticCommands,
     directSourceLanguageSuggestions(normalizedPaths),
@@ -1099,8 +1116,13 @@ export function suggestFocusedChecks(paths = []) {
     directFocusedCheckTestSuggestions(normalizedPaths),
     'pnpm test:checks:changed',
   );
-  const escalations = rulesToSuggestions(ESCALATIONS, normalizedPaths);
-  return { paths: normalizedPaths, commands: withFocusedCheckDirect, escalations };
+  const escalations = rulesToSuggestions(ESCALATIONS, rulePaths);
+  return {
+    paths: normalizedPaths,
+    deletedPaths: normalizedDeleted,
+    commands: withFocusedCheckDirect,
+    escalations,
+  };
 }
 
 function directSourceLanguageSuggestions(paths) {

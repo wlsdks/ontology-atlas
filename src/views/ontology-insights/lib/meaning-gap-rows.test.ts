@@ -6,6 +6,17 @@ import {
   type ConceptDocFacts,
 } from "./meaning-gap-rows";
 
+// English prose fixture — mirrors messages/en.json handoffProse.
+const PROSE = {
+  verificationGate: 'query_ontology({operation:"health"}) to re-check the result',
+  missingDefinition:
+    'patch_concept({slug:"%ref%", frontmatter:{description:"<this concept in one sentence>"}}) to write its meaning',
+  missingDefinitionProof: 'get_concept({slug:"%ref%"}) to confirm the sentence',
+  missingDomain:
+    'patch_concept({slug:"%ref%", frontmatter:{domain:"<domain name>"}}) to record where it belongs',
+  missingDomainProof: 'get_concept({slug:"%ref%"}) to confirm the domain',
+};
+
 function node(partial: Partial<KnowledgeGraphNode> & { id: string }): KnowledgeGraphNode {
   return {
     title: partial.id,
@@ -37,6 +48,7 @@ describe("buildMeaningGapRows", () => {
         ["capabilities/a", facts({ hasDefinition: false })],
         ["capabilities/b", facts({ hasDefinition: true })],
       ]),
+      { prose: PROSE },
     );
     expect(result.definitionRows.map((row) => row.ownSlug)).toEqual(["capabilities/a"]);
     expect(result.counts.missingDefinition).toBe(1);
@@ -56,6 +68,7 @@ describe("buildMeaningGapRows", () => {
     const result = buildMeaningGapRows(
       nodes,
       new Map([["capabilities/owner", facts({ hasDefinition: false, domainRef: null })]]),
+      { prose: PROSE },
     );
     expect(result.definitionRows).toEqual([]);
     expect(result.domainRows).toEqual([]);
@@ -86,6 +99,7 @@ describe("buildMeaningGapRows", () => {
         ["elements/e", facts({ domainRef: null })],
         ["domains/d", facts({ domainRef: null })],
       ]),
+      { prose: PROSE },
     );
     expect(result.domainRows.map((row) => row.ownSlug)).toEqual(["capabilities/a", "elements/e"]);
     expect(result.counts.missingDomain).toBe(2);
@@ -103,7 +117,7 @@ describe("buildMeaningGapRows", () => {
     const result = buildMeaningGapRows(
       nodes,
       new Map(nodes.map((n) => [n.evidenceIds[0], facts({ hasDefinition: false })])),
-      { perKindLimit: 2 },
+      { perKindLimit: 2, prose: PROSE },
     );
     expect(result.definitionRows).toHaveLength(2);
     expect(result.counts.missingDefinition).toBe(5);
@@ -121,6 +135,7 @@ describe("buildMeaningGapRows", () => {
         }),
       ],
       new Map([["ontology/capabilities/pay", facts({ hasDefinition: false, mtime: 42 })]]),
+      { prose: PROSE },
     );
     const [row] = result.definitionRows;
     expect(row.ownSlug).toBe("ontology/capabilities/pay");
@@ -133,6 +148,7 @@ describe("buildMeaningGapRows", () => {
     const result = buildMeaningGapRows(
       [node({ id: "capability:ghost", evidenceIds: ["capabilities/ghost"], hasOwnDocument: true })],
       new Map(),
+      { prose: PROSE },
     );
     expect(result.definitionRows).toEqual([]);
   });

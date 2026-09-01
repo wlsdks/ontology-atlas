@@ -664,7 +664,13 @@ export function ProjectForm({
         : parsed.data.category;
       const categoryChanged =
         initialProject?.category !== resolvedCategoryId;
-      const position = initialProject
+      // Branch on the MODE, not on `initialProject` truthiness: duplicate mode
+      // is "create" WITH an initialProject, and testing truthiness sent the
+      // copy down the edit branch — with the category unchanged it inherited
+      // initialPos and landed exactly on top of the source project on the map
+      // (bug sweep 2026-09-01). A duplicate gets a fresh placement slot like
+      // any other create, with the source still occupying its own.
+      const position = mode === "edit" && initialProject
         ? categoryChanged && nextCategory
           ? findProjectPlacement(
               nextCategory,

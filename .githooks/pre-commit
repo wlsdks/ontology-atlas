@@ -22,7 +22,13 @@
 
 set -e
 
-staged=$(git diff --cached --name-only --diff-filter=ACMR)
+# Deletions included (D): removing a vault doc changes the manifest, tree,
+# backlinks, and public copies just as surely as editing one — with ACMR only,
+# a deletion-only commit skipped this gate entirely and committed stale
+# generated output, deferring the catch from this hook's half-second to the
+# pre-push lane's minutes (bug sweep 2026-09-01). The checkout-index snapshot
+# below expands the index as-is, so a deleted file is simply absent from it.
+staged=$(git diff --cached --name-only --diff-filter=ACMRD)
 [ -n "$staged" ] || exit 0
 
 # If touched, inspect whether input (Vault markdown) or output — even if only

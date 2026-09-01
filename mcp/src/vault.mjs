@@ -594,6 +594,58 @@ function assertRealPathInside(candidate, normalizedRoot, slug) {
  * throwing out of slugToPath, so the caller can branch on a boolean. A genuine fs
  * error surfaces naturally on the caller's follow-up read.
  */
+/**
+ * Returns the exact on-disk spelling of an existing slug, or `null`.
+ *
+ * **Why letter case needs its own resolver** (bug sweep 2026-09-01, reproduced).
+ * `existsSync` follows the filesystem's case rules, so on macOS and Windows a
+ * wrong-case slug (`capabilities/Auth` for `auth.md`) passes every existence
+ * gate — but every backlink match below is a case-sensitive string comparison.
+ * Reproduced: `rename_concept` deleted `auth.md`, created `authn.md`, redirected
+ * **0** backlinks, and reported success. Destructive tools must therefore
+ * operate on the disk's spelling, never the caller's.
+ *
+ * Matching walks one directory level per slug segment: exact entry first, then a
+ * unique case-insensitive entry. On a case-sensitive filesystem this makes a
+ * wrong-case slug resolve the same way it already does on macOS, so behaviour
+ * stops depending on the platform. If the path exists but a segment cannot be
+ * matched (for example Unicode normalization differences between the slug and
+ * the directory listing), the input slug is returned unchanged — never worse
+ * than the old `existsSync` behaviour.
+ */
+export function canonicalDiskSlug(rootPath, slug) {
+  if (typeof slug !== 'string' || slug.length === 0) return null;
+  let contained;
+  try {
+    contained = slugToPath(rootPath, slug);
+  } catch {
+    return null;
+  }
+  const existsAsGiven = existsSync(contained);
+  const parts = slug.split('/');
+  let dir = resolve(rootPath);
+  const canonical = [];
+  for (let i = 0; i < parts.length; i += 1) {
+    const want = i === parts.length - 1 ? `${parts[i]}.md` : parts[i];
+    let entries;
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      return existsAsGiven ? slug : null;
+    }
+    let hit = entries.includes(want) ? want : null;
+    if (hit === null) {
+      const lower = want.toLowerCase();
+      const caseMatches = entries.filter((entry) => entry.toLowerCase() === lower);
+      if (caseMatches.length !== 1) return existsAsGiven ? slug : null;
+      hit = caseMatches[0];
+    }
+    canonical.push(i === parts.length - 1 ? hit.slice(0, -3) : hit);
+    dir = join(dir, hit);
+  }
+  return canonical.join('/');
+}
+
 export function vaultSlugExists(rootPath, slug) {
   if (typeof slug !== 'string' || slug.length === 0) return false;
   let candidate;
@@ -817,6 +869,17 @@ function noteGateWrite(rootPath, slug) {
   GATE.index.names.add(slug);
   const tail = slug.split('/').pop();
   if (tail) GATE.index.names.add(tail);
+}
+/**
+ * Drops the lazy gate index after a document leaves the vault. Additions can be
+ * folded in (`noteGateWrite`), but a removal cannot: another slug may still
+ * provide the same tail, so the only safe move is a rebuild on next use.
+ * Without this, `gateResolves` kept answering true for a deleted / renamed /
+ * merged-away slug for the rest of the session, silently suppressing the
+ * dangling-graph-reference advisory (bug sweep 2026-09-01).
+ */
+function noteGateRemoval() {
+  GATE.index = null;
 }
 
 /**
@@ -1294,6 +1357,7 @@ export function deleteDoc(rootPath, slug, options = {}) {
   options.beforeDelete?.();
   assertCurrentDocSnapshot(slug, filePath, captured.raw, captured.mtime);
   unlinkSync(filePath);
+  noteGateRemoval();
   return { ...captured, filePath };
 }
 
@@ -1443,44 +1507,16 @@ export function findOrphans(rootPath, options = {}) {
       ? options.excludeKinds
       : ['project', 'vault-readme'],
   );
-  const slugs = new Set(docs.map((d) => d.slug));
-  const tailToFull = new Map();
-  const frontmatterSlugToFull = new Map();
-  for (const slug of slugs) {
-    const tail = slug.split('/').pop();
-    if (tail && tail !== slug && !tailToFull.has(tail)) {
-      tailToFull.set(tail, slug);
-    }
-  }
-  for (const doc of docs) {
-    const fmSlug = doc.frontmatter.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim() && !frontmatterSlugToFull.has(fmSlug)) {
-      frontmatterSlugToFull.set(fmSlug, doc.slug);
-    }
-  }
+  // "Is this node referenced?" is answered conservatively: an ambiguous ref
+  // counts as a reference to **every** candidate, so no document a vault plainly
+  // names is reported as an orphan (bug sweep 2026-09-01 — the private
+  // first-wins map before this marked one of two same-tail nodes orphaned).
+  const { resolveCandidates } = buildRefIndex(docs);
   const referenced = new Set();
   for (const doc of docs) {
     for (const { ref } of collectNeighborRefs(doc)) {
-      if (typeof ref !== 'string') continue;
-      if (slugs.has(ref)) {
-        if (ref !== doc.slug) referenced.add(ref);
-        continue;
-      }
-      if (frontmatterSlugToFull.has(ref)) {
-        const resolved = frontmatterSlugToFull.get(ref);
-        if (resolved && resolved !== doc.slug) referenced.add(resolved);
-        continue;
-      }
-      if (tailToFull.has(ref)) {
-        const resolved = tailToFull.get(ref);
-        if (resolved && resolved !== doc.slug) referenced.add(resolved);
-        continue;
-      }
-      for (const slug of slugs) {
-        if (slug.endsWith(`/${ref}`) && slug !== doc.slug) {
-          referenced.add(slug);
-          break;
-        }
+      for (const candidate of resolveCandidates(ref)) {
+        if (candidate !== doc.slug) referenced.add(candidate);
       }
     }
   }
@@ -1519,34 +1555,12 @@ export function findOrphans(rootPath, options = {}) {
 export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   assertBoundedNonNegativeInteger(maxHops, 'maxHops', { max: 20 });
   const docs = loadVaultDocs(rootPath);
-  const slugs = new Set(docs.map((d) => d.slug));
   // The last segment and the frontmatter slug are aliases, so in a dogfood vault
   // where project.md carries a user-facing `slug: ontology-atlas`, traversal still
-  // treats the file slug and the frontmatter slug as one node.
-  const tailToFull = new Map();
-  const frontmatterSlugToFull = new Map();
-  for (const slug of slugs) {
-    const tail = slug.split('/').pop();
-    if (tail && tail !== slug && !tailToFull.has(tail)) {
-      tailToFull.set(tail, slug);
-    }
-  }
-  for (const doc of docs) {
-    const fmSlug = doc.frontmatter.slug;
-    if (typeof fmSlug === 'string' && fmSlug.trim() && !frontmatterSlugToFull.has(fmSlug)) {
-      frontmatterSlugToFull.set(fmSlug, doc.slug);
-    }
-  }
-  function resolveRef(ref) {
-    if (typeof ref !== 'string') return null;
-    if (slugs.has(ref)) return ref;
-    if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
-    if (tailToFull.has(ref)) return tailToFull.get(ref);
-    for (const slug of slugs) {
-      if (slug.endsWith(`/${ref}`)) return slug;
-    }
-    return null;
-  }
+  // treats the file slug and the frontmatter slug as one node. The shared index
+  // nulls an ambiguous ref, so a path is never routed through an arbitrary match
+  // (bug sweep 2026-09-01 — this function used a private first-wins map before).
+  const resolveRef = buildRefIndex(docs).resolve;
   const resolvedFrom = resolveRef(fromSlug);
   const resolvedTo = resolveRef(toSlug);
   // Both endpoints must exist in the vault for the answer to mean anything. Even
@@ -1626,9 +1640,17 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
  * keys (capabilities, elements, dependencies, relates, contains, describes) and at
  * wikilinks and markdown links in the body.
  */
-export function findBacklinks(rootPath, targetSlug) {
+export function findBacklinks(rootPath, targetSlug, options = {}) {
+  // `includeAmbiguousTailRefs` widens the frontmatter match to documents whose
+  // ref is ambiguous but **could** mean the target, each row marked
+  // `ambiguousTail: true`. The default stays exact-only (standing decision — an
+  // ambiguous tail is not misattributed as a confirmed backlink), but
+  // delete_concept's safety gate opts in: without this, a node referenced only
+  // via an ambiguous tail was deletable without force and without a warning
+  // (bug sweep 2026-09-01, reproduced).
+  const includeAmbiguous = options.includeAmbiguousTailRefs === true;
   const docs = loadVaultDocs(rootPath);
-  const resolveRef = buildRefResolver(docs);
+  const { resolve: resolveRef, resolveCandidates } = buildRefIndex(docs);
   const resolvedTarget = resolveRef(targetSlug) || targetSlug;
   const matches = [];
   // Graph frontmatter is read through collectNeighborRefs, so a legacy key such as
@@ -1645,10 +1667,21 @@ export function findBacklinks(rootPath, targetSlug) {
   for (const doc of docs) {
     if (doc.slug === resolvedTarget) continue;
     const matchedKeys = [];
+    let ambiguousHit = false;
     for (const { key, ref } of collectNeighborRefs(doc)) {
       const resolved = resolveRef(ref);
-      if (resolved !== resolvedTarget) continue;
-      if (!matchedKeys.includes(key)) matchedKeys.push(key);
+      if (resolved === resolvedTarget) {
+        if (!matchedKeys.includes(key)) matchedKeys.push(key);
+        continue;
+      }
+      if (
+        includeAmbiguous &&
+        resolved === null &&
+        resolveCandidates(ref).includes(resolvedTarget)
+      ) {
+        ambiguousHit = true;
+        if (!matchedKeys.includes(key)) matchedKeys.push(key);
+      }
     }
     // Wikilinks match their alias (`[[x|label]]`) and heading (`[[x#h]]`) forms
     // too — redirectBacklinks rewrites those, so this count must see them.
@@ -1673,25 +1706,34 @@ export function findBacklinks(rootPath, targetSlug) {
       mtime: doc.mtime,
       matchedKeys: matchedKeys.length > 0 ? matchedKeys : undefined,
       matchedInBody: bodyHit || undefined,
+      ambiguousTail: ambiguousHit || undefined,
     });
   }
   return matches;
 }
 
-function buildRefResolver(docs) {
+/**
+ * One candidate-aware reference index shared by findPath, findOrphans and
+ * findBacklinks (bug sweep 2026-09-01). Before it, three policies coexisted in
+ * this file: buildRefResolver nulled ambiguous tails, while findPath and
+ * findOrphans kept private first-wins maps — reproduced: with
+ * `capabilities/foo.md` and `elements/foo.md`, `find_path` routed a path through
+ * the arbitrary first match and `find_orphans` reported one of them as an orphan
+ * a document plainly references. Policy now: an ambiguous ref asserts **no
+ * specific edge** (resolve → null) but is a **candidate referrer of every
+ * match** (resolveCandidates), so "is this node referenced?" checks stay
+ * conservative.
+ */
+function buildRefIndex(docs) {
   const slugs = new Set(docs.map((d) => d.slug));
-  const tailToFull = new Map();
-  const ambiguousTails = new Set();
+  const tailToFulls = new Map();
   const frontmatterSlugToFull = new Map();
   for (const slug of slugs) {
     const tail = slug.split('/').pop();
-    if (!tail || tail === slug || ambiguousTails.has(tail)) continue;
-    if (tailToFull.has(tail)) {
-      tailToFull.delete(tail);
-      ambiguousTails.add(tail);
-      continue;
-    }
-    tailToFull.set(tail, slug);
+    if (!tail || tail === slug) continue;
+    const list = tailToFulls.get(tail);
+    if (list) list.push(slug);
+    else tailToFulls.set(tail, [slug]);
   }
   for (const doc of docs) {
     const fmSlug = doc.frontmatter.slug;
@@ -1699,18 +1741,25 @@ function buildRefResolver(docs) {
       frontmatterSlugToFull.set(fmSlug, doc.slug);
     }
   }
-  return (ref) => {
-    if (typeof ref !== 'string') return null;
-    if (slugs.has(ref)) return ref;
-    if (frontmatterSlugToFull.has(ref)) return frontmatterSlugToFull.get(ref);
-    if (ambiguousTails.has(ref)) return null;
-    if (tailToFull.has(ref)) return tailToFull.get(ref);
+  function resolveCandidates(ref) {
+    if (typeof ref !== 'string') return [];
+    if (slugs.has(ref)) return [ref];
+    if (frontmatterSlugToFull.has(ref)) return [frontmatterSlugToFull.get(ref)];
+    const tails = tailToFulls.get(ref);
+    if (tails) return [...tails];
+    const suffixMatches = [];
     for (const slug of slugs) {
-      if (slug.endsWith(`/${ref}`)) return slug;
+      if (slug.endsWith(`/${ref}`)) suffixMatches.push(slug);
     }
-    return null;
-  };
+    return suffixMatches;
+  }
+  function resolve(ref) {
+    const candidates = resolveCandidates(ref);
+    return candidates.length === 1 ? candidates[0] : null;
+  }
+  return { slugs, resolve, resolveCandidates };
 }
+
 
 /**
  * Applies a multi-file vault write **all-or-nothing**.
@@ -2026,6 +2075,9 @@ export function applyAllOrNothing(plan, options = {}) {
         after: entry.op === 'write' ? entry.content : null,
       });
     }
+    // A plan that deleted a file invalidates the lazy gate index — the removed
+    // slug (or its tail) must stop resolving for the advisory channel.
+    if (done.some((step) => step.op === 'delete')) noteGateRemoval();
     return { applied: done.length };
   } catch (error) {
     const unrecovered = [];
@@ -2147,19 +2199,32 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     const beforeKeys = [];
     const afterKeys = [];
     let fmChanged = false;
+    // When the document being rewritten IS the destination node (merge_concepts
+    // scans the surviving doc for refs to the absorbed one), every rewrite would
+    // by construction produce a reference to itself. Reproduced (bug sweep
+    // 2026-09-01): merging capabilities/b into capabilities/a where a carried
+    // `relates: [capabilities/b]` wrote `relates: [capabilities/a]` — a self-loop
+    // polluting degree counts, neighbors and path queries. Such refs are dropped
+    // instead of rewritten; the removal stays visible in beforeKeys/afterKeys.
+    const rewritingSelf = doc.slug === nextSlug;
 
     for (const key of Object.keys(nextFm)) {
       const value = nextFm[key];
       if (Array.isArray(value)) {
         const before = [...value];
-        const after = value.map((v) => rewriteArrayItem(v).value);
-        if (before.some((b, i) => b !== after[i])) {
+        const rewritten = value.map((v) => rewriteArrayItem(v));
+        const after = rewritten
+          .filter((r) => !(rewritingSelf && r.changed))
+          .map((r) => r.value);
+        if (before.length !== after.length || before.some((b, i) => b !== after[i])) {
           // dedup + sort — never append a duplicate when nextSlug is already
           // present, so the same graph state leaves the same frontmatter array.
           const deduped = normalizeRelationRefs(after);
           nextFm[key] = deduped;
           beforeKeys.push({ key, before });
-          afterKeys.push({ key, after: deduped });
+          // A removal (self-ref drop leaving the array empty) reports the key
+          // with `after` omitted — the update-row contract's removal shape.
+          afterKeys.push(deduped.length > 0 ? { key, after: deduped } : { key });
           fmChanged = true;
         }
       } else if (typeof value === 'string') {
@@ -2173,9 +2238,15 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
         const isRefSlot = key === 'domain' || GRAPH_ARRAY_KEY_SET.has(key);
         const r = isRefSlot ? rewriteArrayItem(value) : { changed: false };
         if (r.changed) {
-          nextFm[key] = r.value;
-          beforeKeys.push({ key, before: value });
-          afterKeys.push({ key, after: r.value });
+          if (rewritingSelf) {
+            delete nextFm[key];
+            beforeKeys.push({ key, before: value });
+            afterKeys.push({ key });
+          } else {
+            nextFm[key] = r.value;
+            beforeKeys.push({ key, before: value });
+            afterKeys.push({ key, after: r.value });
+          }
           fmChanged = true;
         }
       } else if (value && typeof value === 'object') {
@@ -2199,6 +2270,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
             continue;
           }
           mapChanged = true;
+          // A note whose key would now denote the document itself (merge into
+          // this doc) is dropped with the self-ref it annotated.
+          if (rewritingSelf) continue;
           if (r.value in nextMap || entries.some(([k]) => k === r.value)) {
             // Collision — the existing (new key) value wins; the old value is only recorded.
             continue;
@@ -2211,8 +2285,15 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
             if (!(mapKey in nextMap) && !rewriteArrayItem(mapKey).changed) nextMap[mapKey] = mapValue;
           }
           beforeKeys.push({ key, before: value });
-          afterKeys.push({ key, after: nextMap });
-          nextFm[key] = nextMap;
+          if (Object.keys(nextMap).length > 0) {
+            afterKeys.push({ key, after: nextMap });
+            nextFm[key] = nextMap;
+          } else {
+            // The last note annotated the dropped self-ref — remove the empty
+            // map with it and report the removal (`after` omitted).
+            afterKeys.push({ key });
+            delete nextFm[key];
+          }
           fmChanged = true;
         }
       }

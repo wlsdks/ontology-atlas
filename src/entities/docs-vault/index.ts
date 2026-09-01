@@ -66,4 +66,8 @@ export { buildOntologyDeeplinkForDoc } from './lib/ontology-deeplink';
 export { buildTopologyDeeplinkForDoc } from './lib/topology-deeplink';
 export { applyFrontmatterUpdates } from './lib/frontmatter-updates';
 export type { FrontmatterUpdateValue } from './lib/frontmatter-updates';
+export {
+  computeRenameRefContext,
+  rewriteRenamedDocRefs,
+} from './lib/rename-ref-rewrites';
 export { fetchServerDocContent, buildDocsVaultAssetCandidates } from './lib/server-doc-content';

@@ -1162,6 +1162,19 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     focusedSlugRef.current = focusedSlug;
+    /*
+     * The hover ref is cleared on every focus transition (bug sweep
+     * 2026-09-01). The pointermove handler early-returns while a node is
+     * focused, so the id captured at click time froze in this ref: the idle
+     * gate read it as "interaction in progress" every frame and the ambient
+     * sleep never engaged — a full-frame 60fps repaint for as long as the
+     * mouse rested over the canvas (~130ms/s at 2k nodes). And deselecting via
+     * Escape or the panel close without moving the mouse let the frame
+     * resolver revive the stale id as a live hover ring on the
+     * previously-clicked node. A fresh pointermove after deselect re-derives
+     * the real hover.
+     */
+    hoveredNodeIdRef.current = null;
     // Select and deselect are static state transitions, so force one more draw
     // even while idle skipping (symmetric with the selectedEdge effect).
     // Without this wake on deselect, the retained colorFocus fade freezes in
@@ -4951,13 +4964,24 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   // render) so the effect below can stay mount-only (`[]`) without going
   // stale — `handlers` itself isn't memoized, so it isn't a safe effect dep.
   const handleWheelRef = useRef(handlers.handleWheel);
+  // `noteInput` is declared further down; the mount-only listener reaches it
+  // through this ref (kept in sync by the effect beside noteInput's declaration).
+  const wheelNoteInputRef = useRef<() => void>(() => {});
   useEffect(() => {
     handleWheelRef.current = handlers.handleWheel;
   });
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const listener = (e: WheelEvent) => handleWheelRef.current(e);
+    // The native listener must go through `noteInput` like every other input
+    // path. It used to bind the raw handler, so wheel input never updated
+    // lastInputMs — after the 30s ambient sleep, wheel-zooming without moving
+    // the pointer left the ambient factor at 0 and the depends-edge comets
+    // stayed frozen through the whole interaction (bug sweep 2026-09-01).
+    const listener = (e: WheelEvent) => {
+      wheelNoteInputRef.current();
+      handleWheelRef.current(e);
+    };
     canvas.addEventListener("wheel", listener, { passive: false });
     return () => canvas.removeEventListener("wheel", listener);
   }, []);
@@ -4992,6 +5016,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // enough to guarantee it.
     lastActiveMsRef.current = lastInputMsRef.current;
   }, []);
+  useEffect(() => {
+    wheelNoteInputRef.current = noteInput;
+  }, [noteInput]);
 
   /**
    * Announcing a dead end — **silence was the defect.**

@@ -574,7 +574,15 @@ function throwIdentityIssues(issues) {
   const hints = [...new Set(issues.map((issue) => IDENTITY_REPAIR_HINT[issue.code]).filter(Boolean))];
   const error = new Error(
     `Ontology compilation failed with ${issues.length} node identity error${issues.length === 1 ? '' : 's'}: ` +
-      issues.map((issue) => `${issue.code} (${issue.slug})`).join(', ') +
+      issues
+        .map((issue) => {
+          // duplicate-uid / duplicate-merged-uid carry `slugs` (plural) — the one
+          // error that stops every graph command must name the offending files,
+          // not print "(undefined)" (bug sweep 2026-09-01).
+          const where = issue.slug ?? (Array.isArray(issue.slugs) ? issue.slugs.join(' + ') : 'unknown');
+          return `${issue.code} (${where})`;
+        })
+        .join(', ') +
       (hints.length ? `\n  → ${hints.join('\n  → ')}` : ''),
   );
   error.name = 'OntologyIdentityError';

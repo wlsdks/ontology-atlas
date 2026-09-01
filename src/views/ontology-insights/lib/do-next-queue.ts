@@ -45,6 +45,8 @@ export interface DoNextQueue {
 }
 
 export interface BuildDoNextQueueOptions {
+  /** Locale-resolved handoff prose (from the insights messages, via `t.raw`). */
+  prose: DoNextHandoffProse;
   /** The minimum degree to count as a hub. Defaults to 4. */
   hubMinDegree?: number;
   /** The minimum elapsed days to count as "neglected". Defaults to 30. */
@@ -55,8 +57,37 @@ export interface BuildDoNextQueueOptions {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const DO_NEXT_VERIFICATION_GATE =
-  'query_ontology({operation:"health"}) 로 변경 결과 재확인';
+
+/**
+ * The locale-resolved prose the handoff builders interleave between MCP calls.
+ * These are user-facing clipboard strings, so they come from the messages files
+ * (via `t.raw`, ICU-free — the MCP-call braces must survive verbatim) rather
+ * than hardcoded Korean: an English-locale user used to copy Korean operating
+ * instructions from every insights handoff (bug sweep 2026-09-01). `%ref%`,
+ * `%kind%` and friends are plain tokens filled by `fillHandoffTemplate`.
+ */
+export interface DoNextHandoffProse {
+  verificationGate: string;
+  createDocFirst: string;
+  doNextUpdate: string;
+  doNextUpdateProof: string;
+  doNextNewDocProof: string;
+  orphanRelate: string;
+  orphanFindNeighbors: string;
+  orphanProof: string;
+  promotionNewDoc: string;
+  promotionDocumented: string;
+  promotionProof: string;
+}
+
+export function fillHandoffTemplate(
+  template: string,
+  values: Record<string, string>,
+): string {
+  return template.replace(/%([a-zA-Z]+)%/g, (whole, name: string) =>
+    Object.prototype.hasOwnProperty.call(values, name) ? values[name] : whole,
+  );
+}
 
 /**
  * A per-row handoff does not end at "what to change" — it closes with a health re-query on the same
@@ -65,8 +96,9 @@ const DO_NEXT_VERIFICATION_GATE =
 export function withDoNextVerification(
   instruction: string,
   resultProof: string,
+  verificationGate: string,
 ): string {
-  return `${instruction} → ${resultProof} → ${DO_NEXT_VERIFICATION_GATE}`;
+  return `${instruction} → ${resultProof} → ${verificationGate}`;
 }
 
 /**
@@ -87,50 +119,63 @@ function agentNameOf(node: KnowledgeGraphNode | undefined, fallbackId: string): 
   };
 }
 
-/** The shared first step attached to a concept with no document — create it. */
-function createDocFirst(ref: string, kind: string): string {
-  return `이 개념은 아직 볼트에 "${ref}" 라는 참조로만 적혀 있어요(문서 없음) → add_concept({slug:"${ref}", kind:"${kind}"}) 로 문서부터 만들기`;
+function createDocFirst(prose: DoNextHandoffProse, ref: string, kind: string): string {
+  return fillHandoffTemplate(prose.createDocFirst, { ref, kind });
 }
 
-function buildDoNextHandoff(node: KnowledgeGraphNode): string {
+function buildDoNextHandoff(prose: DoNextHandoffProse, node: KnowledgeGraphNode): string {
   const { ref, documented } = agentNameOf(node, node.id);
   if (!documented) {
     return withDoNextVerification(
-      createDocFirst(ref, node.kind),
-      `get_concept({slug:"${ref}"}) 로 새 문서 확인`,
+      createDocFirst(prose, ref, node.kind),
+      fillHandoffTemplate(prose.doNextNewDocProof, { ref }),
+      prose.verificationGate,
     );
   }
   return withDoNextVerification(
-    `query_ontology({operation:"blast_radius", slug:"${ref}"}) 로 영향권 확인 → 문서 내용 검토 후 patch_concept({slug:"${ref}", …}) 로 갱신`,
-    `get_concept({slug:"${ref}"}) 로 갱신된 원문 확인`,
+    fillHandoffTemplate(prose.doNextUpdate, { ref }),
+    fillHandoffTemplate(prose.doNextUpdateProof, { ref }),
+    prose.verificationGate,
   );
 }
 
-function buildOrphanHandoff(node: KnowledgeGraphNode | undefined, fallbackId: string): string {
+function buildOrphanHandoff(
+  prose: DoNextHandoffProse,
+  node: KnowledgeGraphNode | undefined,
+  fallbackId: string,
+): string {
   const { ref, documented } = agentNameOf(node, fallbackId);
   if (!documented) {
     return withDoNextVerification(
-      `${createDocFirst(ref, node?.kind ?? "element")} → add_relation({from:"${ref}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
-      `find_neighbors({slug:"${ref}"}) 로 새 관계 확인`,
+      `${createDocFirst(prose, ref, node?.kind ?? "element")} → ${fillHandoffTemplate(prose.orphanRelate, { ref })}`,
+      fillHandoffTemplate(prose.orphanProof, { ref }),
+      prose.verificationGate,
     );
   }
   return withDoNextVerification(
-    `find_neighbors({slug:"${ref}"}) 로 이웃 후보 확인 → relation_check 사전 점검 → add_relation({from:"${ref}", to:"<대상>", type:"relates", why:"<근거 한 줄>"})`,
-    `find_neighbors({slug:"${ref}"}) 로 새 관계 확인`,
+    fillHandoffTemplate(prose.orphanFindNeighbors, { ref }),
+    fillHandoffTemplate(prose.orphanProof, { ref }),
+    prose.verificationGate,
   );
 }
 
-function buildPromotionHandoff(node: KnowledgeGraphNode | undefined, fallbackId: string): string {
+function buildPromotionHandoff(
+  prose: DoNextHandoffProse,
+  node: KnowledgeGraphNode | undefined,
+  fallbackId: string,
+): string {
   const { ref, documented } = agentNameOf(node, fallbackId);
   if (!documented) {
     return withDoNextVerification(
-      `${createDocFirst(ref, node?.kind ?? "element")} → 승격이 맞으면 그 문서의 kind 를 상향`,
-      `query_ontology({operation:"node_profile", slug:"${ref}"}) 로 kind와 fan-in 재확인`,
+      `${createDocFirst(prose, ref, node?.kind ?? "element")} → ${prose.promotionNewDoc}`,
+      fillHandoffTemplate(prose.promotionProof, { ref }),
+      prose.verificationGate,
     );
   }
   return withDoNextVerification(
-    `query_ontology({operation:"node_profile", slug:"${ref}"}) 로 fan-in 확인 → 승격이 맞으면 patch_concept 로 kind 상향 또는 add_concept 로 상위 개념 신설`,
-    `query_ontology({operation:"node_profile", slug:"${ref}"}) 로 kind와 fan-in 재확인`,
+    fillHandoffTemplate(prose.promotionDocumented, { ref }),
+    fillHandoffTemplate(prose.promotionProof, { ref }),
+    prose.verificationGate,
   );
 }
 
@@ -143,8 +188,9 @@ export function buildDoNextQueue(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   freshnessIndex: ReadonlyMap<string, string>,
-  options: BuildDoNextQueueOptions = {},
+  options: BuildDoNextQueueOptions,
 ): DoNextQueue {
+  const prose = options.prose;
   const hubMinDegree = options.hubMinDegree ?? 4;
   const neglectMinDays = options.neglectMinDays ?? 30;
   const perKindLimit = options.perKindLimit ?? 5;
@@ -175,7 +221,7 @@ export function buildDoNextQueue(
       degree,
       agoDays,
       evidenceOnly: isEvidenceOnlyConcept(node),
-      handoffPayload: buildDoNextHandoff(node),
+      handoffPayload: buildDoNextHandoff(prose, node),
     });
   }
   neglectedHubs.sort((a, b) => (b.degree ?? 0) * (b.agoDays ?? 0) - (a.degree ?? 0) * (a.agoDays ?? 0));
@@ -191,7 +237,7 @@ export function buildDoNextQueue(
     title: name,
     nodeKind: nodeById.get(slug)?.kind ?? "unknown",
     evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
-    handoffPayload: buildOrphanHandoff(nodeById.get(slug), slug),
+    handoffPayload: buildOrphanHandoff(prose, nodeById.get(slug), slug),
   }));
 
   const promotions: DoNextRow[] = signals.promotion.map(({ slug, name, fanIn }) => ({
@@ -203,7 +249,7 @@ export function buildDoNextQueue(
     // The evidence for "why was this picked" — the incoming reference count, exposed verbatim as the row metric ("N references").
     degree: fanIn,
     evidenceOnly: isEvidenceOnlyConcept(nodeById.get(slug)),
-    handoffPayload: buildPromotionHandoff(nodeById.get(slug), slug),
+    handoffPayload: buildPromotionHandoff(prose, nodeById.get(slug), slug),
   }));
 
   const rows = [

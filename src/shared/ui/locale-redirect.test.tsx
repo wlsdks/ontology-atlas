@@ -78,4 +78,30 @@ describe('LocaleRedirect — 디자인 토큰 가드', () => {
 
     expect(window.location.replace).toHaveBeenCalledWith('/en/');
   });
+
+  /*
+   * Bug sweep 2026-09-01: the locale hop dropped the query string and hash, so
+   * any shared, bookmarked, or agent-emitted deep link addressed to `/`
+   * (`/?p=…`, `/?realm=…`) opened an unselected map — the clicked project was
+   * silently lost. Deciding the language only means changing the PATH only.
+   */
+  it('쿼리와 해시는 locale 홉을 그대로 통과한다', () => {
+    window.localStorage.setItem('ontology-atlas:locale', 'en');
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      writable: true,
+      value: {
+        ...originalLocation,
+        search: '?p=projects%2Fatlas&realm=web',
+        hash: '#detail',
+        replace: vi.fn(),
+      },
+    });
+
+    render(<LocaleRedirect />);
+
+    expect(window.location.replace).toHaveBeenCalledWith(
+      '/en/?p=projects%2Fatlas&realm=web#detail',
+    );
+  });
 });

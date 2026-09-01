@@ -121,7 +121,14 @@ touched "$APP" '^eslint\.config\.mjs$' && lane lint 'pnpm lint'
 # worker pool and timeout.
 touched "$APP" '^messages/' && lane unit 'pnpm exec vitest run --maxWorkers=2 --testTimeout=30000 --exclude "**/*.perf.test.*" --exclude "tests/contract/**"'
 touched '^messages/|^scripts/validate-messages' && lane i18n 'pnpm test:i18n:messages'
-touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/' && lane agents 'pnpm agents:check'
+# The lane selector covers agents:check's full subject set: `.codex/**` (the
+# hook/config mirror and the MCP-grant denominator via .codex/config.toml),
+# `.mcp.json` (the other grant denominator), and every nested AGENTS.md (an
+# input of the 32 KiB cap — root plus the largest nested file). With the
+# narrower glob, growing a nested AGENTS.md past the cap passed pre-push
+# silently and only CI's unconditional agents:check caught it (bug sweep
+# 2026-09-01 — the same half-subject-set failure noted here on 2026-08-24).
+touched '^AGENTS\.md$|^CLAUDE\.md$|^\.claude/|^\.agents/|^\.codex/|^\.mcp\.json$|(^|/)AGENTS\.md$' && lane agents 'pnpm agents:check'
 touched "$DOCS" '^src/entities/docs-vault/data/' && lane docs 'pnpm docs:language && pnpm docs:links && pnpm docs-vault:check'
 # The gateway shows one vault file verbatim; the committed copy must match the vault.
 touched '^docs/ontology/' '^scripts/generate-evidence-specimen' '^src/views/download/model/evidence-specimen' && lane specimen 'pnpm gateway:specimen:check'

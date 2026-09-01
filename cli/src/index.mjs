@@ -266,9 +266,22 @@ function parseInitArgs(args) {
   let quickStart = false;
   // Starter body language. The file set and frontmatter are identical; only the prose differs.
   let locale = 'en';
-  for (const arg of args) {
+  for (let i = 0; i < args.length; i += 1) {
+    const arg = args[i];
     if (arg === '--quick-start') {
       quickStart = true;
+      continue;
+    }
+    // Both value forms, like every other command. Supporting only `=` made the
+    // space form fail with the self-contradictory "unknown flag: --locale. Did
+    // you mean --locale?" (bug sweep 2026-09-01).
+    if (arg === '--locale') {
+      const value = args[i + 1];
+      if (value === undefined || value.startsWith('-')) {
+        return { error: '--locale requires a value (for example --locale ko)' };
+      }
+      locale = value;
+      i += 1;
       continue;
     }
     if (arg.startsWith('--locale=')) {
@@ -589,7 +602,13 @@ async function runInit(targetArg, opts = {}) {
   // silently. This write exists for "I am standing in my project, put a vault inside it"; when the
   // vault lands outside cwd, cwd is merely where the person stood. See lib/cwd-binding-scope.mjs.
   const bindingScope = cwdBindingScope(cwdPath, canonicalTarget);
-  let cwdVaultArg = '.';
+  // Every printed follow-up (`bootstrap --vault`, `mcp-verify`, the absorb
+  // suggestion) and the quick-start bootstrap itself must name the vault that
+  // was just scaffolded. This used to stay '.' whenever the vault landed
+  // outside cwd, so the pasteable commands — including `absorb --write` —
+  // targeted the directory the person happened to stand in, not the new vault
+  // (bug sweep 2026-09-01).
+  let cwdVaultArg = relative(cwdPath, canonicalTarget) || '.';
   if (bindingScope.write) {
     cwdVaultArg = bindingScope.relativeVault;
     writeMcpJson(cwdPath, cwdVaultArg, '.', 'cwd');

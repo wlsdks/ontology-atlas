@@ -7406,6 +7406,151 @@ await test("MCP slug conflicts expose structured recovery fields", async () => {
   }
 });
 
+/*
+ * Bug sweep 2026-09-01, reproduced: on macOS/Windows a wrong-case slug passes
+ * `existsSync` while backlink matching is a case-sensitive string comparison, so
+ * `rename_concept{oldSlug:"capabilities/Auth"}` deleted `auth.md`, redirected
+ * **0** backlinks, and reported success — and `delete_concept` deleted a
+ * referenced node without `force` because `findBacklinks` saw no referrers.
+ * Destructive tools now resolve the caller's spelling to the on-disk one first.
+ */
+await test("MCP rename_concept with a wrong-case oldSlug still redirects backlinks", async () => {
+  const root = makeVault([
+    { slug: "capabilities/auth", content: "---\nkind: capability\ntitle: Auth\n---\n" },
+    {
+      slug: "d1",
+      content: "---\nkind: document\ntitle: D1\ncapabilities: [capabilities/auth]\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "rename_concept", {
+        oldSlug: "capabilities/Auth",
+        newSlug: "capabilities/authn",
+        confirm: true,
+      }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), false);
+    const renamed = getCallStructured(responses, 2);
+    assert.equal(renamed.ok, true);
+    assert.equal(renamed.moved, true);
+    assert.equal(renamed.oldSlug, "capabilities/auth");
+    assert.equal(renamed.backlinkUpdates.totalUpdated, 1);
+    assert.equal(existsSync(join(root, "capabilities", "auth.md")), false);
+    assert.equal(existsSync(join(root, "capabilities", "authn.md")), true);
+    const referrer = readFileSync(join(root, "d1.md"), "utf-8");
+    assert.match(referrer, /capabilities\/authn/);
+    assert.doesNotMatch(referrer, /capabilities\/auth\b(?!n)/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("MCP rename_concept refuses a target that case-collides with another document", async () => {
+  const root = makeVault([
+    { slug: "capabilities/auth", content: "---\nkind: capability\ntitle: Auth\n---\n" },
+    { slug: "capabilities/search", content: "---\nkind: capability\ntitle: Search\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "rename_concept", {
+        oldSlug: "capabilities/search",
+        newSlug: "capabilities/AUTH",
+        confirm: true,
+      }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(getCallText(responses, 2), /letter case/i);
+    assert.equal(existsSync(join(root, "capabilities", "search.md")), true);
+    assert.equal(existsSync(join(root, "capabilities", "auth.md")), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("MCP delete_concept with a wrong-case slug still sees its backlinks", async () => {
+  const root = makeVault([
+    { slug: "capabilities/auth", content: "---\nkind: capability\ntitle: Auth\n---\n" },
+    {
+      slug: "d1",
+      content: "---\nkind: document\ntitle: D1\ncapabilities: [capabilities/auth]\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "delete_concept", { slug: "capabilities/Auth", confirm: true }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(getCallText(responses, 2), /backlink/i);
+    assert.equal(existsSync(join(root, "capabilities", "auth.md")), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("MCP rename_concept preserves a frontmatter slug alias that differs from the file slug", async () => {
+  // The dogfood pattern: project.md carries a user-facing `slug: ontology-atlas`
+  // alias other documents reference by that spelling. Rename used to overwrite
+  // the alias with newSlug, severing every alias-form ref silently.
+  const root = makeVault([
+    {
+      slug: "capabilities/auth",
+      content: "---\nkind: capability\ntitle: Auth\nslug: auth-alias\n---\n",
+    },
+    {
+      slug: "d1",
+      content: "---\nkind: document\ntitle: D1\ncapabilities: [auth-alias]\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "rename_concept", {
+        oldSlug: "capabilities/auth",
+        newSlug: "capabilities/authn",
+        confirm: true,
+      }),
+      callTool(3, "find_backlinks", { slug: "capabilities/authn" }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), false);
+    const renamedDoc = readFileSync(join(root, "capabilities", "authn.md"), "utf-8");
+    assert.match(renamedDoc, /slug: auth-alias/);
+    const backlinks = getCallStructured(responses, 3);
+    assert.deepEqual(backlinks.matches.map((row) => row.slug), ["d1"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("MCP delete_concept treats an ambiguous-tail referrer as a blocking backlink", async () => {
+  // capabilities/foo and elements/foo share a tail; d1's `capabilities: [foo]`
+  // could mean either. Deleting a candidate without force must be refused —
+  // before the shared ref index, findBacklinks saw no referrer for either node
+  // and the safety gate waved the delete through (bug sweep 2026-09-01).
+  const root = makeVault([
+    { slug: "capabilities/foo", content: "---\nkind: capability\ntitle: Foo Cap\n---\n" },
+    { slug: "elements/foo", content: "---\nkind: element\ntitle: Foo El\n---\n" },
+    {
+      slug: "d1",
+      content: "---\nkind: document\ntitle: D1\ncapabilities: [foo]\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "delete_concept", { slug: "capabilities/foo", confirm: true }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(getCallText(responses, 2), /backlink/i);
+    assert.equal(existsSync(join(root, "capabilities", "foo.md")), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("MCP write tools — finalize project meaning survives a fresh MCP process and fails closed after a body edit", async () => {
   const competency = renderProjectCompetencyMarkdown({
     scope: {
@@ -9514,6 +9659,38 @@ await test("replace_relation — atomically replaces target/type and rationale",
     assert.deepEqual(project.frontmatter.domains, ["domains/identity"]);
     assert.equal(project.frontmatter.relation_notes["domains/identity"], "Canonical ownership");
     assert.equal(project.frontmatter.relation_notes["domains/auth"], undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("replace_relation — converting to depends_on demands a why when none can be inherited", async () => {
+  // add_relation hard-requires a nonblank why for every new depends_on edge;
+  // replace_relation used to bypass that contract when converting an edge that
+  // carried no prior relation note (bug sweep 2026-09-01).
+  const root = makeVault([
+    { slug: "capabilities/a", content: "---\nkind: capability\ntitle: A\nrelates: [capabilities/b]\n---\n" },
+    { slug: "capabilities/b", content: "---\nkind: capability\ntitle: B\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "replace_relation", {
+        from: "capabilities/a", oldTo: "capabilities/b", oldType: "relates",
+        newTo: "capabilities/b", newType: "depends_on", confirm: true,
+      }),
+      callTool(3, "replace_relation", {
+        from: "capabilities/a", oldTo: "capabilities/b", oldType: "relates",
+        newTo: "capabilities/b", newType: "depends_on", why: "Uses b's session store", confirm: true,
+      }),
+      callTool(4, "get_concept", { slug: "capabilities/a" }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(getCallText(responses, 2), /why is required/i);
+    assert.equal(isErrorResponse(responses, 3), false);
+    const a = getCallParsed(responses, 4);
+    assert.deepEqual(a.frontmatter.dependencies, ["capabilities/b"]);
+    assert.equal(a.frontmatter.relation_notes["capabilities/b"], "Uses b's session store");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -243,7 +243,22 @@ describe("화면이 복사해 주는 MCP 호출의 인자 (인사이트)", () =>
       const slug = node.evidenceIds[0];
       if (slug) freshness.set(slug, "2020-01-01T00:00:00.000Z");
     }
-    const queue = buildDoNextQueue(insight.nodes, insight.edges, freshness);
+    const queue = buildDoNextQueue(insight.nodes, insight.edges, freshness, {
+      // The prose is locale data; this contract only reads the MCP-call slugs.
+      prose: {
+        verificationGate: 'query_ontology({operation:"health"}) to re-check the result',
+        createDocFirst: 'create the document first with add_concept({slug:"%ref%", kind:"%kind%"})',
+        doNextUpdate: 'query_ontology({operation:"blast_radius", slug:"%ref%"}) then patch_concept({slug:"%ref%", …})',
+        doNextUpdateProof: 'get_concept({slug:"%ref%"})',
+        doNextNewDocProof: 'get_concept({slug:"%ref%"})',
+        orphanRelate: 'add_relation({from:"%ref%", to:"<target>", type:"relates", why:"<one-line reason>"})',
+        orphanFindNeighbors: 'find_neighbors({slug:"%ref%"}) then add_relation({from:"%ref%", to:"<target>", type:"relates", why:"<one-line reason>"})',
+        orphanProof: 'find_neighbors({slug:"%ref%"})',
+        promotionNewDoc: 'raise that document kind if right',
+        promotionDocumented: 'query_ontology({operation:"node_profile", slug:"%ref%"}) then patch_concept or add_concept',
+        promotionProof: 'query_ontology({operation:"node_profile", slug:"%ref%"})',
+      },
+    });
     expect(queue.rows.length).toBeGreaterThan(0);
     for (const row of queue.rows) assertResolvable(row.handoffPayload);
   });

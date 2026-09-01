@@ -354,6 +354,37 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
     // The canonical title is locale-independent; display_* carries the on-screen name.
     assert.match(koReadme, /title: My ontology vault/);
 
+    // The space form works like every other command's value flags — it used to
+    // fail with the self-contradictory "unknown flag: --locale. Did you mean
+    // --locale?" (bug sweep 2026-09-01).
+    const koSpace = await run(['init', 'vault-ko-space', '--locale', 'ko'], { cwd: repo });
+    assert.equal(koSpace.code, 0, `stdout: ${koSpace.stdout}\nstderr: ${koSpace.stderr}`);
+    assert.match(
+      readFileSync(join(repo, 'vault-ko-space', 'README.md'), 'utf-8'),
+      /# 내 온톨로지 문서함/,
+    );
+    const missing = await run(['init', 'vault-x', '--locale'], { cwd: repo });
+    assert.notEqual(missing.code, 0, 'a dangling --locale must be rejected');
+    assert.match(missing.stderr, /--locale requires a value/);
+
+    // When the vault lands outside cwd, the pasteable follow-ups must name the
+    // scaffolded vault, never `--vault .` (which pointed at wherever the person
+    // stood — bug sweep 2026-09-01).
+    const outsideVault = mkdtempSync(join(tmpdir(), 'cli-init-outside-'));
+    try {
+      const standDir = mkdtempSync(join(tmpdir(), 'cli-init-stand-'));
+      try {
+        const outside = await run(['init', join(outsideVault, 'ov')], { cwd: standDir });
+        assert.equal(outside.code, 0, `stdout: ${outside.stdout}\nstderr: ${outside.stderr}`);
+        assert.ok(!/--vault '?\.'?\s/.test(outside.stdout), 'follow-ups must not target cwd');
+        assert.ok(outside.stdout.includes('ov'), 'follow-ups must name the scaffolded vault');
+      } finally {
+        rmSync(standDir, { recursive: true, force: true });
+      }
+    } finally {
+      rmSync(outsideVault, { recursive: true, force: true });
+    }
+
     const en = await run(['init', 'vault-en'], { cwd: repo });
     assert.equal(en.code, 0, `stdout: ${en.stdout}\nstderr: ${en.stderr}`);
     const enReadme = readFileSync(join(repo, 'vault-en', 'README.md'), 'utf-8');

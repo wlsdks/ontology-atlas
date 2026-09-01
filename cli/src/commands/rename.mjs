@@ -4,9 +4,9 @@
 // Thin wrapper over MCP rename_concept (dry-run + confirm pattern).
 
 import { COLORS } from '../lib/colors.mjs';
-import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
+import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--confirm', '--overwrite', '--json'];
 
@@ -23,7 +23,11 @@ export async function runRename(args) {
     return 1;
   }
 
-  const vaultRoot = resolve(process.cwd(), vault);
+  // The shared resolution order (explicit → OATLAS_VAULT → docs/ontology
+  // auto-detect), like every other vault command. The bare cwd resolve this
+  // used meant a destructive write could target a different vault than the
+  // read/write siblings in the same shell (bug sweep 2026-09-01).
+  const vaultRoot = resolveVaultRoot(vault);
 
   if (!confirm) {
     // Dry-run preview.

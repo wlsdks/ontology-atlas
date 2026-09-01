@@ -33,6 +33,7 @@ const ALLOWED_FLAGS = ['--vault', '--json', '--dry-run'];
 
 // Mirrors `relate.mjs`'s copy, for the same reason it keeps one: the CLI does not
 // import across the mcp/cli package boundary.
+const LEGACY_KEYS = Object.freeze({ dependencies: ['depends_on'] });
 const RELATION_KEY = Object.freeze({
   depends_on: 'dependencies',
   relates: 'relates',
@@ -67,13 +68,22 @@ export function planRemoval(frontmatter, relation, to) {
     }
     return { key, found: true, next: null };
   }
-  const existing = Array.isArray(frontmatter[key]) ? frontmatter[key] : null;
-  if (existing === null) return { key, found: false, reason: `this document has no ${key}` };
+  // Alias-aware, like the MCP remover: a hand-authored `depends_on:` array is
+  // the same edge family as `dependencies:` — answering "this document has no
+  // dependencies" for an edge the map plainly renders was the bug (2026-09-01).
+  const aliasKeys = (LEGACY_KEYS[key] ?? []).filter((k) => frontmatter[k] !== undefined);
+  const existing = [key, ...aliasKeys]
+    .map((k) => frontmatter[k])
+    .filter(Array.isArray)
+    .flat();
+  if (existing.length === 0 && !Array.isArray(frontmatter[key]) && aliasKeys.length === 0) {
+    return { key, found: false, reason: `this document has no ${key}` };
+  }
   const normalized = normalizeRelationRefs(existing);
   if (!normalized.includes(to)) {
     return { key, found: false, reason: `${to} is not in ${key} (${normalized.length} entr${normalized.length === 1 ? 'y' : 'ies'})` };
   }
-  return { key, found: true, next: normalized.filter((ref) => ref !== to) };
+  return { key, found: true, next: normalized.filter((ref) => ref !== to), aliasKeys };
 }
 
 function removeRelation(rootPath, { from, to, relation }, runtime) {
@@ -96,6 +106,9 @@ function removeRelation(rootPath, { from, to, relation }, runtime) {
     return { ...runtime.writeFrontmatterKeys(rootPath, from, patch, { expectedRevision: revision }), plan };
   }
   const patch = hadNote ? { [plan.key]: plan.next, relation_notes: notes } : { [plan.key]: plan.next };
+  // Consolidate: the surviving refs land under the canonical key and any alias
+  // key they were read from is deleted, exactly as the MCP writer does.
+  for (const alias of plan.aliasKeys ?? []) patch[alias] = null;
   return { ...runtime.writeFrontmatterKeys(rootPath, from, patch, { expectedRevision: revision }), plan };
 }
 

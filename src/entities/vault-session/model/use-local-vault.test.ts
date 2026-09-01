@@ -711,4 +711,36 @@ describe('structurallyEqualStatus — 폴링 가드가 실제로 작동한다', 
     changed.proof.sources.mcp = 1;
     expect(structurallyEqualStatus(emptyAgentActivityStatus(), changed)).toBe(false);
   });
+
+  /*
+   * Bug sweep 2026-09-01. `ageMs` (and `refreshRequest.previousAgeMs`) embed
+   * `Date.now()` at parse time, so with a heartbeat file present two consecutive
+   * poll ticks were never structurally equal — the guard this block protects was
+   * defeated again and the whole app re-rendered every 1.5–5s during (and after)
+   * any agent session. Volatile age fields must not participate in the compare;
+   * `stale` still does, so the one meaningful age transition updates state.
+   */
+  it('ageMs 만 다른 두 heartbeat status 는 같다고 판정한다', async () => {
+    const { comparableAgentActivityStatus, structurallyEqualStatus } = await import('./use-local-vault');
+    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const a = { ...emptyAgentActivityStatus(), ageMs: 1_000 };
+    const b = { ...emptyAgentActivityStatus(), ageMs: 4_500 };
+    b.refreshRequest = { ...b.refreshRequest, previousAgeMs: 4_500 };
+    expect(
+      structurallyEqualStatus(comparableAgentActivityStatus(a), comparableAgentActivityStatus(b)),
+    ).toBe(true);
+  });
+
+  it('stale 전이는 여전히 변경으로 판정한다', async () => {
+    const { comparableAgentActivityStatus, structurallyEqualStatus } = await import('./use-local-vault');
+    const { emptyAgentActivityStatus } = await import('./agent-activity-status');
+    const fresh = { ...emptyAgentActivityStatus(), ageMs: 1_000, stale: false };
+    const stale = { ...emptyAgentActivityStatus(), ageMs: 999_000, stale: true };
+    expect(
+      structurallyEqualStatus(
+        comparableAgentActivityStatus(fresh),
+        comparableAgentActivityStatus(stale),
+      ),
+    ).toBe(false);
+  });
 });

@@ -83,7 +83,7 @@ function importUiReducer(state: ImportUiState, action: ImportUiAction): ImportUi
  */
 export function BlockImportModule() {
   const t = useTranslations("ontologyBlocks");
-  const { status, manifest, createDoc } = useLocalVault();
+  const { status, manifest, createDoc, deleteDoc } = useLocalVault();
   const [{ preview, inlineText }, dispatchImportUi] = useReducer(importUiReducer, {
     preview: null,
     inlineText: null,
@@ -156,11 +156,13 @@ export function BlockImportModule() {
   useEffect(() => {
     if (!open) return;
     const handler = (event: KeyboardEvent) => {
-      if (event.key === "Escape") dispatchImportUi({ type: "close-preview" });
+      // Never while writes are in flight — closing hid an import mid-write
+      // with no way to see its outcome (bug sweep 2026-09-01).
+      if (event.key === "Escape" && !busy) dispatchImportUi({ type: "close-preview" });
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+  }, [open, busy]);
 
   // Decided by whether it can be called, not by key presence (`in`) — judging "supported"
   // in an environment where the value is undefined paints a raw JS error where the user
@@ -213,6 +215,16 @@ export function BlockImportModule() {
     if (!preview || !plan || plan.writes.length === 0 || busy) return;
     setBusy(true);
     setDialogError(false);
+    /*
+     * All writes land or none do (bug sweep 2026-09-01). A mid-loop failure
+     * used to leave the earlier files on disk with no manifest refresh, and —
+     * worse — made retry permanently impossible: the memoized plan still
+     * targeted the already-created slugs, so the retry's first createDoc threw
+     * "Document already exists" every time. The files this loop creates are
+     * new by construction, so rolling back is deleting exactly what it made;
+     * after the rollback the same plan applies cleanly on retry.
+     */
+    const landed: string[] = [];
     try {
       for (let i = 0; i < plan.writes.length; i += 1) {
         const write = plan.writes[i];
@@ -220,9 +232,17 @@ export function BlockImportModule() {
         await createDoc(write.slug, write.content, {
           skipRefresh: i < plan.writes.length - 1,
         });
+        landed.push(write.slug);
       }
       dispatchImportUi({ type: "complete-import", text: t("importDone", { count: plan.writes.length }) });
     } catch {
+      for (const slug of landed.reverse()) {
+        try {
+          await deleteDoc(slug);
+        } catch {
+          // Best effort — the error row below still tells the user to check.
+        }
+      }
       setDialogError(true);
     } finally {
       setBusy(false);
@@ -287,7 +307,9 @@ export function BlockImportModule() {
             exit={{ opacity: 0 }}
             transition={MOTION.base}
             className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-6"
-            onClick={() => dispatchImportUi({ type: "close-preview" })}
+            onClick={() => {
+              if (!busy) dispatchImportUi({ type: "close-preview" });
+            }}
           >
             <motion.section
               initial={{ opacity: 0, y: 12, scale: 0.985 }}
@@ -318,7 +340,10 @@ export function BlockImportModule() {
                 </div>
                 <IconButton
                   label={t("closeAria")}
-                  onClick={() => dispatchImportUi({ type: "close-preview" })}
+                  disabled={busy}
+                  onClick={() => {
+                    if (!busy) dispatchImportUi({ type: "close-preview" });
+                  }}
                   data-testid="block-import-close"
                   className="hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
                 >
@@ -434,7 +459,10 @@ export function BlockImportModule() {
               <footer className="flex shrink-0 items-center justify-end gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-5 py-3">
                 <button
                   type="button"
-                  onClick={() => dispatchImportUi({ type: "close-preview" })}
+                  disabled={busy}
+                  onClick={() => {
+                    if (!busy) dispatchImportUi({ type: "close-preview" });
+                  }}
                   data-testid="block-import-cancel"
                   className={controlClass({
                     shape: "segment",

@@ -1035,11 +1035,23 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
         return;
       }
 
-      const anchor = next.downPoint ?? point;
-      const worldDX = (point.x - anchor.x) / cameraRef.current.scale.value;
-      const worldDY = (point.y - anchor.y) / cameraRef.current.scale.value;
-      const nextX = camStartAtDownRef.current.x - worldDX;
-      const nextY = camStartAtDownRef.current.y - worldDY;
+      /*
+       * Incremental, not gesture-total (bug sweep 2026-09-01). The old math
+       * divided the WHOLE gesture's screen delta from downPoint by the CURRENT
+       * scale — wheel-zooming while a background drag was held retroactively
+       * rescaled the accumulated delta, so the next 1px pointermove jumped the
+       * camera by up to half the drag distance. Only the delta since the last
+       * sample (the history's tail — seeded with the down point) is converted
+       * at the current scale, so a mid-drag zoom changes nothing already panned.
+       */
+      const previous = dragHistoryRef.current[dragHistoryRef.current.length - 1]
+        ?? next.downPoint
+        ?? point;
+      const scale = cameraRef.current.scale.value;
+      const worldDX = (point.x - previous.x) / scale;
+      const worldDY = (point.y - previous.y) / scale;
+      const nextX = cameraRef.current.x.value - worldDX;
+      const nextY = cameraRef.current.y.value - worldDY;
       // 1:1 tracking, no lag — drag follows the pointer directly, the spring
       // only takes back over once the flick is released (`engine/momentum.ts`).
       cameraRef.current = { ...cameraRef.current, x: { value: nextX, velocity: 0 }, y: { value: nextY, velocity: 0 } };

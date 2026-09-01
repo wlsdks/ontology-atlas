@@ -48,6 +48,24 @@ export function changedPathsFromGit({
   );
 }
 
+/**
+ * The deleted counterpart. A deleted path must never reach a file-reading tool
+ * (the rule above), but it is still a **rule-matching subject**: deleting a
+ * route file must still suggest `decisions:check`, deleting a vault doc
+ * `docs-vault:check`, deleting a view `test:contracts` — their ratchets scan
+ * the filesystem and do move on deletions. Dropping deletions before all
+ * matching made a deletion-only change print "nothing to run" and exit 0
+ * (bug sweep 2026-09-01).
+ */
+export function deletedPathsFromGit({
+  cwd = process.cwd(),
+  spawn = spawnSync,
+  exists = existsSync,
+} = {}) {
+  const tracked = spawnGit({ cwd, spawn, args: ['diff', '--name-only', 'HEAD', '--'] });
+  return uniqueLines(tracked).filter((path) => !exists(resolve(cwd, path)));
+}
+
 function spawnGit({ cwd, spawn, args }) {
   const result = spawn('git', args, {
     cwd,
@@ -200,8 +218,10 @@ export function runSuggestFocusedChecks({
   const run = args.includes('--run');
   const pathArgs = args.filter((arg) => arg !== '--run');
   try {
-    const paths = pathArgs.length > 0 ? pathArgs : changedPathsFromGit({ cwd, spawn });
-    const suggestions = suggestFocusedChecks(paths);
+    const explicit = pathArgs.length > 0;
+    const paths = explicit ? pathArgs : changedPathsFromGit({ cwd, spawn });
+    const deletedPaths = explicit ? [] : deletedPathsFromGit({ cwd, spawn });
+    const suggestions = suggestFocusedChecks(paths, { deletedPaths });
     stdout.write(`${formatFocusedCheckSuggestions(suggestions)}\n`);
     if (!run) return 0;
     return runFocusedChecks({ commands: suggestions.commands, cwd, stdout, spawn });

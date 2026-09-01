@@ -106,6 +106,57 @@ export const WRITER_CASES = [
     expected: '---\ntitle: Kept\n---\n\n',
   },
   {
+    /*
+     * Bug sweep 2026-09-01, reproduced: with the plain `|-` header the reader
+     * took its base indent from the first non-blank line, so a value whose first
+     * line has its own leading whitespace re-read with a deeper base and every
+     * later line escaped the scalar into the top-level loop (`kind: capability`
+     * inside a description changed the node's kind). The writer must emit the
+     * explicit indentation indicator for exactly these values.
+     */
+    name: 'first-line leading whitespace gets an explicit indentation indicator',
+    input: {
+      frontmatter: {
+        kind: 'element',
+        definition: '  sample: yaml snippet\nkind: capability\nnote about it',
+      },
+      body: '',
+    },
+    expected:
+      '---\n' +
+      'kind: element\n' +
+      'definition: |2-\n' +
+      '    sample: yaml snippet\n' +
+      '  kind: capability\n' +
+      '  note about it\n' +
+      '---\n\n',
+  },
+  {
+    /*
+     * Bug sweep 2026-09-01: an unquoted 'true' or '2026' re-read as a
+     * boolean/number, and consumers gating on typeof string (buildMdEntry's
+     * title, readDisplayLocales) silently dropped the value after one round
+     * trip. Strings the reader would re-type are now written quoted.
+     */
+    name: 'quotes strings the reader would re-type as boolean or number',
+    input: {
+      frontmatter: {
+        title: 'true',
+        display_ko: '2026',
+        note: 'false',
+        version: '1.0.1',
+      },
+      body: '',
+    },
+    expected:
+      '---\n' +
+      'title: "true"\n' +
+      'display_ko: "2026"\n' +
+      'note: "false"\n' +
+      'version: 1.0.1\n' +
+      '---\n\n',
+  },
+  {
     name: 'normalizes leading body newlines',
     input: {
       frontmatter: { kind: 'project', title: 'Sample' },

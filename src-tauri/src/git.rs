@@ -247,6 +247,14 @@ fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<Porcelai
     let out = run_git(
         repo_root,
         &[
+            // Raw UTF-8 paths — git's default core.quotePath C-quotes any
+            // non-ASCII path (`"\355\225\234..."`), which this parser would
+            // keep literally and every consumer downstream would mangle: the
+            // same defect class the CLI fixed by moving to `-z`
+            // (bug sweep 2026-09-01). The newline+arrow form stays because the
+            // Rust mirror's tests pin it.
+            "-c",
+            "core.quotepath=false",
             "status",
             "--porcelain",
             "--untracked-files=all",
@@ -267,7 +275,13 @@ fn get_porcelain_status(repo_root: &Path, pathspec: &str) -> Result<Vec<Porcelai
 fn get_full_porcelain_status(repo_root: &Path) -> Vec<PorcelainRow> {
     match run_git(
         repo_root,
-        &["status", "--porcelain", "--untracked-files=all"],
+        &[
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain",
+            "--untracked-files=all",
+        ],
     ) {
         Ok(out) if out.success => parse_porcelain(&out.stdout),
         _ => Vec::new(),

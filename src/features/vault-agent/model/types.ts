@@ -84,6 +84,13 @@ type ProposalStatus =
    */
   | 'applying'
   | 'applied'
+  /**
+   * The write itself failed (an I/O error, or a same-file selection that cannot
+   * be honored). Distinct from 'pending' on purpose: mapping a failure back to
+   * 'pending' made a failed write indistinguishable from "not yet applied"
+   * while files may already have changed (bug sweep 2026-09-01).
+   */
+  | 'failed'
   | 'cancelled'
   | 'conflict'
   | 'copy-degraded';
@@ -95,6 +102,8 @@ export interface AgentProposal {
   /** Defaults to true when the vault is a git repository. */
   snapshotRequested: boolean;
   appliedSnapshotSha?: string;
+  /** Why the apply failed — shown on the card while status is 'failed'. */
+  applyErrorMessage?: string;
   /**
    * The node slugs actually read this turn. A proposal editing a file that is not
    * here gets a warning row on the card — narrowing the path by which an injection

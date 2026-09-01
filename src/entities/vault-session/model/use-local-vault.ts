@@ -18,6 +18,8 @@ import {
   type VaultManifest,
   applyFrontmatterUpdates,
   type FrontmatterUpdateValue,
+  computeRenameRefContext,
+  rewriteRenamedDocRefs,
 } from '@/entities/docs-vault';
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,
@@ -554,6 +556,24 @@ async function readAgentActivityStatus(
  * to prevent. The inputs are small parsed sidecar summaries with no cycles, so a recursive
  * compare costs far less than one wasted render. Exported for its regression test only.
  */
+/**
+ * Blanks the volatile age fields before a no-change compare. `ageMs` and
+ * `refreshRequest.previousAgeMs` embed `Date.now()` at parse time, so with a
+ * heartbeat file present two consecutive poll ticks were never structurally
+ * equal and the "nothing changed means state is not touched" guard was defeated
+ * — the whole app re-rendered every 1.5–5s during any agent session (bug sweep
+ * 2026-09-01). `stale` still participates, so the one meaningful age transition
+ * still reaches state. Nothing on screen reads `ageMs` directly.
+ */
+export function comparableAgentActivityStatus(status: AgentActivityStatus): AgentActivityStatus {
+  if (status.ageMs === null && status.refreshRequest.previousAgeMs === null) return status;
+  return {
+    ...status,
+    ageMs: null,
+    refreshRequest: { ...status.refreshRequest, previousAgeMs: null },
+  };
+}
+
 export function structurallyEqualStatus(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
@@ -1069,8 +1089,17 @@ export function useLocalVaultInternal() {
           setState((s) => {
             const same =
               structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
-              structurallyEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
+              // Volatile age fields are excluded — they advance on every parse
+              // and defeated this guard whenever a heartbeat file existed.
+              structurallyEqualStatus(
+                comparableAgentActivityStatus(s.agentActivityStatus),
+                comparableAgentActivityStatus(sidecars.agentActivityStatus),
+              ) &&
+              // Length alone misses an append once the log reaches its 50-entry
+              // read cap (tail replaced at identical length) — compare the last
+              // entry too.
               s.agentActivityLog.length === sidecars.agentActivityLog.length &&
+              structurallyEqualStatus(s.agentActivityLog.at(-1), sidecars.agentActivityLog.at(-1)) &&
               s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
               s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;
             return same ? s : { ...s, ...sidecars, lastLoadedAt: Date.now() };
@@ -1369,42 +1398,45 @@ export function useLocalVaultInternal() {
 
       // --- optional cascading backlink rewrite
       if (opts.rewriteBacklinks && state.manifest) {
-        // Recover the slugs citing this document from the manifest's linksOut.
-        const referrers = state.manifest.docs
-          .filter(
-            (d) => d.slug !== oldSlug && d.linksOut.includes(oldSlug),
-          )
-          .map((d) => d.slug);
-        // Read each referrer's raw text and rewrite both `[[oldSlug...]]` and
-        // `(...oldSlug.md...)` forms, checking boundaries so a longer slug is not clipped.
-        const escaped = oldSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        // [[oldSlug]] / [[oldSlug|..]] / [[oldSlug#..]]
-        const wikiRe = new RegExp(
-          `(\\[\\[)(${escaped})(\\||#|\\]\\])`,
-          'g',
+        /*
+         * ⚠️ **Frontmatter relations are the primary graph** (bug sweep
+         * 2026-09-01). This block used to rewrite only body `[[wikilink]]` /
+         * `](x.md)` forms and select referrers from body-only `linksOut`, so a
+         * rename orphaned every frontmatter relation (`dependencies:`,
+         * `capabilities:`, …) to the renamed node — backlinks vanished and the
+         * graph minted a phantom stub under the old name, unlike MCP
+         * `rename_concept`. `rewriteRenamedDocRefs` now applies the same key
+         * family and tail rules as the MCP rewrite, and every doc is scanned
+         * (reads are free; only actual changes ask for write permission), which
+         * also catches referrers `linksOut` missed — a same-directory relative
+         * link was previously detected but left dangling by the full-slug regex.
+         */
+        const { canRewriteTail } = computeRenameRefContext(
+          state.manifest.docs.map((d) => d.slug),
+          oldSlug,
         );
-        // [text](path/oldSlug.md...) — a relative path ending in oldSlug.md.
-        const mdRe = new RegExp(
-          `(\\]\\([^)]*?)(${escaped})(\\.md)`,
-          'g',
-        );
-        for (const ref of referrers) {
-          const fh = state.fileHandles.get(ref);
+        for (const doc of state.manifest.docs) {
+          if (doc.slug === oldSlug) continue;
+          const fh = state.fileHandles.get(doc.slug);
           if (!fh) continue;
           try {
-            const perm = await verifyHandlePermission(fh, 'readwrite', {
-              ask: true,
-            });
-            if (perm !== 'granted') continue;
             const srcFile = await fh.getFile();
             const srcText = await srcFile.text();
-            const nextText = srcText
-              .replace(wikiRe, `$1${newSlug}$3`)
-              .replace(mdRe, `$1${newSlug}$3`);
+            const nextText = rewriteRenamedDocRefs(srcText, {
+              oldSlug,
+              newSlug,
+              referrerSlug: doc.slug,
+              canRewriteTail,
+            });
             if (nextText !== srcText) {
+              const perm = await verifyHandlePermission(fh, 'readwrite', {
+                ask: true,
+              });
+              if (perm !== 'granted') continue;
               const w = await fh.createWritable();
               await w.write(nextText);
               await w.close();
+              markSelfWrite(doc.slug);
             }
           } catch {
             /* Best effort — skip a file that fails. */

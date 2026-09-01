@@ -351,14 +351,18 @@ export function useVaultAgent(args: UseVaultAgentArgs) {
       current
         ? {
             ...current,
+            // 'failed' stays 'failed' — mapping it back to 'pending' discarded
+            // the error and made a failed write look like "not yet applied"
+            // while files may already have changed (bug sweep 2026-09-01).
             status:
               outcome.status === 'applied'
                 ? 'applied'
                 : outcome.status === 'conflict'
                   ? 'conflict'
-                  : 'pending',
+                  : 'failed',
             appliedSnapshotSha:
               outcome.status === 'applied' ? (outcome.snapshotSha ?? undefined) : undefined,
+            applyErrorMessage: outcome.status === 'failed' ? outcome.message : undefined,
           }
         : current,
     );

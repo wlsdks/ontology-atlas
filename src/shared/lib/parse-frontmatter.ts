@@ -23,6 +23,37 @@ type ParsedScalar = string | number | boolean;
 
 const UNSAFE_OBJECT_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
+// These frontmatter keys are graph edges, not arbitrary metadata (same set as
+// mcp/src/parser.mjs). A scalar at one of these keys parses fine and then
+// silently draws no edge — the mcp parser has diagnosed it since 2026-08 while
+// this parser stayed silent, a 3-way divergence the 4-way contract fixtures
+// did not cover (bug sweep 2026-09-01).
+const GRAPH_ARRAY_KEYS = new Set([
+  'domains',
+  'capabilities',
+  'elements',
+  'dependencies',
+  'depends_on',
+  'relates',
+  'contains',
+  'describes',
+  'broader',
+]);
+
+function pushGraphArrayDiagnostic(
+  diagnostics: FrontmatterDiagnostic[],
+  key: string,
+  line: number,
+  value: unknown,
+): void {
+  if (!GRAPH_ARRAY_KEYS.has(key) || Array.isArray(value)) return;
+  diagnostics.push({
+    code: 'malformed-frontmatter-line',
+    line,
+    message: `Frontmatter line ${line} graph relation \`${key}:\` must be an array.`,
+  });
+}
+
 function assignParsedKey(
   target: Record<string, unknown>,
   key: string,
@@ -96,10 +127,11 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     // **Check for a block scalar before classifying the value.** The value of
     // `definition: |` is `"|"`, not an empty string, so putting this inside the
     // empty-value branch would make it unreachable.
-    const scalarIndicator = /^[|>][-+]?$/.exec(value);
+    const scalarIndicator = /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
       assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, read.value);
       i = read.next - 1;
       continue;
     }
@@ -133,10 +165,12 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
           j += 1;
         }
         assignParsedKey(frontmatter, key, obj, diagnostics, i + 2);
+        pushGraphArrayDiagnostic(diagnostics, key, i + 2, obj);
         i = j - 1;
         continue;
       }
       assignParsedKey(frontmatter, key, '', diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, '');
       continue;
     }
 
@@ -146,17 +180,15 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
       continue;
     }
     if (value.startsWith('{') && value.endsWith('}')) {
-      assignParsedKey(
-        frontmatter,
-        key,
-        parseInlineObject(value, diagnostics, i + 2),
-        diagnostics,
-        i + 2,
-      );
+      const inlineObject = parseInlineObject(value, diagnostics, i + 2);
+      assignParsedKey(frontmatter, key, inlineObject, diagnostics, i + 2);
+      pushGraphArrayDiagnostic(diagnostics, key, i + 2, inlineObject);
       continue;
     }
     pushQuotedScalarDiagnostic(diagnostics, key, i + 2, value);
-    assignParsedKey(frontmatter, key, parseTopLevelScalar(value), diagnostics, i + 2);
+    const topLevelScalar = parseTopLevelScalar(value);
+    assignParsedKey(frontmatter, key, topLevelScalar, diagnostics, i + 2);
+    pushGraphArrayDiagnostic(diagnostics, key, i + 2, topLevelScalar);
   }
   const result: ParsedFrontmatter = { frontmatter, body };
   if (diagnostics.length > 0) result.diagnostics = diagnostics;
@@ -360,8 +392,20 @@ function splitTopLevel(input: string, separator: string): string[] {
 }
 
 export function firstHeading(body: string): string | null {
-  const m = body.match(/^#\s+(.+)$/m);
-  return m ? m[1].trim() : null;
+  // Fence-aware like extractHeadings (bug sweep 2026-09-01): a titleless doc
+  // whose body opens with a fenced shell block containing `# comment` used to
+  // get that comment as its manifest and graph title.
+  let inCode = false;
+  for (const line of body.split('\n')) {
+    if (line.startsWith('```')) {
+      inCode = !inCode;
+      continue;
+    }
+    if (inCode) continue;
+    const m = line.match(/^#\s+(.+)$/);
+    if (m) return m[1].trim();
+  }
+  return null;
 }
 
 export interface HeadingInfo {
@@ -584,7 +628,13 @@ function readBlockScalar(
   const chomp = indicator.includes('-') ? 'strip' : indicator.includes('+') ? 'keep' : 'clip';
   const collected: string[] = [];
   let j = start;
-  let baseIndent: number | null = null;
+  // An explicit indentation indicator (`|2-`) fixes the base indent. Without it
+  // the first non-blank line decides — the writer emits the digit whenever the
+  // value's own first line carries leading whitespace, because a first-line
+  // base would swallow that whitespace and eject shallower lines back into the
+  // top-level key loop.
+  const explicitIndent = /[1-9]/.exec(indicator);
+  let baseIndent: number | null = explicitIndent ? Number(explicitIndent[0]) : null;
   while (j < lines.length) {
     const line = lines[j];
     if (line.trim() === '') {

@@ -679,6 +679,7 @@ export function VaultAgentPanel({
                     appliedNoSnapshot: t('proposal.appliedNoSnapshot'),
                     cancelled: t('proposal.cancelled'),
                     conflict: t('proposal.conflict'),
+                    failed: (message) => t('proposal.failed', { message }),
                     unreadWarning: t('proposal.unreadWarning'),
                     showOnMap: t('proposal.showOnMap'),
                     expandHint: t('proposal.expandHint'),
