@@ -30,6 +30,12 @@ const REF_ARRAY_KEYS = [
   'capabilities',
   'elements',
   'dependencies',
+  // `depends_on` is the schema's authoring alias for `dependencies`, and
+  // `broader` (is-a) is written by this web UI itself — omitting them here
+  // orphaned exactly the edges the map renders (2026-09-01 review): the MCP
+  // rewrite iterates every frontmatter key and never had the gap.
+  'depends_on',
+  'broader',
   'relates',
   'contains',
   'describes',
@@ -183,20 +189,31 @@ export function rewriteRenamedDocRefs(
   let next = Object.keys(updates).length > 0 ? applyFrontmatterUpdates(raw, updates) : raw;
 
   // ── body links, on the (possibly frontmatter-updated) text ──────────
-  // Wikilinks are vault-root-relative: exact slug always, bare tail only while
-  // it uniquely resolves.
-  const escapedOldSlug = oldSlug.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  /*
+   * Wikilinks resolve the way `extractOutLinksWithContext` resolves them, not
+   * by raw substring (2026-09-01 review): inside the nested ontology/ vault a
+   * `[[capabilities/y]]` means `ontology/capabilities/y`, so matching the raw
+   * written form both missed the nested link that pointed at the renamed doc
+   * AND rewrote a nested link that pointed at a different root-level doc of
+   * the same name. Each target is resolved from the referrer, compared against
+   * the renamed slug, and written back in the referrer's own vault-relative
+   * form. The bare-tail shorthand keeps its unique-resolution guard.
+   */
   next = next.replace(
-    new RegExp(`(\\[\\[)(${escapedOldSlug})(\\||#|\\]\\])`, 'g'),
-    `$1${newSlug}$3`,
+    /(\[\[)([^\]|#]+)((?:[|#][^\]]*)?\]\])/g,
+    (whole, open: string, target: string, rest: string) => {
+      const written = target.trim();
+      if (canRewriteTail && oldTail !== oldSlug && written === oldTail) {
+        return `${open}${newTail}${rest}`;
+      }
+      const nested = referrerSlug.startsWith('ontology/') && !written.startsWith('ontology/');
+      const resolved = nested ? `ontology/${written}` : written;
+      if (resolved !== oldSlug) return whole;
+      const writtenNext =
+        nested && newSlug.startsWith('ontology/') ? newSlug.slice('ontology/'.length) : newSlug;
+      return `${open}${writtenNext}${rest}`;
+    },
   );
-  if (canRewriteTail && oldTail !== oldSlug) {
-    const escapedTail = oldTail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    next = next.replace(
-      new RegExp(`(\\[\\[)(${escapedTail})(\\||#|\\]\\])`, 'g'),
-      `$1${newTail}$3`,
-    );
-  }
   // Markdown links: re-resolve each target against the referrer's directory and
   // replace the ones that resolve to the renamed document.
   next = next.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (whole, text: string, target: string) => {
