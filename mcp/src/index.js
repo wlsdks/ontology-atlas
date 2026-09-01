@@ -124,7 +124,7 @@ import {
   META_MODEL_RULES_EN,
 } from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent, resolveAgentName } from './activity-log.mjs';
-import { unlinkSync, writeFileSync } from 'node:fs';
+import { unlinkSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import {
