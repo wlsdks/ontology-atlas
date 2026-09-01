@@ -41,7 +41,15 @@ function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord
 }
 
 function recordIdentity(record: LocalFsHandleRecord): string {
-  return record.desktopRootPath ?? record.id;
+  // On the web every record's id is 'current' (single-vault mode), so falling
+  // back to it deduped every vault to one identity — the recent list could
+  // never hold more than one entry and opening folder B silently evicted
+  // folder A (bug sweep 2026-09-01). The FSA handle's folder name is the best
+  // durable web identity available (isSameEntry is async and pairwise); two
+  // different folders sharing a name still collapse, which loses far less.
+  if (record.desktopRootPath) return record.desktopRootPath;
+  const folderName = record.handle?.name;
+  return folderName ? `fsa:${folderName}` : record.id;
 }
 
 function toStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
