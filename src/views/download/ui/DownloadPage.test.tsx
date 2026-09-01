@@ -625,19 +625,17 @@ describe('DownloadPage', () => {
   });
 
   /**
-   * The headline is **the owner's sentence verbatim** — a fixed point of the remake, so it is
-   * locked by sentence (polishing it changes this screen's premise, and that has to go through the
-   * ledger). The two lines plus the lead are one unit.
+   * The headline is **the owner's sentence verbatim** — a fixed point of the remake. The lead is
+   * the outcome: human review before accepting agent work, rather than agent-authored memory.
    */
-  it('keeps the owner-verbatim headline and lead', () => {
+  it('keeps the owner-verbatim headline and gives it a human review outcome', () => {
     renderDownloadPage();
 
     const heading = screen.getByRole('heading', { level: 1 });
     expect(heading).toHaveTextContent('Agents write the code.');
     expect(heading).toHaveTextContent('People accumulate the cognitive debt.');
-    expect(
-      screen.getByText(/An ontology is how that debt gets repaid/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/reviewable map of what the code means/i)).toBeInTheDocument();
+    expect(screen.getByText(/before accepting the work/i)).toBeInTheDocument();
   });
 
   /**

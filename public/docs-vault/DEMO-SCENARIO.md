@@ -8,6 +8,13 @@ The playback contract lives in `src/views/download/ui/DemoStage.tsx`. Asset regi
 in `src/views/download/model/demo-clips.ts`. The accountable decision is the 2026-08-30 record
 “Two real-use cuts replace the nine-second neighbourhood loop” in `docs/DECISIONS.md`.
 
+The next campaign story is specified separately in
+`docs/launch/DEMO-GIF-STORYBOARD.md`: agent code work → explicit ontology-update request → exact
+semantic proposal → human correction or approval → Markdown/History → later agent retrieval. It
+has not been recorded and does not rename this clip. Until replacement footage passes that brief's
+source-hidden comprehension gate and the proof below, the active 44-second take remains honestly
+described only as concept, relation, evidence, and read-only path lookup.
+
 ## 1. The sentences the footage must prove
 
 > **Page:** Pick a concept, read its relations and evidence, and let Codex follow that same map.

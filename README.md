@@ -34,10 +34,16 @@
 </p>
 
 <p align="center">
-  Ontology Atlas keeps that explanation as a codebase ontology in repository
-  Markdown: product domains and capabilities linked to implementation evidence,
-  dependencies, and impact. People judge the files and git diffs; AI agents
-  query and maintain the same ontology over MCP.
+  AI agents can change a codebase faster than a person can review every line.
+  Atlas keeps a reviewable map of what the code means — capabilities,
+  boundaries, dependencies, evidence, and unknowns — so people can see what
+  was built before accepting the work.
+</p>
+
+<p align="center">
+  That map is a codebase ontology in repository Markdown. People and AI agents
+  maintain the same files over the app, CLI, and MCP; people judge the meaning
+  and its git diff.
 </p>
 
 <p align="center">
@@ -77,10 +83,17 @@ affect. Atlas keeps those answers beside the code, in an `atlas/` folder of
 Markdown files inside the repository itself — so the meaning is cloned,
 branched, reviewed, and shared with the code rather than alongside it.
 
-Use Atlas before a change so a person and an AI agent start from the same
-answer: what the code is for, where to begin, what else it touches, and what to
-verify. That answer stays bounded — a list of observed capabilities is not
-treated as exhaustive, and unsupported scope remains visible uncertainty.
+The gap is most obvious after an AI agent finishes a change. A Git diff is the
+exact record of which lines moved. The producing agent's summary is its claim
+about the work. Atlas preserves the product-level meaning a person can review:
+which capability or boundary changed, what evidence supports it, what it
+depends on, and what remains unknown.
+
+Use Atlas after an agent change to review what the codebase has become, and
+before the next change so a person and an AI agent start from the same accepted
+map: what the code is for, where to begin, what else it touches, and what to
+verify. That map stays bounded — a list of observed capabilities is not treated
+as exhaustive, and unsupported scope remains visible uncertainty.
 
 Each file's frontmatter declares what it is (`project`, `domain`, `capability`,
 `element`, or a linked `document`) and what it points at. That folder is the
@@ -92,8 +105,10 @@ questions a note-taking tool cannot: *what breaks if I change this, what is this
 capability's blast radius, which paths connect these two things, what is
 disconnected, what is stale.*
 
-Your agent asks those questions over MCP. You read the same answers as a map,
-and every write the agent makes lands as a line in a Markdown file you can diff.
+Your agent asks those questions over MCP and can propose updates after code
+work. You read the same answers as a map, and an Atlas write does not become
+accepted meaning merely because an agent produced it: it lands as Markdown and
+a Git diff a person can correct, reject, or keep.
 
 Architecture is a separate reviewed contract rather than another ontology layer,
 and unknown coverage is never shown as green. [Step 4](#4-plan-against-reviewed-architecture)

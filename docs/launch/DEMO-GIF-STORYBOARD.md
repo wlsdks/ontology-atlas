@@ -1,72 +1,97 @@
-# 30s Demo GIF — retired storyboard
+# Campaign Demo Storyboard — Review What the Agent Built
 
-> Retired on 2026-08-30. The shipped X MP4 and localized download-page takes follow
-> `docs/DEMO-SCENARIO.md`: the page takes show one selected capability, its relations and
-> evidence, and a real read-only Codex `get_concept`/`find_path` round trip; the separate X take
-> rapidly crosses the seven LNB destinations. The five-cut editor/terminal/picker plan below
-> remains only as historical launch planning and must not be used for a new capture.
+> **Status: replacement brief, not recorded.** The active download-page video
+> remains the localized 44-second `atlas-tour` documented in
+> `docs/DEMO-SCENARIO.md`. That footage proves concept → relations/evidence →
+> read-only Codex path lookup. Do not relabel it as post-agent change review.
 
-Storyboard for the 30-second GIF/mp4 to be featured on the README first screen. **claim → proof** 5-cut sequence. Each cut ~6 seconds.
+This brief defines the next campaign demo without authorizing media production.
+It uses only existing Atlas behavior: guarded agent writes, exact Markdown
+changes, human approval, History, Map, and a later read through Atlas MCP.
 
-## Cut 1 (0–6s) — "AI and humans editing the same vault"
+## The two questions the clip must answer
 
-- **screen**: Left side shows VS Code (or Obsidian) opening `domains/auth.md` with frontmatter visible. Right side shows Claude Code terminal displaying results of `ontology-atlas` tool calls.
-- **action**: Human adds `capabilities/login` to the `capabilities:` key in markdown → saves. AI creates `capabilities/login.md` in the same vault via `add_concept`.
-- **caption**: `humans + AI agents author the same vault`
+After one viewing, a coding-agent developer should be able to say:
 
-## Cut 2 (6–12s) — "Frontmatter is the graph"
+1. **What does Atlas show?** The capability, boundary, evidence, dependency, or
+   uncertainty that changed — not merely the files an agent touched.
+2. **When do I use it?** After an agent finishes and before I accept the work or
+   start the next task.
 
-- **screen**: Open the vault folder in the installed Ontology Atlas macOS app via the `/docs` picker to immediately display nodes and edges on the map.
-- **action**: Click `domains/auth` in the left tree of the workbench → frontmatter appears as-is in the right detail panel.
-- **caption**: `frontmatter is the graph`
+The reusable contrast is:
 
-## Cut 3 (12–18s) — "Topology view"
-
-- **screen**: `/topology` canvas map/graph — current dogfood vault drag / hover.
-- **action**: User hovers over one node → highlights 1-hop neighbors → clicks → opens ProjectDrawer.
-- **caption**: `Topology · 1 click → context`
-
-## Cut 4 (18–24s) — "AI agent reads the ontology and suggests code"
-
-- **screen**: Claude Code queries the dependency chain between two capabilities using `find_path` → responds with something like "This change affects capabilities/login → elements/jwt-token".
-- **action**: User asks "Tell me the impact scope of the auth refactor" → AI answers based on the ontology dependency tree.
-- **caption**: `AI reads the ontology before suggesting code`
-
-## Cut 5 (24–30s) — "One button click connects the agent"
-
-- **screen**: Click [Connect Agent] in the installed app → preview where and how to use it (all paths + create/overwrite) → approve → green confirmation.
-- **action**: User reads the preview and approves → the app writes `.mcp.json` / `.codex/config.toml`, spawns the bundle server, and verifies `get_concept` round-trip.
-- **caption**: `one download installs the agent's server too — no terminal`
-- **Why this cut**: After npm publishing was scrapped (`docs/DECISIONS.md` 2026-07-27), the setup narrative for this product is not "one line in the terminal" but rather **"one download installs both the human surface and the agent surface."** Do not include a terminal cut again.
-
-## Recording Environment
-
-- **OS**: macOS (user's actual environment)
-- **App**: Installed macOS desktop app, 1280×800 window (for readability)
-- **Terminal**: Dark theme, 14pt or larger
-- **VSCode/Obsidian**: Dark theme, same font size
-- **Recording tool**: `kap.app` (.gif export, 12fps, ~5 MB) or OBS → ffmpeg
-- **Resolution**: 1280×720 (GitHub README embed-friendly)
-- **File size**: < 8 MB (limit for inline embedding in GitHub markdown)
-
-## README Embed
-
-```markdown
-![ontology-atlas demo](docs/launch/demo.gif)
+```text
+Git shows which lines changed.
+The producing agent says what it claims it did.
+Atlas preserves what a person reviewed the codebase to mean.
 ```
 
-Or briefly show just one surface of the hosted demo:
+## Evidence-bound example
+
+Use the committed synthetic change-flow example rather than inventing a success
+story. In `2026-08-31-change-r7-greenfield-on-r1.diff`, checkout gained a
+validated `discountCents` option and focused tests. The paired Atlas record added:
 
 ```markdown
-![Topology view](docs/launch/topology-30s.gif)
+## Change record
+- The confirmed total now accepts non-negative integer discountCents and clamps at zero.
 ```
 
-## Alternative: 4-image grid
+The existing capability boundary still excludes inventory availability
+calculation. The run proved that this reviewed record can travel beside the code;
+it did **not** prove faster work, better code, or a better human decision.
 
-The same message can be conveyed with 4 static images instead of a GIF:
-1. Installed app [Connect Agent] preview + green confirmation
-2. Workbench `/topology`
-3. Workbench `/ontology/studio` (workshop)
-4. Claude Code MCP tool call result
+## 36-second one-take flow
 
-Each PNG is ~200 KB. Arrange them in a grid using a README markdown table.
+| Time | Visible beat | What it proves |
+|---:|---|---|
+| 0–4s | Start on `capabilities/checkout`: purchase confirmation and pricing adjustments are in scope; inventory availability remains out of scope. | There is a readable before-state and a boundary to preserve. |
+| 4–9s | The coding-agent turn has finished the `discountCents` code and focused tests. The person explicitly asks: “Update Atlas with only the meaning this change supports. Keep unsupported scope unknown.” | Atlas does not claim to detect semantic change automatically. |
+| 9–16s | The Atlas write request pauses on the exact capability body change. Hold long enough to read the target, proposed text, and selected-folder scope. | The agent proposes; it does not declare truth. |
+| 16–20s | The person reviews the proposal and chooses **Allow once**. If a genuinely unsupported relation appears during a real rehearsal, reject it and record that correction; never stage a fake error just for drama. | Human judgment is the acceptance boundary. |
+| 20–27s | Open **History** and hold on the Markdown diff: the one checkout change record is unsaved/changed, while the existing inventory boundary remains readable. | The semantic delta is inspectable and Git-backed. |
+| 27–32s | Return to the Map and select Checkout; its capability, boundary, implementation evidence, and change record are now one reading path. | The codebase's new meaning is visible above file level. |
+| 32–36s | In a fresh read-only agent turn, ask “What changed in checkout?” and show `get_concept` retrieving the accepted record. End on: **Review what was built before you accept the work.** | The next worker inherits what the person accepted, not only the producing session's summary. |
+
+## Capture contract
+
+- Use a disposable copy of the committed public benchmark fixture outside the
+  repository. Show no private path, account, notification, terminal history, or
+  provider credential.
+- Capture surface: **Installed macOS desktop app**, at 1512×950 and 30fps, in
+  Korean and English as separate one-take captures. No speed changes and no
+  hidden edit between approval, History, Map, and the read-only retrieval.
+- The agent update must be explicitly requested on screen. Never use captions
+  that imply automatic source understanding, exhaustive coverage, or a fully
+  current vault.
+- The approval receipt must name the actual target and changed text. A generic
+  “success” toast is not proof.
+- The final read must use Atlas MCP. A plausible answer from shell search or the
+  agent's prior transcript invalidates the take.
+
+## Copy for the clip
+
+Use at most these four captions:
+
+```text
+The agent changed the code.
+Atlas shows the meaning it proposes to change.
+You correct or approve it.
+The next agent starts from what you accepted.
+```
+
+Localize these captions through the product message catalog only after the
+recording contract passes; do not maintain a second prose source in this brief.
+
+## Exit gate before recording
+
+Show a text storyboard or rough local rehearsal to five source-hidden
+coding-agent developers. At least four must answer both questions from the first
+section without being prompted. Also ask what they believe happened
+automatically; any answer that Atlas detected or understood all code fails the
+storyboard.
+
+If the gate misses, keep the current lookup video and revise the storyboard.
+Passing this gate authorizes a separate recording task with the privacy, motion,
+locale, and responsive proof required by `docs/DEMO-SCENARIO.md`; it is not
+itself permission to publish.
