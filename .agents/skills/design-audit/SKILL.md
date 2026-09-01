@@ -10,8 +10,10 @@ by sight. An unlocalized feeling cannot become a reliable fix, while imagined
 defects damage healthy code. The fixed order is: measure → list violations →
 attach screenshots as evidence.
 
-Run after every frontend implementation before calling it done. Skip copy-only
-and pure-logic changes.
+Run only when `pnpm design:route` includes `design-audit`. Audit its returned
+scope: one affected state for a local change, affected map state for topology,
+or the full surface for a structural change. Copy-only, pure logic, motion-only,
+and topology-gesture-only work use their own routed proof.
 
 ## 0. Fix the state
 
@@ -105,9 +107,20 @@ Spec, `node-shapes.test.ts`, `topology-v2-kind-glyph.test.tsx`, and
 At maximum scroll, compare the last content bottom with the bottom bar top. Below
 `lg`, reserve both `--topology-mobile-bottom-tab-reserve` and safe-area inset.
 
-## 5. Screenshots after measurement
+## 5. Final Computer Use checkpoint after measurement
 
-Capture 1512×900 and 390px evidence after measuring, and state DPR. Visual critique
+After browser geometry measurement, open the actual browser, WebView, or installed
+app through the computer-use capability. Capture its fresh accessibility tree and screenshot;
+record app/window identity, route, viewport, DPR, state, screenshot path, and the
+element that owns the primary action or selected fact. Browser automation
+screenshots do not replace this required human-checkable capture.
+
+Link this final checkpoint to the baseline and material checkpoints produced by
+`/design-build`. A final screenshot cannot retroactively validate a whole screen
+that was built without the Computer Use render loop.
+
+Capture the affected viewport for a scoped audit. Use both 1512×900 and 390px
+only when the route requests a full surface or responsive matrix. Visual critique
 may suggest a question; promote it to a defect only after rect/style evidence
 confirms it.
 
@@ -128,10 +141,11 @@ confirms it.
 | Contrast | combinations · failures · ratios · unmeasured |
 | Scroll end | measured clearance and reserve token |
 
-**Evidence**: screenshot paths at 1512×900 and 390
+**Evidence**: measured browser state · Computer Use app/window/tree/screenshot path
 **Confirmed defects and prescriptions**: …
 **Visual suggestions rejected by measurement**: …
 ```
 
-Motion belongs to `/motion-verify`; breakpoint coverage to `/responsive-sweep`;
-the question of what should win attention belongs to `/design-council`.
+Motion belongs to `/motion-verify`; breakpoint coverage to `/responsive-sweep`.
+`/design-council` is not an automatic next step; use it only when the route
+selects a structural council.

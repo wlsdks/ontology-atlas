@@ -26545,3 +26545,155 @@ adoption or measured comprehension.
 **Accountable**: jinan
 
 **Status**: implemented · automated and rendered verification passed · source-hidden comprehension gate pending
+
+---
+
+## 2026-09-01 — Design proof follows the changed failure mode; rendered work is observed while it is built
+
+**Trigger**: the owner questioned whether Atlas's design council, design audit,
+responsive sweep, and motion procedure were improving work or merely stacking
+ceremony. The owner then made the non-negotiable evidence boundary explicit:
+UI/UX must be built through repeated Computer Use screenshots and state
+inspection rather than imagined from code, and motion must be approved from a
+real screen recording.
+
+**Prior state and evidence**: the Product Design Operating System was 1,245
+lines and contained 150 mandatory-language terms. Its active skills could send a
+single non-trivial UI change through directions, two standing council seats,
+design audit, responsive sweep, motion recording, and installed-app proof even
+when only one failure mode changed. Trigger wording disagreed across the design
+OS, `AGENTS.md`, `/design-directions`, `/design-build`, and `/design-council`.
+The 2026-08-29 mascot council remains evidence that independent motion,
+infoviz, responsive, and installed-app review can catch real defects in a
+cross-surface commitment; it does not justify the same review footprint for a
+spacing or timing adjustment.
+
+### Atlas product pass
+
+**Prior decision**: retain measured design instruments and the accountable
+guardian; no standing decision required every instrument or seat for every
+change. Its falsifier—unmeasured visual or temporal regressions—still stands.
+
+**Human loss and moment**: after an agent changes Atlas UI, the developer cannot
+judge whether the relevant visual failure modes were actually observed because
+the old procedure mixes relevant evidence with unrelated ritual.
+
+**Atlas outcome**: `judge` — from observable change facts, the developer can see
+the exact required proof and every intentionally omitted instrument.
+
+**Evidence state**: observed — conflicting trigger prose, the 1,245-line
+operating document, and replayed route controls.
+
+**Change signals**: `rollback-cheap`;
+`truth=unchanged; transfer=unchanged; agent-write=unchanged;
+human-correction=unchanged`.
+
+**Computed route**: two-way · risk none · solo · build and verify, because the
+internal workflow is cheap to undo and changes no product truth or authority
+boundary.
+
+**Recovery proof**: given one or more Atlas design change classes, without the
+builder selecting a preferred approval path, the router must return the
+smallest relevant proof set. Every rendered class, including copy, must contain
+the Computer Use render loop; motion must contain a real-recording verifier;
+local visual work must not acquire directions or council. Failure is an accepted
+control that omits one of those proofs or restores universal ceremony.
+
+### Design Council Verdict — design verification contract
+
+**Convened because**: `design-contract` routed to a two-seat council ·
+**Selected seats**: `design-lead`, `design-system` · **independence**: positions
+were run sequentially in one context, so first-position independence was weaker
+than separate reviewers.
+
+**Pre-review decision**: replace self-declared “meaningful UI” with a fact
+router; require actual-window inspection for rendered work and recording for
+motion; retain council only for structural commitments.
+
+| Seat | Verdict | Prescription / evidence |
+|---|---|---|
+| Lead Product Designer | Approve | Make the change-fact → proof table the first decision surface; remove the historical critique queue, standing seats, and universal post-check stack. A non-rendered policy change does not invent screenshot evidence. |
+| Design Systems Engineer | Conditional → approve | Keep the Computer Use requirement capability-based inside mirrored shared skills, enforce every rendered route and the motion recording in one policy module, wire its tests to changed-path suggestions, and prove RED before trusting it. |
+
+**Computer Use feasibility**: the current Orca runtime reported ready;
+computer-use capabilities reported screenshots, element frames, app/window
+selection, and accessibility actions available. This proves the workflow can
+run in the current environment; it is not a screenshot claim for this
+non-rendered policy change.
+
+**Motion evidence**: not routed. No product animation changed, so a recording
+would be fabricated evidence rather than verification.
+
+**Decisive disagreement / rebuttal**: none · zero rebuttal turns.
+
+**Decision (design-guardian)**:
+
+- Add `pnpm design:route` with 16 Atlas change classes. It derives directions,
+  selected council seats, proof instruments, and scope.
+- Every rendered class, including copy, receives `computer-use-loop`: baseline,
+  one coherent visual slice, fresh actual-window screenshot and accessibility
+  tree, DOM/computed-style/rect localization when needed, correction before the
+  next slice, and a final capture. A whole screen may not be built from
+  imagination and inspected only at the end.
+- `motion` receives `/motion-verify` against a real macOS screen recording,
+  uniform 30 fps frames, phase strip, frame-diff statistics, and reduced-motion
+  proof. Static or headless frames cannot approve motion.
+- Local visual, layout, responsive, interaction, motion, topology gesture,
+  journey, desktop-shell, handoff, and copy changes do not receive council by
+  default. Directions and council are reserved for a new surface, information
+  architecture, primary interaction model, primary attention model, or a
+  canonical design contract. Only affected seats attend; cross-critique occurs
+  only on material conflict.
+- Scope instruments independently: responsive checks affected bands unless the
+  surface is new; map performance applies to topology gestures; installed-app
+  proof applies to desktop-shell/WKWebView behavior; a motion recording does not
+  substitute for work cost and a performance number does not approve motion.
+- Record council decision delta, unique contribution, and review turns. Five
+  consecutive no-delta councils force an owner review of the threshold.
+
+The active design OS is now 311 lines with 22 mandatory-language terms. Static
+product values remain in `docs/DESIGN-SYSTEM.md`; gate archaeology remains in
+`.claude/rules/design-gates.md`.
+
+**Decision delta**: verification strengthened and ceremony narrowed · **Unique
+contribution**: `design-system` caught and removed a runtime-specific tool name
+from mirrored skills while preserving the mandatory computer-use capability.
+
+**Review footprint**: two sequential first positions · zero rebuttals.
+
+**Remove/dim/collapse/align**: remove two standing seats from every council;
+remove automatic directions/audit/responsive/motion/app stacking; collapse the
+1,245-line mixed policy/history document to one router contract; align all
+mirrored skills and agent briefs to that route.
+
+### Gate probe
+
+Three temporary defects were planted in
+`scripts/lib/design-proof-router.mjs`, each restored afterward:
+
+1. removing `motion-verify` from `motion` made two contract assertions RED;
+2. removing `computer-use-loop` from visible copy made two assertions RED;
+3. reattaching council to `local-visual` made the route fail its contrasting-seat
+   invariant and two control assertions RED.
+
+After restoration, 69 design-gate tests passed. The changed-path advisor maps
+the router to `pnpm test:design-gates`; the ontology design guard maps the
+operating contract; and `pnpm agents:check` reported 24 mirrored skill pairs and
+15 mirrored agent pairs with zero drift.
+
+**Recorded dissent**: change classes are still supplied by an agent. A dishonest
+or mistaken caller can omit `responsive`, `motion`, or `desktop-shell`; CI also
+cannot prove that an external screenshot or recording was honestly inspected.
+The inspectable route, required evidence packet, and capability blocker are a
+narrower control than pretending automatic semantic classification exists.
+
+**Falsifier and revisit**: reopen immediately if a rendered UI change merges
+without its baseline/checkpoint/final Computer Use evidence, a motion change is
+approved without a real recording, or a route control omits an instrument. Also
+revisit after five councils: if none changes a decision, scope, or proof, narrow
+or remove council again; if local changes repeatedly miss cross-mode defects,
+widen the specific change class rather than restore universal ceremony.
+
+**Accountable**: jinan
+
+**Status**: implemented · RED/GREEN gate probes and all 23 changed-path checks passed

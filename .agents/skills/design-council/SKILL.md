@@ -1,104 +1,116 @@
 ---
 name: design-council
-description: Convene only the relevant Atlas design seats around a built surface, run independent critique and one cross-critique, then let design-guardian decide, apply, and remeasure.
+description: Review only the Atlas structural commitments selected by design routing, using relevant seats, built evidence, optional conflict rebuttal, and one accountable guardian.
 ---
 
-# Design Council — eight seats, one accountable applier
+# Design Council — selected seats, one accountable applier
 
-Use after a meaningful visual, layout, interaction, motion, graph-readability,
-responsive, workbench, or agent-handoff change. Skip copy-only and build-plumbing
-work. Run `/design-directions` before implementation when the shape was not yet
-selected.
+Run only when `pnpm design:route` returns
+`council.required=true`. Local visual work, spacing/layout repairs,
+responsive fixes, interaction-state fixes, motion tuning, topology gesture work,
+and copy do not acquire a council merely because they are UI.
+
+The council reviews one built direction and its proof packet. Run
+`/design-directions` first only when the route says `directions=yes`.
 
 ## Roster
 
-| Agent | Seat | Owns |
+| Agent | Seat | Atlas ownership |
 |---|---|---|
-| `design-lead` | Lead Product Designer | screen job, attention winner, first impression |
-| `design-system` | Design Systems Engineer | tokens, ramps, lint, tests, static depth |
-| `design-interaction` | Interaction Designer | states, keyboard, discoverability, modality |
-| `design-motion` | Motion / Action Designer | physical feel, interruption, measured motion |
-| `design-infoviz` | Information Visualization Designer | mark→fact mapping, graph readability, contrast |
-| `design-workbench` | macOS Workbench Designer | installed app, window, 14-inch first viewport |
-| `design-responsive` | Responsive & Touch Designer | breakpoint rects, touch, safe area, reflow |
-| `design-handoff` | Agent Handoff Designer | MCP/CLI next action and state-bound handoff |
+| `design-lead` | Lead Product Designer | primary Atlas fact/action and attention |
+| `design-system` | Design Systems Engineer | tokens, primitives, markers, and gates |
+| `design-interaction` | Interaction Designer | inspect, correct, confirm, reverse, keyboard |
+| `design-motion` | Motion / Action Designer | temporal meaning and reduced motion |
+| `design-infoviz` | Information Visualization Designer | topology mark → typed fact |
+| `design-workbench` | macOS Workbench Designer | installed window and WKWebView |
+| `design-responsive` | Responsive & Touch Designer | measured bands, input mode, safe area |
+| `design-handoff` | Agent Handoff Designer | state-bound MCP and CLI continuation |
 
-`design-lead` and `design-system` always attend: hierarchy and system always
-attend. Add only seats the change actually touches.
+No seat always attends. Use exactly the seats returned by the router; structural
+routes derive at least two contrasting seats. `design-guardian` is not a seat.
+It is the accountable decider and applier.
 
-`design-guardian` is not a seat. It is the accountable decider and applier, so the
-builder does not approve its own work.
+Seat briefs live at `../../agents/design-*.md`. The path resolves inside each
+mirrored tool tree. Open the selected briefs explicitly and never create a third
+copy.
 
-Seat briefs live at `../../agents/design-*.md`. The relative path resolves inside
-each mirrored tool tree. Open them explicitly and never create a third copy.
+## Required evidence
 
-If parallel subagents are available, launch every selected seat in one batch.
-Otherwise run sequentially and disclose that Round 1 independence was lost. If a
-runtime cannot open the built artifact or run a required instrument, defer the
-verdict rather than judge by eye. Branch on capability, never a tool brand.
+Before a position can approve, provide:
 
-## Instruments are mandatory
+- the exact PO outcome and selected design direction, when any;
+- the built route/app state and commit;
+- the router's change facts, seats, and proof packet;
+- the computer-use render-loop packet: baseline, material checkpoints,
+  final accessibility tree and screenshot for every rendered state in scope;
+- measured rect/style, responsive, graph, performance, journey, or installed-app
+  output only when the route selected it;
+- a real macOS recording and `/motion-verify` result whenever `motion` is in
+  the route.
 
-- `design-motion` runs `/motion-verify`.
-- `design-responsive` runs `/responsive-sweep`.
-- Every finished visual change runs `/design-audit`.
+A browser automation screenshot may support measurement but does not replace the
+Computer Use render loop. Static screenshots do not replace a motion recording. If a
+runtime cannot open the built artifact or run a required instrument, defer that
+part of the verdict instead of judging code or a diff by eye.
 
-Other seats open the built surface relevant to their judgment; diff-only critique
-is invalid.
+## Round 0 — prior decision
 
-## Round 0 — prior decisions and selected direction
+Read only the relevant `docs/DECISIONS.md` record and its falsifier. Include the
+selected `/design-directions` sentence and rejected alternatives when the route
+required divergence.
 
-Read `docs/DECISIONS.md` for the same surface and its falsifier. Include the
-selected `/design-directions` sentence and rejected alternatives. A council
-reviews the chosen direction; it does not invent options after implementation.
-
-## Round 1 — independent critique
+## Round 1 — independent positions
 
 Give every selected seat the same literal brief:
 
 ```text
 [Change] requester wording and selected direction
-[PO decision] exact PO result
-[Evidence paths] source, rules, messages, tests
-[Built artifact] URL/app state and assigned unique port
-[Required instrument] seat-specific command or none
-[Output] the seat brief's exact format; at most one cross-council query
+[PO decision] exact Atlas outcome and recovery proof
+[Design route] change facts, selected seats, proof scopes
+[Evidence] source, tests, measurements, Computer Use render loop, recording when motion
+[Built artifact] URL/app state and commit
+[Output] selected seat brief's exact format
 ```
 
-Every seat names a concrete alternative when rejecting and cites published
-principles without copying another product's assets, words, or visual signature.
+Keep first positions independent when independent reviewers are available. When
+they are not, run sequentially and disclose lost independence. Every rejection
+names an implementable alternative and may use published principles without
+copying another product's assets, words, palette, layout, or motion signature.
 
-## Round 2 — one cross-critique
+## Round 2 — only material conflict
 
-Resume the same seats and provide the other positions in varied order. Each seat
-must restate the strongest opposition, concede or refute it, change only after a
-newly learned fact, create its strongest self-critique, and name one point another
-seat got right. One round only.
+Do not run a ceremonial cross-critique. Rebuttal happens only when two positions
+conflict on the same implementable decision or one new fact could change a
+position. Give both sides the opposing claim and run one response each. No
+repeated questions and no second round.
 
-## Bounded cross-council query
+## Guardian decision and application
+
+The guardian chooses one proposal or something smaller, never a union. Repository
+charter and measured Atlas workflow evidence beat external taste. The decision
+must remove, dim, collapse, or align something; addition-only critique fails.
+
+After applying, rerun only the route proofs invalidated by the guardian's change.
+Do not repeat a full design audit, responsive matrix, recording, or installed-app
+run when the last-mile edit cannot affect it. A changed proof is never waived.
+
+Append hard-to-reverse decisions, strongest dissent, falsifier, and revisit
+condition to `docs/DECISIONS.md`.
+
+## Council utility
+
+The ledger must expose whether the council earned its cost:
 
 ```md
-**Query → <other seat>**
-**Question**: one answerable sentence
-**Decision at stake**: what changes
-**Assumption if unanswered**: default
+**Pre-review decision**: …
+**Selected seats / first positions**: … / N
+**Rebuttal**: none / N turns because <material conflict>
+**Decision delta**: unchanged / stopped / narrowed / redirected / proof strengthened
+**Unique contribution**: <seat + exact contribution> / none
 ```
 
-Route through Round 2 when the other council is open; otherwise call only the
-named seat. One answer, no repeated question.
-
-## Round 3 — guardian decision and application
-
-The guardian chooses one proposal or something smaller, never a union. It applies
-the repository charter over external taste and chooses the smallest change that
-clarifies the ontology workflow.
-
-An addition-only critique fails: the decision names something to remove, dim,
-collapse, or align. After editing, the guardian reruns `/design-audit`; Round 1
-measured the old build, not the guardian's last mile.
-
-Append the decision, strongest dissent, falsifier, and revisit condition to
-`docs/DECISIONS.md`.
+An unchanged council may be honest but cannot claim review-caused improvement.
+Five consecutive no-delta councils trigger owner review of the threshold.
 
 ## Output to the human owner
 
@@ -111,23 +123,26 @@ Append the decision, strongest dissent, falsifier, and revisit condition to
 ```
 
 The verdict block does not belong in the conversation. This plain-language rule
-applies to the entire answer. A clarification request is a failure signal; rewrite
-from the beginning. “What differs from your request” cannot be omitted.
+applies to the entire answer. A clarification request is a failure signal;
+rewrite from the beginning. “What differs from your request” cannot be omitted.
 
 ## Ledger block
 
 ```md
 ## Design Council Verdict — <change>
 
-**Convened because**: … · **Selected seats**: …
+**Convened because**: design route facts · **Selected seats**: …
+**Pre-review decision**: …
 | Seat | Verdict | Prescription/evidence |
 |---|---|---|
 | … | … | … |
-**Primary moment**: … · **Attention winner**: …
-**Decisive disagreement**: …
-**Applied rule**: smallest slice / charter first / no union / removal required
+**Computer Use evidence**: baseline · material checkpoints · final app/window/tree/screenshot
+**Motion evidence**: recording/phase strip/stalls when routed, otherwise not routed
+**Decisive disagreement**: none / …
 **Decision (design-guardian)**: …
+**Decision delta**: … · **Unique contribution**: …
+**Review footprint**: first N · rebuttal N
 **Recorded dissent**: … · **falsifier**: … · **revisit**: …
 **Remove/dim/collapse/align**: …
-**Proof after application**: design-audit · motion/responsive/app as required
+**Remeasured proof**: only invalidated route proofs
 ```

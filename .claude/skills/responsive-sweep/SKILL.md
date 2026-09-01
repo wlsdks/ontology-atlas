@@ -5,6 +5,10 @@ description: Live-verify layout across tablet, laptop, and wide breakpoints by m
 
 # Responsive sweep
 
+Run only when `pnpm design:route` includes `responsive-sweep`. Use its scope:
+affected bands for a breakpoint-local change, the full matrix for a new surface
+or information architecture.
+
 - A **breakpoint** is a width where layout changes (`md` 768px, `lg` 1024px).
 - A **rect** is the measured `getBoundingClientRect()` geometry.
 - **Chrome** is the frame around content: header, toolbar, tab bar, and panels.
@@ -42,6 +46,11 @@ layout, or breakpoint-contract changes.
      content's bottom and every bottom-attached panel.
 3. Capture a screenshot for human evidence.
 
+After the measured loop, capture at least the affected representative state with
+the computer-use capability and record app/window identity, accessibility owner, and saved
+screenshot path. Browser automation screenshots support the rect evidence but do
+not replace this capture.
+
 ## Standing rules
 
 - `docs/DESIGN-SYSTEM.md`, “Touch & tablet responsive contract,” is canonical.
@@ -57,6 +66,6 @@ layout, or breakpoint-contract changes.
 
 ## Report
 
-Use a viewport-by-screen table with pass/defect, numeric evidence, screenshots,
-the applied fix, and the remeasured value. Do not claim “responsive is fine” from
-Tailwind reasoning alone.
+Use a viewport-by-screen table with pass/defect, numeric evidence, browser
+screenshots, Computer Use evidence, the applied fix, and the remeasured value.
+Do not claim “responsive is fine” from Tailwind reasoning alone.

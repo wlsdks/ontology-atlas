@@ -12,7 +12,7 @@ import {
 } from "../../scripts/lib/design-spec-census.mjs";
 
 /**
- * Contract keeping “Changing the specification requires `design-system`” from
+ * Contract keeping “Changing the specification requires `design-contract`” from
  * reverting to **a rule that lives only in a
  * document.**
  *

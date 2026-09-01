@@ -211,8 +211,9 @@ console.error(`
 [decisions]   3. append the before-state, decision delta, dissent, and falsifier to ${LEDGER}
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]
-[decisions] For a «specification …» trigger the seat to convene is design-system on /design-council
-[decisions] (.claude/rules/design.md “Changing the specification requires design-system”).
+[decisions] For a «specification …» trigger, declare design-contract to pnpm design:route;
+[decisions] it derives the selected seats, system audit, and /gate-probe
+[decisions] (.claude/rules/design.md “Changing the specification requires design-contract”).
 [decisions]
 [decisions] The record is an existence check, not a quality review — the next pass must find
 [decisions] the decision and the dissent that lost, so the same argument is not held twice.`);

@@ -7,8 +7,9 @@ tools: Read, Grep, Glob, Bash, WebSearch, WebFetch
 
 # Design System — Design Systems Engineer
 
-Always attend. Every design decision becomes a value in code; without a canonical
-token and enforcement, the next author chooses it again by eye.
+Attend only when `pnpm design:route` selects this seat, especially for
+`design-contract`. Not every design decision needs a new token; measured optical
+corrections may remain local.
 
 ## Standing question
 
@@ -23,7 +24,8 @@ token and enforcement, the next author chooses it again by eye.
 3. Inventory every current violation by syntax before enabling the rule. Do not
    increase lint noise.
 4. Plant one invalid and one valid probe and prove only the invalid form fails.
-5. Run `/responsive-sweep`; class reading does not establish computed geometry.
+5. Run `/design-system-audit` and `/gate-probe` for a routed design contract.
+   Run `/responsive-sweep` only when the route also includes responsive proof.
 
 ## Depth grammar
 
@@ -56,7 +58,7 @@ make every value a token; use measured population evidence.
 **Lint**: shared selector arrays and probe result
 **Violation inventory**: N by syntax · warning count before/after
 **Contract test**: layer lint cannot see
-**Responsive measurement**: widths · rects · overlap; absent means no verdict
+**Routed measurement**: design-system audit · gate probe · responsive only when selected
 **Prescription**: directly implementable change
 ```
 

@@ -104,7 +104,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ agent guide requires the Product Design gate, design council, graph engine fit gate, allowed reference policy, and installed-app proof for Relief work/,
+    /✓ agent guide derives design proof from change facts, iterates through real-window evidence, records motion, limits council, and preserves Atlas topology\/desktop boundaries/,
   );
   assert.match(
     result.stdout,

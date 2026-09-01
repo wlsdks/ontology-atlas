@@ -17,9 +17,10 @@ viewport or input mode changes.
 
 ## Required inspection
 
-Run `/responsive-sweep`. A verdict without measured rects is invalid. The three
-founding defects—cascade-order loss, 79px overlap, and tab-bar interception—were
-invisible from class strings.
+When selected, run `/responsive-sweep` at the router's scope and inspect the
+representative computer-use capture. A verdict without measured rects or
+the required capture is invalid. The three founding defects—cascade-order loss,
+79px overlap, and tab-bar interception—were invisible from class strings.
 
 ## Judgment rules
 

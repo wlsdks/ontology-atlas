@@ -31,8 +31,6 @@ const TIERS: Record<string, string> = {
   'design-responsive': 'opus',
   'design-handoff': 'opus',
 };
-const ALWAYS = ['design-lead', 'design-system'];
-const INSTRUMENTS = ['motion-verify', 'responsive-sweep', 'design-audit'];
 const MAX_AGENT_BYTES = 9_000;
 
 const read = (path: string): string => readFileSync(join(ROOT, path), 'utf8');
@@ -68,10 +66,11 @@ describe('Design Council wiring', () => {
     }
   });
 
-  it('keeps hierarchy and system in every convening', () => {
+  it('uses the fact router instead of standing seats', () => {
     const skill = read(SKILL).replace(/\s+/g, ' ');
-    for (const name of ALWAYS) expect(skill).toContain(name);
-    expect(skill).toMatch(/hierarchy and system always attend/i);
+    expect(skill).toContain('pnpm design:route');
+    expect(skill).toMatch(/No seat always attends/i);
+    expect(skill).toMatch(/exactly the seats returned by the router/i);
   });
 
   it('requires subtraction and a falsifier', () => {
@@ -91,23 +90,24 @@ describe('Design Council wiring', () => {
     }
   });
 
-  it('makes every measuring seat run its instrument', () => {
+  it('requires real pixels and recorded temporal output without making all instruments universal', () => {
     const skill = read(SKILL);
-    for (const instrument of INSTRUMENTS) expect(skill).toContain(instrument);
+    expect(skill).toContain('computer-use render-loop packet');
+    expect(skill).toContain('motion-verify');
+    expect(skill).toMatch(/real macOS recording/i);
+    expect(skill).toMatch(/only when the route selected it/i);
   });
 
-  it('keeps bounded query and capability-based mirrored seat discovery', () => {
+  it('keeps conflict-bounded rebuttal and capability-based mirrored seat discovery', () => {
     for (const path of [SKILL, MIRROR]) {
       const body = read(path);
       const folded = body.replace(/\s+/g, ' ');
-      expect(folded).toContain('Bounded cross-council query');
-      expect(folded).toContain('Assumption if unanswered');
-      expect(folded).toMatch(/One answer, no repeated question/i);
+      expect(folded).toMatch(/only when two positions conflict/i);
+      expect(folded).toMatch(/No repeated questions/i);
       expect(folded).toContain('../../agents/design-*.md');
       expect(folded).toContain('never create a third copy');
-      expect(folded).toContain('Round 1 independence was lost');
-      expect(folded).toContain('defer the verdict');
-      expect(folded).toContain('parallel subagents');
+      expect(folded).toMatch(/disclose lost independence/i);
+      expect(folded).toMatch(/defer that part of the verdict/i);
       for (const brand of ['Claude Code', 'Codex', 'Cursor', 'Gemini']) {
         expect(body, `${path} must not branch on ${brand}`).not.toContain(brand);
       }
@@ -141,10 +141,18 @@ describe('Design Council wiring', () => {
 
   it('reads prior decisions, mirrors exactly, and names every seat', () => {
     const skill = read(SKILL);
-    expect(skill).toContain('prior decisions');
+    expect(skill).toMatch(/prior decision/i);
     expect(skill).toContain('docs/DECISIONS.md');
     expect(read(MIRROR)).toBe(skill);
     for (const [, name] of BENCH) expect(skill).toContain(name);
+  });
+
+  it('records review utility instead of equating reviewer count with quality', () => {
+    const skill = read(SKILL);
+    for (const field of ['Pre-review decision', 'Decision delta', 'Unique contribution', 'Review footprint']) {
+      expect(skill).toContain(field);
+    }
+    expect(skill).toMatch(/Five consecutive no-delta councils/i);
   });
 });
 

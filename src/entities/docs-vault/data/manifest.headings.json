@@ -11120,6 +11120,26 @@
       "depth": 2,
       "text": "2026-09-01 — Human comprehension after agent work becomes the campaign lens, not a performance claim",
       "slug": "2026-09-01-human-comprehension-after-agent-work-becomes-the-campaign-lens-not-a-performance-claim"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-01 — Design proof follows the changed failure mode; rendered work is observed while it is built",
+      "slug": "2026-09-01-design-proof-follows-the-changed-failure-mode-rendered-work-is-observed-while-it-is-built"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas product pass",
+      "slug": "atlas-product-pass"
+    },
+    {
+      "depth": 3,
+      "text": "Design Council Verdict — design verification contract",
+      "slug": "design-council-verdict-design-verification-contract"
+    },
+    {
+      "depth": 3,
+      "text": "Gate probe",
+      "slug": "gate-probe"
     }
   ],
   "DEMO-SCENARIO": [
@@ -15601,8 +15621,28 @@
     },
     {
       "depth": 2,
-      "text": "Default Design Stance",
-      "slug": "default-design-stance"
+      "text": "Outcome",
+      "slug": "outcome"
+    },
+    {
+      "depth": 2,
+      "text": "Route from change facts",
+      "slug": "route-from-change-facts"
+    },
+    {
+      "depth": 2,
+      "text": "Pixel evidence contract",
+      "slug": "pixel-evidence-contract"
+    },
+    {
+      "depth": 2,
+      "text": "Motion evidence contract",
+      "slug": "motion-evidence-contract"
+    },
+    {
+      "depth": 2,
+      "text": "Direction threshold",
+      "slug": "direction-threshold"
     },
     {
       "depth": 2,
@@ -15611,148 +15651,33 @@
     },
     {
       "depth": 3,
-      "text": "PO And Designer Role Split",
-      "slug": "po-and-designer-role-split"
-    },
-    {
-      "depth": 3,
-      "text": "Joint PO + Designer Decision Standard",
-      "slug": "joint-po-designer-decision-standard"
-    },
-    {
-      "depth": 3,
-      "text": "Designer Conversation Protocol",
-      "slug": "designer-conversation-protocol"
-    },
-    {
-      "depth": 3,
-      "text": "PO + Designer Working Loop",
-      "slug": "po-designer-working-loop"
-    },
-    {
-      "depth": 3,
-      "text": "Standing Relief/Topology Critique Queue",
-      "slug": "standing-relieftopology-critique-queue"
-    },
-    {
-      "depth": 3,
-      "text": "Current Relief/Topology Problem Signals",
-      "slug": "current-relieftopology-problem-signals"
-    },
-    {
-      "depth": 3,
-      "text": "Senior Design Team Standard",
-      "slug": "senior-design-team-standard"
-    },
-    {
-      "depth": 3,
       "text": "Atlas Designer Bench",
       "slug": "atlas-designer-bench"
     },
     {
       "depth": 3,
+      "text": "Council utility",
+      "slug": "council-utility"
+    },
+    {
+      "depth": 2,
       "text": "No-Human-Designer Working Mode",
       "slug": "no-human-designer-working-mode"
     },
     {
-      "depth": 3,
-      "text": "Critique Severity Ladder",
-      "slug": "critique-severity-ladder"
-    },
-    {
-      "depth": 3,
-      "text": "Council Output Contract",
-      "slug": "council-output-contract"
-    },
-    {
-      "depth": 3,
-      "text": "Relief/Topology Attention Layer Model",
-      "slug": "relieftopology-attention-layer-model"
-    },
-    {
-      "depth": 3,
-      "text": "Layer Collision Rules",
-      "slug": "layer-collision-rules"
-    },
-    {
-      "depth": 3,
-      "text": "State Contract",
-      "slug": "state-contract"
-    },
-    {
-      "depth": 3,
-      "text": "Council Rejection Rules",
-      "slug": "council-rejection-rules"
-    },
-    {
-      "depth": 3,
-      "text": "How The Council Talks",
-      "slug": "how-the-council-talks"
+      "depth": 2,
+      "text": "Build order",
+      "slug": "build-order"
     },
     {
       "depth": 2,
-      "text": "Reference Rules",
-      "slug": "reference-rules"
-    },
-    {
-      "depth": 3,
-      "text": "Live Reference Review Loop",
-      "slug": "live-reference-review-loop"
-    },
-    {
-      "depth": 3,
-      "text": "Reference Trust Levels",
-      "slug": "reference-trust-levels"
-    },
-    {
-      "depth": 3,
-      "text": "Live Reference Review - 2026-06-15",
-      "slug": "live-reference-review---2026-06-15"
-    },
-    {
-      "depth": 3,
       "text": "Reference Permission Test",
       "slug": "reference-permission-test"
     },
     {
-      "depth": 3,
-      "text": "Modern Reference Bar",
-      "slug": "modern-reference-bar"
-    },
-    {
-      "depth": 3,
-      "text": "Reference Translation Protocol",
-      "slug": "reference-translation-protocol"
-    },
-    {
-      "depth": 3,
-      "text": "Reference Permission Matrix",
-      "slug": "reference-permission-matrix"
-    },
-    {
-      "depth": 3,
-      "text": "Reference Translation Examples",
-      "slug": "reference-translation-examples"
-    },
-    {
       "depth": 2,
-      "text": "Relief/Topology Design Gate",
-      "slug": "relieftopology-design-gate"
-    },
-    {
-      "depth": 3,
       "text": "Relief/Topology Graph Engine Fit Gate",
       "slug": "relieftopology-graph-engine-fit-gate"
-    },
-    {
-      "depth": 3,
-      "text": "Relief/Topology Token And Anti-Pattern Gate",
-      "slug": "relieftopology-token-and-anti-pattern-gate"
-    },
-    {
-      "depth": 3,
-      "text": "Agent Handoff Design Contract",
-      "slug": "agent-handoff-design-contract"
     },
     {
       "depth": 2,
@@ -15760,43 +15685,13 @@
       "slug": "relieftopology-surface-rules"
     },
     {
-      "depth": 3,
-      "text": "Relief/Topology Surface Stack Contract",
-      "slug": "relieftopology-surface-stack-contract"
-    },
-    {
-      "depth": 3,
-      "text": "Relief/Topology Motion And Interaction Feel",
-      "slug": "relieftopology-motion-and-interaction-feel"
-    },
-    {
-      "depth": 3,
-      "text": "14-Inch Fullscreen Geometry Rules",
-      "slug": "14-inch-fullscreen-geometry-rules"
+      "depth": 2,
+      "text": "Responsive and installed-app scope",
+      "slug": "responsive-and-installed-app-scope"
     },
     {
       "depth": 2,
-      "text": "Responsive Quality Bar",
-      "slug": "responsive-quality-bar"
-    },
-    {
-      "depth": 2,
-      "text": "Installed macOS App Proof Contract",
-      "slug": "installed-macos-app-proof-contract"
-    },
-    {
-      "depth": 2,
-      "text": "14-Inch MacBook Critique Protocol",
-      "slug": "14-inch-macbook-critique-protocol"
-    },
-    {
-      "depth": 3,
-      "text": "14-Inch No-Gos",
-      "slug": "14-inch-no-gos"
-    },
-    {
-      "depth": 2,
-      "text": "Design Post-Check",
+      "text": "Design post-check",
       "slug": "design-post-check"
     }
   ],

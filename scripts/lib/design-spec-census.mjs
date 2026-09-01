@@ -5,7 +5,7 @@
  * ## Why "the file is in the diff" is not the test
  *
  * `.claude/rules/design.md`'s “Changing the specification requires
- * `design-system`” section names the trigger files. Those
+ * `design-contract`” section names the trigger files. Those
  * are the **most frequently touched files in this repository** — `app/globals.css`
  * alone appears in more than a third of the last 200 commits. Requiring a ledger
  * entry whenever one appears in a diff would catch typo fixes, comments,
@@ -58,7 +58,7 @@ import ts from 'typescript';
 export const SPEC_RULE_DOC = '.claude/rules/design.md';
 
 /** The section of that document where the list lives. Renaming the heading makes the parser die loudly. */
-export const SPEC_RULE_SECTION = 'Changing the specification requires `design-system`';
+export const SPEC_RULE_SECTION = 'Changing the specification requires `design-contract`';
 
 /** design.md's “Fixed scale contract” section — the target of the number and token inventory. */
 const SCALE_CONTRACT_SECTION = 'Fixed scale contract';
