@@ -335,6 +335,15 @@ export function useAcpSession({
   const disposedRef = useRef(false);
   /** The resolver of a permission request awaiting an answer — closed with a rejection on cleanup. */
   const pendingResolverRef = useRef<((optionId: string | null) => void) | null>(null);
+  /**
+   * Serializes concurrent permission requests (2026-09-01 review). The adapter can issue two
+   * `session/request_permission`s in one turn (parallel tool calls, an elicitation overlapping a
+   * built-in-tool permission), and with a single resolver slot the second card overwrote the
+   * first: its resolver became unreachable, its JSON-RPC id was never answered, and the agent
+   * hung on the unanswered request for the rest of the session. Each ask now waits for the
+   * previous card to settle before presenting.
+   */
+  const askChainRef = useRef<Promise<unknown>>(Promise.resolve());
   /** Timer that hands control back to ACP after the approval confirm motion. Always cancelled when the window closes. */
   const permissionDecisionTimerRef = useRef<number | null>(null);
   /** Held alongside state so the `tool_call_update` callback reads the latest approval target. */
@@ -461,9 +470,16 @@ export function useAcpSession({
     [emitWorkReceipt, push, setApprovedOntologyWriteTracked],
   );
 
-  /** Creates the promise that waits until the screen answers. */
+  /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
   const askUser = useCallback((request: AcpPermissionRequest) => {
-    return new Promise<string | null>((resolve) => {
+    const generation = generationRef.current;
+    const present = () => new Promise<string | null>((resolve) => {
+      // A question that waited in the queue may outlive its session: answered-by-nobody beats
+      // presenting a card for a conversation that is already stopped or dead.
+      if (generationRef.current !== generation || statusRef.current === 'exited') {
+        resolve(null);
+        return;
+      }
       pendingResolverRef.current = resolve;
       setPending({
         request,
@@ -510,6 +526,10 @@ export function useAcpSession({
         },
       });
     });
+    const result = askChainRef.current.then(present, present);
+    // The chain must survive any outcome, or one settled question blocks every later one.
+    askChainRef.current = result.catch(() => null);
+    return result;
   }, [approvalSettleMs, emitWorkReceipt, runtimeId, setApprovedOntologyWriteTracked]);
 
   const start = useCallback(async () => {
@@ -787,28 +807,40 @@ export function useAcpSession({
           /* Being unable to read past conversations is not this conversation's problem. */
         });
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-      setStatusTracked('error');
       /*
-       * ⚠️ **If starting failed, stop what was started** (caught in review, 2026-08-16).
-       * It used to set status to `error` and stop there, but depending on where it failed the child
-       * process is **already up** (a failed event subscription, say). The next `start()` then spawns
-       * a new process while the previous becomes a ghost nobody stops until the app quits — the same
-       * discipline as "closing mid-start stops itself" was missing on the failure path.
+       * **The failure path is generation-guarded like every await on the success path**
+       * (2026-09-01 review). A superseded start can reject long after `stop()` ran and the
+       * replacement start repopulated these refs — cleaning up "the current session" here then
+       * unsubscribes the replacement's listener, disposes its client, stops its process, and
+       * paints the healthy conversation with a stale error. A stale failure has nothing left to
+       * clean: `stop()` already stopped the process this start() had registered.
        */
-      const orphan = acpSessionRef.current;
-      if (orphan) {
-        acpSessionRef.current = null;
-        unlistenRef.current?.();
-        unlistenRef.current = null;
-        clientRef.current?.dispose();
-        clientRef.current = null;
-        await stopAcpSession(orphan).catch(() => {
-          /* It may already be dead — do not throw again on the cleanup path. */
-        });
+      if (!stale()) {
+        setError(err instanceof Error ? err.message : String(err));
+        setStatusTracked('error');
+        /*
+         * ⚠️ **If starting failed, stop what was started** (caught in review, 2026-08-16).
+         * It used to set status to `error` and stop there, but depending on where it failed the child
+         * process is **already up** (a failed event subscription, say). The next `start()` then spawns
+         * a new process while the previous becomes a ghost nobody stops until the app quits — the same
+         * discipline as "closing mid-start stops itself" was missing on the failure path.
+         */
+        const orphan = acpSessionRef.current;
+        if (orphan) {
+          acpSessionRef.current = null;
+          unlistenRef.current?.();
+          unlistenRef.current = null;
+          clientRef.current?.dispose();
+          clientRef.current = null;
+          await stopAcpSession(orphan).catch(() => {
+            /* It may already be dead — do not throw again on the cleanup path. */
+          });
+        }
       }
     } finally {
-      startingRef.current = false;
+      // A stale start's lock was already released by stop() — and possibly re-taken by the
+      // replacement start, whose lock this line must not open mid-start.
+      if (!stale()) startingRef.current = false;
     }
   }, [
     applyUpdate,
