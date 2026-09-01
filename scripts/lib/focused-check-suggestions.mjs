@@ -418,10 +418,24 @@ const RULES = [
     ],
   },
   {
-    command: 'pnpm exec vitest run tests/contract/po-council.contract.test.ts',
-    reason: 'Atlas product-risk routing policy or its active instructions changed',
+    command: 'pnpm test:po',
+    reason: 'Atlas outcome routing, reviewer map, or measured pilot contract changed',
     matches: [
-      /^scripts\/(?:lib\/po-risk-router|po-risk-router)\.mjs$/,
+      /^scripts\/(?:lib\/po-(?:risk-router|pilot)|po-(?:risk-router|pilot))\.mjs$/,
+      /^scripts\/check-decision-record\.mjs$/,
+      /^tests\/contract\/po-council\.contract\.test\.ts$/,
+      /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
+      /^\.(?:claude|agents)\/skills\/po-(?:pass|council)\/SKILL\.md$/,
+      /^\.(?:claude|agents)\/agents\/(?:chief|po-(?:evidence|steward|wedge|leverage|craft))\.md$/,
+      /^AGENTS\.md$/,
+      /^package\.json$/,
+    ],
+  },
+  {
+    command: 'pnpm po:pilot -- --check',
+    reason: 'Atlas PO pilot policy or register changed — validate metrics and the forced sunset',
+    matches: [
+      /^scripts\/(?:lib\/po-(?:risk-router|pilot)|po-(?:risk-router|pilot))\.mjs$/,
       /^scripts\/check-decision-record\.mjs$/,
       /^tests\/contract\/po-council\.contract\.test\.ts$/,
       /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,

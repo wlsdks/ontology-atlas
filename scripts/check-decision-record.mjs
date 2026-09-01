@@ -195,7 +195,7 @@ console.error(`[decisions] this change tripped a significant-decision trigger bu
 for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
 [decisions] Do one of these:
-[decisions]   1. run /po-pass (or pnpm po:route) to classify the door and primary Atlas risk
+[decisions]   1. run /po-pass (or pnpm po:route) with one Atlas outcome and every change/boundary fact
 [decisions]   2. if the route is review, run /po-council with Evidence plus the selected specialist
 [decisions]   3. append the before-state, decision delta, dissent, and falsifier to ${LEDGER}
 [decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record

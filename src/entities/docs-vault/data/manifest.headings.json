@@ -6958,6 +6958,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 — Atlas PO routing derives risk and must prove recovered understanding",
+      "slug": "2026-09-01-atlas-po-routing-derives-risk-and-must-prove-recovered-understanding"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 — Atlas product review becomes a reversible risk-routed pilot",
       "slug": "2026-09-01-atlas-product-review-becomes-a-reversible-risk-routed-pilot"
     },
@@ -15569,8 +15574,18 @@
     },
     {
       "depth": 2,
-      "text": "Runs",
-      "slug": "runs"
+      "text": "Legacy baseline",
+      "slug": "legacy-baseline"
+    },
+    {
+      "depth": 2,
+      "text": "Structured runs",
+      "slug": "structured-runs"
+    },
+    {
+      "depth": 2,
+      "text": "Outcome updates",
+      "slug": "outcome-updates"
     }
   ],
   "PRODUCT-DESIGN-OPERATING-SYSTEM": [
@@ -15970,33 +15985,38 @@
     },
     {
       "depth": 2,
-      "text": "The one product question",
-      "slug": "the-one-product-question"
+      "text": "The five Atlas outcomes",
+      "slug": "the-five-atlas-outcomes"
     },
     {
       "depth": 2,
-      "text": "Route by reversibility",
-      "slug": "route-by-reversibility"
-    },
-    {
-      "depth": 3,
-      "text": "1. Mechanical — skip the PO gate",
-      "slug": "1-mechanical-skip-the-po-gate"
-    },
-    {
-      "depth": 3,
-      "text": "2. Two-way door — one accountable solo pass",
-      "slug": "2-two-way-door-one-accountable-solo-pass"
-    },
-    {
-      "depth": 3,
-      "text": "3. One-way door — two independent reviewers",
-      "slug": "3-one-way-door-two-independent-reviewers"
+      "text": "Evidence before commitment",
+      "slug": "evidence-before-commitment"
     },
     {
       "depth": 2,
-      "text": "Universal boundary scan",
-      "slug": "universal-boundary-scan"
+      "text": "Route from facts, not verdicts",
+      "slug": "route-from-facts-not-verdicts"
+    },
+    {
+      "depth": 3,
+      "text": "Mechanical maintenance",
+      "slug": "mechanical-maintenance"
+    },
+    {
+      "depth": 3,
+      "text": "Change signals",
+      "slug": "change-signals"
+    },
+    {
+      "depth": 3,
+      "text": "Resulting paths",
+      "slug": "resulting-paths"
+    },
+    {
+      "depth": 2,
+      "text": "Recovery proof",
+      "slug": "recovery-proof"
     },
     {
       "depth": 2,
@@ -16015,13 +16035,8 @@
     },
     {
       "depth": 2,
-      "text": "Pilot and sunset",
-      "slug": "pilot-and-sunset"
-    },
-    {
-      "depth": 2,
-      "text": "What was retained and removed",
-      "slug": "what-was-retained-and-removed"
+      "text": "Measured pilot and forced sunset",
+      "slug": "measured-pilot-and-forced-sunset"
     },
     {
       "depth": 2,

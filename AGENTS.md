@@ -79,9 +79,9 @@ Use the matching source, never memory and never this summary — what follows is
 routing only: when to open a gate, not how it runs.
 
 - **PO gate** — Before product, UX, graph, MCP, CLI, workflow, or macOS work,
-  `/po-pass` names the observable failure and runs `pnpm po:route`. Local-first
-  and human sovereignty are universal; other Atlas value is conditional. Log
-  eligible pilot rows in `docs/PO-PILOT.md`.
+  `/po-pass` names one lost Atlas ability and gives change/boundary facts to
+  `pnpm po:route`; it derives door and risk. Log pilot outcomes in
+  `docs/PO-PILOT.md`; `pnpm po:pilot -- --check` owns the sunset.
 - **Product design gate** — `docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md`, after
   the PO pass, for UI, visual design, interaction, graph readability,
   responsive layout and macOS workbench work:
@@ -96,8 +96,8 @@ routing only: when to open a gate, not how it runs.
   `.codex/config.toml` alike because the two brief trees are byte identical. A
   seat may only name a server its own tree's config declares; a personal agent
   config is not this repository's contract, and `pnpm agents:check` enforces it.
-- **Councils** — `/po-council` pairs Evidence with one risk specialist for
-  hard-to-reverse work; `chief` routes and rebuts only material conflict.
+- **Councils** — `/po-council` pairs Evidence with the derived-risk specialist
+  and tests recovery proof; `chief` rebuts only material conflict.
   `/design-council` owns visual work, with `design-guardian` as editor/decider
   before and after meaningful Relief or Topology work.
 - **Decision ledger** — `docs/DECISIONS.md` is append-only. Read it before a
