@@ -6958,6 +6958,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-01 — Atlas product review becomes a reversible risk-routed pilot",
+      "slug": "2026-09-01-atlas-product-review-becomes-a-reversible-risk-routed-pilot"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 — Inside-the-vault auto-allow narrows to read-only tool kinds",
       "slug": "2026-09-01-inside-the-vault-auto-allow-narrows-to-read-only-tool-kinds"
     },
@@ -12209,6 +12214,11 @@
       "slug": "decision-ledger-gate-pnpm-decisionscheck"
     },
     {
+      "depth": 3,
+      "text": "Atlas PO risk-router probe (2026-09-01)",
+      "slug": "atlas-po-risk-router-probe-2026-09-01"
+    },
+    {
       "depth": 2,
       "text": "Agent File Checks",
       "slug": "agent-file-checks"
@@ -15541,6 +15551,28 @@
       "slug": "progress-2026-08-23"
     }
   ],
+  "PO-PILOT": [
+    {
+      "depth": 1,
+      "text": "Atlas PO routing pilot",
+      "slug": "atlas-po-routing-pilot"
+    },
+    {
+      "depth": 2,
+      "text": "Method",
+      "slug": "method"
+    },
+    {
+      "depth": 2,
+      "text": "Acceptance and sunset",
+      "slug": "acceptance-and-sunset"
+    },
+    {
+      "depth": 2,
+      "text": "Runs",
+      "slug": "runs"
+    }
+  ],
   "PRODUCT-DESIGN-OPERATING-SYSTEM": [
     {
       "depth": 1,
@@ -15933,133 +15965,68 @@
   "PRODUCT-OWNER-OPERATING-SYSTEM": [
     {
       "depth": 1,
-      "text": "PRODUCT OWNER OPERATING SYSTEM",
-      "slug": "product-owner-operating-system"
+      "text": "ATLAS PRODUCT DECISION SYSTEM",
+      "slug": "atlas-product-decision-system"
     },
     {
       "depth": 2,
-      "text": "The PO We Are Creating",
-      "slug": "the-po-we-are-creating"
+      "text": "The one product question",
+      "slug": "the-one-product-question"
     },
     {
       "depth": 2,
-      "text": "Chief PO Standard",
-      "slug": "chief-po-standard"
-    },
-    {
-      "depth": 2,
-      "text": "Phenomenon-First Command Style",
-      "slug": "phenomenon-first-command-style"
-    },
-    {
-      "depth": 2,
-      "text": "Non-Negotiable Operating Rule",
-      "slug": "non-negotiable-operating-rule"
+      "text": "Route by reversibility",
+      "slug": "route-by-reversibility"
     },
     {
       "depth": 3,
-      "text": "Feature Request Translation Protocol",
-      "slug": "feature-request-translation-protocol"
-    },
-    {
-      "depth": 2,
-      "text": "Reference Lineage",
-      "slug": "reference-lineage"
-    },
-    {
-      "depth": 2,
-      "text": "The Atlas PO Council",
-      "slug": "the-atlas-po-council"
+      "text": "1. Mechanical — skip the PO gate",
+      "slug": "1-mechanical-skip-the-po-gate"
     },
     {
       "depth": 3,
-      "text": "The council is five callable agents, not thirteen bullet points",
-      "slug": "the-council-is-five-callable-agents-not-thirteen-bullet-points"
+      "text": "2. Two-way door — one accountable solo pass",
+      "slug": "2-two-way-door-one-accountable-solo-pass"
     },
     {
       "depth": 3,
-      "text": "When to convene",
-      "slug": "when-to-convene"
+      "text": "3. One-way door — two independent reviewers",
+      "slug": "3-one-way-door-two-independent-reviewers"
     },
     {
       "depth": 2,
-      "text": "Default PO Stance",
-      "slug": "default-po-stance"
+      "text": "Universal boundary scan",
+      "slug": "universal-boundary-scan"
     },
     {
       "depth": 2,
-      "text": "Problem Insight Bar",
-      "slug": "problem-insight-bar"
+      "text": "Compact solo pass",
+      "slug": "compact-solo-pass"
     },
     {
       "depth": 2,
-      "text": "PO Operating Loop",
-      "slug": "po-operating-loop"
+      "text": "Selected review protocol",
+      "slug": "selected-review-protocol"
     },
     {
       "depth": 2,
-      "text": "Mandatory PO Gate",
-      "slug": "mandatory-po-gate"
+      "text": "Significant decision record",
+      "slug": "significant-decision-record"
     },
     {
       "depth": 2,
-      "text": "PO Verdicts",
-      "slug": "po-verdicts"
+      "text": "Pilot and sunset",
+      "slug": "pilot-and-sunset"
     },
     {
       "depth": 2,
-      "text": "Fast PO Pass for AI Agents",
-      "slug": "fast-po-pass-for-ai-agents"
+      "text": "What was retained and removed",
+      "slug": "what-was-retained-and-removed"
     },
     {
       "depth": 2,
-      "text": "PO Quality Rubric",
-      "slug": "po-quality-rubric"
-    },
-    {
-      "depth": 2,
-      "text": "Chief PO Level Evaluation",
-      "slug": "chief-po-level-evaluation"
-    },
-    {
-      "depth": 2,
-      "text": "Required Agent Behavior",
-      "slug": "required-agent-behavior"
-    },
-    {
-      "depth": 2,
-      "text": "Prioritization Rule",
-      "slug": "prioritization-rule"
-    },
-    {
-      "depth": 2,
-      "text": "Atlas-Specific Decision Rules",
-      "slug": "atlas-specific-decision-rules"
-    },
-    {
-      "depth": 2,
-      "text": "Agent Implementation Contract",
-      "slug": "agent-implementation-contract"
-    },
-    {
-      "depth": 2,
-      "text": "Kill Criteria",
-      "slug": "kill-criteria"
-    },
-    {
-      "depth": 2,
-      "text": "Anti-PO Smells",
-      "slug": "anti-po-smells"
-    },
-    {
-      "depth": 2,
-      "text": "PO Decision Record Template",
-      "slug": "po-decision-record-template"
-    },
-    {
-      "depth": 2,
-      "text": "Definition of Done for Product Work",
-      "slug": "definition-of-done-for-product-work"
+      "text": "Why this shape",
+      "slug": "why-this-shape"
     }
   ],
   "prototypes/RATIO-SYSTEM": [

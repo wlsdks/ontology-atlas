@@ -40,6 +40,80 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+> **Active format from 2026-09-01:** the historical template above remains as
+> append-only evidence. New significant records use the fields in
+> `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`: before-state, evidence, door,
+> primary Atlas risk, accountable owner, decision delta, review footprint,
+> dissent/falsifier, revisit, and outcome. Do not add a numeric score.
+
+## 2026-09-01 — Atlas product review becomes a reversible risk-routed pilot
+
+**Pre-review decision**: improve the existing PO pass rather than abolish it;
+the exact replacement was unresolved. The offered options were to keep and
+tune the universal scorecard, permanently replace it with a lighter router, or
+remove product review in favor of owner judgment plus technical gates.
+
+**Evidence state**: observed + inferred. The active operating system was 696
+lines / 39,874 bytes, its daily skill was 3,894 bytes, its council skill was
+5,539 bytes, and this ledger was 1,910,142 bytes before this record. The ledger
+was touched by 395 commits while the repository recorded 1,165 commits since
+2026-07-27. Historical reviews did reject the unsupported OS URL scheme, hold
+an unmeasured ACP transport rewrite, and bound first-contact positioning
+claims. But historical records almost never captured the intended decision
+before review, so the review's causal decision delta cannot be measured.
+Council and score counts derived from the free-form ledger are
+classifier-dependent and are not treated as exact facts.
+
+**Door**: one-way — this changes the canonical instructions agents use to
+approve product, workflow, MCP/CLI, and human-authority decisions.
+
+**Primary Atlas risk**: meaning — an agent may not use a generic framework to
+self-certify changes to canonical truth, local transfer, write authority, or a
+person's ability to inspect, reject, and correct meaning.
+
+**Confidence**: medium — the cost and missing causal fields are observed, and
+known catches show the review is not valueless; its prospective effect is still
+untested.
+
+**Accountable owner**: jinan.
+
+**Decision**: make the risk router the active daily path for a finite pilot.
+Mechanical work skips product review. Reversible work gets one compact solo
+pass. A hard-to-reverse decision gets `po-evidence` plus exactly one specialist
+for `meaning`, `positioning`, or `scope`; rebuttal occurs only for material
+conflict. Every non-mechanical change retains a fail-closed local-first and
+human-sovereignty scan. Numeric scoring, invented universal ontology value,
+mandatory full-roster review, and duplicated design/journey inspection leave
+the active path. `po-craft` remains available only when the owner explicitly
+requests an independent proof audit.
+
+**Decision delta**: narrowed. Independent review changed the likely permanent
+replacement into an instrumented, reversible pilot and retained one universal
+Atlas-specific brake. Evidence required a recorded before-state and outcome;
+Steward preserved the sovereignty boundary; Wedge and Leverage required the
+pilot to prove distinctive Atlas value and sunset; Craft removed duplicated UX
+proof from the PO path.
+
+**Review footprint**: five independent first positions and five rebuttals (10
+review turns). Capacity required two parallel waves; the later wave did not see
+earlier output, but full simultaneous Round 1 independence was weakened.
+
+**Dissent and falsifier**: the router can become a new layer of meta-work, and
+the missing historical before-states mean this change is not evidence that the
+old council failed. Revert or adjust the pilot if any serious local-first,
+schema, reputation, or human-authority boundary is missed; if fewer than 20% of
+escalations materially change the recorded decision; if fewer than 80% of
+eligible reversible changes avoid council; or if the owner still needs another
+summary to understand the verdict.
+
+**Revisit**: after the next 20 eligible product decisions or 14 days, whichever
+comes first. Extend once to 21 days only when fewer than 10 eligible decisions
+occur. Remove a specialist from the default route after five calls with no
+unique material contribution.
+
+**Outcome**: pending merge and live use. Runs and later outcomes append to
+`docs/PO-PILOT.md`; this record is not rewritten.
+
 ## 2026-09-01 — Inside-the-vault auto-allow narrows to read-only tool kinds
 
 **Convened**: solo pass, owner-directed ("fix in severity order") after the
