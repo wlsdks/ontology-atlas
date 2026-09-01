@@ -733,13 +733,13 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based. The manifests moved to the 1.0.0 line on 2026-07-27 and have shipped as 1.0.0-rc.N release candidates since; the r",
-      "wordCount": 86251,
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; a released entry also names its tag. v1.0.0 shipped on 2026-09-01 after nineteen release candidates. Versioning ba",
+      "wordCount": 86716,
       "updatedAt": "2026-09-01",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
-        "domains/catalog",
-        "slug"
+        "slug",
+        "domains/catalog"
       ]
     },
     {
@@ -3761,18 +3761,11 @@
         "linkText": "`docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md`"
       }
     ],
-    "domains/catalog": [
-      {
-        "fromSlug": "CHANGELOG",
-        "context": "표시하지 않는다. storefront 112개념 + Ollama `qwen3:8b` 실측은 `list_kinds` → `list_concepts` → `get_concepts` 뒤 언어 재합성을 거쳐 약 25초에 `**[domains/catalog]**`만 인용하고 “검증 범위로는 브릿지 필요 여부를 판단할 수 없음”이라고 한국어로 답했다. 임의의 숫자 목표와 근거 없는 브릿지 권고는 없었다. 배치 상세 읽기의 6,000자 상한도 의미 비교를 보존한다. 예전 이",
-        "linkText": "domains/catalog"
-      }
-    ],
     "slug": [
       {
         "fromSlug": "CHANGELOG",
-        "context": "pt` + `merge_concepts` 추가. 한 번의 atomic 호출로 slug 변경/노드 합치기 + 모든 backlink (frontmatter array · inline string · body link `**[slug]**` · `(slug.md)`) 자동 redirect. 이전엔 AI agent 가 `find_backlinks` + N 회 `patch_concept` 으로 직접 짜야 했던 graph-level 변형이 1 콜. ##",
-        "linkText": "slug"
+        "context": "tgoingEdges. Writes now merge alias keys and consolidate them. - **Renames and merges rewrite every body-link form** — `**[alias]**`, `[[slug#heading]]`, `(tail.md)`, and path-prefixed links no longer dangle after a confirmed rename, or point at a",
+        "linkText": "alias"
       },
       {
         "fromSlug": "DECISIONS",
@@ -3783,6 +3776,13 @@
         "fromSlug": "FEATURES",
         "context": "ve, gold star for pinned - Markdown: GFM tables/lists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`**[slug]**`, `[[slug|label]]`, `[[slug#anchor]]`, `[[project:slug]]`) · heading anchor copy buttons - Local images: relative paths",
         "linkText": "slug"
+      }
+    ],
+    "domains/catalog": [
+      {
+        "fromSlug": "CHANGELOG",
+        "context": "표시하지 않는다. storefront 112개념 + Ollama `qwen3:8b` 실측은 `list_kinds` → `list_concepts` → `get_concepts` 뒤 언어 재합성을 거쳐 약 25초에 `**[domains/catalog]**`만 인용하고 “검증 범위로는 브릿지 필요 여부를 판단할 수 없음”이라고 한국어로 답했다. 임의의 숫자 목표와 근거 없는 브릿지 권고는 없었다. 배치 상세 읽기의 6,000자 상한도 의미 비교를 보존한다. 예전 이",
+        "linkText": "domains/catalog"
       }
     ],
     "benchmark/FINDINGS-2026-08-31-metric-split": [

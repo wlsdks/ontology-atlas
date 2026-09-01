@@ -2,12 +2,62 @@
 
 > Major change history. Code commit messages answer *why*; this file answers *when / which surface changed*. Focused on **user-visible changes**, not PR-level granularity.
 >
-> Newest at the top. Entries stay date-based. The manifests moved to the 1.0.0
-> line on 2026-07-27 and have shipped as `1.0.0-rc.N` release candidates since;
-> the release tag, not this file, carries the semver promise. `package.json`
-> is the version authority.
+> Newest at the top. Entries stay date-based; a released entry also names its
+> tag. `v1.0.0` shipped on 2026-09-01 after nineteen release candidates.
+>
+> **Versioning baseline (2026-09-01, from v1.0.0).** `package.json` is the
+> version authority, and the v-prefixed release tag must match it together with
+> `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` (`pnpm desktop:check`
+> enforces the alignment). From here:
+>
+> - **Patch (`1.0.N`)** is the default for every release — bug fixes, hardening,
+>   copy, and small improvements. N has no ceiling and never rolls over into a
+>   minor: `1.0.200` is an ordinary, expected version.
+> - **Minor (`1.X.0`)** marks a new user-visible capability or surface, or a
+>   backward-compatible MCP/CLI/schema addition.
+> - **Major (`X.0.0`)** marks a break in a public contract or the local-first
+>   promise, and convenes the PO council before the work.
+> - `-rc.N` prereleases are no longer the default; cut one only when a release
+>   needs a public soak before the plain tag.
 
 ---
+
+## 2026-09-01 · v1.0.1 — the post-release bug sweep lands
+
+The first patch release under the versioning baseline above. A full-codebase
+review of v1.0.0 confirmed ten defects; nine ship fixed here, each with a
+regression test.
+
+- **An in-app agent's own file edits inside the vault now ask first.** Path
+  containment alone used to auto-allow them, so a built-in edit tool could
+  rewrite vault Markdown with no card while the Atlas write path dutifully
+  asked. Auto-allow now also requires a read-only declared tool kind; an
+  unknown kind falls through to the permission card. (Decision record appended,
+  refining 2026-08-16 (2) §3.)
+- **Relation writes see the `depends_on:` authoring alias.** An aliased edge
+  could not be removed through `remove_relation`, `add_relation` duplicated it
+  under a second key, and `get_concept`'s neighbors contradicted its own
+  outgoingEdges. Writes now merge alias keys and consolidate them.
+- **Renames and merges rewrite every body-link form** — `[[slug|alias]]`,
+  `[[slug#heading]]`, `(tail.md)`, and path-prefixed links no longer dangle
+  after a confirmed rename, or point at a deleted file after a merge.
+- **`absorb_document` is all-or-nothing.** A mid-write failure rolls back every
+  section this call created instead of leaving a half-absorbed vault whose
+  retry minted `-2`-suffixed duplicates, and the source rewrite is atomic.
+- **Hangul file names resolve on the web map.** The web vault walk now
+  NFC-normalizes names the way MCP and the CLI already did, so a Hangul-named
+  node keeps its relations instead of minting a phantom duplicate.
+- **Frontmatter booleans and numbers survive a round trip.** `draft: false` no
+  longer comes back as the truthy string `'false'`; quoted scalars stay text.
+- **Two ACP session races are closed**: a superseded start's late failure can
+  no longer kill the replacement conversation, and concurrent permission
+  requests queue so every card presents and every request is answered.
+- **The quiet-poll re-render guard works again** — the app no longer re-renders
+  on every 1.5–5 s vault poll tick when nothing changed.
+
+The tenth finding — `broader` staying out of the public MCP relation enum — is
+intentionally unchanged per the 2026-08-09 council decision;
+`patch_concept(expected_mtime)` remains its documented write path.
 
 ## 2026-08-31 · Installed-app crashes leave a trace, and the chat's first suggestions say what they ask
 
