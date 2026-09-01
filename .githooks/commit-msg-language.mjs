@@ -9,8 +9,13 @@
 
 import { readFileSync } from 'node:fs';
 
+// Includes the Jamo blocks (U+1100-11FF, U+3130-318F — "ㅋㅋ"/"ㄴㄴ" —
+// U+A960-A97F, U+D7B0-D7FF) and halfwidth Kana/Hangul (U+FF65-FFDC): the
+// repo's own markdown-language HANGUL class already counts them, and a
+// jamo-only Korean subject used to pass this gate (bug sweep 2026-09-01).
+// Mirror: cli/src/lib/agent-files.mjs NON_ENGLISH_SCRIPT_RE.
 const NON_ENGLISH_SCRIPT_RE =
-  /[぀-ヿ㐀-䶿一-鿿가-힯豈-﫿]/u;
+  /[\u1100-\u11FF\u3040-\u30FF\u3130-\u318F\u3400-\u4DBF\u4E00-\u9FFF\uA960-\uA97F\uAC00-\uD7FF\uF900-\uFAFF\uFF65-\uFFDC]/u;
 
 // A merge, revert, squash or fixup subject is generated from text that already
 // exists. Blocking it would force someone to edit history they did not write.

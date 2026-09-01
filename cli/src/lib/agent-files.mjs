@@ -412,8 +412,10 @@ function checkAtRefs(records, options, drift) {
  * `display_<locale>` frontmatter never match AGENT_FILE_RULES, so they are out
  * of this subject set by construction rather than by exception.
  */
+// Kept in sync with .githooks/commit-msg-language.mjs: Jamo blocks and
+// halfwidth Kana/Hangul included, so jamo-only Korean cannot slip either gate.
 const NON_ENGLISH_SCRIPT_RE =
-  /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\uf900-\ufaff]/gu;
+  /[\u1100-\u11ff\u3040-\u30ff\u3130-\u318f\u3400-\u4dbf\u4e00-\u9fff\ua960-\ua97f\uac00-\ud7ff\uf900-\ufaff\uff65-\uffdc]/gu;
 
 function checkAgentLanguage(records, drift, requireEnglish) {
   // Opt-in. This is one repository's policy, not a truth about agent files, and

@@ -392,6 +392,13 @@ describe('commit-msg language gate', () => {
     assert.equal((await runHook('docs: 测试\n')).status, 1);
   });
 
+  it('catches jamo-only Korean and halfwidth kana too (bug sweep 2026-09-01)', async () => {
+    // Compatibility jamo ("ㅋㅋ") and halfwidth forms sat outside the class
+    // while the repo's own markdown HANGUL inventory counts them.
+    assert.equal((await runHook('fix: ㅋㅋ cleanup\n')).status, 1);
+    assert.equal((await runHook('chore: ｶﾀｶﾅ pass\n')).status, 1);
+  });
+
   it('leaves generated subjects alone — merge, revert, fixup', async () => {
     assert.equal((await runHook("Merge branch 'x' into main\n")).status, 0);
     assert.equal((await runHook('Revert "feat: 관문 모션 셋"\n')).status, 0);
