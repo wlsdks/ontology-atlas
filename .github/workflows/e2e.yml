@@ -1,36 +1,6 @@
-# E2E — Playwright (chromium).
-#
-# ## Why five jobs instead of one (2026-08-02)
-#
-# This file was written in 2026-07 with the note *"the suite is small enough to run
-# as a single job without sharding."* That premise is outdated — measured data (step times for the longest successful run):
-#
-# | Step | Tests | Duration |
-# |---|---|---|
-# | Static export (workshop nav) | 5 | 49s |
-# | Web smoke | 10 | 46s |
-# | **Full suite** | **150** | **448s** (boot 22s + run 426s) |
-#
-# All three ran sequentially in one job for 543s.
-#
-# **Increase runners, not workers.** `workers: 1` and `fullyParallel: false` in
-# `playwright.config.ts` are not preferences but answers to the timing vulnerability
-# of dev (Turbopack) cold starts (see the `retries` comment in the same file — on-demand
-# recompilation causes sporadic failures). Increasing workers **increases concurrent requests
-# to a single dev server**, exactly amplifying that vulnerability. Sharding is different:
-# each shard gets its own runner and dev server, so **concurrency per server remains 1**,
-# and only wall-clock time is divided.
-#
-# Math: fixed cost per shard is boot 22s + setup 36s ≈ 58s. Dividing 150 tests by N shards
-# gives 58 + 426/N seconds per shard. For N=3 it is 200s, for N=4 it is 165s, for N=5 it is 143s —
-# **due to fixed costs, returns diminish quickly.** Choose 3 (543 → 200s, 63% reduction).
-# If there is a reason to slice finer later, just extend the `shard` array and update `/3` accordingly.
-#
-# Change classification is a separate, checkout-only job. It adds a few seconds in
-# front of rendered-surface changes, but it prevents five required checks from each
-# installing pnpm, Chromium, system libraries, and the app before discovering there
-# is nothing to test. The protected check names still start on every PR; they fail
-# closed if classification fails and otherwise skip only the expensive steps.
+# Browser CI uses the same impact plan as unit/MCP CI. Exact source-to-spec
+# mappings run on shard 1 only; unmapped rendered dependencies fail closed to
+# the three-shard PR smoke project. Main and planner changes run every project.
 name: E2E smoke
 
 on:
@@ -51,71 +21,60 @@ env:
 
 jobs:
   changes:
-    name: E2E change scope
+    name: E2E impact plan
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      runtime: ${{ steps.classify.outputs.runtime }}
-      browser: ${{ steps.classify.outputs.browser }}
-      e2e: ${{ steps.classify.outputs.e2e }}
+      plan: ${{ steps.impact.outputs.plan }}
+      playwright: ${{ steps.impact.outputs.playwright }}
+      static: ${{ steps.impact.outputs.static }}
+      web: ${{ steps.impact.outputs.web }}
     steps:
-      # Change classification uses `git merge-base`, so a shallow checkout would
-      # fail open into the full suite and erase the intended scope boundary.
       - name: Checkout
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
-      - name: Classify change
-        id: classify
-        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
+      - name: Build impact plan
+        id: impact
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="origin/$BASE_REF"
 
-  # ── Static export only layer — cannot catch with dev ──────────────────────────
-  #
-  # Measured 2026-07-28: same-route navigation in the workshop (browse · create transition)
-  # was crashing only in production builds. `router.push` with the same path but different
-  # query parameters becomes a no-op at the routing level, and dev succeeds for both with
-  # the same code — **dev has zero diagnostic power for this defect.** Since the rest of the
-  # suite targets dev, without this job, regressions of this class would pass green forever.
   static-export:
     name: Playwright (static export)
     needs: changes
-    # Keep this branch-protected status alive when classification fails, so the
-    # missing verdict becomes RED rather than a skipped-success bypass.
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    env:
-      RUN_PLAYWRIGHT: ${{ github.event_name != 'pull_request' || needs.changes.outputs.runtime == 'true' || needs.changes.outputs.browser == 'true' }}
-    # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
-    # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
-    # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
-    # (setup-playwright), so this value is no longer that safety net — increase it by the amount
-    # needed for retries.
     timeout-minutes: 30
+    env:
+      ACTIVE: ${{ needs.changes.outputs.static }}
+      CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
     steps:
-      - name: Require change classification
+      - name: Require impact plan
         if: needs.changes.result != 'success'
         run: |
-          echo "::error::E2E change classification failed; refusing to turn a missing verdict into a green required check"
+          echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
           exit 1
 
       - name: Checkout
-        if: env.RUN_PLAYWRIGHT == 'true'
+        if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Playwright
-        if: env.RUN_PLAYWRIGHT == 'true'
+        if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      - name: Static export e2e (studio navigation)
-        if: env.RUN_PLAYWRIGHT == 'true'
-        run: pnpm test:e2e:static
+      - name: Run static-export evidence
+        if: env.ACTIVE == 'true'
+        run: node scripts/run-ci-lane.mjs --lane=static
         env:
           CI: true
 
-      - name: Skip Playwright setup
-        if: env.RUN_PLAYWRIGHT != 'true'
-        run: echo "No runtime change — skipped Playwright dependencies, browser, build, and test"
+      - name: Skip unaffected Playwright setup
+        if: env.ACTIVE != 'true' && needs.changes.result == 'success'
+        run: echo "Static-export-only behavior is untouched"
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -125,53 +84,39 @@ jobs:
           path: output/playwright/test-results
           retention-days: 1
 
-  # ── Web smoke — the place the classifier cannot turn off ────────────────────────────────
-  #
-  # After surface separation (`docs/DECISIONS.md`) on 2026-07-27, the web no longer follows the app,
-  # and owners only use the app. In other words, the web is an **unmanned surface** but the only
-  # entry point. If it shares conditions with the rest of the suite (browser), changes touching
-  # only the desktop bridge (`src-tauri/**`) merge without ever seeing the web — that is exactly
-  # the rot this gate was built to block. So widen the condition: **if shipped code changes (runtime),
-  # it always runs**, and on main push, it always runs even if the classifier cannot find a comparison base.
   web-smoke:
     name: Playwright (web surface)
     needs: changes
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    env:
-      RUN_PLAYWRIGHT: ${{ github.event_name != 'pull_request' || needs.changes.outputs.runtime == 'true' || needs.changes.outputs.browser == 'true' }}
-    # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
-    # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
-    # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
-    # (setup-playwright), so this value is no longer that safety net — increase it by the amount
-    # needed for retries.
     timeout-minutes: 30
+    env:
+      ACTIVE: ${{ needs.changes.outputs.web }}
+      CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
     steps:
-      - name: Require change classification
+      - name: Require impact plan
         if: needs.changes.result != 'success'
         run: |
-          echo "::error::E2E change classification failed; refusing to turn a missing verdict into a green required check"
+          echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
           exit 1
 
       - name: Checkout
-        if: env.RUN_PLAYWRIGHT == 'true'
+        if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Playwright
-        if: env.RUN_PLAYWRIGHT == 'true'
+        if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      # The deployed web is the static export (deploy-pages) — smoke also targets it.
-      # When targeting dev, on-demand compilation took dozens of seconds for the first request.
-      - name: Web surface smoke
-        if: env.RUN_PLAYWRIGHT == 'true'
-        run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test tests/e2e/web-surface-smoke.spec.ts
+      - name: Run web-surface evidence
+        if: env.ACTIVE == 'true'
+        run: node scripts/run-ci-lane.mjs --lane=web
         env:
           CI: true
 
-      - name: Skip Playwright setup
-        if: env.RUN_PLAYWRIGHT != 'true'
-        run: echo "No runtime change — skipped Playwright dependencies, browser, build, and test"
+      - name: Skip unaffected Playwright setup
+        if: env.ACTIVE != 'true' && needs.changes.result == 'success'
+        run: echo "The unattended web gateway is untouched"
 
       - name: Upload Playwright report on failure
         if: failure()
@@ -181,87 +126,43 @@ jobs:
           path: output/playwright/test-results
           retention-days: 1
 
-  # ── Suite — 3 shards. PR gets gate (smoke) only, main push gets all ─────────
-  #
-  # Measured 2026-08-21: when running the full spec per PR, one shard took 13 minutes,
-  # and of the serial full measured 16.8 minutes, 7.8 minutes (47%) was **instrumentation sweep**
-  # (frame/motion sample collection · previous route×previous width matrix instrumentation) across
-  # 19 files. This class rarely changes the prescription, and defects are caught identically in
-  # post-merge main runs. All specs shaken that day were of this class. So we split them — the
-  # boundary's canonical source and evidence is a single file `tests/e2e/post-merge-specs.ts`,
-  # and wiring monitoring is handled by `tests/contract/e2e-suite-split.contract.test.ts`.
-  #
-  # Triggers that actually run deferred tests: ① main push (= immediately after merge, the push branch below
-  # runs all without project filters) ② PRs touching e2e infrastructure (classify's `e2e` output —
-  # a PR fixing specs sees its own red before merging).
-  #
-  # **CI targets built static export, not dev** (2026-08-21).
-  # dev (Turbopack) compiles routes on the first request, so any spec hitting a route for the first
-  # time paid that cost entirely — who bites is determined by shard configuration and execution order,
-  # **causing different specs to die with a 30s timeout each run** (#1178 first run: dialog-responsive 32.6s ✘ etc., 2.0s ✓ running alone). Static export has no first-request cost, making time deterministic and diagnostic power higher (measured 2026-07-28:
-  # workshop same-route navigation only crashed in export). Census of running all 350 full suite tests against static:
-  # 0 failures · 0 flaky · serial 15.7 minutes (dev 16.8 minutes). Local default is still dev reuse —
-  # this transition exists only in these two CI jobs.
-  #
-  # The full suite including the web smoke once more is intentional (~20s).
-  # Jobs are split so that if the web breaks, you do not need to dig through logs; just seeing the job name tells you.
-  #
-  # Changes that do not affect rendered pages (agent brief · docs · workflows)
-  # keep all three required shard statuses, but do not checkout the app or run
-  # Playwright setup. This avoids required-check deadlock without paying browser cost.
   suite:
     name: Playwright (chromium ${{ matrix.shard }}/3)
     needs: changes
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
-    env:
-      RUN_PLAYWRIGHT: ${{ github.event_name != 'pull_request' || needs.changes.outputs.browser == 'true' }}
-    # It was 20 minutes. Measured (2026-08-19): passing shards already take 12–17 minutes,
-    # leaving only a 3-minute margin, and if the setup step retries even once, a «slow but normal
-    # run» falls off the cliff. The infinite wait for the setup step is now blocked by `run-with-retry`
-    # (setup-playwright), so this value is no longer that safety net — increase it by the amount
-    # needed for retries.
     timeout-minutes: 30
     strategy:
-      # Even if one shard turns red, the rest run to completion — telling about only one defect at a time
-      # makes verification round-trip. This is the same reason for using `if: always()` inside the job.
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
+    env:
+      ACTIVE: ${{ needs.changes.outputs.playwright == 'full' || needs.changes.outputs.playwright == 'smoke' || (needs.changes.outputs.playwright == 'targeted' && matrix.shard == 1) }}
+      CI_IMPACT_PLAN: ${{ needs.changes.outputs.plan }}
     steps:
-      - name: Require change classification
+      - name: Require impact plan
         if: needs.changes.result != 'success'
         run: |
-          echo "::error::E2E change classification failed; refusing to turn a missing verdict into a green required check"
+          echo "::error::E2E impact planning failed; refusing to turn a missing verdict into green"
           exit 1
 
       - name: Checkout
-        if: env.RUN_PLAYWRIGHT == 'true'
+        if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Playwright
-        if: env.RUN_PLAYWRIGHT == 'true'
+        if: env.ACTIVE == 'true'
         uses: ./.github/actions/setup-playwright
 
-      # PR gets PR gate (smoke) only — except PRs fixing e2e infrastructure itself and main
-      # pushes run all (smoke + post-merge) without project filters.
-      #
-      # ⚠️ Project selection is in env, not run. Initially I wrote the expression on two lines
-      # inside the folding scalar (>-) of run, but **continuously indented lines do not fold
-      # and remain literal lines** due to YAML rules — so the script became two lines —
-      # 1 line ran all without shards and 2 lines `--shard=…` died with exit 127,
-      # causing three shards each to run all 348 tests for 27 minutes and still turn red (#1178 first run
-      # measured). env values are single-line expressions, so this trap is avoided.
-      - name: Run Playwright suite (shard ${{ matrix.shard }}/3)
-        if: env.RUN_PLAYWRIGHT == 'true'
-        run: pnpm build && PLAYWRIGHT_STATIC=1 pnpm exec playwright test $PLAYWRIGHT_PROJECT_ARGS --shard=${{ matrix.shard }}/3
+      - name: Run browser evidence (shard ${{ matrix.shard }}/3)
+        if: env.ACTIVE == 'true'
+        run: node scripts/run-ci-lane.mjs --lane=e2e --shard=${{ matrix.shard }}/3
         env:
           CI: true
-          PLAYWRIGHT_PROJECT_ARGS: ${{ (github.event_name == 'pull_request' && needs.changes.outputs.e2e != 'true') && '--project=smoke' || '' }}
 
-      - name: Skip Playwright setup
-        if: env.RUN_PLAYWRIGHT != 'true'
-        run: echo "No browser-dependent change — skipped Playwright dependencies, browser, build, and test"
+      - name: Skip unaffected Playwright setup
+        if: env.ACTIVE != 'true' && needs.changes.result == 'success'
+        run: echo "No browser evidence assigned to this shard"
 
       - name: Upload Playwright report on failure
         if: failure()

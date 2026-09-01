@@ -33,9 +33,6 @@ const scripts = (JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as
 }).scripts;
 
 const DELIBERATELY_UNWIRED: Record<string, string> = {
-  "integration:mcp":
-    "measured past two minutes against a live MCP server. Promoting it is a "
-    + "scheduling decision about CI wall-clock, not a wiring oversight.",
   "integration:cli":
     "measured 94 seconds. CI runs a filtered subset of the same file through "
     + "`integration:cli:setup` (--test-name-pattern \"^(init|agent-setup)\"), so the "
@@ -52,7 +49,8 @@ function readAll(dir: string): string {
 
 const workflows = readAll(".github/workflows");
 const gitHooks = readAll(".githooks");
-const callers = `${workflows}\n${gitHooks}`;
+const ciRegistry = readFileSync(join(ROOT, "scripts", "classify-change.mjs"), "utf8");
+const callers = `${workflows}\n${gitHooks}\n${ciRegistry}`;
 
 const nodeTestScripts = Object.entries(scripts)
   .filter(([, command]) => command.includes("node --test"))
@@ -82,6 +80,12 @@ function reachable(script: string, seen = new Set<string>()): boolean {
 describe("node:test reachability", () => {
   it("has suites to protect — an empty sweep would pass vacuously", () => {
     expect(nodeTestScripts.length).toBeGreaterThanOrEqual(20);
+  });
+
+  it("the workflow actually invokes the registry counted as a caller", () => {
+    expect(workflows).toContain("node scripts/run-ci-lane.mjs --lane=gates");
+    expect(ciRegistry).toContain("export const FULL_LANE_COMMANDS");
+    expect(ciRegistry).toContain("pnpm test:ci:impact");
   });
 
   it("runs every node:test suite somewhere, or says why it does not", () => {

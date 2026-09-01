@@ -47,6 +47,107 @@
 > owner, decision delta, review footprint, dissent/falsifier, revisit, and
 > outcome. Do not add a numeric score.
 
+## 2026-09-01 — Pull-request CI follows impact; default-branch truth stays exhaustive
+
+**Pre-review decision**: extend the Playwright-only setup classifier from #1365
+into one repository-wide impact architecture. Pull requests should pay only for
+evidence that can observe their changed paths; `main` and existing release
+workflows should retain the complete verification boundary. This supersedes
+only the scheduling premise in 2026-08-22 (97) that an eight-minute PR was
+already sufficiently fast. That record's conclusion that test quantity is not,
+by itself, waste remains standing.
+
+**Atlas outcome**: handoff — an agent working on one of many concurrent branches
+can return a change with timely, inspectable evidence, while the owner retains a
+regular exhaustive checkpoint that does not depend on the agent's judgment.
+
+**Evidence state**: observed + supported. On the already optimized #1365
+baseline, `Types · Lint · Docs` took 191 seconds, `Unit · Contract` 542 seconds,
+and `MCP` 367 seconds; the post-merge browser maximum was 11 minutes 2 seconds.
+Inside those jobs, full root Vitest took 489 seconds and full MCP integration
+305 seconds, while the entire filesystem contract suite took 37.9 seconds.
+Those fixed costs ran even when their boundary was untouched. A replay over the
+latest 30 first-parent changes classified 19 comparable changes into affected
+plans and correctly retained 11 globally exhaustive plans for CI authority or
+root-contract changes. Vitest documents Git-aware `--changed` execution;
+Playwright documents exact test-file arguments and sharding; GitHub Actions
+supports independent jobs and matrices. These mechanisms support the schedule,
+but only repository contracts can define Atlas's cross-file boundaries:
+[Vitest CLI](https://vitest.dev/guide/cli),
+[Playwright CLI](https://playwright.dev/docs/test-cli), and
+[GitHub Actions jobs](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-jobs).
+
+**Change signals**: `rollback-cheap`; boundaries
+`truth=unchanged`, `transfer=unchanged`, `agent-write=unchanged`, and
+`human-correction=unchanged`. This changes when existing evidence runs, not the
+vault, public product contract, agent write authority, or a person's correction
+path.
+
+**Computed route**: maintenance skip. No product council is required; the
+changed gate must instead pass a defect probe because a permanently green test
+selector is not trustworthy.
+
+**Primary Atlas risk**: scope — an impact planner can be fast by silently
+omitting evidence outside the language import graph.
+
+**Confidence**: medium-high. The bottlenecks, supported runner capabilities,
+and historical plans are measured. Prospective PR timing and missed-regression
+rate remain unknown until this schedule runs on ordinary changes.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: given only a changed-path list and the emitted plan, a
+maintainer can name why each required lane is skipped, focused, affected, or
+full and can see the exact commands before they run. Fail if untouched MCP/CLI
+work installs MCP dependencies, a pure TypeScript change wakes Playwright
+without an explicit mapping, a mapped browser owner runs a broad sweep, a
+deleted or unknown path disappears from classification, a missing plan becomes
+green, or a default-branch push omits any exhaustive registry.
+
+**Decision**: make `scripts/classify-change.mjs` the versioned planner and reuse
+the existing `checks:changed` mapping as its path-to-evidence authority. Make
+`scripts/run-ci-lane.mjs` the command executor. On comparable pull requests,
+run root source through Vitest's affected graph; keep filesystem contracts
+separate and exact where possible; skip MCP entirely when untouched and run
+focused MCP/CLI handler families when touched; run exact Playwright specs once
+when mapped; and promote unmapped rendered inputs to the three-shard smoke
+project. Static-export and unattended-web evidence activate independently.
+Unknown paths, missing comparisons, planner/root dependency changes, and every
+push to `main` fail closed to exhaustive lanes. Keep all eight protected job
+names stable; inactive jobs skip checkout and every setup step but still publish
+an explicit success. Existing release workflows remain exhaustive.
+
+**Decision delta**: widened technically, not procedurally. The owner's observed
+CI bottleneck changed the prior browser-only optimization into a shared plan for
+types/docs, unit/contracts, MCP, and browser evidence. Measurement prevented the
+contract suite from being blamed for the 542-second unit lane, while the
+filesystem and browser dependency gaps prevented a naive language-graph-only
+implementation.
+
+**Review footprint**: compact solo maintenance pass; no council or specialist.
+Repository test and workflow contracts, a historical replay, and RED/GREEN gate
+probes carry the review burden.
+
+**Dissent and falsifier**: affected tests are an optimization heuristic, not a
+proof of independence. Vitest cannot discover contracts that scan files, and a
+browser spec often does not import the route it verifies. The separate contract
+boundary, explicit source-to-spec mappings, unmapped-rendered smoke fallback,
+planner self-verification, and exhaustive `main` checkpoint contain those
+limits. Revert the affected schedule immediately if a serious regression is
+caught by the following `main` sweep after its PR plan skipped the relevant
+evidence. Refine mappings if ordinary, non-authority changes promote to full or
+unmapped smoke in more than 20% of the next 20 pull requests, or if the median
+focused lane still exceeds four minutes.
+
+**Revisit**: after 20 ordinary pull requests or 2026-09-15, whichever comes
+first. Compare per-lane setup time, wall time, promotion reason, and any
+post-merge-only failure; speed without a missed-evidence denominator is not a
+success metric.
+
+**Outcome**: implemented with four RED/GREEN defect probes and 24/24 final
+planner/executor tests. The first pull request and following exhaustive `main`
+run remain the prospective timing and missed-evidence proof.
+
 ## 2026-09-01 — Atlas PO routing derives risk and must prove recovered understanding
 
 **Pre-review decision**: honor the owner's request to make the PO system

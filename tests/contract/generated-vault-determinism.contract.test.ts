@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { FULL_LANE_COMMANDS } from '../../scripts/classify-change.mjs';
+
 /**
  * Generated-manifest determinism guard — stops **generation time** leaking into
  * committed build output.
@@ -146,12 +148,21 @@ describe('워크플로 — 매니페스트를 만지는 잡은 전체 히스토�
   /** Does it have a step that runs the generator directly (or via `pnpm build`)? */
   const RUNS_GENERATOR = /docs-vault:(build|check)|pnpm build\b/;
 
+  function runsGenerator(name: string, body: string): boolean {
+    if (RUNS_GENERATOR.test(body)) return true;
+    return (
+      name === 'checks.yml' &&
+      /run-ci-lane\.mjs --lane=gates\b/.test(body) &&
+      FULL_LANE_COMMANDS.gates.some((command) => RUNS_GENERATOR.test(command))
+    );
+  }
+
   it.each(MANIFEST_WORKFLOWS)('%s', (name) => {
     const yaml = readFileSync(path.join(WORKFLOW_DIR, name), 'utf8');
     const jobs = splitJobs(yaml);
     expect(jobs.length).toBeGreaterThan(0);
 
-    const generatorJobs = jobs.filter((job) => RUNS_GENERATOR.test(job.body));
+    const generatorJobs = jobs.filter((job) => runsGenerator(name, job.body));
     // The reason a workflow is on this list is that it runs the generator — finding
     // none means the list is stale, which must fail first.
     expect(generatorJobs.map((job) => job.name).length).toBeGreaterThan(0);

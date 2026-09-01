@@ -1,28 +1,7 @@
-# Unit verification gate — tsc · lint · vitest · MCP.
-#
-# Why it exists: Until 2026-07-26, PRs only ran Playwright (15 min) and vault
-# consistency checks. `pnpm test:run` (~3900 tests), `tsc`, and `lint` were **never run.**
-# Thus, stale expectations in `ProjectSelectorPage.test.tsx` sat in main until a human
-# accidentally discovered them, causing branches to break CI three times while importing
-# modules they had deleted themselves.
-#
-# This workflow is **much faster than Playwright**, so it actually gives answers first —
-# type/unit regressions are caught here within minutes, and slow e2e tests follow later.
-#
-# ## Why split into three jobs (2026-08-02)
-#
-# Observation: This workflow took 624 seconds, with **463 seconds (74%) spent on just two steps** —
-# unit+contract (291s) and MCP integration (172s). These two don't wait for each other, but running
-# them sequentially in one job made the sum equal to the wait time.
-#
-# Splitting into three makes the critical path **the slowest single one**. The cost is repeated
-# checkout/setup per job (~25s per job), but that adds to each job's path rather than summing up.
-#
-# The splitting criterion was not «what is checked» but **«how long it takes»** — the nine fast gates
-# are grouped into one job because they have no reason to wait for each other.
-#
-# `if: always()` is maintained **within** jobs — if a first failure masks the rest, verification
-# becomes round-trip. Jobs **between** remain independent; even if one job turns red, others run to completion.
+# PR checks are impact-planned before any dependency install. The exact required
+# status names stay stable; inactive lanes start, explain the skip, and finish in
+# seconds. A missing plan is RED. Pushes to main and planner changes run every
+# command registered in `scripts/classify-change.mjs`.
 name: Checks
 
 on:
@@ -42,404 +21,183 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ── Job 1: Fast gates (observed sum ≈100s) ───────────────────────────────
+  plan:
+    name: Check impact plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      plan: ${{ steps.impact.outputs.plan }}
+      gates: ${{ steps.impact.outputs.gates }}
+      gates_needs_mcp: ${{ steps.impact.outputs.gates_needs_mcp }}
+      unit: ${{ steps.impact.outputs.unit }}
+      unit_needs_mcp: ${{ steps.impact.outputs.unit_needs_mcp }}
+      mcp: ${{ steps.impact.outputs.mcp }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+
+      - name: Build impact plan
+        id: impact
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: node scripts/classify-change.mjs --event="$EVENT_NAME" --base="origin/$BASE_REF"
+
   gates:
     name: Types · Lint · Docs
+    needs: plan
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ACTIVE: ${{ needs.plan.outputs.gates }}
+      NEED_MCP: ${{ needs.plan.outputs.gates_needs_mcp }}
+      CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
-      # fetch-depth: 0 is required — `docs-vault:check` reads the "last changed date" per document
-      # from git history. A shallow clone gives all documents the same date,
-      # causing verification to compare against incorrect values. `decisions:check` also
-      # requires the base ref.
+      - name: Require impact plan
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::CI impact planning failed; refusing to turn a missing verdict into green"
+          exit 1
+
       - name: Checkout
+        if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
+        if: env.ACTIVE == 'true'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
       - name: Enable Corepack pnpm
+        if: env.ACTIVE == 'true'
         run: |
           corepack enable
           corepack prepare pnpm@10.18.0 --activate
           pnpm --version
 
       - name: Install dependencies
+        if: env.ACTIVE == 'true'
         run: pnpm install --frozen-lockfile
 
-      # Kept as separate steps — grouping them into one step forces digging through logs
-      # to see which one broke. `if: always()` ensures a first failure doesn't mask the rest.
-      # We enforce only **three mechanically verifiable lines** among significant-decision triggers:
-      # route addition/removal, MCP/CLI public contract changes, and design-spec inventory changes. Other triggers ("positioning",
-      # "phrases a stranger reads for the first time") are semantic and invisible to scripts.
-      # This moves the repo's repeated lesson that specifications existing only in prose
-      # go unkept into gates — though it looks only at *existence*, not *quality* of records.
-      - name: Decision record
-        if: github.event_name == 'pull_request'
-        run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
-
-      # This time-based gate is intentionally always wired. While collecting it
-      # validates the typed register; at the 14/21-day or 20-decision boundary it
-      # refuses to let a pending or unsupported `keep` become permanent by inertia.
-      - name: Atlas PO pilot sunset
-        if: always()
-        run: pnpm po:pilot -- --check
-
-      - name: Typecheck
-        run: pnpm exec tsc --noEmit
-
-      - name: Lint
-        if: always()
-        run: pnpm lint
-
-      # The two below are node:test suites outside `pnpm test:run`, so if not caught here,
-      # they won't run anywhere. In fact, as of 2026-07-26, both were broken on main
-      # and no one knew until someone happened to discover them — a gate that doesn't trigger is
-      # not a gate but a comment.
-      #
-      # ⚠️ 2026-08-05: **That exact thing happened with the color gate.** Inside this file where I wrote the above sentence,
-      # both `check:tokens` and its unit test were not
-      # triggered — only defined in `package.json`, without any other scripts, this
-      # workflow, or `.githooks/pre-commit` calling them. `test:check:tokens`
-      # was `node --test scripts/*.test.mjs`, also outside vitest include(`app/**` · `src/**`
-      # · `tests/contract/**`). It was passing, but if it stopped, no one
-      # would have known.
-      - name: Color tokens
-        if: always()
-        run: pnpm check:tokens
-
-      - name: Color token checker tests
-        if: always()
-        run: pnpm test:check:tokens
-
-      - name: i18n message catalog
-        if: always()
-        run: pnpm test:i18n:messages
-
-      - name: Package contracts
-        if: always()
-        run: pnpm package:check
-
-      - name: Meaning corpus quality gate
-        if: always()
-        run: pnpm test:meaning-corpus
-
-      - name: Vault migration contracts
-        if: always()
-        run: pnpm test:vault:migrate
-
-      - name: Public guide node examples
-        if: always()
-        run: pnpm test:guide-examples
-
-      # Drift in agent instruction files. **The CLI was already notifying exit 1,
-      # but no workflow caught it** — so both silently rotted (discovered 2026-07-31):
-      #
-      # ① `skill-copy-diverged` ×3 — Only `.claude/skills` received the `?guides=off` instruction,
-      #    while the `.agents/skills` copy did not. If Codex runs the audit skill in this state, it
-      #    overwrites the first-visit screen with inventory, rendering all measurements meaningless.
-      #    With two copies and no gate, the diverged one becomes the default.
-      #
-      # ② `agents-md-over-codex-cap` — If AGENTS.md exceeds Codex's
-      #    `project_doc_max_bytes` (default 32,768B), it is **silently truncated**.
-      #    Leaving it over means later sections are invisible to Codex while showing no signal on screen.
-      #    At the observation point, it was 39,617B, so the vault write loop and schema table
-      #    were entirely behind the truncation line.
-      - name: Agent instruction files
-        if: always()
-        run: pnpm agents:check
-
-      # Every remaining `node --test` suite. These are invisible to `pnpm test:run`,
-      # whose vitest include covers `app/**`, `src/**` and `tests/contract/**` only,
-      # so a suite that no workflow names runs nowhere at all.
-      #
-      # The comment above the colour gate already recorded this failure twice: two
-      # suites broken on main with nobody knowing (2026-07-26), then `check:tokens`
-      # and its own unit test defined and never called (2026-08-05). It happened a
-      # third time. On 2026-08-24 nineteen of thirty-one `node --test` suites were
-      # unreachable from CI and from the git hooks — including
-      # `test:claude:hooks`, which is the only coverage the publish guard, the Git
-      # guard, the generated-output guard, the commit-message gate, the agent-file
-      # drift reporter and the secret-read guard have.
-      #
-      # They are cheap: the whole set below measured about fourteen seconds.
-      # `integration:mcp` is deliberately not here — it runs for minutes, and
-      # promoting it is a scheduling decision rather than a wiring fix.
-      # `tests/contract/node-test-reachability.contract.test.ts` fails when a new
-      # suite is added without appearing here, in a git hook, or in its stated
-      # exclusion list.
-      # A checker whose unit test runs while the checker itself does not is the
-      # 2026-08-05 colour-gate shape. `test:vault:audit` reached CI in the step
-      # below; `vault:audit` did not, and it is the gate that proves every vault
-      # node's `path:` still points at a file that exists — 75 paths across 83
-      # nodes, 0.2 seconds, and it goes red on a planted path.
-      #
-      # The other six pairs in that shape were left alone deliberately.
-      # `vault:migrate` mutates, `vault:freshness` needs a diff range and exits 2
-      # without one, `skills:audit` always exits 0 over a personal skill
-      # collection, and the `dogfood:*` three are status reports rather than
-      # gates. Wiring them would put a migration tool in CI and call a permanent
-      # green a gate.
-      - name: Vault path drift
-        if: always()
-        run: pnpm vault:audit
-
-      # `test:claude:hooks` drives the real SessionStart hook, which spawns the
-      # source MCP server. The root install intentionally skips
-      # `mcp/node_modules`, so without this the hook dies on
-      # ERR_MODULE_NOT_FOUND before it reads any vault and every case collapses
-      # into the same "dependencies missing" message — which is what happened on
-      # the first run after these suites were wired into CI. `Unit · Contract`
-      # and `MCP` already install it for the same reason.
-      # `if: always()` matches the step below rather than the job's default. Without
-      # it, a red `Vault path drift` skips this install, the always-run suites below
-      # still execute, and all nineteen collapse into the same ERR_MODULE_NOT_FOUND
-      # the comment above describes. The log then shows a wall of "dependencies
-      # missing" with the one real failure buried above it.
       - name: Install MCP dependencies
-        if: always()
+        if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
 
-      - name: Node test suites outside vitest
-        if: always()
-        run: |
-          pnpm test:claude:hooks
-          pnpm test:checks:changed
-          pnpm test:source:language
-          pnpm test:docs:language
-          pnpm test:docs:checks
-          pnpm test:benchmark
-          pnpm test:skills:audit
-          pnpm test:cli:args
-          pnpm test:cli:mcp-call
-          pnpm test:architecture
-          pnpm test:mcp:verify
-          pnpm test:vault:validate
-          pnpm test:vault:audit
-          pnpm test:vault:freshness
-          pnpm test:dogfood:args
-          pnpm test:dogfood:status
-          pnpm test:dogfood:graph-db
-          pnpm test:dogfood:script-refs
-          pnpm test:dogfood:compile-fix
-          pnpm dogfood:test
+      - name: Run planned type, lint, and documentation gates
+        if: env.ACTIVE == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/run-ci-lane.mjs --lane=gates --base="origin/$BASE_REF"
 
-      # This is the unit suite for the desktop gate. Until now, it **only ran in the release workflow**,
-      # so all defects that should have been caught here were first exposed "after tagging"
-      # — which is why `v1.0.0-rc.2` was tagged four times, stopping at the build job each time. There is
-      # no reason to delay a 30-second suite until after tagging.
-      #
-      # Full rehearsal (`pnpm desktop:release-rehearsal`) includes app compilation,
-      # so humans run it locally before tagging. Here, we only check what is verifiable without compilation.
-      - name: Desktop checker tests
-        if: always()
-        run: pnpm test:desktop:check
+      - name: Skip unaffected gate setup
+        if: env.ACTIVE != 'true' && needs.plan.result == 'success'
+        run: echo "No affected type, lint, or documentation gate"
 
-      # Two generation manifest gates. Until 2026-07, neither was caught in any PR verification —
-      # `docs-vault:check` only ran on macOS release paths, and `test:docs-vault`
-      # ran nowhere. Thus, no one stopped PRs that edited `docs/**` and forgot regeneration,
-      # or PRs where generation reverted non-deterministically.
-      #
-      # Since 2026-08-02, `.githooks/pre-commit`(#834) performs the same check at commit time.
-      # We still keep it here — hooks depend on local setup (`pnpm install`
-      # not run · `--no-verify` · fork contributors), while CI does not.
-      - name: Docs vault freshness
-        if: always()
-        run: pnpm docs-vault:check
-
-      - name: Docs vault determinism
-        if: always()
-        run: pnpm test:docs-vault
-
-      # The gateway's evidence section claims one vault file is shown verbatim. A hand-copied
-      # duplicate becomes false the moment the file changes and says nothing when it does, so
-      # the artifact is regenerated and diffed against the commit (the "generate, then compare"
-      # shape in `.claude/rules/documentation.md`).
-      - name: Gateway evidence specimen freshness
-        if: always()
-        run: pnpm gateway:specimen:check
-
-      # 2026-08-07: Sub-checks of `docs:check` (generated surface diff · DESIGN-SYSTEM
-      # TOC · document/source-comment language · link reference integrity) were **never invoked in any workflow.** Hooks
-      # don't check this either — the above `pre-commit` only measures vault artifacts. In this blind spot,
-      # main was actually left red: #960 added `###` sections and manually inserted TOC lines,
-      # but the generator only captures `## `, so `design:toc:check` failed continuously with no signal. **A check
-      # that isn't invoked is as good as nonexistent** (`.claude/skills/gate-probe` §4).
-      #
-      # ⚠️ **We do not run `docs:check` entirely here.** Its
-      # `docs:surface:check` **launches the actual MCP server** to query `tools/list`, but
-      # this job doesn't install `mcp/node_modules` (MCP is not a workspace member), causing
-      # `ERR_MODULE_NOT_FOUND` and death — it failed exactly like this when first triggered, and the comment
-      # below in the `mcp` job's install step already noted this trap.
-      # That check went to the `mcp` job where dependencies live. This one has a set that only reads files — we chose
-      # not to add MCP installation to the fastest job to avoid slowing it down.
-      #
-      # ⚠️ Reason for splitting into two steps: If chained with `&&`, **the second doesn't run if the first breaks.**
-      # A PR where both TOC and links break might fix only the TOC failure and turn red again.
-      # Splitting shows both at once (2026-08-07 review).
-      #
-      # Contract to ensure this split doesn't contradict `docs:check` definition:
-      # `tests/contract/docs-check-ci-coverage.contract.test.ts`
-      - name: Docs TOC
-        if: always()
-        run: pnpm design:toc:check
-
-      - name: Docs language
-        if: always()
-        run: pnpm docs:language
-
-      - name: Source comment language
-        if: always()
-        run: pnpm source:language
-
-      - name: Docs links
-        if: always()
-        run: pnpm docs:links
-
-  # ── Job 2: Unit + Contract Suites (observed 291s — critical path) ────────────────
   unit:
     name: Unit · Contract
+    needs: plan
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ACTIVE: ${{ needs.plan.outputs.unit != 'skip' }}
+      NEED_MCP: ${{ needs.plan.outputs.unit_needs_mcp }}
+      CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
-      # `classify-change.mjs` compares against the base ref, so full history is required.
+      - name: Require impact plan
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::CI impact planning failed; refusing to turn a missing verdict into green"
+          exit 1
+
       - name: Checkout
+        if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
+        if: env.ACTIVE == 'true'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
       - name: Enable Corepack pnpm
+        if: env.ACTIVE == 'true'
         run: |
           corepack enable
           corepack prepare pnpm@10.18.0 --activate
           pnpm --version
 
       - name: Install dependencies
+        if: env.ACTIVE == 'true'
         run: pnpm install --frozen-lockfile
 
-      # Contract tests in this job launch the real source MCP server. The root
-      # install intentionally skips mcp/node_modules, so without this lockfile
-      # install those probes exit at startup with ERR_MODULE_NOT_FOUND.
-      # Same reason as the `Node test suites` job: the step that needs this install
-      # runs on `always()`, so the install has to as well, or its failure is
-      # reported as a missing module instead.
       - name: Install MCP dependencies
-        if: always()
+        if: env.ACTIVE == 'true' && env.NEED_MCP == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
 
-      # This analyzer loads scope adapters for the root, scripts, CLI, and MCP.
-      # Keep it here, after both installs, rather than in the fast job that has
-      # no MCP dependency tree.
-      - name: Dead code
-        if: always()
-        run: pnpm knip
+      - name: Run affected unit and contract evidence
+        if: env.ACTIVE == 'true'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/run-ci-lane.mjs --lane=unit --base="origin/$BASE_REF"
 
-      # Run only what can actually break. Observation (2026-07-27): This suite
-      # took 270 seconds, and changes in that session were almost entirely agent briefs and documents. If judgment
-      # is uncertain, leave runtime=true — missed tests are shipped bugs,
-      # while remaining tests take 4 minutes.
-      - name: Classify change
-        id: classify
-        if: github.event_name == 'pull_request'
-        run: node scripts/classify-change.mjs --base=origin/${{ github.base_ref }}
+      - name: Skip unaffected unit setup
+        if: env.ACTIVE != 'true' && needs.plan.result == 'success'
+        run: echo "No affected unit or contract evidence"
 
-      # If runtime code hasn't changed, only run contract suites (2.4s vs 270s).
-      # Contract tests read `.claude/**` wiring, so they must always run
-      # during governance changes — only runtime unit tests are skipped.
-      - name: Unit + contract tests
-        if: always() && (github.event_name != 'pull_request' || steps.classify.outputs.runtime == 'true')
-        run: pnpm test:run
-
-      - name: Contract tests only (no runtime change)
-        if: always() && github.event_name == 'pull_request' && steps.classify.outputs.runtime != 'true'
-        run: pnpm exec vitest run tests/contract/
-
-  # ── Job 3: MCP Server (observed 176s) ──────────────────────────────────────
   mcp:
     name: MCP
+    needs: plan
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ACTIVE: ${{ needs.plan.outputs.mcp != 'skip' }}
+      CI_IMPACT_PLAN: ${{ needs.plan.outputs.plan }}
     steps:
+      - name: Require impact plan
+        if: needs.plan.result != 'success'
+        run: |
+          echo "::error::CI impact planning failed; refusing to turn a missing verdict into green"
+          exit 1
+
       - name: Checkout
+        if: env.ACTIVE == 'true'
         uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
       - name: Setup Node.js
+        if: env.ACTIVE == 'true'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: 24
 
       - name: Enable Corepack pnpm
+        if: env.ACTIVE == 'true'
         run: |
           corepack enable
           corepack prepare pnpm@10.18.0 --activate
           pnpm --version
 
       - name: Install dependencies
+        if: env.ACTIVE == 'true'
         run: pnpm install --frozen-lockfile
 
-      # MCP is not a workspace member (no `pnpm-workspace.yaml` at root),
-      # so the root install does not create `mcp/node_modules`. Pure unit tests
-      # still run, but cases that actually start the server fail to find
-      # `@modelcontextprotocol/sdk` and crash — it passed locally because
-      # it was installed previously, and only surfaced in CI (on the first day
-      # the suite ran). This is a one-liner, same as what the release workflow already uses.
       - name: Install MCP dependencies
+        if: env.ACTIVE == 'true'
         run: pnpm --dir mcp install --frozen-lockfile
 
-      - name: Agent config setup integration
-        run: pnpm integration:cli:setup
+      - name: Run affected MCP and CLI boundary evidence
+        if: env.ACTIVE == 'true'
+        run: node scripts/run-ci-lane.mjs --lane=mcp
 
-      # MCP server unit suite. **It was not wired to any workflow** —
-      # `package:check` ran the CLI side (`test:cli:lib`/`test:cli:commands`),
-      # but there was no symmetric step for MCP. Meanwhile, one
-      # `verify-script.test.mjs` fell behind source changes and failed silently,
-      # unseen by anyone (discovered 2026-07-28).
-      #
-      # It finds files via **glob**, not a file list. The previous script had a
-      # hand-written list of 21 files, but there were 27 on disk — new test files
-      # quietly slipped through. A list is the scope; if the list is managed by
-      # hand, the scope shrinks by hand too.
-      - name: MCP unit tests
-        if: always()
-        run: pnpm test:mcp:unit
-
-      # **Integration suite — now actually runs.** The previous comment excluded it
-      # from the unit step citing 162 seconds as the reason, writing that it is
-      # *"the responsibility of a separate step,"* but that step was never created.
-      # Result: the largest MCP suite that starts a real server remained **unwired to
-      # any workflow** and red since #806 (path-slug rejection), unseen by anyone —
-      # it only surfaced when someone manually ran it during rc.5 verification on 2026-08-01.
-      #
-      # This file repeats the same mistake written twice before: *"A list is the
-      # scope; if the list is managed by hand, the scope shrinks by hand."* Here,
-      # it was not the list but the **intent** that was managed by hand — the intent
-      # to "create a step later" was never enforced anywhere. On 2026-08-02, that
-      # "separate" one finally landed.
-      - name: MCP integration tests
-        if: always()
-        run: node --test mcp/src/integration.test.mjs
-
-      # Surface diff — **the reason it is here is dependency.** This check actually
-      # starts the MCP server, queries `tools/list`, compares it against
-      # `docs/.generated/mcp-surface.json`, and verifies that all registered tools
-      # and command names appear in the README. In other words, it cannot run without
-      # the above "Install MCP dependencies" — it failed with `ERR_MODULE_NOT_FOUND`
-      # when placed in the `gates` job, which is on the critical path and did not
-      # install mcp. The other two sub-checks (table of contents · links) only read
-      # files, so they remain in `gates`.
-      - name: Docs surface (MCP tools/list)
-        if: always()
-        run: pnpm docs:surface:check
-
-      - name: MCP release gate
-        if: always()
-        run: pnpm dogfood:release-gate
+      - name: Skip unaffected MCP setup
+        if: env.ACTIVE != 'true' && needs.plan.result == 'success'
+        run: echo "MCP and CLI boundaries are untouched — skipped both dependency trees and tests"

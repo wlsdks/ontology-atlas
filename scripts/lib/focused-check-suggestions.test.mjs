@@ -113,6 +113,8 @@ describe('focused check suggestions', () => {
     const paths = [
       'src/shared/lib/example.ts',
       'scripts/quality/dead-code/check.mjs',
+      'scripts/quality/dead-code/baseline.json',
+      'scripts/quality/dead-code/exceptions.json',
       'cli/src/lib/example.mjs',
       'mcp/src/example.mjs',
       'mcp/scripts/verify.mjs',
@@ -593,6 +595,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(domainCommands(result), [
+      'pnpm test:ci:impact',
       'pnpm exec node --test scripts/run-focused-node-test.test.mjs',
       'pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs',
       'pnpm exec node --test scripts/lib/pnpm-script-refs.test.mjs',
@@ -1284,9 +1287,34 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(domainCommands(result), [
       'pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs',
+      'pnpm test:ci:impact',
       'pnpm exec node --test scripts/suggest-focused-checks.test.mjs',
       'pnpm test:checks:changed',
     ]);
+  });
+
+  it('routes every CI impact surface to its planner and executor contract', () => {
+    const paths = [
+      'scripts/classify-change.mjs',
+      'scripts/classify-change.test.mjs',
+      'scripts/run-ci-lane.mjs',
+      'scripts/run-ci-lane.test.mjs',
+      'scripts/lib/focused-check-suggestions.mjs',
+      'scripts/lib/focused-check-suggestions.test.mjs',
+      'scripts/suggest-focused-checks.mjs',
+      'scripts/suggest-focused-checks.test.mjs',
+      '.github/workflows/checks.yml',
+      '.github/workflows/e2e.yml',
+      '.github/actions/setup-playwright/action.yml',
+    ];
+
+    assert.ok(paths.length > 0, 'CI impact surface inventory must not be empty');
+    for (const path of paths) {
+      assert.ok(
+        commandNames(suggestFocusedChecks([path])).includes('pnpm test:ci:impact'),
+        `${path} must recommend the CI impact contract`,
+      );
+    }
   });
 
   it('routes every active PO policy surface to the outcome-router and sunset contracts', () => {

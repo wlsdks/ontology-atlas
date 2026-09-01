@@ -52,26 +52,83 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 
 `--no-verify` is not the escape hatch — `.claude/rules/git.md` forbids it.
 
-## CI change scope — classify before Playwright setup
+## CI impact architecture — affected on pull requests, exhaustive on `main`
 
-Pull requests always publish the five branch-protected E2E statuses: static
-export, web smoke, and three Playwright shards. A checkout-only `changes` job
-runs `scripts/classify-change.mjs` first. When a change cannot affect runtime or
-rendered behavior, those required jobs remain green and visible but skip app
-checkout, dependency installation, Chromium, system packages, build, and tests.
-When classification itself fails, all five protected statuses fail instead of
-turning an absent verdict into skipped success. Pushes to `main` still run the
-full sweep.
+CI computes one versioned impact plan from the merge-base diff before any
+dependency installation. `scripts/classify-change.mjs` reuses the same
+path-to-check rules as `pnpm checks:changed`; it owns only lane assignment and
+fail-closed escalation. `scripts/run-ci-lane.mjs` is the sole command executor.
+This prevents the local advisor, CI workflow YAML, and package scripts from
+becoming three competing test selectors.
 
-The wiring gate is:
+The branch-protected names remain stable even when a lane is unaffected:
+`Types · Lint · Docs`, `Unit · Contract`, `MCP`, `Playwright (static export)`,
+`Playwright (web surface)`, and the three `Playwright (chromium N/3)` jobs.
+An inactive job starts, explains the decision, and finishes without checkout,
+Node, pnpm, MCP dependencies, Chromium, system packages, or a build. A missing
+or invalid plan is RED in every required consumer; it can never become a green
+skip.
+
+| Lane | Comparable pull request | Exhaustive promotion |
+|---|---|---|
+| Types · Lint · Docs | Runs only checks returned by the repository advisor, plus the cheap PO-pilot and decision-ledger guards. Installs `mcp/node_modules` only when a selected command imports that boundary. | Planner/root package changes, an unknown path, no trustworthy comparison, or a default-branch push runs the complete registry. |
+| Unit · Contract | Root source uses Vitest's Git-aware dependency graph from the merge base. Filesystem-scanned contracts run separately: an exact changed contract stays exact, while a shared contract input or deletion promotes the contract boundary to its full suite. `knip` runs only when selected. | Vitest setup/config and TypeScript project changes run the full root suite. Root manifest/lock and planner changes run every lane. |
+| MCP | An untouched `mcp/`/CLI boundary skips both dependency installation and tests. Touched handler families run the advisor's focused unit or integration commands. | MCP manifest/lock changes run the full MCP boundary; a globally exhaustive plan does the same. |
+| Playwright suite | Exact source-to-spec mappings run those specs once on shard 1. An unmapped rendered input (`app/`, TSX/CSS, messages, public assets) fails closed to the three-shard PR smoke project. Pure TypeScript relies on affected unit evidence unless it has an explicit browser mapping. | Playwright/Next/PostCSS configuration, shared browser helpers, unknown paths, planner changes, and `main` run every project across three shards. |
+| Static export / web surface | These required jobs activate independently only for their declared owners. Their specs are removed from the general targeted list, so the same evidence is not run twice. | Every globally exhaustive plan runs both. |
+
+Generated docs-vault output is not treated as an independent runtime change;
+its authored source still selects freshness and documentation evidence.
+Deleted paths participate in classification but are never interpolated into a
+test command. This is affected testing with explicit safety boundaries, not a
+promise that every change can be perfectly inferred.
+
+The planner and wiring gate is:
 
 ```bash
-pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts
+pnpm test:ci:impact
+pnpm exec vitest run \
+  tests/contract/e2e-change-scope.contract.test.ts \
+  tests/contract/e2e-suite-split.contract.test.ts \
+  tests/contract/ci-bounded-network.contract.test.ts \
+  tests/contract/mcp-source-ci-deps.contract.test.ts \
+  tests/contract/node-test-reachability.contract.test.ts
 ```
 
-`pnpm checks:changed` recommends it for the E2E workflow, the shared Playwright
-setup action, and any of the three contracts. This keeps selection mechanical
-while decision (96)'s path-scoped local lanes remain the fast pre-push layer.
+`pnpm checks:changed` recommends `pnpm test:ci:impact` for every planner,
+executor, workflow, shared Playwright setup, and advisor surface. The planner's
+own diff always requests exhaustive self-verification. Pull-request selection
+uses the supported Vitest changed graph and exact Playwright file arguments;
+sharding remains reserved for smoke/full sweeps. Default-branch and release
+verification remain exhaustive.
+
+### CI impact gate probe (2026-09-01)
+
+**Property:** every changed path either reaches evidence that can observe it or
+promotes the relevant boundary; no absent plan or inactive setup can become an
+unexplained green result; default-branch verification is exhaustive.
+
+**Inventory:** the liveness test classified all 3,475 tracked paths with zero
+unknown namespaces. Exhaustive registries contained 41 type/lint/docs commands,
+two root unit commands, and five MCP commands. The workflow contracts found all
+eight protected statuses, three browser decisions, non-empty plan consumers,
+and conditional expensive setup before defect injection.
+
+**RED → GREEN:** four one-line defects were planted and restored with
+`apply_patch`. Removing unknown-path promotion failed the exact full-plan
+assertion. Promoting MCP for every non-empty diff failed with `full !== skip` on
+an untouched app test. Making static-export Playwright setup unconditional
+failed only that job's setup contract. Removing the push-event promotion failed
+the default-branch exhaustive assertion. Each focused test returned GREEN after
+restoration; the final planner/executor suite was 24/24 GREEN and the focused
+E2E workflow contract was 10/10 GREEN.
+
+**Idle and automatic wiring:** the planner test refuses an inventory below
+1,000 tracked files and refuses empty exhaustive command registries. The advisor
+maps every planner/executor/workflow/setup surface to `pnpm test:ci:impact`, the
+full CI registry includes that test, and planner changes force exhaustive
+self-verification. A new top-level namespace therefore fails closed before its
+first test mapping exists instead of silently leaving the detector idle.
 
 ## Quick Matrix
 
@@ -80,7 +137,7 @@ while decision (96)'s path-scoped local lanes remain the fast pre-push layer.
 | App/type safety | `pnpm exec tsc --noEmit` | `pnpm build` |
 | Lint/style | `pnpm lint` | `pnpm test:run` |
 | Static deploy safety | `pnpm build` | `pnpm exec tsc --noEmit` |
-| E2E CI change scope | `pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts` | Inspect the five required statuses on a prose-only PR, then confirm the full sweep on the following `main` push |
+| CI impact plan | `pnpm test:ci:impact` | Run the workflow contracts above, inspect all eight required statuses on a narrow PR, then confirm the exhaustive sweep on the following `main` push |
 | GitHub Pages deploy | `pnpm build` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
 | Gateway evidence specimen | `pnpm gateway:specimen:check` | `pnpm gateway:specimen` to refresh |

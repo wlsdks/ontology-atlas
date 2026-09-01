@@ -4,6 +4,18 @@ import { isSupportedSourcePath } from '../quality/source-language/source-paths.m
 
 const RULES = [
   {
+    command: 'pnpm test:ci:impact',
+    reason: 'CI impact planner, executor, or workflow wiring changed',
+    matches: [
+      /^scripts\/classify-change(?:\.test)?\.mjs$/,
+      /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
+      /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
+      /^scripts\/suggest-focused-checks(?:\.test)?\.mjs$/,
+      /^\.github\/workflows\/(?:checks|e2e)\.yml$/,
+      /^\.github\/actions\/setup-playwright\/action\.yml$/,
+    ],
+  },
+  {
     command: 'pnpm test:mcp:registration',
     reason: 'MCP source-checkout registration templates changed',
     matches: [/^\.mcp\.json(?:\.example)?$/, /^\.codex\/config\.toml$/],
@@ -51,7 +63,7 @@ const RULES = [
     reason: 'dead-code analyzer scope, configuration, package, or implementation changed',
     matches: [
       /^(?:app|src)\/.+\.(?:[cm]?[jt]sx?|css)$/,
-      /^scripts\/(?:quality\/dead-code\/|.+\.(?:mjs|js))$/,
+      /^scripts\/(?:quality\/dead-code\/.+|.+\.(?:mjs|js))$/,
       /^cli\/(?:src\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
       /^mcp\/(?:src\/|scripts\/|package(?:-lock)?\.json$|pnpm-lock\.yaml$)/,
       /^(?:package(?:-lock)?\.json|pnpm-lock\.yaml|next\.config\.ts|tsconfig(?:\.[^/]+)?\.json|vitest\.config\.ts|playwright\.config\.ts|postcss\.config\.mjs)$/,
