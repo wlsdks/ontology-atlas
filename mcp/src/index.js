@@ -87,6 +87,7 @@ import {
 import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
   GRAPH_ARRAY_KEYS,
+  NEIGHBOR_KEY_ALIASES,
   VaultConflictError,
   collectNeighborRefs,
   relationNoteFor,
@@ -114,6 +115,7 @@ import {
   updateDoc,
   vaultSlugExists,
   writeDoc,
+  writeFileAtomically,
 } from './vault.mjs';
 import {
   CONSTRUCTION_RULES_EN,
@@ -122,7 +124,7 @@ import {
   META_MODEL_RULES_EN,
 } from './construction-rules.mjs';
 import { appendActivityEntry, buildActivityEntry, readHeartbeatAgent, resolveAgentName } from './activity-log.mjs';
-import { writeFileSync } from 'node:fs';
+import { unlinkSync } from 'node:fs';
 import { buildMarkdown, parseFrontmatter } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import {
@@ -7402,7 +7404,9 @@ function getConcept({ slug, uid, body }, context = {}) {
       domain: doc.frontmatter.domain || null,
       capabilities: doc.frontmatter.capabilities || [],
       elements: doc.frontmatter.elements || [],
-      dependencies: doc.frontmatter.dependencies || [],
+      // Alias-aware: a `depends_on:`-authored edge must appear here too, or this
+      // block contradicts the outgoingEdges list built from the same document.
+      dependencies: normalizeRelationRefs(relationRefsFor(doc, 'dependencies')),
       relates: doc.frontmatter.relates || [],
       contains: doc.frontmatter.contains || [],
       describes: doc.frontmatter.describes || [],
@@ -8090,7 +8094,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
         : { postWriteMaintenance: compactPostWriteMaintenance() }),
     };
   }
-  const existing = Array.isArray(doc.frontmatter[key]) ? doc.frontmatter[key] : [];
+  const existing = relationRefsFor(doc, key);
   if (existing.some((ref) => relationRefMatches(ref, canonicalTo))) {
     return { ok: true, alreadyExists: true, changed: false, from: canonicalFrom, to: canonicalTo, type };
   }
@@ -8104,7 +8108,7 @@ function addRelation({ from, to, type, why, expected_mtime }, options = {}) {
   // Relation plus rationale (`why`) in a single frontmatter write: written
   // separately, a failure between them leaves a relation with no reason or a
   // reason with no relation.
-  const patch = { [key]: next };
+  const patch = relationKeyPatch(doc, key, next);
   if (typeof why === 'string' && why.trim()) {
     const notes = { ...(doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? doc.frontmatter.relation_notes : {}) };
     notes[canonicalTo] = why.trim();
@@ -8135,10 +8139,44 @@ function relationRefMatches(storedRef, canonicalTo) {
   return resolveExistingVaultSlug(candidate) === canonicalTo;
 }
 
+/*
+ * `depends_on:` is a legal authoring alias for `dependencies:` — the read layer
+ * (collectNeighborRefs, the compiler) canonicalizes it, so the write layer must
+ * see the same edges. Reading only the literal canonical key made an aliased
+ * edge visible to get_concept's outgoingEdges yet "nonexistent" to
+ * add/remove/replace_relation, which could then append a duplicate under a
+ * second key or refuse to remove an edge the graph plainly renders.
+ */
+function aliasKeysFor(canonicalKey) {
+  return Object.keys(NEIGHBOR_KEY_ALIASES)
+    .filter((alias) => NEIGHBOR_KEY_ALIASES[alias] === canonicalKey);
+}
+
+function relationRefsFor(doc, canonicalKey) {
+  const refs = [];
+  for (const key of [canonicalKey, ...aliasKeysFor(canonicalKey)]) {
+    const value = doc.frontmatter[key];
+    if (Array.isArray(value)) refs.push(...value);
+  }
+  return refs;
+}
+
+/*
+ * A write to a relation key consolidates its alias spellings into the canonical
+ * key in the same patch: the alias arrays fold into `nextRefs` and are deleted,
+ * so one edit never leaves the same edge type split across two frontmatter keys.
+ */
+function relationKeyPatch(doc, canonicalKey, nextRefs) {
+  const patch = { [canonicalKey]: nextRefs };
+  for (const alias of aliasKeysFor(canonicalKey)) {
+    if (doc.frontmatter[alias] !== undefined) patch[alias] = null;
+  }
+  return patch;
+}
+
 function relationExists(doc, key, canonicalTo) {
   if (key === 'domain') return relationRefMatches(doc.frontmatter.domain, canonicalTo);
-  return Array.isArray(doc.frontmatter[key])
-    && doc.frontmatter[key].some((ref) => relationRefMatches(ref, canonicalTo));
+  return relationRefsFor(doc, key).some((ref) => relationRefMatches(ref, canonicalTo));
 }
 
 function matchingRelationNoteKeys(notes, canonicalTo) {
@@ -8199,7 +8237,11 @@ function removeRelation({ from, to, type, confirm = false, expected_mtime }) {
   if (!exists || !confirm) return base;
   const patch = key === 'domain'
     ? { domain: null }
-    : { [key]: doc.frontmatter[key].filter((ref) => !relationRefMatches(ref, canonicalTo)) };
+    : relationKeyPatch(
+        doc,
+        key,
+        relationRefsFor(doc, key).filter((ref) => !relationRefMatches(ref, canonicalTo)),
+      );
   for (const noteKey of matchingNoteKeys) delete notes[noteKey];
   patch.relation_notes = Object.keys(notes).length > 0 ? notes : null;
   patchFrontmatter(VAULT_ROOT, canonicalFrom, patch, { expectedMtime: expected_mtime });
@@ -8238,12 +8280,17 @@ function replaceRelation({ from, oldTo, oldType, newTo, newType, why, confirm = 
   if (!confirm) return base;
   const patch = {};
   if (oldKey === 'domain') patch.domain = null;
-  else patch[oldKey] = (doc.frontmatter[oldKey] || [])
-    .filter((ref) => !relationRefMatches(ref, canonicalOldTo));
+  else {
+    Object.assign(patch, relationKeyPatch(
+      doc,
+      oldKey,
+      relationRefsFor(doc, oldKey).filter((ref) => !relationRefMatches(ref, canonicalOldTo)),
+    ));
+  }
   if (newKey === 'domain') patch.domain = canonicalNewTo;
   else {
-    const starting = oldKey === newKey ? patch[newKey] : (Array.isArray(doc.frontmatter[newKey]) ? doc.frontmatter[newKey] : []);
-    patch[newKey] = normalizeRelationRefs([...starting, canonicalNewTo]);
+    const starting = oldKey === newKey ? patch[newKey] : relationRefsFor(doc, newKey);
+    Object.assign(patch, relationKeyPatch(doc, newKey, normalizeRelationRefs([...starting, canonicalNewTo])));
   }
   const notes = doc.frontmatter.relation_notes && typeof doc.frontmatter.relation_notes === 'object' ? { ...doc.frontmatter.relation_notes } : {};
   const oldNoteKeys = matchingRelationNoteKeys(notes, canonicalOldTo);
@@ -11425,28 +11472,72 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     );
   }
 
+  /*
+   * All-or-nothing (2026-09-01 review): rename/merge/reclassify apply their
+   * multi-file writes as one unit, and absorption has the same shape — N new
+   * node files plus one source rewrite. Writing sections in a bare loop meant a
+   * mid-loop failure (a slug created concurrently, EACCES, ENOSPC) left a
+   * half-absorbed vault, and the retry re-planned around the already-landed
+   * files into `-2`-suffixed duplicates. writeDoc still performs each write
+   * (slug/identity validation, uid minting, the growth gate); the pre-check
+   * refuses before anything lands and the rollback removes what this call
+   * created — every written file is new, so unlink restores the vault.
+   */
+  const absorbSections = plan.sections.filter((section) => section.action === 'absorb');
+  for (const section of absorbSections) {
+    if (existsSync(slugToPath(VAULT_ROOT, section.targetSlug))) {
+      throw new Error(
+        `absorb_document refused before writing anything: "${section.targetSlug}" already exists ` +
+          '(created since the dry-run). The vault is unchanged — run the dry-run again and re-confirm.',
+      );
+    }
+  }
   const written = [];
-  for (const section of plan.sections) {
-    if (section.action !== 'absorb') continue;
-    const fm = buildFrontmatter({
-      slug: section.targetSlug,
-      kind: 'document',
-      title: section.targetTitle,
-      role: 'policy',
-      source: relative(VAULT_ROOT, abs),
-      // Absorption is a write through this server too — same stamp, same identity source.
-      [CREATED_BY_KEY]: agentProvenance(),
-    });
-    const body = `# ${section.targetTitle}\n\n${section.body}\n`;
-    const writtenPath = writeDoc(VAULT_ROOT, section.targetSlug, { frontmatter: fm, body });
-    written.push({ slug: section.targetSlug, filePath: writtenPath });
+  try {
+    for (const section of absorbSections) {
+      const fm = buildFrontmatter({
+        slug: section.targetSlug,
+        kind: 'document',
+        title: section.targetTitle,
+        role: 'policy',
+        source: relative(VAULT_ROOT, abs),
+        // Absorption is a write through this server too — same stamp, same identity source.
+        [CREATED_BY_KEY]: agentProvenance(),
+      });
+      const body = `# ${section.targetTitle}\n\n${section.body}\n`;
+      const writtenPath = writeDoc(VAULT_ROOT, section.targetSlug, { frontmatter: fm, body });
+      written.push({ slug: section.targetSlug, filePath: writtenPath });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const rollbackFailures = [];
+    for (const entry of written) {
+      try {
+        unlinkSync(entry.filePath);
+      } catch (rollbackError) {
+        rollbackFailures.push(`${entry.filePath} (${rollbackError?.code ?? rollbackError})`);
+      }
+    }
+    if (rollbackFailures.length > 0) {
+      // Saying "I do not know" beats saying "it is fine" — name what was left behind.
+      throw new Error(
+        `absorb_document failed mid-write AND rollback could not remove ${rollbackFailures.length} file(s):\n  ` +
+          `${rollbackFailures.join('\n  ')}\nRemove them by hand before retrying. Original error: ${message}`,
+      );
+    }
+    throw new Error(
+      `absorb_document failed before completing; every section written by this call was rolled back ` +
+        `and the vault is unchanged. Original error: ${message}`,
+    );
   }
 
   // Backup *after* the vault writes succeed — if a write throws above, the
   // original source file is left untouched and the caller can retry safely.
   copyFileSync(abs, backupPath);
   const pointer = buildSlimPointer(plan);
-  writeFileSync(abs, pointer, 'utf-8');
+  // Atomic replace: a bare writeFileSync truncates the user's document first,
+  // so a death between truncate and write destroyed the very file being absorbed.
+  writeFileAtomically(abs, pointer);
 
   return {
     ok: true,

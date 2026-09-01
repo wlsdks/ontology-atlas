@@ -67,6 +67,19 @@ describe('walkVault — 경계', () => {
     expect(result.prunedDirs).toEqual([]);
   });
 
+  it('normalizes NFD filesystem names to NFC so Hangul slugs match NFC refs', async () => {
+    // macOS hands back NFD names; frontmatter refs are NFC. Caught in the
+    // 2026-09-01 review: the unnormalized slug matched no ref, the containment
+    // edge dangled, and derivation minted a phantom duplicate node.
+    const nfdName = '결제.md'.normalize('NFD');
+    const nfdDir = '도메인'.normalize('NFD');
+    const result = await run(dir('vault', [file(nfdName), dir(nfdDir, [file(nfdName)])]));
+    expect(result.entries.map((e) => e.relativePath).sort()).toEqual([
+      '결제.md'.normalize('NFC'),
+      `${'도메인'.normalize('NFC')}/${'결제.md'.normalize('NFC')}`,
+    ]);
+  });
+
   /**
    * `CACHEDIR.TAG` is the **public convention** for cache directories: the directory
    * declares itself (Cargo writes one into `target/`). Unlike a name list there is

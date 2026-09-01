@@ -527,3 +527,72 @@ describe('도구 입력 refinement — 실제 Claude ACP 순서', () => {
     });
   });
 });
+
+describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다', () => {
+  it('두 번째 요청이 첫 카드를 덮어쓰지 않고, 두 JSON-RPC id 모두 답장이 나간다', async () => {
+    /*
+     * Caught in the 2026-09-01 review. With a single resolver slot, the second concurrent
+     * `session/request_permission` (parallel tool calls in one turn) replaced the first card's
+     * resolver: the first request's id was never answered and the agent hung on it for the rest
+     * of the session.
+     */
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const permissionRequest = (id: number, path: string) =>
+      JSON.stringify({
+        jsonrpc: '2.0',
+        id,
+        method: 'session/request_permission',
+        params: {
+          sessionId: 's-1',
+          options: [
+            { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+            { kind: 'allow_once', name: 'Allow', optionId: 'allow' },
+          ],
+          toolCall: {
+            toolCallId: `tool-${id}`,
+            title: `Write ${path}`,
+            kind: 'edit',
+            rawInput: { file_path: path },
+          },
+        },
+      });
+
+    // Two requests in one turn — the adapter is free to overlap them.
+    await act(async () => {
+      bridge.listener?.(permissionRequest(101, '/outside/a.md'));
+      bridge.listener?.(permissionRequest(102, '/outside/b.md'));
+    });
+
+    // The first card presents alone, and answering it answers **its own** id.
+    await waitFor(() => expect(result.current.pending).toBeTruthy());
+    expect(result.current.pending?.request.filePath).toBe('/outside/a.md');
+    await act(async () => {
+      result.current.pending?.resolve('allow');
+    });
+    await waitFor(() =>
+      expect(bridge.sent.some((m) => m.id === 101 && 'result' in m)).toBe(true),
+    );
+
+    // Only then does the second card present — and its id is answered too.
+    await waitFor(() => expect(result.current.pending?.request.filePath).toBe('/outside/b.md'));
+    await act(async () => {
+      result.current.pending?.resolve('reject');
+    });
+    await waitFor(() =>
+      expect(bridge.sent.some((m) => m.id === 102 && 'result' in m)).toBe(true),
+    );
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});

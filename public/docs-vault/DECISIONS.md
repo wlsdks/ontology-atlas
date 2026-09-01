@@ -40,6 +40,43 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+## 2026-09-01 — Inside-the-vault auto-allow narrows to read-only tool kinds
+
+**Convened**: solo pass, owner-directed ("fix in severity order") after the
+v1.0.0 full-codebase review · **Trigger**: the review confirmed that an ACP
+agent's own built-in edit tool, aimed at a vault Markdown file, was auto-allowed
+by path containment alone — no permission card, no typed change review — while
+the Atlas write path for the same file dutifully asked. A gate on one door of
+the same file is not a gate.
+
+**Prior decision**: 2026-08-16 (2) §3 said "structured path, not title strings:
+inside the vault auto-allow, outside ask." That rule was written against the
+observed problem of reads being rejected; it never distinguished reading from
+writing. Decisions (111) and (113) later established the standard this record
+applies: an unasked write is worse than one question too many.
+
+**Decision**: a non-Atlas tool is auto-allowed only when its path verdict is
+inside-the-vault AND its declared ACP `toolCall.kind` is read-only (`read` or
+`search`). Every other kind — `edit`, `delete`, `move`, `execute`, an absent or
+unknown kind — falls through to the permission card even inside the vault.
+Atlas-server tools keep their own read/write policy (`atlas-tool-policy.ts`)
+unchanged. Refines 2026-08-16 (2) §3; does not overturn its path-containment or
+allow_always clauses.
+
+**Recorded dissent**: the original rationale stands — asking every time breaks
+the conversation, and an agent that edits vault files as its normal working mode
+will now generate a card per edit. **Falsifier**: users observed abandoning
+in-app chat sessions because of repeated permission cards for ordinary in-vault
+edits they always approve. The remedy then is a scoped allow_always the user
+picks explicitly, never a return to silent path-based allow.
+
+**Review**: first sustained in-app chat usage reports after 1.0.x.
+
+**Gate**: `acp-client.test.ts` — the ask-before-an-inside-vault-edit case and
+the unknown-kind fail-closed case.
+
+**Status**: active; refines 2026-08-16 (2) §3.
+
 ## 2026-09-01 — The Do-next tab is one list, and the a58 indigo step retires with its meter
 
 **Convened**: solo pass after the owner's direction (2026-08-31: the tab "shows

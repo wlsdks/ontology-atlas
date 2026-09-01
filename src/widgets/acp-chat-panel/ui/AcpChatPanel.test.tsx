@@ -121,7 +121,7 @@ async function bootSession(
   };
 }
 
-function permissionRequest(filePath: string, id = 77) {
+function permissionRequest(filePath: string, id = 77, kind = 'edit') {
   return {
     jsonrpc: '2.0',
     id,
@@ -133,7 +133,7 @@ function permissionRequest(filePath: string, id = 77) {
         { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
         { kind: 'allow_always', name: 'Always', optionId: 'allow_always' },
       ],
-      toolCall: { toolCallId: 'tc1', title: `Write ${filePath}`, kind: 'edit', rawInput: { file_path: filePath } },
+      toolCall: { toolCallId: 'tc1', title: `Write ${filePath}`, kind, rawInput: { file_path: filePath } },
     },
   };
 }
@@ -682,10 +682,10 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     expect(answerFor(80)).toBeUndefined();
   });
 
-  it('볼트 안이면 카드를 안 띄우고 앱이 대신 허용한다', async () => {
+  it('볼트 안 **읽기**는 카드를 안 띄우고 앱이 대신 허용한다', async () => {
     bridge.verdict = 'allow-inside-vault';
     await bootSession();
-    emit(permissionRequest('/vault/notes.md'));
+    emit(permissionRequest('/vault/notes.md', 77, 'read'));
 
     await waitFor(() => expect(answerFor(77)).toBeTruthy());
     expect(bridge.verdictCalls).toEqual([
@@ -693,6 +693,20 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     ]);
     expect(answerFor(77)).toEqual({ outcome: 'selected', optionId: 'allow' });
     expect(screen.queryByTestId('acp-permission-card')).toBeNull();
+  });
+
+  it('볼트 안이라도 **편집**은 카드를 띄운다 — 경로 안전과 변경 승인은 다른 질문이다', async () => {
+    // 2026-09-01 review: path containment auto-allowed the agent's own edit tool on
+    // vault Markdown, bypassing the review the Atlas write path enforces on the same files.
+    bridge.verdict = 'allow-inside-vault';
+    await bootSession();
+    emit(permissionRequest('/vault/notes.md', 77, 'edit'));
+
+    await waitFor(() => expect(screen.getByTestId('acp-permission-card')).toBeInTheDocument());
+    expect(answerFor(77)).toBeUndefined();
+
+    fireEvent.click(screen.getByTestId('acp-permission-reject'));
+    await waitFor(() => expect(answerFor(77)).toEqual({ outcome: 'selected', optionId: 'reject' }));
   });
 
   it('볼트 밖이면 카드를 띄우고, 답하기 전에는 아무 답도 보내지 않는다', async () => {

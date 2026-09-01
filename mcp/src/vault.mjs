@@ -183,7 +183,7 @@ const NEIGHBOR_KEYS = Object.freeze([
 ]);
 
 const INLINE_NEIGHBOR_KEYS = Object.freeze(['domain']);
-const NEIGHBOR_KEY_ALIASES = Object.freeze({
+export const NEIGHBOR_KEY_ALIASES = Object.freeze({
   depends_on: 'dependencies',
 });
 export const GRAPH_ARRAY_KEYS = Object.freeze([
@@ -1650,10 +1650,14 @@ export function findBacklinks(rootPath, targetSlug) {
       if (resolved !== resolvedTarget) continue;
       if (!matchedKeys.includes(key)) matchedKeys.push(key);
     }
+    // Wikilinks match their alias (`[[x|label]]`) and heading (`[[x#h]]`) forms
+    // too — redirectBacklinks rewrites those, so this count must see them.
     const bodyHit = [...bodyNeedles].some(
       (needle) =>
         doc.body.includes(`[[${needle}]]`) ||
-        doc.body.includes(`(${needle}.md)`) ||
+        doc.body.includes(`[[${needle}#`) ||
+        doc.body.includes(`[[${needle}|`) ||
+        doc.body.includes(`(${needle}.md`) ||
         doc.body.includes(`/${needle}.md`),
     );
     if (matchedKeys.length === 0 && !bodyHit) continue;
@@ -2216,18 +2220,35 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
 
     let nextBody = doc.body;
     let bodyChanged = false;
-    if (nextBody.includes(`[[${targetSlug}]]`)) {
-      nextBody = nextBody.split(`[[${targetSlug}]]`).join(`[[${nextSlug}]]`);
-      bodyChanged = true;
-    }
-    if (canRewriteTail && nextBody.includes(`[[${targetTail}]]`)) {
-      nextBody = nextBody.split(`[[${targetTail}]]`).join(`[[${nextTail}]]`);
-      bodyChanged = true;
-    }
-    if (nextBody.includes(`(${targetSlug}.md)`)) {
-      nextBody = nextBody.split(`(${targetSlug}.md)`).join(`(${nextSlug}.md)`);
-      bodyChanged = true;
-    }
+    /*
+     * Body links carry the same reference in more shapes than the frontmatter
+     * arrays do: `[[slug]]`, `[[slug#heading]]`, `[[slug|alias]]`, `(slug.md)`,
+     * `(slug.md#anchor)`, and path-prefixed `(…/slug.md)`. Rewriting only the
+     * bare forms left alias/anchor links silently dangling after a confirmed
+     * rename — and permanently dangling after a merge, which deletes the old
+     * file in the same plan. `rewriteArrayItem` already owns the slug/tail
+     * matching rules (including the ambiguous-tail guard), so every form routes
+     * through it. Bare prose paths outside a link stay untouched: an evidence
+     * string is not a reference (see the pathDrift note above).
+     */
+    nextBody = nextBody.replace(
+      /\[\[([^\][|#\r\n]+)((?:#[^\][|\r\n]*)?(?:\|[^\][\r\n]*)?)\]\]/g,
+      (whole, target, rest) => {
+        const r = rewriteArrayItem(target.trim());
+        if (!r.changed) return whole;
+        bodyChanged = true;
+        return `[[${r.value}${rest}]]`;
+      },
+    );
+    nextBody = nextBody.replace(
+      /\(([^()\s]+)\.md(#[^()\s]*)?\)/g,
+      (whole, target, anchor) => {
+        const r = rewriteArrayItem(target);
+        if (!r.changed) return whole;
+        bodyChanged = true;
+        return `(${r.value}.md${anchor ?? ''})`;
+      },
+    );
 
     if (!fmChanged && !bodyChanged) continue;
 

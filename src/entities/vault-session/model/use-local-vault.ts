@@ -547,17 +547,21 @@ async function readAgentActivityStatus(
  * Are two sidecar states **effectively the same** — the check that stops every polling
  * tick from re-rendering the whole app just because it built a new object.
  *
- * Deliberately shallow: these are flat objects of a few booleans and strings, and a deep
- * comparison would itself become a cost paid every five seconds.
+ * Structural, not reference, equality (2026-09-01 review). The one-level `===` version was a
+ * dead guard: `reviewTarget`, `proof`, and `refreshRequest` are non-null nested objects rebuilt
+ * fresh on every parse, so the compare was permanently false and `setState` fired on every
+ * 1.5–5 s tick — reinstating exactly the five-second full-app re-render this comparison exists
+ * to prevent. The inputs are small parsed sidecar summaries with no cycles, so a recursive
+ * compare costs far less than one wasted render. Exported for its regression test only.
  */
-function shallowEqualStatus(a: unknown, b: unknown): boolean {
+export function structurallyEqualStatus(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
   const left = a as Record<string, unknown>;
   const right = b as Record<string, unknown>;
   const keys = Object.keys(left);
   if (keys.length !== Object.keys(right).length) return false;
-  return keys.every((key) => left[key] === right[key]);
+  return keys.every((key) => structurallyEqualStatus(left[key], right[key]));
 }
 
 async function readVaultSidecarStatuses(handle: FileSystemDirectoryHandle): Promise<{
@@ -1064,8 +1068,8 @@ export function useLocalVaultInternal() {
            */
           setState((s) => {
             const same =
-              shallowEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
-              shallowEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
+              structurallyEqualStatus(s.agentConfigStatus, sidecars.agentConfigStatus) &&
+              structurallyEqualStatus(s.agentActivityStatus, sidecars.agentActivityStatus) &&
               s.agentActivityLog.length === sidecars.agentActivityLog.length &&
               s.acpWorkReceipts.length === sidecars.acpWorkReceipts.length &&
               s.acpWorkReceipts.at(-1)?.updatedAt === sidecars.acpWorkReceipts.at(-1)?.updatedAt;

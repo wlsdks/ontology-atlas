@@ -68,7 +68,9 @@ function resolveRefToDocSlug(
   slugSet: ReadonlySet<string>,
   tailToSlug: ReadonlyMap<string, string | null>,
 ): string | null {
-  const normalized = ref.replace(/\.md$/i, '');
+  // References are normalized to NFC as well — normalizing only one side leaves
+  // identical characters that do not match (the CLI validator's own rule).
+  const normalized = ref.normalize('NFC').replace(/\.md$/i, '');
   if (slugSet.has(normalized)) return normalized;
   const tail = normalized.split('/').pop() ?? normalized;
   const byTail = tailToSlug.get(tail);
@@ -189,7 +191,16 @@ async function walkInto(
       return;
     }
     if (name.startsWith('.')) continue;
-    const relative = prefix ? `${prefix}/${name}` : name;
+    /*
+     * macOS filesystems hand back NFD names while frontmatter refs are NFC —
+     * identical characters, different bytes. The MCP walker (`pathToSlug`) and
+     * the CLI walker both normalize to NFC; without it here a Hangul-named doc's
+     * slug matches no ref, its containment edge dangles, and derivation mints a
+     * phantom duplicate. Same defect the 2026-08-08 DocsVaultViewer wikilink fix
+     * measured, one layer up.
+     */
+    const nfcName = name.normalize('NFC');
+    const relative = prefix ? `${prefix}/${nfcName}` : nfcName;
     if (handle.kind === 'directory') {
       if (PRUNE_BY_NAME.has(name)) {
         acc.prunedDirs.push(relative);
@@ -274,8 +285,11 @@ export interface LocalVaultBuild {
 function fingerprintFromEntries(
   entries: Array<{ relativePath: string; lastModified: number }>,
 ): string {
+  // NFC here too: native entries arrive with raw filesystem (NFD) names, and a
+  // fingerprint that differs from the walk's normalized paths would report a
+  // change on every focus.
   return entries
-    .map((e) => `${e.relativePath}@${e.lastModified}`)
+    .map((e) => `${e.relativePath.normalize('NFC')}@${e.lastModified}`)
     .sort()
     .join('\n');
 }
@@ -300,7 +314,7 @@ export async function computeLocalVaultFingerprintWithStamps(
       return {
         fingerprint: fingerprintFromEntries(native.entries),
         nativeStamps: new Map(
-          native.entries.map((e) => [e.relativePath, e.lastModified] as const),
+          native.entries.map((e) => [e.relativePath.normalize('NFC'), e.lastModified] as const),
         ),
       };
     }
@@ -670,7 +684,7 @@ export async function rebuildLocalManifestIncremental(
         const native = await nativeVaultFingerprint(nativeRoot);
         if (native) {
           nativeStamps = new Map(
-            native.entries.map((e) => [e.relativePath, e.lastModified] as const),
+            native.entries.map((e) => [e.relativePath.normalize('NFC'), e.lastModified] as const),
           );
         }
       } catch {
