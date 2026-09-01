@@ -854,6 +854,26 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('routes every E2E scope surface to the direct workflow contracts', () => {
+    const command =
+      'pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts';
+    const paths = [
+      '.github/workflows/e2e.yml',
+      '.github/actions/setup-playwright/action.yml',
+      'tests/contract/e2e-change-scope.contract.test.ts',
+      'tests/contract/e2e-suite-split.contract.test.ts',
+      'tests/contract/ci-bounded-network.contract.test.ts',
+    ];
+
+    assert.ok(paths.length > 0, 'the E2E scope surface inventory must not be empty');
+    for (const path of paths) {
+      assert.ok(
+        commandNames(suggestFocusedChecks([path])).includes(command),
+        `${path} must recommend the E2E workflow contracts`,
+      );
+    }
+  });
+
   it('suggests docs and package contracts for GitHub quality-gate files', () => {
     const result = suggestFocusedChecks([
       '.github/workflows/release-macos.yml',

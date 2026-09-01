@@ -52,6 +52,27 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 
 `--no-verify` is not the escape hatch — `.claude/rules/git.md` forbids it.
 
+## CI change scope — classify before Playwright setup
+
+Pull requests always publish the five branch-protected E2E statuses: static
+export, web smoke, and three Playwright shards. A checkout-only `changes` job
+runs `scripts/classify-change.mjs` first. When a change cannot affect runtime or
+rendered behavior, those required jobs remain green and visible but skip app
+checkout, dependency installation, Chromium, system packages, build, and tests.
+When classification itself fails, all five protected statuses fail instead of
+turning an absent verdict into skipped success. Pushes to `main` still run the
+full sweep.
+
+The wiring gate is:
+
+```bash
+pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts
+```
+
+`pnpm checks:changed` recommends it for the E2E workflow, the shared Playwright
+setup action, and any of the three contracts. This keeps selection mechanical
+while decision (96)'s path-scoped local lanes remain the fast pre-push layer.
+
 ## Quick Matrix
 
 | Area | First check | Escalate when needed |
@@ -59,6 +80,7 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | App/type safety | `pnpm exec tsc --noEmit` | `pnpm build` |
 | Lint/style | `pnpm lint` | `pnpm test:run` |
 | Static deploy safety | `pnpm build` | `pnpm exec tsc --noEmit` |
+| E2E CI change scope | `pnpm exec vitest run tests/contract/e2e-change-scope.contract.test.ts tests/contract/e2e-suite-split.contract.test.ts tests/contract/ci-bounded-network.contract.test.ts` | Inspect the five required statuses on a prose-only PR, then confirm the full sweep on the following `main` push |
 | GitHub Pages deploy | `pnpm build` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
 | Gateway evidence specimen | `pnpm gateway:specimen:check` | `pnpm gateway:specimen` to refresh |
