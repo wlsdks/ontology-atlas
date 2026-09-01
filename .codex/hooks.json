@@ -71,6 +71,54 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|apply_patch|functions.apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/fast-sensor.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/stamp-verification.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "exec_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/stamp-verification.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "functions.exec_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/stamp-verification.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/remind-verify-on-stop.sh"
+          }
+        ]
+      }
     ]
   }
 }

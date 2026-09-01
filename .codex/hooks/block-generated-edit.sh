@@ -24,7 +24,7 @@ set -euo pipefail
 INPUT="$(cat)"
 
 VERDICT=$(printf '%s' "$INPUT" | python3 -c '
-import json, sys
+import json, re, sys
 
 GENERATED_PREFIXES = (
     "src/entities/docs-vault/data/",
@@ -37,21 +37,41 @@ except Exception:
     sys.exit(0)
 
 tool = str(data.get("tool_name") or "")
-if tool not in {"Edit", "Write", "NotebookEdit", "MultiEdit"}:
+if tool not in {"Edit", "Write", "NotebookEdit", "MultiEdit", "apply_patch", "functions.apply_patch"}:
     sys.exit(0)
 
 tool_input = data.get("tool_input") or {}
-path = tool_input.get("file_path") or tool_input.get("path") or ""
-if not path:
+
+# ⚠️ **Codex edits arrive as a patch envelope, not as a path** (measured
+# 2026-09-01, codex-cli 0.151.0). Its `apply_patch` payload carries only
+# `tool_input.command`, holding `*** Update File: <path>` lines; the tool name
+# is `apply_patch`, not `Edit`. This guard read `file_path` and matched the
+# Claude tool names, so on the Codex side it denied nothing at all: measured by
+# feeding it a real captured payload naming `public/docs-vault/manifest.json`
+# and watching it pass. A mirrored guard that cannot read the payload its own
+# runtime sends is the dead gate this repository keeps finding, and it is worse
+# than no guard because the mirror table says it is covered.
+paths = [
+    value
+    for value in (tool_input.get("file_path"), tool_input.get("path"))
+    if isinstance(value, str) and value
+]
+command = tool_input.get("command")
+if isinstance(command, str) and command:
+    paths.extend(re.findall(r"^\*\*\* (?:Add|Update|Delete) File: (.+)$", command, re.M))
+
+if not paths:
     sys.exit(0)
 
 # Normalizes paths so that absolute paths can be determined as repository-relative prefixes.
-normalized = path.replace("\\", "/")
-for prefix in GENERATED_PREFIXES:
-    idx = normalized.find(prefix)
-    if idx != -1 and (idx == 0 or normalized[idx - 1] == "/"):
-        sys.stdout.write(prefix)
-        break
+# Every path in one patch is judged: a single generated target refuses the whole patch.
+for raw_path in paths:
+    normalized = raw_path.strip().replace("\\", "/")
+    for prefix in GENERATED_PREFIXES:
+        idx = normalized.find(prefix)
+        if idx != -1 and (idx == 0 or normalized[idx - 1] == "/"):
+            sys.stdout.write(prefix)
+            sys.exit(0)
 ' 2>/dev/null || true)
 
 if [[ -n "$VERDICT" ]]; then

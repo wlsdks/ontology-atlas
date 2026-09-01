@@ -30,16 +30,20 @@
 # (.tmp/harness/session-<id>.edits) that the Stop-time verification reminder
 # reads. Ledger append is source code only: a docs edit does not gate a stop.
 #
-# Mirrored at `.codex/hooks/fast-sensor.sh` since 2026-09-01, after measuring
-# codex-cli 0.151.0 instead of assuming: PostToolUse fires there for edit tools
-# too. The mirror is adapted rather than copied because a Codex edit arrives as
-# `apply_patch` with a patch envelope in `tool_input.command` and no
-# `file_path` key.
+# The Codex mirror. Measured 2026-09-01 with codex-cli 0.151.0 rather than
+# assumed: PostToolUse fires for both Bash and edit tools, and an edit arrives
+# as `tool_name: apply_patch` whose `tool_input.command` is a patch envelope
+# with `*** Update File: <path>` lines. There is no `file_path` key at all, so
+# the path extraction below is the Codex-shaped half of this mirror; copying
+# the Claude reader verbatim would produce a hook that runs and sees nothing.
+# The same measurement retired the earlier claim in this header that Codex was
+# Bash-event-only, and found the generated-file guard beside it already dead
+# for exactly this reason.
 
 set -u
 
 INPUT="$(cat)"
-REPO_ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+REPO_ROOT="${CODEX_PROJECT_DIR:-$(pwd)}"
 
 RESULT="$(
   REPO_ROOT="$REPO_ROOT" node --input-type=module -e '
@@ -58,6 +62,13 @@ const input = payload?.tool_input ?? {};
 const paths = [input.file_path, input.path, input.notebook_path]
   .concat(Array.isArray(input.edits) ? input.edits.map((e) => e?.file_path) : [])
   .filter((p) => typeof p === "string" && p.length > 0);
+// Codex apply_patch: every file the patch envelope names.
+if (typeof input.command === "string" && input.command.length > 0) {
+  for (const line of input.command.split("\n")) {
+    const named = /^\*\*\* (?:Add|Update|Delete) File: (.+)$/.exec(line);
+    if (named) paths.push(named[1].trim());
+  }
+}
 if (paths.length === 0) process.exit(0);
 
 const root = process.env.REPO_ROOT;

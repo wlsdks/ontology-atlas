@@ -54,7 +54,14 @@ const HOOK_CONFIGS = [
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
       'bash .codex/hooks/block-unsafe-git.sh',
+      // The sensor lane, mirrored 2026-09-01 after measuring codex-cli 0.151.0
+      // firing PostToolUse for edit tools and honouring a Stop-time block.
+      'bash .codex/hooks/fast-sensor.sh',
       'bash .codex/hooks/inject-ontology-summary.sh',
+      'bash .codex/hooks/remind-verify-on-stop.sh',
+      'bash .codex/hooks/stamp-verification.sh',
+      'bash .codex/hooks/stamp-verification.sh',
+      'bash .codex/hooks/stamp-verification.sh',
     ],
     expectedPreToolMatchers: [
       'Bash',
@@ -716,6 +723,69 @@ describe('fast sensor findings log', () => {
       assert.equal(rows[0].kind, 'em-dash');
       assert.equal(rows[0].session, 'log-test');
       assert.ok(Date.parse(rows[0].at) > 0, 'the row must carry a parseable timestamp');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// Codex sends an edit as `apply_patch` with a patch envelope in
+// `tool_input.command` and no `file_path` key at all (measured 2026-09-01,
+// codex-cli 0.151.0). Both edit-side guards read the Claude shape and therefore
+// saw nothing on that runtime: the generated-output guard was live in main and
+// denied nothing, while the mirror table said it was covered. These cases pin
+// the payload the runtime actually sends.
+describe('Codex apply_patch payload parity', () => {
+  const codexEdit = (path) => ({
+    hook_event_name: 'PreToolUse',
+    tool_name: 'apply_patch',
+    session_id: 'codex-parity',
+    tool_input: {
+      command: `*** Begin Patch\n*** Update File: ${path}\n@@\n-old\n+new\n*** End Patch`,
+    },
+  });
+
+  const fire = (hook, payload, projectDir = process.cwd()) =>
+    spawnSync('bash', [hook], {
+      input: JSON.stringify(payload),
+      encoding: 'utf8',
+      env: { ...process.env, CODEX_PROJECT_DIR: projectDir, CLAUDE_PROJECT_DIR: projectDir },
+    });
+
+  it('refuses a generated-output file named inside a patch envelope', () => {
+    for (const path of [
+      'public/docs-vault/manifest.json',
+      `${process.cwd()}/src/entities/docs-vault/data/content.json`,
+    ]) {
+      const result = fire('.codex/hooks/block-generated-edit.sh', codexEdit(path));
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /"permissionDecision": "deny"/, path);
+    }
+  });
+
+  it('leaves an ordinary file in a patch envelope alone', () => {
+    const result = fire('.codex/hooks/block-generated-edit.sh', codexEdit('src/app/page.tsx'));
+    assert.equal(result.stdout, '');
+  });
+
+  it('the Codex sensor reads a patch envelope, including a symlinked root', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'codex-sensor-'));
+    try {
+      const { mkdir, realpath } = await import('node:fs/promises');
+      await mkdir(join(dir, 'docs', 'guide'), { recursive: true });
+      const doc = join(dir, 'docs', 'guide', 'probe.md');
+      await writeFile(doc, 'A lead — the dash.\n');
+      // macOS reports /private/tmp for a /tmp root; the sensor must still judge
+      // the file as repository-relative rather than silently finding nothing.
+      const reported = join(await realpath(dir), 'docs', 'guide', 'probe.md');
+      const result = fire(
+        '.codex/hooks/fast-sensor.sh',
+        { ...codexEdit(reported), hook_event_name: 'PostToolUse' },
+        dir,
+      );
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /em-dash in user-rendered prose/);
+      assert.match(result.stdout, /docs\/guide\/probe\.md/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

@@ -18,15 +18,18 @@
 # lane: two observed false turns-back in a week mean the detection heuristic
 # gets fixed, never escalated to a hard block.
 #
-# Mirrored at `.codex/hooks/remind-verify-on-stop.sh` since 2026-09-01: Codex
-# does have a Stop event, it honours `decision: block`, and it sets
-# `stop_hook_active` on the continuation, so the once-only protocol holds
-# identically on both runtimes (measured, codex-cli 0.151.0).
+# The Codex mirror. Measured 2026-09-01 (codex-cli 0.151.0) rather than assumed:
+# a Stop hook emitting `{"decision":"block","reason":...}` really does turn the
+# agent back (the probe asked for a word and got it), and the second Stop
+# arrives with `stop_hook_active: true`, so the once-only protocol below holds
+# unchanged. The earlier claim in this header that Codex has no Stop event was
+# wrong, and the codex plugin's own review gate is a separate thing that does
+# not make this one redundant.
 
 set -u
 
 INPUT="$(cat)"
-REPO_ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
+REPO_ROOT="${CODEX_PROJECT_DIR:-$(pwd)}"
 
 REPO_ROOT="$REPO_ROOT" node --input-type=module -e '
 import { readFileSync, statSync, existsSync } from "node:fs";
