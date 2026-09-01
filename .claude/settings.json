@@ -48,6 +48,29 @@
           {
             "type": "command",
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh\""
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/fast-sensor.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/stamp-verification.sh\""
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/remind-verify-on-stop.sh\""
           }
         ]
       }
