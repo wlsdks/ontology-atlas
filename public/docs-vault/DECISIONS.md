@@ -47,6 +47,104 @@
 > owner, decision delta, review footprint, dissent/falsifier, revisit, and
 > outcome. Do not add a numeric score.
 
+## 2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof
+
+**Prior decisions**: the app-carries-the-server distribution contract and the
+same-day exact-case semantic-source decision remain valid. A source checkout,
+compiled sidecar, signed bundle, and installed app are distinct delivery
+stages; a green earlier stage is not evidence for a later one.
+
+**Before-state**: the current source MCP and freshly built sidecar returned the
+expected lowercase `readme.md` address, while the binary at
+`/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` returned
+22 uppercase `README.md` addresses, zero lowercase addresses, and omitted the
+project evidence. Its bytes and size differed from the built sidecar. Tool
+inventory and ordinary app launch checks still passed, so the installed agent
+surface could look healthy while handing a successor a false source address.
+
+**Atlas outcome**: `handoff` — the agent using the installed app must receive
+evidence from the exact app build that was inspected, including the repository's
+real source-path bytes.
+
+**Evidence state**: observed. A controlled copy signed with the existing
+recursive ad-hoc command preserved lowercase behavior, falsifying the initial
+hypothesis that `codesign --deep` caused the regression. A fresh signed local
+deployment then produced one 13-entry bundle digest before and after launch and
+returned lowercase addresses with project evidence from the installed absolute
+sidecar path.
+
+**Change signals**: `public-contract`; boundaries `truth=affected`,
+`transfer=affected`, `agent-write=unchanged`, and
+`human-correction=unchanged`.
+
+**Computed route**: one-way meaning review with `po-evidence` and
+`po-steward`. The first positions conditionally preferred a signing-order
+change from the initial evidence. After the controlled deep-signing result,
+both independently redirected the decision to final-artifact identity and
+installed semantic proof.
+
+**Primary Atlas risk**: meaning — an installed server can expose the right
+tool schemas while citing a source path that does not exist on a
+case-sensitive successor filesystem.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: compile a sidecar from the final source, sign the app, copy
+the whole app, and launch it. The built and installed bundle inventories must
+be byte-identical immediately after copy and after first launch. The sidecar at
+the installed absolute path must analyze a generated repository whose only
+semantic root is lowercase `readme.md`, report at least one exact lowercase
+address, report zero uppercase addresses, and retain `readme.md` as project
+evidence. Replacing only the sidecar must turn the identity gate RED before MCP
+use; restoring the built sidecar must return GREEN.
+
+**Decision**:
+
+1. Measure every directory, regular file, and symlink in the built app in
+   deterministic path order. Bind entry type and mode; bind file size and
+   SHA-256 bytes; bind symlink target. Do not use timestamps as identity.
+2. Require the installed inventory to equal that manifest after copy and again
+   after the app launch proof. Any missing, changed, or unexpected entry stops
+   deployment and names the first differences.
+3. Exercise exact lowercase semantic-source behavior in the compiled MCP
+   build, again after macOS app signing, and from the installed sidecar both
+   before and after first launch. Tool count or signature validity cannot
+   substitute for this semantic check.
+4. Retain recursive signing and strict recursive verification. The controlled
+   test disproved the proposed signing cause, so replacing signing strategy
+   would be an unrelated change.
+5. Keep Developer ID, notarization, DMG extraction, updater installation, and
+   both macOS architectures under their existing release gates. This local
+   proof does not claim those unexecuted stages passed.
+
+**Decision delta**: redirected and verification-strengthened. Evidence removed
+an unsupported signing diagnosis. Steward required content identity rather
+than timestamps and required the semantic probe to run from the final installed
+absolute path.
+
+**Review footprint**: two independent read-only first positions and one focused
+correction turn from each reviewer after material new evidence; two rebuttal
+turns total. Neither reviewer edited the checkout.
+
+**Dissent and falsifier**: hashing the whole bundle adds local deployment cost,
+and exact-case analysis is narrower than every MCP behavior. Reopen the runtime
+or signing diagnosis if an installed app with matching pre/post-launch
+manifests still differs semantically from its built sidecar. Widen the semantic
+probe if another bundled-only behavior escapes while the exact-case control
+stays green. Remove or narrow whole-bundle hashing only if a measured legitimate
+runtime writes inside the app bundle and a more precise immutable manifest can
+separate that state without admitting mixed code.
+
+**Revisit**: the next credentialed Developer ID/notarized dual-architecture
+release and the next updater install/relaunch rehearsal.
+
+**Outcome**: pass for the local installed-app path. The planted mixed-sidecar
+fixture was detected and the restored fixture passed. The signed built app and
+installed app shared one 13-entry digest after copy and after first launch; the
+installed sidecar returned lowercase-only source addresses with project
+evidence at both checkpoints. Credentialed public-release stages remain
+unclaimed.
+
 ## 2026-09-02 — A documented convention is a courtesy, not a boundary: human review moves to the call path, and drift is detected rather than trusted
 
 **Pre-review decision**: re-aim `/docs` from a Markdown reader into the layer
@@ -201,6 +299,499 @@ five open items above pending
 
 ---
 
+## 2026-09-02 — Semantic source addresses preserve repository entry case
+
+**Pre-review decision**: canonicalize only selected semantic-document source
+addresses to the unique actual repository entry before they reach semantic or
+domain evidence, proposal citations, persisted competency bodies, or source
+receipts. Invalidate the accepted plan and rebuild from a fresh digest; never
+patch already released rows or add connector-side case folding.
+
+**Atlas outcome**: `handoff` — a successor can distinguish a removed source from
+an Atlas address error and carry the same evidence path across filesystems.
+
+**Evidence state**: observed. The pinned target contains `readme.md`, while the
+analyzer retained seed spelling `README.md` after macOS resolved it
+case-insensitively. The accepted 11-concept/16-relation write validated,
+compiled, and full-read 11/11 bodies byte-exactly, but source-connect dry-run
+reported 7/8 witnesses and `declared_source_path_missing` for `README.md`.
+Connection and finalization were not confirmed.
+
+**Change signals**: `public-contract`; boundaries `truth=affected`,
+`transfer=unchanged`, `agent-write=affected`, and
+`human-correction=unchanged`.
+
+**Computed route**: one-way meaning review with `po-evidence` and `po-steward`.
+Both selected producer-side exact-case resolution plus fresh qualification; no
+rebuttal was needed.
+
+**Primary Atlas risk**: meaning — connector case folding would preserve a
+non-portable false address and let an old acceptance survive changed evidence
+bytes.
+
+**Confidence**: high on the reproduced cause; cross-filesystem and full fresh
+lifecycle proof remain pending.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: lowercase root and workspace README fixtures must emit the
+exact repository-relative spelling on both case-sensitive and case-insensitive
+filesystems. Exact matches win; ambiguous folds, missing entries, non-files,
+and symlink escapes fail closed. The old accepted packet must remain
+non-writable. A fresh digest must preserve all non-case meaning, write/read 11/11
+bodies byte-exactly, connect 8/8 source witnesses, and reach current
+finalization.
+
+**Decision**: resolve each selected semantic document one path segment at a
+time from directory entries. Preserve exact bytes when present; use one unique
+case-fold match only for semantic documents, never package contracts. Require a
+regular file and keep the existing root-containment/symlink guard. Propagate the
+resolved relative path through root/workspace semantic discovery and README
+domain evidence. Content, trust, review units, ordering, caps, meaning, gaps,
+permissions, and all non-case path bytes stay unchanged.
+
+**Decision delta**: verification-strengthened. Evidence required the old packet
+to turn RED and the full lifecycle to prove 8/8, not merely a resolver unit.
+Steward required the source and plan digests to bind the same canonical path and
+forbade retroactive row repair.
+
+**Review footprint**: two independent read-only first positions, zero rebuttal
+turns, no independence limitation, and no material conflict.
+
+**Dissent and falsifier**: connector-only case-insensitive lookup is smaller and
+would keep the expensive approval. Stop or revisit if canonicalization changes
+content, selection, ordering, trust, review units, caps, meaning, permissions,
+or any non-case path byte; accepts ambiguity/escape/non-file; leaves either
+digest unchanged; lets stale acceptance write; or fails fresh 11/11 body,
+8/8 source, or current-finalization proof.
+
+**Revisit**: after the exact-case fresh field replay completes.
+
+**Outcome**: pass. The exact-case fresh replay changed 29 proposal values and no
+other normalized meaning byte. It received a new plan/candidate/manifest/witness
+digest; the prior accepted packet failed with 27 errors and no write plan.
+Fresh independent lanes overlapped for 366 seconds and verified 79/79 claims,
+163/163 citations, unsupported 0, FDE 0, and the same exact 5/10 ability
+breadth. Exact writes landed 11 concepts and 16 relations in a fresh vault;
+11/11 full bodies matched byte-for-byte with one leading newline and contained
+29 lowercase `readme.md` occurrences with zero uppercase occurrences. Validation
+and compile had zero issues, source connection reached 8/8 supported witnesses
+and `verified_current/current`, and finalization succeeded with the honest
+`needs_evidence` competency result preserved.
+
+## 2026-09-02 — Selected safe sections share the existing semantic excerpt budget
+
+**Pre-review decision**: preserve the claim-local `reviewRequiredEvidence`
+contract and every current packet cap. Give every selected safe semantic section
+a deterministic nonzero share of the existing 1,200 characters, then clarify
+when one current semantic source may form a review-only capability proposal.
+
+**Atlas outcome**: `handoff` — a source-hidden successor receives usable prose
+for the breadth Atlas already says it selected, instead of eight headings backed
+almost entirely by the first two sections.
+
+**Evidence state**: observed. The first claim-local replay retained the exact
+line-45 native-ESM/CommonJS review unit, but its candidate excerpt ended during
+the early API prose. A six-concept draft still modeled one of ten predeclared
+ability families; a later fail-closed retreat sealed only the project and zero
+capabilities. Neither candidate joined, received acceptance, or wrote.
+
+**Change signals**: `public-contract`; boundaries `truth=affected`,
+`transfer=unchanged`, `agent-write=affected`, and
+`human-correction=unchanged`.
+
+**Computed route**: one-way meaning review with `po-evidence` and `po-steward`.
+Both selected the bounded allocation and low-confidence proposal rule; no
+rebuttal was needed.
+
+**Primary Atlas risk**: meaning — eight short fragments may be too shallow, and
+an implementation path could be mistaken for a second semantic authority.
+
+**Confidence**: high on the reproduced starvation and low until the fresh
+source-hidden/source-aware replay clears the 5/10 threshold.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: on the same pinned target, a fresh Atlas-only builder must
+model at least five of the fixed ten source-documented ability families, and an
+independent source-aware audit must verify every counted capability with zero
+unsupported claims. The packet remains six documents, eight headings, and 1,200
+characters; the line-45 review unit remains visible and non-authoritative; FDE,
+join, acceptance, and writes remain zero until the independent lanes pass.
+
+**Decision**: initially divide the prose budget by the number of selected safe
+sections. Short sections return unused capacity, which is redistributed by
+purpose/architecture/ability priority and then source order. Every section keeps
+its heading order and existing safe-boundary truncation. No public cap grows.
+
+One exact `candidate-evidence` unit plus one matching implementation witness may
+support a capability only as a proposal below `0.8` confidence. The path is not
+a second semantic authority and cannot establish domain, ownership,
+completeness, an `answered` competency, qualification, approval, or write. A
+low-confidence domain proposal still needs its own semantic responsibility
+statement; code structure cannot supply it.
+
+**Decision delta**: narrowed and verification-strengthened. Evidence required
+explicit capability proposals, not headings, for the recall numerator. Steward
+limited the one-source rule to sub-0.8 review proposals and preserved every
+higher authority boundary.
+
+**Review footprint**: two independent read-only first positions, zero rebuttal
+turns, no independence limitation, and no material conflict.
+
+**Dissent and falsifier**: equal fragments can destroy coherent context, while
+one semantic source plus code can invite implementation-shaped capability
+labels. Stop or redesign if any selected safe section stays starved, purpose
+becomes unusable, a cap grows, risk/admitted text diverge, a review unit supports
+a claim, implementation supplies semantic/domain authority, confidence reaches
+0.8, a competency becomes answered, unsupported claims exceed zero, or the
+fresh audit remains below 5/10.
+
+**Revisit**: after the fresh sealed builder and independent hidden/source-aware
+lanes, before join or write.
+
+**Outcome**: bounded field pass, not a general top-tier claim. A fresh
+context-isolated builder produced an 11-concept/16-relation plan with six
+sub-0.8 capability proposals and six explicit proposal gaps. Independent lanes
+verified 79/79 claims, 163/163 citations, unsupported 0, all source-hidden axes,
+and exactly 5/10 fixed ability families: concurrency, task admission, timeouts,
+lifecycle events, and custom scheduling. Rate limiting, priority,
+pause/start/clear, cancellation, and backpressure/introspection remain explicit
+misses. After the exact-case follow-up above, fresh accepted writes, 11/11 body
+equality, 8/8 source currentness, and honest `needs_evidence` finalization all
+passed without FDE or authority promotion.
+
+## 2026-09-02 — Mixed semantic evidence is split into candidate and review units
+
+**Pre-review decision**: extend the standing 2026-09-01 selected-claim decision
+only far enough to keep a current README purpose/ability unit usable when a
+separate compatibility statement in the same selected packet needs review. Keep
+every risk expression, qualification step, human acceptance boundary, and write
+brake unchanged.
+
+**Atlas outcome**: `handoff` — a source-hidden successor can reuse current
+abilities without losing the source's limiting policy or mistaking it for claim
+authority.
+
+**Evidence state**: observed. On one pinned permissively licensed Node target,
+the source-aware auditor verified 44/44 candidate claims and 143/143 citations,
+but found that the proposal modeled only 1 of 10 bounded source-documented
+ability families. One native-ESM/no-CommonJS sentence had downgraded the entire
+README row to `claim-review-required`. The candidate was invalidated before
+join; no acceptance or write ran.
+
+**Change signals**: `public-contract`; boundaries `truth=affected`,
+`transfer=unchanged`, `agent-write=affected`, and
+`human-correction=unchanged`.
+
+**Computed route**: one-way meaning review with `po-evidence` and `po-steward`,
+because typed evidence admission changes which source units may support a public
+proposal and therefore what an agent may eventually ask a person to approve.
+
+**Primary Atlas risk**: meaning — a coarse fix could either hide a real
+compatibility boundary or launder deprecated/negated prose into current claim
+authority.
+
+**Confidence**: high on the reproduced row-wide cause and the unit contract;
+the fresh source-hidden/source-aware recovery remains pending.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: given the same pinned target and a fresh Atlas-only rooted
+packet, without native-source business-meaning fallback, a fresh builder must
+keep the exact native-ESM/CommonJS statement visibly review-required and raise
+independently audited explicit ability-family recall from 1/10 to at least 5/10
+with zero unsupported claims. Selected deprecated/removed ability prose must
+never become candidate evidence; hostile instructions must still taint the
+whole selected row. Any qualification, acceptance, or write relaxation fails.
+
+**Decision**: keep each existing semantic source row unique. Its `headings`,
+`excerpt`, `trust`, and top-level `riskFlags` are the exact candidate-eligible
+unit. When that bounded selection mixes current text with future, negated, or
+deprecated prose, remove each policy line from the candidate unit and emit it
+additively as `reviewRequiredEvidence` with heading, exact one-based line span,
+excerpt, and risk flags. Review units may inform uncertainty but cannot support
+a Definition, Includes, Excludes, capability, competency answer, or write.
+Instruction/write risks never enter the split. More than four review units,
+more than 400 characters in one, more than 800 total review characters, an
+unsplittable combined risk, or no remaining current excerpt preserves the old
+row-wide fail-closed state.
+
+**Decision delta**: verification-strengthened. Evidence predeclared the
+ten-family comparison and exact evidence/risk-span parity. Steward required the
+limiting unit to remain co-retrievable with the admitted abilities and never
+become claim authority.
+
+**Review footprint**: two independent read-only first positions, zero rebuttal
+turns, no independence limitation, and no material conflict.
+
+**Dissent and falsifier**: native ESM without CommonJS constrains who can realize
+every ability, so a separately emitted warning can yield a richer but misleading
+handoff if an agent overlooks it. Stop or redesign with explicit fragment-level
+claim references if any admitted claim lacks identical risk-scanned text, the
+limitation disappears or becomes trusted, unsupported claims rise, any safety
+gate weakens, or the fresh audit stays below 5/10.
+
+**Revisit**: after the fresh sealed builder, source-hidden evaluator, and
+source-aware audit complete on the pinned target, before any join or write.
+
+**Outcome**: fail-caught before join. The fresh sealed replay retained the exact
+compatibility review unit but modeled 0/10 ability families, below the declared
+5/10 threshold, so no independent lanes or acceptance ran. It also exposed a
+validator/lifecycle interaction: an independently corroborated review-unit
+overlap warning became a non-gap hard block. The warning is now absent when a
+different current semantic source supports the claim, while uncorroborated use
+still errors. The starvation failure opens the bounded-budget decision above.
+
+## 2026-09-02 — Reviewed concept bodies use the canonical full-read representation
+
+**Prior decision**: the 2026-08-09 Construction Qualification contract and the
+2026-09-02 project-owned FDE decision remain valid. Human acceptance binds an
+exact `reviewPlan`, an unchanged `writePlan`, source/plan digests, and visible
+gaps. This record closes a later transport mismatch without weakening any
+semantic, evidence, audience-authority, source-hidden, or approval gate.
+
+**Before-state**: a held-out write released twelve concept bodies exactly, but
+`get_concepts(body: "full")` returned `"\n" + approvedBody` for all twelve.
+Trailing bytes and semantic content were otherwise identical, so post-write
+byte equality was 0/12 even though `reviewPlan === writePlan`. The analyzer
+produced bodies outside the parser's existing canonical representation.
+
+**Atlas outcome**: `handoff` — the exact bytes a person approves must be the
+bytes a source-hidden successor reads after persistence.
+
+**Evidence state**: observed, high confidence. `buildMarkdown` removes leading
+body newlines before writing the ordinary frontmatter separator, while
+`parseFrontmatter` returns that separator as exactly one canonical leading
+newline. The mismatch was therefore isolated to analyzer body production, not
+to Markdown truth or a content mutation.
+
+**Change signals**: `public-contract`; boundaries `truth=unchanged`,
+`transfer=affected`, `agent-write=affected`, and
+`human-correction=unchanged`.
+
+**Computed route**: one-way meaning review with `po-evidence` and `po-steward`.
+Both independently selected the same narrow producer fix. No rebuttal was
+needed.
+
+**Primary Atlas risk**: meaning — accepting semantic equivalence or trimming at
+verification time would make a real body mutation indistinguishable from a
+serialization convention and hollow out exact plan acceptance.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: analyzer-generated project and non-project bodies must start
+with exactly one canonical leading newline and satisfy
+`parseFrontmatter(buildMarkdown({ body })).body === body`. Removing the prefix
+must turn the focused gate RED. A fresh plan digest must invalidate the earlier
+acceptance; after fresh qualification and acceptance, all twelve written bodies
+must full-read byte-exactly with no trim or fallback.
+
+**Decision**: canonicalize only analyzer-generated review/write plan bodies to
+the parser's existing full-body representation. Do not change parser/public
+reads and do not weaken byte equality. After writes, full-read every released
+concept before source connection or finalization.
+
+**Decision delta**: verification-strengthened. The change adds no source,
+meaning, relation, gap, permission, or storage field; it makes the approved and
+successor-visible body payload identical.
+
+**Review footprint**: two independent first positions, zero rebuttal turns, and
+zero material conflict.
+
+**Dissent and falsifier**: a parser API whose body starts at `##` would be more
+intuitive than exposing a structural newline. Revisit that larger option only as
+a versioned parser migration. This decision fails if any supported writer/read
+surface yields zero or two leading newlines, changes disk content or trailing
+bytes, reuses the old acceptance, or misses 12/12 exact persisted equality.
+
+**Revisit**: when another analyzer/writer surface fails canonical round-trip or
+a versioned parser migration has complete consumer evidence.
+
+**Outcome**: pass. The focused round-trip gate was RED before the producer fix
+and GREEN after it. The V4 plan received a new digest, fresh hidden/audit lanes
+overlapped for 211.891 seconds, and verified 77/77 claims plus 195/195
+citations with zero FDE or semantic drift. A new accepted release wrote 12/12
+concepts and 14/14 relations; a full read returned 12/12 bodies byte-exactly,
+with one canonical leading newline in all twelve. Validation, compile, source
+connection, and finalization passed while the three accepted evidence gaps
+remained `needs_evidence` rather than being promoted.
+
+## 2026-09-02 — FDE is project-owned or unavailable
+
+**Prior decision**: the 2026-08-09 Construction Qualification decision remains
+valid for independent builder/evaluator identity, human-approved CQs, exact
+claims and citations, source-hidden execution, seven independent axes, and
+fail-closed acceptance. This record narrowly overturns its assumption that FDE
+is one of four universal project audiences. Executive, employee, and agent
+remain required, and the minimum of four scenarios remains unchanged.
+
+**Before-state**: `constructionQualification:v1` used the same four-value enum
+as both compatibility vocabulary and required audience census. A fresh held-out
+Python trial consequently assigned two implementation/evidence questions to
+FDE even though a bounded source search found no FDE role or ownership evidence.
+The label added no source-backed meaning but could still help satisfy the gate.
+
+**Atlas outcome**: `judge` — qualification must distinguish a project-owned FDE
+decision from an evaluator-invented persona before treating that audience as
+usable.
+
+**Evidence state**: observed. The user's correction was exact: an FDE audience
+must be unusable unless the project owns it. The current enum and audience loops
+confirmed the dual use, and the active trial demonstrated the false-positive path. The
+interrupted source-hidden and source-aware branches are retained only as
+invalidated evidence and cannot join or authorize writes.
+
+**Change signals**: `public-contract`; boundaries `truth=affected`,
+`transfer=unchanged`, `agent-write=affected`, and
+`human-correction=affected`.
+
+**Computed route**: one-way meaning review with `po-evidence` and `po-steward`.
+Both independently required project-owned FDE authority and an exact
+witness→claim→citation chain. Their only material conflict was whether removing
+universal FDE should also reduce the scenario/CQ minimum from four to three.
+
+**Primary Atlas risk**: meaning — a compatibility label could still be
+laundered into audience authority, or removing FDE could silently remove the
+technical impact questions that exposed weak implementation handoff.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: an FDE-free packet with executive, employee, and two agent
+scenarios must qualify; adding FDE must fail independently when any one of eight
+links is removed: exact project decision, project meaning owner, required
+authority kind, declared project source, carried current witness, supported
+claim, or exact verified citation. The held-out q4/q5 technical questions must
+remain present under the agent audience, and the old FDE-bearing branches must
+remain non-joinable.
+
+**Decision**: retain `fde` in the supported enum for compatibility, but remove it
+from the required audience set. Preserve the four-scenario and four-CQ floor.
+An FDE CQ is usable only when purpose authority contains the exact
+`audience:fde` decision, its human owner is also a named project meaning owner,
+and a current `audience-authority:fde` witness uses one of that purpose
+authority's declared source refs. The exact witness must be carried by the CQ
+result, a supported claim, and a verified citation. Declared provenance remains
+non-authenticated; it is not an identity certificate.
+
+**Decision delta**: verification-strengthened. Evidence preserved the full
+authority chain; Steward preserved human correction and compatibility. After
+one rebuttal each, the accountable decision kept the minimum at four so
+technical depth moves to a second agent scenario instead of disappearing.
+
+**Review footprint**: two independent first positions and one focused rebuttal
+from each reviewer; one material conflict, resolved by the accountable owner.
+
+**Dissent and falsifier**: universal FDE was a useful proxy for implementation
+depth, and keeping four rows without a fourth required audience may create
+filler. Reopen this decision if FDE-free trials lose q4/q5-style implementation
+and evidence coverage, if duplicate agent rows add no distinct decision, or if
+an unowned FDE packet qualifies after any authority link is removed.
+
+**Revisit**: after the active held-out trial completes a fresh seal,
+source-hidden evaluation, source-aware audit, join, and no-write/write decision
+under this contract.
+
+**Outcome**: bounded field pass. Eight independent FDE authority mutations, the
+direct-evaluator four-case bypass, and the compact-handoff laundering probe are
+all RED when defective and GREEN when restored. Two fresh held-out
+qualification replays used four executive/employee/agent scenarios with zero
+FDE rows; q4/q5 stayed under the project-owned agent audience. The final replay
+verified 77/77 claims and 195/195 citations, wrote only the exact 12-concept /
+14-relation plan after human acceptance, and preserved every declared gap.
+Unowned FDE never contributed to scenario coverage, qualification, or write
+eligibility. Installed-app verification is recorded with the enclosing change.
+
+## 2026-09-01 — Semantic evidence trust follows the selected claim, not an unrelated README section
+
+**Prior decision**: the 2026-08-02 bounded Python construction-ingress decision
+remains valid: `README.rst` may supply bounded mission evidence, ordinary
+document sections do not become domains or capabilities, and writes still wait
+for independent qualification plus exact human acceptance. Its proof boundary
+was reopened by an unfamiliar repository where valid current product prose was
+present but an unrelated peer section controlled the whole evidence row.
+
+**Pre-review decision**: make only the document-title section and explicitly
+classified purpose, architecture, or ability sections visible in one semantic
+evidence row and its risk scan. Keep every risk expression, trust level, tool
+shape, schema, and write/approval boundary unchanged.
+
+**Atlas outcome**: `handoff` — a fresh builder can carry the repository's
+evidence-backed abilities into a reviewable plan instead of losing them because
+another section contains contributor instructions.
+
+**Evidence state**: observed. In the pinned scratch run, `About` named current
+parsing, encoding, decoding, generation, monitoring, and plotting abilities,
+while the peer `Contributing` section said changes should not break legacy
+behavior. The analyzer treated every unnamed level-one section as purpose,
+combined both sections, and downgraded the whole row to
+`claim-review-required` with `negated-claim` and `deprecated-state`. The first
+fresh builder took 582.862 seconds, rejected three drafts, and released a
+five-concept/five-relation candidate whose five competency answers were all
+partial.
+
+**Change signals**: `public-contract`; boundaries `truth=affected`,
+`transfer=unchanged`, `agent-write=unchanged`, and
+`human-correction=unchanged`.
+
+**Computed route**: one-way meaning review with `po-evidence` and `po-steward`,
+because evidence admission changes what may enter a public proposal even though
+accepted Markdown truth and every write brake remain unchanged.
+
+**Primary Atlas risk**: meaning — narrowing document-wide taint could hide a
+real temporal caveat or instruction if model-visible evidence and the risk scan
+do not use the exact same selected sections.
+
+**Confidence**: high on the reproduced cause and candidate-stage recovery;
+source-hidden qualification remains pending.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: given the same pinned unfamiliar repository and an
+Atlas-only rooted packet, without native-source business-meaning fallback, a
+fresh builder must cite the selected current README evidence in a non-writing,
+reviewable candidate. The model-visible headings and excerpt must omit the
+unselected peer section; selected future, negated, deprecated, or hostile prose
+must remain review-required. Fail if unsupported assertions rise above zero,
+write eligibility weakens, or the semantic gaps do not improve.
+
+**Decision**: mark only the first document-title section as the unnamed purpose
+fallback, and return headings only for the title and selected semantic sections.
+Do not create section-level public rows or relax the existing risk vocabulary.
+The source-hidden candidate gate remains mandatory before this becomes a full
+field-trial result.
+
+**Decision delta**: verification-strengthened. Both reviewers kept the narrow
+implementation; Evidence added the invariant that every model-visible heading
+and excerpt must match the risk boundary, and Steward kept qualification,
+approval, local-first truth, and agent authority unchanged.
+
+**Review footprint**: two independent first positions in isolated read-only
+sessions; zero rebuttal turns because their recommendations agreed.
+
+**Dissent and falsifier**: document-wide taint can catch a limitation elsewhere
+that constrains the selected claim. Revert or redesign as section-level evidence
+if selected risky prose becomes trusted, an unselected section still changes
+any semantic output, citation or unsupported-claim accuracy regresses, or the
+fresh source-hidden abilities answer does not improve.
+
+**Revisit**: after the exact candidate packet is evaluated source-hidden and
+source-aware under the preapproved six-question set.
+
+**Outcome**: bounded field pass, not a general top-tier claim. A second
+context-isolated builder reached a reviewable 12-concept/14-relation candidate
+in 424.892 seconds after one rejected draft, 157.970 seconds (27.1%) faster than
+the reproduced pre-fix run. The pinned MIT target's `tox -e py` suite passed
+418/418 tests with 94.005% coverage. Independent audit then caught one unsupported
+project exclusion before join; the candidate moved it to explicit uncertainty
+and fresh lanes verified 77/77 claims and 195/195 citations. The final
+source-hidden CQs passed q3/q5/q6 and kept q1/q2/q4 partial. Exact writes
+validated with 80/80 persisted path occurrences, while a sidecar-free reader
+returned two full, three partial, and one unknown answer; its 11/11
+source-judgeable claims and all 11 unique paths passed independent audit. Total
+first-rooted-call to finalizer time was 12,926.239 seconds and the final meaning
+assessment remained `needs_evidence`, so construction cost and three meaning
+gaps remain explicit failures against the broader ambition.
 ## 2026-09-01 — Pull-request CI follows impact; default-branch truth stays exhaustive
 
 **Pre-review decision**: extend the Playwright-only setup classifier from #1365

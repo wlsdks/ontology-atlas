@@ -28,7 +28,11 @@ import {
   hostTargetTriple,
   SUPPORTED_TARGET_TRIPLES,
 } from './lib/mcp-binary.mjs';
-import { verifyMcpBinary, verifyMcpParity } from './verify-mcp-binary.mjs';
+import {
+  verifyMcpBinary,
+  verifyMcpExactCase,
+  verifyMcpParity,
+} from './verify-mcp-binary.mjs';
 
 const root = process.cwd();
 const argv = process.argv.slice(2);
@@ -108,6 +112,11 @@ try {
   const parity = await verifyMcpParity({ binaryPath: outFile, vaultPath: vault });
   console.log(
     `✔ source/bundled parity — ${parity.toolCount} tools, ${parity.sourceVersion} / ${parity.bundledVersion}`,
+  );
+  const exactCase = await verifyMcpExactCase({ binaryPath: outFile });
+  console.log(
+    `✔ exact-case source address — readme.md ${exactCase.lowercaseAddresses}, ` +
+      `README.md ${exactCase.uppercaseAddresses}, project evidence present`,
   );
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error));

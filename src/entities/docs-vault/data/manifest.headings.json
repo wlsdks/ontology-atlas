@@ -3849,6 +3849,36 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-02 · Unreleased: installed apps prove the MCP they actually carry",
+      "slug": "2026-09-02-unreleased-installed-apps-prove-the-mcp-they-actually-carry"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 · Unreleased: semantic evidence keeps exact repository path case",
+      "slug": "2026-09-02-unreleased-semantic-evidence-keeps-exact-repository-path-case"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 · Unreleased: mixed README policy no longer erases current evidence",
+      "slug": "2026-09-02-unreleased-mixed-readme-policy-no-longer-erases-current-evidence"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 · Unreleased: reviewed concept bodies survive persistence byte-for-byte",
+      "slug": "2026-09-02-unreleased-reviewed-concept-bodies-survive-persistence-byte-for-byte"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 · Unreleased: FDE is project-owned or unavailable",
+      "slug": "2026-09-02-unreleased-fde-is-project-owned-or-unavailable"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-01 · Unreleased: RST evidence no longer loses product meaning to an unrelated section",
+      "slug": "2026-09-01-unreleased-rst-evidence-no-longer-loses-product-meaning-to-an-unrelated-section"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-01 · v1.0.3: the CI planner stops missing PRs, and the harness can be judged",
       "slug": "2026-09-01-v103-the-ci-planner-stops-missing-prs-and-the-harness-can-be-judged"
     },
@@ -7020,8 +7050,43 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof",
+      "slug": "2026-09-02-installed-mcp-evidence-is-trusted-only-after-whole-app-identity-and-semantic-proof"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 — A documented convention is a courtesy, not a boundary: human review moves to the call path, and drift is detected rather than trusted",
       "slug": "2026-09-02-a-documented-convention-is-a-courtesy-not-a-boundary-human-review-moves-to-the-call-path-and-drift-is-detected-rather-than-trusted"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — Semantic source addresses preserve repository entry case",
+      "slug": "2026-09-02-semantic-source-addresses-preserve-repository-entry-case"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — Selected safe sections share the existing semantic excerpt budget",
+      "slug": "2026-09-02-selected-safe-sections-share-the-existing-semantic-excerpt-budget"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — Mixed semantic evidence is split into candidate and review units",
+      "slug": "2026-09-02-mixed-semantic-evidence-is-split-into-candidate-and-review-units"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — Reviewed concept bodies use the canonical full-read representation",
+      "slug": "2026-09-02-reviewed-concept-bodies-use-the-canonical-full-read-representation"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — FDE is project-owned or unavailable",
+      "slug": "2026-09-02-fde-is-project-owned-or-unavailable"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-01 — Semantic evidence trust follows the selected claim, not an unrelated README section",
+      "slug": "2026-09-01-semantic-evidence-trust-follows-the-selected-claim-not-an-unrelated-readme-section"
     },
     {
       "depth": 2,
@@ -14388,6 +14453,16 @@
     },
     {
       "depth": 2,
+      "text": "Project-owned audiences",
+      "slug": "project-owned-audiences"
+    },
+    {
+      "depth": 2,
+      "text": "Exact body handoff",
+      "slug": "exact-body-handoff"
+    },
+    {
+      "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
     }
@@ -15262,6 +15337,23 @@
       "slug": "confidence"
     }
   ],
+  "ontology/elements/construction-qualification-evaluator": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Project-owned FDE authority",
+      "slug": "project-owned-fde-authority"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
+    }
+  ],
   "ontology/elements/design-proof-router": [
     {
       "depth": 2,
@@ -15272,6 +15364,55 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundary",
+      "slug": "boundary"
+    }
+  ],
+  "ontology/elements/installed-mcp-identity-gate": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
+      "text": "Uncertainty",
+      "slug": "uncertainty"
+    }
+  ],
+  "ontology/elements/meaning-proposal-evaluator": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Claim-local authority",
+      "slug": "claim-local-authority"
+    },
+    {
+      "depth": 2,
+      "text": "Exact body contract",
+      "slug": "exact-body-contract"
     },
     {
       "depth": 2,
@@ -15294,6 +15435,33 @@
       "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
+    }
+  ],
+  "ontology/elements/semantic-evidence-selector": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Verification",
+      "slug": "verification"
     }
   ],
   "ontology/elements/task-scoped-agent-brief-projection": [

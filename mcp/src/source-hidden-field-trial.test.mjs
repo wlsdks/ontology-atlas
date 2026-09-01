@@ -99,7 +99,7 @@ test('the source-hidden fixture fixes a precommitted, repository-agnostic 20-CQ 
   assert.equal(new Set(questions.map(({ id }) => id)).size, questions.length);
   assert.deepEqual(
     [...new Set(questions.map(({ audience }) => audience))].sort(),
-    ['agent', 'employee', 'executive', 'fde'],
+    ['agent', 'employee', 'executive'],
   );
   for (const question of questions) {
     assert.match(question.id, /^cq\d{2}-[a-z-]+$/);

@@ -1,0 +1,27 @@
+---
+uid: c048a18a-3730-436e-a806-fa01231d648e
+slug: elements/meaning-proposal-evaluator
+kind: element
+title: Meaning Proposal Evaluator
+domain: domains/project-portfolio
+path: mcp/src/meaning-evaluation.mjs
+created_by: "agent:codex"
+---
+
+## Definition
+
+The meaning proposal evaluator validates proposed project, domain, capability, element, relation, and competency meaning against bounded repository analysis, then derives the exact non-writing review plan and any later released write plan.
+
+## Claim-local authority
+
+A Definition, Includes, Excludes, relation rationale, or answered competency that overlaps line-scoped `reviewRequiredEvidence` needs a different claim-aligned current semantic source. Without that source, the proposal fails; a partial or visible-gap answer may retain the unit only as unresolved counterevidence.
+
+One exact current candidate unit plus one matching implementation witness may support only a capability proposal below 0.8 confidence. The path is not a second semantic authority and cannot establish domain, ownership, completeness, an answered competency, qualification, approval, or write.
+
+## Exact body contract
+
+Generated concept bodies use the parser canonical full-body representation with exactly one structural leading newline. The Markdown writer removes that representation-only prefix before serialization and the parser restores it on read, so `reviewPlan.body`, accepted `writePlan.body`, and a persisted full-body read remain byte-identical without changing Markdown content.
+
+## Boundary
+
+This evaluator neither writes a vault nor authenticates human acceptance. Unknown evidence remains a gap, project exclusions still require source-backed meaning, and canonical whitespace cannot substitute for claim, citation, source-hidden, or approval checks.

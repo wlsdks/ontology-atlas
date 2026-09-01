@@ -11,6 +11,43 @@ import {
   resolveDefaultDeployRoute,
   summarizeDeployMacosAppEvidence,
 } from "./deploy-macos-app-local.mjs";
+import {
+  compareMacosAppBundleIdentity,
+  measureMacosAppBundleIdentity,
+} from "./lib/macos-app-bundle-identity.mjs";
+
+test("local deploy identity rejects a mixed app bundle before MCP use", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-app-identity-"));
+  const builtApp = path.join(root, "built", "Ontology Atlas.app");
+  const installedApp = path.join(root, "installed", "Ontology Atlas.app");
+  const builtMacos = path.join(builtApp, "Contents", "MacOS");
+  const installedMacos = path.join(installedApp, "Contents", "MacOS");
+  fs.mkdirSync(builtMacos, { recursive: true });
+  fs.writeFileSync(path.join(builtMacos, "ontology-atlas"), "main-v2");
+  fs.writeFileSync(path.join(builtMacos, "ontology-atlas-mcp"), "mcp-v2");
+  fs.cpSync(builtApp, installedApp, { recursive: true });
+
+  try {
+    const expected = measureMacosAppBundleIdentity(builtApp);
+    assert.deepEqual(compareMacosAppBundleIdentity(expected, installedApp), {
+      match: true,
+      expectedDigest: expected.digest,
+      actualDigest: expected.digest,
+      mismatches: [],
+    });
+
+    fs.writeFileSync(path.join(installedMacos, "ontology-atlas-mcp"), "mcp-v1");
+    const mixed = compareMacosAppBundleIdentity(expected, installedApp);
+    assert.equal(mixed.match, false);
+    assert.equal(mixed.expectedDigest, expected.digest);
+    assert.notEqual(mixed.actualDigest, expected.digest);
+    assert.deepEqual(mixed.mismatches, [
+      "changed Contents/MacOS/ontology-atlas-mcp",
+    ]);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("local deploy clears stale WebKit assets without deleting vault persistence", () => {
   const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "ontology-atlas-webkit-cache-"));

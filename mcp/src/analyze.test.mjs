@@ -12,6 +12,7 @@ import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { analyzeRepoStructure, buildProposalAssessment } from './analyze.mjs';
+import { selectExactCaseEntry } from './analyze/scan-guards.mjs';
 
 // The meaning corpus lives at the repo root (tests/fixtures/meaning-corpus).
 // Resolve it from this file, not process.cwd(), so the suite passes whether it
@@ -27,6 +28,115 @@ function withRepo(setup) {
   setup(root);
   return root;
 }
+
+test('exact-case source selection prefers exact bytes and rejects ambiguous folds', () => {
+  assert.equal(
+    selectExactCaseEntry(['README.md', 'readme.md'], 'README.md'),
+    'README.md',
+  );
+  assert.equal(
+    selectExactCaseEntry(['readme.md'], 'README.md'),
+    'readme.md',
+  );
+  assert.equal(
+    selectExactCaseEntry(['README.md', 'readme.md'], 'ReadMe.md'),
+    null,
+  );
+  assert.equal(selectExactCaseEntry(['guide.md'], 'README.md'), null);
+});
+
+test('lowercase root readme keeps exact source case through semantic and domain evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-queue' }));
+    writeFileSync(
+      join(r, 'readme.md'),
+      [
+        '# Portable Queue',
+        '',
+        'Portable Queue coordinates reviewed fulfillment work.',
+        '',
+        '## Fulfillment Control',
+        '',
+        'Fulfillment Control owns admission and completion policy.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const result = analyzeRepoStructure(root);
+    const readmeEvidence = result.semanticEvidence.find(
+      (row) => row.source.toLowerCase() === 'readme.md',
+    );
+
+    assert.equal(readmeEvidence?.source, 'readme.md');
+    assert.ok(result.project.evidence.includes('readme.md'));
+    assert.equal(result.project.evidence.includes('README.md'), false);
+    assert.ok(result.domains.length > 0, 'the lowercase README domain subject must exist');
+    assert.ok(result.domains.every((row) => row.evidence.source === 'readme.md'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('lowercase workspace readme keeps its exact repository-relative case', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'portable-workspace' }));
+    mkdirSync(join(r, 'packages', 'queue'), { recursive: true });
+    writeFileSync(
+      join(r, 'packages', 'queue', 'package.json'),
+      JSON.stringify({ name: '@portable/queue', description: 'Coordinates queued work.' }),
+    );
+    writeFileSync(
+      join(r, 'packages', 'queue', 'readme.md'),
+      '# Queue package\n\nThe package coordinates queued work for callers.\n',
+    );
+  });
+  try {
+    const sources = analyzeRepoStructure(root).semanticEvidence.map(
+      (row) => row.source,
+    );
+
+    assert.ok(sources.includes('packages/queue/readme.md'));
+    assert.equal(sources.includes('packages/queue/README.md'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('root readme case resolution rejects non-files and repository escapes', () => {
+  const directoryRoot = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'directory-readme' }));
+    mkdirSync(join(r, 'readme.md'));
+  });
+  const outside = mkdtempSync(join(tmpdir(), 'ontology-atlas-readme-outside-'));
+  const symlinkRoot = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), JSON.stringify({ name: 'escaped-readme' }));
+    writeFileSync(join(outside, 'readme.md'), '# Escaped\n\nMust stay outside.\n');
+    symlinkSync(join(outside, 'readme.md'), join(r, 'readme.md'));
+  });
+  try {
+    assert.equal(
+      analyzeRepoStructure(directoryRoot).semanticEvidence.some(
+        (row) => row.source.toLowerCase() === 'readme.md',
+      ),
+      false,
+    );
+    const escaped = analyzeRepoStructure(symlinkRoot);
+    assert.notEqual(escaped.project.title, 'Escaped');
+    assert.deepEqual(escaped.domains, []);
+    assert.equal(
+      escaped.semanticEvidence.some(
+        (row) => row.source.toLowerCase() === 'readme.md',
+      ),
+      false,
+    );
+    assert.ok(escaped.skipped.some((row) =>
+      /readme\.md resolves outside repository root/.test(row.reason)));
+  } finally {
+    rmSync(directoryRoot, { recursive: true, force: true });
+    rmSync(symlinkRoot, { recursive: true, force: true });
+    rmSync(outside, { recursive: true, force: true });
+  }
+});
 
 test('FSD repo — features/ → capabilities, entities/widgets/views → implementation elements', () => {
   const root = withRepo((r) => {
@@ -183,6 +293,39 @@ test('README.rst accepts punctuation title adornments and excludes directive cod
   }
 });
 
+test('README.rst keeps unselected peer instructions out of trusted semantic evidence', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.rst'),
+      [
+        'About',
+        '=====',
+        '',
+        'The current toolkit parses and decodes vehicle network data.',
+        '',
+        'Contributing',
+        '============',
+        '',
+        'Implement tests so future changes do not break legacy behavior.',
+      ].join('\n'),
+    );
+  });
+  try {
+    const evidence = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.rst',
+    );
+
+    assert.ok(evidence, 'the README.rst evidence row must be measured');
+    assert.equal(evidence.trust, 'candidate-evidence');
+    assert.deepEqual(evidence.riskFlags, []);
+    assert.deepEqual(evidence.headings, ['About']);
+    assert.match(evidence.excerpt, /parses and decodes vehicle network data/);
+    assert.doesNotMatch(evidence.excerpt, /Contributing|break legacy/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('README semantic evidence keeps later meaning blocks ahead of decorative noise', () => {
   const root = withRepo((r) => {
     const noise = (label) => Array.from(
@@ -302,6 +445,61 @@ test('README semantic evidence reserves purpose, architecture, and feature prose
         excerpt.indexOf('provides searchable notes and bounded exports'),
     );
     assert.ok(excerpt.length <= 1200);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('README semantic evidence gives every selected safe section a bounded share', () => {
+  const root = withRepo((r) => {
+    const section = (heading, marker) => [
+      `## ${heading}`,
+      '',
+      `${marker} ${'bounded context '.repeat(30)}`,
+      '',
+    ];
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# Portable Work Queue',
+        '',
+        `Mission marker preserves the current outcome. ${'purpose context '.repeat(30)}`,
+        '',
+        ...section('Usage', 'Usage marker shows controlled execution.'),
+        ...section('Constructor', 'Constructor marker shows configurable limits.'),
+        ...section('Queue', 'Admission marker shows queued work entry.'),
+        ...section('Events', 'Events marker shows lifecycle observation.'),
+        ...section('Advanced example', 'Priority marker shows scheduling control.'),
+        ...section('Handling timeouts', 'Timeout marker shows bounded execution.'),
+        ...section('Custom policy', 'Policy marker shows replaceable scheduling.'),
+      ].join('\n'),
+    );
+  });
+  try {
+    const first = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+    const second = analyzeRepoStructure(root).semanticEvidence.find(
+      (row) => row.source === 'README.md',
+    );
+
+    assert.ok(first, 'the bounded README evidence subject must exist');
+    for (const marker of [
+      'Mission marker',
+      'Usage marker',
+      'Constructor marker',
+      'Admission marker',
+      'Events marker',
+      'Priority marker',
+      'Timeout marker',
+      'Policy marker',
+    ]) {
+      assert.match(first.excerpt, new RegExp(marker));
+    }
+    assert.equal(first.headings.length, 8);
+    assert.ok(first.excerpt.length <= 1200);
+    assert.equal(first.excerpt, second?.excerpt);
+    assert.deepEqual(first.headings, second?.headings);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -5,7 +5,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-import { compareMcpContracts } from './verify-mcp-binary.mjs';
+import {
+  assessMcpExactCaseAnalysis,
+  compareMcpContracts,
+  countExactReadmeAddresses,
+} from './verify-mcp-binary.mjs';
 
 const contractFixture = () => ({
   initialize: { serverInfo: { version: '0.13.0' } },
@@ -39,6 +43,44 @@ test('source/bundled parity rejects schema drift instead of trusting tool count'
     ok: false,
     mismatches: ['tools/list schemas'],
   });
+});
+
+test('exact-case verifier rejects an uppercase or missing semantic source address', () => {
+  const exact = {
+    project: { evidence: ['readme.md'] },
+    domains: [{ evidence: { source: 'readme.md' } }],
+  };
+  assert.deepEqual(countExactReadmeAddresses(exact), { lowercase: 2, uppercase: 0 });
+  assert.deepEqual(assessMcpExactCaseAnalysis(exact), {
+    ok: true,
+    lowercaseAddresses: 2,
+    uppercaseAddresses: 0,
+    projectEvidence: ['readme.md'],
+  });
+  assert.deepEqual(
+    assessMcpExactCaseAnalysis({
+      project: { evidence: ['README.md'] },
+    }),
+    {
+      ok: false,
+      lowercaseAddresses: 0,
+      uppercaseAddresses: 1,
+      projectEvidence: ['README.md'],
+    },
+  );
+  assert.deepEqual(
+    assessMcpExactCaseAnalysis({
+      project: { evidence: ['readme.md'] },
+      domains: [{ evidence: { source: 'README.md' } }],
+    }),
+    {
+      ok: false,
+      lowercaseAddresses: 1,
+      uppercaseAddresses: 1,
+      projectEvidence: ['readme.md'],
+    },
+  );
+  assert.equal(assessMcpExactCaseAnalysis({ project: { evidence: [] } }).ok, false);
 });
 
 test('parses inline binary and vault flags used by the Windows workflows', () => {

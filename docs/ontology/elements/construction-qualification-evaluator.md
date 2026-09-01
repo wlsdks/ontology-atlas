@@ -1,0 +1,21 @@
+---
+uid: 899d10d4-289c-4b79-a3f1-c3a9304ef24b
+slug: elements/construction-qualification-evaluator
+kind: element
+title: Construction Qualification Evaluator
+domain: domains/project-portfolio
+path: mcp/src/construction-qualification.mjs
+created_by: "agent:codex"
+---
+
+## Definition
+
+The construction qualification evaluator is the pure categorical policy engine for `constructionQualification:v1`. It validates purpose authority, independent actors, motivating scenarios, human-approved competency questions, current witnesses, exact claims and citations, target coverage, source-hidden execution, seven independent quality axes, regression, resource use, and digest-bound human acceptance without averaging them into a score.
+
+## Project-owned FDE authority
+
+Executive, employee, and agent are required across at least four cases. FDE remains an optional compatibility value and is unusable unless project purpose authority declares `audience:fde`, the CQ belongs to a named project meaning owner, and current `audience-authority:fde` evidence from a declared purpose source reaches the CQ result, a supported claim, and its exact verified citation.
+
+## Boundary
+
+The evaluator reads no repository source, invokes no MCP tool, writes no vault, and authenticates no human identity. It judges only the supplied digest-bound packet and keeps missing, stale, unsupported, conflicting, partial, unknown, refused, or unowned evidence visible and fail-closed.

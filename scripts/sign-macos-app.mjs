@@ -2,7 +2,9 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { MCP_BINARY_NAME } from "./lib/mcp-binary.mjs";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
+import { verifyMcpExactCase } from "./verify-mcp-binary.mjs";
 
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
@@ -181,6 +183,19 @@ run("codesign", signArgs);
 run("codesign", signDmg
   ? ["--verify", "--strict", "--verbose=2", appPath]
   : ["--verify", "--deep", "--strict", "--verbose=2", appPath]);
+
+if (!signDmg) {
+  const bundledMcp = path.join(appPath, "Contents", "MacOS", MCP_BINARY_NAME);
+  try {
+    const exactCase = await verifyMcpExactCase({ binaryPath: bundledMcp });
+    console.log(
+      `[desktop-sign] signed MCP exact-case source address: ` +
+        `readme.md ${exactCase.lowercaseAddresses}, README.md ${exactCase.uppercaseAddresses}`,
+    );
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error));
+  }
+}
 
 console.log(
   signDmg

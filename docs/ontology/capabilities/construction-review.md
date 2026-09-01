@@ -6,10 +6,10 @@ title: Construction Qualification Review
 display_ko: 온톨로지 구축 검수
 display_en: Construction Qualification Review
 domain: domains/project-portfolio
-elements: [elements/project-detail, elements/qualification-handoff-helper]
+elements: [elements/construction-qualification-evaluator, elements/meaning-proposal-evaluator, elements/project-detail, elements/qualification-handoff-helper]
 path: src/entities/construction-review
 created_by: "agent:unknown"
-relation_notes: { elements/project-detail: Construction qualification is opened and judged inside the existing project-detail workbench., elements/qualification-handoff-helper: "Construction qualification uses this private source-checkout helper to preserve exact candidate, evidence, actor, approval, and release boundaries without writing a vault." }
+relation_notes: { elements/project-detail: Construction qualification is opened and judged inside the existing project-detail workbench., elements/qualification-handoff-helper: "Construction qualification uses this private source-checkout helper to preserve exact candidate, evidence, actor, approval, and release boundaries without writing a vault.", elements/construction-qualification-evaluator: "Construction qualification delegates categorical CQ, evidence, audience-authority, axis, and acceptance judgment to this pure evaluator.", elements/meaning-proposal-evaluator: "Construction review receives its validated canonical review plan and exact concept bodies from this proposal evaluator." }
 ---
 
 ## Definition
@@ -19,6 +19,14 @@ Read conclusions first in project details for verified ontology construction art
 ## Source-checkout qualification handoff
 
 The private qualification handoff helper emits canonical proposal coverage before claim authoring, seals payload witnesses without requiring callers to reproduce transport hashes, and packages isolated source-hidden and source-aware receipts through join, human acceptance, and release. Every actor discovers the complete contract from a file-backed schema; truncation, actor/access collision, claim or citation drift, and pre-join acceptance fail closed before any writer call.
+
+## Project-owned audiences
+
+Executive, employee, and agent remain required across at least four decision cases. FDE is compatible but optional: it is unusable unless project purpose authority declares the exact audience decision and connects a named meaning owner plus current declared-source witness to a supported claim and verified citation. The evaluator enforces the same breadth floor even when called directly without MCP transport validation.
+
+## Exact body handoff
+
+Analyzer-generated review and write plans use the same canonical body representation returned by a later full-body vault read. Human acceptance therefore binds the bytes a successor agent receives after persistence, while Markdown frontmatter separators and authored semantic content remain unchanged.
 
 ## Boundary
 

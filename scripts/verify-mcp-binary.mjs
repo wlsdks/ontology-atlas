@@ -2,12 +2,197 @@
 
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { isDeepStrictEqual } from 'node:util';
 
 function request(id, method, params = {}) {
   return `${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`;
+}
+
+export function countExactReadmeAddresses(value) {
+  const counts = { lowercase: 0, uppercase: 0 };
+  const visit = (entry) => {
+    if (entry === 'readme.md') counts.lowercase += 1;
+    else if (entry === 'README.md') counts.uppercase += 1;
+    else if (Array.isArray(entry)) entry.forEach(visit);
+    else if (entry && typeof entry === 'object') Object.values(entry).forEach(visit);
+  };
+  visit(value);
+  return counts;
+}
+
+export function assessMcpExactCaseAnalysis(analysis) {
+  const counts = countExactReadmeAddresses(analysis);
+  const projectEvidence = analysis?.project?.evidence;
+  return {
+    ok:
+      counts.lowercase > 0 &&
+      counts.uppercase === 0 &&
+      Array.isArray(projectEvidence) &&
+      projectEvidence.includes('readme.md'),
+    lowercaseAddresses: counts.lowercase,
+    uppercaseAddresses: counts.uppercase,
+    projectEvidence: Array.isArray(projectEvidence) ? projectEvidence : null,
+  };
+}
+
+function structuredToolResult(result) {
+  if (result?.structuredContent && typeof result.structuredContent === 'object') {
+    return result.structuredContent;
+  }
+  const text = result?.content?.[0]?.text;
+  if (typeof text !== 'string') return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
+  const binary = path.resolve(binaryPath);
+  if (!fs.statSync(binary, { throwIfNoEntry: false })?.isFile()) {
+    throw new Error(`compiled MCP binary is missing: ${binary}`);
+  }
+
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'ontology-atlas-mcp-exact-case-'));
+  const repoRoot = path.join(fixtureRoot, 'repo');
+  const vaultRoot = path.join(fixtureRoot, 'vault');
+  fs.mkdirSync(repoRoot, { recursive: true });
+  fs.mkdirSync(vaultRoot, { recursive: true });
+  fs.writeFileSync(
+    path.join(repoRoot, 'package.json'),
+    `${JSON.stringify({ name: 'exact-case-fixture', private: true }, null, 2)}\n`,
+  );
+  fs.writeFileSync(
+    path.join(repoRoot, 'readme.md'),
+    [
+      '# Exact Case Fixture',
+      '',
+      '## Purpose',
+      '',
+      'Exact Case Fixture coordinates queued work for local teams.',
+      '',
+      '## Capabilities',
+      '',
+      '### Queue admission',
+      '',
+      'The queue admits bounded work and reports when each task begins.',
+      '',
+    ].join('\n'),
+  );
+
+  try {
+    return await new Promise((resolve, reject) => {
+      const child = spawn(binary, [], {
+        cwd: repoRoot,
+        env: {
+          ...process.env,
+          OATLAS_VAULT: vaultRoot,
+          OATLAS_REPO_ROOT: repoRoot,
+        },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      let stdout = '';
+      let stderr = '';
+      let settled = false;
+      let deadline;
+
+      const finish = (error, result) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(deadline);
+        child.kill();
+        if (error) reject(error);
+        else resolve(result);
+      };
+      const inspect = () => {
+        const messages = stdout
+          .split('\n')
+          .filter(Boolean)
+          .flatMap((line) => {
+            try {
+              return [JSON.parse(line)];
+            } catch {
+              return [];
+            }
+          });
+        const response = messages.find((message) => message.id === 2);
+        if (!response) return;
+        if (response.error || response.result?.isError) {
+          finish(
+            new Error(
+              `compiled MCP exact-case probe failed: ${JSON.stringify(response.error ?? response.result)}`,
+            ),
+          );
+          return;
+        }
+        const analysis = structuredToolResult(response.result);
+        if (!analysis) {
+          finish(new Error('compiled MCP exact-case probe returned no structured analysis'));
+          return;
+        }
+        const assessment = assessMcpExactCaseAnalysis(analysis);
+        if (!assessment.ok) {
+          finish(
+            new Error(
+              'compiled MCP changed the exact lowercase readme.md source address ' +
+                `(lowercase=${assessment.lowercaseAddresses}, ` +
+                `uppercase=${assessment.uppercaseAddresses}, ` +
+                `project=${JSON.stringify(assessment.projectEvidence)})`,
+            ),
+          );
+          return;
+        }
+        finish(null, {
+          lowercaseAddresses: assessment.lowercaseAddresses,
+          uppercaseAddresses: assessment.uppercaseAddresses,
+          projectEvidence: assessment.projectEvidence,
+        });
+      };
+
+      child.on('error', (error) => {
+        finish(new Error(`could not spawn the compiled MCP exact-case probe: ${error.message}`));
+      });
+      child.on('exit', (code, signal) => {
+        if (!settled) {
+          finish(
+            new Error(
+              `compiled MCP exact-case probe exited before responding ` +
+                `(code=${code}, signal=${signal}); stderr: ${stderr.slice(0, 600)}`,
+            ),
+          );
+        }
+      });
+      child.stdout.on('data', (chunk) => {
+        stdout += chunk;
+        inspect();
+      });
+      child.stderr.on('data', (chunk) => {
+        stderr += chunk;
+      });
+      child.stdin.write(
+        request(1, 'initialize', {
+          protocolVersion: '2024-11-05',
+          capabilities: {},
+          clientInfo: { name: 'verify-mcp-exact-case', version: '1' },
+        }),
+      );
+      child.stdin.write(request(2, 'tools/call', { name: 'analyze_repo_structure', arguments: {} }));
+
+      deadline = setTimeout(() => {
+        finish(
+          new Error(
+            `compiled MCP exact-case probe timed out after ${timeoutMs}ms; stderr: ${stderr.slice(0, 600)}`,
+          ),
+        );
+      }, timeoutMs);
+    });
+  } finally {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true });
+  }
 }
 
 export async function verifyMcpBinary({ binaryPath, vaultPath, expectedMinTools = 32, timeoutMs = 25_000 }) {
@@ -276,6 +461,11 @@ async function main() {
     const parity = await verifyMcpParity({ binaryPath, vaultPath });
     console.log(
       `✔ source/bundled MCP parity — ${parity.toolCount} tools, ${parity.sourceVersion} / ${parity.bundledVersion}`,
+    );
+    const exactCase = await verifyMcpExactCase({ binaryPath });
+    console.log(
+      `✔ exact-case source address — readme.md ${exactCase.lowercaseAddresses}, ` +
+        `README.md ${exactCase.uppercaseAddresses}, project evidence present`,
     );
   } catch (error) {
     console.error(`✖ ${error instanceof Error ? error.message : String(error)}`);

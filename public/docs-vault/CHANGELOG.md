@@ -22,6 +22,116 @@
 
 ---
 
+## 2026-09-02 · Unreleased: installed apps prove the MCP they actually carry
+
+- **A local deploy now fails on any mixed app bundle.** The deployer records a
+  SHA-256 inventory of every built app directory, file, and symlink, including
+  mode and file size, then requires the installed bundle to match after copy
+  and again after first launch. Replacing only the main executable, MCP
+  sidecar, signature resources, or any other entry is reported before the
+  installed MCP can be trusted.
+- **Exact source-case behavior is exercised in the compiled, signed, and
+  installed sidecar.** A generated lowercase-only `readme.md` repository must
+  remain lowercase and present as project evidence. `mcp:build-binary`, macOS
+  app signing, and local app deployment now report lowercase/uppercase address
+  counts and fail closed on drift. This closes a measured gap where source and
+  build probes were current while `/Applications` still carried a different
+  sidecar that returned uppercase addresses and omitted project evidence.
+
+## 2026-09-02 · Unreleased: semantic evidence keeps exact repository path case
+
+- **Source addresses now use the repository entry bytes, not a seed spelling.**
+  A lowercase root or workspace `readme.md` remains `readme.md` through semantic
+  and domain evidence, proposal citations, competency bodies, and source
+  receipts. Exact matches win; ambiguous case folds, missing entries,
+  directories, and repository-escaping symlinks fail closed. Package contracts
+  still require exact conventional spelling.
+- **Old approval cannot survive the address correction.** The previously
+  accepted uppercase plan now fails with 27 unknown citations, `canWrite:false`,
+  and no write plan. The fresh digest then verified 79/79 claims and 163/163
+  citations, wrote 11 concepts and 16 relations, full-read 11/11 bodies exactly,
+  connected all 8/8 source witnesses as `verified_current/current`, and finalized
+  with the retained `needs_evidence` competency result.
+
+## 2026-09-02 · Unreleased: mixed README policy no longer erases current evidence
+
+- **Semantic trust is now evidence-unit scoped inside one source row.** Current
+  purpose and ability prose stays in the candidate excerpt, while selected
+  future, negated, or deprecated prose moves into typed, line-scoped
+  `reviewRequiredEvidence` beside it. The review unit remains visible to the
+  next agent but cannot support a proposal claim. Instruction injection and
+  ontology-write requests still taint the whole row, and an over-bound split
+  falls back to the old row-wide review state.
+- **The gate was proved against the actual defect.** The mixed-row fixture was
+  RED before the split and GREEN after it; a selected deprecated ability remains
+  outside candidate evidence, and a mixed hostile instruction remains wholly
+  untrusted. The first fresh sealed replay nevertheless modeled 0/10 ability
+  families and was invalidated before independent lanes or join; the split alone
+  did not recover a useful ontology.
+- **The fixed 1,200 characters now reach every selected safe section.** Each
+  section receives a deterministic initial share and short sections return
+  unused space by semantic priority and source order. The public caps do not
+  grow. One exact current semantic unit plus a matching implementation witness
+  may form only a sub-0.8 review proposal; it cannot establish domain authority,
+  completeness, an answered competency, qualification, approval, or write. A
+  fresh held-out builder produced an 11-concept/16-relation reviewable plan with
+  six sub-0.8 capability proposals and six explicit gaps. It sealed 79 claims
+  and rejected all six mutation probes. Independent source-hidden/source-aware
+  judging later verified 79/79 claims, 163/163 citations, unsupported 0, and
+  exactly 5/10 fixed ability families. The exact-case follow-up completed the
+  fresh write/read/source/finalization lifecycle without promoting the five
+  still-missing families or any FDE authority.
+
+## 2026-09-02 · Unreleased: reviewed concept bodies survive persistence byte-for-byte
+
+- **The exact plan now uses the same body representation a successor reads.**
+  Analyzer-generated review/write plan bodies carry the parser's canonical
+  structural leading newline. The Markdown writer still produces the same file
+  content and public reads are unchanged; only the out-of-contract producer was
+  aligned. Post-write bootstrap now full-reads every released concept and stops
+  before source connection or finalization on any byte mismatch.
+- **A frozen replay moved the real measurement from 0/12 to 12/12.** Before the
+  fix, every persisted body differed from its accepted plan by one leading
+  newline. The new plan received a fresh digest and fresh human acceptance;
+  independent lanes reverified 77/77 claims and 195/195 citations, then all
+  twelve persisted full bodies matched without trimming. Validation, compile,
+  source connection, and finalization also passed with the accepted evidence
+  gaps still visible.
+
+## 2026-09-02 · Unreleased: FDE is project-owned or unavailable
+
+- **Qualification no longer invents an FDE persona for every project.** The
+  required audience set is executive, employee, and agent while the four-case
+  breadth floor remains. `fde` stays readable for compatible packets, but an
+  FDE scenario is unusable unless purpose authority declares the exact
+  `audience:fde` decision, its CQ owner is a named project meaning owner, and a
+  current `audience-authority:fde` witness comes from a declared purpose source.
+  The same witness must reach a supported claim and its exact verified
+  citation. Eight mutation probes cover every link in that authority chain.
+- **The in-progress held-out qualification was invalidated and restarted.** Its
+  target source contained no FDE role evidence, so two technical questions now
+  remain agent questions instead of borrowing an unowned persona. The prior
+  source-hidden and audit attempts cannot be joined or used for a write. Fresh
+  no-FDE lanes later verified 77/77 claims and 195/195 citations; q4/q5 remained
+  agent-owned through the exact 12-concept/14-relation release.
+
+## 2026-09-01 · Unreleased: RST evidence no longer loses product meaning to an unrelated section
+
+- **Semantic evidence trust now follows the evidence an agent can actually
+  read.** In reStructuredText READMEs, only the document-title section and
+  explicitly classified purpose, architecture, or ability sections enter the
+  bounded headings/excerpt and their risk scan. A peer `Contributing` section
+  can no longer make a current `About` claim look deprecated merely because it
+  tells contributors not to break legacy behavior. Risky prose inside a selected
+  section remains review-required, and qualification, human approval, and every
+  write gate are unchanged.
+- **The held-out candidate improved without weakening truth controls.** On the
+  same unfamiliar Python repository, a context-isolated builder moved from 5 to
+  12 concepts, 5 to 14 relations, and `0 answered / 5 partial` to
+  `2 answered / 3 partial` competency answers; unsupported, uncited,
+  misclassified, circular, and conflicting assertion counts remained zero. This
+  is candidate-stage evidence, not a completed source-hidden field trial.
+
 ## 2026-09-01 · v1.0.3: the CI planner stops missing PRs, and the harness can be judged
 
 A review of main after v1.0.2 confirmed ten defects, mostly inside the

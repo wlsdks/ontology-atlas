@@ -4,11 +4,11 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server
 domain: domains/agent-integration
-elements: [elements/task-scoped-agent-brief-projection]
+elements: [elements/installed-mcp-identity-gate, elements/task-scoped-agent-brief-projection]
 path: mcp/src
 created_by: "agent:unknown"
 dependencies: [capabilities/vault-ontology]
-relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs. }
+relation_notes: { capabilities/vault-ontology: "The MCP server parses, validates, and writes the vault ontology schema, so schema changes alter the agent-facing read and write contract.", elements/task-scoped-agent-brief-projection: The compact projection is the concrete MCP read-side implementation that produces bounded selected-project task handoffs., elements/installed-mcp-identity-gate: "The MCP server capability relies on this gate to prove the compiled, signed, and installed sidecar preserves exact source-address semantics." }
 display_ko: AI 연결 서버
 display_en: AI Connection Server
 ---
@@ -21,6 +21,7 @@ It provides a stdio JSON-RPC interface so that an AI coding agent can read and s
 
 - The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
 - Upon connection, it verifies actual vault/repository coordinates and tool inventory to detect incorrect folders or stale client states.
+- Across compile, signing, installation, and first launch, it verifies that the installed app carries the exact built bundle and that its MCP preserves repository source-path case as project evidence.
 - Before writing, it reads the current document and blocks concurrent edits, duplicates, broken relationships, and destructive changes with structured errors and dry-runs.
 
 ## Active Tool Inventory Contract

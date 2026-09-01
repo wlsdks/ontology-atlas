@@ -275,26 +275,31 @@ function access(role, actorId, startedAt, endedAt) {
 }
 
 function qualificationCore() {
-  const audiences = ['executive', 'employee', 'fde', 'agent'];
-  const scenarios = audiences.map((audience) => ({
-    id: `scenario:${audience}`,
+  const audienceCases = [
+    { id: 'executive', audience: 'executive' },
+    { id: 'employee', audience: 'employee' },
+    { id: 'agent-impact', audience: 'agent' },
+    { id: 'agent-next-action', audience: 'agent' },
+  ];
+  const scenarios = audienceCases.map(({ id, audience }) => ({
+    id: `scenario:${id}`,
     audience,
-    trigger: `A fictitious ${audience} decision begins.`,
-    decision: `Choose the bounded ${audience} next step.`,
-    expectedOutcome: `Name the evidence for the ${audience} decision.`,
+    trigger: `A fictitious ${id} decision begins.`,
+    decision: `Choose the bounded ${id} next step.`,
+    expectedOutcome: `Name the evidence for the ${id} decision.`,
   }));
-  const competencyQuestions = audiences.map((audience) => ({
-    id: `cq:${audience}`,
-    scenarioId: `scenario:${audience}`,
+  const competencyQuestions = audienceCases.map(({ id, audience }) => ({
+    id: `cq:${id}`,
+    scenarioId: `scenario:${id}`,
     audience,
-    question: `What is the bounded ${audience} answer?`,
+    question: `What is the bounded ${id} answer?`,
     owner: { id: HUMAN_ID, authority: 'human' },
     revision: { version: 1, approvedBy: HUMAN_ID, approvedAt: QUESTION_APPROVED_ISO },
-    expectedAnswer: { shape: 'one-row', quantifier: 'one', targets: [`target:${audience}`] },
+    expectedAnswer: { shape: 'one-row', quantifier: 'one', targets: [`target:${id}`] },
     requiredWitnessKinds: ['source_span'],
     unknownPolicy: { allowed: true, response: 'State that the fictitious evidence is unknown.' },
-    examples: [{ id: `example:${audience}`, expectedStatus: 'answered' }],
-    counterexamples: [{ id: `counterexample:${audience}`, mustReject: 'An unbounded whole-repository claim.' }],
+    examples: [{ id: `example:${id}`, expectedStatus: 'answered' }],
+    counterexamples: [{ id: `counterexample:${id}`, mustReject: 'An unbounded whole-repository claim.' }],
   }));
   const axes = [
     'semantic',
@@ -1770,6 +1775,23 @@ describe('hidden and audit RED probes', () => {
       error.exitCode === EXIT.GATE_BLOCKED
       && /failed competency questions/.test(error.message)
       && error.details[0].id === core.competencyQuestions[0].id
+    ));
+  });
+
+  test('hidden cannot launder an unowned FDE label through compact handoff', () => {
+    const sealed = sealedFixture();
+    const core = qualificationCore(sealed.manifest);
+    core.scenarios[2].audience = 'fde';
+    core.competencyQuestions[2].audience = 'fde';
+    assert.throws(() => buildHiddenPacket({
+      ...sealed,
+      access: access('source_hidden_evaluator', 'agent:hidden', '2026-01-02T03:00:00.000Z', '2026-01-02T03:10:00.000Z'),
+      qualificationCore: core,
+      answers: compactAnswers(sealed.manifest, core),
+    }), (error) => (
+      error.exitCode === EXIT.DATA
+      && error.details.some(({ code }) => code === 'fde-audience-authority-decision-missing')
+      && error.details.some(({ code }) => code === 'fde-audience-authority-not-carried')
     ));
   });
 
