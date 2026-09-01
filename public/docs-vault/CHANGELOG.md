@@ -10,7 +10,7 @@
 > `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml` (`pnpm desktop:check`
 > enforces the alignment). From here:
 >
-> - **Patch (`1.0.N`)** is the default for every release — bug fixes, hardening,
+> - **Patch (`1.0.N`)** is the default for every release: bug fixes, hardening,
 >   copy, and small improvements. N has no ceiling and never rolls over into a
 >   minor: `1.0.200` is an ordinary, expected version.
 > - **Minor (`1.X.0`)** marks a new user-visible capability or surface, or a
@@ -22,7 +22,7 @@
 
 ---
 
-## 2026-09-01 · v1.0.1 — the post-release bug sweep lands
+## 2026-09-01 · v1.0.1: the post-release bug sweep lands
 
 The first patch release under the versioning baseline above. A full-codebase
 review of v1.0.0 confirmed ten defects; nine ship fixed here, each with a
@@ -38,7 +38,7 @@ regression test.
   could not be removed through `remove_relation`, `add_relation` duplicated it
   under a second key, and `get_concept`'s neighbors contradicted its own
   outgoingEdges. Writes now merge alias keys and consolidate them.
-- **Renames and merges rewrite every body-link form** — `[[slug|alias]]`,
+- **Renames and merges rewrite every body-link form**: `[[slug|alias]]`,
   `[[slug#heading]]`, `(tail.md)`, and path-prefixed links no longer dangle
   after a confirmed rename, or point at a deleted file after a merge.
 - **`absorb_document` is all-or-nothing.** A mid-write failure rolls back every
@@ -52,10 +52,10 @@ regression test.
 - **Two ACP session races are closed**: a superseded start's late failure can
   no longer kill the replacement conversation, and concurrent permission
   requests queue so every card presents and every request is answered.
-- **The quiet-poll re-render guard works again** — the app no longer re-renders
+- **The quiet-poll re-render guard works again**: the app no longer re-renders
   on every 1.5–5 s vault poll tick when nothing changed.
 
-The tenth finding — `broader` staying out of the public MCP relation enum — is
+The tenth finding (`broader` staying out of the public MCP relation enum) is
 intentionally unchanged per the 2026-08-09 council decision;
 `patch_concept(expected_mtime)` remains its documented write path.
 

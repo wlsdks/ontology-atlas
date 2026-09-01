@@ -734,7 +734,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on user-visible changes, not PR-level granularity. Newest at the top. Entries stay date-based; a released entry also names its tag. v1.0.0 shipped on 2026-09-01 after nineteen release candidates. Versioning ba",
-      "wordCount": 86716,
+      "wordCount": 86710,
       "updatedAt": "2026-09-01",
       "linksOut": [
         "audits/CASE-STUDY-AGENTS-MD-DRIFT",
@@ -3764,7 +3764,7 @@
     "slug": [
       {
         "fromSlug": "CHANGELOG",
-        "context": "tgoingEdges. Writes now merge alias keys and consolidate them. - **Renames and merges rewrite every body-link form** — `**[alias]**`, `[[slug#heading]]`, `(tail.md)`, and path-prefixed links no longer dangle after a confirmed rename, or point at a",
+        "context": "utgoingEdges. Writes now merge alias keys and consolidate them. - **Renames and merges rewrite every body-link form**: `**[alias]**`, `[[slug#heading]]`, `(tail.md)`, and path-prefixed links no longer dangle after a confirmed rename, or point at a",
         "linkText": "alias"
       },
       {
