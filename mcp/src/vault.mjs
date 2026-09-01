@@ -2187,13 +2187,24 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
     const beforeKeys = [];
     const afterKeys = [];
     let fmChanged = false;
+    // When the document being rewritten IS the destination node (merge_concepts
+    // scans the surviving doc for refs to the absorbed one), every rewrite would
+    // by construction produce a reference to itself. Reproduced (bug sweep
+    // 2026-09-01): merging capabilities/b into capabilities/a where a carried
+    // `relates: [capabilities/b]` wrote `relates: [capabilities/a]` — a self-loop
+    // polluting degree counts, neighbors and path queries. Such refs are dropped
+    // instead of rewritten; the removal stays visible in beforeKeys/afterKeys.
+    const rewritingSelf = doc.slug === nextSlug;
 
     for (const key of Object.keys(nextFm)) {
       const value = nextFm[key];
       if (Array.isArray(value)) {
         const before = [...value];
-        const after = value.map((v) => rewriteArrayItem(v).value);
-        if (before.some((b, i) => b !== after[i])) {
+        const rewritten = value.map((v) => rewriteArrayItem(v));
+        const after = rewritten
+          .filter((r) => !(rewritingSelf && r.changed))
+          .map((r) => r.value);
+        if (before.length !== after.length || before.some((b, i) => b !== after[i])) {
           // dedup + sort — never append a duplicate when nextSlug is already
           // present, so the same graph state leaves the same frontmatter array.
           const deduped = normalizeRelationRefs(after);
@@ -2213,9 +2224,15 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
         const isRefSlot = key === 'domain' || GRAPH_ARRAY_KEY_SET.has(key);
         const r = isRefSlot ? rewriteArrayItem(value) : { changed: false };
         if (r.changed) {
-          nextFm[key] = r.value;
-          beforeKeys.push({ key, before: value });
-          afterKeys.push({ key, after: r.value });
+          if (rewritingSelf) {
+            delete nextFm[key];
+            beforeKeys.push({ key, before: value });
+            afterKeys.push({ key, after: null });
+          } else {
+            nextFm[key] = r.value;
+            beforeKeys.push({ key, before: value });
+            afterKeys.push({ key, after: r.value });
+          }
           fmChanged = true;
         }
       } else if (value && typeof value === 'object') {
@@ -2239,6 +2256,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
             continue;
           }
           mapChanged = true;
+          // A note whose key would now denote the document itself (merge into
+          // this doc) is dropped with the self-ref it annotated.
+          if (rewritingSelf) continue;
           if (r.value in nextMap || entries.some(([k]) => k === r.value)) {
             // Collision — the existing (new key) value wins; the old value is only recorded.
             continue;

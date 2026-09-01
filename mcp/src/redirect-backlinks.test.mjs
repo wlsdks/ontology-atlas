@@ -346,6 +346,30 @@ test("findBacklinks — includeAmbiguousTailRefs opts candidate referrers in, ma
   rmSync(root, { recursive: true, force: true });
 });
 
+test("redirectBacklinks — the surviving doc's refs to the absorbed node are dropped, never turned into self-edges", () => {
+  // Reproduced (bug sweep 2026-09-01): merging capabilities/b into
+  // capabilities/a where a carried `relates: [capabilities/b]` wrote
+  // `relates: [capabilities/a]` — a self-loop on disk.
+  const root = makeVault();
+  writeMd(
+    root,
+    "capabilities/a",
+    "---\nkind: capability\nrelates: [capabilities/b]\nrelation_notes: { capabilities/b: shares the session store }\n---\n",
+  );
+  writeMd(root, "capabilities/b", "---\nkind: capability\n---\n");
+  writeMd(root, "d1", "---\nkind: document\nrelates: [capabilities/b]\n---\n");
+
+  const result = redirectBacklinks(root, "capabilities/b", "capabilities/a", { dryRun: false });
+
+  assert.equal(result.totalUpdated, 2);
+  const survivor = readMd(root, "capabilities/a");
+  assert.doesNotMatch(survivor, /relates: \[capabilities\/a\]/);
+  assert.doesNotMatch(survivor, /capabilities\/a: shares/);
+  assert.match(survivor, /relates: \[\]/);
+  assert.match(readMd(root, "d1"), /relates: \[capabilities\/a\]/);
+  rmSync(root, { recursive: true, force: true });
+});
+
 test("path: 증거 문자열은 참조가 아니다 — tail-suffix 절이 건드리지 않는다", () => {
   // Measured regression (2026-08-01, while flattening the dogfood vault): the
   // rename `elements/src/widgets/docs-vault` → `elements/docs-vault-widget`
