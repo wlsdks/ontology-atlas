@@ -1,101 +1,125 @@
 ---
 name: po-pass
-description: Run the solo product-owner gate before product, UX, graph, MCP, CLI, workflow, or macOS-shell work. Separate phenomenon from problem, score all six rubric rows, and escalate mechanically.
+description: Route Atlas product work from observable change facts and one human-recovery outcome; use a compact solo pass for reversible work.
 ---
 
-# PO pass — the daily path
+# Atlas product pass — recover human understanding
 
-Most work uses one solo pass, not the five-seat council. The 2026-07-27 failure
-happened here: a pass wrote “none” into two rows the rubric makes fatal, approved
-itself, and shipped. A council nobody convenes cannot repair a broken daily path.
+This is not a general PO scorecard. It protects the moment where coding-agent
+velocity has made a person unable to find, explain, judge, correct, or hand off
+what their codebase now means.
 
-## 0. Read prior decisions
+Read `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` before using this skill. Run
+`pnpm po:route -- --help`; never supply your own door or risk verdict.
+
+## 0. Skip real maintenance
+
+Typos, dependency bumps, CI plumbing, lint configuration, isolated fixtures, and
+equivalent maintenance go straight to technical checks:
+
+```bash
+pnpm po:route -- --mechanical
+```
+
+A change with any product or sovereignty signal is not mechanical. The router
+must reject that combination.
+
+## 1. Read the one prior decision you need
 
 Search `docs/DECISIONS.md` for the same surface and question.
 
 - Cite a standing decision or explicitly overturn it.
-- Check whether its falsifier has been observed. If so, the losing argument won
-  and the new pass starts there.
+- Check its falsifier.
+- Do not summarize the full ledger.
 
-## 1. Separate phenomenon from problem
+## 2. Name the lost human ability
 
-The order is observed phenomenon → user problem → success condition → solution →
-implementation. A phenomenon rewritten in user language is not yet a problem.
+Write the actor, exact moment, and one Atlas outcome:
 
-Apply all three tests:
+- `orient`: find the right starting point;
+- `explain`: explain what exists and why;
+- `judge`: judge evidence, uncertainty, and impact;
+- `correct`: inspect, reject, or correct agent-authored meaning;
+- `handoff`: let the next person or agent reuse accepted meaning and proof.
 
-1. **Difference:** remove the phenomenon. Does the statement still identify who,
-   at what moment, loses a decision, understanding, trust, or handoff?
-2. **Second observation:** if the problem is real, what else would be visible—an
-   exit, retry, question, agent failure, or support request? This is also the
-   falsifier.
-3. **Solution independence:** would the problem remain true under another
-   solution? Proposed module, library, or pattern names do not belong in it.
+The statement must remain true after removing the requested route, panel,
+library, schema field, animation, or tool name.
 
-Any failure caps Problem insight at 2; rewrite before scoring.
+Classify evidence as `observed`, `inferred`, or `unknown`. Unknown evidence
+requires a bounded probe, not confidence prose.
 
-## 2. Fill the canonical pass
+## 3. Supply facts to the router
 
-Use the “Fast PO Pass” template in
-`docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`. Include at least: observed phenomenon,
-user problem, audience and moment, current alternative, ontology value, agent
-value, simplification, and verification.
+Use one or more change signals:
 
-## 3. Score all six rows from their anchors
+- `rollback-cheap`;
+- `public-contract`;
+- `positioning`;
+- `surface-inventory`;
+- `substantial-investment`.
 
-Quote the rubric's 0/2/4 anchors before scoring; do not score from memory.
+Assess every boundary as `unchanged`, `affected`, or `unknown`:
 
-| Row | Council owner if escalated |
-|---|---|
-| Problem insight, User moment | `po-evidence` |
-| Differentiation | `po-wedge` |
-| Ontology value, Agent value | `po-steward` |
-| Verification | `po-craft` |
+- `truth`: canonical truth or acceptance changes;
+- `transfer`: information crosses a machine or trust boundary;
+- `agent-write`: agent write or approval authority changes;
+- `human-correction`: inspect, reject, or correction ability changes.
 
-“Not applicable” scores zero; it is not a self-granted exemption. In particular,
-only the steward can judge an ontology/agent exemption, which requires convening
-the council.
+Omitting one is an error. `affected` and `unknown` force one-way meaning review
+and override `rollback-cheap`. The router derives the door, risk, and reviewers,
+so the builder must leave an inspectable claim instead of silently omitting the
+scan.
 
-## 4. Declare escalation
+```bash
+pnpm po:route -- --evidence=unknown --outcome=handoff --change=rollback-cheap \
+  --boundary=truth:unchanged,transfer:unchanged,agent-write:unchanged,human-correction:unchanged
+pnpm po:route -- --evidence=observed --outcome=correct \
+  --change=public-contract \
+  --boundary=truth:unchanged,transfer:unchanged,agent-write:affected,human-correction:affected
+```
 
-The PO Council is required when any condition holds:
+## 4. Define the recovery proof
 
-- total below 18/24;
-- zero in Problem insight, Ontology value, Agent value, or Verification;
-- a user-facing route is added or removed;
-- a public MCP signature, CLI command, or vault schema changes;
-- product direction, positioning, or a stranger's first words change;
-- a first public release or another one-shot first impression;
-- the owner asks for it.
+Write one observable contract before implementation:
 
-Do not convene for mechanical work such as typos, dependency bumps, CI plumbing,
-test fixtures, or lint configuration.
+```text
+Given <Atlas artifact and knowledge state>, without <forbidden fallback>,
+<actor> can <outcome task> and cite <evidence>.
+Fail when <observable condition>.
+```
 
-## 5. Decide and record
+Use source-hidden proof when claiming Atlas itself carries understanding. Use
+the real runtime for interaction or control. Delegate visual, responsive,
+motion, and journey measurement to their own gates.
 
-Choose one verdict: `Do not build`, `Investigate first`, `Shape a slice`, or
-`Build and verify`.
-
-Required-escalation work receives a new `docs/DECISIONS.md` record. Route,
-public-contract, and design-spec triggers are mechanically enforced by
-`pnpm decisions:check`.
-
-## Output
+## 5. Write one screen
 
 ```md
-## PO pass — <change>
+## Atlas product pass — <decision>
 
-**Prior decision**: <record, standing/overturned, falsifier observed or not>
-**Observed phenomenon**: …
-**User problem**: …
-**Phenomenon/problem tests**: difference pass/fail · second observation: … · solution independence pass/fail
-**Audience and moment**: …
-**Current alternative**: …
-**Ontology value**: …
-**Agent value**: …
-**Simplification**: …
-**Verification**: …
-**Score**: Problem insight N · User moment N · Differentiation N · Ontology value N · Agent value N · Verification N = N/24 (fatal zeros: none / row)
-**Escalation**: not required / required because …
-**Verdict**: Do not build / Investigate first / Shape a slice / Build and verify
+**Prior decision**: <standing record or none; falsifier observed or not>
+**Human loss and moment**: <actor, lost ability, and exact moment>
+**Atlas outcome**: orient / explain / judge / correct / handoff — <observable ability>
+**Evidence state**: observed / inferred / unknown — <primary artifact>
+**Change signals**: <change signals and all four boundary assessments>
+**Computed route**: <door, risk, route, and router reasons>
+**Recovery proof**: Given …; fail when …
+**Decision**: stop / probe first / build and verify — <smallest slice>
 ```
+
+## 6. Follow and measure the route
+
+- `skip`: maintenance checks.
+- `solo`: one accountable owner proceeds; unknown evidence means probe first.
+- `review`: invoke `/po-council` with only the returned pair.
+
+If the owner explicitly adds reviewers to a two-way decision, record
+`owner-review` in the pilot so the council-avoidance metric sees the cost.
+
+Routine solo work stays out of `docs/DECISIONS.md`. Every eligible
+non-mechanical decision adds one structured run and outcome row to
+`docs/PO-PILOT.md`; run `pnpm po:pilot` to see whether the gate is earning
+its cost.
+
+A green router is not proof of a good product decision. The recovery proof and
+later observed result are.

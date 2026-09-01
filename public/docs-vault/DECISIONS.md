@@ -40,6 +40,172 @@
 **상태**: 유효 / 뒤집힘(→ 링크) / 반증됨(관측: …)
 ```
 
+> **Active format from 2026-09-01:** the historical template above remains as
+> append-only evidence. New significant records use the fields in
+> `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`: before-state, Atlas outcome,
+> evidence, change/boundary facts, computed route, recovery proof, accountable
+> owner, decision delta, review footprint, dissent/falsifier, revisit, and
+> outcome. Do not add a numeric score.
+
+## 2026-09-01 — Atlas PO routing derives risk and must prove recovered understanding
+
+**Pre-review decision**: honor the owner's request to make the PO system
+best-in-class for Atlas by closing the three observed v2 gaps: self-classified
+routes, no explicit human-understanding outcome, and a pilot whose effectiveness
+could not be calculated. Keep the two-reviewer ceiling and avoid adding a
+generic discovery framework or more standing seats.
+
+**Atlas outcome**: explain — when coding agents move faster than the owner can
+follow, the owner must be able to understand what was built and why. Product
+decisions now name one of five observable recovery abilities: orient, explain,
+judge, correct, or handoff.
+
+**Evidence state**: observed + inferred. The v2 CLI accepted three incompatible
+verdicts for the same unencoded real change: `--mechanical` returned skip,
+`--door=two-way --risk=none` returned solo, and `--door=one-way --risk=meaning`
+returned review. `docs/PO-PILOT.md` had one free-form baseline row and no parser,
+report, expiry enforcement, proof coverage, owner-clarity measure, boundary-miss
+measure, or specialist-contribution calculation. The owner's stated target is
+the cognitive gap created when agents build faster than a person can track.
+External human-AI and agent-evaluation guidance supports observable correction,
+explanation, risk-proportional review, realistic task proofs, and prospective
+measurement; whether this exact Atlas contract improves decisions remains
+inferred until the pilot runs.
+
+**Change signals**: `rollback-cheap`; boundaries
+`truth=unchanged`, `transfer=unchanged`, `agent-write=affected`, and
+`human-correction=affected`. The policy is recoverable in Git, but it changes
+the instructions by which agents route product work and expose their judgment
+to the human owner.
+
+**Computed route**: one-way meaning review — explicit `agent-write` and
+`human-correction` effects override cheap rollback. Required reviewers are
+`po-evidence` and `po-steward`; rebuttal is unnecessary without a material
+conflict.
+
+**Primary Atlas risk**: meaning.
+
+**Confidence**: medium — the v2 execution and measurement gaps are directly
+observed, while the v3 product effect is deliberately unclaimed before 20
+eligible decisions or the time-boxed sunset.
+
+**Accountable owner**: jinan.
+
+**Recovery proof**: given the policy files, CLI, known historical controls, and
+pilot register, without an author's verbal explanation, a contributor can name
+the lost Atlas ability, explicitly assess all four boundaries, receive a derived
+route and reasons, and read whether the gate is earning its cost. Fail if a
+legacy door/risk verdict is accepted, a boundary can be omitted, affected or
+unknown authority routes solo, a due pilot with pending or unsupported `keep`
+passes CI, or the owner still needs a second generic PO explanation.
+
+**Decision**: activate v3 inside the existing finite pilot. Replace
+builder-declared door/risk with evidence, one Atlas outcome, change signals, and
+mandatory `unchanged`/`affected`/`unknown` assessments for truth, transfer,
+agent-write authority, and human correction. Derive risk with fixed priority
+meaning, positioning, then scope. Keep solo reversible work and exactly two
+default reviewers for one-way work. Add a typed append-only run/outcome register,
+an executable pilot report, CI sunset enforcement, owner-review accounting,
+recovery-proof coverage, owner clarity, boundary misses, and per-specialist
+unique contribution. Do not add a universal PO persona, numeric score, backlog
+ritual, extra standing reviewer, or duplicated design/journey gate.
+
+**Decision delta**: verification-strengthened. Evidence converted “highest
+level” from an unbounded rewrite into three falsifiable gaps and required
+prospective outcomes; Steward caught that affected-only boundary flags could
+still be silently omitted, so all four boundary states became mandatory and
+`unknown` now fails closed. Both contributions changed the intended contract.
+
+**Review footprint**: `po-evidence` + `po-steward`; two sequential first
+positions, zero rebuttal turns. Both opened the same primary artifacts, but the
+single execution context weakened first-position independence; no extra seat was
+invented to hide that limitation.
+
+**Dissent and falsifier**: a typed signal can still be falsely marked
+`unchanged`; semantic judgment cannot be compiled away. Machine-visible route
+and public-contract triggers remain separately enforced by
+`pnpm decisions:check`, while the pilot makes every boundary claim inspectable.
+The added vocabulary is itself harmful if owners cannot read it, reversible
+work starts summoning review, recovery proofs stay pending, or reviewers
+manufacture deltas to satisfy the metric. Adjust or revert if any serious
+boundary is missed, owner clarity is below 100%, proof coverage is below 80% or
+a failed proof ships, reversible council avoidance is below 80%, review delta
+is below 20%, or a specialist has five calls without a unique contribution.
+
+**Revisit**: at 20 eligible decisions or 2026-09-15; extend once to 2026-09-22
+only if fewer than 10 decisions exist. `pnpm po:pilot -- --check` forces the
+recorded `keep`, `adjust`, or `revert` outcome.
+
+**Outcome**: pending implementation verification and live pilot evidence.
+
+## 2026-09-01 — Atlas product review becomes a reversible risk-routed pilot
+
+**Pre-review decision**: improve the existing PO pass rather than abolish it;
+the exact replacement was unresolved. The offered options were to keep and
+tune the universal scorecard, permanently replace it with a lighter router, or
+remove product review in favor of owner judgment plus technical gates.
+
+**Evidence state**: observed + inferred. The active operating system was 696
+lines / 39,874 bytes, its daily skill was 3,894 bytes, its council skill was
+5,539 bytes, and this ledger was 1,910,142 bytes before this record. The ledger
+was touched by 395 commits while the repository recorded 1,165 commits since
+2026-07-27. Historical reviews did reject the unsupported OS URL scheme, hold
+an unmeasured ACP transport rewrite, and bound first-contact positioning
+claims. But historical records almost never captured the intended decision
+before review, so the review's causal decision delta cannot be measured.
+Council and score counts derived from the free-form ledger are
+classifier-dependent and are not treated as exact facts.
+
+**Door**: one-way — this changes the canonical instructions agents use to
+approve product, workflow, MCP/CLI, and human-authority decisions.
+
+**Primary Atlas risk**: meaning — an agent may not use a generic framework to
+self-certify changes to canonical truth, local transfer, write authority, or a
+person's ability to inspect, reject, and correct meaning.
+
+**Confidence**: medium — the cost and missing causal fields are observed, and
+known catches show the review is not valueless; its prospective effect is still
+untested.
+
+**Accountable owner**: jinan.
+
+**Decision**: make the risk router the active daily path for a finite pilot.
+Mechanical work skips product review. Reversible work gets one compact solo
+pass. A hard-to-reverse decision gets `po-evidence` plus exactly one specialist
+for `meaning`, `positioning`, or `scope`; rebuttal occurs only for material
+conflict. Every non-mechanical change retains a fail-closed local-first and
+human-sovereignty scan. Numeric scoring, invented universal ontology value,
+mandatory full-roster review, and duplicated design/journey inspection leave
+the active path. `po-craft` remains available only when the owner explicitly
+requests an independent proof audit.
+
+**Decision delta**: narrowed. Independent review changed the likely permanent
+replacement into an instrumented, reversible pilot and retained one universal
+Atlas-specific brake. Evidence required a recorded before-state and outcome;
+Steward preserved the sovereignty boundary; Wedge and Leverage required the
+pilot to prove distinctive Atlas value and sunset; Craft removed duplicated UX
+proof from the PO path.
+
+**Review footprint**: five independent first positions and five rebuttals (10
+review turns). Capacity required two parallel waves; the later wave did not see
+earlier output, but full simultaneous Round 1 independence was weakened.
+
+**Dissent and falsifier**: the router can become a new layer of meta-work, and
+the missing historical before-states mean this change is not evidence that the
+old council failed. Revert or adjust the pilot if any serious local-first,
+schema, reputation, or human-authority boundary is missed; if fewer than 20% of
+escalations materially change the recorded decision; if fewer than 80% of
+eligible reversible changes avoid council; or if the owner still needs another
+summary to understand the verdict.
+
+**Revisit**: after the next 20 eligible product decisions or 14 days, whichever
+comes first. Extend once to 21 days only when fewer than 10 eligible decisions
+occur. Remove a specialist from the default route after five calls with no
+unique material contribution.
+
+**Outcome**: pending merge and live use. Runs and later outcomes append to
+`docs/PO-PILOT.md`; this record is not rewritten.
+
 ## 2026-09-01 — The 2026-09 bug sweep tightens MCP write-tool contracts, changing observable behavior
 
 **Convened**: solo pass, owner-directed ("find every bug on main and fix them
@@ -26310,3 +26476,72 @@ construction/maintenance cost are measured.
 remain linked there and are not counted as successful product evidence.
 
 **Status**: valid · first end-to-end feasibility result recorded · general claim pending
+
+---
+
+## 2026-09-01 — Human comprehension after agent work becomes the campaign lens, not a performance claim
+
+**Trigger**: the owner described the observable failure as human cognitive
+absence after an agent produces code faster than the owner can understand what
+was built, then asked to align the README, landing page, launch copy, and core
+demo. This is a positioning decision, so a five-seat product-owner council was
+convened before editing public surfaces.
+
+**Standing decisions retained**: the 2026-08-25 codebase-ontology category and
+master promise still stand; the 2026-08-28 landing headline still stands; and
+the 2026-08-31 benchmark limits still stand. Atlas remains a local-first
+codebase ontology workbench. This decision changes the campaign lens, not the
+product category or public contract.
+
+**Evidence boundary**: one owner dogfood observation supports the phenomenon,
+and the prior public surfaces described the same product with inconsistent
+emphasis. The change-flow benchmark shows that a reviewed meaning record can
+travel with code; it does not show faster work, better code, lower token use,
+or better human decisions.
+
+| Council seat | Recommendation | Controlling judgment |
+| --- | --- | --- |
+| Evidence | Build and verify | Problem insight is `2/4`: one first-party observation, no second independent user observation. User moment is `4/4`: after agent work and before acceptance. |
+| Craft | Build and verify | Keep the current headline; rewrite the lead around a reviewable map and the acceptance moment. Verification is `3/4` until a source-hidden comprehension test passes. |
+| Steward | Build and verify | Ontology value and agent value are each `4/4`: a person judges the durable capability, boundary, evidence, and unknowns that the next agent retrieves. |
+| Wedge | Build and verify | Differentiation is `3/4`: Markdown, graphs, MCP, and summaries are reproducible; the harder asset is accumulated human-approved identity, rationale, provenance, uncertainty, and correction history. |
+| Leverage | Build and verify | Spend one working day on words and verification. Do not produce or relabel media in this slice. |
+
+**Gate result**: `20/24`, with no fatal zero and unanimous `Build and verify`.
+
+**Decision**:
+
+- Keep the master promise and landing headline. Use “human comprehension after
+  agent work, before acceptance” as the campaign lens.
+- Contrast three artifacts precisely: Git records the exact changed lines; the
+  producing agent summarizes its claim about its work; Atlas carries durable,
+  human-reviewable product meaning and its evidence boundary.
+- Align the landing lead, README, positioning guide, and HN/Reddit drafts to
+  that outcome. Keep agent-authored meaning correctable, rejectable, and
+  visibly uncertain.
+- Do not relabel the current 44-second video as post-agent review evidence. It
+  remains lookup evidence. Specify a replacement flow separately: guarded
+  semantic proposal, human decision, Markdown/Git diff, map update, and fresh
+  read-only retrieval.
+- Do not claim `100x`, token savings, faster answers, better code, general
+  quality improvement, exhaustive coverage, or automatic semantic truth from
+  the current evidence.
+- Do not claim that this campaign works until at least four of five
+  source-hidden evaluators can identify what changed and when it matters from
+  the Atlas artifact alone.
+
+**Dissent and falsifier**: the problem currently has one observed owner, not a
+market. Revert this lens to an unposted prototype/interview prompt if fewer than
+four of five evaluators can recover the changed capability and review moment;
+if users demonstrate that a PR summary is sufficient; if accepted corrections
+are not retrieved in later work; or if keeping the meaning current costs more
+than the avoided misunderstanding.
+
+**Slice**: in scope are public words, localized landing labels, launch drafts,
+and a truthful replacement-demo brief. Out of scope are recording new media,
+publishing posts, changing the ontology schema or write contract, and claiming
+adoption or measured comprehension.
+
+**Accountable**: jinan
+
+**Status**: implemented · automated and rendered verification passed · source-hidden comprehension gate pending

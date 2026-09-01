@@ -1269,6 +1269,34 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('routes every active PO policy surface to the outcome-router and sunset contracts', () => {
+    const commands = ['pnpm test:po', 'pnpm po:pilot -- --check'];
+    const paths = [
+      'scripts/lib/po-risk-router.mjs',
+      'scripts/po-risk-router.mjs',
+      'scripts/lib/po-pilot.mjs',
+      'scripts/po-pilot.mjs',
+      'scripts/check-decision-record.mjs',
+      'tests/contract/po-council.contract.test.ts',
+      'docs/PRODUCT-OWNER-OPERATING-SYSTEM.md',
+      'docs/PO-PILOT.md',
+      '.claude/skills/po-pass/SKILL.md',
+      '.agents/skills/po-council/SKILL.md',
+      '.claude/agents/chief.md',
+      '.agents/agents/po-craft.md',
+      'AGENTS.md',
+      'package.json',
+    ];
+
+    assert.ok(paths.length > 0, 'the PO policy path inventory must not be empty');
+    for (const path of paths) {
+      const suggested = commandNames(suggestFocusedChecks([path]));
+      for (const command of commands) {
+        assert.ok(suggested.includes(command), `${path} must recommend ${command}`);
+      }
+    }
+  });
+
   it('suggests docs contracts when the shared package contract test changes', () => {
     const result = suggestFocusedChecks([
       'scripts/check-package-contracts.mjs',

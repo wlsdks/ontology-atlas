@@ -2,11 +2,11 @@
 /**
  * Decision-record gate.
  *
- * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` lists when a council is required,
- * and `.claude/skills/po-council/SKILL.md` repeats it — but a trigger list
- * written in prose is enforced by whoever happens to remember it. The founding
- * incident (2026-07-27) was exactly that: a pass wrote "none" into two rubric
- * rows the doc calls fatal, self-certified, and shipped.
+ * `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md` routes significant decisions by
+ * reversibility and Atlas risk, but a trigger list written only in prose is
+ * enforced by whoever happens to remember it. The founding incident
+ * (2026-07-27) was exactly that: a product pass self-exempted a change that
+ * crossed Atlas's meaning and agent-handoff boundary, then shipped.
  *
  * Most of that trigger list is semantic ("positioning", "the words a stranger
  * reads first") and no script can see intent. Three rows are mechanical, and
@@ -192,7 +192,7 @@ const specChanges = designSpecChanges();
 const triggers = [...surfaceChanges, ...contractChanges, ...specChanges];
 
 if (triggers.length === 0) {
-  console.log("[decisions] no council trigger in this change ✓");
+  console.log("[decisions] no significant-decision trigger in this change ✓");
   process.exit(0);
 }
 
@@ -202,13 +202,14 @@ if (changedPaths.has(LEDGER)) {
   process.exit(0);
 }
 
-console.error(`[decisions] this change tripped a council trigger but ${LEDGER} holds no record of it:`);
+console.error(`[decisions] this change tripped a significant-decision trigger but ${LEDGER} holds no record of it:`);
 for (const trigger of triggers) console.error(`[decisions]   - ${trigger}`);
 console.error(`
 [decisions] Do one of these:
-[decisions]   1. convene /po-council and append its verdict to the top of ${LEDGER}
-[decisions]   2. if it was already decided, cite the earlier record and append this change to it
-[decisions]   3. if the trigger is a false positive (a route file move, say), say so in one line in the record
+[decisions]   1. run /po-pass (or pnpm po:route) with one Atlas outcome and every change/boundary fact
+[decisions]   2. if the route is review, run /po-council with Evidence plus the selected specialist
+[decisions]   3. append the before-state, decision delta, dissent, and falsifier to ${LEDGER}
+[decisions]   4. if the trigger is a false positive (a route file move, say), say so in one line in the record
 [decisions]
 [decisions] For a «specification …» trigger the seat to convene is design-system on /design-council
 [decisions] (.claude/rules/design.md “Changing the specification requires design-system”).

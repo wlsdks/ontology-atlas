@@ -429,6 +429,34 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:po',
+    reason: 'Atlas outcome routing, reviewer map, or measured pilot contract changed',
+    matches: [
+      /^scripts\/(?:lib\/po-(?:risk-router|pilot)|po-(?:risk-router|pilot))\.mjs$/,
+      /^scripts\/check-decision-record\.mjs$/,
+      /^tests\/contract\/po-council\.contract\.test\.ts$/,
+      /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
+      /^\.(?:claude|agents)\/skills\/po-(?:pass|council)\/SKILL\.md$/,
+      /^\.(?:claude|agents)\/agents\/(?:chief|po-(?:evidence|steward|wedge|leverage|craft))\.md$/,
+      /^AGENTS\.md$/,
+      /^package\.json$/,
+    ],
+  },
+  {
+    command: 'pnpm po:pilot -- --check',
+    reason: 'Atlas PO pilot policy or register changed — validate metrics and the forced sunset',
+    matches: [
+      /^scripts\/(?:lib\/po-(?:risk-router|pilot)|po-(?:risk-router|pilot))\.mjs$/,
+      /^scripts\/check-decision-record\.mjs$/,
+      /^tests\/contract\/po-council\.contract\.test\.ts$/,
+      /^docs\/(?:PRODUCT-OWNER-OPERATING-SYSTEM|PO-PILOT)\.md$/,
+      /^\.(?:claude|agents)\/skills\/po-(?:pass|council)\/SKILL\.md$/,
+      /^\.(?:claude|agents)\/agents\/(?:chief|po-(?:evidence|steward|wedge|leverage|craft))\.md$/,
+      /^AGENTS\.md$/,
+      /^package\.json$/,
+    ],
+  },
+  {
     /*
      * **The script that decides what CI runs had no suggestion mapping of its own**
      * (2026-08-08). `pnpm checks:changed -- scripts/classify-change.mjs` returned "no

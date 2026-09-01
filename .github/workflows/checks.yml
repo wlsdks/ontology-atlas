@@ -42,7 +42,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  # ── Job 1: Nine fast gates (observed sum ≈100s) ──────────────────────────
+  # ── Job 1: Fast gates (observed sum ≈100s) ───────────────────────────────
   gates:
     name: Types · Lint · Docs
     runs-on: ubuntu-latest
@@ -73,14 +73,21 @@ jobs:
 
       # Kept as separate steps — grouping them into one step forces digging through logs
       # to see which one broke. `if: always()` ensures a first failure doesn't mask the rest.
-      # We enforce only **two mechanically verifiable lines** among the council assembly triggers:
-      # route addition/removal, MCP/CLI public contract changes. Other triggers ("positioning",
+      # We enforce only **three mechanically verifiable lines** among significant-decision triggers:
+      # route addition/removal, MCP/CLI public contract changes, and design-spec inventory changes. Other triggers ("positioning",
       # "phrases a stranger reads for the first time") are semantic and invisible to scripts.
       # This moves the repo's repeated lesson that specifications existing only in prose
       # go unkept into gates — though it looks only at *existence*, not *quality* of records.
       - name: Decision record
         if: github.event_name == 'pull_request'
         run: pnpm decisions:check -- --base=origin/${{ github.base_ref }}
+
+      # This time-based gate is intentionally always wired. While collecting it
+      # validates the typed register; at the 14/21-day or 20-decision boundary it
+      # refuses to let a pending or unsupported `keep` become permanent by inertia.
+      - name: Atlas PO pilot sunset
+        if: always()
+        run: pnpm po:pilot -- --check
 
       - name: Typecheck
         run: pnpm exec tsc --noEmit

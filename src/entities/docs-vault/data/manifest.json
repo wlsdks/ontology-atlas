@@ -749,9 +749,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-08-25. Understand what your codebase builds, why it is structured that way, and what a change will affect. Ontology Atlas is a local-first codebase ontology workbench. It keeps product meaning, capability boundaries, implementation ",
-      "wordCount": 1444,
-      "updatedAt": "2026-08-25",
+      "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 2026-09-01. Understand what your codebase builds, why it is structured that way, and what a change will affect. Ontology Atlas is a local-first codebase ontology workbench. It keeps product meaning, capability boundaries, implementation ",
+      "wordCount": 1853,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -774,7 +774,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 228459,
+      "wordCount": 230399,
       "updatedAt": "2026-09-01",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -790,8 +790,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Current scenario: one localized page clip · 44 seconds · one take · no speed changes · no audio · recorded separately in Korean and English. The X export is a separate Korean 23-second LNB overview and is not part of the page registry. The playback contract lives in src/views/download/ui/DemoStage.tsx. Asset registrati",
-      "wordCount": 1635,
-      "updatedAt": "2026-08-30",
+      "wordCount": 1706,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -870,7 +870,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Maintainer-only checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For user-facing UI changes, add the relevant Playwright route check. pnpm install ",
-      "wordCount": 13578,
+      "wordCount": 13886,
       "updatedAt": "2026-09-01",
       "linksOut": []
     },
@@ -1088,24 +1088,24 @@
     {
       "slug": "launch/DEMO-GIF-STORYBOARD",
       "path": "docs/launch/DEMO-GIF-STORYBOARD.md",
-      "title": "30s Demo GIF — retired storyboard",
+      "title": "Campaign Demo Storyboard — Review What the Agent Built",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Retired on 2026-08-30. The shipped X MP4 and localized download-page takes follow docs/DEMO-SCENARIO.md: the page takes show one selected capability, its relations and evidence, and a real read-only Codex getconcept/findpath round trip; the separate X take rapidly crosses the seven LNB destinations. The five-cut editor",
-      "wordCount": 596,
-      "updatedAt": "2026-08-30",
+      "excerpt": "Status: replacement brief, not recorded. The active download-page video remains the localized 44-second atlas-tour documented in docs/DEMO-SCENARIO.md. That footage proves concept → relations/evidence → read-only Codex path lookup. Do not relabel it as post-agent change review. This brief defines the next campaign demo",
+      "wordCount": 825,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
       "slug": "launch/HN-POST",
       "path": "docs/launch/HN-POST.md",
-      "title": "Hacker News — Show HN draft",
+      "title": "Hacker News — Show HN Draft",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ontology-atlas – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ontology-atlas (Word count: ~380. HN expects substantive Show HN posts, not one-liners; ",
-      "wordCount": 646,
+      "excerpt": "Submission type: Show HN Category: open-source developer tool The title is 54 characters, including spaces. It names the human outcome rather than frontmatter, MCP, or agent memory. https://github.com/wlsdks/ontology-atlas Use the repository, not the download landing page. The project can be tried without an account th",
+      "wordCount": 654,
       "updatedAt": "2026-09-01",
       "linksOut": []
     },
@@ -1124,12 +1124,12 @@
     {
       "slug": "launch/REDDIT-POSTS",
       "path": "docs/launch/REDDIT-POSTS.md",
-      "title": "Reddit — launch drafts",
+      "title": "Reddit — Launch Drafts",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Reddit responds best to honest, problem-first framing. Each subreddit has its own norms; copy below tuned per audience. Title: ontology-atlas — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows long-form better than HN): my-project/ ├── project.md ├── domains/ │ ├── auth.m",
-      "wordCount": 1068,
+      "excerpt": "These drafts start with the developer's review problem, not the implementation inventory. Rewrite the final post in the owner's natural voice before posting; do not mass-post the same body across communities. Title: I built a local map for reviewing what AI coding agents changed Body: text agent changes code → agent pr",
+      "wordCount": 1051,
       "updatedAt": "2026-09-01",
       "linksOut": []
     },
@@ -3543,6 +3543,26 @@
       "linksOut": []
     },
     {
+      "slug": "PO-PILOT",
+      "path": "docs/PO-PILOT.md",
+      "title": "Atlas PO routing pilot",
+      "tags": [],
+      "frontmatter": {
+        "started": "2026-09-01",
+        "decision_target": 20,
+        "decision_deadline": "2026-09-15",
+        "sparse_extension_deadline": "2026-09-22",
+        "outcome": "pending"
+      },
+      "headings": [],
+      "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
+      "wordCount": 531,
+      "updatedAt": "2026-09-01",
+      "linksOut": [
+        "DECISIONS"
+      ]
+    },
+    {
       "slug": "PRODUCT-DESIGN-OPERATING-SYSTEM",
       "path": "docs/PRODUCT-DESIGN-OPERATING-SYSTEM.md",
       "title": "Product Design Operating System",
@@ -3574,13 +3594,13 @@
     {
       "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
       "path": "docs/PRODUCT-OWNER-OPERATING-SYSTEM.md",
-      "title": "PRODUCT OWNER OPERATING SYSTEM",
+      "title": "ATLAS PRODUCT DECISION SYSTEM",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Purpose: keep Ontology Atlas from becoming a feature factory — a project that counts what it shipped instead of asking whether anything got better. Every feature, design change, graph interaction, MCP tool, CLI command, and macOS workflow must pass this product-owner lens (lens — one fixed question to ask before passin",
-      "wordCount": 6127,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Version 3, active as a finite pilot from 2026-09-01. It keeps the v2 two-reviewer ceiling but removes the builder's ability to declare their own door and risk. Git preserves both prior systems; docs/PO-PILOT.md decides whether this one earns a permanent place. Atlas does not need a universal product-management framewor",
+      "wordCount": 1715,
+      "updatedAt": "2026-09-01",
       "linksOut": []
     },
     {
@@ -3751,6 +3771,11 @@
       {
         "fromSlug": "BRAND",
         "context": "tology Atlas > The meaning, source contract, and usage rules for the pixel mascot identity. > The 2026-08-28 record in **[`DECISIONS.md`]** owns the replacement > decision; the committed PNG masters own the pixels. ## Identity Status The pixel mascot is the",
+        "linkText": "`DECISIONS.md`"
+      },
+      {
+        "fromSlug": "PO-PILOT",
+        "context": "sures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in **[`DECISIONS.md`]**; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run `pnpm",
         "linkText": "`DECISIONS.md`"
       }
     ],
@@ -5899,14 +5924,14 @@
             "path": "launch/DEMO-GIF-STORYBOARD",
             "type": "doc",
             "slug": "launch/DEMO-GIF-STORYBOARD",
-            "title": "30s Demo GIF — retired storyboard"
+            "title": "Campaign Demo Storyboard — Review What the Agent Built"
           },
           {
             "name": "HN-POST",
             "path": "launch/HN-POST",
             "type": "doc",
             "slug": "launch/HN-POST",
-            "title": "Hacker News — Show HN draft"
+            "title": "Hacker News — Show HN Draft"
           },
           {
             "name": "README",
@@ -5920,7 +5945,7 @@
             "path": "launch/REDDIT-POSTS",
             "type": "doc",
             "slug": "launch/REDDIT-POSTS",
-            "title": "Reddit — launch drafts"
+            "title": "Reddit — Launch Drafts"
           },
           {
             "name": "X-THREAD",
@@ -6849,6 +6874,13 @@
         "title": "Ontology Quality Authority Map"
       },
       {
+        "name": "PO-PILOT",
+        "path": "PO-PILOT",
+        "type": "doc",
+        "slug": "PO-PILOT",
+        "title": "Atlas PO routing pilot"
+      },
+      {
         "name": "PRODUCT-DESIGN-OPERATING-SYSTEM",
         "path": "PRODUCT-DESIGN-OPERATING-SYSTEM",
         "type": "doc",
@@ -6867,7 +6899,7 @@
         "path": "PRODUCT-OWNER-OPERATING-SYSTEM",
         "type": "doc",
         "slug": "PRODUCT-OWNER-OPERATING-SYSTEM",
-        "title": "PRODUCT OWNER OPERATING SYSTEM"
+        "title": "ATLAS PRODUCT DECISION SYSTEM"
       },
       {
         "name": "README",

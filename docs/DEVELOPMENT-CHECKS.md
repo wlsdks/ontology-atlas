@@ -81,6 +81,8 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 | Graph hot-path perf | `pnpm perf:graph:check` | `pnpm perf:graph:scale` |
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
+| Atlas product outcome and risk routing | `pnpm po:route -- --help` | `pnpm test:po` replays derived change/boundary routes and the known one-way and reversible controls |
+| Atlas PO pilot sunset | `pnpm po:pilot -- --check` | Plant a pending due pilot or unsupported `keep`; the command must fail with the rejected metric, while the live collecting register stays green |
 | Decision ledger triggers | `pnpm decisions:check` | `pnpm exec vitest run tests/contract/design-spec-ledger.contract.test.ts` |
 | Copy that names the reader's surface | `pnpm exec vitest run tests/contract/surface-naming-ratchet.contract.test.ts` | `pnpm test:contracts` |
 | Markdown table shape (rows vs their header) | `pnpm exec vitest run tests/contract/markdown-table-shape.contract.test.ts` | `pnpm test:contracts` |
@@ -100,8 +102,11 @@ pnpm docs-vault:build && git add src/entities/docs-vault/data public/docs-vault
 
 ### Decision-ledger gate (`pnpm decisions:check`)
 
-Fails when a change trips a mechanical council trigger without appending to
-`docs/DECISIONS.md` in the same change. Three triggers:
+Fails when a change trips a mechanical significant-decision trigger without
+appending to `docs/DECISIONS.md` in the same change. Supply its evidence,
+human-recovery outcome, and change/boundary facts to `pnpm po:route -- --help`;
+the command derives the door and risk. A `review` route uses Evidence plus the
+selected Atlas-risk specialist. Three triggers:
 
 1. **New surface / surface removal** — `app/[locale]/**/page.tsx` added or deleted.
 2. **Public contract change** — `cli/src/lib/cli-commands.mjs` or `mcp/src/index.js` edited.
@@ -121,6 +126,33 @@ there extends the gate the same day.
 duplicated in code, that every listed path exists, and that every listed file
 still yields a non-empty census — a detector idling on an empty set is
 indistinguishable from no gate.
+
+### Atlas PO risk-router probe (2026-09-01)
+
+**Property:** every Atlas product decision routes by reversibility to
+maintenance checks, one solo pass, or Evidence plus exactly one relevant
+specialist; a local-first or human-sovereignty change cannot self-exempt, and
+the retired score gate cannot return to active instructions.
+
+**Inventory:** the contract guards 20 active policy, skill, CLI, and mirrored
+agent files. All existed, the four historical control cases were non-empty, the
+pilot contained a real first row, and the retired-score scan found zero active
+hits before probing.
+
+**RED → GREEN:** changing the `meaning` route from Steward to Wedge produced
+three useful failures (duplicate specialist, OS URL replay, and sovereignty
+reviewer). Letting a sovereignty change retain its caller-selected `scope` risk
+produced the exact fail-closed replay failure. Planting the old numeric threshold
+in the active operating system produced the retired-score failure. Each defect
+was restored with `apply_patch`; the final focused run was 9/9 GREEN.
+
+**Idle and automatic wiring:** the test refuses an empty active-file or control
+inventory and requires a measured pilot row. `pnpm checks:changed --
+scripts/lib/po-risk-router.mjs` recommends the focused contract, its advisor
+mapping has a direct node:test, and `.github/workflows/checks.yml` runs both the
+advisor suite and all `tests/contract/` Vitest files. This makes the router's
+mechanical boundary trustworthy; whether review improves decisions remains a
+prospective pilot outcome, not something this gate can prove.
 
 `pnpm test:mcp:docs` also guards
 the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
