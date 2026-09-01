@@ -39,9 +39,10 @@ export function DocMetaBar({
    * The person's own two actions on this document, present only when a writable
    * local folder is loaded.
    *
-   * This is the path the MCP server refuses to let an agent take: a click in a
-   * surface a person opened is what "a path that proves a person" means here.
-   * Absent on the bundled sample, where nothing can be written at all.
+   * This is the path the MCP server refuses to let an agent take. It is a lane,
+   * not an identity check — Atlas has no login, and a file-capable agent can
+   * write the same keys without passing here. Absent on the bundled sample,
+   * where nothing can be written at all.
    */
   review?: {
     /** True while this document carries `review_state: human_decides`. */
@@ -169,11 +170,17 @@ export function DocMetaBar({
           // both at once would ask a person to classify their own click before
           // making it, and the two are not alternatives: releasing a reservation
           // is the end of a decision, confirming is the end of a reading.
+          // **Confirming is the primary action even on a reserved node** (Codex
+          // review, 2026-09-02). Offering only "release" there meant a person
+          // who had just decided the question had to clear the reservation,
+          // wait for the folder to reread, and press again — and in between the
+          // node was agent-writable and still unapproved. Releasing without
+          // approving stays possible, as the secondary action beside it.
           <button
             type="button"
             data-testid="doc-review-action"
             disabled={review.busy}
-            onClick={review.reserved ? review.onRelease : review.onConfirm}
+            onClick={review.onConfirm}
             className={controlClass({
               shape: "chip",
               size: "sm",
@@ -182,7 +189,24 @@ export function DocMetaBar({
               className: "min-h-7 font-mono",
             })}
           >
-            {review.reserved ? tReview("actionRelease") : tReview("actionConfirm")}
+            {tReview("actionConfirm")}
+          </button>
+        ) : null}
+        {review?.reserved ? (
+          <button
+            type="button"
+            data-testid="doc-review-release"
+            disabled={review.busy}
+            onClick={review.onRelease}
+            className={controlClass({
+              shape: "chip",
+              size: "sm",
+              tone: "muted",
+              hoverSurface: "lift",
+              className: "min-h-7 font-mono",
+            })}
+          >
+            {tReview("actionRelease")}
           </button>
         ) : null}
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">

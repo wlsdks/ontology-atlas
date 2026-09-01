@@ -2613,6 +2613,21 @@
       "depth": 2,
       "text": "Conclusion carried into the decision",
       "slug": "conclusion-carried-into-the-decision"
+    },
+    {
+      "depth": 2,
+      "text": "Adversarial review of the implementation (2026-09-02, Codex)",
+      "slug": "adversarial-review-of-the-implementation-2026-09-02-codex"
+    },
+    {
+      "depth": 3,
+      "text": "Still open after that review",
+      "slug": "still-open-after-that-review"
+    },
+    {
+      "depth": 3,
+      "text": "Examined and found correct",
+      "slug": "examined-and-found-correct"
     }
   ],
   "benchmark/README": [

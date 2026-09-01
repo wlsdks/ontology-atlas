@@ -102,3 +102,71 @@ Two consequences, both of which change the build order:
   half of the design has to be detection rather than prevention: bind an approval
   to what was approved, and a later edit — by any tool, through any path —
   reads as "changed since it was reviewed" without anyone's cooperation.
+
+## Adversarial review of the implementation (2026-09-02, Codex)
+
+The mechanism this probe justified was then attacked. Four confirmed bypasses,
+each reproduced as a test that was green before its guard existed:
+
+- `rename_concept({ overwrite: true })` read a reserved destination and replaced
+  it with the source's bytes. Only the operand was guarded; the casualty was not.
+- Rename, reclassify, and merge redirect backlinks, which writes documents nobody
+  named — a reserved bystander was rewritten as collateral. The guard now runs
+  over every path in a write plan rather than per handler.
+- `absorb_document` rewrote a reserved node into a pointer. Its refusal list is
+  assembled for the dry-run preview only; the write path re-throws each condition
+  separately, so the first fix reported the refusal and wrote anyway
+  (`ok: true, dryRun: false`) until it was added to the write path too.
+- `get_concept` returned `digestNow`, handing an agent the value that makes a
+  forged stamp read as current. Removed.
+
+**The limit that cannot be fixed by another guard.** Enforcement covers the Atlas
+write path. The adversary this probe measured is a coding agent with ordinary
+file tools, which never meets that path, and the binding is an unkeyed hash it
+can recompute. So the mark means *no Atlas write tool produced this*, and the
+digest says *whether the node changed since*. Neither authenticates a person.
+Product language was narrowed to that claim; nothing in the code, the UI, or the
+decision record now says a person is proven. The durable value is that every one
+of these edits is visible in a Git diff.
+
+Accepted without a fix, recorded rather than dropped: the parser admits
+`Infinity` and `-Infinity`, which `JSON.stringify` serializes identically, so
+swapping one for the other preserves the digest. No vault key takes a non-finite
+number, and narrowing the parser is a separate decision.
+
+### Still open after that review
+
+Named here rather than closed quietly. None of them makes the mechanism claim
+something false; each makes it less useful than it reads.
+
+- **The digest does not carry the node's canonical address.** A document's real
+  slug comes from its file path, and the hash sees only frontmatter and body. A
+  node whose `slug:` is absent or aliased can move to a new address and stay
+  `current`, while one whose `slug:` mirrors its path goes stale for the same
+  move. Deciding what a rename should mean for an approval is a design question,
+  not a patch — it needs an answer before the keys enter the public spec.
+- **Array and nested-map order is hashed as written.** Reordering the same
+  relation set, or the keys of `relation_notes`, changes the digest even though
+  the graph treats relation arrays as sets. False drift, in the safe direction.
+- **The queue can pair manifest frontmatter with a freshly read body.** The
+  frontmatter comes from the last folder scan and the body is read at queue time,
+  so a frontmatter-only edit in between is invisible until the next scan. Codex
+  raised this as a hypothesis; it has not been reproduced.
+- **`add_relation` guards only its source.** A reserved node can still gain an
+  incoming edge, which changes the compiled meaning around it without writing its
+  file. The reservation protects a document's authored contents, not every fact
+  the graph derives about it.
+- **The two-implementation contract still starts from objects, not files.** It
+  now compares verdicts rather than hashes, which is stronger, but nothing yet
+  runs raw Markdown through both parsers and then both digests. A parser
+  divergence on block scalars, Unicode, or quoting would pass both suites.
+
+### Examined and found correct
+
+A digest made only of digits (`0000…`, about one in ten million) reads back from
+frontmatter as a number rather than a string, and the queue then reports
+`unknown` and draws nothing. Chased on the running app before assuming a defect:
+the app's writer already quotes any number-like string, so nothing Atlas writes
+can land in that shape, and a value that did parse as a number has lost its
+leading zeros and cannot be recovered — `unknown` is the only honest answer left.
+No change was made.

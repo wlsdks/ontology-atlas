@@ -1485,7 +1485,17 @@ function DocsVaultContent() {
       try {
         const patch: Record<string, string | null> =
           intent === 'release'
-            ? { review_state: null, review_note: null }
+            ? {
+                review_state: null,
+                review_note: null,
+                // A node confirmed earlier and reserved later keeps its old
+                // receipt; clearing only the state left `reviewedBy` beside
+                // `state: null`, which reads as an approval nobody holds
+                // (Codex review, 2026-09-02).
+                reviewed_by: null,
+                reviewed_at: null,
+                reviewed_digest: null,
+              }
             : {
                 review_state: 'confirmed',
                 // The reader's own calendar day, not UTC's. Measured 2026-09-02
@@ -1506,8 +1516,17 @@ function DocsVaultContent() {
           expectedMtime: selectedDoc.mtime,
         });
       } catch (err) {
-        if (err instanceof VaultConflictError) toast.show(t('dialog.vaultConflict'), 'error');
-        throw err;
+        // **A rethrow into `void` is a silent failure** (Codex review,
+        // 2026-09-02). Both callers discard this promise, so a read, permission,
+        // crypto, or write error left the screen looking as if the review had
+        // landed. The person is told here, where the failure is known, and the
+        // error still reaches the console for a developer.
+        if (err instanceof VaultConflictError) {
+          toast.show(t('dialog.vaultConflict'), 'error');
+        } else {
+          toast.show(t('review.writeFailed'), 'error');
+        }
+        console.error('[docs-vault] review write failed', err);
       } finally {
         setReviewBusy(false);
       }

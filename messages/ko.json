@@ -1274,7 +1274,9 @@
           "changedPlain": "확인했었고, 그 뒤에 바뀌었어요",
           "docChipRaised": "사람이 정해야 하는 문서",
           "actionConfirm": "확인했어요",
-          "actionRelease": "내가 정했어요"
+          "actionRelease": "내가 정했어요",
+          "unverifiableHeader": "확인했지만 점검 못 한 것 · {count}",
+          "unverifiablePlain": "파일을 읽지 못해 바뀌었는지 알 수 없어요"
         }
       },
       "empty": {
@@ -2154,7 +2156,10 @@
     },
     "linkCopied": "문서 링크를 복사했습니다",
     "linkCopyFailed": "문서 링크 복사 실패",
-    "proofHealthOpenQueue": "할 일에서 보기"
+    "proofHealthOpenQueue": "할 일에서 보기",
+    "review": {
+      "writeFailed": "검토 표시를 파일에 저장하지 못했어요. 바뀐 건 없습니다."
+    }
   },
   "topology": {
     "widgetError": {

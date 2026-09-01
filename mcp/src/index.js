@@ -217,7 +217,6 @@ import {
   REVIEWED_AT_KEY,
   REVIEWED_BY_KEY,
   reviewCurrentness,
-  reviewDigest,
   NODE_UID_PATTERN,
   flatSlugIssue,
   mergeNodeIdentityHistory,
@@ -7758,6 +7757,15 @@ function requireValidFrontmatterPatch(frontmatter) {
  * A documented convention is honoured in proportion to model capability, so the
  * refusal has to live here, where the call path — not the prompt — decides.
  *
+ * ⚠️ **What this is not.** It is a lane guard, not authentication. It decides
+ * who may write *through this server*; an agent with ordinary file tools edits
+ * the Markdown directly and never meets it, and the binding is an unkeyed hash
+ * anyone can recompute. So a stamp here means "no Atlas write tool produced
+ * this", never "a person did" — and nothing in this product may say otherwise
+ * (Codex review, 2026-09-02). What survives regardless is the Git diff: every
+ * such edit is visible, attributable, and revertable, which is the same trust
+ * model `forbidden.md` already uses for declarative extensions.
+ *
  * The asymmetry is deliberate and is the whole mechanism:
  *
  *   - **Raising is allowed.** An agent that cannot settle a question may write
@@ -7777,7 +7785,7 @@ function requireAgentWritableReviewFields(frontmatter) {
   for (const key of HUMAN_ONLY_REVIEW_KEYS) {
     if (!Object.prototype.hasOwnProperty.call(frontmatter, key)) continue;
     throw new Error(
-      `frontmatter.${key} records that a person reviewed this node, so it is written only by a path that proves a person — ` +
+      `frontmatter.${key} records a person's review, so Atlas write tools do not set it — ` +
         'an agent writing it would be asserting the review, not recording it. ' +
         `If you cannot settle this node yourself, set ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES} with a ${REVIEW_NOTE_KEY} instead.`,
     );
@@ -7793,7 +7801,7 @@ function requireAgentWritableReviewFields(frontmatter) {
   }
   if (state === REVIEW_STATE_CONFIRMED) {
     throw new Error(
-      `frontmatter.${REVIEW_STATE_KEY}: ${REVIEW_STATE_CONFIRMED} states that a person judged this node, so it is written only by a path that proves a person. ` +
+      `frontmatter.${REVIEW_STATE_KEY}: ${REVIEW_STATE_CONFIRMED} states that a person judged this node, so Atlas write tools do not set it. ` +
         `Set ${REVIEW_STATE_HUMAN_DECIDES} with a ${REVIEW_NOTE_KEY} if you want a person to look at it.`,
     );
   }
@@ -7835,10 +7843,12 @@ function readDocIfPresent(slug) {
  * every read, so an approval that no longer describes its node says so without
  * anyone having noticed the change or cooperated in reporting it.
  *
- * `digestNow` is the value a human-proving path records when it confirms. It is
- * returned here so the app and the CLI bind an approval with the same function
- * this server checks it with — a second implementation of the same hash would
- * be a second opinion about what "unchanged" means.
+ * **`digestNow` was here and was removed** (Codex review, 2026-09-02). It was
+ * returned so a human-proving path could bind an approval with the same function
+ * this server checks it with. But this server's caller *is* the agent, and the
+ * binding is an unkeyed hash: handing over the value that makes a stamp look
+ * current is handing over the forgery. The app computes its own through the
+ * contract-tested twin, and nothing else needs it.
  */
 function describeReview(doc) {
   const frontmatter = doc?.frontmatter ?? {};
@@ -7851,7 +7861,6 @@ function describeReview(doc) {
     ...(frontmatter[REVIEWED_BY_KEY] ? { reviewedBy: frontmatter[REVIEWED_BY_KEY] } : {}),
     ...(frontmatter[REVIEWED_AT_KEY] ? { reviewedAt: frontmatter[REVIEWED_AT_KEY] } : {}),
     currentness,
-    digestNow: reviewDigest(frontmatter, doc?.body ?? ''),
     ...(state === REVIEW_STATE_HUMAN_DECIDES
       ? {
           agentGuidance:
@@ -11242,6 +11251,14 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
       `Target slug already exists: "${newSlug}". Pass overwrite: true to replace it.`,
     );
   }
+  // **The destination is a write too** (Codex review, 2026-09-02). Guarding only
+  // the source left `overwrite: true` as a door: the reserved document at the
+  // destination was read, then replaced with the source's bytes, and its
+  // reservation went with it. A refusal that covers the operand but not the
+  // casualty is not a refusal.
+  if (targetExists) {
+    requireNodeNotReservedForHuman(readDocIfPresent(newSlug), 'rename_concept');
+  }
 
   const sourcePath = slugToPath(VAULT_ROOT, diskOldSlug);
   const targetPath = slugToPath(VAULT_ROOT, newSlug);
@@ -11597,6 +11614,30 @@ const ABSORB_BACKUP_SUFFIX = '.pre-absorb.bak';
 // path; core plan logic lives in ./absorb.mjs (mirrored at
 // cli/src/lib/absorb.mjs, kept in lock-step by
 // tests/contract/absorb.contract.test.ts).
+/**
+ * `review_state: human_decides` on the file `absorb_document` was pointed at.
+ *
+ * Absorption is the one write path whose target is named by absolute path rather
+ * than by slug, so it never reaches the slug-based guard or the plan guard. A
+ * file that is not a reserved node returns null and absorption proceeds.
+ */
+function reservedSourceIssue(absolutePath) {
+  let frontmatter;
+  try {
+    frontmatter = parseFrontmatter(readFileSync(absolutePath, 'utf-8')).frontmatter ?? {};
+  } catch {
+    return null;
+  }
+  if (frontmatter[REVIEW_STATE_KEY] !== REVIEW_STATE_HUMAN_DECIDES) return null;
+  const note = frontmatter[REVIEW_NOTE_KEY];
+  const slug = typeof frontmatter.slug === 'string' ? frontmatter.slug : absolutePath;
+  return (
+    `${slug} carries ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES}, so it is reserved for a person and absorbing it would rewrite it` +
+    (note ? ` — what they have to decide: ${note}` : '') +
+    '. Report it and let the person decide.'
+  );
+}
+
 function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = false }) {
   requireNonBlankString(filePath, 'filePath');
   requireOptionalBoolean(confirm, 'confirm');
@@ -11621,6 +11662,11 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     ...(existsSync(backupPath)
       ? [`backup already exists and would be overwritten: ${backupPath}`]
       : []),
+    // **Absorption rewrites its source**, and a source can be a vault node a
+    // person reserved (Codex review, 2026-09-02). It does not go through the
+    // multi-file plan guard, so the refusal has to be stated here. A backup
+    // makes the rewrite recoverable; it does not make it permitted.
+    ...(reservedSourceIssue(abs) ? [reservedSourceIssue(abs)] : []),
   ];
   const raw = readFileSync(abs, 'utf-8');
   const sourceLabel = basename(abs).replace(/\.md$/i, '');
@@ -11666,6 +11712,16 @@ function absorbDocumentTool({ filePath, confirm = false, allowOutsideRepo = fals
     };
   }
 
+  // **The dry-run branch reports; this branch blocks.** `blockedReasons` is
+  // assembled above for the preview and never consulted here — each condition is
+  // re-thrown on the write path individually. A refusal added to the list alone
+  // would read as enforced and write anyway, which is how this one was found
+  // (Codex review, 2026-09-02: the first fix landed in the list and the test
+  // still recorded `ok: true, dryRun: false`).
+  const reservedSource = reservedSourceIssue(abs);
+  if (reservedSource) {
+    throw new Error(`absorb_document blocked: ${reservedSource}`);
+  }
   if (outsideRepo && !allowOutsideRepo) {
     throw new Error(
       `absorb_document blocked: source file is outside repoRoot (${canonicalRepoRoot}): ${abs}. ` +

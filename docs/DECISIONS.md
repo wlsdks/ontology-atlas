@@ -169,8 +169,35 @@ OUT — a public-spec entry for these keys (held outside `ONTOLOGY-ATLAS-SPEC.md
 (there is no login, and the field is written only when a name exists), map
 badges, and the collection-tab and audit-modal cleanup the same review named.
 
-**Status**: implemented · probe recorded · automated and rendered verification
-passed · installed-app proof pending
+**Adversarial review, same day**: the implementation was then attacked by an
+independent agent. Four bypasses were confirmed and closed — a rename overwriting
+a reserved destination, backlink redirection rewriting a reserved bystander,
+`absorb_document` rewriting a reserved source, and `get_concept` handing an agent
+the digest value that makes a forged stamp read as current. Each is now a test
+that was green before its guard existed, and the collateral case moved the guard
+from the handlers to the write-plan boundary so a tool added later inherits it.
+
+That review also carried one correction this record must state plainly: **the
+mark is not authentication.** Enforcement covers the Atlas write path, the
+adversary is an agent with ordinary file tools that never meets it, and the
+binding is an unkeyed hash anyone can recompute. The mark means *no Atlas write
+tool produced this* and the digest says *whether the node changed since*; neither
+proves a person. The code, the UI, and this record now say only that. Point 1
+above stands as written — it is a lane guard, and describing it as a sovereignty
+boundary would have been the false safety point 6 warned about.
+
+**Open, recorded rather than closed**: the digest omits the node's canonical
+address, so rename semantics are undecided; array and nested-map ordering
+produces false drift; a frontmatter-only edit between a folder scan and a queue
+build can be missed; `add_relation` guards its source only, so a reserved node
+can still gain an incoming edge; and the cross-package contract compares verdicts
+from objects, not from raw Markdown through both parsers.
+`docs/benchmark/FINDINGS-2026-09-02-review-marks.md` carries the detail. The
+first of these has to be answered before these keys enter the public spec.
+
+**Status**: implemented · probe recorded · adversarially reviewed, four bypasses
+closed · automated and rendered verification passed · installed-app proof and the
+five open items above pending
 
 ---
 

@@ -1274,7 +1274,9 @@
           "changedPlain": "Confirmed once, and it changed afterwards",
           "docChipRaised": "A person has to decide this",
           "actionConfirm": "I checked this",
-          "actionRelease": "I decided this"
+          "actionRelease": "I decided this",
+          "unverifiableHeader": "Confirmed, but could not be checked · {count}",
+          "unverifiablePlain": "This file could not be read, so whether it changed is unknown"
         }
       },
       "empty": {
@@ -2154,7 +2156,10 @@
     },
     "linkCopied": "Copied the document link",
     "linkCopyFailed": "Could not copy the document link",
-    "proofHealthOpenQueue": "Open in Do next"
+    "proofHealthOpenQueue": "Open in Do next",
+    "review": {
+      "writeFailed": "Could not save your review to the file. Nothing was changed."
+    }
   },
   "topology": {
     "widgetError": {

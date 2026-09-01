@@ -4,7 +4,6 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-import * as schema from '../../mcp/src/schema.mjs';
 
 /**
  * **A person's judgment is written only by a path that proves a person.**
@@ -132,6 +131,15 @@ function makeVault(): string {
     '---\nuid: 33333333-3333-4333-8333-333333333333\nslug: capabilities/open\nkind: capability\ntitle: Open\n---\n\nNobody has ruled on this.\n',
     'utf8',
   );
+  // A reserved document that merely *mentions* another node. Nothing names it in
+  // any of the calls below; a backlink redirect reaches it on its own.
+  writeFileSync(
+    join(dir, 'capabilities', 'reserved-referrer.md'),
+    '---\nuid: 55555555-5555-4555-8555-555555555555\nslug: capabilities/reserved-referrer\nkind: capability\n' +
+      'title: Reserved Referrer\nrelates: [capabilities/open]\nreview_state: human_decides\n' +
+      'review_note: "Reserved, and it happens to point at another node."\n---\n\nUntouched.\n',
+    'utf8',
+  );
   return dir;
 }
 
@@ -205,6 +213,57 @@ describe('review marks — only a path that proves a person writes a human judgm
     expect(read(vault, 'capabilities/reserved.md')).toContain('The person has not decided yet.');
   });
 
+  // The three shapes a per-operand guard misses, each found by adversarial review
+  // (Codex, 2026-09-02) rather than by this suite. Every one was green before its
+  // guard existed, which is why they assert the file's bytes rather than the reply.
+  it('refuses to overwrite a reserved destination, even with overwrite: true', () => {
+    const vault = makeVault();
+    const before = read(vault, 'capabilities/reserved.md');
+    const result = callTool(vault, 'rename_concept', {
+      oldSlug: 'capabilities/open',
+      newSlug: 'capabilities/reserved',
+      confirm: true,
+      overwrite: true,
+    });
+    expect(result.isError).toBe(true);
+    // The casualty of a rename is still a write. Guarding only the operand left
+    // the reserved document read, replaced, and its reservation gone with it.
+    expect(read(vault, 'capabilities/reserved.md')).toBe(before);
+  });
+
+  it('refuses a rename whose backlink redirect would rewrite a reserved bystander', () => {
+    const vault = makeVault();
+    const before = read(vault, 'capabilities/reserved-referrer.md');
+    const result = callTool(vault, 'rename_concept', {
+      oldSlug: 'capabilities/open',
+      newSlug: 'capabilities/renamed-open',
+      confirm: true,
+    });
+    expect(result.isError).toBe(true);
+    expect(read(vault, 'capabilities/reserved-referrer.md')).toBe(before);
+    // All or nothing: the operation that was refused must not have half-landed.
+    expect(() => read(vault, 'capabilities/open.md')).not.toThrow();
+  });
+
+  it('refuses to absorb a reserved node into a pointer', () => {
+    const vault = makeVault();
+    const before = read(vault, 'capabilities/reserved.md');
+    const result = callTool(vault, 'absorb_document', {
+      filePath: join(vault, 'capabilities', 'reserved.md'),
+      // The fixture lives outside this repository, and absorb refuses that on a
+      // different ground. Opening that door is the only way this case reaches
+      // the reservation at all — a green it never touched proves nothing.
+      allowOutsideRepo: true,
+      confirm: true,
+    });
+    // `absorb_document` states refusals in `blockedReasons` rather than throwing —
+    // its own contract, and the assertion has to match the tool rather than the
+    // suite's habit. What matters either way is that the bytes did not move.
+    expect(result.text).toContain('reserved for a person');
+    expect(read(vault, 'capabilities/reserved.md')).toBe(before);
+    expect(read(vault, 'capabilities/reserved.md')).toContain('The person has not decided yet.');
+  });
+
   it('allows raising a reservation — the behaviour the product wants', () => {
     const vault = makeVault();
     const result = callTool(vault, 'patch_concept', {
@@ -221,52 +280,10 @@ describe('review marks — only a path that proves a person writes a human judgm
   });
 });
 
-describe('review currentness — the half that needs nobody cooperation', () => {
-  const frontmatter = {
-    uid: '44444444-4444-4444-8444-444444444444',
-    slug: 'capabilities/bound',
-    kind: 'capability',
-    title: 'Bound',
-    domain: 'domains/example',
-  };
-
-  it('an approval bound to what was approved survives a re-read', () => {
-    const digest = schema.reviewDigest(frontmatter, 'The reviewed meaning.');
-    const confirmed = { ...frontmatter, review_state: 'confirmed', reviewed_by: 'jinan', reviewed_digest: digest };
-    expect(schema.reviewCurrentness(confirmed, 'The reviewed meaning.')).toBe('current');
-  });
-
-  it('stops asserting approval once the body changes, with nobody touching the mark', () => {
-    const digest = schema.reviewDigest(frontmatter, 'The reviewed meaning.');
-    const confirmed = { ...frontmatter, review_state: 'confirmed', reviewed_by: 'jinan', reviewed_digest: digest };
-    expect(schema.reviewCurrentness(confirmed, 'Rewritten by something later.')).toBe(
-      'changed-since-review',
-    );
-  });
-
-  it('a changed relation expires the approval too — meaning is not only prose', () => {
-    const digest = schema.reviewDigest(frontmatter, 'The reviewed meaning.');
-    const moved = { ...frontmatter, domain: 'domains/elsewhere', review_state: 'confirmed', reviewed_digest: digest };
-    expect(schema.reviewCurrentness(moved, 'The reviewed meaning.')).toBe('changed-since-review');
-  });
-
-  it('adding a localized display name does not expire every approval in the vault', () => {
-    const digest = schema.reviewDigest(frontmatter, 'The reviewed meaning.');
-    const localized = {
-      ...frontmatter,
-      display_ko: '경계',
-      review_state: 'confirmed',
-      reviewed_digest: digest,
-    };
-    expect(schema.reviewCurrentness(localized, 'The reviewed meaning.')).toBe('current');
-  });
-
-  it('no binding reads as unknown, never as still-current', () => {
-    const unbound = { ...frontmatter, review_state: 'confirmed', reviewed_by: 'jinan' };
-    expect(schema.reviewCurrentness(unbound, 'anything at all')).toBe('unknown');
-  });
-
-  it('an unmarked node is not a defect — absence is its own answer', () => {
-    expect(schema.reviewCurrentness(frontmatter, 'The reviewed meaning.')).toBe('not-confirmed');
-  });
-});
+/*
+ * The currentness half moved out of this file on 2026-09-02. It used to be
+ * tested here against the MCP implementation alone; `review-mark.contract.test.ts`
+ * now runs the same fixture table through **both** implementations and compares
+ * the verdict rather than the hash, which is the thing the product depends on.
+ * Keeping a single-sided copy here would have been a second, weaker opinion.
+ */

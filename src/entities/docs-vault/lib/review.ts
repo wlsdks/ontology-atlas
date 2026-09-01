@@ -8,7 +8,14 @@
  *
  * Why the app needs its own copy at all: the MCP path is the one that is
  * provably an agent, so it is where confirming is *refused*. Confirming happens
- * here, on the path a person is actually on — a click in a surface they opened.
+ * here, in a surface a person opened.
+ *
+ * ⚠️ That is a lane, not proof of a person. Atlas has no login, and an agent with
+ * file tools can write the same keys directly without meeting either path. The
+ * mark means "no Atlas write tool produced this" and the digest says whether the
+ * node changed afterwards; neither authenticates who typed it. What makes it
+ * worth having anyway is that every such edit lands in a Git diff
+ * (Codex review, 2026-09-02).
  *
  * Measured background: `docs/benchmark/FINDINGS-2026-09-02-review-marks.md`.
  */
@@ -32,8 +39,11 @@ const REVIEW_KEYS = [
   REVIEWED_DIGEST_KEY,
 ];
 
-/** Mirrors `DIGEST_IGNORED_KEY_PREFIXES` in `mcp/src/schema.mjs`. */
-const DIGEST_IGNORED_KEY_PREFIXES = ['display'];
+/** Mirrors `DIGEST_IGNORED_KEY_PREFIXES` in `mcp/src/schema.mjs` — presentation, not meaning. */
+const DIGEST_IGNORED_KEY_PREFIXES = ['display', 'canvasPosition'];
+
+/** Mirrors `REVIEWED_DIGEST_PATTERN`: a binding this code could have written. */
+const REVIEWED_DIGEST_PATTERN = /^[0-9a-f]{32}$/;
 
 /**
  * Approval currentness, as three answers.
@@ -84,7 +94,7 @@ export async function reviewCurrentness(
 ): Promise<ReviewCurrentness> {
   if (frontmatter?.[REVIEW_STATE_KEY] !== REVIEW_STATE_CONFIRMED) return 'not-confirmed';
   const recorded = frontmatter?.[REVIEWED_DIGEST_KEY];
-  if (typeof recorded !== 'string' || !recorded) return 'unknown';
+  if (typeof recorded !== 'string' || !REVIEWED_DIGEST_PATTERN.test(recorded)) return 'unknown';
   return recorded === (await reviewDigest(frontmatter, body)) ? 'current' : 'changed-since-review';
 }
 
@@ -93,7 +103,7 @@ export interface ReviewQueueRow {
   slug: string;
   title: string;
   /** Why it is here — the two reasons are different work, so they are never merged into one count. */
-  reason: 'raised' | 'changed-since-review';
+  reason: 'raised' | 'changed-since-review' | 'unverifiable';
   /** The agent's own sentence about what has to be decided, when it left one. */
   note?: string;
   reviewedBy?: string;
@@ -117,8 +127,8 @@ export async function buildReviewQueue(
    * manifest deliberately keeps no bodies, a raised node needs none, and the
    * approved set is bounded by how much a person actually reviewed.
    *
-   * A body that cannot be read yields `null` and the row is left out rather than
-   * reported as changed — an unreadable file is not evidence of drift.
+   * A body that cannot be read yields `null`, and the row says so rather than
+   * claiming drift — an unreadable file is not evidence of a change.
    */
   readBody: (slug: string) => Promise<string | null>,
 ): Promise<ReviewQueueRow[]> {
@@ -137,9 +147,17 @@ export async function buildReviewQueue(
       continue;
     }
     if (state !== REVIEW_STATE_CONFIRMED) continue;
-    if (typeof frontmatter[REVIEWED_DIGEST_KEY] !== 'string') continue;
+    // A malformed binding is `unknown`, not drift, so it must not reach the
+    // queue as a row accusing someone of a change they did not make.
+    if (!REVIEWED_DIGEST_PATTERN.test(String(frontmatter[REVIEWED_DIGEST_KEY] ?? ''))) continue;
     const body = await readBody(doc.slug);
-    if (body === null) continue;
+    if (body === null) {
+      // Silence here would let "nothing waiting" conceal an approval that could
+      // not be checked and may well have drifted (Codex review, 2026-09-02).
+      // Saying so is not an accusation; it is the honest third answer.
+      rows.push({ slug: doc.slug, title: doc.title, reason: 'unverifiable' });
+      continue;
+    }
     if ((await reviewCurrentness(frontmatter, body)) !== 'changed-since-review') continue;
     const reviewedBy = frontmatter[REVIEWED_BY_KEY];
     rows.push({

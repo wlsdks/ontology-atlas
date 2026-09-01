@@ -62,6 +62,26 @@ describe('ReviewQueueSection', () => {
     expect(screen.getByText('review.changedBy:dana')).toBeInTheDocument();
   });
 
+  it('keeps an unverifiable approval as its own group, not folded into either answer', () => {
+    render(
+      <ReviewQueueSection
+        rows={[
+          { slug: 'capabilities/a', title: 'A', reason: 'changed-since-review' },
+          { slug: 'capabilities/b', title: 'B', reason: 'unverifiable' },
+        ]}
+        selectedSlug={null}
+        onSelect={vi.fn()}
+        t={t}
+      />,
+    );
+    // "Could not be checked" is neither fine nor drifted. Folding it into the
+    // drift group would accuse someone of a change nobody saw; dropping it would
+    // let "nothing waiting" hide an approval that may well be stale.
+    expect(screen.getByText('review.unverifiableHeader:1')).toBeInTheDocument();
+    expect(screen.getByText('review.changedHeader:1')).toBeInTheDocument();
+    expect(screen.getByText('review.unverifiablePlain')).toBeInTheDocument();
+  });
+
   it('selects the document the row names', async () => {
     const onSelect = vi.fn();
     render(

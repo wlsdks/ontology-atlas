@@ -235,11 +235,27 @@ const REVIEW_KEYS = Object.freeze([
  * Keys the digest deliberately ignores, beyond the review keys themselves
  * (which would make it circular).
  *
- * A localized display name is not the meaning a person judged, and neither is
- * the order the keys happen to sit in. Including them would expire every
- * approval in the vault the first time someone adds a `display_ko`.
+ * These are **presentation, not meaning**. A localized display name is a
+ * translation of a name, and a canvas coordinate is where a person dragged the
+ * node on the map — neither changes what the node claims. Including them would
+ * expire every approval in a vault the first time someone added a `display_ko`,
+ * and would report meaning drift for moving a dot (Codex review, 2026-09-02).
+ *
+ * ⚠️ **A denylist grows silently.** Every key not listed here is treated as
+ * meaning, which is the safe direction — a new presentation key produces a false
+ * "changed since review", never a missed one. When one appears, add it here with
+ * its reason rather than widening the rule.
  */
-const DIGEST_IGNORED_KEY_PREFIXES = ['display'];
+const DIGEST_IGNORED_KEY_PREFIXES = ['display', 'canvasPosition'];
+
+/**
+ * A binding this module could have written: 32 lowercase hex characters.
+ *
+ * Anything else — a hand-typed placeholder, whitespace, a truncated paste —
+ * never established a baseline, so comparing against it and reporting drift
+ * would accuse a person of a change nobody made.
+ */
+const REVIEWED_DIGEST_PATTERN = /^[0-9a-f]{32}$/;
 
 /**
  * What a person approved, as one value — **the currentness binding**.
@@ -253,7 +269,7 @@ const DIGEST_IGNORED_KEY_PREFIXES = ['display'];
  * able to record a judgment in a text editor with Atlas not running; making the
  * binding mandatory would quietly retire "ordinary, portable Markdown".
  */
-export function reviewDigest(frontmatter, body) {
+function reviewDigest(frontmatter, body) {
   const meaning = {};
   for (const [key, value] of Object.entries(frontmatter ?? {})) {
     if (REVIEW_KEYS.includes(key)) continue;
@@ -278,7 +294,7 @@ export function reviewCurrentness(frontmatter, body) {
   const state = frontmatter?.[REVIEW_STATE_KEY];
   if (state !== REVIEW_STATE_CONFIRMED) return 'not-confirmed';
   const recorded = frontmatter?.[REVIEWED_DIGEST_KEY];
-  if (typeof recorded !== 'string' || !recorded) return 'unknown';
+  if (typeof recorded !== 'string' || !REVIEWED_DIGEST_PATTERN.test(recorded)) return 'unknown';
   return recorded === reviewDigest(frontmatter, body) ? 'current' : 'changed-since-review';
 }
 

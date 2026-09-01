@@ -69,12 +69,26 @@ describe('review queue — the two lists Docs shows, and the third it refuses to
     expect(rows).toEqual([]);
   });
 
-  it('drops a row it could not read rather than calling it changed', async () => {
+  it('says an approval could not be checked rather than calling it changed or fine', async () => {
     const digest = await reviewDigest(FRONTMATTER, BODY);
     const rows = await buildReviewQueue(
       [doc('capabilities/bound', { ...FRONTMATTER, review_state: 'confirmed', reviewed_digest: digest })],
       async () => null,
     );
+    // Dropping it let "nothing waiting" conceal an approval that may well have
+    // drifted; calling it drift would accuse someone of a change nobody saw.
+    expect(rows).toEqual([
+      { slug: 'capabilities/bound', title: 'bound', reason: 'unverifiable' },
+    ]);
+  });
+
+  it('leaves a malformed binding out entirely — it never established a baseline', async () => {
+    const readBody = vi.fn(async () => BODY);
+    const rows = await buildReviewQueue(
+      [doc('capabilities/bound', { ...FRONTMATTER, review_state: 'confirmed', reviewed_digest: 'not-a-digest' })],
+      readBody,
+    );
+    expect(readBody).not.toHaveBeenCalled();
     expect(rows).toEqual([]);
   });
 

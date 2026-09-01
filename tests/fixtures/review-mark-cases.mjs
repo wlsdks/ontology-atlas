@@ -74,6 +74,13 @@ export const REVIEW_DIGEST_CASES = Object.freeze([
     why: 'Recording the approval would otherwise change the thing the approval is bound to — the binding has to be computable before it is written.',
   },
   {
+    name: 'moving the node on the map keeps the approval',
+    frontmatter: { canvasPosition: { x: 420, y: 180 } },
+    body: undefined,
+    sameAsBase: true,
+    why: 'A canvas coordinate is where someone dragged a dot. Reporting meaning drift for it teaches people to ignore the signal.',
+  },
+  {
     name: 'trailing whitespace in the body is not a change',
     frontmatter: {},
     body: '  The meaning a person read and accepted.\n\n  ',

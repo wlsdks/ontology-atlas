@@ -1,7 +1,7 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
-import { CircleDashed, UserRoundPen } from "lucide-react";
+import { CircleDashed, FileQuestion, UserRoundPen } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
@@ -45,6 +45,9 @@ export function ReviewQueueSection({ rows, selectedSlug, onSelect, t }: ReviewQu
   if (rows.length === 0) return null;
   const raised = rows.filter((row) => row.reason === "raised");
   const changed = rows.filter((row) => row.reason === "changed-since-review");
+  // Three reasons, three groups. An approval nobody can check is neither fine
+  // nor drifted, and folding it into either would state something untrue.
+  const unverifiable = rows.filter((row) => row.reason === "unverifiable");
 
   return (
     <section
@@ -59,6 +62,17 @@ export function ReviewQueueSection({ rows, selectedSlug, onSelect, t }: ReviewQu
           rows={raised}
           selectedSlug={selectedSlug}
           onSelect={onSelect}
+        />
+      ) : null}
+      {unverifiable.length > 0 ? (
+        <ReviewGroup
+          testId="docs-review-queue-unverifiable"
+          icon={<FileQuestion size={ICON_SIZE.sm} aria-hidden />}
+          label={t("review.unverifiableHeader", { count: unverifiable.length })}
+          rows={unverifiable}
+          selectedSlug={selectedSlug}
+          onSelect={onSelect}
+          describe={() => t("review.unverifiablePlain")}
         />
       ) : null}
       {changed.length > 0 ? (
