@@ -2222,7 +2222,9 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           const deduped = normalizeRelationRefs(after);
           nextFm[key] = deduped;
           beforeKeys.push({ key, before });
-          afterKeys.push({ key, after: deduped });
+          // A removal (self-ref drop leaving the array empty) reports the key
+          // with `after` omitted — the update-row contract's removal shape.
+          afterKeys.push(deduped.length > 0 ? { key, after: deduped } : { key });
           fmChanged = true;
         }
       } else if (typeof value === 'string') {
@@ -2239,7 +2241,7 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
           if (rewritingSelf) {
             delete nextFm[key];
             beforeKeys.push({ key, before: value });
-            afterKeys.push({ key, after: null });
+            afterKeys.push({ key });
           } else {
             nextFm[key] = r.value;
             beforeKeys.push({ key, before: value });
@@ -2283,8 +2285,15 @@ export function redirectBacklinks(rootPath, targetSlug, nextSlug, options = {}) 
             if (!(mapKey in nextMap) && !rewriteArrayItem(mapKey).changed) nextMap[mapKey] = mapValue;
           }
           beforeKeys.push({ key, before: value });
-          afterKeys.push({ key, after: nextMap });
-          nextFm[key] = nextMap;
+          if (Object.keys(nextMap).length > 0) {
+            afterKeys.push({ key, after: nextMap });
+            nextFm[key] = nextMap;
+          } else {
+            // The last note annotated the dropped self-ref — remove the empty
+            // map with it and report the removal (`after` omitted).
+            afterKeys.push({ key });
+            delete nextFm[key];
+          }
           fmChanged = true;
         }
       }

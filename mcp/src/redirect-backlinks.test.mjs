@@ -362,6 +362,12 @@ test("redirectBacklinks — the surviving doc's refs to the absorbed node are dr
   const result = redirectBacklinks(root, "capabilities/b", "capabilities/a", { dryRun: false });
 
   assert.equal(result.totalUpdated, 2);
+  // A removal is reported with `after` omitted — the update-row contract's
+  // removal shape (mcp-verify rejects null / empty-array / empty-map values).
+  const survivorUpdate = result.updates.find((row) => row.slug === "capabilities/a");
+  for (const keyRow of survivorUpdate.afterKeys) {
+    assert.equal("after" in keyRow, false, `${keyRow.key} should be reported as a removal`);
+  }
   const survivor = readMd(root, "capabilities/a");
   assert.doesNotMatch(survivor, /relates: \[capabilities\/a\]/);
   assert.doesNotMatch(survivor, /capabilities\/a: shares/);
