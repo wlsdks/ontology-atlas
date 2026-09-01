@@ -106,6 +106,32 @@ export const WRITER_CASES = [
     expected: '---\ntitle: Kept\n---\n\n',
   },
   {
+    /*
+     * Bug sweep 2026-09-01, reproduced: with the plain `|-` header the reader
+     * took its base indent from the first non-blank line, so a value whose first
+     * line has its own leading whitespace re-read with a deeper base and every
+     * later line escaped the scalar into the top-level loop (`kind: capability`
+     * inside a description changed the node's kind). The writer must emit the
+     * explicit indentation indicator for exactly these values.
+     */
+    name: 'first-line leading whitespace gets an explicit indentation indicator',
+    input: {
+      frontmatter: {
+        kind: 'element',
+        definition: '  sample: yaml snippet\nkind: capability\nnote about it',
+      },
+      body: '',
+    },
+    expected:
+      '---\n' +
+      'kind: element\n' +
+      'definition: |2-\n' +
+      '    sample: yaml snippet\n' +
+      '  kind: capability\n' +
+      '  note about it\n' +
+      '---\n\n',
+  },
+  {
     name: 'normalizes leading body newlines',
     input: {
       frontmatter: { kind: 'project', title: 'Sample' },

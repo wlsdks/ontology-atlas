@@ -371,6 +371,35 @@ export const CASES = [
     },
   },
   {
+    // Writer/reader indentation mismatch (bug sweep 2026-09-01, reproduced).
+    // The writer indents every line by a fixed 2 spaces, but the reader took its
+    // base indent from the first non-blank line — so a value whose FIRST line
+    // carries its own leading whitespace re-parsed with a deeper base, and every
+    // later line broke out of the scalar into the top-level loop: a
+    // `kind: capability` line inside a description overwrote the node's kind.
+    // The fix is YAML's explicit indentation indicator: the writer emits `|2-`
+    // for such values and every reader honors the digit.
+    name: "block scalar `|2-` — explicit indentation indicator keeps the first line's own leading spaces",
+    input:
+      "---\nkind: element\ndefinition: |2-\n    sample: yaml\n  kind: capability\n  note about it\n---\n",
+    expected: {
+      frontmatter: {
+        kind: "element",
+        definition: "  sample: yaml\nkind: capability\nnote about it",
+      },
+      body: "",
+    },
+  },
+  {
+    // YAML allows both header orders (digit-chomp and chomp-digit); accept both.
+    name: "block scalar `|-2` — chomp/digit order swapped reads the same value",
+    input: "---\ndefinition: |-2\n    a\n  b\n---\n",
+    expected: {
+      frontmatter: { definition: "  a\nb" },
+      body: "",
+    },
+  },
+  {
     // Found in this repository's own vault, 2026-08-31, on `display_ko`.
     // `unquote` only strips a matching pair, so the opening quote survived as
     // literal text and every reader rendered the stray quote — with 0 issues.

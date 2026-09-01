@@ -96,7 +96,7 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
     // **Check for a block scalar before classifying the value.** The value of
     // `definition: |` is `"|"`, not an empty string, so putting this inside the
     // empty-value branch would make it unreachable.
-    const scalarIndicator = /^[|>][-+]?$/.exec(value);
+    const scalarIndicator = /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
       assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2);
@@ -584,7 +584,13 @@ function readBlockScalar(
   const chomp = indicator.includes('-') ? 'strip' : indicator.includes('+') ? 'keep' : 'clip';
   const collected: string[] = [];
   let j = start;
-  let baseIndent: number | null = null;
+  // An explicit indentation indicator (`|2-`) fixes the base indent. Without it
+  // the first non-blank line decides — the writer emits the digit whenever the
+  // value's own first line carries leading whitespace, because a first-line
+  // base would swallow that whitespace and eject shallower lines back into the
+  // top-level key loop.
+  const explicitIndent = /[1-9]/.exec(indicator);
+  let baseIndent: number | null = explicitIndent ? Number(explicitIndent[0]) : null;
   while (j < lines.length) {
     const line = lines[j];
     if (line.trim() === '') {

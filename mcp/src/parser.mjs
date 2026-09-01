@@ -89,7 +89,7 @@ export function parseFrontmatter(input) {
     // **Check for a block scalar before classifying the value.** The value of
     // `definition: |` is `"|"`, not an empty string, so putting this inside the
     // empty-value branch makes it unreachable.
-    const scalarIndicator = /^[|>][-+]?$/.exec(value);
+    const scalarIndicator = /^[|>](?:[1-9][-+]?|[-+][1-9]?)?$/.exec(value);
     if (scalarIndicator) {
       const read = readBlockScalar(lines, i + 1, scalarIndicator[0]);
       if (assignParsedKey(frontmatter, key, read.value, diagnostics, i + 2)) {
@@ -442,7 +442,13 @@ function readBlockScalar(lines, start, indicator) {
   const chomp = indicator.includes('-') ? 'strip' : indicator.includes('+') ? 'keep' : 'clip';
   const collected = [];
   let j = start;
-  let baseIndent = null;
+  // An explicit indentation indicator (`|2-`) fixes the base indent. Without it
+  // the first non-blank line decides — which is exactly why the writer emits the
+  // digit whenever the value's own first line carries leading whitespace: a
+  // first-line-derived base would swallow that whitespace into the base and
+  // eject every shallower line back into the top-level key loop.
+  const explicitIndent = /[1-9]/.exec(indicator);
+  let baseIndent = explicitIndent ? Number(explicitIndent[0]) : null;
   while (j < lines.length) {
     const line = lines[j];
     if (line.trim() === '') {
@@ -490,11 +496,16 @@ function readBlockScalar(lines, start, indicator) {
  * that moves a user's markdown into the vault, so the loss is permanent.
  */
 function serializeMultiline(key, text) {
-  const body = text
-    .split('\n')
-    .map((line) => (line === '' ? '' : `  ${line}`))
-    .join('\n');
-  // `|-` (strip) — adds no trailing newline. It pairs with the parser's default
+  const lines = text.split('\n');
+  const body = lines.map((line) => (line === '' ? '' : `  ${line}`)).join('\n');
+  // When the value's first non-blank line has its own leading whitespace, the
+  // reader's first-line base-indent heuristic would misread the base and eject
+  // the following lines as top-level keys (bug sweep 2026-09-01: a
+  // `kind: capability` line inside a description changed the node's kind on the
+  // next read). YAML's explicit indentation indicator pins the base at 2.
+  const firstContent = lines.find((line) => line !== '');
+  const indent = firstContent !== undefined && /^\s/.test(firstContent) ? '2' : '';
+  // `-` (strip) — adds no trailing newline. It pairs with the parser's default
   // clip, so a round trip never grows the value.
-  return `${key}: |-\n${body}`;
+  return `${key}: |${indent}-\n${body}`;
 }
