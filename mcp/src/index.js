@@ -208,6 +208,12 @@ import {
   localeLabelCodes,
   agentCreatedBy,
   CREATED_BY_KEY,
+  HUMAN_ONLY_REVIEW_KEYS,
+  REVIEW_NOTE_KEY,
+  REVIEW_STATE_CONFIRMED,
+  REVIEW_STATE_HUMAN_DECIDES,
+  REVIEW_STATE_KEY,
+  REVIEW_STATES,
   NODE_UID_PATTERN,
   flatSlugIssue,
   mergeNodeIdentityHistory,
@@ -7734,6 +7740,96 @@ function requireValidFrontmatterPatch(frontmatter) {
         'Patching an existing node is not authorship; leave the field as it is (or absent, which means unknown).',
     );
   }
+  requireAgentWritableReviewFields(frontmatter);
+}
+
+/**
+ * The human-judgment half of a patch, on the one call path that is provably an
+ * agent (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`).
+ *
+ * Measured, with the rule written in the vault's own `AGENTS.md`: one of three
+ * model tiers deleted a live `review_state: human_decides` and replaced it with
+ * `review_state: confirmed` plus a `reviewed_by` name it had never been given.
+ * A documented convention is honoured in proportion to model capability, so the
+ * refusal has to live here, where the call path — not the prompt — decides.
+ *
+ * The asymmetry is deliberate and is the whole mechanism:
+ *
+ *   - **Raising is allowed.** An agent that cannot settle a question may write
+ *     `review_state: human_decides` and a `review_note`. That is the behaviour
+ *     the product wants, and refusing it would leave an agent with no way to
+ *     hand work back.
+ *   - **Clearing and confirming are refused.** Both assert that a person acted.
+ *     Nothing in the file afterwards distinguishes an agent-typed `confirmed`
+ *     from a person-typed one, which is exactly why this cannot be a default an
+ *     instruction can override.
+ *
+ * This gate covers writes that come through this server. It cannot reach a
+ * direct file edit, and it is not described anywhere as if it could — the
+ * durable half of the design is `reviewDigest`, which needs no cooperation.
+ */
+function requireAgentWritableReviewFields(frontmatter) {
+  for (const key of HUMAN_ONLY_REVIEW_KEYS) {
+    if (!Object.prototype.hasOwnProperty.call(frontmatter, key)) continue;
+    throw new Error(
+      `frontmatter.${key} records that a person reviewed this node, so it is written only by a path that proves a person — ` +
+        'an agent writing it would be asserting the review, not recording it. ' +
+        `If you cannot settle this node yourself, set ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES} with a ${REVIEW_NOTE_KEY} instead.`,
+    );
+  }
+  if (!Object.prototype.hasOwnProperty.call(frontmatter, REVIEW_STATE_KEY)) return;
+  const state = frontmatter[REVIEW_STATE_KEY];
+  if (state === REVIEW_STATE_HUMAN_DECIDES) return;
+  if (state === null || state === undefined || state === '') {
+    throw new Error(
+      `frontmatter.${REVIEW_STATE_KEY} cannot be cleared from this path — a reservation is released by the person who made it. ` +
+        'Report the node instead; leaving it in place is the correct outcome of an agent turn.',
+    );
+  }
+  if (state === REVIEW_STATE_CONFIRMED) {
+    throw new Error(
+      `frontmatter.${REVIEW_STATE_KEY}: ${REVIEW_STATE_CONFIRMED} states that a person judged this node, so it is written only by a path that proves a person. ` +
+        `Set ${REVIEW_STATE_HUMAN_DECIDES} with a ${REVIEW_NOTE_KEY} if you want a person to look at it.`,
+    );
+  }
+  throw new Error(
+    `frontmatter.${REVIEW_STATE_KEY} must be ${REVIEW_STATE_HUMAN_DECIDES} on this path (${REVIEW_STATES.join(' | ')} are the only values).`,
+  );
+}
+
+/**
+ * The node itself is reserved — refuse the whole write, not just its review keys.
+ *
+ * A reservation that only protected its own frontmatter would be worthless: the
+ * meaning a person reserved lives in the body and the relations, and an agent
+ * rewriting those while leaving the marker intact is the failure this exists to
+ * stop. Every write tool that names an existing node runs this before touching
+ * disk, so the refusal cannot be reached by choosing a different tool.
+ */
+/**
+ * The node as it is on disk, or `null` when it is not there yet.
+ *
+ * A missing file is not an error here: the reservation guard asks "is this node
+ * reserved", and a node that does not exist cannot be. Its own write path
+ * reports the missing file with the message that fits that operation.
+ */
+function readDocIfPresent(slug) {
+  try {
+    return readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, slug));
+  } catch {
+    return null;
+  }
+}
+
+function requireNodeNotReservedForHuman(doc, operation) {
+  const state = doc?.frontmatter?.[REVIEW_STATE_KEY];
+  if (state !== REVIEW_STATE_HUMAN_DECIDES) return;
+  const note = doc?.frontmatter?.[REVIEW_NOTE_KEY];
+  throw new Error(
+    `${operation} refused: ${doc?.slug ?? 'this node'} carries ${REVIEW_STATE_KEY}: ${REVIEW_STATE_HUMAN_DECIDES}, so it is reserved for a person.` +
+      (note ? ` What they have to decide: ${note}` : '') +
+      ' Report it and let the person decide; only they release the reservation.',
+  );
 }
 
 /**
@@ -8477,6 +8573,7 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
       throw new Error('title must be a non-empty string.');
     }
   }
+  requireNodeNotReservedForHuman(readDocIfPresent(slug), 'patch_concept');
   const { filePath, mintedUid } = updateDoc(VAULT_ROOT, slug, {
     frontmatter,
     body,

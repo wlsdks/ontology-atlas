@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-01",
+  "generatedAt": "2026-09-02",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -425,6 +425,18 @@
       "excerpt": "A second reader was given the same 24 answers, then asked to read them three times. The three readings are what matters. Command: pnpm benchmark:grade --bypass --run-id=2026-08-31-gb-r3 --repeat=3. · Correctness, out of 3 · Reading 1 · Reading 2 · Reading 3 · Without Atlas · 2.75 · 2.833 · 2.833 · With Atlas · 2.833 · ",
       "wordCount": 635,
       "updatedAt": "2026-08-31",
+      "linksOut": []
+    },
+    {
+      "slug": "benchmark/FINDINGS-2026-09-02-review-marks",
+      "path": "docs/benchmark/FINDINGS-2026-09-02-review-marks.md",
+      "title": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "A pre-implementation probe for the proposed human-judgment layer: before adding any schema field, MCP contract, or screen, measure whether a plain-Markdown review mark actually changes agent behaviour. Nothing in the product was changed to run this. The marks were hand-authored, exactly as an FDE with a text editor wou",
+      "wordCount": 863,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -5808,6 +5820,13 @@
             "type": "doc",
             "slug": "benchmark/FINDINGS-2026-08-31-two-graders",
             "title": "The difference is smaller than the ruler — 2026-08-31-gb-r3"
+          },
+          {
+            "name": "FINDINGS-2026-09-02-review-marks",
+            "path": "benchmark/FINDINGS-2026-09-02-review-marks",
+            "type": "doc",
+            "slug": "benchmark/FINDINGS-2026-09-02-review-marks",
+            "title": "Findings — can a frontmatter review mark constrain an agent? (2026-09-02)"
           },
           {
             "name": "README",

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 /**
  * Vault kind schema — per-kind frontmatter shape that AI agents and the CLI
@@ -175,6 +175,114 @@ export function agentCreatedBy(agentName) {
 }
 
 /**
+ * Human judgment — the two facts a person leaves on a node, and the one rule
+ * that keeps them from becoming claims (`docs/benchmark/FINDINGS-2026-09-02-review-marks.md`).
+ *
+ * They are **two facts, not one enum with two values**, because their staleness
+ * runs in opposite directions:
+ *
+ *   - `human_decides` is **forward-looking**: a person reserved this node for
+ *     themselves. It must *survive* the content changing — that is exactly when
+ *     it matters most. Only a person clears it.
+ *   - `confirmed` is **backward-looking**: a person judged the content that was
+ *     there at the time. It must *expire* when that content changes, or it
+ *     launders a later rewrite as human-accepted truth.
+ *
+ * Fold them into one field and the reservation evaporates on the next agent
+ * write — the exact failure the whole mechanism exists to prevent.
+ *
+ * **Absence is unknown, never a defect.** No validator warning hangs off a
+ * missing key, and nothing renders an unmarked node as "not yet reviewed". 80 of
+ * this repository's own 94 nodes carry `created_by: agent:unknown`; a vault-wide
+ * "unreviewed" wall is the cry-wolf failure that already retired one screen
+ * (`docs/DECISIONS.md`, 2026-08-22 record 93 §5).
+ */
+export const REVIEW_STATE_KEY = 'review_state';
+export const REVIEW_NOTE_KEY = 'review_note';
+export const REVIEWED_BY_KEY = 'reviewed_by';
+export const REVIEWED_AT_KEY = 'reviewed_at';
+export const REVIEWED_DIGEST_KEY = 'reviewed_digest';
+
+/** Reserved for a person. An agent may raise this; only a person clears it. */
+export const REVIEW_STATE_HUMAN_DECIDES = 'human_decides';
+/** A person judged this node's meaning. Written only by a path that proves a person. */
+export const REVIEW_STATE_CONFIRMED = 'confirmed';
+
+export const REVIEW_STATES = Object.freeze([
+  REVIEW_STATE_HUMAN_DECIDES,
+  REVIEW_STATE_CONFIRMED,
+]);
+
+/**
+ * The keys only a person may write. An agent that sets these is not recording a
+ * judgment, it is asserting one — and nothing in the file afterwards
+ * distinguishes the two. Measured: the weakest arm of the probe deleted a live
+ * reservation and stamped `reviewed_by` with a name it was never given.
+ */
+export const HUMAN_ONLY_REVIEW_KEYS = Object.freeze([
+  REVIEWED_BY_KEY,
+  REVIEWED_AT_KEY,
+  REVIEWED_DIGEST_KEY,
+]);
+
+export const REVIEW_KEYS = Object.freeze([
+  REVIEW_STATE_KEY,
+  REVIEW_NOTE_KEY,
+  ...HUMAN_ONLY_REVIEW_KEYS,
+]);
+
+/**
+ * Keys the digest deliberately ignores, beyond the review keys themselves
+ * (which would make it circular).
+ *
+ * A localized display name is not the meaning a person judged, and neither is
+ * the order the keys happen to sit in. Including them would expire every
+ * approval in the vault the first time someone adds a `display_ko`.
+ */
+const DIGEST_IGNORED_KEY_PREFIXES = ['display'];
+
+/**
+ * What a person approved, as one value — **the currentness binding**.
+ *
+ * `reviewed_at` alone cannot answer "is this approval still about this node",
+ * because a timestamp only orders events and `mtime` does not survive a clone.
+ * The digest travels inside the file, so a fresh `git clone` on another machine
+ * reads the same answer.
+ *
+ * Absence means "reviewed, currentness unknown" — not invalid. An FDE must stay
+ * able to record a judgment in a text editor with Atlas not running; making the
+ * binding mandatory would quietly retire "ordinary, portable Markdown".
+ */
+export function reviewDigest(frontmatter, body) {
+  const meaning = {};
+  for (const [key, value] of Object.entries(frontmatter ?? {})) {
+    if (REVIEW_KEYS.includes(key)) continue;
+    if (DIGEST_IGNORED_KEY_PREFIXES.some((prefix) => key === prefix || key.startsWith(`${prefix}_`))) continue;
+    meaning[key] = value;
+  }
+  const ordered = Object.keys(meaning)
+    .sort((a, b) => a.localeCompare(b, 'en'))
+    .map((key) => [key, meaning[key]]);
+  const payload = JSON.stringify([ordered, String(body ?? '').trim()]);
+  return createHash('sha256').update(payload, 'utf8').digest('hex').slice(0, 32);
+}
+
+/**
+ * Has the node changed since a person confirmed it?
+ *
+ * Three answers, and the third is not a softer version of the second:
+ * `unknown` means the file never carried a binding, which is a different fact
+ * from "it still matches" and must never be drawn as one.
+ */
+export function reviewCurrentness(frontmatter, body) {
+  const state = frontmatter?.[REVIEW_STATE_KEY];
+  if (state !== REVIEW_STATE_CONFIRMED) return 'not-confirmed';
+  const recorded = frontmatter?.[REVIEWED_DIGEST_KEY];
+  if (typeof recorded !== 'string' || !recorded) return 'unknown';
+  return recorded === reviewDigest(frontmatter, body) ? 'current' : 'changed-since-review';
+}
+
+/**
  * Node-eligibility gate — the numbers half (2026-07-31 council, `docs/DECISIONS.md`
  * 「Ontology Construction Specification」). The gate logic lives in `mcp/src/vault.mjs`, the wording in
  * `mcp/src/construction-rules.mjs`; only the values live here.
@@ -266,7 +374,7 @@ export const VAULT_KIND_SCHEMA = {
     // Without it the renderer derives one from the part of `title` before " ("
     // (`deriveDisplayTitle`, `src/shared/lib/derive-display-title.ts`), so most
     // titles never need this key. Search and matching keep using the full title.
-    optional: ['dependencies', 'relates', 'relation_notes', 'description', 'status', 'display', CREATED_BY_KEY],
+    optional: ['dependencies', 'relates', 'relation_notes', 'description', 'status', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
     requiredExtras: [],
     // Recommended key order, for a human reading the file. buildFrontmatter sorts
     // by this order and appends undefined keys (an external import's custom_field,
@@ -285,6 +393,7 @@ export const VAULT_KIND_SCHEMA = {
       'capabilities',
       'elements',
       CREATED_BY_KEY,
+      ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -298,7 +407,7 @@ export const VAULT_KIND_SCHEMA = {
   domain: {
     folder: 'domains/',
     arrayDefaults: ['capabilities'],
-    optional: ['depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY],
+    optional: ['depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
     requiredExtras: [],
     preferredOrder: [
       'uid',
@@ -311,6 +420,7 @@ export const VAULT_KIND_SCHEMA = {
       'depends_on',
       'capabilities',
       CREATED_BY_KEY,
+      ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -321,7 +431,7 @@ export const VAULT_KIND_SCHEMA = {
   capability: {
     folder: 'capabilities/',
     arrayDefaults: ['elements'],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
     // `domain` is the parent in the tree hierarchy — left empty, the capability
     // floats as an orphan and adds distribution noise to the user's insights. The
     // validator warns.
@@ -341,6 +451,7 @@ export const VAULT_KIND_SCHEMA = {
       'elements',
       'path',
       CREATED_BY_KEY,
+      ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -351,7 +462,7 @@ export const VAULT_KIND_SCHEMA = {
   element: {
     folder: 'elements/',
     arrayDefaults: [],
-    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY],
+    optional: ['path', 'depends_on', 'relates', 'broader', 'relation_notes', 'description', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
     // An element is the unit some capability inside some domain uses — with
     // `domain` missing it floats as a sink in the tree.
     requiredExtras: ['domain'],
@@ -367,6 +478,7 @@ export const VAULT_KIND_SCHEMA = {
       'path',
       'depends_on',
       CREATED_BY_KEY,
+      ...REVIEW_KEYS,
     ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
@@ -377,9 +489,9 @@ export const VAULT_KIND_SCHEMA = {
   document: {
     folder: '',
     arrayDefaults: [],
-    optional: ['describes', 'relates', 'relation_notes', 'display', CREATED_BY_KEY],
+    optional: ['describes', 'relates', 'relation_notes', 'display', CREATED_BY_KEY, ...REVIEW_KEYS],
     requiredExtras: [],
-    preferredOrder: ['uid', 'merged_uids', 'slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY],
+    preferredOrder: ['uid', 'merged_uids', 'slug', 'kind', 'title', 'display', 'describes', 'relates', CREATED_BY_KEY, ...REVIEW_KEYS],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
       `State what this narrative or reference artifact explains and which graph concept it describes.\n\n` +
