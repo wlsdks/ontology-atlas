@@ -2,18 +2,53 @@ import { existsSync } from 'node:fs';
 
 import { isSupportedSourcePath } from '../quality/source-language/source-paths.mjs';
 
+/**
+ * The one list of files that ARE the CI planner. `classify-change.mjs` imports
+ * it as its full-plan trigger (PLANNER_SURFACE), so the "planner changes run
+ * exhaustive lanes" promise and this advisor rule can never drift apart — the
+ * 2026-09-01 review caught the hand-copied pair disagreeing about
+ * setup-playwright/action.yml, which then rode a focused plan built on the
+ * assumption the CI infrastructure had not changed.
+ */
+export const CI_PLANNER_SURFACE_PATTERNS = Object.freeze([
+  /^scripts\/classify-change(?:\.test)?\.mjs$/,
+  /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
+  /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
+  /^scripts\/suggest-focused-checks(?:\.test)?\.mjs$/,
+  /^\.github\/workflows\/(?:checks|e2e)\.yml$/,
+  /^\.github\/actions\/setup-playwright\/action\.yml$/,
+]);
+
 const RULES = [
   {
     command: 'pnpm test:ci:impact',
     reason: 'CI impact planner, executor, or workflow wiring changed',
-    matches: [
-      /^scripts\/classify-change(?:\.test)?\.mjs$/,
-      /^scripts\/run-ci-lane(?:\.test)?\.mjs$/,
-      /^scripts\/lib\/focused-check-suggestions(?:\.test)?\.mjs$/,
-      /^scripts\/suggest-focused-checks(?:\.test)?\.mjs$/,
-      /^\.github\/workflows\/(?:checks|e2e)\.yml$/,
-      /^\.github\/actions\/setup-playwright\/action\.yml$/,
-    ],
+    matches: [...CI_PLANNER_SURFACE_PATTERNS],
+  },
+  {
+    // 2026-09-01 review: check:tokens and design:toc:check were unconditional
+    // CI steps before the impact-aware rework and existed afterwards only in
+    // the push-to-main full lane — a raw color slipping into globals.css or a
+    // stale DESIGN-SYSTEM.md table of contents merged green and turned main
+    // red after the fact.
+    command: 'pnpm check:tokens',
+    reason: 'styles or ramp registries changed — the raw-color and token gates apply',
+    matches: [/^app\/globals\.css$/, /^src\/.+\.css$/, /^src\/shared\/lib\/cn\.ts$/],
+  },
+  {
+    command: 'pnpm design:toc:check',
+    reason: 'the design system document changed and its table of contents is generated',
+    matches: [/^docs\/DESIGN-SYSTEM\.md$/],
+  },
+  {
+    // cli/src/lib has had this aggregate for a while (test:cli:lib below);
+    // cli/src/commands never got its twin, so a command suite whose file name
+    // is not the sibling `<command>.test.mjs` — relate.snapshot-write,
+    // validate.exit-codes — ran only inside `pnpm package:check` on the
+    // push-to-main lane and on no pull request at all (2026-09-01 review).
+    command: 'pnpm test:cli:commands',
+    reason: 'a CLI command implementation changed',
+    matches: [/^cli\/src\/commands\//],
   },
   {
     command: 'pnpm test:mcp:registration',
@@ -1211,7 +1246,10 @@ function directLintSuggestions(paths) {
   if (lintable.length === 0) return [];
   return [
     {
-      command: `pnpm exec eslint ${lintable.join(' ')}`,
+      // --max-warnings 0 matches the full `pnpm lint` lane (2026-09-01 review):
+      // the warning ratchet lives at zero, and a bare eslint run exits 0 on a
+      // new warning, so the breach only surfaced as a red main after merge.
+      command: `pnpm exec eslint --max-warnings 0 ${lintable.join(' ')}`,
       reason: 'design-system ramps and FSD boundaries are lint-enforced on changed source',
       paths: lintable,
     },

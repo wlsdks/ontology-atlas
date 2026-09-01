@@ -205,3 +205,49 @@ test('every currently tracked path belongs to a known impact namespace', () => {
   assert.ok(files.length > 1_000, 'tracked-path inventory is unexpectedly empty');
   assert.deepEqual(buildImpactPlan({ files }).unknownPaths, []);
 });
+
+// 2026-09-01 review regressions: four formerly-unconditional gates ran on no
+// pull request, rendering .ts in ui/ segments planned zero browser evidence,
+// two MCP-spawning smokes missed the needsMcp flag, and PLANNER_SURFACE was a
+// hand-copy that disagreed with the advisor's own planner rule.
+test('token, toc, and package gates reach the PRs that touch their inputs', () => {
+  const tokens = buildImpactPlan({ files: ['app/globals.css'] });
+  assert.ok(tokens.lanes.gates.commands.includes('pnpm check:tokens'));
+
+  const toc = buildImpactPlan({ files: ['docs/DESIGN-SYSTEM.md'] });
+  assert.ok(toc.lanes.gates.commands.includes('pnpm design:toc:check'));
+
+  const cli = buildImpactPlan({ files: ['cli/src/commands/relate.mjs'] });
+  assert.ok(cli.lanes.gates.commands.includes('pnpm test:cli:commands'));
+});
+
+test('per-file lint carries the warning ratchet', () => {
+  const plan = buildImpactPlan({ files: ['src/shared/lib/cn.ts'] });
+  const lint = plan.lanes.gates.commands.find((command) => command.includes('exec eslint'));
+  assert.ok(lint, 'changed source must plan a lint command');
+  assert.match(lint, /--max-warnings 0/);
+});
+
+test('rendering .ts in a ui/ segment fails closed to smoke; lib .ts stays with units', () => {
+  const ui = buildImpactPlan({
+    files: ['src/widgets/topology-map-v2/ui/topology-pointer-handlers.ts'],
+  });
+  assert.equal(ui.lanes.e2e.mode, 'smoke');
+
+  const lib = buildImpactPlan({ files: ['src/shared/lib/cn.ts'] });
+  assert.equal(lib.lanes.e2e.mode, 'skip');
+});
+
+test('MCP-spawning smokes raise the needsMcp flag', () => {
+  const plan = buildImpactPlan({ files: ['scripts/smoke-clean-onboarding.mjs'] });
+  if (plan.lanes.gates.commands.includes('pnpm smoke:onboarding')) {
+    assert.equal(plan.lanes.gates.needsMcp, true);
+  } else {
+    assert.fail('smoke:onboarding must stay planned for its own script');
+  }
+});
+
+test('the Playwright setup action is planner surface and forces the full plan', () => {
+  const plan = buildImpactPlan({ files: ['.github/actions/setup-playwright/action.yml'] });
+  assert.equal(plan.full, true);
+});
