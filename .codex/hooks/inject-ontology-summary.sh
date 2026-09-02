@@ -17,6 +17,11 @@
 # recognizes the vault from the very first moment of work, without requiring
 # the user to say "use ontology" in every prompt.
 #
+# Sources, read 2026-09-02: https://developers.openai.com/codex/hooks
+# (SessionStart plain stdout is added as developer context; SessionStart with
+# `source: compact` runs after compaction; PreCompact/PostCompact carry no
+# context; project hooks run only after `/hooks` trust).
+#
 # Output convention (agent hooks):
 #   - exit 0 + empty stdout → silent (blocks noise in repos without a vault)
 #   - exit 0 + non-empty stdout → added to agent system context (our path)
@@ -98,8 +103,15 @@ if ! JSON=$($CLI_BIN overview "$VAULT" --json 2>"$CLI_STDERR"); then
       ;;
   esac
 
+  # The first output line is deliberately not bracketed. Codex reads a hook's
+  # stdout as JSON when it looks like JSON, and a line starting with `[` looks
+  # like an array: the earlier `[ontology vault @ …]` header made codex-cli
+  # 0.151.0 mark this hook "SessionStart Failed" on every session (measured
+  # 2026-09-02 by tracing the hook to a clean exit 0 and then removing the
+  # bracket, after which the same run reported Completed). Claude Code never
+  # minded, but one census format for both runtimes is cheaper than two.
   cat <<EOF
-[ontology vault @ ${VAULT}]
+ontology vault @ ${VAULT}
 Vault will not compile — no ontology context this session.
 $REASON
 Fix it before trusting any ontology answer: \`$FIX\`.
@@ -142,7 +154,7 @@ if [ -z "$SUMMARY" ]; then
 fi
 
 cat <<EOF
-[ontology vault @ ${VAULT}]
+ontology vault @ ${VAULT}
 $SUMMARY
 
 Token budget: prefer focused ontology reads and the narrowest available source
