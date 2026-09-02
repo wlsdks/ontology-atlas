@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29721,
+      "wordCount": 29746,
       "updatedAt": "2026-09-02",
       "linksOut": []
     },
@@ -1968,7 +1968,7 @@
       },
       "headings": [],
       "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
-      "wordCount": 1003,
+      "wordCount": 1078,
       "updatedAt": "2026-09-02",
       "linksOut": []
     },
@@ -3812,8 +3812,8 @@
       },
       "headings": [],
       "excerpt": "Design rationale and implemented contract for how the topology map reveals a node on click and stays readable + fast as the vault grows. /topology is the explicit map address; / is the map only after a vault is available (a web visitor without one sees the gateway). This is the canonical decision; .claude/rules/design.",
-      "wordCount": 1171,
-      "updatedAt": "2026-08-23",
+      "wordCount": 1198,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {

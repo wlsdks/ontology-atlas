@@ -124,6 +124,16 @@ export interface TraceDrawState {
    */
   emphasized?: boolean;
   /**
+   * **Hover lift** 0..1 — how far a `normal` edge that touches the hovered node
+   * has risen toward the ego ink (2026-09-02). The map's hover used to move only
+   * the node (ring, shimmer, neighbour ripple) and left every line untouched;
+   * Obsidian's graph — the tactile reference the owner keeps naming — lights a
+   * note's connections the moment the cursor lands. The value is the hovered
+   * node's own emphasis ramp, so lines rise and fall on the same clock as the
+   * ring and never cut. Ignored unless `egoState === "normal"`.
+   */
+  hoverLift?: number;
+  /**
    * Edge selection (pair focus) — drawn with the dedicated pale-indigo stroke.
    * Same family as node selection (standard indigo) but a different value, so
    * the two read apart at a glance without adding a second colour system.
@@ -277,6 +287,8 @@ const COMET_TAIL_FAR_SIZES = [1.3, 0.9, 0.6];
  * (glow is banned).
  */
 const COMET_TAIL_BASE_NORMAL = [2.1, 1.5, 0.9];
+/** Extra width a hovered node's lines gain at full lift — half the ego step, since nothing is selected yet. */
+export const HOVER_LIFT_WIDTH_PX = 0.45;
 const COMET_TAIL_BASE_EGO = [2.9, 2.1, 1.3];
 const COMET_TAIL_BASE_EMPHASIZED = [3.6, 2.7, 1.7];
 
@@ -325,6 +337,14 @@ export function draw(ctx: CanvasRenderingContext2D, state: TraceDrawState, token
             ? tokens.edgeContainsL2 ?? tokens.edgeContains
             : tokens.edgeContains;
       width = (1 + (0.45 - 1) * farT) * CONTAINS_LEVEL_WIDTH_FACTOR[level];
+    }
+    const hoverLift = clamp01(state.hoverLift ?? 0);
+    if (hoverLift > 0.01) {
+      // The same ink the ego state uses, blended by the ramp: at 1 the line is
+      // exactly what a click would make it, so hover reads as "this is what you
+      // would get" rather than a third colour.
+      stroke = mixHex(stroke, isDepends ? tokens.indigoBright : tokens.indigo, hoverLift);
+      width += HOVER_LIFT_WIDTH_PX * hoverLift;
     }
   }
 

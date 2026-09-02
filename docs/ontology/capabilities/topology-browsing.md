@@ -20,6 +20,10 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
 - AGENTS.md: Tech stack ("The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)")
 
 ## View Modes
+- **Hover lights the connections (2026-09-02)**: With nothing selected, hovering a concept raises its own relation lines
+  toward the ego ink (`render/traces.ts` `hoverLift`) and recedes every other line by a mild step, both driven by the
+  hovered node's existing emphasis ramp (`model/focus-state.ts`, τ 90 ms) so nothing cuts; nodes keep their ink. The
+  reference is Obsidian's graph hover; a click still owns the full ego dim, and the lift is suppressed under focus and lenses.
 - **3D View (2026-08-18; cone tree since 2026-09-02)**: An opt-in mode that lifts the map into depth. The
   ownership arrangement is a **cone tree** (Robertson, Mackinlay & Card 1991): height is the containment tier
   (project apex → domain → capability → element plane) and every parent is the apex of its own cone whose

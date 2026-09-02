@@ -248,6 +248,14 @@ let nodeVisualCacheReducedMotion: boolean | null = null;
 const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
 /** The zero dome frame — shared (and never mutated) by dome-off nodes and the 2D path. */
 const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
+/**
+ * How far the lines NOT touching the hovered node recede at full hover ramp
+ * (alpha multiplier 1 − step). 0.3 is a step the eye reads as "pointed away
+ * from", still well above the dimmest data ink the contrast contract pins, and
+ * small enough that sweeping the cursor across a dense map does not read as the
+ * whole map flickering.
+ */
+const HOVER_RECEDE_ALPHA_STEP = 0.3;
 
 /**
  * **The node alphas this frame actually drew** — the single source for hit testing.
@@ -1581,9 +1589,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // Omit distant details — same rule as fog exemption: relationships brightened for reading
       // also reclaim their halo (if exempt edges cannot cut through tangled tangles, the exemption is half-hearted).
       if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
+      /*
+       * Hover lift (2026-09-02) — with nothing focused, the lines of the hovered
+       * node rise toward the ego ink and every other line recedes a step, both on
+       * the hovered node's own emphasis ramp (`emphasisById`, τ 90 ms), so the
+       * change eases in with the ring and eases out when the cursor leaves. The
+       * recede is deliberately mild: a focus dims to hide, a hover only points.
+       * Nodes keep their ink — only lines move, which is what makes a hover read
+       * as "these are its connections" without the screen changing under the
+       * cursor. Suppressed under focus and lenses, which own attention there.
+       */
+      const hoverRamp =
+        focusedNodeId === null && hoveredNodeId !== null && !trailLensActive && !pathLensActive
+          ? Math.min(1, Math.max(0, emphasisById.get(hoveredNodeId) ?? 0))
+          : 0;
+      const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
+      const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
+      const hoverRecede =
+        hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
+        hoverRecede *
         (domeEdgeExempt ? 1 : domeEdgeFog);
       /*
        * A halo's strength follows **how strong this line currently is**: a near
@@ -1620,6 +1647,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           farT,
           t: edge.t,
           emphasized,
+          hoverLift,
           reducedMotion,
           level: edge.level,
           widthScale: domeEdgeExempt ? 1 : domeWidthScale,
