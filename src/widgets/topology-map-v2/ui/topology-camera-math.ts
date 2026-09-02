@@ -16,7 +16,7 @@
 import { computePanBounds, type CameraAxes, type CameraTarget, type PanBounds } from "../engine/camera";
 import { LABEL_OFFSET } from "../render/labels";
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
-import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type TopologyWorld } from "./topology-world";
+import { computeClusterDiscBounds, computeEgoBounds, radiusForKind, type Bounds, type TopologyWorld } from "./topology-world";
 import type { WorldNode } from "./topology-world";
 
 interface Point {
@@ -442,11 +442,17 @@ export function computeFocusCameraTarget(
    * the global ego (the existing contract unchanged).
    */
   restrictIds?: ReadonlySet<string> | null,
+  /**
+   * The bounds the deselect return fits. Defaults to the spine; the loop passes
+   * the full bounds while expand-all is on, so closing a panel lands on the
+   * same frame the fit button and the `0` key produce.
+   */
+  overviewBounds: Bounds = world.spineBounds,
 ): CameraTarget | null {
   if (focusedSlug === null) {
     // Overview fits the SPINE bbox (project+domain+hub — the only tier drawn at
     // entry), not the full 295-node bounds; see `topology-world.ts#spineBounds`.
-    return computeOverviewCameraTarget(world.spineBounds, viewportWidth, viewportHeight, tokens);
+    return computeOverviewCameraTarget(overviewBounds, viewportWidth, viewportHeight, tokens);
   }
   const egoBounds = computeEgoBounds(world, tokens, focusedSlug, restrictIds);
   if (!egoBounds) return null;

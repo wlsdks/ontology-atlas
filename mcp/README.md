@@ -524,11 +524,15 @@ explicit `project`; Atlas does not silently pick the first project. Omitted
 known coding task, `detail:"compact"` requires a request-local `task` of at most
 2,000 characters and returns no more than 12,000 UTF-8 JSON bytes. The compact
 v2 contract keeps final source/meaning currentness, `meaningRepair:v2`, approval
-and no-auto-write/finalize guards, one broad capability selected from persisted
-evidence, cited element/path anchors, explicit impact/verification unknowns,
-one bounded full-body read, and an exact `detail:"full"` follow-up. It does not
-persist or echo raw task text, treat lexical matching as behavior proof, inspect
-raw source generally, or write the vault. An element may record human-reviewable
+and no-auto-write/finalize guards, one broad capability selected only when its
+persisted Definition/Includes/Excludes are compatible with the task, cited
+element/path anchors, explicit impact/verification unknowns, one bounded
+full-body read, and an exact `detail:"full"` follow-up. Desired work must be
+supported by Definition or Includes; explicit non-goals may align with Excludes.
+A desired/negative boundary conflict, an unsupported claim, or a tied top claim
+returns no capability. It does not persist or echo raw task text, treat this
+claim compatibility as behavior proof, inspect raw source generally, or write
+the vault. An element may record human-reviewable
 Evidence coordinates as `Primary implementation`, `Supporting implementation`,
 and `Focused test` bullets. With a current bound source, `taskNavigation:v1`
 checks only those named files, requires each symbol/test to resolve uniquely,

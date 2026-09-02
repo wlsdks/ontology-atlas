@@ -38,6 +38,7 @@ import { DEFAULT_EXPAND, type ExpandPreference } from "@/shared/lib/appearance-p
 import { depthParallaxOffsetFor, ZERO_PARALLAX, type DepthParallaxOffset } from "../model/realm-depth-parallax";
 import {
   commitDomeEntrySweep,
+  clampOrbitReleaseVelocity,
   domeFacingYaws,
   isInsideDomeGrip,
   projectOrbitLanding,
@@ -1281,8 +1282,9 @@ export function createTopologyPointerHandlers(refs: PointerHandlerRefs): Topolog
               minSpeedPxPerMs: tokens.cameraFlickMinSpeed,
             });
             if (release.isFlick) {
-              dome.yawVel = release.vx * ORBIT_YAW_PER_PX;
-              dome.pitchVel = release.vy * ORBIT_PITCH_PER_PX;
+              // Capped so the coast never exceeds half a turn (`ORBIT_COAST_MAX_RAD`).
+              dome.yawVel = clampOrbitReleaseVelocity(release.vx * ORBIT_YAW_PER_PX);
+              dome.pitchVel = clampOrbitReleaseVelocity(release.vy * ORBIT_PITCH_PER_PX);
               /*
                * **A meaningful landing** — left to momentum alone, the dome stops at an
                * arbitrary angle. The natural landing point is computed from the release

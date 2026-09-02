@@ -168,8 +168,10 @@ roadmap promise. It summarizes current product behavior documented in the
 - **MCP over stdio** for Claude Code, Cursor, VS Code, Codex, and any other MCP
   client — a typed read and write surface the running server advertises through
   `tools/list`. For a known coding task that only reads Atlas context, the
-  measured `OATLAS_READ_ONLY=1` path returns one compact current-source batch;
-  use the full profile when that session must also write ontology Markdown.
+  measured `OATLAS_READ_ONLY=1` path returns one compact current-source batch.
+  The compact handoff follows the selected capability's persisted
+  Definition/Includes/Excludes and refuses conflicting or tied claims; use the
+  full profile when that session must also write ontology Markdown.
   [Agent guide](mcp/README.md).
 - **A CLI carrying the same authority as the agent** — scaffold, validate,
   dry-run writes, bounded traversal, blast radius, commit preflight,
@@ -314,11 +316,12 @@ Recent changes can narrow the map while preserving project and domain context;
 Footprints record the order in which you opened concepts. Both are views over
 local file and session evidence, not hosted activity guesses.
 
-![The current 3D picker in the installed macOS app, offering Flat for the ordinary 2D map, Dome for tiers stacked the way things are contained, and Cloud for clustering by what relates to what](docs/assets/readme/three-dimensional-views.png)
+![The current 3D picker in the installed macOS app, offering Flat for the ordinary 2D map, Cone for containment drawn as nested cones, and Cloud for clustering by what relates to what](docs/assets/readme/three-dimensional-views.png)
 
 Three spatial readings are explicit rather than mixed together: **Flat** is the
-normal 2D map, **Dome** places containment tiers in depth, and **Cloud** lets
-relations determine all three axes. Changing the view never changes the graph.
+normal 2D map, **Cone** hangs each parent's children on a cone directly under
+it with height as the containment tier, and **Cloud** lets relations determine
+all three axes. Changing the view never changes the graph.
 
 ### 4. Plan against reviewed architecture
 
@@ -761,8 +764,11 @@ node $ATLAS agent-brief ./atlas --project project-slug --compact --task "Describ
 Compact v2 can start the first source read at an exact implementation symbol,
 supporting symbol, focused test, and reviewed IN/OUT boundary when those
 coordinates are already human-reviewable in the selected element's Markdown
-and the bound source is current. It checks only the named files. It does not
-build a symbol index or infer coordinates from the task; stale, ambiguous,
+and the bound source is current. Before that read it uses persisted Definition
+and Includes as positive scope and Excludes as the explicit boundary; a
+conflicting, unsupported, or tied capability stays unselected. It checks only
+the named files. It does not build a symbol index, infer coordinates from the
+task, or present claim compatibility as behavior proof; stale, ambiguous,
 unsafe, missing, or unrecorded evidence remains explicitly unknown. For a
 known task that only reads Atlas context, use `OATLAS_READ_ONLY=1`: the current
 frozen-control run cut source reads from four to one, wall time by 23.9%, and
@@ -896,6 +902,9 @@ structured response, so a builder does not copy them into a private wrapper.
 Payload-carrying witnesses may omit their derived digest: seal adds the canonical
 binding to a cloned output, still rejects a supplied mismatch, and still requires
 a digest when no payload is present.
+
+For the CLI compact-bootstrap count gate, run
+`node scripts/run-focused-node-test.mjs --test-name-pattern "compact import delivery preserves review totals" cli/src/integration.test.mjs`; it proves a bounded review plan does not turn omitted full arrays into false zero candidate counts.
 
 The rest of the gate reference lives in
 [development checks](docs/DEVELOPMENT-CHECKS.md), which is where a contributor

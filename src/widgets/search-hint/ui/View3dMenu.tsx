@@ -128,7 +128,13 @@ export function View3dMenu({ open, onClose }: { open: boolean; onClose: () => vo
       className={cn(
         'overlay-spring-surface',
         presence.exiting && 'pointer-events-none',
-        'absolute left-1/2 top-full z-40 mt-2 w-60 -translate-x-1/2',
+        // Below `xl` the lane sits in the top-right corner, so a menu centred under
+        // the chip ran into the right-hand control column (measured 2026-09-02 at
+        // 1100 and 1200 px: it covered the fit, tour, and help tiles). There it
+        // hangs from the chip's right edge instead, which keeps it left of that
+        // column; from `xl` up the lane is centred in the map and the menu centres
+        // under the chip as before.
+        'absolute right-0 top-full z-40 mt-2 w-60 xl:left-1/2 xl:right-auto xl:-translate-x-1/2',
         'rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]',
         'bg-[color:var(--topology-v2-panel-surface)] p-1.5 shadow-[var(--topology-v2-panel-shadow)]',
       )}

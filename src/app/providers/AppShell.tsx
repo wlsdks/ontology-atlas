@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useDestinationShortcuts } from "@/shared/lib/use-destination-shortcuts";
 import { focusMapCanvasWhenReady } from "@/shared/lib/focus-map-canvas";
+import { settleRouteViewTransition } from "@/shared/lib/route-view-transition";
 import { installExternalLinkOpener } from "@/shared/lib/tauri-external-link";
 import { useToast } from "@/shared/ui";
 import { useTranslations } from "next-intl";
@@ -49,6 +50,20 @@ import { useHydrated } from "@/shared/lib/use-hydrated";
  * structure a page has to remember is what causes drift. `h-screen` /
  * `min-h-screen` on a new page is a defect.
  */
+/**
+ * Releases a route crossfade the moment the new route has committed — a layout
+ * effect keyed on the pathname runs after commit and before paint, which is the
+ * exact moment the View Transitions API wants the "new" state to exist
+ * (`shared/lib/route-view-transition.ts`).
+ */
+function RouteViewTransitionSettle() {
+  const pathname = usePathname();
+  useLayoutEffect(() => {
+    settleRouteViewTransition();
+  }, [pathname]);
+  return null;
+}
+
 export function AppShell({ children }: { children: ReactNode }) {
   useGuideOverride();
   /*
@@ -76,6 +91,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           */}
           <AppUpdateProvider>
             <RouteFocusManager />
+            <RouteViewTransitionSettle />
             <ShellColumn>{children}</ShellColumn>
           </AppUpdateProvider>
       </GuideReplayProvider>

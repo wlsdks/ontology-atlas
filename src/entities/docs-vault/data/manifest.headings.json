@@ -3849,6 +3849,11 @@
     },
     {
       "depth": 2,
+      "text": "Unreleased",
+      "slug": "unreleased"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 · v1.0.4: the installed app proves its own bundle, and the records fit one screen",
       "slug": "2026-09-02-v104-the-installed-app-proves-its-own-bundle-and-the-records-fit-one-screen"
     },
@@ -6175,8 +6180,23 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-03 — CLI bootstrap compact plans preserve the import review totals they summarize",
+      "slug": "2026-09-03-cli-bootstrap-compact-plans-preserve-the-import-review-totals-they-summarize"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-03 — The download headline types only its own sentence, and the changelog is offered once per viewport",
       "slug": "2026-09-03-the-download-headline-types-only-its-own-sentence-and-the-changelog-is-offered-once-per-viewport"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap",
+      "slug": "2026-09-02-compact-task-handoff-follows-persisted-capability-boundaries-not-noun-overlap"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — The 3D ownership arrangement becomes a cone tree, arrangement switches morph, and a dome visit no longer keeps 2D awake",
+      "slug": "2026-09-02-the-3d-ownership-arrangement-becomes-a-cone-tree-arrangement-switches-morph-and-a-dome-visit-no-longer-keeps-2d-awake"
     },
     {
       "depth": 2,
@@ -9797,6 +9817,11 @@
     },
     {
       "depth": 3,
+      "text": "Compact task-claim routing",
+      "slug": "compact-task-claim-routing"
+    },
+    {
+      "depth": 3,
       "text": "CLI argument parsing",
       "slug": "cli-argument-parsing"
     },
@@ -10179,6 +10204,11 @@
       "depth": 3,
       "text": "CLI code-to-vault commands",
       "slug": "cli-code-to-vault-commands"
+    },
+    {
+      "depth": 3,
+      "text": "CLI compact bootstrap totals",
+      "slug": "cli-compact-bootstrap-totals"
     },
     {
       "depth": 3,
@@ -12900,6 +12930,11 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    },
+    {
+      "depth": 2,
+      "text": "Map Feel (2026-09-02)",
+      "slug": "map-feel-2026-09-02"
     }
   ],
   "ontology/capabilities/vault-agent": [

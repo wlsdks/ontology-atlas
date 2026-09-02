@@ -938,6 +938,8 @@
         "clickSelect": "Select a node",
         "dragPan": "Pan the map (empty space) or move a node (spring rebound)",
         "wheelZoom": "Zoom in or out",
+        "keyZoom": "Zoom in or out one step",
+        "keyFit": "Fit the whole map",
         "rightClickContext": "Context menu: document, edit relations, copy handoff, path, full detail",
         "moveBetweenResults": "Move between results",
         "openSelectedResult": "Open the selected result",
@@ -1016,7 +1018,7 @@
       "collapseAllLabel": "Collapse all",
       "view3dChoice": {
         "flat": "Flat",
-        "ownership": "Dome",
+        "ownership": "Cone",
         "coupling": "Cloud"
       },
       "view3dChoiceHint": {
@@ -2436,6 +2438,8 @@
       "switchToMyDataTooltip": "Open my markdown folder: the map fills with my data (⌘O)",
       "changeAnnouncement": "{count} concepts updated: synced",
       "close": "Close",
+      "replayGrowthTooltip": "Replay how it grew",
+      "replayGrowthAriaLabel": "Replay the ontology appearing in containment order",
       "tourTooltip": "Guided tour",
       "tourAriaLabel": "Start the guided tour",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
@@ -2617,6 +2621,13 @@
       "eyebrow": "Recent changes",
       "title": "Open your folder to turn this on",
       "body": "You're looking at the sample map. Its dates are when this app last touched the sample, which has nothing to do with you. Open your folder and the map will point out what changed and when.",
+      "action": "Open my folder",
+      "close": "Close"
+    },
+    "editNeedsVault": {
+      "eyebrow": "Edit a relation",
+      "title": "Open your folder to edit",
+      "body": "You're looking at the sample map, so it can't be edited. Open your folder and you can fix relations right here: each change lands in a markdown file in that folder.",
       "action": "Open my folder",
       "close": "Close"
     },

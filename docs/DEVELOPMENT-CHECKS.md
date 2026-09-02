@@ -181,6 +181,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Compact agent_brief truth fields stay exact, probing source-currentness, the 12,000-byte cap, and stop_on_match independently.
 **Escalate**: `pnpm test:mcp:unit`, then current-source MCP/CLI integration and a prospective field trial
 
+### Compact task-claim routing
+
+**Run**: `node scripts/run-focused-node-test.mjs --test-name-pattern "persisted responsibility|task boundaries|claim boundaries" mcp/src/agent-brief-compact.test.mjs mcp/src/integration.test.mjs`
+**Proves**: Compact `agent_brief` honors Definition/Includes/Excludes polarity and refuses conflicts, unsupported claims, and ties.
+**Escalate**: `pnpm test:mcp:unit`, then `pnpm integration:mcp` and a source-hidden replay before a product claim
+
 ### CLI argument parsing
 
 **Run**: `pnpm test:cli:args`
@@ -664,6 +670,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Run**: `pnpm integration:cli:repo-analysis`
 **Proves**: The CLI's `index`, `analyze`, `infer-imports`, `architecture`, and `bootstrap` code-to-vault commands behave correctly.
 **Escalate**: none.
+
+### CLI compact bootstrap totals
+
+**Run**: `node scripts/run-focused-node-test.mjs --test-name-pattern "compact import delivery preserves review totals" cli/src/integration.test.mjs`
+**Proves**: A compact bootstrap receipt keeps candidate and unresolved totals while exit 3, approval-required state, and zero writes remain unchanged.
+**Escalate**: `pnpm integration:cli:repo-analysis`
 
 ### CLI local vault commands
 

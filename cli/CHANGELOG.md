@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed — compact bootstrap review totals (2026-09-03)
+
+- `bootstrap --json` now derives import-candidate and unresolved totals from the validated compact scan summary/review queue when full arrays are intentionally omitted. It remains review-only with exit 3, `approval_required`, `writeEligible:false`, and writes 0.
+
 ### Changed — command count restated (2026-08-31)
 
 - The developer-facing CLI documents 58 commands and the installed `mcp-verify`

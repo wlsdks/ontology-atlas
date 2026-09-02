@@ -938,6 +938,8 @@
         "clickSelect": "노드 선택",
         "dragPan": "지도 이동(빈 공간) 또는 노드 위치 이동(스프링 반사)",
         "wheelZoom": "확대·축소",
+        "keyZoom": "확대 · 축소 한 단계",
+        "keyFit": "지도 전체 맞춤",
         "rightClickContext": "컨텍스트 메뉴: 문서 열기 · 관계 편집 · AI에게 줄 정보 복사 · 경로 찾기 · 자세히 보기",
         "moveBetweenResults": "결과 간 이동",
         "openSelectedResult": "선택한 결과 열기",
@@ -1016,12 +1018,12 @@
       "collapseAllLabel": "전체 접기",
       "view3dChoice": {
         "flat": "평면",
-        "ownership": "돔",
+        "ownership": "원뿔",
         "coupling": "구름"
       },
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
-        "ownership": "담긴 구조대로 층층이 쌓인 모양",
+        "ownership": "담긴 구조대로 원뿔이 층층이 매달린 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
       "view3dLabel": "3D",
@@ -2223,7 +2225,7 @@
       "domainLabel": "도메인",
       "poweredOn": "최근 갱신",
       "poweredOff": "한동안 그대로",
-      "metricUsedBy": "사용하는 항목",
+      "metricUsedBy": "이 항목을 사용하는 곳",
       "metricContainsHelp": "이 노드가 직접 담고 있는 하위 항목들: 하위 전체가 아니라 바로 아래 한 단계예요.",
       "metricUsedByHelp": "이 노드를 직접 쓰는(가리키는) 다른 항목들.",
       "metricDependsOnHelp": "이 노드가 직접 기대는(필요로 하는) 다른 항목들.",
@@ -2436,6 +2438,8 @@
       "switchToMyDataTooltip": "내 폴더 열기: 지도가 내 데이터로 채워집니다 (⌘O)",
       "changeAnnouncement": "개념 {count}개 갱신됨: 반영됨",
       "close": "닫기",
+      "replayGrowthTooltip": "자라는 순서로 다시 보기",
+      "replayGrowthAriaLabel": "온톨로지가 담긴 순서대로 나타나는 것을 다시 보기",
       "tourTooltip": "가이드 투어",
       "tourAriaLabel": "가이드 투어 시작",
       "shortcutsTooltip": "키보드 단축키 (?)",
@@ -2537,11 +2541,11 @@
       "openDoc": "열기"
     },
     "edgeSentence": {
-      "contains": "{from} 가 {to} 를 담고 있어요.",
-      "depends": "{from} 가 {to} 에 기대요.",
-      "describes": "{from} 가 {to} 의 근거예요.",
-      "belongsTo": "{from} 는 {to} 에 속해요.",
-      "related": "{from} 와 {to} 가 서로 관련돼 있어요."
+      "contains": "{from}{fromJosa} {to}{toJosa} 담고 있어요.",
+      "depends": "{from}{fromJosa} {to}에 기대요.",
+      "describes": "{from}{fromJosa} {to}의 근거예요.",
+      "belongsTo": "{from}{fromJosa} {to}에 속해요.",
+      "related": "{from}{fromJosa} {to}{toJosa} 서로 관련돼 있어요."
     },
     "edgeHover": {
       "clickHint": "클릭하면 상세 · 출처 문서"
@@ -2620,6 +2624,13 @@
       "action": "내 폴더 열기",
       "close": "닫기"
     },
+    "editNeedsVault": {
+      "eyebrow": "관계 고치기",
+      "title": "내 폴더를 열면 고칠 수 있어요",
+      "body": "지금 보는 건 예시 지도라 고칠 수 없어요. 내 폴더를 열면 여기서 바로 관계를 고치고, 고친 것이 그 폴더의 마크다운 파일로 남아요.",
+      "action": "내 폴더 열기",
+      "close": "닫기"
+    },
     "createNeedsVault": {
       "eyebrow": "항목 만들기",
       "title": "내 폴더를 열면 만들 수 있어요",
@@ -2678,7 +2689,7 @@
     "close": "닫기",
     "metric": {
       "contains": "하위 항목",
-      "usedBy": "사용하는 항목",
+      "usedBy": "이 항목을 사용하는 곳",
       "dependsOn": "필요한 항목",
       "reach": "3단계 도달"
     },

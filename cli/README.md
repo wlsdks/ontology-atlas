@@ -46,7 +46,7 @@ validates all claims before writing, and inherits the dirty-Markdown guard.
 | `ontology-atlas add <kind> <slug> --title="..."` | Scaffold a new node and mint a fresh immutable UID (`--domain X --body "..." --vault path`); throws on duplicate slug or UID. Bad scalar input fails before writing. Body defaults to a starter only when omitted. `--auto-prefix` is on by default; use `--raw-slug` to opt out. |
 | `ontology-atlas find <query> [vault]` | Search slug + title (case-insensitive, enum-validated `--kind X` filter with closest-value hints, `--json`) |
 | `ontology-atlas import <path...>` | Import external `.md` through the same schema as `add`. A valid source UID is preserved; a missing UID is minted; malformed or destination/batch-colliding identities fail instead of being replaced. `--rename` changes only the slug and never duplicates identity. Options: `--vault path`, `--kind K`, `--auto-prefix`, `--raw-slug`, `--rename`, `--dry-run`. |
-| `ontology-atlas bootstrap [rootPath]` | Analyze a repo and return a **review-only** plan for project/domain/capability/element candidates and containment. Cold-start CLI never writes semantic nodes: an exact `constructionQualification:v1` packet, human acceptance, and unchanged released `writePlan` are required through the MCP lifecycle. Inferred imports are returned only as exact-evidence `rationale_review_required` candidates. `--json` includes `writeEligible:false`, `reason:"approval_required"`, and `writes:0`. Use a connected agent with `/ontology-bootstrap` to continue review → independent qualification → human acceptance → exact writePlan. |
+| `ontology-atlas bootstrap [rootPath]` | Analyze a repo and return a **review-only** plan for project/domain/capability/element candidates and containment. Cold-start CLI never writes semantic nodes: an exact `constructionQualification:v1` packet, human acceptance, and unchanged released `writePlan` are required through the MCP lifecycle. Inferred imports are returned only as exact-evidence `rationale_review_required` candidates. When a large import result is compact, plan totals still come from the validated scan summary/review queue instead of absent full arrays. `--json` includes `writeEligible:false`, `reason:"approval_required"`, and `writes:0`. Use a connected agent with `/ontology-bootstrap` to continue review → independent qualification → human acceptance → exact writePlan. |
 | `ontology-atlas analyze [rootPath]` | Preview repo-derived candidates without writing. For root Python packages, up to 12 implementation boundaries that participate in observed imports become element/path candidates: direct modules are the base and up to two exact nested security/policy/risk endpoints may reserve slots. Unused files and ambiguous flat slugs stay out. The MCP proposal preflight may separately validate at most four other exact observed file endpoints selected for distinct change-navigation roles without adding them to this automatic list. Top-level `rootPath` / `framework` / `skipped` and candidate `evidence.source` payloads are validated before JSON or human output, so MCP outputSchema drift fails closed. `--apply` is retained only as a fail-closed compatibility wrapper: it returns `approval_required`, `writeEligible:false`, and `writes:0`; it never calls batch writers or prunes starters. An exact `constructionQualification:v1` packet, human acceptance, unchanged `writePlan`, then validate/compile/finalize remain an existing MCP lifecycle path. |
 | `ontology-atlas infer-imports [rootPath]` | Preview TS/JS, bounded static Python, deterministic Rust `use` / file-backed `mod` / exact literal include dependencies, and root-module Go package imports without writing. Rust reads at most 256 KiB and 256 dependency statements per file; it does not expand macros, evaluate `cfg`, resolve symbols, or turn source direction into runtime/business impact. Go evidence remains a separate typed `goPackageImports:v1` receipt. Lines are labelled `imports`, not `depends_on`: they are code-use facts, not approved ontology relations. Every collapsed edge includes counts and up to five exact evidence receipts. Reconciliation remains review-only and never emits a write action. `--apply` is deliberately disabled: inspect both concepts, explain why the semantic dependency holds, ask the user, then write one explicit relation with `why`. `--threshold N` filters review candidates only; `--full` explicitly requests complete evidence when MCP would compact a large response. MCP agents should start the bounded approval flow with `infer_imports({reviewMode:"next"})`; a compact Go summary points to the explicit full-evidence call. |
 | `ontology-atlas architecture [rootPath] --vault <path> [--profile <slug>]` | Compare one reviewed `architecture-profile/v1` with current supported source imports and print the same fail-closed `architectureBrief:v1` as MCP `inspect_architecture`. Reports governed import usages, usage-qualified role edges and receipts, violations, and unknowns; unclassified usage stays unknown and pattern names remain reviewed declarations. Side effect 0. Use before implementation, return `architectureChangePlan:v1`, then rerun after editing. (`--json`) |
@@ -102,9 +102,12 @@ These wrap the MCP server (`ontology-atlas-mcp`) so the developer has the same a
 
 When a coding task is already known, add `--compact --task "..."`. This opt-in
 v2 mode returns one selected-project handoff capped at 12,000 UTF-8 JSON bytes:
-final source and meaning currentness, one broad capability selected from the
-persisted vault, cited element/path anchors, explicit impact and verification
-unknowns, a bounded full-body next read, and an exact full-detail follow-up.
+final source and meaning currentness, one broad capability selected only when
+its persisted Definition/Includes/Excludes are compatible with the task, cited
+element/path anchors, explicit impact and verification unknowns, a bounded
+full-body next read, and an exact full-detail follow-up. A desired/negative
+boundary conflict, an unsupported claim, or a tied top claim returns no
+capability.
 When the selected element's Markdown contains reviewed `Primary
 implementation`, `Supporting implementation`, and `Focused test` Evidence
 coordinates and the bound source is current, `taskNavigation` verifies only
@@ -116,7 +119,7 @@ the reads. Human output includes the verified runner/manifest and the
 non-overlapping verification policy: separately named positive/negative
 regressions, exact observable output, one focused check, and one full check.
 Compact never searches the repository or infers a symbol from the task.
-The task text is request-local and is not persisted; lexical matching selects
+The task text is request-local and is not persisted; claim compatibility selects
 evidence but never proves source behavior or approves ontology meaning. The
 complete response remains the default. `--compact` cannot be combined with
 `--graph-db-pack` or `--verify-fallbacks`, whose full manuals are deliberately
@@ -499,6 +502,8 @@ node cli/src/index.mjs bootstrap . --vault ontology --json
 
 `bootstrap` is review-only: it returns `reason: "approval_required"`,
 `writeEligible: false`, and `writes: 0`; it never replaces starter files.
+Large compact import receipts preserve candidate and unresolved totals in the
+approval plan without requesting the multi-megabyte full arrays.
 Continue through a connected agent's `/ontology-bootstrap` workflow for
 independent qualification, human acceptance, and the exact released
 `writePlan`.

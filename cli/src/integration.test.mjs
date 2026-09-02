@@ -9607,6 +9607,33 @@ await test('bootstrap --json — analyze / imports / approval plan 모두 단일
   }
 });
 
+await test('bootstrap --json — compact import delivery preserves review totals without writes', async () => {
+  const vault = withVault([]);
+  const repo = makeCompactImportRepo();
+  try {
+    const before = readdirSync(vault).sort();
+    const r = await run(['bootstrap', repo, '--vault', vault, '--json']);
+    assert.equal(r.code, 3, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+
+    assert.equal(data.reason, 'approval_required');
+    assert.equal(data.writeEligible, false);
+    assert.equal(data.next.writes, 0);
+    assert.equal(data.imports.delivery.selection, 'automatic_compact');
+    assert.equal(Object.hasOwn(data.imports, 'moduleEdges'), false);
+    assert.equal(Object.hasOwn(data.imports, 'unresolved'), false);
+    assert.ok(data.imports.scanSummary.moduleEdges > 0);
+    assert.ok(data.imports.scanSummary.unresolvedImports > 0);
+    assert.equal(data.plan.importRelations, data.imports.scanSummary.moduleEdges);
+    assert.equal(data.plan.importRelations, data.imports.reviewQueue.total);
+    assert.equal(data.plan.unresolvedImports, data.imports.scanSummary.unresolvedImports);
+    assert.deepEqual(readdirSync(vault).sort(), before, 'compact review must not write the vault');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async () => {
   // billing is imported only once → at threshold 3 the import edge does not land.
   const vault = withVault([]);
@@ -9732,6 +9759,11 @@ function makeCompactImportRepo() {
       'utf-8',
     );
   }
+  writeFileSync(
+    join(repo, 'src', 'unresolved.ts'),
+    'import { gone } from "./missing";\nexport const unresolved = gone;\n',
+    'utf-8',
+  );
   return repo;
 }
 

@@ -123,12 +123,13 @@ describe("measureCanvasInsets", () => {
    * fallen into once).
    */
   const fakeCanvas = (
-    panels: (Rect & { hidden?: boolean; cameraObstacle?: "side-panel" })[],
+    panels: (Omit<Rect, "cameraObstacle"> & { hidden?: boolean; cameraObstacle?: "side-panel" | "none"; modal?: boolean })[],
   ) => {
     const make = (
-      r: Rect,
+      r: Omit<Rect, "cameraObstacle">,
       hidden?: boolean,
-      cameraObstacle?: "side-panel",
+      cameraObstacle?: "side-panel" | "none",
+      modal?: boolean,
     ) => {
       const el = document.createElement("div");
       el.getBoundingClientRect = (() => ({
@@ -138,13 +139,14 @@ describe("measureCanvasInsets", () => {
       })) as typeof el.getBoundingClientRect;
       if (hidden) el.style.display = "none";
       if (cameraObstacle) el.dataset.topologyCameraObstacle = cameraObstacle;
+      if (modal) el.setAttribute("aria-modal", "true");
       return el;
     };
     document.body.innerHTML = "";
     const canvas = make({ x: 64, y: 0, width: 1448, height: 982 });
     document.body.append(canvas);
     for (const p of panels) {
-      document.body.append(make(p, p.hidden, p.cameraObstacle));
+      document.body.append(make(p, p.hidden, p.cameraObstacle, p.modal));
     }
     return canvas;
   };
@@ -187,6 +189,22 @@ describe("measureCanvasInsets", () => {
   it("왼쪽 패널을 왼쪽 인셋으로 잰다", () => {
     const canvas = fakeCanvas([{ x: 64, y: 0, width: 324, height: 900 }]);
     expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 324, right: 0 });
+  });
+
+  /**
+   * Measured 2026-09-03: the search palette (an `aria-modal` sheet) was still
+   * fading out on the frame the focus camera measured the DOM, and it was
+   * subtracted as a 915 px *left* panel, so the picked node was aimed under the
+   * detail panel. A modal blocks the map; it never shares the screen with it.
+   */
+  it("모달 시트는 좌우 인셋으로 세지 않는다 — 검색 팔레트가 사라지는 프레임", () => {
+    const canvas = fakeCanvas([{ x: 400, y: 64, width: 576, height: 640, modal: true }, RIGHT_POPOVER]);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 384 });
+  });
+
+  it("장애물 아님을 명시한 일시 표면도 세지 않는다", () => {
+    const canvas = fakeCanvas([{ x: 64, y: 0, width: 324, height: 900, cameraObstacle: "none" }]);
+    expect(measureCanvasInsets(canvas, CANVAS)).toEqual({ left: 0, right: 0 });
   });
 
   it("숨은 패널은 세지 않는다", () => {
