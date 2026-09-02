@@ -2948,9 +2948,18 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 domeModelBuildRef.current = pending;
               }
               if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
-                // Still relaxing — keep drawing the previous model this frame and
-                // count it as activity so the idle gate does not fold.
+                /*
+                 * Still relaxing — **hold the previous picture** this frame and
+                 * resume next frame, the same contract as first entry. Redrawing
+                 * the old model on every slice frame stacked ~10 ms of draw on the
+                 * 28 ms slice (measured 2026-09-02 at 3,000 nodes: p95 52 ms for 31
+                 * frames), and nothing on screen was moving anyway — the click on
+                 * the picker put the pointer over the canvas, which parks the spin.
+                 * Counted as activity so the idle gate does not fold mid-build.
+                 */
                 lastActiveMsRef.current = now;
+                handle = requestAnimationFrame(frame);
+                return;
               } else {
                 domeModelBuildRef.current = null;
                 beginDomeMorph(dome, pending.build.model, now, reducedMotionRef.current ? 0 : DOME_POSE_MS);

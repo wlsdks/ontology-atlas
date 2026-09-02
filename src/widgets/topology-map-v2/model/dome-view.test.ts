@@ -4,6 +4,7 @@ import type { CameraAxes } from "../engine/camera";
 import { worldToScreen } from "../ui/topology-camera-math";
 import {
   buildDomeModel,
+  beginDomeModelBuild,
   clampDomePitch,
   createDomeRuntime,
   decayOrbitVelocity,
@@ -1200,5 +1201,27 @@ describe("플릭 코스트 상한 — 반 바퀴를 넘는 관성은 정보가 �
 
   it("상한은 반 바퀴다 — 그 뒤로는 어느 면이 앞이었는지 잃는다", () => {
     expect(ORBIT_COAST_MAX_RAD).toBeCloseTo(Math.PI, 12);
+  });
+});
+
+describe("구름 이완 슬라이스 — 쌍 루프 안에서 끊어도 결과는 바이트 그대로다 (2026-09-02)", () => {
+  const nodes: DomeInputNode[] = [
+    { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+    ...Array.from({ length: 6 }, (_, i) => ({ id: `d${i}`, kind: "domain" as const, x: i * 40, y: 0, parentId: "p" })),
+    ...Array.from({ length: 60 }, (_, i) => ({ id: `c${i}`, kind: "capability" as const, x: i * 7, y: 30 + (i % 5) * 9, parentId: `d${i % 6}` })),
+  ];
+  const edges = Array.from({ length: 90 }, (_, i) => ({ sourceId: `c${i % 60}`, targetId: `c${(i * 7 + 3) % 60}` }));
+
+  it("초미세 예산으로 여러 번 나눠 돌려도 한 번에 돌린 것과 좌표가 같다", () => {
+    const whole = buildDomeModel(nodes, { arrangement: "coupling", edges });
+    const build = beginDomeModelBuild(nodes, { arrangement: "coupling", edges });
+    let calls = 0;
+    while (!build.step!(0.02)) {
+      calls += 1;
+      if (calls > 100000) throw new Error("slicing never finishes");
+    }
+    // A 0.02 ms budget has to pause inside the pair loop many times.
+    expect(calls).toBeGreaterThan(10);
+    for (const [id, coord] of whole.coords) expect(build.model.coords.get(id)).toEqual(coord);
   });
 });

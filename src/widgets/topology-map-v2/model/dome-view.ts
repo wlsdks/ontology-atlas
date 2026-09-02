@@ -924,10 +924,27 @@ function createCouplingCloudRelaxer(
   let done = false;
 
   /** One pass of the original for-loop — cooling factor and convergence test included. */
-  const runIteration = (): void => {
+  /*
+   * An iteration is resumable **inside the pair loop** (2026-09-02). One
+   * iteration at 3,000 nodes is 4.5 million pairs — about 40 ms on the owner's
+   * machine — so an iteration-sized budget check could not hold a 28 ms slice
+   * and the arrangement switch stuttered at p95 52 ms for ~30 frames. The outer
+   * row `i` is the cursor: pausing between rows changes no operation order (row
+   * `i` only ever reads rows ≥ i after earlier rows have finished pushing), so
+   * the result stays bit-identical to the unsliced run. Springs, centering, and
+   * cooling always run to completion in the call that finishes the rows.
+   */
+  let pairRow = 0;
+  let inPairLoop = false;
+  const beginIteration = (): void => {
     fx.fill(0);
     fy.fill(0);
     fz.fill(0);
+    pairRow = 0;
+    inPairLoop = true;
+  };
+  /** Runs pair rows until the deadline; true once every row of this iteration is done. */
+  const runPairRows = (deadlineMs: number): boolean => {
 
     /*
      * ①+② repulsion and collision are handled in **one pair loop**.
@@ -942,7 +959,8 @@ function createCouplingCloudRelaxer(
      * order inside an iteration matters (here the position correction is applied
      * first and the forces are integrated once, below).
      */
-    for (let i = 0; i < n; i += 1) {
+    while (pairRow < n) {
+      const i = pairRow;
       for (let j = i + 1; j < n; j += 1) {
         let dx = px[i] - px[j];
         let dy = py[i] - py[j];
@@ -982,8 +1000,15 @@ function createCouplingCloudRelaxer(
           pz[j] -= dz * push;
         }
       }
+      pairRow += 1;
+      // A row costs up to n pair evaluations; checking the clock every 16 rows
+      // keeps the overshoot past the deadline under a millisecond at any size.
+      if ((pairRow & 15) === 0 && performance.now() >= deadlineMs) return false;
     }
-
+    inPairLoop = false;
+    return true;
+  };
+  const finishIteration = (): void => {
     // ③ Relation springs — pull or push toward the rest length.
     for (const [a, b] of links) {
       const dx = px[b] - px[a];
@@ -1067,13 +1092,15 @@ function createCouplingCloudRelaxer(
   return {
     step(budgetMs: number): boolean {
       if (done) return true;
-      // Budget clock — one iteration (the O(n²) pair loop) is the smallest unit, so
-      // an iteration that ran past the budget still counts and the next call resumes
-      // from there.
-      const start = performance.now();
+      // Budget clock — the pair loop yields between rows, so a slice ends within a
+      // millisecond of its budget at any vault size and the next call resumes the
+      // same iteration where it paused.
+      const deadline = performance.now() + budgetMs;
       while (iter < iterations && !settled) {
-        runIteration();
-        if (performance.now() - start >= budgetMs) break;
+        if (!inPairLoop) beginIteration();
+        if (!runPairRows(deadline)) return false;
+        finishIteration();
+        if (performance.now() >= deadline) break;
       }
       if (iter >= iterations || settled) {
         finalize();
