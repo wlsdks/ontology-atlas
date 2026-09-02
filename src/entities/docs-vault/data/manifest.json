@@ -3538,9 +3538,9 @@
         }
       },
       "headings": [],
-      "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\".",
-      "wordCount": 18,
-      "updatedAt": "2026-08-29",
+      "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\". The opt-in 3D view lives inside this widget rather than in a second renderer: model/dome-view.ts lays the ownership arrangement out as a cone tree (height = containm",
+      "wordCount": 109,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
