@@ -168,8 +168,10 @@ roadmap promise. It summarizes current product behavior documented in the
 - **MCP over stdio** for Claude Code, Cursor, VS Code, Codex, and any other MCP
   client — a typed read and write surface the running server advertises through
   `tools/list`. For a known coding task that only reads Atlas context, the
-  measured `OATLAS_READ_ONLY=1` path returns one compact current-source batch;
-  use the full profile when that session must also write ontology Markdown.
+  measured `OATLAS_READ_ONLY=1` path returns one compact current-source batch.
+  The compact handoff follows the selected capability's persisted
+  Definition/Includes/Excludes and refuses conflicting or tied claims; use the
+  full profile when that session must also write ontology Markdown.
   [Agent guide](mcp/README.md).
 - **A CLI carrying the same authority as the agent** — scaffold, validate,
   dry-run writes, bounded traversal, blast radius, commit preflight,
@@ -762,8 +764,11 @@ node $ATLAS agent-brief ./atlas --project project-slug --compact --task "Describ
 Compact v2 can start the first source read at an exact implementation symbol,
 supporting symbol, focused test, and reviewed IN/OUT boundary when those
 coordinates are already human-reviewable in the selected element's Markdown
-and the bound source is current. It checks only the named files. It does not
-build a symbol index or infer coordinates from the task; stale, ambiguous,
+and the bound source is current. Before that read it uses persisted Definition
+and Includes as positive scope and Excludes as the explicit boundary; a
+conflicting, unsupported, or tied capability stays unselected. It checks only
+the named files. It does not build a symbol index, infer coordinates from the
+task, or present claim compatibility as behavior proof; stale, ambiguous,
 unsafe, missing, or unrecorded evidence remains explicitly unknown. For a
 known task that only reads Atlas context, use `OATLAS_READ_ONLY=1`: the current
 frozen-control run cut source reads from four to one, wall time by 23.9%, and

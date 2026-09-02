@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed — compact handoff task boundaries (2026-09-02)
+
+- Compact `agent_brief` now treats persisted Definition/Includes as positive scope and Excludes as an explicit boundary. Conflicting, unsupported, or tied claims return no capability instead of letting noun overlap choose the wrong responsibility; task text, tool/schema shape, source-currentness, approval, and write authority stay unchanged.
+
 ### Changed — project-owned FDE qualification and claim-local semantic evidence (2026-09-02)
 
 - Construction qualification still accepts `fde` for compatible packets, but
