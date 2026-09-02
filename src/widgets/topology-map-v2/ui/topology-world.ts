@@ -236,6 +236,33 @@ export function computeSpineBounds(nodes: readonly WorldNode[], tokens: Topology
 }
 
 /**
+ * **Revealed bounds** (2026-09-03): the spine plus the children a person has
+ * expanded. The overview fit frames the spine, and a chip expansion dives to
+ * its cluster, but every *other* way back to the overview — a deep link with
+ * `open=`, the fit button, the `0` key, auto-arrange, the deselect return, a
+ * resize — refitted the spine alone, leaving the expanded children just off
+ * the edge (measured: five marketing elements at y 877–895 on an 860 px
+ * canvas). Clustered children (past the batch cap) are not drawn, so they do
+ * not widen the frame; with nothing expanded this is exactly the spine.
+ */
+export function computeRevealedBounds(
+  world: Pick<TopologyWorld, "spineBounds" | "childrenByParent" | "nodeById">,
+  tokens: TopologyV2Tokens,
+  expandedParents: ReadonlySet<string>,
+  clustered: ReadonlySet<string> | null,
+): Bounds {
+  const bounds: Bounds = { ...world.spineBounds };
+  for (const parentId of expandedParents) {
+    for (const childId of world.childrenByParent.get(parentId) ?? []) {
+      if (clustered?.has(childId)) continue;
+      const child = world.nodeById.get(childId);
+      if (child) growBounds(bounds, child, tokens);
+    }
+  }
+  return bounds;
+}
+
+/**
  * Radius-padded bbox of a focused node + its 1-hop neighbors (the ego cluster).
  * Returns `null` when `focusedSlug` doesn't resolve. Shared by the focus camera
  * fit (`topology-camera-math.ts#computeFocusCameraTarget`, which adds its own

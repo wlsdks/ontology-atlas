@@ -119,3 +119,25 @@ test("an edit intent that arrives by URL on the sample says why it cannot edit a
   await page.locator('[data-testid="recent-changes-needs-vault-close"]').click();
   await expect(dialog).toHaveCount(0, { timeout: 3_000 });
 });
+
+test("a deep link that opens one domain frames its revealed children, and the 0 key agrees", async ({ page }) => {
+  await page.goto("/ko/topology/?e2e=1&guides=off&open=domain%3Amarketing", { waitUntil: "domcontentloaded" });
+  await expect.poll(async () => (await readMap(page)).visible, { timeout: 20_000 }).toBeGreaterThan(40);
+  await page.waitForTimeout(3000);
+  // Capabilities are density-gated at overview altitude (not drawn, not hidden), so
+  // only the tiers the overview draws are measured: spine and the revealed elements.
+  const drawnOffscreen = () =>
+    page.evaluate(() => {
+      const m = (window as unknown as { __atlasMap: AtlasMap }).__atlasMap;
+      const c = document.querySelector('[data-testid="topology-map-v2-canvas"]')!.getBoundingClientRect();
+      return m
+        .nodes()
+        .filter((n) => !n.hidden && n.kind !== "capability")
+        .filter((n) => n.x < 0 || n.y < 0 || n.x > c.width || n.y > c.height).length;
+    });
+  expect(await drawnOffscreen(), "딥링크로 펼친 도메인의 요소가 화면 밖에 남지 않는다").toBe(0);
+  await page.mouse.click(700, 820);
+  await page.keyboard.press("0");
+  await page.waitForTimeout(2500);
+  expect(await drawnOffscreen(), "0 키 맞춤도 펼친 요소를 담는다").toBe(0);
+});
