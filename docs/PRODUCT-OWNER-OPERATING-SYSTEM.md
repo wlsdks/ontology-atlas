@@ -183,31 +183,32 @@ the dedicated design and journey gates instead of repeating them.
 
 ## Significant decision record
 
-Keep a new record to roughly one page. Historical records stay append-only.
+From 2026-09-03 a record is six fields in this order, within 24 lines and
+2,000 bytes; `pnpm decisions:check` refuses anything else. Historical records
+stay append-only and are not judged. The measurement behind the cut: 478
+records in 38 days, median 51 lines and nine labels each, and a fifteen-field
+format that nobody could read before convening.
 
 ```md
-## YYYY-MM-DD — <decision>
+## YYYY-MM-DD — <the decision in one line>
 
-**Pre-review decision**: …
-**Atlas outcome**: orient / explain / judge / correct / handoff — …
-**Evidence state**: observed / inferred / unknown
-**Change signals**: …
-**Computed route**: one-way — <risk, reviewers, and reasons>
-**Primary Atlas risk**: meaning / positioning / scope
-**Confidence**: high / medium / low — <basis>
-**Accountable owner**: <person who accepts or overturns the review>
-**Recovery proof**: Given …; fail when …
-**Decision**: …
-**Decision delta**: unchanged / stopped / narrowed / redirected / evidence-bounded / verification-strengthened — <why and contributor>
-**Review footprint**: <reviewers, first-position turns, rebuttal turns, independence limits>
-**Dissent and falsifier**: …
-**Revisit**: …
-**Outcome**: pending / <later observed result>
+**Why**: <the observation that forced a decision>
+**Prior**: <YYYY-MM-DD (n) cited as standing or overturned, or none>
+**Decision**: <what is decided, the smallest slice>
+**Dissent**: <the strongest losing argument and whose it was, or none>
+**Falsifier**: <the one observable condition that reopens this>
+**Owner**: <the accountable person>
 ```
 
+Route, evidence state, review turns, delta, and later result are typed per
+run in `docs/PO-PILOT.md`; they are not repeated in the record. A change that
+fits its commit message needs no record. Overturning is a new record whose
+`Prior` names the old one; `pnpm decisions:find` lists who cites a record, so
+status is derived, never edited in place.
+
 Route, public MCP/CLI contract, and design-spec changes still trip
-`pnpm decisions:check`. That gate proves a durable record exists; it does not
-claim the judgment was good.
+`pnpm decisions:check`. That gate proves a durable record exists and fits the
+template; it does not claim the judgment was good.
 
 ## Measured pilot and forced sunset
 

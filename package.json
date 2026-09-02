@@ -86,6 +86,8 @@
     "test:source:language": "node --test scripts/quality/source-language/inventory.test.mjs",
     "vault:validate": "node scripts/validate-vault.mjs",
     "decisions:check": "node scripts/check-decision-record.mjs",
+    "decisions:find": "node scripts/decisions-find.mjs",
+    "test:decisions": "node --test scripts/decisions-find.test.mjs scripts/lib/decision-record-template.test.mjs",
     "po:route": "node scripts/po-risk-router.mjs",
     "po:pilot": "node scripts/po-pilot.mjs",
     "test:po": "vitest run tests/contract/po-council.contract.test.ts",

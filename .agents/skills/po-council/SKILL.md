@@ -38,8 +38,9 @@ seats; reviewers prescribe the cheapest learning path.
 
 ## Round 0 — prior decision and before-state
 
-Read only the relevant record in `docs/DECISIONS.md`. Cite it or explicitly
-overturn it and check its falsifier.
+Read only the relevant record in `docs/DECISIONS.md`, located with
+`pnpm decisions:find <surface terms>`. Cite it or explicitly overturn it, check
+its falsifier, and read the later records the finder lists as citing it.
 
 Before reviewers answer, record:
 
@@ -116,24 +117,19 @@ the summary means, rewrite it instead of stacking another explanation.
 
 ## Significant record
 
-```md
-## YYYY-MM-DD — <decision>
+Six fields within one screen; `pnpm decisions:check` refuses anything else.
+Route, evidence state, review turns, delta, and later result go to the typed
+run in `docs/PO-PILOT.md`, not into the record.
 
-**Pre-review decision**: …
-**Atlas outcome**: orient / explain / judge / correct / handoff — …
-**Evidence state**: observed / inferred / unknown
-**Change signals**: …
-**Computed route**: one-way — <risk, reviewers, and reasons>
-**Primary Atlas risk**: meaning / positioning / scope
-**Confidence**: high / medium / low — <basis>
-**Accountable owner**: <person who accepts or overturns the review>
-**Recovery proof**: Given …; fail when …
-**Decision**: …
-**Decision delta**: unchanged / stopped / narrowed / redirected / evidence-bounded / verification-strengthened — <why and contributor>
-**Review footprint**: <reviewers, first-position turns, rebuttal turns, independence limits>
-**Dissent and falsifier**: …
-**Revisit**: …
-**Outcome**: pending / <later observed result>
+```md
+## YYYY-MM-DD — <the decision in one line>
+
+**Why**: <the observation that forced a decision>
+**Prior**: <YYYY-MM-DD (n) cited as standing or overturned, or none>
+**Decision**: <what is decided, the smallest slice>
+**Dissent**: <the strongest losing argument and whose it was, or none>
+**Falsifier**: <the one observable condition that reopens this>
+**Owner**: <the accountable person>
 ```
 
 ## Failure shields

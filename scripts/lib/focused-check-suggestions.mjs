@@ -404,6 +404,17 @@ const RULES = [
     matches: [/^scripts\/harness-smoke(?:\.test)?\.mjs$/, /^\.claude\/settings\.json$/, /^\.codex\/hooks\.json$/],
   },
   {
+    // The finder is the only retrieval the ledger has; its parser is pinned
+    // against the live label census, so its own edits re-run that pin.
+    command: 'pnpm test:decisions',
+    reason: 'the decision-ledger finder, its record template, or the gate that applies them changed',
+    matches: [
+      /^scripts\/decisions-find(?:\.test)?\.mjs$/,
+      /^scripts\/lib\/decision-record-template(?:\.test)?\.mjs$/,
+      /^scripts\/check-decision-record\.mjs$/,
+    ],
+  },
+  {
     // The pre-push hook writes the ledger these outcomes are counted from, so
     // editing the hook re-proves the record shape it hands over.
     command: 'pnpm test:harness:outcomes',
@@ -811,8 +822,8 @@ const RULES = [
   },
   {
     command: 'pnpm decisions:check',
-    reason: 'a route or design-spec surface moved — the decision ledger must move with it',
-    matches: [/^app\/(?:.+\/)?(?:page|not-found)\.tsx$/],
+    reason: 'a route or design-spec surface moved, or a record was appended: the ledger must move with the surface and a new record must fit the template',
+    matches: [/^app\/(?:.+\/)?(?:page|not-found)\.tsx$/, /^docs\/DECISIONS\.md$/],
   },
   {
     command: 'pnpm build',
