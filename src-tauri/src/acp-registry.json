@@ -14,7 +14,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.70.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.73.0",
         "args": []
       }
     },
@@ -30,7 +30,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@1.7.0",
+        "package": "@agentclientprotocol/codex-acp@1.8.0",
         "args": []
       }
     },
@@ -114,7 +114,7 @@
       "cli": "cline",
       "launch": {
         "kind": "npx",
-        "package": "cline@3.0.60",
+        "package": "cline@3.0.61",
         "args": [
           "--acp"
         ]
@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.141.0",
+        "package": "@tencent-ai/codebuddy-code@2.143.0",
         "args": [
           "--acp"
         ]
@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.3.22",
+        "package": "dimcode@0.3.26",
         "args": [
           "acp"
         ]
@@ -273,7 +273,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.1",
+        "package": "dirac-cli@0.5.2",
         "args": [
           "--acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.208.0",
+        "package": "droid@0.210.0",
         "args": [
           "exec",
           "--output-format",
@@ -329,7 +329,7 @@
       "cli": "gemini",
       "launch": {
         "kind": "npx",
-        "package": "@google/gemini-cli@0.57.0",
+        "package": "@google/gemini-cli@0.58.0",
         "args": [
           "--acp"
         ]
@@ -347,7 +347,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.81",
+        "package": "@github/copilot@1.0.82",
         "args": [
           "--acp"
         ]
@@ -365,7 +365,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "glm-acp-agent@1.7.0",
+        "package": "glm-acp-agent@1.8.0",
         "args": []
       }
     },
@@ -415,7 +415,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.13",
+        "package": "@xai-official/grok@1.0.17",
         "args": [
           "agent",
           "stdio"
