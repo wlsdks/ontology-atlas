@@ -135,12 +135,22 @@ import {
 
 import { readTopologyV2TokensOrNull } from "./topology-read-tokens";
 import type { TopologyMapV2Props } from "./TopologyMapV2";
-import { applyForcePositions, buildTopologyWorld, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
+import { applyForcePositions, buildTopologyWorld, computeRevealedBounds, recomputeWorldGeometry, type TopologyWorld, radiusForKind } from "./topology-world";
 import { prepareRevealHome } from "./topology-reveal-home";
 
-/** Kept outside the hook so it never enters an effect's dependency list. */
-function overviewBoundsFor(fit: "spine" | "full", world: TopologyWorld) {
-  return fit === "full" ? world.bounds : world.spineBounds;
+/**
+ * Kept outside the hook so it never enters an effect's dependency list. The
+ * "spine" fit is the spine grown by whatever the person has expanded
+ * (`topology-world.ts#computeRevealedBounds`); "full" is everything.
+ */
+function overviewBoundsFor(
+  fit: "spine" | "full",
+  world: TopologyWorld,
+  tokens: TopologyV2Tokens,
+  expandedParents: ReadonlySet<string>,
+  clustered: ReadonlySet<string> | null,
+) {
+  return fit === "full" ? world.bounds : computeRevealedBounds(world, tokens, expandedParents, clustered);
 }
 import type { TopologyV2Tokens } from "../tokens/read-topology-v2-tokens";
 
@@ -1586,7 +1596,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
     if (hasAnyNodeOnScreen(cameraRef.current, width, height, world.nodes)) return;
-    const target = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+    const target = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
     cameraTargetRef.current = { tx: target.tx, ty: target.ty, tscale: target.tscale };
     userDrivenCameraRef.current = false;
   };
@@ -1597,7 +1607,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     const { width, height } = viewportRef.current;
     if (!world || width <= 0 || height <= 0) return;
     const target = computeOverviewCameraTarget(
-      overviewBoundsFor(overviewFitRef.current, world),
+      overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
       width,
       height,
       tokens,
@@ -1611,7 +1621,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     cameraTargetRef.current = target;
     userDrivenCameraRef.current = false;
     overviewScaleRef.current = computeOverviewFitScale(
-      overviewBoundsFor(overviewFitRef.current, world),
+      overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
       width,
       height,
       tokens,
@@ -1963,10 +1973,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // SPINE bbox (not the full 295-node bounds) so "fit view" reframes the same
     // legible 8-node spine as the initial entry — and keeps `overviewScaleRef`
     // on the same spine bounds so the zoom-ratio/altitude anchor stays at ratio 1.
-    const overviewTarget = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+    const overviewTarget = computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
     cameraTargetRef.current = overviewTarget;
     userDrivenCameraRef.current = false;
-    overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+    overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
     dampingRef.current = tokens.cameraDampingDefault;
     // Dive-zoom fix — "fit view"/relayout is a PROGRAMMATIC camera move, so it
     // eases via the cubic transition tween (reduced-motion → spring/snap), not
@@ -2129,7 +2139,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
     // Put the actual DOM width of INDEX/selection inspector into the same safe inset syntax.
     const tokens = cameraTokens(rawTokens);
-    const overviewBounds = overviewBoundsFor(overviewFitRef.current, world);
+    const overviewBounds = overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current);
     overviewScaleRef.current = computeOverviewFitScale(
       overviewBounds,
       width,
@@ -2404,7 +2414,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        // difference in entry/exit states for one condition, not a separate correction value.
        */
       const focusTokens = focusedSlug === null ? tokens : cameraTokens(tokens);
-      target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBoundsFor(overviewFitRef.current, world));
+      target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current));
     }
     if (!target) return;
     /*
@@ -2563,10 +2573,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         // Return to "where the user was looking" if entry saved a keyframe,
         // falling back to the overview fit.
         const savedEntry = realmDataRef.current?.entryCamera ?? null;
-        const target = savedEntry ?? computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+        const target = savedEntry ?? computeOverviewCameraTarget(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
         cameraTargetRef.current = target;
         userDrivenCameraRef.current = false;
-        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+        overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
         dampingRef.current = tokens.cameraDampingDefault;
         cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
         // 750 ms, matched to the choreography (inside reverse-FLIP 660,
@@ -3157,7 +3167,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             flatFitPendingRef.current = false;
             const teardownMs = reducedMotionRef.current ? 0 : dome.rampClock / 1.6;
             const flatTarget = computeOverviewCameraTarget(
-              overviewBoundsFor(overviewFitRef.current, world),
+              overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
               width,
               height,
               tokens,
@@ -3165,7 +3175,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             );
             cameraTargetRef.current = flatTarget;
             overviewScaleRef.current = computeOverviewFitScale(
-              overviewBoundsFor(overviewFitRef.current, world),
+              overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current),
               width,
               height,
               tokens,
@@ -3954,13 +3964,13 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // ceiling anchor is recomputed live and cannot suppress the target at
           // the tween → spring handover — equivalent to the fresh and deselect
           // paths.
-          overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+          overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
         } else if (rt.phase === "idle" && realmDataRef.current !== null) {
           // Exit complete: reverse playback returned everything home, so drop
           // the realm data and settle the overview anchor against the home
           // spineBounds — the close of the recomputation above.
           realmDataRef.current = null;
-          overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world), width, height, tokens, world.nodes.length);
+          overviewScaleRef.current = computeOverviewFitScale(overviewBoundsFor(overviewFitRef.current, world, tokens, expandedParentsRef.current, clusteredIdsRef.current), width, height, tokens, world.nodes.length);
         }
       }
 
