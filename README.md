@@ -833,6 +833,13 @@ wiring, and fails on any hook the runtime marked failed, any count below the
 wiring, or a census that never reached the model. It needs both CLIs signed in,
 so it is a local check, not CI.
 
+`pnpm harness:outcomes` looks downstream of the harness: pushes the pre-push
+gate refused locally (one ledger line per push, written by the hook) against
+merged-PR commits whose CI checks failed, and `fix:` commits landing after
+each release tag. The first pair is the push gate's earned value; the second is
+what a release shipped. Both are proxies and are named as such; `--local` skips
+the GitHub calls.
+
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before
 semantic reads and that qualification keeps explicit unknown/refusal behavior.

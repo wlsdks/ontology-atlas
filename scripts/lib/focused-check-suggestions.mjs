@@ -404,6 +404,13 @@ const RULES = [
     matches: [/^scripts\/harness-smoke(?:\.test)?\.mjs$/, /^\.claude\/settings\.json$/, /^\.codex\/hooks\.json$/],
   },
   {
+    // The pre-push hook writes the ledger these outcomes are counted from, so
+    // editing the hook re-proves the record shape it hands over.
+    command: 'pnpm test:harness:outcomes',
+    reason: 'the outcome report, the pre-push ledger writer, or the hook that feeds it changed',
+    matches: [/^scripts\/harness-(?:outcomes|prepush-ledger)(?:\.test)?\.mjs$/, /^\.githooks\/pre-push$/],
+  },
+  {
     command: 'pnpm test:claude:hooks',
     reason: 'agent hook wiring, a guard, or the commit-message gate changed',
     /*

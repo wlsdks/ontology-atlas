@@ -26,6 +26,8 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { readPrepush } from './harness-outcomes.mjs';
+
 // Resolved per call, not at import: a module-level constant captures the
 // directory the process started in, which silently reports on the wrong
 // repository from a worktree or a test fixture.
@@ -138,6 +140,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
   const smoke = Object.fromEntries(
     Object.entries(readSmoke()).map(([runtime, row]) => [runtime, { ...row, stale: row.atMs < sinceMs }]),
   );
+  const prepush = readPrepush(process.cwd(), sinceMs);
 
   const withEdits = sessions.filter((session) => session.files.size > 0);
   const unverified = withEdits.filter((session) => session.lastVerified < session.lastEdit);
@@ -158,6 +161,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
     },
     sensor: { findings: findings.length, byKind },
     smoke,
+    prepush,
     /**
      * The sensor earns its place by catching things. Zero findings across a
      * window with real edits is the falsifier its own header names.
@@ -185,6 +189,13 @@ function format(report) {
         : ''
     }`,
   ];
+  if (report.prepush) {
+    const lanes = Object.entries(report.prepush.byLane)
+      .sort((a, b) => b[1] - a[1])
+      .map(([lane, n]) => `${lane} ${n}`)
+      .join(' · ');
+    lines.push(`[harness] pre-push: pushes=${report.prepush.pushes} · refused locally=${report.prepush.blocked}${lanes ? ` (${lanes})` : ''}`);
+  }
   const runtimes = Object.entries(report.smoke ?? {});
   if (runtimes.length === 0) {
     lines.push('[harness] runtime smoke: never run here; `pnpm harness:smoke` is the only proof the runtimes fire these hooks.');

@@ -161,6 +161,12 @@ for name in $lane_names; do
   fi
 done
 
+# One line per push into the local harness ledger, pass or fail. This is the
+# number that says whether the gate earns its minutes: `pnpm harness:outcomes`
+# sets pushes refused here against PR commits that failed in CI. Measurement
+# only; a failed write never changes the push's fate.
+node scripts/harness-prepush-ledger.mjs "$n_changed" "$lane_names" "$failed" 2>/dev/null || true
+
 if [ -n "$failed" ]; then
   for name in $failed; do
     echo ""
