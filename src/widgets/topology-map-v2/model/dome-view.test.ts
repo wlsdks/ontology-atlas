@@ -32,6 +32,8 @@ import {
   ORBIT_SNAP_WINDOW_RAD,
   orbitSnapTauMs,
   projectOrbitLanding,
+  clampOrbitReleaseVelocity,
+  ORBIT_COAST_MAX_RAD,
   snapOrbitLanding,
   DOME_ENTRY_SWEEP_MS,
   DOME_GRIP_MARGIN,
@@ -1183,5 +1185,20 @@ describe("화면 밖 정착 — 3D 를 다녀온 2D 지도가 다시 잠든다 (
     expect(runtime.morph).toBeNull();
     expect(runtime.pitch).toBe(DOME_PITCH_MAX);
     expect(runtime.pitchTarget).toBe(runtime.pitch);
+  });
+});
+
+describe("플릭 코스트 상한 — 반 바퀴를 넘는 관성은 정보가 없다 (2026-09-02)", () => {
+  it("상한 안의 속도는 그대로, 넘는 속도는 반 바퀴 코스트로 잘린다", () => {
+    expect(clampOrbitReleaseVelocity(0.001)).toBe(0.001);
+    expect(clampOrbitReleaseVelocity(-0.001)).toBe(-0.001);
+    const capped = clampOrbitReleaseVelocity(0.05);
+    expect(capped).toBeLessThan(0.05);
+    expect(Math.abs(projectOrbitLanding(0, capped))).toBeCloseTo(ORBIT_COAST_MAX_RAD, 9);
+    expect(projectOrbitLanding(0, clampOrbitReleaseVelocity(-0.05))).toBeCloseTo(-ORBIT_COAST_MAX_RAD, 9);
+  });
+
+  it("상한은 반 바퀴다 — 그 뒤로는 어느 면이 앞이었는지 잃는다", () => {
+    expect(ORBIT_COAST_MAX_RAD).toBeCloseTo(Math.PI, 12);
   });
 });

@@ -239,6 +239,26 @@ export function projectOrbitLanding(yaw: number, yawVel: number): number {
 }
 
 /**
+ * **Longest coast a flick may buy (rad) — half a turn.**
+ *
+ * Measured 2026-09-02: a moderate flick (200 px in ~150 ms) released at
+ * 0.01 rad/ms and, with the shared 0.998/ms decay, coasted 1.8 turns. Past half
+ * a turn the person has lost which face was in front, so the extra travel
+ * carries no information, and the landing re-aim (`ORBIT_SNAP_WINDOW_RAD`)
+ * rarely engages because the natural landing point lands anywhere. The
+ * decay constant stays shared with the camera flick; only the release velocity
+ * is capped so the total travel never exceeds π. A drag itself is never capped
+ * (1:1 direct manipulation).
+ */
+export const ORBIT_COAST_MAX_RAD = Math.PI;
+
+/** Clamp a release velocity (rad/ms) so the coast it buys stays within `ORBIT_COAST_MAX_RAD`. */
+export function clampOrbitReleaseVelocity(velRadPerMs: number): number {
+  const max = ORBIT_COAST_MAX_RAD / ORBIT_DECAY_TRAVEL_MS;
+  return Math.max(-max, Math.min(max, velRadPerMs));
+}
+
+/**
  * The yaws that put a domain **at the front** — this dome's meaningful positions.
  *
  * Derivation: in `projectWithTrig` the post-rotation depth term is

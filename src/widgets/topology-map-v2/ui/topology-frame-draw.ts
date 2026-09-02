@@ -941,18 +941,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     {
       viewportWidth,
       viewportHeight,
-      farT,
-      variant: backgroundVariant,
       // 3D — the background grid and dots recede into **void**: with a grid
       // present the object reads as resting on a floor rather than floating. The
-      // base fill and vignette stay; only the pattern layer switches off.
-      gridPattern: domeRamp > 0.001 ? null : gridPattern,
+      // base fill and vignette stay; the pattern layers fold away **on the
+      // assembly ramp** (2026-09-02 recording: they used to cut in one frame
+      // while the tiers took 1,120 ms to rise — the background hard-cutting
+      // under an easing protagonist is the defect the motion rules name). The
+      // grid already fades with altitude, so the ramp rides the same `farT`.
+      farT: Math.max(farT, domeRamp),
+      variant: backgroundVariant,
+      gridPattern,
       paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
       // Each layer derives its parallax origin from the **grid** origin, not the
       // background origin — the latter is already parallaxed once, and applying it
       // twice collapses the layers together.
+      depthLayersAlpha: 1 - domeRamp,
       depthLayers:
-        depthDotPatterns && domeRamp <= 0.001
+        depthDotPatterns && domeRamp < 0.999
           ? DEPTH_DOT_LAYERS.map((layer, i) => {
               const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight },
                 reducedMotion ? 1 : layer.parallax);
