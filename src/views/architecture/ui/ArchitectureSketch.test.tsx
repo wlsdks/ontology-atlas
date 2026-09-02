@@ -267,6 +267,7 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'across');
       expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(4);
       expect(screen.getAllByTestId(/^architecture-delta-connector-/)).toHaveLength(4);
+      expect(container.querySelectorAll('[data-architecture-role-hit-area="true"]')).toHaveLength(4);
       expect(screen.getByTestId('architecture-graph-box-domain')).toHaveAttribute(
         'data-box-height',
         '84',

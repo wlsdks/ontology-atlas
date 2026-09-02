@@ -408,7 +408,11 @@ test('a role sentence stays inside the drawn box, including a stadium cap', asyn
       const box = g.getBoundingClientRect();
       const w = Number(g.getAttribute('data-box-width'));
       const h = Number(g.getAttribute('data-box-height'));
-      const isStadium = g.querySelector('rect[rx]') !== null;
+      const rect = g.querySelector('rect');
+      /* Process cards are softly rounded too (`rx=6`). A stadium is the shape whose cap radius is
+         half its height; treating every rounded rectangle as a stadium invented a 186px cap chord
+         inside a 220px process card and reported contained text as overflow. */
+      const isStadium = Number(rect?.getAttribute('rx') ?? 0) >= h / 2 - 0.5;
       const chordAt = (y: number) => {
         if (!isStadium) return w;
         const r = h / 2;

@@ -386,10 +386,23 @@ export function ArchitectureSketch({
      longer scaled. Derived, never a ref written during render. */
   const boxEnd = useMemo(
     () => ({
-      down: [...placed.values()].map((at) => at.y + boxH),
+      /*
+       * Roomy roles include a lower observation card inside the same interactive group. Counting
+       * only the upper contract card said zero hidden roles in a short 1400x400 canvas while all
+       * four observation cards were below the viewport. The group is the role; its lowest face is
+       * the boundary that the hidden-count affordance must measure.
+       */
+      down: graph.boxes.map((box) => {
+        const contract = placed.get(box.id);
+        const observation = observedPlaced.get(box.id);
+        if (!contract) return 0;
+        return usesRoomyBoxes && observation
+          ? observation.y + OBSERVATION_BOX_H
+          : contract.y + boxH;
+      }),
       across: [...placed.values()].map((at) => at.x + boxW),
     }),
-    [placed, boxH, boxW],
+    [graph.boxes, observedPlaced, placed, usesRoomyBoxes, boxH, boxW],
   );
 
   /*
@@ -867,6 +880,7 @@ export function ArchitectureSketch({
           width={width}
           height={height}
           role="presentation"
+          pointerEvents="none"
           data-testid="architecture-graph"
           data-edge-source={graph.edgeSource}
           data-architecture-axis={axis}
@@ -1144,6 +1158,7 @@ export function ArchitectureSketch({
             <g
               key={box.id}
               role="button"
+              pointerEvents="all"
               tabIndex={0}
               aria-pressed={isSelected}
               aria-label={[
@@ -1182,6 +1197,27 @@ export function ArchitectureSketch({
               style={{ opacity: receded ? 0.35 : 1 }}
               className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible>rect]:stroke-[color:var(--color-indigo-a60)]"
             >
+              {/*
+                The roomy role is one interactive fact split into two visual faces. Its SVG group
+                therefore has a taller bounding box than either painted card, and pointer
+                automation correctly chooses that centre — the empty delta gap. A transparent
+                first rect makes the full role footprint a real hit target while every visible
+                face and event still belongs to this one group.
+              */}
+              <rect
+                x={at.x}
+                y={at.y}
+                width={boxW}
+                height={
+                  usesRoomyBoxes
+                    ? observationOffset + OBSERVATION_BOX_H
+                    : boxH
+                }
+                fill="transparent"
+                stroke="none"
+                pointerEvents="all"
+                data-architecture-role-hit-area="true"
+              />
               {/*
                 The fill is a separate flat shape: the sketch passes are an outline built from
                 joined segments — several subpaths, which fill as slivers rather than as a box —
