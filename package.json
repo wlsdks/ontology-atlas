@@ -159,6 +159,8 @@
     "test:harness:report": "node --test scripts/harness-report.test.mjs",
     "harness:smoke": "node scripts/harness-smoke.mjs",
     "test:harness:smoke": "node --test scripts/harness-smoke.test.mjs",
+    "harness:outcomes": "node scripts/harness-outcomes.mjs",
+    "test:harness:outcomes": "node --test scripts/harness-outcomes.test.mjs",
     "test:dogfood:compile-fix": "node --test scripts/dogfood-compile-fix.test.mjs",
     "dogfood:health": "node scripts/lib/check-mcp-source-dependencies.mjs && node cli/src/index.mjs health docs/ontology --json",
     "dogfood:agent": "node cli/src/index.mjs agent-brief docs/ontology --json",

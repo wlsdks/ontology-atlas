@@ -73,6 +73,19 @@ describe('harness report', () => {
     assert.deepEqual(report.smoke.codex.problems, ['Stop: 0 completed']);
   });
 
+  it('reads the pre-push ledger into the same window as everything else', () => {
+    const report = withHarnessState(
+      {
+        'prepush.jsonl':
+          `${JSON.stringify({ at: new Date(recent).toISOString(), files: 3, lanes: ['lint'], failed: ['lint'] })}\n` +
+          `${JSON.stringify({ at: new Date(recent).toISOString(), files: 1, lanes: ['docs'], failed: [] })}\n` +
+          `${JSON.stringify({ at: new Date(old).toISOString(), files: 1, lanes: ['docs'], failed: ['docs'] })}\n`,
+      },
+      () => buildHarnessReport({ now: NOW }),
+    );
+    assert.deepEqual(report.prepush, { pushes: 2, blocked: 1, byLane: { lint: 1 } });
+  });
+
   it('says so when the smoke has never run, instead of staying silent', () => {
     const lines = [];
     withHarnessState({}, () => runHarnessReport([], { log: (line) => lines.push(line), error: () => {} }));
