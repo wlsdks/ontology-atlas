@@ -6,6 +6,7 @@ import {
   computeMagnitudeScale,
   computeEgoBounds,
   computeClusterDiscBounds,
+  computeRevealedBounds,
   computeSpineBounds,
   isSpineNode,
   type WorldNode,
@@ -324,5 +325,35 @@ describe("computeMagnitudeScale (S2 파트 2 — √childCount)", () => {
     expect(computeMagnitudeScale("domain", 0, 103, 0.45)).toBe(1);
     expect(computeMagnitudeScale("domain", 10, 0, 0.45)).toBe(1);
     expect(computeMagnitudeScale("domain", 10, 103, 0)).toBe(1);
+  });
+});
+
+describe("computeRevealedBounds", () => {
+  const p = node({ id: "p", kind: "project", x: 0, y: 0 });
+  const d = node({ id: "d", kind: "domain", x: 100, y: 0, parentId: "p" });
+  const e1 = node({ id: "e1", kind: "element", x: 100, y: 300, parentId: "d" });
+  const e2 = node({ id: "e2", kind: "element", x: 100, y: 900, parentId: "d" });
+  const world = {
+    spineBounds: computeSpineBounds([p, d], tokens),
+    childrenByParent: new Map([["p", ["d"]], ["d", ["e1", "e2"]]]),
+    nodeById: new Map([["p", p], ["d", d], ["e1", e1], ["e2", e2]]),
+  };
+
+  it("is exactly the spine when nothing is expanded", () => {
+    expect(computeRevealedBounds(world, tokens, new Set(), null)).toEqual(world.spineBounds);
+  });
+
+  it("grows the spine by an expanded parent's drawn children only", () => {
+    // e2 is clustered past the batch cap, so it is not drawn and must not widen the frame.
+    const bounds = computeRevealedBounds(world, tokens, new Set(["d"]), new Set(["e2"]));
+    expect(bounds.maxY).toBe(305);
+    expect(bounds.minY).toBe(world.spineBounds.minY);
+    expect(computeRevealedBounds(world, tokens, new Set(["d"]), null).maxY).toBe(905);
+  });
+
+  it("does not mutate the world's spine bounds", () => {
+    const before = { ...world.spineBounds };
+    computeRevealedBounds(world, tokens, new Set(["d"]), null);
+    expect(world.spineBounds).toEqual(before);
   });
 });
