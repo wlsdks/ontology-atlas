@@ -15,6 +15,10 @@
 # User intent (R14 rounds): "Read ontology during work and automatically record via MCP upon completion". This ensures
 # the agent recognizes the vault from the very first moment of work without the user needing to say "use ontology" for every prompt.
 #
+# Sources, read 2026-09-02: https://code.claude.com/docs/en/hooks (exit-0
+# stdout reaches context only for UserPromptSubmit, UserPromptExpansion,
+# SessionStart, PostModelSwitch; SessionStart matchers include `compact`).
+#
 # Output convention (Claude Code hooks):
 #   - exit 0 + empty stdout → silent (blocks noise in repos without vault)
 #   - exit 0 + stdout content → added to agent system context (this is our path)
@@ -91,8 +95,15 @@ if ! JSON=$($CLI_BIN overview "$VAULT" --json 2>"$CLI_STDERR"); then
       ;;
   esac
 
+  # The first output line is deliberately not bracketed. Codex reads a hook's
+  # stdout as JSON when it looks like JSON, and a line starting with `[` looks
+  # like an array: the earlier `[ontology vault @ …]` header made codex-cli
+  # 0.151.0 mark this hook "SessionStart Failed" on every session (measured
+  # 2026-09-02 by tracing the hook to a clean exit 0 and then removing the
+  # bracket, after which the same run reported Completed). Claude Code never
+  # minded, but one census format for both runtimes is cheaper than two.
   cat <<EOF
-[ontology vault @ ${VAULT}]
+ontology vault @ ${VAULT}
 Vault will not compile — no ontology context this session.
 $REASON
 Fix it before trusting any ontology answer: \`$FIX\`.
@@ -135,7 +146,7 @@ if [ -z "$SUMMARY" ]; then
 fi
 
 cat <<EOF
-[ontology vault @ ${VAULT}]
+ontology vault @ ${VAULT}
 $SUMMARY
 
 Token budget: prefer focused ontology reads and the narrowest available source
