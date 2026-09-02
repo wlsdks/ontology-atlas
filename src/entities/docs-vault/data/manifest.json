@@ -3696,8 +3696,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Atlas-specific design routing. The PO pass decides whether a product slice is worth doing. This system derives which design work and runtime evidence that slice needs. It does not grade taste and it does not make every UI edit hold a council. Atlas exists so a person can recover understanding after agents change code f",
-      "wordCount": 2282,
-      "updatedAt": "2026-09-01",
+      "wordCount": 2295,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {

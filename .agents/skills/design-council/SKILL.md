@@ -95,8 +95,9 @@ After applying, rerun only the route proofs invalidated by the guardian's change
 Do not repeat a full design audit, responsive matrix, recording, or installed-app
 run when the last-mile edit cannot affect it. A changed proof is never waived.
 
-Append hard-to-reverse decisions, strongest dissent, falsifier, and revisit
-condition to `docs/DECISIONS.md`.
+Append a hard-to-reverse decision to `docs/DECISIONS.md` as the six-field
+record below; `pnpm decisions:check` refuses any other shape. The council
+utility block goes in the pull-request rationale, never into the ledger.
 
 ## Council utility
 
@@ -108,6 +109,7 @@ The ledger must expose whether the council earned its cost:
 **Rebuttal**: none / N turns because <material conflict>
 **Decision delta**: unchanged / stopped / narrowed / redirected / proof strengthened
 **Unique contribution**: <seat + exact contribution> / none
+**Review footprint**: first N · rebuttal N
 ```
 
 An unchanged council may be honest but cannot claim review-caused improvement.
@@ -127,23 +129,18 @@ The verdict block does not belong in the conversation. This plain-language rule
 applies to the entire answer. A clarification request is a failure signal;
 rewrite from the beginning. “What differs from your request” cannot be omitted.
 
-## Ledger block
+## Ledger record
 
 ```md
-## Design Council Verdict — <change>
+## YYYY-MM-DD — <the decision in one line>
 
-**Convened because**: design route facts · **Selected seats**: …
-**Pre-review decision**: …
-| Seat | Verdict | Prescription/evidence |
-|---|---|---|
-| … | … | … |
-**Computer Use evidence**: baseline · material checkpoints · final app/window/tree/screenshot
-**Motion evidence**: recording/phase strip/stalls when routed, otherwise not routed
-**Decisive disagreement**: none / …
-**Decision (design-guardian)**: …
-**Decision delta**: … · **Unique contribution**: …
-**Review footprint**: first N · rebuttal N
-**Recorded dissent**: … · **falsifier**: … · **revisit**: …
-**Remove/dim/collapse/align**: …
-**Remeasured proof**: only invalidated route proofs
+**Why**: <the observation that forced a decision>
+**Prior**: <YYYY-MM-DD (n) cited as standing or overturned, or none>
+**Decision**: <what design-guardian decided, the smallest slice>
+**Dissent**: <the strongest losing seat position, or none>
+**Falsifier**: <the one observable condition that reopens this>
+**Owner**: <the accountable person>
 ```
+
+Seats, verdict table, evidence checkpoints, delta, and footprint stay in the
+pull request; the record carries what the next council must read.

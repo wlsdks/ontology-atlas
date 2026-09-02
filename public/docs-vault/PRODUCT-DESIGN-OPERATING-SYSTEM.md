@@ -176,7 +176,8 @@ by that last-mile change.
 
 ### Council utility
 
-Every council record states:
+Every council states, in its pull-request rationale (the ledger record itself
+keeps only the six template fields):
 
 - the decision before review;
 - selected seats and first-position turn count;
