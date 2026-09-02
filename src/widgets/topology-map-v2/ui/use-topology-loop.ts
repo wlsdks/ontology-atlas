@@ -43,7 +43,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
-import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnLabelBoxes } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
@@ -124,6 +124,7 @@ import {
   shouldAnnounceDeadEnd,
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
+import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
 import {
   collectCanvasObstacles,
   computeFreeArea,
@@ -1866,13 +1867,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   // --- relayoutToken / fitViewToken — both mean "spring back to the full overview fit" ---
-  useEffect(() => {
-    // Skip while both tokens still equal their captured mount-time values —
-    // this effect's own mount-time fire (see `initialFitTokensRef` above).
-    // `trySnapInitialCamera` already set the correct initial camera; this
-    // effect should only react to an actual "fit view"/relayout click after.
-    const initial = initialFitTokensRef.current;
-    if (relayoutToken === initial.relayout && fitViewToken === initial.fitView) return;
+  /**
+   * Spring back to the full overview fit — shared by the fit/relayout tokens
+   * and the `0` key (`interaction/keyboard-zoom.ts`), so the keyboard fit is
+   * byte for byte the fit the toolbar performs.
+   */
+  const runOverviewFit = useCallback(() => {
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -1952,7 +1952,16 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [relayoutToken, fitViewToken, beginCameraTween]);
+  }, [beginCameraTween]);
+  useEffect(() => {
+    // Skip while both tokens still equal their captured mount-time values —
+    // this effect's own mount-time fire (see `initialFitTokensRef` above).
+    // `trySnapInitialCamera` already set the correct initial camera; this
+    // effect should only react to an actual "fit view"/relayout click after.
+    const initial = initialFitTokensRef.current;
+    if (relayoutToken === initial.relayout && fitViewToken === initial.fitView) return;
+    runOverviewFit();
+  }, [relayoutToken, fitViewToken, runOverviewFit]);
 
   /*
    * The spotlight fit: the **moment** the recent-changes lens turns on or its
@@ -5188,6 +5197,42 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * nothing is visible".
    */
   const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
+    /*
+     * Keyboard zoom and fit (`interaction/keyboard-zoom.ts`): `+`/`-` step the
+     * camera about the viewport centre on the same tween the fit uses, `0` is
+     * the toolbar fit itself. Modifier combinations fall through to the browser.
+     */
+    const zoomIntent = keyboardZoomIntent(e);
+    if (zoomIntent !== null) {
+      e.preventDefault();
+      if (zoomIntent.kind === "fit") {
+        runOverviewFit();
+        return;
+      }
+      const tokens = readTopologyV2TokensOrNull();
+      if (!tokens) return;
+      const target = cameraTargetRef.current;
+      const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+      const scaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+      let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+      const dome = domeRuntimeRef.current;
+      if (dome !== null && dome.active) {
+        // The 3D fit sits below the 2D floor; the wheel path lowers the floor the same way.
+        if (dome.fitScale !== null) scaleMin = Math.min(scaleMin, dome.fitScale);
+        dome.spinArmed = false;
+        commitDomeEntrySweep(dome);
+        dome.poseTween = null;
+      }
+      const tscale = Math.min(scaleMax, Math.max(scaleMin, target.tscale * zoomIntent.factor));
+      if (Math.abs(tscale - target.tscale) < 1e-6) return;
+      const next = { tx: target.tx, ty: target.ty, tscale };
+      cameraTargetRef.current = next;
+      userDrivenCameraRef.current = true;
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      beginCameraTween(next);
+      return;
+    }
     const direction = walkDirectionForKey(e.key);
     if (!direction) return;
     if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
@@ -5321,7 +5366,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         beginCameraTween(cameraTarget);
       }
     }
-  }, [onSelect, beginCameraTween, announceDeadEnd]);
+  }, [onSelect, beginCameraTween, announceDeadEnd, runOverviewFit]);
 
   const wrappedHandlers = useMemo(
     () => ({

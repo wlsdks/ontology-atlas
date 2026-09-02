@@ -930,6 +930,8 @@
         "clickSelect": "Select a node",
         "dragPan": "Pan the map (empty space) or move a node (spring rebound)",
         "wheelZoom": "Zoom in or out",
+        "keyZoom": "Zoom in or out one step",
+        "keyFit": "Fit the whole map",
         "rightClickContext": "Context menu: document, edit relations, copy handoff, path, full detail",
         "moveBetweenResults": "Move between results",
         "openSelectedResult": "Open the selected result",

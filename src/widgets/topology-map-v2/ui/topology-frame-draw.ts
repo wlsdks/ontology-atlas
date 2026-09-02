@@ -1607,11 +1607,16 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
       const hoverRecede =
         hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
+      // In 3D the hovered node's lines also climb out of the depth fog on the
+      // same ramp — the fog (near 1.0 → far 0.09) otherwise swallows the lift on
+      // the far side of the cone tree, and a hover that lights only the near
+      // half reads as broken rather than as depth.
+      const domeEdgeFogForEdge = domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift);
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
         hoverRecede *
-        (domeEdgeExempt ? 1 : domeEdgeFog);
+        domeEdgeFogForEdge;
       /*
        * A halo's strength follows **how strong this line currently is**: a near
        * (strong) line cuts hard, a far line buried in fog barely cuts at all, which
@@ -1650,7 +1655,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           hoverLift,
           reducedMotion,
           level: edge.level,
-          widthScale: domeEdgeExempt ? 1 : domeWidthScale,
+          widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairMeta(edge).key) : undefined,
           dependsCometEligible: kind === "depends" ? ambientDependsComets.has(edgePairMeta(edge).key) : undefined,

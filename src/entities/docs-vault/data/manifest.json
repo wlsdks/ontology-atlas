@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29746,
+      "wordCount": 29776,
       "updatedAt": "2026-09-02",
       "linksOut": []
     },
@@ -1968,7 +1968,7 @@
       },
       "headings": [],
       "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
-      "wordCount": 1078,
+      "wordCount": 1146,
       "updatedAt": "2026-09-02",
       "linksOut": []
     },

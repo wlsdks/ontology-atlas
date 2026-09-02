@@ -20,6 +20,10 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
 - AGENTS.md: Tech stack ("The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)")
 
 ## View Modes
+- **Keyboard zoom and fit (2026-09-02)**: With the canvas focused, `+`/`=` and `-`/`_` step the camera ×1.25 about the
+  viewport centre on the same tween the fit uses, and `0` runs the toolbar's whole-map fit (`runOverviewFit`, shared by
+  the fit and relayout tokens). Modifier combinations stay with the browser. `interaction/keyboard-zoom.ts` decides the
+  intent; every reference the map is measured against (Obsidian, Figma, tldraw) offers the same three keys.
 - **Hover lights the connections (2026-09-02)**: With nothing selected, hovering a concept raises its own relation lines
   toward the ego ink (`render/traces.ts` `hoverLift`) and recedes every other line by a mild step, both driven by the
   hovered node's existing emphasis ramp (`model/focus-state.ts`, τ 90 ms) so nothing cuts; nodes keep their ink. The

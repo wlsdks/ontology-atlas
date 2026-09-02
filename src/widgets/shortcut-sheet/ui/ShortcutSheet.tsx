@@ -178,6 +178,8 @@ const SECTIONS: ShortcutSection[] = [
       { keys: [k("click")], labelKey: "clickSelect" },
       { keys: [k("drag")], labelKey: "dragPan" },
       { keys: [k("scroll")], labelKey: "wheelZoom" },
+      { keys: ["+", "−"], labelKey: "keyZoom" },
+      { keys: ["0"], labelKey: "keyFit" },
       { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
       { keys: ["Esc"], labelKey: "stepCloseOverlays" },
       { keys: [k("rightClick")], labelKey: "rightClickContext" },
