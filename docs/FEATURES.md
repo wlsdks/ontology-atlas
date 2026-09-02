@@ -284,6 +284,12 @@ had become false).
   - a **closing band** before the colophon bookends the page: the winner's file again as an `outline` control (the hero keeps the single filled indigo), the version line, the trust line, and the verification recipe — the platform's command (`shasum -a 256 <file>` / `Get-FileHash`), one sentence on why the hash must match, and the winner's full SHA-256. The winner is decided once for the hero, the strip, and the band;
   - a phone visitor (iPhone, Android mobile) gets *Try it in the browser* as the filled winner and the three files one step down — a phone cannot install a DMG or an EXE;
   - the agents section uses the evidence section's 11/9 grid: the in-app chat scene left, the three still cards stacked right, so the column is filled and the two sections share one grammar.
+- **The map is the ground of the first screen (2026-09-02, round two — owner: *"I wanted cool motion or a background effect"*):**
+  - the hero object is no longer a boxed column beside the type. It is the **stage behind the whole first screen**: the same graph in its **plane form** — a radial map seen from a tilted camera, anchored right of centre at the split width and dimmed so the type stays clear (measured 0.0% lit pixels under the headline, 0.5% under the decision block at 1512). Below `xl` it sits in a plinth under the facts strip instead of behind the text;
+  - the stage **answers the hand**: yaw and pitch lean toward the pointer, eased over frames, and the gateway field gains a fourth light that trails the pointer with inertia (same ink, same alpha ceiling). Fine pointers only, never under reduced motion;
+  - the stage carries a **scroll camera**: as the hero leaves the viewport the plane turns, pushes in, looks further down, lifts slower than the page, and fades out over the last half — so the evidence section's real map arrives on clear ground. Reduced motion keeps one still frame;
+  - the mascot left the hero (it read as part of the map and is not data); the chrome's compact mark is the page's one mascot;
+  - the e2e grid gate now measures legibility over the stage (lit-pixel share under the headline and the decision block) instead of "no destination stands on the object", which the stage makes true by design.
 
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 

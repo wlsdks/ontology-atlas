@@ -4069,6 +4069,41 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   visibility: visible;
 }
 
+/*
+ * The landing (2026-09-02). A character that has just been typed settles into the line: it
+ * arrives at the normal weight and three-fifths ink and takes `--motion-settle` to reach the
+ * monument's signature weight and full ink. Pretendard Variable interpolates the weight axis,
+ * so the glyph visibly firms rather than pops. Declared only under `no-preference`: under
+ * reduced motion the kill rule above already shows every character complete.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .gateway-type-ch.is-on {
+    animation: gatewayTypeLand var(--motion-settle) var(--motion-ease) both;
+  }
+}
+
+@keyframes gatewayTypeLand {
+  from {
+    font-weight: 400;
+    opacity: 0.6;
+  }
+  to {
+    font-weight: var(--font-weight-signature);
+    opacity: 1;
+  }
+}
+
+/* The decoder ghost — the undecided glyph in the caret's slot (`data-ghost`, HeroTypewriter). */
+.gateway-type-ch.is-cursor::after {
+  content: attr(data-ghost);
+  visibility: visible;
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--color-text-quaternary);
+  font-weight: 400;
+}
+
 /* Cursor is left of the first untyped character = right of the last typed character.
  * Being a pseudo-element it takes no space so lines do not shift even as cursor moves. */
 .gateway-type-ch.is-cursor {
@@ -4094,8 +4129,14 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 /* Hero object stage — no entrance of its own: the object assembles as the headline is typed
  * (the typing echo, drawn on the canvas from `HeroTypewriter`'s progress), so the stage is
  * present from the first frame and carries only the atmosphere behind the ink. */
+/*
+ * The stage is positioned by its utility classes (2026-09-02: `absolute inset-0`, the hero's
+ * ground). This unlayered rule used to pin `position: relative`, which outranks a layered
+ * Tailwind utility — measured, the stage collapsed to 0px tall and the canvas drew nothing.
+ * Only the deep spot (`::before`) needs a containing block, and any positioned value gives one.
+ */
 .gateway-hero-stage {
-  position: relative;
+  isolation: isolate;
 }
 
 /* The reserved caption line under the hero object — ink arrives, the box never moves. */
@@ -4113,7 +4154,7 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   position: absolute;
   inset: -12%;
   background: radial-gradient(
-    ellipse 52% 48% at 50% 47%,
+    ellipse 42% 52% at 68% 50%,
     var(--gateway-fx-deep) 0%,
     transparent 72%
   );

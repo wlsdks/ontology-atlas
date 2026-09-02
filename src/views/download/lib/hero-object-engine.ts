@@ -72,6 +72,34 @@ export interface HeroEngineOptions {
   echo?: boolean;
   /** A fine pointer resting on a lit dot, or leaving it. Never fires while dragging. */
   onHover?: (slug: string | null) => void;
+  /**
+   * Where the ink envelope's centre sits on the stage, as fractions of width and height
+   * (default 0.5/0.5). The full-bleed hero (2026-09-02) anchors the dome right of centre so the
+   * decision block on the left reads over the dome's faint far side, not its dense near side.
+   */
+  anchor?: { x: number; y?: number; bottomPx?: number };
+  /** A multiplier on every alpha — the dome as a background must yield to the type over it. */
+  dim?: number;
+  /**
+   * The dome answers the pointer (2026-09-02): yaw and pitch lean toward where the hand is, eased
+   * over frames. Fine pointers only; never under reduced motion; off by default.
+   */
+  tilt?: boolean;
+  /**
+   * The scroll camera (2026-09-02): a function returning progress 0..1 as the hero leaves the
+   * viewport. The dome turns, grows, lifts, and fades with it — the camera pushes into the map
+   * on the way down to the evidence section. Read per frame; never under reduced motion.
+   */
+  camera?: () => number;
+  /**
+   * `plane` (2026-09-02, owner: *"it doesn't have to be the dome"*): every tier sits on one
+   * ground plane instead of stacked rings, seen from a high pitch — the same graph as a radial
+   * map on a tilted floor. It is the form the evidence section's real map already has, so the
+   * scroll camera can lay it flatter on the way down and hand over to that map.
+   */
+  form?: 'dome' | 'plane';
+  /** Camera pitch in radians. Default 0.34 for the dome; the plane uses 0.95. */
+  pitch?: number;
 }
 
 export interface HeroEngineHandle {
@@ -82,6 +110,12 @@ export interface HeroEngineHandle {
   litCount: () => number;
   /** Where every node sat on the last drawn frame, in canvas CSS px — for gates. */
   nodesOnScreen: () => { s: string; k: HeroGraphNode['k']; x: number; y: number }[];
+}
+
+/** Clamped smoothstep on [0,1]. */
+function smooth01(u: number): number {
+  const x = Math.max(0, Math.min(1, u));
+  return x * x * (3 - 2 * x);
 }
 
 /** Deterministic hash → [0,1) — stable per-node jitter. */
@@ -254,6 +288,9 @@ export function mountHeroObject(
     (typeof matchMedia === 'function' &&
       matchMedia('(prefers-reduced-motion: reduce)').matches);
   const model = layoutHeroGraph(data);
+  const flat = opts.form === 'plane';
+  if (flat) for (const n of model.nodes) n.py = 0;
+  const planeY = (kind: HeroGraphNode['k']): number => (flat ? 0 : PLANE[kind].y);
 
   const rootEl = opts.tokenEl ?? document.documentElement;
   // The accent comes only from a token — the name says indigo but the value follows the switch.
@@ -263,7 +300,7 @@ export function mountHeroObject(
   const fill = hexRgb(cssVar(rootEl, '--color-panel', '#0f1011'));
 
   const PERIOD = opts.periodMs ?? 48000;
-  const PITCH = 0.34;
+  const PITCH = opts.pitch ?? (flat ? 0.95 : 0.34);
   const F = 1050;
   const ASSEMBLE = 1600;
   const inkScale = opts.inkScale ?? 1;
@@ -316,7 +353,7 @@ export function mountHeroObject(
         const P = PLANE[kind];
         for (let i = 0; i < 24; i += 1) {
           const a = (i / 24) * TAU;
-          consider(Math.cos(a) * P.r, P.y, Math.sin(a) * P.r, cy, sy, 0);
+          consider(Math.cos(a) * P.r, planeY(kind), Math.sin(a) * P.r, cy, sy, 0);
         }
       }
     }
@@ -339,7 +376,9 @@ export function mountHeroObject(
     ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     // `fitPx` is «the size we want», the clamp below is «not clipped» — a scale where the
     // envelope exceeds the box is cut back, leaving 4% margin (see the envelope doc-block).
-    const MARGIN = 0.04;
+    // Tilt leans the dome up to ~0.1 rad past the envelope's yaw sweep, so it gets twice the
+    // margin — a background may run past its box, a boxed stage may not.
+    const MARGIN = opts.tilt ? 0.08 : 0.04;
     const envW = Math.max(1, envelope.x1 - envelope.x0);
     const envH = Math.max(1, envelope.y1 - envelope.y0);
     scaleFit = Math.min(
@@ -347,9 +386,16 @@ export function mountHeroObject(
       (W * (1 - MARGIN * 2)) / envW,
       (H * (1 - MARGIN * 2)) / envH,
     );
-    // What is centred on the stage is not the world origin but **the ink envelope's centre**.
-    centerX = W / 2 - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
-    centerY = H / 2 - ((envelope.y0 + envelope.y1) / 2) * scaleFit;
+    // What is centred on the anchor is not the world origin but **the ink envelope's centre**.
+    const ax = opts.anchor?.x ?? 0.5;
+    const ay = opts.anchor?.y ?? 0.5;
+    const envMidY = ((envelope.y0 + envelope.y1) / 2) * scaleFit;
+    centerX = W * ax - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
+    // `bottomPx` pins the envelope's centre a fixed distance above the stage's foot — the narrow
+    // layout's plinth is a fixed-height spacer, so a fraction of a content-driven height would
+    // drift with the copy while a pixel distance does not.
+    centerY =
+      opts.anchor?.bottomPx !== undefined ? H - opts.anchor.bottomPx - envMidY : H * ay - envMidY;
   }
   size();
 
@@ -454,8 +500,38 @@ export function mountHeroObject(
     typeof ResizeObserver === 'function' ? new ResizeObserver(() => onResize()) : null;
   boxObserver?.observe(canvas);
 
-  const cosP = cosP0;
-  const sinP = sinP0;
+  /** Pointer lean — targets in radians, eased toward per frame; zero when the hand leaves. */
+  let tiltYawT = 0;
+  let tiltPitchT = 0;
+  let tiltYaw = 0;
+  let tiltPitch = 0;
+  const finePointer =
+    typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
+  const onLean = (e: PointerEvent): void => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const nx = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / rect.width) * 2 - 1));
+    const ny = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / rect.height) * 2 - 1));
+    tiltYawT = nx * 0.16;
+    tiltPitchT = -ny * 0.09;
+  };
+  const onLeanEnd = (): void => {
+    tiltYawT = 0;
+    tiltPitchT = 0;
+  };
+  const tilt = opts.tilt === true && finePointer && !reduced;
+  if (tilt) {
+    addEventListener('pointermove', onLean, { passive: true });
+    document.documentElement.addEventListener('mouseleave', onLeanEnd);
+    addEventListener('blur', onLeanEnd);
+  }
+  /** The scroll camera's eased progress, 0..1, and what it does to the projection. */
+  let cam = 0;
+  let camScale = 1;
+  let camLift = 0;
+
+  let cosP = cosP0;
+  let sinP = sinP0;
   interface Projected {
     x: number;
     y: number;
@@ -469,7 +545,9 @@ export function mountHeroObject(
     const z2 = -py * sinP + z * cosP;
     const s = F / (F + z2);
     // Not W/2 · H/2 but the envelope centre (`size()`'s centerX/centerY) — see the doc-block above.
-    return { x: x * s * scaleFit + centerX, y: -y2 * s * scaleFit + centerY, s, z: z2 };
+    // The camera's push (`camScale`) and lift (`camLift`) are applied here, on the projection.
+    const k = scaleFit * camScale;
+    return { x: x * s * k + centerX, y: -y2 * s * k + centerY - camLift, s, z: z2 };
   }
 
   function tierAlpha(kind: HeroGraphNode['k'], t: number): number {
@@ -502,8 +580,24 @@ export function mountHeroObject(
     if (disposed) return;
     lastT = t;
     ctx!.clearRect(0, 0, W, H);
-    ctx!.globalAlpha = inkScale;
-    const yaw = (reduced ? 0.55 : (t / PERIOD) * TAU) + userYaw + 0.55;
+    if (!reduced) {
+      tiltYaw += (tiltYawT - tiltYaw) * 0.06;
+      tiltPitch += (tiltPitchT - tiltPitch) * 0.06;
+      const target = opts.camera ? Math.max(0, Math.min(1, opts.camera())) : 0;
+      cam += (target - cam) * 0.18;
+    }
+    // The camera: it turns (+0.9 rad over the hero), pushes in (×1.35), looks further down
+    // (+0.22 rad), lifts the dome slower than the page (depth parallax), and fades the ink out
+    // over the last half so the evidence section's real map arrives on a clear ground.
+    const pitch = PITCH + tiltPitch + cam * 0.22;
+    cosP = Math.cos(pitch);
+    sinP = Math.sin(pitch);
+    camScale = 1 + cam * 0.35;
+    camLift = cam * H * 0.22;
+    const camFade = 1 - smooth01((cam - 0.5) / 0.45);
+    ctx!.globalAlpha = inkScale * (opts.dim ?? 1) * camFade;
+    if (ctx!.globalAlpha <= 0.005) return;
+    const yaw = (reduced ? 0.55 : (t / PERIOD) * TAU) + userYaw + 0.55 + tiltYaw + cam * 0.9;
     const trig: Record<HeroGraphNode['k'], [number, number]> = {
       project: [0, 0],
       domain: [0, 0],
@@ -555,7 +649,7 @@ export function mountHeroObject(
       for (let i = 0; i <= 48; i += 1) {
         const ang = (i / 48) * TAU;
         pts.push(
-          project(Math.cos(ang) * P.r, P.y, Math.sin(ang) * P.r, trig[kind][0], trig[kind][1]),
+          project(Math.cos(ang) * P.r, planeY(kind), Math.sin(ang) * P.r, trig[kind][0], trig[kind][1]),
         );
       }
       let x0 = Infinity;
@@ -748,6 +842,11 @@ export function mountHeroObject(
       unregisterFrame?.();
       removeEventListener('resize', onResize);
       boxObserver?.disconnect();
+      if (tilt) {
+        removeEventListener('pointermove', onLean);
+        document.documentElement.removeEventListener('mouseleave', onLeanEnd);
+        removeEventListener('blur', onLeanEnd);
+      }
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);

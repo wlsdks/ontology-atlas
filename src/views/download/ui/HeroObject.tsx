@@ -6,7 +6,6 @@ import { mountHeroObject, type HeroEngineHandle, type HeroGraphData } from '../l
 import { echoFact } from '../lib/hero-echo';
 import type { StageGraph } from '../lib/stage-graph';
 import { cn } from '@/shared/lib/cn';
-import { BrandMark } from '@/shared/ui/brand-mark';
 
 /**
  * The hero object — the column opposite the type.
@@ -62,11 +61,47 @@ export function HeroObject({
     // the dome's bottom was clipped by the instrument rule. The engine measures the projected bbox
     // over a full revolution of yaw, puts the vertical centre at the envelope's centre, and reduces
     // an overflowing scale leaving 4% margin — see the envelope doc-block in `hero-object-engine.ts`).
+    /**
+     * The full-bleed stage (2026-09-02, owner: *"I wanted cool motion or a background effect"*).
+     * The dome is no longer a boxed object beside the type; it is the ground the first screen
+     * stands on — anchored right of centre, dimmed to 0.62 so the decision block reads over its
+     * far side, leaning toward the pointer, and pushed into by the scroll camera. `fitPx` rises
+     * with the box: the stage is now the hero's whole area, and 560 keeps the dome about
+     * three-fifths of the height at 1512×982 (measured) instead of filling it edge to edge.
+     */
+    const scrollHost = (): HTMLElement | null => {
+      for (let n: HTMLElement | null = canvas.parentElement; n; n = n.parentElement) {
+        const o = getComputedStyle(n).overflowY;
+        if (o === 'auto' || o === 'scroll') return n;
+      }
+      return null;
+    };
+    /**
+     * Two placements, one breakpoint (`xl`, where the split layout lives). Wide: the plane is
+     * the ground beside the decision block, anchored at 72%/60%. Narrow: the block spans the
+     * column, so the plane behind it would sit under the buttons (measured 834: 4.4% of the
+     * block's pixels lit) — it moves below the facts strip into a fixed 21rem plinth, centred,
+     * smaller, and a little brighter since nothing reads over it.
+     */
+    const wide = typeof matchMedia === 'function' && matchMedia('(min-width: 80rem)').matches;
     const handle = mountHeroObject(canvas, data, {
       inkScale: 0.97,
-      fitPx: 420,
+      // `fitPx` is a divisor: the ink scales by min(W, H) / fitPx, so a larger value draws a
+      // smaller plane (600 measured 746px wide, 740 the width below; 1180 keeps the narrow
+      // plinth's plane under the facts strip — 980 measured its top row behind the links).
+      fitPx: wide ? 740 : 1180,
       echo: true,
       onHover: setHover,
+      form: 'plane',
+      anchor: wide ? { x: 0.72, y: 0.6 } : { x: 0.5, bottomPx: 176 },
+      dim: wide ? 0.55 : 0.7,
+      tilt: true,
+      camera: () => {
+        const host = scrollHost();
+        const top = host ? host.scrollTop : window.scrollY;
+        const h = canvas.getBoundingClientRect().height || 1;
+        return top / h;
+      },
     });
     handleRef.current = handle;
     // The inspection window for gates, attached only under `?e2e=1` (the map's `__atlasMap` grammar).
@@ -99,35 +134,24 @@ export function HeroObject({
     : '';
 
   return (
-    <div aria-hidden="true" className="flex min-w-0 flex-col xl:h-full">
-      <div
-        data-testid="gateway-hero-object"
-        className="gateway-hero-stage aspect-[1/0.62] w-full max-h-[24rem] xl:aspect-auto xl:h-full xl:max-h-none xl:min-h-[20rem]"
-      >
-        <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
-        {/* A static brand companion, not a work-state claim. The graph remains the
-            hero's product object; this simply closes the identity gap between the
-            gateway, the downloaded app icon, and the evidence-bound in-app mascot. */}
-        <BrandMark
-          detail="full"
-          size={128}
-          alt=""
-          aria-hidden="true"
-          loading="eager"
-          data-testid="gateway-hero-mascot"
-          className="pointer-events-none absolute bottom-0 right-0 z-[1] size-16 select-none md:size-32"
-        />
-      </div>
+    <div
+      aria-hidden="true"
+      data-testid="gateway-hero-object"
+      className="gateway-hero-stage absolute inset-0 min-w-0 overflow-hidden"
+    >
+      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
       {/* The reserved caption line: a non-breaking space keeps its height while nothing is pointed
-          at, so a fact appearing changes ink, never layout. */}
+          at, so a fact appearing changes ink, never layout. It sits at the stage's upper right,
+          on the eyebrow's row — clear of the decision block at every width, unlike the foot,
+          where the facts strip wraps to three rows below `lg`. */}
       <p
         data-testid="gateway-hero-caption"
         className={cn(
-          'gateway-hero-caption mt-2 truncate font-mono text-label leading-label text-[color:var(--color-text-tertiary)]',
+          'gateway-hero-caption pointer-events-none absolute right-[var(--gateway-origin)] top-12 max-w-[40%] truncate text-right font-mono text-label leading-label text-[color:var(--color-text-tertiary)] md:top-16',
           caption ? 'is-on' : undefined,
         )}
       >
-        {caption || ' '}
+        {caption || '\u00A0'}
       </p>
     </div>
   );

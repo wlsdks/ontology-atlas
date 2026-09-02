@@ -91,10 +91,28 @@ export function GatewayFx() {
 
     // Three low-luminance lights — relative weights (1 / .64 / .5) used only multiplied by the alpha ceiling.
     const blobs = [
-      { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0 },
-      { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2 },
-      { w: 0.5, r: 0.6, cx: 0.52, cy: 0.92, sp: 0.5, ph: 4.4 },
+      { w: 1, r: 0.46, cx: 0.26, cy: 0.34, sp: 1.0, ph: 0, follow: false },
+      { w: 0.64, r: 0.52, cx: 0.76, cy: 0.22, sp: 0.66, ph: 2.2, follow: false },
+      { w: 0.5, r: 0.6, cx: 0.52, cy: 0.92, sp: 0.5, ph: 4.4, follow: false },
+      /*
+       * The fourth light follows the hand (2026-09-02). Same ink, same ceiling (`w` < 1 keeps it
+       * under `--gateway-fx-blob-alpha`), no new colour: the field answers where the pointer is,
+       * trailing it with inertia so the light reads as weather, not a cursor. Fine pointers only;
+       * a finger has no resting position, and reduced motion paints one still frame anyway.
+       */
+      { w: 0.5, r: 0.3, cx: 0.5, cy: 0.45, sp: 0, ph: 0, follow: true },
     ];
+    let handX = 0.5;
+    let handY = 0.45;
+    let handSeen = false;
+    const finePointer =
+      typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
+    const onHand = (e: PointerEvent): void => {
+      handX = e.clientX / Math.max(1, innerWidth);
+      handY = e.clientY / Math.max(1, innerHeight);
+      handSeen = true;
+    };
+    if (finePointer && !reduced) addEventListener('pointermove', onHand, { passive: true });
     const dust = Array.from({ length: 110 }, () => ({
       x: Math.random(),
       y: Math.random(),
@@ -144,6 +162,11 @@ export function GatewayFx() {
       const T = t / 24000;
       ctx!.globalCompositeOperation = 'lighter';
       for (const b of blobs) {
+        if (b.follow) {
+          if (!handSeen) continue;
+          b.cx += (handX - b.cx) * 0.045;
+          b.cy += (handY - b.cy) * 0.045;
+        }
         const x = (b.cx + 0.07 * Math.sin(T * 6.283 * b.sp + b.ph)) * W;
         const y = (b.cy + 0.05 * Math.cos(T * 6.283 * b.sp * 0.8 + b.ph)) * H;
         const r = b.r * Math.max(W, H);
@@ -260,6 +283,7 @@ export function GatewayFx() {
       window.clearTimeout(startTimer);
       unregisterFrame?.();
       removeEventListener('resize', onResize);
+      removeEventListener('pointermove', onHand);
       cleanupCursor?.();
     };
   }, []);

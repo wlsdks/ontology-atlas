@@ -721,7 +721,7 @@ describe('DownloadPage', () => {
    * are locked by meaning rather than by value.
    */
   describe('두 주소에 사는 한 화면', () => {
-    it('carries the pixel identity in both the gateway chrome and hero', () => {
+    it('carries the pixel identity in the gateway chrome, and only there', () => {
       mocks.pathname = '/download';
       renderDownloadPage();
 
@@ -733,14 +733,9 @@ describe('DownloadPage', () => {
         'data-brand-detail',
         'compact',
       );
-      expect(screen.getByTestId('gateway-hero-mascot')).toHaveAttribute(
-        'src',
-        '/brand/mascot-full.png',
-      );
-      expect(screen.getByTestId('gateway-hero-mascot')).toHaveAttribute(
-        'data-brand-detail',
-        'full',
-      );
+      // The hero carries no mascot (owner, 2026-09-02: standing beside the dome it read as part
+      // of the map, and it is not data). The chrome's compact mark is the page's one mascot.
+      expect(screen.queryByTestId('gateway-hero-mascot')).toBeNull();
     });
 
     it('/download 에서는 빵부스러기가 여기가 어디인지 말한다', () => {

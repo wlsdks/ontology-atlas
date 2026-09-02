@@ -193,6 +193,24 @@ export function HeroTypewriter({
 
   // The caret rides the first un-typed character, spaces included — skipping spaces would blink it
   // out of existence for one tick every time it crossed a word boundary (measured 2026-08-23).
+  /**
+   * The decoder ghost (2026-09-02, owner: *"shouldn't the type come out really cool?"*). The slot
+   * the caret stands in shows a glyph that is not yet decided — a character drawn from the same
+   * sentence, re-drawn every 45ms in quaternary ink — until the real one lands. It lives in the
+   * caret span's `::after`, absolutely positioned over the hidden real glyph, so nothing reflows:
+   * the line's width is the finished sentence's from the first frame, as before. Drawing from the
+   * sentence itself keeps the Korean line cycling Hangul and the English line Latin.
+   */
+  const [ghost, setGhost] = useState('');
+  useEffect(() => {
+    if (!start || reduced || typed >= total) return;
+    const pool = [...sentence].filter((c) => !/\s/.test(c));
+    if (pool.length === 0) return;
+    const tick = () => setGhost(pool[Math.floor(Math.random() * pool.length)]);
+    tick();
+    const id = window.setInterval(tick, 45);
+    return () => window.clearInterval(id);
+  }, [start, reduced, typed, total, sentence]);
   const cursorAt = (at: number) => typed === at && start && !reduced;
   const chClass = (at: number) =>
     cn('gateway-type-ch', typed > at && 'is-on', cursorAt(at) && 'is-cursor');
@@ -209,7 +227,7 @@ export function HeroTypewriter({
             ) : (
               <span key={`w${partIndex}`} className="gateway-type-word">
                 {part.chars.map(({ char, at }) => (
-                  <span key={at} className={chClass(at)}>
+                  <span key={at} className={chClass(at)} data-ghost={cursorAt(at) ? ghost : undefined}>
                     {char}
                   </span>
                 ))}

@@ -418,17 +418,25 @@ function HeroSection({
        any viewport, so nothing changes there. */
     <section
       data-testid="gateway-hero"
-      className={cn(PAGE_GUTTER, 'flex w-full flex-col xl:min-h-[calc(100svh-4rem)]')}
+      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col xl:min-h-[calc(100svh-4rem)]')}
     >
       {/* The monument measure — the headline uses the full column as its measure. `@container`
           declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
           stay on one line each at every width of the split hero (the budget arithmetic is in the
           token doc-block). */}
-      <div className={cn(PAGE_COLUMN, '@container min-w-0 pt-12 md:pt-16')}>
+      {/* The stage — the dome is the ground of the whole first screen (2026-09-02, owner: *"I
+          wanted cool motion or a background effect"*). It sits behind the type at every width;
+          the monument, the decision band, and the strip stack above it on `z-[1]`. */}
+      <HeroObject graph={graph} typed={typing.typed} total={typing.total} />
+
+      {/* `pointer-events-none` on the two wrappers, `pointer-events-auto` on what they hold: the
+          wrappers span the whole column, and the stage behind them takes the hand wherever the
+          type is not — measured, a full-width band ate the hover over the plane's apex. */}
+      <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16')}>
         <p
           className={cn(
             rise('gateway-t700'),
-            'flex flex-wrap items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
+            'pointer-events-auto flex w-fit flex-wrap items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
           )}
         >
           <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-[color:var(--color-indigo-brand)]" />
@@ -441,7 +449,7 @@ function HeroSection({
           // The visible characters are `aria-hidden`, so the heading is named here — once.
           aria-label={heroSentence(heroLines)}
           className={cn(
-            'mt-6 break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]',
+            'pointer-events-auto mt-6 w-fit break-keep text-monument font-[var(--font-weight-signature)] tracking-[var(--tracking-monument)] text-[color:var(--color-text-primary)]',
           )}
         >
           {/* Typed one character at a time (`HeroTypewriter` owns the cadence and the caret).
@@ -464,8 +472,10 @@ function HeroSection({
       <div
         className={cn(
           PAGE_COLUMN,
-          'grid min-w-0 items-center gap-x-10 gap-y-10 pb-6 pt-7 xl:flex-1 xl:pb-7',
-          'xl:grid-cols-[minmax(520px,1fr)_minmax(320px,0.85fr)]',
+          // One column since 2026-09-02: the object left the band for the stage behind it. The
+          // decision block keeps the 40rem measure the lead already had, so the dome's near side
+          // (anchored at 68% of the width) stays right of the type at the split width.
+          'pointer-events-none relative z-[1] min-w-0 pb-6 pt-7 xl:pb-7',
         )}
       >
         {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"Too much space at the top"* — too much space at the top; measured at 1512, the correction lifted the
@@ -473,11 +483,11 @@ function HeroSection({
             the canvas bottom, which in turn made the object look pushed down). Now that the CTA
             wraps to two lines and the block is closer to the canvas height, plain `items-center`
             is also optically correct. */}
-        <div className="min-w-0">
+        <div className="pointer-events-auto min-w-0 max-w-[40rem]">
           <p
             className={cn(
               rise('gateway-t700'),
-              'max-w-[40rem] break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
+              'break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
             )}
           >
             {t('heroLead')}
@@ -595,21 +605,21 @@ function HeroSection({
           </p>
         </div>
 
-        {/* The object column stretches to the band's height at the split width (2026-09-02) so
-            the room the first viewport gives the hero goes into the object, not into blank rows
-            above and below the decision block. The engine fits its ink to min(width, height). */}
-        <div className="min-w-0 xl:self-stretch">
-          <HeroObject graph={graph} typed={typing.typed} total={typing.total} />
-        </div>
       </div>
 
+      {/* `mt-auto`: at the split width the strip sits on the fold, and the room between the
+          decision block and the strip is the dome's. */}
       <FactsStrip
+        className="relative z-[1] mt-auto"
         published={published}
         primaryAsset={primaryAsset}
         windowsAsset={windowsInstaller}
         windowsPrimary={heroWindowsPrimary}
         heroIn={heroIn}
       />
+      {/* The narrow layout's plinth: below `xl` the plane draws here, under the strip, instead
+          of behind a decision block that spans the column (`HeroObject`'s placement note). */}
+      <div aria-hidden data-testid="gateway-hero-plinth" className="h-[22rem] xl:hidden" />
     </section>
   );
 }
@@ -664,12 +674,14 @@ function HeroIntelLink() {
  * always mac (`visitor-platform.ts`), so the first paint is unchanged too.
  */
 function FactsStrip({
+  className,
   published,
   primaryAsset,
   windowsAsset: windowsInstaller,
   windowsPrimary,
   heroIn,
 }: {
+  className?: string;
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
   windowsAsset: ReturnType<typeof windowsAsset>;
@@ -757,7 +769,7 @@ function FactsStrip({
   ];
 
   return (
-    <div className={cn('gateway-rise gateway-t950', heroIn && 'is-in', 'w-full')}>
+    <div className={cn('gateway-rise gateway-t950', heroIn && 'is-in', 'w-full', className)}>
       {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
           item so it moves as a unit — measured at 834 with the links loose in the list, the
           push-right left one link alone on a third row. From `lg` the pair sits on the column's

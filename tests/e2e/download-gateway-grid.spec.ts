@@ -530,42 +530,70 @@ test.describe("관문 다운로드의 그리드", () => {
 
 });
 
-test.describe("the hero split waits for a column that can hold the decision", () => {
+test.describe("the decision block reads over the stage at every split width", () => {
   /*
-   * ⚠️ Measured 2026-08-30: the split opened at `lg`, where the page column is 624px. The object
-   * took its 320px minimum, the decision block got 256px, the Windows button (304px) ran into
-   * the object, and from 1024 to 1439 all five destinations stood one per row. The split opens
-   * at `xl` now with a 500px floor for the decision block. This measures the two things a
-   * reader would see: no destination leaves its column, and none stands on the object.
+   * [2026-09-02] The object is no longer a column beside the decision block — it is the stage
+   * behind the whole first screen (the plane form of the graph, anchored right of centre). So
+   * "no destination stands on the object" stopped being the contract: every destination stands
+   * on it by design. What a reader would see now is whether the type stays legible over it, and
+   * that is measured directly: the share of lit canvas pixels under the decision block and under
+   * the headline. The 2026-08-30 lesson survives unchanged — the destinations must keep their
+   * rows, and none may be squeezed narrower than its label.
    */
   for (const width of [1024, 1100, 1280, 1440, 1512]) {
-    test(`${width}px — every destination stays in its column and off the object`, async ({ page }) => {
+    test(`${width}px — every destination keeps its row, and the type stays clear of the ink`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await seedFirstRunSeen(page);
       await page.goto("/en/download/", { waitUntil: "load" });
-      /* Measured with the page's own face, not the fallback: on a cold CI runner the labels were
-         still in the fallback font at 1.5s, wider by a word, and five rows were counted. */
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(1500);
+      /* The echo lights the last dot with the last character (~2.5s); measure the settled stage. */
+      await page.waitForTimeout(3200);
       const m = await page.evaluate(() => {
-        const object = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
+        const stage = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
+        const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="gateway-hero-object"] canvas')!;
+        const ctx = canvas.getContext("2d")!;
+        const dpr = canvas.width / Math.max(1, canvas.getBoundingClientRect().width);
+        const litShare = (el: Element): number => {
+          const r = el.getBoundingClientRect();
+          const x0 = Math.max(0, Math.round((r.left - stage.left) * dpr));
+          const y0 = Math.max(0, Math.round((r.top - stage.top) * dpr));
+          const w = Math.max(1, Math.min(canvas.width - x0, Math.round(r.width * dpr)));
+          const h = Math.max(1, Math.min(canvas.height - y0, Math.round(r.height * dpr)));
+          const d = ctx.getImageData(x0, y0, w, h).data;
+          let lit = 0;
+          let total = 0;
+          for (let i = 3; i < d.length; i += 16) {
+            total += 1;
+            if (d[i] > 40) lit += 1;
+          }
+          return total ? lit / total : 0;
+        };
         const out: string[] = [];
         const rows = new Set<number>();
         for (const a of document.querySelectorAll('a[data-testid^="gateway-hero-"]')) {
           const r = a.getBoundingClientRect();
           rows.add(Math.round(r.top));
-          /* A destination squeezed narrower than its label is the column failing, not the label. */
           if (a.scrollWidth > a.clientWidth + 1) out.push(`${a.getAttribute("data-testid")} is narrower than its label by ${a.scrollWidth - a.clientWidth}px`);
-          const overlap = Math.min(r.right, object.right) - Math.max(r.left, object.left) > 0 && Math.min(r.bottom, object.bottom) - Math.max(r.top, object.top) > 0;
-          if (overlap) out.push(`${a.getAttribute("data-testid")} stands on the object`);
         }
+        const block = document.querySelector('[data-testid="gateway-hero-cta"]')!.parentElement!.parentElement!;
         const widths = [...document.querySelectorAll('a[data-testid^="gateway-hero-"]')].map((a) => `${a.getAttribute("data-testid")}=${Math.round(a.getBoundingClientRect().width)}`);
-        return { out, rows: rows.size, objectWidth: Math.round(object.width), widths, mono: getComputedStyle(document.querySelector('[data-testid="gateway-hero-cta"] span:last-child')!).fontFamily.slice(0, 60) };
+        return {
+          out,
+          rows: rows.size,
+          stageWidth: Math.round(stage.width),
+          inkUnderHeadline: litShare(document.querySelector('[data-testid="gateway-hero"] h1')!),
+          inkUnderBlock: litShare(block),
+          widths,
+        };
       });
       expect(m.out, `at ${width}`).toEqual([]);
       /* Two rows plus one for the destination the second row cannot hold; five is a column. */
-      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}: ${m.widths.join(" ")} (mono: ${m.mono})`).toBeLessThanOrEqual(3);
-      expect(m.objectWidth, "the object keeps its minimum").toBeGreaterThanOrEqual(320);
+      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}: ${m.widths.join(" ")}`).toBeLessThanOrEqual(3);
+      expect(m.stageWidth, "the stage is the hero's whole width").toBeGreaterThanOrEqual(width - 1);
+      /* Measured 2026-09-02 at 1512: 0.0% under the headline, 0.5% under the block. The
+         thresholds leave room for narrower widths, where the plane sits closer to the type. */
+      expect(m.inkUnderHeadline, `ink under the headline at ${width}`).toBeLessThanOrEqual(0.03);
+      expect(m.inkUnderBlock, `ink under the decision block at ${width}`).toBeLessThanOrEqual(0.06);
     });
   }
 });
