@@ -846,6 +846,14 @@ template within one screen (`Why`, `Prior`, `Decision`, `Dissent`,
 `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`; the ledger was condensed to it on
 2026-09-02 with every heading preserved.
 
+`pnpm changelog:check` (part of `pnpm docs:check`) refuses a `docs/CHANGELOG.md`
+entry that is not the entry template: a dated heading naming the release (or
+the single `Unreleased` entry at the top), then one to four single-line
+categories in order (`Added`, `Changed`, `Fixed`, `Removed`) within 6 lines and
+900 bytes. A pull request adds to the `Unreleased` lines and the release cut
+renames that entry to its tag. `pnpm changelog:check -- --template` prints the
+shape.
+
 `pnpm decisions:find <terms>` retrieves from `docs/DECISIONS.md` by record
 rather than by line: each hit shows the file line, date and number, title, the
 decision's first sentence, its falsifier, and the later records that cite it,
