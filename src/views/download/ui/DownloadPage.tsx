@@ -325,8 +325,9 @@ function SectionIntro({
 
 /**
  * The first three seconds (owner-confirmed): 0–150ms the background paints in its still state →
- * 150/220ms the two headline lines rise from their own line boxes → 700ms eyebrow and lead →
- * 800ms CTA → 950ms trust line and instrument strip. After that the foreground is permanently
+ * 150/220ms the two headline lines rise from their own line boxes → 240ms eyebrow and lead →
+ * 320ms CTA → 400ms trust line and instrument strip (2026-09-03; it was 700/800/950 — the CTA
+ * stood invisible yet hit-testable for 920ms, and the typing already says "arriving"). After that the foreground is permanently
  * still. Every delay lives in CSS (`gateway-t***`); JS only adds one `is-in` class on the frame
  * after mount.
  *
@@ -435,7 +436,7 @@ function HeroSection({
       <div className={cn(PAGE_COLUMN, '@container pointer-events-none relative z-[1] min-w-0 pt-12 md:pt-16')}>
         <p
           className={cn(
-            rise('gateway-t700'),
+            rise('gateway-t240'),
             'pointer-events-auto flex w-fit flex-wrap items-center gap-2 font-mono text-label uppercase leading-label tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]',
           )}
         >
@@ -486,14 +487,14 @@ function HeroSection({
         <div className="pointer-events-auto min-w-0 max-w-[40rem]">
           <p
             className={cn(
-              rise('gateway-t700'),
+              rise('gateway-t240'),
               'break-keep text-title font-normal leading-title text-[color:var(--color-text-secondary)]',
             )}
           >
             {t('heroLead')}
           </p>
 
-          <div className={cn(rise('gateway-t800'), 'mt-9 flex flex-wrap items-center gap-3')}>
+          <div className={cn(rise('gateway-t320'), 'mt-9 flex flex-wrap items-center gap-3')}>
             {fileWins ? (
               /* The filled CTA — a direct link to the real file. Since the install section was
                  deleted on 2026-08-19 this is the **only** primary download on the page. The file
@@ -548,7 +549,7 @@ function HeroSection({
                Gate: the 320px overflow test in `download-gateway-grid.spec.ts`. */
             <div
               data-testid="gateway-hero-alt-row"
-              className={cn(rise('gateway-t800'), 'mt-2.5 flex flex-wrap items-center gap-2.5')}
+              className={cn(rise('gateway-t320'), 'mt-2.5 flex flex-wrap items-center gap-2.5')}
             >
               {heroWindowsPrimary || !fileWins ? (
                 <a
@@ -594,7 +595,7 @@ function HeroSection({
 
           <p
             className={cn(
-              rise('gateway-t950'),
+              rise('gateway-t400'),
               'mt-5 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]',
             )}
           >
@@ -779,7 +780,7 @@ function FactsStrip({
   ];
 
   return (
-    <div className={cn('gateway-rise gateway-t950', heroIn && 'is-in', 'w-full', className)}>
+    <div className={cn('gateway-rise gateway-t400', heroIn && 'is-in', 'w-full', className)}>
       {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
           item so it moves as a unit — measured at 834 with the links loose in the list, the
           push-right left one link alone on a third row. From `lg` the pair sits on the column's

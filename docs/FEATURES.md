@@ -291,6 +291,7 @@ had become false).
   - the mascot left the hero (it read as part of the map and is not data); the chrome's compact mark is the page's one mascot;
   - the e2e grid gate now measures legibility over the stage (lit-pixel share under the headline and the decision block) instead of "no destination stands on the object", which the stage makes true by design.
   - council (2026-09-03, five seats, guardian decided): the split opens at 90rem (1440) and follows resizes; the scroll camera runs only there; the cursor says `grab` only over a dot and the hover follows the dot through motion; the hover caption sits in the plane's corner and leads with the kind word; the fan lanes stay inside their rings, the fog floor is 0.22, and indigo on the stage means only `depends`. The decoder ghost that briefly showed a wrong letter in the headline was removed (the caret and the weight landing stay, h1 drift gated at ≤4px). On the gateway face the chrome no longer repeats the changelog chip — the facts strip's "What changed in vX.Y.Z" is the page's one changelog destination.
+  - round three (2026-09-03): the hero rises inside half a second (eyebrow and lead 240ms, CTA 320ms, strip 400ms; the CTA used to be invisible yet hit-testable for 920ms); the scroll camera lays the plane down toward the demo poster's top-down view, drifts it to the centre axis, and dissolves it above the facts strip; phones keep three tiers (project, domains, capabilities) drawn larger instead of 96 unreadable dots.
 
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 

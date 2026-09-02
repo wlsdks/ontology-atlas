@@ -26,6 +26,22 @@ const subscribeSplit = (onChange: () => void): (() => void) => {
 };
 const readSplit = (): boolean =>
   typeof matchMedia === 'function' && matchMedia(HERO_SPLIT_MEDIA).matches;
+/**
+ * The phone band (≤40rem, 2026-09-03). In the plinth at 390 the whole graph — 96 nodes — drew
+ * into 165px: the element and capability radii were 0.7px apart, below resolution, so the kind
+ * channel collapsed and the marks were a texture (infoviz seat). A phone shows the project, the
+ * domains, and the capabilities — a typed subset is more honest than an unresolvable whole — and
+ * the plane is drawn larger for the nodes it keeps.
+ */
+const HERO_PHONE_MEDIA = '(max-width: 40rem)';
+const subscribePhone = (onChange: () => void): (() => void) => {
+  if (typeof matchMedia !== 'function') return () => {};
+  const mq = matchMedia(HERO_PHONE_MEDIA);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+};
+const readPhone = (): boolean =>
+  typeof matchMedia === 'function' && matchMedia(HERO_PHONE_MEDIA).matches;
 
 /**
  * The hero object — the column opposite the type.
@@ -75,15 +91,19 @@ export function HeroObject({
    * engine inherits the headline's progress (above), which is what made the remount safe.
    */
   const wide = useSyncExternalStore(subscribeSplit, readSplit, () => false);
+  const phone = useSyncExternalStore(subscribePhone, readPhone, () => false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || graph.nodes.length === 0) return;
 
+    const keep = (kind: StageGraph['nodes'][number]['kind']): boolean => !phone || kind !== 'element';
+    const kept = new Set(graph.nodes.filter((node) => keep(node.kind)).map((node) => node.id));
     const data: HeroGraphData = {
-      nodes: graph.nodes.map((node) => ({ s: node.id, k: node.kind })),
+      nodes: graph.nodes.filter((node) => kept.has(node.id)).map((node) => ({ s: node.id, k: node.kind })),
       edges: graph.edges
         .filter((edge) => edge.kind === 'contains' || edge.kind === 'depends')
+        .filter((edge) => kept.has(edge.source) && kept.has(edge.target))
         .map((edge) => ({ a: edge.source, b: edge.target, y: edge.kind })),
     };
 
@@ -126,7 +146,8 @@ export function HeroObject({
       // `fitPx` is a divisor: the ink scales by min(W, H) / fitPx, so a larger value draws a
       // smaller plane (600 measured 746px wide, 740 the width below; 1180 keeps the narrow
       // plinth's plane under the facts strip — 980 measured its top row behind the links).
-      fitPx: wide ? 740 : 1180,
+      // On a phone the plane keeps three tiers and is drawn larger for them (2026-09-03).
+      fitPx: wide ? 740 : phone ? 820 : 1180,
       echo: true,
       onHover: setHover,
       form: 'plane',
@@ -173,7 +194,7 @@ export function HeroObject({
       if (inspect) delete (window as unknown as { __heroEcho?: unknown }).__heroEcho;
       handle?.dispose();
     };
-  }, [graph, wide]);
+  }, [graph, wide, phone]);
 
   useEffect(() => {
     // Before the headline's first report `total` is 0 and there is nothing to echo yet.
