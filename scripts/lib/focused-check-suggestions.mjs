@@ -415,6 +415,16 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm changelog:check',
+    reason: 'a changelog entry was added or edited; it must fit the entry template',
+    matches: [/^docs\/CHANGELOG\.md$/],
+  },
+  {
+    command: 'pnpm test:changelog',
+    reason: 'the changelog entry template or its gate changed',
+    matches: [/^scripts\/lib\/changelog-entry-template(?:\.test)?\.mjs$/, /^scripts\/check-changelog\.mjs$/],
+  },
+  {
     // The pre-push hook writes the ledger these outcomes are counted from, so
     // editing the hook re-proves the record shape it hands over.
     command: 'pnpm test:harness:outcomes',
