@@ -1,11 +1,31 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslations } from 'next-intl';
 import { mountHeroObject, type HeroEngineHandle, type HeroGraphData } from '../lib/hero-object-engine';
 import { echoFact } from '../lib/hero-echo';
 import type { StageGraph } from '../lib/stage-graph';
 import { cn } from '@/shared/lib/cn';
+
+/**
+ * The hero's split width — **one number, four consumers** (council, 2026-09-02). Above it the
+ * plane is the ground beside the type (the section claims the viewport, the caption sits in the
+ * plane's corner); below it the plane drops into the plinth under the facts strip. 90rem (1440):
+ * measured, 1280–1439 put 8–16% of the plane's ink under the decision block and the trust line,
+ * and 1440 is the first band that clears the recovery proof with margin. The three Tailwind
+ * consumers spell it as `min-[90rem]:` — `tests/contract/hero-split-width.contract.test.ts` keeps
+ * them equal to this constant.
+ */
+export const HERO_SPLIT_MIN_WIDTH_REM = 90;
+const HERO_SPLIT_MEDIA = `(min-width: ${HERO_SPLIT_MIN_WIDTH_REM}rem)`;
+const subscribeSplit = (onChange: () => void): (() => void) => {
+  if (typeof matchMedia !== 'function') return () => {};
+  const mq = matchMedia(HERO_SPLIT_MEDIA);
+  mq.addEventListener('change', onChange);
+  return () => mq.removeEventListener('change', onChange);
+};
+const readSplit = (): boolean =>
+  typeof matchMedia === 'function' && matchMedia(HERO_SPLIT_MEDIA).matches;
 
 /**
  * The hero object — the column opposite the type.
@@ -37,9 +57,24 @@ export function HeroObject({
   total: number;
 }) {
   const t = useTranslations('download');
+  const tKinds = useTranslations('kinds');
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const handleRef = useRef<HeroEngineHandle | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  /** The latest progress, readable from the mount effect without re-running it. */
+  const typingRef = useRef({ typed, total });
+  // Synced in an effect, not during render (react-hooks/refs); declared before the mount effect
+  // so it runs first in the same commit and the mount effect reads the current values.
+  useEffect(() => {
+    typingRef.current = { typed, total };
+  });
+  /**
+   * Which placement the stage uses — **reactive** (council, 2026-09-02). Read once at mount, a
+   * rotation or resize across the split kept the wrong placement until reload: measured 1512→834
+   * without reload, 48% lit under the trust line. The engine remounts on change; a remounted
+   * engine inherits the headline's progress (above), which is what made the remount safe.
+   */
+  const wide = useSyncExternalStore(subscribeSplit, readSplit, () => false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -62,12 +97,15 @@ export function HeroObject({
     // over a full revolution of yaw, puts the vertical centre at the envelope's centre, and reduces
     // an overflowing scale leaving 4% margin — see the envelope doc-block in `hero-object-engine.ts`).
     /**
-     * The full-bleed stage (2026-09-02, owner: *"I wanted cool motion or a background effect"*).
-     * The dome is no longer a boxed object beside the type; it is the ground the first screen
-     * stands on — anchored right of centre, dimmed to 0.62 so the decision block reads over its
-     * far side, leaning toward the pointer, and pushed into by the scroll camera. `fitPx` rises
-     * with the box: the stage is now the hero's whole area, and 560 keeps the dome about
-     * three-fifths of the height at 1512×982 (measured) instead of filling it edge to edge.
+     * The full-bleed stage (2026-09-02, owner: *"I wanted cool motion or a background effect"*,
+     * then *"the size must be right, and it need not be the dome"*). The object is no longer a
+     * boxed column beside the type; it is the ground the first screen stands on, in the graph's
+     * **plane form** — the same rings seen from a tilted camera. At the split width (`wide`) it is
+     * anchored at 72% of the width and 60% of the height, dimmed to 0.55, leaning toward the
+     * pointer, and pushed into by the scroll camera; `fitPx` 740 measured an ink box of
+     * 798..1408 × 371..879 at 1512×982 — right of the decision block, above the facts strip.
+     * Narrower, it drops into the plinth under the strip (`bottomPx`), smaller (`fitPx` 1180),
+     * a little brighter (0.7) because nothing sits over it there.
      */
     const scrollHost = (): HTMLElement | null => {
       for (let n: HTMLElement | null = canvas.parentElement; n; n = n.parentElement) {
@@ -83,7 +121,6 @@ export function HeroObject({
      * block's pixels lit) — it moves below the facts strip into a fixed 21rem plinth, centred,
      * smaller, and a little brighter since nothing reads over it.
      */
-    const wide = typeof matchMedia === 'function' && matchMedia('(min-width: 80rem)').matches;
     const handle = mountHeroObject(canvas, data, {
       inkScale: 0.97,
       // `fitPx` is a divisor: the ink scales by min(W, H) / fitPx, so a larger value draws a
@@ -96,14 +133,31 @@ export function HeroObject({
       anchor: wide ? { x: 0.72, y: 0.6 } : { x: 0.5, bottomPx: 176 },
       dim: wide ? 0.55 : 0.7,
       tilt: true,
-      camera: () => {
-        const host = scrollHost();
-        const top = host ? host.scrollTop : window.scrollY;
-        const h = canvas.getBoundingClientRect().height || 1;
-        return top / h;
-      },
+      // The scroll camera runs only at the split width (council, 2026-09-02): below it the plane
+      // sits in the plinth under the facts strip, and the lift carried it up through the strip's
+      // links — measured 834 at scrollTop 627, 59% lit under the changelog link. Below the split
+      // the plane is under the fold anyway, so the camera bought nothing there.
+      camera: wide
+        ? () => {
+            const host = scrollHost();
+            const top = host ? host.scrollTop : window.scrollY;
+            const h = canvas.getBoundingClientRect().height || 1;
+            return top / h;
+          }
+        : undefined,
     });
     handleRef.current = handle;
+    /**
+     * A freshly mounted engine inherits the headline's progress (council, 2026-09-02). The
+     * `[typed, total]` effect below fires only when those change, so an engine mounted after the
+     * last character — a remount on `graph`, HMR — would wait forever for a message that had
+     * already gone by, and with `echo` on, an engine that never hears `setTyping` lights nothing:
+     * a permanently blank ground with no diagnostic. Measured in the shared window: 0 lit pixels,
+     * loop alive, headline complete.
+     */
+    if (handle && typingRef.current.total > 0) {
+      handle.setTyping(typingRef.current.typed, typingRef.current.total);
+    }
     // The inspection window for gates, attached only under `?e2e=1` (the map's `__atlasMap` grammar).
     const inspect =
       handle !== null && new URLSearchParams(window.location.search).get('e2e') === '1';
@@ -119,7 +173,7 @@ export function HeroObject({
       if (inspect) delete (window as unknown as { __heroEcho?: unknown }).__heroEcho;
       handle?.dispose();
     };
-  }, [graph]);
+  }, [graph, wide]);
 
   useEffect(() => {
     // Before the headline's first report `total` is 0 and there is nothing to echo yet.
@@ -127,11 +181,15 @@ export function HeroObject({
   }, [typed, total]);
 
   const fact = hover !== null ? echoFact(graph, hover) : null;
-  const caption = fact
+  const hovered = hover !== null ? graph.nodes.find((n) => n.id === hover) : undefined;
+  /* The kind word leads the caption (council, 2026-09-02): the size ramp is the plane's only
+     kind channel and nothing stated it — now the first hover teaches it ("capability · …"). */
+  const factLine = fact
     ? fact.relation === 'contains'
       ? t('heroFactContains', { parent: fact.from, child: fact.to })
       : t('heroFactDepends', { from: fact.from, to: fact.to })
     : '';
+  const caption = factLine && hovered ? `${tKinds(hovered.kind)} · ${factLine}` : factLine;
 
   return (
     <div
@@ -141,13 +199,15 @@ export function HeroObject({
     >
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
       {/* The reserved caption line: a non-breaking space keeps its height while nothing is pointed
-          at, so a fact appearing changes ink, never layout. It sits at the stage's upper right,
-          on the eyebrow's row — clear of the decision block at every width, unlike the foot,
-          where the facts strip wraps to three rows below `lg`. */}
+          at, so a fact appearing changes ink, never layout. Below `xl` it sits at the stage's
+          upper right on the eyebrow's row, clear of the stacked content; at the split width it
+          moves to the plane's own corner, just above the facts strip (7.5rem: the strip's 5.4rem
+          plus breath), so the fact appears near the dot that caused it — the council measured the
+          upper-right slot 588px from the dot (2026-09-02). */}
       <p
         data-testid="gateway-hero-caption"
         className={cn(
-          'gateway-hero-caption pointer-events-none absolute right-[var(--gateway-origin)] top-12 max-w-[40%] truncate text-right font-mono text-label leading-label text-[color:var(--color-text-tertiary)] md:top-16',
+          'gateway-hero-caption pointer-events-none absolute right-[var(--gateway-origin)] top-12 max-w-[40%] truncate text-right font-mono text-label leading-label text-[color:var(--color-text-tertiary)] md:top-16 min-[90rem]:top-auto min-[90rem]:bottom-[7.5rem]',
           caption ? 'is-on' : undefined,
         )}
       >

@@ -156,6 +156,7 @@ export function GatewayFx() {
       return KEY[i] + (next - KEY[i]) * f;
     }
 
+    let lastT = 0;
     function draw(t: number): void {
       ctx!.clearRect(0, 0, W, H);
       intensity += (targetIntensity() - intensity) * 0.06;
@@ -164,8 +165,11 @@ export function GatewayFx() {
       for (const b of blobs) {
         if (b.follow) {
           if (!handSeen) continue;
-          b.cx += (handX - b.cx) * 0.045;
-          b.cy += (handY - b.cy) * 0.045;
+          // Time-based (council, 2026-09-02): the field paints every ~33ms, so the follower
+          // eases by 1 − e^(−dt/370ms) per paint, the same on a 60Hz and a 120Hz panel.
+          const k = 1 - Math.exp(-(t - lastT) / 370);
+          b.cx += (handX - b.cx) * k;
+          b.cy += (handY - b.cy) * k;
         }
         const x = (b.cx + 0.07 * Math.sin(T * 6.283 * b.sp + b.ph)) * W;
         const y = (b.cy + 0.05 * Math.cos(T * 6.283 * b.sp * 0.8 + b.ph)) * H;
@@ -190,6 +194,7 @@ export function GatewayFx() {
         ctx!.fillRect(d.x * W, d.y * H, d.s, d.s);
       }
       ctx!.globalCompositeOperation = 'source-over';
+      lastT = t;
     }
 
     let startTimer = 0;

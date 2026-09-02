@@ -530,6 +530,68 @@ test.describe("관문 다운로드의 그리드", () => {
 
 });
 
+test.describe("the headline types only its own sentence (council, 2026-09-03)", () => {
+  /*
+   * The decoder ghost drew a glyph from the sentence into the caret's slot at the headline's own
+   * size, so the page's one claim read as a misspelling for a frame ("Agents write tlt"). It was
+   * removed; this keeps it from returning quietly, and pins the one cost the kept landing has —
+   * `gatewayTypeLand` interpolates font-weight on a variable face, measured ≤3.73px of h1 width
+   * drift while typing.
+   */
+  test("no ghost glyph, and the headline does not wander while it types", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 982 });
+    await seedFirstRunSeen(page);
+    await page.goto("/en/download/", { waitUntil: "load" });
+    const samples: { ghosts: number; after: string; width: number; typed: number }[] = [];
+    const deadline = Date.now() + 2600;
+    while (Date.now() < deadline) {
+      samples.push(
+        await page.evaluate(() => {
+          const h1 = document.querySelector('[data-testid="gateway-hero"] h1')!;
+          const cursor = h1.querySelector(".gateway-type-ch.is-cursor");
+          return {
+            ghosts: document.querySelectorAll("[data-ghost]").length,
+            after: cursor ? getComputedStyle(cursor, "::after").content : "none",
+            width: h1.getBoundingClientRect().width,
+            typed: h1.querySelectorAll(".gateway-type-ch.is-on").length,
+          };
+        }),
+      );
+      await page.waitForTimeout(60);
+    }
+    const typing = samples.filter((s) => s.typed > 0);
+    expect(typing.length, "typing was observed").toBeGreaterThanOrEqual(6);
+    for (const s of typing) {
+      expect(s.ghosts, "a ghost glyph is back").toBe(0);
+      expect(s.after === "none" || s.after === "normal", `the caret slot draws ::after ${s.after}`).toBe(true);
+    }
+    const widths = typing.map((s) => s.width);
+    expect(Math.max(...widths) - Math.min(...widths), "the headline's width wandered").toBeLessThanOrEqual(4);
+  });
+
+  test("the changelog is offered once per viewport on /download, and once in the chrome on /guide", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 982 });
+    await seedFirstRunSeen(page);
+    const visibleChangelogLinks = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll<HTMLAnchorElement>("a[href]")]
+          .filter((a) => /\/changelog\/?$/.test(new URL(a.href).pathname))
+          .filter((a) => {
+            const r = a.getBoundingClientRect();
+            return r.width > 0 && r.height > 0 && getComputedStyle(a).visibility !== "hidden";
+          })
+          .map((a) => a.getAttribute("data-testid")),
+      );
+    await page.goto("/en/download/", { waitUntil: "load" });
+    await page.waitForTimeout(1500);
+    expect(await visibleChangelogLinks()).toEqual(["gateway-facts-changelog"]);
+    await page.goto("/en/guide/", { waitUntil: "load" });
+    await page.waitForTimeout(800);
+    const onGuide = await visibleChangelogLinks();
+    expect(onGuide, "the chrome keeps the chip off the gateway face").toContain("gateway-nav-changelog");
+  });
+});
+
 test.describe("the decision block reads over the stage at every split width", () => {
   /*
    * [2026-09-02] The object is no longer a column beside the decision block — it is the stage
@@ -540,7 +602,10 @@ test.describe("the decision block reads over the stage at every split width", ()
    * the headline. The 2026-08-30 lesson survives unchanged — the destinations must keep their
    * rows, and none may be squeezed narrower than its label.
    */
-  for (const width of [1024, 1100, 1280, 1440, 1512]) {
+  /* 1280 and 1366 sit below the 90rem split (the plinth), 1440 is its first band, 1512 the owner's
+     laptop. The council measured 8–16% lit under the type at 1280–1366 while the split opened at
+     80rem; the split moved and these widths now guard it. */
+  for (const width of [1024, 1100, 1280, 1366, 1440, 1512]) {
     test(`${width}px — every destination keeps its row, and the type stays clear of the ink`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await seedFirstRunSeen(page);

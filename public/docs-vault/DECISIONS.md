@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+
+## 2026-09-03 — The download headline types only its own sentence, and the changelog is offered once per viewport
+
+**Why**: The hero's decoder ghost drew a sentence character into the caret's slot at headline size, so the page's one claim read as a misspelling for a frame ("Agents write tlt", "the codelt"). `/download` also offered `/changelog` twice in one first screen: the chrome chip and the strip's "What changed in v1.0.4".
+**Prior**: 2026-08-18 (73) standing: four hero destinations keep four ranks; its falsifier (an observed hesitation at row two) was not met, so collapsing rows 2–3 is rejected. 2026-08-23 ("real typewriter", not a per-character fade) standing: `gatewayTypeLand` keeps its weight leg. `GatewayNav`'s rule that the same link in chrome and page makes one a dead promise is applied, not restated. The 2026-09-02 round stands with the seats' measured conditions applied.
+**Decision**: Remove the ghost (state, `data-ghost`, `::after`); keep the caret and the landing, and pin the landing's h1 width drift at ≤4px. On the gateway face (`/`, `/download`) the chrome drops the Changelog chip; the strip's versioned link is the one route. Guide, the chip on `/changelog`, the footer row, and all hero destinations are unchanged.
+**Dissent**: design-motion and design-interaction would keep a lighter or caret-suppressed ghost. design-lead holds that four outlined controls still read as a catalog. On the chip: chrome duplication is ordinary, and removing it costs mid-scroll reach.
+**Falsifier**: A walkthrough showing hesitation at row two fires (73)'s falsifier. h1 drift above 4px makes the landing opacity-only. A mid-page visitor with no changelog route returns the chip and drops the strip link. A headline that reads flat to the owner's eye calls for more graph in the ground, not a wrong letter in the type.
+**Owner**: design-guardian decided; the builder applied; the owner's "make people's eyes go wide" was the bar, and the 2026-08-18 and 2026-08-23 owner calls were treated as binding.
 ## 2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof
 
 **Why**: the current source MCP and freshly built sidecar returned the expected lowercase `readme.md` address, while the binary at `/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` returned 22 uppercase `README.md` addresses, zero lowercase, omitted project evidence, and had bytes and size differing from the built sidecar.

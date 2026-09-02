@@ -117,9 +117,16 @@ export function GatewayNav() {
             <GatewayNavLink href="/guide" active={path.startsWith('/guide')}>
               {tNav('guide')}
             </GatewayNavLink>
-            <GatewayNavLink href="/changelog" active={path.startsWith('/changelog')}>
-              {tNav('changelog')}
-            </GatewayNavLink>
+            {/* On the gateway face (`/` and `/download`) the page itself carries the changelog —
+                the facts strip's labeled, versioned "What changed in vX.Y.Z" beside the version
+                it explains — so the chrome does not offer it a second time in the same viewport
+                (council, 2026-09-03; the rule is this file's own: the same link in chrome and page
+                makes one of them a dead promise). `/guide` and `/changelog` keep the chip. */}
+            {atRoot || path.startsWith('/download') ? null : (
+              <GatewayNavLink href="/changelog" active={path.startsWith('/changelog')}>
+                {tNav('changelog')}
+              </GatewayNavLink>
+            )}
           </span>
 
           {/*

@@ -782,8 +782,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 93187,
-      "updatedAt": "2026-09-02",
+      "wordCount": 93502,
+      "updatedAt": "2026-09-03",
       "linksOut": [
         "slug"
       ]
@@ -888,7 +888,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
-      "wordCount": 25603,
+      "wordCount": 25727,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "slug",
@@ -3682,7 +3682,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1236,
+      "wordCount": 1249,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "DECISIONS"

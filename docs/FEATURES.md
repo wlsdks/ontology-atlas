@@ -290,6 +290,7 @@ had become false).
   - the stage carries a **scroll camera**: as the hero leaves the viewport the plane turns, pushes in, looks further down, lifts slower than the page, and fades out over the last half — so the evidence section's real map arrives on clear ground. Reduced motion keeps one still frame;
   - the mascot left the hero (it read as part of the map and is not data); the chrome's compact mark is the page's one mascot;
   - the e2e grid gate now measures legibility over the stage (lit-pixel share under the headline and the decision block) instead of "no destination stands on the object", which the stage makes true by design.
+  - council (2026-09-03, five seats, guardian decided): the split opens at 90rem (1440) and follows resizes; the scroll camera runs only there; the cursor says `grab` only over a dot and the hover follows the dot through motion; the hover caption sits in the plane's corner and leads with the kind word; the fan lanes stay inside their rings, the fog floor is 0.22, and indigo on the stage means only `depends`. The decoder ghost that briefly showed a wrong letter in the headline was removed (the caret and the weight landing stay, h1 drift gated at ≤4px). On the gateway face the chrome no longer repeats the changelog chip — the facts strip's "What changed in vX.Y.Z" is the page's one changelog destination.
 
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 

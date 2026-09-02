@@ -418,7 +418,7 @@ function HeroSection({
        any viewport, so nothing changes there. */
     <section
       data-testid="gateway-hero"
-      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col xl:min-h-[calc(100svh-4rem)]')}
+      className={cn(PAGE_GUTTER, 'relative flex w-full flex-col min-[90rem]:min-h-[calc(100svh-4rem)]')}
     >
       {/* The monument measure — the headline uses the full column as its measure. `@container`
           declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
@@ -475,7 +475,7 @@ function HeroSection({
           // One column since 2026-09-02: the object left the band for the stage behind it. The
           // decision block keeps the 40rem measure the lead already had, so the dome's near side
           // (anchored at 68% of the width) stays right of the type at the split width.
-          'pointer-events-none relative z-[1] min-w-0 pb-6 pt-7 xl:pb-7',
+          'pointer-events-none relative z-[1] min-w-0 pb-6 pt-7 min-[90rem]:pb-7',
         )}
       >
         {/* The old `lg:pb-14` optical correction was returned (owner, 2026-08-18: *"Too much space at the top"* — too much space at the top; measured at 1512, the correction lifted the
@@ -619,7 +619,17 @@ function HeroSection({
       />
       {/* The narrow layout's plinth: below `xl` the plane draws here, under the strip, instead
           of behind a decision block that spans the column (`HeroObject`'s placement note). */}
-      <div aria-hidden data-testid="gateway-hero-plinth" className="h-[22rem] xl:hidden" />
+      {/* The plinth exists only when there is a plane to stand on it (council, 2026-09-02): an
+          empty graph used to leave 352px of nothing in the flow below `xl`. */}
+      {graph.nodes.length > 0 ? (
+        <div
+          aria-hidden
+          data-testid="gateway-hero-plinth"
+          // The reserve follows the ink: at 834 the plane fills 22rem, at 390 it is 162px tall
+          // and a fixed 22rem left half a viewport of empty scroll (council, 2026-09-02).
+          className="h-[clamp(0rem,62vw,22rem)] min-[90rem]:hidden"
+        />
+      ) : null}
     </section>
   );
 }

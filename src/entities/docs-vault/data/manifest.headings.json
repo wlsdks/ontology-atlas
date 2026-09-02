@@ -6175,6 +6175,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-03 — The download headline types only its own sentence, and the changelog is offered once per viewport",
+      "slug": "2026-09-03-the-download-headline-types-only-its-own-sentence-and-the-changelog-is-offered-once-per-viewport"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof",
       "slug": "2026-09-02-installed-mcp-evidence-is-trusted-only-after-whole-app-identity-and-semantic-proof"
     },

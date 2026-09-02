@@ -93,7 +93,20 @@ function frame(t: number): void {
   const factor = ambientSleepFactor(performance.now(), lastInputMs);
   if (isAmbientAsleep(factor)) return; // Sleep — skip paint front (noop frame)
   const tick: GatewayFrameTick = { t, dtMs, factor };
-  for (const client of clients) client(tick);
+  for (const client of clients) {
+    try {
+      client(tick);
+    } catch (error) {
+      /*
+       * A client that throws mid-frame must not take the loop with it, and must not stay: the
+       * hero engine clears its canvas on the first line of every frame, so a client that throws
+       * after that line would leave a blank stage re-cleared forever (council, 2026-09-02). It is
+       * unregistered and the error surfaced once.
+       */
+      clients.delete(client);
+      console.error('[gateway-frame-loop] client removed after throwing', error);
+    }
+  }
 }
 
 function start(): void {

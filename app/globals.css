@@ -3669,6 +3669,12 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     .gateway-term-line {
       opacity: 1 !important;
     }
+
+    /* The hover caption is opacity-only, so it keeps its 120ms fade instead of the global
+       kill's hard cut — the same rule the toast above follows (council, 2026-09-02). */
+    .gateway-hero-caption {
+      transition-duration: var(--motion-fast) !important;
+    }
   }
 
   /*
@@ -4077,7 +4083,9 @@ body[data-no-tabbar] [data-tabbar="primary"] {
  * reduced motion the kill rule above already shows every character complete.
  */
 @media (prefers-reduced-motion: no-preference) {
-  .gateway-type-ch.is-on {
+  /* `gateway-type-land` is the landing's own class (set with `is-on` by HeroTypewriter) so the
+     reduced-motion contract can name it — the scanner reads the last class of a selector. */
+  .gateway-type-land {
     animation: gatewayTypeLand var(--motion-settle) var(--motion-ease) both;
   }
 }
@@ -4093,16 +4101,13 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   }
 }
 
-/* The decoder ghost — the undecided glyph in the caret's slot (`data-ghost`, HeroTypewriter). */
-.gateway-type-ch.is-cursor::after {
-  content: attr(data-ghost);
-  visibility: visible;
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: var(--color-text-quaternary);
-  font-weight: 400;
-}
+/*
+ * [Removed 2026-09-03, council] The decoder ghost — a glyph drawn from the sentence into the
+ * caret's slot before the real character landed. At the headline's size it read as a
+ * misspelling of the page's one claim ("Agents write tlt", "the codelt"). The caret stays; the
+ * landing above carries the type's arrival. Gate: the grid spec asserts no `[data-ghost]` and
+ * `::after { content: none }` on the caret slot.
+ */
 
 /* Cursor is left of the first untyped character = right of the last typed character.
  * Being a pseudo-element it takes no space so lines do not shift even as cursor moves. */
