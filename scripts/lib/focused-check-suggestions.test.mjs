@@ -1129,6 +1129,7 @@ describe('focused check suggestions', () => {
       'pnpm docs:surface:check',
       'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',
+      'pnpm dev-checks:check',
       // `.claude/rules/testing.md` and the skill are agent files, and a rule's
       // globs are what the nested `AGENTS.md` pointers derive from.
       'pnpm agents:check',

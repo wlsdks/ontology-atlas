@@ -39,6 +39,8 @@ export const FULL_LANE_COMMANDS = Object.freeze({
     'pnpm test:decisions',
     'pnpm test:changelog',
     'pnpm changelog:check',
+    'pnpm dev-checks:check',
+    'pnpm test:dev-checks',
     'pnpm test:checks:changed',
     'pnpm test:ci:impact',
     'pnpm test:source:language',
