@@ -1008,12 +1008,12 @@
       "collapseAllLabel": "전체 접기",
       "view3dChoice": {
         "flat": "평면",
-        "ownership": "돔",
+        "ownership": "원뿔",
         "coupling": "구름"
       },
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
-        "ownership": "담긴 구조대로 층층이 쌓인 모양",
+        "ownership": "담긴 구조대로 원뿔이 층층이 매달린 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
       "view3dLabel": "3D",

@@ -437,7 +437,7 @@ function HomePageImpl() {
   // an app-wide store and handed down to the map canvas; the DOM glyphs subscribe
   // to the same store themselves, so both surfaces swap in lockstep.
   const canvasBackground = useCanvasBackground();
-  // 3D view (2026-08-18, opt-in): either the ownership Dome or the relation-driven Cloud.
+  // 3D view (2026-08-18, opt-in): either the ownership Cone tree or the relation-driven Cloud.
   const view3d = useView3d();
   /** Which structural question places nodes in 3D — see the `MapArrangement` doc-block. */
   const mapArrangement = useMapArrangement();

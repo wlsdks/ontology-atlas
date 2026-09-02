@@ -45,6 +45,11 @@
 
 ---
 
+## Unreleased
+
+**Changed**: The 3D ownership view is now a cone tree named Cone: each parent is the apex of its own cone and its children rest on a base circle directly under it, so a domain's whole subtree is one shape you can turn to the front; switching between Cone and Cloud morphs the concepts into place and refits only when the new shape would spill off screen.
+**Fixed**: After visiting 3D, the 2D map falls asleep again when idle instead of redrawing at full frame rate for the rest of the session; switching arrangements on a large ontology no longer freezes one frame.
+
 ## 2026-09-02 · v1.0.4: the installed app proves its own bundle, and the records fit one screen
 
 **Changed**: The changelog and the decision ledger now follow fixed one-screen templates in English, with gates that refuse anything else; ontology qualification no longer assumes an FDE persona unless the project owns that audience with evidence.

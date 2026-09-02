@@ -20,20 +20,25 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
 - AGENTS.md: Tech stack ("The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)")
 
 ## View Modes
-- **3D View (dome view, 2026-08-18)**: An opt-in mode that repositions the map as a dome of kind concentric rings (project vertex →
-  domain → capability → element ring). Enabled via the "3D" chip in the top toolbar. Auto-rotation (48s/rev; stops if the user drags
-  the view, disabling auto-rotation and re-enabling "auto-align"·3D re-entry for that session) · Orbit drag (pitch is ±83°
-  full angle before reaching the poles) · In-plane node drag · Wheel zoom · "Reset to Origin" · Selection
-  reframe (selecting a node aligns yaw and camera in one clock to frame that node on the front,
-  reframing based on visible area even when panels are open/closed). Default is 2D (cross-verified evidence,
-  `docs/DECISIONS.md` 2026-08-18). Implementation: `src/widgets/topology-map-v2/model/dome-view.ts`,
-  config key `atlas.appearance.view3d`.
-- **3D Representation Layers (2026-08-18 3rd iteration)**: Five rendering devices that make the dome read as a dome.
-  ① **Meridian relationship lines** riding on the convex hull (control points are on the hull, not the chord,
-  so the silhouette becomes a sphere rather than a tent), ② **Depth halo** (thickly drawing the same geometry in the background color just before ink to hide what's behind. Everts et al. 2009),
-  ③ **Edge painter alignment** (farthest first), ④ **Latitude rings** (three kind planes as 96 sample
-  polylines, each arc with its own depth ink. `render/dome-rings.ts`),
-  ⑤ **Node 3D shading** (assuming a light source slightly upper-left, Sun & Perona 1998).
+- **3D View (2026-08-18; cone tree since 2026-09-02)**: An opt-in mode that lifts the map into depth. The
+  ownership arrangement is a **cone tree** (Robertson, Mackinlay & Card 1991): height is the containment tier
+  (project apex → domain → capability → element plane) and every parent is the apex of its own cone whose
+  children rest on a base circle directly under it, sectors proportional to subtree size, a single child hanging
+  straight down (`layoutConeTree`). It replaced the 2026-08-18 dome of latitude rings after measurement showed
+  70% of the nodes crowding one bottom ring (`docs/DECISIONS.md` 2026-09-02). Enabled via the "3D" chip in the
+  top toolbar. Auto-rotation (48s/rev; stops if the user drags the view, disabling auto-rotation and re-enabling
+  "auto-align"·3D re-entry for that session) · Orbit drag (pitch is ±83° full angle before reaching the poles) ·
+  In-plane node drag · Wheel zoom · "Reset to Origin" · Selection reframe (selecting a node aligns yaw and camera
+  in one clock to frame that node on the front, reframing based on visible area even when panels are open/closed).
+  Default is 2D (cross-verified evidence, `docs/DECISIONS.md` 2026-08-18). Implementation:
+  `src/widgets/topology-map-v2/model/dome-view.ts`, config key `atlas.appearance.view3d`.
+- **3D Representation Layers (2026-08-18 3rd iteration, re-based on the cone tree 2026-09-02)**: Five rendering
+  devices. ① **Straight cone edges for containment, bowed meridians for relations** (`domeEdgeControl` takes the
+  edge kind; only `depends` rides the shell), ② **Depth halo** (thickly drawing the same geometry in the
+  background color just before ink to hide what's behind. Everts et al. 2009), ③ **Edge painter alignment**
+  (farthest first), ④ **Cone-base rings** (the project's domain ring plus one base per parent with two or more
+  children, sampled in proportion to radius, each arc with its own depth ink. `DomeModel.circles`,
+  `render/dome-rings.ts`), ⑤ **Node 3D shading** (assuming a light source slightly upper-left, Sun & Perona 1998).
   All values are derived from `model/dome-view.ts` and the single token `--topology-v2-dome-ring`.
 - **3D Manipulation & Motion (2026-08-18 4th iteration)**: Dragging empty space behaves differently depending on location.
   Inside the dome silhouette (an ellipse inscribed in the bbox of drawn nodes, with 1.08 padding) is orbit rotation,
@@ -48,12 +53,15 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
   if near a domain meridian, it aims there (`projectOrbitLanding` ·
   `domeFacingYaws` · `snapOrbitLanding`). The time constant for approach is
   inversely calculated from the release speed to ensure velocity continuity (`orbitSnapTauMs`).
-- **Arrangement Criteria (2026-08-18 6th iteration)**: 3D has two arrangement modes. `ownership` (default)
-  uses the existing dome (height=tier, azimuth=parent), `coupling` is a 3D force
+- **Arrangement Criteria (2026-08-18 6th iteration; morphing switch 2026-09-02)**: 3D has two arrangement modes. `ownership` (default)
+  is the cone tree (height=tier, position=parent), `coupling` is a 3D force
   cloud where relationships determine position (`relaxCouplingCloud`: push all pairs + relationship springs + cooling, ownership coordinates
   warmstart with random 0). The cloud does not draw latitude rings or hull warping. Config key
   `atlas.appearance.map-arrangement`, UI is the picker opened by the "3D" chip at the top of the map
-  (`widgets/search-hint/ui/View3dMenu.tsx`). Three lines (plane·dome·cloud) so "Turn off 3D" and "Choose shape" are read in one place.
+  (`widgets/search-hint/ui/View3dMenu.tsx`). Three lines (flat·cone·cloud) so "Turn off 3D" and "Choose shape" are read in one place.
+  A switch while 3D is on rebuilds in frame-budget slices and **morphs** the coordinates over the pose-move cap
+  (`beginDomeMorph`), refitting the camera only when the new shape overflows the viewport; a dome that has fully
+  left the screen rests its motion state (`settleDomeRuntimeOffscreen`) so the 2D idle gate can fold again.
 
 ## Large Map Overview and ACP Exploration (2026-08-22)
 - Top "Expand All" opens all containment parents for the session only, and fits all rendered

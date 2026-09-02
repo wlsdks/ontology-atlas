@@ -70,8 +70,14 @@ export const KIND_DEPTH: Readonly<Record<DomeViewKind, number>> = {
 
 /** Idle spin period — the hero engine's 48 s/turn, unchanged. */
 export const DOME_PERIOD_MS = 48000;
-/** Default look-down angle (rad) — the hero engine's pitch 0.34, unchanged. */
-export const DOME_PITCH_DEFAULT = 0.34;
+/**
+ * Default look-down angle (rad). The hero engine's 0.34 (19°) was tuned for a
+ * single dome whose only rings were wide latitude circles; on the cone tree the
+ * bases are small circles under each parent, and at 19° they squash into lines.
+ * 0.5 (29°) opens them enough to read as circles while the tree still reads as
+ * standing rather than as a plan view.
+ */
+export const DOME_PITCH_DEFAULT = 0.5;
 /**
  * Pole margin for pitch (rad) — at exactly ±π/2 the screen's "up" flips beyond
  * the pole (yaw direction inverts). This margin exists only to prevent that flip.
@@ -487,6 +493,21 @@ export interface DomeCoord {
   pz: number;
 }
 
+/**
+ * One **cone base** — the circle a parent's children rest on (dome units). The
+ * project's base is the domain ring; every parent with two or more children gets
+ * its own, centred directly under that parent on the children's kind plane. These
+ * are the coordinate system the draw shows as rings (`DOME_RING_KINDS` doc-block).
+ */
+interface DomeCircle {
+  /** The tier of the children resting on this circle — its assembly ramp and yaw torsion follow that tier. */
+  kind: DomeViewKind;
+  cx: number;
+  cz: number;
+  y: number;
+  r: number;
+}
+
 export interface DomeModel {
   /**
    * Which arrangement produced these coordinates — the draw decides whether to draw
@@ -500,18 +521,202 @@ export interface DomeModel {
   /** Dome units → world units — sized so the element ring overlaps the 2D layout radius. */
   unit: number;
   coords: Map<string, DomeCoord>;
+  /** Cone bases (ownership only; empty for the cloud) — see `DomeCircle`. */
+  circles: DomeCircle[];
 }
 
 /**
- * Dome layout — a port of the hero engine's `layout()`.
+ * **Ownership layout — a cone tree, not a dome of rings (2026-09-02).**
  *
- * Angles come from the containment parent: domains spread evenly on their ring
- * (sorted by slug, for determinism), capabilities fan inside their parent domain's
- * sector, elements fan inside their parent's sector (capability first, else
- * domain). With no parent, a deterministic hash angle. Crowded fans alternate
- * across two staggered sub-rings (same as the hero). Projects sit at the apex, or
- * on a small ring if there is more than one.
+ * The first ownership layout (2026-08-18, ledger (76)) was the hero engine's dome:
+ * every kind on one latitude ring, a node's bearing taken from its parent's
+ * sector. Measured against the dogfood vault and a 1,000-node synthetic vault it
+ * failed on distribution rather than on shape: 70% of the nodes (the elements) sat
+ * on the single lowest, widest ring, which at the default pitch flattens into a
+ * band, so the crowd overlapped in exactly the place the eye lands, while the top
+ * half of the silhouette stayed empty. Ownership was carried only by *sector*, a
+ * fact the 2D map already shows by proximity.
+ *
+ * A cone tree (Robertson, Mackinlay & Card, "Cone Trees: animated 3D
+ * visualizations of hierarchical information", CHI 1991) keeps both typed facts
+ * and strengthens the second:
+ *
+ * - **height = containment tier** — unchanged, the kind planes of `DOME_PLANE`;
+ * - **position = ownership** — a parent is the apex of its own cone and its
+ *   children rest on that cone's base circle, **directly under it**, not merely
+ *   inside its sector. A subtree is a physical bump you can point at and rotate to
+ *   the front.
+ *
+ * Geometry, all deterministic (sorted by id, no randomness):
+ * - the project sits at the apex and the domains rest on the project's base, the
+ *   ring of radius `DOME_PLANE.domain.r`; each domain owns an angular sector
+ *   proportional to its subtree size (a floor of 1 keeps an empty domain a slot);
+ * - a domain's children (capabilities, and elements it contains directly) rest on
+ *   a circle centred under the domain, radius from the child count (`CONE_SPACING`)
+ *   capped by the room to the next domain's sector (`coneRoom`), so sibling cones
+ *   do not intersect;
+ * - a capability's elements rest on a circle centred under the capability, radius
+ *   capped by the gap to its sibling capabilities;
+ * - a parent with one child gets radius 0 (the child hangs straight down: a stalk
+ *   is the honest one-child cone) and no base circle;
+ * - crowded bases (more than `CONE_STAGGER_FROM` children) alternate two radii so
+ *   labels and discs interleave rather than fuse;
+ * - a node whose parent is not in the model falls back to a deterministic hash
+ *   bearing on its own kind plane, as the dome did.
+ *
+ * Cones nest three deep at most, so the footprint stays inside the old bottom
+ * ring (`DOME_FIT_RADIUS`) and the camera, fog, grip and in-plane drag contracts
+ * are untouched: y is still one value per kind, which is what `solveDomePlanePoint`
+ * relies on.
  */
+const CONE_SPACING: Readonly<Record<DomeViewKind, number>> = {
+  project: 0,
+  domain: 0,
+  // Capability disc ≈ 6.5 dome units radius → 13 diameter; 16 leaves a hairline gap.
+  capability: 16,
+  // Element disc ≈ 4.3 radius → 8.6 diameter.
+  element: 10,
+};
+/** Smallest base radius that still reads as a circle rather than a smear (dome units). */
+const CONE_MIN_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 10, element: 6 };
+/** Largest base radius per tier — a giant domain must not swallow its neighbours' room. */
+const CONE_MAX_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 64, element: 26 };
+/** Fraction of the available room a cone base may take — the rest is the gap between sibling cones. */
+const CONE_ROOM_FILL = 0.82;
+/** Above this many children on one base, alternate two radii. */
+const CONE_STAGGER_FROM = 8;
+const CONE_STAGGER_OUT = 1.12;
+const CONE_STAGGER_IN = 0.9;
+
+function layoutConeTree(nodes: readonly DomeInputNode[]): { coords: Map<string, DomeCoord>; circles: DomeCircle[] } {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const coords = new Map<string, DomeCoord>();
+  const circles: DomeCircle[] = [];
+  const byIdAsc = (a: DomeInputNode, b: DomeInputNode) => (a.id < b.id ? -1 : 1);
+
+  const kids = new Map<string, DomeInputNode[]>();
+  for (const n of nodes) {
+    if (n.parentId === null || !byId.has(n.parentId) || n.parentId === n.id) continue;
+    const list = kids.get(n.parentId);
+    if (list) list.push(n);
+    else kids.set(n.parentId, [n]);
+  }
+  for (const list of kids.values()) list.sort(byIdAsc);
+
+  /** Subtree size including the node itself; cycles (a bad vault) are cut at the first repeat. */
+  const weightMemo = new Map<string, number>();
+  const weightOf = (id: string, trail: Set<string>): number => {
+    const memo = weightMemo.get(id);
+    if (memo !== undefined) return memo;
+    if (trail.has(id)) return 1;
+    trail.add(id);
+    let w = 1;
+    for (const k of kids.get(id) ?? []) w += weightOf(k.id, trail);
+    trail.delete(id);
+    weightMemo.set(id, w);
+    return w;
+  };
+
+  const projects = nodes.filter((n) => n.kind === "project").sort(byIdAsc);
+  projects.forEach((p, i) => {
+    if (projects.length === 1) {
+      coords.set(p.id, { px: 0, py: DOME_PLANE.project.y, pz: 0 });
+    } else {
+      const a = (i / projects.length) * TAU - Math.PI / 2;
+      coords.set(p.id, { px: Math.cos(a) * 26, py: DOME_PLANE.project.y, pz: Math.sin(a) * 26 });
+    }
+  });
+
+  // Domains on the project's base ring, sectors proportional to subtree weight.
+  const domains = nodes.filter((n) => n.kind === "domain").sort(byIdAsc);
+  const ringR = DOME_PLANE.domain.r;
+  const weights = domains.map((d) => weightOf(d.id, new Set()));
+  const weightSum = weights.reduce((acc, w) => acc + w, 0) || 1;
+  const sectorOf = new Map<string, number>();
+  const bearingOf = new Map<string, number>();
+  let cursor = -Math.PI / 2;
+  domains.forEach((d, i) => {
+    const sector = (weights[i] / weightSum) * TAU;
+    const a = cursor + sector / 2;
+    cursor += sector;
+    sectorOf.set(d.id, sector);
+    bearingOf.set(d.id, a);
+    coords.set(d.id, { px: Math.cos(a) * ringR, py: DOME_PLANE.domain.y, pz: Math.sin(a) * ringR });
+  });
+  if (domains.length > 0) circles.push({ kind: "domain", cx: 0, cz: 0, y: DOME_PLANE.domain.y, r: ringR });
+
+  /**
+   * Rest `children` on a circle of radius `r` around `parent`.
+   *
+   * **The heaviest child faces outward.** Children are ordered by subtree size
+   * (then id) and dealt symmetrically about the parent's outward bearing: the
+   * largest sub-cone on the bearing itself, the next two one slot to either
+   * side, and so on, so the lightest children end up on the inside, toward the
+   * axis — the only place where sibling domains' cones can meet. Heavy subtrees
+   * therefore grow away from each other and a rotation that brings a domain to
+   * the front brings its biggest capability with it.
+   */
+  const rest = (parent: DomeCoord, outward: number, children: readonly DomeInputNode[], r: number): void => {
+    const n = children.length;
+    const ordered = [...children].sort((a, b) => {
+      const dw = weightOf(b.id, new Set()) - weightOf(a.id, new Set());
+      return dw !== 0 ? dw : byIdAsc(a, b);
+    });
+    ordered.forEach((k, i) => {
+      // 0, +1, −1, +2, −2, … slots of TAU/n around the outward bearing.
+      const slot = i === 0 ? 0 : i % 2 ? (i + 1) / 2 : -(i / 2);
+      const a = outward + (slot / n) * TAU;
+      const ri = n > CONE_STAGGER_FROM ? r * (i % 2 ? CONE_STAGGER_OUT : CONE_STAGGER_IN) : r;
+      coords.set(k.id, { px: parent.px + Math.cos(a) * ri, py: DOME_PLANE[k.kind].y, pz: parent.pz + Math.sin(a) * ri });
+    });
+  };
+  /** Base radius for `count` children of tier `tier` inside `room` — 0 for a single child (a stalk). */
+  const baseRadius = (count: number, tier: DomeViewKind, room: number): number => {
+    if (count <= 1) return 0;
+    const cap = Math.min(CONE_MAX_R[tier], room * CONE_ROOM_FILL);
+    const wanted = Math.max(CONE_MIN_R[tier], (count * CONE_SPACING[tier]) / TAU);
+    return Math.max(0, Math.min(cap, wanted));
+  };
+
+  const capRoom = new Map<string, number>();
+  for (const d of domains) {
+    const children = kids.get(d.id) ?? [];
+    const room = ringR * Math.sin((sectorOf.get(d.id) ?? 0) / 2);
+    const r = baseRadius(children.length, "capability", room);
+    const at = coords.get(d.id)!;
+    const outward = bearingOf.get(d.id) ?? 0;
+    rest(at, outward, children, r);
+    if (r > 0) circles.push({ kind: "capability", cx: at.px, cz: at.pz, y: DOME_PLANE.capability.y, r });
+    // Room for each child's own cone: the gap to its sibling on this base, or the
+    // domain's whole room when it hangs alone.
+    const childRoom = children.length <= 1 ? room * CONE_ROOM_FILL : r * Math.sin(Math.PI / children.length);
+    for (const c of children) capRoom.set(c.id, childRoom);
+  }
+
+  const capabilities = nodes.filter((n) => n.kind === "capability").sort(byIdAsc);
+  for (const c of capabilities) {
+    const at = coords.get(c.id);
+    if (!at) continue;
+    const children = kids.get(c.id) ?? [];
+    if (children.length === 0) continue;
+    const parentAt = c.parentId !== null ? coords.get(c.parentId) : undefined;
+    const outward = parentAt ? Math.atan2(at.pz - parentAt.pz, at.px - parentAt.px) : Math.atan2(at.pz, at.px);
+    const r = baseRadius(children.length, "element", capRoom.get(c.id) ?? CONE_MAX_R.element);
+    rest(at, outward, children, r);
+    if (r > 0) circles.push({ kind: "element", cx: at.px, cz: at.pz, y: DOME_PLANE.element.y, r });
+  }
+
+  // Whatever is still unplaced — no parent, a parent outside the model, or a
+  // parent that was itself unplaced — takes a deterministic hash bearing on its
+  // own kind plane, as the dome did.
+  for (const n of nodes) {
+    if (coords.has(n.id)) continue;
+    const a = domeHash01(n.id) * TAU;
+    const r = DOME_PLANE[n.kind].r;
+    coords.set(n.id, { px: Math.cos(a) * r, py: DOME_PLANE[n.kind].y, pz: Math.sin(a) * r });
+  }
+  return { coords, circles };
+}
 /**
  * **The arrangement axis — 「Ownership」 (ownership) and 「Coupling」 (coupling).**
  *
@@ -911,96 +1116,25 @@ export function beginDomeModelBuild(
   // starter nodes).
   const unit = Math.max(radius, 220) / DOME_FIT_RADIUS;
 
-  const byId = new Map(nodes.map((n) => [n.id, n]));
-  const angle = new Map<string, number>();
-  const coords = new Map<string, DomeCoord>();
-
-  const domains = nodes.filter((n) => n.kind === "domain").sort((a, b) => (a.id < b.id ? -1 : 1));
-  domains.forEach((d, i) => {
-    angle.set(d.id, (i / Math.max(1, domains.length)) * TAU - Math.PI / 2);
-  });
-
-  const projects = nodes.filter((n) => n.kind === "project").sort((a, b) => (a.id < b.id ? -1 : 1));
-  projects.forEach((p, i) => {
-    if (projects.length === 1) {
-      coords.set(p.id, { px: 0, py: DOME_PLANE.project.y, pz: 0 });
-    } else {
-      const a = (i / projects.length) * TAU - Math.PI / 2;
-      coords.set(p.id, { px: Math.cos(a) * 26, py: DOME_PLANE.project.y, pz: Math.sin(a) * 26 });
-    }
-    angle.set(p.id, 0);
-  });
-  domains.forEach((d) => {
-    const a = angle.get(d.id) ?? 0;
-    coords.set(d.id, {
-      px: Math.cos(a) * DOME_PLANE.domain.r,
-      py: DOME_PLANE.domain.y,
-      pz: Math.sin(a) * DOME_PLANE.domain.r,
-    });
-  });
-
-  /** Follow the parent's (then the grandparent's) angle; failing both, a deterministic hash angle. */
-  const baseAngleFor = (n: DomeInputNode): number => {
-    const p = n.parentId;
-    if (p !== null) {
-      const direct = angle.get(p);
-      if (direct !== undefined) return direct;
-      const grand = byId.get(p)?.parentId;
-      if (grand != null) {
-        const inherited = angle.get(grand);
-        if (inherited !== undefined) return inherited;
-      }
-    }
-    return domeHash01(n.id) * TAU;
-  };
-
-  const fan = (kids: readonly DomeInputNode[], ringR: number, planeY: number, sectorW: number): void => {
-    const groups = new Map<number, DomeInputNode[]>();
-    for (const k of kids) {
-      const a = baseAngleFor(k);
-      const g = groups.get(a);
-      if (g) g.push(k);
-      else groups.set(a, [k]);
-    }
-    for (const [a0, group] of groups) {
-      group.sort((a, b) => (a.id < b.id ? -1 : 1));
-      group.forEach((k, i) => {
-        const t = group.length === 1 ? 0 : i / (group.length - 1) - 0.5;
-        const a = a0 + t * sectorW;
-        const r = ringR + (group.length > 4 ? (i % 2 ? 26 : -12) : 0) + (domeHash01(k.id) - 0.5) * 10;
-        angle.set(k.id, a);
-        coords.set(k.id, { px: Math.cos(a) * r, py: planeY, pz: Math.sin(a) * r });
-      });
-    }
-  };
-
-  const sector = TAU / Math.max(1, domains.length);
-  fan(
-    nodes.filter((n) => n.kind === "capability"),
-    DOME_PLANE.capability.r,
-    DOME_PLANE.capability.y,
-    sector * 0.62,
-  );
-  fan(
-    nodes.filter((n) => n.kind === "element"),
-    DOME_PLANE.element.r,
-    DOME_PLANE.element.y,
-    sector * 0.78,
-  );
+  const { coords, circles } = layoutConeTree(nodes);
 
   /*
    * "Coupling" (coupling) arrangement — relaxes from a **warm start** at the angles the
    * ownership arrangement produced. Not starting from arbitrary angles is what buys
    * determinism and spatial memory (`DomeArrangement` doc-block).
    */
+  const arrangement = options?.arrangement ?? "ownership";
   const model: DomeModel = {
     centerX: cx,
     centerY: cy,
     unit,
     coords,
-    arrangement: options?.arrangement ?? "ownership",
+    arrangement,
+    // The cloud has no cone bases — drawing them would assert a coordinate system
+    // relations did not produce.
+    circles: arrangement === "coupling" ? [] : circles,
   };
-  if (options?.arrangement === "coupling" && options.edges && options.edges.length > 0) {
+  if (arrangement === "coupling" && options?.edges && options.edges.length > 0) {
     const relaxer = createCouplingCloudRelaxer(coords, nodes, options.edges);
     return { model, step: (budgetMs: number) => relaxer.step(budgetMs) };
   }
@@ -1093,10 +1227,21 @@ export const DOME_EDGE_BOW = 0.9;
  * that far. Drop this one line and the bow is always half of what was intended, and
  * half reads as "is that bowed or not".
  */
-export function domeEdgeControl(model: DomeModel, sourceId: string, targetId: string): DomeCoord | null {
+export function domeEdgeControl(
+  model: DomeModel,
+  sourceId: string,
+  targetId: string,
+  /**
+   * The edge's kind. In the cone tree a **containment** edge is a cone's own
+   * edge (apex to base) and draws straight; only a `depends` relation bows over
+   * the shell so it does not cut through the cones. Omitted, the edge bows.
+   */
+  kind: "contains" | "depends" = "depends",
+): DomeCoord | null {
   // A coupling cloud has no shell — with no skin to bow over, lines go straight
   // (the caller takes null and falls back to the 2D control point).
   if (model.arrangement === "coupling") return null;
+  if (kind === "contains") return null;
   const a = model.coords.get(sourceId);
   const b = model.coords.get(targetId);
   if (!a || !b) return null;
@@ -1201,8 +1346,9 @@ export function domeEdgeControlWorld(
   runtime: DomeRuntime,
   sourceId: string,
   targetId: string,
+  kind: "contains" | "depends" = "depends",
 ): { wx: number; wy: number } | null {
-  const coord = domeEdgeControl(runtime.model, sourceId, targetId);
+  const coord = domeEdgeControl(runtime.model, sourceId, targetId, kind);
   if (coord === null) return null;
   // Use the trig computed once per frame (see the `drawCosYaw` doc-block) — redoing
   // cos/sin per edge exceeds a thousand calls per frame in this vault alone.
@@ -1447,8 +1593,33 @@ export function updateDomeFrame(
   nodes: ReadonlyArray<{ id: string; kind: DomeViewKind; x: number; y: number }>,
   /** A node's 2D base radius (world) — radiusForKind × magnitudeScale. Denominator of the `s` inversion. */
   baseRadiusFor: (node: { id: string; kind: DomeViewKind }) => number,
+  /** Frame clock (`performance.now()`), only read while a morph is in flight. */
+  nowMs = 0,
 ): void {
   const { model, frame } = runtime;
+  // Morph progress — see `DomeMorph`. Ends itself the frame it reaches 1.
+  let morphE = 1;
+  const morph = runtime.morph;
+  if (morph !== null) {
+    const t = morph.durationMs <= 0 ? 1 : (nowMs - morph.startMs) / morph.durationMs;
+    if (t >= 1) {
+      runtime.morph = null;
+    } else {
+      morphE = domeEaseInOutCubic(t <= 0 ? 0 : t);
+    }
+  }
+  const morphing = runtime.morph !== null;
+  const morphCoord: DomeCoord = { px: 0, py: 0, pz: 0 };
+  /** The coordinate to draw this frame — the target, or the eased blend from the previous model. */
+  const coordFor = (id: string, target: DomeCoord): DomeCoord => {
+    if (!morphing) return target;
+    const from = morph!.fromCoords.get(id);
+    if (!from) return target;
+    morphCoord.px = from.px + (target.px - from.px) * morphE;
+    morphCoord.py = from.py + (target.py - from.py) * morphE;
+    morphCoord.pz = from.pz + (target.pz - from.pz) * morphE;
+    return morphCoord;
+  };
   /*
    * Entry sweep — added to the drawn pose only (`DOME_ENTRY_PITCH_LIFT` doc-block).
    * Why not push `runtime.yaw/pitch` directly: that would make the entry animation
@@ -1499,7 +1670,7 @@ export function updateDomeFrame(
     const [cy, sy] = trig[node.kind];
     const r = ramp[node.kind];
     // A tier at r=0 skips projection — offset 0 (not −0), factor 1, identical to 2D.
-    const p = r > 0 ? projectWithTrig(model, coord, cy, sy, cp, sp) : null;
+    const p = r > 0 ? projectWithTrig(model, coordFor(node.id, coord), cy, sy, cp, sp) : null;
     const dx = p === null ? 0 : (p.wx - node.x) * r;
     const dy = p === null ? 0 : (p.wy - node.y) * r;
     let s = 1;
@@ -1547,29 +1718,27 @@ export function updateDomeFrame(
    * nodes by that much — the coordinate system would be changing the data's
    * presentation. The rings read their own u by clamping to the same range below.
    */
-  // A coupling cloud has no kind planes — drawing rings would assert a coordinate
-  // system that does not exist.
-  const ringKinds = model.arrangement === "coupling" ? [] : DOME_RING_KINDS;
-  for (let i = 0; i < ringKinds.length; i++) {
-    const kind = ringKinds[i];
-    const plane = DOME_PLANE[kind];
+  // Cone bases — the model's own circles (the cloud carries none: drawing rings
+  // there would assert a coordinate system that does not exist). During a morph
+  // the previous model's bases fade out behind the new ones fading in.
+  let ringCount = 0;
+  const sampleCircle = (circle: DomeCircle, alpha: number): void => {
+    const { kind } = circle;
     const [cyK, syK] = trig[kind];
-    let ring = runtime.rings[i];
-    if (!ring || ring.kind !== kind) {
+    let ring = runtime.rings[ringCount];
+    if (!ring) {
       ring = { kind, a: 0, points: [] };
-      runtime.rings[i] = ring;
+      runtime.rings[ringCount] = ring;
     }
-    ring.a = ramp[kind];
-    for (let k = 0; k < DOME_RING_SAMPLES; k++) {
-      const theta = (k / DOME_RING_SAMPLES) * TAU;
-      const p = projectWithTrig(
-        model,
-        { px: Math.cos(theta) * plane.r, py: plane.y, pz: Math.sin(theta) * plane.r },
-        cyK,
-        syK,
-        cp,
-        sp,
-      );
+    ring.kind = kind;
+    ring.a = ramp[kind] * alpha;
+    const samples = domeRingSampleCount(circle.r);
+    for (let k = 0; k < samples; k++) {
+      const theta = (k / samples) * TAU;
+      ringCoord.px = circle.cx + Math.cos(theta) * circle.r;
+      ringCoord.py = circle.y;
+      ringCoord.pz = circle.cz + Math.sin(theta) * circle.r;
+      const p = projectWithTrig(model, ringCoord, cyK, syK, cp, sp);
       const point = ring.points[k];
       if (point) {
         point.wx = p.wx;
@@ -1579,9 +1748,12 @@ export function updateDomeFrame(
         ring.points[k] = { wx: p.wx, wy: p.wy, u: p.z };
       }
     }
-    ring.points.length = DOME_RING_SAMPLES;
-  }
-  runtime.rings.length = ringKinds.length;
+    ring.points.length = samples;
+    ringCount++;
+  };
+  for (const circle of model.circles) sampleCircle(circle, morphing ? morphE : 1);
+  if (morphing) for (const circle of morph!.fromCircles) sampleCircle(circle, 1 - morphE);
+  runtime.rings.length = ringCount;
 
   // Pass 2 — normalise z into 0..1 (u). If every tier is r=0 there is no span → u 0.
   const span = zMax - zMin;
@@ -1616,6 +1788,67 @@ export function updateDomeFrame(
 }
 
 const DOME_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
+
+/** Scratch coordinate for ring sampling — one object per module, never per sample. */
+const ringCoord: DomeCoord = { px: 0, py: 0, pz: 0 };
+
+/**
+ * Samples for a base of radius `r` — `DOME_RING_SAMPLES` on the domain ring
+ * (r=148), proportionally fewer on the small bases so a 12-unit circle is not
+ * drawn with 96 segments. The floor keeps the smallest base round.
+ */
+export function domeRingSampleCount(r: number): number {
+  return Math.max(12, Math.min(DOME_RING_SAMPLES, Math.round(r * 0.65)));
+}
+
+/** ease-in-out cubic — the camera tween's curve, shared by the morph. */
+function domeEaseInOutCubic(t: number): number {
+  const c = t <= 0 ? 0 : t >= 1 ? 1 : t;
+  return c < 0.5 ? 4 * c * c * c : 1 - Math.pow(-2 * c + 2, 3) / 2;
+}
+
+/**
+ * Swap the model in and start a morph from the one being replaced — see
+ * `DomeMorph`. Call it from the loop when a rebuild (arrangement or world change)
+ * completes while the dome is on screen. `durationMs` 0 is a cut (reduced-motion).
+ */
+export function beginDomeMorph(runtime: DomeRuntime, next: DomeModel, nowMs: number, durationMs: number): void {
+  const prev = runtime.model;
+  runtime.model = next;
+  runtime.morph =
+    durationMs > 0
+      ? { fromCoords: prev.coords, fromCircles: prev.circles, startMs: nowMs, durationMs }
+      : null;
+}
+
+/**
+ * Put a dome that has fully left the screen to rest (2026-09-02).
+ *
+ * The loop's dome step runs only while 3D is on or the teardown ramp is still
+ * above 0, so anything that was in flight at the moment 2D took over — a pose
+ * tween, tier torsion, momentum, the landing target — stayed frozen at its last
+ * value. The idle gate names every one of those as "motion", so the map never
+ * slept again after a single visit to 3D (measured: 120 frames/s, 32 s after the
+ * last input, cause `domeMotion`). Nothing here is visible — the frame map is
+ * already empty — so settling is a pure bookkeeping reset.
+ */
+export function settleDomeRuntimeOffscreen(runtime: DomeRuntime): void {
+  runtime.yawVel = 0;
+  runtime.pitchVel = 0;
+  runtime.yawSnap = null;
+  runtime.poseTween = null;
+  runtime.morph = null;
+  runtime.orbiting = false;
+  runtime.drag = null;
+  runtime.entryArmed = false;
+  runtime.lag.project = 0;
+  runtime.lag.domain = 0;
+  runtime.lag.capability = 0;
+  runtime.lag.element = 0;
+  runtime.pitch = clampDomePitch(runtime.pitch);
+  runtime.pitchTarget = runtime.pitch;
+  runtime.yawTarget = runtime.yaw;
+}
 
 /**
  * Back-projection — solve one world 2D point into dome coordinates **on the plane at
@@ -1858,30 +2091,30 @@ interface DomeRing {
 }
 
 /**
- * Latitude rings — **the single device that makes the dome read as a dome**.
+ * Cone-base rings — **the device that makes the tree read as a tree of cones**.
  *
- * Without them, points and lines alone read as spokes radiating from an apex (a cone,
- * a tent). The first implementation did exactly that. Actually drawing each kind
- * plane's circle produces three things at once:
+ * The dome drew one latitude ring per kind plane; those rings were what made it
+ * read as a dome rather than as spokes (ledger 2026-08-18 (78)). The cone tree
+ * keeps the same device with a different membership: the ring is now **each
+ * parent's base circle** (`DomeModel.circles`), so the three things a ring did
+ * still happen, and one more:
  *
- * 1. **Height being a typed fact becomes visible** — three rings are three layers, so
- *    "project on top, element at the bottom" reads without explanation.
- * 2. **Rotation gains a reference** — how flat the ellipse is *is* the pitch, and
- *    which arc of the ring is in front *is* the yaw. Without rings you turn it and
- *    cannot tell what changed (the same judgment that killed the z-lift proposal —
- *    ledger 2026-08-18 (76)).
- * 3. **Depth becomes a continuous signal** — nodes are discrete and too sparsely
- *    sampled to judge front from back, whereas a ring's brightness runs all the way
+ * 1. **Height being a typed fact becomes visible** — bases sit on the kind
+ *    planes, so "project on top, element at the bottom" reads without explanation.
+ * 2. **Rotation gains a reference** — how flat an ellipse is *is* the pitch, and
+ *    which arc is in front *is* the yaw.
+ * 3. **Depth becomes a continuous signal** — a ring's brightness runs all the way
  *    round and makes the fog ramp itself visible.
+ * 4. **Ownership becomes a shape** — a base under a parent, with its children
+ *    on it, is the cone; a person can point at "that domain's cone".
  *
  * A ring is **a coordinate system, not data** — so it plays the same role as the
  * background dot grid ("it only says a coordinate system exists"), and its ink is the
  * lowest tier to match.
  */
-const DOME_RING_KINDS: readonly DomeViewKind[] = ["domain", "capability", "element"];
 
 /**
- * Samples per ring. At 96, even the largest ring (r=224) has a per-segment chord-arc
+ * Samples on the largest ring. At 96, the domain ring (r=148) has a per-segment chord-arc
  * error under 0.1 dome units, so it does not look faceted. 3 rings × 96 = 288
  * projections per frame — 2.3× the 125 node projections, but both are below the
  * decimal point of the frame budget.
@@ -1901,10 +2134,33 @@ export const DOME_RING_ALPHA = 0.34;
 /** Base hairline width of a ring (screen px) — the depth width attenuation multiplies straight into it. */
 export const DOME_RING_WIDTH_PX = 1;
 
+/**
+ * A **coordinate morph** — the frames between one model and the next when the
+ * arrangement (or the world) changes while the dome is on screen (2026-09-02).
+ *
+ * Before this, an arrangement switch swapped `model` and the next frame drew the
+ * new coordinates: a hard cut. The offset the frame map carries is
+ * `(projected − 2D) × ramp`, and the ramp is already 1 mid-session, so nothing
+ * interpolated. Now the previous model's coordinates are kept and each node is
+ * drawn at `lerp(from, to, ease(t))`; a node with no previous coordinate takes its
+ * target directly. The previous cone bases fade out while the new ones fade in on
+ * the same clock, so a dome→cloud switch dissolves its rings rather than dropping
+ * them. Duration is the pose-move cap (`DOME_POSE_MS`) so a simultaneous camera
+ * refit runs on the same clock. Reduced-motion passes 0 and gets the cut.
+ */
+interface DomeMorph {
+  fromCoords: ReadonlyMap<string, DomeCoord>;
+  fromCircles: readonly DomeCircle[];
+  startMs: number;
+  durationMs: number;
+}
+
 export interface DomeRuntime {
   model: DomeModel;
+  /** In-flight coordinate morph, or null. Registered with the idle gate — a morph is motion. */
+  morph: DomeMorph | null;
   /**
-   * This frame's latitude rings (world coordinates) — `updateDomeFrame` updates them
+   * This frame's cone-base rings (world coordinates) — `updateDomeFrame` updates them
    * in place. Entries and arrays are reused, so allocations per frame converge to 0.
    */
   rings: DomeRing[];
@@ -2026,6 +2282,7 @@ export interface DomeRuntime {
 export function createDomeRuntime(model: DomeModel): DomeRuntime {
   return {
     model,
+    morph: null,
     frame: new Map(),
     rings: [],
     drawnBounds: null,

@@ -758,7 +758,9 @@ export interface FrameDrawParams {
    * bow rather than run straight: the `DOME_EDGE_BOW` doc-block in
    * `model/dome-view.ts`. Returning null leaves that edge on its 2D control point.
    */
-  domeControlFor?: ((sourceId: string, targetId: string) => { wx: number; wy: number } | null) | null;
+  domeControlFor?:
+    | ((sourceId: string, targetId: string, kind: "contains" | "depends") => { wx: number; wy: number } | null)
+    | null;
   /**
    * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
    *
@@ -1014,6 +1016,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     edge: {
       sourceId: string;
       targetId: string;
+      kind: "contains" | "depends";
       ax: number;
       ay: number;
       bx: number;
@@ -1048,7 +1051,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      */
     const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
     const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
-    const meridian = domeControlFor === null ? null : domeControlFor(edge.sourceId, edge.targetId);
+    const meridian = domeControlFor === null ? null : domeControlFor(edge.sourceId, edge.targetId, edge.kind);
     const aMin = Math.min(offA.a, offB.a);
     const controlX = meridian === null ? flatControlX : flatControlX + (meridian.wx - flatControlX) * aMin;
     const controlY = meridian === null ? flatControlY : flatControlY + (meridian.wy - flatControlY) * aMin;
@@ -2047,7 +2050,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenX: screen.x,
         screenY: screen.y,
         screenRadius,
-        farT,
+        // 3D keeps every node a dot at any zoom (2026-09-02). The far-field
+        // shape convergence is what made the cone tree read as dots at fit zoom,
+        // and wheeling in used to bring the 2D squares back inside the tree —
+        // two visual languages in one frame. The assembly ramp `a` cross-fades
+        // in, so 2D is untouched and the switch stays continuous.
+        farT: domeOn ? Math.max(farT, nodeDome.a) : farT,
         // Rings (selection double-ring, hub, project decor) follow the RETAINED
         // color ego so the selection ring holds through the deselect fade and
         // clears only once the ramp reaches 0 — instead of snapping off the

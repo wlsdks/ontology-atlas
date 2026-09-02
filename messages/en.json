@@ -1008,7 +1008,7 @@
       "collapseAllLabel": "Collapse all",
       "view3dChoice": {
         "flat": "Flat",
-        "ownership": "Dome",
+        "ownership": "Cone",
         "coupling": "Cloud"
       },
       "view3dChoiceHint": {

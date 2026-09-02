@@ -3849,6 +3849,11 @@
     },
     {
       "depth": 2,
+      "text": "Unreleased",
+      "slug": "unreleased"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 · v1.0.4: the installed app proves its own bundle, and the records fit one screen",
       "slug": "2026-09-02-v104-the-installed-app-proves-its-own-bundle-and-the-records-fit-one-screen"
     },
@@ -6172,6 +6177,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — The 3D ownership arrangement becomes a cone tree, arrangement switches morph, and a dome visit no longer keeps 2D awake",
+      "slug": "2026-09-02-the-3d-ownership-arrangement-becomes-a-cone-tree-arrangement-switches-morph-and-a-dome-visit-no-longer-keeps-2d-awake"
     },
     {
       "depth": 2,

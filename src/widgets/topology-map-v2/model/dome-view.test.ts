@@ -55,6 +55,10 @@ import {
   solveDomePlanePoint,
   stepDomeDragSpring,
   updateDomeFrame,
+  beginDomeMorph,
+  domeRingSampleCount,
+  settleDomeRuntimeOffscreen,
+  type DomeRuntime,
   type DomeInputNode,
   type DomeViewKind,
 } from "./dome-view";
@@ -492,6 +496,7 @@ describe("자오선 제어점 — 관계선이 돔 속을 가로지르지 않는
     centerX: 0,
     centerY: 0,
     unit: 1,
+    circles: [],
     coords: new Map([
       ["apex", { px: 0, py: DOME_PLANE.project.y, pz: 0 }],
       ["ring", { px: DOME_PLANE.domain.r, py: DOME_PLANE.domain.y, pz: 0 }],
@@ -570,15 +575,22 @@ describe("위도 링 — 좌표계이지 데이터가 아니다", () => {
     { id: "e", kind: "element", x: 140, y: 80, parentId: "c" },
   ];
 
-  it("링 셋(domain·capability·element)을 표본 수만큼 채운다", () => {
+  it("링은 모델의 원뿔 바닥 원이다 — 한 줄기 사슬(p→d→c→e)에는 프로젝트 바닥 하나뿐", () => {
     const runtime = createDomeRuntime(buildDomeModel(nodes));
     runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
     updateDomeFrame(runtime, nodes, () => 10);
-    expect(runtime.rings).toHaveLength(3);
-    for (const ring of runtime.rings) {
-      expect(ring.points).toHaveLength(DOME_RING_SAMPLES);
-      expect(ring.a).toBeGreaterThan(0.99);
-    }
+    // d, c each have one child → radius 0 → no base circle; only the project's ring.
+    expect(runtime.rings).toHaveLength(1);
+    expect(runtime.rings[0].kind).toBe("domain");
+    expect(runtime.rings[0].points).toHaveLength(DOME_RING_SAMPLES);
+    expect(runtime.rings[0].a).toBeGreaterThan(0.99);
+  });
+
+  it("표본 수는 반지름에 비례하고 바닥 12 · 천장 DOME_RING_SAMPLES 이다", () => {
+    expect(domeRingSampleCount(DOME_PLANE.domain.r)).toBe(DOME_RING_SAMPLES);
+    expect(domeRingSampleCount(1)).toBe(12);
+    expect(domeRingSampleCount(40)).toBeGreaterThan(12);
+    expect(domeRingSampleCount(40)).toBeLessThan(DOME_RING_SAMPLES);
   });
 
   it("한 링 안에서 깊이가 갈린다 — 앞뒤가 같으면 링은 깊이 단서가 아니다", () => {
@@ -976,5 +988,200 @@ describe("결합 구름 — 관계가 자리를 정한다", () => {
   it("구름에는 껍질 휨이 없다 — 휘게 할 겉면이 없다", () => {
     const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
     expect(domeEdgeControl(cloud, "a1", "a2")).toBeNull();
+  });
+});
+
+describe("콘 트리 — 자식은 부모 바로 아래 원 위에 놓인다 (2026-09-02)", () => {
+  /** 1 project · 3 domains of unequal size · capabilities · elements. */
+  const tree: DomeInputNode[] = [
+    { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+    { id: "d-big", kind: "domain", x: 0, y: 0, parentId: "p" },
+    { id: "d-mid", kind: "domain", x: 0, y: 0, parentId: "p" },
+    { id: "d-one", kind: "domain", x: 0, y: 0, parentId: "p" },
+    ...Array.from({ length: 6 }, (_, i) => ({ id: `c-big-${i}`, kind: "capability" as const, x: 0, y: 0, parentId: "d-big" })),
+    ...Array.from({ length: 2 }, (_, i) => ({ id: `c-mid-${i}`, kind: "capability" as const, x: 0, y: 0, parentId: "d-mid" })),
+    { id: "c-one", kind: "capability", x: 0, y: 0, parentId: "d-one" },
+    ...Array.from({ length: 9 }, (_, i) => ({ id: `e-big-0-${i}`, kind: "element" as const, x: 0, y: 0, parentId: "c-big-0" })),
+    { id: "e-one", kind: "element", x: 0, y: 0, parentId: "c-one" },
+    { id: "e-direct", kind: "element", x: 0, y: 0, parentId: "d-mid" },
+    { id: "e-lost", kind: "element", x: 0, y: 0, parentId: "nowhere" },
+  ];
+  const horizontal = (a: { px: number; pz: number }, b: { px: number; pz: number }) => Math.hypot(a.px - b.px, a.pz - b.pz);
+
+  it("자식은 부모의 (px, pz) 둘레 안에 있다 — 섹터가 아니라 바로 아래", () => {
+    const m = buildDomeModel(tree);
+    for (const n of tree) {
+      if (n.parentId === null || n.parentId === "nowhere") continue;
+      const parent = m.coords.get(n.parentId)!;
+      const at = m.coords.get(n.id)!;
+      // Never farther from its parent than the widest base times the stagger —
+      // except a domain, which rests on the project's ring.
+      expect(horizontal(at, parent)).toBeLessThanOrEqual((n.kind === "domain" ? DOME_PLANE.domain.r : 64 * 1.12) + 1e-9);
+      // Height is still one value per kind — the in-plane drag contract.
+      expect(at.py).toBe(DOME_PLANE[n.kind].y);
+    }
+  });
+
+  it("외자식은 줄기다 — 부모와 같은 (px, pz), 바닥 원 없음", () => {
+    const m = buildDomeModel(tree);
+    expect(horizontal(m.coords.get("c-one")!, m.coords.get("d-one")!)).toBeCloseTo(0, 9);
+    expect(horizontal(m.coords.get("e-one")!, m.coords.get("c-one")!)).toBeCloseTo(0, 9);
+    expect(m.circles.some((c) => c.kind === "capability" && Math.abs(c.cx - m.coords.get("d-one")!.px) < 1e-9 && Math.abs(c.cz - m.coords.get("d-one")!.pz) < 1e-9)).toBe(false);
+  });
+
+  it("자식이 둘 이상인 부모마다 바닥 원이 하나씩, 프로젝트 바닥은 도메인 링이다", () => {
+    const m = buildDomeModel(tree);
+    const domainRing = m.circles.filter((c) => c.kind === "domain");
+    expect(domainRing).toHaveLength(1);
+    expect(domainRing[0].r).toBe(DOME_PLANE.domain.r);
+    // d-big (6 children) and d-mid (3 children) get capability bases; d-one does not.
+    expect(m.circles.filter((c) => c.kind === "capability")).toHaveLength(2);
+    // c-big-0 (9 elements) gets an element base; c-one does not.
+    const elementBases = m.circles.filter((c) => c.kind === "element");
+    expect(elementBases).toHaveLength(1);
+    const cBig0 = m.coords.get("c-big-0")!;
+    expect(elementBases[0].cx).toBeCloseTo(cBig0.px, 9);
+    expect(elementBases[0].cz).toBeCloseTo(cBig0.pz, 9);
+    expect(elementBases[0].y).toBe(DOME_PLANE.element.y);
+    for (const c of m.circles) expect(c.r).toBeGreaterThan(0);
+  });
+
+  it("도메인 섹터는 서브트리 크기에 비례한다 — 큰 도메인이 더 넓은 각을 받는다", () => {
+    const m = buildDomeModel(tree);
+    const bearing = (id: string) => {
+      const c = m.coords.get(id)!;
+      return Math.atan2(c.pz, c.px);
+    };
+    const gap = (a: number, b: number) => {
+      const d = Math.abs(a - b) % (Math.PI * 2);
+      return d > Math.PI ? Math.PI * 2 - d : d;
+    };
+    // Sorted by id: d-big, d-mid, d-one. The big domain's neighbours sit farther from it.
+    expect(gap(bearing("d-big"), bearing("d-mid"))).toBeGreaterThan(gap(bearing("d-mid"), bearing("d-one")));
+  });
+
+  it("형제 원뿔은 서로 겹치지 않는다 — 바닥 원 사이 거리가 반지름 합보다 크다", () => {
+    const m = buildDomeModel(tree);
+    const bases = m.circles.filter((c) => c.kind === "capability");
+    for (let i = 0; i < bases.length; i += 1) {
+      for (let j = i + 1; j < bases.length; j += 1) {
+        const d = Math.hypot(bases[i].cx - bases[j].cx, bases[i].cz - bases[j].cz);
+        expect(d).toBeGreaterThan(bases[i].r + bases[j].r);
+      }
+    }
+  });
+
+  it("발자국은 옛 바닥 링 안에 남는다 — 카메라 핏·안개·손잡이 계약이 그대로다", () => {
+    const m = buildDomeModel(tree);
+    for (const c of m.coords.values()) {
+      expect(Math.hypot(c.px, c.pz)).toBeLessThanOrEqual(DOME_FIT_RADIUS * 1.1);
+    }
+  });
+
+  it("부모가 모델 밖이면 자기 평면에서 해시 방위를 받는다 — 빠지는 노드는 없다", () => {
+    const m = buildDomeModel(tree);
+    const lost = m.coords.get("e-lost")!;
+    expect(lost.py).toBe(DOME_PLANE.element.y);
+    expect(Math.hypot(lost.px, lost.pz)).toBeCloseTo(DOME_PLANE.element.r, 6);
+  });
+
+  it("결정론 — 같은 입력이면 좌표와 바닥 원이 그대로다", () => {
+    const a = buildDomeModel(tree);
+    const b = buildDomeModel(tree);
+    expect([...a.coords.entries()]).toEqual([...b.coords.entries()]);
+    expect(a.circles).toEqual(b.circles);
+  });
+
+  it("담김 선은 곧고 관계선만 휜다 — 원뿔의 모서리는 직선이다", () => {
+    const m = buildDomeModel(tree);
+    expect(domeEdgeControl(m, "p", "d-big", "contains")).toBeNull();
+    expect(domeEdgeControl(m, "d-big", "d-mid", "depends")).not.toBeNull();
+    // Omitted kind keeps the bow — the older callers and the meridian tests above.
+    expect(domeEdgeControl(m, "d-big", "d-mid")).not.toBeNull();
+  });
+});
+
+describe("배치 모핑 — 전환은 컷이 아니라 이동이다 (2026-09-02)", () => {
+  const nodes: DomeInputNode[] = [
+    { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+    { id: "d1", kind: "domain", x: 100, y: 0, parentId: "p" },
+    { id: "d2", kind: "domain", x: -100, y: 0, parentId: "p" },
+    { id: "c1", kind: "capability", x: 120, y: 40, parentId: "d1" },
+    { id: "c2", kind: "capability", x: 140, y: 40, parentId: "d1" },
+  ];
+  const edges = [
+    { sourceId: "d1", targetId: "c1" },
+    { sourceId: "d2", targetId: "c2" },
+  ];
+  const drawnOffset = (runtime: DomeRuntime, id: string) => {
+    const f = runtime.frame.get(id)!;
+    return { dx: f.dx, dy: f.dy };
+  };
+
+  it("중간 프레임은 from 과 to 사이에 있고, 끝나면 morph 가 null 이다", () => {
+    const runtime = createDomeRuntime(buildDomeModel(nodes));
+    runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
+    updateDomeFrame(runtime, nodes, () => 10, 0);
+    const before = drawnOffset(runtime, "c2");
+    const cloud = buildDomeModel(nodes, { arrangement: "coupling", edges });
+    beginDomeMorph(runtime, cloud, 1000, 750);
+    expect(runtime.morph).not.toBeNull();
+    updateDomeFrame(runtime, nodes, () => 10, 1000 + 375);
+    const mid = drawnOffset(runtime, "c2");
+    updateDomeFrame(runtime, nodes, () => 10, 1000 + 750);
+    const after = drawnOffset(runtime, "c2");
+    expect(runtime.morph).toBeNull();
+    const dist = (a: { dx: number; dy: number }, b: { dx: number; dy: number }) => Math.hypot(a.dx - b.dx, a.dy - b.dy);
+    expect(dist(before, after)).toBeGreaterThan(1);
+    expect(dist(before, mid)).toBeLessThan(dist(before, after));
+    expect(dist(mid, after)).toBeLessThan(dist(before, after));
+  });
+
+  it("모핑 중에는 옛 바닥 원이 사라지는 중이고 새 원이 나타나는 중이다", () => {
+    const runtime = createDomeRuntime(buildDomeModel(nodes));
+    runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
+    updateDomeFrame(runtime, nodes, () => 10, 0);
+    const treeRings = runtime.rings.length;
+    expect(treeRings).toBeGreaterThan(0);
+    beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 750);
+    updateDomeFrame(runtime, nodes, () => 10, 1000 + 375);
+    // The cloud has no rings, so every ring drawn now is a fading tree ring.
+    expect(runtime.rings).toHaveLength(treeRings);
+    for (const ring of runtime.rings) {
+      expect(ring.a).toBeGreaterThan(0);
+      expect(ring.a).toBeLessThan(1);
+    }
+    updateDomeFrame(runtime, nodes, () => 10, 1000 + 750);
+    expect(runtime.rings).toHaveLength(0);
+  });
+
+  it("지속 0 은 컷이다 — reduced-motion", () => {
+    const runtime = createDomeRuntime(buildDomeModel(nodes));
+    beginDomeMorph(runtime, buildDomeModel(nodes, { arrangement: "coupling", edges }), 1000, 0);
+    expect(runtime.morph).toBeNull();
+    expect(runtime.model.arrangement).toBe("coupling");
+  });
+});
+
+describe("화면 밖 정착 — 3D 를 다녀온 2D 지도가 다시 잠든다 (2026-09-02)", () => {
+  it("남아 있던 모션 상태를 전부 쉬게 한다", () => {
+    const runtime = createDomeRuntime(
+      buildDomeModel([{ id: "p", kind: "project", x: 0, y: 0, parentId: null }]),
+    );
+    runtime.poseTween = { startYaw: 0, startPitch: 0, targetYaw: 1, targetPitch: 0.3, startMs: 0, durationMs: 750 };
+    runtime.lag.element = -0.036;
+    runtime.yawVel = 0.01;
+    runtime.yawSnap = 1.2;
+    runtime.entryArmed = true;
+    runtime.pitch = DOME_PITCH_MAX + 0.05;
+    settleDomeRuntimeOffscreen(runtime);
+    expect(runtime.poseTween).toBeNull();
+    expect(runtime.lag).toEqual({ project: 0, domain: 0, capability: 0, element: 0 });
+    expect(runtime.yawVel).toBe(0);
+    expect(runtime.yawSnap).toBeNull();
+    expect(runtime.entryArmed).toBe(false);
+    expect(runtime.morph).toBeNull();
+    expect(runtime.pitch).toBe(DOME_PITCH_MAX);
+    expect(runtime.pitchTarget).toBe(runtime.pitch);
   });
 });

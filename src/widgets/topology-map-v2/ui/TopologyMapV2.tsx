@@ -339,7 +339,7 @@ export interface TopologyMapV2Props {
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — ownership becomes the concentric Dome and
+   * 3D view (2026-08-18, opt-in) — ownership becomes the Cone tree and
    * coupling becomes the relation-driven Cloud (`model/dome-view.ts`). The top
    * toolbar's 3D picker turns it on; omitted is false (2D, the default).
    */

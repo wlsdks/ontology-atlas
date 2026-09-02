@@ -83,7 +83,7 @@ import {
 } from "../model/realm-depth-parallax";
 import {
   beginDomeModelBuild,
-  buildDomeModel,
+  beginDomeMorph,
   clampDomePitch,
   DOME_BUILD_SLICE_MS,
   createDomeRuntime,
@@ -107,6 +107,7 @@ import {
   ORBIT_SMOOTH_TAU_MS,
   projectDomeCoord,
   stepDomeDragSpring,
+  settleDomeRuntimeOffscreen,
   updateDomeFrame,
   type DomeModelBuild,
   type DomeRuntime,
@@ -421,12 +422,12 @@ export interface UseTopologyLoopArgs {
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — relays the map into the ownership Dome or
+   * 3D view (2026-08-18, opt-in) — relays the map into the ownership Cone tree or
    * relation-driven Cloud (`model/dome-view.ts`). Draw, hit-testing, DOM anchors,
    * and the inspection hook all read the same frame map. Omitted keeps 2D.
    */
   view3d?: boolean;
-  /** Which 3D structure is drawn — ownership Dome or coupling Cloud. */
+  /** Which 3D structure is drawn — ownership Cone tree or coupling Cloud. */
   mapArrangement?: MapArrangement;
   /** 3D reframe input: is the detail panel covering the viewport (`TopologyMapV2` JSDoc). */
   detailPanelVisible?: boolean;
@@ -584,6 +585,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const domeFocusPendingRef = useRef<{ slug: string | null } | null>(null);
   /** One-shot after 3D turns on: cinematically fit the camera to the dome bbox. Turning it off leaves the camera alone. */
   const domeFitPendingRef = useRef(false);
+  /**
+   * Duration for the next dome fit tween (ms), set together with
+   * `domeFitPendingRef`: the assembly length on entry, the morph length on an
+   * arrangement refit. Undefined falls back to the 2D transition rule.
+   */
+  const domeFitDurationRef = useRef<number | undefined>(undefined);
   /**
    * Debt to refit the 2D overview after 3D turns off — written by the `view3d`
    * effect, paid by the loop's dome step **once teardown has finished**.
@@ -1243,6 +1250,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * some paths happened to land right. This makes the accident a contract.
      */
     domeFitPendingRef.current = view3d;
+    if (view3d) domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
     if (!view3d) flatFitPendingRef.current = true;
     // Re-entering 3D restarts an untouched screen, so rearm the attention spin
     // (the rule that lowers it on interaction is in the spinArmed JSDoc) and
@@ -2517,9 +2525,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * demand it) and tie the draw loop to that identity. Here matches its real
      * lifetime — the function reads only refs.
      */
-    const domeEdgeControlForFrame = (sourceId: string, targetId: string) => {
+    const domeEdgeControlForFrame = (sourceId: string, targetId: string, kind: "contains" | "depends") => {
       const dome = domeRuntimeRef.current;
-      return dome === null ? null : domeEdgeControlWorld(dome, sourceId, targetId);
+      return dome === null ? null : domeEdgeControlWorld(dome, sourceId, targetId, kind);
     };
     /**
      * **`alpha: false` — this map never needs to show what is behind it.**
@@ -2731,6 +2739,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                * expensive class of symptom to trace back to its cause.
                */
               domeRt.yawSnap !== null ||
+              domeRt.morph !== null ||
               domeRt.entryArmed ||
               domeFocusPendingRef.current !== null ||
               Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
@@ -2905,21 +2914,69 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               // When the map loads with 3D already on (a saved preference on
               // revisit) the toggle effect never runs, so the first fit is
               // scheduled here.
-              if (domeTargetOn) domeFitPendingRef.current = true;
+              if (domeTargetOn) {
+                domeFitPendingRef.current = true;
+                domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
+              }
             } else {
-              // The world changed — re-solve layout, keep the pose (yaw/pitch).
-              // Recomputed synchronously because the dome is already on screen;
-              // deferring it into slices would draw the stale model meanwhile
-              // and briefly show the old arrangement.
-              dome.model = buildDomeModel(
-                world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
-                { arrangement: mapArrangementRef.current, edges: world.edges },
-              );
-              dome.frame.clear();
-              dome.drawnBounds = null;
-              dome.drag = null;
+              /*
+               * The world or the arrangement changed while the dome is on
+               * screen — re-solve layout, keep the pose (yaw/pitch).
+               *
+               * Measured 2026-09-02: this path rebuilt synchronously, so a
+               * dome→cloud switch held one frame for 22 ms at 125 nodes and
+               * **260 ms at 1,000** — the first-entry path above had been sliced
+               * (ledger (85)) but a switch had not. It now consumes the same
+               * sliced build; the previous model keeps drawing meanwhile, and
+               * on completion the coordinates **morph** to the new model
+               * (`beginDomeMorph`) instead of cutting.
+               */
+              let pending = domeModelBuildRef.current;
+              if (
+                pending === null ||
+                pending.world !== world ||
+                pending.arrangement !== mapArrangementRef.current
+              ) {
+                pending = {
+                  world,
+                  arrangement: mapArrangementRef.current,
+                  build: beginDomeModelBuild(
+                    world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
+                    { arrangement: mapArrangementRef.current, edges: world.edges },
+                  ),
+                };
+                domeModelBuildRef.current = pending;
+              }
+              if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
+                // Still relaxing — keep drawing the previous model this frame and
+                // count it as activity so the idle gate does not fold.
+                lastActiveMsRef.current = now;
+              } else {
+                domeModelBuildRef.current = null;
+                beginDomeMorph(dome, pending.build.model, now, reducedMotionRef.current ? 0 : DOME_POSE_MS);
+                dome.drawnBounds = null;
+                dome.drag = null;
+                domeWorldSourceRef.current = world;
+                /*
+                 * Refit only when the new shape does not fit the viewport at the
+                 * current zoom (the cloud is wider than the tree, so a switch made
+                 * after a selection reframe spilled nodes past the top edge —
+                 * measured 2026-09-02). A shape that still fits keeps the zoom the
+                 * user set; the pose is never touched either way.
+                 */
+                const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
+                if (b !== null) {
+                  const scale = cameraRef.current.scale.value;
+                  const spanX = (b.maxX - b.minX) * 1.3 * scale;
+                  const spanY = (b.maxY - b.minY) * 1.3 * scale;
+                  if (spanX > width || spanY > height) {
+                    domeFitPendingRef.current = true;
+                    domeFitDurationRef.current = DOME_POSE_MS;
+                  }
+                }
+              }
             }
-            domeWorldSourceRef.current = world;
+            if (domeModelBuildRef.current === null) domeWorldSourceRef.current = world;
           }
           dome.active = domeTargetOn;
           // Once, right after turning on: fit the camera so the whole dome sits
@@ -2946,7 +3003,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               userDrivenCameraRef.current = false;
               dampingRef.current = tokens.cameraDampingDefault;
               cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-              beginCameraTween(target);
+              /*
+               * The fit rides the choreography's clock, not the 2D tween cap
+               * (measured 2026-09-02 on a real recording: the zoom-out finished
+               * in 300 ms while the rings were still at 33% of their rise, so
+               * one input read as two events — a whip, then a slow assembly).
+               * Entry takes the assembly length; an arrangement refit takes
+               * the morph length. `domeFitDurationRef` is set by whoever raised
+               * the pending flag.
+               */
+              beginCameraTween(target, domeFitDurationRef.current);
+              domeFitDurationRef.current = undefined;
             }
           }
           const dtMs = dt * 1000;
@@ -2994,8 +3061,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
            * after turning 3D off differed from the view after pressing
            * fit-view, that difference would itself be the next defect.
            */
-          if (flatFitPendingRef.current && !domeTargetOn && dome.rampClock <= 0) {
+          /*
+           * The return fit starts **with** the teardown and lasts exactly as
+           * long (measured 2026-09-02: it used to wait for the ramp to reach 0,
+           * so the concepts folded back at 3D zoom for 700 ms and only then
+           * the camera zoomed in — two events for one input). The target is the
+           * 2D overview, whose bounds do not depend on the ramp, so it is known
+           * on the first teardown frame; the tween and the ramp end together.
+           */
+          if (flatFitPendingRef.current && !domeTargetOn) {
             flatFitPendingRef.current = false;
+            const teardownMs = reducedMotionRef.current ? 0 : dome.rampClock / 1.6;
             const flatTarget = computeOverviewCameraTarget(
               overviewBoundsFor(overviewFitRef.current, world),
               width,
@@ -3017,7 +3093,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-            beginCameraTween(flatTarget);
+            beginCameraTween(flatTarget, teardownMs > 0 ? teardownMs : undefined);
             lastActiveMsRef.current = now;
           }
           // 3D selection reframe: consume the ticket the focus effect left
@@ -3296,10 +3372,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           if (dome.rampClock > 0) {
             // The dot radius denominator — the same formula draw and
             // hit-testing multiply by.
-            updateDomeFrame(dome, world.nodes, (n) => {
-              const w = world.nodeById.get(n.id);
-              return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
-            });
+            updateDomeFrame(
+              dome,
+              world.nodes,
+              (n) => {
+                const w = world.nodeById.get(n.id);
+                return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
+              },
+              now,
+            );
           } else if (dome.frame.size > 0) {
             dome.frame.clear();
             dome.drawnBounds = null;
@@ -3308,6 +3389,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         } else if (dome !== null) {
           dome.active = false;
+          // Fully off screen: rest every in-flight motion so the idle gate can
+          // fold (see `settleDomeRuntimeOffscreen` — before this, a single 3D
+          // visit kept the 2D map awake at 120 frames/s for the whole session).
+          settleDomeRuntimeOffscreen(dome);
+          domeModelBuildRef.current = null;
           domeFocusPendingRef.current = null;
           if (dome.frame.size > 0) {
             dome.frame.clear();
