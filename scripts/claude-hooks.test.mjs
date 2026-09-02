@@ -704,6 +704,22 @@ describe('fast-sensor lane and stop-time verification reminder', () => {
     }
   });
 
+  it('leaves a file outside the repository alone, ledger and gates included', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'sensor-outside-'));
+    const elsewhere = await mkdtemp(join(tmpdir(), 'sensor-elsewhere-'));
+    try {
+      const doc = join(elsewhere, 'note.md');
+      await writeFile(doc, 'A lead — the dash, in a file that is not ours.\n');
+      const result = fireHook(SENSOR, editPayload(doc, 'sess-outside'), dir);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, '', 'a scratch file outside the root must not be judged');
+      await assert.rejects(access(join(dir, '.tmp', 'harness', 'session-sess-outside.edits')));
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+      await rm(elsewhere, { recursive: true, force: true });
+    }
+  });
+
   it('the stamp ignores non-verification commands and sessions without edits stop freely', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'stop-free-'));
     try {
