@@ -43,7 +43,11 @@
 set -u
 
 INPUT="$(cat)"
-REPO_ROOT="${CODEX_PROJECT_DIR:-$(pwd)}"
+# Codex sets no project-directory variable for hooks (none exists in the
+# 0.151.0 binary or the hooks reference); commands run in the session cwd,
+# which is the repository root because hooks.json paths are relative to it.
+# ATLAS_HOOK_ROOT is a test seam only, so a fixture can point at a temp root.
+REPO_ROOT="${ATLAS_HOOK_ROOT:-$(pwd)}"
 
 RESULT="$(
   REPO_ROOT="$REPO_ROOT" node --input-type=module -e '

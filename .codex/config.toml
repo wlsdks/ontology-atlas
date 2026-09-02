@@ -21,6 +21,11 @@ args = [
   "--redact-network-headers",
 ]
 
+# Hooks in ./hooks.json run only after you trust them: Codex records a hash per
+# hook definition and skips new or changed entries until `/hooks` approves them
+# (measured 2026-09-02: the PostToolUse and Stop mirrors were silent for that
+# reason alone). Re-open `/hooks` after any change to that file.
+
 # Secrets, and what this file cannot do about them.
 #
 # `.claude/settings.json` carries `permissions.deny` rules that refuse reads of

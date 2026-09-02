@@ -28,10 +28,9 @@ const HOOK_CONFIGS = [
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-npm-publish.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/block-unsafe-git.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/fast-sensor.sh"',
-      // Twice on purpose: the same census script runs at SessionStart and again
-      // at PreCompact, which is where an injected census would otherwise be
-      // dropped from a long session.
-      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
+      // Once: a matcher-less SessionStart also fires for the `compact` source,
+      // and PreCompact stdout never reaches the model (its one-day wiring was
+      // removed 2026-09-02; the census header records the observation).
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/remind-verify-on-stop.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
@@ -57,9 +56,8 @@ const HOOK_CONFIGS = [
       // The sensor lane, mirrored 2026-09-01 after measuring codex-cli 0.151.0
       // firing PostToolUse for edit tools and honouring a Stop-time block.
       'bash .codex/hooks/fast-sensor.sh',
-      // Twice, like the Claude side: SessionStart and PreCompact. codex-cli
-      // 0.151.0 declares PreCompact in its own hook enum and JSON schema.
-      'bash .codex/hooks/inject-ontology-summary.sh',
+      // Once: Codex PreCompact/PostCompact output carries no model context
+      // (hooks reference), so the 2026-09-01 PreCompact wiring was removed.
       'bash .codex/hooks/inject-ontology-summary.sh',
       'bash .codex/hooks/remind-verify-on-stop.sh',
       'bash .codex/hooks/stamp-verification.sh',
@@ -516,7 +514,7 @@ describe('Codex secret read guard', () => {
       cwd: root,
       input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }),
       encoding: 'utf8',
-      env: { ...process.env, CODEX_PROJECT_DIR: root },
+      env: { ...process.env, ATLAS_HOOK_ROOT: root },
     });
     return (result.stdout ?? '').trim();
   };
@@ -681,6 +679,31 @@ describe('fast-sensor lane and stop-time verification reminder', () => {
     }
   });
 
+  it('stamps the pnpm verification families this repository actually runs', async () => {
+    // The first regex listed nine runner names and missed 61 of the 65
+    // verification scripts in package.json (2026-09-02), so `pnpm lint` and
+    // `pnpm test:contracts` still ended in a false turn-back.
+    const dir = await mkdtemp(join(tmpdir(), 'stamp-family-'));
+    try {
+      const stampPath = join(dir, '.tmp', 'harness', 'session-sess-family.verified');
+      for (const command of ['pnpm lint', 'pnpm test:contracts', 'pnpm --dir mcp test', 'pnpm docs:check']) {
+        await rm(stampPath, { force: true });
+        const result = fireHook(
+          STAMP,
+          { session_id: 'sess-family', tool_name: 'Bash', tool_input: { command } },
+          dir,
+        );
+        assert.equal(result.status, 0, result.stderr);
+        await access(stampPath);
+      }
+      await rm(stampPath, { force: true });
+      fireHook(STAMP, { session_id: 'sess-family', tool_name: 'Bash', tool_input: { command: 'pnpm dev' } }, dir);
+      await assert.rejects(access(stampPath), 'pnpm dev is not verification');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it('the stamp ignores non-verification commands and sessions without edits stop freely', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'stop-free-'));
     try {
@@ -752,7 +775,7 @@ describe('Codex apply_patch payload parity', () => {
     spawnSync('bash', [hook], {
       input: JSON.stringify(payload),
       encoding: 'utf8',
-      env: { ...process.env, CODEX_PROJECT_DIR: projectDir, CLAUDE_PROJECT_DIR: projectDir },
+      env: { ...process.env, ATLAS_HOOK_ROOT: projectDir, CLAUDE_PROJECT_DIR: projectDir },
     });
 
   it('refuses a generated-output file named inside a patch envelope', () => {
