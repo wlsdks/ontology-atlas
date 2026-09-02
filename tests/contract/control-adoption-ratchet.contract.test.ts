@@ -1111,7 +1111,7 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // Link (the raw form hard-navigated to the locale-less root, which dropped ?p=).
 // 2026-09-02: Architecture's empty-profile action became a real in-tab button instead of a
 // button-styled Link to Map. The destination count and the verified registration both fall by one.
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 10 };
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 11 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1158,7 +1158,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
   },
   {
     file: 'src/views/download/ui/DownloadPage.tsx',
-    count: 7,
+    count: 9,
     claim: 'standard-button',
     proof: 'buttonVariants',
     why:
@@ -1169,7 +1169,10 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
       '않는다" 고 선언했으므로 여기를 `controlClass` 로 옮기는 것은 그 규칙 위반이다.\n' +
       '2026-08-19: 14 → 7. 설치 절(판 · 검증 레일 · 3단)이 삭제되면서 판의 주 CTA · ' +
       'Intel · GitHub 출구 · 웹 출구 · 릴리스 노트 · Windows 받기 · Windows 추적 일곱이 ' +
-      '함께 사라졌다(`docs/DECISIONS.md` (83)).',
+      '함께 사라졌다(`docs/DECISIONS.md` (83)).\n' +
+      '2026-09-02: 7 → 9. 페이지 끝의 닫는 밴드가 히어로의 승자를 `outline` 으로 한 번 더 ' +
+      '내놓는다(published `<a>` · web `<Link>`) — 같은 표준 버튼 프리미티브, 채움 인디고는 ' +
+      '여전히 히어로 하나뿐이다.',
     conditional:
       '⚠️ 이 중 둘은 `className` 이 프리미티브의 반경·인셋을 덮는다(`rounded-chip px-4 sm:px-6`). ' +
       '그건 이 게이트가 아니라 다음 디자인 라운드의 일이다 — 등재가 그 결함을 승인하지는 않는다.',
@@ -1291,7 +1294,7 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
 // 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
 // before registering a shape the value layer cannot make.**
-const BASELINE_ANCHOR_REGISTERED = 27;
+const BASELINE_ANCHOR_REGISTERED = 29;
 
 /** **Only this number may fall.** The current anchor total (27) minus registered (27). */
 const BASELINE_ANCHOR_DEBT = 0;

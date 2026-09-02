@@ -183,6 +183,7 @@ async function measure(page: import("@playwright/test").Page) {
       stage: (() => {
         const demo = laidOut('[data-testid="demo-stage"]');
         const agent = laidOut('[data-testid="gateway-agent-scene"]');
+        const mapFrame = laidOut('[data-testid="download-stage-map-frame"]');
         if (!demo) return null;
         const demoRect = demo.getBoundingClientRect();
         const colRect = demo.parentElement!.getBoundingClientRect();
@@ -193,6 +194,7 @@ async function measure(page: import("@playwright/test").Page) {
           colLeft: Math.round(colRect.left),
           colW: Math.round(colRect.width),
           agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
+          mapW: mapFrame ? Math.round(mapFrame.getBoundingClientRect().width) : null,
           /*
            * The head's **text** centre, not the element's. The `h2` fills the column whichever
            * way its text is aligned, so its box centre is the column centre either way and would
@@ -323,11 +325,20 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     `${label}: 절 제목(${stage.headInkMid})과 시연 무대(${Math.round(stageMid)})의 축이 다르다 — ` +
       "한 절에 격자가 둘이면 눈에는 기둥이 끊겨 보인다",
   ).toBeLessThanOrEqual(2);
+  /*
+   * **The agent scene shares the evidence section's grid, not the demo's stage** (2026-09-02).
+   *
+   * Until then the scene stood at the stage width and this line held it to the demo's width —
+   * "this much is the stage" said once. Measured at 1512 that left a third of the column empty
+   * beside a 768px card. The scene now sits in the same 11/20 column as the evidence map, with
+   * the three still cards stacked in the other 9/20, so the relation to keep is with the map
+   * frame: two sections, one grid. The demo stays the page's single centred stage.
+   */
   expect(
     stage.agentW,
-    `${label}: 에이전트 장면(${stage.agentW})과 시연 무대(${stage.demoW})의 폭이 갈렸다 — ` +
-      "「이만큼이 무대다」는 한 번만 말해져야 한다",
-  ).toBe(stage.demoW);
+    `${label}: 에이전트 장면(${stage.agentW})과 근거 지도 프레임(${stage.mapW})의 폭이 갈렸다 — ` +
+      "두 절은 같은 11/20 격자에 서야 한다",
+  ).toBe(stage.mapW);
 }
 
 test.describe("관문 다운로드의 그리드", () => {
@@ -519,42 +530,135 @@ test.describe("관문 다운로드의 그리드", () => {
 
 });
 
-test.describe("the hero split waits for a column that can hold the decision", () => {
+test.describe("the headline types only its own sentence (council, 2026-09-03)", () => {
   /*
-   * ⚠️ Measured 2026-08-30: the split opened at `lg`, where the page column is 624px. The object
-   * took its 320px minimum, the decision block got 256px, the Windows button (304px) ran into
-   * the object, and from 1024 to 1439 all five destinations stood one per row. The split opens
-   * at `xl` now with a 500px floor for the decision block. This measures the two things a
-   * reader would see: no destination leaves its column, and none stands on the object.
+   * The decoder ghost drew a glyph from the sentence into the caret's slot at the headline's own
+   * size, so the page's one claim read as a misspelling for a frame ("Agents write tlt"). It was
+   * removed; this keeps it from returning quietly, and pins the one cost the kept landing has —
+   * `gatewayTypeLand` interpolates font-weight on a variable face, measured ≤3.73px of h1 width
+   * drift while typing.
    */
-  for (const width of [1024, 1100, 1280, 1440, 1512]) {
-    test(`${width}px — every destination stays in its column and off the object`, async ({ page }) => {
+  test("no ghost glyph, and the headline does not wander while it types", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 982 });
+    await seedFirstRunSeen(page);
+    await page.goto("/en/download/", { waitUntil: "load" });
+    const samples: { ghosts: number; after: string; width: number; typed: number }[] = [];
+    const deadline = Date.now() + 2600;
+    while (Date.now() < deadline) {
+      samples.push(
+        await page.evaluate(() => {
+          const h1 = document.querySelector('[data-testid="gateway-hero"] h1')!;
+          const cursor = h1.querySelector(".gateway-type-ch.is-cursor");
+          return {
+            ghosts: document.querySelectorAll("[data-ghost]").length,
+            after: cursor ? getComputedStyle(cursor, "::after").content : "none",
+            width: h1.getBoundingClientRect().width,
+            typed: h1.querySelectorAll(".gateway-type-ch.is-on").length,
+          };
+        }),
+      );
+      await page.waitForTimeout(60);
+    }
+    const typing = samples.filter((s) => s.typed > 0);
+    expect(typing.length, "typing was observed").toBeGreaterThanOrEqual(6);
+    for (const s of typing) {
+      expect(s.ghosts, "a ghost glyph is back").toBe(0);
+      expect(s.after === "none" || s.after === "normal", `the caret slot draws ::after ${s.after}`).toBe(true);
+    }
+    const widths = typing.map((s) => s.width);
+    expect(Math.max(...widths) - Math.min(...widths), "the headline's width wandered").toBeLessThanOrEqual(4);
+  });
+
+  test("the changelog is offered once per viewport on /download, and once in the chrome on /guide", async ({ page }) => {
+    await page.setViewportSize({ width: 1512, height: 982 });
+    await seedFirstRunSeen(page);
+    const visibleChangelogLinks = () =>
+      page.evaluate(() =>
+        [...document.querySelectorAll<HTMLAnchorElement>("a[href]")]
+          .filter((a) => /\/changelog\/?$/.test(new URL(a.href).pathname))
+          .filter((a) => {
+            const r = a.getBoundingClientRect();
+            return r.width > 0 && r.height > 0 && getComputedStyle(a).visibility !== "hidden";
+          })
+          .map((a) => a.getAttribute("data-testid")),
+      );
+    await page.goto("/en/download/", { waitUntil: "load" });
+    await page.waitForTimeout(1500);
+    expect(await visibleChangelogLinks()).toEqual(["gateway-facts-changelog"]);
+    await page.goto("/en/guide/", { waitUntil: "load" });
+    await page.waitForTimeout(800);
+    const onGuide = await visibleChangelogLinks();
+    expect(onGuide, "the chrome keeps the chip off the gateway face").toContain("gateway-nav-changelog");
+  });
+});
+
+test.describe("the decision block reads over the stage at every split width", () => {
+  /*
+   * [2026-09-02] The object is no longer a column beside the decision block — it is the stage
+   * behind the whole first screen (the plane form of the graph, anchored right of centre). So
+   * "no destination stands on the object" stopped being the contract: every destination stands
+   * on it by design. What a reader would see now is whether the type stays legible over it, and
+   * that is measured directly: the share of lit canvas pixels under the decision block and under
+   * the headline. The 2026-08-30 lesson survives unchanged — the destinations must keep their
+   * rows, and none may be squeezed narrower than its label.
+   */
+  /* 1280 and 1366 sit below the 90rem split (the plinth), 1440 is its first band, 1512 the owner's
+     laptop. The council measured 8–16% lit under the type at 1280–1366 while the split opened at
+     80rem; the split moved and these widths now guard it. */
+  for (const width of [1024, 1100, 1280, 1366, 1440, 1512]) {
+    test(`${width}px — every destination keeps its row, and the type stays clear of the ink`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await seedFirstRunSeen(page);
       await page.goto("/en/download/", { waitUntil: "load" });
-      /* Measured with the page's own face, not the fallback: on a cold CI runner the labels were
-         still in the fallback font at 1.5s, wider by a word, and five rows were counted. */
       await page.evaluate(() => document.fonts.ready);
-      await page.waitForTimeout(1500);
+      /* The echo lights the last dot with the last character (~2.5s); measure the settled stage. */
+      await page.waitForTimeout(3200);
       const m = await page.evaluate(() => {
-        const object = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
+        const stage = document.querySelector('[data-testid="gateway-hero-object"]')!.getBoundingClientRect();
+        const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="gateway-hero-object"] canvas')!;
+        const ctx = canvas.getContext("2d")!;
+        const dpr = canvas.width / Math.max(1, canvas.getBoundingClientRect().width);
+        const litShare = (el: Element): number => {
+          const r = el.getBoundingClientRect();
+          const x0 = Math.max(0, Math.round((r.left - stage.left) * dpr));
+          const y0 = Math.max(0, Math.round((r.top - stage.top) * dpr));
+          const w = Math.max(1, Math.min(canvas.width - x0, Math.round(r.width * dpr)));
+          const h = Math.max(1, Math.min(canvas.height - y0, Math.round(r.height * dpr)));
+          const d = ctx.getImageData(x0, y0, w, h).data;
+          let lit = 0;
+          let total = 0;
+          for (let i = 3; i < d.length; i += 16) {
+            total += 1;
+            if (d[i] > 40) lit += 1;
+          }
+          return total ? lit / total : 0;
+        };
         const out: string[] = [];
         const rows = new Set<number>();
         for (const a of document.querySelectorAll('a[data-testid^="gateway-hero-"]')) {
           const r = a.getBoundingClientRect();
           rows.add(Math.round(r.top));
-          /* A destination squeezed narrower than its label is the column failing, not the label. */
           if (a.scrollWidth > a.clientWidth + 1) out.push(`${a.getAttribute("data-testid")} is narrower than its label by ${a.scrollWidth - a.clientWidth}px`);
-          const overlap = Math.min(r.right, object.right) - Math.max(r.left, object.left) > 0 && Math.min(r.bottom, object.bottom) - Math.max(r.top, object.top) > 0;
-          if (overlap) out.push(`${a.getAttribute("data-testid")} stands on the object`);
         }
+        const block = document.querySelector('[data-testid="gateway-hero-cta"]')!.parentElement!.parentElement!;
         const widths = [...document.querySelectorAll('a[data-testid^="gateway-hero-"]')].map((a) => `${a.getAttribute("data-testid")}=${Math.round(a.getBoundingClientRect().width)}`);
-        return { out, rows: rows.size, objectWidth: Math.round(object.width), widths, mono: getComputedStyle(document.querySelector('[data-testid="gateway-hero-cta"] span:last-child')!).fontFamily.slice(0, 60) };
+        return {
+          out,
+          rows: rows.size,
+          stageWidth: Math.round(stage.width),
+          inkUnderHeadline: litShare(document.querySelector('[data-testid="gateway-hero"] h1')!),
+          inkUnderBlock: litShare(block),
+          widths,
+        };
       });
       expect(m.out, `at ${width}`).toEqual([]);
       /* Two rows plus one for the destination the second row cannot hold; five is a column. */
-      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}: ${m.widths.join(" ")} (mono: ${m.mono})`).toBeLessThanOrEqual(3);
-      expect(m.objectWidth, "the object keeps its minimum").toBeGreaterThanOrEqual(320);
+      expect(m.rows, `the destinations stand ${m.rows} rows tall at ${width}: ${m.widths.join(" ")}`).toBeLessThanOrEqual(3);
+      expect(m.stageWidth, "the stage is the hero's whole width").toBeGreaterThanOrEqual(width - 1);
+      /* Measured 2026-09-02 at 1512: 0.0% under the headline, 0.5% under the block. The
+         thresholds leave room for narrower widths, where the plane sits closer to the type. */
+      expect(m.inkUnderHeadline, `ink under the headline at ${width}`).toBeLessThanOrEqual(0.03);
+      expect(m.inkUnderBlock, `ink under the decision block at ${width}`).toBeLessThanOrEqual(0.06);
     });
   }
 });

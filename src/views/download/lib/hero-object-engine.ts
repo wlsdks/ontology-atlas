@@ -72,6 +72,34 @@ export interface HeroEngineOptions {
   echo?: boolean;
   /** A fine pointer resting on a lit dot, or leaving it. Never fires while dragging. */
   onHover?: (slug: string | null) => void;
+  /**
+   * Where the ink envelope's centre sits on the stage, as fractions of width and height
+   * (default 0.5/0.5). The full-bleed hero (2026-09-02) anchors the dome right of centre so the
+   * decision block on the left reads over the dome's faint far side, not its dense near side.
+   */
+  anchor?: { x: number; y?: number; bottomPx?: number };
+  /** A multiplier on every alpha — the dome as a background must yield to the type over it. */
+  dim?: number;
+  /**
+   * The dome answers the pointer (2026-09-02): yaw and pitch lean toward where the hand is, eased
+   * over frames. Fine pointers only; never under reduced motion; off by default.
+   */
+  tilt?: boolean;
+  /**
+   * The scroll camera (2026-09-02): a function returning progress 0..1 as the hero leaves the
+   * viewport. The dome turns, grows, lifts, and fades with it — the camera pushes into the map
+   * on the way down to the evidence section. Read per frame; never under reduced motion.
+   */
+  camera?: () => number;
+  /**
+   * `plane` (2026-09-02, owner: *"it doesn't have to be the dome"*): every tier sits on one
+   * ground plane instead of stacked rings, seen from a high pitch — the same graph as a radial
+   * map on a tilted floor. It is the form the evidence section's real map already has, so the
+   * scroll camera can lay it flatter on the way down and hand over to that map.
+   */
+  form?: 'dome' | 'plane';
+  /** Camera pitch in radians. Default 0.34 for the dome; the plane uses 0.95. */
+  pitch?: number;
 }
 
 export interface HeroEngineHandle {
@@ -82,6 +110,12 @@ export interface HeroEngineHandle {
   litCount: () => number;
   /** Where every node sat on the last drawn frame, in canvas CSS px — for gates. */
   nodesOnScreen: () => { s: string; k: HeroGraphNode['k']; x: number; y: number }[];
+}
+
+/** Clamped smoothstep on [0,1]. */
+function smooth01(u: number): number {
+  const x = Math.max(0, Math.min(1, u));
+  return x * x * (3 - 2 * x);
 }
 
 /** Deterministic hash → [0,1) — stable per-node jitter. */
@@ -184,7 +218,10 @@ function layoutHeroGraph(data: HeroGraphData): HeroModel {
         const a = a0 + t * sectorW;
         // A crowded fan is split across two secondary rings.
         const r =
-          ringR + (g.length > 4 ? (i % 2 ? 26 : -12) : 0) + (hash01(k.s) - 0.5) * 10;
+          // The fan's two lanes stay inside their ring's band (council, 2026-09-02): +26/−12 with
+          // ±5 jitter put 22% of nodes across the neighbouring rim, so the rims asserted a kind
+          // partition the layout did not honour. +11/−5 with ±4 keeps 183–207 and 215–239 disjoint.
+          ringR + (g.length > 4 ? (i % 2 ? 11 : -5) : 0) + (hash01(k.s) - 0.5) * 8;
         angle.set(k.s, a);
         k.px = Math.cos(a) * r;
         k.pz = Math.sin(a) * r;
@@ -254,6 +291,9 @@ export function mountHeroObject(
     (typeof matchMedia === 'function' &&
       matchMedia('(prefers-reduced-motion: reduce)').matches);
   const model = layoutHeroGraph(data);
+  const flat = opts.form === 'plane';
+  if (flat) for (const n of model.nodes) n.py = 0;
+  const planeY = (kind: HeroGraphNode['k']): number => (flat ? 0 : PLANE[kind].y);
 
   const rootEl = opts.tokenEl ?? document.documentElement;
   // The accent comes only from a token — the name says indigo but the value follows the switch.
@@ -263,7 +303,7 @@ export function mountHeroObject(
   const fill = hexRgb(cssVar(rootEl, '--color-panel', '#0f1011'));
 
   const PERIOD = opts.periodMs ?? 48000;
-  const PITCH = 0.34;
+  const PITCH = opts.pitch ?? (flat ? 0.95 : 0.34);
   const F = 1050;
   const ASSEMBLE = 1600;
   const inkScale = opts.inkScale ?? 1;
@@ -316,7 +356,7 @@ export function mountHeroObject(
         const P = PLANE[kind];
         for (let i = 0; i < 24; i += 1) {
           const a = (i / 24) * TAU;
-          consider(Math.cos(a) * P.r, P.y, Math.sin(a) * P.r, cy, sy, 0);
+          consider(Math.cos(a) * P.r, planeY(kind), Math.sin(a) * P.r, cy, sy, 0);
         }
       }
     }
@@ -339,7 +379,9 @@ export function mountHeroObject(
     ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     // `fitPx` is «the size we want», the clamp below is «not clipped» — a scale where the
     // envelope exceeds the box is cut back, leaving 4% margin (see the envelope doc-block).
-    const MARGIN = 0.04;
+    // Tilt leans the dome up to ~0.1 rad past the envelope's yaw sweep, so it gets twice the
+    // margin — a background may run past its box, a boxed stage may not.
+    const MARGIN = opts.tilt ? 0.08 : 0.04;
     const envW = Math.max(1, envelope.x1 - envelope.x0);
     const envH = Math.max(1, envelope.y1 - envelope.y0);
     scaleFit = Math.min(
@@ -347,9 +389,16 @@ export function mountHeroObject(
       (W * (1 - MARGIN * 2)) / envW,
       (H * (1 - MARGIN * 2)) / envH,
     );
-    // What is centred on the stage is not the world origin but **the ink envelope's centre**.
-    centerX = W / 2 - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
-    centerY = H / 2 - ((envelope.y0 + envelope.y1) / 2) * scaleFit;
+    // What is centred on the anchor is not the world origin but **the ink envelope's centre**.
+    const ax = opts.anchor?.x ?? 0.5;
+    const ay = opts.anchor?.y ?? 0.5;
+    const envMidY = ((envelope.y0 + envelope.y1) / 2) * scaleFit;
+    centerX = W * ax - ((envelope.x0 + envelope.x1) / 2) * scaleFit;
+    // `bottomPx` pins the envelope's centre a fixed distance above the stage's foot — the narrow
+    // layout's plinth is a fixed-height spacer, so a fraction of a content-driven height would
+    // drift with the copy while a pixel distance does not.
+    centerY =
+      opts.anchor?.bottomPx !== undefined ? H - opts.anchor.bottomPx - envMidY : H * ay - envMidY;
   }
   size();
 
@@ -391,7 +440,7 @@ export function mountHeroObject(
     lastX = e.clientX;
     userVel = 0;
     canvas.setPointerCapture(e.pointerId);
-    canvas.style.cursor = 'grabbing';
+    setCursor('grabbing');
   };
   const setHover = (next: string | null): void => {
     if (next === hover) return;
@@ -399,23 +448,29 @@ export function mountHeroObject(
     opts.onHover?.(hover);
     if (reduced) drawAt(lastT);
   };
+  /** Where the hand rests, in canvas px — re-tested every frame while the projection moves. */
+  let pointerAt: { x: number; y: number } | null = null;
+  const hitAt = (x: number, y: number): string | null => {
+    let best: string | null = null;
+    let bestD = HIT_PX * HIT_PX;
+    for (const [s, p] of lastProjected) {
+      if ((lastAlpha.get(s) ?? 0) < 0.5) continue;
+      const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+      if (d < bestD) {
+        bestD = d;
+        best = s;
+      }
+    }
+    return best;
+  };
   const onPointerMove = (e: PointerEvent): void => {
     if (!dragging) {
       // At rest the pointer reads, it does not turn: the nearest lit dot within reach lights.
       const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      let best: string | null = null;
-      let bestD = HIT_PX * HIT_PX;
-      for (const [s, p] of lastProjected) {
-        if ((lastAlpha.get(s) ?? 0) < 0.5) continue;
-        const d = (p.x - x) ** 2 + (p.y - y) ** 2;
-        if (d < bestD) {
-          bestD = d;
-          best = s;
-        }
-      }
+      pointerAt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const best = hitAt(pointerAt.x, pointerAt.y);
       setHover(best);
+      setCursor(best !== null ? 'grab' : 'default');
       return;
     }
     const dx = e.clientX - lastX;
@@ -428,11 +483,25 @@ export function mountHeroObject(
   };
   const onPointerUp = (): void => {
     dragging = false;
-    canvas.style.cursor = 'grab';
+    setCursor(hover !== null ? 'grab' : 'default');
   };
-  const onPointerLeave = (): void => setHover(null);
+  const onPointerLeave = (): void => {
+    pointerAt = null;
+    setHover(null);
+    setCursor('default');
+  };
   canvas.style.touchAction = 'pan-y';
-  canvas.style.cursor = 'grab';
+  /**
+   * The cursor is a signifier for the dot under it, not for the stage (council, 2026-09-02):
+   * measured, 61% of the hero answered `grab` including bare ground — the first screen told the
+   * hand it could grasp the whole page while the ink was 1.7% of it. `grab` now appears only over
+   * a lit dot, mirrored on `data-hero-cursor` for the gate.
+   */
+  const setCursor = (value: 'default' | 'grab' | 'grabbing'): void => {
+    canvas.style.cursor = value;
+    canvas.dataset.heroCursor = value;
+  };
+  setCursor('default');
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
@@ -443,9 +512,60 @@ export function mountHeroObject(
     drawAt(lastT);
   };
   addEventListener('resize', onResize);
+  /**
+   * The box can change without the window changing (2026-09-02): at the split width the stage
+   * stretches to the hero band's height, and crossing that breakpoint re-lays the box a frame
+   * after the `resize` event that `size()` answered — measured 834→1280, the canvas was sized
+   * against the old box and stayed blank until the next window resize. The observer follows
+   * the box itself; the window listener stays for browsers without it.
+   */
+  const boxObserver =
+    typeof ResizeObserver === 'function' ? new ResizeObserver(() => onResize()) : null;
+  boxObserver?.observe(canvas);
+  /* A lost 2D context (capture, memory pressure) would leave a permanent blank; on restore the
+     stage is sized and drawn again (council, 2026-09-02). */
+  const onContextLost = (e: Event): void => e.preventDefault();
+  const onContextRestored = (): void => onResize();
+  canvas.addEventListener('contextlost', onContextLost);
+  canvas.addEventListener('contextrestored', onContextRestored);
 
-  const cosP = cosP0;
-  const sinP = sinP0;
+  /** Pointer lean — targets in radians, eased toward per frame; zero when the hand leaves. */
+  let tiltYawT = 0;
+  let tiltPitchT = 0;
+  let tiltYaw = 0;
+  let tiltPitch = 0;
+  const finePointer =
+    typeof matchMedia === 'function' && matchMedia('(pointer: fine)').matches;
+  const onLean = (e: PointerEvent): void => {
+    const rect = canvas.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const nx = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / rect.width) * 2 - 1));
+    const ny = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / rect.height) * 2 - 1));
+    tiltYawT = nx * 0.16;
+    tiltPitchT = -ny * 0.09;
+  };
+  const onLeanEnd = (): void => {
+    tiltYawT = 0;
+    tiltPitchT = 0;
+  };
+  const tilt = opts.tilt === true && finePointer && !reduced;
+  if (tilt) {
+    addEventListener('pointermove', onLean, { passive: true });
+    document.documentElement.addEventListener('mouseleave', onLeanEnd);
+    addEventListener('blur', onLeanEnd);
+  }
+  /** The scroll camera's eased progress, 0..1, and what it does to the projection. */
+  let cam = 0;
+  let camScale = 1;
+  let camLift = 0;
+  /** The last tick's length, for the time-based followers; 16.7 when drawn outside the loop. */
+  let frameDt = 16.7;
+  const TILT_TAU_MS = 280;
+  const CAM_TAU_MS = 90;
+  const INERTIA_TAU_MS = 540;
+
+  let cosP = cosP0;
+  let sinP = sinP0;
   interface Projected {
     x: number;
     y: number;
@@ -459,7 +579,9 @@ export function mountHeroObject(
     const z2 = -py * sinP + z * cosP;
     const s = F / (F + z2);
     // Not W/2 · H/2 but the envelope centre (`size()`'s centerX/centerY) — see the doc-block above.
-    return { x: x * s * scaleFit + centerX, y: -y2 * s * scaleFit + centerY, s, z: z2 };
+    // The camera's push (`camScale`) and lift (`camLift`) are applied here, on the projection.
+    const k = scaleFit * camScale;
+    return { x: x * s * k + centerX, y: -y2 * s * k + centerY - camLift, s, z: z2 };
   }
 
   function tierAlpha(kind: HeroGraphNode['k'], t: number): number {
@@ -492,8 +614,29 @@ export function mountHeroObject(
     if (disposed) return;
     lastT = t;
     ctx!.clearRect(0, 0, W, H);
-    ctx!.globalAlpha = inkScale;
-    const yaw = (reduced ? 0.55 : (t / PERIOD) * TAU) + userYaw + 0.55;
+    if (!reduced) {
+      // Time-based followers (council, 2026-09-02): a per-frame lerp settles twice as fast on a
+      // 120Hz panel as in a 60fps recording. `frameDt` is the loop's tick, already clamped to
+      // 64ms, so a stall cannot make a follower jump.
+      const kTilt = 1 - Math.exp(-frameDt / TILT_TAU_MS);
+      const kCam = 1 - Math.exp(-frameDt / CAM_TAU_MS);
+      tiltYaw += (tiltYawT - tiltYaw) * kTilt;
+      tiltPitch += (tiltPitchT - tiltPitch) * kTilt;
+      const target = opts.camera ? Math.max(0, Math.min(1, opts.camera())) : 0;
+      cam += (target - cam) * kCam;
+    }
+    // The camera: it turns (+0.9 rad over the hero), pushes in (×1.35), looks further down
+    // (+0.22 rad), lifts the dome slower than the page (depth parallax), and fades the ink out
+    // over the last half so the evidence section's real map arrives on a clear ground.
+    const pitch = PITCH + tiltPitch + cam * 0.22;
+    cosP = Math.cos(pitch);
+    sinP = Math.sin(pitch);
+    camScale = 1 + cam * 0.35;
+    camLift = cam * H * 0.22;
+    const camFade = 1 - smooth01((cam - 0.5) / 0.45);
+    ctx!.globalAlpha = inkScale * (opts.dim ?? 1) * camFade;
+    if (ctx!.globalAlpha <= 0.005) return;
+    const yaw = (reduced ? 0.55 : (t / PERIOD) * TAU) + userYaw + 0.55 + tiltYaw + cam * 0.9;
     const trig: Record<HeroGraphNode['k'], [number, number]> = {
       project: [0, 0],
       domain: [0, 0],
@@ -525,11 +668,26 @@ export function mountHeroObject(
     }
     lastProjected = projected;
     lastAlpha = alphaOf;
+    /*
+     * The hover follows the dot, not the other way round (council, 2026-09-02): with the pointer
+     * held still, idle yaw carried a hovered dot 117px and the scroll camera 238px while the ring
+     * and caption stayed on it. The projection is fresh here, so the hit test is a lookup.
+     */
+    if (!dragging && pointerAt !== null && !reduced) {
+      const best = hitAt(pointerAt.x, pointerAt.y);
+      if (best !== hover) {
+        setHover(best);
+        setCursor(best !== null ? 'grab' : 'default');
+      }
+    }
     const zSpan = Math.max(1, zMax - zMin);
     // Near → 1, far → 0.09 (a squared family) — this contrast is what reads as 3D.
     const fog = (z: number): number => {
       const u = (z - zMin) / zSpan;
-      return 0.09 + 0.91 * (1 - u) ** 1.8;
+      // Floor 0.22 (council, 2026-09-02): at 0.09 the far half of every rotation sat below
+      // perceptibility (max 1.12:1 against its own field) for a fact — camera azimuth — that is
+      // not in the vault; the near-side peak is untouched.
+      return 0.22 + 0.78 * (1 - u) ** 1.8;
     };
     const lw = (z: number): number => {
       const u = (z - zMin) / zSpan;
@@ -545,7 +703,7 @@ export function mountHeroObject(
       for (let i = 0; i <= 48; i += 1) {
         const ang = (i / 48) * TAU;
         pts.push(
-          project(Math.cos(ang) * P.r, P.y, Math.sin(ang) * P.r, trig[kind][0], trig[kind][1]),
+          project(Math.cos(ang) * P.r, planeY(kind), Math.sin(ang) * P.r, trig[kind][0], trig[kind][1]),
         );
       }
       let x0 = Infinity;
@@ -561,10 +719,13 @@ export function mountHeroObject(
       ctx!.beginPath();
       pts.forEach((p, i) => (i ? ctx!.lineTo(p.x, p.y) : ctx!.moveTo(p.x, p.y)));
       ctx!.closePath();
-      const lg = ctx!.createLinearGradient(x0, y0, x1, y1); // light source at the top left
-      lg.addColorStop(0, `rgba(${ink[0]},${ink[1]},${ink[2]},${0.034 * a})`);
-      lg.addColorStop(1, `rgba(${ink[0]},${ink[1]},${ink[2]},${0.004 * a})`);
-      ctx!.fillStyle = lg;
+      // A constant fill (council, 2026-09-02): the old top-left gradient asserted a light source,
+      // encoded nothing, and measured ≤1.07:1. `x0..y1` stay in scope for the rim strokes below.
+      void x0;
+      void y0;
+      void x1;
+      void y1;
+      ctx!.fillStyle = `rgba(${ink[0]},${ink[1]},${ink[2]},${0.018 * a})`;
       ctx!.fill();
       for (let i = 0; i < 48; i += 1) {
         const p0 = pts[i];
@@ -593,11 +754,11 @@ export function mountHeroObject(
       const a = Math.min(alphaOf.get(it.e.a) ?? 0, alphaOf.get(it.e.b) ?? 0);
       if (a <= 0.01) continue;
       const f = fog(it.z);
+      // The project's spokes carry their prominence on width alone (council, 2026-09-02): with
+      // the accent gone from them, indigo on this stage means exactly one fact — `depends`.
       const spine = ka === 'project' || kb === 'project';
-      ctx!.strokeStyle = spine
-        ? `rgba(${accent[0]},${accent[1]},${accent[2]},${(0.2 + 0.28 * f) * a})`
-        : `rgba(${ink[0]},${ink[1]},${ink[2]},${0.24 * f * a})`;
-      ctx!.lineWidth = lw(it.z) * 0.85;
+      ctx!.strokeStyle = `rgba(${ink[0]},${ink[1]},${ink[2]},${(spine ? 0.34 : 0.24) * f * a})`;
+      ctx!.lineWidth = lw(it.z) * (spine ? 1.1 : 0.85);
       ctx!.beginPath();
       ctx!.moveTo(it.A.x, it.A.y);
       ctx!.lineTo(it.B.x, it.B.y);
@@ -723,8 +884,9 @@ export function mountHeroObject(
     let animT = 0;
     unregisterFrame = registerGatewayFrameClient(({ dtMs, factor }) => {
       if (disposed) return;
+      frameDt = dtMs;
       if (!dragging) {
-        userVel *= 0.94;
+        userVel *= Math.exp(-dtMs / INERTIA_TAU_MS);
         userYaw += userVel;
       }
       animT += dtMs * factor;
@@ -737,6 +899,14 @@ export function mountHeroObject(
       disposed = true;
       unregisterFrame?.();
       removeEventListener('resize', onResize);
+      boxObserver?.disconnect();
+      canvas.removeEventListener('contextlost', onContextLost);
+      canvas.removeEventListener('contextrestored', onContextRestored);
+      if (tilt) {
+        removeEventListener('pointermove', onLean);
+        document.documentElement.removeEventListener('mouseleave', onLeanEnd);
+        removeEventListener('blur', onLeanEnd);
+      }
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);

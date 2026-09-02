@@ -3708,6 +3708,12 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     .gateway-term-line {
       opacity: 1 !important;
     }
+
+    /* The hover caption is opacity-only, so it keeps its 120ms fade instead of the global
+       kill's hard cut — the same rule the toast above follows (council, 2026-09-02). */
+    .gateway-hero-caption {
+      transition-duration: var(--motion-fast) !important;
+    }
   }
 
   /*
@@ -4108,6 +4114,40 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   visibility: visible;
 }
 
+/*
+ * The landing (2026-09-02). A character that has just been typed settles into the line: it
+ * arrives at the normal weight and three-fifths ink and takes `--motion-settle` to reach the
+ * monument's signature weight and full ink. Pretendard Variable interpolates the weight axis,
+ * so the glyph visibly firms rather than pops. Declared only under `no-preference`: under
+ * reduced motion the kill rule above already shows every character complete.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  /* `gateway-type-land` is the landing's own class (set with `is-on` by HeroTypewriter) so the
+     reduced-motion contract can name it — the scanner reads the last class of a selector. */
+  .gateway-type-land {
+    animation: gatewayTypeLand var(--motion-settle) var(--motion-ease) both;
+  }
+}
+
+@keyframes gatewayTypeLand {
+  from {
+    font-weight: 400;
+    opacity: 0.6;
+  }
+  to {
+    font-weight: var(--font-weight-signature);
+    opacity: 1;
+  }
+}
+
+/*
+ * [Removed 2026-09-03, council] The decoder ghost — a glyph drawn from the sentence into the
+ * caret's slot before the real character landed. At the headline's size it read as a
+ * misspelling of the page's one claim ("Agents write tlt", "the codelt"). The caret stays; the
+ * landing above carries the type's arrival. Gate: the grid spec asserts no `[data-ghost]` and
+ * `::after { content: none }` on the caret slot.
+ */
+
 /* Cursor is left of the first untyped character = right of the last typed character.
  * Being a pseudo-element it takes no space so lines do not shift even as cursor moves. */
 .gateway-type-ch.is-cursor {
@@ -4133,8 +4173,14 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 /* Hero object stage — no entrance of its own: the object assembles as the headline is typed
  * (the typing echo, drawn on the canvas from `HeroTypewriter`'s progress), so the stage is
  * present from the first frame and carries only the atmosphere behind the ink. */
+/*
+ * The stage is positioned by its utility classes (2026-09-02: `absolute inset-0`, the hero's
+ * ground). This unlayered rule used to pin `position: relative`, which outranks a layered
+ * Tailwind utility — measured, the stage collapsed to 0px tall and the canvas drew nothing.
+ * Only the deep spot (`::before`) needs a containing block, and any positioned value gives one.
+ */
 .gateway-hero-stage {
-  position: relative;
+  isolation: isolate;
 }
 
 /* The reserved caption line under the hero object — ink arrives, the box never moves. */
@@ -4152,7 +4198,7 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   position: absolute;
   inset: -12%;
   background: radial-gradient(
-    ellipse 52% 48% at 50% 47%,
+    ellipse 42% 52% at 68% 50%,
     var(--gateway-fx-deep) 0%,
     transparent 72%
   );

@@ -6185,6 +6185,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-03 — The download headline types only its own sentence, and the changelog is offered once per viewport",
+      "slug": "2026-09-03-the-download-headline-types-only-its-own-sentence-and-the-changelog-is-offered-once-per-viewport"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap",
       "slug": "2026-09-02-compact-task-handoff-follows-persisted-capability-boundaries-not-noun-overlap"
     },

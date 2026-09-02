@@ -93,6 +93,14 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // it turns red.
   "gateway-scroll-stage":
     "스크롤이 굴린다(view() 타임라인) — duration 이 없어 감속용 시간을 줄 대상이 없다. 감속에서는 선언 자체가 존재하지 않고 무대(영상·지도·ACP 장면)는 처음부터 전부 보인다.",
+  // The headline's landing (2026-09-02, council 2026-09-03). Each typed character firms
+  // from weight 400 / 60% ink to the signature weight over `--motion-settle`. It lives only
+  // inside `no-preference`; under reduced motion the base-layer carve-out shows every
+  // character complete from the first frame (`.gateway-type-ch { visibility: visible }`), so
+  // the declaration never exists there and no time axis is left to shorten. The condition
+  // is measured below with the scroll-timeline classes.
+  "gateway-type-land":
+    "타자 안착 — 감속에서는 선언 자체가 없고 문장은 첫 프레임부터 완성돼 보인다(base 레이어 carve-out). 줄일 시간축이 없다.",
 };
 
 /**
@@ -100,7 +108,7 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
  * inside `no-preference`". A reason recorded only in prose gives no signal when the
  * next person moves the declaration out, so the condition is **measured** here.
  */
-const SCROLL_TIMELINE_CLASSES = ["gateway-scroll-stage"] as const;
+const SCROLL_TIMELINE_CLASSES = ["gateway-scroll-stage", "gateway-type-land"] as const;
 
 /**
  * The surfaces that must actually carry an equivalent — **extracted from the

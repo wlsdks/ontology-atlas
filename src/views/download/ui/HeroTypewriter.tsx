@@ -109,7 +109,8 @@ export function HeroTypewriter({
   onProgress,
 }: {
   lines: readonly HeroTypewriterLine[];
-  /** Typing begins when this turns true — the eyebrow lands first, so the cause precedes it. */
+  /** Typing begins when this turns true. Measured 2026-09-02: the headline starts 533ms before
+      the eyebrow rises — the attention winner moves first; the eyebrow follows it. */
   start: boolean;
   className?: string;
   /**
@@ -195,7 +196,7 @@ export function HeroTypewriter({
   // out of existence for one tick every time it crossed a word boundary (measured 2026-08-23).
   const cursorAt = (at: number) => typed === at && start && !reduced;
   const chClass = (at: number) =>
-    cn('gateway-type-ch', typed > at && 'is-on', cursorAt(at) && 'is-cursor');
+    cn('gateway-type-ch', typed > at && 'is-on gateway-type-land', cursorAt(at) && 'is-cursor');
 
   return (
     <span className={className} aria-hidden="true">
