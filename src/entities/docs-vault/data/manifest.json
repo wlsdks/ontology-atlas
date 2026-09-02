@@ -781,16 +781,14 @@
     {
       "slug": "DECISIONS",
       "path": "docs/DECISIONS.md",
-      "title": "DECISIONS — 카운슬 결정 원장",
+      "title": "DECISIONS — the council decision ledger",
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 240006,
+      "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
+      "wordCount": 93187,
       "updatedAt": "2026-09-02",
       "linksOut": [
-        "benchmark/FINDINGS-2026-08-31-metric-split",
-        "benchmark/results/2026-08-31-gb-r3-regrade-summary",
         "slug"
       ]
     },
@@ -3729,7 +3727,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Version 3, active as a finite pilot from 2026-09-01. It keeps the v2 two-reviewer ceiling but removes the builder's ability to declare their own door and risk. Git preserves both prior systems; docs/PO-PILOT.md decides whether this one earns a permanent place. Atlas does not need a universal product-management framewor",
-      "wordCount": 1766,
+      "wordCount": 1782,
       "updatedAt": "2026-09-02",
       "linksOut": []
     },
@@ -3924,7 +3922,7 @@
       },
       {
         "fromSlug": "DECISIONS",
-        "context": "왕복에 63.009초 + 12.832초 + 43.370초(합 119.211초), 67,264자를 전송했다. 다음 결과는 30개 capability 목록만 읽고 실제 부모를 하나도 읽지 않은 채 중간 결론을 냈고, `**[slug]**` 인용이 없어 화면에서 근거 없음으로 강등됐다. 같은 18,888자·15도구 요청의 `list_kinds` 선택은 Ollama 기본 사고 모드 29.885초, `reasoning_effort: low` 3.610초",
+        "context": "wide. **Prior**: none **Decision**: Split across PR #832/#833. `citation.ts`'s `demoted` verdict wrongly counted only `**[slug]**` citations despite real tool reads, fixed via a two-branch check. The \"web unsupported\" notice was corrected since Olla",
         "linkText": "slug"
       },
       {
@@ -3938,40 +3936,6 @@
         "fromSlug": "CHANGELOG",
         "context": "표시하지 않는다. storefront 112개념 + Ollama `qwen3:8b` 실측은 `list_kinds` → `list_concepts` → `get_concepts` 뒤 언어 재합성을 거쳐 약 25초에 `**[domains/catalog]**`만 인용하고 “검증 범위로는 브릿지 필요 여부를 판단할 수 없음”이라고 한국어로 답했다. 임의의 숫자 목표와 근거 없는 브릿지 권고는 없었다. 배치 상세 읽기의 6,000자 상한도 의미 비교를 보존한다. 예전 이",
         "linkText": "domains/catalog"
-      }
-    ],
-    "benchmark/FINDINGS-2026-08-31-metric-split": [
-      {
-        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
-        "context": "# Reading the 24 answers — 2026-08-31 > A screening pass, not a verdict. Read > **[the scoring correction]** first: it showed > that the machine score could not compare the two sides, and that only a person > reading the answers",
-        "linkText": "the scoring correction"
-      },
-      {
-        "fromSlug": "benchmark/README",
-        "context": "ge-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | **[`FINDINGS-2026-08-31-metric-split.md`]** | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, n",
-        "linkText": "`FINDINGS-2026-08-31-metric-split.md`"
-      },
-      {
-        "fromSlug": "DECISIONS",
-        "context": "eld control had written \"explicitly outside it\", which is the same boundary correctly stated and scored zero. Evidence: **[the correction]** and [the re-scored matrix](benchmark/results/2026-08-31-gb-r3-regrade-summary.md). **Decision**: required items are so",
-        "linkText": "the correction"
-      }
-    ],
-    "benchmark/results/2026-08-31-gb-r3-regrade-summary": [
-      {
-        "fromSlug": "benchmark/FINDINGS-2026-08-31-metric-split",
-        "context": ".7389 on the brownfield one — so what follows is a different reading of the same run, not a different run. Full matrix: **[`2026-08-31-gb-r3-regrade-summary.md`]**. ## What was wrong with the original score The score was one number: of the things an answer was supposed to name, ho",
-        "linkText": "`2026-08-31-gb-r3-regrade-summary.md`"
-      },
-      {
-        "fromSlug": "benchmark/README",
-        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`FINDINGS-2026-08-31-tw",
-        "linkText": "`results/2026-08-31-gb-r3-regrade-summary.md`"
-      },
-      {
-        "fromSlug": "DECISIONS",
-        "context": "oundary correctly stated and scored zero. Evidence: [the correction](benchmark/FINDINGS-2026-08-31-metric-split.md) and **[the re-scored matrix]**. **Decision**: required items are sorted into an Atlas concept name, a source path, or an ordinary phrase. Summaries r",
-        "linkText": "the re-scored matrix"
       }
     ],
     "design-references/DESIGN-linear": [
@@ -4132,6 +4096,18 @@
         "linkText": "`FINDINGS-2026-08-31.md`"
       }
     ],
+    "benchmark/results/2026-08-31-gb-r3-regrade-summary": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-metric-split",
+        "context": ".7389 on the brownfield one — so what follows is a different reading of the same run, not a different run. Full matrix: **[`2026-08-31-gb-r3-regrade-summary.md`]**. ## What was wrong with the original score The score was one number: of the things an answer was supposed to name, ho",
+        "linkText": "`2026-08-31-gb-r3-regrade-summary.md`"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "3-summary.md`](results/2026-08-31-gb-r3-summary.md) | Raw 3-repeat lifecycle matrix summary; machine coverage only. | | **[`results/2026-08-31-gb-r3-regrade-summary.md`]** | The same 24 answers re-scored with the evidence split, plus the token behind every miss. | | [`FINDINGS-2026-08-31-tw",
+        "linkText": "`results/2026-08-31-gb-r3-regrade-summary.md`"
+      }
+    ],
     "benchmark/rubric": [
       {
         "fromSlug": "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -4157,6 +4133,18 @@
         "fromSlug": "benchmark/tasks",
         "context": "the vault body and nowhere in the source, so an agent that only greps has to invent one. Score with the D-only axes in **[`rubric.md`]**. ### D1 — Documented exclusion **Prompt:** > A request came in to make our MCP server do code symbol search too. Shou",
         "linkText": "`rubric.md`"
+      }
+    ],
+    "benchmark/FINDINGS-2026-08-31-metric-split": [
+      {
+        "fromSlug": "benchmark/FINDINGS-2026-08-31-screening-grade",
+        "context": "# Reading the 24 answers — 2026-08-31 > A screening pass, not a verdict. Read > **[the scoring correction]** first: it showed > that the machine score could not compare the two sides, and that only a person > reading the answers",
+        "linkText": "the scoring correction"
+      },
+      {
+        "fromSlug": "benchmark/README",
+        "context": "ge-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. | | **[`FINDINGS-2026-08-31-metric-split.md`]** | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, n",
+        "linkText": "`FINDINGS-2026-08-31-metric-split.md`"
       }
     ],
     "benchmark/results/2026-08-31-gb-r3-blind-packet": [
@@ -7010,7 +6998,7 @@
         "path": "DECISIONS",
         "type": "doc",
         "slug": "DECISIONS",
-        "title": "DECISIONS — 카운슬 결정 원장"
+        "title": "DECISIONS — the council decision ledger"
       },
       {
         "name": "DEMO-SCENARIO",

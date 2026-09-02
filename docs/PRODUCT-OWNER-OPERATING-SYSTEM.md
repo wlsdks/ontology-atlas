@@ -183,11 +183,13 @@ the dedicated design and journey gates instead of repeating them.
 
 ## Significant decision record
 
-From 2026-09-03 a record is six fields in this order, within 24 lines and
-2,000 bytes; `pnpm decisions:check` refuses anything else. Historical records
-stay append-only and are not judged. The measurement behind the cut: 478
-records in 38 days, median 51 lines and nine labels each, and a fifteen-field
-format that nobody could read before convening.
+A record is six fields in this order, within 24 lines and 2,000 bytes;
+`pnpm decisions:check` refuses anything else, on every record. The
+measurement behind the cut: 478 records in 38 days, median 51 lines and nine
+labels each, and a fifteen-field format that nobody could read before
+convening. On 2026-09-02 every earlier record was condensed into this shape
+with its heading, date, and number unchanged; the originals stay in Git
+history.
 
 ```md
 ## YYYY-MM-DD — <the decision in one line>

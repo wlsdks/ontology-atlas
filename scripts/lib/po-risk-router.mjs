@@ -84,7 +84,7 @@ export const PO_SOLO_FIELDS = Object.freeze([
 ]);
 
 // The ledger record is the six-field template `pnpm decisions:check` enforces
-// from 2026-09-03; route, evidence state, footprint, and delta are typed per
+// on every record; route, evidence state, footprint, and delta are typed per
 // run in docs/PO-PILOT.md instead of repeated here. One source, so the council
 // skill, the operating system, and the gate cannot drift apart.
 export const PO_REVIEW_RECORD_FIELDS = Object.freeze([...FIELDS]);

@@ -8,14 +8,17 @@
  * the strongest losing argument, the observation that reopens it, and who is
  * accountable. Everything else the pilot register already types per run.
  *
- * So from `TEMPLATE_SINCE` a record is exactly these six fields in this order,
- * inside a size that fits one screen. Older records are append-only evidence
- * and are not judged. The rule is mechanical on purpose: a template that lives
- * in prose is followed by whoever remembers it, which is how the ledger got to
- * two megabytes.
+ * So a record is exactly these six fields in this order, inside a size that
+ * fits one screen. `TEMPLATE_SINCE` predates the first record: on 2026-09-02
+ * every earlier record was condensed into the template, so nothing is exempt.
+ * The rule is mechanical on purpose: a template that lives in prose is
+ * followed by whoever remembers it, which is how the ledger got to two
+ * megabytes.
  */
 
-export const TEMPLATE_SINCE = '2026-09-03';
+// Every record: the ledger was condensed to the template on 2026-09-02, so
+// there is no historical shape left to exempt.
+const TEMPLATE_SINCE = '2026-07-01';
 
 export const FIELDS = ['Why', 'Prior', 'Decision', 'Dissent', 'Falsifier', 'Owner'];
 
