@@ -903,6 +903,9 @@ Payload-carrying witnesses may omit their derived digest: seal adds the canonica
 binding to a cloned output, still rejects a supplied mismatch, and still requires
 a digest when no payload is present.
 
+For the CLI compact-bootstrap count gate, run
+`node scripts/run-focused-node-test.mjs --test-name-pattern "compact import delivery preserves review totals" cli/src/integration.test.mjs`; it proves a bounded review plan does not turn omitted full arrays into false zero candidate counts.
+
 The rest of the gate reference lives in
 [development checks](docs/DEVELOPMENT-CHECKS.md), which is where a contributor
 already looks: `pnpm knip` for dead files, exports and types across every scope,

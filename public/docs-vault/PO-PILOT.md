@@ -73,6 +73,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 10 | 2026-09-02 | Bind local app deployment to one exact bundle and its installed MCP behavior | one-way | review | handoff | public-contract | truth=affected;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 2 | redirected | po-evidence+po-steward |
 | 11 | 2026-09-02 | Make Architecture an evidence-bound AI decision loop inside its own workbench | one-way | review | orient | positioning+substantial-investment | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | evidence-bounded | po-evidence+po-steward |
 | 12 | 2026-09-02 | Make compact task handoff honor persisted capability boundaries | one-way | review | handoff | public-contract | truth=unchanged;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 13 | 2026-09-03 | Preserve compact CLI bootstrap import review totals | one-way | review | judge | public-contract | truth=unchanged;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | unchanged | none |
 
 ## Outcome updates
 
@@ -99,3 +100,5 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 11 | 2026-09-02 | pass | pending | no | pending |
 | 12 | 2026-09-02 | pending | yes | no | pending |
 | 12 | 2026-09-02 | pass | yes | no | held |
+| 13 | 2026-09-03 | pending | yes | no | pending |
+| 13 | 2026-09-03 | pass | yes | no | held |

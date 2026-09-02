@@ -671,6 +671,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The CLI's `index`, `analyze`, `infer-imports`, `architecture`, and `bootstrap` code-to-vault commands behave correctly.
 **Escalate**: none.
 
+### CLI compact bootstrap totals
+
+**Run**: `node scripts/run-focused-node-test.mjs --test-name-pattern "compact import delivery preserves review totals" cli/src/integration.test.mjs`
+**Proves**: A compact bootstrap receipt keeps candidate and unresolved totals while exit 3, approval-required state, and zero writes remain unchanged.
+**Escalate**: `pnpm integration:cli:repo-analysis`
+
 ### CLI local vault commands
 
 **Run**: `pnpm integration:cli:local-vault`

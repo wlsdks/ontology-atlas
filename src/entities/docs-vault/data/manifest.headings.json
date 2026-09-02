@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-03 — CLI bootstrap compact plans preserve the import review totals they summarize",
+      "slug": "2026-09-03-cli-bootstrap-compact-plans-preserve-the-import-review-totals-they-summarize"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap",
       "slug": "2026-09-02-compact-task-handoff-follows-persisted-capability-boundaries-not-noun-overlap"
     },
@@ -10194,6 +10199,11 @@
       "depth": 3,
       "text": "CLI code-to-vault commands",
       "slug": "cli-code-to-vault-commands"
+    },
+    {
+      "depth": 3,
+      "text": "CLI compact bootstrap totals",
+      "slug": "cli-compact-bootstrap-totals"
     },
     {
       "depth": 3,
