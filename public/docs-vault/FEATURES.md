@@ -1152,14 +1152,18 @@ until `project` is supplied. The complete response remains the default. For a
 known coding task, opt-in `detail:"compact"` plus a request-local `task` returns
 an `agentBriefCompact:v2` projection capped at 12,000 UTF-8 JSON bytes. It keeps
 final source/meaning currentness, the compact meaning-repair and human-approval
-guards, a broad persisted capability, cited element/path evidence, explicit
-impact/verification unknowns, bounded full-body reads, and an exact full-detail
-follow-up. When reviewed implementation/supporting/test coordinates exist in
+guards, a broad persisted capability only when its Definition/Includes/Excludes
+agree with the desired work and explicit non-goals, cited element/path evidence,
+explicit impact/verification unknowns, bounded full-body reads, and an exact
+full-detail follow-up. A conflicting, unsupported, or tied claim returns no
+capability instead of a noun-overlap winner. When reviewed
+implementation/supporting/test coordinates exist in
 the selected element and the bound source is current, `taskNavigation:v1`
 verifies only those named files and returns exact current line locators plus the
 reviewed non-exhaustive IN/OUT boundary. Stale, missing, ambiguous, unsafe, or
-unrecorded evidence returns no exact target; task matching never searches source,
-proves code behavior, persists raw task text, or creates a narrow capability.
+unrecorded evidence returns no exact target; claim-compatible task selection
+never searches source, proves code behavior, persists raw task text, or creates
+a narrow capability.
 The same source fingerprint, revision, and graph hash are checked again after
 the named reads; a mismatch detected by the exact-file guards or that final
 recheck withdraws every target and downgrades outer currentness. Compact v2

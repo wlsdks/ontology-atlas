@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap
+
+**Why**: on current HEAD, three pre-expiry policy tasks all selected `capabilities/expiry-diagnostics`, including a task that explicitly said not to add diagnostics; the correct `capabilities/policy-appraisal` Definition and Includes stated the requested rejection, and its Excludes stated the non-goal. Structural health and the existing compact tests stayed green.
+**Prior**: narrowly overturns only lexical capability selection in 2026-08-30 "A coding handoff earns compact-by-default only after it improves the first decision"; its opt-in/full-default, currentness, size, task-privacy, navigation, and selection-not-proof boundaries remain valid. That record's warning that lexical search could hide weak cross-boundary evidence was observed.
+**Decision**: compact `agent_brief` treats persisted Definition and Includes as positive task scope and Excludes as the explicit boundary. Desired work present only in Excludes, an explicit non-goal present in positive scope, unsupported claims, and tied top claims return no capability. Child path matches cannot override a conflicting parent claim. No tool, schema, writer, approval, analyzer, qualification, or vault-truth contract changes.
+**Dissent**: the existing response already says selection is not proof and requires full-body follow-up; an English clause heuristic may overfit the fixture and create more confidence without improving ontology construction.
+**Falsifier**: revert or narrow to stricter refusal if a boundary-conflicting candidate wins, an ambiguous claim is selected, the diagnostic positive control regresses, document order changes the result, raw task text persists, any writer or approval boundary expands, or a source-hidden replay fails to improve the frozen handoff without unsupported claims.
+**Owner**: jinan.
+
 ## 2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof
 
 **Why**: the current source MCP and freshly built sidecar returned the expected lowercase `readme.md` address, while the binary at `/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` returned 22 uppercase `README.md` addresses, zero lowercase, omitted project evidence, and had bytes and size differing from the built sidecar.

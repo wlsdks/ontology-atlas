@@ -298,6 +298,167 @@ DER parsing and unrelated encodings.
     assert.equal(result.focus.capability.slug, 'capabilities/parse');
   });
 
+  it('routes by persisted responsibility and boundaries instead of noun overlap', () => {
+    const policyDocs = [
+      {
+        slug: 'project',
+        frontmatter: { kind: 'project', title: 'Policy Runtime' },
+        body: '## Definition\n\nA runtime that evaluates collateral policy.\n',
+      },
+      {
+        slug: 'capabilities/policy-appraisal',
+        frontmatter: { kind: 'capability', title: 'Policy Appraisal' },
+        body: [
+          '## Definition',
+          '',
+          'Evaluate whether collateral remains acceptable before expiry using a configured safety margin.',
+          '',
+          '## Includes',
+          '',
+          '- Reject collateral when remaining validity is below the safety margin.',
+          '',
+          '## Excludes',
+          '',
+          '- Post-expiry diagnostic reporting.',
+          '',
+        ].join('\n'),
+      },
+      {
+        slug: 'capabilities/expiry-diagnostics',
+        frontmatter: { kind: 'capability', title: 'Expiry Diagnostics' },
+        body: [
+          '## Definition',
+          '',
+          'Report why expired collateral was rejected and expose validity-margin diagnostics.',
+          '',
+          '## Includes',
+          '',
+          '- Post-expiry diagnostic reporting.',
+          '',
+          '## Excludes',
+          '',
+          '- Deciding pre-expiry acceptance policy.',
+          '',
+        ].join('\n'),
+      },
+    ];
+    const taskCases = [
+      [
+        'Before expiry, reject collateral whose remaining validity is below a safety margin; do not add post-expiry diagnostics.',
+        'capabilities/policy-appraisal',
+      ],
+      [
+        'Implement a pre-expiry validity-margin rejection policy; diagnostics after expiry are out of scope.',
+        'capabilities/policy-appraisal',
+      ],
+      [
+        'Decide pre-expiry acceptance from remaining collateral validity and leave diagnostic reporting unchanged.',
+        'capabilities/policy-appraisal',
+      ],
+      [
+        'Add post-expiry diagnostics explaining rejected collateral; do not change pre-expiry acceptance policy.',
+        'capabilities/expiry-diagnostics',
+      ],
+    ];
+    assert.equal(taskCases.length, 4, 'the boundary-routing gate must exercise real subjects');
+
+    for (const orderedDocs of [policyDocs, [policyDocs[0], ...policyDocs.slice(1).reverse()]]) {
+      for (const [task, expectedSlug] of taskCases) {
+        const result = buildCompactAgentBrief({
+          brief,
+          artifact,
+          docs: orderedDocs,
+          task,
+        });
+        assert.equal(result.focus.capability?.slug, expectedSlug, task);
+      }
+    }
+  });
+
+  it('fails closed when task boundaries conflict or appear only in Excludes', () => {
+    const boundaryDocs = [
+      docs[0],
+      {
+        slug: 'capabilities/retain-cache',
+        frontmatter: { kind: 'capability', title: 'Retain Cache' },
+        body: [
+          '## Definition',
+          '',
+          'Retain accepted records in a local cache.',
+          '',
+          '## Excludes',
+          '',
+          '- Purging rejected records.',
+          '',
+        ].join('\n'),
+      },
+      {
+        slug: 'capabilities/archive-cache',
+        frontmatter: { kind: 'capability', title: 'Archive Cache' },
+        body: [
+          '## Definition',
+          '',
+          'Retain accepted records in a local cache.',
+          '',
+          '## Excludes',
+          '',
+          '- Purging rejected records.',
+          '',
+        ].join('\n'),
+      },
+    ];
+    const ambiguous = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: boundaryDocs,
+      task: 'Retain accepted records in the local cache.',
+    });
+    assert.equal(ambiguous.focus.status, 'not_recorded');
+    assert.equal(ambiguous.focus.capability, null);
+
+    const excludesOnly = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], boundaryDocs[1]],
+      task: 'Purge rejected records.',
+    });
+    assert.equal(excludesOnly.focus.status, 'not_recorded');
+    assert.equal(excludesOnly.focus.capability, null);
+
+    const commaBoundary = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs,
+      task: 'Encode DER output, do not parse DER input.',
+    });
+    assert.equal(commaBoundary.focus.capability?.slug, 'capabilities/write');
+
+    const unchangedOnly = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs,
+      task: 'Writer must remain unchanged.',
+    });
+    assert.equal(unchangedOnly.focus.status, 'not_recorded');
+    assert.equal(unchangedOnly.focus.capability, null);
+
+    const notInScope = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [
+        docs[0],
+        {
+          slug: 'capabilities/diagnostics',
+          frontmatter: { kind: 'capability', title: 'Diagnostics' },
+          body: '## Definition\n\nReport diagnostic events.\n',
+        },
+      ],
+      task: 'Diagnostics are not in scope.',
+    });
+    assert.equal(notInScope.focus.status, 'not_recorded');
+    assert.equal(notInScope.focus.capability, null);
+  });
+
   it('does not match SET to settings or admit one weak body-only token', () => {
     const unrelatedDocs = [
       docs[0],

@@ -102,9 +102,12 @@ These wrap the MCP server (`ontology-atlas-mcp`) so the developer has the same a
 
 When a coding task is already known, add `--compact --task "..."`. This opt-in
 v2 mode returns one selected-project handoff capped at 12,000 UTF-8 JSON bytes:
-final source and meaning currentness, one broad capability selected from the
-persisted vault, cited element/path anchors, explicit impact and verification
-unknowns, a bounded full-body next read, and an exact full-detail follow-up.
+final source and meaning currentness, one broad capability selected only when
+its persisted Definition/Includes/Excludes are compatible with the task, cited
+element/path anchors, explicit impact and verification unknowns, a bounded
+full-body next read, and an exact full-detail follow-up. A desired/negative
+boundary conflict, an unsupported claim, or a tied top claim returns no
+capability.
 When the selected element's Markdown contains reviewed `Primary
 implementation`, `Supporting implementation`, and `Focused test` Evidence
 coordinates and the bound source is current, `taskNavigation` verifies only
@@ -116,7 +119,7 @@ the reads. Human output includes the verified runner/manifest and the
 non-overlapping verification policy: separately named positive/negative
 regressions, exact observable output, one focused check, and one full check.
 Compact never searches the repository or infers a symbol from the task.
-The task text is request-local and is not persisted; lexical matching selects
+The task text is request-local and is not persisted; claim compatibility selects
 evidence but never proves source behavior or approves ontology meaning. The
 complete response remains the default. `--compact` cannot be combined with
 `--graph-db-pack` or `--verify-fallbacks`, whose full manuals are deliberately

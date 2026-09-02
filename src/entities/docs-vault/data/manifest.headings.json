@@ -3849,6 +3849,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-02 · Unreleased: compact agent handoffs honor reviewed capability boundaries",
+      "slug": "2026-09-02-unreleased-compact-agent-handoffs-honor-reviewed-capability-boundaries"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 · v1.0.4: the installed app proves its own bundle, and the records fit one screen",
       "slug": "2026-09-02-v104-the-installed-app-proves-its-own-bundle-and-the-records-fit-one-screen"
     },
@@ -6172,6 +6177,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap",
+      "slug": "2026-09-02-compact-task-handoff-follows-persisted-capability-boundaries-not-noun-overlap"
     },
     {
       "depth": 2,
@@ -9789,6 +9799,11 @@
       "depth": 3,
       "text": "Exact task-navigation truth",
       "slug": "exact-task-navigation-truth"
+    },
+    {
+      "depth": 3,
+      "text": "Compact task-claim routing",
+      "slug": "compact-task-claim-routing"
     },
     {
       "depth": 3,

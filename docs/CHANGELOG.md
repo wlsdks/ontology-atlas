@@ -45,6 +45,10 @@
 
 ---
 
+## 2026-09-02 · Unreleased: compact agent handoffs honor reviewed capability boundaries
+
+**Fixed**: A known-task MCP handoff now follows the selected capability's reviewed Definition, Includes, and Excludes instead of noun overlap; conflicting, unsupported, or tied claims remain unselected.
+
 ## 2026-09-02 · v1.0.4: the installed app proves its own bundle, and the records fit one screen
 
 **Changed**: The changelog and the decision ledger now follow fixed one-screen templates in English, with gates that refuse anything else; ontology qualification no longer assumes an FDE persona unless the project owns that audience with evidence.

@@ -181,6 +181,12 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: Compact agent_brief truth fields stay exact, probing source-currentness, the 12,000-byte cap, and stop_on_match independently.
 **Escalate**: `pnpm test:mcp:unit`, then current-source MCP/CLI integration and a prospective field trial
 
+### Compact task-claim routing
+
+**Run**: `node scripts/run-focused-node-test.mjs --test-name-pattern "persisted responsibility|task boundaries|claim boundaries" mcp/src/agent-brief-compact.test.mjs mcp/src/integration.test.mjs`
+**Proves**: Compact `agent_brief` honors Definition/Includes/Excludes polarity and refuses conflicts, unsupported claims, and ties.
+**Escalate**: `pnpm test:mcp:unit`, then `pnpm integration:mcp` and a source-hidden replay before a product claim
+
 ### CLI argument parsing
 
 **Run**: `pnpm test:cli:args`
