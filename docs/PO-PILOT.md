@@ -77,6 +77,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 14 | 2026-09-03 | Close the download page's loop: repository and changelog links, a bookend download with the verification recipe, a phone-first winner | two-way | solo | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 15 | 2026-09-03 | The map becomes the ground of the download page's first screen, answers the pointer, and carries a scroll camera; the mascot leaves the hero | two-way | solo | orient | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 16 | 2026-09-03 | The download hero rises inside half a second, hands off by view angle, and shows a phone three tiers | two-way | solo | orient | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
+| 17 | 2026-09-03 | Remove Architecture demo chrome and make evidence comparison the workbench | two-way | solo | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 
 ## Outcome updates
 
@@ -109,3 +110,5 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 15 | 2026-09-03 | pending | pending | no | pending |
 | 15 | 2026-09-03 | pass | pending | no | pending |
 | 16 | 2026-09-03 | pending | pending | no | pending |
+| 17 | 2026-09-03 | pending | yes | no | pending |
+| 17 | 2026-09-03 | pass | yes | no | held |

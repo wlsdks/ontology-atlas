@@ -1212,41 +1212,19 @@
   }
 
   /*
- * ## Architecture canvas — the surface a graph is drawn on (2026-08-28)
+ * ## Architecture canvas — a calm comparison surface
  *
- * A node graph needs its ground to read as ground. Every editor in this shape draws one: n8n,
- * ComfyUI and Figma all put a faint dot field behind the nodes, and without it a set of boxes on a
- * flat panel reads as a row of cards rather than as a canvas somebody laid things out on. This
- * product already draws the same thing on the map, in canvas 2D, through
- * `--topology-v2-grid-minor`; those values belong to a WebGL-free 2D renderer and are consumed by
- * `getComputedStyle`, so a DOM surface needs its own pair rather than borrowing them.
- *
- * **Ink, not decoration.** The background always loses to the data (Tufte, the same rule
- * `--canvas-bg-ink-max` states for the map). The dot is one step above the panel it sits on and
- * nothing more: at 1px on a 22px pitch it is perceptible as a field and illegible as a mark, which
- * is exactly what a coordinate ground should be.
- *
- * No image, no gradient background, no aurora. `radial-gradient` here paints one flat dot per tile
- * and carries no colour transition at all; it is the tiling primitive, not a gradient effect.
+ * This is not the topology map. A repeated dot field competed with every caption and dependency
+ * stroke, making the entire workbench look like one giant graph. The architecture canvas stays a
+ * solid recessed ground; the two large lane surfaces carry grouping instead.
  */
 :root {
-  /* Measured 2026-08-28: #1b1c1f on the canvas ground was invisible at 1px on a 22px pitch — a
-     field nobody perceives is not a field. This is one step under the soft border, which reads as
-     ground and still loses to every mark drawn on it. */
-  --architecture-canvas-dot: #2a2b30;
-  --architecture-canvas-pitch: 22px;
   /* The lit top edge of a raised node: one step above `--color-elevated`, which is the smallest
      move that reads as a face catching light rather than as a second border. */
   --architecture-node-lit-edge: #2e2f33;
   /* The pencil. A drawn outline sits above the node's own face and under its label, so it reads
      as a line somebody made rather than as a border the layout emitted. */
   --color-architecture-sketch-ink: #6d7080;
-  /* One interruptible wave. The source-column step is normalized to 0…1, so the existing
-     settle + fast tokens cap the whole replay at 360ms whatever number of roles a profile has. */
-  --architecture-run-duration: var(--motion-settle);
-  --architecture-run-stagger: var(--motion-fast);
-  --architecture-run-dash: 10px 14px;
-  --architecture-run-dash-travel: 48px;
 }
 
 /*
@@ -1270,10 +1248,13 @@
  */
 .architecture-canvas-ground {
   background-color: var(--color-canvas);
-  background-image: radial-gradient(var(--architecture-canvas-dot) 1px, transparent 1px);
-  background-size: var(--architecture-canvas-pitch) var(--architecture-canvas-pitch);
-  background-position: center center;
   box-shadow: inset 0 1px 0 var(--color-shadow-a35);
+}
+
+@media (min-width: 1280px) {
+  .architecture-workbench-grid {
+    transition: grid-template-columns var(--motion-base) var(--topology-motion-ease-out);
+  }
 }
 
 .architecture-canvas-node {
@@ -1281,28 +1262,47 @@
 }
 
 /*
- * ## Running the flow (2026-08-28)
- *
- * A dash travelling along a stroke is the one motion that says "this is the direction the thing
- * actually moves", which is why every node editor with an execute view uses it. It runs on a
- * deliberate press and stops on its own: an ambient loop would be a claim that something is
- * happening in the source right now, and nothing is.
- *
- * Stagger by column, so the run reads left to right as one wave rather than every stroke firing
- * at once. The step index arrives as a unitless custom property, so no raw time value rides an
- * inline style.
- *
- * Reduced motion collapses it, and nothing is lost: the arrowheads and the column order state the
- * same direction with no time axis at all. Roster: reduced-motion-equivalent.contract.test.ts.
+ * Role focus is one state change, so its face and the real connection points answer together.
+ * Only fill, stroke, and opacity move; geometry and labels stay still while somebody is reading.
  */
-@keyframes architectureFlowRun {
-  from {
-    stroke-dashoffset: var(--architecture-run-dash-travel);
-  }
+.architecture-node-face {
+  transition:
+    fill var(--motion-fast) var(--motion-ease),
+    stroke var(--motion-fast) var(--motion-ease),
+    stroke-width var(--motion-fast) var(--motion-ease);
+}
 
-  to {
-    stroke-dashoffset: 0;
-  }
+.architecture-node-port {
+  transition:
+    fill var(--motion-fast) var(--motion-ease),
+    stroke var(--motion-fast) var(--motion-ease),
+    opacity var(--motion-fast) var(--motion-ease);
+  vector-effect: non-scaling-stroke;
+}
+
+.architecture-node-copy {
+  transition: fill var(--motion-fast) var(--motion-ease);
+}
+
+/*
+ * A paired architecture role has two deliberately different faces: reviewed intent and observed
+ * source. Selection draws one persistent rule through the delta gap. That short left-to-right
+ * reveal explains the relationship and then stays as state, unlike the retired playback flash
+ * that ended without leaving any new information behind.
+ */
+.architecture-selection-trace {
+  opacity: 0;
+  transform: scaleX(0);
+  transform-box: fill-box;
+  transform-origin: left center;
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-base) var(--topology-motion-ease-out);
+}
+
+.architecture-selection-trace[data-selected='true'] {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 /*
@@ -1365,40 +1365,6 @@
   animation-play-state: running;
 }
 
-.architecture-flow-running {
-  stroke-dasharray: var(--architecture-run-dash);
-  animation: architectureFlowRun var(--architecture-run-duration) var(--motion-ease) both;
-  animation-delay: calc(var(--architecture-run-stagger) * var(--architecture-run-step, 0));
-}
-
-/*
- * Short vertical chains leave only a few pixels of edge between cards, so dash travel alone can be
- * technically correct and visually unreadable. The source role's observation line now scans once
- * with the same clock and column stagger as its measured edge. It never touches the contract face,
- * never loops, and disappears when replay completes.
- */
-@keyframes architectureObservationPulse {
-  from {
-    opacity: 0;
-    clip-path: inset(0 100% 0 0);
-  }
-
-  35% {
-    opacity: 1;
-  }
-
-  to {
-    opacity: 0;
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-.architecture-observation-pulse {
-  animation: architectureObservationPulse var(--architecture-run-duration)
-    var(--motion-ease) both;
-  animation-delay: calc(var(--architecture-run-stagger) * var(--architecture-run-step, 0));
-}
-
 /*
  * A local, truthful progress line for the Architecture observation lane. It exists only while an
  * ACP turn is actually active; it never loops over a stored receipt or an idle contract. The text
@@ -1427,6 +1393,15 @@
     animation-duration: var(--motion-fast) !important;
     animation-delay: 0ms !important;
     transform: none !important;
+  }
+
+  .architecture-selection-trace {
+    transition: none !important;
+    transform: none;
+  }
+
+  .architecture-workbench-grid {
+    transition: none !important;
   }
 }
 

@@ -17,8 +17,8 @@ import { ArchitectureSketch } from './ArchitectureSketch';
 
 
 /**
- * The architecture stage: a horizontal graph of the reviewed roles, and one panel for whichever
- * role is selected.
+ * The architecture canvas: a measured graph of reviewed roles with an adjacent dock for the role
+ * a person selects.
  *
  * ⚠️ **The diagram and the document are separate artifacts** (`docs/DECISIONS.md`, 2026-08-28 (3)).
  * This used to be a stack of full-width bands that carried their own prose, modules and concepts
@@ -29,8 +29,8 @@ import { ArchitectureSketch } from './ArchitectureSketch';
  *
  * ⚠️ **A stroke has to carry something the columns cannot.** `buildArchitectureGraph` owns that
  * rule and reports which case this profile is in through `edgeSource`; the legend states it rather
- * than assuming. Under `lower-only` the permitted set is the column order restated, so it is drawn
- * as nothing at all.
+ * than assuming. Under `lower-only`, adjacent roles keep the readable spine while skip rules are
+ * withheld until selection because the column order already carries them.
  */
 export function ArchitectureFlow({
   profile,
@@ -44,17 +44,17 @@ export function ArchitectureFlow({
   ledgerImportsLabel,
   contractTrackLabel,
   observationTrackLabel,
+  deltaTrackLabel,
   observationMissingLabel,
   violatedPairs,
   selected,
+  roleInspectorOpen,
   onSelect,
   roleLabel,
   reachLabel,
   sinkLabel,
   moduleCountLabel,
   conceptCountLabel,
-  runLabel,
-  finishRunLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -70,12 +70,12 @@ export function ArchitectureFlow({
   concepts: Readonly<Record<string, RoleConcept[]>>;
   /**
    * Measured crossings between roles, from the persisted conformance record. Undefined where no
-   * record exists; the stage then draws no traffic at all rather than guessing at any.
+   * record exists; the canvas then draws no traffic at all rather than guessing at any.
    */
   roleTraffic?: readonly ArchitectureRoleEdge[];
   /**
    * The persisted receipt, or null. Only what each role's own outgoing edges did is read from it
-   * here; the whole-profile verdict stays where it already is, in the stage chip.
+   * here; the whole-profile verdict stays where it already is, in the evidence summary.
    */
   record?: ArchitectureRecord | null;
   /** The profile's own sentence for a role, or null; the box prints it in place of counts. */
@@ -87,17 +87,17 @@ export function ArchitectureFlow({
   ledgerImportsLabel: (count: number) => string;
   contractTrackLabel: string;
   observationTrackLabel: string;
+  deltaTrackLabel: string;
   observationMissingLabel: string;
   /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
   selected: string | null;
-  onSelect: (id: string) => void;
+  roleInspectorOpen: boolean;
+  onSelect: (id: string, trigger: SVGGElement) => void;
   roleLabel: (id: string) => string;
   reachLabel: (role: string, targets: string) => string;
   sinkLabel: string;
   moduleCountLabel: (count: number) => string;
   conceptCountLabel: (count: number) => string;
-  runLabel: string;
-  finishRunLabel: string;
   hiddenRightLabel: (count: number) => string;
   hiddenLeftLabel: (count: number) => string;
   hiddenAboveLabel: (count: number) => string;
@@ -137,11 +137,15 @@ export function ArchitectureFlow({
 
 
   return (
-    <div className="flex w-full min-h-0 flex-1 flex-col gap-3" data-testid="architecture-flow">
-      <div className="relative flex min-h-0 flex-1 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]">
+    <div
+      className="architecture-canvas-ground flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-panel border border-[color:var(--color-border-soft)]"
+      data-testid="architecture-flow"
+    >
+      <div className="relative flex min-h-0 flex-1 flex-col">
         <ArchitectureSketch
           graph={graph}
           selected={selected !== null && order.includes(selected) ? selected : null}
+          roleInspectorOpen={roleInspectorOpen}
           onSelect={onSelect}
           roleLabel={roleLabel}
           ledgers={ledgers}
@@ -152,19 +156,17 @@ export function ArchitectureFlow({
           ledgerImportsLabel={ledgerImportsLabel}
           contractTrackLabel={contractTrackLabel}
           observationTrackLabel={observationTrackLabel}
+          deltaTrackLabel={deltaTrackLabel}
           observationMissingLabel={observationMissingLabel}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}
           moduleCounts={moduleCounts}
           conceptCounts={conceptCounts}
-          runLabel={runLabel}
-          finishRunLabel={finishRunLabel}
           hiddenRightLabel={hiddenRightLabel}
           hiddenLeftLabel={hiddenLeftLabel}
           hiddenAboveLabel={hiddenAboveLabel}
           hiddenBelowLabel={hiddenBelowLabel}
         />
-
       </div>
 
       {/* The drawing is hidden from assistive technology, so the policy is stated in words here. */}

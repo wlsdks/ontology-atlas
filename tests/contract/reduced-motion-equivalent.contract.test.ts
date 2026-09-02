@@ -46,16 +46,6 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   "atlas-mascot-sprite":
     "The stepped character frames stop. The final static READ or SUCCESS pose plus the same accessible status preserves the information.",
   "agent-pending-dot": "끝없이 도는 맥박 — 감속의 뜻이 바로 이걸 멈추는 것이다. 상태는 옆의 글자가 말한다.",
-  // Architecture spine flow (2026-08-27). A one-shot directional run down the gaps
-  // between a focused layer and its reach — decorative direction emphasis, not the
-  // carrier of the fact. The static arrowheads on every connector and the focus
-  // opacity states say the same direction without any time axis, so collapsing this
-  // run under reduced motion loses zero information; giving it a "short equivalent"
-  // would just re-introduce the very movement being declined.
-  "architecture-flow-running":
-    "One-shot run on a deliberate press, a dash travelling the strokes left to right. The arrowheads and the column order already state the direction with no time axis, so collapsing the run loses nothing; a short equivalent would re-introduce the exact movement being declined.",
-  "architecture-observation-pulse":
-    "One-shot scan inside the measured observation row. Reduced motion keeps the stamped import count, role order, and arrowheads and removes only the travelling reveal.",
   "architecture-observation-scan":
     "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
   "overlay-spring-surface":

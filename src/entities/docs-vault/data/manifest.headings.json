@@ -8617,6 +8617,11 @@
       "depth": 2,
       "text": "2026-09-02 — Every decision record is six fields on one screen, and the ledger is condensed to match",
       "slug": "2026-09-02-every-decision-record-is-six-fields-on-one-screen-and-the-ledger-is-condensed-to-match"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — Architecture is a comparison workbench, not a demo canvas",
+      "slug": "2026-09-03-architecture-is-a-comparison-workbench-not-a-demo-canvas"
     }
   ],
   "DEMO-SCENARIO": [
@@ -9228,8 +9233,8 @@
     },
     {
       "depth": 3,
-      "text": "Running the flow",
-      "slug": "running-the-flow"
+      "text": "Architecture comparison rows",
+      "slug": "architecture-comparison-rows"
     },
     {
       "depth": 3,

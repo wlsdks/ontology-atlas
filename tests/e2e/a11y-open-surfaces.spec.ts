@@ -277,24 +277,10 @@ const OPENERS: readonly Opener[] = [
     },
   },
   {
-    name: "아키텍처 계획",
-    route: "/ko/architecture/",
-    trigger: "architecture-mode-plan",
-    surface: '[data-architecture-stage="plan"]',
-    dogfood: true,
-  },
-  {
     name: "아키텍처 근거 흐름",
     route: "/ko/architecture/",
     trigger: "architecture-evidence-rail",
-    surface: '[data-testid="architecture-evidence-overlay"]',
-    dogfood: true,
-  },
-  {
-    name: "아키텍처 검증",
-    route: "/ko/architecture/",
-    trigger: "architecture-mode-verify",
-    surface: '[data-architecture-stage="verify"]',
+    surface: '[data-testid="architecture-evidence-dock"]',
     dogfood: true,
   },
 ];

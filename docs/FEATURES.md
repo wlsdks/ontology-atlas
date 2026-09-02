@@ -512,33 +512,32 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   (2026-08-30). The canvas holds the full height; the role's own answer, the rule
   sentences, the mark legend, the applied scopes and the dependency-direction prose
   open in a 380px panel beside it — by clicking a role, by the "Roles and rules"
-  button, or by a link naming a role — and Escape closes it. The roles panel and
-  the stage panel are exclusive, because both at once leave a laptop canvas too
-  narrow for the drawing. The receipt's verdict and stamp, and the name of the
-  pattern being drawn, stay on the canvas at every width. Below workbench width the
-  screen remains the stacked, scrolling document it was.
+  button, or by a link naming a role — and Escape closes it. The continuous
+  contract/observation/delta ledger opens in its own 360px panel. Role, rules, and
+  evidence panels are mutually exclusive, because two at once leave a laptop canvas
+  too narrow for the drawing. The 44px evidence summary stays above the canvas at
+  every width. Below workbench width the panels return to the document flow.
 - **A violated crossing is drawn as one** (2026-08-30): always visible even when it
   skips a role, in the same tone as the `Violated` pill, dashed so it reads without
   colour, with its own legend row and the same mark on its sentence.
 - **Each role box carries its own ledger** when a persisted receipt exists
   (2026-08-30). One line under a ruled separator states what that role's own
-  outgoing edges did and how many imports leave it — `✓ no violations out · 411
+  outgoing edges did and how many imports leave it — `✓ none recorded · 411
   imports`, `⊘ 2/5 edges violated · 38 imports`, `at least N violated` when the
   receipt's violation sample was truncated, `○ no source matched` for a role the
   receipt lists as empty. It is never a per-role verdict: `conforms` /
-  `violated` / `unknown` stays profile-wide on the stage chip, and no box ever
+  `violated` / `unknown` stays profile-wide in the evidence summary, and no box ever
   says "unmeasured", because unmapped and unruled edges carry no role. Without a
   receipt there is no ledger at all rather than a row of zeros — in a browser,
   which cannot read a source folder, that is the ordinary case. Status is a
   glyph, never a colour.
-- Plan copies a state-bound `architectureChangePlan:v1` request. In the installed
+- The short agent action sends a state-bound inspection or change request. In the installed
   app, an exact CLI fallback is included only when the project source binding,
   vault path, and Atlas CLI entry are all verified absolute paths; otherwise the
   packet says the fallback is unavailable instead of inventing a command.
-- At narrow widths the role model remains first in document order. If a mode
-  change increases the support panel height while the user is already at the
-  scroll end, the scroll owner re-anchors to the new end so the copy action stays
-  above the bottom-tab reserve.
+- At narrow widths the role model remains first in document order. Open evidence
+  and role panels scroll into view without covering the persistent bottom tabs,
+  whose reserve stays part of the workbench.
 
 ### `/docs` — Ontology workspace (reader + editor + palette)
 

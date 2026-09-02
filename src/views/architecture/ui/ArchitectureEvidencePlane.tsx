@@ -1,37 +1,20 @@
-import { CircleHelp, FileCheck2, GitCompareArrows, ScanSearch } from 'lucide-react';
-
 import type { ArchitectureRecordStatus } from '@/entities/architecture-record';
 import { cn } from '@/shared/lib/cn';
-import { badgeClass } from '@/shared/ui/badge-class';
-import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 type DeltaStatus = ArchitectureRecordStatus | 'missing';
 
-const DELTA_TONE_CLASS: Record<DeltaStatus, string> = {
-  conforms:
-    'border border-[color:var(--color-success-a35)] bg-[color:var(--color-success-a12)] text-[color:var(--color-success-text-a90)]',
-  violated:
-    'border border-[color:var(--color-danger-a32)] bg-[color:var(--color-danger-a12)] text-[color:var(--color-danger-text)]',
-  unknown:
-    'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-  missing:
-    'border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] text-[color:var(--color-amber-source-a90)]',
-};
-
-const DELTA_ICON: Record<DeltaStatus, typeof CircleHelp> = {
-  conforms: FileCheck2,
-  violated: GitCompareArrows,
-  unknown: CircleHelp,
-  missing: CircleHelp,
+const DELTA_DOT_CLASS: Record<DeltaStatus, string> = {
+  conforms: 'bg-[color:var(--color-success-a45)]',
+  violated: 'bg-[color:var(--color-danger-a50)]',
+  unknown: 'bg-[color:var(--color-amber-source-a50)]',
+  missing: 'bg-[color:var(--color-amber-source-a50)]',
 };
 
 function EvidenceLane({
-  index,
   source,
   label,
   title,
   body,
-  icon: Icon,
   state,
   testId,
   bodyTestId,
@@ -39,12 +22,10 @@ function EvidenceLane({
   noteTestId,
   active = false,
 }: {
-  index: string;
   source: 'human' | 'agent' | 'delta';
   label: string;
   title: string;
   body: string;
-  icon: typeof CircleHelp;
   state: string;
   testId?: string;
   bodyTestId?: string;
@@ -57,10 +38,7 @@ function EvidenceLane({
       data-evidence-source={source}
       data-evidence-state={state}
       data-testid={testId}
-      className={cn(
-        'relative min-w-0 border-t border-[color:var(--color-border-soft)] p-3 first:border-t-0 md:border-l md:border-t-0 md:first:border-l-0 md:p-4',
-        source === 'agent' && 'bg-[color:var(--color-overlay-1)]',
-      )}
+      className="relative min-w-0 border-t border-[color:var(--color-border-soft)] py-5 first:border-t-0 md:border-l md:border-t-0 md:px-4 md:first:border-l-0 xl:border-l-0 xl:border-t xl:px-0 xl:first:border-t-0"
     >
       {active ? (
         <span
@@ -69,27 +47,21 @@ function EvidenceLane({
           className="architecture-observation-scan absolute inset-x-0 bottom-0 h-px bg-[color:var(--color-indigo-a60)] motion-reduce:animate-none"
         />
       ) : null}
-      <div className="flex items-center justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2 text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-          <Icon size={ICON_SIZE.sm} aria-hidden />
-          <span className="truncate">{label}</span>
-        </span>
-        <span className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]" aria-hidden>
-          {index}
-        </span>
-      </div>
+      <p className="min-w-0 truncate text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </p>
       <p className="mt-2 text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
         {title}
       </p>
       <p
-        className="mt-1 break-keep text-caption leading-prose text-[color:var(--color-text-tertiary)]"
+        className="mt-2 break-keep text-caption leading-prose text-[color:var(--color-text-tertiary)]"
         data-testid={bodyTestId}
       >
         {body}
       </p>
       {note ? (
         <p
-          className="mt-1 break-keep text-caption leading-prose text-[color:var(--color-text-quaternary)]"
+          className="mt-2 break-keep border-l border-[color:var(--color-indigo-a32)] pl-2 text-caption leading-prose text-[color:var(--color-text-quaternary)]"
           data-testid={noteTestId}
         >
           {note}
@@ -128,32 +100,26 @@ export function ArchitectureEvidencePlane({
   deltaBody: string;
   deltaStatus: DeltaStatus;
 }) {
-  const DeltaIcon = DELTA_ICON[deltaStatus];
-
   return (
     <section
       aria-label={ariaLabel}
       data-testid="architecture-evidence-plane"
       data-delta-status={deltaStatus}
-      className="overflow-hidden rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] shadow-[var(--shadow-elevation-1)]"
+      className="min-w-0"
     >
-      <div className="grid grid-cols-1 md:grid-cols-3">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-1">
         <EvidenceLane
-          index="01"
           source="human"
           label={contractLabel}
           title={contractTitle}
           body={contractBody}
-          icon={FileCheck2}
           state="reviewed"
         />
         <EvidenceLane
-          index="02"
           source="agent"
           label={observationLabel}
           title={observationTitle}
           body={observationBody}
-          icon={ScanSearch}
           state={deltaStatus === 'missing' ? 'missing' : 'recorded'}
           testId={deltaStatus === 'missing' ? 'architecture-source-check' : undefined}
           bodyTestId={
@@ -170,28 +136,23 @@ export function ArchitectureEvidencePlane({
           data-evidence-state={deltaStatus}
           data-testid={deltaStatus === 'missing' ? undefined : 'architecture-record-status'}
           data-architecture-record-status={deltaStatus === 'missing' ? undefined : deltaStatus}
-          className="relative min-w-0 border-t border-[color:var(--color-border-soft)] p-3 md:border-l md:border-t-0 md:p-4"
+          className="relative min-w-0 border-t border-[color:var(--color-border-soft)] py-5 md:border-l md:border-t-0 md:px-4 xl:border-l-0 xl:border-t xl:px-0"
         >
-          <div className="flex items-center justify-between gap-3">
-            <span className="flex min-w-0 items-center gap-2 text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-              <GitCompareArrows size={ICON_SIZE.sm} aria-hidden />
-              <span className="truncate">{deltaLabel}</span>
-            </span>
-            <span className="text-caption tabular-nums text-[color:var(--color-text-quaternary)]" aria-hidden>
-              03
-            </span>
-          </div>
-          <span
-            data-testid={deltaStatus === 'missing' ? undefined : 'architecture-record-pill'}
-            className={badgeClass({
-              shape: 'pill',
-              className: cn('mt-2', DELTA_TONE_CLASS[deltaStatus]),
-            })}
+          <p className="min-w-0 truncate text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+            {deltaLabel}
+          </p>
+          <div
+            data-testid={deltaStatus === 'missing' ? undefined : 'architecture-record-summary'}
+            className="mt-2 flex items-start gap-2 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
           >
-            <DeltaIcon size={ICON_SIZE.sm} aria-hidden />
-            {deltaTitle}
-          </span>
-          <p className="mt-1 break-keep text-caption leading-prose text-[color:var(--color-text-tertiary)]">
+            <span
+              aria-hidden
+              data-testid={deltaStatus === 'missing' ? undefined : 'architecture-record-marker'}
+              className={cn('mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full', DELTA_DOT_CLASS[deltaStatus])}
+            />
+            <span>{deltaTitle}</span>
+          </div>
+          <p className="mt-2 break-keep text-caption leading-prose text-[color:var(--color-text-tertiary)]">
             {deltaBody}
           </p>
         </article>

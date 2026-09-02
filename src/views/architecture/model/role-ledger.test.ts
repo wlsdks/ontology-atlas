@@ -89,7 +89,7 @@ describe('buildRoleLedgers', () => {
   /*
    * ⚠️ `emptyRoles` is the only absence the receipt attributes to a role. `unmappedEdges` and
    * `unruledEdges` are profile-wide totals with no role attached, so a box must never say
-   * "unmeasured" — that sentence belongs to the stage chip, which already carries it.
+   * "unmeasured" — that sentence belongs to the evidence summary, which already carries it.
    */
   it('states no-source only for the roles the receipt names, and outranks a clean count', () => {
     const ledgers = buildRoleLedgers(

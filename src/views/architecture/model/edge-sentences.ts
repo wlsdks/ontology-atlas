@@ -75,6 +75,8 @@ export interface SentenceLayoutInput {
   leadRoom: number;
   /** Ground right of the column (down) or below the chain (across) past the deepest arc. */
   trailRoom: number;
+  /** Downward skip arcs can leave either side so paired evidence rails never cross each other. */
+  skipSide?: 'negative' | 'positive';
   sentenceOf: (edge: SentenceEdge) => string;
   /**
    * The role a reader is pointing at or has chosen. Its strokes' sentences place first, so a
@@ -85,6 +87,7 @@ export interface SentenceLayoutInput {
 
 /** The same conservative glyph width the box captions budget with. */
 const CHAR_PX = 4.7;
+const WIDE_CHAR_PX = 8;
 const LINE_H = 12;
 /** Air between a sentence and the box or stroke it belongs to. */
 const GAP_TO_BOX = 20;
@@ -95,6 +98,17 @@ const MIN_CHARS = 12;
 
 function budgetFor(roomPx: number): number {
   return Math.floor(roomPx / CHAR_PX);
+}
+
+function estimatedTextWidth(text: string): number {
+  return [...text].reduce(
+    (width, character) =>
+      width +
+      (/[ᄀ-ᇿ㄰-㆏㐀-䶿一-鿿가-힯]/u.test(character)
+        ? WIDE_CHAR_PX
+        : CHAR_PX),
+    0,
+  );
 }
 
 function intersects(
@@ -112,7 +126,19 @@ function intersects(
 
 export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacement[] {
   const {
-    axis, edges, placed, boxW, boxH, rowGap, colGap, swingOf, leadRoom, trailRoom, sentenceOf, focus = null,
+    axis,
+    edges,
+    placed,
+    boxW,
+    boxH,
+    rowGap,
+    colGap,
+    swingOf,
+    leadRoom,
+    trailRoom,
+    skipSide = 'positive',
+    sentenceOf,
+    focus = null,
   } = input;
   const boxes = [...placed.values()].map((p) => ({ x: p.x, y: p.y, width: boxW, height: boxH }));
   const taken: { x: number; y: number; width: number; height: number }[] = [];
@@ -186,11 +212,19 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
         anchor = isTraffic ? 'start' : 'end';
         roomPx = (isTraffic ? trailRoom : leadRoom) - GAP_TO_BOX - 12;
       } else {
-        const swingX = Math.max(a.x, b.x) + boxW / 2 + clearSwing(edge, (sy + ty) / 2);
-        x = swingX + GAP_TO_ARC;
+        const clear = clearSwing(edge, (sy + ty) / 2);
+        const negative = skipSide === 'negative';
+        const swingX = negative
+          ? Math.min(a.x, b.x) + boxW / 2 - clear
+          : Math.max(a.x, b.x) + boxW / 2 + clear;
+        x = swingX + (negative ? -GAP_TO_ARC : GAP_TO_ARC);
         y = (sy + ty) / 2 + 4;
-        anchor = 'start';
-        roomPx = trailRoom - GAP_TO_ARC - 12;
+        anchor = negative ? 'end' : 'start';
+        roomPx =
+          (negative ? leadRoom : trailRoom) -
+          Math.max(0, clear - boxW / 2) -
+          GAP_TO_ARC -
+          12;
       }
     } else {
       const sx = a.x + boxW;
@@ -216,15 +250,38 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text: full, x, y, anchor, hidden: 'no-room' });
       continue;
     }
-    const [text] = splitSummaryLines(full, budget, 1);
-    const width = text.length * CHAR_PX;
-    const rect = {
+    let fittedBudget = budget;
+    let [text] = splitSummaryLines(full, fittedBudget, 1);
+    let width = estimatedTextWidth(text);
+    let rect = {
       x: anchor === 'end' ? x - width : anchor === 'middle' ? x - width / 2 : x,
       y: y - 9,
       width,
       height: LINE_H,
     };
-    if (boxes.some((box) => intersects(rect, box)) || taken.some((t) => intersects(rect, t))) {
+    let collision =
+      width > roomPx ||
+      boxes.some((box) => intersects(rect, box)) ||
+      taken.some((item) => intersects(rect, item));
+    /* A focused role can reveal two nested skips on one baseline. Preserve both sentences by
+       tightening only the later candidate until their measured script-aware rectangles clear;
+       hiding the whole second sentence made a selected stroke less informative than rest. */
+    while (collision && fittedBudget > MIN_CHARS) {
+      fittedBudget -= 1;
+      [text] = splitSummaryLines(full, fittedBudget, 1);
+      width = estimatedTextWidth(text);
+      rect = {
+        x: anchor === 'end' ? x - width : anchor === 'middle' ? x - width / 2 : x,
+        y: y - 9,
+        width,
+        height: LINE_H,
+      };
+      collision =
+        width > roomPx ||
+        boxes.some((box) => intersects(rect, box)) ||
+        taken.some((item) => intersects(rect, item));
+    }
+    if (collision) {
       out.push({ key, kind: edge.kind, from: edge.from, to: edge.to, text, x, y, anchor, hidden: 'collision' });
       continue;
     }

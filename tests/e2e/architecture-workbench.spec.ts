@@ -6,66 +6,23 @@ import { useDogfoodSample } from './sample-source';
 test.use({ viewport: { width: 600, height: 900 } });
 
 
-test('변경 단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 문장 버튼이 남는다', async ({ page }) => {
+test('핵심 행동만 남고 에이전트 작업 버튼은 하단 탭에 가리지 않는다', async ({ page }) => {
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/ko/architecture/?guides=off');
 
-  const scroller = page.getByTestId('architecture-layout-scroll');
   await expect(page.getByText('Atlas Web Workbench').first()).toBeVisible();
-  await scroller.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
-  });
+  await expect(page.getByTestId('architecture-graph-run')).toHaveCount(0);
+  await expect(page.getByTestId('architecture-walk')).toHaveCount(0);
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
 
-  const before = await scroller.evaluate((element) => ({
-    scrollTop: element.scrollTop,
-    maxScrollTop: element.scrollHeight - element.clientHeight,
-  }));
-  expect(Math.abs(before.maxScrollTop - before.scrollTop)).toBeLessThanOrEqual(1);
-
-  const plan = page.getByRole('radio', { name: '변경' });
-  await plan.focus();
-  await page.keyboard.press('Space');
-  await expect(plan).toHaveAttribute('aria-checked', 'true');
-
-  /*
-   * ⚠️ **What this protects is reach, not a scroll position.** It used to poll that the view
-   * stayed pinned to the end, which was one way of keeping the paste button reachable while the
-   * stage panel was a permanent column. The panel is a dock now: choosing a stage mounts it, and
-   * the layout keeps growing for a moment afterwards, so an end anchor is neither achievable nor
-   * the thing anybody needs. The assertions below are the property itself — the button exists,
-   * nothing covers it, and it owns its own centre point — and they were always the half that
-   * mattered.
-   */
-
-  /*
-   * ⚠️ Reachability includes reaching it. The button now lives inside the stage dock, which is a
-   * full-height column with its own scroll, so "visible without moving anything" was never the
-   * invariant — the invariant is that once you go to it, nothing sits on top of it. Bringing it
-   * into view is part of the measurement rather than an assumption the old layout happened to
-   * satisfy.
-   */
-  const copyButton = page.getByRole('button', { name: '에이전트에 붙여넣을 문장 복사' });
-  /*
-   * Scroll the way a reader does — to the end — rather than only until the button is nominally on
-   * screen. `scrollIntoViewIfNeeded` stops the moment any part of it is visible, which on a narrow
-   * layout is underneath the bottom tab bar; the end is where the reserved clearance lives, and
-   * keeping that clearance honest is the whole point of the measurement below.
-   */
-  await scroller.evaluate((element) => {
-    element.scrollTop = element.scrollHeight;
-  });
-  await copyButton.scrollIntoViewIfNeeded();
-  const report = await copyButton.evaluate(
+  const agentButton = page.getByTestId('architecture-agent-action');
+  await expect(agentButton).toBeVisible();
+  const report = await agentButton.evaluate(
     (button) => {
       const bar = document.querySelector<HTMLElement>('nav[data-tabbar="primary"]');
-      /*
-       * ⚠️ A hidden bar is not a bar. It is in the DOM at every width and displayed only below the
-       * breakpoint that has one, where `display: none` gives it a rectangle of all zeros — so
-       * subtracting the button's bottom from its top produced a large negative clearance that
-       * described nothing. Measure the gap only where there is something to keep clear of.
-       */
       const barShown = Boolean(bar) && bar!.getBoundingClientRect().height > 0;
       const buttonRect = button.getBoundingClientRect();
       const barRect = barShown ? bar!.getBoundingClientRect() : null;
@@ -84,110 +41,131 @@ test('변경 단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여�
   expect(report.hitOwnsPoint).toBe(true);
 });
 
-test('the agent packet says it is longer than its box, before anything is scrolled', async ({
-  page,
-}) => {
-  /*
-   * ⚠️ The fade over a covered edge existed and never appeared. Measured on the built export
-   * (2026-08-28): entering plan mode gave `clientHeight 190, scrollHeight 444` with
-   * `mask-image: none` — a quarter of a kilobyte of text hidden with nothing on screen saying so,
-   * which a fresh-eyes walker read as a sentence truncated mid-word. Any scroll fixed it, which is
-   * why a unit test could not catch it: the reading ran once, before the block was mounted.
-   *
-   * macOS hides its overlay scrollbar until something moves, so the fade is the only affordance
-   * this state has. Asserted here rather than in jsdom because the whole claim is about a
-   * measured box.
-   */
-  await page.goto('/ko/architecture/');
-  await page.getByTestId('architecture-mode-plan').click();
-
-  const packet = page.locator('pre[aria-label]').first();
-  await expect(packet).toBeVisible();
-
-  const measured = await packet.evaluate((element) => ({
-    hidden: element.scrollHeight - element.clientHeight,
-    mask: getComputedStyle(element).maskImage,
-    scrollTop: element.scrollTop,
-  }));
-
-  expect(measured.scrollTop, 'nothing has been scrolled yet').toBe(0);
-  expect(measured.hidden, 'this fixture is meant to overflow its box').toBeGreaterThan(1);
-  expect(measured.mask, 'a covered edge with no affordance reads as truncated text').not.toBe(
-    'none',
-  );
-});
-
-test('the agent packet stops capping itself inside a panel that already scrolls', async ({
-  page,
-}) => {
-  /*
-   * ⚠️ A second fresh-eyes walkthrough found 254px hidden inside a 190px box while the panel
-   * around it had room to spare. Measured on the built export: raising the viewport by 200px gave
-   * the packet none of it, because a 12rem cap is a constant and the panel is not — and that panel
-   * is itself a scroller on the wide layout, so the packet was the inner one of two.
-   *
-   * The cap is not gone, only lifted where the outer scroller exists. Below that breakpoint the
-   * panel does not scroll, so the cap and its fade still do the work, and both sides are asserted
-   * because a fix that quietly removed the narrow-width affordance would pass a one-width test.
-   */
-  await page.setViewportSize({ width: 1440, height: 900 });
+test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
   await page.goto('/ko/architecture/?stage=plan');
-  const packet = page.locator('pre[aria-label]').first();
-  await expect(packet).toBeVisible();
+  await expect(page.getByTestId('architecture-graph')).toBeVisible();
+  await expect(page.getByRole('radio')).toHaveCount(0);
+  await expect(page.locator('[data-architecture-stage]')).toHaveCount(0);
+  await expect(page.locator('pre[aria-label]')).toHaveCount(0);
 
-  const wide = await packet.evaluate((element) => ({
-    hidden: element.scrollHeight - element.clientHeight,
-  }));
-  /*
-   * ⚠️ The property is that nothing is hidden, not that a particular element does the scrolling.
-   * This once asserted that the panel around it was the scroller, which was true when the panel
-   * was a short column; as a full-height dock it is simply tall enough, and asserting the
-   * mechanism would have failed on a change that made the packet more readable, not less.
-   */
-  expect(wide.hidden, 'nothing is hidden once the cap is lifted').toBeLessThanOrEqual(1);
-
-  /* Narrow: no outer scroller, so the packet keeps its own cap and says when it is covered. */
-  await page.setViewportSize({ width: 700, height: 900 });
-  const narrow = await packet.evaluate((element) => ({
-    hidden: element.scrollHeight - element.clientHeight,
-    mask: getComputedStyle(element).maskImage,
-  }));
-  expect(narrow.hidden).toBeGreaterThan(1);
-  expect(narrow.mask).not.toBe('none');
+  await page.getByTestId('architecture-graph-box-application').click();
+  const address = new URL(page.url()).searchParams;
+  expect(address.get('stage')).toBeNull();
+  expect(address.get('role')).toBe('application');
 });
 
-test('a shared link opens the stage it names', async ({ page }) => {
-  /*
-   * ⚠️ A fresh-eyes walkthrough on 2026-08-28 found the plan and verify stages left the address at
-   * `/ko/architecture/`: a colleague opening a shared link always landed on understand, and a
-   * refresh discarded the stage. The stage is screen state a person would want to send, so it
-   * belongs in the URL — the same argument, and the same native-history mechanism, as the insights
-   * tabs.
-   *
-   * An unknown value falls back rather than erroring, because a stale link or a typed URL should
-   * still open the screen.
-   */
-  await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto('/ko/architecture/');
-  await expect(page.getByTestId('architecture-mode-understand')).toHaveAttribute(
-    'aria-checked',
-    'true',
+test('keyboard opens, closes, restores focus, and reopens the selected role', async ({ page }) => {
+  await page.setViewportSize({ width: 1512, height: 945 });
+  await page.goto('/ko/architecture/?guides=off');
+
+  const evidence = page.getByTestId('architecture-evidence-rail');
+  await evidence.focus();
+  await page.keyboard.press('Space');
+  await expect(page.getByTestId('architecture-evidence-dock')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(evidence).toBeFocused();
+
+  const role = page.getByTestId('architecture-graph-box-application');
+  await role.focus();
+  await page.keyboard.press('Enter');
+  await expect(role).toHaveAttribute('aria-pressed', 'true');
+  await expect(role).toHaveAttribute('aria-expanded', 'true');
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'role',
   );
 
-  await page.getByTestId('architecture-mode-plan').click();
-  expect(new URL(page.url()).searchParams.get('stage')).toBe('plan');
+  await page.keyboard.press('Escape');
+  await expect(role).toBeFocused();
+  await expect(role).toHaveAttribute('aria-pressed', 'true');
+  await expect(role).toHaveAttribute('aria-expanded', 'false');
 
-  await page.reload();
-  await expect(page.getByTestId('architecture-mode-plan')).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Space');
+  await expect(role).toHaveAttribute('aria-expanded', 'true');
+  await expect(role).toHaveAttribute('aria-pressed', 'true');
 
-  await page.goto('/ko/architecture/?stage=verify');
-  await expect(page.getByTestId('architecture-mode-verify')).toHaveAttribute('aria-checked', 'true');
+  /* The 380px role dock must take unused connector space before it hides a role. This is the
+     installed app's 1512px width: previously the final role sat partly behind the dock and the
+     toolbar looked fixed while the first real action broke the canvas beneath it. */
+  await page.waitForTimeout(240);
+  const selectedFit = await page.getByTestId('architecture-graph').evaluate((svg) => {
+    const viewport = svg.parentElement!.getBoundingClientRect();
+    const boxes = [...svg.querySelectorAll('[data-testid^="architecture-graph-box-"]')];
+    return {
+      hidden: boxes.filter((box) => {
+        const rect = box.getBoundingClientRect();
+        return rect.left < viewport.left - 1 || rect.right > viewport.right + 1;
+      }).length,
+      columnGap: Number(svg.getAttribute('data-column-gap')),
+    };
+  });
+  expect(selectedFit.hidden).toBe(0);
+  expect(selectedFit.columnGap).toBeGreaterThanOrEqual(20);
+});
 
-  await page.goto('/ko/architecture/?stage=nonsense');
-  await expect(page.getByTestId('architecture-mode-understand')).toHaveAttribute(
-    'aria-checked',
-    'true',
+test('a real viewport resize may reflow the chain without losing the selected role', async ({ page }) => {
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await page.goto('/ko/architecture/?guides=off');
+  const graph = page.getByTestId('architecture-graph');
+  await expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+
+  const role = page.getByTestId('architecture-graph-box-application');
+  await role.click();
+  await expect(role).toHaveAttribute('aria-pressed', 'true');
+
+  await page.setViewportSize({ width: 1112, height: 834 });
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   );
+  await expect(graph).toHaveAttribute('data-architecture-axis', 'across');
+  await expect(role).toHaveAttribute('aria-pressed', 'true');
+
+  await page.setViewportSize({ width: 834, height: 1112 });
+  await page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+  await expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+  await expect(role).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('320px and a 200%-equivalent viewport keep controls and evidence inside the page', async ({
+  page,
+}) => {
+  for (const width of [320, 384]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/ko/architecture/?guides=off');
+    await expect(page.getByTestId('architecture-graph')).toBeVisible();
+    const before = await page.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      agentOwnsPoint: (() => {
+        const button = document.querySelector<HTMLElement>(
+          '[data-testid="architecture-agent-action"]',
+        );
+        if (!button) return false;
+        const rect = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return hit === button || Boolean(hit && button.contains(hit));
+      })(),
+    }));
+    expect(before.overflow, `${width}px document overflow`).toBeLessThanOrEqual(0);
+    expect(before.agentOwnsPoint, `${width}px agent control`).toBe(true);
+
+    await page.getByTestId('architecture-evidence-rail').click();
+    const dock = page.getByTestId('architecture-evidence-dock');
+    await expect(dock).toBeVisible();
+    const after = await dock.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        right: rect.right,
+        viewport: document.documentElement.clientWidth,
+        columns: getComputedStyle(
+          element.querySelector('[data-testid="architecture-evidence-plane"] > div')!,
+        ).gridTemplateColumns.split(' ').length,
+      };
+    });
+    expect(after.right, `${width}px evidence right edge`).toBeLessThanOrEqual(after.viewport + 1);
+    expect(after.columns, `${width}px evidence columns`).toBe(1);
+  }
 });
 
 test('a link carries the chosen role, and refuses one the profile lacks', async ({ page }) => {
@@ -211,17 +189,11 @@ test('a link carries the chosen role, and refuses one the profile lacks', async 
   await page.getByTestId('architecture-graph-box-application').click();
   expect(new URL(page.url()).searchParams.get('role')).toBe('application');
 
-  await page.getByTestId('architecture-mode-plan').click();
-  const both = new URL(page.url()).searchParams;
-  expect(both.get('stage')).toBe('plan');
-  expect(both.get('role')).toBe('application');
-
   await page.reload();
   await expect(page.getByTestId('architecture-graph-box-application')).toHaveAttribute(
     'aria-pressed',
     'true',
   );
-  await expect(page.getByTestId('architecture-mode-plan')).toHaveAttribute('aria-checked', 'true');
 
   /* Deselecting takes it back out, so the bare address keeps meaning "nothing chosen". */
   await page.getByTestId('architecture-graph-box-application').click();
@@ -303,6 +275,15 @@ test('a chain is never cut in silence — it turns, or it says what is hidden', 
   await expect(page.getByTestId('architecture-graph')).toBeVisible();
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height });
+    /* ResizeObserver updates the measured axis, then React commits the resulting SVG on the next
+       frame. Measuring between those two frames reads a stale role group against the new canvas
+       and reports a role cut in silence even though the settled frame is whole. */
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
     /*
      * ⚠️ **The claim narrowed on 2026-08-30, and this is the half that survived.** It used to
      * assert the canvas never overflows at any size, which held only because the *page* scrolled
