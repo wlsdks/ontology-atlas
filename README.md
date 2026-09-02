@@ -809,8 +809,9 @@ skipped when MCP/CLI is untouched, and mapped browser work runs only its exact
 Playwright specs. Unmapped rendered work promotes to the PR smoke suite instead
 of guessing; unknown/planner changes and every push to `main` run the exhaustive
 sweep. All eight branch-protected statuses remain visible even when their setup
-is safely skipped. [Development checks](docs/DEVELOPMENT-CHECKS.md#ci-impact-architecture--affected-on-pull-requests-exhaustive-on-main)
-owns the selection and fail-closed contract.
+is safely skipped. [Development checks](docs/DEVELOPMENT-CHECKS.md) names the
+first check and escalation for the planner; the selection and fail-closed
+contract live in `scripts/classify-change.mjs` and its tests.
 
 For Markdown changes, that selector includes `pnpm docs:language`. For source,
 test, configuration, and historical-prototype changes, it includes
@@ -853,6 +854,12 @@ categories in order (`Added`, `Changed`, `Fixed`, `Removed`) within 6 lines and
 900 bytes. A pull request adds to the `Unreleased` lines and the release cut
 renames that entry to its tag. `pnpm changelog:check -- --template` prints the
 shape.
+
+`pnpm dev-checks:check` (part of `pnpm docs:check`) refuses a
+`docs/DEVELOPMENT-CHECKS.md` entry that is not the entry template: one `###`
+area under `## Checks` with `Run`, `Proves`, `Escalate`, and an optional `Fix`
+line, within 5 lines and 700 bytes, every `pnpm` command a real script, every
+area named once. `pnpm dev-checks:check -- --template` prints the shape.
 
 `pnpm decisions:find <terms>` retrieves from `docs/DECISIONS.md` by record
 rather than by line: each hit shows the file line, date and number, title, the
@@ -915,9 +922,9 @@ forks, and that is a security boundary rather than a formality. If you are
 working inside this repository, [AGENTS.md](AGENTS.md) is the canonical guide for
 people and AI agents alike. Start verification with `pnpm checks:changed`; it
 maps a changed MCP source with a real sibling test to that direct test and the
-full MCP unit gate. [Development checks](docs/DEVELOPMENT-CHECKS.md) records the
-exact-navigation RED→GREEN probes and escalation path, including the dogfood
-vault's automatically wired section-shape ratchet. For product decisions,
+full MCP unit gate. [Development checks](docs/DEVELOPMENT-CHECKS.md) names the
+first check and the escalation path for exact task navigation and for the
+dogfood vault's section-shape ratchet. For product decisions,
 `pnpm po:route -- --help` derives maintenance, solo, or two-reviewer handling
 from change facts and one human-recovery outcome; it does not accept a
 self-declared door or risk. `pnpm test:po` replays known controls, and

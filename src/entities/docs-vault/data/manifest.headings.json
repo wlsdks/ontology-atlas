@@ -9667,113 +9667,718 @@
   "DEVELOPMENT-CHECKS": [
     {
       "depth": 1,
-      "text": "Development Checks",
+      "text": "Development checks",
       "slug": "development-checks"
     },
     {
       "depth": 2,
-      "text": "Default Gate",
+      "text": "Default gate",
       "slug": "default-gate"
     },
     {
       "depth": 2,
-      "text": "Git hooks — generated vault freshness, message language, push lanes",
-      "slug": "git-hooks-generated-vault-freshness-message-language-push-lanes"
+      "text": "How to read an entry",
+      "slug": "how-to-read-an-entry"
     },
     {
       "depth": 2,
-      "text": "CI impact architecture — affected on pull requests, exhaustive on `main`",
-      "slug": "ci-impact-architecture-affected-on-pull-requests-exhaustive-on-main"
+      "text": "Checks",
+      "slug": "checks"
     },
     {
       "depth": 3,
-      "text": "CI impact gate probe (2026-09-01)",
-      "slug": "ci-impact-gate-probe-2026-09-01"
+      "text": "App/type safety",
+      "slug": "apptype-safety"
     },
     {
       "depth": 3,
-      "text": "Static CI worker gate probe (2026-09-01)",
-      "slug": "static-ci-worker-gate-probe-2026-09-01"
-    },
-    {
-      "depth": 2,
-      "text": "Quick Matrix",
-      "slug": "quick-matrix"
+      "text": "Lint/style",
+      "slug": "lintstyle"
     },
     {
       "depth": 3,
-      "text": "Decision-ledger gate (`pnpm decisions:check`)",
-      "slug": "decision-ledger-gate-pnpm-decisionscheck"
+      "text": "Static deploy safety",
+      "slug": "static-deploy-safety"
     },
     {
       "depth": 3,
-      "text": "Atlas PO risk-router probe (2026-09-01)",
-      "slug": "atlas-po-risk-router-probe-2026-09-01"
-    },
-    {
-      "depth": 2,
-      "text": "Agent File Checks",
-      "slug": "agent-file-checks"
-    },
-    {
-      "depth": 2,
-      "text": "Vault Checks",
-      "slug": "vault-checks"
+      "text": "CI impact plan",
+      "slug": "ci-impact-plan"
     },
     {
       "depth": 3,
-      "text": "Generated manifest determinism",
-      "slug": "generated-manifest-determinism"
+      "text": "GitHub Pages deploy",
+      "slug": "github-pages-deploy"
     },
     {
       "depth": 3,
-      "text": "Concurrent ledger conflict recovery",
-      "slug": "concurrent-ledger-conflict-recovery"
-    },
-    {
-      "depth": 2,
-      "text": "Docs Checks",
-      "slug": "docs-checks"
-    },
-    {
-      "depth": 2,
-      "text": "MCP And CLI Checks",
-      "slug": "mcp-and-cli-checks"
+      "text": "Static dogfood manifest",
+      "slug": "static-dogfood-manifest"
     },
     {
       "depth": 3,
-      "text": "The download page's facts are a handoff, so a gate watches it",
-      "slug": "the-download-pages-facts-are-a-handoff-so-a-gate-watches-it"
-    },
-    {
-      "depth": 2,
-      "text": "Skill Integrity (discovery instrument, not a gate)",
-      "slug": "skill-integrity-discovery-instrument-not-a-gate"
+      "text": "Gateway evidence specimen",
+      "slug": "gateway-evidence-specimen"
     },
     {
       "depth": 3,
-      "text": "⚠️ What is counted is everything about this tool — it was wrong twice (2026-08-09)",
-      "slug": "what-is-counted-is-everything-about-this-tool-it-was-wrong-twice-2026-08-09"
+      "text": "Docs vs code surface",
+      "slug": "docs-vs-code-surface"
     },
     {
-      "depth": 2,
-      "text": "Dogfood Shortcuts",
-      "slug": "dogfood-shortcuts"
+      "depth": 3,
+      "text": "Source comment language",
+      "slug": "source-comment-language"
     },
     {
-      "depth": 2,
-      "text": "Filtered Integration Runs",
-      "slug": "filtered-integration-runs"
+      "depth": 3,
+      "text": "CLI printed-output language",
+      "slug": "cli-printed-output-language"
     },
     {
-      "depth": 2,
-      "text": "Source-Checkout Verify",
-      "slug": "source-checkout-verify"
+      "depth": 3,
+      "text": "Agent instruction files",
+      "slug": "agent-instruction-files"
     },
     {
-      "depth": 2,
-      "text": "Release Smoke",
-      "slug": "release-smoke"
+      "depth": 3,
+      "text": "macOS desktop readiness",
+      "slug": "macos-desktop-readiness"
+    },
+    {
+      "depth": 3,
+      "text": "Vault integrity",
+      "slug": "vault-integrity"
+    },
+    {
+      "depth": 3,
+      "text": "Vault section shape",
+      "slug": "vault-section-shape"
+    },
+    {
+      "depth": 3,
+      "text": "Capability quantifier integrity",
+      "slug": "capability-quantifier-integrity"
+    },
+    {
+      "depth": 3,
+      "text": "Claim-local semantic evidence",
+      "slug": "claim-local-semantic-evidence"
+    },
+    {
+      "depth": 3,
+      "text": "Semantic source path case",
+      "slug": "semantic-source-path-case"
+    },
+    {
+      "depth": 3,
+      "text": "First-pass construction completion",
+      "slug": "first-pass-construction-completion"
+    },
+    {
+      "depth": 3,
+      "text": "Agent ontology workflow helpers",
+      "slug": "agent-ontology-workflow-helpers"
+    },
+    {
+      "depth": 3,
+      "text": "Project source witness parity",
+      "slug": "project-source-witness-parity"
+    },
+    {
+      "depth": 3,
+      "text": "Exact task-navigation truth",
+      "slug": "exact-task-navigation-truth"
+    },
+    {
+      "depth": 3,
+      "text": "CLI argument parsing",
+      "slug": "cli-argument-parsing"
+    },
+    {
+      "depth": 3,
+      "text": "MCP core units",
+      "slug": "mcp-core-units"
+    },
+    {
+      "depth": 3,
+      "text": "Business meaning corpus",
+      "slug": "business-meaning-corpus"
+    },
+    {
+      "depth": 3,
+      "text": "Vault validator argument contract",
+      "slug": "vault-validator-argument-contract"
+    },
+    {
+      "depth": 3,
+      "text": "Vault audit argument contract",
+      "slug": "vault-audit-argument-contract"
+    },
+    {
+      "depth": 3,
+      "text": "Vault migration runner",
+      "slug": "vault-migration-runner"
+    },
+    {
+      "depth": 3,
+      "text": "Public guide examples",
+      "slug": "public-guide-examples"
+    },
+    {
+      "depth": 3,
+      "text": "Claude/Codex hook wiring",
+      "slug": "claudecodex-hook-wiring"
+    },
+    {
+      "depth": 3,
+      "text": "MCP/CLI surface documentation parity",
+      "slug": "mcpcli-surface-documentation-parity"
+    },
+    {
+      "depth": 3,
+      "text": "Docs Korean-language ratchet",
+      "slug": "docs-korean-language-ratchet"
+    },
+    {
+      "depth": 3,
+      "text": "Repo link and citation integrity",
+      "slug": "repo-link-and-citation-integrity"
+    },
+    {
+      "depth": 3,
+      "text": "Code-comment doc reference integrity",
+      "slug": "code-comment-doc-reference-integrity"
+    },
+    {
+      "depth": 3,
+      "text": "MCP/docs contract",
+      "slug": "mcpdocs-contract"
+    },
+    {
+      "depth": 3,
+      "text": "Graph hot-path perf",
+      "slug": "graph-hot-path-perf"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood MCP smoke",
+      "slug": "dogfood-mcp-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Packed CLI release",
+      "slug": "packed-cli-release"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas product outcome and risk routing",
+      "slug": "atlas-product-outcome-and-risk-routing"
+    },
+    {
+      "depth": 3,
+      "text": "Atlas PO pilot sunset",
+      "slug": "atlas-po-pilot-sunset"
+    },
+    {
+      "depth": 3,
+      "text": "Decision ledger triggers",
+      "slug": "decision-ledger-triggers"
+    },
+    {
+      "depth": 3,
+      "text": "Copy that names the reader's surface",
+      "slug": "copy-that-names-the-readers-surface"
+    },
+    {
+      "depth": 3,
+      "text": "Markdown table shape (rows vs their header)",
+      "slug": "markdown-table-shape-rows-vs-their-header"
+    },
+    {
+      "depth": 3,
+      "text": "Design don't-list drift",
+      "slug": "design-dont-list-drift"
+    },
+    {
+      "depth": 3,
+      "text": "Design-system TOC drift",
+      "slug": "design-system-toc-drift"
+    },
+    {
+      "depth": 3,
+      "text": "Implicit b weight (browser default 700)",
+      "slug": "implicit-b-weight-browser-default-700"
+    },
+    {
+      "depth": 3,
+      "text": "Drawing-surface type (canvas ctx.font, inline SVG attrs)",
+      "slug": "drawing-surface-type-canvas-ctxfont-inline-svg-attrs"
+    },
+    {
+      "depth": 3,
+      "text": "Focus ring presence (value layer emits it)",
+      "slug": "focus-ring-presence-value-layer-emits-it"
+    },
+    {
+      "depth": 3,
+      "text": "Raw colour literals (src/, app/, and .css)",
+      "slug": "raw-colour-literals-src-app-and-css"
+    },
+    {
+      "depth": 3,
+      "text": "Pixel identity palette, frame continuity, and safe map lane",
+      "slug": "pixel-identity-palette-frame-continuity-and-safe-map-lane"
+    },
+    {
+      "depth": 3,
+      "text": "Demo clip declaration vs shipped asset",
+      "slug": "demo-clip-declaration-vs-shipped-asset"
+    },
+    {
+      "depth": 3,
+      "text": "Demo clip locale (played source vs poster)",
+      "slug": "demo-clip-locale-played-source-vs-poster"
+    },
+    {
+      "depth": 3,
+      "text": "CI preparation step infinite wait",
+      "slug": "ci-preparation-step-infinite-wait"
+    },
+    {
+      "depth": 3,
+      "text": "Integration check list vs screen text",
+      "slug": "integration-check-list-vs-screen-text"
+    },
+    {
+      "depth": 3,
+      "text": "Guide in-body link targets (markdown source)",
+      "slug": "guide-in-body-link-targets-markdown-source"
+    },
+    {
+      "depth": 3,
+      "text": "CLI re-exports the MCP schema instead of copying it",
+      "slug": "cli-re-exports-the-mcp-schema-instead-of-copying-it"
+    },
+    {
+      "depth": 3,
+      "text": "Ontology workbench design guard",
+      "slug": "ontology-workbench-design-guard"
+    },
+    {
+      "depth": 3,
+      "text": "macOS desktop payload smoke",
+      "slug": "macos-desktop-payload-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "macOS static artifact size budget",
+      "slug": "macos-static-artifact-size-budget"
+    },
+    {
+      "depth": 3,
+      "text": "Installed-app dogfood deploy proof",
+      "slug": "installed-app-dogfood-deploy-proof"
+    },
+    {
+      "depth": 3,
+      "text": "Packaged app launch smoke",
+      "slug": "packaged-app-launch-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Keyless local LLM connection proof",
+      "slug": "keyless-local-llm-connection-proof"
+    },
+    {
+      "depth": 3,
+      "text": "DMG install smoke",
+      "slug": "dmg-install-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Local pre-tag release preflight",
+      "slug": "local-pre-tag-release-preflight"
+    },
+    {
+      "depth": 3,
+      "text": "Credentialed direct-download artifact build",
+      "slug": "credentialed-direct-download-artifact-build"
+    },
+    {
+      "depth": 3,
+      "text": "Desktop release goal audit",
+      "slug": "desktop-release-goal-audit"
+    },
+    {
+      "depth": 3,
+      "text": "Release secret readiness",
+      "slug": "release-secret-readiness"
+    },
+    {
+      "depth": 3,
+      "text": "Release tag/SHA admission",
+      "slug": "release-tagsha-admission"
+    },
+    {
+      "depth": 3,
+      "text": "ACP agent-runtime registry snapshot",
+      "slug": "acp-agent-runtime-registry-snapshot"
+    },
+    {
+      "depth": 3,
+      "text": "Release tag version alignment",
+      "slug": "release-tag-version-alignment"
+    },
+    {
+      "depth": 3,
+      "text": "Release slot cleanliness",
+      "slug": "release-slot-cleanliness"
+    },
+    {
+      "depth": 3,
+      "text": "Operator-side release workflow readiness",
+      "slug": "operator-side-release-workflow-readiness"
+    },
+    {
+      "depth": 3,
+      "text": "Post-release completion audit",
+      "slug": "post-release-completion-audit"
+    },
+    {
+      "depth": 3,
+      "text": "Bundled MCP sidecar binary parity",
+      "slug": "bundled-mcp-sidecar-binary-parity"
+    },
+    {
+      "depth": 3,
+      "text": "Generated DMG checksum smoke",
+      "slug": "generated-dmg-checksum-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Release DMG signature and notarization",
+      "slug": "release-dmg-signature-and-notarization"
+    },
+    {
+      "depth": 3,
+      "text": "Download page release-facts freshness",
+      "slug": "download-page-release-facts-freshness"
+    },
+    {
+      "depth": 3,
+      "text": "Public download asset verification",
+      "slug": "public-download-asset-verification"
+    },
+    {
+      "depth": 3,
+      "text": "i18n message catalog parity",
+      "slug": "i18n-message-catalog-parity"
+    },
+    {
+      "depth": 3,
+      "text": "Claude/Codex hook wiring and publish guard",
+      "slug": "claudecodex-hook-wiring-and-publish-guard"
+    },
+    {
+      "depth": 3,
+      "text": "Vitest config/setup smoke",
+      "slug": "vitest-configsetup-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Playwright config/webServer smoke",
+      "slug": "playwright-configwebserver-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Global CSS/PostCSS overflow smoke",
+      "slug": "global-csspostcss-overflow-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Dead-code and dependency lint",
+      "slug": "dead-code-and-dependency-lint"
+    },
+    {
+      "depth": 3,
+      "text": "Changed-path focused-check advisor",
+      "slug": "changed-path-focused-check-advisor"
+    },
+    {
+      "depth": 3,
+      "text": "Focused-check advisor helper contract",
+      "slug": "focused-check-advisor-helper-contract"
+    },
+    {
+      "depth": 3,
+      "text": "Korean word-break rendering",
+      "slug": "korean-word-break-rendering"
+    },
+    {
+      "depth": 3,
+      "text": "Dead-end folder-open CTA",
+      "slug": "dead-end-folder-open-cta"
+    },
+    {
+      "depth": 3,
+      "text": "Gateway reading-surface reach",
+      "slug": "gateway-reading-surface-reach"
+    },
+    {
+      "depth": 3,
+      "text": "Insights to-do badge agreement",
+      "slug": "insights-to-do-badge-agreement"
+    },
+    {
+      "depth": 3,
+      "text": "Screen hierarchy and accent discipline",
+      "slug": "screen-hierarchy-and-accent-discipline"
+    },
+    {
+      "depth": 3,
+      "text": "CLI MCP wrapper parser/spawn",
+      "slug": "cli-mcp-wrapper-parserspawn"
+    },
+    {
+      "depth": 3,
+      "text": "Full CLI integration contracts",
+      "slug": "full-cli-integration-contracts"
+    },
+    {
+      "depth": 3,
+      "text": "CLI entrypoint and command inventory",
+      "slug": "cli-entrypoint-and-command-inventory"
+    },
+    {
+      "depth": 3,
+      "text": "CLI compile/--fix canonicalization",
+      "slug": "cli-compile--fix-canonicalization"
+    },
+    {
+      "depth": 3,
+      "text": "CLI diagnosis commands",
+      "slug": "cli-diagnosis-commands"
+    },
+    {
+      "depth": 3,
+      "text": "CLI read-only graph commands",
+      "slug": "cli-read-only-graph-commands"
+    },
+    {
+      "depth": 3,
+      "text": "CLI graph write safety",
+      "slug": "cli-graph-write-safety"
+    },
+    {
+      "depth": 3,
+      "text": "CLI code-to-vault commands",
+      "slug": "cli-code-to-vault-commands"
+    },
+    {
+      "depth": 3,
+      "text": "CLI local vault commands",
+      "slug": "cli-local-vault-commands"
+    },
+    {
+      "depth": 3,
+      "text": "CLI growth_plan wrapper",
+      "slug": "cli-growth_plan-wrapper"
+    },
+    {
+      "depth": 3,
+      "text": "Architecture profile parser/conformance",
+      "slug": "architecture-profile-parserconformance"
+    },
+    {
+      "depth": 3,
+      "text": "MCP registration templates",
+      "slug": "mcp-registration-templates"
+    },
+    {
+      "depth": 3,
+      "text": "Full MCP integration contracts",
+      "slug": "full-mcp-integration-contracts"
+    },
+    {
+      "depth": 3,
+      "text": "MCP JSON-RPC surface",
+      "slug": "mcp-json-rpc-surface"
+    },
+    {
+      "depth": 3,
+      "text": "MCP code-to-vault tools",
+      "slug": "mcp-code-to-vault-tools"
+    },
+    {
+      "depth": 3,
+      "text": "MCP graph artifact/query tools",
+      "slug": "mcp-graph-artifactquery-tools"
+    },
+    {
+      "depth": 3,
+      "text": "MCP vault read tools",
+      "slug": "mcp-vault-read-tools"
+    },
+    {
+      "depth": 3,
+      "text": "MCP query_concepts and shared read validation",
+      "slug": "mcp-query_concepts-and-shared-read-validation"
+    },
+    {
+      "depth": 3,
+      "text": "MCP write tool handlers",
+      "slug": "mcp-write-tool-handlers"
+    },
+    {
+      "depth": 3,
+      "text": "MCP verifier helper",
+      "slug": "mcp-verifier-helper"
+    },
+    {
+      "depth": 3,
+      "text": "MCP first-contact safety",
+      "slug": "mcp-first-contact-safety"
+    },
+    {
+      "depth": 3,
+      "text": "MCP verify timeout/retry",
+      "slug": "mcp-verify-timeoutretry"
+    },
+    {
+      "depth": 3,
+      "text": "MCP maintenance_plan behavior",
+      "slug": "mcp-maintenance_plan-behavior"
+    },
+    {
+      "depth": 3,
+      "text": "MCP enum/argument suggestions",
+      "slug": "mcp-enumargument-suggestions"
+    },
+    {
+      "depth": 3,
+      "text": "Focused live dogfood helper contracts",
+      "slug": "focused-live-dogfood-helper-contracts"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood graph DB command pack",
+      "slug": "dogfood-graph-db-command-pack"
+    },
+    {
+      "depth": 3,
+      "text": "Full dogfood helper regression",
+      "slug": "full-dogfood-helper-regression"
+    },
+    {
+      "depth": 3,
+      "text": "Benchmark runner config smoke",
+      "slug": "benchmark-runner-config-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Scale benchmark config smoke",
+      "slug": "scale-benchmark-config-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Small vault perf smoke",
+      "slug": "small-vault-perf-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Map edge-crossing and overlap measurement",
+      "slug": "map-edge-crossing-and-overlap-measurement"
+    },
+    {
+      "depth": 3,
+      "text": "Accessibility rule census",
+      "slug": "accessibility-rule-census"
+    },
+    {
+      "depth": 3,
+      "text": "Accessibility ratchet (route-level)",
+      "slug": "accessibility-ratchet-route-level"
+    },
+    {
+      "depth": 3,
+      "text": "Accessibility ratchet (vault-mounted)",
+      "slug": "accessibility-ratchet-vault-mounted"
+    },
+    {
+      "depth": 3,
+      "text": "Text and data-mark contrast measurement",
+      "slug": "text-and-data-mark-contrast-measurement"
+    },
+    {
+      "depth": 3,
+      "text": "Contrast ratchet (CI)",
+      "slug": "contrast-ratchet-ci"
+    },
+    {
+      "depth": 3,
+      "text": "Scroll-end bottom clearance",
+      "slug": "scroll-end-bottom-clearance"
+    },
+    {
+      "depth": 3,
+      "text": "Clean-repo onboarding smoke",
+      "slug": "clean-repo-onboarding-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Fresh-repo memory loop smoke",
+      "slug": "fresh-repo-memory-loop-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Skill bundle integrity audit",
+      "slug": "skill-bundle-integrity-audit"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood vault canonicalization",
+      "slug": "dogfood-vault-canonicalization"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood script-reference parity",
+      "slug": "dogfood-script-reference-parity"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood shortcut argument helper",
+      "slug": "dogfood-shortcut-argument-helper"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood connector-less agent setup gate",
+      "slug": "dogfood-connector-less-agent-setup-gate"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood runtime graph DB pack",
+      "slug": "dogfood-runtime-graph-db-pack"
+    },
+    {
+      "depth": 3,
+      "text": "Dogfood release gate",
+      "slug": "dogfood-release-gate"
+    },
+    {
+      "depth": 3,
+      "text": "Focused integration test runs",
+      "slug": "focused-integration-test-runs"
+    },
+    {
+      "depth": 3,
+      "text": "Source-checkout MCP verify",
+      "slug": "source-checkout-mcp-verify"
+    },
+    {
+      "depth": 3,
+      "text": "macOS release candidate smoke",
+      "slug": "macos-release-candidate-smoke"
     }
   ],
   "FEATURES": [

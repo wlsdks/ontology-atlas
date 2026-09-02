@@ -420,6 +420,16 @@ const RULES = [
     matches: [/^docs\/CHANGELOG\.md$/],
   },
   {
+    command: 'pnpm dev-checks:check',
+    reason: 'the development-checks reference changed; entries must fit the template and name real scripts',
+    matches: [/^docs\/DEVELOPMENT-CHECKS\.md$/],
+  },
+  {
+    command: 'pnpm test:dev-checks',
+    reason: 'the development-checks entry template or its gate changed',
+    matches: [/^scripts\/lib\/dev-checks-template(?:\.test)?\.mjs$/, /^scripts\/check-dev-checks\.mjs$/],
+  },
+  {
     command: 'pnpm test:changelog',
     reason: 'the changelog entry template or its gate changed',
     matches: [/^scripts\/lib\/changelog-entry-template(?:\.test)?\.mjs$/, /^scripts\/check-changelog\.mjs$/],
