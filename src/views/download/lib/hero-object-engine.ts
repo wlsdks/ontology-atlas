@@ -443,6 +443,16 @@ export function mountHeroObject(
     drawAt(lastT);
   };
   addEventListener('resize', onResize);
+  /**
+   * The box can change without the window changing (2026-09-02): at the split width the stage
+   * stretches to the hero band's height, and crossing that breakpoint re-lays the box a frame
+   * after the `resize` event that `size()` answered — measured 834→1280, the canvas was sized
+   * against the old box and stayed blank until the next window resize. The observer follows
+   * the box itself; the window listener stays for browsers without it.
+   */
+  const boxObserver =
+    typeof ResizeObserver === 'function' ? new ResizeObserver(() => onResize()) : null;
+  boxObserver?.observe(canvas);
 
   const cosP = cosP0;
   const sinP = sinP0;
@@ -737,6 +747,7 @@ export function mountHeroObject(
       disposed = true;
       unregisterFrame?.();
       removeEventListener('resize', onResize);
+      boxObserver?.disconnect();
       canvas.removeEventListener('pointerdown', onPointerDown);
       canvas.removeEventListener('pointermove', onPointerMove);
       canvas.removeEventListener('pointerup', onPointerUp);

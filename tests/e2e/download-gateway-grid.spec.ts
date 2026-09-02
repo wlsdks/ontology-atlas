@@ -183,6 +183,7 @@ async function measure(page: import("@playwright/test").Page) {
       stage: (() => {
         const demo = laidOut('[data-testid="demo-stage"]');
         const agent = laidOut('[data-testid="gateway-agent-scene"]');
+        const mapFrame = laidOut('[data-testid="download-stage-map-frame"]');
         if (!demo) return null;
         const demoRect = demo.getBoundingClientRect();
         const colRect = demo.parentElement!.getBoundingClientRect();
@@ -193,6 +194,7 @@ async function measure(page: import("@playwright/test").Page) {
           colLeft: Math.round(colRect.left),
           colW: Math.round(colRect.width),
           agentW: agent ? Math.round(agent.getBoundingClientRect().width) : null,
+          mapW: mapFrame ? Math.round(mapFrame.getBoundingClientRect().width) : null,
           /*
            * The head's **text** centre, not the element's. The `h2` fills the column whichever
            * way its text is aligned, so its box centre is the column centre either way and would
@@ -323,11 +325,20 @@ function assertGrid(m: Awaited<ReturnType<typeof measure>>, label: string) {
     `${label}: 절 제목(${stage.headInkMid})과 시연 무대(${Math.round(stageMid)})의 축이 다르다 — ` +
       "한 절에 격자가 둘이면 눈에는 기둥이 끊겨 보인다",
   ).toBeLessThanOrEqual(2);
+  /*
+   * **The agent scene shares the evidence section's grid, not the demo's stage** (2026-09-02).
+   *
+   * Until then the scene stood at the stage width and this line held it to the demo's width —
+   * "this much is the stage" said once. Measured at 1512 that left a third of the column empty
+   * beside a 768px card. The scene now sits in the same 11/20 column as the evidence map, with
+   * the three still cards stacked in the other 9/20, so the relation to keep is with the map
+   * frame: two sections, one grid. The demo stays the page's single centred stage.
+   */
   expect(
     stage.agentW,
-    `${label}: 에이전트 장면(${stage.agentW})과 시연 무대(${stage.demoW})의 폭이 갈렸다 — ` +
-      "「이만큼이 무대다」는 한 번만 말해져야 한다",
-  ).toBe(stage.demoW);
+    `${label}: 에이전트 장면(${stage.agentW})과 근거 지도 프레임(${stage.mapW})의 폭이 갈렸다 — ` +
+      "두 절은 같은 11/20 격자에 서야 한다",
+  ).toBe(stage.mapW);
 }
 
 test.describe("관문 다운로드의 그리드", () => {

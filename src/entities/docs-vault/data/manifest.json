@@ -888,7 +888,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
-      "wordCount": 25104,
+      "wordCount": 25344,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "slug",
@@ -3682,7 +3682,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1115,
+      "wordCount": 1173,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "DECISIONS"

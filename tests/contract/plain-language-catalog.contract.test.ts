@@ -228,6 +228,8 @@ const INTENTIONALLY_ENGLISH = new Set([
   'footer.license', // the licence's own name
   'footer.stack', // technology names
   'download.trustVerifyCommand', // a command the person types
+  'download.trustVerifyCommandWindows', // a command the person types (PowerShell)
+  'download.factSourceValue', // the repository's own name (owner/repo)
   'projectPages.selector.nextSlotCliCommand', // a command the person types
   'projectPages.selector.nextSlotAgentCommand', // an MCP call signature an agent runs
   'docsVault.agentSetup.connectionClaudeCursor', // product names

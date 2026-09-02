@@ -342,7 +342,16 @@ describe('DownloadPage', () => {
         );
         // 21,500,000 B → 21.5 MB — the winner's size must be the winner's file.
         expect(primary).toHaveTextContent(/21\.5 MB/);
-        expect(screen.getByText(/Unsigned beta · SmartScreen/i)).toBeInTheDocument();
+        // Two slots since 2026-09-02: the hero trust line and the closing band's mirror of it.
+        expect(screen.getAllByText(/Unsigned beta · SmartScreen/i)).toHaveLength(2);
+        // The closing band verifies the winner's file, with the Windows command for it.
+        expect(screen.getByTestId('download-closing-cta')).toHaveAttribute(
+          'href',
+          expect.stringMatching(/_windows_x64-setup\.exe$/),
+        );
+        expect(screen.getByTestId('download-closing-command')).toHaveTextContent(
+          /Get-FileHash ontology-atlas_.*_windows_x64-setup\.exe -Algorithm SHA256/,
+        );
 
         // The macOS files do not disappear; they move one step down.
         expect(screen.getByTestId('gateway-hero-macos-aarch64')).toHaveAttribute(
@@ -408,12 +417,21 @@ describe('DownloadPage', () => {
    * slot for this claim is the hero trust line, so this test measures there — if that sentence
    * shrinks, the signing fact disappears from this page entirely, and this assertion is the last
    * line of defence.
+   *
+   * [Widened 2026-09-02] The closing band at the page's foot mirrors the hero trust line beside
+   * its own download control, so the sentence now stands in exactly two slots — the top and the
+   * foot — and the band adds the verification recipe the 2026-08-19 deletion had removed.
    */
-  it('states the signing status that is true today, in the one slot that still carries it', () => {
+  it('states the signing status that is true today, at the top and at the foot', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getByText(/Signed and notarized by Apple/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Signed and notarized by Apple/i)).toHaveLength(2);
+    // The verification recipe: the winner's file, the command, and its full checksum.
+    expect(screen.getByTestId('download-closing-command')).toHaveTextContent(
+      /shasum -a 256 ontology-atlas_.*_aarch64\.dmg/,
+    );
+    expect(screen.getByTestId('download-closing-sha')).toHaveTextContent(/^[0-9a-f]{64}$/);
 
     // The unsigned-era instructions are gone: they are false today, and a
     // Gatekeeper detour is the single most expensive first impression.
@@ -436,7 +454,8 @@ describe('DownloadPage', () => {
     publishRelease();
     renderDownloadPage();
 
-    expect(screen.getByText(/no Atlas backend/i)).toBeInTheDocument();
+    // Top and foot (2026-09-02): the hero trust line and the closing band's mirror.
+    expect(screen.getAllByText(/no Atlas backend/i)).toHaveLength(2);
     expect(screen.queryByText(/nothing sent to a server/i)).not.toBeInTheDocument();
     // Checks that the false capability claim removed on 2026-07-27 has not returned — Chromium on
     // the web really does open a folder.

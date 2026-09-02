@@ -25,11 +25,9 @@ import { describe, expect, it } from "vitest";
  *  (c) **Cap ≤ the clip's source width** — the demo clip's source is 1512px wide.
  *      A larger cap upscales the video at 1x density, and we would be calling a
  *      blurrier picture "bigger".
- *  (d) **One source of truth for the stage width** — the demo section and the
- *      agent scene both consume this token, and no `max-w-[48rem]` setting the
- *      stage width separately remains in `src/views/download/**`. (Write 48rem in
- *      two places and a day comes when only one is updated — the drift this
- *      repository has caught repeatedly.)
+ *  (d) **One source of truth for the stage width** — the demo section is the
+ *      token's one consumer since 2026-09-02 (the agent scene moved to the
+ *      evidence section's grid), and no local `max-w-[48rem]` survives.
  *  (e) **Documented** — the gateway table in `docs/DESIGN-SYSTEM.md` carries the
  *      same formula. A value that exists only in code is a coincidence, not a spec.
  *
@@ -94,7 +92,13 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
     ).toBeLessThanOrEqual(1512);
   });
 
-  it("(d) 무대 폭의 진실원은 토큰 하나다 — 소비 2곳 + 로컬 48rem 0곳", () => {
+  /*
+   * [2026-09-02] The agent scene left the stage: it now shares the evidence section's 11/20
+   * grid with the three cards stacked beside it (`DownloadPage.tsx`, agents section), so the
+   * demo is the page's one centred stage and the token's one consumer. The e2e grid spec holds
+   * the scene to the evidence map frame's width instead.
+   */
+  it("(d) 무대 폭의 진실원은 토큰 하나다 — 소비 1곳 + 로컬 48rem 0곳", () => {
     const downloadFiles = walk(join(repoRoot, "src", "views", "download"));
     const consumers: string[] = [];
     const strays: string[] = [];
@@ -107,11 +111,8 @@ describe("관문 무대 폭 — --gateway-stage-max 의 불변식", () => {
     }
     expect(
       consumers.sort(),
-      "시연 무대(DemoStage)와 에이전트 장면(DownloadPage)이 같은 토큰을 소비해야 한다",
-    ).toEqual([
-      "src/views/download/ui/DemoStage.tsx",
-      "src/views/download/ui/DownloadPage.tsx",
-    ]);
+      "시연 무대(DemoStage)만 토큰을 소비해야 한다 — 에이전트 장면은 근거 절의 격자에 선다",
+    ).toEqual(["src/views/download/ui/DemoStage.tsx"]);
     expect(strays, "무대 폭을 따로 정하는 max-w-[48rem] 이 남아 있다").toEqual([]);
   });
 

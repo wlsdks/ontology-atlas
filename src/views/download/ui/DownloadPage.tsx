@@ -16,6 +16,8 @@ import { EvidenceSpecimen, type EvidenceDemoKey } from './EvidenceSpecimen';
 import { CountUp } from './CountUp';
 import { EVIDENCE_SPECIMEN } from '../model/evidence-specimen.generated';
 import { buttonVariants } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
+import { GITHUB_REPO_URL } from '@/shared/config/social-links';
 import { RELEASE_MIN_MACOS, RELEASE_MIN_WINDOWS, RELEASE_VERSION } from '../lib/release-facts';
 import {
   MACOS_RELEASE,
@@ -166,6 +168,20 @@ export function DownloadPage() {
    * draws are the same object (locked by `DownloadPage.test.tsx`).
    */
   const graph = useStageGraph();
+  /**
+   * Which file this screen is talking about — decided **once** (2026-09-02). The hero's CTA, its
+   * trust line, the facts strip, and the closing band at the page's end all read this pair; the
+   * 2026-08-22 defect (a Windows visitor shown a DMG's checksum) was two of them deciding alone.
+   */
+  const visitorPlatform = useVisitorDesktopPlatform();
+  const windowsInstaller = windowsAsset();
+  const windowsPrimary = visitorPlatform === 'windows' && windowsInstaller !== null;
+  /**
+   * The winner of the hero's filled control. `file` — the platform's file; `web` — the browser
+   * map, which wins when there is nothing to download or when the visitor holds a phone.
+   */
+  const winner: 'file' | 'web' =
+    published && primaryAsset && visitorPlatform !== 'handheld' ? 'file' : 'web';
 
   return (
     <div className="gateway-fx-stage relative flex min-h-full w-full flex-col">
@@ -173,7 +189,14 @@ export function DownloadPage() {
       <GatewayNav />
 
       <main id="main" tabIndex={-1} className="relative z-[1] flex min-w-0 flex-1 flex-col">
-        <HeroSection published={published} primaryAsset={primaryAsset} graph={graph} />
+        <HeroSection
+          published={published}
+          primaryAsset={primaryAsset}
+          windowsInstaller={windowsInstaller}
+          windowsPrimary={windowsPrimary}
+          winner={winner}
+          graph={graph}
+        />
         <DemoSection />
         <EvidenceSection graph={graph} />
         <AgentSection />
@@ -192,13 +215,21 @@ export function DownloadPage() {
           data-gateway-bottom-reserve-active={bottomTabBarPresent ? 'true' : undefined}
           className={cn(
             PAGE_GUTTER,
-            'mt-24 shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
+            SECTION_GAP,
+            'shrink-0 pb-[max(var(--page-bottom-breath),env(safe-area-inset-bottom))]',
             bottomTabBarPresent &&
               'max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]',
           )}
         >
           <div className={PAGE_COLUMN}>
-            <footer className="border-t border-[color:var(--color-divider)] pt-5 text-label leading-label text-[color:var(--color-text-quaternary)]">
+            <ClosingBand
+              published={published}
+              primaryAsset={primaryAsset}
+              windowsInstaller={windowsInstaller}
+              windowsPrimary={windowsPrimary}
+              winner={winner}
+            />
+            <footer className="mt-14 border-t border-[color:var(--color-divider)] pt-5 text-label leading-label text-[color:var(--color-text-quaternary)]">
               <GatewayReadingLinks />
               <ReleasePolicyNotes published={published} />
               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -319,12 +350,19 @@ function SectionIntro({
 function HeroSection({
   published,
   primaryAsset,
+  windowsInstaller,
+  windowsPrimary: heroWindowsPrimary,
+  winner,
   graph,
 }: {
   published: boolean;
   primaryAsset: ReturnType<typeof macosAssetFor>;
+  windowsInstaller: ReturnType<typeof windowsAsset>;
+  windowsPrimary: boolean;
+  winner: 'file' | 'web';
   graph: StageGraph;
 }) {
+  const fileWins = winner === 'file' && published && primaryAsset !== null;
   const t = useTranslations('download');
   const [heroIn, setHeroIn] = useState(false);
   useEffect(() => {
@@ -353,12 +391,9 @@ function HeroSection({
    * signing and notarization in the same slot. In the demoted version (the Windows button on the
    * second row) the `unsigned` marker beside the label does the same job. [2026-08-19] The
    * install section that carried the full warning text and the checksum was deleted, so this
-   * trust line is now the **only** place that fact lives — shortening the copy here deletes the fact.
+   * trust line and its mirror in the closing band (2026-09-02) are the only places that fact
+   * lives — shortening the copy here deletes the fact.
    */
-  const visitorPlatform = useVisitorDesktopPlatform();
-  const windowsInstaller = windowsAsset();
-  const heroWindowsPrimary = visitorPlatform === 'windows' && windowsInstaller !== null;
-
   const releaseTag = published
     ? MACOS_RELEASE.tag
     : resolveDisplayReleaseTag({
@@ -374,7 +409,17 @@ function HeroSection({
   ];
 
   return (
-    <section data-testid="gateway-hero" className={cn(PAGE_GUTTER, 'w-full')}>
+    /* **The first screen is the hero's** (2026-09-02). Measured at 1512×982 the facts strip ended
+       at 754 and 150px of nothing followed before the fold; at 1920×1080 the gap was wider. At the
+       split width the section now claims the viewport below the chrome (`min-h`, so a short
+       window never clips) and the split band takes the slack, which centres the decision block
+       and the object in the room that was empty. The strip stays the hero's bottom rule and now
+       sits on the fold. Below `xl` the object stacks under the type and the hero is taller than
+       any viewport, so nothing changes there. */
+    <section
+      data-testid="gateway-hero"
+      className={cn(PAGE_GUTTER, 'flex w-full flex-col xl:min-h-[calc(100svh-4rem)]')}
+    >
       {/* The monument measure — the headline uses the full column as its measure. `@container`
           declares that measure and `--text-monument` (4.8cqw) sizes against it, so both sentences
           stay on one line each at every width of the split hero (the budget arithmetic is in the
@@ -419,7 +464,7 @@ function HeroSection({
       <div
         className={cn(
           PAGE_COLUMN,
-          'grid min-w-0 items-center gap-x-10 gap-y-10 pb-6 pt-7 xl:pb-7',
+          'grid min-w-0 items-center gap-x-10 gap-y-10 pb-6 pt-7 xl:flex-1 xl:pb-7',
           'xl:grid-cols-[minmax(520px,1fr)_minmax(320px,0.85fr)]',
         )}
       >
@@ -439,7 +484,7 @@ function HeroSection({
           </p>
 
           <div className={cn(rise('gateway-t800'), 'mt-9 flex flex-wrap items-center gap-3')}>
-            {published && primaryAsset ? (
+            {fileWins ? (
               /* The filled CTA — a direct link to the real file. Since the install section was
                  deleted on 2026-08-19 this is the **only** primary download on the page. The file
                  follows the visitor's platform — the defect this branch fixes was a Windows
@@ -457,7 +502,8 @@ function HeroSection({
                 />
               </a>
             ) : (
-              /* With nothing to download, the winner is what does work — the map in the browser. */
+              /* With nothing to download — or nothing this device can install — the winner is
+                 what does work: the map in the browser. */
               <Link
                 href="/topology"
                 data-testid="gateway-hero-cta"
@@ -494,7 +540,7 @@ function HeroSection({
               data-testid="gateway-hero-alt-row"
               className={cn(rise('gateway-t800'), 'mt-2.5 flex flex-wrap items-center gap-2.5')}
             >
-              {heroWindowsPrimary ? (
+              {heroWindowsPrimary || !fileWins ? (
                 <a
                   href={primaryAsset.downloadUrl}
                   data-testid="gateway-hero-macos-aarch64"
@@ -524,13 +570,15 @@ function HeroSection({
                   — the web playground button is missing). The label is shorter than `webCta`'s
                   because of the line budget: a longer label drops this line alone onto a third row
                   in the 575px Korean measure (measured at 1512). */}
-              <Link
-                href="/topology"
-                data-testid="gateway-hero-web-cta"
-                className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4', HERO_CTA_WRAP)}
-              >
-                {t('heroWebCta')}
-              </Link>
+              {fileWins ? (
+                <Link
+                  href="/topology"
+                  data-testid="gateway-hero-web-cta"
+                  className={cn(buttonVariants({ variant: 'outline', size: 'md' }), 'touch-hit-expand rounded-chip px-3 sm:px-4', HERO_CTA_WRAP)}
+                >
+                  {t('heroWebCta')}
+                </Link>
+              ) : null}
             </div>
           ) : null}
 
@@ -547,7 +595,10 @@ function HeroSection({
           </p>
         </div>
 
-        <div className="min-w-0">
+        {/* The object column stretches to the band's height at the split width (2026-09-02) so
+            the room the first viewport gives the hero goes into the object, not into blank rows
+            above and below the decision block. The engine fits its ink to min(width, height). */}
+        <div className="min-w-0 xl:self-stretch">
           <HeroObject graph={graph} typed={typing.typed} total={typing.total} />
         </div>
       </div>
@@ -672,32 +723,109 @@ function FactsStrip({
     });
   }
 
+  /**
+   * The two destinations on the strip — **facts on the left, where they lead on the right**
+   * (2026-09-02). The page said "open source" in its eyebrow and linked the repository nowhere;
+   * the changelog sat only in the chrome, a row above the version it explains. The 2026-08-19
+   * deletion of the install section had already named this loss in its dissent and pointed the
+   * remedy at exactly this rail. Both are links, not facts: the engraved numeral face is for
+   * values that never move, so these take the page's link grammar instead (underline, secondary
+   * ink, `↗` declaring the one that leaves the site).
+   */
+  const tag = published
+    ? MACOS_RELEASE.tag
+    : resolveDisplayReleaseTag({
+        published: false,
+        publishedTag: MACOS_RELEASE.tag,
+        releaseVersion: RELEASE_VERSION,
+      });
+  const links = [
+    {
+      label: t('factChangelogLabel'),
+      text: t('factChangelogValue', { tag }),
+      href: '/changelog' as const,
+      external: false,
+      testId: 'gateway-facts-changelog',
+    },
+    {
+      label: t('factSourceLabel'),
+      text: t('factSourceValue'),
+      href: GITHUB_REPO_URL,
+      external: true,
+      testId: 'gateway-facts-source',
+    },
+  ];
+
   return (
     <div className={cn('gateway-rise gateway-t950', heroIn && 'is-in', 'w-full')}>
-      <dl
+      {/* Two flex items on one rule: the facts list and the destination pair. The pair is one
+          item so it moves as a unit — measured at 834 with the links loose in the list, the
+          push-right left one link alone on a third row. From `lg` the pair sits on the column's
+          right edge; narrower, it wraps whole beneath the facts. */}
+      <div
         data-testid="gateway-facts"
         className={cn(
           PAGE_COLUMN,
           'flex flex-wrap gap-x-12 gap-y-4 border-t border-[color:var(--color-border-soft)] py-5',
         )}
       >
-        {facts.map((fact) => (
-          <div key={fact.label} className="min-w-0">
-            <dt className="font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
-              {fact.label}
-            </dt>
-            <dd
-              data-token="engraved-numeral"
-              className="mt-1 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
-            >
-              {fact.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+        <dl className="flex min-w-0 flex-wrap gap-x-12 gap-y-4">
+          {facts.map((fact) => (
+            <div key={fact.label} className="min-w-0">
+              <dt className={FACT_LABEL}>{fact.label}</dt>
+              <dd
+                data-token="engraved-numeral"
+                className="mt-1 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+              >
+                {fact.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+        <div className="flex min-w-0 flex-wrap gap-x-12 gap-y-4 lg:ml-auto">
+          {links.map((link) => (
+            <div key={link.label} className="min-w-0">
+              <span className={cn(FACT_LABEL, 'block')}>{link.label}</span>
+              <span className="mt-1 block">
+                {link.external ? (
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    data-testid={link.testId}
+                    className={FACT_LINK}
+                  >
+                    <span aria-hidden data-external-link-marker>
+                      ↗
+                    </span>
+                    {link.text}
+                  </a>
+                ) : (
+                  <Link href={link.href} data-testid={link.testId} className={FACT_LINK}>
+                    {link.text}
+                  </Link>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
+const FACT_LABEL =
+  'font-mono text-caption uppercase leading-caption tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]';
+
+/** The strip's link grammar — the same underline and ink as the evidence section's file link. */
+const FACT_LINK = controlClass({
+  shape: 'link',
+  hoverInk: 'strong',
+  className:
+    // `items-start`: the link shape centres its text in a 24px floor, which sat the label 2px
+    // below the engraved values beside it (measured 1512). Top-aligned, both share one line box.
+    'touch-hit-expand items-start font-mono text-body leading-body text-[color:var(--color-text-secondary)] underline underline-offset-2',
+});
 
 // ─── ② Demo — plays itself once visible ─────────────────────────────────────
 
@@ -936,37 +1064,42 @@ function AgentSection() {
       <div className={cn(PAGE_COLUMN, 'min-w-0')}>
         <SectionIntro eyebrow={t('agentsEyebrow')} title={t('agentsTitle')} sub={t('agentsSub')} />
 
-        {/* The stage width uses the same token as the demo section (`--gateway-stage-max`), so the
-            page states "this much is the stage" only once. At ≤1920 it is the previous 48rem; only
-            at wider widths does it grow proportionally (rationale in the token doc-block). */}
-        <div
-          data-testid="gateway-agent-scene"
-          className="gateway-scroll-stage mt-9 max-w-[var(--gateway-stage-max)]"
-        >
-          <AcpChatScene />
-        </div>
-        {/* The three cards are still — one moving thing above is enough. */}
-        <div className="mt-14 grid min-w-0 gap-y-10 md:grid-cols-3">
-          {columns.map((column, i) => (
-            <div
-              key={column.title}
-              className={cn(
-                'min-w-0 md:px-8',
-                i === 0 && 'md:pl-0',
-                i > 0 && 'md:border-l md:border-[color:var(--color-border-soft)]',
-              )}
-            >
-              <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
-                {column.title}
-              </h3>
-              <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-                {column.body}
-              </p>
-              <code className="mt-4 block border-l border-[color:var(--color-border-strong)] pl-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
-                {column.code}
-              </code>
-            </div>
-          ))}
+        {/*
+         * **Scene left, cards right — the evidence section's grid** (2026-09-02). Until now the
+         * scene stood alone at the stage width with a third of the column empty beside it
+         * (measured 1512: a 768px card in an 1112px column), and the three cards ran in a row
+         * beneath. The evidence section already answers this layout: the moving thing on the left
+         * at 11/20, the still facts on the right at 9/20. Using the same split here makes the two
+         * sections one grammar, fills the column, and keeps "one moving thing per section" — the
+         * cards are still, now stacked with a rule between them instead of beside each other.
+         * Below `lg` the cards stack under the scene at full width.
+         */}
+        <div className="mt-9 grid min-w-0 gap-10 lg:grid-cols-[minmax(0,11fr)_minmax(0,9fr)] lg:gap-12">
+          <div data-testid="gateway-agent-scene" className="gateway-scroll-stage min-w-0 lg:self-center">
+            <AcpChatScene />
+          </div>
+          {/* The three cards are still — one moving thing beside them is enough. */}
+          <div className="grid min-w-0 content-start lg:self-center">
+            {columns.map((column, i) => (
+              <div
+                key={column.title}
+                className={cn(
+                  'min-w-0 py-6 first:pt-0 last:pb-0',
+                  i > 0 && 'border-t border-[color:var(--color-border-soft)]',
+                )}
+              >
+                <h3 className="break-keep text-title font-[var(--font-weight-emphasis)] leading-title text-[color:var(--color-text-primary)]">
+                  {column.title}
+                </h3>
+                <p className="mt-2.5 break-keep text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                  {column.body}
+                </p>
+                <code className="mt-4 block border-l border-[color:var(--color-border-strong)] pl-3 font-mono text-body leading-body text-[color:var(--color-text-tertiary)]">
+                  {column.code}
+                </code>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -1013,6 +1146,128 @@ function AssetSize({ bytes, onFill = false }: { bytes: number; onFill?: boolean 
     >
       {formatAssetSize(bytes)}
     </span>
+  );
+}
+
+/**
+ * **The closing band** — the page ends where it began (2026-09-02).
+ *
+ * Below the agents section the page used to stop at a licence line: someone who read to the end
+ * had to scroll 3,500px back up to act. The reference survey found the strongest pages bookend
+ * their one action (the same button at the top and at the foot), so the winner's file returns here
+ * — as an `outline`, because the 2026-08-08 decision keeps exactly one filled indigo control on
+ * this screen and it is the hero's.
+ *
+ * The other half is the verification recipe. The install section deleted on 2026-08-19 took the
+ * checksum and the command with it, and its falsifier named the remedy: proof lines at the foot,
+ * not a revived section. HandBrake and Sublime carry this without reading like a file server by
+ * stating *why* in one sentence and placing the value beside the file it belongs to. The command
+ * follows the winner's platform, and the hash is the winner's — the 2026-08-22 defect (another
+ * file's checksum) cannot recur because the page decides the winner once.
+ *
+ * Unpublished: the band holds only the browser route, since there is no file to verify.
+ */
+function ClosingBand({
+  published,
+  primaryAsset,
+  windowsInstaller,
+  windowsPrimary,
+  winner,
+}: {
+  published: boolean;
+  primaryAsset: ReturnType<typeof macosAssetFor>;
+  windowsInstaller: ReturnType<typeof windowsAsset>;
+  windowsPrimary: boolean;
+  winner: 'file' | 'web';
+}) {
+  const t = useTranslations('download');
+  const subject =
+    winner === 'file' ? (windowsPrimary && windowsInstaller ? windowsInstaller : primaryAsset) : null;
+  const subjectIsWindows = subject !== null && subject === windowsInstaller;
+  const fileName = subject ? subject.downloadUrl.slice(subject.downloadUrl.lastIndexOf('/') + 1) : '';
+  const format = useFormatter();
+  const publishedAt = macosPublishedDate();
+  /** The same three facts the strip opened with — OBS repeats them under every tab for the same reason. */
+  const versionLine = [
+    published
+      ? MACOS_RELEASE.tag
+      : resolveDisplayReleaseTag({
+          published: false,
+          publishedTag: MACOS_RELEASE.tag,
+          releaseVersion: RELEASE_VERSION,
+        }),
+    published && publishedAt
+      ? format.dateTime(publishedAt, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
+      : null,
+    `${subjectIsWindows ? RELEASE_MIN_WINDOWS : RELEASE_MIN_MACOS}${t('factMinOsSuffix')}`,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <div
+      data-testid="download-closing-band"
+      className="grid min-w-0 gap-10 border-t border-[color:var(--color-border-soft)] pt-10 lg:grid-cols-2 lg:gap-12"
+    >
+      <div className="min-w-0">
+        <p className={FACT_LABEL}>{t('downloadSectionLabel')}</p>
+        <p
+          data-token="engraved-numeral"
+          className="mt-2 font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+        >
+          {versionLine}
+        </p>
+        <div className="mt-5">
+          {published && subject ? (
+            <a
+              href={subject.downloadUrl}
+              data-testid="download-closing-cta"
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+            >
+              <Download size={ICON_SIZE.lg} aria-hidden />
+              {subjectIsWindows ? t('windowsDownloadCta') : t('primaryCtaPublished')}
+              <AssetSize bytes={subject.sizeBytes} />
+            </a>
+          ) : (
+            <Link
+              href="/topology"
+              data-testid="download-closing-cta"
+              className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-chip px-6', HERO_CTA_WRAP)}
+            >
+              {t('webCta')}
+            </Link>
+          )}
+        </div>
+        <p className="mt-4 break-keep text-body leading-body text-[color:var(--color-text-tertiary)]">
+          {subjectIsWindows ? t('trustLineWindows') : t('trustLine')}
+        </p>
+      </div>
+
+      {published && subject ? (
+        <div className="min-w-0">
+          <p className={FACT_LABEL}>{t('closingVerifyLabel')}</p>
+          <p className="mt-2 max-w-[34rem] break-keep text-body leading-body text-[color:var(--color-text-secondary)]">
+            {t('closingVerifyBody')}
+          </p>
+          <code
+            data-testid="download-closing-command"
+            className="mt-4 block break-all border-l border-[color:var(--color-border-strong)] pl-3 font-mono text-body leading-body text-[color:var(--color-text-primary)]"
+          >
+            {subjectIsWindows
+              ? t('trustVerifyCommandWindows', { file: fileName })
+              : t('trustVerifyCommand', { file: fileName })}
+          </code>
+          <p className={cn(FACT_LABEL, 'mt-4')}>{t('closingShaLabel')}</p>
+          <p
+            data-testid="download-closing-sha"
+            data-token="engraved-numeral"
+            className="mt-1 break-all font-mono text-body leading-body text-[color:var(--engraved-numeral-face)] [text-shadow:var(--engraved-numeral-text-shadow)]"
+          >
+            {subject.sha256}
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

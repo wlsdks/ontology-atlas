@@ -6,8 +6,8 @@ import { LocaleSwitch } from '@/features/locale-switch';
 import { cn } from '@/shared/lib/cn';
 import { PAGE_COLUMN, PAGE_GUTTER } from '@/shared/lib/gateway-frame';
 import { stripLocalePrefix } from '@/shared/lib/nav-destination';
-import { xProfileUrl } from '@/shared/config/social-links';
-import { XMark } from '@/shared/ui';
+import { GITHUB_REPO_URL, xProfileUrl } from '@/shared/config/social-links';
+import { GithubMark, XMark } from '@/shared/ui';
 import { controlClass } from '@/shared/ui/control-class';
 import { BrandMark } from '@/shared/ui/brand-mark';
 
@@ -78,18 +78,23 @@ export function GatewayNav() {
             data-testid="gateway-brand-mark"
             className="size-8 shrink-0"
           />
-          <span className="text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+          {/* `whitespace-nowrap`: measured at 834 the wordmark broke into two lines once the row
+              held the repository mark beside X. A brand that wraps is a defect, not a reflow. */}
+          <span className="whitespace-nowrap text-body leading-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
             Ontology Atlas
           </span>
         </Link>
         {crumb ? (
           <>
-            <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] sm:inline">
+            {/* The breadcrumb yields before the brand does: from `sm` to `lg` the 434px column
+                (the frame's gutter stays 200) cannot hold brand, crumb, two chips, two marks and
+                the locale switch, so the crumb waits for `lg` (2026-09-02). */}
+            <span aria-hidden className="hidden text-body text-[color:var(--color-text-quaternary)] lg:inline">
               /
             </span>
             <span
               aria-current="page"
-              className="hidden text-body leading-body text-[color:var(--color-text-tertiary)] sm:inline"
+              className="hidden text-body leading-body text-[color:var(--color-text-tertiary)] lg:inline"
             >
               {crumb}
             </span>
@@ -116,6 +121,23 @@ export function GatewayNav() {
               {tNav('changelog')}
             </GatewayNavLink>
           </span>
+
+          {/*
+           * The repository (2026-09-02). The eyebrow on `/download` says "open source" and the
+           * chrome offered no way to the source — the only github.com links on the page were the
+           * release files. Same shape and tone as the X mark beside it: one row, one kind of
+           * object.
+           */}
+          <a
+            href={GITHUB_REPO_URL}
+            target="_blank"
+            rel="noreferrer noopener"
+            data-testid="gateway-github-link"
+            aria-label={tNav('githubLabel')}
+            className={controlClass({ hoverInk: 'strong', shape: "link", tone: "muted", className: "touch-hit-expand" })}
+          >
+            <GithubMark size={15} aria-hidden />
+          </a>
 
           {/*
            * X — the position exists and the destination does not yet (`X_HANDLE` is

@@ -99,10 +99,10 @@ export function HeroObject({
     : '';
 
   return (
-    <div aria-hidden="true" className="min-w-0">
+    <div aria-hidden="true" className="flex min-w-0 flex-col xl:h-full">
       <div
         data-testid="gateway-hero-object"
-        className="gateway-hero-stage aspect-[1/0.62] w-full max-h-[24rem]"
+        className="gateway-hero-stage aspect-[1/0.62] w-full max-h-[24rem] xl:aspect-auto xl:h-full xl:max-h-none xl:min-h-[20rem]"
       >
         <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-pan-y" />
         {/* A static brand companion, not a work-state claim. The graph remains the
