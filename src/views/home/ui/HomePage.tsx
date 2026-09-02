@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
+import { useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import {
   consumeQueuedAgentChatIntent,
@@ -16,6 +17,7 @@ import {
   useChatSuggestions,
 } from "@/features/acp-session";
 import { agentChatDoor } from "../model/agent-chat-door";
+import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "../model/search-lane-density";
 import {
   planRouteAskDockSync,
   type RouteAskDockRequest,
@@ -2874,6 +2876,12 @@ function HomePageImpl() {
     topologyUtilityChromeState === "compact-focus" ||
     topologyUtilityChromeState === "selected-node-inspector" ||
     agentDockRequestedOpen;
+  // Width-driven compaction of the search lane alone — see `search-lane-density.ts`
+  // for the measured band. The utility group keeps its own state-driven rule.
+  const searchLaneCrowded = isSearchLaneCrowded({
+    viewportBelowCrowdedWidth: useViewportBelow(SEARCH_LANE_CROWDED_BELOW_PX),
+    indexExpanded: renderedIndexState === "expanded",
+  });
   /*
    * The utility lane is raised one step **only while the activity inbox is open**.
    * Owner, 2026-08-17: *"Should the notification cover what is above?"* (the notification should cover what is
@@ -4294,7 +4302,7 @@ function HomePageImpl() {
               {!selectedRelationActive ? (
                 <>
                   <SearchHint
-                    density={topologyUtilityChromeCompact ? "compact-focus" : "default"}
+                    density={topologyUtilityChromeCompact || searchLaneCrowded ? "compact-focus" : "default"}
                     phoneFocusSuppressed={selectedNodeFocusActive}
                     rightInspectorReserved={nodePanelMounted}
                     leftIndexReserved={renderedIndexState === "expanded"}
