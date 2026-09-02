@@ -10096,6 +10096,106 @@ await test("query_ontology agent_brief — selected project and compact task han
   }
 });
 
+await test("query_ontology agent_brief: persisted claim boundaries outrank task noun overlap", async () => {
+  const root = makeVault([
+    {
+      slug: "project",
+      content: "---\nkind: project\ntitle: Policy Runtime\ndomains: [domains/policy]\n---\n## Definition\n\nA runtime that evaluates collateral policy.\n",
+    },
+    {
+      slug: "domains/policy",
+      content: "---\nkind: domain\ntitle: Policy\ncapabilities: [capabilities/policy-appraisal, capabilities/expiry-diagnostics]\n---\n## Definition\n\nPolicy owns collateral acceptance and its reporting boundary.\n",
+    },
+    {
+      slug: "capabilities/policy-appraisal",
+      content: [
+        "---",
+        "kind: capability",
+        "title: Policy Appraisal",
+        "domain: domains/policy",
+        "---",
+        "## Definition",
+        "",
+        "Evaluate whether collateral remains acceptable before expiry using a configured safety margin.",
+        "",
+        "## Includes",
+        "",
+        "- Reject collateral when remaining validity is below the safety margin.",
+        "",
+        "## Excludes",
+        "",
+        "- Post-expiry diagnostic reporting.",
+        "",
+      ].join("\n"),
+    },
+    {
+      slug: "capabilities/expiry-diagnostics",
+      content: [
+        "---",
+        "kind: capability",
+        "title: Expiry Diagnostics",
+        "domain: domains/policy",
+        "---",
+        "## Definition",
+        "",
+        "Report why expired collateral was rejected and expose validity-margin diagnostics.",
+        "",
+        "## Includes",
+        "",
+        "- Post-expiry diagnostic reporting.",
+        "",
+        "## Excludes",
+        "",
+        "- Deciding pre-expiry acceptance policy.",
+        "",
+      ].join("\n"),
+    },
+  ]);
+  const taskCases = [
+    [
+      "Before expiry, reject collateral whose remaining validity is below a safety margin; do not add post-expiry diagnostics.",
+      "capabilities/policy-appraisal",
+    ],
+    [
+      "Implement a pre-expiry validity-margin rejection policy; diagnostics after expiry are out of scope.",
+      "capabilities/policy-appraisal",
+    ],
+    [
+      "Decide pre-expiry acceptance from remaining collateral validity and leave diagnostic reporting unchanged.",
+      "capabilities/policy-appraisal",
+    ],
+    [
+      "Add post-expiry diagnostics explaining rejected collateral; do not change pre-expiry acceptance policy.",
+      "capabilities/expiry-diagnostics",
+    ],
+  ];
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      ...taskCases.map(([task], index) => callTool(index + 2, "query_ontology", {
+        operation: "agent_brief",
+        project: "project",
+        detail: "compact",
+        task,
+      })),
+    ], 3000);
+
+    assert.equal(taskCases.length, 4, "the MCP boundary-routing gate must exercise real subjects");
+    for (const [index, [task, expectedSlug]] of taskCases.entries()) {
+      const compact = getCallParsed(responses, index + 2);
+      assert.equal(compact.focus.capability?.slug, expectedSlug, task);
+      assert.match(compact.focus.selectionPolicy, /Definition, Includes, and Excludes compatibility/);
+      assert.equal(compact.task.text, undefined);
+      assert.doesNotMatch(JSON.stringify(compact), new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.equal(compact.safety.automaticWrite, false);
+      assert.equal(compact.safety.automaticFinalize, false);
+      assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("query_ontology agent_brief: current reviewed coordinates become one exact task-navigation batch", async () => {
   const vault = makeVault([
     {

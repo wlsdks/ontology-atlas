@@ -38,10 +38,22 @@ function normalizeText(value) {
 }
 
 function canonicalToken(token) {
-  if (/^(?:writer|writes|writing|written)$/.test(token)) return 'write';
-  if (/^(?:parser|parses|parsing|parsed)$/.test(token)) return 'parse';
+  if (/^(?:writer|writes|writing|written|produce|produces|produced|producing|production)$/.test(token)) return 'write';
+  if (/^(?:parser|parses|parsing|parsed|interpret|interprets|interpreted|interpreting|interpretation)$/.test(token)) return 'parse';
   if (/^(?:encoder|encodes|encoding|encoded)$/.test(token)) return 'encode';
   if (/^serializ(?:e|es|ed|er|ers|ing|ation)$/.test(token)) return 'serialize';
+  if (/^reject(?:s|ed|ing|ion)?$/.test(token)) return 'reject';
+  if (/^(?:decide|decides|decided|deciding|decision)$/.test(token)) return 'decide';
+  if (/^(?:evaluate|evaluates|evaluated|evaluating|evaluation)$/.test(token)) return 'evaluate';
+  if (/^(?:appraise|appraises|appraised|appraising|appraisal)$/.test(token)) return 'appraise';
+  if (/^(?:accept|accepts|accepted|accepting|acceptable|acceptance)$/.test(token)) return 'accept';
+  if (/^(?:expire|expires|expired|expiring|expiry)$/.test(token)) return 'expire';
+  if (/^(?:diagnostic|diagnostics)$/.test(token)) return 'diagnostic';
+  if (/^(?:report|reports|reported|reporting)$/.test(token)) return 'report';
+  if (/^(?:remain|remains|remained|remaining)$/.test(token)) return 'remain';
+  if (token.length > 4 && /[^s]s$/.test(token) && !/(?:ss|us|is)$/.test(token)) {
+    return token.slice(0, -1);
+  }
   return token;
 }
 
@@ -80,6 +92,53 @@ function taskTerms(task) {
   return [...new Set([...expansions, ...terms])];
 }
 
+const NON_GOAL_CLAUSE = /\b(?:do\s+not|must\s+not|should\s+not|never|without|out\s+of\s+scope|not\s+in\s+scope|(?:leave|keep)\b.*\bunchanged|(?:must|should)\s+(?:remain|stay)\s+unchanged|(?:are|is)\s+unchanged)\b/iu;
+
+function splitInlineBoundaryClause(clause) {
+  for (const pattern of [
+    /\s+(?:and|but|while)\s+(?=(?:do\s+not|must\s+not|should\s+not|never)\b|(?:leave|keep)\b.*\bunchanged\b)/iu,
+    /\s+(?=without\b)/iu,
+  ]) {
+    const match = pattern.exec(clause);
+    if (match?.index > 0) {
+      return [clause.slice(0, match.index), clause.slice(match.index + match[0].length)];
+    }
+  }
+  return [clause];
+}
+
+function stripNonGoalMarker(clause) {
+  return clause
+    .replace(/\b(?:do\s+not|must\s+not|should\s+not|never)\s+(?:add|change|modify|replace|remove|introduce)?\b/giu, ' ')
+    .replace(/\b(?:must|should)\s+(?:remain|stay)\s+unchanged\b/giu, ' ')
+    .replace(/\b(?:are|is)\s+unchanged\b/giu, ' ')
+    .replace(/\b(?:are|is)\s+out\s+of\s+scope\b/giu, ' ')
+    .replace(/\b(?:are|is)\s+not\s+in\s+scope\b/giu, ' ')
+    .replace(/\bnot\s+in\s+scope\b/giu, ' ')
+    .replace(/\b(?:leave|keep)\b/giu, ' ')
+    .replace(/\bunchanged\b/giu, ' ')
+    .replace(/\bwithout\b/giu, ' ');
+}
+
+function taskIntent(task) {
+  const clauses = String(task)
+    .split(/[;,.!?\n]+/u)
+    .flatMap((clause) => splitInlineBoundaryClause(clause.trim()))
+    .map((clause) => clause.trim())
+    .filter(Boolean);
+  const desiredClauses = [];
+  const nonGoalClauses = [];
+  for (const clause of clauses) {
+    if (NON_GOAL_CLAUSE.test(clause)) nonGoalClauses.push(stripNonGoalMarker(clause));
+    else desiredClauses.push(clause);
+  }
+  return {
+    allTerms: taskTerms(task),
+    desiredTerms: taskTerms(desiredClauses.join(' ')),
+    nonGoalTerms: taskTerms(nonGoalClauses.join(' ')),
+  };
+}
+
 function markdownSection(body, heading) {
   if (typeof body !== 'string' || body.length === 0) return '';
   const lines = body.split('\n');
@@ -116,7 +175,7 @@ function compactDoc(doc) {
   };
 }
 
-function scoreDocument(doc, terms) {
+function scoreLexicalDocument(doc, terms) {
   const fields = [
     ['title', 8, new Set(lexicalTokens(doc.frontmatter?.title || doc.frontmatter?.name || ''))],
     ['slug', 6, new Set(lexicalTokens(doc.slug))],
@@ -141,6 +200,56 @@ function scoreDocument(doc, terms) {
   return { score, matchedTerms, matchedFields: [...matchedFields].sort() };
 }
 
+function sectionTokens(doc, heading) {
+  return new Set(lexicalTokens(markdownSection(doc.body, heading)));
+}
+
+function matchedTermsIn(terms, tokens) {
+  return terms.filter((term) => tokens.has(term));
+}
+
+function matchedTermsOnlyIn(terms, included, excluded) {
+  return terms.filter((term) => included.has(term) && !excluded.has(term));
+}
+
+function scoreCapabilityClaim(doc, intent) {
+  const definition = sectionTokens(doc, 'Definition');
+  const includes = sectionTokens(doc, 'Includes');
+  const excludes = sectionTokens(doc, 'Excludes');
+  const hasStructuredClaim = definition.size > 0 || includes.size > 0 || excludes.size > 0;
+  const fallback = hasStructuredClaim ? new Set() : new Set(lexicalTokens(doc.body));
+  const positive = new Set([...definition, ...includes, ...fallback]);
+  const identity = new Set(lexicalTokens([
+    doc.frontmatter?.title || doc.frontmatter?.name || '',
+    doc.slug,
+    doc.frontmatter?.path || '',
+  ].join(' ')));
+  const desiredPositive = matchedTermsOnlyIn(intent.desiredTerms, positive, excludes);
+  const desiredExcluded = matchedTermsOnlyIn(intent.desiredTerms, excludes, positive);
+  const desiredTermSet = new Set(intent.desiredTerms);
+  const distinctNonGoalTerms = intent.nonGoalTerms.filter((term) => !desiredTermSet.has(term));
+  const nonGoalPositive = matchedTermsOnlyIn(distinctNonGoalTerms, positive, excludes);
+  const nonGoalExcluded = matchedTermsOnlyIn(distinctNonGoalTerms, excludes, positive);
+  const identitySupport = desiredPositive.filter((term) => identity.has(term));
+  const hasClaimSupport = desiredPositive.length >= 2
+    || (desiredPositive.length >= 1 && nonGoalExcluded.length >= 1)
+    || identitySupport.length >= 1;
+  const conflict = desiredExcluded.length > 0 || nonGoalPositive.length > 0;
+  const termWeight = (term) => (includes.has(term) ? 6 : definition.has(term) ? 4 : 2);
+  const score = desiredPositive.reduce((sum, term) => sum + termWeight(term), 0)
+    + nonGoalExcluded.length * 4;
+  return {
+    score,
+    matchedTerms: [...new Set([...desiredPositive, ...nonGoalExcluded])].sort(),
+    matchedFields: [
+      ...(matchedTermsIn(intent.desiredTerms, definition).length > 0 ? ['definition'] : []),
+      ...(matchedTermsIn(intent.desiredTerms, includes).length > 0 ? ['includes'] : []),
+      ...(nonGoalExcluded.length > 0 ? ['excludes'] : []),
+    ],
+    qualified: hasClaimSupport && !conflict && score > 0,
+  };
+}
+
 function defensibleMatch(row) {
   if (!row || row.score <= 0) return false;
   const fields = new Set(row.matchedFields);
@@ -148,30 +257,29 @@ function defensibleMatch(row) {
   return fields.has('title') && (fields.has('slug') || fields.has('path'));
 }
 
-function selectCapability(docs, terms) {
+function selectCapability(docs, intent) {
   const capabilities = docs.filter((doc) => doc.frontmatter?.kind === 'capability');
   const elements = docs.filter((doc) => doc.frontmatter?.kind === 'element');
-  const elementScores = new Map(elements.map((doc) => [doc.slug, { doc, ...scoreDocument(doc, terms) }]));
+  const elementScores = new Map(elements.map((doc) => [doc.slug, {
+    doc,
+    ...scoreLexicalDocument(doc, intent.allTerms),
+  }]));
   const rows = capabilities.map((doc) => {
-    const direct = scoreDocument(doc, terms);
+    const claim = scoreCapabilityClaim(doc, intent);
     const matchedChildren = (Array.isArray(doc.frontmatter?.elements) ? doc.frontmatter.elements : [])
       .map((slug) => elementScores.get(slug))
       .filter((row) => defensibleMatch(row))
       .sort((left, right) => right.score - left.score || left.doc.slug.localeCompare(right.doc.slug));
-    const directQualified = defensibleMatch(direct);
-    const childScore = matchedChildren
-      .slice(0, 3)
-      .reduce((sum, row) => sum + Math.floor(row.score / 2), 0);
     const matchedTerms = [...new Set([
-      ...(directQualified ? direct.matchedTerms : []),
+      ...claim.matchedTerms,
       ...matchedChildren.flatMap((row) => row.matchedTerms),
     ])].sort();
     return {
       doc,
-      score: (directQualified ? direct.score : 0) + childScore,
+      score: claim.score,
       matchedTerms,
       matchedChildren,
-      qualified: directQualified || matchedChildren.length > 0,
+      qualified: claim.qualified,
     };
   }).filter((row) => row.qualified);
   rows.sort((left, right) => right.score - left.score || left.doc.slug.localeCompare(right.doc.slug));
@@ -408,8 +516,9 @@ export function buildCompactAgentBrief({
   }
   const scopedDocs = Array.isArray(docs) ? docs : [];
   const projectDoc = scopedDocs.find((doc) => doc.slug === brief.projectSlug && doc.frontmatter?.kind === 'project') ?? null;
-  const terms = taskTerms(task);
-  const selected = selectCapability(scopedDocs, terms);
+  const intent = taskIntent(task);
+  const terms = intent.allTerms;
+  const selected = selectCapability(scopedDocs, intent);
   const capabilityDoc = selected?.doc ?? null;
   const anchorDocs = selected?.matchedChildren.map((row) => row.doc).slice(0, 3) ?? [];
   let evidenceAnchors = taskEvidenceAnchors(selected, brief);
@@ -545,7 +654,7 @@ export function buildCompactAgentBrief({
       status: capabilityDoc
         ? evidenceAnchors.length > 0 ? 'matched_with_evidence' : 'matched_without_element_evidence'
         : 'not_recorded',
-      selectionPolicy: 'Lexical match selects persisted evidence; it is not behavior proof or approval.',
+      selectionPolicy: 'Persisted Definition, Includes, and Excludes compatibility selects evidence; it is not behavior proof or approval.',
       capability: capabilityDoc
         ? {
             ...compactDoc(capabilityDoc),

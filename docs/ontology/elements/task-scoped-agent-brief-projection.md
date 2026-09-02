@@ -24,14 +24,15 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 - Primary implementation: `mcp/src/agent-brief-compact.mjs#buildCompactAgentBrief`
 - Supporting implementation: `mcp/src/index.js#queryOntologyTool`
 - Focused test: `mcp/src/task-navigation-evidence.test.mjs#resolves reviewed JavaScript functions and named tests without source snippets`
-- Focused test: `mcp/src/agent-brief-compact.test.mjs#projects current reviewed task navigation without persisting task text or source prose`
-- Focused test: `mcp/src/integration.test.mjs#query_ontology agent_brief: current reviewed coordinates become one exact task-navigation batch`
+- Focused test: `mcp/src/agent-brief-compact.test.mjs#routes by persisted responsibility and boundaries instead of noun overlap`
+- Focused test: `mcp/src/integration.test.mjs#query_ontology agent_brief: persisted claim boundaries outrank task noun overlap`
 
 ## Includes
 
 - Project-scoped counts, hubs, entrypoints, and final readiness wording.
 - A compact v2 opt-in response with a 12,000-byte UTF-8 JSON ceiling.
-- Lexical selection of one broad persisted capability and only task-matched element anchors.
+- Claim-compatible selection of one broad persisted capability from Definition, Includes, and Excludes, with boundary conflicts, unsupported claims, and ties refused.
+- Only task-matched element anchors after the parent capability claim is compatible.
 - A source-current task-navigation receipt for reviewed implementation, supporting, and focused-test coordinates.
 - Whole-vault validation, source and meaning currentness, approval guards, and explicit unknowns.
 
@@ -45,3 +46,5 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 ## Uncertainty
 
 The latest same-task frozen-control run reduced source reads from four to one, wall time by 23.9%, and uncached input by 19.1%; two order-reversed blind judges preferred the treatment. Cross-repository speed remains unearned because the prospective unfamiliar-repository coding lane could not start without its required toolchain, so compact delivery remains explicit opt-in.
+
+The boundary-routing control now selects policy appraisal for three policy tasks and expiry diagnostics for one diagnostic control in both document orders, and refuses conflicting or ambiguous claims. A held-out source-hidden replay remains required before this read-side correction can support any broader ontology-construction claim.

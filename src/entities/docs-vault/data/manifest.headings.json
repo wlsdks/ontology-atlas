@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap",
+      "slug": "2026-09-02-compact-task-handoff-follows-persisted-capability-boundaries-not-noun-overlap"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-02 — The 3D ownership arrangement becomes a cone tree, arrangement switches morph, and a dome visit no longer keeps 2D awake",
       "slug": "2026-09-02-the-3d-ownership-arrangement-becomes-a-cone-tree-arrangement-switches-morph-and-a-dome-visit-no-longer-keeps-2d-awake"
     },
@@ -9799,6 +9804,11 @@
       "depth": 3,
       "text": "Exact task-navigation truth",
       "slug": "exact-task-navigation-truth"
+    },
+    {
+      "depth": 3,
+      "text": "Compact task-claim routing",
+      "slug": "compact-task-claim-routing"
     },
     {
       "depth": 3,
