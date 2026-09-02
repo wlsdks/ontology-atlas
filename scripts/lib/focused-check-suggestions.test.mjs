@@ -650,8 +650,10 @@ describe('focused check suggestions', () => {
 
     // Every path here is also inventoried by `agent-files`, and `.claude/settings.json`
     // carries the `permissions.deny` rules the secret-read guard derives from
-    // `.gitignore`, so all three gates apply.
+    // `.gitignore`, so all three gates apply. The runtime smoke derives its
+    // expected hook counts from both wiring files, so it re-proves its parsers.
     assert.deepEqual(domainCommands(result), [
+      'pnpm test:harness:smoke',
       'pnpm test:claude:hooks',
       'pnpm agents:check',
       'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',

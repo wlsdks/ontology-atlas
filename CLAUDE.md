@@ -19,7 +19,7 @@ sources; nothing else points at them.
 | `.agents/skills/**`, `.agents/agents/**` | does not read | reads |
 | `.codex/**` | does not read | reads config and hooks |
 
-The Codex column stands for every tool reading the open format: Cursor,
+The Codex column covers every open-format reader: Cursor,
 Antigravity CLI and Copilot resolve `AGENTS.md` and its nested files the same
 way. That file owns the mirror contract, the nested-pointer rule, and what
 `pnpm agents:check` enforces.
@@ -44,8 +44,8 @@ inventoried agent files. Seven mirror `.codex/hooks/`: the three blocks, the
 vault census, and the sensor lane. A Codex edit is
 `apply_patch` carrying a patch envelope, so mirrors are adapted, not copied.
 `report-agent-file-drift.sh` is Claude-only, `block-secret-read.sh` Codex-only.
-Headers say why. Change wiring with `pnpm test:claude:hooks`; judge sensors
-with `pnpm harness:report`.
+Headers say why. `pnpm test:claude:hooks` guards wiring, `pnpm harness:report`
+judges sensors, `pnpm harness:smoke` proves the runtimes.
 
 ## Synchronization
 

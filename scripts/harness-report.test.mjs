@@ -56,6 +56,29 @@ describe('harness report', () => {
     assert.equal(report.verdict, 'sensor-earning-its-place');
   });
 
+  it('reports the last smoke verdict per runtime and flags one older than the window', () => {
+    const report = withHarnessState(
+      {
+        'smoke.jsonl':
+          `${JSON.stringify({ at: new Date(old).toISOString(), runtime: 'claude', ok: true, problems: [] })}\n` +
+          `${JSON.stringify({ at: new Date(recent).toISOString(), runtime: 'codex', ok: false, problems: ['Stop: 0 completed'] })}\n` +
+          `${JSON.stringify({ at: new Date(recent - 5000).toISOString(), runtime: 'codex', ok: true, problems: [] })}\n`,
+      },
+      () => buildHarnessReport({ now: NOW }),
+    );
+    assert.equal(report.smoke.claude.ok, true);
+    assert.equal(report.smoke.claude.stale, true, 'a pass from 40 days ago proves nothing about today');
+    // The newest codex row wins, not the last one written.
+    assert.equal(report.smoke.codex.ok, false);
+    assert.deepEqual(report.smoke.codex.problems, ['Stop: 0 completed']);
+  });
+
+  it('says so when the smoke has never run, instead of staying silent', () => {
+    const lines = [];
+    withHarnessState({}, () => runHarnessReport([], { log: (line) => lines.push(line), error: () => {} }));
+    assert.match(lines.join('\n'), /runtime smoke: never run here/);
+  });
+
   it('names the sensor falsifier when real edits caught nothing', () => {
     const report = withHarnessState(
       { 'session-a.edits': `${recent}\tsrc/a.ts\n` },

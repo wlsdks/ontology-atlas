@@ -825,7 +825,13 @@ sessions edited source, how many ended before verifying, and what the
 edit-time sensor caught, over a `--days=` window (14 by default, `--json` for
 a machine). It reads only local gitignored session state under `.tmp/harness/`
 and reports a `sensor-caught-nothing` verdict when the lane stopped earning its
-place, which is the falsifier those hooks were added under.
+place, which is the falsifier those hooks were added under. It also shows when
+`pnpm harness:smoke` last passed per runtime. That smoke drives one short
+Claude Code and Codex session each (a shell command, then the vault node count
+from the census), counts which hook events completed against the project
+wiring, and fails on any hook the runtime marked failed, any count below the
+wiring, or a census that never reached the model. It needs both CLIs signed in,
+so it is a local check, not CI.
 
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before

@@ -397,6 +397,13 @@ const RULES = [
     ],
   },
   {
+    // The smoke reads its expected counts from both hook wirings, so a change
+    // to either settings file re-proves the parsers against them.
+    command: 'pnpm test:harness:smoke',
+    reason: 'the runtime smoke, or the hook wiring it derives its expectations from, changed',
+    matches: [/^scripts\/harness-smoke(?:\.test)?\.mjs$/, /^\.claude\/settings\.json$/, /^\.codex\/hooks\.json$/],
+  },
+  {
     command: 'pnpm test:claude:hooks',
     reason: 'agent hook wiring, a guard, or the commit-message gate changed',
     /*
