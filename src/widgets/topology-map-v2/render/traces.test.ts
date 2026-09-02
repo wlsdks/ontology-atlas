@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bezierPoint, computeBowControlPoint, computeDependsBowControlPoint, dependsTaperFactor, DEPENDS_TAPER_END, DEPENDS_TAPER_START, draw, type Point, type TraceDrawState } from "./traces";
+import { bezierPoint, computeBowControlPoint, computeDependsBowControlPoint, dependsTaperFactor, DEPENDS_TAPER_END, DEPENDS_TAPER_START, draw, HOVER_LIFT_WIDTH_PX, type Point, type TraceDrawState } from "./traces";
 
 describe("computeBowControlPoint", () => {
   it("never bows further than maxBow*blend from the segment midpoint", () => {
@@ -367,3 +367,85 @@ describe("computeDependsBowControlPoint", () => {
 });
 
 /** Corner self-similarity: the silhouette keeps the same character regardless of zoom (screen r). */
+
+describe("hover lift — a hovered node's lines rise toward the ego ink on the ramp (2026-09-02)", () => {
+  const TOKENS = {
+    edgeContains: "#3a3a42",
+    edgeDepends: "#4c4c63",
+    edgeDim: "#1a1a1f",
+    indigo: "#5e6ad2",
+    indigoBright: "#8b97ff",
+  };
+  function drawAndRead(state: TraceDrawState): { stroke: string; width: number } {
+    let stroke = "";
+    let width = 0;
+    const ctx: Record<string, unknown> & { strokeStyle: string; lineWidth: number } = {
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {},
+      stroke() {
+        // The body stroke is the last one; halo and tails happen elsewhere.
+        stroke = String(ctx.strokeStyle);
+        width = ctx.lineWidth;
+      },
+      fill() {},
+      setLineDash() {},
+      arc() {},
+      strokeStyle: "",
+      fillStyle: "",
+      lineWidth: 0,
+      lineCap: "butt",
+      lineJoin: "miter",
+      lineDashOffset: 0,
+    };
+    draw(ctx as unknown as CanvasRenderingContext2D, state, TOKENS);
+    return { stroke, width };
+  }
+  const contains: TraceDrawState = {
+    a: { x: 0, y: 0 },
+    b: { x: 100, y: 0 },
+    control: { x: 50, y: 20 },
+    relationType: "contains",
+    egoState: "normal",
+    farT: 0,
+    t: 0.5,
+    reducedMotion: true,
+  };
+
+  it("lift 0 draws the plain normal line", () => {
+    const plain = drawAndRead(contains);
+    const zero = drawAndRead({ ...contains, hoverLift: 0 });
+    expect(zero).toEqual(plain);
+  });
+
+  it("full lift lands on the ego ink and gains the lift width", () => {
+    const plain = drawAndRead(contains);
+    const lifted = drawAndRead({ ...contains, hoverLift: 1 });
+    // `mixHex` emits rgb() — compare channels, not spelling.
+    const rgb = (c: string) => {
+      const m = c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+      if (m) return [Number(m[1]), Number(m[2]), Number(m[3])];
+      return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16));
+    };
+    expect(rgb(lifted.stroke)).toEqual(rgb(TOKENS.indigo));
+    expect(lifted.width).toBeCloseTo(plain.width + HOVER_LIFT_WIDTH_PX, 6);
+  });
+
+  it("half lift sits between — the ramp, not a switch", () => {
+    const plain = drawAndRead(contains);
+    const half = drawAndRead({ ...contains, hoverLift: 0.5 });
+    const full = drawAndRead({ ...contains, hoverLift: 1 });
+    expect(half.width).toBeGreaterThan(plain.width);
+    expect(half.width).toBeLessThan(full.width);
+    expect(half.stroke).not.toBe(plain.stroke);
+    expect(half.stroke.toLowerCase()).not.toBe(full.stroke.toLowerCase());
+  });
+
+  it("ego and dim edges ignore the lift — focus owns those inks", () => {
+    const ego = drawAndRead({ ...contains, egoState: "ego" });
+    expect(drawAndRead({ ...contains, egoState: "ego", hoverLift: 1 })).toEqual(ego);
+    const dim = drawAndRead({ ...contains, egoState: "dim" });
+    expect(drawAndRead({ ...contains, egoState: "dim", hoverLift: 1 })).toEqual(dim);
+  });
+});

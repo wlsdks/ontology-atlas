@@ -31,7 +31,7 @@ import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navig
 import { stepSpotlightPhase } from "../model/spotlight-motion";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { resolveViewportReframeMode } from "../model/viewport-reframe";
-import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
+import { classifyZoomTier, computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -43,7 +43,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
-import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnLabelBoxes } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
@@ -83,7 +83,7 @@ import {
 } from "../model/realm-depth-parallax";
 import {
   beginDomeModelBuild,
-  buildDomeModel,
+  beginDomeMorph,
   clampDomePitch,
   DOME_BUILD_SLICE_MS,
   createDomeRuntime,
@@ -107,6 +107,7 @@ import {
   ORBIT_SMOOTH_TAU_MS,
   projectDomeCoord,
   stepDomeDragSpring,
+  settleDomeRuntimeOffscreen,
   updateDomeFrame,
   type DomeModelBuild,
   type DomeRuntime,
@@ -123,6 +124,8 @@ import {
   shouldAnnounceDeadEnd,
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
+import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
+import { createGrowthReplay, GROWTH_REPLAY_CANCEL_GRACE_MS, stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
 import {
   collectCanvasObstacles,
   computeFreeArea,
@@ -238,6 +241,8 @@ export interface UseTopologyLoopArgs {
    */
   overviewFit?: "spine" | "full";
   fitViewToken: number;
+  /** Bump to start a growth replay (`model/growth-replay.ts`). Ignored under reduced motion. */
+  growthReplayToken?: number;
   /** Bumped to aim the camera at the spotlit nodes when the lens or its window changes (0 = unused). */
   spotlightFitToken?: number;
   relayoutToken: number;
@@ -421,12 +426,12 @@ export interface UseTopologyLoopArgs {
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — relays the map into the ownership Dome or
+   * 3D view (2026-08-18, opt-in) — relays the map into the ownership Cone tree or
    * relation-driven Cloud (`model/dome-view.ts`). Draw, hit-testing, DOM anchors,
    * and the inspection hook all read the same frame map. Omitted keeps 2D.
    */
   view3d?: boolean;
-  /** Which 3D structure is drawn — ownership Dome or coupling Cloud. */
+  /** Which 3D structure is drawn — ownership Cone tree or coupling Cloud. */
   mapArrangement?: MapArrangement;
   /** 3D reframe input: is the detail panel covering the viewport (`TopologyMapV2` JSDoc). */
   detailPanelVisible?: boolean;
@@ -459,7 +464,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
@@ -584,6 +589,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const domeFocusPendingRef = useRef<{ slug: string | null } | null>(null);
   /** One-shot after 3D turns on: cinematically fit the camera to the dome bbox. Turning it off leaves the camera alone. */
   const domeFitPendingRef = useRef(false);
+  /**
+   * Duration for the next dome fit tween (ms), set together with
+   * `domeFitPendingRef`: the assembly length on entry, the morph length on an
+   * arrangement refit. Undefined falls back to the 2D transition rule.
+   */
+  const domeFitDurationRef = useRef<number | undefined>(undefined);
   /**
    * Debt to refit the 2D overview after 3D turns off — written by the `view3d`
    * effect, paid by the loop's dome step **once teardown has finished**.
@@ -971,6 +982,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * seeded at 1 and this cannot collide with the initial-load choreography.
    */
   const appearRef = useRef<Map<string, number>>(new Map());
+  /**
+   * Growth replay in flight (`model/growth-replay.ts`), or null. While it runs
+   * the draw reads `growthReplayAppearRef` instead of `appearRef`, so the
+   * physics step's own appear ramp is untouched and resumes the moment the
+   * replay ends or is cancelled by input.
+   */
+  const growthReplayRef = useRef<GrowthReplay | null>(null);
+  const growthReplayAppearRef = useRef<Map<string, number>>(new Map());
+  const growthReplayTokenSeenRef = useRef(growthReplayToken);
   const prevNodeIdsRef = useRef<Set<string>>(new Set());
   /**
    * Ids of nodes **born during this session**. The appearance ramp
@@ -1243,6 +1263,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * some paths happened to land right. This makes the accident a contract.
      */
     domeFitPendingRef.current = view3d;
+    if (view3d) domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
     if (!view3d) flatFitPendingRef.current = true;
     // Re-entering 3D restarts an untouched screen, so rearm the attention spin
     // (the rule that lowers it on interaction is in the spinArmed JSDoc) and
@@ -1858,13 +1879,12 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   // --- relayoutToken / fitViewToken — both mean "spring back to the full overview fit" ---
-  useEffect(() => {
-    // Skip while both tokens still equal their captured mount-time values —
-    // this effect's own mount-time fire (see `initialFitTokensRef` above).
-    // `trySnapInitialCamera` already set the correct initial camera; this
-    // effect should only react to an actual "fit view"/relayout click after.
-    const initial = initialFitTokensRef.current;
-    if (relayoutToken === initial.relayout && fitViewToken === initial.fitView) return;
+  /**
+   * Spring back to the full overview fit — shared by the fit/relayout tokens
+   * and the `0` key (`interaction/keyboard-zoom.ts`), so the keyboard fit is
+   * byte for byte the fit the toolbar performs.
+   */
+  const runOverviewFit = useCallback(() => {
     const tokens = readTopologyV2TokensOrNull();
     const world = worldRef.current;
     const { width, height } = viewportRef.current;
@@ -1944,7 +1964,49 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [relayoutToken, fitViewToken, beginCameraTween]);
+  }, [beginCameraTween]);
+  useEffect(() => {
+    if (growthReplayToken === growthReplayTokenSeenRef.current) return;
+    growthReplayTokenSeenRef.current = growthReplayToken;
+    const world = worldRef.current;
+    if (!world || reducedMotionRef.current) return;
+    const tokens = readTopologyV2TokensOrNull();
+    if (!tokens) return;
+    // Fit first so the whole ontology is on screen while it grows; the fit tween
+    // and the first nodes start on the same frame.
+    runOverviewFit();
+    const now = performance.now();
+    /*
+     * Schedule only what the screen will actually show. In 2D the density gate
+     * hides elements at overview altitude, and a replay paced over 125 nodes of
+     * which 36 are visible spent most of its twelve seconds on nothing
+     * (measured 2026-09-02: one visible birth per second). The tier alpha is
+     * read at the **fit target** scale, since that is where the camera is
+     * heading; the cone tree draws every tier, so 3D keeps them all.
+     */
+    const zoomRatio = computeZoomRatio(cameraTargetRef.current.tscale, overviewScaleRef.current * tokens.overviewEntryRatio);
+    const dome = domeRuntimeRef.current;
+    const domeOn = dome !== null && dome.active;
+    const clustered = clusteredIdsRef.current;
+    const shown = world.nodes.filter(
+      (n) => !clustered.has(n.id) && (domeOn || nodeTierAlpha(n.kind, n.isHub, zoomRatio, tierRevealRef.current) > 0.05),
+    );
+    growthReplayRef.current = createGrowthReplay(
+      shown.map((n) => ({ id: n.id, kind: n.kind, parentId: n.parentId })),
+      now,
+    );
+    growthReplayAppearRef.current = new Map();
+    lastActiveMsRef.current = now;
+  }, [growthReplayToken, runOverviewFit]);
+  useEffect(() => {
+    // Skip while both tokens still equal their captured mount-time values —
+    // this effect's own mount-time fire (see `initialFitTokensRef` above).
+    // `trySnapInitialCamera` already set the correct initial camera; this
+    // effect should only react to an actual "fit view"/relayout click after.
+    const initial = initialFitTokensRef.current;
+    if (relayoutToken === initial.relayout && fitViewToken === initial.fitView) return;
+    runOverviewFit();
+  }, [relayoutToken, fitViewToken, runOverviewFit]);
 
   /*
    * The spotlight fit: the **moment** the recent-changes lens turns on or its
@@ -2517,9 +2579,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
      * demand it) and tie the draw loop to that identity. Here matches its real
      * lifetime — the function reads only refs.
      */
-    const domeEdgeControlForFrame = (sourceId: string, targetId: string) => {
+    const domeEdgeControlForFrame = (sourceId: string, targetId: string, kind: "contains" | "depends") => {
       const dome = domeRuntimeRef.current;
-      return dome === null ? null : domeEdgeControlWorld(dome, sourceId, targetId);
+      return dome === null ? null : domeEdgeControlWorld(dome, sourceId, targetId, kind);
     };
     /**
      * **`alpha: false` — this map never needs to show what is behind it.**
@@ -2731,6 +2793,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                * expensive class of symptom to trace back to its cause.
                */
               domeRt.yawSnap !== null ||
+              domeRt.morph !== null ||
               domeRt.entryArmed ||
               domeFocusPendingRef.current !== null ||
               Math.abs(domeRt.lag.domain) + Math.abs(domeRt.lag.capability) + Math.abs(domeRt.lag.element) > 1e-4 ||
@@ -2758,6 +2821,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                   assembled: domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
                 }))));
 
+        // Growth replay — advance every node's appear value for this frame; the
+        // first input after the starting click ends it (nothing is left behind,
+        // `appearRef` still holds every node at 1).
+        if (growthReplayRef.current !== null) {
+          const replay = growthReplayRef.current;
+          const cancelled = lastInputMsRef.current > replay.startMs + GROWTH_REPLAY_CANCEL_GRACE_MS;
+          if (cancelled || stepGrowthReplay(replay, now, growthReplayAppearRef.current)) {
+            growthReplayRef.current = null;
+          }
+          lastActiveMsRef.current = now;
+        }
         const idleFlags = {
           pointerActive: pointerMachineRef.current.phase !== "idle",
           // The sim counts as warm only while a drag grab/release is charging
@@ -2776,6 +2850,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // always-on), so the canvas is never idle; the focused `contains`
           // comets and the hover pulses raise the same flag. When the document
           // is hidden the browser stops rAF itself, which protects the battery.
+          growthReplaying: growthReplayRef.current !== null,
           egoTailAnimating: isEgoTailAnimating({
             reducedMotion: reducedMotionRef.current,
             ambientAsleep,
@@ -2905,21 +2980,78 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               // When the map loads with 3D already on (a saved preference on
               // revisit) the toggle effect never runs, so the first fit is
               // scheduled here.
-              if (domeTargetOn) domeFitPendingRef.current = true;
+              if (domeTargetOn) {
+                domeFitPendingRef.current = true;
+                domeFitDurationRef.current = DOME_ASSEMBLE_TOTAL_MS;
+              }
             } else {
-              // The world changed — re-solve layout, keep the pose (yaw/pitch).
-              // Recomputed synchronously because the dome is already on screen;
-              // deferring it into slices would draw the stale model meanwhile
-              // and briefly show the old arrangement.
-              dome.model = buildDomeModel(
-                world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
-                { arrangement: mapArrangementRef.current, edges: world.edges },
-              );
-              dome.frame.clear();
-              dome.drawnBounds = null;
-              dome.drag = null;
+              /*
+               * The world or the arrangement changed while the dome is on
+               * screen — re-solve layout, keep the pose (yaw/pitch).
+               *
+               * Measured 2026-09-02: this path rebuilt synchronously, so a
+               * dome→cloud switch held one frame for 22 ms at 125 nodes and
+               * **260 ms at 1,000** — the first-entry path above had been sliced
+               * (ledger (85)) but a switch had not. It now consumes the same
+               * sliced build; the previous model keeps drawing meanwhile, and
+               * on completion the coordinates **morph** to the new model
+               * (`beginDomeMorph`) instead of cutting.
+               */
+              let pending = domeModelBuildRef.current;
+              if (
+                pending === null ||
+                pending.world !== world ||
+                pending.arrangement !== mapArrangementRef.current
+              ) {
+                pending = {
+                  world,
+                  arrangement: mapArrangementRef.current,
+                  build: beginDomeModelBuild(
+                    world.nodes.map((n) => ({ id: n.id, kind: n.kind, x: n.x, y: n.y, parentId: n.parentId })),
+                    { arrangement: mapArrangementRef.current, edges: world.edges },
+                  ),
+                };
+                domeModelBuildRef.current = pending;
+              }
+              if (pending.build.step !== null && !pending.build.step(DOME_BUILD_SLICE_MS)) {
+                /*
+                 * Still relaxing — **hold the previous picture** this frame and
+                 * resume next frame, the same contract as first entry. Redrawing
+                 * the old model on every slice frame stacked ~10 ms of draw on the
+                 * 28 ms slice (measured 2026-09-02 at 3,000 nodes: p95 52 ms for 31
+                 * frames), and nothing on screen was moving anyway — the click on
+                 * the picker put the pointer over the canvas, which parks the spin.
+                 * Counted as activity so the idle gate does not fold mid-build.
+                 */
+                lastActiveMsRef.current = now;
+                handle = requestAnimationFrame(frame);
+                return;
+              } else {
+                domeModelBuildRef.current = null;
+                beginDomeMorph(dome, pending.build.model, now, reducedMotionRef.current ? 0 : DOME_POSE_MS);
+                dome.drawnBounds = null;
+                dome.drag = null;
+                domeWorldSourceRef.current = world;
+                /*
+                 * Refit only when the new shape does not fit the viewport at the
+                 * current zoom (the cloud is wider than the tree, so a switch made
+                 * after a selection reframe spilled nodes past the top edge —
+                 * measured 2026-09-02). A shape that still fits keeps the zoom the
+                 * user set; the pose is never touched either way.
+                 */
+                const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
+                if (b !== null) {
+                  const scale = cameraRef.current.scale.value;
+                  const spanX = (b.maxX - b.minX) * 1.3 * scale;
+                  const spanY = (b.maxY - b.minY) * 1.3 * scale;
+                  if (spanX > width || spanY > height) {
+                    domeFitPendingRef.current = true;
+                    domeFitDurationRef.current = DOME_POSE_MS;
+                  }
+                }
+              }
             }
-            domeWorldSourceRef.current = world;
+            if (domeModelBuildRef.current === null) domeWorldSourceRef.current = world;
           }
           dome.active = domeTargetOn;
           // Once, right after turning on: fit the camera so the whole dome sits
@@ -2946,7 +3078,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
               userDrivenCameraRef.current = false;
               dampingRef.current = tokens.cameraDampingDefault;
               cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-              beginCameraTween(target);
+              /*
+               * The fit rides the choreography's clock, not the 2D tween cap
+               * (measured 2026-09-02 on a real recording: the zoom-out finished
+               * in 300 ms while the rings were still at 33% of their rise, so
+               * one input read as two events — a whip, then a slow assembly).
+               * Entry takes the assembly length; an arrangement refit takes
+               * the morph length. `domeFitDurationRef` is set by whoever raised
+               * the pending flag.
+               */
+              beginCameraTween(target, domeFitDurationRef.current);
+              domeFitDurationRef.current = undefined;
             }
           }
           const dtMs = dt * 1000;
@@ -2994,8 +3136,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
            * after turning 3D off differed from the view after pressing
            * fit-view, that difference would itself be the next defect.
            */
-          if (flatFitPendingRef.current && !domeTargetOn && dome.rampClock <= 0) {
+          /*
+           * The return fit starts **with** the teardown and lasts exactly as
+           * long (measured 2026-09-02: it used to wait for the ramp to reach 0,
+           * so the concepts folded back at 3D zoom for 700 ms and only then
+           * the camera zoomed in — two events for one input). The target is the
+           * 2D overview, whose bounds do not depend on the ramp, so it is known
+           * on the first teardown frame; the tween and the ramp end together.
+           */
+          if (flatFitPendingRef.current && !domeTargetOn) {
             flatFitPendingRef.current = false;
+            const teardownMs = reducedMotionRef.current ? 0 : dome.rampClock / 1.6;
             const flatTarget = computeOverviewCameraTarget(
               overviewBoundsFor(overviewFitRef.current, world),
               width,
@@ -3017,7 +3168,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             userDrivenCameraRef.current = false;
             dampingRef.current = tokens.cameraDampingDefault;
             cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
-            beginCameraTween(flatTarget);
+            beginCameraTween(flatTarget, teardownMs > 0 ? teardownMs : undefined);
             lastActiveMsRef.current = now;
           }
           // 3D selection reframe: consume the ticket the focus effect left
@@ -3296,10 +3447,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           if (dome.rampClock > 0) {
             // The dot radius denominator — the same formula draw and
             // hit-testing multiply by.
-            updateDomeFrame(dome, world.nodes, (n) => {
-              const w = world.nodeById.get(n.id);
-              return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
-            });
+            updateDomeFrame(
+              dome,
+              world.nodes,
+              (n) => {
+                const w = world.nodeById.get(n.id);
+                return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
+              },
+              now,
+            );
           } else if (dome.frame.size > 0) {
             dome.frame.clear();
             dome.drawnBounds = null;
@@ -3308,6 +3464,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           }
         } else if (dome !== null) {
           dome.active = false;
+          // Fully off screen: rest every in-flight motion so the idle gate can
+          // fold (see `settleDomeRuntimeOffscreen` — before this, a single 3D
+          // visit kept the 2D map awake at 120 frames/s for the whole session).
+          settleDomeRuntimeOffscreen(dome);
+          domeModelBuildRef.current = null;
           domeFocusPendingRef.current = null;
           if (dome.frame.size > 0) {
             dome.frame.clear();
@@ -3952,7 +4113,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
-        appearById: appearRef.current,
+        appearById: growthReplayRef.current !== null ? growthReplayAppearRef.current : appearRef.current,
         tierReveal: tierRevealRef.current,
       });
       cameraRef.current = camera;
@@ -4738,7 +4899,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
-        appearById: appearRef.current,
+        appearById: growthReplayRef.current !== null ? growthReplayAppearRef.current : appearRef.current,
         bornNodeIds: bornNodeIdsRef.current,
         chipRevealById: chipRevealRef.current,
         expandRevealById: expandRevealRef.current,
@@ -5093,6 +5254,42 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * nothing is visible".
    */
   const handleKeyDown = useCallback((e: ReactKeyboardEvent<HTMLCanvasElement>) => {
+    /*
+     * Keyboard zoom and fit (`interaction/keyboard-zoom.ts`): `+`/`-` step the
+     * camera about the viewport centre on the same tween the fit uses, `0` is
+     * the toolbar fit itself. Modifier combinations fall through to the browser.
+     */
+    const zoomIntent = keyboardZoomIntent(e);
+    if (zoomIntent !== null) {
+      e.preventDefault();
+      if (zoomIntent.kind === "fit") {
+        runOverviewFit();
+        return;
+      }
+      const tokens = readTopologyV2TokensOrNull();
+      if (!tokens) return;
+      const target = cameraTargetRef.current;
+      const overviewEntryScale = overviewScaleRef.current * tokens.overviewEntryRatio;
+      const scaleMax = computeEffectiveCameraScaleMax(overviewEntryScale, tokens.cameraMaxZoomRatio, tokens.cameraScaleMax);
+      let scaleMin = computeEffectiveCameraScaleMin(overviewEntryScale, tokens.cameraMinZoomRatio, tokens.cameraScaleMin);
+      const dome = domeRuntimeRef.current;
+      if (dome !== null && dome.active) {
+        // The 3D fit sits below the 2D floor; the wheel path lowers the floor the same way.
+        if (dome.fitScale !== null) scaleMin = Math.min(scaleMin, dome.fitScale);
+        dome.spinArmed = false;
+        commitDomeEntrySweep(dome);
+        dome.poseTween = null;
+      }
+      const tscale = Math.min(scaleMax, Math.max(scaleMin, target.tscale * zoomIntent.factor));
+      if (Math.abs(tscale - target.tscale) < 1e-6) return;
+      const next = { tx: target.tx, ty: target.ty, tscale };
+      cameraTargetRef.current = next;
+      userDrivenCameraRef.current = true;
+      dampingRef.current = tokens.cameraDampingDefault;
+      cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
+      beginCameraTween(next);
+      return;
+    }
     const direction = walkDirectionForKey(e.key);
     if (!direction) return;
     if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
@@ -5226,7 +5423,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         beginCameraTween(cameraTarget);
       }
     }
-  }, [onSelect, beginCameraTween, announceDeadEnd]);
+  }, [onSelect, beginCameraTween, announceDeadEnd, runOverviewFit]);
 
   const wrappedHandlers = useMemo(
     () => ({

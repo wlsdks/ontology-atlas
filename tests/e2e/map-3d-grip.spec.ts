@@ -45,13 +45,38 @@ async function readPose(page: import("@playwright/test").Page) {
 async function domeScreenBox(page: import("@playwright/test").Page) {
   return page.evaluate(() => {
     const m = (
-      window as unknown as { __atlasMap?: { nodes: () => Array<{ hidden: boolean; x: number; y: number }> } }
+      window as unknown as {
+        __atlasMap?: { nodes: () => Array<{ hidden: boolean; x: number; y: number; radius: number }> };
+      }
     ).__atlasMap;
     const box = document.querySelector('[data-testid="topology-map-v2-canvas"]')?.getBoundingClientRect();
     const nodes = (m?.nodes() ?? []).filter((n) => !n.hidden);
     if (!box || nodes.length === 0) return null;
     const xs = nodes.map((n) => n.x);
     const ys = nodes.map((n) => n.y);
+    const cx = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const cy = (Math.min(...ys) + Math.max(...ys)) / 2;
+    /*
+     * The inside point is the bbox centre **moved to the nearest empty spot**. On
+     * the cone tree (2026-09-02) a domain sits a few px from the centre, and a
+     * pointerdown on a node is a node drag, not an orbit — the test would then
+     * fail for a reason that is not the grip rule. Spiral out until nothing is
+     * within its disc plus a margin.
+     */
+    const clear = (x: number, y: number) => nodes.every((n) => Math.hypot(n.x - x, n.y - y) > n.radius + 10);
+    let insideX = cx;
+    let insideY = cy;
+    search: for (let ring = 0; ring < 40; ring += 1) {
+      for (let a = 0; a < 12; a += 1) {
+        const x = cx + Math.cos((a / 12) * Math.PI * 2) * ring * 6;
+        const y = cy + Math.sin((a / 12) * Math.PI * 2) * ring * 6;
+        if (clear(x, y)) {
+          insideX = x;
+          insideY = y;
+          break search;
+        }
+      }
+    }
     return {
       left: box.left,
       top: box.top,
@@ -59,6 +84,8 @@ async function domeScreenBox(page: import("@playwright/test").Page) {
       maxX: Math.max(...xs),
       minY: Math.min(...ys),
       maxY: Math.max(...ys),
+      insideX,
+      insideY,
     };
   });
 }
@@ -123,8 +150,8 @@ test("3D — 돔 안을 끌면 돌고, 돔 밖 검은 자리를 끌면 지도가
   const box2 = await domeScreenBox(page);
   expect(box2, "팬 뒤에 돔이 화면 밖으로 나갔다 — ①의 이동량이 과하다").not.toBeNull();
   const b2 = box2!;
-  const insideX2 = b2.left + (b2.minX + b2.maxX) / 2;
-  const insideY2 = b2.top + (b2.minY + b2.maxY) / 2;
+  const insideX2 = b2.left + b2.insideX;
+  const insideY2 = b2.top + b2.insideY;
   const before2 = await readPose(page);
   await page.mouse.move(insideX2, insideY2);
   await page.mouse.down();

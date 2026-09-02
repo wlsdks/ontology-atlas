@@ -314,11 +314,12 @@ Recent changes can narrow the map while preserving project and domain context;
 Footprints record the order in which you opened concepts. Both are views over
 local file and session evidence, not hosted activity guesses.
 
-![The current 3D picker in the installed macOS app, offering Flat for the ordinary 2D map, Dome for tiers stacked the way things are contained, and Cloud for clustering by what relates to what](docs/assets/readme/three-dimensional-views.png)
+![The current 3D picker in the installed macOS app, offering Flat for the ordinary 2D map, Cone for containment drawn as nested cones, and Cloud for clustering by what relates to what](docs/assets/readme/three-dimensional-views.png)
 
 Three spatial readings are explicit rather than mixed together: **Flat** is the
-normal 2D map, **Dome** places containment tiers in depth, and **Cloud** lets
-relations determine all three axes. Changing the view never changes the graph.
+normal 2D map, **Cone** hangs each parent's children on a cone directly under
+it with height as the containment tier, and **Cloud** lets relations determine
+all three axes. Changing the view never changes the graph.
 
 ### 4. Plan against reviewed architecture
 

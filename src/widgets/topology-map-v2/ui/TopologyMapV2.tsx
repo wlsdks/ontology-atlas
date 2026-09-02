@@ -118,6 +118,8 @@ export interface TopologyMapV2Props {
   dataSourceKey?: string | null;
   /** Increment to re-run fit-to-bounds (HomePage's "fit the map" — fit the map). */
   fitViewToken: number;
+  /** Bump to replay the ontology growing in containment order (`model/growth-replay.ts`). */
+  growthReplayToken?: number;
   /** The token that fits the camera to the emphasised nodes when the lens or period changes. */
   spotlightFitToken?: number;
   /** Increment to force a full relayout. */
@@ -339,7 +341,7 @@ export interface TopologyMapV2Props {
    */
   canvasBackground?: CanvasBackground;
   /**
-   * 3D view (2026-08-18, opt-in) — ownership becomes the concentric Dome and
+   * 3D view (2026-08-18, opt-in) — ownership becomes the Cone tree and
    * coupling becomes the relation-driven Cloud (`model/dome-view.ts`). The top
    * toolbar's 3D picker turns it on; omitted is false (2D, the default).
    */
@@ -392,7 +394,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -506,6 +508,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       emphasizedNeighborSlug,
       dataSourceKey,
       fitViewToken,
+      growthReplayToken,
       spotlightFitToken,
       relayoutToken,
       revealToken,

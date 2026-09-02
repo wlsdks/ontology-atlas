@@ -58,7 +58,7 @@ demand). See [References](#references).
 | State | What the user sees |
 |---|---|
 | **Overview (default)** | Project/domain/hub spine is visible first; semantic-zoom tier and density gates reveal more only when useful. |
-| **Hover** | Hover emphasis/ripple may light the hovered ego set, without changing durable focus or camera. |
+| **Hover** | Hover emphasis/ripple lights the hovered ego set, and since 2026-09-02 the hovered node's own lines rise toward the ego ink while every other line recedes a step, both on the same 90 ms ramp — without changing durable focus or camera. |
 | **Focus (click)** | `focus-state` keeps the node and bounded direct-neighbor ego readable, dims unrelated nodes/edges, and the camera reframes through the canvas layer. |
 | **Detail (opt-in)** | `TopologyV2DetailPanel` is the compact current datasheet; its explicit action opens `FullDetailA1` for deeper detail. |
 | **Clear** | The pointer state machine clears focus on the selected node again or empty-canvas interaction; the page Escape ladder closes one active layer at a time. |

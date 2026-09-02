@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29535,
+      "wordCount": 29834,
       "updatedAt": "2026-09-02",
       "linksOut": []
     },
@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 93187,
+      "wordCount": 93534,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "slug"
@@ -848,7 +848,7 @@
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
       "wordCount": 38393,
-      "updatedAt": "2026-08-31",
+      "updatedAt": "2026-09-02",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",
@@ -1968,8 +1968,8 @@
       },
       "headings": [],
       "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
-      "wordCount": 879,
-      "updatedAt": "2026-08-24",
+      "wordCount": 1253,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -3538,9 +3538,9 @@
         }
       },
       "headings": [],
-      "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\".",
-      "wordCount": 18,
-      "updatedAt": "2026-08-29",
+      "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\". The opt-in 3D view lives inside this widget rather than in a second renderer: model/dome-view.ts lays the ownership arrangement out as a cone tree (height = containm",
+      "wordCount": 109,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -3812,8 +3812,8 @@
       },
       "headings": [],
       "excerpt": "Design rationale and implemented contract for how the topology map reveals a node on click and stays readable + fast as the vault grows. /topology is the explicit map address; / is the map only after a vault is available (a web visitor without one sees the gateway). This is the canonical decision; .claude/rules/design.",
-      "wordCount": 1171,
-      "updatedAt": "2026-08-23",
+      "wordCount": 1198,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
