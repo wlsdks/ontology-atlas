@@ -30,7 +30,10 @@ export function resolveTopologyNodeTitle({
 
   const node = resolveTopologySelectedOntologyNode(slug, ontologyNodes);
   if (!node) return null;
-  return compactTopologyPanelTitle(node.title);
+  // The name a person reads on the map (`display_<locale>`), not the canonical
+  // search title: the path chip once said "Fulfillment → Payments" over a map
+  // whose labels were Korean (measured 2026-09-03).
+  return compactTopologyPanelTitle(node.display ?? node.title);
 }
 
 /** Strips the parenthetical aside so chips and panels fit on one line. */

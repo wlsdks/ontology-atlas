@@ -128,6 +128,17 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
  *
  * The canvas itself and its ancestors and descendants are excluded — an ancestor
  * does not «cover» the canvas, it contains it.
+ *
+ * **A modal is not a panel** (2026-09-03). Picking a result in the search
+ * palette closes it and selects the node in the same tick; the focus camera
+ * measures the DOM one frame later, while the palette is still fading out
+ * (`aria-modal` sheet, 60% of the canvas height, centred left of the middle).
+ * It was subtracted as a *left* panel — a left inset of 915 px on a 1329 px
+ * canvas — so the free area collapsed to a sliver at the right and the chosen
+ * node was aimed under the detail panel (measured: node x 1090, panel edge
+ * 955). A modal blocks the map instead of sharing the screen with it, so the
+ * camera never has to make room for one; `data-topology-camera-obstacle="none"`
+ * opts a non-modal transient surface out the same way.
  */
 export function collectCanvasObstacles(canvas: Element, canvasRect: Rect): Rect[] {
   const out: Rect[] = [];
@@ -140,6 +151,7 @@ export function collectCanvasObstacles(canvas: Element, canvasRect: Rect): Rect[
     if (box.bottom <= canvasRect.y || box.top >= canvasRect.y + canvasRect.height) continue;
     if (el.closest('details:not([open])')) continue;
     if (el.closest('[aria-hidden="true"]')) continue;
+    if (el.closest('[aria-modal="true"], [data-topology-camera-obstacle="none"]')) continue;
     const style = getComputedStyle(el);
     if (style.visibility === 'hidden' || style.display === 'none') continue;
     if (Number(style.opacity) < 0.05) continue;
