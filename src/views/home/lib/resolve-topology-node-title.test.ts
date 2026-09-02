@@ -6,10 +6,11 @@ import {
   resolveTopologyNodeTitle,
 } from "./resolve-topology-node-title";
 
-function node(id: string, title: string): KnowledgeGraphNode {
+function node(id: string, title: string, display?: string): KnowledgeGraphNode {
   return {
     id,
     title,
+    ...(display ? { display } : {}),
     kind: "capability",
     projectIds: [],
     evidenceIds: [],
@@ -18,7 +19,10 @@ function node(id: string, title: string): KnowledgeGraphNode {
   };
 }
 
-const nodes = [node("capability:checkout", "결제 (주문 도메인)")];
+const nodes = [
+  node("capability:checkout", "결제 (주문 도메인)"),
+  node("domain:fulfillment", "Fulfillment", "배송"),
+];
 const noProjects: ReadonlyMap<string, Project> = new Map();
 
 describe("resolveTopologyNodeTitle", () => {
@@ -30,6 +34,16 @@ describe("resolveTopologyNodeTitle", () => {
         ontologyNodes: nodes,
       }),
     ).toBe("결제");
+  });
+
+  it("지도가 부르는 이름(display)을 정본 제목보다 먼저 쓴다", () => {
+    expect(
+      resolveTopologyNodeTitle({
+        slug: "domain:fulfillment",
+        projectBySlug: noProjects,
+        ontologyNodes: nodes,
+      }),
+    ).toBe("배송");
   });
 
   /**

@@ -29,6 +29,14 @@ describe("SearchHint", () => {
       "title",
       "Choose a map view. Current: Cloud.",
     );
+    // With 3D on, the chip names the arrangement: the indigo tint alone cannot
+    // say which view this is once the labels fade and the choice survives a reload.
+    expect(picker).toHaveTextContent("Cloud");
+  });
+
+  it("reads 3D while the flat view is on", () => {
+    render(<SearchHint onOpenSearch={vi.fn()} onRelayout={vi.fn()} />);
+    expect(screen.getByTestId("topology-view-3d")).toHaveTextContent("3D");
   });
 
   it("exposes utility-lane token contracts on search and auto-arrange actions", () => {
