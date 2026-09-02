@@ -102,10 +102,42 @@ function readFindings(sinceMs) {
   return rows;
 }
 
+/**
+ * Last `pnpm harness:smoke` verdict per runtime. The parity tests prove the
+ * scripts; only the smoke proves the runtimes run them, so a report that did
+ * not say when that last happened would be reporting on hooks nobody watched.
+ */
+function readSmoke() {
+  const path = join(harnessDir(), 'smoke.jsonl');
+  const latest = {};
+  if (!existsSync(path)) return latest;
+  try {
+    for (const line of readFileSync(path, 'utf8').split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        const row = JSON.parse(line);
+        const at = Date.parse(row?.at ?? '');
+        if (!Number.isFinite(at) || typeof row.runtime !== 'string') continue;
+        if (!latest[row.runtime] || latest[row.runtime].atMs < at) {
+          latest[row.runtime] = { atMs: at, at: row.at, ok: row.ok === true, problems: Array.isArray(row.problems) ? row.problems : [] };
+        }
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    return latest;
+  }
+  return latest;
+}
+
 export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
   const sinceMs = now - days * 24 * 60 * 60 * 1000;
   const sessions = readSessions(sinceMs);
   const findings = readFindings(sinceMs);
+  const smoke = Object.fromEntries(
+    Object.entries(readSmoke()).map(([runtime, row]) => [runtime, { ...row, stale: row.atMs < sinceMs }]),
+  );
 
   const withEdits = sessions.filter((session) => session.files.size > 0);
   const unverified = withEdits.filter((session) => session.lastVerified < session.lastEdit);
@@ -125,6 +157,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
       filesTouched: new Set(withEdits.flatMap((session) => [...session.files])).size,
     },
     sensor: { findings: findings.length, byKind },
+    smoke,
     /**
      * The sensor earns its place by catching things. Zero findings across a
      * window with real edits is the falsifier its own header names.
@@ -152,6 +185,16 @@ function format(report) {
         : ''
     }`,
   ];
+  const runtimes = Object.entries(report.smoke ?? {});
+  if (runtimes.length === 0) {
+    lines.push('[harness] runtime smoke: never run here; `pnpm harness:smoke` is the only proof the runtimes fire these hooks.');
+  } else {
+    lines.push(
+      `[harness] runtime smoke: ${runtimes
+        .map(([runtime, row]) => `${runtime} ${row.ok ? 'ok' : 'FAILED'} ${row.at.slice(0, 10)}${row.stale ? ' (stale)' : ''}`)
+        .join(' · ')}`,
+    );
+  }
   if (report.verdict === 'no-data') {
     lines.push('[harness] no source-editing session recorded yet; the lane has nothing to answer for.');
   } else if (report.verdict === 'sensor-caught-nothing') {
