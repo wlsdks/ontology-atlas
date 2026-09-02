@@ -1,8 +1,11 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import { buildArchitectureLayout, parseArchitectureProfile } from '@/entities/architecture-profile';
-import { HEXAGONAL_PROFILE_FRONTMATTER } from '../../../../tests/fixtures/architecture-profile-cases.mjs';
+import {
+  FSD_PROFILE_FRONTMATTER,
+  HEXAGONAL_PROFILE_FRONTMATTER,
+} from '../../../../tests/fixtures/architecture-profile-cases.mjs';
 import { buildArchitectureGraph } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import type { ArchitectureRoleEdge } from '@/entities/architecture-record';
@@ -18,9 +21,10 @@ function draw(
   ledgers: Record<string, RoleLedger> = {},
   violatedPairs = new Set<string>(),
   traffic: readonly ArchitectureRoleEdge[] = [],
+  profileFrontmatter: unknown = HEXAGONAL_PROFILE_FRONTMATTER,
 ) {
   const graph = buildArchitectureGraph(
-    buildArchitectureLayout(parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER as never)),
+    buildArchitectureLayout(parseArchitectureProfile(profileFrontmatter as never)),
     traffic,
   );
   return render(
@@ -40,16 +44,16 @@ function draw(
       ledgerImportsLabel={(count) => `${count} imports out`}
       contractTrackLabel="Contract"
       observationTrackLabel="Observation"
+      deltaTrackLabel="Delta"
       observationMissingLabel="Not inspected"
       selected={null}
+      roleInspectorOpen={false}
       onSelect={() => {}}
       roleLabel={(id) => id}
       moduleCountLabel={(n) => `${n} modules`}
       conceptCountLabel={(n) => `${n} concepts`}
       moduleCounts={null}
       conceptCounts={{}}
-      runLabel="Run the flow"
-      finishRunLabel="Finish replay"
       hiddenRightLabel={(count) => `${count} more to the right`}
       hiddenLeftLabel={(count) => `${count} more to the left`}
       hiddenAboveLabel={(count) => `${count} more above`}
@@ -87,101 +91,6 @@ describe('the count of what is below', () => {
     expect(wrapper.className).toContain('pointer-events-none');
     const scroller = document.querySelector('[data-testid="architecture-graph"]')?.parentElement as HTMLElement;
     expect(wrapper.compareDocumentPosition(scroller) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-  });
-});
-
-describe('the run control', () => {
-  it('normalizes the stagger across the whole observed path', () => {
-    /*
-     * ⚠️ The defect a fresh-eyes walkthrough measured on 2026-08-28. The step was fed the box's x
-     * coordinate, and the stylesheet multiplies the step by a 90ms token — so three strokes began
-     * at 2520ms, 20520ms and 38520ms and a "run" took forty seconds to cross four boxes. A stagger
-     * counts places in a queue; a queue place is a small integer.
-     */
-    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
-    fireEvent.click(screen.getByTestId('architecture-graph-run'));
-    const steps = [...container.querySelectorAll('[data-edge-kind]')].map((edge) =>
-      Number((edge as HTMLElement).style.getPropertyValue('--architecture-run-step')),
-    );
-    expect(steps.length).toBeGreaterThan(0);
-    for (const step of steps) expect(step).toBeGreaterThanOrEqual(0);
-    for (const step of steps) expect(step).toBeLessThanOrEqual(1);
-    expect(Math.max(...steps)).toBe(1);
-  });
-
-  it('finishes the current replay when pressed again', () => {
-    /* A replay is feedback, not a lock: the second activation settles every moving mark. */
-    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
-    const button = screen.getByTestId('architecture-graph-run');
-    expect(button).not.toBeDisabled();
-    fireEvent.click(button);
-    expect(button).toHaveTextContent('Finish replay');
-    fireEvent.click(button);
-    expect(button).toHaveTextContent('Run the flow');
-    expect(
-      [...container.querySelectorAll('[data-edge-kind]')].some((edge) =>
-        edge.classList.contains('architecture-flow-running'),
-      ),
-    ).toBe(false);
-  });
-
-  it('makes the measured role sequence visible even when adjacent edge travel is short', () => {
-    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
-    expect(container.querySelector('[data-testid^="architecture-observation-pulse-"]')).toBeNull();
-
-    fireEvent.click(screen.getByTestId('architecture-graph-run'));
-
-    const pulses = [
-      ...container.querySelectorAll('[data-testid^="architecture-observation-pulse-"]'),
-    ];
-    expect(pulses).toHaveLength(3);
-    expect(pulses.every((pulse) => pulse.classList.contains('architecture-observation-pulse'))).toBe(
-      true,
-    );
-  });
-
-  it('takes the running class off every stroke once the flow ends', () => {
-    /*
-     * ⚠️ The class carries the dash pattern as a static rule, so leaving it on left the whole
-     * drawing dashed for good with no way back. The strokes report their own end; nothing here
-     * repeats the duration as a number.
-     */
-    /* ⚠️ Scope every query to this render's own container. `document.querySelectorAll` also
-       reaches the trees the earlier cases left mounted, and those pressed run and never ended —
-       so a global query reports the class still present no matter what this case does. */
-    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
-    fireEvent.click(screen.getByTestId('architecture-graph-run'));
-    const trafficEdges = [
-      ...container.querySelectorAll('[data-edge-kind="traffic"][data-edge-drawn="true"]'),
-    ];
-    const contractEdges = [
-      ...container.querySelectorAll('[data-edge-kind="permitted"][data-edge-drawn="true"]'),
-    ];
-    expect(trafficEdges.every((e) => e.classList.contains('architecture-flow-running'))).toBe(true);
-    expect(contractEdges.some((e) => e.classList.contains('architecture-flow-running'))).toBe(false);
-    /* `bubbles: true` is required: React listens at the root, and Testing Library's default
-       initialiser for an animation event does not bubble, so the handler would never run. */
-    /* `bubbles: true` is required: React listens at the root, and Testing Library's default
-       initialiser for an animation event does not bubble. */
-    /*
-     * ⚠️ **The prefixed name, and only it.** React resolves the animation-event name once at
-     * startup by feature-detecting the style object, and under jsdom that detection lands on
-     * `webkitAnimationEnd` — so a plain `animationend`, including Testing Library's
-     * `fireEvent.animationEnd`, never reaches the handler and this case failed while the browser
-     * behaved correctly. Firing exactly one event per stroke also keeps the count honest: firing
-     * both names would drive the counter past zero and hide a miscount.
-     */
-    for (const edge of trafficEdges) {
-      act(() => {
-        edge.dispatchEvent(new Event('webkitAnimationEnd', { bubbles: true }));
-      });
-    }
-    expect(
-      [...container.querySelectorAll('[data-edge-kind]')].some((e) =>
-        e.classList.contains('architecture-flow-running'),
-      ),
-    ).toBe(false);
-    expect(screen.getByTestId('architecture-graph-run')).not.toBeDisabled();
   });
 });
 
@@ -241,6 +150,56 @@ describe('the role ledger', () => {
 });
 
 describe('the evidence split plane', () => {
+  it('uses the selected dual evidence ladder when seven roles fit as paired downward rows', () => {
+    const geometry: Record<string, number> = {
+      clientWidth: 1200,
+      scrollWidth: 1200,
+      clientHeight: 700,
+      scrollHeight: 700,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ]),
+    );
+    try {
+      for (const [key, value] of Object.entries(geometry)) {
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get: () => value,
+        });
+      }
+      const { container } = draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+      const graph = screen.getByTestId('architecture-graph');
+      expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+      expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+      expect(graph).toHaveAttribute('width', '1008');
+      expect(graph).toHaveAttribute('height', '660');
+      expect(screen.getByTestId('architecture-paired-lane-headings')).toHaveTextContent(
+        'ContractDeltaObservation',
+      );
+      expect(screen.getAllByTestId(/^architecture-role-index-/)).toHaveLength(7);
+      expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(7);
+      expect(screen.getAllByTestId(/^architecture-delta-marker-/)).toHaveLength(7);
+      expect(screen.getByTestId('architecture-delta-marker-widgets')).toHaveTextContent('○');
+      expect(screen.getByTestId('architecture-graph-box-widgets')).toHaveAttribute(
+        'data-box-width',
+        '280',
+      );
+      expect(screen.getByTestId('architecture-observation-box-widgets')).toHaveAttribute(
+        'width',
+        '240',
+      );
+      expect(container.querySelectorAll('[data-architecture-role-hit-area="true"]')).toHaveLength(7);
+    } finally {
+      for (const [key, descriptor] of Object.entries(originals)) {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
+
   it('expands into aligned contract and observation lanes only when the full role set fits', () => {
     const geometry: Record<string, number> = {
       clientWidth: 1600,
@@ -267,7 +226,31 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'across');
       expect(screen.getAllByTestId(/^architecture-observation-box-/)).toHaveLength(4);
       expect(screen.getAllByTestId(/^architecture-delta-connector-/)).toHaveLength(4);
+      expect(screen.getAllByTestId(/^architecture-role-index-/)).toHaveLength(4);
+      expect(screen.getByTestId('architecture-role-index-adapter')).toHaveTextContent('01');
+      expect(screen.getByTestId('architecture-role-index-domain')).toHaveTextContent('04');
       expect(container.querySelectorAll('[data-architecture-role-hit-area="true"]')).toHaveLength(4);
+      expect(container.querySelectorAll('[data-architecture-port="contract"]')).toHaveLength(6);
+      expect(
+        container.querySelector(
+          '[data-graph-box="adapter"] [data-port-direction="incoming"]',
+        ),
+      ).toBeNull();
+      expect(
+        container.querySelector(
+          '[data-graph-box="adapter"] [data-port-direction="outgoing"]',
+        ),
+      ).not.toBeNull();
+      expect(
+        container.querySelector(
+          '[data-graph-box="domain"] [data-port-direction="incoming"]',
+        ),
+      ).not.toBeNull();
+      expect(
+        container.querySelector(
+          '[data-graph-box="domain"] [data-port-direction="outgoing"]',
+        ),
+      ).toBeNull();
       expect(screen.getByTestId('architecture-graph-box-domain')).toHaveAttribute(
         'data-box-height',
         '84',
@@ -280,6 +263,37 @@ describe('the evidence split plane', () => {
       for (const [key, descriptor] of Object.entries(originals)) {
         if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
         else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
+
+  it('keeps a split observation card to its import count while the gutter carries status', () => {
+    const originalClientWidth = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth',
+    );
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 1600,
+    });
+    try {
+      draw({
+        domain: {
+          state: 'clean',
+          violated: 0,
+          outgoing: 2,
+          sampleLimited: false,
+          importsOut: 314,
+        },
+      });
+      const observation = screen.getByTestId('architecture-role-ledger-domain');
+      expect(observation).toHaveTextContent(/^314 imports out$/);
+      expect(observation).not.toHaveTextContent('no violations');
+    } finally {
+      if (originalClientWidth) {
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth);
+      } else {
+        delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
       }
     }
   });
@@ -334,5 +348,43 @@ describe('the evidence split plane', () => {
         else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
       }
     }
+  });
+
+  it('keeps a violated edge and arrowhead red while shared ports remain indigo', () => {
+    /* Ports for the observed lane exist only once the measured canvas can split contract from
+       observation. jsdom reports a zero-width canvas unless this test supplies the same wide
+       geometry the assertion is about. */
+    const originalClientWidth = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      'clientWidth',
+    );
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+      configurable: true,
+      get: () => 1200,
+    });
+    let container: HTMLElement;
+    try {
+      ({ container } = draw(
+        {},
+        new Set(['adapter>application']),
+        OBSERVED_TRAFFIC,
+      ));
+    } finally {
+      if (originalClientWidth) {
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth);
+      } else {
+        delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+      }
+    }
+    const edge = container.querySelector<SVGPathElement>(
+      '[data-edge-kind="traffic"][data-edge-from="adapter"][data-edge-to="application"]',
+    );
+    expect(edge).toHaveAttribute('stroke', 'var(--color-danger-text)');
+    expect(edge).toHaveAttribute('marker-end', 'url(#architecture-sketch-arrow-violation)');
+    const ports = [...container.querySelectorAll('[data-architecture-port="observation"]')];
+    expect(ports.length).toBeGreaterThan(0);
+    expect(ports.every((port) => port.getAttribute('stroke') !== 'var(--color-danger-text)')).toBe(
+      true,
+    );
   });
 });

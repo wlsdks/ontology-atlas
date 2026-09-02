@@ -109,7 +109,7 @@ async function openSeededVault(page: import('@playwright/test').Page) {
     .toBe(true);
 }
 
-test('a measured profile states each role’s receipt inside its box, whole chain on screen', async ({
+test('a measured profile separates each role contract and receipt, whole chain on screen', async ({
   page,
 }) => {
   test.setTimeout(180_000);
@@ -140,8 +140,17 @@ test('a measured profile states each role’s receipt inside its box, whole chai
 
       const measured = await page.evaluate(() => {
         const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')];
+        const paintedFaces = [...document.querySelectorAll('.architecture-node-face')];
         return {
           boxWidth: Number(boxes[0]?.getAttribute('data-box-width') ?? 0),
+          observationWidth: Number(
+            document
+              .querySelector('[data-testid^="architecture-observation-box-"]')
+              ?.getAttribute('width') ?? 0,
+          ),
+          evidenceLayout: document
+            .querySelector('[data-testid="architecture-graph"]')
+            ?.getAttribute('data-evidence-layout'),
           /*
            * How far the lowest box falls below the fold — the measurement that catches a chain
            * running off the screen. Neither the scroller's `scrollHeight` nor the box's position
@@ -162,7 +171,10 @@ test('a measured profile states each role’s receipt inside its box, whole chai
           ].map((text) => (text as SVGTextElement).getBBox().width),
           /* Direction B: every drawn sentence clears every box and every other sentence. */
           sentenceOffenders: (() => {
-            const boxRects = boxes.map((b) => b.getBoundingClientRect());
+            /* The role group includes one transparent hit rect spanning contract, delta, and
+               observation. It is interactive geometry, not paint; collision checks use only the
+               actual card faces. */
+            const boxRects = paintedFaces.map((b) => b.getBoundingClientRect());
             const drawn = [...document.querySelectorAll('[data-edge-sentence="drawn"]')].map((t) => ({
               id: t.getAttribute('data-testid'),
               r: t.getBoundingClientRect(),
@@ -183,7 +195,7 @@ test('a measured profile states each role’s receipt inside its box, whole chai
       const where = `${locale} @ ${size.width}`;
       /* No sentence crosses its own outline. */
       expect(Math.max(...measured.sentences), where).toBeLessThanOrEqual(
-        measured.boxWidth - BOX_SIDE_PAD * 2,
+        measured.observationWidth - BOX_SIDE_PAD * 2,
       );
       expect(Math.max(...measured.captions), where).toBeLessThanOrEqual(
         measured.boxWidth - BOX_SIDE_PAD * 2,
@@ -193,23 +205,34 @@ test('a measured profile states each role’s receipt inside its box, whole chai
       /* Direction B: the strokes say their sentences, and none of them touches anything. */
       expect(measured.sentenceOffenders, `${where} ${measured.sentenceOffenders.join('\n')}`).toEqual([]);
       expect(measured.sentencesDrawn, where).toBeGreaterThanOrEqual(6);
+      expect(measured.evidenceLayout, where).toBe(
+        size.width === 1512 ? 'paired-ladder' : 'split',
+      );
     }
 
-    /*
-     * ⚠️ **Hover recedes over the feedback step, never as a hard cut.** Routes and Entities share
-     * no stroke, so hovering one recedes the other; the box carries `--motion-fast` and settles at
-     * its receded opacity. Measured here because the four-role sample connects every role to every
-     * other and nothing there ever recedes.
-     */
+    /* Hover answers locally; only a committed selection may dim the rest of the graph. */
     {
       await page.setViewportSize({ width: 1512, height: 945 });
-      await page.getByTestId('architecture-graph-box-routing').hover();
+      const routing = page.getByTestId('architecture-graph-box-routing');
+      await routing.hover();
       const receded = page.getByTestId('architecture-graph-box-entities');
+      await expect(routing).toHaveAttribute('data-architecture-role-state', 'hover');
+      await expect
+        .poll(() => receded.evaluate((el) => getComputedStyle(el).opacity), { timeout: 2000 })
+        .toBe('1');
+
+      await routing.dispatchEvent('pointerdown', { pointerId: 1, pointerType: 'mouse', button: 0 });
+      await expect(routing).toHaveAttribute('data-architecture-role-state', 'active');
+      await routing.dispatchEvent('pointerup', { pointerId: 1, pointerType: 'mouse', button: 0 });
+
+      await routing.click();
+      await expect(routing).toHaveAttribute('data-architecture-role-state', 'selected');
       await expect
         .poll(() => receded.evaluate((el) => getComputedStyle(el).opacity), { timeout: 2000 })
         .toBe('0.35');
       const duration = await receded.evaluate((el) => getComputedStyle(el).transitionDuration);
-      expect(duration, `${locale}: hover recede runs at the feedback step`).toBe('0.12s');
+      expect(duration, `${locale}: selected recede runs at the feedback step`).toBe('0.12s');
+      await routing.click();
       await page.mouse.move(5, 5);
     }
   }
@@ -260,8 +283,20 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     const evidenceRail = page.getByTestId('architecture-evidence-rail');
     await expect(evidenceRail, where).toBeVisible();
     await expect(evidenceRail, where).toContainText(/Inspection receipt|Source check required/);
+    const toolbarGeometry = await page.evaluate(() =>
+      ['architecture-evidence-rail', 'architecture-agent-action', 'architecture-inspector-toggle']
+        .map((id) => document.querySelector(`[data-testid="${id}"]`)?.getBoundingClientRect())
+        .filter((rect): rect is DOMRect => Boolean(rect))
+        .map((rect) => ({ y: Math.round(rect.y), height: Math.round(rect.height) })),
+    );
+    expect(toolbarGeometry.map((rect) => rect.height), `${where} toolbar heights`).toEqual([
+      44,
+      44,
+      44,
+    ]);
+    expect(new Set(toolbarGeometry.map((rect) => rect.y)).size, `${where} toolbar alignment`).toBe(1);
 
-    /* Full provenance is an on-canvas overlay now; opening it never changes canvas geometry. */
+    /* Full provenance is a comparison dock, not a floating card covering the diagram. */
     const canvasBeforeEvidence = await page
       .getByTestId('architecture-flow-panel')
       .evaluate((element) => {
@@ -269,21 +304,54 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
         return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
       });
     await evidenceRail.click();
+    const evidenceDock = page.getByTestId('architecture-evidence-dock');
+    await expect(evidenceDock, where).toBeVisible();
     await expect(page.getByTestId('architecture-record-status'), where).toBeVisible();
+    await expect
+      .poll(
+        () =>
+          page
+            .getByTestId('architecture-flow-panel')
+            .evaluate((element) => element.getBoundingClientRect().width),
+        { message: `${where} evidence dock did not finish reserving its width` },
+      )
+      .toBeLessThan(canvasBeforeEvidence.width - 358);
     const canvasWithEvidence = await page
       .getByTestId('architecture-flow-panel')
       .evaluate((element) => {
         const rect = element.getBoundingClientRect();
         return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
       });
-    expect(canvasWithEvidence, `${where} evidence overlay reflowed the canvas`).toEqual(
-      canvasBeforeEvidence,
+    const evidenceDockRect = await evidenceDock.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    });
+    expect(canvasWithEvidence.x, where).toBe(canvasBeforeEvidence.x);
+    expect(canvasWithEvidence.y, where).toBe(canvasBeforeEvidence.y);
+    expect(canvasWithEvidence.height, where).toBe(canvasBeforeEvidence.height);
+    expect(canvasWithEvidence.width, `${where} evidence dock did not reserve its own width`).toBeLessThan(
+      canvasBeforeEvidence.width - 300,
     );
+    expect(canvasWithEvidence.width, `${where} evidence dock crushed the diagram`).toBeGreaterThan(900);
+    expect(
+      evidenceDockRect.x - (canvasWithEvidence.x + canvasWithEvidence.width),
+      `${where} evidence dock covered the diagram`,
+    ).toBeGreaterThanOrEqual(-1);
+    expect(await travel(), where).toBeLessThanOrEqual(1);
     await page.getByTestId('architecture-evidence-close').click();
+    await expect(page.getByTestId('architecture-graph'), where).toHaveAttribute(
+      'data-evidence-layout',
+      size.width === 1512 ? 'paired-ladder' : 'split',
+    );
 
     /* Clicking a role opens the dock, and the dock leads with that role's own answer. */
     await page.locator('[data-testid="architecture-graph-box-widgets"]').click();
     await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'true');
+    if (size.width === 1512) {
+      const selectionTrace = page.getByTestId('architecture-selection-trace-widgets');
+      await expect(selectionTrace, where).toHaveAttribute('data-selected', 'true');
+      await expect(selectionTrace, where).toHaveCSS('opacity', '1');
+    }
     const detail = page.getByTestId('architecture-role-detail');
     await expect(detail, where).toBeVisible();
     expect(await travel(), where).toBeLessThanOrEqual(1);
@@ -308,44 +376,12 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'true');
     await expect(page.getByTestId('architecture-rules'), where).toBeVisible();
 
-    /*
-     * ⚠️ **The stage takes one column, not two.** `lg:col-span-2` emits a `grid-column` shorthand
-     * that an `xl:col-end-*` longhand loses to, so the stage went on spanning two tracks at
-     * workbench width, the grid invented a third for it, and the canvas collapsed to a 218px strip
-     * with the panel sprawling across the rest (the owner met this on the installed app,
-     * 2026-08-30). Opening the stage also closes this dock: 380 plus 340 leaves the canvas too
-     * narrow for the drawing.
-     */
-    await page.getByTestId('architecture-mode-plan').click();
-    await expect(dock, where).toHaveAttribute('data-architecture-inspector-open', 'false');
-    const withStage = await page.evaluate(() => {
-      const flow = document.querySelector('[data-testid="architecture-flow-panel"]') as HTMLElement;
-      const scroller = document.querySelector(
-        '[data-testid="architecture-layout-scroll"]',
-      ) as HTMLElement;
-      return {
-        canvas: Math.round(flow.getBoundingClientRect().width),
-        tracks: getComputedStyle(scroller).gridTemplateColumns.split(' ').length,
-        travel: scroller.scrollHeight - scroller.clientHeight,
-      };
-    });
-    expect(withStage.tracks, `${where} the stage invented a column`).toBe(2);
-    expect(withStage.canvas, `${where} the stage squeezed the canvas`).toBeGreaterThan(700);
-    expect(withStage.travel, where).toBeLessThanOrEqual(1);
-    await page.getByTestId('architecture-mode-understand').click();
-
-    /*
-     * ⚠️ **The walk moves the selection, never the camera.** The reference this borrows from flies
-     * its viewport to each step; this canvas holds one scale by contract, so what advances is the
-     * chosen role and the panel that answers it. The order is the drawing's own.
-     */
-    await page.getByTestId('architecture-walk').click();
-    await expect(page.getByTestId('architecture-walk-step'), where).toHaveText('1 of 7');
-    await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('ArrowRight');
-    await expect(page.getByTestId('architecture-walk-step'), where).toHaveText('3 of 7');
-    expect(new URL(page.url()).searchParams.get('role'), where).toBe('views');
-    await page.keyboard.press('Escape');
+    /* Playback, guided walking, and prose-only workflow stages were removed: direct role
+       selection plus the two factual docks are the complete visible path. */
+    await expect(page.getByTestId('architecture-graph-run'), where).toHaveCount(0);
+    await expect(page.getByTestId('architecture-walk'), where).toHaveCount(0);
+    await expect(page.getByRole('radio'), where).toHaveCount(0);
+    await page.getByTestId('architecture-inspector-close').click();
     await expect(dock, where).toHaveAttribute('data-architecture-inspector', 'none');
     expect(new URL(page.url()).searchParams.get('role'), where).toBeNull();
   }
@@ -353,7 +389,7 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
 
 test('a skip sentence never sits on another arc, sampled along the strokes', async ({ page }) => {
   /*
-   * ⚠️ Review 2026-08-30 at 1920 with Entities hovered: the sentence beside the shorter of two
+   * ⚠️ Review 2026-08-30 at 1920 with Entities selected: the sentence beside the shorter of two
    * nested skips sat on its own apex and the longer arc ran through it. The rectangle gates
    * compare sentences with boxes and with each other; an arc is a curve, so it is measured as
    * points along its length against every visible sentence's box, with 2px of air.
@@ -370,7 +406,7 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
     await page.setViewportSize(size);
     await page.waitForTimeout(500);
     for (const role of ['entities', 'views']) {
-      await page.getByTestId(`architecture-graph-box-${role}`).hover();
+      await page.getByTestId(`architecture-graph-box-${role}`).click();
       await page.waitForTimeout(400);
       const touches = await page.evaluate(() => {
         const visible = (el: Element) => Number(getComputedStyle(el).opacity) > 0.05;
@@ -398,8 +434,9 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
         }
         return [...new Set(out)];
       });
-      expect(touches, `${role} hovered at ${size.width}: an arc runs through a sentence`).toEqual([]);
+      expect(touches, `${role} selected at ${size.width}: an arc runs through a sentence`).toEqual([]);
     }
+    await page.getByTestId('architecture-graph-box-views').click();
     await page.mouse.move(2, 2);
   }
 });

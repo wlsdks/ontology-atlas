@@ -6,7 +6,7 @@ import type { ArchitectureRecord } from '@/entities/architecture-record';
  * ⚠️ **A rollup, and it says so in edge terms** (2026-08-29, direction B). The reference this came
  * from — a workflow graph — gives every node a status because every node had a *run*. We have no
  * runs, and the one verdict this product owns (`conforms` / `violated` / `unknown`) is per profile,
- * which is exactly as global as the stage chip that already shows it. So a box never claims a
+ * which is exactly as global as the evidence summary that already shows it. So a box never claims a
  * per-role verdict. It states what its own **outgoing edges** did, which is a grouping of facts the
  * receipt already carries, and the wording stays edge-shaped so the two can never be confused.
  *
@@ -17,7 +17,7 @@ import type { ArchitectureRecord } from '@/entities/architecture-record';
  *    so a limited sample is reported as "at least N" rather than as a count.
  * 2. **Unmeasured is not a per-role fact.** `unmappedEdges` and `unruledEdges` are profile-wide
  *    totals with no role attached. A box therefore never says "unmeasured" — that belongs to the
- *    stage chip, which already carries it.
+ *    evidence summary, which already carries it.
  * 3. **Only `emptyRoles` names roles.** A role that matched no source file is the one absence the
  *    receipt attributes, so it is the one absence a box states.
  */

@@ -7,7 +7,11 @@ import {
   parseArchitectureProfile,
   type ArchitectureHandoffContext,
 } from '@/entities/architecture-profile';
-import { parseArchitectureRecord, type ArchitectureRecordSource } from '@/entities/architecture-record';
+import {
+  parseArchitectureRecord,
+  type ArchitectureRecordSource,
+  type ArchitectureRoleEdge,
+} from '@/entities/architecture-record';
 import {
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
@@ -36,11 +40,13 @@ function buildRecord({
   status = 'violated',
   violationCount = 3,
   excludedByUsage = 18 as number | undefined,
+  observedRoleEdges = [] as ArchitectureRoleEdge[],
 }: {
   source?: ArchitectureRecordSource;
   status?: 'conforms' | 'violated' | 'unknown';
   violationCount?: number;
   excludedByUsage?: number | undefined;
+  observedRoleEdges?: ArchitectureRoleEdge[];
 } = {}) {
   return parseArchitectureRecord({
     contract: 'architectureRecord:v1',
@@ -61,6 +67,7 @@ function buildRecord({
         status,
         violationCount,
         violations: [],
+        observedRoleEdges,
         ...(excludedByUsage === undefined ? {} : { excludedByUsage }),
         unknown: { coverageIncomplete: false, unmappedEdges: 2, unruledEdges: 0, emptyRoles: [] },
       },
@@ -79,7 +86,7 @@ function renderWithRecord(record: ReturnType<typeof buildRecord>) {
 
 function openEvidence() {
   fireEvent.click(screen.getByTestId('architecture-evidence-rail'));
-  return screen.getByTestId('architecture-evidence-overlay');
+  return screen.getByTestId('architecture-evidence-dock');
 }
 
 /*
@@ -89,8 +96,8 @@ function openEvidence() {
  * It was inert on the installed rc.15: the button navigated to the map and carried nothing, while
  * the sentence above it promised an agent would read the folder and the imports and draft this.
  */
-/* The chosen role and stage live in the address, and jsdom shares one window across a file — so a
-   case that selects a role would otherwise hand the next one a pre-selected screen. */
+/* The chosen role lives in the address, and jsdom shares one window across a file — so a case that
+   selects a role would otherwise hand the next one a pre-selected screen. */
 beforeEach(() => {
   window.history.replaceState({}, '', '/ko/architecture/');
 });
@@ -228,7 +235,7 @@ describe('ArchitectureWorkbench', () => {
     expect(window.location.pathname).toBe('/ko/architecture/');
   });
 
-  it('opens the evidence overlay without erasing unrelated route state', () => {
+  it('opens the evidence dock without erasing unrelated route state', () => {
     window.history.replaceState({}, '', '/ko/architecture/?guides=off&fixture=storefront');
     renderWorkbench();
 
@@ -270,6 +277,28 @@ describe('ArchitectureWorkbench', () => {
       'h-[var(--topology-mobile-bottom-tab-reserve)]',
       'lg:hidden',
     );
+    const currentProfile = screen.getByTestId('architecture-profile-current');
+    expect(currentProfile).toHaveAttribute('aria-current', 'true');
+    expect(currentProfile).toHaveTextContent('Current');
+    expect(currentProfile.tagName).toBe('DIV');
+    expect(screen.queryByTestId('architecture-profile-option')).toBeNull();
+  });
+
+  it('keeps only another profile actionable and turns the new current profile into a fact', () => {
+    const fsd = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    const hexagonal = parseArchitectureProfile(HEXAGONAL_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench profiles={[fsd, hexagonal]} />
+      </NextIntlClientProvider>,
+    );
+
+    expect(screen.getAllByTestId('architecture-profile-current')).toHaveLength(1);
+    const option = screen.getByTestId('architecture-profile-option');
+    expect(option).toHaveTextContent(hexagonal.title);
+    fireEvent.click(option);
+    expect(screen.getByTestId('architecture-profile-current')).toHaveTextContent(hexagonal.title);
+    expect(screen.getByTestId('architecture-graph-box-adapter')).toBeInTheDocument();
   });
 
   /*
@@ -389,14 +418,26 @@ describe('ArchitectureWorkbench', () => {
     fireEvent.click(views);
     expect(views).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'views');
+    expect(screen.getByTestId('architecture-role-detail-motion')).toHaveClass('topology-chrome-in');
     expect(screen.queryByTestId('architecture-role-detail-empty')).toBeNull();
 
     fireEvent.click(screen.getByTestId('architecture-graph-box-shared'));
     expect(views).toHaveAttribute('aria-pressed', 'false');
+    const shared = screen.getByTestId('architecture-graph-box-shared');
     expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
 
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(shared).toHaveAttribute('aria-pressed', 'true');
+    expect(shared).toHaveAttribute('aria-expanded', 'false');
+
+    /* A closed detail can be reopened from the still-selected role; it is not mistaken for a
+       request to clear the selection. */
+    fireEvent.click(shared);
+    expect(shared).toHaveAttribute('aria-pressed', 'true');
+    expect(shared).toHaveAttribute('aria-expanded', 'true');
+
     /* Clicking the chosen box again lets go of it, so a reader can get back to the whole map. */
-    fireEvent.click(screen.getByTestId('architecture-graph-box-shared'));
+    fireEvent.click(shared);
     expect(screen.getByTestId('architecture-role-detail-empty')).toBeInTheDocument();
   });
 
@@ -486,39 +527,13 @@ describe('ArchitectureWorkbench', () => {
     expect(detail).toHaveTextContent('Home');
   });
 
-  it('keeps the same blueprint while switching from understand to plan and verify', () => {
+  it('keeps the workbench focused on architecture facts instead of demo playback or prose stages', () => {
     renderWorkbench();
-    const box = screen.getByTestId('architecture-graph-box-features');
-    const boxClassName = box.className;
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
-    expect(screen.getByText('Architecture-first agent plan')).toBeInTheDocument();
-    expect(screen.getByText(/inspect_architecture/)).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-graph-box-features')).toBe(box);
-    expect(box.className).toBe(boxClassName);
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Verify' }));
-    expect(screen.getByText('Verify the actual change')).toBeInTheDocument();
-    expect(screen.getByText(/unknown is not compliant/i)).toBeInTheDocument();
-    expect(screen.getByTestId('architecture-graph-box-features')).toBe(box);
-  });
-
-  it('reanchors a prior scroll end after a taller workflow stage mounts', async () => {
-    renderWorkbench();
-    const scroller = screen.getByTestId('architecture-layout-scroll');
-    Object.defineProperty(scroller, 'clientHeight', { configurable: true, value: 200 });
-    Object.defineProperty(scroller, 'scrollHeight', {
-      configurable: true,
-      /* Asked of the scroller itself: the panels moved into a dock, so the blueprint's parent is
-         no longer the grid that holds the canvas. */
-      get: () => (scroller.querySelector('[data-architecture-mode="plan"]') ? 600 : 500),
-    });
-    scroller.scrollTop = 300;
-
-    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
-
-    expect(scroller).toHaveAttribute('data-architecture-scroll-reanchor', 'mode-end');
-    await waitFor(() => expect(scroller.scrollTop).toBe(400));
+    expect(screen.queryByTestId('architecture-graph-run')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-walk')).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByText('Architecture-first agent plan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Verify the actual change')).not.toBeInTheDocument();
   });
 
   it('copies an executable architecture handoff instead of a generic prompt', async () => {
@@ -529,16 +544,15 @@ describe('ArchitectureWorkbench', () => {
       vaultRoot: '/Users/dana/Atlas Source/docs/ontology',
       cliEntry: '/Users/dana/Atlas Source/cli/src/index.mjs',
     });
-    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
-    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('architectureChangePlan:v1'));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy task for your agent' }));
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('This is a verification task'));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("--profile 'atlas-web' --json"));
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
     );
     await waitFor(() => {
       const buttons = screen.getAllByRole('button', { name: 'Copied. Paste it into your agent' });
-      expect(buttons).toHaveLength(2);
+      expect(buttons).toHaveLength(1);
       for (const button of buttons) {
         expect(button).toHaveAttribute('data-architecture-copy-state', 'copied');
       }
@@ -548,11 +562,10 @@ describe('ArchitectureWorkbench', () => {
   it('keeps a retryable clipboard error on screen', async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
     renderWorkbench();
-    fireEvent.click(screen.getByRole('radio', { name: 'Change' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Copy the sentence for your agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy task for your agent' }));
     await waitFor(() => {
       const buttons = screen.getAllByRole('button', { name: 'Could not copy. Try again' });
-      expect(buttons).toHaveLength(2);
+      expect(buttons).toHaveLength(1);
       for (const button of buttons) {
         expect(button).toHaveAttribute('data-architecture-copy-state', 'error');
       }
@@ -571,8 +584,11 @@ describe('ArchitectureWorkbench', () => {
 describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   it('renders a git receipt as a dated stamp with counts beside the verdict, never a bare status', () => {
     renderWithRecord(buildRecord());
+    expect(screen.getByTestId('architecture-role-ledger-routing')).toHaveTextContent(
+      'none recorded',
+    );
     openEvidence();
-    const pill = screen.getByTestId('architecture-record-pill');
+    const pill = screen.getByTestId('architecture-record-summary');
     // The verdict and its accounting are one line: N violations · M edges unmapped · type-only labelled.
     expect(pill).toHaveTextContent('Violated · 3 rule violations · 2 dependencies with no assigned role · 18 type-only edges');
     expect(screen.getByTestId('architecture-record-stamp')).toHaveTextContent(
@@ -609,7 +625,7 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     expect(stamp).toHaveTextContent('Checked 2026-08-27 against a content fingerprint of the source folder');
     expect(stamp.textContent).not.toMatch(/\b[0-9a-f]{7,}\b/);
     // Counts still ride beside the verdict even when everything is zero.
-    expect(screen.getByTestId('architecture-record-pill')).toHaveTextContent(
+    expect(screen.getByTestId('architecture-record-summary')).toHaveTextContent(
       'Conforms · 0 rule violations · 2 dependencies with no assigned role',
     );
   });
@@ -617,23 +633,23 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
   it('wears the existing signal tone families: error for violated, success for conforms, amber for unknown', () => {
     const { unmount } = renderWithRecord(buildRecord());
     openEvidence();
-    expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-danger');
+    expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-danger');
     unmount();
 
     const conforming = renderWithRecord(buildRecord({ status: 'conforms', violationCount: 0 }));
     openEvidence();
-    expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-success');
+    expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-success');
     conforming.unmount();
 
     renderWithRecord(buildRecord({ status: 'unknown', violationCount: 0 }));
     openEvidence();
-    expect(screen.getByTestId('architecture-record-pill').className).toContain('--color-amber-source');
+    expect(screen.getByTestId('architecture-record-marker').className).toContain('--color-amber-source');
   });
 
   it('keeps the unchanged amber "Source check required" state when no record exists', () => {
     renderWorkbench();
     expect(screen.getByText('Source check required')).toBeInTheDocument();
-    expect(screen.queryByTestId('architecture-record-pill')).toBeNull();
+    expect(screen.queryByTestId('architecture-record-summary')).toBeNull();
     // No record means no date anywhere: an absent measurement must not look dated.
     expect(screen.queryByTestId('architecture-record-stamp')).toBeNull();
     expect(screen.queryByTestId('architecture-record-cannot-confirm')).toBeNull();

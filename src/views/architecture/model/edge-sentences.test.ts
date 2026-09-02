@@ -56,6 +56,32 @@ describe('placeEdgeSentences', () => {
     expect(s.x).toBe(400 + 90 + 120 + 10);
   });
 
+  it('routes a paired contract skip and its sentence to the negative side', () => {
+    const placed = chainDown(400);
+    const skip: SentenceEdge = {
+      from: 'entities',
+      to: 'widgets',
+      kind: 'permitted',
+      columnSpan: 2,
+      violated: false,
+    };
+    const [s] = placeEdgeSentences({
+      axis: 'down',
+      edges: [skip],
+      placed,
+      ...BOX,
+      swingOf: () => 120,
+      leadRoom: 300,
+      trailRoom: 300,
+      skipSide: 'negative',
+      sentenceOf: sentence,
+    });
+    expect(s.hidden).toBeUndefined();
+    expect(s.anchor).toBe('end');
+    expect(s.x).toBe(400 + 90 - 120 - 10);
+    expect(s.rect!.x + s.rect!.width).toBeLessThanOrEqual(s.x);
+  });
+
   it('alternates two tiers above an across chain so neighbours never touch', () => {
     const placed = chainAcross();
     const out = placeEdgeSentences({
@@ -186,5 +212,54 @@ describe('placeEdgeSentences', () => {
     /* Both sit on the same gap band; at rest the violation wins, with Views focused the skip wins. */
     expect(drawn(atRest, 'entities>views') || drawn(atRest, 'views>shared')).toBe(true);
     expect(drawn(focused, 'views>shared')).toBe(true);
+  });
+
+  it('keeps two focused Korean skip sentences from touching at the dock-fit width', () => {
+    const boxW = 197.5;
+    const colGap = 52;
+    const ids = ['adapter', 'application', 'port', 'domain'];
+    const placed = new Map(
+      ids.map((id, index) => [id, { x: 28 + index * (boxW + colGap), y: 70 }]),
+    );
+    const edges: SentenceEdge[] = [
+      {
+        from: 'adapter',
+        to: 'port',
+        kind: 'permitted',
+        columnSpan: 2,
+        violated: false,
+      },
+      {
+        from: 'adapter',
+        to: 'domain',
+        kind: 'permitted',
+        columnSpan: 3,
+        violated: false,
+      },
+    ];
+    const out = placeEdgeSentences({
+      axis: 'across',
+      edges,
+      placed,
+      boxW,
+      boxH: 84,
+      rowGap: 26,
+      colGap,
+      swingOf: (edge) => 30 + (edge.columnSpan - 2) * 10 + 42,
+      leadRoom: 44,
+      trailRoom: 28,
+      focus: 'adapter',
+      sentenceOf: (edge) =>
+        edge.to === 'port'
+          ? '어댑터: 포트에 의존할 수 있습니다'
+          : '어댑터: 도메인에 의존할 수 있습니다',
+    });
+
+    expect(out.every((sentence) => sentence.hidden === undefined)).toBe(true);
+    const [first, second] = out.map((sentence) => sentence.rect!);
+    const apart =
+      first.x + first.width + 4 <= second.x || second.x + second.width + 4 <= first.x;
+    expect(apart).toBe(true);
+    expect(out.some((sentence) => sentence.text.endsWith('…'))).toBe(true);
   });
 });

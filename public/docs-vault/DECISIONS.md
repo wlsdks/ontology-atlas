@@ -4445,3 +4445,12 @@ record stays in Git history before commit `e4fb49a89`.
 **Dissent**: condensing history loses nuance that a future dispute might need (the reviewer's position); it lost because Git keeps every original byte and a ledger that is not read loses everything.
 **Falsifier**: a dispute in which the condensed record misstates what was decided and the reader has to recover it from Git history; two such cases reopen how much a record may carry.
 **Owner**: stark
+
+## 2026-09-03 — Architecture is a comparison workbench, not a demo canvas
+
+**Why**: installed-app walkthroughs showed a dotted full-screen map, three-card evidence popup, long amber status capsule, one-second import replay, guided “walk”, and Change/Verify prose panels competing with the architecture itself; the owner found them cramped, AI-styled, unclear, or useless.
+**Prior**: overturns the visible Understand-Plan-Verify workflow from 2026-08-26 and the replay interaction; keeps the reviewed architecture contract, dated observation receipt, canvas-with-docks boundary, direct role boxes, and fail-closed unknown state.
+**Decision**: four paths remain: compare evidence, select a role, open roles/rules, or hand the task to an available agent. Remove tabs, replay, guided walking, and raw prompt panels. The canvas is solid; when 1008px fits, each of seven rows pairs a 280px reviewed card, 72px delta gutter, and 240px observation card, with honest combined cards below that width. Role and evidence docks reserve 380px and 360px respectively and are mutually exclusive. Evidence is one continuous ruled ledger, not three cards. The toolbar is one 44px control row; the short agent action is outline. Current scope is static; clean roles say only “no recorded violations.” Selection animates into persistent paired state and dock width over existing motion tokens; nothing loops or performs for decoration.
+**Dissent**: workflow stages could teach the intended process, replay could emphasize direction, and borderless rows could reduce card weight; they lost because the live screen made those features harder to understand than direct selection and made the evidence less distinct.
+**Falsifier**: reopen if five observed Architecture tasks require a removed stage/replay/walk path, if readers cannot distinguish reviewed intent from observed imports and delta, if a selected dependency cannot be recovered from canvas plus dock, or if 1512px hides a role, mismatches toolbar heights, or lets a dock cover the diagram.
+**Owner**: jinan

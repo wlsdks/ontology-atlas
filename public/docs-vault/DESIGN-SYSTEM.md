@@ -1381,14 +1381,12 @@ shadow ramp's "an inset hairline is material" clause:
 
 | Token | Value | Role |
 |---|---|---|
-| `--architecture-canvas-dot` | `#2a2b30` | the ground's dot field; one step under the soft border, so it reads as a field and loses to every mark on it |
-| `--architecture-canvas-pitch` | `22px` | dot spacing |
 | `--architecture-node-lit-edge` | `#2e2f33` | a node's lit top face, one step above `--color-elevated` |
 
 The ground carries `inset 0 1px 0 var(--color-shadow-a35)` — the shadow a wall casts into a
-recess, which is what says things sit *in* here rather than *on* another card. `#1b1c1f` was tried
-for the dot first and measured invisible at 1px on a 22px pitch; a field nobody perceives is not a
-field.
+recess, which is what says things sit *in* here rather than *on* another card. Architecture uses a
+solid ground; lane surfaces, not a repeated background pattern, separate reviewed structure from
+source observation.
 
 ### Ports
 
@@ -1397,21 +1395,34 @@ one. It is the single clearest signal a node editor gives, and its absence is wh
 attempt stayed unreadable even after the routing was corrected. A port on a side with no
 connection would be a promise of a line that is not coming.
 
-### Running the flow
+### Architecture comparison rows
 
-| Token | Value |
-|---|---|
-| `--architecture-run-duration` | `520ms` |
-| `--architecture-run-stagger` | `90ms` |
-| `--architecture-run-dash` | `10px 14px` |
-| `--architecture-run-dash-travel` | `48px` |
+At laptop width, each role pairs a reviewed-structure card with one quieter source-observation
+card. They are separate authorities, so they keep separate faces; consistent spacing and a shared
+centre dot make them one comparison row. The solid canvas stays visually behind both.
 
-A dash travelling the strokes, staggered by column so seven columns read as one wave and finish
-inside 1.06s. **On a deliberate press, once.** An ambient loop would claim something is happening
-in the source right now, and nothing is. Reduced motion collapses it entirely: the arrowheads and
-the column order state the same direction with no time axis, so a "short equivalent" would
-re-introduce exactly the movement being declined. Roster:
-`tests/contract/reduced-motion-equivalent.contract.test.ts`.
+The desktop row is explicit geometry: **280px reviewed face + 72px comparison gutter + 240px
+observation face**, with 20px between rows. Outside sentence lanes may grow to 180px on either
+side, but they yield evenly when a dock opens so the paired faces stay whole. An across chain uses
+bounded role faces (148/180px compact, 220/240px roomy without/with a receipt). While a desktop
+dock reserves space, the faces interpolate down first (receipt-backed split faces stop at 160px),
+then the connector gap may contract from 52px to **20px**. Type never scales. The role dock
+reserves 380px and the evidence dock 360px. Both are mutually exclusive and the workbench
+interpolates that column over `--motion-base`.
+
+The toolbar is one control baseline: evidence disclosure, agent handoff, and roles/rules are all
+**44px** high, use the outline surface family, and share one 8px gap. A disclosure may consume the
+remaining width, but it cannot become a taller information card.
+
+An applied scope is a fact, not a no-op control. The current profile is a static bordered row marked
+"Current"; only another profile is a button. A role with no sampled violation says **no recorded
+violations**, never the broader "no violations", because profile-wide unmapped dependencies remain
+unknown and cannot be attributed safely to one role.
+
+Selection uses one persistent indigo wash plus a rule that reveals from the reviewed role toward
+the observation over `--motion-base`. The rule remains after the motion, so time is feedback for a
+state change rather than a transient effect. Reduced motion shows the same selected wash and rule
+immediately.
 
 ### What this surface still does not have
 

@@ -1,20 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  Bot,
-  Boxes,
-  ChevronLeft,
-  ChevronRight,
-  FileCode2,
-  Footprints,
-  PanelRight,
-  ShieldCheck,
-  X,
-} from 'lucide-react';
+import { Bot, Boxes, PanelRight, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
-import { listboxBottomIsHidden, listboxTopIsHidden } from '@/shared/ui/select-growth';
 import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
@@ -37,88 +26,50 @@ import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
-import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
 import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
 import { ArchitectureRules } from './ArchitectureRules';
 import { buildArchitectureGraph } from '../model/graph-layout';
 
-type Mode = 'understand' | 'plan' | 'verify';
-
-const MODES: readonly Mode[] = ['understand', 'plan', 'verify'];
-
 /**
- * The workbench columns, written out rather than composed, because a class name assembled at
- * runtime is a class name the CSS compiler never sees. `i` is the inspector dock, `s` the stage
- * dock; the canvas always takes what is left.
+ * The workbench columns, written out because runtime-assembled class names are invisible to the
+ * CSS compiler. The canvas owns the screen until a concrete answer opens beside it.
  */
 const XL_COLUMNS = {
-  '--': 'xl:grid-cols-[minmax(0,1fr)]',
-  'i-': 'xl:grid-cols-[minmax(0,1fr)_380px]',
-  '-s': 'xl:grid-cols-[minmax(0,1fr)_340px]',
-  is: 'xl:grid-cols-[minmax(0,1fr)_380px_340px]',
+  closed: 'xl:grid-cols-[minmax(0,1fr)_0px]',
+  inspector: 'xl:grid-cols-[minmax(0,1fr)_380px]',
 } as const;
 
-/**
- * ⚠️ **The stage lives in the URL, so a link carries it.** A fresh-eyes walkthrough on 2026-08-28
- * found that switching to the plan or verify stage left the address at `/ko/architecture/`: a
- * colleague opening a shared link always landed on understand, and a refresh discarded the stage.
- * An unknown or absent value reads as understand rather than as an error, because a URL a person
- * typed or a stale link should still open the screen.
- */
-function parseArchitectureStage(raw: string | null): Mode {
-  return MODES.find((mode) => mode === raw) ?? 'understand';
-}
+const XL_EVIDENCE_COLUMNS = 'xl:grid-cols-[minmax(0,1fr)_360px]';
 
 /**
- * The same document with a different query view. Defaults stay bare, so a plain address still
- * means "this screen, nothing chosen" and a link carries only what somebody actually picked.
+ * The same document with a different role selected. Defaults stay bare, and obsolete workflow
+ * stage parameters are removed when this screen next writes its state.
  */
-function buildArchitectureHref(
-  view: { stage: Mode; role: string | null; stageOpen: boolean },
-  pathname: string,
-): string {
-  /* Preserve orthogonal route flags (`guides=off`, test fixtures, future view options). This
-     component owns only `stage` and `role`; rebuilding the whole query made opening an overlay
-     silently erase the caller's state. */
+function buildArchitectureHref(role: string | null, pathname: string): string {
+  /* Preserve orthogonal route flags (`guides=off`, fixtures, future view options). */
   const query = new URLSearchParams(
     typeof window === 'undefined' ? undefined : window.location.search,
   );
   query.delete('stage');
   query.delete('role');
-  /*
-   * ⚠️ The stage parameter says the panel is open, not merely which stage is selected. A bare
-   * address means the drawing has the frame to itself, which is the state this screen opens in.
-   */
-  if (view.stageOpen) query.set('stage', view.stage);
-  if (view.role) query.set('role', view.role);
+  if (role) query.set('role', role);
   const search = query.toString();
   return search ? `${pathname}?${search}` : pathname;
 }
 
-/** Whichever of the two the address carries, trusting neither. */
-/** Writes the view into the address without a router navigation, the way `changeMode` does. */
-function writeArchitectureAddress(view: {
-  stage: Mode;
-  role: string | null;
-  stageOpen: boolean;
-}): void {
+function writeArchitectureAddress(role: string | null): void {
   window.history.replaceState(
     window.history.state,
     '',
-    buildArchitectureHref(view, window.location.pathname),
+    buildArchitectureHref(role, window.location.pathname),
   );
 }
 
-function readArchitectureAddress(): { stage: Mode; role: string | null; stageOpen: boolean } {
-  if (typeof window === 'undefined') return { stage: 'understand', role: null, stageOpen: false };
-  const params = new URL(window.location.href).searchParams;
-  return {
-    stage: parseArchitectureStage(params.get('stage')),
-    role: params.get('role'),
-    stageOpen: params.get('stage') !== null,
-  };
+function readArchitectureRole(): string | null {
+  if (typeof window === 'undefined') return null;
+  return new URL(window.location.href).searchParams.get('role');
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 
@@ -158,22 +109,6 @@ export function ArchitectureWorkbench({
   const t = useTranslations('architecture');
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
-  /*
-   * Read through native history, not `useSearchParams`. The write side already goes through
-   * `history.replaceState` — a Next navigation would move focus to the document root inside the
-   * WebView — and one component should not read its address one way and write it another.
-   * `useSearchParams` would also pull this page under a Suspense boundary it does not otherwise
-   * need under static export.
-   */
-  const [mode, setMode] = useState<Mode>(() => readArchitectureAddress().stage);
-  /*
-   * ⚠️ **The stage panel is a dock, not a column.** It owned a third of the width and, because its
-   * row was sized by its own content, most of the height too: the drawing got 174px of a 1000px
-   * window while a 444px agent packet sat below it. The map already answers this — its agent panel
-   * opens on demand and reserves width only while open, and nothing else permanently owns the
-   * space beside the canvas. Choosing a stage opens it; choosing the open one again closes it.
-   */
-  const [stageOpen, setStageOpen] = useState(() => readArchitectureAddress().stageOpen);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   /*
    * ⚠️ **At workbench width the screen stops being a document.** Everything that used to sit in a
@@ -186,23 +121,19 @@ export function ArchitectureWorkbench({
    * the stacked document it was, because a phone has no room for a dock beside anything.
    */
   const [inspector, setInspector] = useState<'role' | 'rules' | null>(() => {
-    /*
-     * A link that names a role is a link to that role's answer, so it arrives open — unless the
-     * same link also names a stage, because the two docks are exclusive (a 380px panel beside a
-     * 340px one leaves a 1512 canvas too narrow for the drawing). A link that asks for both is
-     * answered with the stage, which is the step somebody was in the middle of.
-     */
-    const address = readArchitectureAddress();
-    return address.role !== null && !address.stageOpen ? 'role' : null;
+    return readArchitectureRole() !== null ? 'role' : null;
   });
   const inspectorOpen = inspector !== null;
+  const rightDockOpen = inspectorOpen || evidenceOpen;
+  const evidenceTriggerRef = useRef<HTMLButtonElement>(null);
+  const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
 
 
   /* Which role the canvas has chosen. It lives here because the canvas and the panel that answers
      it sit in different rows of the page grid: the drawing takes the full width, the answer is
      column content. */
   /*
-   * ⚠️ **The chosen role is in the address, for the same reason the stage is.** Selecting one left
+   * ⚠️ **The chosen role is in the address because a selected dependency is a shareable state.** Selecting one left
    * `/ko/architecture/` unchanged and a reload dropped it (measured on the built export,
    * 2026-08-28) — and this is the half a person is likelier to send: "look at what widgets may
    * depend on" is a link, not an instruction to go and click something.
@@ -212,16 +143,15 @@ export function ArchitectureWorkbench({
    * it. `docs/AGENT-DESIGN-METHOD.md` records where that came from.
    */
   const [selectedRole, setSelectedRole] = useState<string | null>(
-    () => readArchitectureAddress().role,
+    () => readArchitectureRole(),
   );
 
-  /* Back and forward move both, because the address is part of the screen's state now. */
+  /* Back and forward move the selected role because the address is part of the screen's state. */
   useEffect(() => {
     const syncFromHistory = () => {
-      const address = readArchitectureAddress();
-      setMode(address.stage);
-      setSelectedRole(address.role);
-      setStageOpen(address.stageOpen);
+      const role = readArchitectureRole();
+      setSelectedRole(role);
+      setInspector(role === null ? null : 'role');
     };
     window.addEventListener('popstate', syncFromHistory);
     return () => window.removeEventListener('popstate', syncFromHistory);
@@ -233,19 +163,10 @@ export function ArchitectureWorkbench({
    * (2026-08-30). One dock, two contents, never both.
    */
 
-  function openInspector(kind: 'role' | 'rules') {
+  function openInspector(kind: 'role' | 'rules', trigger?: HTMLElement | SVGElement) {
+    if (trigger) inspectorTriggerRef.current = trigger;
     setEvidenceOpen(false);
     setInspector(kind);
-    if (!stageOpen) return;
-    /*
-     * ⚠️ **One dock at a time.** Measured 2026-08-30 at 1512: the inspector is 380px and the stage
-     * 340px, so both open leave the canvas 628px for an 804px drawing — the chain then sits behind
-     * a horizontal scroll, which is the exact defect the canvas took the full width to fix. The
-     * two answer different questions (what is this role · what do I do next), so the one being
-     * asked wins and the other steps aside rather than splitting the screen three ways.
-     */
-    setStageOpen(false);
-    writeArchitectureAddress({ stage: mode, role: selectedRole, stageOpen: false });
   }
 
   /**
@@ -254,17 +175,19 @@ export function ArchitectureWorkbench({
    * (judged 2026-08-30). The chosen role stays in memory — the canvas still shows what was picked
    * and the button reopens its answer — but the link stops promising a panel nobody wants.
    */
-  function closeInspector() {
+  const closeInspector = useCallback(() => {
     setInspector(null);
-    setWalking(false);
-    writeArchitectureAddress({ stage: mode, role: null, stageOpen });
-  }
+    writeArchitectureAddress(null);
+    window.requestAnimationFrame(() => inspectorTriggerRef.current?.focus());
+  }, []);
+
+  const closeEvidence = useCallback(() => {
+    setEvidenceOpen(false);
+    window.requestAnimationFrame(() => evidenceTriggerRef.current?.focus());
+  }, []);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
-  const layoutScrollRef = useRef<HTMLDivElement>(null);
-  const stagePanelRef = useRef<HTMLElement>(null);
-  const reanchorScrollEndRef = useRef(false);
-  const modeChangedRef = useRef(false);
+  const evidencePanelRef = useRef<HTMLElement>(null);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
     [profiles, selectedSlug],
@@ -292,148 +215,37 @@ export function ArchitectureWorkbench({
     () => (selected ? buildArchitectureGraph(buildArchitectureLayout(selected), roleTraffic ?? []) : null),
     [selected, roleTraffic],
   );
-  /**
-   * Reading the chain one role at a time.
-   *
-   * ⚠️ **A walk, not a camera** (2026-08-30). The reference the owner pointed at drives a guided
-   * tour by flying the viewport to each step, and this canvas cannot: its scale is a contract, and
-   * scaling the drawing scales the text off the ramp. So the walk moves the *selection* instead —
-   * the dock already answers whichever role is chosen — and only brings the box into view where
-   * the canvas is too short to hold the whole chain. The order is the drawing's own column order;
-   * nothing is authored and nothing new is stored.
-   */
-  const walkOrder = useMemo(
-    () => (rulesGraph ? [...rulesGraph.boxes].sort((a, b) => a.column - b.column).map((box) => box.id) : []),
-    [rulesGraph],
-  );
-  const [walking, setWalking] = useState(false);
-  const walkAt = selectedRole === null ? -1 : walkOrder.indexOf(selectedRole);
-
-  /**
-   * `delta` steps from wherever the walk is; `to` jumps to an absolute place in the chain.
-   *
-   * ⚠️ **Starting a walk starts it at the top.** Continuing from whatever was last clicked reads
-   * as a random entry point — "walk the chain" promises the chain, from its first role.
-   */
-  const stepWalk = useCallback((delta: number, to?: number) => {
-    if (walkOrder.length === 0) return;
-    const target = to ?? walkAt + delta;
-    const next = walkOrder[Math.min(walkOrder.length - 1, Math.max(0, target))];
-    if (next === undefined) return;
-    setWalking(true);
-    setSelectedRole(next);
-    setInspector('role');
-    writeArchitectureAddress({ stage: mode, role: next, stageOpen: false });
-    if (stageOpen) setStageOpen(false);
-    /* Only where the canvas cannot hold the whole chain does anything move. */
-    window.requestAnimationFrame(() => {
-      const box = document.querySelector(`[data-testid="architecture-graph-box-${next}"]`);
-      const scroller = box?.closest('[data-testid="architecture-graph"]')?.parentElement;
-      if (!box || !scroller) return;
-      if (scroller.scrollHeight <= scroller.clientHeight + 1) return;
-      box.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    });
-  }, [mode, stageOpen, walkAt, walkOrder]);
-
-  /**
-   * ⚠️ **Closing the panel closes the address with it.** `inspectorOpen` initialises from
-   * `?role=`, so a screen somebody deliberately closed came back open on a reload or a share
-   * (judged 2026-08-30). The chosen role stays in memory — the canvas still shows what was picked
-   * and the button reopens its answer — but the link stops promising a panel nobody wants.
-   */
-
-
   useEffect(() => {
     if (!inspectorOpen) return undefined;
-    /* Escape closes the dock, the way it closes every other panel in this app. It never clears the
-       chosen role: the canvas keeps showing what was picked, and the button reopens the answer. */
+    /* Escape closes the dock, the way it closes every other panel in this app. */
     const onKey = (event: KeyboardEvent) => {
-      if ((event.key === 'ArrowRight' || event.key === 'ArrowLeft') && walking) {
-        event.preventDefault();
-        stepWalk(event.key === 'ArrowRight' ? 1 : -1);
-        return;
-      }
       if (event.key !== 'Escape') return;
-      setInspector(null);
-      setWalking(false);
-      writeArchitectureAddress({ stage: mode, role: null, stageOpen });
+      closeInspector();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [inspectorOpen, mode, stageOpen, stepWalk, walking]);
+  }, [closeInspector, inspectorOpen]);
 
   useEffect(() => {
     if (!evidenceOpen) return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setEvidenceOpen(false);
+      if (event.key === 'Escape') closeEvidence();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [evidenceOpen]);
-
-
-
-
+  }, [closeEvidence, evidenceOpen]);
 
   useLayoutEffect(() => {
-    /*
-     * Below xl the stage panel stacks under the blueprint, so a mode press up in the header can
-     * change content the person cannot see (measured 2026-08-27: at 1040 and 390 the panel top
-     * sat at 701/902 in shorter viewports and nothing visibly happened). When the press was not
-     * the scroll-end case below, bring the newly entered stage into view. `modeChangedRef` keeps
-     * the initial mount from scrolling a fresh page.
-     */
-    if (!reanchorScrollEndRef.current) {
-      if (
-        modeChangedRef.current &&
-        typeof window !== 'undefined' &&
-        !window.matchMedia('(min-width: 1280px)').matches
-      ) {
-        const active = stagePanelRef.current?.querySelector<HTMLElement>(
-          `[data-architecture-stage="${mode}"]`,
-        );
-        if (typeof active?.scrollIntoView === 'function') {
-          active.scrollIntoView({ block: 'nearest' });
-        }
-      }
-      return;
-    }
-    const scroller = layoutScrollRef.current;
-    if (!scroller) {
-      reanchorScrollEndRef.current = false;
-      return;
-    }
-    /* The stage panel is a dock, so at the moment a stage is chosen it does not exist yet. This
-       effect exists to wait for something unmounted, so it waits for the dock too. */
-    const root = stagePanelRef.current ?? scroller;
-
-    const alignWhenActiveStageMounts = () => {
-      const active = root.querySelector(
-        `[data-architecture-stage="${mode}"][data-surface-state="entered"]`,
-      );
-      if (!active) return false;
-      scroller.scrollTop = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-      reanchorScrollEndRef.current = false;
-      return true;
-    };
-
-    if (alignWhenActiveStageMounts()) return;
-    const observer = new MutationObserver(() => {
-      if (alignWhenActiveStageMounts()) observer.disconnect();
+    if (!evidenceOpen || typeof window === 'undefined') return;
+    if (window.matchMedia('(min-width: 1280px)').matches) return;
+    window.requestAnimationFrame(() => {
+      evidencePanelRef.current?.scrollIntoView({ block: 'nearest' });
     });
-    observer.observe(root, {
-      attributes: true,
-      attributeFilter: ['data-surface-state'],
-      childList: true,
-      subtree: true,
-    });
-    return () => observer.disconnect();
-  }, [mode]);
+  }, [evidenceOpen]);
 
   const primaryAgentKind: 'change' | 'verify' =
     selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
-  const requestedAgentKind: 'change' | 'verify' =
-    mode === 'plan' ? 'change' : mode === 'verify' ? 'verify' : primaryAgentKind;
+  const requestedAgentKind: 'change' | 'verify' = primaryAgentKind;
   const agentReceipt = selectedRecord
     ? {
         profileContentHash: selectedRecord.profile.contentHash,
@@ -451,78 +263,12 @@ export function ArchitectureWorkbench({
         handoffContexts[selected.slug] ?? null,
         {
           kind: requestedAgentKind,
-          stage: mode,
+          stage: 'understand',
           selectedRole,
           receipt: agentReceipt,
         },
       )
     : '';
-  /*
-   * Which edge of the packet preview is covered. `listboxTopIsHidden`/`listboxBottomIsHidden` are
-   * the repository's one answer to "is something hidden past this edge"; reusing them keeps the
-   * judgment identical to the select listbox and the composer.
-   */
-  const handoffRef = useRef<HTMLPreElement | null>(null);
-  const [handoffEdges, setHandoffEdges] = useState<{ top: boolean; bottom: boolean }>({
-    top: false,
-    bottom: false,
-  });
-  const readHandoffEdges = useCallback(() => {
-    const element = handoffRef.current;
-    if (!element) return;
-    const overflowing = element.scrollHeight > element.clientHeight + 1;
-    setHandoffEdges({
-      top: listboxTopIsHidden(overflowing, element.scrollTop),
-      bottom: listboxBottomIsHidden(
-        overflowing,
-        element.scrollTop,
-        element.clientHeight,
-        element.scrollHeight,
-      ),
-    });
-  }, []);
-
-  /*
-   * ⚠️ **A callback ref, because an effect fires before this element exists.** Measured on the
-   * built export (2026-08-28): entering plan mode gave `clientHeight 190, scrollHeight 444` and
-   * `mask-image: none` — 254px hidden with nothing on screen saying so, which a fresh-eyes walker
-   * read as a sentence truncated mid-word. Any scroll fixed it, and that is the tell: the reading
-   * ran once, when the block was not yet mounted, and nothing re-measured. Adding a
-   * `ResizeObserver` inside an effect did not help, because that effect saw the same null ref.
-   *
-   * Attaching to the node itself removes the timing question: it runs when the element arrives,
-   * however late that is. The observer then covers the box settling afterwards, and `fonts.ready`
-   * covers text growing inside a box that never changes — the late-web-font case `select.tsx`
-   * already names in the comment beside the very helpers this reuses.
-   */
-  const observerRef = useRef<ResizeObserver | null>(null);
-  const attachHandoff = useCallback(
-    (element: HTMLPreElement | null) => {
-      observerRef.current?.disconnect();
-      observerRef.current = null;
-      handoffRef.current = element;
-      if (!element) return;
-      readHandoffEdges();
-      void document.fonts?.ready.then(readHandoffEdges);
-      if (typeof ResizeObserver === 'undefined') return;
-      const observer = new ResizeObserver(readHandoffEdges);
-      observer.observe(element);
-      observerRef.current = observer;
-    },
-    [readHandoffEdges],
-  );
-  /* The text itself can change while the element stays put, so the content is a trigger too. */
-  useLayoutEffect(readHandoffEdges, [readHandoffEdges, handoff, mode]);
-
-  const handoffMask = (() => {
-    const fade = 'var(--leading-body)';
-    if (handoffEdges.top && handoffEdges.bottom) {
-      return `linear-gradient(to bottom, transparent 0, #000 ${fade}, #000 calc(100% - ${fade}), transparent 100%)`;
-    }
-    if (handoffEdges.top) return `linear-gradient(to bottom, transparent 0, #000 ${fade})`;
-    if (handoffEdges.bottom) return `linear-gradient(to top, transparent 0, #000 ${fade})`;
-    return undefined;
-  })();
 
   /*
    * What the detail panel needs about the chosen role, derived from the same layout the canvas
@@ -622,8 +368,8 @@ export function ArchitectureWorkbench({
            * happened. That is the defect this button was built to fix, relocated one route right.
            *
            * The clipboard door is the one that always works, including in a browser, where
-           * spawning a process is an impossibility rather than a gap. It reuses Plan mode's
-           * clipboard vocabulary verbatim; a second set of words for the same act is how two
+           * spawning a process is an impossibility rather than a gap. It reuses the workbench's
+           * handoff vocabulary verbatim; a second set of words for the same act is how two
            * dialects start.
            *
            * The app still does not call MCP itself. That is the 2026-08-24 decision behind the
@@ -749,10 +495,8 @@ export function ArchitectureWorkbench({
       ? `${t(`recordStatus.${conformance.status}`)} · ${recordCounts}`
       : t('deltaUnknown');
   const deltaStatus = conformance?.status ?? 'missing';
-  /* Unique placements: one module two globs both reach is one module, not two. */
-  const moduleTotal = selectedModules
-    ? new Set(Object.values(selectedModules).flat().map((module) => module.path)).size
-    : null;
+  const deltaCompactTitle =
+    deltaStatus === 'missing' ? t('recordStatus.unknown') : t(`recordStatus.${deltaStatus}`);
   const patternLabel = (name: string) =>
     t.has(`patternLabels.${name}`) ? t(`patternLabels.${name}`) : name;
   /* An axis is free text in the contract, so a profile may declare one nobody has translated.
@@ -760,15 +504,6 @@ export function ArchitectureWorkbench({
      not recognise would be the folder-name inference decision (2026-08-26) in another costume. */
   const axisBody = (axis: string) =>
     t.has(`patternAxes.${axis}.body`) ? t(`patternAxes.${axis}.body`) : '';
-  /* Every number is derived from the reviewed profile or the source walk. The module
-     tile drops out where no source folder can be read, which is what makes the count
-     odd — the grid below handles that rather than the list pretending otherwise. */
-  const statTiles: readonly (readonly [number, string])[] = [
-    [selected.roles.length, t('statRoles')],
-    ...(moduleTotal !== null ? ([[moduleTotal, t('statModules')]] as const) : []),
-    [selected.patterns.length, t('patterns')],
-    [selected.evidence.length, t('statEvidence')],
-  ];
   const roleLabel = (id: string) =>
     t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
 
@@ -782,86 +517,10 @@ export function ArchitectureWorkbench({
     }
   }
 
-  function changeMode(nextMode: Mode) {
-    setEvidenceOpen(false);
-    const scroller = layoutScrollRef.current;
-    const maxScrollTop = scroller
-      ? Math.max(0, scroller.scrollHeight - scroller.clientHeight)
-      : 0;
-    reanchorScrollEndRef.current = Boolean(
-      scroller && maxScrollTop > 0 && maxScrollTop - scroller.scrollTop <= 1,
-    );
-    if (nextMode !== mode) setCopyState('idle');
-    modeChangedRef.current = true;
-    const nextOpen = !(stageOpen && nextMode === mode);
-    setMode(nextMode);
-    setStageOpen(nextOpen);
-    /*
-     * ⚠️ **One dock at a time.** Measured 2026-08-30 at 1512: the inspector is 380px and the stage
-     * 340px, so both open leave the canvas 628px for an 804px drawing — the chain then sits behind
-     * a horizontal scroll, which is the exact defect the canvas took the full width to fix. The
-     * two answer different questions (what is this role · what do I do next), so the one being
-     * asked wins and the other steps aside rather than splitting the screen three ways.
-     */
-    if (nextOpen) setInspector(null);
-    /*
-     * The same document, a different query view. A Next router navigation would move focus to the
-     * document root inside the WebView, so the address is updated through native history the way
-     * `OntologyInsightsPage` already does — screen state and URL change in one event, which keeps
-     * the segmented control's roving focus intact.
-     */
-    window.history.replaceState(
-      window.history.state,
-      '',
-      buildArchitectureHref(
-        { stage: nextMode, role: selectedRole, stageOpen: nextOpen },
-        window.location.pathname,
-      ),
-    );
-  }
-
   return (
     <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]">
-      <header className="shrink-0 border-b border-[color:var(--color-border-soft)] px-5 py-4 md:px-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-              {t('eyebrow')}
-            </p>
-            <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
-                {t('title')}
-              </h1>
-              <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
-                {selected.title}
-              </span>
-            </div>
-            <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
-              {t('description')}
-            </p>
-          </div>
-          <SegmentedControl
-            ariaLabel={t('modesAria')}
-            value={mode}
-            onChange={changeMode}
-            options={([
-              ['understand', t('modes.understand')],
-              ['plan', t('modes.plan')],
-              ['verify', t('modes.verify')],
-            ] as const).map(([value, label]) => ({
-              value,
-              label,
-              testId: `architecture-mode-${value}`,
-            }))}
-            size="lg"
-          />
-        </div>
-      </header>
-
       <div
-        ref={layoutScrollRef}
         data-testid="architecture-layout-scroll"
-        data-architecture-scroll-reanchor="mode-end"
         className={cn(
           /*
            * ⚠️ **One row at workbench width, and it does not scroll.** The second row used to hold
@@ -871,8 +530,10 @@ export function ArchitectureWorkbench({
            * opens beside it. Below `xl` the stacked, scrolling document stays exactly as it was,
            * because a phone cannot put anything beside anything.
            */
-          'grid min-h-0 flex-1 grid-cols-1 overflow-y-auto lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-1 xl:overflow-hidden',
-          XL_COLUMNS[`${inspectorOpen ? 'i' : '-'}${stageOpen ? 's' : '-'}`],
+          'architecture-workbench-grid grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-1 xl:overflow-hidden',
+          evidenceOpen
+            ? XL_EVIDENCE_COLUMNS
+            : XL_COLUMNS[inspectorOpen ? 'inspector' : 'closed'],
         )}
       >
         {/*
@@ -886,39 +547,54 @@ export function ArchitectureWorkbench({
         <div
           className="min-w-0 border-b border-[color:var(--color-border-soft)] px-5 pb-5 pt-4 md:px-8 lg:col-start-1 lg:col-end-3 xl:col-start-1 xl:col-end-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:border-b-0 xl:pb-3 xl:pt-3"
           data-testid="architecture-flow-panel"
-          data-architecture-mode={mode}
         >
+          <header className="mb-3 shrink-0 px-1">
+            <div className="min-w-0">
+              <p className="text-caption font-[var(--font-weight-signature)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                {t('eyebrow')}
+              </p>
+              <div className="mt-1 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                <h1 className="text-display font-[var(--font-weight-strong)] leading-display-tight text-[color:var(--color-text-primary)]">
+                  {t('title')}
+                </h1>
+                <span className="text-body-lg text-[color:var(--color-text-tertiary)]">
+                  {selected.title}
+                </span>
+              </div>
+              <p className="mt-1 text-body text-[color:var(--color-text-tertiary)]">
+                {t('description')}
+              </p>
+            </div>
+          </header>
           {/*
             The provenance explanation is available in one press, but it does not own a permanent
             150px band above the architecture. The rail keeps the three authorities visible at a
             glance; the full plane opens over the canvas below.
           */}
-          <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
+          <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2 md:flex-nowrap">
               <ArchitectureEvidenceRail
                 ariaLabel={evidenceOpen ? t('evidenceClose') : t('evidenceOpen')}
+                buttonRef={evidenceTriggerRef}
                 expanded={evidenceOpen}
                 onToggle={() => {
                   const next = !evidenceOpen;
-                  setEvidenceOpen(next);
-                  if (!next) return;
-                  setInspector(null);
-                  if (stageOpen) {
-                    setStageOpen(false);
-                    writeArchitectureAddress({ stage: mode, role: selectedRole, stageOpen: false });
+                  if (!next) {
+                    closeEvidence();
+                    return;
                   }
+                  setEvidenceOpen(true);
+                  setInspector(null);
                 }}
-                contractLabel={t('contractLabel')}
                 contractTitle={t('contractReviewed')}
-                observationLabel={t('observationLabel')}
                 observationTitle={observationTitle}
                 observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
-                deltaLabel={t('deltaLabel')}
-                deltaTitle={deltaTitle}
+                deltaCompactTitle={deltaCompactTitle}
                 deltaStatus={deltaStatus}
+                compact={rightDockOpen}
               />
               <Button
-                variant={agentRoute === 'agent' ? 'primary' : 'outline'}
-                size="sm"
+                variant="outline"
+                size="lg"
                 className="atlas-touch-floor ml-auto shrink-0"
                 disabled={agentRoute === 'checking' || copyState === 'pending'}
                 data-testid="architecture-agent-action"
@@ -928,8 +604,7 @@ export function ArchitectureWorkbench({
                     const kind: ArchitectureAgentRequest['kind'] = requestedAgentKind;
                     setInspector(null);
                     setEvidenceOpen(false);
-                    setStageOpen(false);
-                    writeArchitectureAddress({ stage: mode, role: selectedRole, stageOpen: false });
+                    writeArchitectureAddress(selectedRole);
                     onAgentRequest?.({
                       kind,
                       prompt: buildArchitectureAgentPrompt(
@@ -937,7 +612,7 @@ export function ArchitectureWorkbench({
                         handoffContexts[selected.slug] ?? null,
                         {
                           kind,
-                          stage: mode,
+                          stage: 'understand',
                           selectedRole,
                           receipt: agentReceipt,
                         },
@@ -960,38 +635,27 @@ export function ArchitectureWorkbench({
                           ? t('copyHandoffError')
                           : t('copyAgentTask')
                     : conformance?.status === 'conforms'
-                      ? t('planChangeWithAgent', { agent: agentLabel ?? t('connectedAgent') })
+                      ? t('planChangeAction')
                       : conformance
-                        ? t('reviewDeltaWithAgent', { agent: agentLabel ?? t('connectedAgent') })
-                        : t('inspectWithAgent', { agent: agentLabel ?? t('connectedAgent') })}
+                        ? t('reviewDeltaAction')
+                        : t('inspectSourceAction')}
               </Button>
               <span className="sr-only" role="status" aria-live="polite">
                 {agentRoute === 'clipboard' && copyState === 'copied'
                   ? t('copiedHandoff')
                   : agentRoute === 'clipboard' && copyState === 'error'
                     ? t('copyHandoffError')
-                    : ''}
+                  : ''}
               </span>
-              {/*
-                ⚠️ **A walk, not a tour with a camera.** The reference flies its viewport from step
-                to step; this canvas holds one scale by contract, so the walk moves the selection
-                and lets the panel do the talking — and only scrolls where the chain does not fit.
-              */}
               <Button
                 variant="outline"
-                size="sm"
+                size="lg"
                 className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
-                onClick={() => (walking ? closeInspector() : stepWalk(0, 0))}
-                data-testid="architecture-walk"
-              >
-                <Footprints size={ICON_SIZE.sm} aria-hidden />
-                {walking ? t('walkStop') : t('walkChain')}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
-                onClick={() => (inspector === 'rules' ? closeInspector() : openInspector('rules'))}
+                onClick={(event) =>
+                  inspector === 'rules'
+                    ? closeInspector()
+                    : openInspector('rules', event.currentTarget)
+                }
                 aria-expanded={inspector === 'rules'}
                 data-testid="architecture-inspector-toggle"
               >
@@ -1041,23 +705,19 @@ export function ArchitectureWorkbench({
                 ledgerImportsLabel={(count) => t('roleLedgerImports', { count })}
                 contractTrackLabel={t('contractTrackLabel')}
                 observationTrackLabel={t('observationTrackLabel')}
+                deltaTrackLabel={t('deltaLabel')}
                 observationMissingLabel={t('observationMissingShort')}
                 selected={selectedRole}
-                onSelect={(id) => {
-                  const next = selectedRole === id ? null : id;
+                roleInspectorOpen={inspector === 'role'}
+                onSelect={(id, trigger) => {
+                  const shouldClear = selectedRole === id && inspector === 'role';
+                  const next = shouldClear ? null : id;
                   setSelectedRole(next);
                   /* Choosing a role is the question the dock answers, so it opens with the
                      choice; clicking the same role again clears both. */
                   if (next === null) setInspector(null);
-                  else openInspector('role');
-                  window.history.replaceState(
-                    window.history.state,
-                    '',
-                    buildArchitectureHref(
-                      { stage: mode, role: next, stageOpen },
-                      window.location.pathname,
-                    ),
-                  );
+                  else openInspector('role', trigger);
+                  writeArchitectureAddress(next);
                 }}
                 reachLabel={(role, targets) => t('reachAria', { role, targets })}
                 sinkLabel={t('reachNone')}
@@ -1067,59 +727,71 @@ export function ArchitectureWorkbench({
                 hiddenLeftLabel={(count) => t('hiddenLeft', { count })}
                 hiddenAboveLabel={(count) => t('hiddenAbove', { count })}
                 hiddenBelowLabel={(count) => t('hiddenBelow', { count })}
-                runLabel={t('runFlow')}
-                finishRunLabel={t('finishFlow')}
               />
-              <Surface
-                open={evidenceOpen}
-                as="aside"
-                motion="chrome"
-                origin="top center"
-                id="architecture-evidence-overlay"
-                aria-label={t('evidenceOverlayTitle')}
-                data-testid="architecture-evidence-overlay"
-                className="absolute inset-x-2 top-2 z-20 max-h-[calc(100%-1rem)] overflow-y-auto rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-2 shadow-[var(--shadow-elevation-3)] md:inset-x-3 md:top-3"
-              >
-                <div className="mb-2 flex items-center justify-between gap-3 px-1">
-                  <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-                    {t('evidenceOverlayTitle')}
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="atlas-touch-floor"
-                    onClick={() => setEvidenceOpen(false)}
-                    aria-label={t('evidenceClose')}
-                    data-testid="architecture-evidence-close"
-                  >
-                    <span className="text-caption text-[color:var(--color-text-quaternary)]">
-                      {t('inspectorEscHint')}
-                    </span>
-                    <X size={ICON_SIZE.sm} aria-hidden />
-                  </Button>
-                </div>
-                <ArchitectureEvidencePlane
-                  ariaLabel={t('evidencePlaneAria')}
-                  contractLabel={t('contractLabel')}
-                  contractTitle={t('contractReviewed')}
-                  contractBody={t('contractBody', {
-                    pattern: selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · '),
-                    roles: selected.roles.length,
-                    evidence: selected.evidence.length,
-                  })}
-                  observationLabel={t('observationLabel')}
-                  observationTitle={observationTitle}
-                  observationBody={observationBody}
-                  observationNote={observationNote}
-                  observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
-                  deltaLabel={t('deltaLabel')}
-                  deltaTitle={deltaTitle}
-                  deltaBody={conformance ? t('deltaMeasuredBody') : t('deltaUnknownBody')}
-                  deltaStatus={deltaStatus}
-                />
-              </Surface>
           </div>
         </div>
+
+        <Surface
+          ref={evidencePanelRef}
+          open={evidenceOpen}
+          as="aside"
+          motion="overlay"
+          origin="right center"
+          id="architecture-evidence-dock"
+          aria-label={t('evidenceOverlayTitle')}
+          data-testid="architecture-evidence-dock"
+          data-architecture-presentation="dock"
+          className="min-w-0 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] lg:col-span-2 xl:col-span-1 xl:col-start-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:overflow-y-auto xl:border-b-0 xl:border-l"
+        >
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[color:var(--color-border-soft)] px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
+                {t('evidenceOverlayTitle')}
+              </p>
+              <p className="mt-1 flex flex-wrap items-center gap-1.5 text-caption text-[color:var(--color-text-tertiary)]">
+                <span>{t('contractLabel')}</span>
+                <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+                <span>{t('observationLabel')}</span>
+                <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+                <span>{t('deltaLabel')}</span>
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="atlas-touch-floor shrink-0"
+              onClick={closeEvidence}
+              aria-label={t('evidenceClose')}
+              data-testid="architecture-evidence-close"
+            >
+              <span className="text-caption text-[color:var(--color-text-quaternary)]">
+                {t('inspectorEscHint')}
+              </span>
+              <X size={ICON_SIZE.sm} aria-hidden />
+            </Button>
+          </div>
+          <div className="min-w-0 p-3 xl:flex-1 xl:p-4">
+            <ArchitectureEvidencePlane
+              ariaLabel={t('evidencePlaneAria')}
+              contractLabel={t('contractLabel')}
+              contractTitle={t('contractReviewed')}
+              contractBody={t('contractBody', {
+                pattern: selected.patterns.map((pattern) => patternLabel(pattern.name)).join(' · '),
+                roles: selected.roles.length,
+                evidence: selected.evidence.length,
+              })}
+              observationLabel={t('observationLabel')}
+              observationTitle={observationTitle}
+              observationBody={observationBody}
+              observationNote={observationNote}
+              observationActive={agentActivity !== null && agentActivity.state !== 'blocked'}
+              deltaLabel={t('deltaLabel')}
+              deltaTitle={deltaTitle}
+              deltaBody={conformance ? t('deltaMeasuredBody') : t('deltaUnknownBody')}
+              deltaStatus={deltaStatus}
+            />
+          </div>
+        </Surface>
 
         {/*
           The dock. Below `xl` these are two stacked sections in document order, exactly as
@@ -1128,6 +800,7 @@ export function ArchitectureWorkbench({
           for it: by clicking a role, or by pressing the button on the canvas.
         */}
         <div
+          id="architecture-inspector"
           data-testid="architecture-inspector"
           data-architecture-inspector-open={inspectorOpen ? 'true' : 'false'}
           data-architecture-inspector={inspector ?? 'none'}
@@ -1152,38 +825,6 @@ export function ArchitectureWorkbench({
               {inspector === 'role' && activeRole !== null ? roleLabel(activeRole) : t('inspectorTitle')}
             </h2>
             <div className="flex shrink-0 items-center gap-1">
-              {walking && walkAt >= 0 ? (
-                <>
-                  <span
-                    className="mr-1 text-caption tabular-nums text-[color:var(--color-text-quaternary)]"
-                    data-testid="architecture-walk-step"
-                  >
-                    {t('walkStep', { index: walkAt + 1, total: walkOrder.length })}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="atlas-touch-floor"
-                    onClick={() => stepWalk(-1)}
-                    disabled={walkAt <= 0}
-                    aria-label={t('walkPrev')}
-                    data-testid="architecture-walk-prev"
-                  >
-                    <ChevronLeft size={ICON_SIZE.sm} aria-hidden />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="atlas-touch-floor"
-                    onClick={() => stepWalk(1)}
-                    disabled={walkAt >= walkOrder.length - 1}
-                    aria-label={t('walkNext')}
-                    data-testid="architecture-walk-next"
-                  >
-                    <ChevronRight size={ICON_SIZE.sm} aria-hidden />
-                  </Button>
-                </>
-              ) : null}
               {/* The escape hatch says itself, the way the reference's breadcrumb does. */}
               <span className="text-caption text-[color:var(--color-text-quaternary)]">
                 {t('inspectorEscHint')}
@@ -1241,24 +882,30 @@ export function ArchitectureWorkbench({
                 <p className="m-0">{t('selectRoleHint')}</p>
               </div>
             ) : (
-              <ArchitectureRoleDetail
-                roleId={activeRole}
-                index={roleIndexOf.get(activeRole) ?? 1}
-                label={roleLabel(activeRole)}
-                summary={roleSummaryOf.get(activeRole) ?? null}
-                paths={rolePathsOf.get(activeRole) ?? []}
-                reach={roleReachOf.get(activeRole) ?? []}
-                modules={selectedModules === null ? null : selectedModules[activeRole] ?? []}
-                concepts={(conceptsByProfile[selected.slug] ?? {})[activeRole] ?? []}
-                edgeParticipants={EMPTY_EDGE_PARTICIPANTS}
-                roleLabel={roleLabel}
-                sinkLabel={t('reachNone')}
-                reachInlineLabel={(targets) => t('reachInline', { targets })}
-                moduleCountLabel={(count) => t('moduleCount', { count })}
-                moreLabel={(count) => t('moreOccupants', { count })}
-                showFewerLabel={t('fewerOccupants')}
-                layerConceptsLabel={(count) => t('layerConcepts', { count })}
-              />
+              <div
+                key={activeRole}
+                className="topology-chrome-in origin-left"
+                data-testid="architecture-role-detail-motion"
+              >
+                <ArchitectureRoleDetail
+                  roleId={activeRole}
+                  index={roleIndexOf.get(activeRole) ?? 1}
+                  label={roleLabel(activeRole)}
+                  summary={roleSummaryOf.get(activeRole) ?? null}
+                  paths={rolePathsOf.get(activeRole) ?? []}
+                  reach={roleReachOf.get(activeRole) ?? []}
+                  modules={selectedModules === null ? null : selectedModules[activeRole] ?? []}
+                  concepts={(conceptsByProfile[selected.slug] ?? {})[activeRole] ?? []}
+                  edgeParticipants={EMPTY_EDGE_PARTICIPANTS}
+                  roleLabel={roleLabel}
+                  sinkLabel={t('reachNone')}
+                  reachInlineLabel={(targets) => t('reachInline', { targets })}
+                  moduleCountLabel={(count) => t('moduleCount', { count })}
+                  moreLabel={(count) => t('moreOccupants', { count })}
+                  showFewerLabel={t('fewerOccupants')}
+                  layerConceptsLabel={(count) => t('layerConcepts', { count })}
+                />
+              </div>
             )}
           </div>
 
@@ -1383,9 +1030,6 @@ export function ArchitectureWorkbench({
               flow. Saying everything twice is why: neither half could use the width, so the screen
               was simultaneously redundant and empty. One band per role carries the name, the globs
               and the allowances, and the arrows run down the gutter beside them.
-
-              `data-architecture-mode` stays here because the scroll-reanchor test uses it to tell
-              which stage is mounted; it moved with the block it was attached to.
             */}
           </div>
         </section>
@@ -1412,18 +1056,19 @@ export function ArchitectureWorkbench({
             {t('profileList')}
           </h2>
           <div className="mt-3 flex flex-col gap-1.5">
-            {profiles.map((profile) => (
-              <RowButton
-                key={profile.uid}
-                active={profile.slug === selected.slug}
-                hoverInk="strong"
-                hoverSurface="lift"
-                onClick={() => setSelectedSlug(profile.slug)}
-                className="w-full justify-start px-3 py-2 text-left"
-              >
+            {profiles.map((profile) => {
+              const current = profile.slug === selected.slug;
+              const content = (
                 <span className="min-w-0">
-                  <span className="block truncate text-body-lg font-[var(--font-weight-signature)]">
-                    {profile.title}
+                  <span className="flex items-baseline justify-between gap-2">
+                    <span className="block min-w-0 truncate text-body-lg font-[var(--font-weight-signature)]">
+                      {profile.title}
+                    </span>
+                    {current ? (
+                      <span className="shrink-0 text-caption text-[color:var(--color-text-quaternary)]">
+                        {t('profileCurrent')}
+                      </span>
+                    ) : null}
                   </span>
                   <span className="mt-0.5 block truncate text-caption text-[color:var(--color-text-tertiary)]">
                     {profile.scopePaths.join(' · ')}
@@ -1437,165 +1082,37 @@ export function ArchitectureWorkbench({
                     {profile.patterns[0] ? ` · ${patternLabel(profile.patterns[0].name)}` : ''}
                   </span>
                 </span>
-              </RowButton>
-            ))}
+              );
+              if (current) {
+                return (
+                  <div
+                    key={profile.uid}
+                    aria-current="true"
+                    data-testid="architecture-profile-current"
+                    className="flex w-full items-center rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-3 py-2 text-left"
+                  >
+                    {content}
+                  </div>
+                );
+              }
+              return (
+                <RowButton
+                  key={profile.uid}
+                  data-testid="architecture-profile-option"
+                  hoverInk="strong"
+                  hoverSurface="lift"
+                  onClick={() => setSelectedSlug(profile.slug)}
+                  className="w-full justify-start px-3 py-2 text-left"
+                >
+                  {content}
+                </RowButton>
+              );
+            })}
           </div>
         </aside>
 
         </div>
 
-        {!stageOpen ? null : (
-        <aside ref={stagePanelRef} className={cn(
-          /*
-           * ⚠️ **Longhand placement, because a span shorthand cannot be overridden by one.**
-           * `lg:col-span-2` emits `grid-column: span 2 / span 2`, and an `xl:col-end-*` longhand
-           * lost to it in the cascade: the stage went on spanning two tracks at `xl`, the grid
-           * invented a third for it, and the canvas was squeezed to a 218px strip with the stage
-           * sprawling beside it (measured on the installed app and reproduced at 1512,
-           * 2026-08-30). Both ends are stated at both breakpoints now.
-           */
-          'border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-5 lg:col-start-1 lg:col-end-3 xl:row-start-1 xl:min-h-0 xl:border-l xl:border-t-0 xl:overflow-y-auto',
-          /*
-           * The stage sits outside the inspector, so which column it lands in depends on whether
-           * the inspector is there to sit beside.
-           *
-           * ⚠️ **Both ends, always.** `lg:col-span-2` still applies at `xl`, so a start with no end
-           * made this aside span two tracks — and where only two exist the grid invented a third,
-           * squeezing the canvas to a 220px strip with the stage sprawling beside it (measured on
-           * the installed app, 2026-08-30). An explicit end is what the old placement had, and
-           * removing it was the regression.
-           */
-          inspectorOpen ? 'xl:col-start-3 xl:col-end-4' : 'xl:col-start-2 xl:col-end-3',
-        )}>
-          <div className="grid">
-          <Surface open={mode === 'understand'} as="section" data-architecture-stage="understand" className="col-start-1 row-start-1 min-w-0">
-            <FileCode2 size={ICON_SIZE.lg} className="text-[color:var(--color-indigo-text-soft)]" aria-hidden />
-            <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {t('understandTitle')}
-            </h2>
-            {/* Numbers before prose: the derived facts win the first glance, the explanation
-                follows for whoever wants it. Every number here comes from the reviewed profile
-                and the source walk — the reference mockup's stat cards carried an uptime nobody
-                measures, and that is the part that did not survive translation.
-
-                Position carries that priority, not size: the numeral sits at the title step,
-                because the display step is the page title's own size and nothing outside an h1
-                may match it. `text-title` is also where the app's other derived numerals live
-                (DomainCapacityBar, the insights overview).
-
-                An odd tile count would otherwise leave a half-width hole in the second column —
-                visible whenever no source folder can be read and the module tile drops out,
-                which is every browser. The last tile takes the whole row instead. */}
-            <dl className="mt-4 grid grid-cols-2 gap-2" data-testid="architecture-stats">
-              {statTiles.map(([value, label], index) => (
-                <div
-                  key={label}
-                  className={`rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)] ${
-                    statTiles.length % 2 === 1 && index === statTiles.length - 1 ? 'col-span-2' : ''
-                  }`}
-                >
-                  <dd className="m-0 text-title font-[var(--font-weight-strong)] leading-display-tight tabular-nums text-[color:var(--color-text-primary)]">
-                    {value}
-                  </dd>
-                  <dt className="mt-1 text-caption text-[color:var(--color-text-quaternary)]">
-                    {label}
-                  </dt>
-                </div>
-              ))}
-            </dl>
-            <p className="mt-4 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('understandBody')}
-            </p>
-            <h3 className="mt-6 text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caption)] text-[color:var(--color-text-quaternary)]">
-              {t('evidenceTitle')}
-            </h3>
-            <ul className="mt-3 flex flex-col gap-2">
-              {selected.evidence.map((entry) => (
-                <li key={entry} className="rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 font-mono text-caption text-[color:var(--color-text-tertiary)]">
-                  {entry}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-5 break-keep text-body text-[color:var(--color-text-tertiary)]">
-              {t('sourceCheckBody')}
-            </p>
-          </Surface>
-
-          <Surface open={mode === 'plan'} as="section" data-architecture-stage="plan" className="col-start-1 row-start-1 min-w-0">
-            <Bot size={ICON_SIZE.lg} className="text-[color:var(--color-indigo-text-soft)]" aria-hidden />
-            <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {t('planTitle')}
-            </h2>
-            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('planBody')}
-            </p>
-            {/*
-              The box scrolls, but macOS hides its overlay scrollbar until something moves — so a
-              packet longer than 12rem simply stopped mid-sentence and read as truncated text
-              (2026-08-28 inspection, installed app: "…does not embed a current conformance").
-              The covered edge gets the same fade the select listbox uses, on the same helpers, so
-              two surfaces solving one problem do not answer it differently.
-
-              ⚠️ **On the wide layout the cap is lifted, because the panel around it is already a
-              scroller.** A second walkthrough measured 254px hidden inside a 190px box while 237px
-              of that panel sat unused below it — and raising the viewport 200px gave the packet
-              none of it, because 12rem is a constant and the panel is not. Two nested scrollers
-              was the defect; one is the fix, and it needs no new number. Below `xl` the panel does
-              not scroll, so the cap and its fade stay exactly as they were.
-            */}
-            <pre
-              ref={attachHandoff}
-              onScroll={readHandoffEdges}
-              className="mt-4 max-h-48 overflow-auto whitespace-pre-wrap rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] p-3 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)] xl:max-h-none xl:overflow-visible"
-              style={handoffMask ? { maskImage: handoffMask, WebkitMaskImage: handoffMask } : undefined}
-              aria-label={t('handoffPreview')}
-              tabIndex={0}
-            >
-              {handoff}
-            </pre>
-            <Button
-              className="atlas-touch-floor mt-4"
-              variant="primary"
-              size="sm"
-              disabled={copyState === 'pending'}
-              data-architecture-copy-state={copyState}
-              onClick={() => void copyHandoff()}
-            >
-              {copyState === 'pending'
-                ? t('copyingHandoff')
-                : copyState === 'copied'
-                  ? t('copiedHandoff')
-                  : copyState === 'error'
-                    ? t('copyHandoffError')
-                    : t('copyHandoff')}
-            </Button>
-            <p className="sr-only" role="status" aria-live="polite">
-              {copyState === 'copied'
-                ? t('copiedHandoff')
-                : copyState === 'error'
-                  ? t('copyHandoffError')
-                  : ''}
-            </p>
-          </Surface>
-
-          <Surface open={mode === 'verify'} as="section" data-architecture-stage="verify" className="col-start-1 row-start-1 min-w-0">
-            <ShieldCheck size={ICON_SIZE.lg} className="text-[color:var(--color-indigo-text-soft)]" aria-hidden />
-            <h2 className="mt-3 text-title font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {t('verifyTitle')}
-            </h2>
-            <p className="mt-2 break-keep text-body-lg leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('verifyBody')}
-            </p>
-            <p className="mt-4 rounded-card border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a12)] px-3 py-3 text-body text-[color:var(--color-amber-source-a90)]">
-              {t('unknownIsNotCompliant')}
-            </p>
-            <p className="mt-4 font-mono text-caption leading-prose text-[color:var(--color-text-tertiary)]">
-              {t('verifyCommands')}
-            </p>
-          </Surface>
-          </div>
-        </aside>
-        )}
         <div
           aria-hidden
           data-testid="architecture-bottom-tab-reserve"
