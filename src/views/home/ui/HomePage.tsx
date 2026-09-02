@@ -31,6 +31,7 @@ import {
 } from "@/widgets/acp-chat-panel";
 import type { ChatSuggestion, AcpTurnActivity } from "@/features/acp-session";
 import { cn } from "@/shared/lib/cn";
+import { edgeSentenceValues, normalizeEdgeSentenceKey } from "../lib/edge-sentence";
 import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -110,15 +111,6 @@ const HubRail = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.HubRail),
   { ssr: false },
 );
-/** Relation type → sentence i18n key; folds synonym types onto one key. */
-function normalizeEdgeSentenceKey(type: string): string {
-  if (type === "dependencies" || type === "depends_on") return "depends";
-  if (type === "contains" || type === "elements" || type === "capabilities" || type === "domains" || type === "domain") return "contains";
-  if (type === "describes") return "describes";
-  if (type === "belongs_to") return "belongsTo";
-  return "related";
-}
-
 const TopologyEmptyState = dynamic(
   () => import("@/widgets/topology-controls").then((m) => m.TopologyEmptyState),
   { ssr: false },
@@ -782,7 +774,12 @@ function HomePageImpl() {
   const [recentNeedsVaultOpen, setRecentNeedsVaultOpen] = useState(false);
   /** Same for "create one from here" on the sample: a route to a folder, not a dead
    * end. */
-  const [createNeedsVaultOpen, setCreateNeedsVaultOpen] = useState(false);
+  /**
+   * Which "open your folder" sentence to show when a write is asked of the sample:
+   * creating and editing are different promises, so the dialog names the one
+   * that was attempted. `null` keeps it closed.
+   */
+  const [needsVaultReason, setNeedsVaultReason] = useState<"createNeedsVault" | "editNeedsVault" | null>(null);
   const spotlightNeedsVault = vault.status !== 'loaded';
   const handleToggleSpotlight = useCallback(() => {
     if (spotlightNeedsVault) {
@@ -1128,6 +1125,23 @@ function HomePageImpl() {
       if (cancelled) return;
       if (!meaningEditorIntent || !meaningEditorSource) {
         if (!meaningEditorIntent) setMeaningEditorState(null);
+        /*
+         * An edit intent that arrived by URL (`?workbench=edit`, e.g. from the
+         * insights to-do list) has no document to write in the sample. It used to
+         * be dropped in silence: the address named an edit while the screen showed
+         * the ordinary read panel (walkthrough finding, 2026-09-03). Say why, offer
+         * the folder, and drop the intent from the address so it does not repeat.
+         */
+        if (
+          meaningEditorIntent &&
+          selectedOntologyNode &&
+          vault.status !== "loaded" &&
+          vault.status !== "loading" &&
+          vault.status !== "permission-needed"
+        ) {
+          setNeedsVaultReason("editNeedsVault");
+          closeMeaningEditor();
+        }
         return;
       }
       const parsed = parseOntologyMeaningEditParam(meaningEditParam);
@@ -1158,7 +1172,7 @@ function HomePageImpl() {
     return () => {
       cancelled = true;
     };
-  }, [meaningEditParam, meaningEditorIntent, meaningEditorSource, ontologyInsight]);
+  }, [meaningEditParam, meaningEditorIntent, meaningEditorSource, ontologyInsight, selectedOntologyNode, vault.status, closeMeaningEditor]);
   const applyMeaningEditor = useCallback(
     async (plan: OntologyRelationEditPlan) => {
       if (!nodeEditTarget || !meaningEditorState) throw new Error("missing edit target");
@@ -1275,10 +1289,8 @@ function HomePageImpl() {
     // The edge sentence and both endpoint labels use the short display title.
     const fromDisplay = from.display ?? from.title;
     const toDisplay = to.display ?? to.title;
-    const sentence = t(`edgeSentence.${normalizeEdgeSentenceKey(selectedEdge.relationType)}`, {
-      from: fromDisplay,
-      to: toDisplay,
-    });
+    const sentenceKey = normalizeEdgeSentenceKey(selectedEdge.relationType);
+    const sentence = t(`edgeSentence.${sentenceKey}`, edgeSentenceValues(sentenceKey, fromDisplay, toDisplay));
     const declaredIso = selectedEdge.declaredBySlug
       ? docFreshnessIndex.get(selectedEdge.declaredBySlug)
       : undefined;
@@ -1354,11 +1366,15 @@ function HomePageImpl() {
     const edgeRecord = ontologyInsight.edges.find(
       (e) => e.from === hoverEdge.edge.sourceId && e.to === hoverEdge.edge.targetId,
     );
+    // The hover card names the endpoints the way the map does (`display_<locale>`
+    // first); it once used the canonical titles, so a Korean map showed an
+    // English sentence on hover and a Korean one on click.
+    const hoverKey = normalizeEdgeSentenceKey(hoverEdge.edge.relationType);
     return {
-      sentence: t(`edgeSentence.${normalizeEdgeSentenceKey(hoverEdge.edge.relationType)}`, {
-        from: from.title,
-        to: to.title,
-      }),
+      sentence: t(
+        `edgeSentence.${hoverKey}`,
+        edgeSentenceValues(hoverKey, from.display ?? from.title, to.display ?? to.title),
+      ),
       typeLabel: relationVocabulary(hoverEdge.edge.relationType, relationRegister),
       why: edgeRecord?.label?.trim() || null,
       x: hoverEdge.x,
@@ -5396,9 +5412,14 @@ function HomePageImpl() {
                          `sample:…`. Passing that straight down makes the camera jump every
                          time one file is saved into the vault (measured dy −10.66). */
                       dataSourceKey={deeplinkSourceReady ? vaultIdentity : null}
-                      overviewFit={
-                        expandAllActive || expandedParentSet.size > 0 ? "full" : "spine"
-                      }
+                      /*
+                       * "Full" only under expand-all. `expandedParentSet` is not a
+                       * person's choice alone: selecting any node opens its parents
+                       * (`open=project:…`) and that survives closing the panel, so
+                       * keying on it made every fit after a first click a full-bounds
+                       * fit (measured 2026-09-03: fit x 41 against the return's -45).
+                       */
+                      overviewFit={expandAllActive ? "full" : "spine"}
                       fitViewToken={combinedFitToken}
                       growthReplayToken={growthReplayToken}
                       spotlightFitToken={spotlightFitToken}
@@ -5776,9 +5797,9 @@ function HomePageImpl() {
               {/* Same skeleton, different reason: "this is a sample and cannot be edited"
                   has to be a different sentence from "these dates are not yours". */}
               <RecentChangesNeedsVaultDialog
-                open={createNeedsVaultOpen}
-                copyKey="createNeedsVault"
-                onClose={() => setCreateNeedsVaultOpen(false)}
+                open={needsVaultReason !== null}
+                copyKey={needsVaultReason ?? "createNeedsVault"}
+                onClose={() => setNeedsVaultReason(null)}
                 onOpenVault={requestVaultOpen}
               />
 
@@ -5971,7 +5992,7 @@ function HomePageImpl() {
                           targetId: null,
                       });
                     } else {
-                      setCreateNeedsVaultOpen(true);
+                      setNeedsVaultReason("editNeedsVault");
                     }
                   }
                 }
@@ -5997,7 +6018,7 @@ function HomePageImpl() {
                  */
                 onCreateLinked={
                   canvasSelectedGraphNode?.kind === "domain" && !canCreateNode
-                    ? () => setCreateNeedsVaultOpen(true)
+                    ? () => setNeedsVaultReason("createNeedsVault")
                     : canCreateNode && canvasSelectedGraphNode?.kind === "domain"
                     ? () => {
                         const tail = canvasSelectedGraphNode.id.includes(":")
@@ -6119,7 +6140,7 @@ function HomePageImpl() {
                           targetId: heldEdgePanelModel.toId,
                         });
                       } else {
-                        setCreateNeedsVaultOpen(true);
+                        setNeedsVaultReason("editNeedsVault");
                       }
                       setSelectedEdge(null);
                     }

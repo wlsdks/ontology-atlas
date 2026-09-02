@@ -18,7 +18,7 @@ export interface RecentChangesNeedsVaultDialogProps {
    * *these dates have nothing to do with you*, while "create an item" is *this is an
    * example and cannot be edited*. Merging them into one sentence makes both awkward.
    */
-  copyKey?: 'recentChangesNeedsVault' | 'createNeedsVault';
+  copyKey?: 'recentChangesNeedsVault' | 'createNeedsVault' | 'editNeedsVault';
   onClose: () => void;
   /** "Open my folder" — must be the **same** handler the first-run card uses. */
   onOpenVault: () => void;

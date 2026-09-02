@@ -1554,12 +1554,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * `overviewScaleRef` anchor must use the same bbox or the entry zoomRatio
    * stops being 1 — same contract as the warning in `trySnapInitialCamera`.
    *
-   * Frozen at mount (both consumers pass a literal). A ref plus a module-level
-   * function, because lint blocks ref writes during render and
-   * component-local functions in effect deps, while a ref read and a pure
-   * function outside the hook trip neither.
+   * A ref plus a module-level function, because lint blocks ref writes during
+   * render and component-local functions in effect deps, while a ref read and
+   * a pure function outside the hook trip neither.
+   *
+   * The ref follows the prop. It was once "frozen at mount" because both
+   * consumers passed a literal; the map now passes `full` while expand-all is
+   * on, and a frozen `spine` sent auto-arrange and the `0` key back to the
+   * spine bounds with 19 of 125 expanded nodes off screen (measured
+   * 2026-09-03). Expand-all itself was unaffected because its own refit reads
+   * the prop, which is how the two fits came to disagree.
    */
   const overviewFitRef = useRef(overviewFit);
+  useEffect(() => {
+    overviewFitRef.current = overviewFit;
+  }, [overviewFit]);
 
   /**
    * Safety net: if a resize or a monitor change leaves **no node on screen at
@@ -2395,7 +2404,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        // difference in entry/exit states for one condition, not a separate correction value.
        */
       const focusTokens = focusedSlug === null ? tokens : cameraTokens(tokens);
-      target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers);
+      target = computeFocusCameraTarget(world, focusTokens, width, height, focusedSlug, overviewEntryScale, realmMembers, overviewBoundsFor(overviewFitRef.current, world));
     }
     if (!target) return;
     /*

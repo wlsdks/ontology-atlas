@@ -263,7 +263,10 @@ export function SearchHint({
               view: t(`view3dChoice.${currentView}`),
             })}
           >
-            {t('view3dLabel')}
+            {/* While a 3D arrangement is on, the chip names it (Cone, Cloud): once the
+                labels fade in 3D and the choice survives a reload, the indigo tint alone
+                no longer says which view this is (walkthrough finding, 2026-09-03). */}
+            {view3d ? t(`view3dChoice.${currentView}`) : t('view3dLabel')}
           </ChromeChip>
           <View3dMenu open={view3dMenuOpen} onClose={() => setView3dMenuOpen(false)} />
         </div>

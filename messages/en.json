@@ -2616,6 +2616,13 @@
       "action": "Open my folder",
       "close": "Close"
     },
+    "editNeedsVault": {
+      "eyebrow": "Edit a relation",
+      "title": "Open your folder to edit",
+      "body": "You're looking at the sample map, so it can't be edited. Open your folder and you can fix relations right here: each change lands in a markdown file in that folder.",
+      "action": "Open my folder",
+      "close": "Close"
+    },
     "createNeedsVault": {
       "eyebrow": "Create an item",
       "title": "Open your folder to create",

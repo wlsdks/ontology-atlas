@@ -2217,7 +2217,7 @@
       "domainLabel": "도메인",
       "poweredOn": "최근 갱신",
       "poweredOff": "한동안 그대로",
-      "metricUsedBy": "사용하는 항목",
+      "metricUsedBy": "이 항목을 사용하는 곳",
       "metricContainsHelp": "이 노드가 직접 담고 있는 하위 항목들: 하위 전체가 아니라 바로 아래 한 단계예요.",
       "metricUsedByHelp": "이 노드를 직접 쓰는(가리키는) 다른 항목들.",
       "metricDependsOnHelp": "이 노드가 직접 기대는(필요로 하는) 다른 항목들.",
@@ -2533,11 +2533,11 @@
       "openDoc": "열기"
     },
     "edgeSentence": {
-      "contains": "{from} 가 {to} 를 담고 있어요.",
-      "depends": "{from} 가 {to} 에 기대요.",
-      "describes": "{from} 가 {to} 의 근거예요.",
-      "belongsTo": "{from} 는 {to} 에 속해요.",
-      "related": "{from} 와 {to} 가 서로 관련돼 있어요."
+      "contains": "{from}{fromJosa} {to}{toJosa} 담고 있어요.",
+      "depends": "{from}{fromJosa} {to}에 기대요.",
+      "describes": "{from}{fromJosa} {to}의 근거예요.",
+      "belongsTo": "{from}{fromJosa} {to}에 속해요.",
+      "related": "{from}{fromJosa} {to}{toJosa} 서로 관련돼 있어요."
     },
     "edgeHover": {
       "clickHint": "클릭하면 상세 · 출처 문서"
@@ -2616,6 +2616,13 @@
       "action": "내 폴더 열기",
       "close": "닫기"
     },
+    "editNeedsVault": {
+      "eyebrow": "관계 고치기",
+      "title": "내 폴더를 열면 고칠 수 있어요",
+      "body": "지금 보는 건 예시 지도라 고칠 수 없어요. 내 폴더를 열면 여기서 바로 관계를 고치고, 고친 것이 그 폴더의 마크다운 파일로 남아요.",
+      "action": "내 폴더 열기",
+      "close": "닫기"
+    },
     "createNeedsVault": {
       "eyebrow": "항목 만들기",
       "title": "내 폴더를 열면 만들 수 있어요",
@@ -2674,7 +2681,7 @@
     "close": "닫기",
     "metric": {
       "contains": "하위 항목",
-      "usedBy": "사용하는 항목",
+      "usedBy": "이 항목을 사용하는 곳",
       "dependsOn": "필요한 항목",
       "reach": "3단계 도달"
     },
