@@ -4016,16 +4016,25 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   transform: none;
 }
 
-.gateway-t700 {
-  transition-delay: 700ms;
+/*
+ * The rise waits for the headline to start, not to finish (2026-09-03, overturning the
+ * 700/800/950 delays of the 2026-08-18 remake in part). Measured, the filled CTA stood at
+ * `opacity: 0` yet hit-testable for 920ms while the page's one action waited for a stagger
+ * that said nothing the typing did not; the motion seat put the same-input stage spread at
+ * 267ms against the 120ms rule. Now the eyebrow and lead follow the first characters at 240ms,
+ * the CTA at 320ms, and the strip at 400ms — one arrival, headline first, inside half a second —
+ * and the typing carries the sense of arrival for the remaining 1.6s.
+ */
+.gateway-t240 {
+  transition-delay: 240ms;
 }
 
-.gateway-t800 {
-  transition-delay: 800ms;
+.gateway-t320 {
+  transition-delay: 320ms;
 }
 
-.gateway-t950 {
-  transition-delay: 950ms;
+.gateway-t400 {
+  transition-delay: 400ms;
 }
 
 /*

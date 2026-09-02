@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — The download hero rises inside half a second, hands off by view angle, and shows a phone three tiers
+
+**Why**: Measured at 1512, the filled CTA stood at `opacity: 0` yet hit-testable for 920ms behind a 700/800/950ms stagger the typing already made redundant (same-input stage spread 267ms against the 120ms rule). The scroll camera lifted the plane above the fold while the demo stage rose below it, so the two never met. At 390 the plinth drew 96 nodes into 165px: a texture, not a map.
+**Prior**: 2026-08-18 (70) partly overturned — its entrance order stands (headline first), its 700/800/950 delays do not. 2026-09-03 (the council record above) standing; the plane, the split, and the ghost removal are unchanged.
+**Decision**: The eyebrow and lead rise at 240ms, the CTA at 320ms, the strip at 400ms (`gateway-t240/t320/t400`); typing carries the rest of the arrival. The camera lays the plane down toward top-down (1.35 rad), drifts it toward the centre, and dissolves it over cam 0.55–0.95 while it stays in its own band above the facts strip — a handoff of view and axis, not of travel, because following the viewport carried it behind the strip's links and into a clipped canvas (measured). On phones (≤40rem) the plane keeps project, domains, and capabilities and drops elements, drawn larger.
+**Dissent**: The motion seat asked for 0/80/160ms; 240/320/400 keeps a readable order at the cost of 240ms. A literal fly-in to the demo stage was the more theatrical handoff; it was measured, not imagined, to break legibility.
+**Falsifier**: If the CTA's visible-at time exceeds 500ms after first paint, or an observer reads the rise as three events, the delays return to one shared value. If a phone visitor asks where the small dots went, the element tier returns at a legible radius instead.
+**Owner**: builder, under the owner's standing bar for this page and "do all three".
+
 ## 2026-09-03 — CLI bootstrap compact plans preserve the import review totals they summarize
 
 **Why**: a sanitized 1,520-file Atlas self-run returned a valid `automatic_compact` import receipt with 889 module-edge candidates and 16 unresolved imports, while public `bootstrap --json` reported `importRelations:0` and `unresolvedImports:0` because it counted only full arrays omitted by compact delivery.

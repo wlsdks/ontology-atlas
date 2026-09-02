@@ -558,6 +558,9 @@ export function mountHeroObject(
   let cam = 0;
   let camScale = 1;
   let camLift = 0;
+  let camShiftX = 0;
+  /** Where the camera lays the plane at the end of the hero — near top-down, 1.35 rad. */
+  const PITCH_TOP = 1.35;
   /** The last tick's length, for the time-based followers; 16.7 when drawn outside the loop. */
   let frameDt = 16.7;
   const TILT_TAU_MS = 280;
@@ -581,7 +584,7 @@ export function mountHeroObject(
     // Not W/2 · H/2 but the envelope centre (`size()`'s centerX/centerY) — see the doc-block above.
     // The camera's push (`camScale`) and lift (`camLift`) are applied here, on the projection.
     const k = scaleFit * camScale;
-    return { x: x * s * k + centerX, y: -y2 * s * k + centerY - camLift, s, z: z2 };
+    return { x: x * s * k + centerX + camShiftX, y: -y2 * s * k + centerY - camLift, s, z: z2 };
   }
 
   function tierAlpha(kind: HeroGraphNode['k'], t: number): number {
@@ -628,12 +631,23 @@ export function mountHeroObject(
     // The camera: it turns (+0.9 rad over the hero), pushes in (×1.35), looks further down
     // (+0.22 rad), lifts the dome slower than the page (depth parallax), and fades the ink out
     // over the last half so the evidence section's real map arrives on a clear ground.
-    const pitch = PITCH + tiltPitch + cam * 0.22;
+    // The handoff (2026-09-03): as the hero leaves, the camera lays the plane down toward
+    // top-down (the evidence map's own view), drifts it from the anchor to the centre where the
+    // demo stage rises, grows it toward that stage's width, and fades it out only over the last
+    // third — so the next stage arrives where the plane was, in the view it was tilting toward.
+    const pitch = PITCH + tiltPitch + cam * (PITCH_TOP - PITCH);
     cosP = Math.cos(pitch);
     sinP = Math.sin(pitch);
-    camScale = 1 + cam * 0.35;
-    camLift = cam * H * 0.22;
-    const camFade = 1 - smooth01((cam - 0.5) / 0.45);
+    camScale = 1 + cam * 0.4;
+    // The plane stays in its own band and scrolls away with the section: following the viewport
+    // down would carry it behind the facts strip's links and into a canvas the section clips
+    // (measured 2026-09-03). The handoff is one of view, not of place — the plane lays down to the
+    // top-down angle the demo's poster shows, drifts toward the centre, and dissolves as the demo
+    // stage rises in the same axis.
+    const drift = smooth01((cam - 0.3) / 0.6);
+    camLift = cam * H * 0.1;
+    camShiftX = drift * (W * 0.5 - W * (opts.anchor?.x ?? 0.5));
+    const camFade = 1 - smooth01((cam - 0.55) / 0.4);
     ctx!.globalAlpha = inkScale * (opts.dim ?? 1) * camFade;
     if (ctx!.globalAlpha <= 0.005) return;
     const yaw = (reduced ? 0.55 : (t / PERIOD) * TAU) + userYaw + 0.55 + tiltYaw + cam * 0.9;
