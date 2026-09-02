@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29855,
+      "wordCount": 29869,
       "updatedAt": "2026-09-03",
       "linksOut": []
     },
@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 93780,
+      "wordCount": 93968,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "slug"
@@ -876,8 +876,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Which command to run first for an area of this repository, what a pass proves, and when to escalate. The reasons a gate exists live in docs/DECISIONS.md and in the gate's own header, not here. Start every change with the planner, and let it run what it recommends: It reads the Git diff (tracked and untracked), prints t",
-      "wordCount": 5816,
-      "updatedAt": "2026-09-02",
+      "wordCount": 5855,
+      "updatedAt": "2026-09-03",
       "linksOut": []
     },
     {
@@ -888,8 +888,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
-      "wordCount": 25131,
-      "updatedAt": "2026-09-02",
+      "wordCount": 25153,
+      "updatedAt": "2026-09-03",
       "linksOut": [
         "slug",
         "project:slug",
@@ -1414,8 +1414,8 @@
       },
       "headings": [],
       "excerpt": "An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal. Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local che",
-      "wordCount": 453,
-      "updatedAt": "2026-08-23",
+      "wordCount": 490,
+      "updatedAt": "2026-09-03",
       "linksOut": []
     },
     {
@@ -3471,7 +3471,7 @@
       "headings": [],
       "excerpt": "Task-scoped agent brief projection is the read-side implementation that turns one selected project and one request-local coding task into a bounded handoff of currentness, broad capability meaning, cited implementation anchors, explicit unknowns, and exact next reads. mcp/src/agent-brief-compact.mjs mcp/src/index.js mc",
       "wordCount": 323,
-      "updatedAt": "2026-09-02",
+      "updatedAt": "2026-09-03",
       "linksOut": []
     },
     {
@@ -3682,8 +3682,8 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1175,
-      "updatedAt": "2026-09-02",
+      "wordCount": 1234,
+      "updatedAt": "2026-09-03",
       "linksOut": [
         "DECISIONS"
       ]

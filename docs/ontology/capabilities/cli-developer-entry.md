@@ -39,6 +39,7 @@ An operational entry point that allows inspecting, querying, and writing local m
 3. Narrow down necessary nodes, paths, and impacts using `find`, `show`, and graph query commands.
 4. Write only approved changes via `add` / `import` / `bootstrap` and explicit apply commands.
    However, `infer-imports --apply` is blocked, and bootstrap/index does not automatically write import endpoints or semantic `depends_on`. Preview lines are marked with `imports`, and imports are review candidates with precise justification, not approved dependencies.
+   When import delivery is compact, `bootstrap --json` keeps review-candidate and unresolved totals from the validated scan summary/review queue instead of treating omitted full arrays as zero.
 5. Verify connections, impacts, and local Git checkpoints with `mcp-verify`, `preflight`, and `snapshot`.
 
 ## Inclusions / Exclusions
@@ -52,6 +53,7 @@ An operational entry point that allows inspecting, querying, and writing local m
 
 - `cli/src/index.mjs` · `cli/src/lib/cli-commands.mjs`: command dispatcher and registry
 - `cli/src/commands/`: individual command implementations
+- `cli/src/commands/bootstrap.mjs` · `cli/src/integration.test.mjs`: approval-only bootstrap plan and compact import-count parity
 - `cli/src/lib/mcp-call.mjs`: graph command boundary writing structured results like MCP
 - `src/shared/config/mcp-server-launch.ts`: determination of two launch shapes shared by app and CLI
 - `scripts/smoke-packed-cli.mjs`: end-to-end smoke test viewing quick-start success, injected partial failures' exit codes/messages/runtime import completeness in actual tarball installation environments together

@@ -147,8 +147,15 @@ async function printApprovalRequiredPlan({
     plan: {
       concepts: concepts.length,
       suggestedRelations: analyzeResult.suggestedRelations?.length ?? 0,
-      importRelations: importsResult?.moduleEdges?.length ?? 0,
-      unresolvedImports: importsResult?.unresolved?.length ?? 0,
+      importRelations:
+        importsResult?.moduleEdges?.length ??
+        importsResult?.scanSummary?.moduleEdges ??
+        importsResult?.reviewQueue?.total ??
+        0,
+      unresolvedImports:
+        importsResult?.unresolved?.length ??
+        importsResult?.scanSummary?.unresolvedImports ??
+        0,
       readmeOnlyDomains: heldReadmeDomains.map((domain) => domain.slug),
     },
     analyze: analyzeResult,

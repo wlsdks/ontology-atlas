@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — CLI bootstrap compact plans preserve the import review totals they summarize
+
+**Why**: a sanitized 1,520-file Atlas self-run returned a valid `automatic_compact` import receipt with 889 module-edge candidates and 16 unresolved imports, while public `bootstrap --json` reported `importRelations:0` and `unresolvedImports:0` because it counted only full arrays omitted by compact delivery.
+**Prior**: extends 2026-08-14 (10) "Consume large import responses without losing compact review"; its no-loss compact-review requirement remains valid, and the CLI approval-plan summary was observed violating it while the underlying receipt stayed correct.
+**Decision**: when full import arrays are absent, CLI bootstrap plan totals fall back by nullish precedence to validated `scanSummary` and then `reviewQueue`; preserve an explicitly materialized empty array as authoritative. Keep MCP output, analyzer, qualification, human approval, exit 3, `writeEligible:false`, and writes 0 unchanged, with one compact-delivery integration gate.
+**Dissent**: the raw compact receipt already carries the correct totals, so a sophisticated consumer can ignore the faulty duplicate plan summary.
+**Falsifier**: reopen if `scanSummary.moduleEdges` and `reviewQueue.total` diverge while validation passes, if plan counts are explicitly redefined as materialized-array counts, or if the fallback changes the raw receipt or any approval/write boundary.
+**Owner**: jinan.
+
 ## 2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap
 
 **Why**: on current HEAD, three pre-expiry policy tasks all selected `capabilities/expiry-diagnostics`, including a task that explicitly said not to add diagnostics; the correct `capabilities/policy-appraisal` Definition and Includes stated the requested rejection, and its Excludes stated the non-goal. Structural health and the existing compact tests stayed green.
