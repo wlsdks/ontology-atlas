@@ -102,7 +102,11 @@ const sessionId = typeof payload?.session_id === "string" ? payload.session_id.r
 
 for (const p of paths) {
   const r = rel(p);
-  if (r.includes("node_modules/") || r.startsWith(".tmp/")) continue;
+  // A path that stays absolute after rel() lies outside the repository (a
+  // scratch file, a file in another checkout). That edit does not belong to
+  // this repository, and judging it ran the repo-wide Markdown gate for a note
+  // written in a temp directory (observed 2026-09-02).
+  if (r.startsWith("/") || r.includes("node_modules/") || r.startsWith(".tmp/")) continue;
 
   if (CODE_EXT.test(r) && CODE_ROOTS.some((c) => r.startsWith(c))) {
     // Session ledger for the Stop-time reminder — source code only.
