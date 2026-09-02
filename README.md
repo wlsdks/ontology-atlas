@@ -827,7 +827,11 @@ edit-time sensor caught, over a `--days=` window (14 by default, `--json` for
 a machine). It reads only local gitignored session state under `.tmp/harness/`
 and reports a `sensor-caught-nothing` verdict when the lane stopped earning its
 place, which is the falsifier those hooks were added under. It also shows when
-`pnpm harness:smoke` last passed per runtime. That smoke drives one short
+`pnpm harness:smoke` last passed per runtime, and which inventoried skills and
+agent seats no session used in 90 days (the `record-usage` hook counts Skill
+and Task calls and skill-file reads on Claude Code, SubagentStart and shell
+reads of skill files on Codex), which is the number a "bring it down" argument
+needs. That smoke drives one short
 Claude Code and Codex session each (a shell command, then the vault node count
 from the census), counts which hook events completed against the project
 wiring, and fails on any hook the runtime marked failed, any count below the

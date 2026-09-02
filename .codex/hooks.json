@@ -88,6 +88,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/stamp-verification.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/record-usage.sh"
           }
         ]
       },
@@ -97,6 +101,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/stamp-verification.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/record-usage.sh"
           }
         ]
       },
@@ -106,6 +114,10 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/stamp-verification.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/record-usage.sh"
           }
         ]
       }
@@ -116,6 +128,16 @@
           {
             "type": "command",
             "command": "bash .codex/hooks/remind-verify-on-stop.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .codex/hooks/record-usage.sh"
           }
         ]
       }

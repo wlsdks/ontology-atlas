@@ -86,6 +86,32 @@ describe('harness report', () => {
     assert.deepEqual(report.prepush, { pushes: 2, blocked: 1, byLane: { lint: 1 } });
   });
 
+  it('lists the inventoried skills and seats no session used in the 90-day window', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'harness-usage-'));
+    const previous = process.cwd();
+    try {
+      for (const skill of ['po-pass', 'gate-probe']) mkdirSync(join(dir, '.claude', 'skills', skill), { recursive: true });
+      mkdirSync(join(dir, '.claude', 'agents'), { recursive: true });
+      for (const seat of ['chief', 'po-wedge']) writeFileSync(join(dir, '.claude', 'agents', `${seat}.md`), '# seat');
+      mkdirSync(join(dir, '.tmp', 'harness'), { recursive: true });
+      writeFileSync(
+        join(dir, '.tmp', 'harness', 'usage.jsonl'),
+        `${JSON.stringify({ at: new Date(recent).toISOString(), kind: 'skill', name: 'po-pass' })}\n` +
+          `${JSON.stringify({ at: new Date(old).toISOString(), kind: 'agent', name: 'chief' })}\n` +
+          `${JSON.stringify({ at: new Date(NOW - 100 * 24 * 60 * 60 * 1000).toISOString(), kind: 'skill', name: 'gate-probe' })}\n`,
+      );
+      process.chdir(dir);
+      const report = buildHarnessReport({ now: NOW });
+      assert.deepEqual(report.usage.skills, { total: 2, used: 1, unused: ['gate-probe'], counts: { 'po-pass': 1 } });
+      // 40 days old is inside the 90-day usage window even though it is outside the 14-day sensor window.
+      assert.deepEqual(report.usage.agents.unused, ['po-wedge']);
+      assert.equal(report.usage.recorded, true);
+    } finally {
+      process.chdir(previous);
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('says so when the smoke has never run, instead of staying silent', () => {
     const lines = [];
     withHarnessState({}, () => runHarnessReport([], { log: (line) => lines.push(line), error: () => {} }));

@@ -32,6 +32,8 @@ const HOOK_CONFIGS = [
       // and PreCompact stdout never reaches the model (its one-day wiring was
       // removed 2026-09-02; the census header records the observation).
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/inject-ontology-summary.sh"',
+      // The usage sensor: which skills and seats a session invokes (2026-09-02).
+      '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/record-usage.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/remind-verify-on-stop.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/report-agent-file-drift.sh"',
       '"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/stamp-verification.sh"',
@@ -59,6 +61,11 @@ const HOOK_CONFIGS = [
       // Once: Codex PreCompact/PostCompact output carries no model context
       // (hooks reference), so the 2026-09-01 PreCompact wiring was removed.
       'bash .codex/hooks/inject-ontology-summary.sh',
+      // Usage sensor: SubagentStart plus the three shell PostToolUse groups.
+      'bash .codex/hooks/record-usage.sh',
+      'bash .codex/hooks/record-usage.sh',
+      'bash .codex/hooks/record-usage.sh',
+      'bash .codex/hooks/record-usage.sh',
       'bash .codex/hooks/remind-verify-on-stop.sh',
       'bash .codex/hooks/stamp-verification.sh',
       'bash .codex/hooks/stamp-verification.sh',
@@ -833,3 +840,63 @@ describe('Codex apply_patch payload parity', () => {
     }
   });
 });
+
+// The usage ledger is what the 90-day "unused skill or seat" line in
+// `pnpm harness:report` reads. A sensor that records the wrong name, or fires
+// on every Read, would either hide a dead seat or tax every file open.
+describe('usage sensor', () => {
+  const CLAUDE = '.claude/hooks/record-usage.sh';
+  const CODEX = '.codex/hooks/record-usage.sh';
+  const fire = (hook, payload, dir) =>
+    spawnSync('bash', [hook], {
+      input: JSON.stringify(payload),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: dir, ATLAS_HOOK_ROOT: dir },
+    });
+  const ledgerOf = async (dir) => {
+    try {
+      return (await readFile(join(dir, '.tmp', 'harness', 'usage.jsonl'), 'utf8')).trim().split('\n').map((l) => JSON.parse(l));
+    } catch {
+      return [];
+    }
+  };
+
+  it('Claude: records a Skill call, a Task seat, and a skill-file Read, and stays silent otherwise', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'usage-claude-'));
+    try {
+      fire(CLAUDE, { session_id: 's1', tool_name: 'Skill', tool_input: { skill: 'po-pass' } }, dir);
+      fire(CLAUDE, { session_id: 's1', tool_name: 'Task', tool_input: { subagent_type: 'po-evidence', prompt: 'x' } }, dir);
+      fire(CLAUDE, { session_id: 's1', tool_name: 'Read', tool_input: { file_path: `${dir}/.claude/skills/design-audit/SKILL.md` } }, dir);
+      fire(CLAUDE, { session_id: 's1', tool_name: 'Read', tool_input: { file_path: `${dir}/.agents/agents/chief.md` } }, dir);
+      fire(CLAUDE, { session_id: 's1', tool_name: 'Read', tool_input: { file_path: `${dir}/src/app/page.tsx` } }, dir);
+      fire(CLAUDE, { session_id: 's1', tool_name: 'Bash', tool_input: { command: 'ls' } }, dir);
+      const rows = await ledgerOf(dir);
+      assert.deepEqual(rows.map((r) => [r.kind, r.name]), [
+        ['skill', 'po-pass'],
+        ['agent', 'po-evidence'],
+        ['skill', 'design-audit'],
+        ['agent', 'chief'],
+      ]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('Codex: records SubagentStart agent_type and shell reads of skill or seat files', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'usage-codex-'));
+    try {
+      fire(CODEX, { session_id: 'c1', hook_event_name: 'SubagentStart', agent_id: 'a', agent_type: 'po-steward' }, dir);
+      fire(CODEX, { session_id: 'c1', hook_event_name: 'PostToolUse', tool_name: 'exec_command', tool_input: { command: 'sed -n 1,40p .agents/skills/ontology-sync/SKILL.md && cat .claude/agents/design-lead.md' } }, dir);
+      fire(CODEX, { session_id: 'c1', hook_event_name: 'PostToolUse', tool_name: 'exec_command', tool_input: { command: 'pnpm lint' } }, dir);
+      const rows = await ledgerOf(dir);
+      assert.deepEqual(rows.map((r) => [r.kind, r.name]), [
+        ['agent', 'po-steward'],
+        ['skill', 'ontology-sync'],
+        ['agent', 'design-lead'],
+      ]);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+

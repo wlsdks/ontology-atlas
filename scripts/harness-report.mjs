@@ -23,7 +23,7 @@
  * would be the same false confidence the hooks exist to remove.
  */
 
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { readPrepush } from './harness-outcomes.mjs';
@@ -133,6 +133,59 @@ function readSmoke() {
   return latest;
 }
 
+/**
+ * Skills and agent seats: what the repository carries versus what sessions
+ * used. The window is longer than the sensor window because a seat that is
+ * right once a quarter is still a seat; 90 days is the falsifier the process
+ * layer was given on 2026-09-02 ("unused for a quarter: bring it down").
+ */
+export const USAGE_DAYS = 90;
+
+function inventory() {
+  const names = (dir, strip) => {
+    const path = join(process.cwd(), dir);
+    if (!existsSync(path)) return [];
+    return readdirSync(path)
+      .filter((name) => !name.startsWith('.'))
+      .map((name) => (strip ? name.replace(/\.md$/, '') : name))
+      .filter((name) => strip || statSync(join(path, name)).isDirectory())
+      .sort();
+  };
+  return { skills: names('.claude/skills', false), agents: names('.claude/agents', true) };
+}
+
+function readUsage(now, days = USAGE_DAYS) {
+  const sinceMs = now - days * 24 * 60 * 60 * 1000;
+  const path = join(harnessDir(), 'usage.jsonl');
+  const used = { skill: new Map(), agent: new Map() };
+  let recorded = false;
+  if (existsSync(path)) {
+    recorded = true;
+    try {
+      for (const line of readFileSync(path, 'utf8').split('\n')) {
+        if (!line.trim()) continue;
+        try {
+          const row = JSON.parse(line);
+          const at = Date.parse(row?.at ?? '');
+          if (!Number.isFinite(at) || at < sinceMs || !used[row.kind] || typeof row.name !== 'string') continue;
+          used[row.kind].set(row.name, (used[row.kind].get(row.name) ?? 0) + 1);
+        } catch {
+          continue;
+        }
+      }
+    } catch {
+      /* unreadable ledger reads as no use */
+    }
+  }
+  const { skills, agents } = inventory();
+  return {
+    days,
+    recorded,
+    skills: { total: skills.length, used: skills.filter((s) => used.skill.has(s)).length, unused: skills.filter((s) => !used.skill.has(s)), counts: Object.fromEntries(used.skill) },
+    agents: { total: agents.length, used: agents.filter((a) => used.agent.has(a)).length, unused: agents.filter((a) => !used.agent.has(a)), counts: Object.fromEntries(used.agent) },
+  };
+}
+
 export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
   const sinceMs = now - days * 24 * 60 * 60 * 1000;
   const sessions = readSessions(sinceMs);
@@ -141,6 +194,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
     Object.entries(readSmoke()).map(([runtime, row]) => [runtime, { ...row, stale: row.atMs < sinceMs }]),
   );
   const prepush = readPrepush(process.cwd(), sinceMs);
+  const usage = readUsage(now);
 
   const withEdits = sessions.filter((session) => session.files.size > 0);
   const unverified = withEdits.filter((session) => session.lastVerified < session.lastEdit);
@@ -162,6 +216,7 @@ export function buildHarnessReport({ days = 14, now = Date.now() } = {}) {
     sensor: { findings: findings.length, byKind },
     smoke,
     prepush,
+    usage,
     /**
      * The sensor earns its place by catching things. Zero findings across a
      * window with real edits is the falsifier its own header names.
@@ -195,6 +250,15 @@ function format(report) {
       .map(([lane, n]) => `${lane} ${n}`)
       .join(' · ');
     lines.push(`[harness] pre-push: pushes=${report.prepush.pushes} · refused locally=${report.prepush.blocked}${lanes ? ` (${lanes})` : ''}`);
+  }
+  if (report.usage) {
+    const { skills, agents, days: usageDays, recorded } = report.usage;
+    const list = (names) => (names.length === 0 ? 'none' : names.join(', '));
+    lines.push(
+      `[harness] usage (${usageDays}d): skills ${skills.used}/${skills.total} used, unused: ${list(skills.unused)}`,
+      `[harness] usage (${usageDays}d): agents ${agents.used}/${agents.total} used, unused: ${list(agents.unused)}`,
+    );
+    if (!recorded) lines.push('[harness] no usage ledger yet; the record-usage hook writes one from the first Skill, Task, or skill-file Read.');
   }
   const runtimes = Object.entries(report.smoke ?? {});
   if (runtimes.length === 0) {
