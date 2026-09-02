@@ -412,6 +412,7 @@
     "hiddenBelow": "{count} more below",
     "legendSkipHint": "A crossing that skips a role appears when you choose one of its ends.",
     "runFlow": "Replay observed imports",
+    "finishFlow": "Finish replay",
     "legendTraffic": "measured imports; thickness is how many",
     "permittedEdge": "{from} may depend on {to}",
     "trafficEdge": "{from} reaches {to} in {count, plural, one {# import} other {# imports}}",

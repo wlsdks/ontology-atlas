@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import type { AcpTurnActivity } from '@/features/acp-session';
-import { useDelayedVisible, usePanelPresence } from '@/shared/lib/use-presence';
-import { MOTION } from '@/shared/motion';
+import { cn } from '@/shared/lib/cn';
+import { usePanelPresence } from '@/shared/lib/use-presence';
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from '@/shared/ui';
 import {
   AcpChatPanel,
@@ -12,6 +14,7 @@ import {
 import type { ArchitectureAgentRuntime } from '../model/architecture-agent';
 
 export interface ArchitectureAgentOpeningRequest {
+  kind: 'draft' | 'change' | 'verify';
   text: string;
   nonce: number;
 }
@@ -46,19 +49,53 @@ export function ArchitectureAgentDock({
 }) {
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
-  const sessionEnabled = useDelayedVisible(open, MOTION.settle.duration * 1000);
+  const [enabledRequestNonce, setEnabledRequestNonce] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!open || !openingRequest) return;
+    /*
+     * Below xl the conversation is an overlay sheet: it takes no width from the canvas, so there
+     * is no canvas reflow for process startup to compete with. One frame lets the entered surface
+     * paint first. At xl the dock really does resize the workbench, and the width transition event
+     * below — not a timer that merely resembles it — owns the handoff.
+     */
+    const wide = typeof window === 'undefined' || typeof window.matchMedia !== 'function'
+      ? true
+      : window.matchMedia('(min-width: 1280px)').matches;
+    if (wide) return;
+    const nonce = openingRequest.nonce;
+    const frame = window.requestAnimationFrame(() => setEnabledRequestNonce(nonce));
+    return () => window.cancelAnimationFrame(frame);
+  }, [open, openingRequest]);
 
   return (
     <div
       data-testid="architecture-agent-dock-frame"
       data-right-dock={open || presence.mounted ? 'architecture-agent' : undefined}
+      onTransitionEnd={(event) => {
+        if (
+          event.target === event.currentTarget &&
+          event.propertyName === 'width' &&
+          open &&
+          openingRequest
+        ) {
+          setEnabledRequestNonce(openingRequest.nonce);
+        }
+      }}
       style={{
-        width: open ? `${chatWidth.width}px` : '0px',
+        '--architecture-agent-chat-width': `${chatWidth.width}px`,
         transitionProperty: 'width',
         transitionDuration: 'var(--agent-panel-reflow-duration)',
         transitionTimingFunction: 'var(--topology-motion-ease-out)',
-      }}
-      className="relative min-h-0 shrink-0 overflow-hidden bg-[color:var(--color-canvas)]"
+      } as React.CSSProperties}
+      className={cn(
+        'absolute right-0 top-0 z-30 min-h-0 overflow-hidden bg-[color:var(--color-canvas)]',
+        'bottom-[calc(var(--topology-mobile-bottom-tab-reserve)+0.75rem)] lg:bottom-0',
+        'xl:relative xl:inset-auto xl:z-auto xl:shrink-0',
+        open
+          ? 'w-full xl:w-[var(--architecture-agent-chat-width)]'
+          : 'pointer-events-none w-0 xl:w-0',
+      )}
     >
       {presence.mounted ? (
         <Surface
@@ -67,14 +104,16 @@ export function ArchitectureAgentDock({
           motion="overlay"
           data-testid="architecture-agent-dock"
           data-agent-dock-surface="inset"
-          style={{ width: `calc(${chatWidth.width}px - var(--chrome-inset))` }}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} flex min-h-0 shrink-0 flex-col p-4`}
+          data-agent-request-kind={openingRequest?.kind}
+          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 xl:left-auto xl:w-[calc(var(--architecture-agent-chat-width)-var(--chrome-inset))]`}
         >
-          <AcpChatResizeHandle
-            width={chatWidth.width}
-            onWidth={chatWidth.setWidth}
-            onCommit={chatWidth.commitWidth}
-          />
+          <div className="hidden xl:contents">
+            <AcpChatResizeHandle
+              width={chatWidth.width}
+              onWidth={chatWidth.setWidth}
+              onCommit={chatWidth.commitWidth}
+            />
+          </div>
           <AcpChatPanel
             key={runtime.id}
             runtimeId={runtime.id}
@@ -83,7 +122,11 @@ export function ArchitectureAgentDock({
             onRuntimeChange={onRuntimeChange}
             vaultRoot={vaultRoot}
             mcpServers={mcpServers}
-            sessionEnabled={sessionEnabled}
+            sessionEnabled={
+              open &&
+              openingRequest !== null &&
+              enabledRequestNonce === openingRequest.nonce
+            }
             openingRequest={openingRequest}
             knownSlugs={knownSlugs}
             onTurnActivityChange={onTurnActivityChange}

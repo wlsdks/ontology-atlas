@@ -99,7 +99,7 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
   function renderEmpty(
     agent: Pick<
       React.ComponentProps<typeof ArchitectureWorkbench>,
-      'agentRoute' | 'agentLabel' | 'onAgentRequest'
+      'agentRoute' | 'agentLabel' | 'onAgentRequest' | 'draftHandoffContext'
     > = {},
   ) {
     return render(
@@ -132,7 +132,16 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
 
   it('starts the drafting task inside Architecture when a guarded agent is available', () => {
     const onAgentRequest = vi.fn();
-    renderEmpty({ agentRoute: 'agent', agentLabel: 'Claude Code', onAgentRequest });
+    renderEmpty({
+      agentRoute: 'agent',
+      agentLabel: 'Claude Code',
+      onAgentRequest,
+      draftHandoffContext: {
+        sourceRoot: '/Users/dana/product',
+        vaultRoot: '/Users/dana/vault',
+        cliEntry: null,
+      },
+    });
 
     const button = screen.getByTestId('architecture-draft-with-agent');
     fireEvent.click(button);
@@ -141,6 +150,10 @@ describe('ArchitectureWorkbench — nothing recorded yet', () => {
       kind: 'draft',
       prompt: expect.stringContaining('Draft a first architecture profile'),
     });
+    expect(onAgentRequest.mock.calls[0]?.[0].prompt).toContain(
+      '"sourceRoot":"/Users/dana/product"',
+    );
+    expect(button).toHaveClass('atlas-touch-floor');
     expect(window.location.pathname).toBe('/ko/architecture/');
   });
 
@@ -210,6 +223,8 @@ describe('ArchitectureWorkbench', () => {
       kind: 'verify',
       prompt: expect.stringContaining('Call inspect_architecture'),
     });
+    expect(onAgentRequest.mock.calls[0]?.[0].prompt).toContain('"kind":"verify"');
+    expect(screen.getByTestId('architecture-agent-action')).toHaveClass('atlas-touch-floor');
     expect(window.location.pathname).toBe('/ko/architecture/');
   });
 

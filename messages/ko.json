@@ -412,6 +412,7 @@
     "hiddenBelow": "아래에 {count}개 더",
     "legendSkipHint": "역할을 건너뛰는 연결은 그 양끝 중 하나를 고르면 나타납니다.",
     "runFlow": "관찰된 import 재생",
+    "finishFlow": "재생 마치기",
     "legendTraffic": "측정된 import. 굵기가 그 개수입니다",
     "permittedEdge": "{from}: {to}에 의존할 수 있습니다",
     "trafficEdge": "{from}에서 {to}까지 측정된 import {count}개",

@@ -43,6 +43,8 @@ describe('architecture profile read model', () => {
     expect(prompt).toContain('Do not treat unknown as compliant');
     expect(prompt).toContain('current observation receipt for this revision');
     expect(prompt).toContain('reviewed profile remains architecture intent');
+    expect(prompt).toContain('"contract":"architectureAgentTask:v1"');
+    expect(prompt).toContain('"kind":"change"');
     expect(prompt).not.toContain('source of truth for this run');
     expect(prompt).toContain('CLI fallback unavailable from this surface');
     expect(prompt).not.toContain('/absolute/path');
@@ -61,6 +63,50 @@ describe('architecture profile read model', () => {
     expect(prompt).toContain(
       "node '/Users/dana/Atlas Source/cli/src/index.mjs' architecture '/Users/dana/Atlas Source' --vault '/Users/dana/Atlas Source/docs/ontology' --profile 'atlas-web' --json",
     );
+  });
+
+  it('binds the visible stage, selected role, and persisted receipt without calling it current', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    const prompt = buildArchitectureAgentPrompt(
+      profile,
+      {
+        sourceRoot: '/Users/dana/product',
+        vaultRoot: '/Users/dana/vault',
+        cliEntry: null,
+      },
+      {
+        kind: 'verify',
+        stage: 'verify',
+        selectedRole: 'features',
+        receipt: {
+          profileContentHash: `sha256:${'ab'.repeat(32)}`,
+          measuredAt: '2026-09-02T00:00:00.000Z',
+          source: { kind: 'git', revision: 'ff57e45', dirty: true },
+          status: 'violated',
+          violationCount: 2,
+          unmappedEdges: 4,
+          unruledEdges: 1,
+        },
+      },
+    );
+    expect(prompt).toContain('"kind":"verify"');
+    expect(prompt).toContain('"stage":"verify"');
+    expect(prompt).toContain('"selectedRole":"features"');
+    expect(prompt).toContain('"revision":"ff57e45"');
+    expect(prompt).toContain('This is a verification task');
+    expect(prompt).toContain('visible receipt may be stale');
+  });
+
+  it('tells a verifier that an unbound receipt is absent instead of sending it to the filesystem', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    const prompt = buildArchitectureAgentPrompt(profile, null, {
+      kind: 'verify',
+      stage: 'understand',
+      selectedRole: null,
+      receipt: null,
+    });
+    expect(prompt).toContain('No persisted receipt is bound to this screen');
+    expect(prompt).toContain('Do not search the filesystem for one');
   });
 });
 
@@ -115,11 +161,14 @@ describe('buildArchitectureDraftPrompt', () => {
   });
 
   it('names an absolute source root when the desktop bridge knows one, and never invents one', () => {
-    expect(buildArchitectureDraftPrompt({
+    const bound = buildArchitectureDraftPrompt({
       sourceRoot: '/Users/someone/work/app',
       vaultRoot: '/Users/someone/work/app/atlas',
       cliEntry: null,
-    })).toContain('/Users/someone/work/app');
+    });
+    expect(bound).toContain('/Users/someone/work/app');
+    expect(bound).toContain('"vaultRoot":"/Users/someone/work/app/atlas"');
+    expect(bound).toContain('"kind":"draft"');
     expect(prompt()).not.toMatch(/\/Users\//);
   });
 });

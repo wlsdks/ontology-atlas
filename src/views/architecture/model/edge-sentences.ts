@@ -172,10 +172,19 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
       const sy = a.y + boxH;
       const ty = b.y;
       if (!isSkip) {
-        x = Math.min(a.x, b.x) - GAP_TO_BOX;
+        /*
+         * A reviewed rule and measured traffic commonly join the same two roles. Putting both
+         * sentences on the left made the rule win the collision test and hid the observation,
+         * even after their strokes were drawn apart. The evidence grammar already owns two sides:
+         * reviewed policy reads on the left, measured traffic on the right.
+         */
+        const isTraffic = edge.kind === 'traffic';
+        x = isTraffic
+          ? Math.max(a.x, b.x) + boxW + GAP_TO_BOX
+          : Math.min(a.x, b.x) - GAP_TO_BOX;
         y = (sy + ty) / 2 + 4;
-        anchor = 'end';
-        roomPx = leadRoom - GAP_TO_BOX - 12;
+        anchor = isTraffic ? 'start' : 'end';
+        roomPx = (isTraffic ? trailRoom : leadRoom) - GAP_TO_BOX - 12;
       } else {
         const swingX = Math.max(a.x, b.x) + boxW / 2 + clearSwing(edge, (sy + ty) / 2);
         x = swingX + GAP_TO_ARC;

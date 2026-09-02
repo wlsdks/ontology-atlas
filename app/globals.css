@@ -1241,10 +1241,10 @@
   /* The pencil. A drawn outline sits above the node's own face and under its label, so it reads
      as a line somebody made rather than as a border the layout emitted. */
   --color-architecture-sketch-ink: #6d7080;
-  /* One wave, left to right. 7 columns × 90ms + 520ms lands at 1.06s, which is long enough to
-     read as travel and short enough that nobody waits for it. */
-  --architecture-run-duration: 520ms;
-  --architecture-run-stagger: 90ms;
+  /* One interruptible wave. The source-column step is normalized to 0…1, so the existing
+     settle + fast tokens cap the whole replay at 360ms whatever number of roles a profile has. */
+  --architecture-run-duration: var(--motion-settle);
+  --architecture-run-stagger: var(--motion-fast);
   --architecture-run-dash: 10px 14px;
   --architecture-run-dash-travel: 48px;
 }
@@ -1320,11 +1320,12 @@
 }
 
 /*
- * The route teaches its evidence grammar once: contract roles settle first, then their observation
- * track. The 40ms-class stagger is short enough not to gate input and long enough to show reading
- * order; it runs only when the measured canvas width is ready, so the first compact layout never
- * animates into a second position. These are transform/opacity-only and release their final style
- * after the entrance, leaving hover/selection opacity in charge.
+ * The route teaches its evidence grammar once: every contract role settles together, then the
+ * observation track follows one fast step later. Per-role staggering made a seven-role entrance
+ * last 418ms and read like a presentation rather than a workbench. It still waits for the measured
+ * canvas width, so the first compact layout never animates into a second position. These are
+ * transform/opacity-only and release their final style after the entrance, leaving hover/selection
+ * opacity in charge.
  */
 @keyframes architectureEvidenceStepIn {
   from {
@@ -1348,19 +1349,15 @@
 
 .architecture-role-reveal,
 .architecture-observation-reveal {
-  animation: architectureEvidenceStepIn var(--motion-base)
+  animation: architectureEvidenceStepIn var(--motion-fast)
     var(--topology-motion-ease-out) backwards paused;
-  animation-delay: calc(
-    var(--motion-fast) * 0.33 * var(--architecture-reveal-step, 0)
-  );
+  animation-delay: 0ms;
   transform-box: fill-box;
   transform-origin: center;
 }
 
 .architecture-observation-reveal {
-  animation-delay: calc(
-    var(--motion-base) + var(--motion-fast) * 0.33 * var(--architecture-reveal-step, 0)
-  );
+  animation-delay: var(--motion-fast);
 }
 
 [data-architecture-layout-ready='true'] .architecture-role-reveal,

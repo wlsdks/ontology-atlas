@@ -50,6 +50,25 @@ export interface ArchitectureHandoffContext {
   cliEntry: string | null;
 }
 
+interface ArchitectureAgentReceiptContext {
+  profileContentHash: string;
+  measuredAt: string;
+  source:
+    | { kind: 'git'; revision: string; dirty: boolean }
+    | { kind: 'folder'; fingerprint: string };
+  status: 'conforms' | 'violated' | 'unknown';
+  violationCount: number;
+  unmappedEdges: number | null;
+  unruledEdges: number | null;
+}
+
+interface ArchitectureAgentTaskContext {
+  kind: 'change' | 'verify';
+  stage: 'understand' | 'plan' | 'verify';
+  selectedRole: string | null;
+  receipt: ArchitectureAgentReceiptContext | null;
+}
+
 function nonBlank(value: unknown, name: string): string {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`${name} must be a non-empty string.`);
@@ -246,6 +265,12 @@ export function deriveArchitectureProfiles(
 export function buildArchitectureAgentPrompt(
   profile: ArchitectureProfile,
   context: ArchitectureHandoffContext | null = null,
+  task: ArchitectureAgentTaskContext = {
+    kind: 'change',
+    stage: 'understand',
+    selectedRole: null,
+    receipt: null,
+  },
 ): string {
   const sourceRoot = context?.sourceRoot ?? null;
   const vaultRoot = context?.vaultRoot ?? null;
@@ -257,7 +282,44 @@ export function buildArchitectureAgentPrompt(
     ? `CLI fallback: node ${shellArg(cliEntry)} architecture ${shellArg(sourceRoot)} --vault ${shellArg(vaultRoot)} --profile ${shellArg(profile.slug)} --json`
     : 'CLI fallback unavailable from this surface: Atlas could not verify absolute source, vault, and Atlas CLI entry paths. Use the connected MCP tool or open the source checkout that carries cli/src/index.mjs.';
 
+  /*
+   * The visible workbench state is part of the task, not decoration around it. Before this packet
+   * existed, pressing Verify while a role was selected produced the same generic change prompt as
+   * pressing Change with nothing selected. The agent then had to rediscover the exact state the
+   * person had already judged, and a stale sidecar receipt was mentioned only as prose. A small,
+   * typed packet makes the handoff inspectable without turning the receipt into current truth.
+   */
+  const packet = {
+    contract: 'architectureAgentTask:v1',
+    kind: task.kind,
+    stage: task.stage,
+    selectedRole: task.selectedRole,
+    profile: {
+      uid: profile.uid,
+      slug: profile.slug,
+      contentHash: task.receipt?.profileContentHash ?? null,
+    },
+    sourceRoot,
+    vaultRoot,
+    receipt: task.receipt,
+  };
+  const action = task.kind === 'change'
+    ? [
+        'Before editing, return an architectureChangePlan:v1 with touchedRoles, plannedPaths, expectedNewDependencies, crossedBoundaries, preservedInterfaces, verificationCommands, and unknowns.',
+        'After editing, call inspect_architecture again and compare the actual conformance result with the plan.',
+      ]
+    : task.receipt
+      ? [
+        'This is a verification task. Do not edit implementation or architecture-profile files unless the person explicitly asks after seeing the result.',
+        'Compare the fresh inspection with the bound receipt, name every changed count or status, and state whether a new --record receipt should replace the local one.',
+      ]
+      : [
+          'This is a verification task. Do not edit implementation or architecture-profile files unless the person explicitly asks after seeing the result.',
+          'No persisted receipt is bound to this screen. Do not search the filesystem for one. Treat it as absent, report the fresh inspection, and state that `atlas architecture --record` would create the optional local receipt.',
+        ];
+
   return [
+    `Architecture task context: ${JSON.stringify(packet)}`,
     `Start from the reviewed architecture profile ${profile.slug}.`,
     `Call inspect_architecture with ${JSON.stringify(inspectArguments)} before opening implementation files.`,
     cliFallback,
@@ -265,8 +327,7 @@ export function buildArchitectureAgentPrompt(
     'Report the selected scope, declared pattern axes, role mappings, observed dependency coverage, violations, and unknowns.',
     `Apply dependency rules only to the profile's declared import usages: ${profile.dependencyUsages.join(', ')}.`,
     'Do not treat unknown as compliant, and do not infer a named pattern from folder names.',
-    'Before editing, return an architectureChangePlan:v1 with touchedRoles, plannedPaths, expectedNewDependencies, crossedBoundaries, preservedInterfaces, verificationCommands, and unknowns.',
-    'After editing, call inspect_architecture again and compare the actual conformance result with the plan.',
+    ...action,
   ].join('\n');
 }
 
@@ -303,9 +364,20 @@ export function buildArchitectureDraftPrompt(
   context: ArchitectureHandoffContext | null = null,
 ): string {
   const sourceRoot = context?.sourceRoot ?? null;
+  const vaultRoot = context?.vaultRoot ?? null;
   // The absolute path when the desktop bridge knows it, and never an invented one.
   const target = sourceRoot ?? 'the codebase this ontology folder describes';
   return [
+    `Architecture task context: ${JSON.stringify({
+      contract: 'architectureAgentTask:v1',
+      kind: 'draft',
+      stage: 'understand',
+      selectedRole: null,
+      profile: null,
+      sourceRoot,
+      vaultRoot,
+      receipt: null,
+    })}`,
     `Draft a first architecture profile for ${target}.`,
     '',
     'Work in this order and stop where it says to stop:',

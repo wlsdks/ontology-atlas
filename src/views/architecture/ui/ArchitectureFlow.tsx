@@ -54,6 +54,7 @@ export function ArchitectureFlow({
   moduleCountLabel,
   conceptCountLabel,
   runLabel,
+  finishRunLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -96,6 +97,7 @@ export function ArchitectureFlow({
   moduleCountLabel: (count: number) => string;
   conceptCountLabel: (count: number) => string;
   runLabel: string;
+  finishRunLabel: string;
   hiddenRightLabel: (count: number) => string;
   hiddenLeftLabel: (count: number) => string;
   hiddenAboveLabel: (count: number) => string;
@@ -156,6 +158,7 @@ export function ArchitectureFlow({
           moduleCounts={moduleCounts}
           conceptCounts={conceptCounts}
           runLabel={runLabel}
+          finishRunLabel={finishRunLabel}
           hiddenRightLabel={hiddenRightLabel}
           hiddenLeftLabel={hiddenLeftLabel}
           hiddenAboveLabel={hiddenAboveLabel}

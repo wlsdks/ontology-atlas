@@ -49,6 +49,7 @@ function draw(
       moduleCounts={null}
       conceptCounts={{}}
       runLabel="Run the flow"
+      finishRunLabel="Finish replay"
       hiddenRightLabel={(count) => `${count} more to the right`}
       hiddenLeftLabel={(count) => `${count} more to the left`}
       hiddenAboveLabel={(count) => `${count} more above`}
@@ -90,7 +91,7 @@ describe('the count of what is below', () => {
 });
 
 describe('the run control', () => {
-  it('staggers by column, not by pixel', () => {
+  it('normalizes the stagger across the whole observed path', () => {
     /*
      * ⚠️ The defect a fresh-eyes walkthrough measured on 2026-08-28. The step was fed the box's x
      * coordinate, and the stylesheet multiplies the step by a 90ms token — so three strokes began
@@ -103,19 +104,25 @@ describe('the run control', () => {
       Number((edge as HTMLElement).style.getPropertyValue('--architecture-run-step')),
     );
     expect(steps.length).toBeGreaterThan(0);
-    for (const step of steps) {
-      expect(Number.isInteger(step)).toBe(true);
-      expect(step).toBeLessThan(12);
-    }
+    for (const step of steps) expect(step).toBeGreaterThanOrEqual(0);
+    for (const step of steps) expect(step).toBeLessThanOrEqual(1);
+    expect(Math.max(...steps)).toBe(1);
   });
 
-  it('cannot be pressed again while the flow is playing', () => {
-    /* Without this the presses stacked, and nothing on the control said a run was under way. */
-    draw({}, new Set(), OBSERVED_TRAFFIC);
+  it('finishes the current replay when pressed again', () => {
+    /* A replay is feedback, not a lock: the second activation settles every moving mark. */
+    const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
     const button = screen.getByTestId('architecture-graph-run');
     expect(button).not.toBeDisabled();
     fireEvent.click(button);
-    expect(button).toBeDisabled();
+    expect(button).toHaveTextContent('Finish replay');
+    fireEvent.click(button);
+    expect(button).toHaveTextContent('Run the flow');
+    expect(
+      [...container.querySelectorAll('[data-edge-kind]')].some((edge) =>
+        edge.classList.contains('architecture-flow-running'),
+      ),
+    ).toBe(false);
   });
 
   it('makes the measured role sequence visible even when adjacent edge travel is short', () => {
@@ -268,6 +275,58 @@ describe('the evidence split plane', () => {
         'Not inspected',
       );
       expect(container.querySelector('[data-testid="architecture-graph-run"]')).toBeNull();
+    } finally {
+      for (const [key, descriptor] of Object.entries(originals)) {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
+
+  it('draws reviewed permission and matching observed traffic on distinct compact tracks', () => {
+    const geometry: Record<string, number> = {
+      clientWidth: 400,
+      scrollWidth: 400,
+      clientHeight: 700,
+      scrollHeight: 700,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ]),
+    );
+    try {
+      for (const [key, value] of Object.entries(geometry)) {
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get: () => value,
+        });
+      }
+      const { container } = draw({}, new Set(), OBSERVED_TRAFFIC);
+      const rule = container.querySelector<SVGPathElement>(
+        '[data-edge-kind="permitted"][data-edge-from="adapter"][data-edge-to="application"]',
+      );
+      const traffic = container.querySelector<SVGPathElement>(
+        '[data-edge-kind="traffic"][data-edge-from="adapter"][data-edge-to="application"]',
+      );
+      expect(screen.getByTestId('architecture-graph')).toHaveAttribute(
+        'data-architecture-axis',
+        'down',
+      );
+      expect(rule).toHaveAttribute('data-edge-track-offset', '-6');
+      expect(traffic).toHaveAttribute('data-edge-track-offset', '6');
+      expect(rule?.getAttribute('d')).not.toBe(traffic?.getAttribute('d'));
+      expect(
+        container.querySelector(
+          '[data-edge-sentence-kind="permitted"][data-edge-sentence="drawn"]',
+        ),
+      ).not.toBeNull();
+      expect(
+        container.querySelector(
+          '[data-edge-sentence-kind="traffic"][data-edge-sentence="drawn"]',
+        ),
+      ).not.toBeNull();
     } finally {
       for (const [key, descriptor] of Object.entries(originals)) {
         if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);

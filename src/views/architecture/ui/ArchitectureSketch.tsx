@@ -196,6 +196,7 @@ export function ArchitectureSketch({
   observationTrackLabel,
   observationMissingLabel,
   runLabel,
+  finishRunLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -245,6 +246,7 @@ export function ArchitectureSketch({
   observationTrackLabel: string;
   observationMissingLabel: string;
   runLabel: string;
+  finishRunLabel: string;
   /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
   /** The same for the side a pan pushes roles off. */
@@ -352,7 +354,9 @@ export function ArchitectureSketch({
       .reduce((most, edge) => Math.max(most, edgeSentence(toSentenceEdge(edge)).length), 0);
     return longest === 0 ? 0 : Math.min(SENTENCE_LEAD_MAX, Math.ceil(longest * SENTENCE_CHAR_PX) + 32);
   }, [axis, graph.edges, edgeSentence, toSentenceEdge]);
-  const trailRoom = graph.edges.some((edge) => edge.columnSpan > 1)
+  const needsDownObservationRoom =
+    axis === 'down' && graph.edges.some((edge) => edge.kind === 'traffic');
+  const trailRoom = graph.edges.some((edge) => edge.columnSpan > 1) || needsDownObservationRoom
     ? axis === 'across'
       ? 28
       : SENTENCE_TRAIL_ROOM
@@ -674,6 +678,25 @@ export function ArchitectureSketch({
      static policy, not traffic, so an unmeasured profile exposes no replay control at all. */
   const replayableEdges = visibleEdges.filter((edge) => edge.kind === 'traffic');
   const replaySourceRoles = new Set(replayableEdges.map((edge) => edge.from));
+  const maxReplayColumn = Math.max(
+    1,
+    ...replayableEdges.map(
+      (edge) => graph.boxes.find((box) => box.id === edge.from)?.column ?? 0,
+    ),
+  );
+
+  const finishRun = () => {
+    const root = scrollerRef.current;
+    if (root) {
+      root
+        .querySelectorAll<SVGElement>(
+          '.architecture-flow-running, .architecture-observation-pulse',
+        )
+        .forEach((element) => element.getAnimations?.().forEach((animation) => animation.finish()));
+    }
+    pending.current = 0;
+    setRunning(false);
+  };
 
 
   /*
@@ -761,12 +784,16 @@ export function ArchitectureSketch({
           <button
             type="button"
             onClick={() => {
+              if (running) {
+                finishRun();
+                return;
+              }
               pending.current = replayableEdges.length;
               setRunSeq((seq) => seq + 1);
               setRunning(true);
             }}
-            disabled={running}
             data-testid="architecture-graph-run"
+            data-run-state={running ? 'running' : 'idle'}
             className={cn(
               controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverBorder: 'strong' }),
               'bg-[color:var(--color-elevated)]',
@@ -775,7 +802,7 @@ export function ArchitectureSketch({
             <svg width={9} height={10} viewBox="0 0 9 10" aria-hidden>
               <path d="M0.5 0.5 L8.5 5 L0.5 9.5 Z" fill="currentColor" />
             </svg>
-            {runLabel}
+            {running ? finishRunLabel : runLabel}
           </button>
           )}
         </div>
@@ -893,9 +920,20 @@ export function ArchitectureSketch({
             ? OBSERVATION_BOX_H
             : boxH;
           const trackY = (at: Placed) => at.y + edgeBoxH / 2;
-          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2;
+          /*
+           * On the compact downward layout, reviewed permission and measured traffic used exactly
+           * the same centre line. The traffic stroke therefore overpainted the rule 1:1 and the
+           * legend promised two facts while the canvas showed one. Six SVG units to either side
+           * keeps both attached to the same roles and makes their provenance visible as geometry.
+           */
+          const trackOffset = axis === 'down' && !usesRoomyBoxes
+            ? edge.kind === 'permitted'
+              ? -6
+              : 6
+            : 0;
+          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2 + trackOffset;
           const sy = axis === 'across' ? trackY(a) : a.y + boxH;
-          const tx = axis === 'across' ? b.x : b.x + boxW / 2;
+          const tx = axis === 'across' ? b.x : b.x + boxW / 2 + trackOffset;
           const ty = axis === 'across' ? trackY(b) : b.y;
           const receded = focus !== null && focus !== edge.from && focus !== edge.to;
 
@@ -979,7 +1017,9 @@ export function ArchitectureSketch({
                        * 38520ms. The walkthrough measured a "run" that took forty seconds to
                        * cross four boxes. A stagger counts places in a queue.
                        */
-                      '--architecture-run-step': graph.boxes.find((b) => b.id === edge.from)?.column ?? 0,
+                      '--architecture-run-step':
+                        (graph.boxes.find((b) => b.id === edge.from)?.column ?? 0) /
+                        maxReplayColumn,
                     } as React.CSSProperties)
                   : {}),
               }}
@@ -988,6 +1028,7 @@ export function ArchitectureSketch({
               data-edge-from={edge.from}
               data-edge-to={edge.to}
               data-edge-count={edge.count}
+              data-edge-track-offset={trackOffset}
             />
           );
         })}
@@ -1138,12 +1179,7 @@ export function ArchitectureSketch({
                   onSelect(box.id);
                 }
               }}
-              style={
-                {
-                  opacity: receded ? 0.35 : 1,
-                  '--architecture-reveal-step': box.column,
-                } as React.CSSProperties
-              }
+              style={{ opacity: receded ? 0.35 : 1 }}
               className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible>rect]:stroke-[color:var(--color-indigo-a60)]"
             >
               {/*
@@ -1259,11 +1295,6 @@ export function ArchitectureSketch({
               {usesRoomyBoxes && observedAt ? (
                 <g
                   className="architecture-observation-reveal"
-                  style={
-                    {
-                      '--architecture-reveal-step': box.column,
-                    } as React.CSSProperties
-                  }
                 >
                   <line
                     x1={at.x + boxW / 2}
@@ -1339,7 +1370,7 @@ export function ArchitectureSketch({
                   className="architecture-observation-pulse"
                   style={
                     {
-                      '--architecture-run-step': box.column,
+                      '--architecture-run-step': box.column / maxReplayColumn,
                     } as React.CSSProperties
                   }
                   data-testid={`architecture-observation-pulse-${box.id}`}

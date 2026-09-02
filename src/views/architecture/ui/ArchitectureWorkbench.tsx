@@ -125,6 +125,7 @@ type CopyState = 'idle' | 'pending' | 'copied' | 'error';
 export function ArchitectureWorkbench({
   profiles,
   handoffContexts = {},
+  draftHandoffContext = null,
   sourceModulesByProfile = {},
   sourceListingCapable = false,
   sourceUnavailableReason = 'browser',
@@ -137,6 +138,8 @@ export function ArchitectureWorkbench({
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
+  /** The one unambiguous project source available before any profile exists. */
+  draftHandoffContext?: ArchitectureHandoffContext | null;
   /** Per profile slug, the read-only source-directory walk the page performed (installed app). */
   sourceModulesByProfile?: Readonly<Record<string, Record<string, RoleSourceModule[]>>>;
   /** Whether this surface can list a source folder at all — false in a browser, by nature. */
@@ -427,8 +430,32 @@ export function ArchitectureWorkbench({
     return () => observer.disconnect();
   }, [mode]);
 
+  const primaryAgentKind: 'change' | 'verify' =
+    selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
+  const requestedAgentKind: 'change' | 'verify' =
+    mode === 'plan' ? 'change' : mode === 'verify' ? 'verify' : primaryAgentKind;
+  const agentReceipt = selectedRecord
+    ? {
+        profileContentHash: selectedRecord.profile.contentHash,
+        measuredAt: selectedRecord.brief.measured.at,
+        source: selectedRecord.brief.measured.source,
+        status: selectedRecord.brief.conformance.status,
+        violationCount: selectedRecord.brief.conformance.violationCount,
+        unmappedEdges: selectedRecord.brief.conformance.unknown?.unmappedEdges ?? null,
+        unruledEdges: selectedRecord.brief.conformance.unknown?.unruledEdges ?? null,
+      }
+    : null;
   const handoff = selected
-    ? buildArchitectureAgentPrompt(selected, handoffContexts[selected.slug] ?? null)
+    ? buildArchitectureAgentPrompt(
+        selected,
+        handoffContexts[selected.slug] ?? null,
+        {
+          kind: requestedAgentKind,
+          stage: mode,
+          selectedRole,
+          receipt: agentReceipt,
+        },
+      )
     : '';
   /*
    * Which edge of the packet preview is covered. `listboxTopIsHidden`/`listboxBottomIsHidden` are
@@ -609,17 +636,21 @@ export function ArchitectureWorkbench({
                 <Button
                   variant="primary"
                   size="md"
+                  className="atlas-touch-floor"
                   disabled={!onAgentRequest}
                   data-testid="architecture-draft-with-agent"
                   onClick={() =>
-                    onAgentRequest?.({ kind: 'draft', prompt: buildArchitectureDraftPrompt(null) })
+                    onAgentRequest?.({
+                      kind: 'draft',
+                      prompt: buildArchitectureDraftPrompt(draftHandoffContext),
+                    })
                   }
                 >
                   <Bot size={ICON_SIZE.sm} aria-hidden />
                   {t('draftWithAgent', { agent: agentLabel ?? t('connectedAgent') })}
                 </Button>
               ) : agentRoute === 'checking' ? (
-                <Button variant="primary" size="md" disabled data-testid="architecture-agent-checking">
+                <Button className="atlas-touch-floor" variant="primary" size="md" disabled data-testid="architecture-agent-checking">
                   <Bot size={ICON_SIZE.sm} aria-hidden />
                   {t('checkingAgent')}
                 </Button>
@@ -627,13 +658,14 @@ export function ArchitectureWorkbench({
               <Button
                 variant={agentRoute === 'clipboard' ? 'primary' : 'outline'}
                 size="md"
+                className="atlas-touch-floor"
                 disabled={draftCopyState === 'pending'}
                 data-testid="architecture-copy-draft-handoff"
                 data-architecture-draft-copy-state={draftCopyState}
                 onClick={() => {
                   setDraftCopyState('pending');
                   navigator.clipboard
-                    .writeText(buildArchitectureDraftPrompt(null))
+                    .writeText(buildArchitectureDraftPrompt(draftHandoffContext))
                     .then(() => setDraftCopyState('copied'))
                     .catch(() => setDraftCopyState('error'));
                 }}
@@ -887,22 +919,30 @@ export function ArchitectureWorkbench({
               <Button
                 variant={agentRoute === 'agent' ? 'primary' : 'outline'}
                 size="sm"
-                className="ml-auto shrink-0"
+                className="atlas-touch-floor ml-auto shrink-0"
                 disabled={agentRoute === 'checking' || copyState === 'pending'}
                 data-testid="architecture-agent-action"
                 data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
                 onClick={() => {
                   if (agentRoute === 'agent') {
-                    const kind: ArchitectureAgentRequest['kind'] = !record
-                      ? 'verify'
-                      : conformance?.status === 'conforms'
-                        ? 'change'
-                        : 'verify';
+                    const kind: ArchitectureAgentRequest['kind'] = requestedAgentKind;
                     setInspector(null);
                     setEvidenceOpen(false);
                     setStageOpen(false);
                     writeArchitectureAddress({ stage: mode, role: selectedRole, stageOpen: false });
-                    onAgentRequest?.({ kind, prompt: handoff });
+                    onAgentRequest?.({
+                      kind,
+                      prompt: buildArchitectureAgentPrompt(
+                        selected,
+                        handoffContexts[selected.slug] ?? null,
+                        {
+                          kind,
+                          stage: mode,
+                          selectedRole,
+                          receipt: agentReceipt,
+                        },
+                      ),
+                    });
                     return;
                   }
                   void copyHandoff();
@@ -940,7 +980,7 @@ export function ArchitectureWorkbench({
               <Button
                 variant="outline"
                 size="sm"
-                className="hidden shrink-0 xl:inline-flex"
+                className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
                 onClick={() => (walking ? closeInspector() : stepWalk(0, 0))}
                 data-testid="architecture-walk"
               >
@@ -950,7 +990,7 @@ export function ArchitectureWorkbench({
               <Button
                 variant="outline"
                 size="sm"
-                className="hidden shrink-0 xl:inline-flex"
+                className="atlas-touch-floor hidden shrink-0 xl:inline-flex"
                 onClick={() => (inspector === 'rules' ? closeInspector() : openInspector('rules'))}
                 aria-expanded={inspector === 'rules'}
                 data-testid="architecture-inspector-toggle"
@@ -1028,6 +1068,7 @@ export function ArchitectureWorkbench({
                 hiddenAboveLabel={(count) => t('hiddenAbove', { count })}
                 hiddenBelowLabel={(count) => t('hiddenBelow', { count })}
                 runLabel={t('runFlow')}
+                finishRunLabel={t('finishFlow')}
               />
               <Surface
                 open={evidenceOpen}
@@ -1046,6 +1087,7 @@ export function ArchitectureWorkbench({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="atlas-touch-floor"
                     onClick={() => setEvidenceOpen(false)}
                     aria-label={t('evidenceClose')}
                     data-testid="architecture-evidence-close"
@@ -1121,6 +1163,7 @@ export function ArchitectureWorkbench({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="atlas-touch-floor"
                     onClick={() => stepWalk(-1)}
                     disabled={walkAt <= 0}
                     aria-label={t('walkPrev')}
@@ -1131,6 +1174,7 @@ export function ArchitectureWorkbench({
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="atlas-touch-floor"
                     onClick={() => stepWalk(1)}
                     disabled={walkAt >= walkOrder.length - 1}
                     aria-label={t('walkNext')}
@@ -1147,6 +1191,7 @@ export function ArchitectureWorkbench({
               <Button
                 variant="ghost"
                 size="sm"
+                className="atlas-touch-floor"
                 onClick={closeInspector}
                 aria-label={t('inspectorClose')}
                 data-testid="architecture-inspector-close"
@@ -1509,7 +1554,7 @@ export function ArchitectureWorkbench({
               {handoff}
             </pre>
             <Button
-              className="mt-4"
+              className="atlas-touch-floor mt-4"
               variant="primary"
               size="sm"
               disabled={copyState === 'pending'}

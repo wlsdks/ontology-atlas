@@ -27681,3 +27681,70 @@ Verify walkthroughs; selected-seat Design Council; and remeasurement of any
 last-mile correction.
 
 **Status**: selected · implementation and recovery proof pending
+
+---
+
+## 2026-09-02 — Architecture keeps the canvas height and lets ACP take over a narrow work area
+
+**Standing decisions**: the same-day evidence-to-contract split plane remains the selected
+direction. The 2026-08-30 canvas-with-docks decision also remains standing: explanations may
+open over or beside the canvas, but may not permanently tax the drawing's height. This record
+settles the final responsive and motion shape after the owner identified the always-visible top
+evidence block, rather than the vertical role chain, as the reason the canvas felt narrow.
+
+**Observed evidence**: the prior three-column evidence plane permanently consumed roughly
+100–116 CSS px above the drawing. The replacement rail is 44px high; opening its full evidence
+plane overlays the canvas and leaves the flow and canvas rectangles byte-for-byte unchanged.
+At 1024, 1440, and 1920 CSS px the final browser build measured zero document x-overflow;
+the 1440 canvas measured 1276×591 and the 1920 canvas 1756×591. In the installed app at a
+1180×820 window, the former right ACP dock became a full work-area inset sheet and did not
+compress or re-axis the canvas. At 1512×900, reviewed dependency sentences remained on the
+left of the compact downward chain and measured traffic sentences on the right; their paths
+used separate centre offsets instead of overpainting one another.
+
+**Council**: the routed seats were design lead, interaction, motion, information visualization,
+workbench, responsive, and agent handoff. Responsive rejected the prior always-horizontal ACP
+dock; every other seat returned a conditional verdict with a narrower proof defect. There was no
+materially conflicting proposal requiring cross-rebuttal.
+
+**Guardian decision**: accept only the responsive seat's smaller structural proposal. Below
+`xl`, ACP is a full work-area sheet with the mobile bottom-tab reserve and no resize handle; at
+`xl` and above it remains the resizable side dock. Architecture controls receive the existing
+coarse-pointer 44px floor. This is one proposal, not a union of seven preferences.
+
+**Required proof corrections, not additional structural selections**: the motion proof exposed
+a non-interruptible 970ms replay and a process-start timer that ended before the width transition.
+Replay is now an interruptible settle-plus-fast wave capped at 360ms, a second activation finishes
+it, contract roles enter together, observations follow one fast step later, and wide ACP process
+startup is owned by the actual width `transitionend`. A WebKit recording also exposed discrete
+frames when the trigger landed before capture was ready; delayed capture retained the original
+finite clip-path pulse rather than converting a recording setup failure into a product change. The
+infoviz proof showed declared and observed paths and sentences occupying identical compact-down coordinates;
+they now use opposite tracks and both sentences remain visible. The handoff proof showed Draft,
+Change, and Verify collapsing to one generic prompt and an absent receipt prompting a filesystem
+search; the task now carries a typed kind/stage/role/profile/source/vault/receipt packet, preserves
+the request kind, binds the known vault even without a source folder, and explicitly forbids
+searching for an unbound receipt.
+
+**Recorded dissent**: the design lead preferred demoting the filled agent action in the default
+Structure stage; the interaction seat preferred converting the existing in-dock permission alert
+into a modal; the workbench seat preferred widening role boxes further on 2560px displays. None
+was selected. The first two would change standing attention and permission grammar beyond the
+owner's observed canvas-height defect. The third optimizes wide-screen density but does not repair
+the named loss of vertical canvas space.
+
+**Falsifier and revisit**: reopen if the evidence overlay changes the canvas rectangle, ACP at any
+sub-1280 width leaves a sliver of compressed canvas, the responsive sheet obscures the bottom tab
+bar, declared and observed edges again share one path, a second replay press cannot settle motion,
+an absent receipt causes source-file discovery, or a 2560px outside walkthrough calls out empty
+ground before it can explain the contract/observation split.
+
+**Outcome**: implementation and rendered proof complete. The final local app bundle was captured
+from the real macOS display at 3024×1964, then extracted to uniform 30fps frames. The compact
+downward replay advanced through six visually distinct phase samples; its active core (frames
+162–168) measured mean adjacent-frame change 0.196, coefficient of variation 0.284, zero stalls,
+and zero spikes. The reduced-motion contract keeps the same labels and arrow direction while
+removing the replay pulse. Exhaustive repository and merge evidence follow in the delivery commit;
+the shared `/Applications` install is coordinated separately and is not owned by this record.
+
+**Accountable**: jinan
