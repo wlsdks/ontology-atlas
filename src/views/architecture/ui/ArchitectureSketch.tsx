@@ -33,6 +33,15 @@ export const EDGE_STROKE = 'var(--color-indigo-a60)';
 export const VIOLATED_STROKE = 'var(--color-danger-text)';
 
 const BOX_W = 148;
+/**
+ * The wide-workbench face. The compact width remains the fallback at tablet/laptop boundaries and
+ * for a role set that would no longer fit after expansion; spacious canvases no longer leave a
+ * four-role contract occupying less than one fifth of the available plane.
+ */
+const BOX_W_ROOMY = 220;
+const BOX_H_ROOMY = 84;
+const OBSERVATION_BOX_H = 44;
+const OBSERVATION_LANE_GAP = 48;
 /*
  * ⚠️ **The ledger widens the box as well as deepening it.** Measured 2026-08-30 at 1512 and 1920:
  * the receipt line renders 144–156px against 132px of usable width inside a 148px box, so the
@@ -41,6 +50,7 @@ const BOX_W = 148;
  * canvas — which is what stops it from falling back to the vertical axis a short panel would clip.
  */
 const BOX_W_LEDGER = 180;
+const BOX_W_LEDGER_ROOMY = 240;
 /**
  * ⚠️ **Two heights, because a box only grows when it has something more to say.** A role that
  * carries a measured ledger line needs the room; one with no receipt behind it must stay the size
@@ -182,7 +192,11 @@ export function ArchitectureSketch({
   edgeSentence,
   ledgerStatusLabel,
   ledgerImportsLabel,
+  contractTrackLabel,
+  observationTrackLabel,
+  observationMissingLabel,
   runLabel,
+  finishRunLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -228,7 +242,11 @@ export function ArchitectureSketch({
   /** The ledger's first half, already worded by the locale — never assembled here. */
   ledgerStatusLabel: (ledger: RoleLedger) => string;
   ledgerImportsLabel: (count: number) => string;
+  contractTrackLabel: string;
+  observationTrackLabel: string;
+  observationMissingLabel: string;
   runLabel: string;
+  finishRunLabel: string;
   /** "N more to the right" — the count is derived, so the screen never guesses. */
   hiddenRightLabel: (count: number) => string;
   /** The same for the side a pan pushes roles off. */
@@ -277,15 +295,29 @@ export function ArchitectureSketch({
    * simply leaves its third line empty rather than shrinking out of the row.
    */
   const hasLedger = graph.boxes.some((box) => ledgers[box.id] !== undefined);
-  const boxH = hasLedger ? BOX_H_LEDGER : BOX_H;
-  const rowGap = hasLedger ? ROW_GAP_LEDGER : ROW_GAP_PLAIN;
-  const padY = hasLedger ? PAD_Y_LEDGER : PAD_Y;
-  const boxW = hasLedger ? BOX_W_LEDGER : BOX_W;
+  const compactBoxW = hasLedger ? BOX_W_LEDGER : BOX_W;
+  const roomyBoxW = hasLedger ? BOX_W_LEDGER_ROOMY : BOX_W_ROOMY;
   const ranks = graph.columns;
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
-  const naturalAcross = PAD_X * 2 + ranks * boxW + (ranks - 1) * COL_GAP;
+  const naturalAcross = PAD_X * 2 + ranks * compactBoxW + (ranks - 1) * COL_GAP;
   const axisWidth = restWidth > 0 ? restWidth : boxWidth;
   const axis: FlowAxis = axisWidth > 0 && naturalAcross > axisWidth ? 'down' : 'across';
+  const roomyAcross = PAD_X * 2 + ranks * roomyBoxW + (ranks - 1) * COL_GAP;
+  const usesRoomyBoxes = axis === 'across' && axisWidth > 0 && roomyAcross <= axisWidth;
+  const boxW = usesRoomyBoxes ? roomyBoxW : compactBoxW;
+  const rowGap = axis === 'down' ? 8 : hasLedger ? ROW_GAP_LEDGER : ROW_GAP_PLAIN;
+  const padY = axis === 'down' ? 8 : hasLedger ? PAD_Y_LEDGER : PAD_Y;
+  const boxH = usesRoomyBoxes
+    ? BOX_H_ROOMY
+    : axis === 'down'
+      ? 64
+      : hasLedger
+        ? BOX_H_LEDGER
+        : BOX_H;
+  const summaryLineCount = axis === 'down' ? 1 : SUMMARY_LINES;
+  const observationOffset = usesRoomyBoxes
+    ? boxH + OBSERVATION_LANE_GAP
+    : 0;
 
   /*
    * ⚠️ **The drawing answers the pointer before it is clicked.** A reference the owner pointed at
@@ -322,7 +354,9 @@ export function ArchitectureSketch({
       .reduce((most, edge) => Math.max(most, edgeSentence(toSentenceEdge(edge)).length), 0);
     return longest === 0 ? 0 : Math.min(SENTENCE_LEAD_MAX, Math.ceil(longest * SENTENCE_CHAR_PX) + 32);
   }, [axis, graph.edges, edgeSentence, toSentenceEdge]);
-  const trailRoom = graph.edges.some((edge) => edge.columnSpan > 1)
+  const needsDownObservationRoom =
+    axis === 'down' && graph.edges.some((edge) => edge.kind === 'traffic');
+  const trailRoom = graph.edges.some((edge) => edge.columnSpan > 1) || needsDownObservationRoom
     ? axis === 'across'
       ? 28
       : SENTENCE_TRAIL_ROOM
@@ -341,15 +375,34 @@ export function ArchitectureSketch({
     }
     return map;
   }, [graph.boxes, axis, boxH, boxW, rowGap, padY, leadRoom]);
+  const observedPlaced = useMemo(() => {
+    if (!usesRoomyBoxes) return placed;
+    return new Map(
+      [...placed].map(([id, at]) => [id, { ...at, y: at.y + observationOffset }]),
+    );
+  }, [observationOffset, placed, usesRoomyBoxes]);
 
   /* Where each box ends, in the SVG's own units — which are CSS pixels, because the drawing is no
      longer scaled. Derived, never a ref written during render. */
   const boxEnd = useMemo(
     () => ({
-      down: [...placed.values()].map((at) => at.y + boxH),
+      /*
+       * Roomy roles include a lower observation card inside the same interactive group. Counting
+       * only the upper contract card said zero hidden roles in a short 1400x400 canvas while all
+       * four observation cards were below the viewport. The group is the role; its lowest face is
+       * the boundary that the hidden-count affordance must measure.
+       */
+      down: graph.boxes.map((box) => {
+        const contract = placed.get(box.id);
+        const observation = observedPlaced.get(box.id);
+        if (!contract) return 0;
+        return usesRoomyBoxes && observation
+          ? observation.y + OBSERVATION_BOX_H
+          : contract.y + boxH;
+      }),
       across: [...placed.values()].map((at) => at.x + boxW),
     }),
-    [placed, boxH, boxW],
+    [graph.boxes, observedPlaced, placed, usesRoomyBoxes, boxH, boxW],
   );
 
   /*
@@ -573,28 +626,59 @@ export function ArchitectureSketch({
     return lanes;
   }, [graph.edges]);
 
-  const sentences = useMemo(
-    () =>
+  const sentences = useMemo(() => {
+    const place = (
+      edges: readonly Graph['edges'][number][],
+      lane: ReadonlyMap<string, Placed>,
+      laneBoxH: number,
+    ) =>
       placeEdgeSentences({
         axis,
-        edges: graph.edges.map(toSentenceEdge),
-        placed,
+        edges: edges.map(toSentenceEdge),
+        placed: lane,
         boxW,
-        boxH,
+        boxH: laneBoxH,
         rowGap,
         colGap: COL_GAP,
         swingOf: (edge) =>
           SKIP_DROP +
           (edge.columnSpan - 2) * SKIP_STEP +
           (skipLane.get(`${edge.from}>${edge.to}`) ?? 0) * SKIP_LANE_STEP +
-          (axis === 'across' ? boxH : boxW) / 2,
+          (axis === 'across' ? laneBoxH : boxW) / 2,
         leadRoom,
         trailRoom,
         sentenceOf: edgeSentence,
         focus,
-      }),
-    [axis, graph.edges, toSentenceEdge, placed, boxW, boxH, rowGap, skipLane, leadRoom, trailRoom, edgeSentence, focus],
-  );
+      });
+    if (!usesRoomyBoxes) return place(graph.edges, placed, boxH);
+    return [
+      ...place(
+        graph.edges.filter((edge) => edge.kind === 'permitted'),
+        placed,
+        boxH,
+      ),
+      ...place(
+        graph.edges.filter((edge) => edge.kind === 'traffic'),
+        observedPlaced,
+        OBSERVATION_BOX_H,
+      ),
+    ];
+  }, [
+    axis,
+    boxH,
+    boxW,
+    edgeSentence,
+    focus,
+    graph.edges,
+    leadRoom,
+    observedPlaced,
+    placed,
+    rowGap,
+    skipLane,
+    toSentenceEdge,
+    trailRoom,
+    usesRoomyBoxes,
+  ]);
 
   const visibleEdges = graph.edges.filter(
     (edge) =>
@@ -603,6 +687,29 @@ export function ArchitectureSketch({
       focus === edge.to ||
       violatedPairs.has(`${edge.from}>${edge.to}`),
   );
+  /* Directional motion belongs only to a revision-stamped observation. A reviewed permission is
+     static policy, not traffic, so an unmeasured profile exposes no replay control at all. */
+  const replayableEdges = visibleEdges.filter((edge) => edge.kind === 'traffic');
+  const replaySourceRoles = new Set(replayableEdges.map((edge) => edge.from));
+  const maxReplayColumn = Math.max(
+    1,
+    ...replayableEdges.map(
+      (edge) => graph.boxes.find((box) => box.id === edge.from)?.column ?? 0,
+    ),
+  );
+
+  const finishRun = () => {
+    const root = scrollerRef.current;
+    if (root) {
+      root
+        .querySelectorAll<SVGElement>(
+          '.architecture-flow-running, .architecture-observation-pulse',
+        )
+        .forEach((element) => element.getAnimations?.().forEach((animation) => animation.finish()));
+    }
+    pending.current = 0;
+    setRunning(false);
+  };
 
 
   /*
@@ -632,7 +739,9 @@ export function ArchitectureSketch({
       ? padY * 2 + lanes * boxH + (lanes - 1) * rowGap + skipRoom + leadRoom + trailRoom
       : PAD_X * 2 + lanes * boxW + (lanes - 1) * COL_GAP + skipRoom + leadRoom + trailRoom;
   const width = axis === 'across' ? alongExtent : acrossExtent;
-  const height = axis === 'across' ? acrossExtent : alongExtent;
+  const height = axis === 'across'
+    ? acrossExtent + (usesRoomyBoxes ? OBSERVATION_LANE_GAP + OBSERVATION_BOX_H : 0)
+    : alongExtent;
 
   return (
     <div className="architecture-canvas-ground relative flex min-h-0 flex-1 flex-col rounded-panel border border-[color:var(--color-border-soft)]">
@@ -658,7 +767,7 @@ export function ArchitectureSketch({
         which is the accepted overlap this design system forbids and the same mistake that row was
         created to fix. The mask stays; it still softens a label clipped mid-character.
       */}
-      {graph.edges.length === 0 && covered.hiddenRight === 0 ? null : (
+      {replayableEdges.length === 0 && covered.hiddenLeft === 0 && covered.hiddenRight === 0 ? null : (
         <div className="flex items-center justify-end gap-2 px-[var(--card-pad)] pt-2.5">
         {covered.hiddenLeft === 0 ? null : (
           <span
@@ -684,16 +793,20 @@ export function ArchitectureSketch({
             {hiddenRightLabel(covered.hiddenRight)}
           </span>
         )}
-          {graph.edges.length === 0 ? null : (
+          {replayableEdges.length === 0 ? null : (
           <button
             type="button"
             onClick={() => {
-              pending.current = visibleEdges.length;
+              if (running) {
+                finishRun();
+                return;
+              }
+              pending.current = replayableEdges.length;
               setRunSeq((seq) => seq + 1);
               setRunning(true);
             }}
-            disabled={running}
             data-testid="architecture-graph-run"
+            data-run-state={running ? 'running' : 'idle'}
             className={cn(
               controlClass({ shape: 'chip', size: 'sm', tone: 'secondary', hoverBorder: 'strong' }),
               'bg-[color:var(--color-elevated)]',
@@ -702,7 +815,7 @@ export function ArchitectureSketch({
             <svg width={9} height={10} viewBox="0 0 9 10" aria-hidden>
               <path d="M0.5 0.5 L8.5 5 L0.5 9.5 Z" fill="currentColor" />
             </svg>
-            {runLabel}
+            {running ? finishRunLabel : runLabel}
           </button>
           )}
         </div>
@@ -767,8 +880,12 @@ export function ArchitectureSketch({
           width={width}
           height={height}
           role="presentation"
+          pointerEvents="none"
           data-testid="architecture-graph"
           data-edge-source={graph.edgeSource}
+          data-architecture-axis={axis}
+          data-box-width-mode={usesRoomyBoxes ? 'roomy' : 'compact'}
+          data-architecture-layout-ready={axisWidth > 0 ? 'true' : 'false'}
           /*
            * ⚠️ `shrink-0`, because the scroller is a flex container now — it centres the drawing in
            * a canvas taller than the drawing. A flex item shrinks by default, so without this the
@@ -805,17 +922,33 @@ export function ArchitectureSketch({
         </defs>
 
         {graph.edges.map((edge) => {
-          const a = placed.get(edge.from);
-          const b = placed.get(edge.to);
+          const edgeLane = usesRoomyBoxes && edge.kind === 'traffic' ? observedPlaced : placed;
+          const a = edgeLane.get(edge.from);
+          const b = edgeLane.get(edge.to);
           if (!a || !b) return null;
           /* A skip stays in the drawing at rest, held at zero, so revealing it on focus is a
              fade rather than a mount: one input, one event, and the stroke is where it will be. */
           const drawn = visibleEdges.includes(edge);
           /* Leave the trailing face and arrive at the leading one, whichever way the chain runs. */
-          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2;
-          const sy = axis === 'across' ? a.y + boxH / 2 : a.y + boxH;
-          const tx = axis === 'across' ? b.x : b.x + boxW / 2;
-          const ty = axis === 'across' ? b.y + boxH / 2 : b.y;
+          const edgeBoxH = usesRoomyBoxes && edge.kind === 'traffic'
+            ? OBSERVATION_BOX_H
+            : boxH;
+          const trackY = (at: Placed) => at.y + edgeBoxH / 2;
+          /*
+           * On the compact downward layout, reviewed permission and measured traffic used exactly
+           * the same centre line. The traffic stroke therefore overpainted the rule 1:1 and the
+           * legend promised two facts while the canvas showed one. Six SVG units to either side
+           * keeps both attached to the same roles and makes their provenance visible as geometry.
+           */
+          const trackOffset = axis === 'down' && !usesRoomyBoxes
+            ? edge.kind === 'permitted'
+              ? -6
+              : 6
+            : 0;
+          const sx = axis === 'across' ? a.x + boxW : a.x + boxW / 2 + trackOffset;
+          const sy = axis === 'across' ? trackY(a) : a.y + boxH;
+          const tx = axis === 'across' ? b.x : b.x + boxW / 2 + trackOffset;
+          const ty = axis === 'across' ? trackY(b) : b.y;
           const receded = focus !== null && focus !== edge.from && focus !== edge.to;
 
           /*
@@ -877,7 +1010,12 @@ export function ArchitectureSketch({
               pointerEvents={drawn ? undefined : 'none'}
               aria-hidden={!drawn}
               data-edge-drawn={drawn ? 'true' : 'false'}
-              className={cn('architecture-stroke', running && drawn ? 'architecture-flow-running' : undefined)}
+              className={cn(
+                'architecture-stroke',
+                running && drawn && edge.kind === 'traffic'
+                  ? 'architecture-flow-running'
+                  : undefined,
+              )}
               onAnimationEnd={() => {
                 pending.current -= 1;
                 if (pending.current <= 0) setRunning(false);
@@ -893,7 +1031,9 @@ export function ArchitectureSketch({
                        * 38520ms. The walkthrough measured a "run" that took forty seconds to
                        * cross four boxes. A stagger counts places in a queue.
                        */
-                      '--architecture-run-step': graph.boxes.find((b) => b.id === edge.from)?.column ?? 0,
+                      '--architecture-run-step':
+                        (graph.boxes.find((b) => b.id === edge.from)?.column ?? 0) /
+                        maxReplayColumn,
                     } as React.CSSProperties)
                   : {}),
               }}
@@ -902,6 +1042,7 @@ export function ArchitectureSketch({
               data-edge-from={edge.from}
               data-edge-to={edge.to}
               data-edge-count={edge.count}
+              data-edge-track-offset={trackOffset}
             />
           );
         })}
@@ -949,6 +1090,7 @@ export function ArchitectureSketch({
 
         {graph.boxes.map((box) => {
           const at = placed.get(box.id);
+          const observedAt = observedPlaced.get(box.id);
           if (!at) return null;
           const isSelected = selected === box.id;
           const receded =
@@ -981,12 +1123,20 @@ export function ArchitectureSketch({
            * sentence. A sentence that turns out to need one line keeps the two-line positions,
            * because its budget was read off those positions and moving it would change the room.
            */
-          const nameY = ledger
-            ? at.y + 21
-            : summary === null
-              ? at.y + boxH / 2 - 4
-              : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * CAPTION_LEADING) / 2;
-          const countsY = nameY + 15;
+          const nameY = usesRoomyBoxes
+            ? at.y + 35
+            : axis === 'down'
+              ? at.y + 18
+              : ledger
+              ? at.y + 21
+              : summary === null
+                ? at.y + boxH / 2 - 4
+                : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * CAPTION_LEADING) / 2;
+          const countsY = usesRoomyBoxes
+            ? at.y + 52
+            : axis === 'down'
+              ? at.y + 34
+              : nameY + 15;
           const summaryLines =
             summary === null
               ? null
@@ -997,17 +1147,18 @@ export function ArchitectureSketch({
                     boxH,
                     shape: box.shape,
                     baselines: Array.from(
-                      { length: SUMMARY_LINES },
+                      { length: summaryLineCount },
                       (_, line) => countsY - at.y + line * CAPTION_LEADING,
                     ),
                   }),
-                  SUMMARY_LINES,
+                  summaryLineCount,
                 );
 
           return (
             <g
               key={box.id}
               role="button"
+              pointerEvents="all"
               tabIndex={0}
               aria-pressed={isSelected}
               aria-label={[
@@ -1016,6 +1167,7 @@ export function ArchitectureSketch({
                 counts,
                 ledger ? ledgerStatusLabel(ledger) : null,
                 ledger ? ledgerImportsLabel(ledger.importsOut) : null,
+                usesRoomyBoxes && !ledger ? observationMissingLabel : null,
               ]
                 .filter((part): part is string => part !== null)
                 .join(' · ')}
@@ -1043,8 +1195,29 @@ export function ArchitectureSketch({
                 }
               }}
               style={{ opacity: receded ? 0.35 : 1 }}
-              className="architecture-recede cursor-pointer outline-none [&:focus-visible>rect]:stroke-[color:var(--color-indigo-a60)]"
+              className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible>rect]:stroke-[color:var(--color-indigo-a60)]"
             >
+              {/*
+                The roomy role is one interactive fact split into two visual faces. Its SVG group
+                therefore has a taller bounding box than either painted card, and pointer
+                automation correctly chooses that centre — the empty delta gap. A transparent
+                first rect makes the full role footprint a real hit target while every visible
+                face and event still belongs to this one group.
+              */}
+              <rect
+                x={at.x}
+                y={at.y}
+                width={boxW}
+                height={
+                  usesRoomyBoxes
+                    ? observationOffset + OBSERVATION_BOX_H
+                    : boxH
+                }
+                fill="transparent"
+                stroke="none"
+                pointerEvents="all"
+                data-architecture-role-hit-area="true"
+              />
               {/*
                 The fill is a separate flat shape: the sketch passes are an outline built from
                 joined segments — several subpaths, which fill as slivers rather than as a box —
@@ -1079,6 +1252,16 @@ export function ArchitectureSketch({
                   strokeWidth={1}
                 />
               )}
+              {usesRoomyBoxes ? (
+                <text
+                  x={at.x + boxW / 2}
+                  y={at.y + 17}
+                  textAnchor="middle"
+                  className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+                >
+                  {contractTrackLabel}
+                </text>
+              ) : null}
               <text
                 x={at.x + boxW / 2}
                 y={nameY}
@@ -1109,7 +1292,7 @@ export function ArchitectureSketch({
                       </tspan>
                     ))}
               </text>
-              {ledger ? (
+              {!usesRoomyBoxes && ledger ? (
                 <>
                   {/*
                     ⚠️ **Ruled, and straight.** Everything above this line is what a person
@@ -1121,14 +1304,14 @@ export function ArchitectureSketch({
                   <line
                     x1={at.x + 12}
                     x2={at.x + boxW - 12}
-                    y1={at.y + 58}
-                    y2={at.y + 58}
+                    y1={axis === 'down' ? at.y + 46 : at.y + 58}
+                    y2={axis === 'down' ? at.y + 46 : at.y + 58}
                     stroke="var(--color-divider)"
                     strokeWidth={1}
                   />
                   <text
                     x={at.x + boxW / 2}
-                    y={at.y + 71}
+                    y={axis === 'down' ? at.y + 59 : at.y + 71}
                     textAnchor="middle"
                     className={cn(
                       'text-caption tabular-nums',
@@ -1144,6 +1327,116 @@ export function ArchitectureSketch({
                     )}`}
                   </text>
                 </>
+              ) : null}
+              {usesRoomyBoxes && observedAt ? (
+                <g
+                  className="architecture-observation-reveal"
+                >
+                  <line
+                    x1={at.x + boxW / 2}
+                    x2={at.x + boxW / 2}
+                    y1={at.y + boxH + 6}
+                    y2={observedAt.y - 6}
+                    stroke="var(--color-divider)"
+                    strokeWidth={1}
+                    strokeDasharray="2 4"
+                    data-testid={`architecture-delta-connector-${box.id}`}
+                    data-delta-state={ledger?.state ?? 'missing'}
+                  />
+                  <circle
+                    cx={at.x + boxW / 2}
+                    cy={(at.y + boxH + observedAt.y) / 2}
+                    r={2.5}
+                    fill={ledger ? 'var(--color-indigo-a60)' : 'var(--color-canvas)'}
+                    stroke={ledger ? 'var(--color-indigo-a60)' : 'var(--color-text-quaternary)'}
+                    strokeWidth={1}
+                  />
+                  <rect
+                    x={observedAt.x}
+                    y={observedAt.y}
+                    width={boxW}
+                    height={OBSERVATION_BOX_H}
+                    rx={8}
+                    fill="var(--color-overlay-1)"
+                    stroke={
+                      ledger?.state === 'violated'
+                        ? 'var(--color-danger-text)'
+                        : 'var(--color-divider)'
+                    }
+                    strokeWidth={1}
+                    strokeDasharray={ledger ? undefined : '4 4'}
+                    data-testid={`architecture-observation-box-${box.id}`}
+                    data-observation-state={ledger?.state ?? 'missing'}
+                  />
+                  <text
+                    x={observedAt.x + boxW / 2}
+                    y={observedAt.y + 15}
+                    textAnchor="middle"
+                    className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+                  >
+                    {observationTrackLabel}
+                  </text>
+                  <text
+                    x={observedAt.x + boxW / 2}
+                    y={observedAt.y + 32}
+                    textAnchor="middle"
+                    className={cn(
+                      'text-caption tabular-nums',
+                      ledger?.state === 'violated'
+                        ? 'fill-[color:var(--color-text-secondary)]'
+                        : 'fill-[color:var(--color-text-quaternary)]',
+                    )}
+                    data-testid={
+                      ledger
+                        ? `architecture-role-ledger-${box.id}`
+                        : `architecture-role-observation-${box.id}`
+                    }
+                    data-ledger-state={ledger?.state}
+                  >
+                    {ledger
+                      ? `${LEDGER_GLYPH[ledger.state]} ${ledgerStatusLabel(ledger)} · ${ledgerImportsLabel(
+                          ledger.importsOut,
+                        )}`
+                      : `○ ${observationMissingLabel}`}
+                  </text>
+                </g>
+              ) : null}
+              {running && replaySourceRoles.has(box.id) ? (
+                <g
+                  className="architecture-observation-pulse"
+                  style={
+                    {
+                      '--architecture-run-step': box.column / maxReplayColumn,
+                    } as React.CSSProperties
+                  }
+                  data-testid={`architecture-observation-pulse-${box.id}`}
+                  aria-hidden
+                >
+                  <rect
+                    x={(usesRoomyBoxes && observedAt ? observedAt.x : at.x) + 12}
+                    y={
+                      (usesRoomyBoxes && observedAt
+                        ? observedAt.y + OBSERVATION_BOX_H
+                        : at.y + boxH) - 19
+                    }
+                    width={boxW - 24}
+                    height={16}
+                    rx={4}
+                    fill="var(--color-indigo-a08)"
+                  />
+                  <rect
+                    x={(usesRoomyBoxes && observedAt ? observedAt.x : at.x) + 12}
+                    y={
+                      (usesRoomyBoxes && observedAt
+                        ? observedAt.y + OBSERVATION_BOX_H
+                        : at.y + boxH) - 3
+                    }
+                    width={boxW - 24}
+                    height={2}
+                    rx={1}
+                    fill="var(--color-indigo-accent)"
+                  />
+                </g>
               ) : null}
             </g>
           );

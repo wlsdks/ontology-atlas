@@ -1,16 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
   deriveArchitectureProfiles,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
-import { useDataSourceMode, VaultSourceHydrationBoundary } from '@/entities/vault-session';
+import {
+  useAgentServer,
+  useDataSourceMode,
+  VaultSourceHydrationBoundary,
+} from '@/entities/vault-session';
 import { useLocalVault } from '@/entities/vault-session';
 import { useStaticVaultSource } from '@/entities/vault-session';
 import { createVaultFileProjectSourceStore } from '@/shared/lib/project-source-store';
+import {
+  type AcpTurnActivity,
+  runtimeOwnsWriteGate,
+  vaultMcpServers,
+  vaultSelfReadSlot,
+} from '@/features/acp-session';
+import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
 import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
@@ -24,7 +35,19 @@ import {
   type SourceDirEntry,
 } from '../model/source-modules';
 import { useArchitectureRecords } from '../model/use-architecture-record';
-import { ArchitectureWorkbench } from './ArchitectureWorkbench';
+import {
+  ArchitectureWorkbench,
+} from './ArchitectureWorkbench';
+import {
+  ArchitectureAgentDock,
+  type ArchitectureAgentOpeningRequest,
+} from './ArchitectureAgentDock';
+import {
+  resolveArchitectureAgentRoute,
+  selectArchitectureAgentRuntimes,
+  type ArchitectureAgentRequest,
+  type ArchitectureAgentRuntime,
+} from '../model/architecture-agent';
 
 /* The runtime never changes inside a session, so the store is a constant read. Same shape as
    `DocsVaultPage`; two surfaces answering "am I the installed app?" differently would be a
@@ -44,29 +67,127 @@ function projectSlugForProfile(profile: ArchitectureProfile, docs: ReadonlyArray
   return typeof project?.frontmatter.slug === 'string' ? project.frontmatter.slug : null;
 }
 
-async function verifiedAtlasCliEntry(sourceRoot: string): Promise<string | null> {
-  if (!sourceRoot.startsWith('/')) return null;
-  try {
-    const packageText = await readTauriVaultText(sourceRoot, 'cli/package.json');
-    const packageJson = packageText ? JSON.parse(packageText) as { name?: unknown } : null;
-    if (packageJson?.name !== 'ontology-atlas') return null;
-    const entries = await listTauriVaultEntries(sourceRoot, 'cli/src');
-    if (!entries.some((entry) => entry.kind === 'file' && entry.name === 'index.mjs')) return null;
-    return `${sourceRoot.replace(/\/+$/, '')}/cli/src/index.mjs`;
-  } catch {
-    return null;
+async function verifiedAtlasCliEntry(candidateRoots: readonly string[]): Promise<string | null> {
+  /*
+   * The target repository and the Atlas tool checkout are different things. The first version
+   * searched only `sourceRoot`, which happened to work while Atlas inspected itself and made every
+   * ordinary project appear to have lost its fallback. A vault commonly lives inside an Atlas
+   * checkout (`docs/ontology`), so inspect the independently known roots and a bounded set of vault
+   * ancestors. Every candidate still has to prove the Atlas package name and real CLI entry.
+   */
+  const roots = new Set<string>();
+  for (const candidate of candidateRoots) {
+    if (!candidate.startsWith('/')) continue;
+    let at = candidate.replace(/\/+$/, '');
+    for (let depth = 0; depth < 5 && at.split('/').length > 2; depth += 1) {
+      roots.add(at);
+      at = at.slice(0, at.lastIndexOf('/'));
+    }
   }
+  for (const root of roots) {
+    try {
+      const packageText = await readTauriVaultText(root, 'cli/package.json');
+      const packageJson = packageText ? JSON.parse(packageText) as { name?: unknown } : null;
+      if (packageJson?.name !== 'ontology-atlas') continue;
+      const entries = await listTauriVaultEntries(root, 'cli/src');
+      if (!entries.some((entry) => entry.kind === 'file' && entry.name === 'index.mjs')) continue;
+      return `${root}/cli/src/index.mjs`;
+    } catch {
+      // A candidate is only a hint. The next independently known root may be the Atlas checkout.
+    }
+  }
+  return null;
 }
 
 export function ArchitecturePage() {
   const mode = useDataSourceMode();
   const localVault = useLocalVault();
+  const agentServer = useAgentServer();
+  const acpBridgeAvailable = useSyncExternalStore(
+    subscribeDesktopRuntime,
+    isAcpBridgeAvailable,
+    readServerDesktopRuntime,
+  );
   const { manifest: staticManifest } = useStaticVaultSource();
   const docs = useMemo(
     () => mode === 'static' ? staticManifest.docs : localVault.manifest?.docs ?? EMPTY_DOCS,
     [localVault.manifest, mode, staticManifest.docs],
   );
   const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
+  const gitVaultPath = localVault.handle ? getTauriVaultRootPath(localVault.handle) ?? null : null;
+  const knownSlugs = useMemo(() => new Set(docs.map((doc) => doc.slug)), [docs]);
+  const [acpRuntimes, setAcpRuntimes] = useState<ArchitectureAgentRuntime[]>([]);
+  const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
+  const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
+  const [agentActivity, setAgentActivity] = useState<AcpTurnActivity | null>(null);
+  const [agentOpeningRequest, setAgentOpeningRequest] =
+    useState<ArchitectureAgentOpeningRequest | null>(null);
+
+  useEffect(() => {
+    if (!acpBridgeAvailable) return;
+    let cancelled = false;
+    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
+      if (cancelled) return;
+      const usable = selectArchitectureAgentRuntimes(list);
+      setAcpRuntimes(usable);
+      setAcpRuntimeId((current) =>
+        current && usable.some((runtime) => runtime.id === current)
+          ? current
+          : (usable[0]?.id ?? null),
+      );
+    };
+
+    void detectAcpRuntimes()
+      .then((fast) => {
+        apply(fast);
+        return detectAcpRuntimes({ probeLogin: true });
+      })
+      .then(apply)
+      .catch(() => apply(null))
+      .finally(() => {
+        if (!cancelled) setRuntimeCheckComplete(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [acpBridgeAvailable]);
+
+  const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
+  const acpMcpServers = useMemo(() => {
+    const registration =
+      vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
+        ? {
+            command: localVault.agentConfigStatus?.codexRegisteredCommand ?? null,
+            validForCurrentVault: localVault.agentConfigStatus?.codexConfigValid === true,
+          }
+        : null;
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+    });
+  }, [
+    acpRuntimeId,
+    agentServer.launch,
+    gitVaultPath,
+    localVault.agentConfigStatus?.codexConfigValid,
+    localVault.agentConfigStatus?.codexRegisteredCommand,
+  ]);
+  const agentRoute = resolveArchitectureAgentRoute({
+    bridgeAvailable: acpBridgeAvailable,
+    runtimeCheckComplete,
+    serverCheckComplete: agentServer.launch !== null || agentServer.reason !== null,
+    runtime: acpRuntime,
+    vaultRoot: gitVaultPath,
+    serverReady: agentServer.launch !== null,
+  });
+  const startAgent = useCallback((request: ArchitectureAgentRequest) => {
+    setAgentOpeningRequest((current) => ({
+      kind: request.kind,
+      text: request.prompt,
+      nonce: (current?.nonce ?? 0) + 1,
+    }));
+    setAgentOpen(true);
+  }, []);
   /* The click-open meaning layer: reviewed concepts joined into roles, real on every surface. */
   const conceptsByProfile = useMemo(() => {
     const out: Record<string, Record<string, RoleConcept[]>> = {};
@@ -78,12 +199,20 @@ export function ArchitecturePage() {
     handle: FileSystemDirectoryHandle | null;
     profileKey: string;
     contexts: Record<string, ArchitectureHandoffContext>;
+    draftContext: ArchitectureHandoffContext | null;
     modules: Record<string, Record<string, RoleSourceModule[]>>;
-  }>({ handle: null, profileKey: '', contexts: EMPTY_HANDOFF_CONTEXTS, modules: {} });
+  }>({
+    handle: null,
+    profileKey: '',
+    contexts: EMPTY_HANDOFF_CONTEXTS,
+    draftContext: null,
+    modules: {},
+  });
   const loaded = mode === 'local'
     && loadedHandoffContexts.handle === localVault.handle
     && loadedHandoffContexts.profileKey === profileKey;
   const handoffContexts = loaded ? loadedHandoffContexts.contexts : EMPTY_HANDOFF_CONTEXTS;
+  const draftHandoffContext = loaded ? loadedHandoffContexts.draftContext : null;
   const sourceModulesByProfile = loaded ? loadedHandoffContexts.modules : undefined;
   /* A browser cannot list a source folder; only the installed app's bridge can. */
   const sourceListingCapable =
@@ -126,17 +255,36 @@ export function ArchitecturePage() {
     void (async () => {
       const next: Record<string, ArchitectureHandoffContext> = {};
       const nextModules: Record<string, Record<string, RoleSourceModule[]>> = {};
+      const bindingsByProject = new Map<string, string>();
+      const projectSlugs = docs
+        .filter((doc) => doc.frontmatter.kind === 'project')
+        .map((doc) => doc.frontmatter.slug)
+        .filter((slug): slug is string => typeof slug === 'string');
+      for (const projectSlug of projectSlugs) {
+        const result = await store.list(projectSlug);
+        if (result.status === 'ok' && result.bindings.length === 1) {
+          bindingsByProject.set(projectSlug, result.bindings[0]!.rootPath);
+        }
+      }
+      const distinctSourceRoots = [...new Set(bindingsByProject.values())];
+      const draftSourceRoot = distinctSourceRoots.length === 1 ? distinctSourceRoots[0]! : null;
+      const cliEntry = await verifiedAtlasCliEntry([...distinctSourceRoots, vaultRoot]);
+      /* The vault root is known even when no project source has been connected. Preserve that
+         truth in every task packet; `sourceRoot: null` is the honest missing half. */
+      const draftContext: ArchitectureHandoffContext = {
+        sourceRoot: draftSourceRoot,
+        vaultRoot,
+        cliEntry,
+      };
       for (const profile of profiles) {
         const projectSlug = projectSlugForProfile(profile, docs);
-        if (!projectSlug) continue;
-        const result = await store.list(projectSlug);
-        if (result.status !== 'ok' || result.bindings.length !== 1) continue;
-        const sourceRoot = result.bindings[0]!.rootPath;
+        const sourceRoot = projectSlug ? bindingsByProject.get(projectSlug) ?? null : null;
         next[profile.slug] = {
           sourceRoot,
           vaultRoot,
-          cliEntry: await verifiedAtlasCliEntry(sourceRoot),
+          cliEntry,
         };
+        if (!sourceRoot) continue;
         /*
          * A read-only directory walk fills the blueprint's bands with the source modules each
          * role glob actually contains. Listing only — no file is opened, no import is read;
@@ -156,7 +304,13 @@ export function ArchitecturePage() {
         nextModules[profile.slug] = await deriveRoleSourceModules(profile, listDir);
       }
       if (!cancelled) {
-        setLoadedHandoffContexts({ handle, profileKey, contexts: next, modules: nextModules });
+        setLoadedHandoffContexts({
+          handle,
+          profileKey,
+          contexts: next,
+          draftContext,
+          modules: nextModules,
+        });
       }
     })();
 
@@ -165,15 +319,36 @@ export function ArchitecturePage() {
 
   return (
     <VaultSourceHydrationBoundary>
-      <ArchitectureWorkbench
-        profiles={profiles}
-        handoffContexts={handoffContexts}
-        sourceModulesByProfile={sourceModulesByProfile}
-        sourceListingCapable={sourceListingCapable}
-        sourceUnavailableReason={sourceUnavailableReason}
-        recordsByProfile={recordsByProfile}
-        conceptsByProfile={conceptsByProfile}
-      />
+      <div className="relative flex min-h-0 flex-1 overflow-hidden">
+        <ArchitectureWorkbench
+          profiles={profiles}
+          handoffContexts={handoffContexts}
+          draftHandoffContext={draftHandoffContext}
+          sourceModulesByProfile={sourceModulesByProfile}
+          sourceListingCapable={sourceListingCapable}
+          sourceUnavailableReason={sourceUnavailableReason}
+          recordsByProfile={recordsByProfile}
+          conceptsByProfile={conceptsByProfile}
+          agentRoute={agentRoute}
+          agentLabel={acpRuntime?.label ?? null}
+          onAgentRequest={agentRoute === 'agent' ? startAgent : undefined}
+          agentActivity={agentActivity}
+        />
+        {acpRuntime && gitVaultPath ? (
+          <ArchitectureAgentDock
+            open={agentOpen}
+            runtime={acpRuntime}
+            runtimes={acpRuntimes}
+            onRuntimeChange={setAcpRuntimeId}
+            vaultRoot={gitVaultPath}
+            mcpServers={acpMcpServers}
+            openingRequest={agentOpeningRequest}
+            knownSlugs={knownSlugs}
+            onTurnActivityChange={setAgentActivity}
+            onClose={() => setAgentOpen(false)}
+          />
+        ) : null}
+      </div>
     </VaultSourceHydrationBoundary>
   );
 }

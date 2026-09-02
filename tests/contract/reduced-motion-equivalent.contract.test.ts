@@ -54,6 +54,10 @@ const INTENTIONALLY_STILL: Readonly<Record<string, string>> = {
   // would just re-introduce the very movement being declined.
   "architecture-flow-running":
     "One-shot run on a deliberate press, a dash travelling the strokes left to right. The arrowheads and the column order already state the direction with no time axis, so collapsing the run loses nothing; a short equivalent would re-introduce the exact movement being declined.",
+  "architecture-observation-pulse":
+    "One-shot scan inside the measured observation row. Reduced motion keeps the stamped import count, role order, and arrowheads and removes only the travelling reveal.",
+  "architecture-observation-scan":
+    "Infinite progress travel shown only during a real ACP turn. Reduced motion stops the line while the adjacent planning/editing/verifying/review-wait text preserves the current state.",
   "overlay-spring-surface":
     "소비처가 감속일 때 `.overlay-fade-only` 로 **클래스를 갈아 끼운다**(GlobalSearch 실측). CSS carve-out 이 아니라 다른 경로로 이미 덮여 있다.",
   // Gateway landing (2026-08-18 remake). An endless caret blink is the same family

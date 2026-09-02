@@ -42,6 +42,9 @@ export function ArchitectureFlow({
   edgeSentence,
   ledgerStatusLabel,
   ledgerImportsLabel,
+  contractTrackLabel,
+  observationTrackLabel,
+  observationMissingLabel,
   violatedPairs,
   selected,
   onSelect,
@@ -51,6 +54,7 @@ export function ArchitectureFlow({
   moduleCountLabel,
   conceptCountLabel,
   runLabel,
+  finishRunLabel,
   hiddenRightLabel,
   hiddenLeftLabel,
   hiddenAboveLabel,
@@ -81,6 +85,9 @@ export function ArchitectureFlow({
   /** `from>to` for each crossing the receipt counted as a violation; drawn apart from the rest. */
   violatedPairs: ReadonlySet<string>;
   ledgerImportsLabel: (count: number) => string;
+  contractTrackLabel: string;
+  observationTrackLabel: string;
+  observationMissingLabel: string;
   /** The chosen role, owned by the page so the canvas and the detail can sit in different rows. */
   selected: string | null;
   onSelect: (id: string) => void;
@@ -90,6 +97,7 @@ export function ArchitectureFlow({
   moduleCountLabel: (count: number) => string;
   conceptCountLabel: (count: number) => string;
   runLabel: string;
+  finishRunLabel: string;
   hiddenRightLabel: (count: number) => string;
   hiddenLeftLabel: (count: number) => string;
   hiddenAboveLabel: (count: number) => string;
@@ -142,11 +150,15 @@ export function ArchitectureFlow({
           violatedPairs={violatedPairs}
           ledgerStatusLabel={ledgerStatusLabel}
           ledgerImportsLabel={ledgerImportsLabel}
+          contractTrackLabel={contractTrackLabel}
+          observationTrackLabel={observationTrackLabel}
+          observationMissingLabel={observationMissingLabel}
           moduleCountLabel={moduleCountLabel}
           conceptCountLabel={conceptCountLabel}
           moduleCounts={moduleCounts}
           conceptCounts={conceptCounts}
           runLabel={runLabel}
+          finishRunLabel={finishRunLabel}
           hiddenRightLabel={hiddenRightLabel}
           hiddenLeftLabel={hiddenLeftLabel}
           hiddenAboveLabel={hiddenAboveLabel}

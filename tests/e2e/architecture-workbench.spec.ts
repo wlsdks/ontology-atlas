@@ -6,7 +6,7 @@ import { useDogfoodSample } from './sample-source';
 test.use({ viewport: { width: 600, height: 900 } });
 
 
-test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 문장 버튼이 남는다', async ({ page }) => {
+test('변경 단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 문장 버튼이 남는다', async ({ page }) => {
   await seedFirstRunSeen(page);
   await useDogfoodSample(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -24,7 +24,7 @@ test('단계 전환 뒤 새 스크롤 끝과 하단 탭 사이에 붙여넣을 �
   }));
   expect(Math.abs(before.maxScrollTop - before.scrollTop)).toBeLessThanOrEqual(1);
 
-  const plan = page.getByRole('radio', { name: '계획' });
+  const plan = page.getByRole('radio', { name: '변경' });
   await plan.focus();
   await page.keyboard.press('Space');
   await expect(plan).toHaveAttribute('aria-checked', 'true');
@@ -408,7 +408,11 @@ test('a role sentence stays inside the drawn box, including a stadium cap', asyn
       const box = g.getBoundingClientRect();
       const w = Number(g.getAttribute('data-box-width'));
       const h = Number(g.getAttribute('data-box-height'));
-      const isStadium = g.querySelector('rect[rx]') !== null;
+      const rect = g.querySelector('rect');
+      /* Process cards are softly rounded too (`rx=6`). A stadium is the shape whose cap radius is
+         half its height; treating every rounded rectangle as a stadium invented a 186px cap chord
+         inside a 220px process card and reported contained text as overflow. */
+      const isStadium = Number(rect?.getAttribute('rx') ?? 0) >= h / 2 - 0.5;
       const chordAt = (y: number) => {
         if (!isStadium) return w;
         const r = h / 2;

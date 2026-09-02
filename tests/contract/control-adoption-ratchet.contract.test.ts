@@ -1109,7 +1109,9 @@ const globalsCss = readFileSync(GLOBALS_CSS, 'utf8');
 // Windows download · Windows tracking) — `Link` 19→17 · `a` 17→12.
 // 2026-09-01: the docs viewer's [[project:slug]] anchor became a locale-aware
 // Link (the raw form hard-navigated to the locale-less root, which dropped ?p=).
-const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 18, a: 10 };
+// 2026-09-02: Architecture's empty-profile action became a real in-tab button instead of a
+// button-styled Link to Map. The destination count and the verified registration both fall by one.
+const ANCHOR_TAG_SPLIT: Readonly<Record<string, number>> = { Link: 17, a: 10 };
 
 /**
  * **The verified "outside the value layer" anchor registry.**
@@ -1178,15 +1180,6 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
     claim: 'standard-button',
     proof: 'buttonVariants',
     why: '`clientControlClass()` = `buttonVariants({ variant: "outline", size: "sm" })` + 폭·반경.',
-  },
-  {
-    file: 'src/views/architecture/ui/ArchitectureWorkbench.tsx',
-    count: 1,
-    claim: 'standard-button',
-    proof: 'buttonVariants',
-    why:
-      '프로필이 없는 전체 화면의 문서함 출구. 링크 의미를 보존하면서 ' +
-      '`cn(buttonVariants({ variant: "primary", size: "sm" }))` 표준 버튼 값을 쓴다.',
   },
   {
     file: 'app/[locale]/not-found.tsx',
@@ -1298,9 +1291,9 @@ const OUTSIDE_VALUE_LAYER_ANCHORS: readonly OutsideEntry[] = [
 // its own line it is an ordinary control, `shape: 'link'` fits, `touch-hit-expand` supplies the
 // 44px finger target, and this ledger did not have to grow. **Check whether the position is wrong
 // before registering a shape the value layer cannot make.**
-const BASELINE_ANCHOR_REGISTERED = 28;
+const BASELINE_ANCHOR_REGISTERED = 27;
 
-/** **Only this number may fall.** The current anchor total (28) minus registered (28). */
+/** **Only this number may fall.** The current anchor total (27) minus registered (27). */
 const BASELINE_ANCHOR_DEBT = 0;
 
 const anchorCensus = census(scannedFiles, OUTSIDE_VALUE_LAYER_ANCHORS, ANCHOR_TAGS, NO_BASIS_ANCHORS);

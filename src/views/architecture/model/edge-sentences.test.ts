@@ -107,7 +107,7 @@ describe('placeEdgeSentences', () => {
     expect(out.map((s) => `${s.kind}:${s.key}`).sort()).toEqual(['permitted:views>widgets', 'traffic:views>widgets']);
   });
 
-  it('lets a rule win over traffic when two sentences would share one place', () => {
+  it('puts a rule left and matching observed traffic right so both remain visible', () => {
     const placed = chainDown(400);
     const rule: SentenceEdge = { from: 'views', to: 'widgets', kind: 'permitted', columnSpan: 1, violated: false };
     const traffic: SentenceEdge = { from: 'views', to: 'widgets', kind: 'traffic', count: 314, columnSpan: 1, violated: false };
@@ -115,9 +115,15 @@ describe('placeEdgeSentences', () => {
       axis: 'down', edges: [traffic, rule], placed, ...BOX, swingOf: () => 0, leadRoom: 400, trailRoom: 300, sentenceOf: sentence,
     });
     const drawn = out.filter((s) => s.hidden === undefined);
-    expect(drawn).toHaveLength(1);
-    expect(drawn[0].text).toContain('may depend on');
-    expect(out.find((s) => s.hidden === 'collision')?.text).toContain('314');
+    expect(drawn).toHaveLength(2);
+    expect(drawn.find((s) => s.kind === 'permitted')).toMatchObject({
+      anchor: 'end',
+      x: 380,
+    });
+    expect(drawn.find((s) => s.kind === 'traffic')).toMatchObject({
+      anchor: 'start',
+      x: 600,
+    });
   });
 
   it('seats a skip\'s sentence past every drawn arc that runs by it, not only its own', () => {

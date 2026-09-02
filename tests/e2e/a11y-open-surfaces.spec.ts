@@ -153,8 +153,14 @@ const MIN_RULES_PASSED = 15;
  * answer. `AcpChatPanel.test.tsx` covers its named group, keyboard-reachable rows,
  * state suppression, and prefill-without-send contract; the installed app carries
  * the actual 1512px turn and screenshot proof.
+ *
+ * 31 → 33 (2026-09-02): Architecture gained a same-route ACP dock and an on-canvas
+ * evidence overlay. The overlay fits the static browser opener grammar and joins
+ * the list below. The dock requires a verified desktop ACP runtime, vault path,
+ * and bundled MCP server, so component tests plus the installed-app walkthrough
+ * carry its accessibility proof.
  */
-const APPEARING_SURFACES_IN_SOURCE = 31;
+const APPEARING_SURFACES_IN_SOURCE = 33;
 
 interface Opener {
   readonly name: string;
@@ -275,6 +281,13 @@ const OPENERS: readonly Opener[] = [
     route: "/ko/architecture/",
     trigger: "architecture-mode-plan",
     surface: '[data-architecture-stage="plan"]',
+    dogfood: true,
+  },
+  {
+    name: "아키텍처 근거 흐름",
+    route: "/ko/architecture/",
+    trigger: "architecture-evidence-rail",
+    surface: '[data-testid="architecture-evidence-overlay"]',
     dogfood: true,
   },
   {
