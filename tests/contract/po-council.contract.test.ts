@@ -492,9 +492,13 @@ describe('Atlas PO policy stays executable and mirrored', () => {
       expect(council).toContain(line);
     }
     expect(council).toMatch(/human owner\s+decides/i);
-    expect(PO_REVIEW_RECORD_FIELDS).toContain('Pre-review decision');
-    expect(PO_REVIEW_RECORD_FIELDS).toContain('Accountable owner');
-    expect(PO_REVIEW_RECORD_FIELDS).toContain('Decision delta');
+    // The record keeps the prior state and the accountable person; the
+    // before/after delta is typed per run in the pilot register (2026-09-03
+    // template), so it is asserted where it now lives.
+    expect(PO_REVIEW_RECORD_FIELDS).toContain('Prior');
+    expect(PO_REVIEW_RECORD_FIELDS).toContain('Owner');
+    expect(PO_REVIEW_RECORD_FIELDS).toContain('Dissent');
+    expect(read(PILOT)).toMatch(/\| Delta \|/);
   });
 
   it('starts the finite pilot with an actual measured row', () => {

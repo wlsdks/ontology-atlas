@@ -55,9 +55,10 @@ part of the verdict instead of judging code or a diff by eye.
 
 ## Round 0 — prior decision
 
-Read only the relevant `docs/DECISIONS.md` record and its falsifier. Include the
-selected `/design-directions` sentence and rejected alternatives when the route
-required divergence.
+Read only the relevant `docs/DECISIONS.md` record and its falsifier, located
+with `pnpm decisions:find <surface terms>`. Include the selected
+`/design-directions` sentence and rejected alternatives when the route required
+divergence.
 
 ## Round 1 — independent positions
 

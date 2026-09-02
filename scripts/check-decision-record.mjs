@@ -47,8 +47,34 @@ import {
   parseTriggerFiles,
   SPEC_RULE_DOC,
 } from "./lib/design-spec-census.mjs";
+import { parseLedger } from "./decisions-find.mjs";
+import { FIELDS, LIMITS, TEMPLATE, TEMPLATE_SINCE, checkLedgerTemplate } from "./lib/decision-record-template.mjs";
 
 const LEDGER = "docs/DECISIONS.md";
+
+/**
+ * Records dated from TEMPLATE_SINCE must be the six-field template within one
+ * screen. Checked before the trigger logic and regardless of it: a record that
+ * exists but cannot be read in one pass fails the ledger's own first contract
+ * ("read before convening"), which is what the gate protects. Measured
+ * 2026-09-02: median record 51 lines, nine labels, eleven records a day.
+ */
+function templateFailures() {
+  const broken = checkLedgerTemplate(parseLedger(readFileSync(LEDGER, "utf8")));
+  if (broken.length === 0) return false;
+  console.error(`[decisions] ${broken.length} record(s) dated ${TEMPLATE_SINCE} or later do not fit the template:`);
+  for (const { record, problems } of broken) {
+    console.error(`[decisions]   ${LEDGER}:${record.line}  ${record.date}  ${record.title}`);
+    for (const problem of problems) console.error(`[decisions]     - ${problem}`);
+  }
+  console.error(`
+[decisions] A record is exactly ${FIELDS.join(", ")}, in that order, within ${LIMITS.lines} lines and ${LIMITS.bytes} bytes:
+${TEMPLATE.split("\n").map((line) => `[decisions]   ${line}`).join("\n")}
+[decisions]
+[decisions] Route, evidence state, review footprint, and delta belong to docs/PO-PILOT.md, which types them per run.
+[decisions] Anything that fits a commit message is a commit message, not a record.`);
+  return true;
+}
 
 /** Route files whose *existence* changes the surface inventory. */
 const ROUTE_PATTERN = /^app\/\[locale\]\/.*\/page\.tsx$/;
@@ -112,6 +138,7 @@ function resolveBase(explicit) {
 }
 
 const base = resolveBase(parseArgs(process.argv.slice(2)));
+if (templateFailures()) process.exit(1);
 if (!base) {
   console.log("[decisions] no comparable base ref — skipping (nothing to diff against)");
   process.exit(0);

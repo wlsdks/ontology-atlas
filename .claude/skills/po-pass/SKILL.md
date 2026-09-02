@@ -26,10 +26,13 @@ must reject that combination.
 
 ## 1. Read the one prior decision you need
 
-Search `docs/DECISIONS.md` for the same surface and question.
+Run `pnpm decisions:find <surface terms>` for the same surface and question;
+it returns records, not lines, with each record's decision, falsifier, and the
+later records that cite it. `--record=<n|date>` prints one in full.
 
 - Cite a standing decision or explicitly overturn it.
-- Check its falsifier.
+- Check its falsifier, and read the records that cite it before calling it
+  standing.
 - Do not summarize the full ledger.
 
 ## 2. Name the lost human ability

@@ -47,6 +47,13 @@
 > owner, decision delta, review footprint, dissent/falsifier, revisit, and
 > outcome. Do not add a numeric score.
 
+> **Active format from 2026-09-03:** six fields, in order, within one screen:
+> `Why`, `Prior`, `Decision`, `Dissent`, `Falsifier`, `Owner`. The exact
+> template and the reasons live in `docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`,
+> and `pnpm decisions:check` refuses a later record that differs. Retrieve
+> with `pnpm decisions:find <terms>`; it also lists who cites a record, so
+> overturning is a new record, never an edit.
+
 ## 2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof
 
 **Prior decisions**: the app-carries-the-server distribution contract and the

@@ -99,9 +99,10 @@ routing only: when to open a gate, not how it runs.
   and tests recovery proof; `chief` rebuts only material conflict.
   `/design-council` runs only for routed structural commitments, with selected
   seats and `design-guardian` deciding. Cross-critique needs material conflict.
-- **Decision ledger** — `docs/DECISIONS.md` is append-only. Read it before a
-  pass or council; cite a standing decision or overturn it explicitly, keeping
-  the losing dissent and a falsifier. Never silently re-decide.
+- **Decision ledger** — `docs/DECISIONS.md` is append-only;
+  `pnpm decisions:find <terms>` finds the record to cite or overturn
+  explicitly, keeping the losing dissent and a falsifier. Never silently
+  re-decide.
 - **Gate probe** — `/gate-probe` whenever a gate changes. A permanently green
   gate is not evidence.
 - **Journey and motion** — `/user-walkthrough` names observable UX patterns,
