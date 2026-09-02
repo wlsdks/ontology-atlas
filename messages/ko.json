@@ -930,6 +930,8 @@
         "clickSelect": "노드 선택",
         "dragPan": "지도 이동(빈 공간) 또는 노드 위치 이동(스프링 반사)",
         "wheelZoom": "확대·축소",
+        "keyZoom": "확대 · 축소 한 단계",
+        "keyFit": "지도 전체 맞춤",
         "rightClickContext": "컨텍스트 메뉴: 문서 열기 · 관계 편집 · AI에게 줄 정보 복사 · 경로 찾기 · 자세히 보기",
         "moveBetweenResults": "결과 간 이동",
         "openSelectedResult": "선택한 결과 열기",
@@ -1008,12 +1010,12 @@
       "collapseAllLabel": "전체 접기",
       "view3dChoice": {
         "flat": "평면",
-        "ownership": "돔",
+        "ownership": "원뿔",
         "coupling": "구름"
       },
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
-        "ownership": "담긴 구조대로 층층이 쌓인 모양",
+        "ownership": "담긴 구조대로 원뿔이 층층이 매달린 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
       "view3dLabel": "3D",
@@ -2428,6 +2430,8 @@
       "switchToMyDataTooltip": "내 폴더 열기: 지도가 내 데이터로 채워집니다 (⌘O)",
       "changeAnnouncement": "개념 {count}개 갱신됨: 반영됨",
       "close": "닫기",
+      "replayGrowthTooltip": "자라는 순서로 다시 보기",
+      "replayGrowthAriaLabel": "온톨로지가 담긴 순서대로 나타나는 것을 다시 보기",
       "tourTooltip": "가이드 투어",
       "tourAriaLabel": "가이드 투어 시작",
       "shortcutsTooltip": "키보드 단축키 (?)",

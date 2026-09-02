@@ -930,6 +930,8 @@
         "clickSelect": "Select a node",
         "dragPan": "Pan the map (empty space) or move a node (spring rebound)",
         "wheelZoom": "Zoom in or out",
+        "keyZoom": "Zoom in or out one step",
+        "keyFit": "Fit the whole map",
         "rightClickContext": "Context menu: document, edit relations, copy handoff, path, full detail",
         "moveBetweenResults": "Move between results",
         "openSelectedResult": "Open the selected result",
@@ -1008,7 +1010,7 @@
       "collapseAllLabel": "Collapse all",
       "view3dChoice": {
         "flat": "Flat",
-        "ownership": "Dome",
+        "ownership": "Cone",
         "coupling": "Cloud"
       },
       "view3dChoiceHint": {
@@ -2428,6 +2430,8 @@
       "switchToMyDataTooltip": "Open my markdown folder: the map fills with my data (⌘O)",
       "changeAnnouncement": "{count} concepts updated: synced",
       "close": "Close",
+      "replayGrowthTooltip": "Replay how it grew",
+      "replayGrowthAriaLabel": "Replay the ontology appearing in containment order",
       "tourTooltip": "Guided tour",
       "tourAriaLabel": "Start the guided tour",
       "shortcutsTooltip": "Keyboard shortcuts (?)",

@@ -248,6 +248,14 @@ let nodeVisualCacheReducedMotion: boolean | null = null;
 const KIND_CACHE_INDEX: Record<WorldNode["kind"], number> = { project: 0, domain: 1, capability: 2, element: 3 };
 /** The zero dome frame — shared (and never mutated) by dome-off nodes and the 2D path. */
 const ZERO_DOME_FRAME: DomeNodeFrame = { dx: 0, dy: 0, s: 1, a: 0, u: 0 };
+/**
+ * How far the lines NOT touching the hovered node recede at full hover ramp
+ * (alpha multiplier 1 − step). 0.3 is a step the eye reads as "pointed away
+ * from", still well above the dimmest data ink the contrast contract pins, and
+ * small enough that sweeping the cursor across a dense map does not read as the
+ * whole map flickering.
+ */
+const HOVER_RECEDE_ALPHA_STEP = 0.3;
 
 /**
  * **The node alphas this frame actually drew** — the single source for hit testing.
@@ -758,7 +766,9 @@ export interface FrameDrawParams {
    * bow rather than run straight: the `DOME_EDGE_BOW` doc-block in
    * `model/dome-view.ts`. Returning null leaves that edge on its 2D control point.
    */
-  domeControlFor?: ((sourceId: string, targetId: string) => { wx: number; wy: number } | null) | null;
+  domeControlFor?:
+    | ((sourceId: string, targetId: string, kind: "contains" | "depends") => { wx: number; wy: number } | null)
+    | null;
   /**
    * Strength 0..1 of the trail lens — an on/off exponential ramp stepped by the loop.
    *
@@ -939,18 +949,23 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     {
       viewportWidth,
       viewportHeight,
-      farT,
-      variant: backgroundVariant,
       // 3D — the background grid and dots recede into **void**: with a grid
       // present the object reads as resting on a floor rather than floating. The
-      // base fill and vignette stay; only the pattern layer switches off.
-      gridPattern: domeRamp > 0.001 ? null : gridPattern,
+      // base fill and vignette stay; the pattern layers fold away **on the
+      // assembly ramp** (2026-09-02 recording: they used to cut in one frame
+      // while the tiers took 1,120 ms to rise — the background hard-cutting
+      // under an easing protagonist is the defect the motion rules name). The
+      // grid already fades with altitude, so the ramp rides the same `farT`.
+      farT: Math.max(farT, domeRamp),
+      variant: backgroundVariant,
+      gridPattern,
       paintAnimated: domeRamp > 0.001 ? null : paintAnimatedBackground,
       // Each layer derives its parallax origin from the **grid** origin, not the
       // background origin — the latter is already parallaxed once, and applying it
       // twice collapses the layers together.
+      depthLayersAlpha: 1 - domeRamp,
       depthLayers:
-        depthDotPatterns && domeRamp <= 0.001
+        depthDotPatterns && domeRamp < 0.999
           ? DEPTH_DOT_LAYERS.map((layer, i) => {
               const o = backgroundParallaxOrigin(gridOrigin, { width: viewportWidth, height: viewportHeight },
                 reducedMotion ? 1 : layer.parallax);
@@ -1014,6 +1029,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     edge: {
       sourceId: string;
       targetId: string;
+      kind: "contains" | "depends";
       ax: number;
       ay: number;
       bx: number;
@@ -1048,7 +1064,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
      */
     const flatControlX = edge.controlX + (offA.dx + offB.dx) / 2;
     const flatControlY = edge.controlY + (offA.dy + offB.dy) / 2;
-    const meridian = domeControlFor === null ? null : domeControlFor(edge.sourceId, edge.targetId);
+    const meridian = domeControlFor === null ? null : domeControlFor(edge.sourceId, edge.targetId, edge.kind);
     const aMin = Math.min(offA.a, offB.a);
     const controlX = meridian === null ? flatControlX : flatControlX + (meridian.wx - flatControlX) * aMin;
     const controlY = meridian === null ? flatControlY : flatControlY + (meridian.wy - flatControlY) * aMin;
@@ -1573,10 +1589,41 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // Omit distant details — same rule as fog exemption: relationships brightened for reading
       // also reclaim their halo (if exempt edges cannot cut through tangled tangles, the exemption is half-hearted).
       if (!domeEdgeExempt && domeEdgeDetail < 1) domeHaloWidthPx *= domeEdgeDetail;
+      /*
+       * Hover lift (2026-09-02) — with nothing focused, the lines of the hovered
+       * node rise toward the ego ink and every other line recedes a step, both on
+       * the hovered node's own emphasis ramp (`emphasisById`, τ 90 ms), so the
+       * change eases in with the ring and eases out when the cursor leaves. The
+       * recede is deliberately mild: a focus dims to hide, a hover only points.
+       * Nodes keep their ink — only lines move, which is what makes a hover read
+       * as "these are its connections" without the screen changing under the
+       * cursor. Suppressed under focus and lenses, which own attention there.
+       */
+      const hoverRamp =
+        focusedNodeId === null && hoveredNodeId !== null && !trailLensActive && !pathLensActive
+          ? Math.min(1, Math.max(0, emphasisById.get(hoveredNodeId) ?? 0))
+          : 0;
+      const hoverTouches = hoverRamp > 0 && (edge.sourceId === hoveredNodeId || edge.targetId === hoveredNodeId);
+      const hoverLift = hoverTouches && edgeEgoState === "normal" ? hoverRamp : 0;
+      const hoverRecede =
+        hoverRamp > 0 && !hoverTouches && !isSelectedEdge && !isPathEdge ? 1 - HOVER_RECEDE_ALPHA_STEP * hoverRamp : 1;
+      // In 3D the hovered node's lines also climb out of the depth fog on the
+      // same ramp — the fog (near 1.0 → far 0.09) otherwise swallows the lift on
+      // the far side of the cone tree, and a hover that lights only the near
+      // half reads as broken rather than as depth.
+      const domeEdgeFogForEdge = domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift);
+      // A line is never brighter than its dimmer endpoint's appear ramp: a node
+      // swelling into view (new node, growth replay) brings its lines with it
+      // instead of the lines arriving first.
+      const edgeAppear = appearById
+        ? Math.min(1, Math.max(0, Math.min(appearById.get(edge.sourceId) ?? 1, appearById.get(edge.targetId) ?? 1)))
+        : 1;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
-        (domeEdgeExempt ? 1 : domeEdgeFog);
+        hoverRecede *
+        edgeAppear *
+        domeEdgeFogForEdge;
       /*
        * A halo's strength follows **how strong this line currently is**: a near
        * (strong) line cuts hard, a far line buried in fog barely cuts at all, which
@@ -1612,9 +1659,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           farT,
           t: edge.t,
           emphasized,
+          hoverLift,
           reducedMotion,
           level: edge.level,
-          widthScale: domeEdgeExempt ? 1 : domeWidthScale,
+          widthScale: domeEdgeExempt ? 1 : 1 + (domeWidthScale - 1) * (1 - hoverLift),
           halo: domeHaloWidthPx > 0.05 ? edgeHaloScratch : null,
           containsCometEligible: kind === "contains" ? egoContainsComets.has(edgePairMeta(edge).key) : undefined,
           dependsCometEligible: kind === "depends" ? ambientDependsComets.has(edgePairMeta(edge).key) : undefined,
@@ -2047,7 +2095,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenX: screen.x,
         screenY: screen.y,
         screenRadius,
-        farT,
+        // 3D keeps every node a dot at any zoom (2026-09-02). The far-field
+        // shape convergence is what made the cone tree read as dots at fit zoom,
+        // and wheeling in used to bring the 2D squares back inside the tree —
+        // two visual languages in one frame. The assembly ramp `a` cross-fades
+        // in, so 2D is untouched and the switch stays continuous.
+        farT: domeOn ? Math.max(farT, nodeDome.a) : farT,
         // Rings (selection double-ring, hub, project decor) follow the RETAINED
         // color ego so the selection ring holds through the deselect fade and
         // clears only once the ramp reaches 0 — instead of snapping off the
@@ -2790,7 +2843,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         revealAlpha: payload.revealAlpha,
         agentFocus: payload.agentFocus,
         fontScale: labelScale,
-        presenceAlpha,
+        // A label is never brighter than its node's appear ramp — a node still
+        // swelling in (new node, growth replay) must not be named before it is there.
+        presenceAlpha: presenceAlpha * (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
       },
       {
         labelProject: tokens.labelProject,

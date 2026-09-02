@@ -282,7 +282,7 @@ export function useFrameMeter(): boolean {
  * Owner request, 2026-08-18: "Put our actual map into a 3D dome that still zooms
  * and can be moved around freely." (put our actual map into a 3D dome that still zooms
  * and can be moved around freely). The toolbar picker now presents one flat view
- * (the default) plus the Dome and Cloud 3D arrangements in one place. There is no
+ * (the default) plus the Cone and Cloud 3D arrangements in one place. There is no
  * duplicate switch in the settings sheet.
  *
  * **Off by default on a measurement, not a preference.** The same data in the
@@ -316,11 +316,11 @@ export function useView3d(): boolean {
 /**
  * Which structural question decides a node's **position** in 3D. This is a
  * question, not a style, and the picker names the resulting visible
- * arrangements Dome and Cloud:
+ * arrangements Cone and Cloud (the cone tree replaced the dome on 2026-09-02):
  *
- * - `ownership` (default) — *who contains what.* Bearing comes from the
- *   containment parent, children spread inside the parent's sector, so ownership
- *   is readable as shape.
+ * - `ownership` (default) — *who contains what.* Every parent is the apex of
+ *   its own cone and its children rest on a circle directly under it, so
+ *   ownership is readable as shape.
  * - `coupling` — *what attaches to what.* Every relation contributes to a free,
  *   deterministic 3D force cloud. It releases the kind tiers so dependencies
  *   can decide height as well as bearing; keeping the tiers produced only a

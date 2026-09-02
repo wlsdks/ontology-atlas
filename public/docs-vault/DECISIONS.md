@@ -63,6 +63,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: revert or narrow to stricter refusal if a boundary-conflicting candidate wins, an ambiguous claim is selected, the diagnostic positive control regresses, document order changes the result, raw task text persists, any writer or approval boundary expands, or a source-hidden replay fails to improve the frozen handoff without unsupported claims.
 **Owner**: jinan.
 
+## 2026-09-02 — The 3D ownership arrangement becomes a cone tree, arrangement switches morph, and a dome visit no longer keeps 2D awake
+
+**Why**: a measured pass over the map (dogfood 125 nodes; synthetic 1,000) found the dome failing on distribution: 70% of the nodes sat on one bottom ring that flattens into a band at the default pitch, ownership was carried only by sector, a dome→cloud switch was a hard cut holding one frame for 22 ms and 260 ms, and after any 3D visit the 2D map never slept again (120 frames/s, 32 s after the last input, idle-gate cause `domeMotion`).
+**Prior**: 2026-08-18 (76) opt-in 3D and (84) two arrangements stand; (78)'s convex shell and latitude rings are overturned for the ownership arrangement, whose crowd-overlap falsifier was observed; (85)'s slicing now also covers switches.
+**Decision**: The ownership arrangement is a cone tree (Robertson, Mackinlay & Card 1991): height stays the containment tier, each parent is the apex of its own cone with its children on a base circle directly under it, sectors proportional to subtree size, a single child hanging straight down; the rings drawn are those bases; containment edges are straight and only `depends` relations bow; the picker names the shape Cone. A world or arrangement change while 3D is on rebuilds in frame-budget slices and morphs coordinates over the pose-move cap, refitting only when the new shape overflows the viewport. Entry and return fits ride the assembly and teardown clocks. A dome fully off screen rests every in-flight motion so the idle gate can fold. Default pitch rises from 0.34 to 0.5.
+**Dissent**: nested cones re-admit the spokes (78) removed, and a very wide domain is capped at 64 dome units so its base may crowd; the owner's earlier reference was the hero dome, and a tree is a different silhouette.
+**Falsifier**: a sibling-cone overlap or a base too small to read on a real vault of 300+ nodes reopens the radius rule; a report that the tree reads worse than the dome for "which domain owns this" reopens the arrangement.
+**Owner**: Jinan.
+
 ## 2026-09-02 — Installed MCP evidence is trusted only after whole-app identity and semantic proof
 
 **Why**: the current source MCP and freshly built sidecar returned the expected lowercase `readme.md` address, while the binary at `/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp` returned 22 uppercase `README.md` addresses, zero lowercase, omitted project evidence, and had bytes and size differing from the built sidecar.

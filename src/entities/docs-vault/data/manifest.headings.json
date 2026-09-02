@@ -3849,8 +3849,8 @@
     },
     {
       "depth": 2,
-      "text": "2026-09-02 · Unreleased: compact agent handoffs honor reviewed capability boundaries",
-      "slug": "2026-09-02-unreleased-compact-agent-handoffs-honor-reviewed-capability-boundaries"
+      "text": "Unreleased",
+      "slug": "unreleased"
     },
     {
       "depth": 2,
@@ -6182,6 +6182,11 @@
       "depth": 2,
       "text": "2026-09-02 — Compact task handoff follows persisted capability boundaries, not noun overlap",
       "slug": "2026-09-02-compact-task-handoff-follows-persisted-capability-boundaries-not-noun-overlap"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-02 — The 3D ownership arrangement becomes a cone tree, arrangement switches morph, and a dome visit no longer keeps 2D awake",
+      "slug": "2026-09-02-the-3d-ownership-arrangement-becomes-a-cone-tree-arrangement-switches-morph-and-a-dome-visit-no-longer-keeps-2d-awake"
     },
     {
       "depth": 2,
@@ -12910,6 +12915,11 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    },
+    {
+      "depth": 2,
+      "text": "Map Feel (2026-09-02)",
+      "slug": "map-feel-2026-09-02"
     }
   ],
   "ontology/capabilities/vault-agent": [
