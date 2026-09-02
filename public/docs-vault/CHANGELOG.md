@@ -45,7 +45,7 @@
 
 ---
 
-## 2026-09-02 · Unreleased: changes since v1.0.3
+## 2026-09-02 · v1.0.4: the installed app proves its own bundle, and the records fit one screen
 
 **Changed**: The changelog and the decision ledger now follow fixed one-screen templates in English, with gates that refuse anything else; ontology qualification no longer assumes an FDE persona unless the project owns that audience with evidence.
 **Fixed**: A local deploy fails when the installed app bundle differs from the built one, so a stale app or MCP server cannot pass as current; evidence keeps the exact letter case of paths like `readme.md`; a README that mixes current and outdated sections only flags the outdated lines; reviewed concept text saves byte for byte; an unrelated reStructuredText section no longer marks current information as deprecated.
