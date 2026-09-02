@@ -48,21 +48,22 @@ import {
   SPEC_RULE_DOC,
 } from "./lib/design-spec-census.mjs";
 import { parseLedger } from "./decisions-find.mjs";
-import { FIELDS, LIMITS, TEMPLATE, TEMPLATE_SINCE, checkLedgerTemplate } from "./lib/decision-record-template.mjs";
+import { FIELDS, LIMITS, TEMPLATE, checkLedgerTemplate } from "./lib/decision-record-template.mjs";
 
 const LEDGER = "docs/DECISIONS.md";
 
 /**
- * Records dated from TEMPLATE_SINCE must be the six-field template within one
- * screen. Checked before the trigger logic and regardless of it: a record that
- * exists but cannot be read in one pass fails the ledger's own first contract
- * ("read before convening"), which is what the gate protects. Measured
- * 2026-09-02: median record 51 lines, nine labels, eleven records a day.
+ * Every record must be the six-field template within one screen (the ledger
+ * was condensed to it on 2026-09-02). Checked before the trigger logic and
+ * regardless of it: a record that exists but cannot be read in one pass fails
+ * the ledger's own first contract ("read before convening"), which is what the
+ * gate protects. Measured before the cut: median record 51 lines, nine labels,
+ * eleven records a day.
  */
 function templateFailures() {
   const broken = checkLedgerTemplate(parseLedger(readFileSync(LEDGER, "utf8")));
   if (broken.length === 0) return false;
-  console.error(`[decisions] ${broken.length} record(s) dated ${TEMPLATE_SINCE} or later do not fit the template:`);
+  console.error(`[decisions] ${broken.length} record(s) do not fit the template:`);
   for (const { record, problems } of broken) {
     console.error(`[decisions]   ${LEDGER}:${record.line}  ${record.date}  ${record.title}`);
     for (const problem of problems) console.error(`[decisions]     - ${problem}`);

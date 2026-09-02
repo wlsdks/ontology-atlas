@@ -840,10 +840,11 @@ each release tag. The first pair is the push gate's earned value; the second is
 what a release shipped. Both are proxies and are named as such; `--local` skips
 the GitHub calls.
 
-`pnpm decisions:check` also refuses a record dated 2026-09-03 or later that is
-not the six-field template within one screen (`Why`, `Prior`, `Decision`,
-`Dissent`, `Falsifier`, `Owner`; 24 lines, 2,000 bytes). The shape is owned by
-`docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`.
+`pnpm decisions:check` also refuses any record that is not the six-field
+template within one screen (`Why`, `Prior`, `Decision`, `Dissent`,
+`Falsifier`, `Owner`; 24 lines, 2,000 bytes). The shape is owned by
+`docs/PRODUCT-OWNER-OPERATING-SYSTEM.md`; the ledger was condensed to it on
+2026-09-02 with every heading preserved.
 
 `pnpm decisions:find <terms>` retrieves from `docs/DECISIONS.md` by record
 rather than by line: each hit shows the file line, date and number, title, the

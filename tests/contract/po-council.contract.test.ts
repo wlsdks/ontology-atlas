@@ -493,8 +493,8 @@ describe('Atlas PO policy stays executable and mirrored', () => {
     }
     expect(council).toMatch(/human owner\s+decides/i);
     // The record keeps the prior state and the accountable person; the
-    // before/after delta is typed per run in the pilot register (2026-09-03
-    // template), so it is asserted where it now lives.
+    // before/after delta is typed per run in the pilot register (six-field
+    // template, 2026-09-02), so it is asserted where it now lives.
     expect(PO_REVIEW_RECORD_FIELDS).toContain('Prior');
     expect(PO_REVIEW_RECORD_FIELDS).toContain('Owner');
     expect(PO_REVIEW_RECORD_FIELDS).toContain('Dissent');

@@ -7035,18 +7035,18 @@
   "DECISIONS": [
     {
       "depth": 1,
-      "text": "DECISIONS — 카운슬 결정 원장",
-      "slug": "decisions-카운슬-결정-원장"
+      "text": "DECISIONS — the council decision ledger",
+      "slug": "decisions-the-council-decision-ledger"
     },
     {
       "depth": 2,
-      "text": "이 원장의 계약 (읽지 않으면 존재 이유가 없다)",
-      "slug": "이-원장의-계약-읽지-않으면-존재-이유가-없다"
+      "text": "The ledger's contract (unread, it has no reason to exist)",
+      "slug": "the-ledgers-contract-unread-it-has-no-reason-to-exist"
     },
     {
       "depth": 2,
-      "text": "기록 형식",
-      "slug": "기록-형식"
+      "text": "Record format",
+      "slug": "record-format"
     },
     {
       "depth": 2,
@@ -7235,11 +7235,6 @@
     },
     {
       "depth": 2,
-      "text": "PO Council Verdict — selected-project task handoff",
-      "slug": "po-council-verdict-selected-project-task-handoff"
-    },
-    {
-      "depth": 2,
       "text": "2026-08-30 — The hero object is the headline's echo, and the page moves in three places",
       "slug": "2026-08-30-the-hero-object-is-the-headlines-echo-and-the-page-moves-in-three-places"
     },
@@ -7257,11 +7252,6 @@
       "depth": 2,
       "text": "2026-08-30 — The map slice is withdrawn: the owner meant the architecture tab",
       "slug": "2026-08-30-the-map-slice-is-withdrawn-the-owner-meant-the-architecture-tab"
-    },
-    {
-      "depth": 2,
-      "text": "PO Council Verdict — the map says what an area is and why two areas are joined",
-      "slug": "po-council-verdict-the-map-says-what-an-area-is-and-why-two-areas-are-joined"
     },
     {
       "depth": 2,
@@ -7354,26 +7344,6 @@
       "slug": "2026-08-29-a-completed-acp-answer-leads-to-grounded-next-actions-never-an-automatic-run"
     },
     {
-      "depth": 3,
-      "text": "PO pass",
-      "slug": "po-pass"
-    },
-    {
-      "depth": 3,
-      "text": "PO Council",
-      "slug": "po-council"
-    },
-    {
-      "depth": 3,
-      "text": "Design Council",
-      "slug": "design-council"
-    },
-    {
-      "depth": 3,
-      "text": "Accountable decision (owner: jinan)",
-      "slug": "accountable-decision-owner-jinan"
-    },
-    {
       "depth": 2,
       "text": "2026-08-29 — A failed competency question cannot become a human gap",
       "slug": "2026-08-29-a-failed-competency-question-cannot-become-a-human-gap"
@@ -7382,11 +7352,6 @@
       "depth": 2,
       "text": "2026-08-29 — Exact element imports remain source dependencies, not runtime impact",
       "slug": "2026-08-29-exact-element-imports-remain-source-dependencies-not-runtime-impact"
-    },
-    {
-      "depth": 3,
-      "text": "PO Council Verdict — import-backed direct dependency",
-      "slug": "po-council-verdict-import-backed-direct-dependency"
     },
     {
       "depth": 2,
@@ -7400,11 +7365,6 @@
     },
     {
       "depth": 2,
-      "text": "Design Council Verdict — pixel identity, truthful motion, and native tray",
-      "slug": "design-council-verdict-pixel-identity-truthful-motion-and-native-tray"
-    },
-    {
-      "depth": 2,
       "text": "2026-08-29 — The mascot may enter the macOS menu bar only as a captured, removable prototype",
       "slug": "2026-08-29-the-mascot-may-enter-the-macos-menu-bar-only-as-a-captured-removable-prototype"
     },
@@ -7412,11 +7372,6 @@
       "depth": 2,
       "text": "2026-08-28 — Pixel mascot replaces the compatibility mark as one raster-first identity",
       "slug": "2026-08-28-pixel-mascot-replaces-the-compatibility-mark-as-one-raster-first-identity"
-    },
-    {
-      "depth": 2,
-      "text": "PO Council Verdict — pixel mascot identity and truthful motion",
-      "slug": "po-council-verdict-pixel-mascot-identity-and-truthful-motion"
     },
     {
       "depth": 2,
@@ -7444,19 +7399,9 @@
       "slug": "2026-08-29-one-reviewed-construction-ends-without-hidden-repair"
     },
     {
-      "depth": 3,
-      "text": "PO Council Verdict — first-pass construction completion",
-      "slug": "po-council-verdict-first-pass-construction-completion"
-    },
-    {
       "depth": 2,
       "text": "2026-08-28 — Bounded capability evidence never becomes exhaustive scope",
       "slug": "2026-08-28-bounded-capability-evidence-never-becomes-exhaustive-scope"
-    },
-    {
-      "depth": 3,
-      "text": "PO Council Verdict — capability quantifier integrity and README use moment",
-      "slug": "po-council-verdict-capability-quantifier-integrity-and-readme-use-moment"
     },
     {
       "depth": 2,
@@ -7467,11 +7412,6 @@
       "depth": 2,
       "text": "2026-08-28 — Architecture profiles declare which import usages dependency rules govern",
       "slug": "2026-08-28-architecture-profiles-declare-which-import-usages-dependency-rules-govern"
-    },
-    {
-      "depth": 3,
-      "text": "PO Council Verdict — profile-wide import-usage policy",
-      "slug": "po-council-verdict-profile-wide-import-usage-policy"
     },
     {
       "depth": 2,
@@ -7532,11 +7472,6 @@
       "depth": 2,
       "text": "2026-08-26 — Architecture is a separate reviewed contract and primary workbench destination",
       "slug": "2026-08-26-architecture-is-a-separate-reviewed-contract-and-primary-workbench-destination"
-    },
-    {
-      "depth": 3,
-      "text": "Design Council Verdict — Living Blueprint",
-      "slug": "design-council-verdict-living-blueprint"
     },
     {
       "depth": 2,
@@ -7620,943 +7555,548 @@
     },
     {
       "depth": 2,
-      "text": "2026-08-23 (100) — 시연 절은 가운데 축이다. 그리고 화면의 문구는 찍은 것을 말해야 한다",
-      "slug": "2026-08-23-100-시연-절은-가운데-축이다-그리고-화면의-문구는-찍은-것을-말해야-한다"
+      "text": "2026-08-23 (100) — The demo is the center axis, and the screen's copy must say what was recorded",
+      "slug": "2026-08-23-100-the-demo-is-the-center-axis-and-the-screens-copy-must-say-what-was-recorded"
     },
     {
       "depth": 2,
-      "text": "2026-08-23 (99) — 관문 제목은 한 글자씩 쳐진다. 단 속도는 우리가 정하고, 자리는 미리 잡는다",
-      "slug": "2026-08-23-99-관문-제목은-한-글자씩-쳐진다-단-속도는-우리가-정하고-자리는-미리-잡는다"
+      "text": "2026-08-23 (99) — The gateway title types one character at a time: we set the speed, and reserve the space in advance",
+      "slug": "2026-08-23-99-the-gateway-title-types-one-character-at-a-time-we-set-the-speed-and-reserve-the-space-in-advance"
     },
     {
       "depth": 2,
-      "text": "2026-08-22 (98) — ACP의 읽기 동작은 지도를 움직이고, 전체 개관과 세부 행동은 각각 한 입구만 둔다",
-      "slug": "2026-08-22-98-acp의-읽기-동작은-지도를-움직이고-전체-개관과-세부-행동은-각각-한-입구만-둔다"
+      "text": "2026-08-22 (98) — ACP's read action moves the map, and overview and detail actions each keep a single entry point",
+      "slug": "2026-08-22-98-acps-read-action-moves-the-map-and-overview-and-detail-actions-each-keep-a-single-entry-point"
     },
     {
       "depth": 2,
-      "text": "2026-08-22 (97) — 검사 총량은 과하지 않다. 과한 것은 «2주에 두 배로 늘어난 속도»다",
-      "slug": "2026-08-22-97-검사-총량은-과하지-않다-과한-것은-2주에-두-배로-늘어난-속도다"
+      "text": "2026-08-22 (97) — The total volume of checks is not excessive. What's excessive is «the rate that doubled in two weeks»",
+      "slug": "2026-08-22-97-the-total-volume-of-checks-is-not-excessive-whats-excessive-is-the-rate-that-doubled-in-two-weeks"
     },
     {
-      "depth": 3,
-      "text": "무엇을 쟀나",
-      "slug": "무엇을-쟀나"
-    },
-    {
-      "depth": 3,
-      "text": "결론 하나 — 총량은 문제가 아니었다",
-      "slug": "결론-하나-총량은-문제가-아니었다"
-    },
-    {
-      "depth": 3,
-      "text": "그럼 무엇이 과했나 — 속도다",
-      "slug": "그럼-무엇이-과했나-속도다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 실측으로 중복이 증명된 둘만 지운다",
-      "slug": "결정-실측으로-중복이-증명된-둘만-지운다"
-    },
-    {
-      "depth": 3,
-      "text": "⚠️ 이 라운드의 가장 중요한 교훈 — 조사 보고 넷이 사실과 달랐다",
-      "slug": "이-라운드의-가장-중요한-교훈-조사-보고-넷이-사실과-달랐다"
-    },
-    {
-      "depth": 3,
-      "text": "안 한 것과 그 이유",
-      "slug": "안-한-것과-그-이유"
-    },
-    {
-      "depth": 3,
-      "text": "진 반대",
-      "slug": "진-반대"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-22 (96) — `pre-push` 훅을 되살린다: 경로별 레인 · 병렬 · e2e 는 CI",
-      "slug": "2026-08-22-96-pre-push-훅을-되살린다-경로별-레인-병렬-e2e-는-ci"
-    },
-    {
-      "depth": 3,
-      "text": "(95) 가 무엇을 틀렸나",
-      "slug": "95-가-무엇을-틀렸나"
-    },
-    {
-      "depth": 3,
-      "text": "Buzz 의 훅이 우리 것과 다른 네 가지",
-      "slug": "buzz-의-훅이-우리-것과-다른-네-가지"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정"
-    },
-    {
-      "depth": 3,
-      "text": "왜 「없앤다」가 아니라 「고친다」인가",
-      "slug": "왜-없앤다가-아니라-고친다인가"
-    },
-    {
-      "depth": 3,
-      "text": "딸린 정정 — 원장 번호가 겹쳐 있었다",
-      "slug": "딸린-정정-원장-번호가-겹쳐-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "진 반대",
-      "slug": "진-반대-2"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-22 (94) — 묶음 변경은 전부 검토하고, 앱 안 결정은 로컬 영수증으로 남기며, 소스 연결 뒤에만 구축을 시작한다",
-      "slug": "2026-08-22-94-묶음-변경은-전부-검토하고-앱-안-결정은-로컬-영수증으로-남기며-소스-연결-뒤에만-구축을-시작한다"
+      "text": "2026-08-22 (96) — Restore the `pre-push` hook: path-based lanes, parallel, and e2e stays in CI",
+      "slug": "2026-08-22-96-restore-the-pre-push-hook-path-based-lanes-parallel-and-e2e-stays-in-ci"
     },
     {
       "depth": 2,
-      "text": "2026-08-22 (95) — `pre-push` 훅을 없앤다: 판정은 CI 가 하고, 로컬은 빠른 것만 막는다",
-      "slug": "2026-08-22-95-pre-push-훅을-없앤다-판정은-ci-가-하고-로컬은-빠른-것만-막는다"
-    },
-    {
-      "depth": 3,
-      "text": "현상",
-      "slug": "현상"
-    },
-    {
-      "depth": 3,
-      "text": "이 결말은 이미 적혀 있었다",
-      "slug": "이-결말은-이미-적혀-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "비교 대상 실측 (2026-08-22, GitHub API 로 직접 확인)",
-      "slug": "비교-대상-실측-2026-08-22-github-api-로-직접-확인"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-2"
-    },
-    {
-      "depth": 3,
-      "text": "왜 이 훅이 애초에 있었나 — 그 이유는 사라지지 않는다",
-      "slug": "왜-이-훅이-애초에-있었나-그-이유는-사라지지-않는다"
+      "text": "2026-08-22 (94) — Review every bundled change in full, keep in-app decisions as a local receipt, and start building only after the source is connected",
+      "slug": "2026-08-22-94-review-every-bundled-change-in-full-keep-in-app-decisions-as-a-local-receipt-and-start-building-only-after-the-source-is-connected"
     },
     {
-      "depth": 3,
-      "text": "진 반대",
-      "slug": "진-반대-3"
-    },
-    {
-      "depth": 3,
-      "text": "트리거 오탐 하나 — `mcp/src/index.js` (같은 변경에 딸림)",
-      "slug": "트리거-오탐-하나-mcpsrcindexjs-같은-변경에-딸림"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-22 (93) — 에이전트 작업은 확인된 heartbeat만 현재형으로 말하고, 저작자와 README를 작업 상태로 쓰지 않는다",
-      "slug": "2026-08-22-93-에이전트-작업은-확인된-heartbeat만-현재형으로-말하고-저작자와-readme를-작업-상태로-쓰지-않는다"
+      "text": "2026-08-22 (95) — Remove the `pre-push` hook: CI makes the verdict, and local only blocks the fast checks",
+      "slug": "2026-08-22-95-remove-the-pre-push-hook-ci-makes-the-verdict-and-local-only-blocks-the-fast-checks"
     },
     {
       "depth": 2,
-      "text": "2026-08-21 (92) — 지도 안에서 뜻을 고치고, ACP 쓰기는 사람의 변경안 확인 뒤에만 이어간다",
-      "slug": "2026-08-21-92-지도-안에서-뜻을-고치고-acp-쓰기는-사람의-변경안-확인-뒤에만-이어간다"
-    },
-    {
-      "depth": 3,
-      "text": "PO Pass",
-      "slug": "po-pass-2"
+      "text": "2026-08-22 (93) — Agent work speaks in present tense only about a confirmed heartbeat, and never uses authorship or the README as work status",
+      "slug": "2026-08-22-93-agent-work-speaks-in-present-tense-only-about-a-confirmed-heartbeat-and-never-uses-authorship-or-the-readme-as-work-status"
     },
     {
       "depth": 2,
-      "text": "2026-08-21 (91) — Skills 제품 표면을 완전히 은퇴시키고, 레일 상한을 일곱으로 닫는다",
-      "slug": "2026-08-21-91-skills-제품-표면을-완전히-은퇴시키고-레일-상한을-일곱으로-닫는다"
+      "text": "2026-08-21 (92) — Edit meaning inside the map, and ACP writes proceed only after a human confirms the change proposal",
+      "slug": "2026-08-21-92-edit-meaning-inside-the-map-and-acp-writes-proceed-only-after-a-human-confirms-the-change-proposal"
     },
     {
       "depth": 2,
-      "text": "2026-08-20 (90) — 「에이전트」는 최상위 목적지다: `/agents/` 신설, 설정 시트에서 이관",
-      "slug": "2026-08-20-90-에이전트는-최상위-목적지다-agents-신설-설정-시트에서-이관"
-    },
-    {
-      "depth": 3,
-      "text": "소집자 정정 — 판정을 움직인 전제 둘이 검증에서 다듬어졌다",
-      "slug": "소집자-정정-판정을-움직인-전제-둘이-검증에서-다듬어졌다"
+      "text": "2026-08-21 (91) — Fully retire the Skills product surface, and close the rail cap at seven",
+      "slug": "2026-08-21-91-fully-retire-the-skills-product-surface-and-close-the-rail-cap-at-seven"
     },
     {
       "depth": 2,
-      "text": "2026-08-20 (89) — Node 런타임도 앱이 받아 온다: 고정된 버전 · 박아 둔 해시 · 앱 전용 자리",
-      "slug": "2026-08-20-89-node-런타임도-앱이-받아-온다-고정된-버전-박아-둔-해시-앱-전용-자리"
+      "text": "2026-08-20 (90) — \"Agents\" is a top-level destination: new `/agents/`, migrated out of the settings sheet",
+      "slug": "2026-08-20-90-agents-is-a-top-level-destination-new-agents-migrated-out-of-the-settings-sheet"
     },
     {
       "depth": 2,
-      "text": "2026-08-20 (88) — 에이전트 CLI 를 앱이 대신 깔아 준다: 고정·검증·격리 셋을 갖출 때만",
-      "slug": "2026-08-20-88-에이전트-cli-를-앱이-대신-깔아-준다-고정검증격리-셋을-갖출-때만"
+      "text": "2026-08-20 (89) — The app fetches the Node runtime too: pinned version, embedded hash, app-only location",
+      "slug": "2026-08-20-89-the-app-fetches-the-node-runtime-too-pinned-version-embedded-hash-app-only-location"
     },
     {
       "depth": 2,
-      "text": "2026-08-19 (87) — 관문의 시연을 새로 찍는다: 89초 무컷 한 테이크 · 돔·구름·Codex ACP 왕복 · 잠정 24초본 은퇴",
-      "slug": "2026-08-19-87-관문의-시연을-새로-찍는다-89초-무컷-한-테이크-돔구름codex-acp-왕복-잠정-24초본-은퇴"
+      "text": "2026-08-20 (88) — The app installs the agent CLI for you: only when pinning, verification, and isolation are all in place",
+      "slug": "2026-08-20-88-the-app-installs-the-agent-cli-for-you-only-when-pinning-verification-and-isolation-are-all-in-place"
     },
     {
       "depth": 2,
-      "text": "2026-08-19 (86) — 도메인 이름을 그리는 두 효과가 크로스페이드를 그만두고 자리를 넘겨받는다",
-      "slug": "2026-08-19-86-도메인-이름을-그리는-두-효과가-크로스페이드를-그만두고-자리를-넘겨받는다"
+      "text": "2026-08-19 (87) — Reshoot the gateway demo: one uncut 89-second take covering dome, cloud, and a Codex ACP round trip, retiring the provisional 24-second cut",
+      "slug": "2026-08-19-87-reshoot-the-gateway-demo-one-uncut-89-second-take-covering-dome-cloud-and-a-codex-acp-round-trip-retiring-the-provisional-24-second-cut"
     },
     {
       "depth": 2,
-      "text": "2026-08-19 (83) — 관문에서 설치 절을 통째로 걷어낸다 (그리고 정직성 사실 넷이 화면에서 사라진다) · 시연 영상은 48rem 무대로 내려온다",
-      "slug": "2026-08-19-83-관문에서-설치-절을-통째로-걷어낸다-그리고-정직성-사실-넷이-화면에서-사라진다-시연-영상은-48rem-무대로-내려온다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 근거인가 — 「맨 위에 다 있다」는 실제로 참이다",
-      "slug": "무엇이-근거인가-맨-위에-다-있다는-실제로-참이다"
+      "text": "2026-08-19 (86) — The two effects that draw domain names stop crossfading and hand off the spot directly",
+      "slug": "2026-08-19-86-the-two-effects-that-draw-domain-names-stop-crossfading-and-hand-off-the-spot-directly"
     },
     {
-      "depth": 3,
-      "text": "화면에서 **사라진** 정직성 사실 — 이 항목이 이 기록의 존재 이유다",
-      "slug": "화면에서-사라진-정직성-사실-이-항목이-이-기록의-존재-이유다"
-    },
-    {
-      "depth": 3,
-      "text": "시연 영상 — 2026-07-30 의 `mx-auto` 기각을 소유자 지시로 되살린다",
-      "slug": "시연-영상-2026-07-30-의-mx-auto-기각을-소유자-지시로-되살린다"
-    },
-    {
-      "depth": 3,
-      "text": "게이트 — 주어를 잃은 단언은 약화하지 않고 지운다",
-      "slug": "게이트-주어를-잃은-단언은-약화하지-않고-지운다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (85) — 3D 최적화: 프레임당 할당을 걷어내고 구름 전환을 100ms 아래로",
-      "slug": "2026-08-18-85-3d-최적화-프레임당-할당을-걷어내고-구름-전환을-100ms-아래로"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 비쌌나 — 재고 나서 고쳤다",
-      "slug": "무엇이-비쌌나-재고-나서-고쳤다"
-    },
-    {
-      "depth": 3,
-      "text": "구름 전환의 한 번뿐인 정지 — 143ms → 88.5ms",
-      "slug": "구름-전환의-한-번뿐인-정지-143ms-885ms"
+      "text": "2026-08-19 (83) — Remove the whole install section from the gateway (and four honesty facts disappear from the screen); the demo video comes down to a 48rem stage",
+      "slug": "2026-08-19-83-remove-the-whole-install-section-from-the-gateway-and-four-honesty-facts-disappear-from-the-screen-the-demo-video-comes-down-to-a-48rem-stage"
     },
     {
-      "depth": 3,
-      "text": "실측 (1512×900 · 125노드/258관계 · 120Hz · 개발 빌드 · rAF 간격)",
-      "slug": "실측-1512900-125노드258관계-120hz-개발-빌드-raf-간격"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (84) — 3D 배치를 둘로 연다: 「소유」(돔)와 「결합」(구름). 돔은 기본으로 남는다",
-      "slug": "2026-08-18-84-3d-배치를-둘로-연다-소유돔와-결합구름-돔은-기본으로-남는다"
-    },
-    {
-      "depth": 3,
-      "text": "「뉴런 흐름」을 성분으로 뜯은 결과",
-      "slug": "뉴런-흐름을-성분으로-뜯은-결과"
-    },
-    {
-      "depth": 3,
-      "text": "무엇을 넣고 무엇을 기각했나",
-      "slug": "무엇을-넣고-무엇을-기각했나"
-    },
-    {
-      "depth": 3,
-      "text": "자리와 이름을 두 번 틀렸다 (소유자가 두 번 잡아냈다)",
-      "slug": "자리와-이름을-두-번-틀렸다-소유자가-두-번-잡아냈다"
-    },
-    {
-      "depth": 3,
-      "text": "중간에 한 번 틀렸다 — 「티어 구속 하이브리드」",
-      "slug": "중간에-한-번-틀렸다-티어-구속-하이브리드"
+      "text": "2026-08-18 (85) — 3D optimization: remove per-frame allocations and bring cloud transitions under 100ms",
+      "slug": "2026-08-18-85-3d-optimization-remove-per-frame-allocations-and-bring-cloud-transitions-under-100ms"
     },
     {
-      "depth": 3,
-      "text": "구름의 물성 (전부 `model/dome-view.ts` 안)",
-      "slug": "구름의-물성-전부-modeldome-viewts-안"
-    },
-    {
-      "depth": 3,
-      "text": "밀도는 힘으로 안 풀렸다 — 렌더로 풀었다",
-      "slug": "밀도는-힘으로-안-풀렸다-렌더로-풀었다"
-    },
-    {
-      "depth": 3,
-      "text": "전환 애니메이션은 안 만들었다",
-      "slug": "전환-애니메이션은-안-만들었다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (82) — 궤도 관성이 «의미 있는 자리»에 착지한다 (그리고 유휴 게이트가 모션을 얼리던 것)",
-      "slug": "2026-08-18-82-궤도-관성이-의미-있는-자리에-착지한다-그리고-유휴-게이트가-모션을-얼리던-것"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-3"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드가 잡은 진짜 결함 — 유휴 게이트에 이름이 없던 모션 둘",
-      "slug": "이-라운드가-잡은-진짜-결함-유휴-게이트에-이름이-없던-모션-둘"
+      "text": "2026-08-18 (84) — Split the 3D layout in two: \"Ownership\" (dome) and \"Composition\" (cloud); the dome stays the default",
+      "slug": "2026-08-18-84-split-the-3d-layout-in-two-ownership-dome-and-composition-cloud-the-dome-stays-the-default"
     },
     {
-      "depth": 3,
-      "text": "실측 (1512×900 · 125노드/258관계 · 120Hz · 개발 빌드)",
-      "slug": "실측-1512900-125노드258관계-120hz-개발-빌드"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (81) — 프로그램 카메라 이동을 van Wijk 최적 경로로 바꾼다 (「lerp 처럼 보이는 것」의 정체)",
-      "slug": "2026-08-18-81-프로그램-카메라-이동을-van-wijk-최적-경로로-바꾼다-lerp-처럼-보이는-것의-정체"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 틀려 있었나",
-      "slug": "무엇이-틀려-있었나"
-    },
-    {
-      "depth": 3,
-      "text": "무엇으로 바꿨나",
-      "slug": "무엇으로-바꿨나"
-    },
-    {
-      "depth": 3,
-      "text": "계량을 두 번 틀렸다 (기록해 둔다)",
-      "slug": "계량을-두-번-틀렸다-기록해-둔다"
+      "text": "2026-08-18 (82) — Orbital inertia lands on a «meaningful position» (and the idle gate that was freezing motion)",
+      "slug": "2026-08-18-82-orbital-inertia-lands-on-a-meaningful-position-and-the-idle-gate-that-was-freezing-motion"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (80) — 3D 조작·모션 3차: 돔 밖은 팬 · 돔 안은 회전 · 프로그램 이동에도 후속 운동 · 진입 스윕",
-      "slug": "2026-08-18-80-3d-조작모션-3차-돔-밖은-팬-돔-안은-회전-프로그램-이동에도-후속-운동-진입-스윕"
-    },
-    {
-      "depth": 3,
-      "text": "① 돔 밖 = 팬, 돔 안 = 회전 (결함이었다)",
-      "slug": "돔-밖-팬-돔-안-회전-결함이었다"
+      "text": "2026-08-18 (81) — Switch programmatic camera movement to the van Wijk optimal path (the true identity of \"what looked like lerp\")",
+      "slug": "2026-08-18-81-switch-programmatic-camera-movement-to-the-van-wijk-optimal-path-the-true-identity-of-what-looked-like-lerp"
     },
     {
-      "depth": 3,
-      "text": "② 모션 — 프로그램 이동에도 후속 운동, 그리고 진입 스윕",
-      "slug": "모션-프로그램-이동에도-후속-운동-그리고-진입-스윕"
-    },
-    {
-      "depth": 3,
-      "text": "③ 3D 토글 — 재현되지 않았다 (열어 둔다)",
-      "slug": "3d-토글-재현되지-않았다-열어-둔다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (79) — 앱 악센트를 인디고로 되돌린다 (기본값 상수가 아니라 두 팔레트를 맞바꿔서)",
-      "slug": "2026-08-18-79-앱-악센트를-인디고로-되돌린다-기본값-상수가-아니라-두-팔레트를-맞바꿔서"
-    },
-    {
-      "depth": 3,
-      "text": "되돌리는 방법이 둘이었고, 큰 쪽을 골랐다",
-      "slug": "되돌리는-방법이-둘이었고-큰-쪽을-골랐다"
-    },
-    {
-      "depth": 3,
-      "text": "스위치가 못 따라오던 토큰 24개 — 이 라운드에서 드러난 결함",
-      "slug": "스위치가-못-따라오던-토큰-24개-이-라운드에서-드러난-결함"
+      "text": "2026-08-18 (80) — 3D manipulation and motion, round 3: pan outside the dome, rotate inside the dome, follow-through motion on programmatic moves too, entry sweep",
+      "slug": "2026-08-18-80-3d-manipulation-and-motion-round-3-pan-outside-the-dome-rotate-inside-the-dome-follow-through-motion-on-programmatic-moves-too-entry-sweep"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (78) — 3D 돔 3차: 볼록 껍질 · 자오선 관계선 · 깊이 헤일로 · 위도 링 · 원근 강화",
-      "slug": "2026-08-18-78-3d-돔-3차-볼록-껍질-자오선-관계선-깊이-헤일로-위도-링-원근-강화"
-    },
-    {
-      "depth": 3,
-      "text": "왜 껍질이 «링 넷의 선형 보간» 이면 안 되나 (첫 시도가 여기서 죽었다)",
-      "slug": "왜-껍질이-링-넷의-선형-보간-이면-안-되나-첫-시도가-여기서-죽었다"
+      "text": "2026-08-18 (79) — Revert the app accent to indigo, not via a default constant but by swapping two palettes",
+      "slug": "2026-08-18-79-revert-the-app-accent-to-indigo-not-via-a-default-constant-but-by-swapping-two-palettes"
     },
     {
-      "depth": 3,
-      "text": "실측 (1512×900, 샘플 볼트 125노드/258관계, 120Hz)",
-      "slug": "실측-1512900-샘플-볼트-125노드258관계-120hz"
-    },
-    {
-      "depth": 3,
-      "text": "헌장과의 관계 — 헤일로는 glow 가 아니다",
-      "slug": "헌장과의-관계-헤일로는-glow-가-아니다"
-    },
-    {
-      "depth": 3,
-      "text": "조사했고 이번에 **안** 만든 것 (다음 라운드의 입력)",
-      "slug": "조사했고-이번에-안-만든-것-다음-라운드의-입력"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드에서 함께 닫은 것",
-      "slug": "이-라운드에서-함께-닫은-것"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (77) — 3D 돔 카메라 2차: 시선 끌기 회전의 무장 해제 · pitch 전각 · 선택 리프레임 · 패널-인지 프레이밍",
-      "slug": "2026-08-18-77-3d-돔-카메라-2차-시선-끌기-회전의-무장-해제-pitch-전각-선택-리프레임-패널-인지-프레이밍"
-    },
-    {
-      "depth": 3,
-      "text": "실측이 찾은 뿌리 — ②·④는 같은 병이었다",
-      "slug": "실측이-찾은-뿌리-는-같은-병이었다"
+      "text": "2026-08-18 (78) — 3D dome, round 3: convex hull, meridian relation lines, depth halo, latitude rings, enhanced perspective",
+      "slug": "2026-08-18-78-3d-dome-round-3-convex-hull-meridian-relation-lines-depth-halo-latitude-rings-enhanced-perspective"
     },
     {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-4"
-    },
-    {
-      "depth": 3,
-      "text": "기각한 대안",
-      "slug": "기각한-대안"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (76) — 지도 3D 보기: kind 링의 돔, 툴바 「3D」 칩, 옵트인",
-      "slug": "2026-08-18-76-지도-3d-보기-kind-링의-돔-툴바-3d-칩-옵트인"
-    },
-    {
-      "depth": 3,
-      "text": "같은 날 오전 기록(z-lift)의 반증 조건 ③이 그대로 관측됐다",
-      "slug": "같은-날-오전-기록z-lift의-반증-조건-이-그대로-관측됐다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 무엇이 출하됐나",
-      "slug": "결정-무엇이-출하됐나"
+      "text": "2026-08-18 (77) — 3D dome camera, round 2: disarming the attention-grabbing rotation, full-range pitch, selection reframe, panel-aware framing",
+      "slug": "2026-08-18-77-3d-dome-camera-round-2-disarming-the-attention-grabbing-rotation-full-range-pitch-selection-reframe-panel-aware-framing"
     },
     {
-      "depth": 3,
-      "text": "«3D 유예 목록» — 이 모드 안에서 앱 규약 밖에 있는 것",
-      "slug": "3d-유예-목록-이-모드-안에서-앱-규약-밖에-있는-것"
-    },
-    {
-      "depth": 3,
-      "text": "실측 (1512×900, 정적 빌드, 샘플 볼트 125노드/258관계)",
-      "slug": "실측-1512900-정적-빌드-샘플-볼트-125노드258관계"
-    },
-    {
-      "depth": 3,
-      "text": "기각한 대안",
-      "slug": "기각한-대안-2"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-2"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (75) — 인라인 부팅 스크립트의 자리는 **취향이 아니라 계약**이다 (세 번 틀렸다)",
-      "slug": "2026-08-18-75-인라인-부팅-스크립트의-자리는-취향이-아니라-계약이다-세-번-틀렸다"
-    },
-    {
-      "depth": 3,
-      "text": "그리고 남은 한 자리는 **게이트의 사정거리**로 정리했다",
-      "slug": "그리고-남은-한-자리는-게이트의-사정거리로-정리했다"
+      "text": "2026-08-18 (76) — Map 3D view: a dome of kind rings, a toolbar \"3D\" chip, opt-in",
+      "slug": "2026-08-18-76-map-3d-view-a-dome-of-kind-rings-a-toolbar-3d-chip-opt-in"
     },
     {
-      "depth": 3,
-      "text": "③ 재연 대사는 번역한다 — 호출 이름만 원문",
-      "slug": "재연-대사는-번역한다-호출-이름만-원문"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (74) — CI 가 잡은 다섯, 그리고 **부팅 스크립트의 자리가 게이트 다섯을 빨갛게 만든 경로**",
-      "slug": "2026-08-18-74-ci-가-잡은-다섯-그리고-부팅-스크립트의-자리가-게이트-다섯을-빨갛게-만든-경로"
-    },
-    {
-      "depth": 3,
-      "text": "① 자리 하나가 라우트 다섯의 대비 게이트를 깼다",
-      "slug": "자리-하나가-라우트-다섯의-대비-게이트를-깼다"
-    },
-    {
-      "depth": 3,
-      "text": "② 히어로 둘째 줄이 44px 계약을 안 졌다",
-      "slug": "히어로-둘째-줄이-44px-계약을-안-졌다"
-    },
-    {
-      "depth": 3,
-      "text": "③ 채운 강조색이 한 문서에 둘",
-      "slug": "채운-강조색이-한-문서에-둘"
-    },
-    {
-      "depth": 3,
-      "text": "④ 표면 조합 14 → 12, 래칫도 12 로",
-      "slug": "표면-조합-14-12-래칫도-12-로"
+      "text": "2026-08-18 (75) — The placement of the inline boot script is **a contract, not a preference** (we got it wrong three times)",
+      "slug": "2026-08-18-75-the-placement-of-the-inline-boot-script-is-a-contract-not-a-preference-we-got-it-wrong-three-times"
     },
     {
-      "depth": 3,
-      "text": "⑤ 유물이 된 게이트 하나를 고쳐 살렸다",
-      "slug": "유물이-된-게이트-하나를-고쳐-살렸다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-18 (73) — 히어로 CTA 는 네 목적지를 전부 열고, 승자는 방문자의 플랫폼이 정한다",
-      "slug": "2026-08-18-73-히어로-cta-는-네-목적지를-전부-열고-승자는-방문자의-플랫폼이-정한다"
+      "text": "2026-08-18 (74) — Five that CI caught, and **the path by which the boot script's placement turned five gates red**",
+      "slug": "2026-08-18-74-five-that-ci-caught-and-the-path-by-which-the-boot-scripts-placement-turned-five-gates-red"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (72) — 에이전트 절은 검증이 아니라 **앱 안 대화**를 판다: `mcp-verify` 터미널 → ACP 채팅 실측 재연",
-      "slug": "2026-08-18-72-에이전트-절은-검증이-아니라-앱-안-대화를-판다-mcp-verify-터미널-acp-채팅-실측-재연"
+      "text": "2026-08-18 (73) — The hero CTA opens all four destinations, and the visitor's platform decides the winner",
+      "slug": "2026-08-18-73-the-hero-cta-opens-all-four-destinations-and-the-visitors-platform-decides-the-winner"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (71) — 기념비는 단이 크기를 정한다: `--text-monument` 5vw → 5.8cqw + 히어로 전폭 단",
-      "slug": "2026-08-18-71-기념비는-단이-크기를-정한다---text-monument-5vw-58cqw-히어로-전폭-단"
+      "text": "2026-08-18 (72) — The agent section sells **an in-app conversation**, not verification: the `mcp-verify` terminal replaced by a real-measured ACP chat reenactment",
+      "slug": "2026-08-18-72-the-agent-section-sells-an-in-app-conversation-not-verification-the-mcp-verify-terminal-replaced-by-a-real-measured-acp-chat-reenactment"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (70) — 관문 랜딩 리메이크: 「살아있는 화면」 — 지도는 첫 화면에서 나가고, 활자가 기념비가 된다",
-      "slug": "2026-08-18-70-관문-랜딩-리메이크-살아있는-화면-지도는-첫-화면에서-나가고-활자가-기념비가-된다"
+      "text": "2026-08-18 (71) — The monument's size is set by the container: `--text-monument` 5vw to 5.8cqw, plus a hero full-width column",
+      "slug": "2026-08-18-71-the-monuments-size-is-set-by-the-container---text-monument-5vw-to-58cqw-plus-a-hero-full-width-column"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (69) — 악센트를 인디고에서 **잉걸(ember `#c14a24`)** 로 바꾼다 — 색상환의 빈 절반으로",
-      "slug": "2026-08-18-69-악센트를-인디고에서-잉걸ember-c14a24-로-바꾼다-색상환의-빈-절반으로"
-    },
-    {
-      "depth": 3,
-      "text": "관측 — 16곳의 CTA 색을 컴퓨티드 스타일로 뽑았다",
-      "slug": "관측-16곳의-cta-색을-컴퓨티드-스타일로-뽑았다"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-5"
-    },
-    {
-      "depth": 3,
-      "text": "이 교체가 **드러낸 것** — 값 하나가 규칙 둘의 근거를 지웠다",
-      "slug": "이-교체가-드러낸-것-값-하나가-규칙-둘의-근거를-지웠다"
-    },
-    {
-      "depth": 3,
-      "text": "기록된 반대",
-      "slug": "기록된-반대"
+      "text": "2026-08-18 (70) — Gateway landing remake, \"A Living Screen\": the map leaves the first screen, and type becomes the monument",
+      "slug": "2026-08-18-70-gateway-landing-remake-a-living-screen-the-map-leaves-the-first-screen-and-type-becomes-the-monument"
     },
     {
       "depth": 2,
-      "text": "2026-08-18 (68) — 초점 표시는 **보여야** 한다: 알파를 뺀 전용 토큰",
-      "slug": "2026-08-18-68-초점-표시는-보여야-한다-알파를-뺀-전용-토큰"
+      "text": "2026-08-18 (69) — Change the accent from indigo to **ember (`#c14a24`)**, the empty half of the color wheel",
+      "slug": "2026-08-18-69-change-the-accent-from-indigo-to-ember-c14a24-the-empty-half-of-the-color-wheel"
     },
     {
-      "depth": 3,
-      "text": "선행 기록 — 뒤집지 않고, 그때 안 잰 축을 잰다",
-      "slug": "선행-기록-뒤집지-않고-그때-안-잰-축을-잰다"
-    },
-    {
-      "depth": 3,
-      "text": "실측 — 알파를 바탕과 합성해야 보인다",
-      "slug": "실측-알파를-바탕과-합성해야-보인다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 색상은 그대로, 알파만 뺀다",
-      "slug": "결정-색상은-그대로-알파만-뺀다"
-    },
-    {
-      "depth": 3,
-      "text": "게이트 — 「있는가」가 아니라 「보이는가」를 잰다",
-      "slug": "게이트-있는가가-아니라-보이는가를-잰다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-17 (67) — 구형 Apple secret은 새 API 릴리스가 성공한 뒤 삭제한다",
-      "slug": "2026-08-17-67-구형-apple-secret은-새-api-릴리스가-성공한-뒤-삭제한다"
+      "text": "2026-08-18 (68) — The focus indicator **must be visible**: a dedicated token with no alpha",
+      "slug": "2026-08-18-68-the-focus-indicator-must-be-visible-a-dedicated-token-with-no-alpha"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (66) — `find_evidence`는 모든 행의 node 여부를 말하고, graph identity는 노드에만 요구한다",
-      "slug": "2026-08-17-66-find_evidence는-모든-행의-node-여부를-말하고-graph-identity는-노드에만-요구한다"
+      "text": "2026-08-17 (67) — Delete the old Apple secret only after the new API release succeeds",
+      "slug": "2026-08-17-67-delete-the-old-apple-secret-only-after-the-new-api-release-succeeds"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (65) — 공증 API 3개는 `release-signing`, 복구 불가능한 기존 identity 4개는 repository scope에 유지한다",
-      "slug": "2026-08-17-65-공증-api-3개는-release-signing-복구-불가능한-기존-identity-4개는-repository-scope에-유지한다"
+      "text": "2026-08-17 (66) — `find_evidence` reports whether every row is a node, and graph identity is required only for nodes",
+      "slug": "2026-08-17-66-find_evidence-reports-whether-every-row-is-a-node-and-graph-identity-is-required-only-for-nodes"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (64) — hosted 공증은 API key 파일만 쓰고, 릴리스 하위 프로세스는 단계별 secret allowlist를 따른다",
-      "slug": "2026-08-17-64-hosted-공증은-api-key-파일만-쓰고-릴리스-하위-프로세스는-단계별-secret-allowlist를-따른다"
+      "text": "2026-08-17 (65) — Three notarization APIs move to `release-signing`; four unrecoverable existing identities stay at repository scope",
+      "slug": "2026-08-17-65-three-notarization-apis-move-to-release-signing-four-unrecoverable-existing-identities-stay-at-repository-scope"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (63) — 보호된 데스크톱 릴리스는 `main`에서 디스패치하고, 서명 환경은 `main`에만 자동으로 연다",
-      "slug": "2026-08-17-63-보호된-데스크톱-릴리스는-main에서-디스패치하고-서명-환경은-main에만-자동으로-연다"
+      "text": "2026-08-17 (64) — Hosted notarization uses only an API key file, and release subprocesses follow a per-stage secret allowlist",
+      "slug": "2026-08-17-64-hosted-notarization-uses-only-an-api-key-file-and-release-subprocesses-follow-a-per-stage-secret-allowlist"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (62) — 생략된 다운로드 검증은 릴리스 readiness blocker다",
-      "slug": "2026-08-17-62-생략된-다운로드-검증은-릴리스-readiness-blocker다"
+      "text": "2026-08-17 (63) — Protected desktop releases dispatch from `main`, and the signing environment opens automatically only for `main`",
+      "slug": "2026-08-17-63-protected-desktop-releases-dispatch-from-main-and-the-signing-environment-opens-automatically-only-for-main"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (61) — 릴리스 API 값은 생성 소스의 데이터로만 직렬화한다",
-      "slug": "2026-08-17-61-릴리스-api-값은-생성-소스의-데이터로만-직렬화한다"
+      "text": "2026-08-17 (62) — Skipped download verification is a release readiness blocker",
+      "slug": "2026-08-17-62-skipped-download-verification-is-a-release-readiness-blocker"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (60) — 일반 볼트 mutation도 안정된 root·parent FD 안에서 수행한다",
-      "slug": "2026-08-17-60-일반-볼트-mutation도-안정된-rootparent-fd-안에서-수행한다"
+      "text": "2026-08-17 (61) — Release API values are serialized only from their generating source's data",
+      "slug": "2026-08-17-61-release-api-values-are-serialized-only-from-their-generating-sources-data"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (59) — 에이전트 설정은 새 inode를 완성한 뒤 안정된 부모 안에서 교체한다",
-      "slug": "2026-08-17-59-에이전트-설정은-새-inode를-완성한-뒤-안정된-부모-안에서-교체한다"
+      "text": "2026-08-17 (60) — Ordinary vault mutations also run inside a stable root/parent FD",
+      "slug": "2026-08-17-60-ordinary-vault-mutations-also-run-inside-a-stable-rootparent-fd"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (58) — MCP 중복 생략은 현재 볼트용 유효 설정일 때만 한다",
-      "slug": "2026-08-17-58-mcp-중복-생략은-현재-볼트용-유효-설정일-때만-한다"
+      "text": "2026-08-17 (59) — Agent configuration is swapped inside a stable parent only after the new inode is complete",
+      "slug": "2026-08-17-59-agent-configuration-is-swapped-inside-a-stable-parent-only-after-the-new-inode-is-complete"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (57) — ACP 트리 종료 완료는 리더 PID가 아니라 프로세스 그룹으로 판정한다",
-      "slug": "2026-08-17-57-acp-트리-종료-완료는-리더-pid가-아니라-프로세스-그룹으로-판정한다"
+      "text": "2026-08-17 (58) — Skip an MCP duplicate only when it's a valid configuration for the current vault",
+      "slug": "2026-08-17-58-skip-an-mcp-duplicate-only-when-its-a-valid-configuration-for-the-current-vault"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (56) — ACP 권한 판정의 볼트는 화면이 고르지 않는다",
-      "slug": "2026-08-17-56-acp-권한-판정의-볼트는-화면이-고르지-않는다"
+      "text": "2026-08-17 (57) — Judge ACP tree-termination completion by process group, not the leader PID",
+      "slug": "2026-08-17-57-judge-acp-tree-termination-completion-by-process-group-not-the-leader-pid"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (55) — JSON-LD 데이터는 script 경계를 소유하지 않는다",
-      "slug": "2026-08-17-55-json-ld-데이터는-script-경계를-소유하지-않는다"
+      "text": "2026-08-17 (56) — The vault behind an ACP permission decision is not chosen by the screen",
+      "slug": "2026-08-17-56-the-vault-behind-an-acp-permission-decision-is-not-chosen-by-the-screen"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (54) — 미검증 상태는 화면에 닿아야 상태다",
-      "slug": "2026-08-17-54-미검증-상태는-화면에-닿아야-상태다"
+      "text": "2026-08-17 (55) — JSON-LD data does not own the script boundary",
+      "slug": "2026-08-17-55-json-ld-data-does-not-own-the-script-boundary"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (53) — 안전 장치가 모르는 것을 안전한 것처럼 다뤘다",
-      "slug": "2026-08-17-53-안전-장치가-모르는-것을-안전한-것처럼-다뤘다"
+      "text": "2026-08-17 (54) — An unverified state isn't a state until it reaches the screen",
+      "slug": "2026-08-17-54-an-unverified-state-isnt-a-state-until-it-reaches-the-screen"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (52) — 감사 로그는 볼트 밖 링크를 따라가지 않는다",
-      "slug": "2026-08-17-52-감사-로그는-볼트-밖-링크를-따라가지-않는다"
+      "text": "2026-08-17 (53) — The safety mechanism treated what it didn't know as if it were safe",
+      "slug": "2026-08-17-53-the-safety-mechanism-treated-what-it-didnt-know-as-if-it-were-safe"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (51) — 맞는 동작에 켜지는 게이트는, 꺼지는 게이트다",
-      "slug": "2026-08-17-51-맞는-동작에-켜지는-게이트는-꺼지는-게이트다"
+      "text": "2026-08-17 (52) — The audit log does not follow links outside the vault",
+      "slug": "2026-08-17-52-the-audit-log-does-not-follow-links-outside-the-vault"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (50) — mtime 숫자가 아니라 읽은 바이트를 지킨다",
-      "slug": "2026-08-17-50-mtime-숫자가-아니라-읽은-바이트를-지킨다"
+      "text": "2026-08-17 (51) — A gate that lights up only for the right behavior is a gate that's effectively off",
+      "slug": "2026-08-17-51-a-gate-that-lights-up-only-for-the-right-behavior-is-a-gate-thats-effectively-off"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (49) — 내보내기가 「다 나갔다」고 말하며 이유를 두고 갔다",
-      "slug": "2026-08-17-49-내보내기가-다-나갔다고-말하며-이유를-두고-갔다"
+      "text": "2026-08-17 (50) — Guard the bytes read, not the mtime number",
+      "slug": "2026-08-17-50-guard-the-bytes-read-not-the-mtime-number"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (48) — 브리프가 자기 안에서 모순이었다",
-      "slug": "2026-08-17-48-브리프가-자기-안에서-모순이었다"
+      "text": "2026-08-17 (49) — The export said \"everything went out\" and left the reason behind",
+      "slug": "2026-08-17-49-the-export-said-everything-went-out-and-left-the-reason-behind"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (47) — 「MCP 가 없을 때 쓰세요」가 실행 안 되는 명령이었다",
-      "slug": "2026-08-17-47-mcp-가-없을-때-쓰세요가-실행-안-되는-명령이었다"
+      "text": "2026-08-17 (48) — The brief contradicted itself",
+      "slug": "2026-08-17-48-the-brief-contradicted-itself"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (46) — 내가 만든 게이트가 세 번째 사본을 못 보고 있었다",
-      "slug": "2026-08-17-46-내가-만든-게이트가-세-번째-사본을-못-보고-있었다"
+      "text": "2026-08-17 (47) — \"Use this when there's no MCP\" was a command that didn't run",
+      "slug": "2026-08-17-47-use-this-when-theres-no-mcp-was-a-command-that-didnt-run"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (45) — 답하다 죽은 것과 다 끝난 것이 같은 화면이었다",
-      "slug": "2026-08-17-45-답하다-죽은-것과-다-끝난-것이-같은-화면이었다"
+      "text": "2026-08-17 (46) — The gate I built couldn't see the third copy",
+      "slug": "2026-08-17-46-the-gate-i-built-couldnt-see-the-third-copy"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (44) — 카드가 자기가 확인 안 한 범위를 단정하고 있었다",
-      "slug": "2026-08-17-44-카드가-자기가-확인-안-한-범위를-단정하고-있었다"
+      "text": "2026-08-17 (45) — Dying mid-answer and finishing cleanly looked like the same screen",
+      "slug": "2026-08-17-45-dying-mid-answer-and-finishing-cleanly-looked-like-the-same-screen"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (43) — 검증한 ACP 구독 실행기는 부모의 임의 자격증명을 받지 않는다",
-      "slug": "2026-08-17-43-검증한-acp-구독-실행기는-부모의-임의-자격증명을-받지-않는다"
+      "text": "2026-08-17 (44) — The card was asserting a scope it never verified",
+      "slug": "2026-08-17-44-the-card-was-asserting-a-scope-it-never-verified"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (42) — CI가 실행하는 외부 코드는 전체 commit SHA로 고정한다",
-      "slug": "2026-08-17-42-ci가-실행하는-외부-코드는-전체-commit-sha로-고정한다"
+      "text": "2026-08-17 (43) — A verified ACP subscription runner does not accept arbitrary credentials from its parent",
+      "slug": "2026-08-17-43-a-verified-acp-subscription-runner-does-not-accept-arbitrary-credentials-from-its-parent"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (41) — 「어디」만 묻고 「무엇을」은 안 물었다",
-      "slug": "2026-08-17-41-어디만-묻고-무엇을은-안-물었다"
+      "text": "2026-08-17 (42) — Pin external code CI runs to the full commit SHA",
+      "slug": "2026-08-17-42-pin-external-code-ci-runs-to-the-full-commit-sha"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (40) — 앱의 curl은 사용자 curlrc를 읽지 않는다",
-      "slug": "2026-08-17-40-앱의-curl은-사용자-curlrc를-읽지-않는다"
+      "text": "2026-08-17 (41) — It only asked \"where\", never \"what\"",
+      "slug": "2026-08-17-41-it-only-asked-where-never-what"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (39) — 체크섬은 설치 파일 이름까지 증명해야 한다",
-      "slug": "2026-08-17-39-체크섬은-설치-파일-이름까지-증명해야-한다"
+      "text": "2026-08-17 (40) — The app's curl does not read the user's curlrc",
+      "slug": "2026-08-17-40-the-apps-curl-does-not-read-the-users-curlrc"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (38) — 해시한 Windows 설치 바이트를 그대로 스테이징한다",
-      "slug": "2026-08-17-38-해시한-windows-설치-바이트를-그대로-스테이징한다"
+      "text": "2026-08-17 (39) — The checksum must prove the installer file name too",
+      "slug": "2026-08-17-39-the-checksum-must-prove-the-installer-file-name-too"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (37) — 허용된 설정 이름도 링크라면 쓰지 않는다",
-      "slug": "2026-08-17-37-허용된-설정-이름도-링크라면-쓰지-않는다"
+      "text": "2026-08-17 (38) — Stage the hashed Windows installer bytes exactly as they are",
+      "slug": "2026-08-17-38-stage-the-hashed-windows-installer-bytes-exactly-as-they-are"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (36) — 낱말을 두 곳에서 선언하고 있었다",
-      "slug": "2026-08-17-36-낱말을-두-곳에서-선언하고-있었다"
+      "text": "2026-08-17 (37) — Even an allowlisted config name is refused if it's a link",
+      "slug": "2026-08-17-37-even-an-allowlisted-config-name-is-refused-if-its-a-link"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (35) — 자기가 마주친 경우만 채운 표는 구멍이 있는 표다",
-      "slug": "2026-08-17-35-자기가-마주친-경우만-채운-표는-구멍이-있는-표다"
+      "text": "2026-08-17 (36) — The term was declared in two places",
+      "slug": "2026-08-17-36-the-term-was-declared-in-two-places"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (34) — 게시된 Windows 설치 파일도 다시 받아 해시한다",
-      "slug": "2026-08-17-34-게시된-windows-설치-파일도-다시-받아-해시한다"
+      "text": "2026-08-17 (35) — A table filled in only for the cases it happened to encounter is a table with holes",
+      "slug": "2026-08-17-35-a-table-filled-in-only-for-the-cases-it-happened-to-encounter-is-a-table-with-holes"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (33) — 「Finder 에서 보기」가 프로그램을 실행할 수 있었다",
-      "slug": "2026-08-17-33-finder-에서-보기가-프로그램을-실행할-수-있었다"
+      "text": "2026-08-17 (34) — Re-download and re-hash the published Windows installer too",
+      "slug": "2026-08-17-34-re-download-and-re-hash-the-published-windows-installer-too"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (32) — 공개 의미 diff와 내부 쓰기 계획을 분리한다",
-      "slug": "2026-08-17-32-공개-의미-diff와-내부-쓰기-계획을-분리한다"
+      "text": "2026-08-17 (33) — \"Show in Finder\" could execute a program",
+      "slug": "2026-08-17-33-show-in-finder-could-execute-a-program"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (31) — 릴리스 자격증명은 필요한 단계에만 보인다",
-      "slug": "2026-08-17-31-릴리스-자격증명은-필요한-단계에만-보인다"
+      "text": "2026-08-17 (32) — Separate the public meaning diff from the internal write plan",
+      "slug": "2026-08-17-32-separate-the-public-meaning-diff-from-the-internal-write-plan"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (30) — 「못 봤다」를 「없다」로 말하면 맞는 관계가 지워진다",
-      "slug": "2026-08-17-30-못-봤다를-없다로-말하면-맞는-관계가-지워진다"
+      "text": "2026-08-17 (31) — Release credentials are visible only at the stage that needs them",
+      "slug": "2026-08-17-31-release-credentials-are-visible-only-at-the-stage-that-needs-them"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (29) — 설치된 앱을 열어 보고서야 보인 것",
-      "slug": "2026-08-17-29-설치된-앱을-열어-보고서야-보인-것"
+      "text": "2026-08-17 (30) — Saying \"couldn't find it\" as \"it doesn't exist\" erases correct relations",
+      "slug": "2026-08-17-30-saying-couldnt-find-it-as-it-doesnt-exist-erases-correct-relations"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (27) — 막힌 ACP 입력은 자기 세션만 멈춘다",
-      "slug": "2026-08-17-27-막힌-acp-입력은-자기-세션만-멈춘다"
+      "text": "2026-08-17 (29) — What only became visible after opening the installed app",
+      "slug": "2026-08-17-29-what-only-became-visible-after-opening-the-installed-app"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (26) — 읽은 상태가 사라졌으면 쓰지 않는다",
-      "slug": "2026-08-17-26-읽은-상태가-사라졌으면-쓰지-않는다"
+      "text": "2026-08-17 (27) — A blocked ACP input stops only its own session",
+      "slug": "2026-08-17-27-a-blocked-acp-input-stops-only-its-own-session"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (25) — 종료 이벤트는 자신이 태어난 세션만 닫는다",
-      "slug": "2026-08-17-25-종료-이벤트는-자신이-태어난-세션만-닫는다"
+      "text": "2026-08-17 (26) — If the state you read has disappeared, don't write",
+      "slug": "2026-08-17-26-if-the-state-you-read-has-disappeared-dont-write"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (24) — 보내지 못한 요청은 기다림이 아니라 실패다",
-      "slug": "2026-08-17-24-보내지-못한-요청은-기다림이-아니라-실패다"
+      "text": "2026-08-17 (25) — An exit event closes only the session it was born in",
+      "slug": "2026-08-17-25-an-exit-event-closes-only-the-session-it-was-born-in"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (23) — ACP 권한 관문은 알림이 아니라 시작 조건이다",
-      "slug": "2026-08-17-23-acp-권한-관문은-알림이-아니라-시작-조건이다"
+      "text": "2026-08-17 (24) — A request that couldn't be sent is a failure, not a wait",
+      "slug": "2026-08-17-24-a-request-that-couldnt-be-sent-is-a-failure-not-a-wait"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (28) — 갓 만든 볼트가 자기가 고장 났다고 말했다",
-      "slug": "2026-08-17-28-갓-만든-볼트가-자기가-고장-났다고-말했다"
+      "text": "2026-08-17 (23) — The ACP permission gate is a start condition, not a notification",
+      "slug": "2026-08-17-23-the-acp-permission-gate-is-a-start-condition-not-a-notification"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (22) — 답변 속 이름과 지도를 잇는다",
-      "slug": "2026-08-17-22-답변-속-이름과-지도를-잇는다"
+      "text": "2026-08-17 (28) — A freshly created vault claimed it was broken",
+      "slug": "2026-08-17-28-a-freshly-created-vault-claimed-it-was-broken"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (21) — 고칠 수 없는 것 83개를 고치라고 말하던 지도",
-      "slug": "2026-08-17-21-고칠-수-없는-것-83개를-고치라고-말하던-지도"
+      "text": "2026-08-17 (22) — Connect the names in the answer to the map",
+      "slug": "2026-08-17-22-connect-the-names-in-the-answer-to-the-map"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (20) — 지워졌다는 거짓말은 사람을 그 자리에서 떠나게 한다",
-      "slug": "2026-08-17-20-지워졌다는-거짓말은-사람을-그-자리에서-떠나게-한다"
+      "text": "2026-08-17 (21) — The map that told you to fix 83 things that couldn't be fixed",
+      "slug": "2026-08-17-21-the-map-that-told-you-to-fix-83-things-that-couldnt-be-fixed"
     },
     {
       "depth": 2,
-      "text": "2026-08-17 (19) — 셀 것이 없으면 전부 통과한다",
-      "slug": "2026-08-17-19-셀-것이-없으면-전부-통과한다"
+      "text": "2026-08-17 (20) — The lie that it was deleted makes people walk away on the spot",
+      "slug": "2026-08-17-20-the-lie-that-it-was-deleted-makes-people-walk-away-on-the-spot"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (18) — 거울이 둘이면 한쪽만 고쳐지는 것이 기본값이다",
-      "slug": "2026-08-16-18-거울이-둘이면-한쪽만-고쳐지는-것이-기본값이다"
+      "text": "2026-08-17 (19) — If there's nothing to count, everything passes",
+      "slug": "2026-08-17-19-if-theres-nothing-to-count-everything-passes"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (17) — 도구를 바꾸는 게 아니라 지시를 쓴다. 그리고 그 지시를 실측으로 정했다",
-      "slug": "2026-08-16-17-도구를-바꾸는-게-아니라-지시를-쓴다-그리고-그-지시를-실측으로-정했다"
+      "text": "2026-08-16 (18) — With two mirrors, fixing only one side is the default",
+      "slug": "2026-08-16-18-with-two-mirrors-fixing-only-one-side-is-the-default"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (16) — 사용자의 마크다운을 잃지 않는다: 네 자리를 막고, 분석 화면을 100배 빠르게",
-      "slug": "2026-08-16-16-사용자의-마크다운을-잃지-않는다-네-자리를-막고-분석-화면을-100배-빠르게"
+      "text": "2026-08-16 (17) — Write an instruction instead of changing the tool, and settle that instruction with a real measurement",
+      "slug": "2026-08-16-17-write-an-instruction-instead-of-changing-the-tool-and-settle-that-instruction-with-a-real-measurement"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (15) — 이 서버는 열어 준 폴더만 읽는다",
-      "slug": "2026-08-16-15-이-서버는-열어-준-폴더만-읽는다"
+      "text": "2026-08-16 (16) — Never lose the user's markdown: plug four gaps, and make the analysis screen 100x faster",
+      "slug": "2026-08-16-16-never-lose-the-users-markdown-plug-four-gaps-and-make-the-analysis-screen-100x-faster"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (14) — 화면은 사람의 말로 말한다. 그리고 어제 막았다던 구멍은 안 막혀 있었다",
-      "slug": "2026-08-16-14-화면은-사람의-말로-말한다-그리고-어제-막았다던-구멍은-안-막혀-있었다"
+      "text": "2026-08-16 (15) — This server reads only the folder it was granted",
+      "slug": "2026-08-16-15-this-server-reads-only-the-folder-it-was-granted"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (13) — 관문의 구멍 셋을 막는다. 이름은 통행증이 아니다",
-      "slug": "2026-08-16-13-관문의-구멍-셋을-막는다-이름은-통행증이-아니다"
+      "text": "2026-08-16 (14) — The screen speaks in plain human language, and the hole we said we'd plugged yesterday wasn't plugged",
+      "slug": "2026-08-16-14-the-screen-speaks-in-plain-human-language-and-the-hole-we-said-wed-plugged-yesterday-wasnt-plugged"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (12) — 호버 축 셋을 **부품이 받아 넘긴다**. 값 층에 있는데 못 닿으면 없는 것과 같다",
-      "slug": "2026-08-16-12-호버-축-셋을-부품이-받아-넘긴다-값-층에-있는데-못-닿으면-없는-것과-같다"
+      "text": "2026-08-16 (13) — Plug three holes in the gateway: a name is not a passport",
+      "slug": "2026-08-16-13-plug-three-holes-in-the-gateway-a-name-is-not-a-passport"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (11) — 대화창은 **하나**다. 갈래는 둘로 남기고 문과 창을 합친다",
-      "slug": "2026-08-16-11-대화창은-하나다-갈래는-둘로-남기고-문과-창을-합친다"
+      "text": "2026-08-16 (12) — The hover axis set is handed off by **the component**: unreachable in the value layer is the same as not existing",
+      "slug": "2026-08-16-12-the-hover-axis-set-is-handed-off-by-the-component-unreachable-in-the-value-layer-is-the-same-as-not-existing"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (10) — 드롭다운 글자를 9.5px 에서 컨트롤 라벨 규격(12.5px)으로 올린다",
-      "slug": "2026-08-16-10-드롭다운-글자를-95px-에서-컨트롤-라벨-규격125px으로-올린다"
+      "text": "2026-08-16 (11) — The chat window is **one**: keep two branches, merge the door and the window",
+      "slug": "2026-08-16-11-the-chat-window-is-one-keep-two-branches-merge-the-door-and-the-window"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (9) — 「준비됨」이 **로그인까지** 확인한다. 그리고 설치는 대신 하지 않는다",
-      "slug": "2026-08-16-9-준비됨이-로그인까지-확인한다-그리고-설치는-대신-하지-않는다"
+      "text": "2026-08-16 (10) — Raise dropdown text from 9.5px to the control-label spec (12.5px)",
+      "slug": "2026-08-16-10-raise-dropdown-text-from-95px-to-the-control-label-spec-125px"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (8) — codex 관문은 **설정이 아니라 세션 모드**로 세운다. 그리고 관문을 붙여 놓고 고를 수 없던 것을 고친다",
-      "slug": "2026-08-16-8-codex-관문은-설정이-아니라-세션-모드로-세운다-그리고-관문을-붙여-놓고-고를-수-없던-것을-고친다"
+      "text": "2026-08-16 (9) — \"Ready\" checks **all the way through login**, and does not install in the user's place",
+      "slug": "2026-08-16-9-ready-checks-all-the-way-through-login-and-does-not-install-in-the-users-place"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (7) — 실측 한 바퀴가 잡은 것: **관문이 우리 자신의 도구를 막고 있었다**",
-      "slug": "2026-08-16-7-실측-한-바퀴가-잡은-것-관문이-우리-자신의-도구를-막고-있었다"
+      "text": "2026-08-16 (8) — The codex gate is built as **session mode, not settings**, and fixes what could not be chosen while the gate sat there",
+      "slug": "2026-08-16-8-the-codex-gate-is-built-as-session-mode-not-settings-and-fixes-what-could-not-be-chosen-while-the-gate-sat-there"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (6) — 앱 안 대화에 **대화방 관리 · 모델/작업방식 선택**을 붙인다: 셋 다 프로토콜이 이미 내놓고 있었다",
-      "slug": "2026-08-16-6-앱-안-대화에-대화방-관리-모델작업방식-선택을-붙인다-셋-다-프로토콜이-이미-내놓고-있었다"
+      "text": "2026-08-16 (7) — What one round of measurement caught: **the gate was blocking our own tool**",
+      "slug": "2026-08-16-7-what-one-round-of-measurement-caught-the-gate-was-blocking-our-own-tool"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (5) — ACP 공개 가능 여부: 라이선스는 전부 통과, **브랜드 규칙 하나를 어기고 있었다**, 약관 하나는 소유자 판단으로 연다",
-      "slug": "2026-08-16-5-acp-공개-가능-여부-라이선스는-전부-통과-브랜드-규칙-하나를-어기고-있었다-약관-하나는-소유자-판단으로-연다"
+      "text": "2026-08-16 (6) — Add **session management and model/working-mode selection** to in-app chat: the protocol already offered all three",
+      "slug": "2026-08-16-6-add-session-management-and-modelworking-mode-selection-to-in-app-chat-the-protocol-already-offered-all-three"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (4) — 남의 제품 마크는 **밝은 판 위에 그 벤더의 색으로** 그린다: 다크 단일 규칙의 유일한 자리 예외",
-      "slug": "2026-08-16-4-남의-제품-마크는-밝은-판-위에-그-벤더의-색으로-그린다-다크-단일-규칙의-유일한-자리-예외"
+      "text": "2026-08-16 (5) — ACP shippability: licenses all pass, **one brand rule was being broken**, one term is left to owner judgment",
+      "slug": "2026-08-16-5-acp-shippability-licenses-all-pass-one-brand-rule-was-being-broken-one-term-is-left-to-owner-judgment"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (3) — 소유자가 「claude 하나부터」를 뒤집었다: 레지스트리 38종을 다 내놓되, 앱이 못 막는 것은 그 줄에서 말한다",
-      "slug": "2026-08-16-3-소유자가-claude-하나부터를-뒤집었다-레지스트리-38종을-다-내놓되-앱이-못-막는-것은-그-줄에서-말한다"
+      "text": "2026-08-16 (4) — Draw another product's mark **on a light plate, in that vendor's color**: the one seat exception to the dark-only rule",
+      "slug": "2026-08-16-4-draw-another-products-mark-on-a-light-plate-in-that-vendors-color-the-one-seat-exception-to-the-dark-only-rule"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 (2) — 권한 관문은 **설정을 격리해야만** 존재한다: 앱은 사용자의 전역 Claude 설정을 물려받지 않는다",
-      "slug": "2026-08-16-2-권한-관문은-설정을-격리해야만-존재한다-앱은-사용자의-전역-claude-설정을-물려받지-않는다"
+      "text": "2026-08-16 (3) — The owner reversed \"start with Claude alone\": ship all 38 registry kinds, and state what the app can't gate in that row",
+      "slug": "2026-08-16-3-the-owner-reversed-start-with-claude-alone-ship-all-38-registry-kinds-and-state-what-the-app-cant-gate-in-that-row"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — ACP 로 사용자의 에이전트를 앱 안으로 들인다: 「위임 일꾼」 경계는 뒤집고, 「지도가 주」는 유지한다",
-      "slug": "2026-08-16-acp-로-사용자의-에이전트를-앱-안으로-들인다-위임-일꾼-경계는-뒤집고-지도가-주는-유지한다"
+      "text": "2026-08-16 (2) — The permission gate exists only if **settings are isolated**: the app does not inherit the user's global Claude settings",
+      "slug": "2026-08-16-2-the-permission-gate-exists-only-if-settings-are-isolated-the-app-does-not-inherit-the-users-global-claude-settings"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — Go import는 기존 file edge에 섞지 않고 typed package evidence로 공개한다",
-      "slug": "2026-08-16-go-import는-기존-file-edge에-섞지-않고-typed-package-evidence로-공개한다"
+      "text": "2026-08-16 — Bring the user's agent into the app via ACP: reverse the \"delegated worker\" boundary, keep \"the map is primary\"",
+      "slug": "2026-08-16-bring-the-users-agent-into-the-app-via-acp-reverse-the-delegated-worker-boundary-keep-the-map-is-primary"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — dogfood 의미 답변은 구조 완성과 의미 미완성을 동시에 말한다",
-      "slug": "2026-08-16-dogfood-의미-답변은-구조-완성과-의미-미완성을-동시에-말한다"
+      "text": "2026-08-16 — Expose Go imports as typed package evidence, not mixed into existing file edges",
+      "slug": "2026-08-16-expose-go-imports-as-typed-package-evidence-not-mixed-into-existing-file-edges"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — 의미 수리 인수인계와 상세 검토는 고정 예산의 두 계약으로 나눈다",
-      "slug": "2026-08-16-의미-수리-인수인계와-상세-검토는-고정-예산의-두-계약으로-나눈다"
+      "text": "2026-08-16 — The dogfood meaning answer states structural completeness and meaning incompleteness together",
+      "slug": "2026-08-16-the-dogfood-meaning-answer-states-structural-completeness-and-meaning-incompleteness-together"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — 목적·도메인의 answered와 고신뢰는 주장에 맞는 독립 의미 근거를 요구한다",
-      "slug": "2026-08-16-목적도메인의-answered와-고신뢰는-주장에-맞는-독립-의미-근거를-요구한다"
+      "text": "2026-08-16 — Split meaning-repair handoff and detailed review into two fixed-budget contracts",
+      "slug": "2026-08-16-split-meaning-repair-handoff-and-detailed-review-into-two-fixed-budget-contracts"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — native 구현 경로는 파일 목록이 아니라 build-role 대표 집합으로 전달한다",
-      "slug": "2026-08-16-native-구현-경로는-파일-목록이-아니라-build-role-대표-집합으로-전달한다"
+      "text": "2026-08-16 — Purpose/domain \"answered\" and high confidence require independent meaning evidence matching the claim",
+      "slug": "2026-08-16-purposedomain-answered-and-high-confidence-require-independent-meaning-evidence-matching-the-claim"
     },
     {
       "depth": 2,
-      "text": "2026-08-16 — 미지원 C와 관계의 명시 경로는 write 전 근거 계약에서 실패 닫는다",
-      "slug": "2026-08-16-미지원-c와-관계의-명시-경로는-write-전-근거-계약에서-실패-닫는다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄"
+      "text": "2026-08-16 — Deliver the native implementation path as a build-role representative set, not a file list",
+      "slug": "2026-08-16-deliver-the-native-implementation-path-as-a-build-role-representative-set-not-a-file-list"
     },
     {
       "depth": 2,
-      "text": "PO Council Verdict — native evidence integrity",
-      "slug": "po-council-verdict-native-evidence-integrity"
+      "text": "2026-08-16 — Unsupported C and an explicit relation path fail closed at the evidence contract before write",
+      "slug": "2026-08-16-unsupported-c-and-an-explicit-relation-path-fail-closed-at-the-evidence-contract-before-write"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (20) — 첫 held-out trial은 자격 미충족에서 정확히 멈춘다",
-      "slug": "2026-08-15-20-첫-held-out-trial은-자격-미충족에서-정확히-멈춘다"
+      "text": "2026-08-15 (20) — The first held-out trial stops exactly at qualification failure",
+      "slug": "2026-08-15-20-the-first-held-out-trial-stops-exactly-at-qualification-failure"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (19) — source-hidden 실패는 승인 가능한 visible gap이 아니다",
-      "slug": "2026-08-15-19-source-hidden-실패는-승인-가능한-visible-gap이-아니다"
+      "text": "2026-08-15 (19) — A source-hidden failure is not an approvable visible gap",
+      "slug": "2026-08-15-19-a-source-hidden-failure-is-not-an-approvable-visible-gap"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (17) — analyzer가 이미 내보내는 proposal 근거의 계약을 정렬한다",
-      "slug": "2026-08-15-17-analyzer가-이미-내보내는-proposal-근거의-계약을-정렬한다"
+      "text": "2026-08-15 (17) — Align the contract for proposal evidence the analyzer already emits",
+      "slug": "2026-08-15-17-align-the-contract-for-proposal-evidence-the-analyzer-already-emits"
     },
     {
       "depth": 2,
@@ -8565,2548 +8105,1203 @@
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (16) — production import evidence는 관측이지 승인된 impact 관계가 아니다",
-      "slug": "2026-08-15-16-production-import-evidence는-관측이지-승인된-impact-관계가-아니다"
+      "text": "2026-08-15 (16) — Production import evidence is an observation, not an approved impact relation",
+      "slug": "2026-08-15-16-production-import-evidence-is-an-observation-not-an-approved-impact-relation"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (15) — 의미 보정은 기존 출력 계약의 tracer부터 시작한다",
-      "slug": "2026-08-15-15-의미-보정은-기존-출력-계약의-tracer부터-시작한다"
+      "text": "2026-08-15 (15) — Meaning correction starts with the tracer for the existing output contract",
+      "slug": "2026-08-15-15-meaning-correction-starts-with-the-tracer-for-the-existing-output-contract"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (14) — candidate packet은 lossless였고, 다음은 의미 보정이다",
-      "slug": "2026-08-15-14-candidate-packet은-lossless였고-다음은-의미-보정이다"
+      "text": "2026-08-15 (14) — The candidate packet was lossless; meaning correction comes next",
+      "slug": "2026-08-15-14-the-candidate-packet-was-lossless-meaning-correction-comes-next"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (13) — candidate handoff는 먼저 scratch probe로 판별한다",
-      "slug": "2026-08-15-13-candidate-handoff는-먼저-scratch-probe로-판별한다"
+      "text": "2026-08-15 (13) — Judge candidate handoff with a scratch probe first",
+      "slug": "2026-08-15-13-judge-candidate-handoff-with-a-scratch-probe-first"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (12) — qualification claim을 exact reviewPlan에 묶는다",
-      "slug": "2026-08-15-12-qualification-claim을-exact-reviewplan에-묶는다"
+      "text": "2026-08-15 (12) — Bind the qualification claim to the exact reviewPlan",
+      "slug": "2026-08-15-12-bind-the-qualification-claim-to-the-exact-reviewplan"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (11) — 자가 qualification은 먼저 shadow admission으로 측정한다",
-      "slug": "2026-08-14-11-자가-qualification은-먼저-shadow-admission으로-측정한다"
+      "text": "2026-08-14 (11) — Measure self-qualification with shadow admission first",
+      "slug": "2026-08-14-11-measure-self-qualification-with-shadow-admission-first"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (13) — MCP selector 오류는 인자 오류로 분류한다",
-      "slug": "2026-08-14-13-mcp-selector-오류는-인자-오류로-분류한다"
+      "text": "2026-08-14 (13) — Classify MCP selector errors as argument errors",
+      "slug": "2026-08-14-13-classify-mcp-selector-errors-as-argument-errors"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (12) — Codex fresh trust와 MCP 등록은 별도 증명이다",
-      "slug": "2026-08-14-12-codex-fresh-trust와-mcp-등록은-별도-증명이다"
+      "text": "2026-08-14 (12) — Codex fresh trust and MCP registration are separate proofs",
+      "slug": "2026-08-14-12-codex-fresh-trust-and-mcp-registration-are-separate-proofs"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (11) — 클라이언트 설정·신뢰·실제 연결은 서로 다른 상태다",
-      "slug": "2026-08-14-11-클라이언트-설정신뢰실제-연결은-서로-다른-상태다"
+      "text": "2026-08-14 (11) — Client configuration, trust, and actual connection are different states",
+      "slug": "2026-08-14-11-client-configuration-trust-and-actual-connection-are-different-states"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (9) — 100+ node 구조 스트레스와 의미 qualification은 별도 gate다",
-      "slug": "2026-08-14-9-100-node-구조-스트레스와-의미-qualification은-별도-gate다"
+      "text": "2026-08-14 (9) — 100+ node structural stress and meaning qualification are separate gates",
+      "slug": "2026-08-14-9-100-node-structural-stress-and-meaning-qualification-are-separate-gates"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (10) — 대형 import 응답은 compact review를 잃지 않고 소비한다",
-      "slug": "2026-08-14-10-대형-import-응답은-compact-review를-잃지-않고-소비한다"
+      "text": "2026-08-14 (10) — Consume large import responses without losing compact review",
+      "slug": "2026-08-14-10-consume-large-import-responses-without-losing-compact-review"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (2) — Skills packet은 독립 source-hidden consumer에서도 닫힌다",
-      "slug": "2026-08-14-2-skills-packet은-독립-source-hidden-consumer에서도-닫힌다"
+      "text": "2026-08-14 (2) — The Skills packet closes even for an independent source-hidden consumer",
+      "slug": "2026-08-14-2-the-skills-packet-closes-even-for-an-independent-source-hidden-consumer"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 — 전문가 disclosure와 Skills gold packet은 근거를 버리지 않는다",
-      "slug": "2026-08-14-전문가-disclosure와-skills-gold-packet은-근거를-버리지-않는다"
+      "text": "2026-08-14 — Expert disclosure and the Skills gold packet do not discard evidence",
+      "slug": "2026-08-14-expert-disclosure-and-the-skills-gold-packet-do-not-discard-evidence"
     },
     {
       "depth": 2,
-      "text": "2026-08-13 — 구조 readiness와 의미 qualification을 검수 계층에서 분리한다",
-      "slug": "2026-08-13-구조-readiness와-의미-qualification을-검수-계층에서-분리한다"
+      "text": "2026-08-13 — Separate structural readiness from meaning qualification at the review layer",
+      "slug": "2026-08-13-separate-structural-readiness-from-meaning-qualification-at-the-review-layer"
     },
     {
       "depth": 2,
-      "text": "2026-08-13 — 활동 기록의 agent 는 하트비트 > 연결 인사(clientInfo.name) > null",
-      "slug": "2026-08-13-활동-기록의-agent-는-하트비트-연결-인사clientinfoname-null"
+      "text": "2026-08-13 — Activity log's agent is heartbeat > connection handshake (clientInfo.name) > null",
+      "slug": "2026-08-13-activity-logs-agent-is-heartbeat-connection-handshake-clientinfoname-null"
     },
     {
       "depth": 2,
-      "text": "2026-08-13 (1) — MCP 실운영 gate와 온톨로지 의미 판정의 경계",
-      "slug": "2026-08-13-1-mcp-실운영-gate와-온톨로지-의미-판정의-경계"
+      "text": "2026-08-13 (1) — The boundary between the MCP production gate and ontology meaning judgment",
+      "slug": "2026-08-13-1-the-boundary-between-the-mcp-production-gate-and-ontology-meaning-judgment"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 — U1.3 전문가 초안은 같은 영수증의 세션 전용 수정 깊이다",
-      "slug": "2026-08-14-u13-전문가-초안은-같은-영수증의-세션-전용-수정-깊이다"
+      "text": "2026-08-14 — The U1.3 expert draft is a session-only revision depth of the same receipt",
+      "slug": "2026-08-14-the-u13-expert-draft-is-a-session-only-revision-depth-of-the-same-receipt"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (7) — source-bound MCP 템플릿은 portable launch로 가장하지 않는다",
-      "slug": "2026-08-14-7-source-bound-mcp-템플릿은-portable-launch로-가장하지-않는다"
+      "text": "2026-08-14 (7) — A source-bound MCP template does not pretend to be a portable launch",
+      "slug": "2026-08-14-7-a-source-bound-mcp-template-does-not-pretend-to-be-a-portable-launch"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (5) — 샘플 Skills는 실제 프로세스를 보여준다",
-      "slug": "2026-08-14-5-샘플-skills는-실제-프로세스를-보여준다"
+      "text": "2026-08-14 (5) — Sample Skills show the actual process",
+      "slug": "2026-08-14-5-sample-skills-show-the-actual-process"
     },
     {
       "depth": 2,
-      "text": "2026-08-14 (6) — 들여쓴 frontmatter 선언도 손실 없이 실패시킨다",
-      "slug": "2026-08-14-6-들여쓴-frontmatter-선언도-손실-없이-실패시킨다"
+      "text": "2026-08-14 (6) — Fail an indented frontmatter declaration losslessly too",
+      "slug": "2026-08-14-6-fail-an-indented-frontmatter-declaration-losslessly-too"
     },
     {
       "depth": 2,
-      "text": "2026-08-13 (3) — 올바른 vault binding이 후보 복구보다 먼저다 · 100+는 생성 목표가 아니다",
-      "slug": "2026-08-13-3-올바른-vault-binding이-후보-복구보다-먼저다-100는-생성-목표가-아니다"
+      "text": "2026-08-13 (3) — Correct vault binding comes before candidate recovery: 100+ is not a generation target",
+      "slug": "2026-08-13-3-correct-vault-binding-comes-before-candidate-recovery-100-is-not-a-generation-target"
     },
     {
-      "depth": 3,
-      "text": "관찰된 현상",
-      "slug": "관찰된-현상"
-    },
-    {
-      "depth": 3,
-      "text": "2회전 PO Council과 판정",
-      "slug": "2회전-po-council과-판정"
-    },
-    {
-      "depth": 3,
-      "text": "가장 강한 패배 논거와 반증 조건",
-      "slug": "가장-강한-패배-논거와-반증-조건"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-13 — 온톨로지 최초 진입을 의미 승인 게이트와 파서 무결성에 묶는다",
-      "slug": "2026-08-13-온톨로지-최초-진입을-의미-승인-게이트와-파서-무결성에-묶는다"
-    },
-    {
-      "depth": 3,
-      "text": "관찰",
-      "slug": "관찰"
+      "text": "2026-08-13 — Bind the ontology's first entry to the meaning approval gate and parser integrity",
+      "slug": "2026-08-13-bind-the-ontologys-first-entry-to-the-meaning-approval-gate-and-parser-integrity"
     },
     {
-      "depth": 3,
-      "text": "결정 (집행)",
-      "slug": "결정-집행"
-    },
-    {
-      "depth": 3,
-      "text": "범위 밖",
-      "slug": "범위-밖"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-3"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-14 — 대형 온톨로지 목록은 누락을 표시하고 끝까지 읽게 한다",
-      "slug": "2026-08-14-대형-온톨로지-목록은-누락을-표시하고-끝까지-읽게-한다"
-    },
-    {
-      "depth": 3,
-      "text": "관찰",
-      "slug": "관찰-2"
+      "text": "2026-08-14 — A large ontology list marks omissions and reads through to the end",
+      "slug": "2026-08-14-a-large-ontology-list-marks-omissions-and-reads-through-to-the-end"
     },
     {
-      "depth": 3,
-      "text": "결정 (집행)",
-      "slug": "결정-집행-2"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-4"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-13 (2) — 큰 배열의 확인보다 구현 경로 focus가 먼저다",
-      "slug": "2026-08-13-2-큰-배열의-확인보다-구현-경로-focus가-먼저다"
-    },
-    {
-      "depth": 3,
-      "text": "반증 관측",
-      "slug": "반증-관측"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-6"
+      "text": "2026-08-13 (2) — Implementation-path focus comes before confirming a large array",
+      "slug": "2026-08-13-2-implementation-path-focus-comes-before-confirming-a-large-array"
     },
     {
-      "depth": 3,
-      "text": "가장 강한 반대와 반증 조건",
-      "slug": "가장-강한-반대와-반증-조건"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-13 — 대형 import evidence는 기본 호출에서 128 KiB를 넘기지 않는다",
-      "slug": "2026-08-13-대형-import-evidence는-기본-호출에서-128-kib를-넘기지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "관찰한 문제",
-      "slug": "관찰한-문제"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-7"
-    },
-    {
-      "depth": 3,
-      "text": "왜 이 경계인가",
-      "slug": "왜-이-경계인가"
+      "text": "2026-08-13 — Large import evidence does not exceed 128 KiB on the default call",
+      "slug": "2026-08-13-large-import-evidence-does-not-exceed-128-kib-on-the-default-call"
     },
     {
-      "depth": 3,
-      "text": "카운슬과 가장 강한 반대",
-      "slug": "카운슬과-가장-강한-반대"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건과 다음 행동",
-      "slug": "반증-조건과-다음-행동"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-13 — 프로젝트 상세: 방사 도메인 지도를 은퇴시키고 행+비율 막대 한 문법으로 (갈래 B)",
-      "slug": "2026-08-13-프로젝트-상세-방사-도메인-지도를-은퇴시키고-행비율-막대-한-문법으로-갈래-b"
+      "text": "2026-08-13 — Project detail: retire the radial domain map for one grammar of rows plus ratio bars (branch B)",
+      "slug": "2026-08-13-project-detail-retire-the-radial-domain-map-for-one-grammar-of-rows-plus-ratio-bars-branch-b"
     },
     {
       "depth": 2,
-      "text": "2026-08-12 — 쓰기 화면의 이름은 스튜디오다 (은퇴명 금지를 소유자가 뒤집음)",
-      "slug": "2026-08-12-쓰기-화면의-이름은-스튜디오다-은퇴명-금지를-소유자가-뒤집음"
+      "text": "2026-08-12 — The write screen's name is Studio (the owner reversed the retired-name ban)",
+      "slug": "2026-08-12-the-write-screens-name-is-studio-the-owner-reversed-the-retired-name-ban"
     },
     {
       "depth": 2,
-      "text": "2026-08-12 — 열 것이 없을 때 **스킬 화면은 무대가 된다**, 그리고 무대 칸을 규격에 올린다",
-      "slug": "2026-08-12-열-것이-없을-때-스킬-화면은-무대가-된다-그리고-무대-칸을-규격에-올린다"
+      "text": "2026-08-12 — When there is nothing to open, **the Skills screen becomes a stage**, and the stage slot joins the spec",
+      "slug": "2026-08-12-when-there-is-nothing-to-open-the-skills-screen-becomes-a-stage-and-the-stage-slot-joins-the-spec"
     },
     {
       "depth": 2,
-      "text": "2026-08-12 — 검수는 프로젝트 본문에서 열고, Skills는 좁은 화면에서도 exact rail을 잃지 않는다",
-      "slug": "2026-08-12-검수는-프로젝트-본문에서-열고-skills는-좁은-화면에서도-exact-rail을-잃지-않는다"
+      "text": "2026-08-12 — Open review in the project body, and Skills keeps the exact rail even on a narrow screen",
+      "slug": "2026-08-12-open-review-in-the-project-body-and-skills-keeps-the-exact-rail-even-on-a-narrow-screen"
     },
     {
       "depth": 2,
-      "text": "2026-08-12 — construction은 같은 artifact를 두 깊이로 읽고, Skills는 손실 없는 인계부터 연다",
-      "slug": "2026-08-12-construction은-같은-artifact를-두-깊이로-읽고-skills는-손실-없는-인계부터-연다"
+      "text": "2026-08-12 — Construction reads the same artifact at two depths, and Skills opens with a lossless handoff first",
+      "slug": "2026-08-12-construction-reads-the-same-artifact-at-two-depths-and-skills-opens-with-a-lossless-handoff-first"
     },
     {
       "depth": 2,
-      "text": "2026-08-10 — evidence ingress는 scan 경계까지 닫고 qualification과 분리한다",
-      "slug": "2026-08-10-evidence-ingress는-scan-경계까지-닫고-qualification과-분리한다"
+      "text": "2026-08-10 — Close evidence ingress up to the scan boundary and separate it from qualification",
+      "slug": "2026-08-10-close-evidence-ingress-up-to-the-scan-boundary-and-separate-it-from-qualification"
     },
     {
       "depth": 2,
-      "text": "2026-08-11 — 잠깐 뜨는 표면이 **자기 종류를 선언한다**, 그리고 페이지 틀에 폼 컬럼을 더한다",
-      "slug": "2026-08-11-잠깐-뜨는-표면이-자기-종류를-선언한다-그리고-페이지-틀에-폼-컬럼을-더한다"
+      "text": "2026-08-11 — A briefly appearing surface **declares its own kind**, and adds a form column to the page frame",
+      "slug": "2026-08-11-a-briefly-appearing-surface-declares-its-own-kind-and-adds-a-form-column-to-the-page-frame"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 설정 시트 타입 방언의 **사정거리를 드릴인까지** 넓힌다 (2026-08-02 의 범위 판단을 뒤집는다)",
-      "slug": "2026-08-09-설정-시트-타입-방언의-사정거리를-드릴인까지-넓힌다-2026-08-02-의-범위-판단을-뒤집는다"
+      "text": "2026-08-09 — Extend the settings-sheet type dialect's **reach to the drill-in** (reverses the 2026-08-02 scope decision)",
+      "slug": "2026-08-09-extend-the-settings-sheet-type-dialects-reach-to-the-drill-in-reverses-the-2026-08-02-scope-decision"
     },
     {
       "depth": 2,
-      "text": "2026-08-10 — meaning evidence ingress는 기존 read-only 계약 안에서 넓힌다",
-      "slug": "2026-08-10-meaning-evidence-ingress는-기존-read-only-계약-안에서-넓힌다"
+      "text": "2026-08-10 — Expand meaning evidence ingress within the existing read-only contract",
+      "slug": "2026-08-10-expand-meaning-evidence-ingress-within-the-existing-read-only-contract"
     },
     {
       "depth": 2,
-      "text": "2026-08-10 — O1.5 첫 red는 UI가 아니라 meaning evidence 경계를 먼저 고친다",
-      "slug": "2026-08-10-o15-첫-red는-ui가-아니라-meaning-evidence-경계를-먼저-고친다"
+      "text": "2026-08-10 — O1.5's first red fixes the meaning evidence boundary first, not the UI",
+      "slug": "2026-08-10-o15s-first-red-fixes-the-meaning-evidence-boundary-first-not-the-ui"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — M1.5의 영속 ledger는 기존 competency body와 finalizer receipt까지다",
-      "slug": "2026-08-09-m15의-영속-ledger는-기존-competency-body와-finalizer-receipt까지다"
+      "text": "2026-08-09 — M1.5's persistent ledger extends only to the existing competency body and finalizer receipt",
+      "slug": "2026-08-09-m15s-persistent-ledger-extends-only-to-the-existing-competency-body-and-finalizer-receipt"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — Construction lifecycle은 `reviewPlan → exact approval → writePlan`으로 강제한다",
-      "slug": "2026-08-09-construction-lifecycle은-reviewplan-exact-approval-writeplan으로-강제한다"
+      "text": "2026-08-09 — Enforce the Construction lifecycle as `reviewPlan → exact approval → writePlan`",
+      "slug": "2026-08-09-enforce-the-construction-lifecycle-as-reviewplan-exact-approval-writeplan"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — Construction Qualification은 독립 축의 범주형 판정이다",
-      "slug": "2026-08-09-construction-qualification은-독립-축의-범주형-판정이다"
+      "text": "2026-08-09 — Construction Qualification is a categorical judgment on an independent axis",
+      "slug": "2026-08-09-construction-qualification-is-a-categorical-judgment-on-an-independent-axis"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 공방은 증거 없는 빈 관계를 추천으로 꾸미지 않는다",
-      "slug": "2026-08-09-공방은-증거-없는-빈-관계를-추천으로-꾸미지-않는다"
+      "text": "2026-08-09 — The workshop does not dress up an evidence-less empty relation as a recommendation",
+      "slug": "2026-08-09-the-workshop-does-not-dress-up-an-evidence-less-empty-relation-as-a-recommendation"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — Atlas meta-model은 현재 구현의 경계를 숨기지 않는 한 정본이다",
-      "slug": "2026-08-09-atlas-meta-model은-현재-구현의-경계를-숨기지-않는-한-정본이다"
+      "text": "2026-08-09 — The Atlas meta-model is canonical only as long as it does not hide the current implementation's boundary",
+      "slug": "2026-08-09-the-atlas-meta-model-is-canonical-only-as-long-as-it-does-not-hide-the-current-implementations-boundary"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 현재 MCP inventory는 활성 runtime registry에서만 파생한다",
-      "slug": "2026-08-09-현재-mcp-inventory는-활성-runtime-registry에서만-파생한다"
+      "text": "2026-08-09 — The current MCP inventory derives only from the active runtime registry",
+      "slug": "2026-08-09-the-current-mcp-inventory-derives-only-from-the-active-runtime-registry"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — quick-start는 부분 성공을 완료로 승격하지 않는다",
-      "slug": "2026-08-09-quick-start는-부분-성공을-완료로-승격하지-않는다"
+      "text": "2026-08-09 — quick-start does not promote partial success to completion",
+      "slug": "2026-08-09-quick-start-does-not-promote-partial-success-to-completion"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — agent config의 `ready`는 지원되는 실행 shape를 뜻한다",
-      "slug": "2026-08-09-agent-config의-ready는-지원되는-실행-shape를-뜻한다"
+      "text": "2026-08-09 — `ready` in agent config means a supported execution shape",
+      "slug": "2026-08-09-ready-in-agent-config-means-a-supported-execution-shape"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — ontology construction quality를 Skills와 UI 확장보다 먼저 닫는다",
-      "slug": "2026-08-09-ontology-construction-quality를-skills와-ui-확장보다-먼저-닫는다"
+      "text": "2026-08-09 — Close ontology construction quality before Skills and UI expansion",
+      "slug": "2026-08-09-close-ontology-construction-quality-before-skills-and-ui-expansion"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 신뢰 계약을 먼저 닫고, 5-kind를 검증한 뒤 Skills process를 연다",
-      "slug": "2026-08-09-신뢰-계약을-먼저-닫고-5-kind를-검증한-뒤-skills-process를-연다"
+      "text": "2026-08-09 — Close the trust contract first, validate the 5-kind, then open the Skills process",
+      "slug": "2026-08-09-close-the-trust-contract-first-validate-the-5-kind-then-open-the-skills-process"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 작대기 정리를 **화면에 그려지는 문서 전체**로 넓힌다 (경계는 「사용자가 읽나」)",
-      "slug": "2026-08-09-작대기-정리를-화면에-그려지는-문서-전체로-넓힌다-경계는-사용자가-읽나"
+      "text": "2026-08-09 — Extend the arrow cleanup to **every document rendered on screen** (the boundary is \"does a user read it\")",
+      "slug": "2026-08-09-extend-the-arrow-cleanup-to-every-document-rendered-on-screen-the-boundary-is-does-a-user-read-it"
     },
     {
-      "depth": 3,
-      "text": "되돌린 적이 한 번 있다 — 되잡기 규칙이 과했다",
-      "slug": "되돌린-적이-한-번-있다-되잡기-규칙이-과했다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-09 — 표면 조합 「30종」은 **두 층을 섞은 수**였다 (표면 14 · 컨트롤 17)",
-      "slug": "2026-08-09-표면-조합-30종은-두-층을-섞은-수였다-표면-14-컨트롤-17"
-    },
-    {
-      "depth": 3,
-      "text": "진짜 드리프트는 하나였다",
-      "slug": "진짜-드리프트는-하나였다"
+      "text": "2026-08-09 — The \"30 kinds\" of surface combinations was **a count mixing two layers** (14 surfaces, 17 controls)",
+      "slug": "2026-08-09-the-30-kinds-of-surface-combinations-was-a-count-mixing-two-layers-14-surfaces-17-controls"
     },
     {
-      "depth": 3,
-      "text": "래칫을 두 층으로 갈랐다",
-      "slug": "래칫을-두-층으로-갈랐다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-09 — UI 문구의 작대기를 **전부** 없앤다 (상한 → 금지)",
-      "slug": "2026-08-09-ui-문구의-작대기를-전부-없앤다-상한-금지"
-    },
-    {
-      "depth": 3,
-      "text": "문장을 못박은 시험 6건이 같이 깨졌고, 그게 정상이다",
-      "slug": "문장을-못박은-시험-6건이-같이-깨졌고-그게-정상이다"
+      "text": "2026-08-09 — Remove **every** arrow from UI copy (cap becomes ban)",
+      "slug": "2026-08-09-remove-every-arrow-from-ui-copy-cap-becomes-ban"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 예시 문서에 **의미가 사는 곳만** 깊이를 준다 + 볼트에서 작대기를 없앤다",
-      "slug": "2026-08-09-예시-문서에-의미가-사는-곳만-깊이를-준다-볼트에서-작대기를-없앤다"
-    },
-    {
-      "depth": 3,
-      "text": "113개를 다 늘리지 않았다",
-      "slug": "113개를-다-늘리지-않았다"
-    },
-    {
-      "depth": 3,
-      "text": "🔴 그러면서 내가 작대기를 새로 넣었다",
-      "slug": "그러면서-내가-작대기를-새로-넣었다"
+      "text": "2026-08-09 — Give depth **only where meaning lives** in example docs, and remove arrows from the vault",
+      "slug": "2026-08-09-give-depth-only-where-meaning-lives-in-example-docs-and-remove-arrows-from-the-vault"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 예시 볼트가 **제품이 드러내려는 것**을 담게 한다",
-      "slug": "2026-08-09-예시-볼트가-제품이-드러내려는-것을-담게-한다"
+      "text": "2026-08-09 — Make the example vault carry **what the product means to show**",
+      "slug": "2026-08-09-make-the-example-vault-carry-what-the-product-means-to-show"
     },
     {
-      "depth": 3,
-      "text": "발견: 예시 볼트는 아무도 검사하지 않고 있었다",
-      "slug": "발견-예시-볼트는-아무도-검사하지-않고-있었다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-09 — 도메인 막대는 **크기가 아니라 구성**을 말한다",
-      "slug": "2026-08-09-도메인-막대는-크기가-아니라-구성을-말한다"
+      "text": "2026-08-09 — The domain bar states **composition, not size**",
+      "slug": "2026-08-09-the-domain-bar-states-composition-not-size"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 상자의 생김새에 규격이 없다 — 우선 **래칫으로 상한을 박는다**",
-      "slug": "2026-08-09-상자의-생김새에-규격이-없다-우선-래칫으로-상한을-박는다"
+      "text": "2026-08-09 — There is no spec for the box's shape: first **pin a cap with a ratchet**",
+      "slug": "2026-08-09-there-is-no-spec-for-the-boxs-shape-first-pin-a-cap-with-a-ratchet"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 목록형 목적지의 **페이지 틀**을 규격으로 세운다 (`PAGE_FRAME`)",
-      "slug": "2026-08-09-목록형-목적지의-페이지-틀을-규격으로-세운다-page_frame"
-    },
-    {
-      "depth": 3,
-      "text": "계기가 규격 결함을 두 번 잡았다 (이 기록의 값어치)",
-      "slug": "계기가-규격-결함을-두-번-잡았다-이-기록의-값어치"
+      "text": "2026-08-09 — Set the **page frame** for list-shaped destinations as spec (`PAGE_FRAME`)",
+      "slug": "2026-08-09-set-the-page-frame-for-list-shaped-destinations-as-spec-page_frame"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 스킬은 **별도 목적지**로 짓는다 (같은 날 카운슬의 「LNB 아직 아니다」를 소유자가 뒤집음)",
-      "slug": "2026-08-09-스킬은-별도-목적지로-짓는다-같은-날-카운슬의-lnb-아직-아니다를-소유자가-뒤집음"
+      "text": "2026-08-09 — Build Skills as a **separate destination** (the owner reversed the same-day council's \"LNB not yet\")",
+      "slug": "2026-08-09-build-skills-as-a-separate-destination-the-owner-reversed-the-same-day-councils-lnb-not-yet"
     },
     {
       "depth": 2,
-      "text": "2026-08-09 — 에이전트 **스킬 뭉치**를 Atlas 가 답해 줄 것인가 — 읽기 전용 인벤토리 한 조각만, LNB 는 아직 아니다",
-      "slug": "2026-08-09-에이전트-스킬-뭉치를-atlas-가-답해-줄-것인가-읽기-전용-인벤토리-한-조각만-lnb-는-아직-아니다"
+      "text": "2026-08-09 — Should Atlas answer for the agent's **skill bundle**? Only a read-only inventory slice, LNB not yet",
+      "slug": "2026-08-09-should-atlas-answer-for-the-agents-skill-bundle-only-a-read-only-inventory-slice-lnb-not-yet"
     },
     {
-      "depth": 3,
-      "text": "⚠️ 소집자 정정 — 판정을 움직인 전제 하나가 검증에서 무너졌다",
-      "slug": "소집자-정정-판정을-움직인-전제-하나가-검증에서-무너졌다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-07 — 하단 탭바 예약고는 **페이지가 소유한다** (전날의 「셸로 올린다」 권고를 뒤집음)",
-      "slug": "2026-08-07-하단-탭바-예약고는-페이지가-소유한다-전날의-셸로-올린다-권고를-뒤집음"
+      "text": "2026-08-07 — The bottom tab-bar reserve is **owned by the page** (reverses the previous day's \"move it to the shell\" recommendation)",
+      "slug": "2026-08-07-the-bottom-tab-bar-reserve-is-owned-by-the-page-reverses-the-previous-days-move-it-to-the-shell-recommendation"
     },
     {
       "depth": 2,
-      "text": "2026-08-06 — 그림자 사다리를 손으로 쓴 기하 0으로 수렴, 지도 패널의 **둘째 잉크 램프는 남긴다**",
-      "slug": "2026-08-06-그림자-사다리를-손으로-쓴-기하-0으로-수렴-지도-패널의-둘째-잉크-램프는-남긴다"
+      "text": "2026-08-06 — Converge the shadow ladder to hand-written geometry 0, keep **the map panel's second ink ramp**",
+      "slug": "2026-08-06-converge-the-shadow-ladder-to-hand-written-geometry-0-keep-the-map-panels-second-ink-ramp"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 터치 계약: 아이콘 모양은 고쳤고, **`--control-h-*` 승격은 소유자 판단으로 남긴다**",
-      "slug": "2026-08-05-터치-계약-아이콘-모양은-고쳤고---control-h--승격은-소유자-판단으로-남긴다"
-    },
-    {
-      "depth": 3,
-      "text": "고친 것 — `icon` 모양이 coarse 승격을 못 받고 있었다",
-      "slug": "고친-것-icon-모양이-coarse-승격을-못-받고-있었다"
+      "text": "2026-08-05 — Touch contract: icon shape is fixed, **`--control-h-*` promotion is left to owner judgment**",
+      "slug": "2026-08-05-touch-contract-icon-shape-is-fixed---control-h--promotion-is-left-to-owner-judgment"
     },
     {
-      "depth": 3,
-      "text": "안 고친 것 — 그리고 왜 안 고쳤나",
-      "slug": "안-고친-것-그리고-왜-안-고쳤나"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 초점은 **base 가 바닥을 깐다**: 104곳을 손으로 고치지 않는다",
-      "slug": "2026-08-05-초점은-base-가-바닥을-깐다-104곳을-손으로-고치지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "값 층만으로는 부족했다",
-      "slug": "값-층만으로는-부족했다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 초점도 같은 모양으로",
-      "slug": "결정-초점도-같은-모양으로"
-    },
-    {
-      "depth": 3,
-      "text": "실측 — 대조군을 두고 쟀다",
-      "slug": "실측-대조군을-두고-쟀다"
+      "text": "2026-08-05 — Focus: **the base lays the floor**: no hand-fixing 104 spots",
+      "slug": "2026-08-05-focus-the-base-lays-the-floor-no-hand-fixing-104-spots"
     },
     {
-      "depth": 3,
-      "text": "게이트가 헐거웠다 — 프로브가 잡았다",
-      "slug": "게이트가-헐거웠다-프로브가-잡았다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 서브에이전트 4인 병렬 감사: 값 층에 **초점 링이 없었고**, 색 게이트는 **한 번도 돌지 않았다**",
-      "slug": "2026-08-05-서브에이전트-4인-병렬-감사-값-층에-초점-링이-없었고-색-게이트는-한-번도-돌지-않았다"
-    },
-    {
-      "depth": 3,
-      "text": "왜 병렬 조사였나",
-      "slug": "왜-병렬-조사였나"
-    },
-    {
-      "depth": 3,
-      "text": "발견 ① — 값 층 프리미티브에 초점 링이 없었다 (106곳)",
-      "slug": "발견-값-층-프리미티브에-초점-링이-없었다-106곳"
-    },
-    {
-      "depth": 3,
-      "text": "발견 ② — 색 게이트가 어디에도 물려 있지 않았다",
-      "slug": "발견-색-게이트가-어디에도-물려-있지-않았다"
-    },
-    {
-      "depth": 3,
-      "text": "발견 ③ — 그 게이트를 물리고 사정거리를 넓히자 실제 결함이 나왔다",
-      "slug": "발견-그-게이트를-물리고-사정거리를-넓히자-실제-결함이-나왔다"
-    },
-    {
-      "depth": 3,
-      "text": "발견 ④ — 죽은 8색 팔레트",
-      "slug": "발견-죽은-8색-팔레트"
-    },
-    {
-      "depth": 3,
-      "text": "내 게이트가 오탐이었다 — 새 게이트도 같은 규율로 재야 한다",
-      "slug": "내-게이트가-오탐이었다-새-게이트도-같은-규율로-재야-한다"
-    },
-    {
-      "depth": 3,
-      "text": "남은 것 — 측정해서 넘긴다",
-      "slug": "남은-것-측정해서-넘긴다"
+      "text": "2026-08-05 — Four-subagent parallel audit: the value layer **had no focus ring**, and the color gate **had never run**",
+      "slug": "2026-08-05-four-subagent-parallel-audit-the-value-layer-had-no-focus-ring-and-the-color-gate-had-never-run"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 「전부 0」은 **DOM 한정이었다**: 그리기 표면 둘이 게이트 밖에 있었다",
-      "slug": "2026-08-05-전부-0은-dom-한정이었다-그리기-표면-둘이-게이트-밖에-있었다"
+      "text": "2026-08-05 — \"All zero\" was **DOM-only**: two drawing surfaces sat outside the gate",
+      "slug": "2026-08-05-all-zero-was-dom-only-two-drawing-surfaces-sat-outside-the-gate"
     },
     {
-      "depth": 3,
-      "text": "「램프 밖 0」이라 보고한 뒤에 나온 것",
-      "slug": "램프-밖-0이라-보고한-뒤에-나온-것"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 층마다 다른 처방",
-      "slug": "결정-층마다-다른-처방"
-    },
-    {
-      "depth": 3,
-      "text": "나머지 사각지대는 실제로 재서 clean 이었다",
-      "slug": "나머지-사각지대는-실제로-재서-clean-이었다"
-    },
-    {
-      "depth": 3,
-      "text": "교훈 — 「0」에는 언제나 한정이 붙는다",
-      "slug": "교훈-0에는-언제나-한정이-붙는다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 램프 밖 값 **0**(DOM 한정): 남은 205건을 전부 갚았고, 그 과정에서 내 분석이 틀렸었다",
-      "slug": "2026-08-05-램프-밖-값-0dom-한정-남은-205건을-전부-갚았고-그-과정에서-내-분석이-틀렸었다"
-    },
-    {
-      "depth": 3,
-      "text": "소유자 지적이 옳았다",
-      "slug": "소유자-지적이-옳았다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 틀렸나 — 후보 집합을 절반만 봤다",
-      "slug": "무엇이-틀렸나-후보-집합을-절반만-봤다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 205건 전량 상환",
-      "slug": "결정-205건-전량-상환"
-    },
-    {
-      "depth": 3,
-      "text": "실측 — 12개 라우트, 정적 export 두 벌 비교",
-      "slug": "실측-12개-라우트-정적-export-두-벌-비교"
+      "text": "2026-08-05 — Off-ramp value **0** (DOM-only): paid off all 205 remaining cases, and my analysis was wrong along the way",
+      "slug": "2026-08-05-off-ramp-value-0-dom-only-paid-off-all-205-remaining-cases-and-my-analysis-was-wrong-along-the-way"
     },
     {
-      "depth": 3,
-      "text": "부수 — 같은 병을 세 번째로 만났다",
-      "slug": "부수-같은-병을-세-번째로-만났다"
-    },
-    {
-      "depth": 3,
-      "text": "결과",
-      "slug": "결과"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 행간 부채를 **두 부류로 가른다**: 숫자 계열 86건은 픽셀 0, 비율 계열은 디자인 판정 *(부분 뒤집힘 → 위 기록)*",
-      "slug": "2026-08-05-행간-부채를-두-부류로-가른다-숫자-계열-86건은-픽셀-0-비율-계열은-디자인-판정-부분-뒤집힘-위-기록"
-    },
-    {
-      "depth": 3,
-      "text": "종전 판단의 과잉 일반화",
-      "slug": "종전-판단의-과잉-일반화"
-    },
-    {
-      "depth": 3,
-      "text": "결정 ①: 숫자 계열 86건 전량 램프로 (픽셀 0)",
-      "slug": "결정-숫자-계열-86건-전량-램프로-픽셀-0"
+      "text": "2026-08-05 — Split line-height debt **into two kinds**: 86 numeric cases go to pixel 0, ratio cases go to design judgment *(partially reversed, see record above)*",
+      "slug": "2026-08-05-split-line-height-debt-into-two-kinds-86-numeric-cases-go-to-pixel-0-ratio-cases-go-to-design-judgment-partially-reversed-see-record-above"
     },
     {
-      "depth": 3,
-      "text": "결정 ②: 비율 계열 104건은 **안 건드린다**, 대신 실측을 장부에 남긴다",
-      "slug": "결정-비율-계열-104건은-안-건드린다-대신-실측을-장부에-남긴다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 소유자 육안 검토: 무게·아이콘 변경 **반증 조건 3건 모두 미관측 → 유지**",
-      "slug": "2026-08-05-소유자-육안-검토-무게아이콘-변경-반증-조건-3건-모두-미관측-유지"
-    },
-    {
-      "depth": 3,
-      "text": "어떻게 봤나 — 시뮬레이션이 아니라 두 빌드",
-      "slug": "어떻게-봤나-시뮬레이션이-아니라-두-빌드"
+      "text": "2026-08-05 — Owner visual review: weight/icon change **all 3 falsifier conditions unobserved, so kept**",
+      "slug": "2026-08-05-owner-visual-review-weighticon-change-all-3-falsifier-conditions-unobserved-so-kept"
     },
     {
-      "depth": 3,
-      "text": "관측 결과 — 셋 다 반증 조건에 안 걸렸다",
-      "slug": "관측-결과-셋-다-반증-조건에-안-걸렸다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 무게 축을 닫은 **뒤에도** 700 이 그려지고 있었다: 값이 안 남는 결함",
-      "slug": "2026-08-05-무게-축을-닫은-뒤에도-700-이-그려지고-있었다-값이-안-남는-결함"
-    },
-    {
-      "depth": 3,
-      "text": "재검에서 나온 것",
-      "slug": "재검에서-나온-것"
+      "text": "2026-08-05 — 700 was still being rendered **even after** closing the weight axis: a defect where the value doesn't stick",
+      "slug": "2026-08-05-700-was-still-being-rendered-even-after-closing-the-weight-axis-a-defect-where-the-value-doesnt-stick"
     },
     {
-      "depth": 3,
-      "text": "결정 — 「700 금지」가 아니라 「명시 요구」",
-      "slug": "결정-700-금지가-아니라-명시-요구"
-    },
-    {
-      "depth": 3,
-      "text": "이 게이트를 쓰다가 스스로 밟은 함정",
-      "slug": "이-게이트를-쓰다가-스스로-밟은-함정"
-    },
-    {
-      "depth": 3,
-      "text": "실물 재검 — 정적 export 8개 라우트",
-      "slug": "실물-재검-정적-export-8개-라우트"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 디자인 문서를 쪼갠다: 다만 254KB 가 아니라 **매 턴 실리는 63KB** 를",
-      "slug": "2026-08-05-디자인-문서를-쪼갠다-다만-254kb-가-아니라-매-턴-실리는-63kb-를"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 잰 것 — 직관과 답이 갈렸다",
-      "slug": "먼저-잰-것-직관과-답이-갈렸다"
+      "text": "2026-08-05 — Split the design doc: not the 254KB, but **the 63KB carried every turn**",
+      "slug": "2026-08-05-split-the-design-doc-not-the-254kb-but-the-63kb-carried-every-turn"
     },
     {
-      "depth": 3,
-      "text": "결정 ①: `DESIGN-SYSTEM.md` 는 파일로 쪼개지 않는다 — 목차를 **생성**한다",
-      "slug": "결정-design-systemmd-는-파일로-쪼개지-않는다-목차를-생성한다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 ②: 쪼갤 것은 `design.md` — **규칙(무엇)과 사연(왜)** 으로 가른다",
-      "slug": "결정-쪼갤-것은-designmd-규칙무엇과-사연왜-으로-가른다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 ③: 「왜 둘이 따로 있지」에 문서 자신이 답하게 한다",
-      "slug": "결정-왜-둘이-따로-있지에-문서-자신이-답하게-한다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 아이콘 램프는 소비처가 0이었고, 게이트는 73% 를 못 보고 있었다",
-      "slug": "2026-08-05-아이콘-램프는-소비처가-0이었고-게이트는-73-를-못-보고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "두 가지를 몰랐다",
-      "slug": "두-가지를-몰랐다"
+      "text": "2026-08-05 — The icon ramp had zero consumers, and the gate was missing 73%",
+      "slug": "2026-08-05-the-icon-ramp-had-zero-consumers-and-the-gate-was-missing-73"
     },
     {
-      "depth": 3,
-      "text": "결정 — 스텝이 판정 없이 정해지는 것만 갚고, 타이는 넘긴다",
-      "slug": "결정-스텝이-판정-없이-정해지는-것만-갚고-타이는-넘긴다"
-    },
-    {
-      "depth": 3,
-      "text": "소스 스캔의 0을 화면의 0으로 읽지 않는다",
-      "slug": "소스-스캔의-0을-화면의-0으로-읽지-않는다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 금지 목록은 정본 하나 + 부분집합: 「파일 하나로 합치기」는 반려",
-      "slug": "2026-08-05-금지-목록은-정본-하나-부분집합-파일-하나로-합치기는-반려"
-    },
-    {
-      "depth": 3,
-      "text": "실측 — 2개가 아니라 3곳이었고, 어느 둘도 일치하지 않았다",
-      "slug": "실측-2개가-아니라-3곳이었고-어느-둘도-일치하지-않았다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 정본 하나, 사본은 선언된 부분집합, 짝은 슬러그로",
-      "slug": "결정-정본-하나-사본은-선언된-부분집합-짝은-슬러그로"
+      "text": "2026-08-05 — The forbidden list is one canonical source plus subsets: merging into a single file is rejected",
+      "slug": "2026-08-05-the-forbidden-list-is-one-canonical-source-plus-subsets-merging-into-a-single-file-is-rejected"
     },
     {
-      "depth": 3,
-      "text": "「파일 하나로 합치기」를 반려한 이유",
-      "slug": "파일-하나로-합치기를-반려한-이유"
-    },
-    {
-      "depth": 3,
-      "text": "왜 문장이 아니라 슬러그를 비교하나",
-      "slug": "왜-문장이-아니라-슬러그를-비교하나"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 무게 축은 닫힌 적이 없었다: 주석이 규격인 척한 216곳",
-      "slug": "2026-08-05-무게-축은-닫힌-적이-없었다-주석이-규격인-척한-216곳"
-    },
-    {
-      "depth": 3,
-      "text": "무엇을 발견했나",
-      "slug": "무엇을-발견했나"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 값을 먼저 옮기고 게이트는 마지막에 켠다",
-      "slug": "결정-값을-먼저-옮기고-게이트는-마지막에-켠다"
+      "text": "2026-08-05 — The weight axis was never closed: 216 places where a comment pretended to be the spec",
+      "slug": "2026-08-05-the-weight-axis-was-never-closed-216-places-where-a-comment-pretended-to-be-the-spec"
     },
     {
-      "depth": 3,
-      "text": "부수 발견 — 스코프 블록 둘이 규격을 통째로 끄고 있었다",
-      "slug": "부수-발견-스코프-블록-둘이-규격을-통째로-끄고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "게이트",
-      "slug": "게이트"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 층위 사다리를 절반만 이름 붙인다 (그 절반이 정직한 선)",
-      "slug": "2026-08-05-층위-사다리를-절반만-이름-붙인다-그-절반이-정직한-선"
+      "text": "2026-08-05 — Name only half of the tier ladder (that half is the honest line)",
+      "slug": "2026-08-05-name-only-half-of-the-tier-ladder-that-half-is-the-honest-line"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 채워진 악센트 버튼은 호버에서 어두워진다 (관례 vs 접근성)",
-      "slug": "2026-08-05-채워진-악센트-버튼은-호버에서-어두워진다-관례-vs-접근성"
+      "text": "2026-08-05 — Filled accent buttons darken on hover (convention vs accessibility)",
+      "slug": "2026-08-05-filled-accent-buttons-darken-on-hover-convention-vs-accessibility"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 자간·무게·팔레트 세 축을 닫는다 + 호버 대비가 한 번도 측정된 적 없음을 기록",
-      "slug": "2026-08-05-자간무게팔레트-세-축을-닫는다-호버-대비가-한-번도-측정된-적-없음을-기록"
+      "text": "2026-08-05 — Close the three axes: letter-spacing, weight, palette, and record that hover contrast was never measured",
+      "slug": "2026-08-05-close-the-three-axes-letter-spacing-weight-palette-and-record-that-hover-contrast-was-never-measured"
     },
     {
-      "depth": 3,
-      "text": "🔴 미해결로 남긴 것 — 호버 상태 대비 (같은 날 발견)",
-      "slug": "미해결로-남긴-것-호버-상태-대비-같은-날-발견"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-05 — 램프 부채 예외를 0으로: 마지막 93건을 디자인 시스템으로 옮긴다",
-      "slug": "2026-08-05-램프-부채-예외를-0으로-마지막-93건을-디자인-시스템으로-옮긴다"
+      "text": "2026-08-05 — Bring ramp-debt exceptions to zero: move the last 93 cases into the design system",
+      "slug": "2026-08-05-bring-ramp-debt-exceptions-to-zero-move-the-last-93-cases-into-the-design-system"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 누를 수 있는 것은 전부 `pointer` 커서를 쓴다",
-      "slug": "2026-08-05-누를-수-있는-것은-전부-pointer-커서를-쓴다"
+      "text": "2026-08-05 — Everything clickable uses the `pointer` cursor",
+      "slug": "2026-08-05-everything-clickable-uses-the-pointer-cursor"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 공방의 평행 그림자 사다리를 정본 사다리로 접는다 + 인라인 `boxShadow` 게이트",
-      "slug": "2026-08-04-공방의-평행-그림자-사다리를-정본-사다리로-접는다-인라인-boxshadow-게이트"
+      "text": "2026-08-04 — Fold the workshop's parallel shadow ladder into the canonical ladder, plus an inline `boxShadow` gate",
+      "slug": "2026-08-04-fold-the-workshops-parallel-shadow-ladder-into-the-canonical-ladder-plus-an-inline-boxshadow-gate"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 색 게이트를 「등록된 튜플 거부」에서 「무채색만 통과」로 뒤집는다 + 첫 실행 시트의 OS 포커스 링 제거",
-      "slug": "2026-08-04-색-게이트를-등록된-튜플-거부에서-무채색만-통과로-뒤집는다-첫-실행-시트의-os-포커스-링-제거"
+      "text": "2026-08-04 — Flip the color gate from rejecting registered tuples to allowing only neutrals, and remove the OS focus ring on the first-run sheet",
+      "slug": "2026-08-04-flip-the-color-gate-from-rejecting-registered-tuples-to-allowing-only-neutrals-and-remove-the-os-focus-ring-on-the-first-run-sheet"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 「연결하세요」를 실행 가능하게: `connect_project_source` / `disconnect_project_source` + 볼트 위치로부터의 소스 루트 추정",
-      "slug": "2026-08-04-연결하세요를-실행-가능하게-connect_project_source-disconnect_project_source-볼트-위치로부터의-소스-루트-추정"
+      "text": "2026-08-04 — Make ‘Connect’ actionable: `connect_project_source` / `disconnect_project_source`, plus source-root inference from the vault location",
+      "slug": "2026-08-04-make-connect-actionable-connect_project_source-disconnect_project_source-plus-source-root-inference-from-the-vault-location"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 타입-크기 분리 반려: 예측 56 의 실측은 2~3 — 타입은 size 에 동승한다, 대신 링크-바닥-24 배당 10 을 회수한다",
-      "slug": "2026-08-04-타입-크기-분리-반려-예측-56-의-실측은-23-타입은-size-에-동승한다-대신-링크-바닥-24-배당-10-을-회수한다"
+      "text": "2026-08-04 — Type-size separation rejected: predicted 56, measured 2-3, type rides along with size, instead reclaim allocation 10 from link-floor-24",
+      "slug": "2026-08-04-type-size-separation-rejected-predicted-56-measured-2-3-type-rides-along-with-size-instead-reclaim-allocation-10-from-link-floor-24"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 컨트롤 부채에서 「근거 없음」을 갈라낸다: 0 에 닿을 수 없는 수는 진도 눈금이 아니다",
-      "slug": "2026-08-04-컨트롤-부채에서-근거-없음을-갈라낸다-0-에-닿을-수-없는-수는-진도-눈금이-아니다"
+      "text": "2026-08-04 — Split out ‘no evidence’ from control debt: a number that can never reach 0 is not a progress gauge",
+      "slug": "2026-08-04-split-out-no-evidence-from-control-debt-a-number-that-can-never-reach-0-is-not-a-progress-gauge"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 콘텐츠 아이콘 크기 램프 3단(12/14/16) 등재: 실사용 시험이 실측한 첫 구멍 — 값은 prop 채널에 살아서 어떤 게이트도 못 봤다",
-      "slug": "2026-08-04-콘텐츠-아이콘-크기-램프-3단121416-등재-실사용-시험이-실측한-첫-구멍-값은-prop-채널에-살아서-어떤-게이트도-못-봤다"
+      "text": "2026-08-04 — Register the 3-step content icon size ramp (12/14/16): the first gap the field trial actually measured, the value lived in a prop channel so no gate saw it",
+      "slug": "2026-08-04-register-the-3-step-content-icon-size-ramp-121416-the-first-gap-the-field-trial-actually-measured-the-value-lived-in-a-prop-channel-so-no-gate-saw-it"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 폭에는 램프를 두지 않는다: 표면 폭은 유도값이고, 「가산 확장의 경량 경로」는 신설이 아니라 이미 있던 것의 문서화다",
-      "slug": "2026-08-04-폭에는-램프를-두지-않는다-표면-폭은-유도값이고-가산-확장의-경량-경로는-신설이-아니라-이미-있던-것의-문서화다"
+      "text": "2026-08-04 — No ramp for width: surface width is a derived value, and ‘the lightweight path for additive expansion’ documents what already existed rather than adding something new",
+      "slug": "2026-08-04-no-ramp-for-width-surface-width-is-a-derived-value-and-the-lightweight-path-for-additive-expansion-documents-what-already-existed-rather-than-adding-something-new"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — link 바닥 24: 값 층이 잘못 인용한 44 를 걷어내고, inline 축을 런타임 계기로 대체한다",
-      "slug": "2026-08-04-link-바닥-24-값-층이-잘못-인용한-44-를-걷어내고-inline-축을-런타임-계기로-대체한다"
+      "text": "2026-08-04 — Link floor 24: remove the 44 the value layer misquoted, and replace the inline axis with a runtime instrument",
+      "slug": "2026-08-04-link-floor-24-remove-the-44-the-value-layer-misquoted-and-replace-the-inline-axis-with-a-runtime-instrument"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 통합 라운드: 부채 168 을 한 표로 재고 조합으로 판정 — 등재 검증 7 · `link` 의 잘못된 바닥(2.5.5 값을 2.5.8 이라 인용) 확인 · 모노 명령 태그 부품 승격 예고",
-      "slug": "2026-08-04-통합-라운드-부채-168-을-한-표로-재고-조합으로-판정-등재-검증-7-link-의-잘못된-바닥255-값을-258-이라-인용-확인-모노-명령-태그-부품-승격-예고"
+      "text": "2026-08-04 — Consolidation round: inventory debt-168 in one table and judge it by combination, 7 registration verifications, confirm `link`'s wrong floor (citing the 2.5.5 value as 2.5.8), and notice of promoting the mono command-tag part",
+      "slug": "2026-08-04-consolidation-round-inventory-debt-168-in-one-table-and-judge-it-by-combination-7-registration-verifications-confirm-links-wrong-floor-citing-the-255-value-as-258-and-notice-of-promoting-the-mono-command-tag-part"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 현재 source와 오래된 competency receipt를 같은 `source_changed`로 부르지 않는다",
-      "slug": "2026-08-04-현재-source와-오래된-competency-receipt를-같은-source_changed로-부르지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-2"
+      "text": "2026-08-04 — Don't call the current source and a stale competency receipt by the same `source_changed`",
+      "slug": "2026-08-04-dont-call-the-current-source-and-a-stale-competency-receipt-by-the-same-source_changed"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 열린 표면이 확인한 잉크 램프의 경계: 값을 또 올리는 대신 라이선스를 명문화한다",
-      "slug": "2026-08-04-열린-표면이-확인한-잉크-램프의-경계-값을-또-올리는-대신-라이선스를-명문화한다"
+      "text": "2026-08-04 — The ink-ramp boundary an open surface confirmed: codify the license instead of raising the value again",
+      "slug": "2026-08-04-the-ink-ramp-boundary-an-open-surface-confirmed-codify-the-license-instead-of-raising-the-value-again"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — Rust의 첫 근거는 의존 화살표가 아니라 feature 조건의 정본 provenance다",
-      "slug": "2026-08-04-rust의-첫-근거는-의존-화살표가-아니라-feature-조건의-정본-provenance다"
+      "text": "2026-08-04 — Rust's first evidence is not a dependency arrow but the canonical provenance of a feature condition",
+      "slug": "2026-08-04-rusts-first-evidence-is-not-a-dependency-arrow-but-the-canonical-provenance-of-a-feature-condition"
     },
     {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-3"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-04 — import 승인 질문은 제품 코드의 값 사용 근거가 있을 때만 자격을 얻는다",
-      "slug": "2026-08-04-import-승인-질문은-제품-코드의-값-사용-근거가-있을-때만-자격을-얻는다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-4"
+      "text": "2026-08-04 — An import approval question only qualifies when there is evidence the product code actually uses the value",
+      "slug": "2026-08-04-an-import-approval-question-only-qualifies-when-there-is-evidence-the-product-code-actually-uses-the-value"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — import 후보의 첫 출력은 180개 목록이 아니라 승인 가능한 관계 질문 한 건이다",
-      "slug": "2026-08-04-import-후보의-첫-출력은-180개-목록이-아니라-승인-가능한-관계-질문-한-건이다"
+      "text": "2026-08-04 — The first output for import candidates is one approvable relation question, not a list of 180",
+      "slug": "2026-08-04-the-first-output-for-import-candidates-is-one-approvable-relation-question-not-a-list-of-180"
     },
     {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-5"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-04 — 영향의 첫 답은 숫자가 아니라 근거 자격이다",
-      "slug": "2026-08-04-영향의-첫-답은-숫자가-아니라-근거-자격이다"
+      "text": "2026-08-04 — The first answer about impact is evidence qualification, not a number",
+      "slug": "2026-08-04-the-first-answer-about-impact-is-evidence-qualification-not-a-number"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — import는 의존성의 증거이지 스스로 승인되는 온톨로지 관계가 아니다",
-      "slug": "2026-08-04-import는-의존성의-증거이지-스스로-승인되는-온톨로지-관계가-아니다"
+      "text": "2026-08-04 — An import is evidence of a dependency, not a self-approving ontology relation",
+      "slug": "2026-08-04-an-import-is-evidence-of-a-dependency-not-a-self-approving-ontology-relation"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 의미 수리의 첫 읽기는 파생 지시가 아니라 실행 가능한 20개 단위 호출이다",
-      "slug": "2026-08-04-의미-수리의-첫-읽기는-파생-지시가-아니라-실행-가능한-20개-단위-호출이다"
+      "text": "2026-08-04 — The first read of meaning repair is 20 executable unit calls, not derived instructions",
+      "slug": "2026-08-04-the-first-read-of-meaning-repair-is-20-executable-unit-calls-not-derived-instructions"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 의미 수리는 더 긴 인수인계가 아니라 첫 행동에 걸린 증거 분리 패킷이다",
-      "slug": "2026-08-03-의미-수리는-더-긴-인수인계가-아니라-첫-행동에-걸린-증거-분리-패킷이다"
+      "text": "2026-08-03 — Meaning repair is an evidence-separation packet staked on the first action, not a longer handoff",
+      "slug": "2026-08-03-meaning-repair-is-an-evidence-separation-packet-staked-on-the-first-action-not-a-longer-handoff"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 새 MCP 인수인계가 사람의 소스 연결을 스스로 재검증한다",
-      "slug": "2026-08-03-새-mcp-인수인계가-사람의-소스-연결을-스스로-재검증한다"
+      "text": "2026-08-03 — The new MCP handoff re-verifies the person's source connection on its own",
+      "slug": "2026-08-03-the-new-mcp-handoff-re-verifies-the-persons-source-connection-on-its-own"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 값 층 라운드 3: 남은 77을 전수 분류하니 «단일 구멍»이 아니라 «겹친 구멍»이었다 — 축 0개, 방언 판정 1건(404 표준 버튼), 회수 5",
-      "slug": "2026-08-04-값-층-라운드-3-남은-77을-전수-분류하니-단일-구멍이-아니라-겹친-구멍이었다-축-0개-방언-판정-1건404-표준-버튼-회수-5"
+      "text": "2026-08-04 — Value layer round 3: classifying the remaining 77 found not a single gap but an overlapping one, 0 axes, 1 dialect ruling (404 standard button), 5 reclaimed",
+      "slug": "2026-08-04-value-layer-round-3-classifying-the-remaining-77-found-not-a-single-gap-but-an-overlapping-one-0-axes-1-dialect-ruling-404-standard-button-5-reclaimed"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 죽은 프리미티브 둘을 지운다. `↗` 허용 열은 남기되, 게이트가 소비처 없이 서게 고친다",
-      "slug": "2026-08-03-죽은-프리미티브-둘을-지운다-허용-열은-남기되-게이트가-소비처-없이-서게-고친다"
+      "text": "2026-08-03 — Delete two dead primitives. Keep the `↗` allowed column, but fix the gate to stand without a consumer",
+      "slug": "2026-08-03-delete-two-dead-primitives-keep-the-allowed-column-but-fix-the-gate-to-stand-without-a-consumer"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 타일 치수는 하나다: `--docs-header-tile-size`(34) 삭제, 정사각 아이콘 타일은 전부 36",
-      "slug": "2026-08-03-타일-치수는-하나다---docs-header-tile-size34-삭제-정사각-아이콘-타일은-전부-36"
+      "text": "2026-08-03 — Tile size is one value: delete `--docs-header-tile-size` (34), every square icon tile becomes 36",
+      "slug": "2026-08-03-tile-size-is-one-value-delete---docs-header-tile-size-34-every-square-icon-tile-becomes-36"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 「규격을 바꾸려면 「체계」를 부른다」에 게이트를 단다: 판정은 파일 이름이 아니라 규격 센서스",
-      "slug": "2026-08-03-규격을-바꾸려면-체계를-부른다에-게이트를-단다-판정은-파일-이름이-아니라-규격-센서스"
+      "text": "2026-08-03 — Add a gate to ‘changing the spec calls the system’: the ruling comes from a spec census, not a file name",
+      "slug": "2026-08-03-add-a-gate-to-changing-the-spec-calls-the-system-the-ruling-comes-from-a-spec-census-not-a-file-name"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 값 층의 반복 구멍 셋을 메운다: 마이크로 티어(반경 `micro` + 칩 `xs`) · 기본 보더 다수 정합 · `tone: 'success'` 글자 역할 재지정",
-      "slug": "2026-08-03-값-층의-반복-구멍-셋을-메운다-마이크로-티어반경-micro-칩-xs-기본-보더-다수-정합-tone-success-글자-역할-재지정"
+      "text": "2026-08-03 — Fill three recurring gaps in the value layer: the micro tier (radius `micro` + chip `xs`), majority default-border alignment, and reassigning the `tone: 'success'` text role",
+      "slug": "2026-08-03-fill-three-recurring-gaps-in-the-value-layer-the-micro-tier-radius-micro-chip-xs-majority-default-border-alignment-and-reassigning-the-tone-success-text-role"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 높이 사다리 2차 정정: 복원은 칩·필에서 멈춰 있었다 — 가로 모양 전 조합에 명시 플로어",
-      "slug": "2026-08-03-높이-사다리-2차-정정-복원은-칩필에서-멈춰-있었다-가로-모양-전-조합에-명시-플로어"
+      "text": "2026-08-03 — Second correction to the height ladder: the restoration had stopped at chips and pills, an explicit floor across every horizontal-shape combination",
+      "slug": "2026-08-03-second-correction-to-the-height-ladder-the-restoration-had-stopped-at-chips-and-pills-an-explicit-floor-across-every-horizontal-shape-combination"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 온톨로지 구축의 첫 최고수준 기준은 「더 긴 프롬프트」가 아니라 CQ의 `each`를 거짓 통과시키지 않는 자격 판정이다",
-      "slug": "2026-08-03-온톨로지-구축의-첫-최고수준-기준은-더-긴-프롬프트가-아니라-cq의-each를-거짓-통과시키지-않는-자격-판정이다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-6"
+      "text": "2026-08-03 — The first top-level bar for ontology construction is a qualification ruling that never lets a CQ's `each` pass falsely, not ‘a longer prompt’",
+      "slug": "2026-08-03-the-first-top-level-bar-for-ontology-construction-is-a-qualification-ruling-that-never-lets-a-cqs-each-pass-falsely-not-a-longer-prompt"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — 「기본값은 패딩이 높이를 정한다」를 뒤집는다: 컨트롤 높이는 사다리가 정하고 `fixedHeight` 축은 없앤다",
-      "slug": "2026-08-03-기본값은-패딩이-높이를-정한다를-뒤집는다-컨트롤-높이는-사다리가-정하고-fixedheight-축은-없앤다"
+      "text": "2026-08-03 — Flip ‘padding decides height by default’: the ladder decides control height, and the `fixedHeight` axis is removed",
+      "slug": "2026-08-03-flip-padding-decides-height-by-default-the-ladder-decides-control-height-and-the-fixedheight-axis-is-removed"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — README는 실제 화면을 먼저 증명하고, 기술 계약은 짧은 경계와 권위 가이드로 나눈다",
-      "slug": "2026-08-03-readme는-실제-화면을-먼저-증명하고-기술-계약은-짧은-경계와-권위-가이드로-나눈다"
+      "text": "2026-08-03 — README proves the real screen first, and splits the technical contract into a short boundary plus an authority guide",
+      "slug": "2026-08-03-readme-proves-the-real-screen-first-and-splits-the-technical-contract-into-a-short-boundary-plus-an-authority-guide"
     },
     {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-7"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-03 — 같은 것을 여섯 이름으로 부르던 화면을 「폴더」 하나로 · 잠긴 기능을 고장으로 읽게 하던 신호를 연결 상태에 묶는다",
-      "slug": "2026-08-03-같은-것을-여섯-이름으로-부르던-화면을-폴더-하나로-잠긴-기능을-고장으로-읽게-하던-신호를-연결-상태에-묶는다"
+      "text": "2026-08-03 — Collapse the screen that called the same thing by six names down to one ‘folder’, and tie the signal that made a locked feature read as broken to connection state",
+      "slug": "2026-08-03-collapse-the-screen-that-called-the-same-thing-by-six-names-down-to-one-folder-and-tie-the-signal-that-made-a-locked-feature-read-as-broken-to-connection-state"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — README의 최근 변경 증명은 전체 설치 앱 프레임과 부모 맥락을 보존한다",
-      "slug": "2026-08-03-readme의-최근-변경-증명은-전체-설치-앱-프레임과-부모-맥락을-보존한다"
+      "text": "2026-08-03 — README's proof of the recent change preserves the full installed-app frame and parent context",
+      "slug": "2026-08-03-readmes-proof-of-the-recent-change-preserves-the-full-installed-app-frame-and-parent-context"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — README는 공개 품질 계약, 내부 문서는 규칙 권위 지도를 맡는다",
-      "slug": "2026-08-02-readme는-공개-품질-계약-내부-문서는-규칙-권위-지도를-맡는다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-8"
+      "text": "2026-08-02 — README owns the public quality contract, internal docs own the rule-authority map",
+      "slug": "2026-08-02-readme-owns-the-public-quality-contract-internal-docs-own-the-rule-authority-map"
     },
     {
       "depth": 2,
-      "text": "PO Council Verdict — public contract + authority map",
-      "slug": "po-council-verdict-public-contract-authority-map"
+      "text": "2026-08-02 — There's no ceiling on total node count; direct-connection breadth is a signal that asks for qualification",
+      "slug": "2026-08-02-theres-no-ceiling-on-total-node-count-direct-connection-breadth-is-a-signal-that-asks-for-qualification"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 노드 총량에는 상한이 없고, 직접 연결 폭은 자격을 묻는 신호다",
-      "slug": "2026-08-02-노드-총량에는-상한이-없고-직접-연결-폭은-자격을-묻는-신호다"
+      "text": "2026-08-02 — The Python source-hidden field trial passes the fixed acceptance line",
+      "slug": "2026-08-02-the-python-source-hidden-field-trial-passes-the-fixed-acceptance-line"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — Python source-hidden field trial이 고정 수용선을 통과한다",
-      "slug": "2026-08-02-python-source-hidden-field-trial이-고정-수용선을-통과한다"
+      "text": "2026-08-02 — Python's risk-ownership boundary reserves at most 2 slots among 12 candidates",
+      "slug": "2026-08-02-pythons-risk-ownership-boundary-reserves-at-most-2-slots-among-12-candidates"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — Python 위험 소유 경계는 12개 후보 안에서 최대 2자리를 예약한다",
-      "slug": "2026-08-02-python-위험-소유-경계는-12개-후보-안에서-최대-2자리를-예약한다"
+      "text": "2026-08-02 — For an exact Python import endpoint, the model selects at most 4",
+      "slug": "2026-08-02-for-an-exact-python-import-endpoint-the-model-selects-at-most-4"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 정확한 Python import endpoint는 모델이 최대 4개만 선택한다",
-      "slug": "2026-08-02-정확한-python-import-endpoint는-모델이-최대-4개만-선택한다"
+      "text": "2026-08-02 — Python impact evidence promotes only the import-participation boundary to element candidates",
+      "slug": "2026-08-02-python-impact-evidence-promotes-only-the-import-participation-boundary-to-element-candidates"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — Python impact 근거는 import 참여 경계만 element 후보로 올린다",
-      "slug": "2026-08-02-python-impact-근거는-import-참여-경계만-element-후보로-올린다"
+      "text": "2026-08-02 — Python cold-start splits meaning ingress and import impact into two contracts",
+      "slug": "2026-08-02-python-cold-start-splits-meaning-ingress-and-import-impact-into-two-contracts"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — Python cold-start는 의미 ingress와 import impact를 두 계약으로 나눈다",
-      "slug": "2026-08-02-python-cold-start는-의미-ingress와-import-impact를-두-계약으로-나눈다"
+      "text": "2026-08-02 — A mandatory UID is vault format v2, and it ships with an official migration path",
+      "slug": "2026-08-02-a-mandatory-uid-is-vault-format-v2-and-it-ships-with-an-official-migration-path"
     },
     {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-9"
-    },
-    {
       "depth": 2,
-      "text": "PO Council Verdict — bounded Python construction ingress",
-      "slug": "po-council-verdict-bounded-python-construction-ingress"
+      "text": "2026-08-02 — UID is a node's permanent identity, and slug is its current human-readable address",
+      "slug": "2026-08-02-uid-is-a-nodes-permanent-identity-and-slug-is-its-current-human-readable-address"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 필수 UID는 vault format v2이며 공식 migration 경로가 함께 간다",
-      "slug": "2026-08-02-필수-uid는-vault-format-v2이며-공식-migration-경로가-함께-간다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-10"
+      "text": "2026-08-02 — The project inspector speaks the result the user gets, not internal handoff jargon",
+      "slug": "2026-08-02-the-project-inspector-speaks-the-result-the-user-gets-not-internal-handoff-jargon"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — UID는 노드의 영구 정체성이고 slug는 사람이 읽는 현재 주소다",
-      "slug": "2026-08-02-uid는-노드의-영구-정체성이고-slug는-사람이-읽는-현재-주소다"
+      "text": "2026-08-02 — Competency read-back recombines the canonical Markdown and the post-write receipt in a fresh process",
+      "slug": "2026-08-02-competency-read-back-recombines-the-canonical-markdown-and-the-post-write-receipt-in-a-fresh-process"
     },
     {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-11"
-    },
-    {
       "depth": 2,
-      "text": "PO Council Verdict — immutable node UID + readable slug",
-      "slug": "po-council-verdict-immutable-node-uid-readable-slug"
+      "text": "2026-08-02 — Meaning assessment opens with a pure contract separated from structural readiness",
+      "slug": "2026-08-02-meaning-assessment-opens-with-a-pure-contract-separated-from-structural-readiness"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 프로젝트 inspector는 내부 인계어 대신 사용자가 얻는 결과를 말한다",
-      "slug": "2026-08-02-프로젝트-inspector는-내부-인계어-대신-사용자가-얻는-결과를-말한다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 — 세 줄",
-      "slug": "먼저-세-줄-12"
+      "text": "2026-08-02 — Remove the project inspector's ‘healthy gap’ sentence and its duplicate actions",
+      "slug": "2026-08-02-remove-the-project-inspectors-healthy-gap-sentence-and-its-duplicate-actions"
     },
     {
       "depth": 2,
-      "text": "Design Council Verdict — project inspector plain-language vocabulary",
-      "slug": "design-council-verdict-project-inspector-plain-language-vocabulary"
+      "text": "2026-08-02 — The source receipt replaces the project inspector's existing hierarchy, not a new card",
+      "slug": "2026-08-02-the-source-receipt-replaces-the-project-inspectors-existing-hierarchy-not-a-new-card"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — competency read-back은 Markdown 정본과 post-write receipt를 새 프로세스에서 다시 결합한다",
-      "slug": "2026-08-02-competency-read-back은-markdown-정본과-post-write-receipt를-새-프로세스에서-다시-결합한다"
+      "text": "2026-08-02 — The project's current source evidence shows to both people and agents as one receipt",
+      "slug": "2026-08-02-the-projects-current-source-evidence-shows-to-both-people-and-agents-as-one-receipt"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 의미 평가는 구조 readiness와 분리한 순수 계약부터 연다",
-      "slug": "2026-08-02-의미-평가는-구조-readiness와-분리한-순수-계약부터-연다"
+      "text": "2026-08-02 — `canWrite` preserves both the competency answer's witness and its visible gap",
+      "slug": "2026-08-02-canwrite-preserves-both-the-competency-answers-witness-and-its-visible-gap"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 프로젝트 inspector의 건강한 빈틈 문장과 중복 행동을 걷어낸다",
-      "slug": "2026-08-02-프로젝트-inspector의-건강한-빈틈-문장과-중복-행동을-걷어낸다"
+      "text": "2026-08-02 — init's vault and repo root are computed in the same canonical coordinate system",
+      "slug": "2026-08-02-inits-vault-and-repo-root-are-computed-in-the-same-canonical-coordinate-system"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — source receipt는 새 카드가 아니라 프로젝트 inspector의 기존 위계를 치환한다",
-      "slug": "2026-08-02-source-receipt는-새-카드가-아니라-프로젝트-inspector의-기존-위계를-치환한다"
+      "text": "2026-08-02 — `canWrite` only passes a deterministic write plan for the fully approved graph",
+      "slug": "2026-08-02-canwrite-only-passes-a-deterministic-write-plan-for-the-fully-approved-graph"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 프로젝트의 현재 source 근거는 하나의 receipt로 사람과 agent에게 보인다",
-      "slug": "2026-08-02-프로젝트의-현재-source-근거는-하나의-receipt로-사람과-agent에게-보인다"
+      "text": "2026-08-02 — The Rust package contract is one bounded `package-contract` evidence row, not a node",
+      "slug": "2026-08-02-the-rust-package-contract-is-one-bounded-package-contract-evidence-row-not-a-node"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — `canWrite`는 competency 답의 witness와 visible gap을 함께 보존한다",
-      "slug": "2026-08-02-canwrite는-competency-답의-witness와-visible-gap을-함께-보존한다"
+      "text": "2026-08-02 — Capability implementation evidence opens with one canonical `path:`, not `elements:`",
+      "slug": "2026-08-02-capability-implementation-evidence-opens-with-one-canonical-path-not-elements"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — init의 vault와 repo root는 같은 canonical 좌표계에서 계산한다",
-      "slug": "2026-08-02-init의-vault와-repo-root는-같은-canonical-좌표계에서-계산한다"
+      "text": "2026-08-02 — The local agent forces an answer after 3 rounds of evidence gathering and closes at 60 seconds",
+      "slug": "2026-08-02-the-local-agent-forces-an-answer-after-3-rounds-of-evidence-gathering-and-closes-at-60-seconds"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — `canWrite`는 승인된 전체 그래프의 deterministic write plan만 통과시킨다",
-      "slug": "2026-08-02-canwrite는-승인된-전체-그래프의-deterministic-write-plan만-통과시킨다"
+      "text": "2026-08-02 (2) — Translate ‘looks AI-designed’ into six fingerprints, and remove one corridor",
+      "slug": "2026-08-02-2-translate-looks-ai-designed-into-six-fingerprints-and-remove-one-corridor"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — Rust package 계약은 노드가 아니라 bounded `package-contract` 근거 한 행이다",
-      "slug": "2026-08-02-rust-package-계약은-노드가-아니라-bounded-package-contract-근거-한-행이다"
+      "text": "2026-08-02 — AI connection and agent turn: cut four spots where the screen said something untrue (including 2 repeated findings)",
+      "slug": "2026-08-02-ai-connection-and-agent-turn-cut-four-spots-where-the-screen-said-something-untrue-including-2-repeated-findings"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — capability 구현 근거는 `elements:`가 아니라 정본 `path:` 하나로 연다",
-      "slug": "2026-08-02-capability-구현-근거는-elements가-아니라-정본-path-하나로-연다"
+      "text": "2026-08-02 — First-run card: on a screen that says ‘this is a sample’ four times, the heaviest ink was the sample's size, demote the instrument to a caption and make the lead the attention winner",
+      "slug": "2026-08-02-first-run-card-on-a-screen-that-says-this-is-a-sample-four-times-the-heaviest-ink-was-the-samples-size-demote-the-instrument-to-a-caption-and-make-the-lead-the-attention-winner"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 로컬 에이전트는 3회 근거 수집 뒤 답을 강제하고 60초에 닫는다",
-      "slug": "2026-08-02-로컬-에이전트는-3회-근거-수집-뒤-답을-강제하고-60초에-닫는다"
+      "text": "2026-08-01 — The demo doesn't fork by address: `/` and `/download` show the same thing (owner signed)",
+      "slug": "2026-08-01-the-demo-doesnt-fork-by-address-and-download-show-the-same-thing-owner-signed"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 (2) — 「AI 가 디자인한 것 같다」를 지문 여섯으로 번역하고, 복도 하나를 지운다",
-      "slug": "2026-08-02-2-ai-가-디자인한-것-같다를-지문-여섯으로-번역하고-복도-하나를-지운다"
-    },
-    {
-      "depth": 3,
-      "text": "chief 가 틀렸던 것 — 셋",
-      "slug": "chief-가-틀렸던-것-셋"
-    },
-    {
-      "depth": 3,
-      "text": "기록된 반대 (반증 조건 포함)",
-      "slug": "기록된-반대-반증-조건-포함"
+      "text": "2026-08-01 — ‘Work is done’ is judged by going quiet: threshold 5 minutes, notify **only per task**",
+      "slug": "2026-08-01-work-is-done-is-judged-by-going-quiet-threshold-5-minutes-notify-only-per-task"
     },
     {
-      "depth": 3,
-      "text": "슬라이스",
-      "slug": "슬라이스"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-02 — AI 연결·에이전트 턴: 화면이 사실과 다른 것을 말한 자리 넷을 끊는다 (반복 지적 2건 포함)",
-      "slug": "2026-08-02-ai-연결에이전트-턴-화면이-사실과-다른-것을-말한-자리-넷을-끊는다-반복-지적-2건-포함"
-    },
-    {
-      "depth": 3,
-      "text": "chief 가 틀렸던 것 — 기록에 남긴다",
-      "slug": "chief-가-틀렸던-것-기록에-남긴다"
-    },
-    {
-      "depth": 3,
-      "text": "기록된 반대 (자리별 · 전부 반증 조건 포함)",
-      "slug": "기록된-반대-자리별-전부-반증-조건-포함"
-    },
-    {
-      "depth": 3,
-      "text": "슬라이스",
-      "slug": "슬라이스-2"
+      "text": "2026-08-01 — Three things the handoff trial found: give the full body as opt-in, state what was withheld, and make an unevidenced capability visible instead of blocking it",
+      "slug": "2026-08-01-three-things-the-handoff-trial-found-give-the-full-body-as-opt-in-state-what-was-withheld-and-make-an-unevidenced-capability-visible-instead-of-blocking-it"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 첫 실행 카드: 「지금은 샘플」을 네 번 말하는 화면에서 가장 센 잉크가 샘플의 크기였다 — 계기를 캡션으로 강등하고 리드를 주목 승자로",
-      "slug": "2026-08-02-첫-실행-카드-지금은-샘플을-네-번-말하는-화면에서-가장-센-잉크가-샘플의-크기였다-계기를-캡션으로-강등하고-리드를-주목-승자로"
+      "text": "2026-08-01 — The web's ‘cannot connect’ was false: ask the person who knows the value the browser doesn't",
+      "slug": "2026-08-01-the-webs-cannot-connect-was-false-ask-the-person-who-knows-the-value-the-browser-doesnt"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 (소유자 서명) — 시연은 주소로 갈리지 않는다: `/` 와 `/download` 가 같은 것을 보여준다",
-      "slug": "2026-08-01-소유자-서명-시연은-주소로-갈리지-않는다-와-download-가-같은-것을-보여준다"
+      "text": "2026-08-01 — Report: regenerating the shopping-mall sample, the bridge spec is a tool for repair, not construction (first real-world verification)",
+      "slug": "2026-08-01-report-regenerating-the-shopping-mall-sample-the-bridge-spec-is-a-tool-for-repair-not-construction-first-real-world-verification"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 「작업이 끝났다」는 조용해짐으로 판정한다: 임계값 5분, 알림은 **작업 단위로만**",
-      "slug": "2026-08-01-작업이-끝났다는-조용해짐으로-판정한다-임계값-5분-알림은-작업-단위로만"
+      "text": "2026-08-01 — The fourth connection is a door, not a vendor: open a keyless ‘connect by address’ branch that absorbs Ollama, LM Studio, and llama.cpp into one place",
+      "slug": "2026-08-01-the-fourth-connection-is-a-door-not-a-vendor-open-a-keyless-connect-by-address-branch-that-absorbs-ollama-lm-studio-and-llamacpp-into-one-place"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 인수인계 시험이 찾아낸 셋: 본문은 opt-in 으로 전부 주고, 안 준 것은 말하고, 증거 없는 능력은 막지 말고 보이게 한다",
-      "slug": "2026-08-01-인수인계-시험이-찾아낸-셋-본문은-opt-in-으로-전부-주고-안-준-것은-말하고-증거-없는-능력은-막지-말고-보이게-한다"
+      "text": "2026-08-01 — CI does not count vault nodes: remove every count gate that stays true only by manual adjustment, and leave only assertions computed at runtime",
+      "slug": "2026-08-01-ci-does-not-count-vault-nodes-remove-every-count-gate-that-stays-true-only-by-manual-adjustment-and-leave-only-assertions-computed-at-runtime"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 웹의 「연결 불가」는 거짓이었다: 브라우저가 모르는 값을 **아는 사람에게 묻는다**",
-      "slug": "2026-08-01-웹의-연결-불가는-거짓이었다-브라우저가-모르는-값을-아는-사람에게-묻는다"
+      "text": "2026-08-01 — Ship Windows x64 as a public unsigned beta, making the warning and native proof part of the download",
+      "slug": "2026-08-01-ship-windows-x64-as-a-public-unsigned-beta-making-the-warning-and-native-proof-part-of-the-download"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 쇼핑몰 샘플 재생성 보고: 브릿지 규격은 **구축이 아니라 수리**의 도구다 (실전 첫 검증)",
-      "slug": "2026-08-01-쇼핑몰-샘플-재생성-보고-브릿지-규격은-구축이-아니라-수리의-도구다-실전-첫-검증"
+      "text": "2026-07-31 — Marking human-made nodes: there is no retroactive provenance, a write-time `created_by` stamp is the first slice, 0 new surfaces, and the screen label reads as work status, not authorship",
+      "slug": "2026-07-31-marking-human-made-nodes-there-is-no-retroactive-provenance-a-write-time-created_by-stamp-is-the-first-slice-0-new-surfaces-and-the-screen-label-reads-as-work-status-not-authorship"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 네 번째 연결은 벤더가 아니라 **문**이다: 키 없는 「주소로 연결」 갈래를 열어 Ollama·LM Studio·llama.cpp 를 한 자리로 흡수한다",
-      "slug": "2026-08-01-네-번째-연결은-벤더가-아니라-문이다-키-없는-주소로-연결-갈래를-열어-ollamalm-studiollamacpp-를-한-자리로-흡수한다"
+      "text": "2026-08-01 — [Extension] Bridge nodes become first-class concepts in the spec: give an unnamed procedure a name and qualification criteria",
+      "slug": "2026-08-01-extension-bridge-nodes-become-first-class-concepts-in-the-spec-give-an-unnamed-procedure-a-name-and-qualification-criteria"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — CI 는 볼트 노드 수를 세지 않는다 — 손으로 맞춰야 유지되는 수 게이트를 전부 걷고, 런타임에 계산되는 단언만 남긴다",
-      "slug": "2026-08-01-ci-는-볼트-노드-수를-세지-않는다-손으로-맞춰야-유지되는-수-게이트를-전부-걷고-런타임에-계산되는-단언만-남긴다"
+      "text": "2026-07-31 — [Correction] Fill the construction spec with a ‘researched recommended range’: bootstrap trigger 8 (domain to capability), 6 (capability to element), prioritizing living-vault p90, and the dogfood vault is fully regenerated, not repaired",
+      "slug": "2026-07-31-correction-fill-the-construction-spec-with-a-researched-recommended-range-bootstrap-trigger-8-domain-to-capability-6-capability-to-element-prioritizing-living-vault-p90-and-the-dogfood-vault-is-fully-regenerated-not-repaired"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — Windows x64는 공개 미서명 베타로 내되, 경고와 네이티브 증명을 다운로드의 일부로 만든다",
-      "slug": "2026-08-01-windows-x64는-공개-미서명-베타로-내되-경고와-네이티브-증명을-다운로드의-일부로-만든다"
+      "text": "2026-07-31 — The ontology construction spec is a node qualification gate, not a fan-out ceiling, the 92 were unresolved strings, not children. The spec has three canonical sources (values, logic, text); LLM text derives from one English canonical source through two paths (MCP, internal chat)",
+      "slug": "2026-07-31-the-ontology-construction-spec-is-a-node-qualification-gate-not-a-fan-out-ceiling-the-92-were-unresolved-strings-not-children-the-spec-has-three-canonical-sources-values-logic-text-llm-text-derives-from-one-english-canonical-source-through-two-paths-mcp-internal-chat"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — 사람이 만든 노드 표기: 소급 출처는 존재하지 않는다 — 쓰기 시점 `created_by` 스탬프가 첫 슬라이스, 새 표면 0, 화면 라벨은 저작이 아니라 작업 상태로",
-      "slug": "2026-07-31-사람이-만든-노드-표기-소급-출처는-존재하지-않는다-쓰기-시점-created_by-스탬프가-첫-슬라이스-새-표면-0-화면-라벨은-저작이-아니라-작업-상태로"
+      "text": "2026-07-31 — The prescription for 140ms drag: candidate 2, ‘make the limit real’, adopted, but 78% of the real culprit was separation, not FA2, and Barnes-Hut was already on",
+      "slug": "2026-07-31-the-prescription-for-140ms-drag-candidate-2-make-the-limit-real-adopted-but-78-of-the-real-culprit-was-separation-not-fa2-and-barnes-hut-was-already-on"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — [확장] 브릿지 노드를 규격의 1급 개념으로 — 이름 없는 절차에 이름과 자격 조건을 붙인다",
-      "slug": "2026-08-01-확장-브릿지-노드를-규격의-1급-개념으로-이름-없는-절차에-이름과-자격-조건을-붙인다"
+      "text": "2026-07-31 — 3D rejected even as a ‘splitting device’: the root of the density is having no expand gate, plus 0 rank channels for the crowd",
+      "slug": "2026-07-31-3d-rejected-even-as-a-splitting-device-the-root-of-the-density-is-having-no-expand-gate-plus-0-rank-channels-for-the-crowd"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — [정정] 구축 규격에 «연구된 권장 범위»를 채운다: 부트스트랩 트리거 8(domain→capability)·6(capability→element), 살아있는 볼트 p90 우선 — 그리고 dogfood 볼트는 수리가 아니라 전면 재생성한다",
-      "slug": "2026-07-31-정정-구축-규격에-연구된-권장-범위를-채운다-부트스트랩-트리거-8domaincapability6capabilityelement-살아있는-볼트-p90-우선-그리고-dogfood-볼트는-수리가-아니라-전면-재생성한다"
+      "text": "2026-07-31 — Instructions are loaded when needed, not all at once: AGENTS.md stays under 32KiB, rules go from 73KB to 13.6KB conditional, and mandatory rules move into hooks",
+      "slug": "2026-07-31-instructions-are-loaded-when-needed-not-all-at-once-agentsmd-stays-under-32kib-rules-go-from-73kb-to-136kb-conditional-and-mandatory-rules-move-into-hooks"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — 온톨로지 구축 규격: 「팬아웃 상한」이 아니라 「노드 자격 게이트」 — 92는 자식이 아니라 미해소 문자열이었다. 규격은 값·로직·텍스트 3정본, LLM 텍스트는 영어 단일 정본에서 두 경로(MCP·내부 채팅)로 파생",
-      "slug": "2026-07-31-온톨로지-구축-규격-팬아웃-상한이-아니라-노드-자격-게이트-92는-자식이-아니라-미해소-문자열이었다-규격은-값로직텍스트-3정본-llm-텍스트는-영어-단일-정본에서-두-경로mcp내부-채팅로-파생"
+      "text": "2026-07-31 — Split the guide into six chapters (`/guide/[segment]`), and the reading surface sits at the center of the screen",
+      "slug": "2026-07-31-split-the-guide-into-six-chapters-guidesegment-and-the-reading-surface-sits-at-the-center-of-the-screen"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — 드래그 140ms 의 처방: 후보 ② 「제한을 진짜로」 채택 — 단 진범의 78%는 FA2 가 아니라 separation 이었고, Barnes-Hut 은 이미 켜져 있었다",
-      "slug": "2026-07-31-드래그-140ms-의-처방-후보-제한을-진짜로-채택-단-진범의-78는-fa2-가-아니라-separation-이었고-barnes-hut-은-이미-켜져-있었다"
+      "text": "2026-07-30 — Ship two reading pages on the gateway: `/guide` and `/changelog`, rendering the vault documents, not a hand-written marketing page",
+      "slug": "2026-07-30-ship-two-reading-pages-on-the-gateway-guide-and-changelog-rendering-the-vault-documents-not-a-hand-written-marketing-page"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — 3D 는 「분할 장치」로도 반려 — 밀집의 뿌리는 펼침 무게이트 + 군중의 서열 채널 0개",
-      "slug": "2026-07-31-3d-는-분할-장치로도-반려-밀집의-뿌리는-펼침-무게이트-군중의-서열-채널-0개"
+      "text": "2026-07-30 — Redefine clip A as a ‘feature tour’: the terminal and typing clause is gone, and the tool button order now derives from `AGENT_CLIENTS`",
+      "slug": "2026-07-30-redefine-clip-a-as-a-feature-tour-the-terminal-and-typing-clause-is-gone-and-the-tool-button-order-now-derives-from-agent_clients"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — 지시문은 **다 싣지 않고 필요할 때 싣는다**: AGENTS.md 32KiB 아래 · rules 73KB→13.6KB 조건부 · 강행 규칙은 훅으로",
-      "slug": "2026-07-31-지시문은-다-싣지-않고-필요할-때-싣는다-agentsmd-32kib-아래-rules-73kb136kb-조건부-강행-규칙은-훅으로"
+      "text": "2026-07-30 — `/` decides only the language: route-restoration removed, the gateway is the web's main face",
+      "slug": "2026-07-30-decides-only-the-language-route-restoration-removed-the-gateway-is-the-webs-main-face"
     },
     {
       "depth": 2,
-      "text": "2026-07-31 — 가이드를 여섯 장으로 가른다 (`/guide/[segment]`) + 읽는 표면은 화면 가운데에 선다",
-      "slug": "2026-07-31-가이드를-여섯-장으로-가른다-guidesegment-읽는-표면은-화면-가운데에-선다"
+      "text": "2026-07-30 — Global scope is added as an option, without flipping the default; outside the vault, the tool writes, not the app",
+      "slug": "2026-07-30-global-scope-is-added-as-an-option-without-flipping-the-default-outside-the-vault-the-tool-writes-not-the-app"
     },
     {
       "depth": 2,
-      "text": "2026-07-30 — 관문에 읽을거리 둘을 낸다: `/guide` · `/changelog` — 손으로 쓴 마케팅 페이지가 아니라 **볼트 문서를 그린다**",
-      "slug": "2026-07-30-관문에-읽을거리-둘을-낸다-guide-changelog-손으로-쓴-마케팅-페이지가-아니라-볼트-문서를-그린다"
+      "text": "2026-07-30 — Demo recording: the owner overrides cursor discipline (automation allowed), and two gate clauses updated",
+      "slug": "2026-07-30-demo-recording-the-owner-overrides-cursor-discipline-automation-allowed-and-two-gate-clauses-updated"
     },
     {
       "depth": 2,
-      "text": "2026-07-30 — 클립 A 재정의: 「기능 소개 투어」 — 터미널·타이핑 조항 소멸 + 도구 버튼 순서는 `AGENT_CLIENTS` 파생으로",
-      "slug": "2026-07-30-클립-a-재정의-기능-소개-투어-터미널타이핑-조항-소멸-도구-버튼-순서는-agent_clients-파생으로"
+      "text": "2026-07-30 — Implement the flip of ‘root-first-open’: `/` is the face for web visitors, the map is `/topology`",
+      "slug": "2026-07-30-implement-the-flip-of-root-first-open-is-the-face-for-web-visitors-the-map-is-topology"
     },
     {
       "depth": 2,
-      "text": "2026-07-30 — `/` 는 **언어만 판정한다**: 라우트 복원 제거, 관문이 웹의 메인 얼굴",
-      "slug": "2026-07-30-는-언어만-판정한다-라우트-복원-제거-관문이-웹의-메인-얼굴"
+      "text": "2026-07-29 — Brand mark: adopt the sheet's ‘layered hexagon’, normalize the geometry, keep the stroke hierarchy as original (thin at the middle, thick at the core), 3 size tiers (full, abbreviated, mini), and brand-asset gradients stay outside the charter's reach (limited to the single indigo hue ramp)",
+      "slug": "2026-07-29-brand-mark-adopt-the-sheets-layered-hexagon-normalize-the-geometry-keep-the-stroke-hierarchy-as-original-thin-at-the-middle-thick-at-the-core-3-size-tiers-full-abbreviated-mini-and-brand-asset-gradients-stay-outside-the-charters-reach-limited-to-the-single-indigo-hue-ramp"
     },
     {
       "depth": 2,
-      "text": "2026-07-30 — 전역 스코프는 **선택지로 넣고 기본값은 뒤집지 않는다**; 볼트 밖은 앱이 쓰지 않고 그 도구가 쓴다",
-      "slug": "2026-07-30-전역-스코프는-선택지로-넣고-기본값은-뒤집지-않는다-볼트-밖은-앱이-쓰지-않고-그-도구가-쓴다"
+      "text": "2026-07-29 — Finalize the background 3-option choice (owner signed, partially reversing the redefinition above): dots, proximity constellation, depth dots",
+      "slug": "2026-07-29-finalize-the-background-3-option-choice-owner-signed-partially-reversing-the-redefinition-above-dots-proximity-constellation-depth-dots"
     },
     {
       "depth": 2,
-      "text": "2026-07-30 — 시연 촬영: 소유자가 **커서 규율을 오버라이드**한다 (자동화 허용) + 게이트 두 조항 갱신",
-      "slug": "2026-07-30-시연-촬영-소유자가-커서-규율을-오버라이드한다-자동화-허용-게이트-두-조항-갱신"
+      "text": "2026-07-29 — Redefine the map background from first principles: the background's job is to be a ruler, fixed to a single dot style, delete the three moving backgrounds, and move “wow” to the foreground",
+      "slug": "2026-07-29-redefine-the-map-background-from-first-principles-the-backgrounds-job-is-to-be-a-ruler-fixed-to-a-single-dot-style-delete-the-three-moving-backgrounds-and-move-wow-to-the-foreground"
     },
     {
-      "depth": 3,
-      "text": "무엇을 뒤집는가",
-      "slug": "무엇을-뒤집는가"
-    },
-    {
-      "depth": 3,
-      "text": "셋업 게이트 두 조항이 갱신됐다",
-      "slug": "셋업-게이트-두-조항이-갱신됐다"
-    },
-    {
-      "depth": 3,
-      "text": "테이크 1 실측 (클립 B)",
-      "slug": "테이크-1-실측-클립-b"
-    },
-    {
       "depth": 2,
-      "text": "2026-07-30 — 「root-first-open」 뒤집기 **구현**: `/` 는 웹 방문자의 얼굴, 지도는 `/topology`",
-      "slug": "2026-07-30-root-first-open-뒤집기-구현-는-웹-방문자의-얼굴-지도는-topology"
-    },
-    {
-      "depth": 3,
-      "text": "소유자의 관측이 결함 하나를 같이 짚었다",
-      "slug": "소유자의-관측이-결함-하나를-같이-짚었다"
+      "text": "2026-07-29 — Audit follow-up: 4 MCP public-contract items are bug fixes, not direction decisions, restore them to where the docs already promised, without widening the contract",
+      "slug": "2026-07-29-audit-follow-up-4-mcp-public-contract-items-are-bug-fixes-not-direction-decisions-restore-them-to-where-the-docs-already-promised-without-widening-the-contract"
     },
     {
-      "depth": 3,
-      "text": "`/` 를 통째로 관문으로 만들지 않았다",
-      "slug": "를-통째로-관문으로-만들지-않았다"
-    },
-    {
-      "depth": 3,
-      "text": "같은 화면, 두 주소",
-      "slug": "같은-화면-두-주소"
-    },
-    {
-      "depth": 3,
-      "text": "웹 스모크는 지운 게 아니라 옮겼다",
-      "slug": "웹-스모크는-지운-게-아니라-옮겼다"
-    },
-    {
       "depth": 2,
-      "text": "2026-07-29 — 브랜드 마크: 시트의 「겹 육각형」 채택 — 기하는 정규화·획 위계는 원본대로(중간 얇게·핵 두껍게), 크기 3단(전체형/축약형/미형), 브랜드 자산 그라디언트는 헌장 사정거리 밖(인디고 단일 hue 램프 한정)",
-      "slug": "2026-07-29-브랜드-마크-시트의-겹-육각형-채택-기하는-정규화획-위계는-원본대로중간-얇게핵-두껍게-크기-3단전체형축약형미형-브랜드-자산-그라디언트는-헌장-사정거리-밖인디고-단일-hue-램프-한정"
+      "text": "2026-07-29 — Footprint customization: accept the owner's reversal, a ‘map’ drill-in subview instead of tab syntax, yellow becomes a dedicated token separate from the hub, glow gets a new charter exception (static, capped at 6px, default 0), and 11 values become 8 exposed controls",
+      "slug": "2026-07-29-footprint-customization-accept-the-owners-reversal-a-map-drill-in-subview-instead-of-tab-syntax-yellow-becomes-a-dedicated-token-separate-from-the-hub-glow-gets-a-new-charter-exception-static-capped-at-6px-default-0-and-11-values-become-8-exposed-controls"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 배경 3택 확정 (소유자 서명, 위 재정의를 부분 뒤집음): 도트 · 근접 성좌 · 깊이 도트",
-      "slug": "2026-07-29-배경-3택-확정-소유자-서명-위-재정의를-부분-뒤집음-도트-근접-성좌-깊이-도트"
+      "text": "2026-07-29 — Visited trail re-ruling: step, not rank, the number moves into an existing number slot rather than a new badge, and footprints go into a lane beside the line",
+      "slug": "2026-07-29-visited-trail-re-ruling-step-not-rank-the-number-moves-into-an-existing-number-slot-rather-than-a-new-badge-and-footprints-go-into-a-lane-beside-the-line"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 지도 배경 원점 재정의: 배경의 일은 「자(尺)」다 — 도트 단일 고정, 움직이는 배경 3종 삭제, \"우와\"는 전경으로 이동",
-      "slug": "2026-07-29-지도-배경-원점-재정의-배경의-일은-자다-도트-단일-고정-움직이는-배경-3종-삭제-우와는-전경으로-이동"
+      "text": "2026-07-29 — Visited trail: remove the ring, use a footprint glyph instead (translate \"make it glow\" as imprint, not glow)",
+      "slug": "2026-07-29-visited-trail-remove-the-ring-use-a-footprint-glyph-instead-translate-make-it-glow-as-imprint-not-glow"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 감사 후속: MCP 공개 계약 4건은 **버그 수정이지 방향 결정이 아니다** — 계약을 넓히지 않고 문서가 이미 약속한 자리로 되돌린다",
-      "slug": "2026-07-29-감사-후속-mcp-공개-계약-4건은-버그-수정이지-방향-결정이-아니다-계약을-넓히지-않고-문서가-이미-약속한-자리로-되돌린다"
+      "text": "2026-07-29 — First-page demo video scenario: 2 clips, 2 tabs, no cuts, no loop, silent",
+      "slug": "2026-07-29-first-page-demo-video-scenario-2-clips-2-tabs-no-cuts-no-loop-silent"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 발자국 커스터마이즈: 소유자 뒤집기 수용 — 탭 문법 대신 「지도」 드릴인 서브뷰, 노랑은 허브와 분리된 전용 토큰, 발광은 헌장 예외 신설(정적·상한 6px·기본 0), 11값은 노출 8컨트롤로",
-      "slug": "2026-07-29-발자국-커스터마이즈-소유자-뒤집기-수용-탭-문법-대신-지도-드릴인-서브뷰-노랑은-허브와-분리된-전용-토큰-발광은-헌장-예외-신설정적상한-6px기본-0-11값은-노출-8컨트롤로"
+      "text": "2026-07-29 — The demo video goes on the first page (contrary to the council verdict) (night, owner signed)",
+      "slug": "2026-07-29-the-demo-video-goes-on-the-first-page-contrary-to-the-council-verdict-night-owner-signed"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 걸어온 길 재판정: rank 가 아니라 step — 숫자는 새 배지가 아니라 이미 있는 숫자 슬롯으로, 발자국은 선 옆 레인으로",
-      "slug": "2026-07-29-걸어온-길-재판정-rank-가-아니라-step-숫자는-새-배지가-아니라-이미-있는-숫자-슬롯으로-발자국은-선-옆-레인으로"
+      "text": "2026-07-29 — Gateway demo: translate \"full tour at the bottom\" into \"one uncut take down the corridor\", and the GitHub button is a separate hygiene issue",
+      "slug": "2026-07-29-gateway-demo-translate-full-tour-at-the-bottom-into-one-uncut-take-down-the-corridor-and-the-github-button-is-a-separate-hygiene-issue"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 걸어온 길: 링을 지우고 발자국 글리프로 — 「빛나게」의 번역은 imprint, not glow",
-      "slug": "2026-07-29-걸어온-길-링을-지우고-발자국-글리프로-빛나게의-번역은-imprint-not-glow"
+      "text": "2026-07-29 — Gateway alignment origin: keep the \"one set\" principle, change only the \"fixed left\" clause to a symmetric derived origin (verdict 3, second narrowing) (night)",
+      "slug": "2026-07-29-gateway-alignment-origin-keep-the-one-set-principle-change-only-the-fixed-left-clause-to-a-symmetric-derived-origin-verdict-3-second-narrowing-night"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 첫 페이지 시연 영상 시나리오: 2클립 2탭 · 무컷 · 루프 없음 · 무음",
-      "slug": "2026-07-29-첫-페이지-시연-영상-시나리오-2클립-2탭-무컷-루프-없음-무음"
+      "text": "2026-07-29 — Gateway gutter: keep the \"one-set grid\" principle, detach only the value (evening)",
+      "slug": "2026-07-29-gateway-gutter-keep-the-one-set-grid-principle-detach-only-the-value-evening"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 (밤, 소유자 서명) — 시연 영상은 첫 페이지로 간다 (카운슬 평결과 다르게)",
-      "slug": "2026-07-29-밤-소유자-서명-시연-영상은-첫-페이지로-간다-카운슬-평결과-다르게"
+      "text": "2026-07-29 — Gateway download: the caption counts its own drawing, the grid becomes one set, and the map gets a leash",
+      "slug": "2026-07-29-gateway-download-the-caption-counts-its-own-drawing-the-grid-becomes-one-set-and-the-map-gets-a-leash"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 관문 시연: 「하단 전체 투어」를 「복도의 무컷 한 테이크」로 번역한다 + GitHub 버튼은 별건 위생",
-      "slug": "2026-07-29-관문-시연-하단-전체-투어를-복도의-무컷-한-테이크로-번역한다-github-버튼은-별건-위생"
+      "text": "2026-07-28 — Gateway council, 4 seats: scroll trap, camera hard cap, \"this page has never said what it is\"",
+      "slug": "2026-07-28-gateway-council-4-seats-scroll-trap-camera-hard-cap-this-page-has-never-said-what-it-is"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 (밤) — 관문 정렬 원점: 「한 벌」 원칙은 유지, 「왼쪽 고정」 조항만 대칭 파생 원점으로 — 평결 ③ 2차 좁힘",
-      "slug": "2026-07-29-밤-관문-정렬-원점-한-벌-원칙은-유지-왼쪽-고정-조항만-대칭-파생-원점으로-평결-2차-좁힘"
+      "text": "2026-07-28 — `/download` redesign: **the map is the page**. The product is the background and download floats on top of it",
+      "slug": "2026-07-28-download-redesign-the-map-is-the-page-the-product-is-the-background-and-download-floats-on-top-of-it"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 (저녁) — 관문 홈통: 「한 벌 그리드」의 원칙은 남기고 값만 뗀다",
-      "slug": "2026-07-29-저녁-관문-홈통-한-벌-그리드의-원칙은-남기고-값만-뗀다"
+      "text": "2026-07-29 — Skill md answers with a \"copy-matching view,\" not an editor (read-only, desktop only)",
+      "slug": "2026-07-29-skill-md-answers-with-a-copy-matching-view-not-an-editor-read-only-desktop-only"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 관문 다운로드: 캡션이 자기가 그린 그림을 세고, 그리드가 한 벌이 되고, 지도에 목줄이 생겼다",
-      "slug": "2026-07-29-관문-다운로드-캡션이-자기가-그린-그림을-세고-그리드가-한-벌이-되고-지도에-목줄이-생겼다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇을 제거했나 (제거 없는 패스는 실패다)",
-      "slug": "무엇을-제거했나-제거-없는-패스는-실패다"
-    },
-    {
-      "depth": 3,
-      "text": "① 숫자 모순 — 두 층이었다",
-      "slug": "숫자-모순-두-층이었다"
-    },
-    {
-      "depth": 3,
-      "text": "② 안전 인셋 드리프트 + 팬 목줄",
-      "slug": "안전-인셋-드리프트-팬-목줄"
-    },
-    {
-      "depth": 3,
-      "text": "③④ 구성 · 오버플로",
-      "slug": "구성-오버플로"
-    },
-    {
-      "depth": 3,
-      "text": "갈린 자리는 어떻게 풀렸나 — 위계 \"덜어낼 것 넷\" vs 작업대 \"없음\"",
-      "slug": "갈린-자리는-어떻게-풀렸나-위계-덜어낼-것-넷-vs-작업대-없음"
+      "text": "2026-07-28 — Cut exploding graph queries honestly, with a budget (`cycles`)",
+      "slug": "2026-07-28-cut-exploding-graph-queries-honestly-with-a-budget-cycles"
     },
     {
       "depth": 2,
-      "text": "2026-07-28 — 관문 카운슬 4석: 스크롤 트랩 · 카메라 하드캡 · \"이 페이지는 자기가 뭔지 말한 적이 없다\"",
-      "slug": "2026-07-28-관문-카운슬-4석-스크롤-트랩-카메라-하드캡-이-페이지는-자기가-뭔지-말한-적이-없다"
+      "text": "2026-07-28 — `/download` is a gateway-style landing page: it sheds the workbench rail, and the hero holds the primary CTA",
+      "slug": "2026-07-28-download-is-a-gateway-style-landing-page-it-sheds-the-workbench-rail-and-the-hero-holds-the-primary-cta"
     },
     {
       "depth": 2,
-      "text": "2026-07-28 — `/download` 재설계: **지도가 곧 페이지다**. 제품이 배경이고 다운로드가 그 위에 뜬다",
-      "slug": "2026-07-28-download-재설계-지도가-곧-페이지다-제품이-배경이고-다운로드가-그-위에-뜬다"
+      "text": "2026-07-27 — Web and app do not promise the same screen: one codebase, capability gates, vault folder as single source of truth",
+      "slug": "2026-07-27-web-and-app-do-not-promise-the-same-screen-one-codebase-capability-gates-vault-folder-as-single-source-of-truth"
     },
     {
       "depth": 2,
-      "text": "2026-07-29 — 스킬 md 는 편집기가 아니라 「사본 일치 뷰」로 답한다 (읽기 전용 · 데스크톱 한정)",
-      "slug": "2026-07-29-스킬-md-는-편집기가-아니라-사본-일치-뷰로-답한다-읽기-전용-데스크톱-한정"
+      "text": "2026-07-27 — AI conversation lives in the app's \"Agent\" panel: inside means an on-screen companion, outside means a delegated worker, web has no touchpoint",
+      "slug": "2026-07-27-ai-conversation-lives-in-the-apps-agent-panel-inside-means-an-on-screen-companion-outside-means-a-delegated-worker-web-has-no-touchpoint"
     },
     {
       "depth": 2,
-      "text": "2026-07-28 — 폭발하는 그래프 질의는 예산과 함께 정직하게 자른다 (`cycles`)",
-      "slug": "2026-07-28-폭발하는-그래프-질의는-예산과-함께-정직하게-자른다-cycles"
+      "text": "2026-07-27 — The app embeds MCP: bundled stdio plus auto-written config, and the npm publish plan is dropped",
+      "slug": "2026-07-27-the-app-embeds-mcp-bundled-stdio-plus-auto-written-config-and-the-npm-publish-plan-is-dropped"
     },
     {
       "depth": 2,
-      "text": "2026-07-28 — `/download` 는 관문형 랜딩이다: 워크벤치 레일을 벗고, 주 CTA 를 히어로가 쥔다",
-      "slug": "2026-07-28-download-는-관문형-랜딩이다-워크벤치-레일을-벗고-주-cta-를-히어로가-쥔다"
+      "text": "2026-07-27 — Build in-app updates (the owner reversed \"do not build it\" the same day)",
+      "slug": "2026-07-27-build-in-app-updates-the-owner-reversed-do-not-build-it-the-same-day"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 웹과 앱은 같은 화면을 약속하지 않는다: 한 코드베이스 · 능력 게이트 · 볼트 폴더 단일 진실원",
-      "slug": "2026-07-27-웹과-앱은-같은-화면을-약속하지-않는다-한-코드베이스-능력-게이트-볼트-폴더-단일-진실원"
+      "text": "2026-07-27 — In-app update notifications are not built yet (6/24, zero critical out of three)",
+      "slug": "2026-07-27-in-app-update-notifications-are-not-built-yet-624-zero-critical-out-of-three"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — AI 대화는 앱 안 「에이전트」 패널에 산다: 안 = 화면 동료, 밖 = 위임 일꾼, 웹 = 접점 없음",
-      "slug": "2026-07-27-ai-대화는-앱-안-에이전트-패널에-산다-안-화면-동료-밖-위임-일꾼-웹-접점-없음"
+      "text": "2026-07-27 — Ship v1.0.0 as an unsigned DMG, and give honest guidance instead",
+      "slug": "2026-07-27-ship-v100-as-an-unsigned-dmg-and-give-honest-guidance-instead"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 앱이 MCP 를 품는다: 번들 stdio + 설정 자동 작성, npm 발행 계획 폐기",
-      "slug": "2026-07-27-앱이-mcp-를-품는다-번들-stdio-설정-자동-작성-npm-발행-계획-폐기"
+      "text": "2026-07-27 — Turn the council into agents callable from documents (5 PO seats, 8 design seats, chief)",
+      "slug": "2026-07-27-turn-the-council-into-agents-callable-from-documents-5-po-seats-8-design-seats-chief"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 앱 내 업데이트를 짓는다 (같은 날 「짓지 않는다」를 소유자가 뒤집음)",
-      "slug": "2026-07-27-앱-내-업데이트를-짓는다-같은-날-짓지-않는다를-소유자가-뒤집음"
+      "text": "2026-07-27 — Make the download page a single publish-or-not state, app version v1.0.0",
+      "slug": "2026-07-27-make-the-download-page-a-single-publish-or-not-state-app-version-v100"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 앱 내 업데이트 알림은 아직 짓지 않는다 (6/24, 치명적 0 셋)",
-      "slug": "2026-07-27-앱-내-업데이트-알림은-아직-짓지-않는다-624-치명적-0-셋"
+      "text": "2026-07-27 — Mobile/tablet and responsive belong in one seat, not two",
+      "slug": "2026-07-27-mobiletablet-and-responsive-belong-in-one-seat-not-two"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — v1.0.0 을 미서명 DMG 로 내고, 대신 정직하게 안내한다",
-      "slug": "2026-07-27-v100-을-미서명-dmg-로-내고-대신-정직하게-안내한다"
+      "text": "2026-08-01 — A slug is a flat identifier: R15 drops the \"two element-slug patterns,\" the write gate rejects path-shaped slugs, and CLI add also stamps authorship",
+      "slug": "2026-08-01-a-slug-is-a-flat-identifier-r15-drops-the-two-element-slug-patterns-the-write-gate-rejects-path-shaped-slugs-and-cli-add-also-stamps-authorship"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 카운슬을 문서에서 호출 가능한 에이전트로 (PO 5인 · 디자인 8석 · chief)",
-      "slug": "2026-07-27-카운슬을-문서에서-호출-가능한-에이전트로-po-5인-디자인-8석-chief"
+      "text": "2026-08-01 — The tool's field of view was the vault's reach: analyze couldn't see the top-level package, and half of the 8 gate cases were \"detecting absence,\" not \"demanding a defect\"",
+      "slug": "2026-08-01-the-tools-field-of-view-was-the-vaults-reach-analyze-couldnt-see-the-top-level-package-and-half-of-the-8-gate-cases-were-detecting-absence-not-demanding-a-defect"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 다운로드 페이지를 게시 여부 단일 상태로, 앱 버전 v1.0.0",
-      "slug": "2026-07-27-다운로드-페이지를-게시-여부-단일-상태로-앱-버전-v100"
+      "text": "2026-08-01 — The criterion for documentation checks: check only what a machine can produce",
+      "slug": "2026-08-01-the-criterion-for-documentation-checks-check-only-what-a-machine-can-produce"
     },
     {
       "depth": 2,
-      "text": "2026-07-27 — 모바일/태블릿과 반응형을 두 자리가 아니라 한 자리로",
-      "slug": "2026-07-27-모바일태블릿과-반응형을-두-자리가-아니라-한-자리로"
+      "text": "2026-08-01 — Lock \"out-of-scope state\" as a category: a declared-scope registry, and an explicit statement that `vaultScopeKey` is not scope",
+      "slug": "2026-08-01-lock-out-of-scope-state-as-a-category-a-declared-scope-registry-and-an-explicit-statement-that-vaultscopekey-is-not-scope"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 슬러그는 평평한 식별자다 — R15 「element slug 두 패턴」 폐기, 쓰기 관문이 경로형 슬러그를 거부하고, CLI add 도 저작 스탬프를 찍는다",
-      "slug": "2026-08-01-슬러그는-평평한-식별자다-r15-element-slug-두-패턴-폐기-쓰기-관문이-경로형-슬러그를-거부하고-cli-add-도-저작-스탬프를-찍는다"
+      "text": "2026-08-01 — Port the mockup's expansion instrumentation into settings, and **replace** today's chip affordance with an \"overhead bar\"",
+      "slug": "2026-08-01-port-the-mockups-expansion-instrumentation-into-settings-and-replace-todays-chip-affordance-with-an-overhead-bar"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 도구의 시야가 곧 볼트의 사정거리였다: analyze 가 최상위 패키지를 못 보고, 게이트 8건의 절반은 「결함 요구」가 아니라 「부재 탐지」였다",
-      "slug": "2026-08-01-도구의-시야가-곧-볼트의-사정거리였다-analyze-가-최상위-패키지를-못-보고-게이트-8건의-절반은-결함-요구가-아니라-부재-탐지였다"
+      "text": "2026-08-02 — The default expansion layout is a \"fan,\" and one node's controls use different orientations",
+      "slug": "2026-08-02-the-default-expansion-layout-is-a-fan-and-one-nodes-controls-use-different-orientations"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 문서 검사의 판별 기준: 기계가 만들 수 있는 것만 검사한다",
-      "slug": "2026-08-01-문서-검사의-판별-기준-기계가-만들-수-있는-것만-검사한다"
+      "text": "2026-08-02 — The settings sheet is outside the \"scale-lock contract,\" and the inside was two dialects",
+      "slug": "2026-08-02-the-settings-sheet-is-outside-the-scale-lock-contract-and-the-inside-was-two-dialects"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 「범위를 넘긴 상태」를 부류로 잠근다: 선언된 범위 등록부, 그리고 `vaultScopeKey` 는 범위가 아니라는 명문화",
-      "slug": "2026-08-01-범위를-넘긴-상태를-부류로-잠근다-선언된-범위-등록부-그리고-vaultscopekey-는-범위가-아니라는-명문화"
+      "text": "2026-08-02 — What makes a bar a bar is the \"text button,\" and \"visited trail\" tints the nodes and edges too",
+      "slug": "2026-08-02-what-makes-a-bar-a-bar-is-the-text-button-and-visited-trail-tints-the-nodes-and-edges-too"
     },
     {
       "depth": 2,
-      "text": "2026-08-01 — 시안의 확장 계측을 설정으로 이식하고, 오늘의 칩 어포던스를 「머리 위 막대」로 **교체**한다",
-      "slug": "2026-08-01-시안의-확장-계측을-설정으로-이식하고-오늘의-칩-어포던스를-머리-위-막대로-교체한다"
+      "text": "2026-08-03 — `tone: 'accent'` was a marker, not ink: split tone into two",
+      "slug": "2026-08-03-tone-accent-was-a-marker-not-ink-split-tone-into-two"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 확장 구조 기본값은 「부챗살」이고, 한 노드의 컨트롤은 서로 다른 방위를 쓴다",
-      "slug": "2026-08-02-확장-구조-기본값은-부챗살이고-한-노드의-컨트롤은-서로-다른-방위를-쓴다"
+      "text": "2026-08-03 — Quaternary ink was a value that only holds up on a raised surface: #787c84 → #82828a",
+      "slug": "2026-08-03-quaternary-ink-was-a-value-that-only-holds-up-on-a-raised-surface-787c84-82828a"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 설정 시트는 「스케일 고정 계약」 밖이다. 그리고 안이 두 방언이었다",
-      "slug": "2026-08-02-설정-시트는-스케일-고정-계약-밖이다-그리고-안이-두-방언이었다"
+      "text": "2026-08-04 — Split the control-adoption ratchet into \"outside the registered value layer\" and \"debt not yet migrated\"",
+      "slug": "2026-08-04-split-the-control-adoption-ratchet-into-outside-the-registered-value-layer-and-debt-not-yet-migrated"
     },
     {
       "depth": 2,
-      "text": "2026-08-02 — 막대를 막대로 만드는 것은 「글자 버튼」이고, 「걸어온 길」은 노드와 선까지 물들인다",
-      "slug": "2026-08-02-막대를-막대로-만드는-것은-글자-버튼이고-걸어온-길은-노드와-선까지-물들인다"
+      "text": "2026-08-04 — Rebuild the idling gate set on a full source scan",
+      "slug": "2026-08-04-rebuild-the-idling-gate-set-on-a-full-source-scan"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — `tone: 'accent'` 는 잉크가 아니라 표식이었다: 톤을 둘로 가른다",
-      "slug": "2026-08-03-tone-accent-는-잉크가-아니라-표식이었다-톤을-둘로-가른다"
+      "text": "2026-08-04 — Register overlay radius as a single `sheet` (18) step, and put the line-height naming utility into the ratchet",
+      "slug": "2026-08-04-register-overlay-radius-as-a-single-sheet-18-step-and-put-the-line-height-naming-utility-into-the-ratchet"
     },
     {
       "depth": 2,
-      "text": "2026-08-03 — quaternary 잉크는 「한 단 올라선 표면에서만 뚫리는 값」이었다: #787c84 → #82828a",
-      "slug": "2026-08-03-quaternary-잉크는-한-단-올라선-표면에서만-뚫리는-값이었다-787c84-82828a"
+      "text": "2026-08-04 — Hardcoded values 13 → 0: register a large-surface grammar (`motion=\"overlay\"`) on `Surface`, and fix the detector that went blinder the more debt was paid down",
+      "slug": "2026-08-04-hardcoded-values-13-0-register-a-large-surface-grammar-motionoverlay-on-surface-and-fix-the-detector-that-went-blinder-the-more-debt-was-paid-down"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 컨트롤 채택 래칫을 「등재된 값 층 밖」과 「아직 안 옮긴 부채」로 가른다",
-      "slug": "2026-08-04-컨트롤-채택-래칫을-등재된-값-층-밖과-아직-안-옮긴-부채로-가른다"
+      "text": "2026-08-04 — Flip ramp coverage from an allowlist to a denylist: new screens get the standard from day one",
+      "slug": "2026-08-04-flip-ramp-coverage-from-an-allowlist-to-a-denylist-new-screens-get-the-standard-from-day-one"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 공회전하던 게이트 셋을 소스 전수 위에 다시 세운다",
-      "slug": "2026-08-04-공회전하던-게이트-셋을-소스-전수-위에-다시-세운다"
+      "text": "2026-08-04 — \"Connect my agent\" is a **step**, not a list (and the red box was lying)",
+      "slug": "2026-08-04-connect-my-agent-is-a-step-not-a-list-and-the-red-box-was-lying"
     },
     {
-      "depth": 3,
-      "text": "전수 — 켜기 전에 셌다",
-      "slug": "전수-켜기-전에-셌다"
-    },
-    {
-      "depth": 3,
-      "text": "왜 앵커를 버튼 부채에 더하지 않았나",
-      "slug": "왜-앵커를-버튼-부채에-더하지-않았나"
-    },
-    {
-      "depth": 3,
-      "text": "색 판정은 하지 않았다",
-      "slug": "색-판정은-하지-않았다"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-04 — 오버레이 반경을 `sheet`(18) 한 단으로 등재하고, 행간 이름 유틸리티를 래칫에 넣는다",
-      "slug": "2026-08-04-오버레이-반경을-sheet18-한-단으로-등재하고-행간-이름-유틸리티를-래칫에-넣는다"
+      "text": "2026-08-04 — An inline collapse does not wear a floating-surface grammar (a partial reversal of the morning ruling)",
+      "slug": "2026-08-04-an-inline-collapse-does-not-wear-a-floating-surface-grammar-a-partial-reversal-of-the-morning-ruling"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 하드컷 13 → 0: `Surface` 에 큰 표면 문법(`motion=\"overlay\"`)을 등재하고, 갚을수록 눈이 멀던 탐지기를 고친다",
-      "slug": "2026-08-04-하드컷-13-0-surface-에-큰-표면-문법motionoverlay을-등재하고-갚을수록-눈이-멀던-탐지기를-고친다"
+      "text": "2026-08-05 — Lay the finger floor with **actual height, not a hit-area expansion** (value-layer chips, rows, pills)",
+      "slug": "2026-08-05-lay-the-finger-floor-with-actual-height-not-a-hit-area-expansion-value-layer-chips-rows-pills"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 램프 커버리지를 허용목록에서 거부목록으로 뒤집는다: 새 화면이 첫날부터 규격을 받는다",
-      "slug": "2026-08-04-램프-커버리지를-허용목록에서-거부목록으로-뒤집는다-새-화면이-첫날부터-규격을-받는다"
+      "text": "2026-08-05 — A checkbox's target is **the label, not the checkbox** (WCAG 2.5.8 AA)",
+      "slug": "2026-08-05-a-checkboxs-target-is-the-label-not-the-checkbox-wcag-258-aa"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 「내 에이전트 연결」은 목록이 아니라 **단계**다 (그리고 빨간 상자가 거짓말이었다)",
-      "slug": "2026-08-04-내-에이전트-연결은-목록이-아니라-단계다-그리고-빨간-상자가-거짓말이었다"
-    },
-    {
-      "depth": 3,
-      "text": "실측이 「너무 길다」를 숫자로 갖는다 (1512×900, 설치 앱 경로)",
-      "slug": "실측이-너무-길다를-숫자로-갖는다-1512900-설치-앱-경로"
+      "text": "2026-08-05 — Bring forms inside the gate's field of view (ratchet's fifth move, plus a touch-audit selector)",
+      "slug": "2026-08-05-bring-forms-inside-the-gates-field-of-view-ratchets-fifth-move-plus-a-touch-audit-selector"
     },
     {
-      "depth": 3,
-      "text": "왜 「지우기」가 아니라 「접기」인가",
-      "slug": "왜-지우기가-아니라-접기인가"
-    },
-    {
-      "depth": 3,
-      "text": "번호는 한 벌이다 — 켤 때 전수 3자리",
-      "slug": "번호는-한-벌이다-켤-때-전수-3자리"
-    },
-    {
-      "depth": 3,
-      "text": "★ 화면이 거짓 사실을 주장하고 있었다 (선택이 아니라 의무)",
-      "slug": "화면이-거짓-사실을-주장하고-있었다-선택이-아니라-의무"
-    },
-    {
-      "depth": 3,
-      "text": "평문화 — 2026-08-03 원장 결정의 이 표면 이행",
-      "slug": "평문화-2026-08-03-원장-결정의-이-표면-이행"
+      "depth": 2,
+      "text": "2026-08-06 — A form field is **the second cva, not a ninth shape** (`fieldClass`)",
+      "slug": "2026-08-06-a-form-field-is-the-second-cva-not-a-ninth-shape-fieldclass"
     },
     {
-      "depth": 3,
-      "text": "딸려 온 정리",
-      "slug": "딸려-온-정리"
+      "depth": 2,
+      "text": "2026-08-06 (2) — Migrate every form to `fieldClass`, types fixed by looking at the screen",
+      "slug": "2026-08-06-2-migrate-every-form-to-fieldclass-types-fixed-by-looking-at-the-screen"
     },
     {
-      "depth": 3,
-      "text": "앞으로 옮겨갈 것을 알고 지었다",
-      "slug": "앞으로-옮겨갈-것을-알고-지었다"
+      "depth": 2,
+      "text": "2026-08-06 (3) — A `stacked` axis on `row`: **layout decides** the radius",
+      "slug": "2026-08-06-3-a-stacked-axis-on-row-layout-decides-the-radius"
     },
     {
-      "depth": 3,
-      "text": "진 대안 ① — 「그냥 짧게 줄이자」(검증·CLI 절 삭제)",
-      "slug": "진-대안-그냥-짧게-줄이자검증cli-절-삭제"
+      "depth": 2,
+      "text": "2026-08-06 (4) — Hand-styled controls 124 → 57: build a **converter that points precisely**, and fix the gate set again",
+      "slug": "2026-08-06-4-hand-styled-controls-124-57-build-a-converter-that-points-precisely-and-fix-the-gate-set-again"
     },
     {
-      "depth": 3,
-      "text": "진 대안 ② — 2·3단계도 자동 완료 판정을 준다",
-      "slug": "진-대안-23단계도-자동-완료-판정을-준다"
+      "depth": 2,
+      "text": "2026-08-06 (5) — Hand-styled controls 57 → 50: **the character of what remains has changed**",
+      "slug": "2026-08-06-5-hand-styled-controls-57-50-the-character-of-what-remains-has-changed"
     },
     {
       "depth": 2,
-      "text": "2026-08-04 — 흐름 안 접기는 떠 있는 표면의 문법을 입지 않는다 (아침 판의 부분 번복)",
-      "slug": "2026-08-04-흐름-안-접기는-떠-있는-표면의-문법을-입지-않는다-아침-판의-부분-번복"
+      "text": "2026-08-06 (6) — **Do not build** vertical stacked tabs: hand-styled controls 50 → 39",
+      "slug": "2026-08-06-6-do-not-build-vertical-stacked-tabs-hand-styled-controls-50-39"
     },
     {
-      "depth": 3,
-      "text": "프레임 실측이 「버벅임」을 수치로 갖는다 (설치 앱, 120fps 녹화 → 30fps 추출)",
-      "slug": "프레임-실측이-버벅임을-수치로-갖는다-설치-앱-120fps-녹화-30fps-추출"
+      "depth": 2,
+      "text": "2026-08-06 (7) — Hand-styled controls 39 → 30: **the contract had been nailing down the source string**",
+      "slug": "2026-08-06-7-hand-styled-controls-39-30-the-contract-had-been-nailing-down-the-source-string"
     },
     {
-      "depth": 3,
-      "text": "왜 `Surface` 에 세 번째 모션(`reveal`)을 만들지 않았나",
-      "slug": "왜-surface-에-세-번째-모션reveal을-만들지-않았나"
+      "depth": 2,
+      "text": "2026-08-06 (8) — Hand-styled controls 30 → 27: **the negative control group was hanging on a real defect**",
+      "slug": "2026-08-06-8-hand-styled-controls-30-27-the-negative-control-group-was-hanging-on-a-real-defect"
     },
     {
-      "depth": 3,
-      "text": "결함 B — 사실과 상호작용의 채널 분리",
-      "slug": "결함-b-사실과-상호작용의-채널-분리"
+      "depth": 2,
+      "text": "2026-08-06 (9) — **Subtract already-adjudicated spots from the debt count**",
+      "slug": "2026-08-06-9-subtract-already-adjudicated-spots-from-the-debt-count"
     },
     {
-      "depth": 3,
-      "text": "진 대안 — 배지가 펼친 행을 따라간다 (`stepState` 를 `openStep` 으로)",
-      "slug": "진-대안-배지가-펼친-행을-따라간다-stepstate-를-openstep-으로"
+      "depth": 2,
+      "text": "2026-08-06 (8) — Lint warning ceiling: **a ratchet, not eliminating them all**",
+      "slug": "2026-08-06-8-lint-warning-ceiling-a-ratchet-not-eliminating-them-all"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 손가락 바닥은 **히트 확장이 아니라 실제 높이**로 깐다 (값 층 칩·행·pill)",
-      "slug": "2026-08-05-손가락-바닥은-히트-확장이-아니라-실제-높이로-깐다-값-층-칩행pill"
+      "text": "2026-08-06 (8) — Disabled-state blur is one value: the lookup-palette input does not outrank the result",
+      "slug": "2026-08-06-8-disabled-state-blur-is-one-value-the-lookup-palette-input-does-not-outrank-the-result"
     },
     {
-      "depth": 3,
-      "text": "문제 — 승격이 또 빈 방에 떨어지고 있었다",
-      "slug": "문제-승격이-또-빈-방에-떨어지고-있었다"
+      "depth": 2,
+      "text": "2026-08-06 (10) — Fix two screen defects that \"hierarchy\" caused: a dead-end CTA and a title tie",
+      "slug": "2026-08-06-10-fix-two-screen-defects-that-hierarchy-caused-a-dead-end-cta-and-a-title-tie"
     },
     {
-      "depth": 3,
-      "text": "진 대안 (B) — `touch-hit-expand` 로 히트 영역만 넓힌다",
-      "slug": "진-대안-b-touch-hit-expand-로-히트-영역만-넓힌다"
+      "depth": 2,
+      "text": "2026-08-06 (11) — Hand-styled controls 19 → 10: **two more contracts were nailing down source strings**",
+      "slug": "2026-08-06-11-hand-styled-controls-19-10-two-more-contracts-were-nailing-down-source-strings"
     },
     {
-      "depth": 3,
-      "text": "한 번 틀렸다 — 레이어 순서는 명시도를 이긴다",
-      "slug": "한-번-틀렸다-레이어-순서는-명시도를-이긴다"
+      "depth": 2,
+      "text": "2026-08-06 (10) — Lint warnings 91 → 62: **the line between reduced and untouched is \"does behavior change\"**",
+      "slug": "2026-08-06-10-lint-warnings-91-62-the-line-between-reduced-and-untouched-is-does-behavior-change"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 체크박스의 타깃은 **체크박스가 아니라 라벨**이다 (WCAG 2.5.8 AA)",
-      "slug": "2026-08-05-체크박스의-타깃은-체크박스가-아니라-라벨이다-wcag-258-aa"
+      "text": "2026-08-06 (12) — Fix the **real data defect** that `exhaustive-deps` surfaced",
+      "slug": "2026-08-06-12-fix-the-real-data-defect-that-exhaustive-deps-surfaced"
     },
     {
-      "depth": 3,
-      "text": "문제 — 게이트 둘이 나란히 이것을 못 봤다",
-      "slug": "문제-게이트-둘이-나란히-이것을-못-봤다"
+      "depth": 2,
+      "text": "2026-08-06 (13) — **Hand-styled buttons reach zero**, and the wording is made plainer",
+      "slug": "2026-08-06-13-hand-styled-buttons-reach-zero-and-the-wording-is-made-plainer"
     },
     {
-      "depth": 3,
-      "text": "처방 — 왜 체크박스를 키우지 않았나",
-      "slug": "처방-왜-체크박스를-키우지-않았나"
+      "depth": 2,
+      "text": "2026-08-06 (14) — ✅ **Declared done: hand-styled spots are at 0**",
+      "slug": "2026-08-06-14-declared-done-hand-styled-spots-are-at-0"
     },
     {
-      "depth": 3,
-      "text": "게이트",
-      "slug": "게이트-2"
+      "depth": 2,
+      "text": "2026-08-07 — Put an actual opening path where it says \"open a folder...\": **the precedent's destination was a dead end on web**",
+      "slug": "2026-08-07-put-an-actual-opening-path-where-it-says-open-a-folder-the-precedents-destination-was-a-dead-end-on-web"
     },
     {
-      "depth": 3,
-      "text": "훑은 범위 — 「0건」의 근거",
-      "slug": "훑은-범위-0건의-근거"
+      "depth": 2,
+      "text": "2026-08-07 (2) — A path to reach the reading material on narrow screens: **neither of the two alternatives promised by comments existed**",
+      "slug": "2026-08-07-2-a-path-to-reach-the-reading-material-on-narrow-screens-neither-of-the-two-alternatives-promised-by-comments-existed"
     },
     {
       "depth": 2,
-      "text": "2026-08-05 — 폼을 게이트 시야 안으로 들인다 (래칫 다섯째 수 + 터치 감사 셀렉터)",
-      "slug": "2026-08-05-폼을-게이트-시야-안으로-들인다-래칫-다섯째-수-터치-감사-셀렉터"
+      "text": "2026-08-07 (3) — One screen does not count the same thing two ways: a rejection reaches the person who clicked",
+      "slug": "2026-08-07-3-one-screen-does-not-count-the-same-thing-two-ways-a-rejection-reaches-the-person-who-clicked"
     },
     {
-      "depth": 3,
-      "text": "값을 고치기 전에 구멍을 막는다",
-      "slug": "값을-고치기-전에-구멍을-막는다"
+      "depth": 2,
+      "text": "2026-08-08 (5) — Docs-pane chrome: **one fact, said in one place** (owner flagged \"complexity\" and \"confusion\")",
+      "slug": "2026-08-08-5-docs-pane-chrome-one-fact-said-in-one-place-owner-flagged-complexity-and-confusion"
     },
     {
-      "depth": 3,
-      "text": "폼 부채는 오늘 0 을 향하지 못한다 — 그것을 그대로 적는다",
-      "slug": "폼-부채는-오늘-0-을-향하지-못한다-그것을-그대로-적는다"
+      "depth": 2,
+      "text": "2026-08-08 — **Do not add** a folder-opening path to the gateway; instead, don't claim otherwise, and let the gate own that judgment",
+      "slug": "2026-08-08-do-not-add-a-folder-opening-path-to-the-gateway-instead-dont-claim-otherwise-and-let-the-gate-own-that-judgment"
     },
     {
-      "depth": 3,
-      "text": "라벨 치환이 없으면 고쳐 놓은 자리를 위반으로 부른다",
-      "slug": "라벨-치환이-없으면-고쳐-놓은-자리를-위반으로-부른다"
+      "depth": 2,
+      "text": "2026-08-08 (2) — With owner delegation, **actually measured collapsing and label order**: neither gets applied",
+      "slug": "2026-08-08-2-with-owner-delegation-actually-measured-collapsing-and-label-order-neither-gets-applied"
     },
     {
       "depth": 2,
-      "text": "2026-08-06 — 폼 필드는 **아홉째 모양이 아니라 둘째 cva** 다 (`fieldClass`)",
-      "slug": "2026-08-06-폼-필드는-아홉째-모양이-아니라-둘째-cva-다-fieldclass"
+      "text": "2026-08-08 (2) — One gate was **forcing** \"write it as forbidden\" for something that actually works",
+      "slug": "2026-08-08-2-one-gate-was-forcing-write-it-as-forbidden-for-something-that-actually-works"
     },
     {
-      "depth": 3,
-      "text": "왜 아홉째 `shape` 가 아닌가 — 셋 다 값 층 자신의 규율이다",
-      "slug": "왜-아홉째-shape-가-아닌가-셋-다-값-층-자신의-규율이다"
+      "depth": 2,
+      "text": "2026-08-08 (3) — Extend the hierarchy gate to every route: the cause of the missing label is closed",
+      "slug": "2026-08-08-3-extend-the-hierarchy-gate-to-every-route-the-cause-of-the-missing-label-is-closed"
     },
     {
-      "depth": 3,
-      "text": "두 자리가 독립적으로 같은 선을 그었다 — `frame` 축의 근거",
-      "slug": "두-자리가-독립적으로-같은-선을-그었다-frame-축의-근거"
+      "depth": 2,
+      "text": "2026-08-08 (4) — Enforce the four delegated rulings, and a rail-border regression",
+      "slug": "2026-08-08-4-enforce-the-four-delegated-rulings-and-a-rail-border-regression"
     },
     {
-      "depth": 3,
-      "text": "실측 — 「0px 6곳」은 마우스 기준이었다",
-      "slug": "실측-0px-6곳은-마우스-기준이었다"
+      "depth": 2,
+      "text": "2026-08-14 (5) — U1.1 Projects taxonomy starts with a compatibility slice",
+      "slug": "2026-08-14-5-u11-projects-taxonomy-starts-with-a-compatibility-slice"
     },
     {
-      "depth": 3,
-      "text": "게이트 (같은 PR)",
-      "slug": "게이트-같은-pr"
+      "depth": 2,
+      "text": "2026-08-14 (6) — U1.2 spotlight only moves during transition and stops at idle",
+      "slug": "2026-08-14-6-u12-spotlight-only-moves-during-transition-and-stops-at-idle"
     },
     {
-      "depth": 3,
-      "text": "이 PR 에 넣지 않은 것 (선행 판정이 필요하다)",
-      "slug": "이-pr-에-넣지-않은-것-선행-판정이-필요하다"
+      "depth": 2,
+      "text": "2026-08-14 (7) — The compact import response does not hide stale edges, it requires a full follow-up",
+      "slug": "2026-08-14-7-the-compact-import-response-does-not-hide-stale-edges-it-requires-a-full-follow-up"
     },
     {
-      "depth": 3,
-      "text": "「위계」가 낸 별건 — 이 PR 밖, 실측치와 함께 남긴다",
-      "slug": "위계가-낸-별건-이-pr-밖-실측치와-함께-남긴다"
+      "depth": 2,
+      "text": "2026-08-14 (8) — The desktop performance gate blocks only static assets",
+      "slug": "2026-08-14-8-the-desktop-performance-gate-blocks-only-static-assets"
     },
     {
       "depth": 2,
-      "text": "2026-08-06 (2) — 폼 전수를 `fieldClass` 로 옮긴다 · 타입은 화면을 보고 고쳤다",
-      "slug": "2026-08-06-2-폼-전수를-fieldclass-로-옮긴다-타입은-화면을-보고-고쳤다"
+      "text": "2026-08-15 — Modality is owned by the primitive: new Dialog, two width tiers, adoption ratchet",
+      "slug": "2026-08-15-modality-is-owned-by-the-primitive-new-dialog-two-width-tiers-adoption-ratchet"
     },
     {
-      "depth": 3,
-      "text": "왜 미루지 않았나",
-      "slug": "왜-미루지-않았나"
+      "depth": 2,
+      "text": "2026-08-15 (2) — Form behavior layer: Input/Textarea, Checkbox approved, Switch, Slider rejected",
+      "slug": "2026-08-15-2-form-behavior-layer-inputtextarea-checkbox-approved-switch-slider-rejected"
     },
     {
-      "depth": 3,
-      "text": "화면이 뒤집은 판정 — 타입은 크기와 짝이다",
-      "slug": "화면이-뒤집은-판정-타입은-크기와-짝이다"
+      "depth": 2,
+      "text": "2026-08-15 (3) — SegmentedControl: the canonical form for exclusive single-select, even a two-option choice is a radiogroup",
+      "slug": "2026-08-15-3-segmentedcontrol-the-canonical-form-for-exclusive-single-select-even-a-two-option-choice-is-a-radiogroup"
     },
     {
-      "depth": 3,
-      "text": "실측 — 첫 화면에서 닿는 필드 전수",
-      "slug": "실측-첫-화면에서-닿는-필드-전수"
+      "depth": 2,
+      "text": "2026-08-15 (4) — For static badges, the value layer owns **geometry only**: color is not an axis, since there is no majority pattern",
+      "slug": "2026-08-15-4-for-static-badges-the-value-layer-owns-geometry-only-color-is-not-an-axis-since-there-is-no-majority-pattern"
     },
     {
-      "depth": 3,
-      "text": "게이트가 진전을 벌한 사건 (오늘 두 번째)",
-      "slug": "게이트가-진전을-벌한-사건-오늘-두-번째"
+      "depth": 2,
+      "text": "2026-08-15 (5) — Section card: value layer **rejected**, instead pay down 12 unadopted spots of an existing token",
+      "slug": "2026-08-15-5-section-card-value-layer-rejected-instead-pay-down-12-unadopted-spots-of-an-existing-token"
     },
     {
-      "depth": 3,
-      "text": "그 밖에 고친 것",
-      "slug": "그-밖에-고친-것"
+      "depth": 2,
+      "text": "2026-08-15 (6) — The same contrast defect appeared for the **third** time: this time, lock it instead of fixing it",
+      "slug": "2026-08-15-6-the-same-contrast-defect-appeared-for-the-third-time-this-time-lock-it-instead-of-fixing-it"
     },
     {
-      "depth": 3,
-      "text": "남은 29 — 무엇이고 왜 남았나",
-      "slug": "남은-29-무엇이고-왜-남았나"
+      "depth": 2,
+      "text": "2026-08-15 (7) — Badge tone axis **rejected on reconsideration**: there are four roles, but \"classifiable\" is not \"convergeable\"",
+      "slug": "2026-08-15-7-badge-tone-axis-rejected-on-reconsideration-there-are-four-roles-but-classifiable-is-not-convergeable"
     },
     {
-      "depth": 3,
-      "text": "덧 (같은 날) — 라벨에도 규격을 주고, **탐지기 자신을 의심했다**",
-      "slug": "덧-같은-날-라벨에도-규격을-주고-탐지기-자신을-의심했다"
+      "depth": 2,
+      "text": "2026-08-15 (8) — radiogroup: **behavior is one hook, the container belongs to the spot**. The value axis was declared done, but the behavior axis was 100% defective",
+      "slug": "2026-08-15-8-radiogroup-behavior-is-one-hook-the-container-belongs-to-the-spot-the-value-axis-was-declared-done-but-the-behavior-axis-was-100-defective"
     },
     {
-      "depth": 4,
-      "text": "게이트가 진전을 벌한 사건 — 하루에 **세 번**",
-      "slug": "게이트가-진전을-벌한-사건-하루에-세-번"
+      "depth": 2,
+      "text": "2026-08-15 (9) — Behavior layer complete, 18/18. **What was blocking the container migration was not the container, but one missing axis**",
+      "slug": "2026-08-15-9-behavior-layer-complete-1818-what-was-blocking-the-container-migration-was-not-the-container-but-one-missing-axis"
     },
     {
-      "depth": 4,
-      "text": "소유자 지적 — 「맨날 같은 걸 잡으면 탐지기가 틀린 것일 수도 있다」",
-      "slug": "소유자-지적-맨날-같은-걸-잡으면-탐지기가-틀린-것일-수도-있다"
+      "depth": 2,
+      "text": "2026-08-15 (10) — Full hover audit: the denominator was 60%, four defects surfaced, the axis ruling comes next round",
+      "slug": "2026-08-15-10-full-hover-audit-the-denominator-was-60-four-defects-surfaced-the-axis-ruling-comes-next-round"
     },
     {
       "depth": 2,
-      "text": "2026-08-06 (3) — `row` 에 `stacked` 축: 반경은 **배치가 정한다**",
-      "slug": "2026-08-06-3-row-에-stacked-축-반경은-배치가-정한다"
+      "text": "2026-08-15 (11) — The hover axis is **three, not one**: per-spot measurement settled it",
+      "slug": "2026-08-15-11-the-hover-axis-is-three-not-one-per-spot-measurement-settled-it"
     },
     {
-      "depth": 3,
-      "text": "왜 필요했나 — 옮겨 보고 나서 드러났다",
-      "slug": "왜-필요했나-옮겨-보고-나서-드러났다"
-    },
-    {
-      "depth": 3,
-      "text": "왜 아홉째 모양이 아니라 축인가",
-      "slug": "왜-아홉째-모양이-아니라-축인가"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드의 이동",
-      "slug": "이-라운드의-이동"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (4) — 손 컨트롤 124 → 57 · **정확히 짚는 변환기**를 만들고, 게이트 셋을 또 고쳤다",
-      "slug": "2026-08-06-4-손-컨트롤-124-57-정확히-짚는-변환기를-만들고-게이트-셋을-또-고쳤다"
-    },
-    {
-      "depth": 3,
-      "text": "변환기를 두 번 고쳤다 — 둘 다 실측이 잡았다",
-      "slug": "변환기를-두-번-고쳤다-둘-다-실측이-잡았다"
-    },
-    {
-      "depth": 3,
-      "text": "게이트가 옳게 잡은 것",
-      "slug": "게이트가-옳게-잡은-것"
-    },
-    {
-      "depth": 3,
-      "text": "게이트가 또 진전을 벌했다 — 이 파일에서만 오늘 **셋**",
-      "slug": "게이트가-또-진전을-벌했다-이-파일에서만-오늘-셋"
-    },
-    {
-      "depth": 3,
-      "text": "실측",
-      "slug": "실측"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (5) — 손 컨트롤 57 → 50 · **남은 것의 성격이 바뀌었다**",
-      "slug": "2026-08-06-5-손-컨트롤-57-50-남은-것의-성격이-바뀌었다"
-    },
-    {
-      "depth": 3,
-      "text": "여기서부터는 「아직 안 옮긴 것」이 아니다",
-      "slug": "여기서부터는-아직-안-옮긴-것이-아니다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (6) — 세로 스택 탭은 **만들지 않는다** · 손 컨트롤 50 → 39",
-      "slug": "2026-08-06-6-세로-스택-탭은-만들지-않는다-손-컨트롤-50-39"
-    },
-    {
-      "depth": 3,
-      "text": "판정: 새 축·모양을 만들지 않는다",
-      "slug": "판정-새-축모양을-만들지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "앞선 분류가 틀렸다 — 정정",
-      "slug": "앞선-분류가-틀렸다-정정"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드의 이동",
-      "slug": "이-라운드의-이동-2"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (7) — 손 컨트롤 39 → 30 · **계약이 소스 문자열을 못박고 있었다**",
-      "slug": "2026-08-06-7-손-컨트롤-39-30-계약이-소스-문자열을-못박고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "⚠️ `settings-sheet-type-dialect` 이 소스 문자열을 못박고 있었다",
-      "slug": "settings-sheet-type-dialect-이-소스-문자열을-못박고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "실측",
-      "slug": "실측-2"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (8) — 손 컨트롤 30 → 27 · **음성 대조군이 실물 결함에 매달려 있었다**",
-      "slug": "2026-08-06-8-손-컨트롤-30-27-음성-대조군이-실물-결함에-매달려-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "⑮ 프로브가 `DemoStage` 를 못 고치게 붙들고 있었다",
-      "slug": "프로브가-demostage-를-못-고치게-붙들고-있었다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (9) — **판정이 끝난 자리는 부채 수에서 뺀다**",
-      "slug": "2026-08-06-9-판정이-끝난-자리는-부채-수에서-뺀다"
-    },
-    {
-      "depth": 3,
-      "text": "등재 8건 — 각각 열어서 근거를 확인했다",
-      "slug": "등재-8건-각각-열어서-근거를-확인했다"
-    },
-    {
-      "depth": 3,
-      "text": "새 주장 `shape-gap` 은 **조건 없이 못 쓴다**",
-      "slug": "새-주장-shape-gap-은-조건-없이-못-쓴다"
-    },
-    {
-      "depth": 3,
-      "text": "프로브 ⑬ 이 또 넓게 쓰여 있었다 — 오늘 다섯 번째",
-      "slug": "프로브-이-또-넓게-쓰여-있었다-오늘-다섯-번째"
-    },
-    {
-      "depth": 3,
-      "text": "결과 — 부채 수가 이제 「할 일」만 센다",
-      "slug": "결과-부채-수가-이제-할-일만-센다"
-    },
-    {
-      "depth": 3,
-      "text": "말에 대한 정정",
-      "slug": "말에-대한-정정"
-    },
-    {
-      "depth": 3,
-      "text": "덧 — **전수 재검수: 같은 병이 세 곳 더 있었다**",
-      "slug": "덧-전수-재검수-같은-병이-세-곳-더-있었다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (8) — lint 경고 상한: **전부 없애기가 아니라 래칫**",
-      "slug": "2026-08-06-8-lint-경고-상한-전부-없애기가-아니라-래칫"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 문제였나 — 감사 문서가 자기 결함을 적어 두고 있었다",
-      "slug": "무엇이-문제였나-감사-문서가-자기-결함을-적어-두고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "판정: 값을 고치는 것과 게이트를 켜는 것을 가른다",
-      "slug": "판정-값을-고치는-것과-게이트를-켜는-것을-가른다"
-    },
-    {
-      "depth": 3,
-      "text": "이 래칫은 **경고가 0이 되는 날에도 통과한다**",
-      "slug": "이-래칫은-경고가-0이-되는-날에도-통과한다"
-    },
-    {
-      "depth": 3,
-      "text": "프로브 — 켜기 전에 빨개지는 것을 확인했다 (`/gate-probe`)",
-      "slug": "프로브-켜기-전에-빨개지는-것을-확인했다-gate-probe"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-5"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (8) — 비활성 흐림은 한 값이다 · 조회 팔레트 입력은 결과를 이기지 않는다",
-      "slug": "2026-08-06-8-비활성-흐림은-한-값이다-조회-팔레트-입력은-결과를-이기지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 1 — `disabled:opacity-*` 를 55 하나로",
-      "slug": "결정-1-disabledopacity--를-55-하나로"
-    },
-    {
-      "depth": 3,
-      "text": "결정 2 — `SearchPalette` 입력의 `text-title`(16px) 덮어쓰기 삭제",
-      "slug": "결정-2-searchpalette-입력의-text-title16px-덮어쓰기-삭제"
-    },
-    {
-      "depth": 3,
-      "text": "남긴 관찰 (후속)",
-      "slug": "남긴-관찰-후속"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (10) — 「위계」가 낸 화면 결함 둘을 고친다 · 막다른 CTA 와 제목 동률",
-      "slug": "2026-08-06-10-위계가-낸-화면-결함-둘을-고친다-막다른-cta-와-제목-동률"
-    },
-    {
-      "depth": 3,
-      "text": "① amber 배너가 막다른 CTA 였다",
-      "slug": "amber-배너가-막다른-cta-였다"
-    },
-    {
-      "depth": 3,
-      "text": "② 보조 패널의 「0%」가 페이지 제목과 동률이었다",
-      "slug": "보조-패널의-0가-페이지-제목과-동률이었다"
-    },
-    {
-      "depth": 3,
-      "text": "게이트 — `tests/e2e/screen-hierarchy.spec.ts` 신설",
-      "slug": "게이트-testse2escreen-hierarchyspects-신설"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (11) — 손 컨트롤 19 → 10 · **계약 둘이 또 소스 문자열을 못박고 있었다**",
-      "slug": "2026-08-06-11-손-컨트롤-19-10-계약-둘이-또-소스-문자열을-못박고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "`settings-sheet-type-dialect` 의 LNB 단언이 한 덩어리 정규식이었다",
-      "slug": "settings-sheet-type-dialect-의-lnb-단언이-한-덩어리-정규식이었다"
-    },
-    {
-      "depth": 3,
-      "text": "그 재작성에서 두 번 틀렸고 프로브가 둘 다 잡았다",
-      "slug": "그-재작성에서-두-번-틀렸고-프로브가-둘-다-잡았다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (10) — lint 경고 91 → 62 · **줄인 것과 안 줄인 것의 경계는 「동작이 바뀌나」**",
-      "slug": "2026-08-06-10-lint-경고-91-62-줄인-것과-안-줄인-것의-경계는-동작이-바뀌나"
-    },
-    {
-      "depth": 3,
-      "text": "없앤 29건 — 성분",
-      "slug": "없앤-29건-성분"
-    },
-    {
-      "depth": 3,
-      "text": "`_` 접두를 설정이 읽게 했다 — 게이트 변경 1건",
-      "slug": "_-접두를-설정이-읽게-했다-게이트-변경-1건"
-    },
-    {
-      "depth": 3,
-      "text": "안 고친 61건 — 전수 분류가 이 결정의 본체다",
-      "slug": "안-고친-61건-전수-분류가-이-결정의-본체다"
-    },
-    {
-      "depth": 3,
-      "text": "화면 변경 0",
-      "slug": "화면-변경-0"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (12) — `exhaustive-deps` 가 낸 **진짜 데이터 결함**을 고친다",
-      "slug": "2026-08-06-12-exhaustive-deps-가-낸-진짜-데이터-결함을-고친다"
-    },
-    {
-      "depth": 3,
-      "text": "① `DocsVaultEditor` 의 `vaultScope` 4건 — 남의 볼트를 오염시킨다",
-      "slug": "docsvaulteditor-의-vaultscope-4건-남의-볼트를-오염시킨다"
-    },
-    {
-      "depth": 3,
-      "text": "② `DocsVaultPage` 의 `localVault.handle` — 옛 경로를 복사한다",
-      "slug": "docsvaultpage-의-localvaulthandle-옛-경로를-복사한다"
-    },
-    {
-      "depth": 3,
-      "text": "⚠️ 재현을 두 번 잘못 썼다 — 순서가 전부였다",
-      "slug": "재현을-두-번-잘못-썼다-순서가-전부였다"
-    },
-    {
-      "depth": 3,
-      "text": "안 고친 3건 — 이유",
-      "slug": "안-고친-3건-이유"
-    },
-    {
-      "depth": 3,
-      "text": "재빌드 검증 (소유자 지시)",
-      "slug": "재빌드-검증-소유자-지시"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (13) — **손으로 스타일을 적은 버튼이 0개가 됐다** · 그리고 말을 쉽게 고친다",
-      "slug": "2026-08-06-13-손으로-스타일을-적은-버튼이-0개가-됐다-그리고-말을-쉽게-고친다"
-    },
-    {
-      "depth": 3,
-      "text": "먼저 말 — 「부채」가 무슨 뜻이었나",
-      "slug": "먼저-말-부채가-무슨-뜻이었나"
-    },
-    {
-      "depth": 3,
-      "text": "결과 — 손으로 스타일을 적은 버튼 **0개**",
-      "slug": "결과-손으로-스타일을-적은-버튼-0개"
-    },
-    {
-      "depth": 3,
-      "text": "⚠️ 완성되는 날 죽는 게이트가 또 있었다 — **다섯 번째**",
-      "slug": "완성되는-날-죽는-게이트가-또-있었다-다섯-번째"
-    },
-    {
-      "depth": 3,
-      "text": "재빌드 검증",
-      "slug": "재빌드-검증"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-06 (14) — ✅ **종료 선언: 손으로 스타일을 적은 자리가 0 이다**",
-      "slug": "2026-08-06-14-종료-선언-손으로-스타일을-적은-자리가-0-이다"
-    },
-    {
-      "depth": 3,
-      "text": "마지막에 옮긴 것 · 목록에 넣은 것",
-      "slug": "마지막에-옮긴-것-목록에-넣은-것"
-    },
-    {
-      "depth": 3,
-      "text": "그래서 다음 사람은 이 수를 다시 안 찾아도 된다",
-      "slug": "그래서-다음-사람은-이-수를-다시-안-찾아도-된다"
-    },
-    {
-      "depth": 3,
-      "text": "⚠️ 완료 지점에서 죽는 게이트가 또 있었다 — 여섯 번째",
-      "slug": "완료-지점에서-죽는-게이트가-또-있었다-여섯-번째"
-    },
-    {
-      "depth": 3,
-      "text": "그리고 내가 낸 회귀 하나를 CI 가 잡았다",
-      "slug": "그리고-내가-낸-회귀-하나를-ci-가-잡았다"
-    },
-    {
-      "depth": 3,
-      "text": "재빌드 검증",
-      "slug": "재빌드-검증-2"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-07 — 「폴더를 열면 …」이라 말한 자리에 여는 길을 놓는다 · **선례의 갈 곳이 웹에서 막다른 길이었다**",
-      "slug": "2026-08-07-폴더를-열면-이라-말한-자리에-여는-길을-놓는다-선례의-갈-곳이-웹에서-막다른-길이었다"
-    },
-    {
-      "depth": 3,
-      "text": "선행 기록을 인용하고, 그 처방의 절반을 뒤집는다",
-      "slug": "선행-기록을-인용하고-그-처방의-절반을-뒤집는다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇을 쟀나 (감사 대상 17개 라우트 · 볼트 없음 · 정적 export · 1512×900)",
-      "slug": "무엇을-쟀나-감사-대상-17개-라우트-볼트-없음-정적-export-1512900"
-    },
-    {
-      "depth": 3,
-      "text": "처방 — 주소로 보내지 않고 **그 자리에서 연다**",
-      "slug": "처방-주소로-보내지-않고-그-자리에서-연다"
-    },
-    {
-      "depth": 3,
-      "text": "관문을 뺀 이유",
-      "slug": "관문을-뺀-이유"
-    },
-    {
-      "depth": 3,
-      "text": "게이트 — 라우트 하나짜리 허용목록을 전 라우트 스윕으로 뒤집는다",
-      "slug": "게이트-라우트-하나짜리-허용목록을-전-라우트-스윕으로-뒤집는다"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-6"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-07 (2) — 좁은 화면에서 읽을거리에 닿는 길 · **주석 둘이 약속한 대체가 둘 다 없었다**",
-      "slug": "2026-08-07-2-좁은-화면에서-읽을거리에-닿는-길-주석-둘이-약속한-대체가-둘-다-없었다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇을 쟀나 (정적 export · 볼트 없음)",
-      "slug": "무엇을-쟀나-정적-export-볼트-없음"
-    },
-    {
-      "depth": 3,
-      "text": "이 결함이 살아남은 이유 — **주석은 게이트가 아니다**",
-      "slug": "이-결함이-살아남은-이유-주석은-게이트가-아니다"
-    },
-    {
-      "depth": 3,
-      "text": "처방",
-      "slug": "처방"
-    },
-    {
-      "depth": 3,
-      "text": "게이트 — `tests/e2e/gateway-reading-reach.spec.ts`",
-      "slug": "게이트-testse2egateway-reading-reachspects"
-    },
-    {
-      "depth": 3,
-      "text": "그리고 이 변경이 낸 회귀를 다른 게이트가 잡았다",
-      "slug": "그리고-이-변경이-낸-회귀를-다른-게이트가-잡았다"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-7"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-07 (3) — 한 화면이 같은 일을 두 수로 세지 않는다 · 거절은 누른 사람에게 도착한다",
-      "slug": "2026-08-07-3-한-화면이-같은-일을-두-수로-세지-않는다-거절은-누른-사람에게-도착한다"
-    },
-    {
-      "depth": 3,
-      "text": "① 「할 일 7」 바로 아래 묶음 머리가 「8」이었다",
-      "slug": "할-일-7-바로-아래-묶음-머리가-8이었다"
-    },
-    {
-      "depth": 3,
-      "text": "② 저장 거절이 화면 밖에 떴다",
-      "slug": "저장-거절이-화면-밖에-떴다"
-    },
-    {
-      "depth": 3,
-      "text": "⚠️ 그리고 내 첫 재현은 무효였다",
-      "slug": "그리고-내-첫-재현은-무효였다"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-8"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-08 (5) — 문서함 크롬: **같은 사실은 한 곳이 말한다** (소유자 「복잡도」·「헷갈림」 지목)",
-      "slug": "2026-08-08-5-문서함-크롬-같은-사실은-한-곳이-말한다-소유자-복잡도헷갈림-지목"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-08 — 관문에 폴더 여는 길을 **놓지 않는다** · 대신 그렇게 말하지도 않고, 그 판정을 게이트가 진다",
-      "slug": "2026-08-08-관문에-폴더-여는-길을-놓지-않는다-대신-그렇게-말하지도-않고-그-판정을-게이트가-진다"
-    },
-    {
-      "depth": 3,
-      "text": "선행 기록 둘을 인용한다 — 하나는 유효, 하나는 이번에 결말이 났다",
-      "slug": "선행-기록-둘을-인용한다-하나는-유효-하나는-이번에-결말이-났다"
-    },
-    {
-      "depth": 3,
-      "text": "결정 — 관문은 폴더를 여는 화면이 **아니다**",
-      "slug": "결정-관문은-폴더를-여는-화면이-아니다"
-    },
-    {
-      "depth": 3,
-      "text": "「길이 있다」의 기준을 못박는다 — 클릭 수는 기준이 아니다",
-      "slug": "길이-있다의-기준을-못박는다-클릭-수는-기준이-아니다"
-    },
-    {
-      "depth": 3,
-      "text": "② 문구 — 「앱에서」는 거짓이다. **되는 것을 안 된다고 쓰는 것**이다",
-      "slug": "문구-앱에서는-거짓이다-되는-것을-안-된다고-쓰는-것이다"
-    },
-    {
-      "depth": 3,
-      "text": "코드 결함 하나 — 착지점이 아니라 **그 옆 패널**이 앱 설치로 답하고 있었다",
-      "slug": "코드-결함-하나-착지점이-아니라-그-옆-패널이-앱-설치로-답하고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "게이트 — 통짜 예외의 값을 갚는다",
-      "slug": "게이트-통짜-예외의-값을-갚는다"
-    },
-    {
-      "depth": 3,
-      "text": "적용하지 않은 것 — 그리고 왜",
-      "slug": "적용하지-않은-것-그리고-왜"
-    },
-    {
-      "depth": 3,
-      "text": "기각 — X 자리 표시 삭제(위계)",
-      "slug": "기각-x-자리-표시-삭제위계"
-    },
-    {
-      "depth": 3,
-      "text": "잰 대가",
-      "slug": "잰-대가"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-08 (2) — 소유자 위임으로 **접기와 라벨 순서를 실제로 재 봤다**: 둘 다 적용하지 않는다",
-      "slug": "2026-08-08-2-소유자-위임으로-접기와-라벨-순서를-실제로-재-봤다-둘-다-적용하지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "① 43개 접기 — **정지 조건 ⓑ 에 걸렸다. 적용하지 않는다**",
-      "slug": "43개-접기-정지-조건-에-걸렸다-적용하지-않는다"
-    },
-    {
-      "depth": 3,
-      "text": "② 390 라벨 순서 — **증상은 실재하고, 처방된 기제는 이미 코드에 있다. 보류**",
-      "slug": "390-라벨-순서-증상은-실재하고-처방된-기제는-이미-코드에-있다-보류"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-9"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-08 (2) — 게이트 하나가 「되는 것을 안 된다고 쓰기」를 **강제하고** 있었다",
-      "slug": "2026-08-08-2-게이트-하나가-되는-것을-안-된다고-쓰기를-강제하고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 났나",
-      "slug": "무엇이-났나"
-    },
-    {
-      "depth": 3,
-      "text": "왜 그렇게 돼 있었나 — 성격이 다른 셋을 한 규칙에 묶었다",
-      "slug": "왜-그렇게-돼-있었나-성격이-다른-셋을-한-규칙에-묶었다"
-    },
-    {
-      "depth": 3,
-      "text": "처방 — 요구를 자리의 성격에 맞춘다",
-      "slug": "처방-요구를-자리의-성격에-맞춘다"
-    },
-    {
-      "depth": 3,
-      "text": "그 시험도 문장을 못박고 있었다",
-      "slug": "그-시험도-문장을-못박고-있었다"
-    },
-    {
-      "depth": 3,
-      "text": "advisor 가 이 게이트를 권하지 않았다 (같은 병 두 번째)",
-      "slug": "advisor-가-이-게이트를-권하지-않았다-같은-병-두-번째"
-    },
-    {
-      "depth": 3,
-      "text": "반증 조건",
-      "slug": "반증-조건-10"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-08 (3) — 위계 게이트를 전 라우트로 · 라벨 실종의 원인이 닫혔다",
-      "slug": "2026-08-08-3-위계-게이트를-전-라우트로-라벨-실종의-원인이-닫혔다"
-    },
-    {
-      "depth": 3,
-      "text": "① `screen-hierarchy` 를 라우트 1개 → 감사 대상 전체로",
-      "slug": "screen-hierarchy-를-라우트-1개-감사-대상-전체로"
-    },
-    {
-      "depth": 3,
-      "text": "② 2026-08-08 ②의 반증 조건이 닫혔다 — 「그날 한 줄로 끝난다」의 그 한 줄",
-      "slug": "2026-08-08-의-반증-조건이-닫혔다-그날-한-줄로-끝난다의-그-한-줄"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-08 (4) — 위임된 판정 넷을 집행한다 · 그리고 레일 테두리 회귀",
-      "slug": "2026-08-08-4-위임된-판정-넷을-집행한다-그리고-레일-테두리-회귀"
-    },
-    {
-      "depth": 3,
-      "text": "① 문서함 딥링크 — URL 이 이긴다 (집행)",
-      "slug": "문서함-딥링크-url-이-이긴다-집행"
-    },
-    {
-      "depth": 3,
-      "text": "② 허브 라벨·재핏 — 결함 수리로 집행 (규격 아님)",
-      "slug": "허브-라벨재핏-결함-수리로-집행-규격-아님"
-    },
-    {
-      "depth": 3,
-      "text": "③ 분석기 README 도메인 — 체를 더 기우지 않고 확증으로 가른다 (집행)",
-      "slug": "분석기-readme-도메인-체를-더-기우지-않고-확증으로-가른다-집행"
-    },
-    {
-      "depth": 3,
-      "text": "④ 공방 제목 · 편집 쌍둥이 저장 — 위계로 집행",
-      "slug": "공방-제목-편집-쌍둥이-저장-위계로-집행"
-    },
-    {
-      "depth": 3,
-      "text": "⑤ (소유자 발견) 레일 타일 테두리 — #961 이관이 얹은 헤어라인",
-      "slug": "소유자-발견-레일-타일-테두리-961-이관이-얹은-헤어라인"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-14 (5) — U1.1 Projects taxonomy는 호환성 슬라이스부터",
-      "slug": "2026-08-14-5-u11-projects-taxonomy는-호환성-슬라이스부터"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-14 (6) — U1.2 spotlight는 전이만 움직이고 idle에서 멈춘다",
-      "slug": "2026-08-14-6-u12-spotlight는-전이만-움직이고-idle에서-멈춘다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-14 (7) — compact import 응답은 stale edge를 숨기지 않고 full follow-up을 요구한다",
-      "slug": "2026-08-14-7-compact-import-응답은-stale-edge를-숨기지-않고-full-follow-up을-요구한다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-14 (8) — desktop 성능 게이트는 정적 자산만 차단한다",
-      "slug": "2026-08-14-8-desktop-성능-게이트는-정적-자산만-차단한다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 — 모달성은 프리미티브가 소유한다: Dialog 신설 · 폭 2단 · 채택 래칫",
-      "slug": "2026-08-15-모달성은-프리미티브가-소유한다-dialog-신설-폭-2단-채택-래칫"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (2) — 폼 행동 층: Input/Textarea·Checkbox 승인, Switch·Slider 반려",
-      "slug": "2026-08-15-2-폼-행동-층-inputtextareacheckbox-승인-switchslider-반려"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (3) — SegmentedControl: 배타 단일선택의 정본, 2택도 radiogroup 이다",
-      "slug": "2026-08-15-3-segmentedcontrol-배타-단일선택의-정본-2택도-radiogroup-이다"
-    },
-    {
-      "depth": 2,
-      "text": "PO Council Verdict — 디자인 시스템 별도 공개 repo 추출 (2026-08-15)",
-      "slug": "po-council-verdict-디자인-시스템-별도-공개-repo-추출-2026-08-15"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (4) — 정적 배지는 값 층이 **기하만** 소유한다. 색은 다수파가 없어 축이 아니다",
-      "slug": "2026-08-15-4-정적-배지는-값-층이-기하만-소유한다-색은-다수파가-없어-축이-아니다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (5) — 섹션 카드: 값 층 **반려**, 대신 이미 있던 토큰의 미채택 12곳을 갚는다",
-      "slug": "2026-08-15-5-섹션-카드-값-층-반려-대신-이미-있던-토큰의-미채택-12곳을-갚는다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (6) — 같은 대비 결함이 **세 번째** 났다. 이번엔 고치지 말고 잠근다",
-      "slug": "2026-08-15-6-같은-대비-결함이-세-번째-났다-이번엔-고치지-말고-잠근다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (7) — 배지 tone 축 **재심 반려**. 역할은 넷이지만 «분류 가능»은 «수렴 가능»이 아니다",
-      "slug": "2026-08-15-7-배지-tone-축-재심-반려-역할은-넷이지만-분류-가능은-수렴-가능이-아니다"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (8) — radiogroup: **행동은 훅 하나, 그릇은 자리의 것**. 값 축은 종료 선언됐는데 행동 축은 100% 결함이었다",
-      "slug": "2026-08-15-8-radiogroup-행동은-훅-하나-그릇은-자리의-것-값-축은-종료-선언됐는데-행동-축은-100-결함이었다"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드에서 가장 중요한 사실",
-      "slug": "이-라운드에서-가장-중요한-사실"
-    },
-    {
-      "depth": 3,
-      "text": "결정 (「체계」석 비준)",
-      "slug": "결정-체계석-비준"
-    },
-    {
-      "depth": 3,
-      "text": "부수 정정 — 브리프 숫자 셋이 틀렸고 등재 하나가 거짓이었다",
-      "slug": "부수-정정-브리프-숫자-셋이-틀렸고-등재-하나가-거짓이었다"
-    },
-    {
-      "depth": 3,
-      "text": "재심 조건 (숫자)",
-      "slug": "재심-조건-숫자"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (9) — 행동 층 18/18 완료. **그릇 이주를 막고 있던 것은 그릇이 아니라 빠진 축 하나였다**",
-      "slug": "2026-08-15-9-행동-층-1818-완료-그릇-이주를-막고-있던-것은-그릇이-아니라-빠진-축-하나였다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 끝났나",
-      "slug": "무엇이-끝났나"
-    },
-    {
-      "depth": 3,
-      "text": "배정이 뒤집힌 이유 — 이주 대상 다섯이 전부 같은 것에 걸렸다",
-      "slug": "배정이-뒤집힌-이유-이주-대상-다섯이-전부-같은-것에-걸렸다"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-8"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드가 (8) 에 남기는 정정",
-      "slug": "이-라운드가-8-에-남기는-정정"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (10) — hover 전수: 분모가 60% 였고, 결함 넷이 나왔고, 축 판정은 다음 라운드다",
-      "slug": "2026-08-15-10-hover-전수-분모가-60-였고-결함-넷이-나왔고-축-판정은-다음-라운드다"
-    },
-    {
-      "depth": 3,
-      "text": "① 분모가 틀렸다 — 312 는 전체의 60%",
-      "slug": "분모가-틀렸다-312-는-전체의-60"
-    },
-    {
-      "depth": 3,
-      "text": "② 속성별 — 결론은 분모를 고쳐도 안 뒤집혔다",
-      "slug": "속성별-결론은-분모를-고쳐도-안-뒤집혔다"
-    },
-    {
-      "depth": 3,
-      "text": "③ 실측으로 확인된 결함 넷 (이번 PR 에서 고쳤다)",
-      "slug": "실측으로-확인된-결함-넷-이번-pr-에서-고쳤다"
-    },
-    {
-      "depth": 3,
-      "text": "④ 값 층 주석의 잘못된 처방 (철회)",
-      "slug": "값-층-주석의-잘못된-처방-철회"
-    },
-    {
-      "depth": 3,
-      "text": "⑤ 게이트 — 잉크 라이선스 셋이 나란히 비켜 간 자리를 메웠다",
-      "slug": "게이트-잉크-라이선스-셋이-나란히-비켜-간-자리를-메웠다"
-    },
-    {
-      "depth": 3,
-      "text": "⑥ 축은 왜 아직 안 여나 — 세 자리가 같은 이름에 다른 값을 제안했다",
-      "slug": "축은-왜-아직-안-여나-세-자리가-같은-이름에-다른-값을-제안했다"
-    },
-    {
-      "depth": 3,
-      "text": "⑦ (9) 반대 의견 — **발화했고, 옳았다**",
-      "slug": "9-반대-의견-발화했고-옳았다"
-    },
-    {
-      "depth": 3,
-      "text": "이월 (다음 라운드)",
-      "slug": "이월-다음-라운드"
-    },
-    {
-      "depth": 2,
-      "text": "2026-08-15 (11) — 호버 축은 **하나가 아니라 셋**이다. 자리별 실측이 그것을 정했다",
-      "slug": "2026-08-15-11-호버-축은-하나가-아니라-셋이다-자리별-실측이-그것을-정했다"
-    },
-    {
-      "depth": 3,
-      "text": "무엇이 조정을 결정했나 — 자리별 co-occurrence",
-      "slug": "무엇이-조정을-결정했나-자리별-co-occurrence"
-    },
-    {
-      "depth": 3,
-      "text": "결정",
-      "slug": "결정-9"
-    },
-    {
-      "depth": 3,
-      "text": "축이 아니라 톤의 결원이었던 것 — 채워진 버튼",
-      "slug": "축이-아니라-톤의-결원이었던-것-채워진-버튼"
-    },
-    {
-      "depth": 3,
-      "text": "이주와 게이트",
-      "slug": "이주와-게이트"
-    },
-    {
-      "depth": 3,
-      "text": "프로브 (`/gate-probe`)",
-      "slug": "프로브-gate-probe"
-    },
-    {
       "depth": 2,
-      "text": "2026-08-16 — 호버 계기의 조리개: 둘은 넓혔고, 하나는 **재 보니 켜면 안 되는 것**이었다",
-      "slug": "2026-08-16-호버-계기의-조리개-둘은-넓혔고-하나는-재-보니-켜면-안-되는-것이었다"
-    },
-    {
-      "depth": 3,
-      "text": "① 라우트당 바닥 — 세웠다",
-      "slug": "라우트당-바닥-세웠다"
-    },
-    {
-      "depth": 3,
-      "text": "② 첫 뷰포트 제약 — 걷어냈다 (**+25건**)",
-      "slug": "첫-뷰포트-제약-걷어냈다-25건"
-    },
-    {
-      "depth": 3,
-      "text": "③ 포인터 주차 — 방어로 넣되, **실측 손실은 0이었다**",
-      "slug": "포인터-주차-방어로-넣되-실측-손실은-0이었다"
-    },
-    {
-      "depth": 3,
-      "text": "④ 비텍스트 대비(1.4.11) — **재 보니 켜면 안 된다**",
-      "slug": "비텍스트-대비1411-재-보니-켜면-안-된다"
-    },
-    {
-      "depth": 3,
-      "text": "이 라운드가 스스로 밟은 함정 하나",
-      "slug": "이-라운드가-스스로-밟은-함정-하나"
-    },
-    {
-      "depth": 3,
-      "text": "남은 것",
-      "slug": "남은-것"
+      "text": "2026-08-16 — The aperture of the hover instrument: two were widened, and one, on remeasurement, turned out to be something that should not be turned on",
+      "slug": "2026-08-16-the-aperture-of-the-hover-instrument-two-were-widened-and-one-on-remeasurement-turned-out-to-be-something-that-should-not-be-turned-on"
     },
     {
       "depth": 2,
-      "text": "2026-08-15 (9) — 비표준 구현 루트도 의미 후보의 증거가 되되, 기능으로 자동 승격하지 않는다",
-      "slug": "2026-08-15-9-비표준-구현-루트도-의미-후보의-증거가-되되-기능으로-자동-승격하지-않는다"
+      "text": "2026-08-15 (9) — A nonstandard implementation route can still serve as evidence for a meaning candidate, but it is not automatically promoted to a feature",
+      "slug": "2026-08-15-9-a-nonstandard-implementation-route-can-still-serve-as-evidence-for-a-meaning-candidate-but-it-is-not-automatically-promoted-to-a-feature"
     },
     {
       "depth": 2,
@@ -11264,34 +9459,9 @@
       "slug": "2026-09-01-design-proof-follows-the-changed-failure-mode-rendered-work-is-observed-while-it-is-built"
     },
     {
-      "depth": 3,
-      "text": "Atlas product pass",
-      "slug": "atlas-product-pass"
-    },
-    {
-      "depth": 3,
-      "text": "Design Council Verdict — design verification contract",
-      "slug": "design-council-verdict-design-verification-contract"
-    },
-    {
-      "depth": 3,
-      "text": "Gate probe",
-      "slug": "gate-probe"
-    },
-    {
       "depth": 2,
-      "text": "2026-09-02 — Architecture becomes an evidence-bound AI decision loop inside its own workbench",
-      "slug": "2026-09-02-architecture-becomes-an-evidence-bound-ai-decision-loop-inside-its-own-workbench"
-    },
-    {
-      "depth": 2,
-      "text": "2026-09-02 — Architecture aligns human contract, delta, and agent observation in one plane",
-      "slug": "2026-09-02-architecture-aligns-human-contract-delta-and-agent-observation-in-one-plane"
-    },
-    {
-      "depth": 2,
-      "text": "2026-09-02 — Architecture keeps the canvas height and lets ACP take over a narrow work area",
-      "slug": "2026-09-02-architecture-keeps-the-canvas-height-and-lets-acp-take-over-a-narrow-work-area"
+      "text": "2026-09-02 — Every decision record is six fields on one screen, and the ledger is condensed to match",
+      "slug": "2026-09-02-every-decision-record-is-six-fields-on-one-screen-and-the-ledger-is-condensed-to-match"
     }
   ],
   "DEMO-SCENARIO": [
