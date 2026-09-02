@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# SessionStart + PreCompact hook — injects a summary of the ontology vault in
-# the current directory into the agent context.
+# SessionStart hook — injects a summary of the ontology vault in the current
+# directory into the agent context.
 #
-# Wired to PreCompact as well since 2026-09-01: compaction is exactly where an
-# injected census is dropped, and the symptom is a long session that quietly
-# stops knowing which vault it is working in. Re-running the same script at that
-# moment restores the same facts through the same stdout convention, so the
-# protection needs no second output contract to be true. A repository with no
-# vault stays silent at both events, as before.
+# **Compaction is covered by this same wiring, and not by PreCompact.** A
+# SessionStart entry with no matcher fires for every source, including
+# `compact`, and its stdout is one of the few that Claude Code adds to context
+# (documented exceptions: UserPromptSubmit, UserPromptExpansion, SessionStart,
+# PostModelSwitch). A PreCompact hook was wired here for one day (2026-09-01)
+# on the assumption that its stdout followed the same convention; it does not.
+# Its output reached the terminal transcript only, while the census the model
+# actually saw after compaction came from this SessionStart entry (observed
+# 2026-09-02). The duplicate was removed so the wiring says what it does.
 #
 # User intent (R14 rounds): "Read ontology during work and automatically record via MCP upon completion". This ensures
 # the agent recognizes the vault from the very first moment of work without the user needing to say "use ontology" for every prompt.

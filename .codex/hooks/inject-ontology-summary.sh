@@ -1,19 +1,16 @@
 #!/usr/bin/env bash
-# SessionStart + PreCompact hook — injects the ontology vault summary of the
-# current directory into the agent context.
+# SessionStart hook — injects the ontology vault summary of the current
+# directory into the agent context.
 #
-# Wired to PreCompact as well since 2026-09-01, for the same reason as the
-# Claude side: compaction is where an injected census is dropped, and the
-# symptom is a long session that quietly stops knowing which vault it is in.
-#
-# **What was measured, and what was not.** codex-cli 0.151.0 carries the event
-# in its own hook enum (`PreToolUse PermissionRequest PostToolUse PreCompact
-# PostCompact SessionStart SessionEnd SubagentStart SubagentStop Interrupt`)
-# with a matching JSON schema constant, which is why this is wired rather than
-# left out as unverifiable. What was NOT observed is an end-to-end firing: a
-# compaction only happens once a real context window fills, and the interactive
-# probe that would force it costs a full session. If someone ever watches this
-# hook fire during a genuine compaction, record it here and drop this caveat.
+# **Why this is not also wired to PreCompact.** codex-cli 0.151.0 does declare
+# PreCompact and PostCompact, and for one day (2026-09-01) this script was
+# wired there on the strength of that enum alone. The output contract was not
+# checked: the Codex hooks reference gives both events only `continue`,
+# `stopReason`, `systemMessage` (a UI warning) and `suppressOutput`. No stdout
+# and no `additionalContext` reaches the model from either, so the wiring
+# could never restore a census and was removed (2026-09-02). Whether Codex
+# re-fires SessionStart after compaction is not documented; if a later version
+# documents a context-carrying compaction event, wire it then, with the proof.
 #
 # User intent (R14 rounds): "Read ontology during work to get help, then
 # automatically record via MCP upon completion." This ensures the agent

@@ -22,8 +22,7 @@ sources; nothing else points at them.
 The Codex column stands for every tool reading the open format: Cursor,
 Antigravity CLI and Copilot resolve `AGENTS.md` and its nested files the same
 way. That file owns the mirror contract, the nested-pointer rule, and what
-`pnpm agents:check` enforces. Importing it organizes context; it does not reduce
-bytes.
+`pnpm agents:check` enforces.
 
 ## Claude Code loading
 
@@ -42,7 +41,7 @@ available to both agent trees; `AGENTS.md` owns invocation triggers and
 
 `.claude/settings.json` owns Claude permissions and hooks, and both are
 inventoried agent files. Seven mirror `.codex/hooks/`: the three blocks, the
-vault census (also at PreCompact), and the sensor lane. A Codex edit is
+vault census, and the sensor lane. A Codex edit is
 `apply_patch` carrying a patch envelope, so mirrors are adapted, not copied.
 `report-agent-file-drift.sh` is Claude-only, `block-secret-read.sh` Codex-only.
 Headers say why. Change wiring with `pnpm test:claude:hooks`; judge sensors

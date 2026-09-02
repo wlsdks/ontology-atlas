@@ -13,7 +13,9 @@
  *
  * **What it reads** — local, gitignored session state under `.tmp/harness/`:
  * per-session edit ledgers, verification stamps, and the findings log. Nothing
- * leaves the machine, and nothing here is vault data.
+ * leaves the machine, and nothing here is vault data. Because every file there
+ * counts, a manual probe of a hook must run against a temp root; a probe left
+ * in the real directory was counted as a session on 2026-09-02.
  *
  * **What it deliberately does not claim.** It cannot measure the published
  * "explicit user correction" rate: `.ontology-atlas/activity.jsonl` records MCP

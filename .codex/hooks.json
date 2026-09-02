@@ -119,16 +119,6 @@
           }
         ]
       }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash .codex/hooks/inject-ontology-summary.sh"
-          }
-        ]
-      }
     ]
   }
 }
