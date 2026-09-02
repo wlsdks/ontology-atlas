@@ -31,7 +31,7 @@ import { NAVIGATION_INTENT_EVENT, NAVIGATION_YIELD_MS } from "@/shared/lib/navig
 import { stepSpotlightPhase } from "../model/spotlight-motion";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import { resolveViewportReframeMode } from "../model/viewport-reframe";
-import { classifyZoomTier, DEFAULT_TIER_REVEAL, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
+import { classifyZoomTier, computeZoomRatio, DEFAULT_TIER_REVEAL, nodeTierAlpha, type TierRevealConfig, type ZoomTier } from "../model/tier-visibility";
 import { relaxNodeSeparation, type SeparationNode } from "../model/separation";
 import { createForceSimulation, type ForceSimulation } from "../model/force-layout";
 import { INITIAL_POINTER_MACHINE_STATE, type PointerMachineState } from "../interaction/pointer-state-machine";
@@ -125,6 +125,7 @@ import {
   walkDirectionForKey,
 } from "../interaction/keyboard-walk";
 import { keyboardZoomIntent } from "../interaction/keyboard-zoom";
+import { createGrowthReplay, GROWTH_REPLAY_CANCEL_GRACE_MS, stepGrowthReplay, type GrowthReplay } from "../model/growth-replay";
 import {
   collectCanvasObstacles,
   computeFreeArea,
@@ -240,6 +241,8 @@ export interface UseTopologyLoopArgs {
    */
   overviewFit?: "spine" | "full";
   fitViewToken: number;
+  /** Bump to start a growth replay (`model/growth-replay.ts`). Ignored under reduced motion. */
+  growthReplayToken?: number;
   /** Bumped to aim the camera at the spotlit nodes when the lens or its window changes (0 = unused). */
   spotlightFitToken?: number;
   relayoutToken: number;
@@ -461,7 +464,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
@@ -979,6 +982,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * seeded at 1 and this cannot collide with the initial-load choreography.
    */
   const appearRef = useRef<Map<string, number>>(new Map());
+  /**
+   * Growth replay in flight (`model/growth-replay.ts`), or null. While it runs
+   * the draw reads `growthReplayAppearRef` instead of `appearRef`, so the
+   * physics step's own appear ramp is untouched and resumes the moment the
+   * replay ends or is cancelled by input.
+   */
+  const growthReplayRef = useRef<GrowthReplay | null>(null);
+  const growthReplayAppearRef = useRef<Map<string, number>>(new Map());
+  const growthReplayTokenSeenRef = useRef(growthReplayToken);
   const prevNodeIdsRef = useRef<Set<string>>(new Set());
   /**
    * Ids of nodes **born during this session**. The appearance ramp
@@ -1954,6 +1966,39 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     beginCameraTween(overviewTarget);
   }, [beginCameraTween]);
   useEffect(() => {
+    if (growthReplayToken === growthReplayTokenSeenRef.current) return;
+    growthReplayTokenSeenRef.current = growthReplayToken;
+    const world = worldRef.current;
+    if (!world || reducedMotionRef.current) return;
+    const tokens = readTopologyV2TokensOrNull();
+    if (!tokens) return;
+    // Fit first so the whole ontology is on screen while it grows; the fit tween
+    // and the first nodes start on the same frame.
+    runOverviewFit();
+    const now = performance.now();
+    /*
+     * Schedule only what the screen will actually show. In 2D the density gate
+     * hides elements at overview altitude, and a replay paced over 125 nodes of
+     * which 36 are visible spent most of its twelve seconds on nothing
+     * (measured 2026-09-02: one visible birth per second). The tier alpha is
+     * read at the **fit target** scale, since that is where the camera is
+     * heading; the cone tree draws every tier, so 3D keeps them all.
+     */
+    const zoomRatio = computeZoomRatio(cameraTargetRef.current.tscale, overviewScaleRef.current * tokens.overviewEntryRatio);
+    const dome = domeRuntimeRef.current;
+    const domeOn = dome !== null && dome.active;
+    const clustered = clusteredIdsRef.current;
+    const shown = world.nodes.filter(
+      (n) => !clustered.has(n.id) && (domeOn || nodeTierAlpha(n.kind, n.isHub, zoomRatio, tierRevealRef.current) > 0.05),
+    );
+    growthReplayRef.current = createGrowthReplay(
+      shown.map((n) => ({ id: n.id, kind: n.kind, parentId: n.parentId })),
+      now,
+    );
+    growthReplayAppearRef.current = new Map();
+    lastActiveMsRef.current = now;
+  }, [growthReplayToken, runOverviewFit]);
+  useEffect(() => {
     // Skip while both tokens still equal their captured mount-time values —
     // this effect's own mount-time fire (see `initialFitTokensRef` above).
     // `trySnapInitialCamera` already set the correct initial camera; this
@@ -2776,6 +2821,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                   assembled: domeRt.rampClock >= DOME_ASSEMBLE_TOTAL_MS,
                 }))));
 
+        // Growth replay — advance every node's appear value for this frame; the
+        // first input after the starting click ends it (nothing is left behind,
+        // `appearRef` still holds every node at 1).
+        if (growthReplayRef.current !== null) {
+          const replay = growthReplayRef.current;
+          const cancelled = lastInputMsRef.current > replay.startMs + GROWTH_REPLAY_CANCEL_GRACE_MS;
+          if (cancelled || stepGrowthReplay(replay, now, growthReplayAppearRef.current)) {
+            growthReplayRef.current = null;
+          }
+          lastActiveMsRef.current = now;
+        }
         const idleFlags = {
           pointerActive: pointerMachineRef.current.phase !== "idle",
           // The sim counts as warm only while a drag grab/release is charging
@@ -2794,6 +2850,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           // always-on), so the canvas is never idle; the focused `contains`
           // comets and the hover pulses raise the same flag. When the document
           // is hidden the browser stops rAF itself, which protects the battery.
+          growthReplaying: growthReplayRef.current !== null,
           egoTailAnimating: isEgoTailAnimating({
             reducedMotion: reducedMotionRef.current,
             ambientAsleep,
@@ -4056,7 +4113,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         rippleStartById: rippleStartRef.current,
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
-        appearById: appearRef.current,
+        appearById: growthReplayRef.current !== null ? growthReplayAppearRef.current : appearRef.current,
         tierReveal: tierRevealRef.current,
       });
       cameraRef.current = camera;
@@ -4842,7 +4899,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasisById: emphasisRef.current,
         egoRevealById: egoRevealRef.current,
         focusRampById: focusRampRef.current,
-        appearById: appearRef.current,
+        appearById: growthReplayRef.current !== null ? growthReplayAppearRef.current : appearRef.current,
         bornNodeIds: bornNodeIdsRef.current,
         chipRevealById: chipRevealRef.current,
         expandRevealById: expandRevealRef.current,

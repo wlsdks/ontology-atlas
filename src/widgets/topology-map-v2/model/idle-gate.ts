@@ -21,6 +21,8 @@ export interface CanvasActivityFlags {
   selectionPulseActive: boolean;
   /** Focus plus an advancing ego tail (speed > 0) — the only always-on motion. */
   egoTailAnimating: boolean;
+  /** A growth replay is driving the appear ramps (`model/growth-replay.ts`). */
+  growthReplaying?: boolean;
   /** A hover/panel emphasis target exists, so the ripple may be ramping. */
   emphasisTarget: boolean;
   /**
@@ -146,6 +148,7 @@ export function isCanvasActive(flags: CanvasActivityFlags): boolean {
     flags.homing ||
     flags.selectionPulseActive ||
     flags.egoTailAnimating ||
+    flags.growthReplaying === true ||
     flags.emphasisTarget ||
     flags.breathing ||
     flags.cameraMoving ||

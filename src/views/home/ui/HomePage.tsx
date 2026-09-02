@@ -49,7 +49,7 @@ import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { useLocale, useTranslations } from "next-intl";
 // `History as HistoryIcon` avoids colliding with the global DOM `History`
 // constructor (same aliasing as `AtlasGitPanel`).
-import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, X } from "lucide-react";
+import { Compass, FolderOpen, HelpCircle, History as HistoryIcon, MessageCircle, X, Play } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
@@ -164,7 +164,7 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, LiveAnnouncer, Surface, Tooltip, WidgetErrorFallback, controlClass, useToast } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, ChromeTile, LiveAnnouncer, Surface, Tooltip, WidgetErrorFallback, controlClass, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
@@ -462,6 +462,7 @@ function HomePageImpl() {
   const localGraphRoot =
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
+  const [growthReplayToken, setGrowthReplayToken] = useState(0);
   const [topologyVisibleCount, setTopologyVisibleCount] = useState<number | null>(null);
   // M-5 — semantic-zoom altitude tier reported by the map engine, for the
   // corner readout's orientation label. "spine" at the overview entry; drops
@@ -5399,6 +5400,7 @@ function HomePageImpl() {
                         expandAllActive || expandedParentSet.size > 0 ? "full" : "spine"
                       }
                       fitViewToken={combinedFitToken}
+                      growthReplayToken={growthReplayToken}
                       spotlightFitToken={spotlightFitToken}
                       relayoutToken={topologyRelayoutToken}
                       revealToken={mapRevealToken}
@@ -5590,6 +5592,29 @@ function HomePageImpl() {
                   <HelpCircle className="size-[var(--chrome-icon)]" aria-hidden />
                 </button>
                 </Tooltip>
+              )}
+              {/* Growth replay (2026-09-02): the fourth slot of the right rail rhythm, one row
+                  below the "?" tile. Replays the ontology appearing in containment order
+                  (`topology-map-v2/model/growth-replay.ts`); desktop only like the tour. A
+                  `ChromeTile`, not a hand-written button — the control ratchet only falls. */}
+              {createNodeOpen ||
+              selectedRelationActive ||
+              topologyBlockingOverlayActive ||
+              selectedNodeFocusActive ? null : (
+                <div
+                  className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-growth-replay-desktop-top)] md:block xl:right-8"
+                  data-agent-dock-adjacent-rail="true"
+                >
+                  <Tooltip content={t('controls.replayGrowthTooltip')} side="left" withProvider={false}>
+                    <ChromeTile
+                      icon={<Play />}
+                      title={t('controls.replayGrowthTooltip')}
+                      aria-label={t('controls.replayGrowthAriaLabel')}
+                      data-testid="topology-replay-growth"
+                      onClick={() => setGrowthReplayToken((t) => t + 1)}
+                    />
+                  </Tooltip>
+                </div>
               )}
               {/* The settings gear moved to the bottom of the left nav rail. After the
                   dead controls panel was removed, the right vertical rail holds only the

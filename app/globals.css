@@ -2492,6 +2492,11 @@
     --topology-shortcuts-help-desktop-top: calc(
       var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 2
     );
+    /* Growth replay tile (2026-09-02, `topology-replay-growth`) — the fourth slot of the
+       same rhythm, one row below the "?" tile. */
+    --topology-growth-replay-desktop-top: calc(
+      var(--topology-floating-control-desktop-top) + (var(--chrome-tile-size) + 8px) * 3
+    );
     /* Settings gear (formerly TopologyV2SettingsGear — settings integration after 2026-07-24,
        AppSettingsMenu trigger, chrome-datasheet-final.html draft) —
        one row below the "?" button on the right utility rail. Shares hide conditions with fit/filter stack (createNodeOpen/selectedRelationActive/blocking-overlay/

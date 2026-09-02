@@ -20,14 +20,6 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
 - AGENTS.md: Tech stack ("The graph renderer is ours: a custom canvas-2D engine (topology-map-v2)")
 
 ## View Modes
-- **Keyboard zoom and fit (2026-09-02)**: With the canvas focused, `+`/`=` and `-`/`_` step the camera ×1.25 about the
-  viewport centre on the same tween the fit uses, and `0` runs the toolbar's whole-map fit (`runOverviewFit`, shared by
-  the fit and relayout tokens). Modifier combinations stay with the browser. `interaction/keyboard-zoom.ts` decides the
-  intent; every reference the map is measured against (Obsidian, Figma, tldraw) offers the same three keys.
-- **Hover lights the connections (2026-09-02)**: With nothing selected, hovering a concept raises its own relation lines
-  toward the ego ink (`render/traces.ts` `hoverLift`) and recedes every other line by a mild step, both driven by the
-  hovered node's existing emphasis ramp (`model/focus-state.ts`, τ 90 ms) so nothing cuts; nodes keep their ink. The
-  reference is Obsidian's graph hover; a click still owns the full ego dim, and the lift is suppressed under focus and lenses.
 - **3D View (2026-08-18; cone tree since 2026-09-02)**: An opt-in mode that lifts the map into depth. The
   ownership arrangement is a **cone tree** (Robertson, Mackinlay & Card 1991): height is the containment tier
   (project apex → domain → capability → element plane) and every parent is the apex of its own cone whose
@@ -84,3 +76,19 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
 
 ## Confidence
 medium-high (0.85): Explicitly states that the capability candidate is supported only by widgets/ evidence, not features/ folder
+
+## Map Feel (2026-09-02)
+- **Growth replay (2026-09-02)**: A play tile under the fit tile replays the ontology appearing piece by piece in
+  containment order (project, then each domain with its capabilities and their elements) over six to sixteen seconds
+  depending on size (`model/growth-replay.ts`). It drives only each node's existing appear ramp (lines follow their dimmer
+  endpoint), fits the camera first, ends on its own or on the first input, and leaves nothing behind; reduced motion
+  ignores the request. In the cone tree it grows one cone at a time. Creation dates, once nodes carry them, can replace
+  the containment order without touching playback.
+- **Keyboard zoom and fit (2026-09-02)**: With the canvas focused, `+`/`=` and `-`/`_` step the camera ×1.25 about the
+  viewport centre on the same tween the fit uses, and `0` runs the toolbar's whole-map fit (`runOverviewFit`, shared by
+  the fit and relayout tokens). Modifier combinations stay with the browser. `interaction/keyboard-zoom.ts` decides the
+  intent; every canvas and graph tool the map is measured against offers the same three keys.
+- **Hover lights the connections (2026-09-02)**: With nothing selected, hovering a concept raises its own relation lines
+  toward the ego ink (`render/traces.ts` `hoverLift`) and recedes every other line by a mild step, both driven by the
+  hovered node's existing emphasis ramp (`model/focus-state.ts`, τ 90 ms) so nothing cuts; nodes keep their ink. The
+  reference is the connection highlight note-graph views share; a click still owns the full ego dim, and the lift is suppressed under focus and lenses.

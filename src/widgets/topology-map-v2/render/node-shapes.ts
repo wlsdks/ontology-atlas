@@ -422,12 +422,17 @@ function drawEngraved(
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = `${FONT_WEIGHT.strong} ${size}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-  ctx.globalAlpha = alpha;
+  // Multiply into the frame's alpha rather than replacing it — the caller has
+  // already folded tier, dim and the appear ramp into `ctx.globalAlpha`, and a
+  // numeral drawn at its own absolute alpha stayed visible on a node that was
+  // otherwise gone (measured 2026-09-02 during the growth replay).
+  const prevAlpha = ctx.globalAlpha;
+  ctx.globalAlpha = prevAlpha * alpha;
   ctx.fillStyle = tokens.numeralShadow;
   ctx.fillText(text, x, y + 1);
   ctx.fillStyle = tokens.numeralFace;
   ctx.fillText(text, x, y);
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = prevAlpha;
 }
 
 /**
@@ -537,11 +542,12 @@ function strokeKindOutline(
   } else {
     roundedPolygonPath(ctx, points, interpolateCornerRadius(minCornerRadius(kind, radius), radius, farT));
   }
-  ctx.globalAlpha = alpha;
+  const prevAlpha = ctx.globalAlpha;
+  ctx.globalAlpha = prevAlpha * alpha;
   ctx.strokeStyle = color;
   ctx.lineWidth = lineWidth;
   ctx.stroke();
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = prevAlpha;
 }
 
 /**
@@ -598,13 +604,14 @@ function drawHoverShimmer(
   }
   ctx.setLineDash([...dash]);
   ctx.lineDashOffset = offset;
-  ctx.globalAlpha = 0.9;
+  const prevAlpha = ctx.globalAlpha;
+  ctx.globalAlpha = prevAlpha * 0.9;
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.lineDashOffset = 0;
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = prevAlpha;
 }
 
 /**
@@ -615,6 +622,9 @@ function drawHoverShimmer(
  * shape-by-kind) or the label (`render/labels.ts`).
  */
 export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, tokens: NodeShapeTokens): void {
+  // The alpha the frame handed us (tier × dim × appear ramp × …). Every
+  // sub-stroke below multiplies into it and restores it; none replaces it.
+  const entryAlpha = ctx.globalAlpha;
   const {
     kind,
     screenX: x,
@@ -733,7 +743,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
   if (kind === "domain" && egoState !== "dim" && detail > 0.01) {
     const s = r * DOMAIN_HALF_EXTENT_RATIO;
     if (s > DOMAIN_PIN_MIN_HALF_EXTENT && farT < DOMAIN_PIN_MAX_FAR_T) {
-      ctx.globalAlpha = (1 - smoothstep(0.55, 0.9, farT)) * detail;
+      ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT)) * detail;
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 1;
       for (const t of domainPinTicks(x, y, s)) {
@@ -742,14 +752,14 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
         ctx.lineTo(t.x2, t.y2);
         ctx.stroke();
       }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = entryAlpha;
     }
   }
 
   if (kind === "element") {
     const half = r * 0.92;
     if (half > 3 && farT < 0.9) {
-      ctx.globalAlpha = 1 - smoothstep(0.55, 0.9, farT);
+      ctx.globalAlpha = entryAlpha * (1 - smoothstep(0.55, 0.9, farT));
       ctx.beginPath();
       ctx.arc(x, y, half * 0.4, 0, Math.PI * 2);
       ctx.fillStyle = tokens.holeFill;
@@ -757,7 +767,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
       ctx.strokeStyle = stroke;
       ctx.lineWidth = 1;
       ctx.stroke();
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = entryAlpha;
     }
   }
 
@@ -800,7 +810,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     if (r > PROJECT_DECOR_MIN_RADIUS && farT < PROJECT_DECOR_MAX_FAR_T) {
       const decorAlpha = 1 - smoothstep(0.55, 0.9, farT);
       strokeKindOutline(ctx, "project", x, y, r * PROJECT_HAIRLINE_INNER_RATIO, farT, tokens.projectHairlineInner, 1, decorAlpha);
-      ctx.globalAlpha = decorAlpha;
+      ctx.globalAlpha = entryAlpha * decorAlpha;
       ctx.strokeStyle = tokens.projectPinTick;
       ctx.lineWidth = 1;
       for (const t of projectPinTicks(x, y, r)) {
@@ -809,7 +819,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
         ctx.lineTo(t.x2, t.y2);
         ctx.stroke();
       }
-      ctx.globalAlpha = 1;
+      ctx.globalAlpha = entryAlpha;
     }
   }
 

@@ -1612,10 +1612,17 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       // the far side of the cone tree, and a hover that lights only the near
       // half reads as broken rather than as depth.
       const domeEdgeFogForEdge = domeEdgeExempt ? 1 : 1 + (domeEdgeFog - 1) * (1 - hoverLift);
+      // A line is never brighter than its dimmer endpoint's appear ramp: a node
+      // swelling into view (new node, growth replay) brings its lines with it
+      // instead of the lines arriving first.
+      const edgeAppear = appearById
+        ? Math.min(1, Math.max(0, Math.min(appearById.get(edge.sourceId) ?? 1, appearById.get(edge.targetId) ?? 1)))
+        : 1;
       ctx.globalAlpha =
         (passthrough ? edgeAlpha * tokens.edgePassthroughAlpha : edgeAlpha) *
         edgeSpotlightSink *
         hoverRecede *
+        edgeAppear *
         domeEdgeFogForEdge;
       /*
        * A halo's strength follows **how strong this line currently is**: a near
@@ -2836,7 +2843,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         revealAlpha: payload.revealAlpha,
         agentFocus: payload.agentFocus,
         fontScale: labelScale,
-        presenceAlpha,
+        // A label is never brighter than its node's appear ramp — a node still
+        // swelling in (new node, growth replay) must not be named before it is there.
+        presenceAlpha: presenceAlpha * (appearById ? Math.min(1, Math.max(0, appearById.get(payload.nodeId) ?? 1)) : 1),
       },
       {
         labelProject: tokens.labelProject,

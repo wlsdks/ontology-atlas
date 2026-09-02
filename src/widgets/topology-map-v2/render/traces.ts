@@ -127,7 +127,7 @@ export interface TraceDrawState {
    * **Hover lift** 0..1 — how far a `normal` edge that touches the hovered node
    * has risen toward the ego ink (2026-09-02). The map's hover used to move only
    * the node (ring, shimmer, neighbour ripple) and left every line untouched;
-   * Obsidian's graph — the tactile reference the owner keeps naming — lights a
+   * the note-graph views the owner keeps naming as the tactile reference light a
    * note's connections the moment the cursor lands. The value is the hovered
    * node's own emphasis ramp, so lines rise and fall on the same clock as the
    * ring and never cut. Ignored unless `egoState === "normal"`.

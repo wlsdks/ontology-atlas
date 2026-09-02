@@ -1,9 +1,8 @@
 /**
  * **Keyboard zoom and fit** (2026-09-02).
  *
- * Every reference the map is measured against offers the same three keys —
- * Obsidian's graph (`+`/`-`), Figma (`⌘0`/`⌘1` family), tldraw (`z` quick zoom)
- * — and this map answered only the wheel. A person walking the map with the
+ * Every canvas and graph tool the map is measured against offers the same
+ * three keys (zoom in, zoom out, fit) and this map answered only the wheel. A person walking the map with the
  * arrow keys (`keyboard-walk.ts`) had no way to change altitude without
  * reaching for the trackpad, which breaks the flow the walk exists for.
  *

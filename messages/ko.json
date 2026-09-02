@@ -2430,6 +2430,8 @@
       "switchToMyDataTooltip": "내 폴더 열기: 지도가 내 데이터로 채워집니다 (⌘O)",
       "changeAnnouncement": "개념 {count}개 갱신됨: 반영됨",
       "close": "닫기",
+      "replayGrowthTooltip": "자라는 순서로 다시 보기",
+      "replayGrowthAriaLabel": "온톨로지가 담긴 순서대로 나타나는 것을 다시 보기",
       "tourTooltip": "가이드 투어",
       "tourAriaLabel": "가이드 투어 시작",
       "shortcutsTooltip": "키보드 단축키 (?)",
