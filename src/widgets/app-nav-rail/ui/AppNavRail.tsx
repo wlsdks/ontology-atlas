@@ -13,7 +13,7 @@ import type {
   MouseEvent as ReactMouseEvent,
   ReactNode,
 } from "react";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   BarChart3,
@@ -31,6 +31,7 @@ import {
 import { DESTINATION_HREF } from "@/shared/config/destinations";
 import { cn } from "@/shared/lib/cn";
 import { signalNavigationIntent } from "@/shared/lib/navigation-intent";
+import { navigateWithViewTransition } from "@/shared/lib/route-view-transition";
 import {
   buildRouteFocusHref,
   rememberRouteFocusIntent,
@@ -94,7 +95,7 @@ interface RailDestination {
 function rememberRailRouteFocus(
   event: ReactMouseEvent<HTMLAnchorElement>,
   pathname: string,
-) {
+): boolean {
   if (
     event.defaultPrevented ||
     event.button !== 0 ||
@@ -103,7 +104,7 @@ function rememberRailRouteFocus(
     event.shiftKey ||
     event.altKey
   ) {
-    return;
+    return false;
   }
   // By here the click is confirmed to «go through» (the guards above filtered out new
   // tabs, modifier keys and cancellation). Signal so a surface with a permanent loop,
@@ -111,6 +112,7 @@ function rememberRailRouteFocus(
   // `shared/lib/navigation-intent.ts`.
   signalNavigationIntent();
   rememberRouteFocusIntent(pathname);
+  return true;
 }
 
 /**
@@ -142,6 +144,7 @@ export function AppNavRail({
 }: AppNavRailProps) {
   const t = useTranslations("navRail");
   const pathname = usePathname() ?? "/";
+  const router = useRouter();
   /**
    * 「Get the app」 (get the app) — the only download prompt, drawn **on the web only**.
    * How that is decided, and why it happens after mount, is in
@@ -260,6 +263,7 @@ export function AppNavRail({
       data-testid="app-nav-rail"
       data-hidden={hidden ? "true" : "false"}
       className={cn(
+        "app-nav-rail-view-transition",
         "hidden w-[var(--app-nav-rail-width)] shrink-0 flex-col items-center border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] py-3 lg:flex",
         hidden && "lg:hidden",
         className,
@@ -329,7 +333,15 @@ export function AppNavRail({
               <li key={id}>
                 <Link
                   href={buildRouteFocusHref(href)}
-                  onClick={(event) => rememberRailRouteFocus(event, surfacePath)}
+                  onClick={(event) => {
+                    if (!rememberRailRouteFocus(event, surfacePath)) return;
+                    // A plain left click on a rail destination crossfades to the new
+                    // screen (`shared/lib/route-view-transition.ts`). The anchor keeps
+                    // its href for new tabs, modifier clicks, and the keyboard.
+                    event.preventDefault();
+                    const target = buildRouteFocusHref(href);
+                    navigateWithViewTransition(() => router.push(target));
+                  }}
                   /* No `title` — the label is **already visible** right under the icon.
                      A native tooltip covers that label with a grey box drawn by the OS,
                      so neither its tokens nor its motion are ours. The icon-only bottom

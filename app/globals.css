@@ -1430,6 +1430,40 @@
   }
 }
 
+  /* Route crossfade (2026-09-02) — `shared/lib/route-view-transition.ts` runs a rail
+     navigation inside `document.startViewTransition`, and these rules give the
+     browser's default crossfade this system's time and curve. Measured before on
+     the static build: 84–99% of a route change landed in one frame. The nav rail
+     is named so it is captured on its own and does not fade: its active indicator
+     already slides on its own transition, and a rail fading under a sliding
+     indicator reads as two events. Reduced motion keeps the crossfade — an
+     opacity-only change is the less-shaking equivalent, not something to remove. */
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: var(--motion-base);
+    animation-timing-function: var(--motion-ease);
+  }
+
+  .app-nav-rail-view-transition {
+    view-transition-name: app-nav-rail;
+  }
+
+  ::view-transition-old(app-nav-rail) {
+    animation: none;
+    opacity: 0;
+  }
+
+  ::view-transition-new(app-nav-rail) {
+    animation: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+      animation-duration: var(--motion-base);
+    }
+  }
+
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.
      Rendering immediately causes subtitles to flash on every normal entry, which is worse
      than the blank screen we aimed to fix.
