@@ -64,8 +64,8 @@ describe('captionLineBudgets', () => {
     const budgets = captionLineBudgets({ boxW: 180, boxH: 82, shape: 'process', baselines: [36, 50] });
     expect(budgets).toHaveLength(2);
     expect(budgets[0]).toBe(budgets[1]);
-    /* 156px of usable width at a conservative 4.7px per caption glyph. */
-    expect(budgets[0]).toBe(33);
+    /* 156px of usable width at the cross-platform 4.8px caption-glyph bound. */
+    expect(budgets[0]).toBe(32);
   });
 
   it('narrows a stadium line by the cap chord at that line, so the lower line gets less', () => {
@@ -79,7 +79,7 @@ describe('captionLineBudgets', () => {
     const tiny = captionLineBudgets({ boxW: 60, boxH: 60, shape: 'terminator', baselines: [30, 44] });
     for (const b of tiny) expect(b).toBeGreaterThanOrEqual(8);
     const wide = captionLineBudgets({ boxW: 400, boxH: 40, shape: 'terminator', baselines: [20, 34] });
-    expect(Math.max(...wide)).toBeLessThanOrEqual(Math.floor((400 - 24) / 4.7));
+    expect(Math.max(...wide)).toBeLessThanOrEqual(Math.floor((400 - 24) / 4.8));
   });
 });
 

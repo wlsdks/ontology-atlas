@@ -1241,10 +1241,10 @@
   /* The pencil. A drawn outline sits above the node's own face and under its label, so it reads
      as a line somebody made rather than as a border the layout emitted. */
   --color-architecture-sketch-ink: #6d7080;
-  /* One wave, left to right. 7 columns × 90ms + 520ms lands at 1.06s, which is long enough to
-     read as travel and short enough that nobody waits for it. */
-  --architecture-run-duration: 520ms;
-  --architecture-run-stagger: 90ms;
+  /* One interruptible wave. The source-column step is normalized to 0…1, so the existing
+     settle + fast tokens cap the whole replay at 360ms whatever number of roles a profile has. */
+  --architecture-run-duration: var(--motion-settle);
+  --architecture-run-stagger: var(--motion-fast);
   --architecture-run-dash: 10px 14px;
   --architecture-run-dash-travel: 48px;
 }
@@ -1319,10 +1319,115 @@
   transition: opacity var(--motion-fast) var(--motion-ease);
 }
 
+/*
+ * The route teaches its evidence grammar once: every contract role settles together, then the
+ * observation track follows one fast step later. Per-role staggering made a seven-role entrance
+ * last 418ms and read like a presentation rather than a workbench. It still waits for the measured
+ * canvas width, so the first compact layout never animates into a second position. These are
+ * transform/opacity-only and release their final style after the entrance, leaving hover/selection
+ * opacity in charge.
+ */
+@keyframes architectureEvidenceStepIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.architecture-evidence-rail-segment {
+  animation: architectureEvidenceStepIn var(--motion-base)
+    var(--topology-motion-ease-out) backwards;
+  animation-delay: calc(
+    var(--motion-fast) * 0.33 * var(--architecture-reveal-step, 0)
+  );
+}
+
+.architecture-role-reveal,
+.architecture-observation-reveal {
+  animation: architectureEvidenceStepIn var(--motion-fast)
+    var(--topology-motion-ease-out) backwards paused;
+  animation-delay: 0ms;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.architecture-observation-reveal {
+  animation-delay: var(--motion-fast);
+}
+
+[data-architecture-layout-ready='true'] .architecture-role-reveal,
+[data-architecture-layout-ready='true'] .architecture-observation-reveal {
+  animation-play-state: running;
+}
+
 .architecture-flow-running {
   stroke-dasharray: var(--architecture-run-dash);
   animation: architectureFlowRun var(--architecture-run-duration) var(--motion-ease) both;
   animation-delay: calc(var(--architecture-run-stagger) * var(--architecture-run-step, 0));
+}
+
+/*
+ * Short vertical chains leave only a few pixels of edge between cards, so dash travel alone can be
+ * technically correct and visually unreadable. The source role's observation line now scans once
+ * with the same clock and column stagger as its measured edge. It never touches the contract face,
+ * never loops, and disappears when replay completes.
+ */
+@keyframes architectureObservationPulse {
+  from {
+    opacity: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+
+  35% {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.architecture-observation-pulse {
+  animation: architectureObservationPulse var(--architecture-run-duration)
+    var(--motion-ease) both;
+  animation-delay: calc(var(--architecture-run-stagger) * var(--architecture-run-step, 0));
+}
+
+/*
+ * A local, truthful progress line for the Architecture observation lane. It exists only while an
+ * ACP turn is actually active; it never loops over a stored receipt or an idle contract. The text
+ * beside it carries the same state, and reduced motion freezes the line without losing meaning.
+ */
+@keyframes architectureObservationScan {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.architecture-observation-scan {
+  animation: architectureObservationScan calc(var(--motion-settle) * 4)
+    linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .architecture-evidence-rail-segment,
+  .architecture-role-reveal,
+  .architecture-observation-reveal {
+    animation-name: panelCrossfadeIn !important;
+    animation-duration: var(--motion-fast) !important;
+    animation-delay: 0ms !important;
+    transform: none !important;
+  }
 }
 
   /* Route loading subtitle — most entries finish within 400ms, so we stay silent before that.

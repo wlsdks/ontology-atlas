@@ -786,7 +786,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "이 파일은 결정과 그때 진 반대 의견을 남긴다. docs/CHANGELOG.md 는 무엇이 언제 바뀌었나를 답하고, 이 파일은 왜 그렇게 정했고, 무엇을 걸었나를 답한다. 최신이 위. 기록은 덧붙이기만 한다 — 지난 기록을 고치지 않는다. 판단이 바뀌었으면 새 기록을 쓰고 옛 기록을 뒤집힘 으로 표시한다. 틀린 기록도 자산이다. 1. 소집 전에 읽는다. 카운슬을 열기 전(그리고 단독 PO 패스를 쓰기 전) 같은 표면 · 같은 질문에 대한 선행 결정이 있는지 먼저 본다. 있으면 새 패스는 그것을 ① 여전히 유효하다고 인용하거나 ② 명시적으로 뒤집는다. 조용히 다시 결정",
-      "wordCount": 238195,
+      "wordCount": 240006,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "benchmark/FINDINGS-2026-08-31-metric-split",
@@ -1389,9 +1389,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The ability for a developer and coding agent to start from a reviewed architecture profile, understand the intended implementation roles and governed import usages, produce an explicit change plan, and verify current source dependencies against the same contract. Unlike the MCP transport, visual design handoff, or onto",
-      "wordCount": 252,
-      "updatedAt": "2026-08-28",
+      "excerpt": "The ability for a developer and coding agent to compare human-reviewed architecture intent with a revision-stamped source observation, decide what should change, and verify the result against the same contract. The Architecture workbench starts the guarded Draft, Change, or Verify conversation inside its own route and ",
+      "wordCount": 380,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -2461,9 +2461,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The human-readable Living Blueprint surface at /architecture: it keeps implementation roles primary, lets a developer move through Understand, Plan, and Verify, and produces a copyable agent handoff grounded in the reviewed profile. Each role band is a boxed layer container that lists its occupants: the source modules ",
-      "wordCount": 881,
-      "updatedAt": "2026-08-30",
+      "excerpt": "The human-readable Architecture workbench at /architecture. Its default view makes the architecture canvas primary and compresses Human contract → Source observation → Delta into one 44px evidence rail. Pressing that rail opens the full three-part provenance plane over the map without changing canvas geometry; closing ",
+      "wordCount": 612,
+      "updatedAt": "2026-09-02",
       "linksOut": []
     },
     {
@@ -3688,7 +3688,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1052,
+      "wordCount": 1115,
       "updatedAt": "2026-09-02",
       "linksOut": [
         "DECISIONS"

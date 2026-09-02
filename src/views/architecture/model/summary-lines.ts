@@ -53,8 +53,12 @@ export function splitSummaryLines(
   return lines;
 }
 
-/** A conservative width for one caption glyph at 9.5px: the widest measured line was 4.39px per character. */
-const CAPTION_CHAR_PX = 4.7;
+/**
+ * A conservative width for one caption glyph at 9.5px. Linux Pretendard measured one seeded
+ * ledger caption at 157px against 156px of room when the former 4.7 estimate allowed 33
+ * characters. 4.8 lowers that case to 32 without changing the type or box geometry.
+ */
+const CAPTION_CHAR_PX = 4.8;
 /** The box's side padding, and the smallest budget a line may fall to before it stops being a line. */
 const CAPTION_SIDE_PAD = 12;
 const CAPTION_MIN_CHARS = 8;

@@ -176,7 +176,12 @@ const BASELINE_HARD_CUTS = 0;
  * Browser OPENERS cannot create that desktop-runtime state; widget tests cover its
  * state/keyboard contract and installed-app evidence covers the real turn.
  */
-const BASELINE_APPEARING_SURFACES = 31;
+/*
+ * 31 → 33 (2026-09-02): Architecture gained two named surfaces. The evidence overlay is opened
+ * by the static-browser accessibility sweep; the Architecture ACP dock requires the installed
+ * desktop bridge and is covered by its component contract plus actual-window journey evidence.
+ */
+const BASELINE_APPEARING_SURFACES = 33;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
