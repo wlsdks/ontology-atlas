@@ -63,6 +63,15 @@
             "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/stamp-verification.sh\""
           }
         ]
+      },
+      {
+        "matcher": "Skill|Task|Agent|Read",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/record-usage.sh\""
+          }
+        ]
       }
     ],
     "Stop": [
