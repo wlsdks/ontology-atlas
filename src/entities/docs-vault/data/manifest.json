@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 96670,
+      "wordCount": 96862,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "slug"
@@ -2463,7 +2463,7 @@
       },
       "headings": [],
       "excerpt": "The human-readable implementation-architecture workbench at /architecture. It is a comparison surface, not the ontology map: a solid canvas keeps each reviewed role beside source observation and names the delta between them. Whenever the paired rows fit the canvas height at rest, a downward chain uses one repeated 280p",
-      "wordCount": 1088,
+      "wordCount": 1097,
       "updatedAt": "2026-09-03",
       "linksOut": []
     },

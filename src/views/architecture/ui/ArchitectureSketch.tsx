@@ -1688,6 +1688,11 @@ export function ArchitectureSketch({
                 )}
                 data-testid={`architecture-box-line-${box.id}`}
               >
+                {/* A cut caption still carries its whole sentence: the tight ladder keeps one
+                    line per role, and a hover or an assistive reader gets the rest here. */}
+                {summaryLines !== null && summary !== null && summaryLines.some((line) => line.endsWith('…')) ? (
+                  <title>{summary}</title>
+                ) : null}
                 {summaryLines === null
                   ? counts
                   : summaryLines.map((line, index) => (

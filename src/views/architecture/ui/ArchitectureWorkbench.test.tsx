@@ -428,12 +428,13 @@ describe('ArchitectureWorkbench', () => {
     const shared = screen.getByTestId('architecture-graph-box-shared');
     expect(screen.getByTestId('architecture-role-detail')).toHaveAttribute('data-role', 'shared');
 
+    /* Closing the panel lets go of the role: a pressed face with no answer beside it read as a
+       screen stuck mid-selection (2026-09-03). */
     fireEvent.keyDown(window, { key: 'Escape' });
-    expect(shared).toHaveAttribute('aria-pressed', 'true');
+    expect(shared).toHaveAttribute('aria-pressed', 'false');
     expect(shared).toHaveAttribute('aria-expanded', 'false');
 
-    /* A closed detail can be reopened from the still-selected role; it is not mistaken for a
-       request to clear the selection. */
+    /* Choosing it again opens its answer again. */
     fireEvent.click(shared);
     expect(shared).toHaveAttribute('aria-pressed', 'true');
     expect(shared).toHaveAttribute('aria-expanded', 'true');

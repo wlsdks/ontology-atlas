@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — Closing a role's answer lets go of the role
+
+**Why**: a source-hidden walker pressed Escape on the role panel and found the face still pressed, the bridge still drawn and the other roles still dimmed, with nothing left to show for it; the screen read as stuck mid-selection.
+**Prior**: 2026-08-30 (closing the panel closes the address) stands for the address and is overturned for the selection, which used to stay in memory so the panel could be reopened from it.
+**Decision**: closing the role panel, by Escape or its close control, clears the selected role as well as the address, and the chain returns whole; choosing the face again opens its answer; the rules panel closes without touching a selection.
+**Dissent**: a kept selection let a reader reopen the same answer without finding the face again; it lost because the face is one click away either way and a selection with no answer is a state nobody asked for.
+**Falsifier**: a reader closes the panel and then looks for "the role I had" and cannot find it, or reopens the same role three times in a session.
+**Owner**: stark
+
 ## 2026-09-03 — A ladder skip leaves the face's side, the count sentence sits on its arrow, and the lanes go where the arcs are
 
 **Why**: the rebuilt macOS app with a real receipt showed the measured count sentences 40px right of the observation column and cut to "import…", a chosen role's three nested skip arcs launching from the face's foot straight through the adjacent count sentence, and every skip sentence cut while 188px of contract-side lane stayed empty.
