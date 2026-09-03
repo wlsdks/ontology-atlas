@@ -98,6 +98,80 @@ function permissionRequest(filePath: string, id = 7, kind = 'edit') {
   };
 }
 
+/** The two-message Codex ACP sequence measured from a real MCP tool approval. */
+function mcpToolUpdate({
+  sessionId = 's1',
+  toolCallId = 'mcp-call-1',
+  server = 'atlas-vault',
+  tool = 'patch_concept',
+  argumentsValue = {
+    slug: 'capabilities/acp-runtime',
+    body: 'Updated ACP runtime meaning.',
+    expected_mtime: 123,
+  },
+}: {
+  sessionId?: string;
+  toolCallId?: string;
+  server?: string;
+  tool?: string;
+  argumentsValue?: Record<string, unknown>;
+} = {}) {
+  return {
+    jsonrpc: '2.0',
+    method: 'session/update',
+    params: {
+      sessionId,
+      update: {
+        sessionUpdate: 'tool_call',
+        toolCallId,
+        kind: 'execute',
+        title: `mcp.${server}.${tool}`,
+        status: 'in_progress',
+        rawInput: { server, tool, arguments: argumentsValue },
+        _meta: { is_mcp_tool_call: true },
+      },
+    },
+  };
+}
+
+function mcpApprovalRequest({
+  id = 81,
+  sessionId = 's1',
+  toolCallId = 'mcp-call-1',
+}: {
+  id?: number;
+  sessionId?: string;
+  toolCallId?: string;
+} = {}) {
+  return {
+    jsonrpc: '2.0',
+    id,
+    method: 'session/request_permission',
+    params: {
+      sessionId,
+      toolCall: {
+        toolCallId,
+        kind: 'execute',
+        status: 'pending',
+        content: [
+          {
+            type: 'content',
+            content: {
+              type: 'text',
+              text: 'Edit concept capabilities/acp-runtime. Apply this change to the vault?',
+            },
+          },
+        ],
+      },
+      _meta: { is_mcp_tool_approval: true },
+      options: [
+        { kind: 'reject_once', name: 'Deny', optionId: 'reject' },
+        { kind: 'allow_once', name: 'Allow Once', optionId: 'allow' },
+      ],
+    },
+  };
+}
+
 function outcomeOf(sent: Array<Record<string, unknown>>, id: number) {
   const answer = sent.find((m) => m.id === id && 'result' in m);
   return (answer?.result as { outcome?: { outcome?: string; optionId?: string } })?.outcome;
@@ -298,6 +372,229 @@ describe('ACP 클라이언트 — 권한 정책', () => {
     });
     await vi.waitFor(() => expect(outcomeOf(t.sent, 9)).toBeTruthy());
     expect(outcomeOf(t.sent, 9)).toEqual({ outcome: 'cancelled' });
+  });
+});
+
+describe('ACP 클라이언트 — Codex MCP 승인 상관관계', () => {
+  it.each([
+    ['reject', 'reject'],
+    ['allow', 'allow'],
+  ])('정확히 연결된 Atlas 쓰기의 명시적 %s를 %s_once로 전달한다', async (choice, optionId) => {
+    const t = fakeTransport();
+    const updates: Array<Record<string, unknown>> = [];
+    const askUser = vi.fn(async (_request: AcpPermissionRequest) => choice);
+    createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+      onUpdate: (update) => updates.push(update),
+    });
+
+    const update = mcpToolUpdate();
+    t.emit(update);
+    t.emit(mcpApprovalRequest());
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 81)).toBeTruthy());
+
+    expect(updates).toEqual([update.params.update]);
+    expect(askUser).toHaveBeenCalledTimes(1);
+    expect(askUser.mock.calls[0][0]).toMatchObject({
+      title: 'Edit concept capabilities/acp-runtime. Apply this change to the vault?',
+      toolCallId: 'mcp-call-1',
+      toolName: 'mcp__atlas-vault__patch_concept',
+      toolKind: 'execute',
+      rawInput: {
+        slug: 'capabilities/acp-runtime',
+        body: 'Updated ACP runtime meaning.',
+        expected_mtime: 123,
+      },
+      reviewKind: 'ontology-write',
+    });
+    expect(outcomeOf(t.sent, 81)).toEqual({ outcome: 'selected', optionId });
+  });
+
+  it('status-only refinement는 구조화된 시작 정보를 지우지 않는다', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async (_request: AcpPermissionRequest) => 'reject');
+    createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(mcpToolUpdate());
+    t.emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'mcp-call-1',
+          status: 'in_progress',
+        },
+      },
+    });
+    t.emit(mcpApprovalRequest());
+
+    await vi.waitFor(() => expect(askUser).toHaveBeenCalledTimes(1));
+    expect(askUser.mock.calls[0][0].toolName).toBe('mcp__atlas-vault__patch_concept');
+  });
+
+  it('session 또는 toolCallId가 다르면 다른 호출의 정보를 소비하지 않고 취소한다', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => 'reject');
+    createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(mcpToolUpdate());
+    t.emit(mcpApprovalRequest({ id: 82, sessionId: 's2' }));
+    t.emit(mcpApprovalRequest({ id: 83, toolCallId: 'some-other-call' }));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 83)).toBeTruthy());
+
+    expect(outcomeOf(t.sent, 82)).toEqual({ outcome: 'cancelled' });
+    expect(outcomeOf(t.sent, 83)).toEqual({ outcome: 'cancelled' });
+    expect(askUser).not.toHaveBeenCalled();
+
+    // Neither mismatch consumed the one exact entry.
+    t.emit(mcpApprovalRequest({ id: 84 }));
+    await vi.waitFor(() => expect(askUser).toHaveBeenCalledTimes(1));
+    expect(outcomeOf(t.sent, 84)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  it.each([
+    ['선행 update 없음', null],
+    [
+      'arguments 누락',
+      {
+        server: 'atlas-vault',
+        tool: 'patch_concept',
+      },
+    ],
+    [
+      'arguments가 객체 아님',
+      {
+        server: 'atlas-vault',
+        tool: 'patch_concept',
+        arguments: [],
+      },
+    ],
+  ])('MCP 문맥이 불완전하면 카드를 열지 않고 cancelled: %s', async (_label, rawInput) => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => 'allow');
+    const notices: string[] = [];
+    createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+      onProtocolNotice: (message) => notices.push(message),
+    });
+
+    if (rawInput) {
+      const update = mcpToolUpdate();
+      (update.params.update as Record<string, unknown>).rawInput = rawInput;
+      t.emit(update);
+    }
+    t.emit(mcpApprovalRequest());
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 81)).toBeTruthy());
+
+    expect(outcomeOf(t.sent, 81)).toEqual({ outcome: 'cancelled' });
+    expect(askUser).not.toHaveBeenCalled();
+    expect(notices).toContain('permission-context-missing:mcp-tool-approval');
+  });
+
+  it('같은 호출의 malformed MCP refinement는 앞선 인자를 재사용하지 않는다', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => 'allow');
+    createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(mcpToolUpdate());
+    const malformed = mcpToolUpdate();
+    (malformed.params.update as Record<string, unknown>).rawInput = {
+      server: 'atlas-vault',
+      tool: 'patch_concept',
+      arguments: [],
+    };
+    t.emit(malformed);
+    t.emit(mcpApprovalRequest());
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 81)).toBeTruthy());
+
+    expect(outcomeOf(t.sent, 81)).toEqual({ outcome: 'cancelled' });
+    expect(askUser).not.toHaveBeenCalled();
+  });
+
+  it('정확히 연결된 다른 MCP 서버는 일반 명시적 카드로 남는다', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async (_request: AcpPermissionRequest) => 'allow');
+    createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(
+      mcpToolUpdate({
+        server: 'issues',
+        tool: 'create_issue',
+        argumentsValue: { title: 'Investigate relation counts' },
+      }),
+    );
+    t.emit(mcpApprovalRequest());
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 81)).toBeTruthy());
+
+    expect(askUser.mock.calls[0][0]).toMatchObject({
+      toolName: 'mcp__issues__create_issue',
+      rawInput: { title: 'Investigate relation counts' },
+      reviewKind: 'permission',
+    });
+    expect(outcomeOf(t.sent, 81)).toEqual({ outcome: 'selected', optionId: 'allow' });
+  });
+
+  it('상관 정보는 한 번만 쓰고 완료·세션 취소 때 버린다', async () => {
+    const t = fakeTransport();
+    const askUser = vi.fn(async () => 'reject');
+    const client = createAcpClient(t.transport, {
+      vaultMcpServerName: 'atlas-vault',
+      verdict: alwaysAsk,
+      askUser,
+    });
+
+    t.emit(mcpToolUpdate());
+    t.emit(mcpApprovalRequest({ id: 85 }));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 85)).toBeTruthy());
+    t.emit(mcpApprovalRequest({ id: 86 }));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 86)).toBeTruthy());
+
+    t.emit(mcpToolUpdate({ toolCallId: 'completed-call' }));
+    t.emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        sessionId: 's1',
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'completed-call',
+          status: 'completed',
+        },
+      },
+    });
+    t.emit(mcpApprovalRequest({ id: 87, toolCallId: 'completed-call' }));
+
+    t.emit(mcpToolUpdate({ toolCallId: 'cancelled-session-call' }));
+    await client.cancel('s1');
+    t.emit(mcpApprovalRequest({ id: 88, toolCallId: 'cancelled-session-call' }));
+    await vi.waitFor(() => expect(outcomeOf(t.sent, 88)).toBeTruthy());
+
+    expect(askUser).toHaveBeenCalledTimes(1);
+    expect(outcomeOf(t.sent, 86)).toEqual({ outcome: 'cancelled' });
+    expect(outcomeOf(t.sent, 87)).toEqual({ outcome: 'cancelled' });
+    expect(outcomeOf(t.sent, 88)).toEqual({ outcome: 'cancelled' });
   });
 });
 

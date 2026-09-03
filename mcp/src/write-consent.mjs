@@ -19,9 +19,10 @@
  *
  * The mechanism is MCP elicitation (`elicitation/create`): before a write tool
  * touches disk, the server asks the connected client to put the question in front
- * of a person. `codex-acp` forwards `mcpServer/elicitation/request` into ACP
- * `session/request_permission`, which is the same permission card the app already
- * renders for Claude — so one server-side gate reaches both.
+ * of a person. The request is deliberately a **message-only form**. That is the
+ * interoperable binary-permission shape: `codex-acp` forwards it into ACP
+ * `session/request_permission`, while a form-capable MCP client can still render
+ * the same question. One server-side gate therefore reaches both.
  *
  * **Fail closed.** If the gate is on and the client never declared the
  * `elicitation` capability, the write is refused rather than performed silently.
@@ -136,30 +137,34 @@ export async function requestWriteConsent({ server, toolName, args, enabled }) {
     result = await server.elicitInput({
       mode: 'form',
       /*
-       * ⚠️ **`confirm` is asked for, never required** (installed acceptance, 2026-08-24).
+       * Compatibility hint, not authorization (installed Codex ACP 1.8.0, 2026-09-03).
        *
-       * It was `required: ['confirm']` at first, and that made the gate refuse **every** answer,
-       * including yes. A form-capable client fills the boolean; an ACP bridge does not have one to
-       * fill. `codex-acp` maps this request onto ACP `session/request_permission`, the app renders
-       * its ordinary permission card, and pressing 「allow once」 comes back as `action: 'accept'`
-       * with **no form content at all**. Codex reported it verbatim: *"the permission response was
-       * invalid because it lacked the required `confirm` field"* — the write was refused, twice,
-       * after a person had said yes.
+       * Codex already emitted this MCP call's exact structured tool update before the server asks.
+       * With this namespaced metadata it verifies that exactly one call for this thread/server is
+       * pending, then carries the real call id into ACP `session/request_permission`. That lets the
+       * app bind the question to `{server, tool, arguments}` by exact identity instead of guessing
+       * from event order. Other MCP clients ignore unknown `_meta`; every client still needs the
+       * person's explicit `accept` below.
+       */
+      _meta: { codex_approval_kind: 'mcp_tool_call' },
+      /*
+       * ⚠️ **Message-only is a compatibility contract, not a missing form** (installed
+       * acceptance, 2026-09-03).
        *
-       * A checkpoint that cannot be passed is not a checkpoint, it is a wall, and a wall teaches
-       * people to route around the gate. So the boolean stays as the **form** spelling of the
-       * question, and `action` stays the answer.
+       * The earlier request carried an optional `confirm` property. That worked with an older
+       * bridge, but `codex-acp` 1.8.0 forwards a non-empty form only when the ACP client advertises
+       * generic form elicitation. Atlas intentionally implements the narrower
+       * `session/request_permission` capability, so the adapter returned `action: 'cancel'` before
+       * the card could appear. Its documented fallback is an object schema with zero properties.
+       *
+       * This question has no data to collect: allow/decline/cancel is the data. Keeping the schema
+       * empty lets permission-only clients render the same binary decision without making Atlas
+       * claim a generic form renderer. A checkpoint that cannot be passed is a wall, not a gate.
        */
       message: `${summary}. Apply this change to the vault?`,
       requestedSchema: {
         type: 'object',
-        properties: {
-          confirm: {
-            type: 'boolean',
-            title: 'Apply this change',
-            description: `${toolName} — ${summary}`,
-          },
-        },
+        properties: {},
       },
     });
   } catch (error) {
@@ -175,12 +180,12 @@ export async function requestWriteConsent({ server, toolName, args, enabled }) {
   }
 
   /*
-   * **`action` is the answer; the boolean only overrides it.**
+   * **`action` is the answer.**
    *
    * `accept` is the MCP elicitation spelling of "the person said yes" — `decline` and `cancel` are
-   * the other two, and neither reaches here as an approval. A client that *did* render the form and
-   * whose user unticked the box sends `accept` with `confirm: false`; that is a no, and it wins.
-   * Absence is not a no — see the schema comment above for what absence actually measured as.
+   * the other two, and neither reaches here as an approval. A defensive `confirm:false` from an
+   * older form client is still a no, and it wins. Absence is
+   * not a no — see the schema comment above for what absence actually measured as.
    */
   const answered = result?.content?.confirm;
   const accepted = result?.action === 'accept' && answered !== false;

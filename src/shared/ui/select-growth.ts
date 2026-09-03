@@ -170,4 +170,3 @@ export function listboxLeft(metrics: {
   const rightmost = viewportWidth - pad - listWidth;
   return Math.max(pad, Math.min(triggerLeft, rightmost));
 }
-

@@ -157,15 +157,16 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
 // requests. The second (installed acceptance, 2026-08-24): `read-only` blocked direct files but a
 // self-registered Atlas `add_relation` changed the vault with no permission request at all.
 //
-// Neither hole is closed by a session mode, and that is the point — a mode is a request the adapter
-// may override, which is exactly what was measured. Both are now closed by things this app owns:
-// direct writes by the sandbox floor in `ISOLATED_CODEX_CONFIG` below, and Atlas MCP writes by the
-// server-side checkpoint (`mcp/src/write-consent.mjs`, decision (113)).
+// A later measurement caught the adapter overriding that config again: codex-acp 1.8.0 labels its
+// `read-only` mode "Ask for approval" but sends `workspaceWrite` for every turn. It created a file
+// inside the vault without a request. The app therefore pins the last measured adapter whose
+// `read-only` mode sends an actual `readOnly` sandbox (1.6.2), forces that mode before the session is
+// usable, and keeps Atlas MCP writes behind the server checkpoint (`mcp/src/write-consent.mjs`).
 //
 // ⚠️ **Listing it here is not the same as offering in-app chat.** This entry only lets the app
 // control the config directory. Whether the UI offers a conversation is decided separately in
-// `runtime-gate.ts`, and decision (111) keeps that closed until an installed-app run proves reject
-// and allow for both self-registered and injected writes.
+// `runtime-gate.ts`. Codex remains eligible only while the exact launch pin and the installed
+// direct-write plus Atlas-MCP reject/allow matrix continue to hold.
 
 /// Runtimes whose permission gate the app has **measured** — the only ones eligible for a
 /// conversation inside the app.
@@ -173,11 +174,11 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
 /// ⚠️ **This is not the same list as `ISOLATION`, and keeping them apart is the whole lesson of
 /// decision (111).** Isolation says the app can control a runtime's config directory. Eligibility
 /// is the stronger claim that the resulting configuration actually stops a write until a person
-/// answers. Codex is isolated and **not** eligible: its isolated `CODEX_HOME` was read (the `model`
-/// value applied) while the approval policy was overridden, and an Atlas MCP write landed unasked.
+/// answers. Codex lost eligibility when an Atlas MCP write landed unasked, then earned it back only
+/// after the server-owned checkpoint and an exact adapter pin passed installed acceptance.
 ///
-/// A runtime joins this list only after an installed-app run shows reject-without-write **and**
-/// allow-with-write, for both self-registered and injected Atlas MCP mutations.
+/// A runtime joins this list only after an installed-app run shows reject-without-write,
+/// allow-with-write, and a fresh question after `allow_once` for every write path it exposes.
 ///
 /// ⚠️ **Codex earned its way back on 2026-08-24, and the run is what did it.** Decision (111)
 /// named the price: *"an app-owned MCP proxy or server capability token reliably pauses every Codex
@@ -185,12 +186,14 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
 /// (`mcp/src/write-consent.mjs`, decision (113)), so it holds for the vault's **own** registration
 /// as much as for one the app injects — the hole that removed Codex in the first place.
 ///
-/// Measured on the installed build against a disposable vault:
+/// Measured again on 2026-09-03 in the rebuilt installed app with the exact 1.6.2 process:
 ///
-/// | answer | what the wire said | what the vault did |
+/// | path | answer | what the disk did |
 /// |---|---|---|
-/// | reject | `Error: The change was not approved (decline)` | unchanged, 10 files |
-/// | allow  | `{"ok":true,"slug":"wire-probe","changed":true}` | the file appeared |
+/// | direct file | reject | absent before and after |
+/// | direct file | allow once | appeared only after the card; the next write asked again |
+/// | Atlas `patch_concept` | reject | mtime, size, and SHA-256 unchanged |
+/// | Atlas `patch_concept` | allow once | only the reviewed body changed; the next write asked again |
 ///
 /// That run also caught the gate refusing **yes**: the elicitation required a `confirm` boolean an
 /// ACP permission card has no way to send, so a person's approval came back as a decline. A
@@ -230,13 +233,16 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 /// `~/.codex/config.toml`** — that file is where a person keeps the permissions they granted for
 /// their own terminal work, and a session opened from a map panel is not that.
 ///
-/// `sandbox_mode = "read-only"` is the floor, not a preference. The 2026-08-24 measurements showed
-/// an approval policy being overridden by the adapter's session mode, so the boundary cannot rest
-/// on asking — it rests on the process not being able to write in the first place. Vault changes do
-/// not need it: they travel through the Atlas MCP server, which asks before it writes.
+/// This file is defense in depth, not the effective per-turn floor. The adapter supplies an explicit
+/// sandbox policy on every turn, and codex-acp 1.8.0 proved that policy can override this value with
+/// `workspaceWrite`. The launch snapshot is therefore pinned to 1.6.2 and
+/// `INITIAL_AGENT_MODE=read-only` is forced below; that measured pair sends a real `readOnly` turn.
+/// Vault changes do not need direct file access: they travel through Atlas MCP, which asks first.
 ///
-/// `approval_policy = "untrusted"` keeps the escalation path alive for the commands codex may still
+/// `approval_policy = "on-request"` keeps the escalation path alive for the commands codex may still
 /// legitimately propose, so a blocked action surfaces as a question rather than a silent failure.
+/// Codex CLI 0.153.0 refuses the former `untrusted` value before login or session startup; the
+/// read-only sandbox and the server checkpoint below remain the write boundaries.
 ///
 /// ⚠️ **The `ontology-atlas` block is how the *vault's own* registration gets a gate.** A vault
 /// written by `init` registers that server in its project `.codex/config.toml`, and a session loads
@@ -249,7 +255,7 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 /// merges this env into the project entry rather than replacing it — `connection_info` still
 /// returned the vault's own path while `add_concept` was refused. `command`/`args` are placeholders
 /// the merge overrides; the project entry supplies the real launch.
-const ISOLATED_CODEX_CONFIG: &str = r#"approval_policy = "untrusted"
+const ISOLATED_CODEX_CONFIG: &str = r#"approval_policy = "on-request"
 sandbox_mode = "read-only"
 
 [mcp_servers.ontology-atlas]
@@ -1064,6 +1070,11 @@ pub(crate) fn apply_runtime_environment(
     // PATH is not passed through the allow list from the parent value; it is overwritten
     // last with the path we built when finding the actual executor and CLI.
     command.env("PATH", child_path);
+    if runtime_id == "codex-acp" {
+        // codex-acp chooses its per-turn sandbox from this mode, overriding config.toml. Keep this
+        // after env_clear so neither the parent process nor a permissive user config can replace it.
+        command.env("INITIAL_AGENT_MODE", "read-only");
+    }
 }
 
 /// Prepares the app-managed config directory and returns its path.
@@ -1976,6 +1987,30 @@ mod tests {
         assert!(stdout.contains("PATH=/atlas/verified/bin"), "{stdout}");
         assert!(!stdout.contains("ATLAS_TEST_SECRET="), "{stdout}");
         assert!(!stdout.contains("NODE_OPTIONS="), "{stdout}");
+    }
+
+    #[test]
+    fn codex_runtime_environment_forces_the_measured_read_only_adapter_mode() {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                "acp::tests::runtime_environment_probe_child",
+                "--nocapture",
+            ])
+            .env("INITIAL_AGENT_MODE", "agent")
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+
+        apply_runtime_environment(&mut command, "codex-acp", "/atlas/verified/bin");
+        command.env("ATLAS_ENV_PROBE_CHILD", "1");
+
+        let output = command.output().unwrap();
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "stdout={stdout}\nstderr={stderr}");
+        assert!(stdout.contains("INITIAL_AGENT_MODE=read-only"), "{stdout}");
+        assert!(!stdout.contains("INITIAL_AGENT_MODE=agent"), "{stdout}");
     }
 
     #[test]
@@ -3023,7 +3058,19 @@ mod tests {
         let dir = prepare_isolated_config("codex-acp", &app_data, Some(&home), None, "").unwrap();
         let written = std::fs::read_to_string(dir.join("config.toml")).unwrap();
         assert_eq!(written, ISOLATED_CODEX_CONFIG);
+        assert!(
+            written.contains("approval_policy = \"on-request\""),
+            "the interactive policy has to be accepted by the shipped codex CLI"
+        );
+        assert!(
+            !written.contains("approval_policy = \"untrusted\""),
+            "codex 0.153 refuses this value before a session can start"
+        );
         assert!(written.contains("sandbox_mode = \"read-only\""), "the floor is the sandbox");
+        assert!(
+            written.contains("OATLAS_WRITE_CONSENT = \"on\""),
+            "Atlas writes still have to stop at the server-owned checkpoint"
+        );
         assert!(!written.contains("danger-full-access"), "the user's own grant must not leak in");
         let _ = std::fs::remove_dir_all(&base);
     }

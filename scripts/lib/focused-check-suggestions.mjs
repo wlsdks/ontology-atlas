@@ -188,6 +188,16 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm acp:registry:check',
+    reason: 'ACP launch identity, isolation boundary, or release wiring changed',
+    matches: [
+      /^scripts\/build-acp-registry\.(?:mjs|test\.mjs)$/,
+      /^src-tauri\/src\/acp-registry\.json$/,
+      /^src-tauri\/src\/acp\.rs$/,
+      /^\.github\/workflows\/release-macos\.yml$/,
+    ],
+  },
+  {
     // The hard desktop performance budgets used to run only in
     // `desktop:release-preflight`, and in the meantime the bundled vault data grew
     // until both budgets were silently exceeded (found during 2026-08-19 release prep:

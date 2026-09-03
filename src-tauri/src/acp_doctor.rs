@@ -85,7 +85,7 @@ pub(crate) const CHECK_IDS: &[&str] = &[
 /// The checks `repair()` actually handles. Only entries here may be `fixable: true`.
 pub(crate) const REPAIRABLE_IDS: &[&str] = &["npx-cache", "config-dir", "credentials-link", "shadow-keychain"];
 
-/// **Executors verified to be able to stand a gate through session mode alone.**
+/// **Executors whose measured launch contract requires a specific session mode.**
 ///
 /// This is a copy of the screen-side `GATED_SESSION_MODE`
 /// (`src/features/acp-session/model/runtime-gate.ts`). There are two copies
@@ -93,10 +93,11 @@ pub(crate) const REPAIRABLE_IDS: &[&str] = &["npx-cache", "config-dir", "credent
 /// this file diagnoses. If they diverge,
 /// `tests/contract/agent-doctor-checks.contract.test.ts` blocks it.
 ///
-/// On the 2026-08-24 installed build, Codex `read-only` failed to block Atlas
-/// MCP writes. The table is therefore intentionally empty for now, and Codex
-/// does not open in-app conversations.
-pub(crate) const SESSION_MODE_GATE: &[(&str, &str)] = &[];
+/// Codex is listed only because the exact 1.6.2 adapter, forced `read-only`
+/// mode, isolated config, and server-owned Atlas MCP checkpoint passed the
+/// installed reject/allow/re-ask matrix together. The mode is not sufficient
+/// on its own; `CHAT_ELIGIBLE` remains the stronger launch boundary.
+pub(crate) const SESSION_MODE_GATE: &[(&str, &str)] = &[("codex-acp", "read-only")];
 
 /// The outside world the diagnosis needs. Taken as values so tests can swap them out.
 pub(crate) struct DoctorContext<'a> {
@@ -143,9 +144,15 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
      * so no fix button is attached.
      */
     // Measured eligibility, not mere isolation: the app can control codex's config directory and
-    // still not hold its write gate, which is exactly what decision (111) recorded.
+    // still not hold its write gate, which is exactly what decision (111) recorded. Report the
+    // compound Codex boundary instead of calling configuration isolation sufficient by itself.
     out.push(if acp::chat_eligible(ctx.runtime_id) && acp::config_env_for(ctx.runtime_id).is_some() {
-        AcpCheck::ok("gate", Some("isolation".into()))
+        let detail = SESSION_MODE_GATE
+            .iter()
+            .find(|(id, _)| *id == ctx.runtime_id)
+            .map(|(_, mode)| format!("isolation+session-mode:{mode}+server-checkpoint"))
+            .unwrap_or_else(|| "isolation".into());
+        AcpCheck::ok("gate", Some(detail))
     } else if let Some((_, mode)) = SESSION_MODE_GATE.iter().find(|(id, _)| *id == ctx.runtime_id) {
         AcpCheck::ok("gate", Some(format!("session-mode:{mode}")))
     } else {
@@ -170,10 +177,9 @@ pub(crate) fn diagnose(ctx: &DoctorContext<'_>) -> Vec<AcpCheck> {
      * ⚠️ **How a gate is stood differs per executor** (2026-08-20 correction).
      *
      * The four below are the story of executors that stand their gate through
-     * **config isolation**. For codex that approach does not take, and the
-     * `read-only` session mode also failed to block Atlas MCP writes. It is
-     * therefore currently an executor with no gate, and it does not open
-     * in-app conversations (`src/features/acp-session/model/runtime-gate.ts`).
+     * **config isolation**. Codex also uses this setup for credentials and a
+     * sandbox floor, but its full write boundary is the measured combination
+     * of exact adapter pin, forced session mode, and server-owned MCP checkpoint.
      *
      * So for executors that do not use isolation, these four are **not emitted
      * at all.** The first cut emitted them as `unknown`, and the screen showed
@@ -420,12 +426,11 @@ mod tests {
     /// That test held decision (111)'s finding: codex's `read-only` session mode blocked direct file
     /// writes while an Atlas MCP write landed unasked, so codex had **no** gate and the screen must
     /// not claim one. The 2026-08-24 acceptance retired the conclusion, not the lesson — codex is
-    /// gated now because the app owns the checkpoint (isolated config plus the server-side consent
-    /// in `mcp/src/write-consent.mjs`), and **never** because a session mode was asked for.
+    /// gated now because the app owns the whole measured combination: exact adapter pin, isolated
+    /// config, forced session mode, and server-side consent in `mcp/src/write-consent.mjs`.
     ///
-    /// So the assertion moves from "codex has no gate" to the thing that was true all along and must
-    /// stay true: a session mode is not a gate this app will report.
-    fn a_gate_is_something_the_app_owns_never_a_session_mode() {
+    /// So the assertion moves from "codex has no gate" to the compound boundary that actually held.
+    fn a_gate_is_the_measured_combination_the_app_owns() {
         let base = std::env::temp_dir().join(format!("atlas-doctor-h-{}", std::process::id()));
 
         // The runtime gated by isolation.
@@ -434,7 +439,7 @@ mod tests {
         assert_eq!(gate.state, "ok");
         assert_eq!(gate.detail.as_deref(), Some("isolation"));
 
-        // Codex too — and by isolation, which is the point.
+        // Codex needs every measured layer; isolation alone would repeat decision (111).
         let mut c = ctx(&base, None);
         c.runtime_id = "codex-acp";
         let codex = diagnose(&c);
@@ -442,12 +447,12 @@ mod tests {
         assert_eq!(gate.state, "ok");
         assert_eq!(
             gate.detail.as_deref(),
-            Some("isolation"),
-            "codex must be gated by what the app owns, not by a mode it asked for"
+            Some("isolation+session-mode:read-only+server-checkpoint"),
+            "codex must report the full measured boundary, not isolation alone"
         );
         assert!(
-            SESSION_MODE_GATE.iter().all(|(id, _)| *id != "codex-acp"),
-            "a session mode is a request the adapter may override — decision (111) measured that"
+            SESSION_MODE_GATE.contains(&("codex-acp", "read-only")),
+            "the doctor must mirror the mode the screen forces before the session is usable"
         );
 
         // A runtime the app neither isolates nor measured still gets nothing green.

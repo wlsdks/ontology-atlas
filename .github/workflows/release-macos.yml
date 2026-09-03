@@ -109,7 +109,9 @@ jobs:
       # read from Rust's `ISOLATION` table so it cannot drift from what the app actually knows;
       # everything else is reported and does not stop the release.
       #
-      # **When blocked**: Run `pnpm acp:registry`, commit the diff, and push again.
+      # A compatibility-pinned runtime is different: its diagnostic names the reviewed upstream
+      # identity, and the installed permission matrix must pass before that identity changes.
+      # **When blocked**: follow the diagnostic; refresh ordinary drift with `pnpm acp:registry`.
       - name: Verify bundled ACP registry is current
         run: pnpm acp:registry:check
 

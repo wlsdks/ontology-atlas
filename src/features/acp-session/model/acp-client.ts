@@ -221,6 +221,19 @@ interface PendingCall {
   extend: () => void;
 }
 
+/**
+ * The only MCP identity trusted for a correlated permission request.
+ *
+ * Codex ACP intentionally keeps the permission request itself sparse and emits this structured
+ * triple on the preceding `session/update`. The dotted, human-facing update title is not policy
+ * input: only the adapter's explicit server/tool/arguments fields cross this boundary.
+ */
+interface CorrelatedMcpToolContext {
+  server: string;
+  tool: string;
+  arguments: Record<string, unknown>;
+}
+
 /** The JSON-RPC error code answering a method we did not declare. */
 const METHOD_NOT_FOUND = -32601;
 
@@ -284,7 +297,60 @@ export function createAcpClient(
 ): AcpClient {
   let nextId = 1;
   const pending = new Map<number, PendingCall>();
+  const correlatedMcpTools = new Map<string, Map<string, CorrelatedMcpToolContext>>();
   let disposed = false;
+
+  const forgetCorrelatedTool = (sessionId: string, toolCallId: string) => {
+    const sessionTools = correlatedMcpTools.get(sessionId);
+    if (!sessionTools) return;
+    sessionTools.delete(toolCallId);
+    if (sessionTools.size === 0) correlatedMcpTools.delete(sessionId);
+  };
+
+  const clearCorrelatedSession = (sessionId: string) => {
+    correlatedMcpTools.delete(sessionId);
+  };
+
+  const rememberCorrelatedMcpTool = (
+    sessionId: string | null,
+    update: Record<string, unknown>,
+  ) => {
+    if (!sessionId) return;
+    const toolCallId = textValue(update.toolCallId);
+    if (!toolCallId) return;
+
+    const status = textValue(update.status);
+    if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+      forgetCorrelatedTool(sessionId, toolCallId);
+      return;
+    }
+
+    // A later status-only update refines the same row. It must not erase the structured start event.
+    const context = readCorrelatedMcpToolContext(update);
+    if (!context) {
+      // An update that claims to replace MCP input but cannot supply the full structured triple
+      // invalidates the old entry. Keeping it would attach stale arguments to a malformed request.
+      if (asRecord(update._meta).is_mcp_tool_call === true && update.rawInput !== undefined) {
+        forgetCorrelatedTool(sessionId, toolCallId);
+      }
+      return;
+    }
+    const sessionTools = correlatedMcpTools.get(sessionId) ?? new Map();
+    sessionTools.set(toolCallId, context);
+    correlatedMcpTools.set(sessionId, sessionTools);
+  };
+
+  const takeCorrelatedMcpTool = (
+    params: Record<string, unknown>,
+  ): CorrelatedMcpToolContext | null => {
+    const sessionId = textValue(params.sessionId);
+    const toolCallId = textValue(asRecord(params.toolCall).toolCallId);
+    if (!sessionId || !toolCallId) return null;
+    const context = correlatedMcpTools.get(sessionId)?.get(toolCallId) ?? null;
+    // Permission context is single-use. A duplicate or late approval must not reuse an older call.
+    if (context) forgetCorrelatedTool(sessionId, toolCallId);
+    return context;
+  };
 
   /**
    * Sends one line.
@@ -362,8 +428,12 @@ export function createAcpClient(
     });
   };
 
-  const answerPermission = async (id: unknown, params: Record<string, unknown>) => {
-    const request = toPermissionRequest(params);
+  const answerPermission = async (
+    id: unknown,
+    params: Record<string, unknown>,
+    correlatedMcpTool: CorrelatedMcpToolContext | null = null,
+  ) => {
+    const request = toPermissionRequest(params, correlatedMcpTool);
     const allowOnce = request.options.find((o) => o.kind === 'allow_once');
     const rejectOnce = request.options.find((o) => o.kind === 'reject_once');
 
@@ -447,7 +517,23 @@ export function createAcpClient(
     // Agent → us, a **request**: it must be answered.
     if (method && hasId) {
       if (method === 'session/request_permission') {
-        void answerPermission(message.id, asRecord(message.params));
+        const params = asRecord(message.params);
+        if (isMcpToolApproval(params)) {
+          const correlatedMcpTool = takeCorrelatedMcpTool(params);
+          if (!correlatedMcpTool) {
+            /*
+             * A generic card cannot make an unidentified MCP write reviewable. Fail closed without
+             * pretending the person rejected a change they were never shown. This is deliberately
+             * `cancelled`, not a synthetic `reject_once` selection.
+             */
+            handlers.onProtocolNotice?.('permission-context-missing:mcp-tool-approval');
+            write({ jsonrpc: '2.0', id: message.id, result: cancelled() });
+            return;
+          }
+          void answerPermission(message.id, params, correlatedMcpTool);
+          return;
+        }
+        void answerPermission(message.id, params);
         return;
       }
     // An undeclared capability. Staying silent leaves the other side stalled.
@@ -464,7 +550,9 @@ export function createAcpClient(
     if (method) {
       if (method === 'session/update') {
         const params = asRecord(message.params);
-        handlers.onUpdate?.(asRecord(params.update));
+        const update = asRecord(params.update);
+        rememberCorrelatedMcpTool(textValue(params.sessionId), update);
+        handlers.onUpdate?.(update);
       }
       return;
     }
@@ -509,6 +597,7 @@ export function createAcpClient(
         clientCapabilities: {},
       }),
     newSession: async (params) => {
+      correlatedMcpTools.clear();
       const result = await call('session/new', {
         cwd: params.cwd,
         mcpServers: params.mcpServers ?? [],
@@ -535,6 +624,7 @@ export function createAcpClient(
     },
     cancel: async (sessionId) => {
       // Cancel is a notification — no answer awaited.
+      clearCorrelatedSession(sessionId);
       write({ jsonrpc: '2.0', method: 'session/cancel', params: { sessionId } });
     },
     listSessions: async (cwd) => {
@@ -565,6 +655,7 @@ export function createAcpClient(
       return keepSessionsInFolder(summaries, cwd);
     },
     loadSession: async (params) => {
+      correlatedMcpTools.clear();
       const result = await call('session/load', {
         sessionId: params.sessionId,
         cwd: params.cwd,
@@ -613,6 +704,7 @@ export function createAcpClient(
         waiting.reject(new Error('acp session closed'));
       }
       pending.clear();
+      correlatedMcpTools.clear();
     },
   };
 }
@@ -621,8 +713,39 @@ function selected(optionId: string) {
   return { outcome: { outcome: 'selected', optionId } };
 }
 
+function cancelled() {
+  return { outcome: { outcome: 'cancelled' } };
+}
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function asPlainRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function textValue(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function isMcpToolApproval(params: Record<string, unknown>): boolean {
+  return asRecord(params._meta).is_mcp_tool_approval === true;
+}
+
+function readCorrelatedMcpToolContext(
+  update: Record<string, unknown>,
+): CorrelatedMcpToolContext | null {
+  if (asRecord(update._meta).is_mcp_tool_call !== true) return null;
+  const rawInput = asPlainRecord(update.rawInput);
+  if (!rawInput) return null;
+  const server = textValue(rawInput.server);
+  const tool = textValue(rawInput.tool);
+  const argumentsValue = asPlainRecord(rawInput.arguments);
+  if (!server || !tool || !argumentsValue) return null;
+  return { server, tool, arguments: argumentsValue };
 }
 
 /** Reduces the raw permission request to what the screen and the policy use. */
@@ -720,14 +843,19 @@ function readPermissionTitle(toolCall: Record<string, unknown>): string | null {
   return null;
 }
 
-export function toPermissionRequest(params: Record<string, unknown>): AcpPermissionRequest {
+export function toPermissionRequest(
+  params: Record<string, unknown>,
+  correlatedMcpTool: CorrelatedMcpToolContext | null = null,
+): AcpPermissionRequest {
   const toolCall = asRecord(params.toolCall);
-  const rawInput = asRecord(toolCall.rawInput);
+  const rawInput = correlatedMcpTool?.arguments ?? asRecord(toolCall.rawInput);
   const rawOptions = Array.isArray(params.options) ? params.options : [];
   return {
     title: readPermissionTitle(toolCall),
     toolCallId: typeof toolCall.toolCallId === 'string' ? toolCall.toolCallId : null,
-    toolName: readToolName(params),
+    toolName: correlatedMcpTool
+      ? `mcp__${correlatedMcpTool.server}__${correlatedMcpTool.tool}`
+      : readToolName(params),
     toolKind: typeof toolCall.kind === 'string' ? toolCall.kind : null,
     // The verdict uses this value rather than the title — the title is a relative path inside the
     // vault and an absolute one outside, so the policy silently flips the day the wording changes.

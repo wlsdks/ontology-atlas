@@ -106,4 +106,3 @@ describe('목록의 왼쪽 자리 — 화면 안에 남는 것이 트리거 밑�
     expect(listboxLeft({ triggerLeft: 300, listWidth: 1200, viewportWidth: 1000, pad: 8 })).toBe(8);
   });
 });
-

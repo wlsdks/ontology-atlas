@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -405,7 +405,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
     ]);
   });
 
-  it('wires the pilot command to the same parser and evaluator', () => {
+  it('wires the closed pilot outcome through the command parser and evaluator', () => {
     const output = execFileSync(process.execPath, [PILOT_CLI, '--json', '--as-of=2026-09-01'], {
       cwd: ROOT,
       encoding: 'utf8',
@@ -427,31 +427,33 @@ describe('Atlas PO pilot can decide its sunset', () => {
      * pilot started every PR would have gone red with no relation to its
      * content. CI mode gates on register validity, an unsupported keep, and a
      * safety stop; a due decision prints as DUE and stays the owner's reminder.
-     */
+    */
     const farPastDeadline = '2027-01-01';
-    // The live register has an outcome now, so the calendar-only case is exercised on a
-    // copy of it with the outcome set back to pending.
-    const pendingRegister = join(tmpdir(), 'po-pilot-pending.contract.md');
-    writeFileSync(
-      pendingRegister,
-      read(PILOT).replace(/^outcome: .*$/m, 'outcome: pending'),
-    );
-    const check = spawnSync(
-      process.execPath,
-      [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`, `--file=${pendingRegister}`],
-      { cwd: ROOT, encoding: 'utf8' },
-    );
-    expect(check.status, check.stderr).toBe(0);
-    expect(check.stderr).toMatch(/DUE:/);
-    expect(check.stderr).not.toMatch(/FAIL:/);
+    const scratch = mkdtempSync(join(tmpdir(), 'ontology-atlas-po-pilot-'));
+    const pendingPilot = join(scratch, 'PO-PILOT.md');
+    writeFileSync(pendingPilot, read(PILOT).replace(/^outcome: .*$/m, 'outcome: pending'));
 
-    // The owner-facing full mode keeps failing loudly at the same date.
-    const full = spawnSync(process.execPath, [PILOT_CLI, `--as-of=${farPastDeadline}`, `--file=${pendingRegister}`], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-    expect(full.status).toBe(1);
-    expect(full.stderr).toMatch(/FAIL:/);
+    try {
+      const check = spawnSync(
+        process.execPath,
+        [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`, `--file=${pendingPilot}`],
+        { cwd: ROOT, encoding: 'utf8' },
+      );
+      expect(check.status, check.stderr).toBe(0);
+      expect(check.stderr).toMatch(/DUE:/);
+      expect(check.stderr).not.toMatch(/FAIL:/);
+
+      // The owner-facing full mode keeps failing loudly at the same date.
+      const full = spawnSync(
+        process.execPath,
+        [PILOT_CLI, `--as-of=${farPastDeadline}`, `--file=${pendingPilot}`],
+        { cwd: ROOT, encoding: 'utf8' },
+      );
+      expect(full.status).toBe(1);
+      expect(full.stderr).toMatch(/FAIL:/);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 
   it('accepts the YAML forms the shared frontmatter parser accepts', () => {
