@@ -732,9 +732,9 @@ containment edges are **drawing the same tree depth twice**, so they reference t
 
 | Row | Token | Contrast | Alias |
 |---|---|---|---|
-| leaf | `--topology-v2-ink-depth-leaf` | 3.22:1 | `node-stroke-element` · `edge-contains-l2` |
-| mid | `--topology-v2-ink-depth-mid` | 3.42:1 | `node-stroke-capability` · `edge-contains` |
-| top | `--topology-v2-ink-depth-top` | 3.96:1 | `node-stroke-domain` · `edge-contains-l0` |
+| leaf | `--topology-v2-ink-depth-leaf` | 4.70:1 | `node-stroke-element` · `edge-contains-l2` |
+| mid | `--topology-v2-ink-depth-mid` | 5.11:1 | `node-stroke-capability` · `edge-contains` |
+| top | `--topology-v2-ink-depth-top` | 5.84:1 | `node-stroke-domain` · `edge-contains-l0` |
 
 Initially, I listed the two groups separately, and the third pair converged within a 0.02 contrast ratio **by chance**.
 That’s luck, not a contract — if you fix one side, it drifts apart without any warning.

@@ -2633,11 +2633,11 @@
      *
      * All values are above WCAG 1.4.11 (non-text 3:1): leaf 3.22 · mid 3.42 · top 3.96.
      */
-    --topology-v2-ink-depth-leaf: #60606d;
-    --topology-v2-ink-depth-mid: #646471;
-    --topology-v2-ink-depth-top: #6e6e79;
+    --topology-v2-ink-depth-leaf: #7a7a86;
+    --topology-v2-ink-depth-mid: #80808c;
+    --topology-v2-ink-depth-top: #8a8a96;
     /* project is one unit on the depth axis — no corresponding containment edge (no parent above project). So it has its own value, not an alias for the axis. */
-    --topology-v2-node-stroke-project: #797984;
+    --topology-v2-node-stroke-project: #9898a3;
     --topology-v2-node-stroke-domain: var(--topology-v2-ink-depth-top);
     --topology-v2-node-stroke-capability: var(--topology-v2-ink-depth-mid);
     --topology-v2-node-stroke-element: var(--topology-v2-ink-depth-leaf);
@@ -2660,11 +2660,11 @@
     /* Ellipse aspect ratio — the picture box is wider. Placing it as a circle fills vertically first, shrinking the whole to 73% (measured fill rate 24% → 42%). */
     --git-ego-ellipse-x: 1.52;
     --git-ego-ellipse-y: 0.8;
-    --topology-v2-node-fill-dim: #1a1a1e;
-    --topology-v2-node-stroke-dim: #2b2b2f;
+    --topology-v2-node-fill-dim: #1e1e24;
+    --topology-v2-node-stroke-dim: #6a6a74;
     /* Recent change spotlight rest alpha (council design 2026-07-23). product reason: when the "changes in last N days" lens is ON, sink nodes/edges outside the window to this alpha so change nodes (fresh channel) win by contrast — not "glowing" but "sinking" (prohibited glow/pulse per charter, fulfilling owner's 'at a glance' desire). Lighter than ego dim(0.15): in the full-map lens, remaining structure must remain readable as context (ego is local focus, so sinks deeper). state/layer:
        map lens. Responsive: value itself is width-agnostic (alpha scalar). Marker: lens state is deterministically reproducible via URL `?recent=`. */
-    --topology-v2-spotlight-rest-alpha: 0.35;
+    --topology-v2-spotlight-rest-alpha: 0.65;
     /* Spotlight change-node ring dash rotation speed (px/ms) — owner directive
        2026-07-23 "only changed items rotate border": sinking alone doesn't make change nodes readable in element view (actual report Image #14), so during lens ON, rotate amberHub dashed ring on change nodes via lineDashOffset. glow/blur
        0 — charter prohibits rotation? No precedent: comet=always motion, agent focus ring =amberHub precedent. 0.012 ≈ one dash cycle (9px)/750ms — lens is a persistent mode kept ON *while reading the map*, so initial 500ms (2Hz) felt rushed on multiple rings (motion inspection 2026-07-23 frame evidence). HIG deference
@@ -2845,7 +2845,7 @@
      * multiplying fog on canvas #0a0a0d results in effectively 0). If the covered area differs,
      * the value must differ even for the same role.
      *
-     * The upper bound is the **bottom of data ink** (`--topology-v2-ink-depth-leaf` #60606d).
+     * The upper bound is the **bottom of data ink** (`--topology-v2-ink-depth-leaf` #7a7a86).
      * If the ring exceeds it, the coordinate system competes with data for attention. This value is below that,
      * and in actual rendering, base opacity (0.34) and depth fog are further multiplied —
      * only nearby arcs remain, distant arcs disappear. That asymmetry is "which side is front".

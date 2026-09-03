@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — The map's ink ladder rises so a dimmed background node still reads
+
+**Why**: the owner showed the expanded map as a dark cloud in which nodes could not be found. The leaf ring sat at 3.2:1 on its own and the expanded-state background dim of 0.42 took it to about 1.5:1; only the ego and the expanded disc kept any light.
+**Prior**: none for the ladder values; the ink-depth ladder (leaf < mid < top < project) and its parity with the edge tokens stand and are kept.
+**Decision**: the three ink-depth steps rise to 4.7:1, 5.1:1 and 5.8:1 on the canvas, the project stroke to 6.9:1 so the ladder keeps its order, and the expanded-state background dim rises from 0.42 to 0.8, so every background ring stays at or above 3.3:1 while the expanded disc, its aura and the ego stand a clear step above.
+**Dissent**: a deeper dim isolates the expanded disc faster; it lost because a node a person cannot find is not context, it is missing.
+**Falsifier**: an expanded map where the disc and the ego cannot be told from the background at a glance, or a leaf ring measured under 3:1 in any map state.
+**Owner**: stark
+
 ## 2026-09-03 — A phone gets the ladder's face, and an across chain grows into its canvas
 
 **Why**: at 390px the single-lane chain drew 148px faces beside a 180px sentence lane, so every caption and rule sentence was cut while half the canvas stayed empty; at 1920×700 the across chain held seven 151px faces with every caption cut while 200px per face was free.

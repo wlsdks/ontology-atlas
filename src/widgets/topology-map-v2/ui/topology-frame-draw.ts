@@ -136,7 +136,13 @@ const EXPANDED_COHORT_ALPHA = 0.42;
  * reveals only a few children (top 24) at a time, so the background has to
  * recede further for the revealed batch to read clearly.
  */
-const BACKGROUND_DIM_WHEN_EXPANDED = 0.42;
+/*
+ * ⚠️ **A dimmed node is still a node someone has to find.** At 0.42 the expanded map's
+ * background read as "a dark cloud" (owner, 2026-09-03): a leaf ring at 3.2:1 dimmed to about
+ * 1.5:1 and vanished into the canvas. 0.8 over the raised ink ladder keeps every background ring
+ * at or above 3:1 while the expanded disc, its aura and the ego still stand a clear step above.
+ */
+const BACKGROUND_DIM_WHEN_EXPANDED = 0.8;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 /** Reused empty cap set for frames with no focus (or no incident `contains` edges). */

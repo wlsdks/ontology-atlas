@@ -64,7 +64,7 @@ export function realmInsideFlipDelayFor(depth: number): number {
  *
  * **Why these were raised from 0.92/0.84** (infoviz measurement, 2026-08-18).
  * The multiplier **composites** onto the node's stroke ink. The darkest depth
- * ink, `--topology-v2-ink-depth-leaf` (#60606d, 3.19:1 on the canvas), times
+ * ink, `--topology-v2-ink-depth-leaf` (#7a7a86, 4.7:1 on the canvas), times
  * 0.84 gives a composited contrast of **2.58:1** — below the WCAG 1.4.11
  * non-text floor of 3:1. The lowest alpha that keeps leaf ink at 3:1 is 0.955,
  * so the multipliers move above it (0.96) and the ink ramp keeps its order
