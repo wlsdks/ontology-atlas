@@ -29,7 +29,7 @@ summary_features_ko: 폴더 열기, 관계 쓰기처럼 사람이 하는 한 가
 summary_entities: A thing the product talks about, with its shape and the rules for reading and writing it.
 summary_entities_ko: 제품이 이야기하는 대상으로, 그 형태와 읽고 쓰는 규칙을 함께 담습니다.
 summary_shared: Basic parts anything may use: design tokens, UI pieces, small helpers, and types. It depends on nothing here.
-summary_shared_ko: 무엇이든 쓸 수 있는 기본 부품입니다. 디자인 토큰, UI 조각, 작은 도우미 함수, 타입이며, 여기 있는 어느 것에도 의존하지 않습니다.
+summary_shared_ko: 무엇이든 쓸 수 있는 기본 부품(토큰, UI 조각, 도우미 함수, 타입)이며, 여기 있는 어느 것에도 의존하지 않습니다.
 dependency_policy: lower-only
 dependency_usages: [value]
 evidence: [docs/ARCHITECTURE.md#fsd-layers, eslint.config.mjs]

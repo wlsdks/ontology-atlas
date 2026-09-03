@@ -136,7 +136,13 @@ const EXPANDED_COHORT_ALPHA = 0.42;
  * reveals only a few children (top 24) at a time, so the background has to
  * recede further for the revealed batch to read clearly.
  */
-const BACKGROUND_DIM_WHEN_EXPANDED = 0.42;
+/*
+ * ⚠️ **A dimmed node is still a node someone has to find.** At 0.42 the expanded map's
+ * background read as "a dark cloud" (owner, 2026-09-03): a leaf ring at 3.2:1 dimmed to about
+ * 1.5:1 and vanished into the canvas. 0.8 over the raised ink ladder keeps every background ring
+ * at or above 3:1 while the expanded disc, its aura and the ego still stand a clear step above.
+ */
+const BACKGROUND_DIM_WHEN_EXPANDED = 0.8;
 
 const EMPTY_NEIGHBOR_SET: ReadonlySet<string> = new Set();
 /** Reused empty cap set for frames with no focus (or no incident `contains` edges). */
@@ -1977,24 +1983,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
     if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
     drawnScreenRadiusById.set(node.id, screenRadius);
-    // Reserve only ego members (center, neighbor) under an active focus and the
-    // hovered node. That leaves the overview's overall label density untouched and
-    // addresses just where the reported defect occurs — the ego focus of the
-    // default click interaction. The selection ring and expand badge sit just
-    // outside the disc, so the ring clearance is reserved with it.
-    if (egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId) {
-      const half = screenRadius + EXPANDED_AURA_RING_OFFSET;
-      nodeDiscReservations.push({
-        ownerId: node.id,
-        priority: NODE_DISC_LABEL_PRIORITY,
-        bbox: {
-          minX: screen.x - half,
-          maxX: screen.x + half,
-          minY: screen.y - half,
-          maxY: screen.y + half,
-        },
-      });
-    }
+    // Every drawn disc reserves its own footprint, so a passive label never
+    // paints across a neighbouring shape. This used to cover only ego members and
+    // the hovered node, to leave the overview's label density alone; measured
+    // 2026-09-03 on the sample vault with every domain open, twelve labels
+    // crossed a leaf or hub ring once the ink ladder made those rings readable,
+    // and a name over a shape makes both unreadable. A label blocked below flips
+    // above before it is dropped (the placement further down), so the overview
+    // keeps its names wherever a slot exists. Ego members and the hovered node
+    // reserve the ring clearance too, because the selection ring and expand
+    // badge sit just outside the disc.
+    const attended = egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId;
+    const reservedHalf = attended ? screenRadius + EXPANDED_AURA_RING_OFFSET : screenRadius + 1;
+    nodeDiscReservations.push({
+      ownerId: node.id,
+      priority: NODE_DISC_LABEL_PRIORITY,
+      bbox: {
+        minX: screen.x - reservedHalf,
+        maxX: screen.x + reservedHalf,
+        minY: screen.y - reservedHalf,
+        maxY: screen.y + reservedHalf,
+      },
+    });
 
     // Slight dim on background nodes unrelated to the expansion (disc members,
     // spine, and ego excluded).

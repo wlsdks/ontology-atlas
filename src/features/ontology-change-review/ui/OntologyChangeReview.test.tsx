@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { OntologyChangeItem, OntologyChangeSet } from '@/entities/knowledge-graph';
@@ -64,5 +64,36 @@ describe('OntologyChangeReview text fit', () => {
       expect(value).toHaveClass('break-words');
     }
     expect(container.querySelectorAll('.break-all')).toHaveLength(0);
+  });
+
+  it('folds a long body behind show more and unfolds it whole on request', () => {
+    const body = Array.from({ length: 12 }, (_, i) => `- src/views/agents/ui/File${i}.tsx: what it carries and why it is cited`).join('\n');
+    renderReview({
+      key: 'add_concept:0:capabilities/agent-runtime',
+      target: 'capabilities/agent-runtime',
+      exact: true,
+      relation: null,
+      fields: [
+        { key: 'title', after: 'Agent runtime' },
+        { key: 'body', after: body },
+      ],
+    });
+
+    const values = screen.getAllByTestId('ontology-change-review-field-value');
+    expect(values[0]).not.toHaveAttribute('data-long');
+    expect(screen.queryAllByTestId('ontology-change-review-field-toggle')).toHaveLength(1);
+
+    const folded = values[1];
+    expect(folded).toHaveAttribute('data-folded', 'true');
+    expect(folded.querySelector('span')).toHaveClass('line-clamp-6');
+
+    const toggle = screen.getByTestId('ontology-change-review-field-toggle');
+    expect(toggle).toHaveTextContent('showMore');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(toggle);
+    expect(folded).toHaveAttribute('data-folded', 'false');
+    expect(folded.querySelector('span')).not.toHaveClass('line-clamp-6');
+    expect(toggle).toHaveTextContent('showLess');
+    expect(folded).toHaveTextContent('File11.tsx');
   });
 });

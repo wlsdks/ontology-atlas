@@ -92,7 +92,7 @@ export interface SentenceLayoutInput {
    * side is the lane the skip arcs travel in (e2e, 2026-09-03: the outermost arc ran through the
    * sentence beside the last adjacent arrow).
    */
-  connectorSide?: 'right' | 'left';
+  connectorSide?: 'right' | 'left' | 'split';
   /**
    * Rectangles another lane already holds, in the same units. The ladder places its two lanes in
    * two calls; without this the rule sentence reading right and the count sentence reading left
@@ -238,9 +238,13 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
              observation lane seats its measured count the same way (installed app, 2026-09-03:
              the count sentence sat 40px right of the column and was cut to "import…"). */
           const centre = Math.min(a.x, b.x) + boxW / 2;
-          x = connectorSide === 'left' ? centre - GAP_TO_ARC : centre + GAP_TO_ARC;
+          /* `split` is the one-lane ladder: the rule reads right of the arrow and the count reads
+             left of it, so a pair that carries both never seats them on top of each other. */
+          const side =
+            connectorSide === 'split' ? (isTraffic ? 'left' : 'right') : connectorSide;
+          x = side === 'left' ? centre - GAP_TO_ARC : centre + GAP_TO_ARC;
           y = (sy + ty) / 2 + 4;
-          anchor = connectorSide === 'left' ? 'end' : 'start';
+          anchor = side === 'left' ? 'end' : 'start';
           roomPx = connectorRoom - GAP_TO_ARC - 12;
         } else {
           x = isTraffic

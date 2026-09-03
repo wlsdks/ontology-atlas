@@ -79,6 +79,9 @@ const SKIP_LANE_STEP = 14;
  * has less room than its first (owner, 2026-08-30: the Adapters pill's caption crossed its caps).
  */
 const SUMMARY_LINES = 2;
+/* The across split face is narrower than the ladder's; without the per-face lane label it has
+   room for a third caption line, which is what the longest reviewed sentences need at 200px. */
+const SUMMARY_LINES_ACROSS = 3;
 /** One caption line to the next, in SVG units: the `--leading-caption` pair of `text-caption`. */
 const CAPTION_LEADING = 14;
 
@@ -107,7 +110,6 @@ const PAD_Y = 26;
 const PAIRED_CONTRACT_W = 280;
 const PAIRED_GUTTER_W = 72;
 const PAIRED_OBSERVATION_W = 240;
-const PAIRED_OBSERVATION_H = 64;
 /*
  * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
  * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
@@ -154,6 +156,8 @@ const PAIRED_SIDE_ROOM = 180;
 const PAIRED_SIDE_ROOM_MIN = 48;
 /** The most ground the observation lane takes for its arcs and sentences when the canvas has it. */
 const PAIRED_TRAIL_ROOM_MAX = 360;
+/** Air the narrow ladder keeps between its face and the canvas edge on each side. */
+const NARROW_LADDER_EDGE = 16;
 /* The two lanes' adjacent sentences share the gutter row gap from opposite ends; this keeps a
    rule sentence and a count sentence apart even when both are long. */
 const GAP_BETWEEN_LANE_SENTENCES = 24;
@@ -444,11 +448,28 @@ export function ArchitectureSketch({
       ? (boxWidth - PAD_X * 2 - (ranks - 1) * COL_GAP) / ranks
       : preferredBoxW;
   const minimumAcrossBoxW = hasLedger ? BOX_W_LEDGER_FIT : BOX_W;
+  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
+  /*
+   * ⚠️ **A phone gets the ladder's face, not the tablet's fallback.** Below the paired width a
+   * single-lane chain drew 148px faces beside a 180px lane reserved for sentences that could not
+   * fit in it: every caption and every rule sentence was cut while half the canvas stayed empty
+   * (390px, 2026-09-03). The narrow ladder keeps one lane, gives the face the canvas width up to
+   * the reviewed face's 280px, and seats each rule sentence beside its arrow like the ladder does.
+   */
+  const usesNarrowLadder = axis === 'down' && lanes === 1 && !usesPairedDown && boxWidth > 0;
+  const narrowFaceW = usesNarrowLadder
+    ? Math.max(BOX_W, Math.min(PAIRED_CONTRACT_W, boxWidth - PAD_X * 2 - NARROW_LADDER_EDGE))
+    : preferredBoxW;
+  /* An across chain takes the width its canvas gives it, up to the roomy face: a 1790px canvas
+     held seven 151px faces with every caption cut while 200px per face was free (1920x700,
+     2026-09-03). The roomy mode still needs the whole roomy row to fit; between the two the
+     face simply grows. */
   const boxW =
     axis === 'across'
-      ? Math.max(minimumAcrossBoxW, Math.min(preferredBoxW, fittedAcrossBoxW))
-      : preferredBoxW;
-  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
+      ? Math.max(minimumAcrossBoxW, Math.min(usesRoomyBoxes ? preferredBoxW : roomyBoxW, fittedAcrossBoxW))
+      : usesNarrowLadder
+        ? narrowFaceW
+        : preferredBoxW;
   /*
    * Which of the two ladder densities this canvas can hold. Below xl `restHeight` is 0 and the
    * roomy rows stand, exactly as before; the tight rows are the answer only where the canvas was
@@ -467,11 +488,13 @@ export function ArchitectureSketch({
     ? usesTightLadder
       ? PAIRED_ROW_GAP_TIGHT
       : PAIRED_ROW_GAP
-    : axis === 'down'
-      ? 8
-      : hasLedger
-        ? ROW_GAP_LEDGER
-        : ROW_GAP_PLAIN;
+    : usesNarrowLadder
+      ? PAIRED_ROW_GAP
+      : axis === 'down'
+        ? 8
+        : hasLedger
+          ? ROW_GAP_LEDGER
+          : ROW_GAP_PLAIN;
   const padY = usesPairedDown
     ? usesTightLadder
       ? PAIRED_PAD_Y_TIGHT
@@ -487,20 +510,25 @@ export function ArchitectureSketch({
       ? usesTightLadder
         ? BOX_H_PAIRED_TIGHT
         : BOX_H
+    : usesNarrowLadder
+      ? BOX_H
     : axis === 'down'
       ? 64
-      : hasLedger
+      : hasLedger || splitsEvidence
         ? BOX_H_LEDGER
         : BOX_H;
   /* The tight row pays for its height with the sentence's second line, not with its face width:
      one line of summary keeps every role's first clause, which cutting the faces would not. */
-  /* The observation face never stands taller than its row: on the tight ladder a 64px face in a
-     58px row closed the gap its count sentence needs. */
-  const observationBoxH = usesPairedDown
-    ? Math.min(PAIRED_OBSERVATION_H, boxH)
-    : OBSERVATION_BOX_H;
+  /* The observation face is exactly its row: a 64px face in a 72px row gave the two lanes
+     different arrow lengths and put their sentences on different baselines (owner, 2026-09-03),
+     and on the tight ladder it closed the gap its count sentence needs. */
+  const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
   const summaryLineCount =
-    usesTightLadder || (axis === 'down' && !usesPairedDown) ? 1 : SUMMARY_LINES;
+    usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder)
+      ? 1
+      : axis === 'across' && splitsEvidence
+        ? SUMMARY_LINES_ACROSS
+        : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
      the reserved width first. This follows the animated grid on every ResizeObserver frame, so the
      chain neither turns nor loses its last role behind a 380px dock at the 1512px app width. */
@@ -574,8 +602,8 @@ export function ArchitectureSketch({
     PAIRED_SIDE_ROOM_MIN,
     Math.min(PAIRED_TRAIL_ROOM_MAX, pairedSlack - pairedLeadRoom),
   );
-  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : leadRoom;
-  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : trailRoom;
+  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : usesNarrowLadder ? 0 : leadRoom;
+  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : usesNarrowLadder ? 0 : trailRoom;
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
@@ -938,12 +966,15 @@ export function ArchitectureSketch({
         /* On the comparison ladder an adjacent rule's sentence sits beside its own arrow, with
            the half face, the delta gutter and the observation face as its room; the row gap
            between the two faces is clear ground by construction. */
-        adjacentSeat: usesPairedDown ? 'connector' : 'lead',
+        adjacentSeat: usesPairedDown || usesNarrowLadder ? 'connector' : 'lead',
         /* The contract lane reads right over the gutter; the observation lane reads left into the
            gutter, keeping its right side free for the skip arcs. */
-        connectorSide: lane === placed ? 'right' : 'left',
-        connectorRoom:
-          lane === placed
+        connectorSide: usesNarrowLadder ? 'split' : lane === placed ? 'right' : 'left',
+        /* On the narrow ladder the sentence may run to the canvas edge: half the face, the edge
+           air and the canvas padding, which is what a nineteen-glyph Korean rule needs. */
+        connectorRoom: usesNarrowLadder
+          ? contractBoxW / 2 + NARROW_LADDER_EDGE + PAD_X
+          : lane === placed
             ? contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
             : observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES,
         sentenceOf: edgeSentence,
@@ -989,6 +1020,7 @@ export function ArchitectureSketch({
     skipLane,
     splitsEvidence,
     toSentenceEdge,
+    usesNarrowLadder,
     usesPairedDown,
   ]);
 
@@ -1131,7 +1163,13 @@ export function ArchitectureSketch({
            * the layout falls back to today's left edge, so the failure mode is the old behaviour.
            */
           '[justify-content:safe_center]',
-          axis === 'down' ? 'overflow-y-auto' : 'items-center overflow-x-auto',
+          /* The ladder sits in the middle of the height it has, the way the across chain
+             already sat in the middle of its width: top-aligned it left every spare pixel below
+             the seventh row (owner, 2026-09-03). `safe` keeps the top reachable when it does not
+             fit. */
+          axis === 'down'
+            ? 'overflow-y-auto [align-items:safe_center]'
+            : 'items-center overflow-x-auto',
           'flex min-h-0 flex-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
         )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
@@ -1201,6 +1239,32 @@ export function ArchitectureSketch({
           </marker>
         </defs>
 
+        {axis === 'across' && splitsEvidence ? (
+          /* One heading per row, not one per face: seven repeats of the same two labels read as
+             fourteen labels (1920×700, 2026-09-03). Each sits above its row's first face. */
+          <g
+            className="architecture-role-reveal"
+            aria-hidden
+            data-testid="architecture-across-lane-headings"
+          >
+            <text
+              x={PAD_X}
+              y={padY + layoutLeadRoom - 6}
+              textAnchor="start"
+              className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+            >
+              {contractTrackLabel}
+            </text>
+            <text
+              x={PAD_X}
+              y={padY + layoutLeadRoom + boxH + observationOffset - boxH - 6}
+              textAnchor="start"
+              className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+            >
+              {observationTrackLabel}
+            </text>
+          </g>
+        ) : null}
         {usesPairedDown ? (
           <g
             className="architecture-role-reveal"
@@ -1468,9 +1532,7 @@ export function ArchitectureSketch({
            * because its budget was read off those positions and moving it would change the room.
            */
           const nameY = splitsEvidence
-            ? usesPairedDown
-              ? at.y + 23
-              : at.y + 35
+            ? at.y + 23
             : axis === 'down'
               ? at.y + 18
               : ledger
@@ -1479,9 +1541,7 @@ export function ArchitectureSketch({
                 ? at.y + boxH / 2 - 4
                 : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * CAPTION_LEADING) / 2;
           const countsY = splitsEvidence
-            ? usesPairedDown
-              ? at.y + 43
-              : at.y + 52
+            ? at.y + 43
             : axis === 'down'
               ? at.y + 34
               : nameY + 15;
@@ -1654,16 +1714,6 @@ export function ArchitectureSketch({
                   >
                     {String(boxIndex + 1).padStart(2, '0')}
                   </text>
-                  {axis === 'across' ? (
-                    <text
-                      x={at.x + contractBoxW / 2}
-                      y={at.y + 17}
-                      textAnchor="middle"
-                      className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
-                    >
-                      {contractTrackLabel}
-                    </text>
-                  ) : null}
                 </>
               ) : null}
               <text
@@ -1684,6 +1734,11 @@ export function ArchitectureSketch({
                 )}
                 data-testid={`architecture-box-line-${box.id}`}
               >
+                {/* A cut caption still carries its whole sentence: the tight ladder keeps one
+                    line per role, and a hover or an assistive reader gets the rest here. */}
+                {summaryLines !== null && summary !== null && summaryLines.some((line) => line.endsWith('…')) ? (
+                  <title>{summary}</title>
+                ) : null}
                 {summaryLines === null
                   ? counts
                   : summaryLines.map((line, index) => (
@@ -1853,16 +1908,6 @@ export function ArchitectureSketch({
                       lane="observation"
                     />
                   ) : null}
-                  {usesPairedDown ? null : (
-                    <text
-                      x={observedAt.x + observationBoxW / 2}
-                      y={observedAt.y + 15}
-                      textAnchor="middle"
-                      className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
-                    >
-                      {observationTrackLabel}
-                    </text>
-                  )}
                   <text
                     x={observedAt.x + observationBoxW / 2}
                     y={

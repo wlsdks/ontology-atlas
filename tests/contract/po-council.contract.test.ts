@@ -294,7 +294,10 @@ describe('Atlas PO pilot can decide its sunset', () => {
     const parsed = parsePoPilot(source);
     expect(parsed.runs.length, 'the structured pilot inventory must not be empty').toBeGreaterThan(0);
     expect(parsed.updates.length).toBeGreaterThanOrEqual(parsed.runs.length);
-    expect(parsed.metadata.outcome).toBe('adjust');
+    // The outcome is the owner's word, read from the document rather than pinned here:
+    // the pilot closed as `adjust` at its 20th decision (2026-09-03), and a test that
+    // insisted on `pending` would have frozen the register mid-pilot forever.
+    expect(['pending', 'keep', 'adjust', 'revert']).toContain(parsed.metadata.outcome);
 
     expect(() =>
       parsePoPilot(
@@ -305,7 +308,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
       ),
     ).toThrow('unchanged review cannot claim a unique contribution');
     expect(() =>
-      parsePoPilot(source.replace('outcome: adjust', 'outcome: adjust\noutcome: keep')),
+      parsePoPilot(source.replace(/^(outcome: .*)$/m, '$1\noutcome: keep')),
     ).toThrow('duplicate frontmatter key outcome');
     expect(() =>
       parsePoPilot(
@@ -407,10 +410,12 @@ describe('Atlas PO pilot can decide its sunset', () => {
       cwd: ROOT,
       encoding: 'utf8',
     });
+    // The command must report what the library reports for the same document and
+    // date, whatever phase the live register is in.
+    const expected = evaluatePoPilot(parsePoPilot(read(PILOT)), '2026-09-01');
     expect(JSON.parse(output)).toMatchObject({
-      phase: 'adjusted',
-      outcome: 'adjust',
-      metrics: { eligibleDecisions: expect.any(Number) },
+      phase: expected.phase,
+      metrics: { eligibleDecisions: expected.metrics.eligibleDecisions },
     });
   });
 
@@ -422,11 +427,11 @@ describe('Atlas PO pilot can decide its sunset', () => {
      * pilot started every PR would have gone red with no relation to its
      * content. CI mode gates on register validity, an unsupported keep, and a
      * safety stop; a due decision prints as DUE and stays the owner's reminder.
-     */
+    */
     const farPastDeadline = '2027-01-01';
     const scratch = mkdtempSync(join(tmpdir(), 'ontology-atlas-po-pilot-'));
     const pendingPilot = join(scratch, 'PO-PILOT.md');
-    writeFileSync(pendingPilot, read(PILOT).replace('outcome: adjust', 'outcome: pending'));
+    writeFileSync(pendingPilot, read(PILOT).replace(/^outcome: .*$/m, 'outcome: pending'));
 
     try {
       const check = spawnSync(

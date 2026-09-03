@@ -188,6 +188,33 @@ describe("Select — 목록은 잘리는 조상 밖에 산다", () => {
     expect(listbox.style.maxHeight).not.toBe("");
   });
 
+  it("오른쪽 끝의 트리거에서 넓게 열린 목록은 창 안으로 미끄러진다 (작성창의 작업 방식 목록, 2026-09-03)", () => {
+    // jsdom has no layout, so the rects the placement reads are stated here: a
+    // 200px trigger whose left edge sits at 620 in a 1000px window, and a list
+    // that renders 400px wide — 620 + 400 runs 28px past the 8px viewport pad.
+    const rect = (left: number, width: number) =>
+      ({ left, right: left + width, width, top: 300, bottom: 336, height: 36, x: left, y: 300 }) as DOMRect;
+    const spy = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function (this: Element) {
+        if (this.getAttribute("role") === "combobox") return rect(620, 200);
+        if (this.getAttribute("role") === "listbox") return rect(620, 400);
+        return rect(0, 0);
+      });
+    const width = window.innerWidth;
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 1000 });
+    try {
+      render(<Harness />);
+      fireEvent.click(screen.getByRole("combobox"));
+      const listbox = screen.getByRole("listbox");
+      expect(listbox.style.left).toBe("592px");
+      expect(listbox.style.minWidth).toBe("200px");
+    } finally {
+      spy.mockRestore();
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+    }
+  });
+
   it("포털된 목록 위의 pointerdown 은 바깥 클릭이 아니다", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("combobox"));

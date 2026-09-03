@@ -54,15 +54,6 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
-## 2026-09-03 — The PO routing pilot closes as adjusted, with its recovered compact handoff retained
-
-**Why**: the owner closed the finite pilot after 26 eligible decisions. Material review delta reached 95%, reversible council avoidance 100%, recovery-proof resolution 81% with no shipped failure, specialist utility passed, and no boundary miss was recorded; owner clarity across the full immutable history remained 73%, below the declared 100% keep threshold, even though every measured run from 17 through 26 was clear after the compact handoff was introduced.
-**Prior**: 2026-09-01 "Atlas PO routing derives risk and must prove recovered understanding" and "Atlas product review becomes a reversible risk-routed pilot" are narrowed at their sunset; their explicit owner-clarity falsifier fired, while their derived-risk routing, reversible solo path, two-reviewer ceiling, and safety stop held.
-**Decision**: set the pilot outcome to `adjust`, not `keep` or `revert`. Retain the active compact handoff that leads with what was decided, what differs from the request, and what the owner must do, because the later measured runs recovered clarity; preserve the unclear early rows rather than laundering the metric. The pilot is closed and does not certify the router as permanent by inertia.
-**Dissent**: the last ten measured runs were all owner-clear, so `keep` could credit the recovered system instead of the initial rollout; it loses because the acceptance contract deliberately covers the whole append-only pilot and promised 100%, not a favorable trailing window.
-**Falsifier**: reopen and replace or remove the router if a future owner still needs a second summary after the compact handoff, a serious boundary miss ships, or the retained routing adds reviewers to reversible work without an explicit owner request.
-**Owner**: stark
-
 ## 2026-09-03 — Codex chat pins the last adapter whose read-only mode holds the installed permission matrix
 
 **Why**: the installed current `@agentclientprotocol/codex-acp@1.8.0` advertised `read-only` but sent `workspaceWrite` and created a direct file with no permission request; 1.7.0 carried the same mapping, while 1.6.2 sent an actual `readOnly` sandbox. The rebuilt installed app on exact 1.6.2 then held direct-file reject, allow-once, and ask-again, plus typed Atlas MCP reject, allow-once, and ask-again with byte-level checks.
@@ -124,6 +115,42 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: keep both counts and their provenance. Add one ACP session instruction requiring `graph.edges` and `internalEdges` to be called frontmatter relation declarations and the map census deduplicated logical lines, with a regression test. Do not change schema, compiler, or map counts.
 **Dissent**: a machine-readable MCP count scope would protect every consumer, not only ACP; it loses because no repeated failure outside ACP justifies broadening the contract yet.
 **Falsifier**: if a source-hidden ACP replay still conflates the counts or another consumer repeats the failure, replace the prompt remedy with explicit machine-readable count fields.
+**Owner**: stark
+
+## 2026-09-03 — The PO routing pilot closes at its 20th decision as adjust
+
+**Why**: the register reached its 20-decision target on 2026-09-03 with the map label reservation change. The evaluator reports review delta 93%, reversible decisions avoiding council 100%, zero boundary misses, but recovery proofs resolved at 75% against the 80% floor and owner-facing clarity at 65% against 100%, so `keep` is not a valid outcome.
+**Prior**: 2026-09-01 (the pilot's own record) stands; this closes the window it opened.
+**Decision**: the outcome is `adjust`. The router, the two-reviewer default, and the typed register stay. What changes is the follow-through: a run's recovery proof and later result are recorded when its pull request merges, not left pending, and every owner-facing summary is judged for clarity before the run is logged.
+**Dissent**: `revert` to the full council, because 75% proof resolution means a quarter of decisions shipped without a recorded proof. It lost because the unresolved rows are bookkeeping debt on merged work, not evidence that routing sent the wrong reviewers.
+**Falsifier**: a shipped recovery-proof failure, or proof resolution still under 80% after the next ten logged decisions.
+**Owner**: stark
+
+## 2026-09-03 — The map's ink ladder rises so a dimmed background node still reads
+
+**Why**: the owner showed the expanded map as a dark cloud in which nodes could not be found. The leaf ring sat at 3.2:1 on its own and the expanded-state background dim of 0.42 took it to about 1.5:1; only the ego and the expanded disc kept any light.
+**Prior**: none for the ladder values; the ink-depth ladder (leaf < mid < top < project) and its parity with the edge tokens stand and are kept.
+**Decision**: the three ink-depth steps rise to 4.7:1, 5.1:1 and 5.8:1 on the canvas, the project stroke to 6.9:1 so the ladder keeps its order, and the expanded-state background dim rises from 0.42 to 0.8, so every background ring stays at or above 3.3:1 while the expanded disc, its aura and the ego stand a clear step above.
+**Dissent**: a deeper dim isolates the expanded disc faster; it lost because a node a person cannot find is not context, it is missing.
+**Falsifier**: an expanded map where the disc and the ego cannot be told from the background at a glance, or a leaf ring measured under 3:1 in any map state.
+**Owner**: stark
+
+## 2026-09-03 — A phone gets the ladder's face, and an across chain grows into its canvas
+
+**Why**: at 390px the single-lane chain drew 148px faces beside a 180px sentence lane, so every caption and rule sentence was cut while half the canvas stayed empty; at 1920×700 the across chain held seven 151px faces with every caption cut while 200px per face was free.
+**Prior**: 2026-09-03 (the ladder is chosen by height, sentences sit on arrows) stands and is extended below the paired width; 2026-08-30 (the chain does not turn under a click) stands.
+**Decision**: below the paired width a single-lane chain draws the narrow ladder, one lane with the face taking the canvas width up to 280px, two caption lines, and each rule sentence beside its arrow reading right to the canvas edge with a count reading left; an across chain's face grows with its canvas up to the roomy 220px instead of stopping at the compact 148px.
+**Dissent**: the compact 148px face was one fixed size everywhere and easy to reason about; it lost because a fixed size that cuts every sentence on the screens people hold in one hand is not a size anyone reads.
+**Falsifier**: at 390px a caption or rule sentence crosses a face or the canvas edge, or the seventh role sits below a page that does not scroll to it; or at 1920×700 a caption is still cut with free canvas beside its face.
+**Owner**: stark
+
+## 2026-09-03 — Closing a role's answer lets go of the role
+
+**Why**: a source-hidden walker pressed Escape on the role panel and found the face still pressed, the bridge still drawn and the other roles still dimmed, with nothing left to show for it; the screen read as stuck mid-selection.
+**Prior**: 2026-08-30 (closing the panel closes the address) stands for the address and is overturned for the selection, which used to stay in memory so the panel could be reopened from it.
+**Decision**: closing the role panel, by Escape or its close control, clears the selected role as well as the address, and the chain returns whole; choosing the face again opens its answer; the rules panel closes without touching a selection.
+**Dissent**: a kept selection let a reader reopen the same answer without finding the face again; it lost because the face is one click away either way and a selection with no answer is a state nobody asked for.
+**Falsifier**: a reader closes the panel and then looks for "the role I had" and cannot find it, or reopens the same role three times in a session.
 **Owner**: stark
 
 ## 2026-09-03 — A ladder skip leaves the face's side, the count sentence sits on its arrow, and the lanes go where the arcs are

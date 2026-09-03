@@ -520,7 +520,14 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   own arrow; a skip arc leaves and arrives at the face's side with a side port,
   so no arc crosses a row gap; the count sentence reads "{from} → {to} import
   {n}"; and the side lanes go where the arcs are, a 48px contract lane unless the
-  profile declares a skip and up to 360px for the observation lane.
+  profile declares a skip and up to 360px for the observation lane. The ladder sits
+  in the middle of the height it has, and the observation face is exactly its row,
+  so both lanes share one arrow length and one sentence baseline. Below the
+  paired width a phone draws the narrow ladder: one lane, the face as wide as the
+  canvas allows up to 280px, two caption lines, and each rule sentence beside its
+  arrow reading to the canvas edge. A short-canvas across chain grows its faces
+  with the canvas up to the roomy 220px, names each row once above its first face
+  instead of on every face, and gives its captions three lines.
 - **A role's sentence can be written in the reader's language** (2026-09-03). Beside
   `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
   `summary_views_ko`. The screen shows the locale line to a reader in that locale

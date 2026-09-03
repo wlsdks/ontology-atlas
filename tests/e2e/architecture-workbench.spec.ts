@@ -135,9 +135,11 @@ test('keyboard opens, closes, restores focus, and reopens the selected role', as
     'role',
   );
 
+  /* Escape closes the answer and lets go of the role (2026-09-03), and focus returns to the
+     face so Space chooses it again. */
   await page.keyboard.press('Escape');
   await expect(role).toBeFocused();
-  await expect(role).toHaveAttribute('aria-pressed', 'true');
+  await expect(role).toHaveAttribute('aria-pressed', 'false');
   await expect(role).toHaveAttribute('aria-expanded', 'false');
 
   await page.keyboard.press('Space');
