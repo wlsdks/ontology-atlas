@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — A phone gets the ladder's face, and an across chain grows into its canvas
+
+**Why**: at 390px the single-lane chain drew 148px faces beside a 180px sentence lane, so every caption and rule sentence was cut while half the canvas stayed empty; at 1920×700 the across chain held seven 151px faces with every caption cut while 200px per face was free.
+**Prior**: 2026-09-03 (the ladder is chosen by height, sentences sit on arrows) stands and is extended below the paired width; 2026-08-30 (the chain does not turn under a click) stands.
+**Decision**: below the paired width a single-lane chain draws the narrow ladder, one lane with the face taking the canvas width up to 280px, two caption lines, and each rule sentence beside its arrow reading right to the canvas edge with a count reading left; an across chain's face grows with its canvas up to the roomy 220px instead of stopping at the compact 148px.
+**Dissent**: the compact 148px face was one fixed size everywhere and easy to reason about; it lost because a fixed size that cuts every sentence on the screens people hold in one hand is not a size anyone reads.
+**Falsifier**: at 390px a caption or rule sentence crosses a face or the canvas edge, or the seventh role sits below a page that does not scroll to it; or at 1920×700 a caption is still cut with free canvas beside its face.
+**Owner**: stark
+
 ## 2026-09-03 — Closing a role's answer lets go of the role
 
 **Why**: a source-hidden walker pressed Escape on the role panel and found the face still pressed, the bridge still drawn and the other roles still dimmed, with nothing left to show for it; the screen read as stuck mid-selection.
