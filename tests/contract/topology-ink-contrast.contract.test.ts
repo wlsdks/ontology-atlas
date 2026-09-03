@@ -160,7 +160,7 @@ describe("topology ink contrast contract", () => {
 
   it("깊이 선명도 알파와 **합성해도** 잉크 사다리가 3:1 바닥 위다", () => {
     // Infoviz seat's measurement (2026-08-18): multiplying
-    // `--topology-v2-ink-depth-leaf` (#60606d, 3.19:1 on its own) by the S5 clarity
+    // `--topology-v2-ink-depth-leaf` (#7a7a86, 4.7:1 on its own) by the S5 clarity
     // alpha of 0.84 gives a composited contrast of **2.58:1** on the map surface — a
     // shortfall the standalone check (the first test above) cannot catch. Measuring the
     // screen means compositing with the alpha the renderer actually multiplies by
