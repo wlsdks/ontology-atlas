@@ -107,7 +107,6 @@ const PAD_Y = 26;
 const PAIRED_CONTRACT_W = 280;
 const PAIRED_GUTTER_W = 72;
 const PAIRED_OBSERVATION_W = 240;
-const PAIRED_OBSERVATION_H = 64;
 /*
  * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
  * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
@@ -494,11 +493,10 @@ export function ArchitectureSketch({
         : BOX_H;
   /* The tight row pays for its height with the sentence's second line, not with its face width:
      one line of summary keeps every role's first clause, which cutting the faces would not. */
-  /* The observation face never stands taller than its row: on the tight ladder a 64px face in a
-     58px row closed the gap its count sentence needs. */
-  const observationBoxH = usesPairedDown
-    ? Math.min(PAIRED_OBSERVATION_H, boxH)
-    : OBSERVATION_BOX_H;
+  /* The observation face is exactly its row: a 64px face in a 72px row gave the two lanes
+     different arrow lengths and put their sentences on different baselines (owner, 2026-09-03),
+     and on the tight ladder it closed the gap its count sentence needs. */
+  const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
   const summaryLineCount =
     usesTightLadder || (axis === 'down' && !usesPairedDown) ? 1 : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
@@ -1131,7 +1129,13 @@ export function ArchitectureSketch({
            * the layout falls back to today's left edge, so the failure mode is the old behaviour.
            */
           '[justify-content:safe_center]',
-          axis === 'down' ? 'overflow-y-auto' : 'items-center overflow-x-auto',
+          /* The ladder sits in the middle of the height it has, the way the across chain
+             already sat in the middle of its width: top-aligned it left every spare pixel below
+             the seventh row (owner, 2026-09-03). `safe` keeps the top reachable when it does not
+             fit. */
+          axis === 'down'
+            ? 'overflow-y-auto [align-items:safe_center]'
+            : 'items-center overflow-x-auto',
           'flex min-h-0 flex-1 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[color:var(--color-divider)]',
         )}
         style={coveredMask ? { maskImage: coveredMask, WebkitMaskImage: coveredMask } : undefined}
@@ -1684,6 +1688,11 @@ export function ArchitectureSketch({
                 )}
                 data-testid={`architecture-box-line-${box.id}`}
               >
+                {/* A cut caption still carries its whole sentence: the tight ladder keeps one
+                    line per role, and a hover or an assistive reader gets the rest here. */}
+                {summaryLines !== null && summary !== null && summaryLines.some((line) => line.endsWith('…')) ? (
+                  <title>{summary}</title>
+                ) : null}
                 {summaryLines === null
                   ? counts
                   : summaryLines.map((line, index) => (

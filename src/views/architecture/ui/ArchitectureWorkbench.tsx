@@ -196,18 +196,20 @@ export function ArchitectureWorkbench({
   }
 
   /**
-   * ⚠️ **Closing the panel closes the address with it.** `inspectorOpen` initialises from
+   * ⚠️ **Closing the role's panel lets go of the role.** `inspectorOpen` initialises from
    * `?role=`, so a screen somebody deliberately closed came back open on a reload or a share
-   * (judged 2026-08-30). The chosen role stays in memory — the canvas still shows what was picked
-   * and the button reopens its answer — but the link stops promising a panel nobody wants.
+   * (judged 2026-08-30), and the address is cleared with the panel. The role used to stay chosen
+   * in memory so the panel could be reopened from it, but a source-hidden walker read the result
+   * as a screen that says "selected" with nothing to show for it: the pressed face, the bridge
+   * and the dimmed neighbours stayed while their answer was gone (2026-09-03). Closing now
+   * returns the whole chain; the rules panel closes without touching the selection.
    */
   const closeInspector = useCallback(() => {
+    if (inspector === 'role') setSelectedRole(null);
     setInspector(null);
     writeArchitectureAddress(null);
     window.requestAnimationFrame(() => inspectorTriggerRef.current?.focus());
-    /* The compiler reads the setter as a dependency; it is stable, and naming it keeps the
-       memoization it can verify. */
-  }, [setInspector]);
+  }, [inspector]);
 
   const closeEvidence = useCallback(() => {
     setEvidenceOpen(false);
