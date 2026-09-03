@@ -9,6 +9,7 @@ import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { cn } from '@/shared/lib/cn';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { RowButton } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 
 function formatValue(value: unknown): string {
   if (value === null) return 'null';
@@ -19,6 +20,60 @@ function formatValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+/**
+ * Past this many characters a field value is folded to its first lines behind 「show more」.
+ *
+ * ⚠️ Measured on the owner's phone-height screenshot (2026-09-03): an agent's `add_concept` body
+ * ran to about 2,400 characters of element lists, decision citations and a confidence paragraph,
+ * and the permission card printed all of it — the 「Don't / Allow once」 buttons sat two screens
+ * below the question. A checkpoint whose answer buttons are out of reach is a wall, not a
+ * question. The first lines say what the change is; the rest is there on request, unclamped,
+ * because nothing is hidden from a person who wants to read it before deciding.
+ */
+const LONG_VALUE_CHARS = 320;
+const LONG_VALUE_LINES = 6;
+
+function isLongValue(text: string): boolean {
+  return text.length > LONG_VALUE_CHARS || text.split('\n').length > LONG_VALUE_LINES;
+}
+
+function FieldValue({ id, text }: { id: string; text: string }) {
+  const t = useTranslations('ontologyChangeReview');
+  const [open, setOpen] = useState(false);
+  const long = isLongValue(text);
+  return (
+    <dd
+      data-testid="ontology-change-review-field-value"
+      data-long={long ? 'true' : undefined}
+      data-folded={long ? String(!open) : undefined}
+      className="min-w-0 break-words text-[color:var(--color-text-primary)]"
+    >
+      <span id={id} className={cn('block whitespace-pre-line break-words', long && !open && 'line-clamp-6')}>
+        {text}
+      </span>
+      {long ? (
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={id}
+          data-testid="ontology-change-review-field-toggle"
+          onClick={() => setOpen((value) => !value)}
+          className={controlClass({
+            shape: 'card',
+            size: 'sm',
+            tone: 'muted',
+            hoverBorder: 'strong',
+            hoverInk: 'secondary',
+            className: 'mt-1.5',
+          })}
+        >
+          {t(open ? 'showLess' : 'showMore')}
+        </button>
+      ) : null}
+    </dd>
+  );
 }
 
 function ChangeDetails({ item }: { item: OntologyChangeItem }) {
@@ -83,12 +138,10 @@ function ChangeDetails({ item }: { item: OntologyChangeItem }) {
               >
                 {field.key}
               </dt>
-              <dd
-                data-testid="ontology-change-review-field-value"
-                className="break-words text-[color:var(--color-text-primary)]"
-              >
-                {formatValue(field.after)}
-              </dd>
+              <FieldValue
+                id={`ontology-change-review-value-${item.key}-${field.key}`}
+                text={formatValue(field.after)}
+              />
             </div>
           ))}
           {hiddenCount > 0 ? (
