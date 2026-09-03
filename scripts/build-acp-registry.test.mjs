@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { driftedAgents, isolatedRuntimeIds, launchLabel } from "./build-acp-registry.mjs";
+import {
+  driftedAgents,
+  isolatedRuntimeIds,
+  launchLabel,
+  runtimeLaunchPinIds,
+  runtimeLaunchPinIssues,
+} from "./build-acp-registry.mjs";
 
 /**
  * ⚠️ **Why this gate is narrow, and what must stay wide.**
@@ -62,4 +68,42 @@ test("a launch without a package still gets a label instead of undefined", () =>
   assert.equal(launchLabel({ launch: { kind: "uvx", command: "thing" } }), "thing");
   assert.equal(launchLabel({ launch: { kind: "custom" } }), "custom");
   assert.equal(launchLabel({}), "(none)");
+});
+
+test("the measured Codex compatibility pin has a live upstream subject", () => {
+  const ids = runtimeLaunchPinIds();
+  assert.ok(ids.length > 0, "the compatibility-pin scan must not run over zero runtimes");
+  assert.deepEqual(ids, ["codex-acp"]);
+  assert.deepEqual(
+    runtimeLaunchPinIssues([
+      {
+        id: "codex-acp",
+        distribution: {
+          npx: { package: "@agentclientprotocol/codex-acp@1.8.0", args: [] },
+        },
+      },
+    ]),
+    [],
+  );
+});
+
+test("a new upstream Codex adapter turns the compatibility gate red with both identities", () => {
+  assert.deepEqual(
+    runtimeLaunchPinIssues([
+      {
+        id: "codex-acp",
+        distribution: {
+          npx: { package: "@agentclientprotocol/codex-acp@1.9.0", args: [] },
+        },
+      },
+    ]),
+    [
+      {
+        id: "codex-acp",
+        pinned: "@agentclientprotocol/codex-acp@1.6.2",
+        reviewedUpstream: "@agentclientprotocol/codex-acp@1.8.0",
+        actualUpstream: "@agentclientprotocol/codex-acp@1.9.0",
+      },
+    ],
+  );
 });

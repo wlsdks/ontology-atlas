@@ -90,6 +90,49 @@ const BRAND_MARK = {
 const VERIFIED = new Set(['claude-acp', 'codex-acp']);
 
 /**
+ * Compatibility pins for runtimes whose newest registry package broke an app-owned safety
+ * boundary. These are not ordinary dependency preferences: the app launches the pinned package
+ * until a newer upstream package passes the same installed permission matrix.
+ *
+ * `reviewedUpstreamPackage` keeps the exception from becoming an invisible permanent downgrade.
+ * When upstream moves again, `--check` turns red and names both values so a person must inspect the
+ * new adapter before either advancing or retaining the pin.
+ */
+const RUNTIME_LAUNCH_PINS = {
+  'codex-acp': {
+    package: '@agentclientprotocol/codex-acp@1.6.2',
+    reviewedUpstreamPackage: '@agentclientprotocol/codex-acp@1.8.0',
+  },
+};
+
+export function runtimeLaunchPinIds() {
+  return Object.keys(RUNTIME_LAUNCH_PINS);
+}
+
+export function runtimeLaunchPinIssues(rawAgents) {
+  const byId = new Map((rawAgents ?? []).map((agent) => [agent.id, agent]));
+  const issues = [];
+  for (const [id, pin] of Object.entries(RUNTIME_LAUNCH_PINS)) {
+    const upstream = pickLaunch(byId.get(id)?.distribution);
+    const actual = upstream?.kind === 'npx' ? upstream.package : null;
+    if (actual !== pin.reviewedUpstreamPackage) {
+      issues.push({
+        id,
+        pinned: pin.package,
+        reviewedUpstream: pin.reviewedUpstreamPackage,
+        actualUpstream: actual ?? '(missing-or-not-npx)',
+      });
+    }
+  }
+  return issues;
+}
+
+function applyRuntimeLaunchPin(id, launch) {
+  const pin = RUNTIME_LAUNCH_PINS[id];
+  return pin && launch?.kind === 'npx' ? { ...launch, package: pin.package } : launch;
+}
+
+/**
  * Display-name overrides — only for launchers whose registry name differs from
  * what people actually call them.
  *
@@ -195,7 +238,7 @@ async function fetchBrandInk() {
 function normalize(raw, brandInk = {}) {
   const agents = [];
   for (const agent of raw.agents ?? []) {
-    const launch = pickLaunch(agent.distribution);
+    const launch = applyRuntimeLaunchPin(agent.id, pickLaunch(agent.distribution));
     if (!launch) continue; // No way to launch it means no reason to list it.
     agents.push({
       id: agent.id,
@@ -315,6 +358,17 @@ async function main() {
     process.exit(1);
   }
   const rawJson = await response.json();
+  const pinIssues = runtimeLaunchPinIssues(rawJson.agents);
+  if (pinIssues.length > 0) {
+    console.error('[acp-registry] a compatibility-pinned runtime moved upstream:');
+    for (const issue of pinIssues) {
+      console.error(
+        `    ${issue.id}: pinned ${issue.pinned}; reviewed ${issue.reviewedUpstream}; upstream is ${issue.actualUpstream}`,
+      );
+    }
+    console.error('  Re-run the installed permission matrix before changing either recorded version.');
+    process.exit(1);
+  }
 
   if (check) {
     // Icons and brand colours are not fetched — check mode asks only whether **the

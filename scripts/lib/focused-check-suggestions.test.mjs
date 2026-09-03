@@ -681,6 +681,29 @@ describe('focused check suggestions', () => {
     );
   });
 
+  it('routes every ACP launch-boundary input to the registry compatibility gate', () => {
+    const subjects = [
+      'scripts/build-acp-registry.mjs',
+      'scripts/build-acp-registry.test.mjs',
+      'src-tauri/src/acp-registry.json',
+      'src-tauri/src/acp.rs',
+      '.github/workflows/release-macos.yml',
+    ];
+    assert.ok(subjects.length > 0, 'the ACP launch-boundary subject inventory must not be empty');
+    for (const subject of subjects) {
+      assert.ok(
+        commandNames(suggestFocusedChecks([subject])).includes('pnpm acp:registry:check'),
+        `${subject} must recommend the ACP registry compatibility gate`,
+      );
+    }
+    assert.ok(
+      !commandNames(suggestFocusedChecks(['src/views/home/ui/HomePage.tsx'])).includes(
+        'pnpm acp:registry:check',
+      ),
+      'an unrelated screen must not trigger a network registry scan',
+    );
+  });
+
   it('suggests desktop readiness checks for macOS desktop distribution files', () => {
     const result = suggestFocusedChecks([
       'scripts/check-desktop-readiness.mjs',
@@ -891,6 +914,7 @@ describe('focused check suggestions', () => {
       'pnpm docs:language',
       'pnpm docs:links',
       'pnpm test:mcp:docs',
+      'pnpm acp:registry:check',
       // A workflow is where a node:test suite becomes reachable or stops being
       // reachable, so editing one re-checks that nothing now runs nowhere.
       'pnpm exec vitest run tests/contract/agent-files.contract.test.ts tests/contract/nested-agents-pointers.contract.test.ts tests/contract/skill-routing.contract.test.ts tests/contract/rules-path-scope.contract.test.ts tests/contract/secret-read-guard.contract.test.ts tests/contract/node-test-reachability.contract.test.ts tests/contract/agent-file-citations.contract.test.ts',

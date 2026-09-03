@@ -478,9 +478,9 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### ACP agent-runtime registry snapshot
 
 **Run**: `pnpm acp:registry:check`
-**Proves**: The committed `src-tauri/src/acp-registry.json` snapshot of launchable coding agents still matches what the app can actually launch, so the app never fetches this list at runtime.
+**Proves**: The committed `src-tauri/src/acp-registry.json` snapshot matches what the app actually launches, and a compatibility-pinned runtime has not moved beyond the newest upstream version whose permission behavior was reviewed. The app still never fetches this list at runtime.
 **Escalate**: none.
-**Fix**: Run `pnpm acp:registry` to refresh it deliberately and read the diff; only measured runtimes are marked `verified`.
+**Fix**: For an ordinary registry move, run `pnpm acp:registry` and read the diff. For a compatibility-pin failure, first rerun the installed permission matrix named by the diagnostic; update the reviewed upstream identity only after that evidence. Only measured runtimes are marked `verified`.
 
 ### Release tag version alignment
 

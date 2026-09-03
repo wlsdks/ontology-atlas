@@ -4151,6 +4151,29 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.summary.dependencyCycles, 0);
     assert.equal(result.summary.relationRecommendations, 0);
     assert.equal(result.summary.dependencyOrderAcyclic, true);
+    assert.equal(result.relationCensus.compilerDeclarations.count, result.summary.edges);
+    assert.deepEqual(result.relationCensus.compilerDeclarations.reportedAt, [
+      'summary.edges',
+      'compiledSummary.edges',
+    ]);
+    assert.equal(
+      result.relationCensus.compilerDeclarations.unit,
+      'compiled_frontmatter_relation_declarations',
+    );
+    assert.equal(result.relationCensus.compilerDeclarations.logicalRelationDeduplicated, false);
+    assert.equal(
+      result.relationCensus.compilerDeclarations.reciprocalDeclarationsMayDescribeOneLogicalRelation,
+      true,
+    );
+    assert.deepEqual(result.relationCensus.canonicalMapCensus, {
+      countAvailable: false,
+      count: null,
+      unit: 'deduplicated_normalized_typed_edges',
+      scope: 'loaded_app_ontology',
+      filterSensitive: false,
+      reason:
+        'The MCP process does not run the app derivation or know its loaded UI state, so use the app census for this numeric count.',
+    });
     assert.deepEqual(
       result.checks.map((check) => ({ id: check.id, status: check.status, count: check.count })),
       [
@@ -4163,6 +4186,39 @@ describe('queryCompiledOntology', () => {
         { id: 'relation_recommendations', status: 'pass', count: 0 },
         { id: 'components', status: 'pass', count: 1 },
       ],
+    );
+  });
+
+  it('keeps reciprocal containment declarations distinct while naming the map comparison unit', () => {
+    const reciprocal = compileOntology(
+      [
+        doc('domains/auth', {
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(reciprocal, { operation: 'health' });
+
+    assert.equal(result.summary.edges, 2);
+    assert.equal(result.relationCensus.compilerDeclarations.count, 2);
+    assert.deepEqual(result.relationCensus.compilerDeclarations.identity, [
+      'declaring_document',
+      'relation_key',
+      'target_reference',
+    ]);
+    assert.equal(result.relationCensus.canonicalMapCensus.countAvailable, false);
+    assert.equal(
+      result.relationCensus.canonicalMapCensus.unit,
+      'deduplicated_normalized_typed_edges',
     );
   });
 

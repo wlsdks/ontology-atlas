@@ -323,6 +323,30 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
   });
 });
 
+describe('Codex 권한 바닥 — 대화가 준비되기 전에 read-only를 건다', () => {
+  it('새 세션마다 read-only 모드를 적용하고 실패하면 ready가 되지 않는다', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({ runtimeId: 'codex-acp', vaultRoot: '/vault' }),
+    );
+    bridge.failSetMode = true;
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const modeCall = bridge.sent.find((message) => message.method === 'session/set_mode');
+    expect(modeCall?.params).toEqual({ sessionId: 's-1', modeId: 'read-only' });
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toContain('gate-mode-failed:read-only');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
 describe('이어받은 대화 — 규칙이 달라지지 않는다', () => {
   it('session/load 에도 새 대화와 같은 지시가 실린다', async () => {
     /*
@@ -419,6 +443,11 @@ describe('세션 지시문 — 실측으로 얻은 네 줄이 실제로 실린�
     expect(prompt, '애매할 때 묻지 않고 만들게 된다').toMatch(/Ask first/);
     // ⑤ answer in the language the person wrote in
     expect(prompt, '한국어로 물었는데 영어로 답한다').toMatch(/language the person wrote in/);
+    // ⑥ compiler declarations and map lines are different censuses; collapsing them made 222 and
+    // 141 look like contradictory answers in the installed app on 2026-09-03.
+    expect(prompt, 'MCP 선언 수와 지도 선 수를 같은 관계 수로 말하게 된다').toMatch(
+      /relationCensus.*graph\.edges.*compiled frontmatter relation declarations.*deduplicated normalized typed edges.*not the current view filter/i,
+    );
 
     await act(async () => {
       await result.current.stop();

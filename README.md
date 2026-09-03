@@ -165,6 +165,9 @@ roadmap promise. It summarizes current product behavior documented in the
   shows the exact paths before writing, creates only the missing connection
   files on confirm, then guides the agent restart and `mcp-verify` check. File
   presence is never presented as a live connection.
+- **In-app ACP runtimes are admitted by measured permission behavior, not by freshness.** Codex is
+  held to an exact adapter version whose read-only turn was exercised in the installed app; a newer
+  upstream adapter stays out until the same direct-file and Atlas MCP reject/allow matrix passes.
 - **MCP over stdio** for Claude Code, Cursor, VS Code, Codex, and any other MCP
   client — a typed read and write surface the running server advertises through
   `tools/list`. For a known coding task that only reads Atlas context, the

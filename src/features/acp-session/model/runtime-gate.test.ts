@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { McpServerLaunch } from '@/shared/config';
 
-import { isGuardedRuntime, runtimeOwnsWriteGate } from './runtime-gate';
+import { GATED_SESSION_MODE, isGuardedRuntime, runtimeOwnsWriteGate } from './runtime-gate';
 import { vaultMcpServers } from './vault-mcp-server';
 
 const LAUNCH = {
@@ -89,5 +89,9 @@ describe('who holds the write checkpoint', () => {
   it('still reports a guarded runtime the same way', () => {
     expect(isGuardedRuntime('claude-acp', true)).toBe(true);
     expect(isGuardedRuntime('anything', false)).toBe(false);
+  });
+
+  it('forces Codex onto the adapter version whose read-only mode is an actual read-only sandbox', () => {
+    expect(GATED_SESSION_MODE).toEqual({ 'codex-acp': 'read-only' });
   });
 });

@@ -4400,6 +4400,17 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(health.summary.nodes, 4);
     assert.equal(health.summary.dependencyCycles, 0);
     assert.equal(health.summary.relationRecommendations, 1);
+    assert.equal(health.relationCensus.compilerDeclarations.count, health.summary.edges);
+    assert.equal(health.relationCensus.compilerDeclarations.count, health.compiledSummary.edges);
+    assert.deepEqual(health.relationCensus.compilerDeclarations.reportedAt, [
+      "summary.edges",
+      "compiledSummary.edges",
+    ]);
+    assert.equal(
+      health.relationCensus.canonicalMapCensus.unit,
+      "deduplicated_normalized_typed_edges",
+    );
+    assert.equal(health.relationCensus.canonicalMapCensus.countAvailable, false);
     assert.equal(health.checks.find((check) => check.id === "relation_recommendations").status, "warn");
 
     const tunedHealth = getCallParsed(responses, 80);

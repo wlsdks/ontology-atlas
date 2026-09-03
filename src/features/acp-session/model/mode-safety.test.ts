@@ -74,24 +74,26 @@ describe('작업 방식 — 아는 것과 모르는 것을 가른다', () => {
  * The tests above measure the function **abstractly** — they never look at which modes actually
  * arrive, so they stay green even when the adapter changes its modes. This pins **the measured list**.
  *
- * How it was measured (2026-08-17, the installed app): a `codex-acp` 1.4 session was opened and the
- * "working mode" list unfolded. There were two: `Read-only` and `Agent`. Choosing `Agent` and asking
- * *"write hello to /tmp/atlas-gate-probe.txt"* created a file **outside** the working folder with
- * **no permission card at all** (contents `hello`).
+ * How it was measured (2026-09-03, the installed app and pinned distribution): a `codex-acp` 1.6.2
+ * session offers three modes. Its distribution maps `read-only` to the real `readOnly` sandbox and
+ * the other two to writable sandboxes. The installed read-only path asked before a direct write,
+ * while the previously measured writable path created a file with no card. The writable ids stay
+ * hidden; their friendly names are not evidence of a boundary.
  *
  * So this adapter is offered **read only**. The uncomfortable conclusion is frozen into a test to
  * stop the next person seeing "writing does not work" and quietly opening `agent` — opening it
  * requires **measuring again and editing this block**.
  */
-describe('실측한 어댑터 — codex-acp 1.4', () => {
+describe('실측한 어댑터 — codex-acp 1.6.2', () => {
   /** The mode list exactly as it arrived in the session. */
-  const CODEX_ACP_1_4_MODES = [
+  const CODEX_ACP_1_6_2_MODES = [
     { id: 'read-only', name: 'Read-only' },
     { id: 'agent', name: 'Agent' },
+    { id: 'agent-full-access', name: 'Agent (full access)' },
   ];
 
   it('읽기 하나만 내준다 — 쓰기 모드는 관문이 없어서 숨긴다', () => {
-    const out = partitionModes(CODEX_ACP_1_4_MODES);
+    const out = partitionModes(CODEX_ACP_1_6_2_MODES);
     expect(out.offered.map((m) => m.id)).toEqual(['read-only']);
     expect(out.unverified).toEqual([]);
   });
@@ -101,7 +103,7 @@ describe('실측한 어댑터 — codex-acp 1.4', () => {
    * measuring nothing — "a check that is always green is not a check".
    */
   it('실측 목록에 숨길 것이 실제로 들어 있다 — 아니면 위 검사가 헛돈다', () => {
-    expect(CODEX_ACP_1_4_MODES).toHaveLength(2);
-    expect(partitionModes(CODEX_ACP_1_4_MODES).offered).toHaveLength(1);
+    expect(CODEX_ACP_1_6_2_MODES).toHaveLength(3);
+    expect(partitionModes(CODEX_ACP_1_6_2_MODES).offered).toHaveLength(1);
   });
 });

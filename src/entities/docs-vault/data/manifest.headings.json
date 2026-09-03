@@ -6180,6 +6180,46 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-03 — The PO routing pilot closes as adjusted, with its recovered compact handoff retained",
+      "slug": "2026-09-03-the-po-routing-pilot-closes-as-adjusted-with-its-recovered-compact-handoff-retained"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — Codex chat pins the last adapter whose read-only mode holds the installed permission matrix",
+      "slug": "2026-09-03-codex-chat-pins-the-last-adapter-whose-read-only-mode-holds-the-installed-permission-matrix"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — Atlas marks its write elicitation for adapter-owned exact correlation",
+      "slug": "2026-09-03-atlas-marks-its-write-elicitation-for-adapter-owned-exact-correlation"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — Codex MCP approvals require exact structured call correlation",
+      "slug": "2026-09-03-codex-mcp-approvals-require-exact-structured-call-correlation"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — The Atlas write checkpoint uses a message-only permission request",
+      "slug": "2026-09-03-the-atlas-write-checkpoint-uses-a-message-only-permission-request"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — Health carries relation census units after the ACP falsifier",
+      "slug": "2026-09-03-health-carries-relation-census-units-after-the-acp-falsifier"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — Isolated Codex uses the supported interactive approval policy",
+      "slug": "2026-09-03-isolated-codex-uses-the-supported-interactive-approval-policy"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-03 — ACP distinguishes relation declarations from map lines",
+      "slug": "2026-09-03-acp-distinguishes-relation-declarations-from-map-lines"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-03 — A ladder skip leaves the face's side, the count sentence sits on its arrow, and the lanes go where the arcs are",
       "slug": "2026-09-03-a-ladder-skip-leaves-the-faces-side-the-count-sentence-sits-on-its-arrow-and-the-lanes-go-where-the-arcs-are"
     },
@@ -12300,6 +12340,11 @@
       "depth": 2,
       "text": "Behaviour Contract",
       "slug": "behaviour-contract"
+    },
+    {
+      "depth": 2,
+      "text": "Conversation and Map Contract",
+      "slug": "conversation-and-map-contract"
     },
     {
       "depth": 2,

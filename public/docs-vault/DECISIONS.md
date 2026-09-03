@@ -54,6 +54,78 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — The PO routing pilot closes as adjusted, with its recovered compact handoff retained
+
+**Why**: the owner closed the finite pilot after 26 eligible decisions. Material review delta reached 95%, reversible council avoidance 100%, recovery-proof resolution 81% with no shipped failure, specialist utility passed, and no boundary miss was recorded; owner clarity across the full immutable history remained 73%, below the declared 100% keep threshold, even though every measured run from 17 through 26 was clear after the compact handoff was introduced.
+**Prior**: 2026-09-01 "Atlas PO routing derives risk and must prove recovered understanding" and "Atlas product review becomes a reversible risk-routed pilot" are narrowed at their sunset; their explicit owner-clarity falsifier fired, while their derived-risk routing, reversible solo path, two-reviewer ceiling, and safety stop held.
+**Decision**: set the pilot outcome to `adjust`, not `keep` or `revert`. Retain the active compact handoff that leads with what was decided, what differs from the request, and what the owner must do, because the later measured runs recovered clarity; preserve the unclear early rows rather than laundering the metric. The pilot is closed and does not certify the router as permanent by inertia.
+**Dissent**: the last ten measured runs were all owner-clear, so `keep` could credit the recovered system instead of the initial rollout; it loses because the acceptance contract deliberately covers the whole append-only pilot and promised 100%, not a favorable trailing window.
+**Falsifier**: reopen and replace or remove the router if a future owner still needs a second summary after the compact handoff, a serious boundary miss ships, or the retained routing adds reviewers to reversible work without an explicit owner request.
+**Owner**: stark
+
+## 2026-09-03 — Codex chat pins the last adapter whose read-only mode holds the installed permission matrix
+
+**Why**: the installed current `@agentclientprotocol/codex-acp@1.8.0` advertised `read-only` but sent `workspaceWrite` and created a direct file with no permission request; 1.7.0 carried the same mapping, while 1.6.2 sent an actual `readOnly` sandbox. The rebuilt installed app on exact 1.6.2 then held direct-file reject, allow-once, and ask-again, plus typed Atlas MCP reject, allow-once, and ask-again with byte-level checks.
+**Prior**: 2026-09-03 "Isolated Codex uses the supported interactive approval policy" stands for `on-request` startup but its assumption that the current adapter preserves the sandbox is narrowed; the three 2026-09-03 Atlas MCP checkpoint and exact-correlation records stand.
+**Decision**: launch Codex with exact `@agentclientprotocol/codex-acp@1.6.2`, force `INITIAL_AGENT_MODE=read-only` at process start and `session/set_mode(read-only)` before readiness, expose no writable mode, and make the registry check fail when the separately recorded reviewed upstream identity moves. Codex remains chat-eligible only while this exact installed permission matrix passes; a newer package earns adoption through the matrix, not recency.
+**Dissent**: pinning an older adapter can defer upstream fixes and protocol improvements; it loses because the current package violated the product's write boundary, while the registry drift gate keeps the exception visible and forces a deliberate remeasurement on every upstream move.
+**Falsifier**: if any direct or Atlas write changes bytes before approval, rejection changes mtime or hash, `allow_once` carries into another request, the mode can become writable, the registry gate misses an upstream move, or 1.6.2 becomes unavailable, remove Codex from `CHAT_ELIGIBLE` until a version passes the full installed matrix.
+**Owner**: stark
+
+## 2026-09-03 — Atlas marks its write elicitation for adapter-owned exact correlation
+
+**Why**: the first installed replay after exact client correlation still showed the standalone outside-folder card: Atlas's message-only elicitation carried no approval metadata, so pinned `codex-acp` 1.8.0 did not connect it to the MCP call it had already announced. Its source and the MCP request schema show a narrower bridge: `codex_approval_kind: mcp_tool_call` makes the adapter require exactly one pending call for the thread and server, then forward that call's real identifier.
+**Prior**: 2026-09-03 "Codex MCP approvals require exact structured call correlation" stands and its no-temporal-inference boundary is retained; 2026-09-03 "The Atlas write checkpoint uses a message-only permission request" stands.
+**Decision**: add only the namespaced `_meta.codex_approval_kind = "mcp_tool_call"` compatibility hint to Atlas's message-only write elicitation. The hint grants nothing: the pinned adapter owns pending-call uniqueness, the ACP client still requires exact session and tool-call identity plus structured server/tool/arguments, and the person still chooses once. Other clients may ignore the metadata. Do not add a most-recent or session/server temporal fallback in Atlas.
+**Dissent**: a vendor-private hint couples the generic MCP server to one adapter version and could drift on upgrade; it loses because the adapter is pinned, unknown `_meta` is permitted by MCP, and duplicating its lifecycle with temporal inference would be weaker authorization evidence.
+**Falsifier**: if the installed pinned adapter still emits a standalone id, if ambiguity yields an approvable card, if any supported non-Codex client changes behavior, or if an adapter upgrade removes the marker contract, disable the affected Codex write path rather than infer the latest call.
+**Owner**: stark
+
+## 2026-09-03 — Codex MCP approvals require exact structured call correlation
+
+**Why**: after the message-only checkpoint made Codex `patch_concept` ask successfully, the installed card still called the operation an unknown write outside the folder because `codex-acp` sends `{server, tool, arguments}` on a preceding `session/update` and sends the permission itself with only the same session and tool-call identifiers.
+**Prior**: 2026-09-03 "The Atlas write checkpoint uses a message-only permission request" stands; 2026-08-16 permission-boundary decisions stand on structured policy input and fail-closed unknowns.
+**Decision**: correlate an MCP approval only by its exact `sessionId` and `toolCallId`, accept only the update's structured `{server, tool, arguments}`, normalize it to `mcp__<server>__<tool>`, and consume it once. A matched Atlas write receives typed ontology review; a matched non-Atlas MCP tool receives the ordinary explicit card; an MCP approval with missing, mismatched, stale, or malformed context returns `cancelled` without a card. Clear context on completion, session replacement or cancellation, and client disposal; never infer identity from a dotted title or the most recent call.
+**Dissent**: a generic card for unidentified approvals would preserve broader adapter compatibility; it loses because the person cannot judge an unnamed operation and showing authority without inspectable arguments violates the correction boundary.
+**Falsifier**: if an installed Atlas card names the wrong server, tool, target, or arguments; if rejection changes bytes; if approval changes any file beyond the reviewed concept; or if a legitimate non-Atlas MCP flow cannot provide structured correlation, reopen the fallback and adapter contract.
+**Owner**: stark
+
+## 2026-09-03 — The Atlas write checkpoint uses a message-only permission request
+
+**Why**: an installed Codex ACP `patch_concept` reached the server checkpoint but showed no review card and returned `cancel`; `codex-acp` 1.8.0 forwards a non-empty MCP form only to clients that advertise generic form elicitation, while Atlas intentionally implements the narrower ACP permission request.
+**Prior**: 2026-08-24 "Codex returns to in-app chat" and its server-owned checkpoint stand; 2026-09-03 "Isolated Codex uses the supported interactive approval policy" stands on startup, but its live reject/allow falsifier opened this transport correction.
+**Decision**: keep the checkpoint in `mcp/src/write-consent.mjs` and make its elicitation schema an object with no properties. The human-readable message plus MCP `accept`, `decline`, or `cancel` is the complete binary decision; do not add generic ACP form rendering or move consent into runtime policy.
+**Dissent**: a full form renderer would preserve an optional checkbox for form-capable clients and cover future questions; it loses because this checkpoint collects no form data, `action` already owns consent, and claiming a broader capability adds an unneeded input and validation surface.
+**Falsifier**: if an installed reject changes bytes or mtime, allow does not apply exactly once, a second write does not ask again, or a form-capable client cannot answer the message-only request, remove Codex from chat eligibility until the checkpoint is repaired.
+**Owner**: stark
+
+## 2026-09-03 — Health carries relation census units after the ACP falsifier
+
+**Why**: the source-hidden installed-app replay required `query_ontology(operation=health)`, received 222, and still described it only as compiled edges while calling the map's 141 filtered/displayed connections; the prompt-only safeguard therefore hit its recorded falsifier.
+**Prior**: 2026-09-03 "ACP distinguishes relation declarations from map lines" stands on preserving both counts, but its prompt-only remedy is overturned.
+**Decision**: add an additive typed `relationCensus` to health. It identifies `summary.edges` and `compiledSummary.edges` as unique compiled frontmatter declarations by declaring document, relation key, and target reference; says reciprocal declarations may describe one logical relation; and names the app comparison unit as deduplicated normalized typed edges while explicitly withholding an MCP-side app count. Keep compiler, map, schema, and write behavior unchanged.
+**Dissent**: encoding an app comparison unit in MCP couples two implementations and can drift; it loses because the observed failure is an agent interpreting the MCP count against that app census, the map's existing reciprocal-dedup test and the new MCP fixture pin both sides, and MCP is forbidden from inventing the app number.
+**Falsifier**: if a source-hidden installed ACP replay still conflates the units, or map normalization changes without a failing contract, move census metadata into a shared count envelope instead of adding more prompt prose.
+**Owner**: stark
+
+## 2026-09-03 — Isolated Codex uses the supported interactive approval policy
+
+**Why**: after the installed app downloaded the current adapter, Codex 0.153.0 exited before login or session startup because its isolated config still set the retired `approval_policy = "untrusted"`; the same config overridden to `on-request` passed the login probe.
+**Prior**: 2026-08-16 (8) stands on Codex session isolation; 2026-08-24 "Codex returns to in-app chat" stands on the read-only sandbox plus the server-owned reject/allow checkpoint, not the retired policy spelling.
+**Decision**: replace only the isolated Codex approval value with `on-request`. Keep `sandbox_mode = "read-only"`, `OATLAS_WRITE_CONSENT = "on"`, chat eligibility, schemas, and write semantics unchanged, and pin all three config invariants in one regression test.
+**Dissent**: the official reference still lists `untrusted`, so this may be a version-specific regression and a version-aware adapter could be more durable; it loses because the supported interactive value works in the exact shipped runtime and no second version branch is yet evidenced.
+**Falsifier**: if the managed CLI rejects `on-request`, a direct write escapes the read-only sandbox, or an Atlas write bypasses or cannot pass the server card, remove Codex from in-app chat and add version-aware capability detection before restoring it.
+**Owner**: stark
+
+## 2026-09-03 — ACP distinguishes relation declarations from map lines
+
+**Why**: the installed 1.0.4 app showed 141 relations while a map-only ACP answer called the compiler's 222 declarations relations; a source tally found 81 mirrored declarations collapsing to the same typed line.
+**Prior**: 2026-08-25 (115) stands: MCP instructions route ontology questions through Atlas tools; this record narrows how an ACP answer names two valid censuses.
+**Decision**: keep both counts and their provenance. Add one ACP session instruction requiring `graph.edges` and `internalEdges` to be called frontmatter relation declarations and the map census deduplicated logical lines, with a regression test. Do not change schema, compiler, or map counts.
+**Dissent**: a machine-readable MCP count scope would protect every consumer, not only ACP; it loses because no repeated failure outside ACP justifies broadening the contract yet.
+**Falsifier**: if a source-hidden ACP replay still conflates the counts or another consumer repeats the failure, replace the prompt remedy with explicit machine-readable count fields.
+**Owner**: stark
+
 ## 2026-09-03 — A ladder skip leaves the face's side, the count sentence sits on its arrow, and the lanes go where the arcs are
 
 **Why**: the rebuilt macOS app with a real receipt showed the measured count sentences 40px right of the observation column and cut to "import…", a chosen role's three nested skip arcs launching from the face's foot straight through the adjacent count sentence, and every skip sentence cut while 188px of contract-side lane stayed empty.

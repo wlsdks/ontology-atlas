@@ -34,7 +34,7 @@ function constList(name: string): string[] {
 const CHECK_IDS = constList('CHECK_IDS');
 const REPAIRABLE_IDS = constList('REPAIRABLE_IDS');
 
-/** Launcher ids from Rust's `SESSION_MODE_GATE`; intentionally empty until one is write-safe. */
+/** Launcher ids and exact modes from Rust's measured session-mode table. */
 const RUST_SESSION_MODE_GATE = [
   ...(/const SESSION_MODE_GATE: &\[\(&str, &str\)\] = &\[([^\]]*)\]/
     .exec(DOCTOR_RS)?.[1] ?? '')
@@ -67,7 +67,7 @@ describe('연동 점검 — 검사와 문구', () => {
   it('세션 모드 관문 표가 화면과 Rust 에서 같다', () => {
     expect(DOCTOR_RS).toMatch(/const SESSION_MODE_GATE: &\[\(&str, &str\)\] = &\[[^\]]*\];/);
     expect(Object.fromEntries(RUST_SESSION_MODE_GATE)).toEqual(GATED_SESSION_MODE);
-    expect(RUST_SESSION_MODE_GATE).toEqual([]);
+    expect(RUST_SESSION_MODE_GATE).toEqual([['codex-acp', 'read-only']]);
   });
 
   for (const [tag, messages] of Object.entries(locales)) {

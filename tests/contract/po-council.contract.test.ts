@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -293,7 +294,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
     const parsed = parsePoPilot(source);
     expect(parsed.runs.length, 'the structured pilot inventory must not be empty').toBeGreaterThan(0);
     expect(parsed.updates.length).toBeGreaterThanOrEqual(parsed.runs.length);
-    expect(parsed.metadata.outcome).toBe('pending');
+    expect(parsed.metadata.outcome).toBe('adjust');
 
     expect(() =>
       parsePoPilot(
@@ -304,7 +305,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
       ),
     ).toThrow('unchanged review cannot claim a unique contribution');
     expect(() =>
-      parsePoPilot(source.replace('outcome: pending', 'outcome: pending\noutcome: keep')),
+      parsePoPilot(source.replace('outcome: adjust', 'outcome: adjust\noutcome: keep')),
     ).toThrow('duplicate frontmatter key outcome');
     expect(() =>
       parsePoPilot(
@@ -401,13 +402,14 @@ describe('Atlas PO pilot can decide its sunset', () => {
     ]);
   });
 
-  it('wires the pilot command to the same parser and evaluator', () => {
+  it('wires the closed pilot outcome through the command parser and evaluator', () => {
     const output = execFileSync(process.execPath, [PILOT_CLI, '--json', '--as-of=2026-09-01'], {
       cwd: ROOT,
       encoding: 'utf8',
     });
     expect(JSON.parse(output)).toMatchObject({
-      phase: 'collecting',
+      phase: 'adjusted',
+      outcome: 'adjust',
       metrics: { eligibleDecisions: expect.any(Number) },
     });
   });
@@ -422,22 +424,31 @@ describe('Atlas PO pilot can decide its sunset', () => {
      * safety stop; a due decision prints as DUE and stays the owner's reminder.
      */
     const farPastDeadline = '2027-01-01';
-    const check = spawnSync(
-      process.execPath,
-      [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`],
-      { cwd: ROOT, encoding: 'utf8' },
-    );
-    expect(check.status, check.stderr).toBe(0);
-    expect(check.stderr).toMatch(/DUE:/);
-    expect(check.stderr).not.toMatch(/FAIL:/);
+    const scratch = mkdtempSync(join(tmpdir(), 'ontology-atlas-po-pilot-'));
+    const pendingPilot = join(scratch, 'PO-PILOT.md');
+    writeFileSync(pendingPilot, read(PILOT).replace('outcome: adjust', 'outcome: pending'));
 
-    // The owner-facing full mode keeps failing loudly at the same date.
-    const full = spawnSync(process.execPath, [PILOT_CLI, `--as-of=${farPastDeadline}`], {
-      cwd: ROOT,
-      encoding: 'utf8',
-    });
-    expect(full.status).toBe(1);
-    expect(full.stderr).toMatch(/FAIL:/);
+    try {
+      const check = spawnSync(
+        process.execPath,
+        [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`, `--file=${pendingPilot}`],
+        { cwd: ROOT, encoding: 'utf8' },
+      );
+      expect(check.status, check.stderr).toBe(0);
+      expect(check.stderr).toMatch(/DUE:/);
+      expect(check.stderr).not.toMatch(/FAIL:/);
+
+      // The owner-facing full mode keeps failing loudly at the same date.
+      const full = spawnSync(
+        process.execPath,
+        [PILOT_CLI, `--as-of=${farPastDeadline}`, `--file=${pendingPilot}`],
+        { cwd: ROOT, encoding: 'utf8' },
+      );
+      expect(full.status).toBe(1);
+      expect(full.stderr).toMatch(/FAIL:/);
+    } finally {
+      rmSync(scratch, { recursive: true, force: true });
+    }
   });
 
   it('accepts the YAML forms the shared frontmatter parser accepts', () => {

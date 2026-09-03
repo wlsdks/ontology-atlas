@@ -5,14 +5,15 @@
  *
  * | | Claude | Codex |
  * |---|---|---|
- * | config isolation (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`) | **works** | it is read, but **the approval policy is ignored** |
- * | session mode (`session/set_mode`) | has no read-only | blocks direct files, **not Atlas MCP writes** |
+ * | config isolation (`CLAUDE_CONFIG_DIR` / `CODEX_HOME`) | **works** | read, but per-turn mode is authoritative |
+ * | session mode (`session/set_mode`) | has no read-only | 1.6.2 `read-only` makes direct writes ask; MCP uses the server gate |
  *
- * The codex measurement was the surprise. Putting `approval_policy = "untrusted"` and
- * `sandbox_mode = "workspace-write"` into an isolated `CODEX_HOME` still produced **zero permission
- * requests and files created outside the vault.** Yet the `model` value in the same folder was
- * honoured — so our config **is read, and only the approval policy is overridden by the adapter's
- * session mode.**
+ * The codex measurement was the surprise. codex-acp 1.8.0 called its mode `read-only` while sending
+ * `workspaceWrite`, and an installed session created an inside-vault file with zero requests. The
+ * launch snapshot is deliberately pinned to 1.6.2, whose same mode id sends a real `readOnly`
+ * sandbox. In the installed app a direct write stopped at an ordinary permission card, rejection
+ * preserved absence, one-time approval wrote once, and the next write asked again. We set the mode
+ * both at process start and here before the conversation becomes usable.
  *
  * The earlier conclusion that this made Codex guarded was overturned by installed-app acceptance
  * on 2026-08-24. A self-registered Atlas `add_relation` produced no `session/request_permission`, no review
@@ -25,7 +26,9 @@
  * **no mode is imposed on a tool that was never measured** (imposing one without knowing what that
  * name means on that tool is guesswork).
  */
-export const GATED_SESSION_MODE: Readonly<Record<string, string>> = {};
+export const GATED_SESSION_MODE: Readonly<Record<string, string>> = {
+  'codex-acp': 'read-only',
+};
 
 /**
  * Does this runtime **have a permission gate** — may the screen say so?
@@ -43,11 +46,11 @@ export function isGuardedRuntime(runtimeId: string, isolated: boolean): boolean 
  * Does this runtime's **own configuration** already put a permission request in front
  * of a person for every tool call — including calls into our MCP server?
  *
- * Only config isolation has been measured to do that (Claude: an isolated
+ * Only config isolation has been measured to do that for Atlas MCP itself (Claude: an isolated
  * `CLAUDE_CONFIG_DIR` with an empty allow-list produced the request, and declining it
- * left the file uncreated). A session mode is not the same thing: Codex `read-only`
- * blocked direct file access while an Atlas MCP write went through with no request at
- * all (installed rc.10 acceptance, 2026-08-24).
+ * left the file uncreated). A session mode is not the same thing: Codex can gate direct files while
+ * an Atlas MCP child still mutates disk (installed rc.10 acceptance, 2026-08-24), so its server
+ * checkpoint remains on even though the pinned mode now gates direct writes too.
  *
  * The answer decides **who holds the single checkpoint** for a session. `true` hands it
  * to the runtime and keeps the server gate off, so nobody is asked twice. `false` — the

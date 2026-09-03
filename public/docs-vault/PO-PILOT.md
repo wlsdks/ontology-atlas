@@ -3,7 +3,7 @@ started: 2026-09-01
 decision_target: 20
 decision_deadline: 2026-09-15
 sparse_extension_deadline: 2026-09-22
-outcome: pending
+outcome: adjust
 ---
 
 # Atlas PO routing pilot
@@ -80,6 +80,13 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 17 | 2026-09-03 | Remove Architecture demo chrome and make evidence comparison the workbench | two-way | solo | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 18 | 2026-09-03 | Choose the comparison ladder by height, seat sentences on arrows, and let the person choose the agent task | one-way | review | judge | rollback-cheap+surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | narrowed | po-steward |
 | 19 | 2026-09-03 | Localize role summaries as summary_<role>_<locale> with per-profile parse isolation | one-way | review | explain | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 20 | 2026-09-03 | Distinguish compiled relation declarations from deduplicated map lines in ACP answers | one-way | review | correct | public-contract | truth=affected;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 21 | 2026-09-03 | Keep isolated Codex ACP startable after the untrusted approval policy was retired | one-way | review | correct | public-contract | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 22 | 2026-09-03 | Put relation census units in the health contract after the ACP replay falsified prompt-only guidance | one-way | review | explain | public-contract | truth=affected;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+| 23 | 2026-09-03 | Make the server-owned Atlas write checkpoint reachable through Codex ACP permission fallback | one-way | review | correct | public-contract | truth=affected;transfer=affected;agent-write=affected;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 24 | 2026-09-03 | Correlate sparse Codex MCP approvals to exact structured tool updates | one-way | review | correct | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 2 | narrowed | po-evidence+po-steward |
+| 25 | 2026-09-03 | Mark Atlas write elicitation for adapter-owned exact MCP call correlation | one-way | review | correct | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 2 | redirected | po-evidence+po-steward |
+| 26 | 2026-09-03 | Pin Codex chat to the last adapter that holds the installed direct and Atlas write matrix | one-way | review | correct | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 
 ## Outcome updates
 
@@ -116,3 +123,18 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 17 | 2026-09-03 | pass | yes | no | held |
 | 18 | 2026-09-03 | pending | yes | no | pending |
 | 19 | 2026-09-03 | pending | yes | no | pending |
+| 20 | 2026-09-03 | pending | yes | no | pending |
+| 21 | 2026-09-03 | pending | yes | no | pending |
+| 20 | 2026-09-03 | fail-caught | yes | no | reopened |
+| 22 | 2026-09-03 | pending | yes | no | pending |
+| 22 | 2026-09-03 | pass | yes | no | held |
+| 23 | 2026-09-03 | pending | yes | no | pending |
+| 24 | 2026-09-03 | pending | yes | no | pending |
+| 24 | 2026-09-03 | fail-caught | yes | no | reopened |
+| 25 | 2026-09-03 | pending | yes | no | pending |
+| 23 | 2026-09-03 | pass | yes | no | held |
+| 24 | 2026-09-03 | pass | yes | no | held |
+| 25 | 2026-09-03 | pass | yes | no | held |
+| 26 | 2026-09-03 | pending | yes | no | pending |
+| 26 | 2026-09-03 | fail-caught | yes | no | reopened |
+| 26 | 2026-09-03 | pass | yes | no | held |

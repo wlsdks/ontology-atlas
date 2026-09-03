@@ -58,17 +58,22 @@ test('an accepted confirmation lets the write through', async () => {
   assert.equal(result.allowed, true);
   assert.equal(result.asked, true);
   assert.match(server.asked[0].message, /Link a → b/);
-  // ⚠️ Never required — a bridge with no form to fill would be refused after a person said yes.
-  assert.ok(
-    !server.asked[0].requestedSchema.required,
-    'requiring the box makes the gate unpassable through an ACP permission card',
+  assert.deepEqual(
+    server.asked[0]._meta,
+    { codex_approval_kind: 'mcp_tool_call' },
+    'codex-acp must receive the hint that makes it forward the exact pending MCP call id',
+  );
+  assert.deepEqual(
+    server.asked[0].requestedSchema,
+    { type: 'object', properties: {} },
+    'a message-only form is the exact shape codex-acp can forward to session/request_permission',
   );
 });
 
 test('a permission card with no form content is still a yes', async () => {
   /*
    * Installed acceptance, 2026-08-24. `codex-acp` maps this request onto ACP
-   * `session/request_permission`; the app draws its ordinary permission card and 「allow once」
+   * `session/request_permission`; the app draws its permission card and 「allow once」
    * returns `action: 'accept'` with **no content**. While the box was required, that was read as a
    * refusal and the write was denied twice after the owner had approved it. Codex's own words:
    * *"the permission response was invalid because it lacked the required `confirm` field."*
@@ -109,7 +114,7 @@ test('cancelling is not consent', async () => {
   assert.equal(result.reason, CONSENT_DECLINED);
 });
 
-test('accept without the confirm box ticked is not consent', async () => {
+test('a defensive confirm:false from an older form client is not consent', async () => {
   const server = fakeServer({
     capabilities: { elicitation: {} },
     reply: { action: 'accept', content: { confirm: false } },

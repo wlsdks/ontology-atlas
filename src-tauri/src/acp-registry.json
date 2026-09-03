@@ -30,7 +30,7 @@
       "cli": "codex",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/codex-acp@1.8.0",
+        "package": "@agentclientprotocol/codex-acp@1.6.2",
         "args": []
       }
     },

@@ -4277,6 +4277,25 @@ export function createOntologyEngine(artifact, options = {}) {
       status,
       graphHash: graph.graphHash,
       maxMtime: graph.maxMtime,
+      relationCensus: {
+        compilerDeclarations: {
+          count: graph.edges,
+          reportedAt: ['summary.edges', 'compiledSummary.edges'],
+          unit: 'compiled_frontmatter_relation_declarations',
+          identity: ['declaring_document', 'relation_key', 'target_reference'],
+          logicalRelationDeduplicated: false,
+          reciprocalDeclarationsMayDescribeOneLogicalRelation: true,
+        },
+        canonicalMapCensus: {
+          countAvailable: false,
+          count: null,
+          unit: 'deduplicated_normalized_typed_edges',
+          scope: 'loaded_app_ontology',
+          filterSensitive: false,
+          reason:
+            'The MCP process does not run the app derivation or know its loaded UI state, so use the app census for this numeric count.',
+        },
+      },
       summary: {
         nodes: graph.nodes,
         edges: graph.edges,
