@@ -1,5 +1,6 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -293,7 +294,10 @@ describe('Atlas PO pilot can decide its sunset', () => {
     const parsed = parsePoPilot(source);
     expect(parsed.runs.length, 'the structured pilot inventory must not be empty').toBeGreaterThan(0);
     expect(parsed.updates.length).toBeGreaterThanOrEqual(parsed.runs.length);
-    expect(parsed.metadata.outcome).toBe('pending');
+    // The outcome is the owner's word, read from the document rather than pinned here:
+    // the pilot closed as `adjust` at its 20th decision (2026-09-03), and a test that
+    // insisted on `pending` would have frozen the register mid-pilot forever.
+    expect(['pending', 'keep', 'adjust', 'revert']).toContain(parsed.metadata.outcome);
 
     expect(() =>
       parsePoPilot(
@@ -304,7 +308,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
       ),
     ).toThrow('unchanged review cannot claim a unique contribution');
     expect(() =>
-      parsePoPilot(source.replace('outcome: pending', 'outcome: pending\noutcome: keep')),
+      parsePoPilot(source.replace(/^(outcome: .*)$/m, '$1\noutcome: keep')),
     ).toThrow('duplicate frontmatter key outcome');
     expect(() =>
       parsePoPilot(
@@ -406,9 +410,12 @@ describe('Atlas PO pilot can decide its sunset', () => {
       cwd: ROOT,
       encoding: 'utf8',
     });
+    // The command must report what the library reports for the same document and
+    // date, whatever phase the live register is in.
+    const expected = evaluatePoPilot(parsePoPilot(read(PILOT)), '2026-09-01');
     expect(JSON.parse(output)).toMatchObject({
-      phase: 'collecting',
-      metrics: { eligibleDecisions: expect.any(Number) },
+      phase: expected.phase,
+      metrics: { eligibleDecisions: expected.metrics.eligibleDecisions },
     });
   });
 
@@ -422,9 +429,16 @@ describe('Atlas PO pilot can decide its sunset', () => {
      * safety stop; a due decision prints as DUE and stays the owner's reminder.
      */
     const farPastDeadline = '2027-01-01';
+    // The live register has an outcome now, so the calendar-only case is exercised on a
+    // copy of it with the outcome set back to pending.
+    const pendingRegister = join(tmpdir(), 'po-pilot-pending.contract.md');
+    writeFileSync(
+      pendingRegister,
+      read(PILOT).replace(/^outcome: .*$/m, 'outcome: pending'),
+    );
     const check = spawnSync(
       process.execPath,
-      [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`],
+      [PILOT_CLI, '--check', `--as-of=${farPastDeadline}`, `--file=${pendingRegister}`],
       { cwd: ROOT, encoding: 'utf8' },
     );
     expect(check.status, check.stderr).toBe(0);
@@ -432,7 +446,7 @@ describe('Atlas PO pilot can decide its sunset', () => {
     expect(check.stderr).not.toMatch(/FAIL:/);
 
     // The owner-facing full mode keeps failing loudly at the same date.
-    const full = spawnSync(process.execPath, [PILOT_CLI, `--as-of=${farPastDeadline}`], {
+    const full = spawnSync(process.execPath, [PILOT_CLI, `--as-of=${farPastDeadline}`, `--file=${pendingRegister}`], {
       cwd: ROOT,
       encoding: 'utf8',
     });
