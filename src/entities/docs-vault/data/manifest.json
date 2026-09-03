@@ -888,7 +888,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-03 (chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser with a find-improvements task; earlier on 2026-08-31 documented the six-tab Insights contract ",
-      "wordCount": 26463,
+      "wordCount": 26482,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "slug",
@@ -2463,7 +2463,7 @@
       },
       "headings": [],
       "excerpt": "The human-readable implementation-architecture workbench at /architecture. It is a comparison surface, not the ontology map: a solid canvas keeps each reviewed role beside source observation and names the delta between them. Whenever the paired rows fit the canvas height at rest, a downward chain uses one repeated 280p",
-      "wordCount": 1137,
+      "wordCount": 1151,
       "updatedAt": "2026-09-03",
       "linksOut": []
     },

@@ -79,6 +79,9 @@ const SKIP_LANE_STEP = 14;
  * has less room than its first (owner, 2026-08-30: the Adapters pill's caption crossed its caps).
  */
 const SUMMARY_LINES = 2;
+/* The across split face is narrower than the ladder's; without the per-face lane label it has
+   room for a third caption line, which is what the longest reviewed sentences need at 200px. */
+const SUMMARY_LINES_ACROSS = 3;
 /** One caption line to the next, in SVG units: the `--leading-caption` pair of `text-caption`. */
 const CAPTION_LEADING = 14;
 
@@ -511,7 +514,7 @@ export function ArchitectureSketch({
       ? BOX_H
     : axis === 'down'
       ? 64
-      : hasLedger
+      : hasLedger || splitsEvidence
         ? BOX_H_LEDGER
         : BOX_H;
   /* The tight row pays for its height with the sentence's second line, not with its face width:
@@ -521,7 +524,11 @@ export function ArchitectureSketch({
      and on the tight ladder it closed the gap its count sentence needs. */
   const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
   const summaryLineCount =
-    usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder) ? 1 : SUMMARY_LINES;
+    usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder)
+      ? 1
+      : axis === 'across' && splitsEvidence
+        ? SUMMARY_LINES_ACROSS
+        : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
      the reserved width first. This follows the animated grid on every ResizeObserver frame, so the
      chain neither turns nor loses its last role behind a 380px dock at the 1512px app width. */
@@ -1232,6 +1239,32 @@ export function ArchitectureSketch({
           </marker>
         </defs>
 
+        {axis === 'across' && splitsEvidence ? (
+          /* One heading per row, not one per face: seven repeats of the same two labels read as
+             fourteen labels (1920×700, 2026-09-03). Each sits above its row's first face. */
+          <g
+            className="architecture-role-reveal"
+            aria-hidden
+            data-testid="architecture-across-lane-headings"
+          >
+            <text
+              x={PAD_X}
+              y={padY + layoutLeadRoom - 6}
+              textAnchor="start"
+              className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+            >
+              {contractTrackLabel}
+            </text>
+            <text
+              x={PAD_X}
+              y={padY + layoutLeadRoom + boxH + observationOffset - boxH - 6}
+              textAnchor="start"
+              className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
+            >
+              {observationTrackLabel}
+            </text>
+          </g>
+        ) : null}
         {usesPairedDown ? (
           <g
             className="architecture-role-reveal"
@@ -1499,9 +1532,7 @@ export function ArchitectureSketch({
            * because its budget was read off those positions and moving it would change the room.
            */
           const nameY = splitsEvidence
-            ? usesPairedDown
-              ? at.y + 23
-              : at.y + 35
+            ? at.y + 23
             : axis === 'down'
               ? at.y + 18
               : ledger
@@ -1510,9 +1541,7 @@ export function ArchitectureSketch({
                 ? at.y + boxH / 2 - 4
                 : at.y + boxH / 2 - 4 - ((SUMMARY_LINES - 1) * CAPTION_LEADING) / 2;
           const countsY = splitsEvidence
-            ? usesPairedDown
-              ? at.y + 43
-              : at.y + 52
+            ? at.y + 43
             : axis === 'down'
               ? at.y + 34
               : nameY + 15;
@@ -1685,16 +1714,6 @@ export function ArchitectureSketch({
                   >
                     {String(boxIndex + 1).padStart(2, '0')}
                   </text>
-                  {axis === 'across' ? (
-                    <text
-                      x={at.x + contractBoxW / 2}
-                      y={at.y + 17}
-                      textAnchor="middle"
-                      className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
-                    >
-                      {contractTrackLabel}
-                    </text>
-                  ) : null}
                 </>
               ) : null}
               <text
@@ -1889,16 +1908,6 @@ export function ArchitectureSketch({
                       lane="observation"
                     />
                   ) : null}
-                  {usesPairedDown ? null : (
-                    <text
-                      x={observedAt.x + observationBoxW / 2}
-                      y={observedAt.y + 15}
-                      textAnchor="middle"
-                      className="fill-[color:var(--color-text-quaternary)] text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-label)]"
-                    >
-                      {observationTrackLabel}
-                    </text>
-                  )}
                   <text
                     x={observedAt.x + observationBoxW / 2}
                     y={
