@@ -2,6 +2,14 @@ const PROFILE_CONTRACT = 'architecture-profile/v1';
 const BRIEF_CONTRACT = 'architectureBrief:v1';
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
+/*
+ * A locale is recognised by shape, never by the application's list of locales. A profile is a
+ * vault file that outlives whichever locales a build happens to ship, so `summary_views_fr` has to
+ * parse the same way in a build with no French screen: as a French sentence nobody asks for yet,
+ * not as a role called `views_fr`. Two letters is the whole rule, which is why `summary_views_kor`
+ * falls back to the role-id reading and is refused as an unknown role. Mirrors the web parser.
+ */
+const SUMMARY_LOCALE = /^[a-z]{2}$/;
 const MATCHED_FILE_SAMPLE_LIMIT = 20;
 const VIOLATION_SAMPLE_LIMIT = 50;
 const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'];
@@ -116,15 +124,25 @@ export function parseArchitectureProfile(frontmatter) {
   /* `summary_<id>`, not `role_summary_<id>`: every `role_*` key is a path group, so the second
      prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
      shape `allow_<id>` already uses. Mirrors the web parser under the cross-surface contract. */
-  const roleSummaries = new Map(
-    Object.entries(frontmatter)
-      .filter(([key]) => key.startsWith('summary_'))
-      .map(([key, value]) => {
-        const id = key.slice('summary_'.length);
-        if (!ROLE_ID.test(id)) throw new Error(`Invalid architecture role id: ${id}.`);
-        return [id, nonBlank(value, key)];
-      }),
-  );
+  const roleSummaries = new Map();
+  /* Role id to locale to sentence, in the order the file wrote them, so both parsers report the
+     same first problem when a file carries several. */
+  const localizedSummaries = new Map();
+  for (const [key, value] of Object.entries(frontmatter)) {
+    if (!key.startsWith('summary_')) continue;
+    const rest = key.slice('summary_'.length);
+    const split = rest.lastIndexOf('_');
+    const locale = split > 0 ? rest.slice(split + 1) : '';
+    const id = SUMMARY_LOCALE.test(locale) ? rest.slice(0, split) : rest;
+    if (!ROLE_ID.test(id)) throw new Error(`Invalid architecture role id: ${id}.`);
+    if (id === rest) {
+      roleSummaries.set(id, nonBlank(value, key));
+      continue;
+    }
+    const byLocale = localizedSummaries.get(id) ?? new Map();
+    byLocale.set(locale, nonBlank(value, key));
+    localizedSummaries.set(id, byLocale);
+  }
   const roleEntries = Object.entries(frontmatter)
     .filter(([key]) => key.startsWith('role_') && key !== 'role_order')
     .map(([key, value]) => {
@@ -143,6 +161,23 @@ export function parseArchitectureProfile(frontmatter) {
   for (const summaryId of roleSummaries.keys()) {
     if (!rolePaths.has(summaryId)) {
       throw new Error(`summary_${summaryId} describes a role that does not exist.`);
+    }
+  }
+  /*
+   * A translation of nothing is refused too. `summary_views_ko` without `summary_views` would put
+   * a sentence on the Korean screen that the English screen, every agent brief and the CLI cannot
+   * show, so the same role would be explained on one surface and silent on the others. The
+   * canonical sentence is the one a person reviewed; a locale line may only restate it.
+   */
+  for (const [summaryId, byLocale] of localizedSummaries) {
+    for (const locale of byLocale.keys()) {
+      const key = `summary_${summaryId}_${locale}`;
+      if (!rolePaths.has(summaryId)) {
+        throw new Error(`${key} describes a role that does not exist.`);
+      }
+      if (!roleSummaries.has(summaryId)) {
+        throw new Error(`${key} translates summary_${summaryId}, which this profile does not declare.`);
+      }
     }
   }
 
@@ -175,9 +210,12 @@ export function parseArchitectureProfile(frontmatter) {
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => {
       const summary = roleSummaries.get(id);
+      /* Parsed for parity with the web reader, and deliberately unread here: `buildArchitectureBrief`
+         emits `summary` only, so no agent brief, prompt or CLI line can ever print a translation. */
+      const summaries = Object.fromEntries(localizedSummaries.get(id) ?? []);
       return summary === undefined
-        ? { id, paths: rolePaths.get(id) }
-        : { id, paths: rolePaths.get(id), summary };
+        ? { id, paths: rolePaths.get(id), summaries }
+        : { id, paths: rolePaths.get(id), summary, summaries };
     }),
     dependencyPolicy,
     dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),

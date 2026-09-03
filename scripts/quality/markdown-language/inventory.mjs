@@ -1,5 +1,14 @@
 const HANGUL = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\uac00-\ud7af\ud7b0-\ud7ff]/gu;
 
+/*
+ * Typed locale data in leading frontmatter, the one place Korean is authored rather than written
+ * as contributor prose. `display_ko` names a node in the reader's language; `summary_<role>_<ko>`
+ * does the same for one architecture role, and the locale is matched by shape (two letters) for
+ * the same reason both profile parsers match it that way: a vault file outlives the locale list
+ * this build happens to ship. Anything else carrying Hangul is still counted as a violation.
+ */
+const TYPED_LOCALE_KEY = /^(?:display|summary_[a-z][a-z0-9-]*)_[a-z]{2}\s*:/;
+
 const OPERATIONAL_PATHS = new Set([
   'AGENTS.md',
   'CLAUDE.md',
@@ -113,7 +122,7 @@ export function auditMarkdownEntries(entries) {
 
       const matches = [...line.matchAll(HANGUL)];
       if (matches.length === 0) continue;
-      if (inLeadingFrontmatter && /^display_ko\s*:/.test(line)) {
+      if (inLeadingFrontmatter && TYPED_LOCALE_KEY.test(line)) {
         result.allowedLocaleLines += 1;
         continue;
       }

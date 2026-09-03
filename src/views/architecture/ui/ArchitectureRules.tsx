@@ -29,8 +29,6 @@ export function ArchitectureRules({
   legendTraffic,
   legendSkipHint,
   legendViolated,
-  legendShapeEnd,
-  legendShapeWork,
   directionLabel,
   hiddenAtWorkbench = false,
 }: {
@@ -41,8 +39,6 @@ export function ArchitectureRules({
   legendTraffic: string;
   legendSkipHint: string;
   legendViolated: string;
-  legendShapeEnd: string;
-  legendShapeWork: string;
   directionLabel: string;
   /** True while the dock is answering a role: the rules are one button away, not stacked under it. */
   hiddenAtWorkbench?: boolean;
@@ -70,35 +66,6 @@ export function ArchitectureRules({
           the rule this broke — every legend row names a mark that is on screen, and every mark on
           screen states itself somewhere readable.
         */}
-        <span className="flex items-center gap-1.5">
-          <svg width={22} height={12} aria-hidden>
-            <rect
-              x={1}
-              y={1}
-              width={20}
-              height={10}
-              rx={5}
-              fill="none"
-              stroke="var(--color-architecture-sketch-ink)"
-              strokeWidth={1.2}
-            />
-          </svg>
-          {legendShapeEnd}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <svg width={22} height={12} aria-hidden>
-            <rect
-              x={1}
-              y={1}
-              width={20}
-              height={10}
-              fill="none"
-              stroke="var(--color-architecture-sketch-ink)"
-              strokeWidth={1.2}
-            />
-          </svg>
-          {legendShapeWork}
-        </span>
         {graph.edgeSource === 'permitted' || graph.edgeSource === 'both' ? (
           <span className="flex items-center gap-1.5">
             <svg width={18} height={6} aria-hidden>

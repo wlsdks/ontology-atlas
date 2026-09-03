@@ -243,11 +243,74 @@ describe('the evidence split plane', () => {
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+      expect(graph).toHaveAttribute('data-ladder-density', 'roomy');
       /* Every adjacent rule sentence is drawn beside its arrow, none held or cut. */
       const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
       expect(sentences).toHaveLength(6);
       expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(true);
       expect(sentences.every((node) => node.getAttribute('text-anchor') === 'start')).toBe(true);
+    } finally {
+      window.matchMedia = originalMatchMedia;
+      for (const [key, descriptor] of Object.entries(originals)) {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
+
+  /*
+   * ⚠️ Measured 2026-09-03 at 1280x800, the widest laptop the product ships to: the canvas column
+   * is 638px and the roomy rows ask for 684, so the seventh role was cut and the canvas counted it
+   * as hidden. Fixed-readable faces and connector space yield with the canvas before any role is
+   * hidden, so the same 280/72/240 comparison draws on tighter rows instead.
+   */
+  it('tightens the ladder rows rather than hiding a role when the canvas is short', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('1280'),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
+    const geometry: Record<string, number> = {
+      clientWidth: 1792,
+      scrollWidth: 1792,
+      clientHeight: 600,
+      scrollHeight: 600,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ]),
+    );
+    try {
+      for (const [key, value] of Object.entries(geometry)) {
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get: () => value,
+        });
+      }
+      draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+      const graph = screen.getByTestId('architecture-graph');
+      expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+      expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+      expect(graph).toHaveAttribute('data-ladder-density', 'tight');
+      /* 4 + 20 + 7x58 + 6x22 + 4: one summary line per role, and the gap the sentence needs. */
+      expect(graph).toHaveAttribute('height', '566');
+      const boxes = screen.getAllByTestId(/^architecture-graph-box-/);
+      expect(boxes).toHaveLength(7);
+      expect(boxes.every((box) => box.getAttribute('data-box-height') === '58')).toBe(true);
+      /* The rows are tighter, and every rule still says its sentence beside its own arrow. */
+      const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
+      expect(sentences).toHaveLength(6);
+      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(
+        true,
+      );
     } finally {
       window.matchMedia = originalMatchMedia;
       for (const [key, descriptor] of Object.entries(originals)) {

@@ -509,3 +509,53 @@ test('every drawn stroke says its sentence, and no sentence touches anything', a
   /* Every role in a hexagonal profile touches every other, so nothing recedes here; the hover
      transition is measured on the seven-role profile in architecture-role-ledger.spec.ts. */
 });
+
+
+/*
+ * ⚠️ **Fixed-readable faces and connector space yield with the canvas before any role is hidden.**
+ * Measured 2026-09-03 at 1280x800, the widest laptop this product ships to: the canvas column is
+ * 638px tall while the roomy ladder asks for 684, so the seventh role fell past the fold and the
+ * canvas answered "1 more below". The tight density draws the same 280/72/240 comparison on 58px
+ * rows, and the whole role set stays inside the scroller.
+ */
+test('the ladder tightens its rows rather than hiding the seventh role at 1280x800', async ({
+  page,
+}) => {
+  await seedFirstRunSeen(page);
+  await useDogfoodSample(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/ko/architecture/?guides=off', { waitUntil: 'domcontentloaded' });
+  const graph = page.getByTestId('architecture-graph');
+  await expect(graph).toBeVisible({ timeout: 60_000 });
+  await page.evaluate(() => document.fonts.ready);
+  /* ResizeObserver measures the canvas, React commits the resulting SVG on the next frame. */
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+
+  await expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+  await expect(graph).toHaveAttribute('data-ladder-density', 'tight');
+  await expect(page.getByTestId('architecture-canvas-hidden-below')).toHaveCount(0);
+
+  const outside = await page.evaluate(() => {
+    const scroller = document
+      .querySelector('[data-testid="architecture-graph"]')!
+      .parentElement!.getBoundingClientRect();
+    const out: string[] = [];
+    for (const box of document.querySelectorAll('[data-testid^="architecture-graph-box-"]')) {
+      const at = box.getBoundingClientRect();
+      if (
+        at.left < scroller.left - 1 ||
+        at.right > scroller.right + 1 ||
+        at.top < scroller.top - 1 ||
+        at.bottom > scroller.bottom + 1
+      )
+        out.push(`${box.getAttribute('data-testid')} is out of view`);
+    }
+    return out;
+  });
+  expect(outside, outside.join('\n')).toEqual([]);
+});

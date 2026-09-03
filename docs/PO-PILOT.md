@@ -79,6 +79,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 16 | 2026-09-03 | The download hero rises inside half a second, hands off by view angle, and shows a phone three tiers | two-way | solo | orient | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 17 | 2026-09-03 | Remove Architecture demo chrome and make evidence comparison the workbench | two-way | solo | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 18 | 2026-09-03 | Choose the comparison ladder by height, seat sentences on arrows, and let the person choose the agent task | one-way | review | judge | rollback-cheap+surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | narrowed | po-steward |
+| 19 | 2026-09-03 | Localize role summaries as summary_<role>_<locale> with per-profile parse isolation | one-way | review | explain | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 
 ## Outcome updates
 
@@ -114,3 +115,4 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 17 | 2026-09-03 | pending | yes | no | pending |
 | 17 | 2026-09-03 | pass | yes | no | held |
 | 18 | 2026-09-03 | pending | yes | no | pending |
+| 19 | 2026-09-03 | pending | yes | no | pending |

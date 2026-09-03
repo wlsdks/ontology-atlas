@@ -54,6 +54,33 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — Every role is one rounded face, and a caption wraps by the width its script needs
+
+**Why**: the owner pointed at the first Korean role sentences running past both outlines of a 280px face, and at the two face shapes (a stadium at each end of the chain, a rectangle between) asking what the difference meant. The caption budget counted characters at a 4.8px Latin glyph while a Hangul syllable measures about 8px; the shapes were ISO 5807 terminators and processes, explained only in the rules dock legend.
+**Prior**: 2026-08-28 (a role may say what it is for) stands; 2026-08-30 (a role box states what its own edges did) stands; the derived terminator/process shape assignment from graph-layout is retired for drawing, kept in the model.
+**Decision**: role captions wrap by estimated glyph width (Hangul and Han 8px, Latin 4.8px) against the straight room of the face, and only the last line is ellipsized; every role face is the same rounded rectangle, the two legend rows for shapes are removed, and position alone says where a chain begins and ends.
+**Dissent**: the flowchart standard's terminator tells a reader where a process starts without a legend; it lost because two owners read the shapes as an unexplained difference and the chain's order already carries that fact.
+**Falsifier**: a caption crosses a face outline in either locale at 1512 or 1920, or a reader asks which role the chain starts from once the stadiums are gone.
+**Owner**: stark
+
+## 2026-09-03 — A role's sentence may be written in the reader's language, and one bad profile stops taking the route down
+
+**Why**: the seven sentences on /architecture are the only place the screen says what a layer is for, and a Korean reader got the role names in Korean and the answer in English; separately, `deriveArchitectureProfiles` throws for the whole vault from a render-phase memo, so one unknown key in one file replaced every profile in the folder with an error boundary that named neither the file nor the key.
+**Prior**: 2026-08-28 (a role may say what it is for) stands and is extended; 2026-08-26 (architecture is a separate reviewed contract) stands and keeps the reviewed sentence the fact.
+**Decision**: `architecture-profile/v1` gains optional `summary_<role>_<locale>`, matched by locale shape rather than the app's locale list. `summary_<role>` stays canonical: it is what `roles[].summary`, every agent prompt, `inspect_architecture` and the CLI print, and a locale line is refused without it, for a role that does not exist, or empty. Only the web workbench reads the locale map, falling back to the canonical sentence per role. `deriveArchitectureProfilesReport` skips an unreadable document and returns it as a named problem the screen prints; MCP and CLI still throw, so an agent never mistakes a half-scanned vault for a whole one.
+**Dissent**: the evidence seat argued parse isolation is separate scope riding a localization decision; it lost because this change is the first to make a rejected key likely in this exact file, and shipping the key without the isolation ships the blank screen with it. The steward held that the version floor is overweighted, since a 1.0.4 reader can simply delete the line; it lost because the failure is the whole screen, not the line.
+**Falsifier**: a Korean reader with all seven Korean sentences still cannot say what a layer is for, or no second profile carries any summary within two sessions.
+**Owner**: stark
+
+## 2026-09-03 — The comparison ladder tightens its rows before it hides a role
+
+**Why**: at 1280×800, the widest laptop this product ships to, the canvas column measured 638px while the roomy ladder asks for 684, so the seventh role fell past the fold and the screen answered "1 more below" while the drawing itself had room to give.
+**Prior**: 2026-09-03 (the ladder is chosen by height, sentences sit on arrows) stands; this adds a second density under its rule and leaves the roomy 24px rows and the width gate untouched.
+**Decision**: where the measured canvas cannot hold the roomy rows but can hold tighter ones, the ladder draws the same 280/72/240 faces on 58px rows with one summary line each, a 22px row gap and 4px of pad. 22 is the narrowest gap a 12px sentence rectangle clears with the 4px collision pad on both sides, so every rule still says its sentence beside its arrow; at 20 the sentence is dropped as a collision. Below xl nothing is measured and nothing changes, and the hidden-count row stays the fallback when even the tight rows do not fit.
+**Dissent**: narrowing the faces would have kept both summary lines; it lost because the fixed faces carry the side-by-side comparison this screen exists for, and a sentence's second line is worth less than a whole role.
+**Falsifier**: a 1280×800 laptop still counts a role as hidden, a rule sentence is held or collides on the tight rows, or a reader cannot say what a role is for from its single summary line.
+**Owner**: stark
+
 ## 2026-09-03 — Receded ink stays at or above 3:1, the ladder takes a tablet canvas, and the chosen task stays on the button
 
 **Why**: the re-audit of the same day measured receded sentences at 2.6:1 and receded indices at 2.8:1 with the 0.65/0.55 opacities; a 1112px tablet gave the canvas 984px, the ladder asked for 1008 and fell back to 148px combined boxes with every summary and sentence cut; and two source-hidden walkers (a developer, a product manager) could not tell afterwards which agent task they had copied, one saw the confirmation vanish before reading it, and both named dependency, import and type-only as words the screen never explained.

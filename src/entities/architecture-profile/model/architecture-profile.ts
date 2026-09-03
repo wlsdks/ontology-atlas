@@ -4,6 +4,14 @@ const ARCHITECTURE_PROFILE_CONTRACT = 'architecture-profile/v1' as const;
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ROLE_ID = /^[a-z][a-z0-9-]*$/;
+/*
+ * A locale is recognised by shape, never by the application's list of locales. A profile is a
+ * vault file that outlives whichever locales this build happens to ship, so `summary_views_fr`
+ * has to parse the same way in a build that has no French screen: as a French sentence nobody
+ * asks for yet, not as a role called `views_fr`. Two letters is the whole rule, which is why
+ * `summary_views_kor` falls back to the role-id reading and is refused as an unknown role.
+ */
+const SUMMARY_LOCALE = /^[a-z]{2}$/;
 const DEPENDENCY_USAGE_VALUES = ['value', 'type_only'] as const;
 
 interface ArchitecturePattern {
@@ -25,6 +33,16 @@ interface ArchitectureRole {
    * before this field existed stays valid and simply says nothing.
    */
   summary?: string;
+  /**
+   * The same sentence in other languages, keyed by the locale in `summary_<id>_<locale>`.
+   *
+   * Separate from `summary` on purpose. `summary` stays the canonical sentence a person reviewed
+   * and the only one an agent brief, a prompt, or the CLI ever prints, so a translation can never
+   * become the fact a machine reasons from. Only the web workbench reads this map, and only to
+   * choose what the reader in front of it can read; where the map has no entry for the active
+   * locale the canonical sentence is shown, never a blank.
+   */
+  summaries: Record<string, string>;
 }
 
 export interface ArchitectureProfile {
@@ -157,11 +175,23 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
      prefix would parse as a role called `summary_views`. Aspect first, role id last — the same
      shape `allow_<id>` already uses. */
   const roleSummaries = new Map<string, string>();
+  /* Role id to locale to sentence, in the order the file wrote them, so both parsers report the
+     same first problem when a file carries several. */
+  const localizedSummaries = new Map<string, Map<string, string>>();
   for (const [key, value] of Object.entries(frontmatter)) {
     if (key.startsWith('summary_')) {
-      const summaryId = key.slice('summary_'.length);
+      const rest = key.slice('summary_'.length);
+      const split = rest.lastIndexOf('_');
+      const locale = split > 0 ? rest.slice(split + 1) : '';
+      const summaryId = SUMMARY_LOCALE.test(locale) ? rest.slice(0, split) : rest;
       if (!ROLE_ID.test(summaryId)) throw new Error(`Invalid architecture role id: ${summaryId}.`);
-      roleSummaries.set(summaryId, nonBlank(value, key));
+      if (summaryId === rest) {
+        roleSummaries.set(summaryId, nonBlank(value, key));
+      } else {
+        const byLocale = localizedSummaries.get(summaryId) ?? new Map<string, string>();
+        byLocale.set(locale, nonBlank(value, key));
+        localizedSummaries.set(summaryId, byLocale);
+      }
       continue;
     }
     if (!key.startsWith('role_') || key === 'role_order') continue;
@@ -180,6 +210,23 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
   for (const summaryId of roleSummaries.keys()) {
     if (!rolePaths.has(summaryId)) {
       throw new Error(`summary_${summaryId} describes a role that does not exist.`);
+    }
+  }
+  /*
+   * A translation of nothing is refused too. `summary_views_ko` without `summary_views` would put
+   * a sentence on the Korean screen that the English screen, every agent brief and the CLI cannot
+   * show, so the same role would be explained on one surface and silent on the others. The
+   * canonical sentence is the one a person reviewed; a locale line may only restate it.
+   */
+  for (const [summaryId, byLocale] of localizedSummaries) {
+    for (const locale of byLocale.keys()) {
+      const key = `summary_${summaryId}_${locale}`;
+      if (!rolePaths.has(summaryId)) {
+        throw new Error(`${key} describes a role that does not exist.`);
+      }
+      if (!roleSummaries.has(summaryId)) {
+        throw new Error(`${key} translates summary_${summaryId}, which this profile does not declare.`);
+      }
     }
   }
 
@@ -212,9 +259,10 @@ export function parseArchitectureProfile(frontmatter: Record<string, unknown>): 
       : stringArray(frontmatter.exclude_paths, 'exclude_paths'),
     roles: roleOrder.map((id) => {
       const summary = roleSummaries.get(id);
+      const summaries = Object.fromEntries(localizedSummaries.get(id) ?? []);
       return summary === undefined
-        ? { id, paths: rolePaths.get(id)! }
-        : { id, paths: rolePaths.get(id)!, summary };
+        ? { id, paths: rolePaths.get(id)!, summaries }
+        : { id, paths: rolePaths.get(id)!, summary, summaries };
     }),
     dependencyPolicy: rawPolicy,
     dependencyUsages: parseDependencyUsages(frontmatter.dependency_usages),
@@ -247,28 +295,71 @@ function profileFingerprint(frontmatter: Record<string, unknown>): string {
   );
 }
 
-export function deriveArchitectureProfiles(
+/** One document the vault carries as an architecture profile and this surface could not read. */
+export interface ArchitectureProfileProblem {
+  documentSlug: string;
+  message: string;
+}
+
+/**
+ * ⚠️ **One unreadable document must not take the route down with it.**
+ *
+ * Measured 2026-09-03: `deriveArchitectureProfiles` threw for the whole vault as soon as any one
+ * document failed to parse, and `/architecture` calls it from a render-phase `useMemo`, so a
+ * single unknown key in a single profile replaced every profile in the folder with an error
+ * boundary. A person who added one line to one file lost the screen that would have told them
+ * which line. The parse stays exactly as strict per document — a bad profile is still not shown —
+ * but the failure is now a named report beside the profiles that did load.
+ *
+ * The duplicate-slug collision reports the same way and carries the wording `mcp` throws, because
+ * the question a person has ("which two documents?") is the same on both surfaces. The MCP and
+ * CLI keep throwing: an agent reading a half-scanned vault must not mistake it for a whole one,
+ * while a person looking at the screen can see both the notice and what did load.
+ */
+export function deriveArchitectureProfilesReport(
   docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
-): ArchitectureProfile[] {
+): { profiles: ArchitectureProfile[]; problems: ArchitectureProfileProblem[] } {
   const profiles: ArchitectureProfile[] = [];
+  const problems: ArchitectureProfileProblem[] = [];
   const seen = new Map<string, { uid: string; fingerprint: string; documentSlug: string }>();
   for (const doc of docs) {
     if (doc.frontmatter.architecture_schema !== ARCHITECTURE_PROFILE_CONTRACT) continue;
-    const profile = parseArchitectureProfile(doc.frontmatter);
+    let profile: ArchitectureProfile;
+    try {
+      profile = parseArchitectureProfile(doc.frontmatter);
+    } catch (error) {
+      problems.push({
+        documentSlug: doc.slug,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      continue;
+    }
     const fingerprint = profileFingerprint(doc.frontmatter);
     const previous = seen.get(profile.slug);
     if (previous) {
       if (previous.uid === profile.uid && previous.fingerprint === fingerprint) continue;
-      throw new Error(
-        `Duplicate architecture profile slug: ${profile.slug}. ` +
+      problems.push({
+        documentSlug: doc.slug,
+        message:
+          `Duplicate architecture profile slug: ${profile.slug}. ` +
           `${previous.documentSlug} and ${doc.slug} both declare it with different contents. ` +
           'Give one of them another profile_slug, or narrow the scan so only one is read.',
-      );
+      });
+      continue;
     }
     seen.set(profile.slug, { uid: profile.uid, fingerprint, documentSlug: doc.slug });
     profiles.push({ ...profile, documentSlug: doc.slug });
   }
-  return profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en'));
+  return {
+    profiles: profiles.sort((left, right) => left.slug.localeCompare(right.slug, 'en')),
+    problems,
+  };
+}
+
+export function deriveArchitectureProfiles(
+  docs: ReadonlyArray<{ slug: string; frontmatter: Record<string, unknown> }>,
+): ArchitectureProfile[] {
+  return deriveArchitectureProfilesReport(docs).profiles;
 }
 
 export function buildArchitectureAgentPrompt(

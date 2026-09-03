@@ -19,8 +19,6 @@ function draw() {
       legendTraffic="measured imports"
       legendSkipHint="a crossing that skips a role"
       legendViolated="a crossing the receipt counted as a violation"
-      legendShapeEnd="a role at either end"
-      legendShapeWork="a role in between"
       directionLabel="an arrow points the way a dependency runs"
     />,
   );
@@ -47,8 +45,8 @@ describe('the rule sentences', () => {
   it('keys every mark the drawing actually uses, and no others', () => {
     const { container } = draw();
     const legend = container.querySelector('p')?.textContent ?? '';
-    expect(legend).toContain('a role at either end');
-    expect(legend).toContain('a role in between');
+    /* Every role is one rounded face since 2026-09-03; no shape row remains to explain. */
+    expect(legend).not.toContain('a role at either end');
     expect(legend).toContain('a reviewed dependency');
     /* This fixture has no measured traffic, so the measured-imports row must not appear. */
     expect(legend).not.toContain('measured imports');

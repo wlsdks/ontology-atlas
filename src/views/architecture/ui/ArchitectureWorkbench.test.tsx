@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import en from '../../../../messages/en.json';
+import ko from '../../../../messages/ko.json';
 import {
   parseArchitectureProfile,
   type ArchitectureHandoffContext,
@@ -720,5 +721,117 @@ describe('ArchitectureWorkbench — persisted conformance receipt', () => {
     expect(
       screen.getByTestId('architecture-source-check').querySelector('button, a'),
     ).toBeNull();
+  });
+});
+
+/*
+ * ⚠️ **The note names an absence a browser cannot lift on its own.** Source modules need a source
+ * folder, and only the installed app can read one — so where the note appears in a browser it ends
+ * in the one thing that changes the answer. Inside the app the same note names a folder to open,
+ * and the app must never offer its own download (`AGENTS.md`), so the page decides by runtime.
+ */
+describe('the source-listing note', () => {
+  it('offers the installed app only when the runtime is not the app itself', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    const browser = render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench profiles={[profile]} offersInstalledApp />
+      </NextIntlClientProvider>,
+    );
+    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
+    expect(screen.getByTestId('architecture-get-installed-app')).toHaveAttribute(
+      'href',
+      expect.stringContaining('/download'),
+    );
+    browser.unmount();
+
+    renderWorkbench();
+    expect(screen.getByTestId('architecture-source-unavailable')).toBeInTheDocument();
+    expect(screen.queryByTestId('architecture-get-installed-app')).toBeNull();
+  });
+});
+
+
+
+/*
+ * ⚠️ **A reviewed sentence a person cannot read explains nothing.** The seven sentences on this
+ * canvas are the only place `/architecture` says what a layer is *for*, and they were English
+ * only, so a Korean reader got the layer names in Korean and the answer in a second language.
+ * `summary_<role>_<locale>` restates the canonical sentence for the screen; `summary_<role>`
+ * stays the fact, and is what every agent brief, prompt and CLI line still prints.
+ */
+describe('the role sentence in the reader\'s language', () => {
+  const KOREAN_VIEWS = '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.';
+
+  function renderIn(locale: 'en' | 'ko') {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    return render(
+      <NextIntlClientProvider locale={locale} messages={locale === 'ko' ? ko : en}>
+        <ArchitectureWorkbench profiles={[profile]} />
+      </NextIntlClientProvider>,
+    );
+  }
+
+  it('prints the Korean sentence on the views card and in the role dock at ko', () => {
+    renderIn('ko');
+    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
+      KOREAN_VIEWS,
+    );
+    /* The canvas budgets the sentence across caption lines, so the drawing is read on its start. */
+    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^라우트가/);
+
+    fireEvent.click(screen.getByTestId('architecture-graph-box-views'));
+    expect(screen.getByTestId('architecture-role-summary-views')).toHaveTextContent(KOREAN_VIEWS);
+  });
+
+  it('prints the canonical English sentence at en', () => {
+    renderIn('en');
+    expect(screen.getByTestId('architecture-graph-box-views').getAttribute('aria-label')).toContain(
+      'One module per route-level screen',
+    );
+    expect(screen.getByTestId('architecture-box-line-views')).toHaveTextContent(/^One module per/);
+  });
+
+  /*
+   * The fallback is the whole reason `summaries` sits beside `summary` instead of replacing it: a
+   * profile translated one role at a time must show the reviewed English for the rest, never a
+   * blank where a sentence was.
+   */
+  it('falls back to the canonical sentence for a role nobody translated', () => {
+    renderIn('ko');
+    fireEvent.click(screen.getByTestId('architecture-graph-box-routing'));
+    expect(screen.getByTestId('architecture-role-summary-routing')).toHaveTextContent(
+      'Locale-prefixed Next entry wrappers.',
+    );
+  });
+});
+
+/*
+ * ⚠️ **The document that could not be read is named on the screen.** Before 2026-09-03 one
+ * unreadable profile threw for the whole route, so the person who added one bad line saw an error
+ * boundary instead of the screen that would have told them which file and which key.
+ */
+describe('an unreadable architecture document', () => {
+  it('names the document and the parser sentence beside the profiles that did load', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    render(
+      <NextIntlClientProvider locale="en" messages={en}>
+        <ArchitectureWorkbench
+          profiles={[profile]}
+          profileProblems={[
+            {
+              documentSlug: 'architecture/broken',
+              message: 'summary_ghost_ko describes a role that does not exist.',
+            },
+          ]}
+        />
+      </NextIntlClientProvider>,
+    );
+    const notice = screen.getByTestId('architecture-profile-problem');
+    expect(notice).toHaveAttribute('role', 'status');
+    expect(notice).toHaveTextContent('architecture/broken');
+    expect(notice).toHaveTextContent('summary_ghost_ko describes a role that does not exist.');
+    /* The profile that did parse is still drawn. */
+    expect(screen.getByTestId('architecture-graph-box-views')).toBeInTheDocument();
   });
 });

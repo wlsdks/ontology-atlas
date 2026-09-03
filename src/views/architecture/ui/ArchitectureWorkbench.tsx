@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Boxes, ChevronDown, PanelRight, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import {
   buildArchitectureAgentPrompt,
@@ -11,6 +11,7 @@ import {
   type ArchitectureAgentTaskKind,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
+  type ArchitectureProfileProblem,
 } from '@/entities/architecture-profile';
 import type { ArchitectureRecord } from '@/entities/architecture-record';
 import type { AcpTurnActivity } from '@/features/acp-session';
@@ -25,10 +26,12 @@ import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Link } from '@/i18n/navigation';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
+const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
@@ -83,6 +86,7 @@ const COPY_FEEDBACK_MS = 4000;
 
 export function ArchitectureWorkbench({
   profiles,
+  profileProblems = EMPTY_PROFILE_PROBLEMS,
   handoffContexts = {},
   draftHandoffContext = null,
   sourceModulesByProfile = {},
@@ -95,8 +99,11 @@ export function ArchitectureWorkbench({
   onAgentRequest,
   agentActivity = null,
   copyFeedbackMs = COPY_FEEDBACK_MS,
+  offersInstalledApp = false,
 }: {
   profiles: ArchitectureProfile[];
+  /** Architecture documents this surface could not read, named rather than silently dropped. */
+  profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
   /** The one unambiguous project source available before any profile exists. */
   draftHandoffContext?: ArchitectureHandoffContext | null;
@@ -116,8 +123,16 @@ export function ArchitectureWorkbench({
   agentActivity?: AcpTurnActivity | null;
   /** How long a copy confirmation stays before the button returns to rest. Tests shorten it. */
   copyFeedbackMs?: number;
+  /** Whether this runtime may point at the installed app. False inside the app itself. */
+  offersInstalledApp?: boolean;
 }) {
   const t = useTranslations('architecture');
+  /*
+   * The reader's own language decides which reviewed sentence is shown, and nothing else does.
+   * `summary_<role>` stays the canonical fact every agent brief, prompt and CLI line prints; a
+   * `summary_<role>_<locale>` line is a restatement of it for whoever is looking at the screen.
+   */
+  const locale = useLocale();
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
@@ -391,8 +406,8 @@ export function ArchitectureWorkbench({
   const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
   const roleSummaryOf = new Map(
     (selected?.roles ?? [])
-      .filter((role) => role.summary)
-      .map((role) => [role.id, role.summary as string]),
+      .map((role) => [role.id, role.summaries[locale] ?? role.summary] as const)
+      .filter((entry): entry is readonly [string, string] => typeof entry[1] === 'string'),
   );
   const roleReachOf = useMemo(() => {
     const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
@@ -412,9 +427,32 @@ export function ArchitectureWorkbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
   }, [roleLayout]);
 
+  /*
+   * ⚠️ **A document this surface could not read is named, not swallowed.** The parse is still
+   * strict per profile — an unreadable one is not drawn — but before 2026-09-03 the whole route
+   * threw, so one unknown key in one file replaced every profile in the folder with an error
+   * boundary and said nothing about which file or which key. The notice carries the document and
+   * the parser's own sentence, in the same amber the rail already uses for "unknown".
+   */
+  const profileNotices = profileProblems.length === 0 ? null : (
+    <div className="mb-3 flex flex-col gap-1">
+      {profileProblems.map((problem) => (
+        <p
+          key={`${problem.documentSlug}\u0000${problem.message}`}
+          role="status"
+          data-testid="architecture-profile-problem"
+          className="m-0 border-l border-[color:var(--color-amber-source-a50)] pl-3 text-body text-[color:var(--color-text-tertiary)]"
+        >
+          {t('profileUnreadable', { document: problem.documentSlug, message: problem.message })}
+        </p>
+      ))}
+    </div>
+  );
+
   if (!selected) {
     return (
-      <main className="flex min-h-0 flex-1 items-center justify-center p-5 md:p-10">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center p-5 md:p-10">
+        {profileNotices ? <div className="w-full max-w-[640px]">{profileNotices}</div> : null}
         <EmptyState
           title={t('noProfiles')}
           titleAs="h1"
@@ -676,6 +714,7 @@ export function ArchitectureWorkbench({
                 {t('description')}
               </p>
             </div>
+            {profileNotices ? <div className="mt-3">{profileNotices}</div> : null}
           </header>
           {/*
             The provenance explanation is available in one press, but it does not own a permanent
@@ -1104,20 +1143,45 @@ export function ArchitectureWorkbench({
             fact as the rules beside it: why a number on the drawing is missing.
           */}
           {sourceListingCapable || !sourceUnavailableReason ? null : (
-            <p
+            <div
               className={cn(
-                'break-keep border-b border-[color:var(--color-border-soft)] px-4 py-3 text-caption text-[color:var(--color-text-quaternary)] lg:col-span-2 xl:shrink-0',
+                'border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2 xl:shrink-0',
                 /* Why a module count is missing belongs with the role whose modules are missing. */
                 inspector === 'role' ? undefined : 'xl:hidden',
               )}
-              data-testid="architecture-source-unavailable"
             >
-              {t(
-                sourceUnavailableReason === 'unbound'
-                  ? 'sourceListingUnbound'
-                  : 'sourceListingUnavailable',
-              )}
-            </p>
+              <p
+                className="break-keep text-caption text-[color:var(--color-text-quaternary)]"
+                data-testid="architecture-source-unavailable"
+              >
+                {t(
+                  sourceUnavailableReason === 'unbound'
+                    ? 'sourceListingUnbound'
+                    : 'sourceListingUnavailable',
+                )}
+              </p>
+              {/*
+                ⚠️ **The one surface that can lift this absence is named where the absence is
+                stated.** A browser cannot read a source folder at all, so the note ends in a fact
+                with nothing to do about it; the installed app is what turns the missing module
+                counts into real ones. The installed app never offers its own download, so the page
+                passes this only while the runtime is a browser.
+              */}
+              {offersInstalledApp ? (
+                <Link
+                  href="/download"
+                  className={controlClass({
+                    shape: 'chip',
+                    size: 'sm',
+                    tone: 'secondary',
+                    className: 'mt-2 w-fit',
+                  })}
+                  data-testid="architecture-get-installed-app"
+                >
+                  {t('getInstalledApp')}
+                </Link>
+              ) : null}
+            </div>
           )}
 
         {/* ⚠️ One inset down the dock. Measured 2026-08-30: the role card sat flush, the rules at
@@ -1229,8 +1293,6 @@ export function ArchitectureWorkbench({
             legendTraffic={t('legendTraffic')}
             legendSkipHint={t('legendSkipHint')}
             legendViolated={t('legendViolated')}
-            legendShapeEnd={t('legendShapeEnd')}
-            legendShapeWork={t('legendShapeWork')}
             directionLabel={t('ladderDirection')}
             hiddenAtWorkbench={inspector !== 'rules'}
           />

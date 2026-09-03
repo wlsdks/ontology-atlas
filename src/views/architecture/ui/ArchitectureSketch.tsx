@@ -10,7 +10,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import { placeEdgeSentences, type SentenceEdge } from '../model/edge-sentences';
-import { captionLineBudgets, splitSummaryLines } from '../model/summary-lines';
+import { captionLineRoom, splitSummaryLinesByWidth } from '../model/summary-lines';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
 /**
@@ -115,6 +115,19 @@ const PAIRED_OBSERVATION_H = 64;
  * more keep the rectangle clear of both faces under the collision pad.
  */
 const PAIRED_ROW_GAP = 24;
+/*
+ * ⚠️ **The ladder yields its own spare height before it hides a role.** Measured 2026-09-03 at
+ * 1280x800: the canvas column is 638px tall while the roomy rows ask for 684, so the seventh role
+ * fell past the fold and the widest laptop the product ships to answered with "1 more below". The
+ * faces keep their 280/72/240 widths, because the side-by-side comparison is the whole structure;
+ * the row gives up its second summary line instead. 58px of face, and a 22px gap: the narrowest a
+ * 12px sentence rectangle clears with the 4px collision pad on both sides. 20 leaves only 3px
+ * under the words, and `placeEdgeSentences` drops the rule sentence as a collision, which is the
+ * opposite of what the tighter rows are for. Seven roles: 4 + 20 + 7x58 + 6x22 + 4 = 566.
+ */
+const PAIRED_ROW_GAP_TIGHT = 22;
+const PAIRED_PAD_Y_TIGHT = 4;
+const BOX_H_PAIRED_TIGHT = 58;
 /*
  * ⚠️ **Receding must leave the words readable.** At 0.35 a non-selected role title measured
  * 3.02:1 and its sentence 1.7:1; at 0.18 the unrelated edge sentences measured 1.23:1 — four of
@@ -391,11 +404,19 @@ export function ArchitectureSketch({
   const axisWidth = restWidth > 0 ? restWidth : boxWidth;
   const pairedNaturalH =
     PAIRED_PAD_Y * 2 + PAIRED_HEADER_H + ranks * BOX_H + (ranks - 1) * PAIRED_ROW_GAP;
+  /* The same rows with one summary line each. Fixed-readable faces and connector space yield with
+     the canvas before any role is hidden, so a canvas too short for the roomy rows still gets the
+     comparison rather than a compressed across chain with a hidden-role count under it. */
+  const pairedTightH =
+    PAIRED_PAD_Y_TIGHT * 2 +
+    PAIRED_HEADER_H +
+    ranks * BOX_H_PAIRED_TIGHT +
+    (ranks - 1) * PAIRED_ROW_GAP_TIGHT;
   const pairedRowsFit =
     lanes === 1 &&
     axisWidth >= PAIRED_MIN_W &&
     restHeight > 0 &&
-    restHeight >= pairedNaturalH;
+    restHeight >= pairedTightH;
   const axis: FlowAxis = pairedRowsFit
     ? 'down'
     : axisWidth > 0 && naturalAcross > axisWidth
@@ -417,19 +438,34 @@ export function ArchitectureSketch({
       ? Math.max(minimumAcrossBoxW, Math.min(preferredBoxW, fittedAcrossBoxW))
       : preferredBoxW;
   const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
+  /*
+   * Which of the two ladder densities this canvas can hold. Below xl `restHeight` is 0 and the
+   * roomy rows stand, exactly as before; the tight rows are the answer only where the canvas was
+   * measured, the roomy rows do not fit it, and the tight ones do. When even those do not fit,
+   * the hidden-count row and the scroller stay the honest fallback.
+   */
+  const ladderDensity: 'roomy' | 'tight' =
+    usesPairedDown && restHeight > 0 && restHeight < pairedNaturalH && restHeight >= pairedTightH
+      ? 'tight'
+      : 'roomy';
+  const usesTightLadder = usesPairedDown && ladderDensity === 'tight';
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
   const contractBoxW = usesPairedDown ? PAIRED_CONTRACT_W : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
   const observationBoxH = usesPairedDown ? PAIRED_OBSERVATION_H : OBSERVATION_BOX_H;
   const rowGap = usesPairedDown
-    ? PAIRED_ROW_GAP
+    ? usesTightLadder
+      ? PAIRED_ROW_GAP_TIGHT
+      : PAIRED_ROW_GAP
     : axis === 'down'
       ? 8
       : hasLedger
         ? ROW_GAP_LEDGER
         : ROW_GAP_PLAIN;
   const padY = usesPairedDown
-    ? PAIRED_PAD_Y
+    ? usesTightLadder
+      ? PAIRED_PAD_Y_TIGHT
+      : PAIRED_PAD_Y
     : axis === 'down'
       ? 8
       : hasLedger
@@ -438,13 +474,18 @@ export function ArchitectureSketch({
   const boxH = usesRoomyBoxes
     ? BOX_H_ROOMY
     : usesPairedDown
-      ? BOX_H
+      ? usesTightLadder
+        ? BOX_H_PAIRED_TIGHT
+        : BOX_H
     : axis === 'down'
       ? 64
       : hasLedger
         ? BOX_H_LEDGER
         : BOX_H;
-  const summaryLineCount = axis === 'down' && !usesPairedDown ? 1 : SUMMARY_LINES;
+  /* The tight row pays for its height with the sentence's second line, not with its face width:
+     one line of summary keeps every role's first clause, which cutting the faces would not. */
+  const summaryLineCount =
+    usesTightLadder || (axis === 'down' && !usesPairedDown) ? 1 : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
      the reserved width first. This follows the animated grid on every ResizeObserver frame, so the
      chain neither turns nor loses its last role behind a 380px dock at the 1512px app width. */
@@ -1064,6 +1105,7 @@ export function ArchitectureSketch({
           data-column-gap={Math.round(colGap * 10) / 10}
           data-box-width-mode={usesRoomyBoxes ? 'roomy' : 'compact'}
           data-evidence-layout={usesPairedDown ? 'paired-ladder' : splitsEvidence ? 'split' : 'combined'}
+          data-ladder-density={usesPairedDown ? ladderDensity : undefined}
           data-architecture-layout-ready={axisWidth > 0 ? 'true' : 'false'}
           /*
            * ⚠️ `shrink-0`, because the scroller is a flex container now — it centres the drawing in
@@ -1385,19 +1427,10 @@ export function ArchitectureSketch({
           const summaryLines =
             summary === null
               ? null
-              : splitSummaryLines(
-                  summary,
-                  captionLineBudgets({
-                    boxW: contractBoxW,
-                    boxH,
-                    shape: box.shape,
-                    baselines: Array.from(
-                      { length: summaryLineCount },
-                      (_, line) => countsY - at.y + line * CAPTION_LEADING,
-                    ),
-                  }),
-                  summaryLineCount,
-                );
+              : /* Budgeted by estimated glyph width, so a Korean sentence wraps where it reaches
+                   (owner, 2026-09-03: the first Korean summaries ran past both outlines). Every
+                   face is a rectangle now, so each line has the same straight room. */
+                splitSummaryLinesByWidth(summary, captionLineRoom(contractBoxW), summaryLineCount);
 
           return (
             <g
@@ -1484,28 +1517,9 @@ export function ArchitectureSketch({
                 behind the first. The terminators are drawn once for that reason; the boxes in
                 between keep both passes.
               */}
-              {box.shape === 'terminator' ? (
-                <rect
-                  x={at.x}
-                  y={at.y}
-                  width={contractBoxW}
-                  height={boxH}
-                  rx={boxH / 2}
-                  fill={
-                    isSelected
-                      ? 'var(--color-indigo-a12)'
-                      : roleState === 'active'
-                        ? 'var(--color-indigo-a06)'
-                        : roleState === 'hover'
-                          ? 'var(--color-elevated)'
-                          : 'var(--color-panel)'
-                  }
-                  stroke={isSelected ? 'var(--color-indigo-accent)' : 'var(--color-architecture-sketch-ink)'}
-                  strokeWidth={isSelected ? 1.6 : 1}
-                  className="architecture-canvas-node architecture-node-face"
-                  data-node-selected={isSelected ? 'true' : 'false'}
-                />
-              ) : (
+              {/* One face for every role. The chain's ends were drawn as ISO 5807 terminators
+                  (stadiums) until 2026-09-03; the owner read the two shapes as a difference the
+                  screen never explained, and position already says where a chain begins. */}
                 <rect
                   x={at.x}
                   y={at.y}
@@ -1525,9 +1539,7 @@ export function ArchitectureSketch({
                   strokeWidth={isSelected ? 1.6 : 1}
                   className="architecture-canvas-node architecture-node-face"
                   data-node-selected={isSelected ? 'true' : 'false'}
-                />
-              )}
-              {contractIncoming.length > 0 ? (
+                />              {contractIncoming.length > 0 ? (
                 <ConnectionPort
                   axis={axis}
                   at={at}

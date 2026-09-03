@@ -9,6 +9,7 @@ import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
   deriveArchitectureProfiles,
+  deriveArchitectureProfilesReport,
   parseArchitectureProfile,
 } from './architecture-profile';
 
@@ -32,6 +33,58 @@ describe('architecture profile read model', () => {
     expect(profiles).toHaveLength(1);
     expect(profiles[0]?.slug).toBe('atlas-web');
     expect(profiles[0]?.documentSlug).toBe('architecture/atlas-web');
+  });
+
+  /*
+   * ⚠️ **One unreadable document used to take the route down with it.** `/architecture` derives
+   * profiles inside a render-phase `useMemo`, so before 2026-09-03 a single unknown key in a
+   * single file threw for the whole vault and replaced every profile with an error boundary — the
+   * person who added one line lost the screen that would have named it. The parse is unchanged per
+   * document; only the failure is now a named report beside what did load.
+   */
+  it('keeps the readable profiles and names the document it could not read', () => {
+    const report = deriveArchitectureProfilesReport([
+      {
+        slug: 'architecture/broken',
+        frontmatter: { ...FSD_PROFILE_FRONTMATTER, profile_slug: 'broken', summary_ghost_ko: 'x' },
+      },
+      { slug: 'architecture/payments', frontmatter: HEXAGONAL_PROFILE_FRONTMATTER },
+    ]);
+    expect(report.profiles.map((profile) => profile.slug)).toEqual(['payments-core']);
+    expect(report.problems).toEqual([
+      {
+        documentSlug: 'architecture/broken',
+        message: 'summary_ghost_ko describes a role that does not exist.',
+      },
+    ]);
+    /* The list callers already had is the report's profiles, so no caller has to learn a shape. */
+    expect(
+      deriveArchitectureProfiles([
+        {
+          slug: 'architecture/broken',
+          frontmatter: { ...FSD_PROFILE_FRONTMATTER, profile_slug: 'broken', summary_ghost_ko: 'x' },
+        },
+        { slug: 'architecture/payments', frontmatter: HEXAGONAL_PROFILE_FRONTMATTER },
+      ]).map((profile) => profile.slug),
+    ).toEqual(['payments-core']);
+  });
+
+  /* A slug collision is a problem entry too, so one bad pair cannot blank the folder either. */
+  it('reports a slug collision instead of throwing, and keeps the first document', () => {
+    const report = deriveArchitectureProfilesReport([
+      { slug: 'architecture/atlas-web', frontmatter: FSD_PROFILE_FRONTMATTER },
+      {
+        slug: 'architecture/other',
+        frontmatter: { ...FSD_PROFILE_FRONTMATTER, title: 'A different contract' },
+      },
+    ]);
+    expect(report.profiles.map((profile) => profile.documentSlug)).toEqual([
+      'architecture/atlas-web',
+    ]);
+    expect(report.problems).toHaveLength(1);
+    expect(report.problems[0]?.documentSlug).toBe('architecture/other');
+    expect(report.problems[0]?.message).toContain('architecture/atlas-web');
+    expect(report.problems[0]?.message).toContain('architecture/other');
   });
 
   it('builds an executable architecture-first agent handoff', () => {
