@@ -1186,6 +1186,26 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('runs source-checkout MCP dependency guard tests from every implementation path', () => {
+    assert.deepEqual(
+      domainCommands(suggestFocusedChecks(['cli/src/lib/mcp-module.mjs'])),
+      [
+        'pnpm exec node --test cli/src/lib/mcp-module.test.mjs',
+        'pnpm test:cli:lib',
+        'pnpm vault:validate',
+      ],
+    );
+    assert.deepEqual(
+      domainCommands(
+        suggestFocusedChecks(['scripts/lib/check-mcp-source-dependencies.mjs']),
+      ),
+      [
+        'pnpm exec node --test scripts/lib/check-mcp-source-dependencies.test.mjs',
+        'pnpm test:dogfood:script-refs',
+      ],
+    );
+  });
+
   it('suggests package contracts for lockfile changes', () => {
     const rootLock = suggestFocusedChecks(['pnpm-lock.yaml']);
 

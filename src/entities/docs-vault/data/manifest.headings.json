@@ -10472,6 +10472,11 @@
     },
     {
       "depth": 3,
+      "text": "Source-checkout MCP dependency preflight",
+      "slug": "source-checkout-mcp-dependency-preflight"
+    },
+    {
+      "depth": 3,
       "text": "Dogfood script-reference parity",
       "slug": "dogfood-script-reference-parity"
     },

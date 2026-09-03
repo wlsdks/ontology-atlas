@@ -743,7 +743,7 @@ environments without a supported installed app.
 # Keep the tool outside the project you are describing.
 git clone https://github.com/wlsdks/ontology-atlas ~/tools/ontology-atlas
 cd ~/tools/ontology-atlas && pnpm install
-pnpm --dir mcp install   # mcp/ carries its own lockfile — the line above skips it
+pnpm --dir mcp install --frozen-lockfile   # mcp/ has its own lockfile — the line above skips it
 ATLAS=~/tools/ontology-atlas/cli/src/index.mjs
 
 cd /path/to/your/repo
@@ -781,9 +781,11 @@ later agents pay one exact batch instead of rediscovering it per task. The full
 write-capable profile and cross-repository speed do not carry that claim yet.
 
 Both install commands are required: `mcp/` owns a separate lockfile, so rerun
-`pnpm --dir mcp install` after each pull. Restart your agent in your repository,
-then use `node $ATLAS mcp-verify ./atlas` to prove the real server process and
-vault contract.
+`pnpm --dir mcp install --frozen-lockfile` after each pull. The source-checkout
+preflight rejects an unresolved runtime dependency, a non-exact declaration, or
+an installed version that differs from `mcp/package.json`, then prints the exact
+repair. Restart your agent in your repository, then use
+`node $ATLAS mcp-verify ./atlas` to prove the real server process and vault contract.
 
 > Run `init` in your own repository, not inside the Atlas clone. This clone
 > already ships a committed `.mcp.json` pointing at Atlas's own vault, and

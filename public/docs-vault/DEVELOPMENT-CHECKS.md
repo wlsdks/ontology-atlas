@@ -881,6 +881,13 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Escalate**: `pnpm docs-vault:build` when the fix changes the vault, then rerun; `pnpm test:dogfood:compile-fix` checks the idempotence guard alone
 **Fix**: Regenerate outputs with `pnpm docs-vault:build`, then rerun `pnpm dogfood:compile-fix` until it reports unchanged
 
+### Source-checkout MCP dependency preflight
+
+**Run**: `node scripts/lib/check-mcp-source-dependencies.mjs`
+**Proves**: The MCP runtime dependency inventory is non-empty, every declaration is exactly pinned, and each installed version matches `mcp/package.json`, including pnpm-linked installations.
+**Escalate**: `pnpm test:dogfood:script-refs` when the command guard changes; `pnpm test:cli:lib` when its shared resolver changes
+**Fix**: Run `pnpm --dir mcp install --frozen-lockfile`; dependency installation remains an explicit contributor action.
+
 ### Dogfood script-reference parity
 
 **Run**: `pnpm test:dogfood:script-refs`
