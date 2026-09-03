@@ -3,6 +3,7 @@ import {
   LISTBOX_MAX_ROWS,
   listboxBottomIsHidden,
   listboxGrowth,
+  listboxLeft,
   listboxTopIsHidden,
 } from './select-growth';
 
@@ -90,3 +91,19 @@ describe('스크롤 어포던스 — 없는 넘침을 광고하지 않는다', (
     expect(listboxTopIsHidden(true, 160)).toBe(true);
   });
 });
+
+describe('목록의 왼쪽 자리 — 화면 안에 남는 것이 트리거 밑에 남는 것보다 먼저다', () => {
+  it('맞으면 트리거의 왼쪽 가장자리를 그대로 쓴다', () => {
+    expect(listboxLeft({ triggerLeft: 120, listWidth: 200, viewportWidth: 800, pad: 8 })).toBe(120);
+  });
+
+  it('오른쪽을 뚫으면 오른쪽 여백에 닿을 때까지 왼쪽으로 민다 (설치 앱 작성창의 작업 방식 목록, 2026-09-03)', () => {
+    // Trigger at 620 in a 1512px window, list 400 wide: 620 + 400 > 1504.
+    expect(listboxLeft({ triggerLeft: 620, listWidth: 400, viewportWidth: 1000, pad: 8 })).toBe(592);
+  });
+
+  it('창보다 넓은 목록은 왼쪽 여백에서 시작한다 — 두 여백을 다 지킬 수 없으면 시작점을 지킨다', () => {
+    expect(listboxLeft({ triggerLeft: 300, listWidth: 1200, viewportWidth: 1000, pad: 8 })).toBe(8);
+  });
+});
+

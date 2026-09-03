@@ -147,3 +147,27 @@ export function listboxBottomIsHidden(
   if (![scrollTop, clientHeight, scrollHeight].every(Number.isFinite)) return false;
   return scrollTop + clientHeight + 1 < scrollHeight;
 }
+
+/**
+ * Where the list's left edge goes — **the list stays on screen before it stays
+ * under the trigger.**
+ *
+ * The list is anchored to the trigger's left edge and grows to its content, so a
+ * trigger sitting at the right of its panel opened a wide list straight through
+ * the window's edge: measured on the installed app's chat composer (owner
+ * screenshot, 2026-09-03), the work-mode list lost its description column past
+ * the right border. Mirrors the vertical flip: keep the trigger's edge while it
+ * fits, otherwise slide left until the list's right edge sits at the viewport
+ * padding, and never past the left padding.
+ */
+export function listboxLeft(metrics: {
+  triggerLeft: number;
+  listWidth: number;
+  viewportWidth: number;
+  pad: number;
+}): number {
+  const { triggerLeft, listWidth, viewportWidth, pad } = metrics;
+  const rightmost = viewportWidth - pad - listWidth;
+  return Math.max(pad, Math.min(triggerLeft, rightmost));
+}
+
