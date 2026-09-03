@@ -1983,24 +1983,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // the whole off-screen node cost (see `render/viewport-cull.ts`).
     if (isNodeCulled(screen, screenRadius * NODE_CULL_SLACK, viewportWidth, viewportHeight)) continue;
     drawnScreenRadiusById.set(node.id, screenRadius);
-    // Reserve only ego members (center, neighbor) under an active focus and the
-    // hovered node. That leaves the overview's overall label density untouched and
-    // addresses just where the reported defect occurs — the ego focus of the
-    // default click interaction. The selection ring and expand badge sit just
-    // outside the disc, so the ring clearance is reserved with it.
-    if (egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId) {
-      const half = screenRadius + EXPANDED_AURA_RING_OFFSET;
-      nodeDiscReservations.push({
-        ownerId: node.id,
-        priority: NODE_DISC_LABEL_PRIORITY,
-        bbox: {
-          minX: screen.x - half,
-          maxX: screen.x + half,
-          minY: screen.y - half,
-          maxY: screen.y + half,
-        },
-      });
-    }
+    // Every drawn disc reserves its own footprint, so a passive label never
+    // paints across a neighbouring shape. This used to cover only ego members and
+    // the hovered node, to leave the overview's label density alone; measured
+    // 2026-09-03 on the sample vault with every domain open, twelve labels
+    // crossed a leaf or hub ring once the ink ladder made those rings readable,
+    // and a name over a shape makes both unreadable. A label blocked below flips
+    // above before it is dropped (the placement further down), so the overview
+    // keeps its names wherever a slot exists. Ego members and the hovered node
+    // reserve the ring clearance too, because the selection ring and expand
+    // badge sit just outside the disc.
+    const attended = egoState === "center" || egoState === "neighbor" || node.id === hoveredNodeId;
+    const reservedHalf = attended ? screenRadius + EXPANDED_AURA_RING_OFFSET : screenRadius + 1;
+    nodeDiscReservations.push({
+      ownerId: node.id,
+      priority: NODE_DISC_LABEL_PRIORITY,
+      bbox: {
+        minX: screen.x - reservedHalf,
+        maxX: screen.x + reservedHalf,
+        minY: screen.y - reservedHalf,
+        maxY: screen.y + reservedHalf,
+      },
+    });
 
     // Slight dim on background nodes unrelated to the expansion (disc members,
     // spine, and ego excluded).

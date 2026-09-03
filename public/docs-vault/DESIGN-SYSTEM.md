@@ -713,8 +713,8 @@ The baseline for canvas labels comes from **one place**: `render/labels.ts#resol
 - Label anchors use the **drawn** screen radius (including magnitudeScale · breathe · entrance ramp ·
   selection's 1.12 growth). Using the nominal radius causes names of large/selected nodes to fall inside the shape.
 - Ensures minimum clearance (`LABEL_NODE_CLEARANCE` 3px) between the outline drawn **outside** the node disc (selection ring +6px) and the glyph. If only offsets are used, the glyph will pierce the ring as it grows upward from the baseline — this cannot be resolved at any zoom level (the font scales with it).
-- Ego member/hover node discs are passed to the label placer as **reserved**
-  (`NODE_DISC_LABEL_PRIORITY` = 1: selection/hover labels do not yield, only passive labels move aside). Reservations have an owner (`ownerId`) that exempts its own label.
+- Every drawn node disc is passed to the label placer as **reserved**; ego members and the hovered node reserve the ring clearance too
+  (`NODE_DISC_LABEL_PRIORITY` = 1: selection/hover labels do not yield, only passive labels move aside). Reservations have an owner (`ownerId`) that exempts its own label. Until 2026-09-03 only ego/hover discs were reserved, and with every domain open twelve passive names crossed a neighbouring ring; `tests/e2e/map-label-collision.spec.ts` measures that frame.
 - The order of yielding is **flip first, suppress later** — if the bottom is blocked, try the space above the node once; only drop the label if that is also blocked (preventing "nameless shape" recurrence).
 
 ### Map ink ladder — one depth axis, two others (2026-07-31)
