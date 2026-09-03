@@ -174,7 +174,7 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
     expect(note.textContent).toContain('claude-acp'); // makeRuntime uses the label as the id
   });
 
-  it('Codex는 MCP 쓰기 관문이 증명되기 전까지 감지되더라도 인앱 대화를 열지 않는다', async () => {
+  it('Codex는 read-only 모드와 서버 체크포인트가 함께 증명되면 인앱 대화를 연다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true }),
       makeRuntime({ id: 'codex-acp', isolated: false }),
@@ -183,11 +183,8 @@ describe('실행기 목록 — 앱이 못 막는 것은 그 줄에서 말한다'
 
     await waitFor(() => expect(screen.getByTestId('app-settings-runtime-codex-acp')).toBeInTheDocument());
     expect(screen.getByTestId('app-settings-runtime-chat-claude-acp')).toBeInTheDocument();
-    expect(screen.queryByTestId('app-settings-runtime-chat-codex-acp')).not.toBeInTheDocument();
-    expect(screen.getByTestId('app-settings-runtimes-guard-note')).toHaveAttribute(
-      'data-guarded-count',
-      '1',
-    );
+    expect(screen.getByTestId('app-settings-runtime-chat-codex-acp')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-settings-runtimes-guard-note')).not.toBeInTheDocument();
   });
 
   it('같은 설명을 줄마다 반복하지 않는다 — 묶음 위에 한 번만', async () => {
