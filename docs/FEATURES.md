@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-09-03 (chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser with a find-improvements task; earlier on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -499,9 +499,25 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   reviewed pattern axes, scopes, roles, paths, evidence, and allowed dependency
   direction plus governed import usages in the same Git-backed folder without
   becoming a map node.
-- The stable role blueprint persists across **Understand → Plan → Verify**.
-  Pattern names are declared summaries; Atlas does not infer Clean, Hexagonal,
-  MVP, or Feature-Sliced Design from folder names.
+- The stable role blueprint is one reviewed contract. Pattern names are declared
+  summaries; Atlas does not infer Clean, Hexagonal, MVP, or Feature-Sliced Design
+  from folder names. The visible Understand → Plan → Verify stages were removed
+  on 2026-09-03; the canvas compares reviewed intent with observation directly.
+- **The comparison ladder is chosen by height** (2026-09-03). Whenever the seven
+  280px reviewed / 72px delta / 240px observation rows fit the canvas at rest, the
+  chain runs down as that ladder — at 1512×945 and at 1920×1080 alike — and each
+  rule sentence sits beside the arrow it describes, in the 24px gap between the
+  two faces it joins. A canvas too short for the rows, or a profile with parallel
+  lanes, still draws the across chain. Choosing a role recedes the unrelated roles
+  to 0.65 and their strokes to 0.55, so every title stays readable.
+- **The agent task is the person's to choose** (2026-09-03). The button keeps its
+  derived default — inspect source, review delta, or plan change — and a chooser
+  beside it lists three tasks with one line each: inspect or re-inspect source,
+  plan change, and find improvements. Find improvements names where the reviewed
+  profile and the observed imports disagree, plus unmapped, unruled and empty
+  roles, with literal paths, and asks the person what the rule should be; it
+  proposes no rule, role name or pattern and writes nothing. A verified agent takes
+  the chosen task as its opening turn; a browser copies the same sentence.
 - `inspect_architecture` and CLI `architecture` scan supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Observed role edges retain value/type-only/unknown usage counts and exact

@@ -406,7 +406,18 @@
     "reviewDeltaAction": "차이 검토",
     "planChangeAction": "변경 계획",
     "copyAgentTask": "에이전트 작업 문장 복사",
-    "draftNoAgentBody": "지금은 연결된 에이전트가 없어 이 화면에서 바로 시작할 수 없습니다. 아래 문장을 복사해 쓰시는 코딩 에이전트에 붙여 넣으세요."
+    "draftNoAgentBody": "지금은 연결된 에이전트가 없어 이 화면에서 바로 시작할 수 없습니다. 아래 문장을 복사해 쓰시는 코딩 에이전트에 붙여 넣으세요.",
+    "agentTaskMenu": "다른 에이전트 작업 고르기",
+    "recheckSourceAction": "소스 다시 검사",
+    "findImprovementsAction": "개선점 찾기",
+    "agentTaskHints": {
+      "inspect": "실제 import를 읽고 승인 구조와 비교합니다.",
+      "recheck": "다시 읽고 지난 검사 기록과 달라진 점을 말합니다.",
+      "change": "이 구조를 지키는 변경 계획부터 씁니다.",
+      "improve": "어긋난 곳과 규칙이 없는 곳을 짚고, 규칙은 사람에게 묻습니다."
+    },
+    "agentTaskCopyHint": "고르면 그 작업 문장을 복사합니다.",
+    "copiedTaskHandoff": "“{task}” 문장을 복사했습니다. 에이전트에 붙여 넣으세요"
   },
   "ontologyRelations": {
     "relationShort": {

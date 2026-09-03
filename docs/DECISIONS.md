@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — The ladder is chosen by height, sentences sit on arrows, and the person picks the agent task
+
+**Why**: at 1920×1080 "across while it fits across" drew 151px cards, 205px of ink in a 918px canvas, every role sentence cut and lane labels repeated fourteen times; at 1512 each rule sentence ended 160px from its arrow; a chosen role receded the rest to 3.0:1 titles and 1.2:1 sentences; and the one agent button decided its own task, so nobody could ask for a re-check or for where the reviewed structure needs a decision.
+**Prior**: 2026-09-03 (comparison workbench) stands and is enforced — its 280/72/240 rows were unreachable where the room was largest; 2026-08-30 (the chain does not turn under a click) stands; 2026-08-26 (draft proposed by an agent, named by a person) stands and binds the improvement task.
+**Decision**: the paired ladder is drawn whenever its rows fit the canvas height at rest, with a 24px row gap seating each rule sentence beside its arrow; across remains for a short canvas or parallel lanes. Receded roles keep 0.65 opacity, strokes 0.55. The agent button keeps its derived default and gains a chooser of three tasks — inspect or re-inspect source, plan change, find improvements — one line each; a browser copies the chosen sentence. Find improvements names disagreements and unmapped, unruled, empty roles with literal paths and asks for the rule; it proposes no rule, role name or pattern and writes nothing.
+**Dissent**: the evidence seat called the chooser a one-state gap and two labels for one `verify` kind duplication; it lost because the label names what the re-check compares against. The steward held a question without a candidate may not be actionable; it lost to the 2026-08-26 refusal.
+**Falsifier**: at 1512×945 or 1920×1080 a role sits below the fold, a sentence touches a face, or a reader cannot say which arrow a sentence belongs to; five find-improvements runs end in a proposal accepted unchanged, or five are abandoned as not actionable; or a `conforms` receipt still blocks a fresh inspection.
+**Owner**: stark
+
 ## 2026-09-03 — The download hero rises inside half a second, hands off by view angle, and shows a phone three tiers
 
 **Why**: Measured at 1512, the filled CTA stood at `opacity: 0` yet hit-testable for 920ms behind a 700/800/950ms stagger the typing already made redundant (same-input stage spread 267ms against the 120ms rule). The scroll camera lifted the plane above the fold while the demo stage rose below it, so the two never met. At 390 the plinth drew 96 nodes into 165px: a texture, not a map.

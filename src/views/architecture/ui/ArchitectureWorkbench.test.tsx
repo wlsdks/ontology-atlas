@@ -559,6 +559,47 @@ describe('ArchitectureWorkbench', () => {
     });
   });
 
+  /*
+   * The button's task is derived from the receipt; the chooser beside it offers the other two
+   * with one line each. Choosing one hands or copies *that* task, not the default (owner,
+   * 2026-09-03: an analysed vault still needs further analysis and improvement).
+   */
+  it('offers the other agent tasks beside the derived one and copies the chosen sentence', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+    renderWorkbench();
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Choose another agent task' }));
+    const menu = screen.getByRole('menu');
+    const items = screen.getAllByRole('menuitem');
+    expect(items.map((item) => item.getAttribute('data-architecture-agent-task'))).toEqual([
+      'verify',
+      'change',
+      'improve',
+    ]);
+    /* Without a receipt the inspection is a first one, and the default is marked as current. */
+    expect(items[0]).toHaveTextContent('Inspect source');
+    expect(items[0]).toHaveAttribute('aria-current', 'true');
+    expect(menu).toHaveTextContent("Choosing copies that task's sentence.");
+    fireEvent.click(screen.getByTestId('architecture-agent-task-improve'));
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining('This is an improvement-finding task'),
+    );
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('"kind":"improve"'));
+    await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
+    /* The confirmation names the task, then leaves: a walker who chose "find improvements" saw
+       only "copied" and, thirty seconds later, still no way to copy again (2026-09-03). */
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Copied “Find improvements”. Paste it into your agent' }),
+      ).toBeInTheDocument(),
+    );
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: 'Copy task for your agent' })).toBeInTheDocument(),
+      { timeout: 3000 },
+    );
+  });
+
   it('keeps a retryable clipboard error on screen', async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
     renderWorkbench();

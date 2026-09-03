@@ -41,6 +41,66 @@ test('핵심 행동만 남고 에이전트 작업 버튼은 하단 탭에 가리
   expect(report.hitOwnsPoint).toBe(true);
 });
 
+test('the agent task chooser offers a re-check and an improvement search beside the derived task', async ({ page }) => {
+  /*
+   * The button's task was decided for the person (conforms → plan, else inspect) and nothing on
+   * the screen could ask for a re-check or for where the reviewed structure needs a decision
+   * (owner, 2026-09-03). The chooser hands or copies the chosen task; Escape returns focus.
+   */
+  await seedFirstRunSeen(page);
+  await useDogfoodSample(page);
+  await page.addInitScript(() => {
+    (window as unknown as { __copied: string[] }).__copied = [];
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          (window as unknown as { __copied: string[] }).__copied.push(text);
+        },
+      },
+    });
+  });
+  await page.setViewportSize({ width: 1512, height: 945 });
+  await page.goto('/ko/architecture/?guides=off');
+  await expect(page.getByTestId('architecture-graph')).toBeVisible();
+
+  const trigger = page.getByTestId('architecture-agent-task-menu');
+  await expect(page.getByTestId('architecture-agent-task-popover')).toHaveCount(0);
+  await trigger.click();
+  const menu = page.getByTestId('architecture-agent-task-popover');
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem')).toHaveCount(3);
+  await expect(menu.getByTestId('architecture-agent-task-verify')).toHaveAttribute('aria-current', 'true');
+  /* The menu owns the space under the trigger: nothing covers its items. */
+  const owns = await menu.getByTestId('architecture-agent-task-improve').evaluate((item) => {
+    const rect = item.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return hit === item || item.contains(hit);
+  });
+  expect(owns).toBe(true);
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  /* Escape closed the menu only; no dock was open, and none opened. */
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'none',
+  );
+
+  await trigger.click();
+  await menu.getByTestId('architecture-agent-task-improve').click();
+  await expect(page.getByTestId('architecture-agent-action')).toHaveAttribute(
+    'data-architecture-copy-state',
+    'copied',
+  );
+  const copied = await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied);
+  expect(copied).toHaveLength(1);
+  expect(copied[0]).toContain('"kind":"improve"');
+  expect(copied[0]).toContain('This is an improvement-finding task');
+  expect(copied[0]).toContain('Write nothing');
+});
+
 test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
   await page.goto('/ko/architecture/?stage=plan');
   await expect(page.getByTestId('architecture-graph')).toBeVisible();

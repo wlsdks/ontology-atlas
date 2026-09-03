@@ -62,8 +62,17 @@ interface ArchitectureAgentReceiptContext {
   unruledEdges: number | null;
 }
 
+/**
+ * The tasks a workbench may hand an agent about an existing profile. `improve` finds where the
+ * reviewed intent and the observed source disagree and asks the person for the rule; it may not
+ * propose one (the 2026-08-26 refusal that `buildArchitectureDraftPrompt` documents applies to a
+ * proposal exactly as it applies to a draft — a rule derived from today's imports approves the
+ * status quo, whichever button it arrives through).
+ */
+export type ArchitectureAgentTaskKind = 'change' | 'verify' | 'improve';
+
 interface ArchitectureAgentTaskContext {
-  kind: 'change' | 'verify';
+  kind: ArchitectureAgentTaskKind;
   stage: 'understand' | 'plan' | 'verify';
   selectedRole: string | null;
   receipt: ArchitectureAgentReceiptContext | null;
@@ -308,6 +317,17 @@ export function buildArchitectureAgentPrompt(
         'Before editing, return an architectureChangePlan:v1 with touchedRoles, plannedPaths, expectedNewDependencies, crossedBoundaries, preservedInterfaces, verificationCommands, and unknowns.',
         'After editing, call inspect_architecture again and compare the actual conformance result with the plan.',
       ]
+    : task.kind === 'improve'
+      ? [
+          'This is an improvement-finding task. The reviewed profile stays the person\'s to author; you find the places that need a decision and ask.',
+          'Name every place where the reviewed profile and the observed imports disagree: crossings the rules forbid, dependencies whose role is unmapped, edges no rule covers, and roles no source matched. Cite the literal paths and import counts behind each one, and say which of them the bound receipt already knew about.',
+          task.receipt
+            ? 'Compare the fresh inspection with the bound receipt first and name every changed count or status, so the person knows which findings are new.'
+            : 'No persisted receipt is bound to this screen. Do not search the filesystem for one; treat it as absent and say so.',
+          'Where a rule is missing or an edge is unruled, ask the person what the rule should be. Write no `allow_*` keys, no `dependency_policy`, and no `dependency_usages`, and propose none: deriving them from what the code happens to do today would turn existing violations into permissions.',
+          'Do not name a pattern, do not rename a role, and do not give a group an architectural name. A file whose imports do not match its role\'s paths is stated as a literal path and a question, never as a new role.',
+          'Write nothing: not the profile, not a receipt, not implementation. Stop after the questions. The person answers them; you do not guess.',
+        ]
     : task.receipt
       ? [
         'This is a verification task. Do not edit implementation or architecture-profile files unless the person explicitly asks after seeing the result.',

@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 94893,
+      "wordCount": 95238,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "slug"
@@ -887,8 +887,8 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; ",
-      "wordCount": 25833,
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-03 (chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser with a find-improvements task; earlier on 2026-08-31 documented the six-tab Insights contract ",
+      "wordCount": 26079,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "slug",
@@ -2455,8 +2455,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The human-readable implementation-architecture workbench at /architecture. It is a comparison surface, not the ontology map: a solid canvas keeps each reviewed role beside source observation and names the delta between them. At supported laptop width a downward chain uses one repeated 280px reviewed face, 72px comparis",
-      "wordCount": 625,
+      "excerpt": "The human-readable implementation-architecture workbench at /architecture. It is a comparison surface, not the ontology map: a solid canvas keeps each reviewed role beside source observation and names the delta between them. Whenever the paired rows fit the canvas height at rest, a downward chain uses one repeated 280p",
+      "wordCount": 864,
       "updatedAt": "2026-09-03",
       "linksOut": []
     },
@@ -3682,7 +3682,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1488,
+      "wordCount": 1545,
       "updatedAt": "2026-09-03",
       "linksOut": [
         "DECISIONS"

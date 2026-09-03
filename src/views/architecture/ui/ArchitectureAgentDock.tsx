@@ -14,7 +14,7 @@ import {
 import type { ArchitectureAgentRuntime } from '../model/architecture-agent';
 
 export interface ArchitectureAgentOpeningRequest {
-  kind: 'draft' | 'change' | 'verify';
+  kind: 'draft' | 'change' | 'verify' | 'improve';
   text: string;
   nonce: number;
 }

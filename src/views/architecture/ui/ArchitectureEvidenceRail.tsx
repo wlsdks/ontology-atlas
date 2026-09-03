@@ -71,7 +71,18 @@ export function ArchitectureEvidenceRail({
             aria-hidden
           />
           <span className="truncate font-[var(--font-weight-emphasis)]">{contractTitle}</span>
-          <span aria-hidden className="text-[color:var(--color-text-quaternary)]">·</span>
+          {/* The separator belongs to the observation title: measured 2026-09-03 with a dock open,
+              the title collapsed to 0px while the dot stayed painted, leaving the contract title
+              followed by a dangling separator. */}
+          <span
+            aria-hidden
+            className={cn(
+              'text-[color:var(--color-text-quaternary)]',
+              compact && 'hidden 2xl:inline',
+            )}
+          >
+            ·
+          </span>
           <span
             className={cn(
               'min-w-0 truncate text-[color:var(--color-text-tertiary)]',

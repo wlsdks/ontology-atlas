@@ -97,6 +97,70 @@ describe('architecture profile read model', () => {
     expect(prompt).toContain('visible receipt may be stale');
   });
 
+  /*
+   * ⚠️ One table over every task kind, so the next kind cannot fall through to a sentence written
+   * for another one (review, 2026-09-03: a two-way branch would have labelled `improve` "a
+   * verification task"). Every task states the profile, the receipt or its absence, the selected
+   * role, and refuses to write before the person has seen the result.
+   */
+  it.each(['change', 'verify', 'improve'] as const)(
+    'binds the profile, the receipt state, and the selected role for a %s task',
+    (kind) => {
+      const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+      const receipt = {
+        profileContentHash: `sha256:${'ab'.repeat(32)}`,
+        measuredAt: '2026-09-02T00:00:00.000Z',
+        source: { kind: 'git' as const, revision: 'ff57e45', dirty: false },
+        status: 'conforms' as const,
+        violationCount: 0,
+        unmappedEdges: 2,
+        unruledEdges: 1,
+      };
+      for (const bound of [receipt, null]) {
+        const prompt = buildArchitectureAgentPrompt(profile, null, {
+          kind,
+          stage: 'understand',
+          selectedRole: 'views',
+          receipt: bound,
+        });
+        expect(prompt).toContain(`"kind":"${kind}"`);
+        expect(prompt).toContain('"slug":"atlas-web"');
+        expect(prompt).toContain('"selectedRole":"views"');
+        if (bound) expect(prompt).toContain('"revision":"ff57e45"');
+        else expect(prompt).toContain('"receipt":null');
+        if (kind !== 'verify') expect(prompt).not.toContain('This is a verification task');
+        expect(prompt).toMatch(
+          kind === 'change'
+            ? /Before editing, return an architectureChangePlan/
+            : kind === 'verify'
+              ? /This is a verification task/
+              : /This is an improvement-finding task/,
+        );
+      }
+    },
+  );
+
+  /*
+   * The same refusal the draft carries: an agent may not derive a rule, a role name, or a pattern
+   * from what the code does today, whichever button asked. `improve` finds and asks; it does not
+   * propose, and it writes nothing.
+   */
+  it('lets an improvement task find disagreements and ask, never propose a rule or write', () => {
+    const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
+    const prompt = buildArchitectureAgentPrompt(profile, null, {
+      kind: 'improve',
+      stage: 'understand',
+      selectedRole: null,
+      receipt: null,
+    });
+    expect(prompt).toMatch(/no `allow_\*` keys, no `dependency_policy`, and no `dependency_usages`/);
+    expect(prompt).toMatch(/propose none/);
+    expect(prompt).toMatch(/Do not name a pattern, do not rename a role/);
+    expect(prompt).toMatch(/Write nothing/);
+    expect(prompt).toMatch(/you do not guess/);
+    expect(prompt).toContain('No persisted receipt is bound to this screen');
+  });
+
   it('tells a verifier that an unbound receipt is absent instead of sending it to the filesystem', () => {
     const profile = parseArchitectureProfile(FSD_PROFILE_FRONTMATTER);
     const prompt = buildArchitectureAgentPrompt(profile, null, {

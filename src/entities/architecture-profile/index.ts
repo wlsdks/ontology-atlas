@@ -3,6 +3,7 @@ export {
   buildArchitectureDraftPrompt,
   deriveArchitectureProfiles,
   parseArchitectureProfile,
+  type ArchitectureAgentTaskKind,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from './model/architecture-profile';

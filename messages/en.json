@@ -406,7 +406,18 @@
     "reviewDeltaAction": "Review delta",
     "planChangeAction": "Plan change",
     "copyAgentTask": "Copy task for your agent",
-    "draftNoAgentBody": "No agent is connected, so this cannot start here. Copy the sentence below and paste it into the coding agent you use."
+    "draftNoAgentBody": "No agent is connected, so this cannot start here. Copy the sentence below and paste it into the coding agent you use.",
+    "agentTaskMenu": "Choose another agent task",
+    "recheckSourceAction": "Re-inspect source",
+    "findImprovementsAction": "Find improvements",
+    "agentTaskHints": {
+      "inspect": "Reads the actual imports and compares them with the reviewed structure.",
+      "recheck": "Reads again and names what changed since the last receipt.",
+      "change": "Writes a change plan that keeps this structure first.",
+      "improve": "Names where intent and observation disagree and where no rule exists, then asks you for the rule."
+    },
+    "agentTaskCopyHint": "Choosing copies that task's sentence.",
+    "copiedTaskHandoff": "Copied “{task}”. Paste it into your agent"
   },
   "ontologyRelations": {
     "relationShort": {

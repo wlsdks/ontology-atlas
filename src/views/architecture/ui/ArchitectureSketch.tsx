@@ -108,8 +108,24 @@ const PAIRED_CONTRACT_W = 280;
 const PAIRED_GUTTER_W = 72;
 const PAIRED_OBSERVATION_W = 240;
 const PAIRED_OBSERVATION_H = 64;
-const PAIRED_ROW_GAP = 20;
+/*
+ * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
+ * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
+ * read as a floating caption). A 12px caption line with 4px of air on each side needs 20px; four
+ * more keep the rectangle clear of both faces under the collision pad.
+ */
+const PAIRED_ROW_GAP = 24;
+/*
+ * ⚠️ **Receding must leave the words readable.** At 0.35 a non-selected role title measured
+ * 3.02:1 and its sentence 1.7:1; at 0.18 the unrelated edge sentences measured 1.23:1 — four of
+ * seven roles became unreadable the moment one was chosen (2026-09-03). The selected pair is
+ * emphasised by its indigo face and stroke, so the rest only needs to step back, not vanish:
+ * 0.65 keeps a receded title above 7:1 and its sentence above 3:1 on the canvas ground.
+ */
+const RECEDED_ROLE_OPACITY = 0.65;
+const RECEDED_STROKE_OPACITY = 0.55;
 const PAIRED_HEADER_H = 20;
+const PAIRED_PAD_Y = 8;
 /* Long edge sentences and focused skip arcs share one bounded outside lane on each side. */
 const PAIRED_SIDE_ROOM = 180;
 const PAIRED_NATURAL_W =
@@ -341,6 +357,17 @@ export function ArchitectureSketch({
    */
   const [restWidth, setRestWidth] = useState(0);
   /*
+   * ⚠️ **The comparison ladder is chosen by the height it needs, not by whether seven boxes could
+   * squeeze across.** Measured 2026-09-03 at 1920×1080: "across while it fits across" drew the
+   * chain as 151px cards, 205px of ink in a 918px canvas, every role sentence cut to "…" and the
+   * lane labels repeated fourteen times — the widest screen showed the least. The 2026-09-03
+   * comparison-workbench record decided the 280/72/240 rows; this reads the canvas height at
+   * rest (the column that holds both the canvas and its hidden-count row, so a count appearing
+   * cannot flip the axis) and prefers those rows whenever they fit. Across remains the answer for
+   * a canvas too short for the rows, and for profiles with parallel lanes.
+   */
+  const [restHeight, setRestHeight] = useState(0);
+  /*
    * ⚠️ **One height for every box, not one per box.** A ledger exists per role, but a chain whose
    * boxes are two different heights reads as two kinds of thing rather than as one row of roles —
    * and the lane arithmetic below assumes a single box height everywhere. So the drawing grows when
@@ -354,7 +381,18 @@ export function ArchitectureSketch({
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
   const naturalAcross = PAD_X * 2 + ranks * compactBoxW + (ranks - 1) * COL_GAP;
   const axisWidth = restWidth > 0 ? restWidth : boxWidth;
-  const axis: FlowAxis = axisWidth > 0 && naturalAcross > axisWidth ? 'down' : 'across';
+  const pairedNaturalH =
+    PAIRED_PAD_Y * 2 + PAIRED_HEADER_H + ranks * BOX_H + (ranks - 1) * PAIRED_ROW_GAP;
+  const pairedRowsFit =
+    lanes === 1 &&
+    axisWidth >= PAIRED_NATURAL_W &&
+    restHeight > 0 &&
+    restHeight >= pairedNaturalH;
+  const axis: FlowAxis = pairedRowsFit
+    ? 'down'
+    : axisWidth > 0 && naturalAcross > axisWidth
+      ? 'down'
+      : 'across';
   const roomyAcross = PAD_X * 2 + ranks * roomyBoxW + (ranks - 1) * COL_GAP;
   const usesRoomyBoxes = axis === 'across' && axisWidth > 0 && roomyAcross <= axisWidth;
   const preferredBoxW = usesRoomyBoxes ? roomyBoxW : compactBoxW;
@@ -383,7 +421,7 @@ export function ArchitectureSketch({
         ? ROW_GAP_LEDGER
         : ROW_GAP_PLAIN;
   const padY = usesPairedDown
-    ? 8
+    ? PAIRED_PAD_Y
     : axis === 'down'
       ? 8
       : hasLedger
@@ -580,6 +618,9 @@ export function ArchitectureSketch({
         )
       : 0;
     setRestWidth(element.clientWidth + dockWidth);
+    /* The column around the scroller keeps its height whether or not a hidden-count row is shown,
+       and no dock changes it at xl (docks open beside the canvas, never above it). */
+    setRestHeight(element.parentElement?.clientHeight ?? element.clientHeight);
     /*
      * ⚠️ **Measured along the axis the chain runs.** These readings were written when a drawing
      * could only be cut on the right; a chain that runs down is cut at the bottom instead, and a
@@ -807,6 +848,11 @@ export function ArchitectureSketch({
         leadRoom: layoutLeadRoom,
         trailRoom: layoutTrailRoom,
         skipSide,
+        /* On the comparison ladder an adjacent rule's sentence sits beside its own arrow, with
+           the half face, the delta gutter and the observation face as its room; the row gap
+           between the two faces is clear ground by construction. */
+        adjacentSeat: usesPairedDown && lane === placed ? 'connector' : 'lead',
+        connectorRoom: contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW,
         sentenceOf: edgeSentence,
         focus,
       });
@@ -1196,7 +1242,7 @@ export function ArchitectureSketch({
               aria-hidden={!drawn}
               data-edge-drawn={drawn ? 'true' : 'false'}
               className="architecture-stroke"
-              style={{ opacity: !drawn ? 0 : receded ? 0.18 : 1 }}
+              style={{ opacity: !drawn ? 0 : receded ? RECEDED_STROKE_OPACITY : 1 }}
               data-edge-kind={edge.kind}
               data-edge-violated={violated ? 'true' : undefined}
               data-edge-from={edge.from}
@@ -1238,7 +1284,7 @@ export function ArchitectureSketch({
                     ? 'fill-[color:var(--color-text-secondary)] tabular-nums'
                     : 'fill-[color:var(--color-text-tertiary)]',
               )}
-              style={{ opacity: !shown ? 0 : receded ? 0.18 : 1 }}
+              style={{ opacity: !shown ? 0 : receded ? RECEDED_STROKE_OPACITY : 1 }}
               aria-hidden={!shown}
               data-testid={`architecture-edge-sentence-${sentence.from}-${sentence.to}`}
               data-edge-sentence={sentence.hidden ?? (drawnStroke ? 'drawn' : 'held')}
@@ -1384,7 +1430,7 @@ export function ArchitectureSketch({
                   onSelect(box.id, event.currentTarget);
                 }
               }}
-              style={{ opacity: receded ? 0.35 : 1 }}
+              style={{ opacity: receded ? RECEDED_ROLE_OPACITY : 1 }}
               className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible_.architecture-node-face]:stroke-[color:var(--color-indigo-focus-ring)] [&:focus-visible_.architecture-node-face]:[stroke-width:2px]"
             >
               {/*

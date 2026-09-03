@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, PanelRight, X } from 'lucide-react';
+import { Bot, Boxes, ChevronDown, PanelRight, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
   buildArchitectureLayout,
+  type ArchitectureAgentTaskKind,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
@@ -20,6 +21,7 @@ import type {
   ArchitectureAgentRoute,
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
+import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 
@@ -72,6 +74,8 @@ function readArchitectureRole(): string | null {
   return new URL(window.location.href).searchParams.get('role');
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
+/** The same window `useCopyFeedback` gives every other copy control before it returns to rest. */
+const COPY_FEEDBACK_MS = 1600;
 
 export function ArchitectureWorkbench({
   profiles,
@@ -187,6 +191,22 @@ export function ArchitectureWorkbench({
   }, []);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
+  /* Which task the last copy carried, so the confirmation names it (a source-hidden walker chose
+     "find improvements" and the button only said "copied", 2026-09-03). */
+  const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);
+  /*
+   * ⚠️ **A confirmation that never leaves is a lost button.** The copied sentence replaced the
+   * button label for good; the same walker waited thirty seconds and could not tell how to copy
+   * again. The feedback window is the repository's clipboard convention (`useCopyFeedback`).
+   */
+  useEffect(() => {
+    if (copyState !== 'copied' && copyState !== 'error') return undefined;
+    const timer = window.setTimeout(() => {
+      setCopyState('idle');
+      setCopiedTaskLabel(null);
+    }, COPY_FEEDBACK_MS);
+    return () => window.clearTimeout(timer);
+  }, [copyState]);
   const evidencePanelRef = useRef<HTMLElement>(null);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
@@ -243,9 +263,53 @@ export function ArchitectureWorkbench({
     });
   }, [evidenceOpen]);
 
-  const primaryAgentKind: 'change' | 'verify' =
+  /*
+   * ⚠️ **One button, one derived default, and a chooser for the rest.** The button used to be
+   * the only door and its task was decided for the person: `conforms` meant "plan a change",
+   * anything else meant "inspect". A developer whose receipt passed and whose code then changed
+   * had no way to ask for a re-check, and nobody could ask where the reviewed structure itself
+   * needed a decision (owner, 2026-09-03). The default stays derived; the chooser beside it
+   * offers the other two tasks with one line each on what they do.
+   */
+  const primaryAgentKind: ArchitectureAgentTaskKind =
     selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
-  const requestedAgentKind: 'change' | 'verify' = primaryAgentKind;
+  const requestedAgentKind: ArchitectureAgentTaskKind = primaryAgentKind;
+  const [taskMenuOpen, setTaskMenuOpen] = useState(false);
+  const taskMenuRef = useRef<HTMLDivElement>(null);
+  const taskMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!taskMenuOpen) return undefined;
+    const onPointerDown = (event: PointerEvent) => {
+      if (taskMenuRef.current && !taskMenuRef.current.contains(event.target as Node)) {
+        setTaskMenuOpen(false);
+      }
+    };
+    /* Escape closes the menu only; the docks keep their own Escape (capture + stop). */
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setTaskMenuOpen(false);
+      taskMenuTriggerRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    /* The surface mounts its items one presence frame after `open`; the second frame is when the
+       first item exists to take focus, so Arrow keys work from the moment the menu is visible. */
+    let inner = 0;
+    const frame = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => {
+        taskMenuRef.current
+          ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
+          ?.focus();
+      });
+    });
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(inner);
+    };
+  }, [taskMenuOpen]);
   const agentReceipt = selectedRecord
     ? {
         profileContentHash: selectedRecord.profile.contentHash,
@@ -257,18 +321,29 @@ export function ArchitectureWorkbench({
         unruledEdges: selectedRecord.brief.conformance.unknown?.unruledEdges ?? null,
       }
     : null;
-  const handoff = selected
-    ? buildArchitectureAgentPrompt(
-        selected,
-        handoffContexts[selected.slug] ?? null,
-        {
-          kind: requestedAgentKind,
-          stage: 'understand',
-          selectedRole,
-          receipt: agentReceipt,
-        },
-      )
-    : '';
+  const promptFor = (kind: ArchitectureAgentTaskKind) =>
+    selected
+      ? buildArchitectureAgentPrompt(
+          selected,
+          handoffContexts[selected.slug] ?? null,
+          {
+            kind,
+            stage: 'understand',
+            selectedRole,
+            receipt: agentReceipt,
+          },
+        )
+      : '';
+  const handoff = promptFor(requestedAgentKind);
+  const agentTasks: { kind: ArchitectureAgentTaskKind; label: string; hint: string }[] = [
+    {
+      kind: 'verify',
+      label: agentReceipt ? t('recheckSourceAction') : t('inspectSourceAction'),
+      hint: agentReceipt ? t('agentTaskHints.recheck') : t('agentTaskHints.inspect'),
+    },
+    { kind: 'change', label: t('planChangeAction'), hint: t('agentTaskHints.change') },
+    { kind: 'improve', label: t('findImprovementsAction'), hint: t('agentTaskHints.improve') },
+  ];
 
   /*
    * What the detail panel needs about the chosen role, derived from the same layout the canvas
@@ -507,14 +582,29 @@ export function ArchitectureWorkbench({
   const roleLabel = (id: string) =>
     t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
 
-  async function copyHandoff() {
+  async function copyHandoff(text: string = handoff, taskLabel: string | null = null) {
     setCopyState('pending');
+    setCopiedTaskLabel(taskLabel);
     try {
-      await navigator.clipboard.writeText(handoff);
+      await navigator.clipboard.writeText(text);
       setCopyState('copied');
     } catch {
       setCopyState('error');
     }
+  }
+
+  /* One path for every task: a verified agent takes it as the opening turn, anything else copies
+     the same bounded sentence. The chooser and the button both end here. */
+  function runAgentTask(kind: ArchitectureAgentTaskKind, taskLabel: string | null = null) {
+    if (!selected) return;
+    if (agentRoute === 'agent') {
+      setInspector(null);
+      setEvidenceOpen(false);
+      writeArchitectureAddress(selectedRole);
+      onAgentRequest?.({ kind, prompt: promptFor(kind) });
+      return;
+    }
+    void copyHandoff(promptFor(kind), taskLabel);
   }
 
   return (
@@ -592,57 +682,121 @@ export function ArchitectureWorkbench({
                 deltaStatus={deltaStatus}
                 compact={rightDockOpen}
               />
-              <Button
-                variant="outline"
-                size="lg"
-                className="atlas-touch-floor ml-auto shrink-0"
-                disabled={agentRoute === 'checking' || copyState === 'pending'}
-                data-testid="architecture-agent-action"
-                data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
-                onClick={() => {
-                  if (agentRoute === 'agent') {
-                    const kind: ArchitectureAgentRequest['kind'] = requestedAgentKind;
-                    setInspector(null);
-                    setEvidenceOpen(false);
-                    writeArchitectureAddress(selectedRole);
-                    onAgentRequest?.({
-                      kind,
-                      prompt: buildArchitectureAgentPrompt(
-                        selected,
-                        handoffContexts[selected.slug] ?? null,
-                        {
-                          kind,
-                          stage: 'understand',
-                          selectedRole,
-                          receipt: agentReceipt,
-                        },
-                      ),
-                    });
-                    return;
-                  }
-                  void copyHandoff();
+              <div
+                ref={taskMenuRef}
+                className="relative ml-auto flex shrink-0 items-stretch"
+                data-testid="architecture-agent-task"
+                onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+                  if (!taskMenuOpen) return;
+                  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+                  const items = [
+                    ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+                  ];
+                  const at = items.indexOf(document.activeElement as HTMLButtonElement);
+                  const next = event.key === 'ArrowDown' ? at + 1 : at - 1;
+                  items[(next + items.length) % items.length]?.focus();
+                  event.preventDefault();
                 }}
               >
-                <Bot size={ICON_SIZE.sm} aria-hidden />
-                {agentRoute === 'checking'
-                  ? t('checkingAgent')
-                  : agentRoute === 'clipboard'
-                    ? copyState === 'pending'
-                      ? t('copyingHandoff')
-                      : copyState === 'copied'
-                        ? t('copiedHandoff')
-                        : copyState === 'error'
-                          ? t('copyHandoffError')
-                          : t('copyAgentTask')
-                    : conformance?.status === 'conforms'
-                      ? t('planChangeAction')
-                      : conformance
-                        ? t('reviewDeltaAction')
-                        : t('inspectSourceAction')}
-              </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="atlas-touch-floor rounded-r-none"
+                  disabled={agentRoute === 'checking' || copyState === 'pending'}
+                  data-testid="architecture-agent-action"
+                  data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
+                  onClick={() => runAgentTask(requestedAgentKind)}
+                >
+                  <Bot size={ICON_SIZE.sm} aria-hidden />
+                  {agentRoute === 'checking'
+                    ? t('checkingAgent')
+                    : agentRoute === 'clipboard'
+                      ? copyState === 'pending'
+                        ? t('copyingHandoff')
+                        : copyState === 'copied'
+                          ? copiedTaskLabel
+                            ? t('copiedTaskHandoff', { task: copiedTaskLabel })
+                            : t('copiedHandoff')
+                          : copyState === 'error'
+                            ? t('copyHandoffError')
+                            : t('copyAgentTask')
+                      : conformance?.status === 'conforms'
+                        ? t('planChangeAction')
+                        : conformance
+                          ? t('reviewDeltaAction')
+                          : t('inspectSourceAction')}
+                </Button>
+                <Button
+                  ref={taskMenuTriggerRef}
+                  variant="outline"
+                  size="lg"
+                  className="atlas-touch-floor -ml-px min-w-9 rounded-l-none px-2"
+                  disabled={agentRoute === 'checking'}
+                  aria-haspopup="menu"
+                  aria-expanded={taskMenuOpen}
+                  aria-label={t('agentTaskMenu')}
+                  data-testid="architecture-agent-task-menu"
+                  onClick={() => setTaskMenuOpen((value) => !value)}
+                >
+                  <ChevronDown
+                    size={ICON_SIZE.sm}
+                    aria-hidden
+                    className={cn(
+                      'transition-transform motion-reduce:transition-none',
+                      taskMenuOpen && 'rotate-180',
+                    )}
+                  />
+                </Button>
+                <Surface
+                  open={taskMenuOpen}
+                  origin="top right"
+                  role="menu"
+                  aria-label={t('agentTaskMenu')}
+                  data-testid="architecture-agent-task-popover"
+                  className="absolute right-0 top-full z-20 mt-1 flex w-80 flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+                >
+                  {agentTasks.map((task) => (
+                    <button
+                      key={task.kind}
+                      type="button"
+                      role="menuitem"
+                      data-testid={`architecture-agent-task-${task.kind}`}
+                      data-architecture-agent-task={task.kind}
+                      aria-current={task.kind === requestedAgentKind ? 'true' : undefined}
+                      onClick={() => {
+                        setTaskMenuOpen(false);
+                        runAgentTask(task.kind, task.label);
+                      }}
+                      className={controlClass({
+                        shape: 'row',
+                        size: 'md',
+                        tone: 'secondary',
+                        hoverSurface: 'lift',
+                        active: task.kind === requestedAgentKind,
+                        className:
+                          'h-auto min-w-0 flex-col items-start gap-0.5 px-3 py-2 focus-visible:bg-[color:var(--color-overlay-2)] focus-visible:outline-none',
+                      })}
+                    >
+                      <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                        {task.label}
+                      </span>
+                      <span className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
+                        {task.hint}
+                      </span>
+                    </button>
+                  ))}
+                  {agentRoute === 'clipboard' ? (
+                    <p className="border-t border-[color:var(--color-divider)] px-3 pb-1 pt-2 text-caption text-[color:var(--color-text-quaternary)]">
+                      {t('agentTaskCopyHint')}
+                    </p>
+                  ) : null}
+                </Surface>
+              </div>
               <span className="sr-only" role="status" aria-live="polite">
                 {agentRoute === 'clipboard' && copyState === 'copied'
-                  ? t('copiedHandoff')
+                  ? copiedTaskLabel
+                    ? t('copiedTaskHandoff', { task: copiedTaskLabel })
+                    : t('copiedHandoff')
                   : agentRoute === 'clipboard' && copyState === 'error'
                     ? t('copyHandoffError')
                   : ''}

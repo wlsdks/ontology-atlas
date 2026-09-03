@@ -206,7 +206,7 @@ test('a measured profile separates each role contract and receipt, whole chain o
       expect(measured.sentenceOffenders, `${where} ${measured.sentenceOffenders.join('\n')}`).toEqual([]);
       expect(measured.sentencesDrawn, where).toBeGreaterThanOrEqual(6);
       expect(measured.evidenceLayout, where).toBe(
-        size.width === 1512 ? 'paired-ladder' : 'split',
+        'paired-ladder',
       );
     }
 
@@ -227,9 +227,11 @@ test('a measured profile separates each role contract and receipt, whole chain o
 
       await routing.click();
       await expect(routing).toHaveAttribute('data-architecture-role-state', 'selected');
+      /* 0.65, not 0.35 (2026-09-03): at 0.35 a receded title measured 3.0:1 and its sentence
+         1.7:1; the rest of the chain steps back but stays readable. */
       await expect
         .poll(() => receded.evaluate((el) => getComputedStyle(el).opacity), { timeout: 2000 })
-        .toBe('0.35');
+        .toBe('0.65');
       const duration = await receded.evaluate((el) => getComputedStyle(el).transitionDuration);
       expect(duration, `${locale}: selected recede runs at the feedback step`).toBe('0.12s');
       await routing.click();
@@ -341,7 +343,7 @@ test('the workbench holds one screen: no page scroll, and the panels open on a c
     await page.getByTestId('architecture-evidence-close').click();
     await expect(page.getByTestId('architecture-graph'), where).toHaveAttribute(
       'data-evidence-layout',
-      size.width === 1512 ? 'paired-ladder' : 'split',
+      'paired-ladder',
     );
 
     /* Clicking a role opens the dock, and the dock leads with that role's own answer. */
@@ -492,11 +494,13 @@ test('choosing a role does not turn the chain, and the chosen box is in view', a
       const boxes = [...document.querySelectorAll('[data-testid^="architecture-graph-box-"]')].map((b) => b.getBoundingClientRect());
       return boxes.length > 1 && Math.abs(boxes[0].top - boxes[1].top) < 1 ? 'across' : 'down';
     });
-  expect(await axisOf(), 'the seven-role chain runs across at 1920 at rest').toBe('across');
+  /* Since 2026-09-03 the seven rows fit a 1080px canvas, so the comparison ladder runs down at
+     rest here too; the claim under test is unchanged — a click may not turn it. */
+  expect(await axisOf(), 'the seven-role chain runs down at 1920×1080 at rest').toBe('down');
   for (const role of ['shared', 'routing', 'entities']) {
     await page.getByTestId(`architecture-graph-box-${role}`).click();
     await page.waitForTimeout(900);
-    expect(await axisOf(), `choosing ${role} turned the chain`).toBe('across');
+    expect(await axisOf(), `choosing ${role} turned the chain`).toBe('down');
     const seen = await page.evaluate((id) => {
       const box = document.querySelector(`[data-testid="architecture-graph-box-${id}"]`)!.getBoundingClientRect();
       const scroller = document.querySelector('[data-testid="architecture-graph"]')!.parentElement!.getBoundingClientRect();

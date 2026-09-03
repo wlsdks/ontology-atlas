@@ -175,7 +175,8 @@ describe('the evidence split plane', () => {
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
       expect(graph).toHaveAttribute('width', '1008');
-      expect(graph).toHaveAttribute('height', '660');
+      /* 8 + 20 + 7×72 + 6×24 + 8: the row gap carries the rule sentence beside its arrow. */
+      expect(graph).toHaveAttribute('height', '684');
       expect(screen.getByTestId('architecture-paired-lane-headings')).toHaveTextContent(
         'ContractDeltaObservation',
       );
@@ -200,12 +201,56 @@ describe('the evidence split plane', () => {
     }
   });
 
+  /*
+   * ⚠️ Measured 2026-09-03 at 1920×1080: "across while it fits across" drew 151px cards, 205px of
+   * ink in a 918px canvas, and cut every role sentence. The 280/72/240 rows the 2026-09-03 record
+   * decided are preferred whenever the canvas at rest is tall enough for them.
+   */
+  it('prefers the comparison ladder over an across chain when the rows fit the height', () => {
+    const geometry: Record<string, number> = {
+      clientWidth: 1792,
+      scrollWidth: 1792,
+      clientHeight: 918,
+      scrollHeight: 918,
+    };
+    const originals = Object.fromEntries(
+      Object.keys(geometry).map((key) => [
+        key,
+        Object.getOwnPropertyDescriptor(HTMLElement.prototype, key),
+      ]),
+    );
+    try {
+      for (const [key, value] of Object.entries(geometry)) {
+        Object.defineProperty(HTMLElement.prototype, key, {
+          configurable: true,
+          get: () => value,
+        });
+      }
+      draw({}, new Set(), [], FSD_PROFILE_FRONTMATTER);
+      const graph = screen.getByTestId('architecture-graph');
+      expect(graph).toHaveAttribute('data-architecture-axis', 'down');
+      expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+      /* Every adjacent rule sentence is drawn beside its arrow, none held or cut. */
+      const sentences = [...document.querySelectorAll('[data-edge-sentence-kind="permitted"]')];
+      expect(sentences).toHaveLength(6);
+      expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(true);
+      expect(sentences.every((node) => node.getAttribute('text-anchor') === 'start')).toBe(true);
+    } finally {
+      for (const [key, descriptor] of Object.entries(originals)) {
+        if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
+        else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];
+      }
+    }
+  });
+
   it('expands into aligned contract and observation lanes only when the full role set fits', () => {
+    /* A canvas too short for the four paired rows (16 + 20 + 4×72 + 3×24 = 396), so the across
+       chain is the honest answer; a taller one takes the comparison ladder, tested below. */
     const geometry: Record<string, number> = {
       clientWidth: 1600,
       scrollWidth: 1600,
-      clientHeight: 700,
-      scrollHeight: 700,
+      clientHeight: 360,
+      scrollHeight: 360,
     };
     const originals = Object.fromEntries(
       Object.keys(geometry).map((key) => [

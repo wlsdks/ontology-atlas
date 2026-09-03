@@ -77,6 +77,15 @@ export interface SentenceLayoutInput {
   trailRoom: number;
   /** Downward skip arcs can leave either side so paired evidence rails never cross each other. */
   skipSide?: 'negative' | 'positive';
+  /**
+   * Where an adjacent pair's sentence sits on a downward chain. `lead` is the ground left of the
+   * column (the compact ladder). `connector` seats it beside the arrow it describes, in the row
+   * gap between the two faces it joins, reading to the right — the comparison ladder (2026-09-03:
+   * the lead-lane sentence ended 160px from its arrow and read as a floating caption).
+   */
+  adjacentSeat?: 'lead' | 'connector';
+  /** Ground to the right of the arrow that a `connector` sentence may use, in SVG units. */
+  connectorRoom?: number;
   sentenceOf: (edge: SentenceEdge) => string;
   /**
    * The role a reader is pointing at or has chosen. Its strokes' sentences place first, so a
@@ -137,6 +146,8 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
     leadRoom,
     trailRoom,
     skipSide = 'positive',
+    adjacentSeat = 'lead',
+    connectorRoom = 0,
     sentenceOf,
     focus = null,
   } = input;
@@ -205,12 +216,21 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
          * reviewed policy reads on the left, measured traffic on the right.
          */
         const isTraffic = edge.kind === 'traffic';
-        x = isTraffic
-          ? Math.max(a.x, b.x) + boxW + GAP_TO_BOX
-          : Math.min(a.x, b.x) - GAP_TO_BOX;
-        y = (sy + ty) / 2 + 4;
-        anchor = isTraffic ? 'start' : 'end';
-        roomPx = (isTraffic ? trailRoom : leadRoom) - GAP_TO_BOX - 12;
+        if (!isTraffic && adjacentSeat === 'connector') {
+          /* Beside the arrow: it leaves the lower face's centre, so the words start just right
+             of that line and run over the gap that the two faces leave between them. */
+          x = Math.min(a.x, b.x) + boxW / 2 + GAP_TO_ARC;
+          y = (sy + ty) / 2 + 4;
+          anchor = 'start';
+          roomPx = connectorRoom - GAP_TO_ARC - 12;
+        } else {
+          x = isTraffic
+            ? Math.max(a.x, b.x) + boxW + GAP_TO_BOX
+            : Math.min(a.x, b.x) - GAP_TO_BOX;
+          y = (sy + ty) / 2 + 4;
+          anchor = isTraffic ? 'start' : 'end';
+          roomPx = (isTraffic ? trailRoom : leadRoom) - GAP_TO_BOX - 12;
+        }
       } else {
         const clear = clearSwing(edge, (sy + ty) / 2);
         const negative = skipSide === 'negative';
