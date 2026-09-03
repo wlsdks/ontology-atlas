@@ -4,11 +4,13 @@ import {
   AMBIGUOUS_PROFILE_FRONTMATTER,
   FSD_PROFILE_FRONTMATTER,
   HEXAGONAL_PROFILE_FRONTMATTER,
+  LOCALIZED_SUMMARY_REJECT_CASES,
   PATH_MATCH_CASES,
 } from '../fixtures/architecture-profile-cases.mjs';
 import {
   parseArchitectureProfile as parseWebProfile,
   deriveArchitectureProfiles as deriveWebProfiles,
+  deriveArchitectureProfilesReport as deriveWebReport,
   matchesArchitecturePath as matchesWebPath,
 } from '@/entities/architecture-profile';
 import {
@@ -79,6 +81,40 @@ describe('architecture-profile/v1 cross-surface contract', () => {
   });
 
   /*
+   * ⚠️ **A localized sentence is a restatement, never a second fact.** `summary_<role>` stays the
+   * canonical sentence in `roles[].summary` on both surfaces and is the only one an agent brief,
+   * a prompt or the CLI prints; `summary_<role>_<locale>` lands in a separate `summaries` map that
+   * only the web workbench reads. Parsing them identically is what keeps a Korean reader and an
+   * agent looking at one profile rather than two.
+   */
+  it.each([
+    ['web', parseWebProfile],
+    ['mcp', parseMcpProfile],
+  ])('%s reads a localized summary beside the canonical one, not instead of it', (_surface, parse) => {
+    const profile = parse(FSD_PROFILE_FRONTMATTER);
+    const byId = new Map(profile.roles.map((role) => [role.id, role]));
+    expect(byId.get('views')?.summary).toBe(
+      'One module per route-level screen, assembled from the layers beneath it.',
+    );
+    expect(byId.get('views')?.summaries).toEqual({
+      ko: '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.',
+    });
+    /* A role whose sentence nobody translated, and a role with no sentence at all. */
+    expect(byId.get('routing')?.summaries).toEqual({});
+    expect(byId.get('shared')?.summary).toBeUndefined();
+    expect(byId.get('shared')?.summaries).toEqual({});
+  });
+
+  it.each(
+    LOCALIZED_SUMMARY_REJECT_CASES.flatMap((row) => [
+      ['web', row, parseWebProfile] as const,
+      ['mcp', row, parseMcpProfile] as const,
+    ]),
+  )('%s refuses %o', (_surface, row, parse) => {
+    expect(() => parse(row.frontmatter)).toThrow(row.message);
+  });
+
+  /*
    * ⚠️ **One record reached twice is not a conflict.** Measured 2026-08-26: `atlas architecture .`
    * at this repository's root died with `Duplicate architecture profile slug: atlas-web.` and
    * nothing else. The cause was the repository's own generated mirror — `pnpm docs-vault:build`
@@ -102,20 +138,37 @@ describe('architecture-profile/v1 cross-surface contract', () => {
    * ⚠️ And a real conflict must still fail closed — but name both documents, because "which two?"
    * is the whole question the old message refused to answer.
    */
-  it.each([
-    ['web', (docs: Parameters<typeof deriveWebProfiles>[0]) => deriveWebProfiles(docs)],
-    ['mcp', (docs: Parameters<typeof deriveWebProfiles>[0]) => findMcpProfiles(docs)],
-  ])('%s refuses two different profiles wearing one slug, and names both', (_surface, derive) => {
-    const call = () =>
-      derive([
-        { slug: 'architecture/atlas-web', frontmatter: FSD_PROFILE_FRONTMATTER },
-        {
-          slug: 'architecture/other',
-          frontmatter: { ...FSD_PROFILE_FRONTMATTER, title: 'A different contract' },
-        },
-      ]);
-    expect(call).toThrow(/architecture\/atlas-web/);
-    expect(call).toThrow(/architecture\/other/);
+  it('refuses two different profiles wearing one slug, and names both on either surface', () => {
+    const docs = [
+      { slug: 'architecture/atlas-web', frontmatter: FSD_PROFILE_FRONTMATTER },
+      {
+        slug: 'architecture/other',
+        frontmatter: { ...FSD_PROFILE_FRONTMATTER, title: 'A different contract' },
+      },
+    ];
+    /*
+     * ⚠️ **One sentence, two ways of delivering it.** An agent reading a half-scanned vault must
+     * not mistake it for a whole one, so the MCP still throws; the screen keeps the profiles it
+     * could read and names the collision beside them (2026-09-03). The wording is the same on
+     * both surfaces, because "which two documents?" is the same question either way.
+     */
+    let thrown: unknown = null;
+    try {
+      findMcpProfiles(docs);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown).toBeInstanceOf(Error);
+    const message = (thrown as Error).message;
+    expect(message).toMatch(/architecture\/atlas-web/);
+    expect(message).toMatch(/architecture\/other/);
+
+    const report = deriveWebReport(docs);
+    expect(report.profiles).toHaveLength(1);
+    expect(report.problems).toEqual([
+      { documentSlug: 'architecture/other', message },
+    ]);
+    expect(deriveWebProfiles(docs)).toHaveLength(1);
   });
 
   /*

@@ -43,6 +43,61 @@ describe('placeEdgeSentences', () => {
     expect(new Set(out.map((s) => s.y)).size).toBe(6);
   });
 
+  it('seats an adjacent rule beside its own arrow on the comparison ladder', () => {
+    /* 2026-09-03: the lead-lane sentence ended 160px from the arrow it described. On the ladder
+       the words start just right of the arrow (the lower face's centre line) and run over the row
+       gap, with the half face, the gutter and the observation face as their room. */
+    /* The ladder's own pitch: the fixture chain is 12px apart, the ladder leaves 24. */
+    const placed = new Map(IDS.map((id, i) => [id, { x: 400, y: 20 + i * (BOX.boxH + 24) }]));
+    const out = placeEdgeSentences({
+      axis: 'down',
+      edges: [spine[0]],
+      placed,
+      ...BOX,
+      rowGap: 24,
+      swingOf: () => 0,
+      leadRoom: 180,
+      trailRoom: 180,
+      adjacentSeat: 'connector',
+      connectorRoom: BOX.boxW / 2 + 72 + 240,
+      sentenceOf: sentence,
+    });
+    const [s] = out;
+    expect(s.hidden).toBeUndefined();
+    expect(s.anchor).toBe('start');
+    expect(s.x).toBe(placed.get('routing')!.x + BOX.boxW / 2 + 10);
+    const gapTop = placed.get('routing')!.y + BOX.boxH;
+    expect(s.rect!.y).toBeGreaterThanOrEqual(gapTop + 4);
+    expect(s.rect!.y + s.rect!.height).toBeLessThanOrEqual(placed.get('app')!.y - 4);
+  });
+
+  it('seats a measured count beside its own observation arrow on the ladder', () => {
+    /* Installed app, 2026-09-03: the count sentence sat 40px right of the observation column and
+       was cut to "import…"; on the ladder both lanes seat their sentence beside the arrow. */
+    const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
+    const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
+    const [s] = placeEdgeSentences({
+      axis: 'down',
+      edges: [traffic],
+      placed,
+      ...BOX,
+      rowGap: 24,
+      swingOf: () => 0,
+      leadRoom: 180,
+      trailRoom: 180,
+      adjacentSeat: 'connector',
+      connectorSide: 'left',
+      /* Half a face plus a wide gutter: enough for the Latin fixture sentence in full. */
+      connectorRoom: BOX.boxW / 2 + 150,
+      sentenceOf: sentence,
+    });
+    expect(s.hidden).toBeUndefined();
+    /* Reads to the left, into the gutter: the right side is the skip arcs' lane. */
+    expect(s.anchor).toBe('end');
+    expect(s.x).toBe(600 + BOX.boxW / 2 - 10);
+    expect(s.text).toBe('routing reaches app in 75 imports');
+  });
+
   it('gives a skip its sentence beside its own arc, right of the column', () => {
     const placed = chainDown(400);
     const skip: SentenceEdge = { from: 'entities', to: 'widgets', kind: 'traffic', count: 2, columnSpan: 2, violated: true };
@@ -261,5 +316,20 @@ describe('placeEdgeSentences', () => {
       first.x + first.width + 4 <= second.x || second.x + second.width + 4 <= first.x;
     expect(apart).toBe(true);
     expect(out.some((sentence) => sentence.text.endsWith('…'))).toBe(true);
+  });
+});
+
+describe('placeEdgeSentences across lanes', () => {
+  it('lets a count sentence give way to a rule sentence another lane already holds', () => {
+    /* e2e, 2026-09-03: the rule read right from the contract arrow and the count read left from
+       the observation arrow into the same gutter row gap, and the two touched. */
+    const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
+    const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
+    const settings = { axis: 'down' as const, placed, ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 180, trailRoom: 180, adjacentSeat: 'connector' as const, connectorSide: 'left' as const, connectorRoom: BOX.boxW / 2 + 150, sentenceOf: sentence };
+    const free = placeEdgeSentences({ ...settings, edges: [traffic] })[0];
+    expect(free.hidden).toBeUndefined();
+    const ruleRect = { x: free.rect!.x - 40, y: free.rect!.y, width: 60, height: free.rect!.height };
+    const yielding = placeEdgeSentences({ ...settings, edges: [traffic], occupied: [ruleRect] })[0];
+    expect(yielding.hidden === 'collision' || yielding.text.length < free.text.length).toBe(true);
   });
 });

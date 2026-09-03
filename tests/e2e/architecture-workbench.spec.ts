@@ -41,6 +41,66 @@ test('핵심 행동만 남고 에이전트 작업 버튼은 하단 탭에 가리
   expect(report.hitOwnsPoint).toBe(true);
 });
 
+test('the agent task chooser offers a re-check and an improvement search beside the derived task', async ({ page }) => {
+  /*
+   * The button's task was decided for the person (conforms → plan, else inspect) and nothing on
+   * the screen could ask for a re-check or for where the reviewed structure needs a decision
+   * (owner, 2026-09-03). The chooser hands or copies the chosen task; Escape returns focus.
+   */
+  await seedFirstRunSeen(page);
+  await useDogfoodSample(page);
+  await page.addInitScript(() => {
+    (window as unknown as { __copied: string[] }).__copied = [];
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: async (text: string) => {
+          (window as unknown as { __copied: string[] }).__copied.push(text);
+        },
+      },
+    });
+  });
+  await page.setViewportSize({ width: 1512, height: 945 });
+  await page.goto('/ko/architecture/?guides=off');
+  await expect(page.getByTestId('architecture-graph')).toBeVisible();
+
+  const trigger = page.getByTestId('architecture-agent-task-menu');
+  await expect(page.getByTestId('architecture-agent-task-popover')).toHaveCount(0);
+  await trigger.click();
+  const menu = page.getByTestId('architecture-agent-task-popover');
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole('menuitem')).toHaveCount(3);
+  await expect(menu.getByTestId('architecture-agent-task-verify')).toHaveAttribute('aria-current', 'true');
+  /* The menu owns the space under the trigger: nothing covers its items. */
+  const owns = await menu.getByTestId('architecture-agent-task-improve').evaluate((item) => {
+    const rect = item.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return hit === item || item.contains(hit);
+  });
+  expect(owns).toBe(true);
+
+  await page.keyboard.press('Escape');
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  /* Escape closed the menu only; no dock was open, and none opened. */
+  await expect(page.getByTestId('architecture-inspector')).toHaveAttribute(
+    'data-architecture-inspector',
+    'none',
+  );
+
+  await trigger.click();
+  await menu.getByTestId('architecture-agent-task-improve').click();
+  await expect(page.getByTestId('architecture-agent-action')).toHaveAttribute(
+    'data-architecture-copy-state',
+    'copied',
+  );
+  const copied = await page.evaluate(() => (window as unknown as { __copied: string[] }).__copied);
+  expect(copied).toHaveLength(1);
+  expect(copied[0]).toContain('"kind":"improve"');
+  expect(copied[0]).toContain('This is an improvement-finding task');
+  expect(copied[0]).toContain('Write nothing');
+});
+
 test('obsolete workflow-stage links do not resurrect the removed prose panels', async ({ page }) => {
   await page.goto('/ko/architecture/?stage=plan');
   await expect(page.getByTestId('architecture-graph')).toBeVisible();
@@ -113,7 +173,10 @@ test('a real viewport resize may reflow the chain without losing the selected ro
   await role.click();
   await expect(role).toHaveAttribute('aria-pressed', 'true');
 
-  await page.setViewportSize({ width: 1112, height: 834 });
+  /* Since 2026-09-03 the comparison ladder takes any canvas from 744px wide whose rows fit its
+     height, so a tablet in landscape keeps the chain down; only a canvas too short for the rows
+     turns it across. The subject here is the selection surviving the turn, so turn it. */
+  await page.setViewportSize({ width: 1400, height: 420 });
   await page.evaluate(
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   );
@@ -445,4 +508,54 @@ test('every drawn stroke says its sentence, and no sentence touches anything', a
   expect(rest.drawn).toBeLessThanOrEqual(rest.strokes);
   /* Every role in a hexagonal profile touches every other, so nothing recedes here; the hover
      transition is measured on the seven-role profile in architecture-role-ledger.spec.ts. */
+});
+
+
+/*
+ * ⚠️ **Fixed-readable faces and connector space yield with the canvas before any role is hidden.**
+ * Measured 2026-09-03 at 1280x800, the widest laptop this product ships to: the canvas column is
+ * 638px tall while the roomy ladder asks for 684, so the seventh role fell past the fold and the
+ * canvas answered "1 more below". The tight density draws the same 280/72/240 comparison on 58px
+ * rows, and the whole role set stays inside the scroller.
+ */
+test('the ladder tightens its rows rather than hiding the seventh role at 1280x800', async ({
+  page,
+}) => {
+  await seedFirstRunSeen(page);
+  await useDogfoodSample(page);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto('/ko/architecture/?guides=off', { waitUntil: 'domcontentloaded' });
+  const graph = page.getByTestId('architecture-graph');
+  await expect(graph).toBeVisible({ timeout: 60_000 });
+  await page.evaluate(() => document.fonts.ready);
+  /* ResizeObserver measures the canvas, React commits the resulting SVG on the next frame. */
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+
+  await expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
+  await expect(graph).toHaveAttribute('data-ladder-density', 'tight');
+  await expect(page.getByTestId('architecture-canvas-hidden-below')).toHaveCount(0);
+
+  const outside = await page.evaluate(() => {
+    const scroller = document
+      .querySelector('[data-testid="architecture-graph"]')!
+      .parentElement!.getBoundingClientRect();
+    const out: string[] = [];
+    for (const box of document.querySelectorAll('[data-testid^="architecture-graph-box-"]')) {
+      const at = box.getBoundingClientRect();
+      if (
+        at.left < scroller.left - 1 ||
+        at.right > scroller.right + 1 ||
+        at.top < scroller.top - 1 ||
+        at.bottom > scroller.bottom + 1
+      )
+        out.push(`${box.getAttribute('data-testid')} is out of view`);
+    }
+    return out;
+  });
+  expect(outside, outside.join('\n')).toEqual([]);
 });

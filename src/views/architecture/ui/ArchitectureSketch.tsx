@@ -10,7 +10,7 @@ import { badgeClass } from '@/shared/ui/badge-class';
 import type { ArchitectureGraph as Graph, GraphBoxShape } from '../model/graph-layout';
 import type { RoleLedger } from '../model/role-ledger';
 import { placeEdgeSentences, type SentenceEdge } from '../model/edge-sentences';
-import { captionLineBudgets, splitSummaryLines } from '../model/summary-lines';
+import { captionLineRoom, splitSummaryLinesByWidth } from '../model/summary-lines';
 
 /* Geometry. One place, so the drawing can be reasoned about without reading the JSX. */
 /**
@@ -108,16 +108,58 @@ const PAIRED_CONTRACT_W = 280;
 const PAIRED_GUTTER_W = 72;
 const PAIRED_OBSERVATION_W = 240;
 const PAIRED_OBSERVATION_H = 64;
-const PAIRED_ROW_GAP = 20;
+/*
+ * ⚠️ **The connector gap carries a sentence now.** The adjacent rule's sentence sits beside the
+ * arrow it describes (measured 2026-09-03: the left-lane sentence ended 160px from its arrow and
+ * read as a floating caption). A 12px caption line with 4px of air on each side needs 20px; four
+ * more keep the rectangle clear of both faces under the collision pad.
+ */
+const PAIRED_ROW_GAP = 24;
+/*
+ * ⚠️ **The ladder yields its own spare height before it hides a role.** Measured 2026-09-03 at
+ * 1280x800: the canvas column is 638px tall while the roomy rows ask for 684, so the seventh role
+ * fell past the fold and the widest laptop the product ships to answered with "1 more below". The
+ * faces keep their 280/72/240 widths, because the side-by-side comparison is the whole structure;
+ * the row gives up its second summary line instead. 58px of face, and a 22px gap: the narrowest a
+ * 12px sentence rectangle clears with the 4px collision pad on both sides. 20 leaves only 3px
+ * under the words, and `placeEdgeSentences` drops the rule sentence as a collision, which is the
+ * opposite of what the tighter rows are for. Seven roles: 4 + 20 + 7x58 + 6x22 + 4 = 566.
+ */
+const PAIRED_ROW_GAP_TIGHT = 22;
+const PAIRED_PAD_Y_TIGHT = 4;
+const BOX_H_PAIRED_TIGHT = 58;
+/*
+ * ⚠️ **Receding must leave the words readable.** At 0.35 a non-selected role title measured
+ * 3.02:1 and its sentence 1.7:1; at 0.18 the unrelated edge sentences measured 1.23:1 — four of
+ * seven roles became unreadable the moment one was chosen (2026-09-03). The selected pair is
+ * emphasised by its indigo face and stroke, so the rest only needs to step back, not vanish:
+ * 0.65 keeps a receded title above 7:1 and its sentence above 3:1 on the canvas ground.
+ */
+/* Re-measured 2026-09-03 after the first pass: 0.65/0.55 still left a receded index at 2.8:1 and
+   a receded sentence at 2.6:1. 0.7 keeps every receded word at or above 3:1 while the selected
+   pair still wins through its indigo face and stroke. */
+const RECEDED_ROLE_OPACITY = 0.7;
+const RECEDED_STROKE_OPACITY = 0.7;
 const PAIRED_HEADER_H = 20;
+const PAIRED_PAD_Y = 8;
 /* Long edge sentences and focused skip arcs share one bounded outside lane on each side. */
 const PAIRED_SIDE_ROOM = 180;
-const PAIRED_NATURAL_W =
-  PAD_X * 2 +
-  PAIRED_SIDE_ROOM * 2 +
-  PAIRED_CONTRACT_W +
-  PAIRED_GUTTER_W +
-  PAIRED_OBSERVATION_W;
+/*
+ * ⚠️ **The ladder needs its faces, not its full side lanes.** A 1112px tablet gave the canvas
+ * 984px; the ladder asked for 1008 and the drawing fell back to 148px combined boxes with every
+ * summary and sentence cut (re-audit, 2026-09-03). The side lanes only hold skip arcs revealed on
+ * selection and their sentences, which are stated as held when they have no room, so the ladder
+ * may take a canvas as narrow as its faces plus this much lane on each side.
+ */
+const PAIRED_SIDE_ROOM_MIN = 48;
+/** The most ground the observation lane takes for its arcs and sentences when the canvas has it. */
+const PAIRED_TRAIL_ROOM_MAX = 360;
+/* The two lanes' adjacent sentences share the gutter row gap from opposite ends; this keeps a
+   rule sentence and a count sentence apart even when both are long. */
+const GAP_BETWEEN_LANE_SENTENCES = 24;
+const PAIRED_FIXED_W =
+  PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
+const PAIRED_MIN_W = PAIRED_FIXED_W + PAIRED_SIDE_ROOM_MIN * 2;
 /*
  * ⚠️ **A scrollbar for empty ground is noise.** Measured 2026-08-30 at 1440×900: the chain fit but
  * the drawing's own bottom padding did not, so the canvas scrolled 13px and showed a bar for dot
@@ -196,6 +238,7 @@ function ConnectionPort({
   active,
   tone,
   lane,
+  side,
 }: {
   axis: FlowAxis;
   at: Placed;
@@ -205,10 +248,14 @@ function ConnectionPort({
   active: boolean;
   tone: string;
   lane: 'contract' | 'observation';
+  /** A ladder skip leaves and arrives at the face's side; the port sits there, mid-height. */
+  side?: 'left' | 'right';
 }) {
   const incoming = direction === 'incoming';
-  const cx = axis === 'across' ? at.x + (incoming ? 0 : boxW) : at.x + boxW / 2;
-  const cy = axis === 'across' ? at.y + boxH / 2 : at.y + (incoming ? 0 : boxH);
+  const cx = side
+    ? side === 'left' ? at.x : at.x + boxW
+    : axis === 'across' ? at.x + (incoming ? 0 : boxW) : at.x + boxW / 2;
+  const cy = side || axis === 'across' ? at.y + boxH / 2 : at.y + (incoming ? 0 : boxH);
 
   return (
     <circle
@@ -224,6 +271,7 @@ function ConnectionPort({
       pointerEvents="none"
       data-architecture-port={lane}
       data-port-direction={direction}
+      data-port-side={side}
     />
   );
 }
@@ -341,6 +389,17 @@ export function ArchitectureSketch({
    */
   const [restWidth, setRestWidth] = useState(0);
   /*
+   * ⚠️ **The comparison ladder is chosen by the height it needs, not by whether seven boxes could
+   * squeeze across.** Measured 2026-09-03 at 1920×1080: "across while it fits across" drew the
+   * chain as 151px cards, 205px of ink in a 918px canvas, every role sentence cut to "…" and the
+   * lane labels repeated fourteen times — the widest screen showed the least. The 2026-09-03
+   * comparison-workbench record decided the 280/72/240 rows; this reads the canvas height at
+   * rest (the column that holds both the canvas and its hidden-count row, so a count appearing
+   * cannot flip the axis) and prefers those rows whenever they fit. Across remains the answer for
+   * a canvas too short for the rows, and for profiles with parallel lanes.
+   */
+  const [restHeight, setRestHeight] = useState(0);
+  /*
    * ⚠️ **One height for every box, not one per box.** A ledger exists per role, but a chain whose
    * boxes are two different heights reads as two kinds of thing rather than as one row of roles —
    * and the lane arithmetic below assumes a single box height everywhere. So the drawing grows when
@@ -354,7 +413,26 @@ export function ArchitectureSketch({
   const lanes = graph.boxes.reduce((most, box) => Math.max(most, box.slot + 1), 1);
   const naturalAcross = PAD_X * 2 + ranks * compactBoxW + (ranks - 1) * COL_GAP;
   const axisWidth = restWidth > 0 ? restWidth : boxWidth;
-  const axis: FlowAxis = axisWidth > 0 && naturalAcross > axisWidth ? 'down' : 'across';
+  const pairedNaturalH =
+    PAIRED_PAD_Y * 2 + PAIRED_HEADER_H + ranks * BOX_H + (ranks - 1) * PAIRED_ROW_GAP;
+  /* The same rows with one summary line each. Fixed-readable faces and connector space yield with
+     the canvas before any role is hidden, so a canvas too short for the roomy rows still gets the
+     comparison rather than a compressed across chain with a hidden-role count under it. */
+  const pairedTightH =
+    PAIRED_PAD_Y_TIGHT * 2 +
+    PAIRED_HEADER_H +
+    ranks * BOX_H_PAIRED_TIGHT +
+    (ranks - 1) * PAIRED_ROW_GAP_TIGHT;
+  const pairedRowsFit =
+    lanes === 1 &&
+    axisWidth >= PAIRED_MIN_W &&
+    restHeight > 0 &&
+    restHeight >= pairedTightH;
+  const axis: FlowAxis = pairedRowsFit
+    ? 'down'
+    : axisWidth > 0 && naturalAcross > axisWidth
+      ? 'down'
+      : 'across';
   const roomyAcross = PAD_X * 2 + ranks * roomyBoxW + (ranks - 1) * COL_GAP;
   const usesRoomyBoxes = axis === 'across' && axisWidth > 0 && roomyAcross <= axisWidth;
   const preferredBoxW = usesRoomyBoxes ? roomyBoxW : compactBoxW;
@@ -370,20 +448,34 @@ export function ArchitectureSketch({
     axis === 'across'
       ? Math.max(minimumAcrossBoxW, Math.min(preferredBoxW, fittedAcrossBoxW))
       : preferredBoxW;
-  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_NATURAL_W;
+  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
+  /*
+   * Which of the two ladder densities this canvas can hold. Below xl `restHeight` is 0 and the
+   * roomy rows stand, exactly as before; the tight rows are the answer only where the canvas was
+   * measured, the roomy rows do not fit it, and the tight ones do. When even those do not fit,
+   * the hidden-count row and the scroller stay the honest fallback.
+   */
+  const ladderDensity: 'roomy' | 'tight' =
+    usesPairedDown && restHeight > 0 && restHeight < pairedNaturalH && restHeight >= pairedTightH
+      ? 'tight'
+      : 'roomy';
+  const usesTightLadder = usesPairedDown && ladderDensity === 'tight';
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
   const contractBoxW = usesPairedDown ? PAIRED_CONTRACT_W : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
-  const observationBoxH = usesPairedDown ? PAIRED_OBSERVATION_H : OBSERVATION_BOX_H;
   const rowGap = usesPairedDown
-    ? PAIRED_ROW_GAP
+    ? usesTightLadder
+      ? PAIRED_ROW_GAP_TIGHT
+      : PAIRED_ROW_GAP
     : axis === 'down'
       ? 8
       : hasLedger
         ? ROW_GAP_LEDGER
         : ROW_GAP_PLAIN;
   const padY = usesPairedDown
-    ? 8
+    ? usesTightLadder
+      ? PAIRED_PAD_Y_TIGHT
+      : PAIRED_PAD_Y
     : axis === 'down'
       ? 8
       : hasLedger
@@ -392,13 +484,23 @@ export function ArchitectureSketch({
   const boxH = usesRoomyBoxes
     ? BOX_H_ROOMY
     : usesPairedDown
-      ? BOX_H
+      ? usesTightLadder
+        ? BOX_H_PAIRED_TIGHT
+        : BOX_H
     : axis === 'down'
       ? 64
       : hasLedger
         ? BOX_H_LEDGER
         : BOX_H;
-  const summaryLineCount = axis === 'down' && !usesPairedDown ? 1 : SUMMARY_LINES;
+  /* The tight row pays for its height with the sentence's second line, not with its face width:
+     one line of summary keeps every role's first clause, which cutting the faces would not. */
+  /* The observation face never stands taller than its row: on the tight ladder a 64px face in a
+     58px row closed the gap its count sentence needs. */
+  const observationBoxH = usesPairedDown
+    ? Math.min(PAIRED_OBSERVATION_H, boxH)
+    : OBSERVATION_BOX_H;
+  const summaryLineCount =
+    usesTightLadder || (axis === 'down' && !usesPairedDown) ? 1 : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
      the reserved width first. This follows the animated grid on every ResizeObserver frame, so the
      chain neither turns nor loses its last role behind a 380px dock at the 1512px app width. */
@@ -454,14 +556,26 @@ export function ArchitectureSketch({
       ? 28
       : SENTENCE_TRAIL_ROOM
     : 0;
-  const pairedFixedWidth =
-    PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
-  const pairedSideRoom =
-    usesPairedDown && boxWidth > 0
-      ? Math.max(0, Math.min(PAIRED_SIDE_ROOM, (boxWidth - pairedFixedWidth) / 2))
-      : PAIRED_SIDE_ROOM;
-  const layoutLeadRoom = usesPairedDown ? pairedSideRoom : leadRoom;
-  const layoutTrailRoom = usesPairedDown ? pairedSideRoom : trailRoom;
+  /*
+   * ⚠️ **Side lanes are given where the arcs are.** Two equal 180px lanes left 188px of empty
+   * ground on the contract side while three nested observation arcs and their sentences fought
+   * for the same 188px on the other side and every sentence was cut (installed app, 1512 with the
+   * role dock open, 2026-09-03). The contract lane only needs room when the profile declares a
+   * skip; otherwise it keeps the minimum and the observation lane takes the rest, up to a cap.
+   */
+  const contractNeedsLane = graph.edges.some(
+    (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
+  );
+  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - PAIRED_FIXED_W) : PAIRED_SIDE_ROOM * 2;
+  const pairedLeadRoom = contractNeedsLane
+    ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, pairedSlack / 2))
+    : PAIRED_SIDE_ROOM_MIN;
+  const pairedTrailRoom = Math.max(
+    PAIRED_SIDE_ROOM_MIN,
+    Math.min(PAIRED_TRAIL_ROOM_MAX, pairedSlack - pairedLeadRoom),
+  );
+  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : leadRoom;
+  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : trailRoom;
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
@@ -580,6 +694,18 @@ export function ArchitectureSketch({
         )
       : 0;
     setRestWidth(element.clientWidth + dockWidth);
+    /*
+     * The column around the scroller keeps its height whether or not a hidden-count row is shown,
+     * and no dock changes it at xl (docks open beside the canvas, never above it). Below xl the
+     * column is content-sized, so its height is the drawing's own and would only ratify whichever
+     * axis drew first (review, 2026-09-03: the same 1100px window drew two different chains
+     * depending on its history). There the width rule alone decides, deterministically.
+     */
+    setRestHeight(
+      window.matchMedia('(min-width: 1280px)').matches
+        ? element.parentElement?.clientHeight ?? element.clientHeight
+        : 0,
+    );
     /*
      * ⚠️ **Measured along the axis the chain runs.** These readings were written when a drawing
      * could only be cut on the right; a chain that runs down is cut at the bottom instead, and a
@@ -790,8 +916,10 @@ export function ArchitectureSketch({
       laneBoxW: number,
       laneBoxH: number,
       skipSide: 'negative' | 'positive' = 'positive',
+      occupied: readonly { x: number; y: number; width: number; height: number }[] = [],
     ) =>
       placeEdgeSentences({
+        occupied,
         axis,
         edges: edges.map(toSentenceEdge),
         placed: lane,
@@ -807,23 +935,40 @@ export function ArchitectureSketch({
         leadRoom: layoutLeadRoom,
         trailRoom: layoutTrailRoom,
         skipSide,
+        /* On the comparison ladder an adjacent rule's sentence sits beside its own arrow, with
+           the half face, the delta gutter and the observation face as its room; the row gap
+           between the two faces is clear ground by construction. */
+        adjacentSeat: usesPairedDown ? 'connector' : 'lead',
+        /* The contract lane reads right over the gutter; the observation lane reads left into the
+           gutter, keeping its right side free for the skip arcs. */
+        connectorSide: lane === placed ? 'right' : 'left',
+        connectorRoom:
+          lane === placed
+            ? contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
+            : observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES,
         sentenceOf: edgeSentence,
         focus,
       });
     if (!splitsEvidence) return place(graph.edges, placed, contractBoxW, boxH);
+    const rules = place(
+      graph.edges.filter((edge) => edge.kind === 'permitted'),
+      placed,
+      contractBoxW,
+      boxH,
+      usesPairedDown ? 'negative' : 'positive',
+    );
+    /* The rule lane places first and holds its ground; a count sentence that would touch a rule
+       sentence in the shared gutter gives way. */
+    const held = rules.flatMap((placement) => (placement.rect ? [placement.rect] : []));
     return [
-      ...place(
-        graph.edges.filter((edge) => edge.kind === 'permitted'),
-        placed,
-        contractBoxW,
-        boxH,
-        usesPairedDown ? 'negative' : 'positive',
-      ),
+      ...rules,
       ...place(
         graph.edges.filter((edge) => edge.kind === 'traffic'),
         observedPlaced,
         observationBoxW,
         observationBoxH,
+        'positive',
+        held,
       ),
     ];
   }, [
@@ -1003,6 +1148,7 @@ export function ArchitectureSketch({
           data-column-gap={Math.round(colGap * 10) / 10}
           data-box-width-mode={usesRoomyBoxes ? 'roomy' : 'compact'}
           data-evidence-layout={usesPairedDown ? 'paired-ladder' : splitsEvidence ? 'split' : 'combined'}
+          data-ladder-density={usesPairedDown ? ladderDensity : undefined}
           data-architecture-layout-ready={axisWidth > 0 ? 'true' : 'false'}
           /*
            * ⚠️ `shrink-0`, because the scroller is a flex container now — it centres the drawing in
@@ -1162,6 +1308,24 @@ export function ArchitectureSketch({
                 (sx + tx) / 2
               } ${midY} C ${tx - colGap} ${midY}, ${tx - colGap} ${ty}, ${tx} ${ty}`;
             }
+            if (usesPairedDown) {
+              /*
+               * On the ladder a skip leaves the face's side, not its foot: a foot-launched arc
+               * swept through the row gap where the adjacent sentence now sits (installed app,
+               * 2026-09-03: three arcs crossed "views reaches widgets"). The apex stays where the
+               * sentence model expects it, one swing past the face's centre line.
+               */
+              const negative = isDeclared;
+              const edgeX = (face: Placed) => (negative ? face.x : face.x + edgeBoxW);
+              const psx = edgeX(a);
+              const psy = a.y + edgeBoxH / 2;
+              const ptx = edgeX(b);
+              const pty = b.y + edgeBoxH / 2;
+              const apex = negative
+                ? Math.min(a.x, b.x) - (swing - edgeBoxW / 2)
+                : Math.max(a.x, b.x) + edgeBoxW + (swing - edgeBoxW / 2);
+              return `M ${psx} ${psy} C ${apex} ${psy}, ${apex} ${pty}, ${ptx} ${pty}`;
+            }
             const midX = usesPairedDown && isDeclared
               ? Math.min(sx, tx) - swing
               : Math.max(sx, tx) + swing;
@@ -1196,7 +1360,7 @@ export function ArchitectureSketch({
               aria-hidden={!drawn}
               data-edge-drawn={drawn ? 'true' : 'false'}
               className="architecture-stroke"
-              style={{ opacity: !drawn ? 0 : receded ? 0.18 : 1 }}
+              style={{ opacity: !drawn ? 0 : receded ? RECEDED_STROKE_OPACITY : 1 }}
               data-edge-kind={edge.kind}
               data-edge-violated={violated ? 'true' : undefined}
               data-edge-from={edge.from}
@@ -1238,7 +1402,7 @@ export function ArchitectureSketch({
                     ? 'fill-[color:var(--color-text-secondary)] tabular-nums'
                     : 'fill-[color:var(--color-text-tertiary)]',
               )}
-              style={{ opacity: !shown ? 0 : receded ? 0.18 : 1 }}
+              style={{ opacity: !shown ? 0 : receded ? RECEDED_STROKE_OPACITY : 1 }}
               aria-hidden={!shown}
               data-testid={`architecture-edge-sentence-${sentence.from}-${sentence.to}`}
               data-edge-sentence={sentence.hidden ?? (drawnStroke ? 'drawn' : 'held')}
@@ -1324,19 +1488,10 @@ export function ArchitectureSketch({
           const summaryLines =
             summary === null
               ? null
-              : splitSummaryLines(
-                  summary,
-                  captionLineBudgets({
-                    boxW: contractBoxW,
-                    boxH,
-                    shape: box.shape,
-                    baselines: Array.from(
-                      { length: summaryLineCount },
-                      (_, line) => countsY - at.y + line * CAPTION_LEADING,
-                    ),
-                  }),
-                  summaryLineCount,
-                );
+              : /* Budgeted by estimated glyph width, so a Korean sentence wraps where it reaches
+                   (owner, 2026-09-03: the first Korean summaries ran past both outlines). Every
+                   face is a rectangle now, so each line has the same straight room. */
+                splitSummaryLinesByWidth(summary, captionLineRoom(contractBoxW), summaryLineCount);
 
           return (
             <g
@@ -1384,7 +1539,7 @@ export function ArchitectureSketch({
                   onSelect(box.id, event.currentTarget);
                 }
               }}
-              style={{ opacity: receded ? 0.35 : 1 }}
+              style={{ opacity: receded ? RECEDED_ROLE_OPACITY : 1 }}
               className="architecture-recede architecture-role-reveal cursor-pointer outline-none [&:focus-visible_.architecture-node-face]:stroke-[color:var(--color-indigo-focus-ring)] [&:focus-visible_.architecture-node-face]:[stroke-width:2px]"
             >
               {/*
@@ -1423,28 +1578,9 @@ export function ArchitectureSketch({
                 behind the first. The terminators are drawn once for that reason; the boxes in
                 between keep both passes.
               */}
-              {box.shape === 'terminator' ? (
-                <rect
-                  x={at.x}
-                  y={at.y}
-                  width={contractBoxW}
-                  height={boxH}
-                  rx={boxH / 2}
-                  fill={
-                    isSelected
-                      ? 'var(--color-indigo-a12)'
-                      : roleState === 'active'
-                        ? 'var(--color-indigo-a06)'
-                        : roleState === 'hover'
-                          ? 'var(--color-elevated)'
-                          : 'var(--color-panel)'
-                  }
-                  stroke={isSelected ? 'var(--color-indigo-accent)' : 'var(--color-architecture-sketch-ink)'}
-                  strokeWidth={isSelected ? 1.6 : 1}
-                  className="architecture-canvas-node architecture-node-face"
-                  data-node-selected={isSelected ? 'true' : 'false'}
-                />
-              ) : (
+              {/* One face for every role. The chain's ends were drawn as ISO 5807 terminators
+                  (stadiums) until 2026-09-03; the owner read the two shapes as a difference the
+                  screen never explained, and position already says where a chain begins. */}
                 <rect
                   x={at.x}
                   y={at.y}
@@ -1464,8 +1600,19 @@ export function ArchitectureSketch({
                   strokeWidth={isSelected ? 1.6 : 1}
                   className="architecture-canvas-node architecture-node-face"
                   data-node-selected={isSelected ? 'true' : 'false'}
+                />              {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+                <ConnectionPort
+                  axis={axis}
+                  at={at}
+                  boxW={contractBoxW}
+                  boxH={boxH}
+                  direction="outgoing"
+                  active={focus === box.id}
+                  tone={portTone}
+                  lane="contract"
+                  side="left"
                 />
-              )}
+              ) : null}
               {contractIncoming.length > 0 ? (
                 <ConnectionPort
                   axis={axis}
@@ -1669,6 +1816,19 @@ export function ArchitectureSketch({
                     data-testid={`architecture-observation-box-${box.id}`}
                     data-observation-state={ledger?.state ?? 'missing'}
                   />
+                  {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+                    <ConnectionPort
+                      axis={axis}
+                      at={observedAt}
+                      boxW={observationBoxW}
+                      boxH={observationBoxH}
+                      direction="outgoing"
+                      active={focus === box.id}
+                      tone={portTone}
+                      lane="observation"
+                      side="right"
+                    />
+                  ) : null}
                   {observationIncoming.length > 0 ? (
                     <ConnectionPort
                       axis={axis}

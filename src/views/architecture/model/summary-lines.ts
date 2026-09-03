@@ -54,7 +54,7 @@ export function splitSummaryLines(
 }
 
 /**
- * A conservative width for one caption glyph at 9.5px. Linux Pretendard measured one seeded
+ * A conservative width for one narrow caption glyph at 9.5px. Linux Pretendard measured one seeded
  * ledger caption at 157px against 156px of room when the former 4.7 estimate allowed 33
  * characters. 4.8 lowers that case to 32 without changing the type or box geometry.
  */
@@ -103,4 +103,85 @@ export function captionLineBudgets({
       CAPTION_SIDE_PAD * 2;
     return Math.max(CAPTION_MIN_CHARS, Math.min(rectBudget, Math.floor(usable / CAPTION_CHAR_PX)));
   });
+}
+
+/**
+ * The width a caption glyph takes at 9.5px, by script. A Hangul or Han glyph is close to square
+ * (about 8px); Latin averages 4.8px. The character budgets above assumed Latin, so the first
+ * Korean role sentences ran past both outlines of a 280px face (owner, 2026-09-03).
+ */
+const WIDE_CAPTION_CHAR_PX = 8;
+const WIDE_SCRIPT = /[\u1100-\u11ff\u3130-\u318f\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af\u3000-\u303f\uff00-\uffef]/u;
+
+export function estimateCaptionWidth(text: string): number {
+  let width = 0;
+  for (const character of text) {
+    width += WIDE_SCRIPT.test(character) ? WIDE_CAPTION_CHAR_PX : CAPTION_CHAR_PX;
+  }
+  return width;
+}
+
+/** The straight room a rectangle face leaves a caption line, in SVG units. */
+export function captionLineRoom(boxW: number): number {
+  return Math.max(CAPTION_MIN_CHARS * CAPTION_CHAR_PX, boxW - CAPTION_SIDE_PAD * 2);
+}
+
+/**
+ * `splitSummaryLines`, budgeted by estimated width instead of by character count, so a Korean
+ * sentence wraps where its glyphs actually reach. Words wrap greedily; a single word wider than
+ * the room is cut by width; only the last line is ellipsized, and only when something was left
+ * out, with the ellipsis itself counted against the room.
+ */
+export function splitSummaryLinesByWidth(
+  summary: string,
+  roomPx: number | readonly number[],
+  maxLines: number,
+): string[] {
+  const words = summary.trim().split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let index = 0;
+  const roomFor = (line: number) =>
+    typeof roomPx === 'number' ? roomPx : (roomPx[line] ?? roomPx[roomPx.length - 1] ?? 0);
+  const fitByWidth = (word: string, room: number) => {
+    let cut = '';
+    for (const character of word) {
+      if (estimateCaptionWidth(cut + character) > room) break;
+      cut += character;
+    }
+    return cut;
+  };
+
+  while (index < words.length && lines.length < maxLines) {
+    const room = roomFor(lines.length);
+    let line = '';
+    while (index < words.length) {
+      const next = line ? `${line} ${words[index]}` : words[index];
+      if (estimateCaptionWidth(next) > room) break;
+      line = next;
+      index += 1;
+    }
+    if (!line) {
+      const word = words[index];
+      const cut = fitByWidth(word, room) || [...word][0] || '';
+      const rest = word.slice(cut.length);
+      line = cut;
+      if (rest) words[index] = rest;
+      else index += 1;
+    }
+    lines.push(line);
+  }
+
+  if (index < words.length && lines.length > 0) {
+    const last = lines[lines.length - 1];
+    const room = roomFor(lines.length - 1) - estimateCaptionWidth('…');
+    let kept = last;
+    while (kept && estimateCaptionWidth(kept) > room) kept = kept.slice(0, -1);
+    const boundary = kept.lastIndexOf(' ');
+    const cut = kept.length < last.length && boundary > 0 && estimateCaptionWidth(kept) - estimateCaptionWidth(kept.slice(0, boundary)) < 48
+      ? kept.slice(0, boundary)
+      : kept;
+    lines[lines.length - 1] = `${cut.trimEnd()}…`;
+  }
+
+  return lines;
 }

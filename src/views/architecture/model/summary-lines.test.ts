@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { captionLineBudgets, splitSummaryLines } from './summary-lines';
+import { captionLineBudgets, captionLineRoom, estimateCaptionWidth, splitSummaryLines, splitSummaryLinesByWidth } from './summary-lines';
 
 /*
  * The seven sentences the dogfood profile declares, measured 2026-08-30: 91, 121, 79, 89, 108,
@@ -88,5 +88,33 @@ describe('splitSummaryLines with per-line budgets', () => {
     const lines = splitSummaryLines(ROUTING, [26, 23], 2);
     expect(lines[0].length).toBeLessThanOrEqual(26);
     expect(lines[1].length).toBeLessThanOrEqual(24); /* 23 + the ellipsis */
+  });
+});
+
+describe('splitSummaryLinesByWidth', () => {
+  /* Owner, 2026-09-03: the first Korean role sentences ran past both outlines of a 280px face,
+     because the character budget assumed a 4.8px Latin glyph and a Hangul glyph is about 8px. */
+  it('keeps every Korean line inside the face by estimated width', () => {
+    const room = captionLineRoom(280);
+    const sentence = '로케일이 붙은 Next 진입 래퍼로, 페이지를 지정해 넘길 뿐 로직은 여기 두지 않습니다.';
+    const lines = splitSummaryLinesByWidth(sentence, room, 2);
+    expect(lines.length).toBeLessThanOrEqual(2);
+    for (const line of lines) expect(estimateCaptionWidth(line)).toBeLessThanOrEqual(room);
+    /* Nothing was dropped silently: either the whole sentence is there or the cut is stated. */
+    const joined = lines.join(' ');
+    expect(joined === sentence || joined.endsWith('…')).toBe(true);
+  });
+
+  it('gives a Latin sentence the same lines the character budget gave it', () => {
+    const sentence = 'Locale-prefixed Next entry wrappers. They name a page and hand off; no logic lives here.';
+    const byWidth = splitSummaryLinesByWidth(sentence, captionLineRoom(280), 2);
+    for (const line of byWidth) expect(estimateCaptionWidth(line)).toBeLessThanOrEqual(captionLineRoom(280));
+    expect(byWidth.join(' ').replace('…', '')).toContain('Locale-prefixed Next entry wrappers.');
+  });
+
+  it('cuts a single word wider than the room by width instead of overflowing', () => {
+    const [line] = splitSummaryLinesByWidth('가나다라마바사아자차카타파하가나다라마바사아자차카타파하', 60, 1);
+    expect(estimateCaptionWidth(line)).toBeLessThanOrEqual(60);
+    expect(line.endsWith('…')).toBe(true);
   });
 });

@@ -32,6 +32,13 @@ const OCCUPANT_CARD_GAP = 10;
 /* What the preview shows before any layout can be measured — the count this grid carried before
    it was derived, so an unmeasurable surface loses nothing. */
 const OCCUPANT_PREVIEW_FALLBACK = 3;
+/*
+ * ⚠️ **One measured row is too little in a one-column dock.** At the 380px role dock the grid
+ * resolves to a single column, so "one full row" meant one concept card followed by "+15 more"
+ * while 524px of the dock stayed empty (measured 2026-09-03 at 1512×945). The preview still
+ * ends on a whole row; it just refuses to end before this many occupants.
+ */
+const OCCUPANT_PREVIEW_MIN = 4;
 
 export function ArchitectureRoleDetail({
   roleId,
@@ -130,8 +137,12 @@ export function ArchitectureRoleDetail({
   });
 
   const roleModules = modules ?? [];
-  const visibleModules = showAllModules ? roleModules : roleModules.slice(0, modulePreview);
-  const hiddenModules = roleModules.length - modulePreview;
+  /* Whole rows only: a three-column grid previews six, never four with two empty cells. */
+  const wholeRows = (columns: number) =>
+    Math.ceil(OCCUPANT_PREVIEW_MIN / Math.max(1, columns)) * Math.max(1, columns);
+  const modulePreviewCount = wholeRows(modulePreview);
+  const visibleModules = showAllModules ? roleModules : roleModules.slice(0, modulePreviewCount);
+  const hiddenModules = roleModules.length - modulePreviewCount;
 
   /*
    * The preview shows the connective tissue first: concepts that participate in a reviewed
@@ -145,7 +156,7 @@ export function ArchitectureRoleDetail({
     : concepts;
   const visibleConcepts = showAllConcepts
     ? orderedConcepts
-    : orderedConcepts.slice(0, conceptPreview);
+    : orderedConcepts.slice(0, wholeRows(conceptPreview));
   const hiddenConcepts = concepts.length - visibleConcepts.length;
 
   return (
@@ -170,7 +181,8 @@ export function ArchitectureRoleDetail({
                   layered-architecture drawing does.
                 */}
                 <span className="shrink-0 font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                  {index}
+                  {/* The canvas says "03"; the dock said "3" for the same role (2026-09-03). */}
+                  {String(index).padStart(2, '0')}
                 </span>
                 <span
                   className={

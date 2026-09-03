@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import {
-  deriveArchitectureProfiles,
+  deriveArchitectureProfilesReport,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
 } from '@/entities/architecture-profile';
@@ -113,7 +113,11 @@ export function ArchitecturePage() {
     () => mode === 'static' ? staticManifest.docs : localVault.manifest?.docs ?? EMPTY_DOCS,
     [localVault.manifest, mode, staticManifest.docs],
   );
-  const profiles = useMemo(() => deriveArchitectureProfiles(docs), [docs]);
+  /* The report, not the list: a document this surface cannot read is named on the screen instead
+     of replacing every profile in the folder with an error boundary (2026-09-03). */
+  const profileReport = useMemo(() => deriveArchitectureProfilesReport(docs), [docs]);
+  const profiles = profileReport.profiles;
+  const profileProblems = profileReport.problems;
   const gitVaultPath = localVault.handle ? getTauriVaultRootPath(localVault.handle) ?? null : null;
   const knownSlugs = useMemo(() => new Set(docs.map((doc) => doc.slug)), [docs]);
   const [acpRuntimes, setAcpRuntimes] = useState<ArchitectureAgentRuntime[]>([]);
@@ -322,11 +326,15 @@ export function ArchitecturePage() {
       <div className="relative flex min-h-0 flex-1 overflow-hidden">
         <ArchitectureWorkbench
           profiles={profiles}
+          profileProblems={profileProblems}
           handoffContexts={handoffContexts}
           draftHandoffContext={draftHandoffContext}
           sourceModulesByProfile={sourceModulesByProfile}
           sourceListingCapable={sourceListingCapable}
           sourceUnavailableReason={sourceUnavailableReason}
+          /* The installed app must never offer its own download; the browser is the only
+             runtime that can hand a person the app that lists their source folder. */
+          offersInstalledApp={!desktopRuntime}
           recordsByProfile={recordsByProfile}
           conceptsByProfile={conceptsByProfile}
           agentRoute={agentRoute}

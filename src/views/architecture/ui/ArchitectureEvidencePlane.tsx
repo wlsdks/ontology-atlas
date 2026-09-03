@@ -54,14 +54,14 @@ function EvidenceLane({
         {title}
       </p>
       <p
-        className="mt-2 break-keep text-caption leading-prose text-[color:var(--color-text-tertiary)]"
+        className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]"
         data-testid={bodyTestId}
       >
         {body}
       </p>
       {note ? (
         <p
-          className="mt-2 break-keep border-l border-[color:var(--color-indigo-a32)] pl-2 text-caption leading-prose text-[color:var(--color-text-quaternary)]"
+          className="mt-2 break-keep border-l border-[color:var(--color-indigo-a32)] pl-2 text-body leading-prose text-[color:var(--color-text-quaternary)]"
           data-testid={noteTestId}
         >
           {note}
@@ -143,7 +143,7 @@ export function ArchitectureEvidencePlane({
           </p>
           <div
             data-testid={deltaStatus === 'missing' ? undefined : 'architecture-record-summary'}
-            className="mt-2 flex items-start gap-2 text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
+            className="mt-2 flex items-start gap-2 text-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]"
           >
             <span
               aria-hidden
@@ -152,7 +152,7 @@ export function ArchitectureEvidencePlane({
             />
             <span>{deltaTitle}</span>
           </div>
-          <p className="mt-2 break-keep text-caption leading-prose text-[color:var(--color-text-tertiary)]">
+          <p className="mt-2 break-keep text-body leading-prose text-[color:var(--color-text-tertiary)]">
             {deltaBody}
           </p>
         </article>

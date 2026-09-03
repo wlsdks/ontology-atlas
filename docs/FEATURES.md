@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-08-31 (documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-09-03 (chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser with a find-improvements task; earlier on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -499,9 +499,47 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   reviewed pattern axes, scopes, roles, paths, evidence, and allowed dependency
   direction plus governed import usages in the same Git-backed folder without
   becoming a map node.
-- The stable role blueprint persists across **Understand → Plan → Verify**.
-  Pattern names are declared summaries; Atlas does not infer Clean, Hexagonal,
-  MVP, or Feature-Sliced Design from folder names.
+- The stable role blueprint is one reviewed contract. Pattern names are declared
+  summaries; Atlas does not infer Clean, Hexagonal, MVP, or Feature-Sliced Design
+  from folder names. The visible Understand → Plan → Verify stages were removed
+  on 2026-09-03; the canvas compares reviewed intent with observation directly.
+- **The comparison ladder is chosen by height** (2026-09-03). Whenever the seven
+  280px reviewed / 72px delta / 240px observation rows fit the canvas at rest, the
+  chain runs down as that ladder — at 1512×945 and at 1920×1080 alike — and each
+  rule sentence sits beside the arrow it describes, in the 24px gap between the
+  two faces it joins. A canvas too short for the rows, or a profile with parallel
+  lanes, still draws the across chain. The ladder needs only its faces plus 48px of
+  side lane each side, so a tablet canvas from 744px draws it too. A canvas too
+  short for those rows but tall enough for tighter ones draws the same comparison
+  on 58px faces with one summary line and a 22px gap, so a 1280×800 laptop shows
+  all seven roles instead of counting the seventh as hidden. Choosing a role
+  recedes the unrelated roles and strokes to 0.7, so every receded word stays at or
+  above 3:1. Every role is one rounded face (the stadium ends were retired on
+  2026-09-03), and captions wrap by the width their script needs, so a Korean
+  sentence stays inside its face. Both lanes seat an adjacent sentence beside its
+  own arrow; a skip arc leaves and arrives at the face's side with a side port,
+  so no arc crosses a row gap; the count sentence reads "{from} → {to} import
+  {n}"; and the side lanes go where the arcs are, a 48px contract lane unless the
+  profile declares a skip and up to 360px for the observation lane.
+- **A role's sentence can be written in the reader's language** (2026-09-03). Beside
+  `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
+  `summary_views_ko`. The screen shows the locale line to a reader in that locale
+  and the canonical `summary_<role>` to everyone else, so a profile translated one
+  role at a time never leaves a blank where a sentence was. `summary_<role>` stays
+  the reviewed fact: it is the only sentence the agent handoff, `inspect_architecture`
+  and CLI `architecture` print, and a locale line without it is refused, as is a
+  locale line for a role the profile does not declare. A document whose profile this
+  screen cannot read is now named in a notice above the canvas instead of replacing
+  every profile in the folder with an error.
+- **The agent task is the person's to choose** (2026-09-03). The button keeps its
+  derived default — inspect source, review delta, or plan change — and a chooser
+  beside it lists three tasks with one line each: inspect or re-inspect source,
+  plan change, and find improvements. The chosen task stays on the button and the
+  copy confirmation names it. Find improvements names where the reviewed
+  profile and the observed imports disagree, plus unmapped, unruled and empty
+  roles, with literal paths, and asks the person what the rule should be; it
+  proposes no rule, role name or pattern and writes nothing. A verified agent takes
+  the chosen task as its opening turn; a browser copies the same sentence.
 - `inspect_architecture` and CLI `architecture` scan supported source imports and
   return `architectureBrief:v1` with `conforms`, `violated`, or `unknown`.
   Observed role edges retain value/type-only/unknown usage counts and exact

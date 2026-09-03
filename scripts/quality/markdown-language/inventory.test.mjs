@@ -50,6 +50,27 @@ test('allows display_ko only inside the leading frontmatter block', () => {
   assert.equal(result.allowedLocaleLines, 1);
 });
 
+test('allows a localized architecture role summary, and only by locale shape', () => {
+  const result = auditMarkdownEntries([
+    {
+      path: 'docs/ontology/architecture/example.md',
+      content: [
+        '---',
+        'summary_views: One module per screen a route can open.',
+        'summary_views_ko: 라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.',
+        'summary_views_kor: 로케일이 아닌 접미사입니다.',
+        '---',
+        '',
+        '# Example',
+      ].join('\n'),
+    },
+  ]);
+
+  assert.equal(result.allowedLocaleLines, 1);
+  assert.equal(result.unexpectedLines, 1);
+  assert.equal(result.violations[0].line, 4);
+});
+
 test('reports Korean prose, owner quotes, and display_ko outside frontmatter', () => {
   const result = auditMarkdownEntries([
     { path: 'AGENTS.md', content: '# Guide\n한국어 산문\n' },

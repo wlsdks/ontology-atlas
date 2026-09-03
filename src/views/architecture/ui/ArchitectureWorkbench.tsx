@@ -1,15 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Bot, Boxes, PanelRight, X } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Bot, Boxes, ChevronDown, PanelRight, X } from 'lucide-react';
+import { useLocale, useTranslations } from 'next-intl';
 
 import {
   buildArchitectureAgentPrompt,
   buildArchitectureDraftPrompt,
   buildArchitectureLayout,
+  type ArchitectureAgentTaskKind,
   type ArchitectureHandoffContext,
   type ArchitectureProfile,
+  type ArchitectureProfileProblem,
 } from '@/entities/architecture-profile';
 import type { ArchitectureRecord } from '@/entities/architecture-record';
 import type { AcpTurnActivity } from '@/features/acp-session';
@@ -20,11 +22,16 @@ import type {
   ArchitectureAgentRoute,
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
+import { copyText } from '@/shared/lib/copy-text';
+import { controlClass } from '@/shared/ui/control-class';
+import { transientSurface } from '@/shared/ui/transient-surface';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { Link } from '@/i18n/navigation';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
+const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
 import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
@@ -72,9 +79,14 @@ function readArchitectureRole(): string | null {
   return new URL(window.location.href).searchParams.get('role');
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
+/* Long enough to read a sentence that names the task: a product-manager walker saw a 1.6s
+   confirmation vanish before finishing it (2026-09-03). Deliberately longer than the 1.5s the
+   shared `useCopyFeedback` gives a one-word confirmation; the chosen task then stays on the button. */
+const COPY_FEEDBACK_MS = 4000;
 
 export function ArchitectureWorkbench({
   profiles,
+  profileProblems = EMPTY_PROFILE_PROBLEMS,
   handoffContexts = {},
   draftHandoffContext = null,
   sourceModulesByProfile = {},
@@ -86,8 +98,12 @@ export function ArchitectureWorkbench({
   agentLabel = null,
   onAgentRequest,
   agentActivity = null,
+  copyFeedbackMs = COPY_FEEDBACK_MS,
+  offersInstalledApp = false,
 }: {
   profiles: ArchitectureProfile[];
+  /** Architecture documents this surface could not read, named rather than silently dropped. */
+  profileProblems?: ReadonlyArray<ArchitectureProfileProblem>;
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
   /** The one unambiguous project source available before any profile exists. */
   draftHandoffContext?: ArchitectureHandoffContext | null;
@@ -105,8 +121,18 @@ export function ArchitectureWorkbench({
   agentLabel?: string | null;
   onAgentRequest?: (request: ArchitectureAgentRequest) => void;
   agentActivity?: AcpTurnActivity | null;
+  /** How long a copy confirmation stays before the button returns to rest. Tests shorten it. */
+  copyFeedbackMs?: number;
+  /** Whether this runtime may point at the installed app. False inside the app itself. */
+  offersInstalledApp?: boolean;
 }) {
   const t = useTranslations('architecture');
+  /*
+   * The reader's own language decides which reviewed sentence is shown, and nothing else does.
+   * `summary_<role>` stays the canonical fact every agent brief, prompt and CLI line prints; a
+   * `summary_<role>_<locale>` line is a restatement of it for whoever is looking at the screen.
+   */
+  const locale = useLocale();
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
@@ -179,14 +205,35 @@ export function ArchitectureWorkbench({
     setInspector(null);
     writeArchitectureAddress(null);
     window.requestAnimationFrame(() => inspectorTriggerRef.current?.focus());
-  }, []);
+    /* The compiler reads the setter as a dependency; it is stable, and naming it keeps the
+       memoization it can verify. */
+  }, [setInspector]);
 
   const closeEvidence = useCallback(() => {
     setEvidenceOpen(false);
     window.requestAnimationFrame(() => evidenceTriggerRef.current?.focus());
-  }, []);
+  }, [setEvidenceOpen]);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
+  /* Which task the last copy carried, so the confirmation names it (a source-hidden walker chose
+     "find improvements" and the button only said "copied", 2026-09-03). */
+  const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);
+  /* The last request wins: a second copy started while the first is still pending must not let
+     the first one's result name the second one's task (review, 2026-09-03). */
+  const copyRequest = useRef(0);
+  /*
+   * ⚠️ **A confirmation that never leaves is a lost button.** The copied sentence replaced the
+   * button label for good; the same walker waited thirty seconds and could not tell how to copy
+   * again. The feedback window is the repository's clipboard convention (`useCopyFeedback`).
+   */
+  useEffect(() => {
+    if (copyState !== 'copied' && copyState !== 'error') return undefined;
+    const timer = window.setTimeout(() => {
+      setCopyState('idle');
+      setCopiedTaskLabel(null);
+    }, copyFeedbackMs);
+    return () => window.clearTimeout(timer);
+  }, [copyFeedbackMs, copyState]);
   const evidencePanelRef = useRef<HTMLElement>(null);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
@@ -243,9 +290,59 @@ export function ArchitectureWorkbench({
     });
   }, [evidenceOpen]);
 
-  const primaryAgentKind: 'change' | 'verify' =
+  /*
+   * ⚠️ **One button, one derived default, and a chooser for the rest.** The button used to be
+   * the only door and its task was decided for the person: `conforms` meant "plan a change",
+   * anything else meant "inspect". A developer whose receipt passed and whose code then changed
+   * had no way to ask for a re-check, and nobody could ask where the reviewed structure itself
+   * needed a decision (owner, 2026-09-03). The default stays derived; the chooser beside it
+   * offers the other two tasks with one line each on what they do.
+   */
+  const primaryAgentKind: ArchitectureAgentTaskKind =
     selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
-  const requestedAgentKind: 'change' | 'verify' = primaryAgentKind;
+  /* A task chosen from the menu stays chosen: the button carries it until the person picks another
+     (walkers on 2026-09-03 could not tell afterwards which task they had copied). */
+  const [chosenAgent, setChosenAgent] = useState<{ slug: string; kind: ArchitectureAgentTaskKind } | null>(null);
+  /* Derived, not reset: a choice made for one profile must not follow the person to another. */
+  const chosenAgentKind = chosenAgent && chosenAgent.slug === selected?.slug ? chosenAgent.kind : null;
+  const requestedAgentKind: ArchitectureAgentTaskKind = chosenAgentKind ?? primaryAgentKind;
+  const [taskMenuOpen, setTaskMenuOpen] = useState(false);
+  const taskMenuRef = useRef<HTMLDivElement>(null);
+  const taskMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!taskMenuOpen) return undefined;
+    const onPointerDown = (event: PointerEvent) => {
+      if (taskMenuRef.current && !taskMenuRef.current.contains(event.target as Node)) {
+        setTaskMenuOpen(false);
+      }
+    };
+    /* Escape closes the menu only: this listener runs in the capture phase on the document and
+       stops propagation, so the docks' window listeners never see the key. */
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.stopPropagation();
+      setTaskMenuOpen(false);
+      taskMenuTriggerRef.current?.focus();
+    };
+    document.addEventListener('pointerdown', onPointerDown, true);
+    document.addEventListener('keydown', onKeyDown, true);
+    /* The surface mounts its items one presence frame after `open`; the second frame is when the
+       first item exists to take focus, so Arrow keys work from the moment the menu is visible. */
+    let inner = 0;
+    const frame = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(() => {
+        taskMenuRef.current
+          ?.querySelector<HTMLButtonElement>('[role="menuitem"]')
+          ?.focus();
+      });
+    });
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+      document.removeEventListener('keydown', onKeyDown, true);
+      window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(inner);
+    };
+  }, [taskMenuOpen]);
   const agentReceipt = selectedRecord
     ? {
         profileContentHash: selectedRecord.profile.contentHash,
@@ -257,18 +354,28 @@ export function ArchitectureWorkbench({
         unruledEdges: selectedRecord.brief.conformance.unknown?.unruledEdges ?? null,
       }
     : null;
-  const handoff = selected
-    ? buildArchitectureAgentPrompt(
-        selected,
-        handoffContexts[selected.slug] ?? null,
-        {
-          kind: requestedAgentKind,
-          stage: 'understand',
-          selectedRole,
-          receipt: agentReceipt,
-        },
-      )
-    : '';
+  const promptFor = (kind: ArchitectureAgentTaskKind) =>
+    selected
+      ? buildArchitectureAgentPrompt(
+          selected,
+          handoffContexts[selected.slug] ?? null,
+          {
+            kind,
+            stage: 'understand',
+            selectedRole,
+            receipt: agentReceipt,
+          },
+        )
+      : '';
+  const agentTasks: { kind: ArchitectureAgentTaskKind; label: string; hint: string }[] = [
+    {
+      kind: 'verify',
+      label: agentReceipt ? t('recheckSourceAction') : t('inspectSourceAction'),
+      hint: agentReceipt ? t('agentTaskHints.recheck') : t('agentTaskHints.inspect'),
+    },
+    { kind: 'change', label: t('planChangeAction'), hint: t('agentTaskHints.change') },
+    { kind: 'improve', label: t('findImprovementsAction'), hint: t('agentTaskHints.improve') },
+  ];
 
   /*
    * What the detail panel needs about the chosen role, derived from the same layout the canvas
@@ -299,8 +406,8 @@ export function ArchitectureWorkbench({
   const rolePathsOf = new Map((selected?.roles ?? []).map((role) => [role.id, role.paths]));
   const roleSummaryOf = new Map(
     (selected?.roles ?? [])
-      .filter((role) => role.summary)
-      .map((role) => [role.id, role.summary as string]),
+      .map((role) => [role.id, role.summaries[locale] ?? role.summary] as const)
+      .filter((entry): entry is readonly [string, string] => typeof entry[1] === 'string'),
   );
   const roleReachOf = useMemo(() => {
     const map = new Map<string, string[]>(roleOrder.map((id) => [id, []]));
@@ -320,9 +427,32 @@ export function ArchitectureWorkbench({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roleOrder is derived from roleLayout
   }, [roleLayout]);
 
+  /*
+   * ⚠️ **A document this surface could not read is named, not swallowed.** The parse is still
+   * strict per profile — an unreadable one is not drawn — but before 2026-09-03 the whole route
+   * threw, so one unknown key in one file replaced every profile in the folder with an error
+   * boundary and said nothing about which file or which key. The notice carries the document and
+   * the parser's own sentence, in the same amber the rail already uses for "unknown".
+   */
+  const profileNotices = profileProblems.length === 0 ? null : (
+    <div className="mb-3 flex flex-col gap-1">
+      {profileProblems.map((problem) => (
+        <p
+          key={`${problem.documentSlug}\u0000${problem.message}`}
+          role="status"
+          data-testid="architecture-profile-problem"
+          className="m-0 border-l border-[color:var(--color-amber-source-a50)] pl-3 text-body text-[color:var(--color-text-tertiary)]"
+        >
+          {t('profileUnreadable', { document: problem.documentSlug, message: problem.message })}
+        </p>
+      ))}
+    </div>
+  );
+
   if (!selected) {
     return (
-      <main className="flex min-h-0 flex-1 items-center justify-center p-5 md:p-10">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center p-5 md:p-10">
+        {profileNotices ? <div className="w-full max-w-[640px]">{profileNotices}</div> : null}
         <EmptyState
           title={t('noProfiles')}
           titleAs="h1"
@@ -507,14 +637,33 @@ export function ArchitectureWorkbench({
   const roleLabel = (id: string) =>
     t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
 
-  async function copyHandoff() {
+  async function copyHandoff(text: string, taskLabel: string | null = null) {
+    const token = ++copyRequest.current;
     setCopyState('pending');
+    setCopiedTaskLabel(taskLabel);
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(handoff);
-      setCopyState('copied');
+      ok = await copyText(text);
     } catch {
-      setCopyState('error');
+      ok = false;
     }
+    if (token !== copyRequest.current) return;
+    setCopyState(ok ? 'copied' : 'error');
+  }
+
+  /* One path for every task: a verified agent takes it as the opening turn, anything else copies
+     the same bounded sentence. The chooser and the button both end here. */
+  function runAgentTask(kind: ArchitectureAgentTaskKind, taskLabel: string | null = null) {
+    if (!selected) return;
+    setTaskMenuOpen(false);
+    if (agentRoute === 'agent') {
+      setInspector(null);
+      setEvidenceOpen(false);
+      writeArchitectureAddress(selectedRole);
+      onAgentRequest?.({ kind, prompt: promptFor(kind) });
+      return;
+    }
+    void copyHandoff(promptFor(kind), taskLabel);
   }
 
   return (
@@ -565,6 +714,7 @@ export function ArchitectureWorkbench({
                 {t('description')}
               </p>
             </div>
+            {profileNotices ? <div className="mt-3">{profileNotices}</div> : null}
           </header>
           {/*
             The provenance explanation is available in one press, but it does not own a permanent
@@ -592,57 +742,134 @@ export function ArchitectureWorkbench({
                 deltaStatus={deltaStatus}
                 compact={rightDockOpen}
               />
-              <Button
-                variant="outline"
-                size="lg"
-                className="atlas-touch-floor ml-auto shrink-0"
-                disabled={agentRoute === 'checking' || copyState === 'pending'}
-                data-testid="architecture-agent-action"
-                data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
-                onClick={() => {
-                  if (agentRoute === 'agent') {
-                    const kind: ArchitectureAgentRequest['kind'] = requestedAgentKind;
-                    setInspector(null);
-                    setEvidenceOpen(false);
-                    writeArchitectureAddress(selectedRole);
-                    onAgentRequest?.({
-                      kind,
-                      prompt: buildArchitectureAgentPrompt(
-                        selected,
-                        handoffContexts[selected.slug] ?? null,
-                        {
-                          kind,
-                          stage: 'understand',
-                          selectedRole,
-                          receipt: agentReceipt,
-                        },
-                      ),
-                    });
-                    return;
-                  }
-                  void copyHandoff();
+              <div
+                ref={taskMenuRef}
+                className="relative ml-auto flex shrink-0 items-stretch"
+                data-testid="architecture-agent-task"
+                onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+                  if (!taskMenuOpen) return;
+                  if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
+                  const items = [
+                    ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
+                  ];
+                  if (items.length === 0) return;
+                  const at = items.indexOf(document.activeElement as HTMLButtonElement);
+                  /* From the trigger (focus not on an item) ArrowDown enters at the top and
+                     ArrowUp at the bottom, the way a native menu does. */
+                  const next =
+                    at === -1
+                      ? event.key === 'ArrowDown' ? 0 : items.length - 1
+                      : (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+                  items[next]?.focus();
+                  event.preventDefault();
                 }}
               >
-                <Bot size={ICON_SIZE.sm} aria-hidden />
-                {agentRoute === 'checking'
-                  ? t('checkingAgent')
-                  : agentRoute === 'clipboard'
-                    ? copyState === 'pending'
-                      ? t('copyingHandoff')
-                      : copyState === 'copied'
-                        ? t('copiedHandoff')
-                        : copyState === 'error'
-                          ? t('copyHandoffError')
-                          : t('copyAgentTask')
-                    : conformance?.status === 'conforms'
-                      ? t('planChangeAction')
-                      : conformance
-                        ? t('reviewDeltaAction')
-                        : t('inspectSourceAction')}
-              </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="atlas-touch-floor rounded-r-none"
+                  disabled={agentRoute === 'checking' || copyState === 'pending'}
+                  data-testid="architecture-agent-action"
+                  data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
+                  onClick={() =>
+                    runAgentTask(
+                      requestedAgentKind,
+                      agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? null,
+                    )
+                  }
+                >
+                  <Bot size={ICON_SIZE.sm} aria-hidden />
+                  {agentRoute === 'checking'
+                    ? t('checkingAgent')
+                    : agentRoute === 'clipboard'
+                      ? copyState === 'pending'
+                        ? t('copyingHandoff')
+                        : copyState === 'copied'
+                          ? copiedTaskLabel
+                            ? t('copiedTaskHandoff', { task: copiedTaskLabel })
+                            : t('copiedHandoff')
+                          : copyState === 'error'
+                            ? t('copyHandoffError')
+                            : t('copyTaskSentence', {
+                                task: agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? '',
+                              })
+                      : agentTasks.find((task) => task.kind === requestedAgentKind)?.label ??
+                        t('inspectSourceAction')}
+                </Button>
+                <Button
+                  ref={taskMenuTriggerRef}
+                  variant="outline"
+                  size="lg"
+                  className="atlas-touch-floor -ml-px min-w-9 rounded-l-none px-2"
+                  disabled={agentRoute === 'checking'}
+                  aria-haspopup="menu"
+                  aria-expanded={taskMenuOpen}
+                  aria-label={t('agentTaskMenu')}
+                  data-testid="architecture-agent-task-menu"
+                  onClick={() => setTaskMenuOpen((value) => !value)}
+                >
+                  <ChevronDown
+                    size={ICON_SIZE.sm}
+                    aria-hidden
+                    className={cn(
+                      'transition-transform motion-reduce:transition-none',
+                      taskMenuOpen && 'rotate-180',
+                    )}
+                  />
+                </Button>
+                <Surface
+                  open={taskMenuOpen}
+                  origin="top right"
+                  role="menu"
+                  aria-label={t('agentTaskMenu')}
+                  {...transientSurface('menu')}
+                  data-testid="architecture-agent-task-popover"
+                  className="absolute right-0 top-full z-20 mt-1 flex w-80 flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
+                >
+                  {agentTasks.map((task) => (
+                    <button
+                      key={task.kind}
+                      type="button"
+                      role="menuitem"
+                      data-testid={`architecture-agent-task-${task.kind}`}
+                      data-architecture-agent-task={task.kind}
+                      aria-current={task.kind === requestedAgentKind ? 'true' : undefined}
+                      onClick={() => {
+                        if (selected) setChosenAgent({ slug: selected.slug, kind: task.kind });
+                        runAgentTask(task.kind, task.label);
+                        /* The menu is leaving; focus goes back to what opened it, not to body. */
+                        taskMenuTriggerRef.current?.focus();
+                      }}
+                      className={controlClass({
+                        shape: 'row',
+                        size: 'md',
+                        tone: 'secondary',
+                        hoverSurface: 'lift',
+                        active: task.kind === requestedAgentKind,
+                        className:
+                          'h-auto min-w-0 flex-col items-start gap-0.5 px-3 py-2 focus-visible:bg-[color:var(--color-overlay-2)] focus-visible:outline-none',
+                      })}
+                    >
+                      <span className="text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                        {task.label}
+                      </span>
+                      <span className="break-keep text-caption text-[color:var(--color-text-tertiary)]">
+                        {task.hint}
+                      </span>
+                    </button>
+                  ))}
+                  {agentRoute === 'clipboard' ? (
+                    <p className="border-t border-[color:var(--color-divider)] px-3 pb-1 pt-2 text-caption text-[color:var(--color-text-quaternary)]">
+                      {t('agentTaskCopyHint')}
+                    </p>
+                  ) : null}
+                </Surface>
+              </div>
               <span className="sr-only" role="status" aria-live="polite">
                 {agentRoute === 'clipboard' && copyState === 'copied'
-                  ? t('copiedHandoff')
+                  ? copiedTaskLabel
+                    ? t('copiedTaskHandoff', { task: copiedTaskLabel })
+                    : t('copiedHandoff')
                   : agentRoute === 'clipboard' && copyState === 'error'
                     ? t('copyHandoffError')
                   : ''}
@@ -916,20 +1143,45 @@ export function ArchitectureWorkbench({
             fact as the rules beside it: why a number on the drawing is missing.
           */}
           {sourceListingCapable || !sourceUnavailableReason ? null : (
-            <p
+            <div
               className={cn(
-                'break-keep border-b border-[color:var(--color-border-soft)] px-4 py-3 text-caption text-[color:var(--color-text-quaternary)] lg:col-span-2 xl:shrink-0',
+                'border-b border-[color:var(--color-border-soft)] px-4 py-3 lg:col-span-2 xl:shrink-0',
                 /* Why a module count is missing belongs with the role whose modules are missing. */
                 inspector === 'role' ? undefined : 'xl:hidden',
               )}
-              data-testid="architecture-source-unavailable"
             >
-              {t(
-                sourceUnavailableReason === 'unbound'
-                  ? 'sourceListingUnbound'
-                  : 'sourceListingUnavailable',
-              )}
-            </p>
+              <p
+                className="break-keep text-caption text-[color:var(--color-text-quaternary)]"
+                data-testid="architecture-source-unavailable"
+              >
+                {t(
+                  sourceUnavailableReason === 'unbound'
+                    ? 'sourceListingUnbound'
+                    : 'sourceListingUnavailable',
+                )}
+              </p>
+              {/*
+                ⚠️ **The one surface that can lift this absence is named where the absence is
+                stated.** A browser cannot read a source folder at all, so the note ends in a fact
+                with nothing to do about it; the installed app is what turns the missing module
+                counts into real ones. The installed app never offers its own download, so the page
+                passes this only while the runtime is a browser.
+              */}
+              {offersInstalledApp ? (
+                <Link
+                  href="/download"
+                  className={controlClass({
+                    shape: 'chip',
+                    size: 'sm',
+                    tone: 'secondary',
+                    className: 'mt-2 w-fit',
+                  })}
+                  data-testid="architecture-get-installed-app"
+                >
+                  {t('getInstalledApp')}
+                </Link>
+              ) : null}
+            </div>
           )}
 
         {/* ⚠️ One inset down the dock. Measured 2026-08-30: the role card sat flush, the rules at
@@ -1041,8 +1293,6 @@ export function ArchitectureWorkbench({
             legendTraffic={t('legendTraffic')}
             legendSkipHint={t('legendSkipHint')}
             legendViolated={t('legendViolated')}
-            legendShapeEnd={t('legendShapeEnd')}
-            legendShapeWork={t('legendShapeWork')}
             directionLabel={t('ladderDirection')}
             hiddenAtWorkbench={inspector !== 'rules'}
           />

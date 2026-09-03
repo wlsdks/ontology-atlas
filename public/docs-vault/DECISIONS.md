@@ -54,6 +54,60 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — A ladder skip leaves the face's side, the count sentence sits on its arrow, and the lanes go where the arcs are
+
+**Why**: the rebuilt macOS app with a real receipt showed the measured count sentences 40px right of the observation column and cut to "import…", a chosen role's three nested skip arcs launching from the face's foot straight through the adjacent count sentence, and every skip sentence cut while 188px of contract-side lane stayed empty.
+**Prior**: 2026-09-03 (the ladder is chosen by height, sentences sit on arrows) stands and is extended to the observation lane; 2026-08-30 (a violation is drawn, the canvas with docks) stands.
+**Decision**: on the ladder both lanes seat an adjacent sentence beside its own arrow; a skip leaves and arrives at the face's side edge, mid-height, with a side port, so no arc enters a row gap; the count sentence reads "{from} → {to} import {n}" in both the canvas and the dock; the contract lane keeps its 48px minimum unless the profile declares a skip, and the observation lane takes the remaining canvas up to 360px. The observation face never stands taller than its row.
+**Dissent**: symmetric lanes keep the ladder centred and predictable; they lost because an empty lane on one side and cut sentences on the other is not symmetry a reader can use.
+**Falsifier**: a drawn arc crosses any sentence or face at 1512 with the role dock open, a count sentence is cut on a canvas 1024px or wider, or a reader cannot tell which face a side-launched arc leaves.
+**Owner**: stark
+
+## 2026-09-03 — Every role is one rounded face, and a caption wraps by the width its script needs
+
+**Why**: the owner pointed at the first Korean role sentences running past both outlines of a 280px face, and at the two face shapes (a stadium at each end of the chain, a rectangle between) asking what the difference meant. The caption budget counted characters at a 4.8px Latin glyph while a Hangul syllable measures about 8px; the shapes were ISO 5807 terminators and processes, explained only in the rules dock legend.
+**Prior**: 2026-08-28 (a role may say what it is for) stands; 2026-08-30 (a role box states what its own edges did) stands; the derived terminator/process shape assignment from graph-layout is retired for drawing, kept in the model.
+**Decision**: role captions wrap by estimated glyph width (Hangul and Han 8px, Latin 4.8px) against the straight room of the face, and only the last line is ellipsized; every role face is the same rounded rectangle, the two legend rows for shapes are removed, and position alone says where a chain begins and ends.
+**Dissent**: the flowchart standard's terminator tells a reader where a process starts without a legend; it lost because two owners read the shapes as an unexplained difference and the chain's order already carries that fact.
+**Falsifier**: a caption crosses a face outline in either locale at 1512 or 1920, or a reader asks which role the chain starts from once the stadiums are gone.
+**Owner**: stark
+
+## 2026-09-03 — A role's sentence may be written in the reader's language, and one bad profile stops taking the route down
+
+**Why**: the seven sentences on /architecture are the only place the screen says what a layer is for, and a Korean reader got the role names in Korean and the answer in English; separately, `deriveArchitectureProfiles` throws for the whole vault from a render-phase memo, so one unknown key in one file replaced every profile in the folder with an error boundary that named neither the file nor the key.
+**Prior**: 2026-08-28 (a role may say what it is for) stands and is extended; 2026-08-26 (architecture is a separate reviewed contract) stands and keeps the reviewed sentence the fact.
+**Decision**: `architecture-profile/v1` gains optional `summary_<role>_<locale>`, matched by locale shape rather than the app's locale list. `summary_<role>` stays canonical: it is what `roles[].summary`, every agent prompt, `inspect_architecture` and the CLI print, and a locale line is refused without it, for a role that does not exist, or empty. Only the web workbench reads the locale map, falling back to the canonical sentence per role. `deriveArchitectureProfilesReport` skips an unreadable document and returns it as a named problem the screen prints; MCP and CLI still throw, so an agent never mistakes a half-scanned vault for a whole one.
+**Dissent**: the evidence seat argued parse isolation is separate scope riding a localization decision; it lost because this change is the first to make a rejected key likely in this exact file, and shipping the key without the isolation ships the blank screen with it. The steward held that the version floor is overweighted, since a 1.0.4 reader can simply delete the line; it lost because the failure is the whole screen, not the line.
+**Falsifier**: a Korean reader with all seven Korean sentences still cannot say what a layer is for, or no second profile carries any summary within two sessions.
+**Owner**: stark
+
+## 2026-09-03 — The comparison ladder tightens its rows before it hides a role
+
+**Why**: at 1280×800, the widest laptop this product ships to, the canvas column measured 638px while the roomy ladder asks for 684, so the seventh role fell past the fold and the screen answered "1 more below" while the drawing itself had room to give.
+**Prior**: 2026-09-03 (the ladder is chosen by height, sentences sit on arrows) stands; this adds a second density under its rule and leaves the roomy 24px rows and the width gate untouched.
+**Decision**: where the measured canvas cannot hold the roomy rows but can hold tighter ones, the ladder draws the same 280/72/240 faces on 58px rows with one summary line each, a 22px row gap and 4px of pad. 22 is the narrowest gap a 12px sentence rectangle clears with the 4px collision pad on both sides, so every rule still says its sentence beside its arrow; at 20 the sentence is dropped as a collision. Below xl nothing is measured and nothing changes, and the hidden-count row stays the fallback when even the tight rows do not fit.
+**Dissent**: narrowing the faces would have kept both summary lines; it lost because the fixed faces carry the side-by-side comparison this screen exists for, and a sentence's second line is worth less than a whole role.
+**Falsifier**: a 1280×800 laptop still counts a role as hidden, a rule sentence is held or collides on the tight rows, or a reader cannot say what a role is for from its single summary line.
+**Owner**: stark
+
+## 2026-09-03 — Receded ink stays at or above 3:1, the ladder takes a tablet canvas, and the chosen task stays on the button
+
+**Why**: the re-audit of the same day measured receded sentences at 2.6:1 and receded indices at 2.8:1 with the 0.65/0.55 opacities; a 1112px tablet gave the canvas 984px, the ladder asked for 1008 and fell back to 148px combined boxes with every summary and sentence cut; and two source-hidden walkers (a developer, a product manager) could not tell afterwards which agent task they had copied, one saw the confirmation vanish before reading it, and both named dependency, import and type-only as words the screen never explained.
+**Prior**: 2026-09-03 (ladder by height, sentences on arrows, person picks the task) stands; this record moves its two opacities and its width gate.
+**Decision**: receded roles and strokes hold 0.7 so every receded word measures at least 3:1; the ladder needs only its faces plus 48px of side lane on each side (744px), since side lanes hold only selection-revealed skips whose sentences are stated as held; the task chosen from the menu stays on the button as "Copy the … task" and the confirmation names it for four seconds; column headings read "reviewed by a person" and "observed in code", the empty face says "not inspected yet", and the rules and hints say "pull in code" where they said import or dependency, with the arrow legend defining dependency once.
+**Dissent**: a stronger recede separates the selected pair faster than an indigo face can; it lost because a word a reader cannot read is not de-emphasised, it is gone. Keeping "import" is more precise for developers; it lost because the developer walker did not need the word and the non-developer could not use it.
+**Falsifier**: a reader at 1512 cannot tell the selected pair from the rest within a glance; a 834px canvas hides a role's name or cuts a rule sentence on the ladder; or five walkers still ask what dependency means after the legend.
+**Owner**: stark
+
+## 2026-09-03 — The ladder is chosen by height, sentences sit on arrows, and the person picks the agent task
+
+**Why**: at 1920×1080 "across while it fits across" drew 151px cards, 205px of ink in a 918px canvas, every role sentence cut and lane labels repeated fourteen times; at 1512 each rule sentence ended 160px from its arrow; a chosen role receded the rest to 3.0:1 titles and 1.2:1 sentences; and the one agent button decided its own task, so nobody could ask for a re-check or for where the reviewed structure needs a decision.
+**Prior**: 2026-09-03 (comparison workbench) stands and is enforced — its 280/72/240 rows were unreachable where the room was largest; 2026-08-30 (the chain does not turn under a click) stands; 2026-08-26 (draft proposed by an agent, named by a person) stands and binds the improvement task.
+**Decision**: the paired ladder is drawn whenever its rows fit the canvas height at rest, with a 24px row gap seating each rule sentence beside its arrow; across remains for a short canvas or parallel lanes. Receded roles keep 0.65 opacity, strokes 0.55. The agent button keeps its derived default and gains a chooser of three tasks — inspect or re-inspect source, plan change, find improvements — one line each; a browser copies the chosen sentence. Find improvements names disagreements and unmapped, unruled, empty roles with literal paths and asks for the rule; it proposes no rule, role name or pattern and writes nothing.
+**Dissent**: the evidence seat called the chooser a one-state gap and two labels for one `verify` kind duplication; it lost because the label names what the re-check compares against. The steward held a question without a candidate may not be actionable; it lost to the 2026-08-26 refusal.
+**Falsifier**: at 1512×945 or 1920×1080 a role sits below the fold, a sentence touches a face, or a reader cannot say which arrow a sentence belongs to; five find-improvements runs end in a proposal accepted unchanged, or five are abandoned as not actionable; or a `conforms` receipt still blocks a fresh inspection.
+**Owner**: stark
+
 ## 2026-09-03 — The download hero rises inside half a second, hands off by view angle, and shows a phone three tiers
 
 **Why**: Measured at 1512, the filled CTA stood at `opacity: 0` yet hit-testable for 920ms behind a 700/800/950ms stagger the typing already made redundant (same-input stage spread 267ms against the 120ms rule). The scroll camera lifted the plane above the fold while the demo stage rose below it, so the two never met. At 390 the plinth drew 96 nodes into 165px: a texture, not a map.

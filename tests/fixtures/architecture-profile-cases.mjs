@@ -17,6 +17,9 @@ export const FSD_PROFILE_FRONTMATTER = Object.freeze({
   role_shared: ['src/shared/**'],
   summary_routing: 'Locale-prefixed Next entry wrappers. Metadata and routing only, never logic.',
   summary_views: 'One module per route-level screen, assembled from the layers beneath it.',
+  /* One locale line, on one of the two roles that declare a sentence, so the fixture also proves
+     the untranslated role and the role with no sentence at all keep behaving as before. */
+  summary_views_ko: '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.',
   dependency_policy: 'lower-only',
   dependency_usages: ['value'],
   evidence: ['docs/ARCHITECTURE.md#fsd-layers'],
@@ -135,4 +138,41 @@ export const PATH_MATCH_CASES = Object.freeze([
   { path: 'src\\entities\\project', pattern: 'src/entities/**', matches: true },
   { path: 'app/[locale]/topology/page.tsx', pattern: 'app/**', matches: true },
   { path: 'src/views/home', pattern: '', matches: false },
+]);
+
+/**
+ * ⚠️ **Every way `summary_<role>_<locale>` can be wrong, in one place both parsers read.**
+ *
+ * A locale is matched by shape, not by the application's locale list, so the last underscore is
+ * only a locale boundary when what follows is two letters. That single rule produces all four
+ * rows: a translated role that does not exist, a translation with no canonical sentence to
+ * restate, an empty value, and a suffix that is not a locale at all — which falls back to the
+ * role-id reading and is refused as the unknown role `views_kor`, not accepted as Korean.
+ */
+export const LOCALIZED_SUMMARY_REJECT_CASES = Object.freeze([
+  Object.freeze({
+    name: 'a localized summary for a role that does not exist',
+    frontmatter: Object.freeze({ ...FSD_PROFILE_FRONTMATTER, summary_ghost_ko: '없는 역할입니다.' }),
+    message: /summary_ghost_ko describes a role that does not exist\./,
+  }),
+  Object.freeze({
+    name: 'a translation of a sentence the profile never wrote',
+    frontmatter: Object.freeze({
+      ...Object.fromEntries(
+        Object.entries(FSD_PROFILE_FRONTMATTER).filter(([key]) => key !== 'summary_views'),
+      ),
+      summary_views_ko: '라우트가 열 수 있는 화면 하나마다 모듈 하나입니다.',
+    }),
+    message: /summary_views_ko translates summary_views, which this profile does not declare\./,
+  }),
+  Object.freeze({
+    name: 'an empty localized summary',
+    frontmatter: Object.freeze({ ...FSD_PROFILE_FRONTMATTER, summary_views_ko: '   ' }),
+    message: /summary_views_ko must be a non-empty string\./,
+  }),
+  Object.freeze({
+    name: 'a suffix that is not a locale, read as the role id it spells',
+    frontmatter: Object.freeze({ ...FSD_PROFILE_FRONTMATTER, summary_views_kor: 'Not a locale.' }),
+    message: /Invalid architecture role id: views_kor\./,
+  }),
 ]);
