@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { createRequire, findPackageJSON } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -25,10 +25,62 @@ const sourceCheckoutMcpRoot = dirname(sourceCheckoutMcpSource);
 export const SOURCE_CHECKOUT_MCP_INSTALL_COMMAND =
   'pnpm --dir mcp install --frozen-lockfile';
 
+const EXACT_SEMVER = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+
+function isExactMcpDependencyVersion(value) {
+  return typeof value === 'string' && EXACT_SEMVER.test(value);
+}
+
+function readInstalledPackage(packagePath, dependency) {
+  try {
+    const installedPackagePath = findPackageJSON(
+      dependency,
+      pathToFileURL(packagePath),
+    );
+    if (!installedPackagePath) return { found: false, version: null };
+    const packageJson = JSON.parse(readFileSync(installedPackagePath, 'utf-8'));
+    if (packageJson.name !== dependency) return { found: false, version: null };
+    return {
+      found: true,
+      version: typeof packageJson.version === 'string' ? packageJson.version : null,
+    };
+  } catch {
+    return { found: false, version: null };
+  }
+}
+
+function inspectSourceCheckoutMcpDependencies(mcpRoot) {
+  const packagePath = resolve(mcpRoot, 'package.json');
+  if (!existsSync(packagePath)) return [];
+
+  const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
+  const dependencies = Object.entries(packageJson.dependencies ?? {}).sort(([left], [right]) =>
+    left.localeCompare(right, 'en'),
+  );
+  if (dependencies.length === 0) {
+    return [{ dependency: 'mcp/package.json', status: 'idle' }];
+  }
+  return dependencies.flatMap(([dependency, declaredVersion]) => {
+    if (!isExactMcpDependencyVersion(declaredVersion)) {
+      return [{ dependency, status: 'unpinned', declaredVersion }];
+    }
+    const installed = readInstalledPackage(packagePath, dependency);
+    if (!installed.found) {
+      return [{ dependency, status: 'missing', declaredVersion }];
+    }
+
+    const installedVersion = installed.version;
+    return installedVersion === declaredVersion
+      ? []
+      : [{ dependency, status: 'stale', declaredVersion, installedVersion }];
+  });
+}
+
 /**
  * Reports runtime dependencies declared by `mcp/package.json` that Node cannot
- * resolve from that package. The probe follows Node's resolver instead of only
- * checking for `mcp/node_modules`: a valid hoisted installation is valid too.
+ * resolve from that package, plus exact-pinned dependencies whose installed
+ * version differs. The probe follows Node's resolver instead of only checking
+ * for `mcp/node_modules`: a valid hoisted or pnpm-linked installation is valid too.
  *
  * A missing source checkout is not an error here. Installed CLI packages do not
  * ship the repository's sibling `mcp/` folder and resolve
@@ -38,25 +90,43 @@ export const SOURCE_CHECKOUT_MCP_INSTALL_COMMAND =
  * @returns {string[]}
  */
 export function findMissingSourceCheckoutMcpDependencies(mcpRoot = sourceCheckoutMcpRoot) {
-  const packagePath = resolve(mcpRoot, 'package.json');
-  if (!existsSync(packagePath)) return [];
-
-  const packageJson = JSON.parse(readFileSync(packagePath, 'utf-8'));
-  const dependencies = Object.keys(packageJson.dependencies ?? {}).sort();
-  const requireFromMcp = createRequire(packagePath);
-  return dependencies.filter((dependency) => {
-    try {
-      requireFromMcp.resolve(dependency);
-      return false;
-    } catch {
-      return true;
-    }
-  });
+  return inspectSourceCheckoutMcpDependencies(mcpRoot).map(({ dependency }) => dependency);
 }
 
-function makeSourceCheckoutMcpDependencyError(missing) {
+function makeSourceCheckoutMcpDependencyError(issues) {
+  const idle = issues.find(({ status }) => status === 'idle');
+  if (idle) {
+    const error = new Error(
+      'Source-checkout MCP dependency preflight has no runtime dependencies to inspect. ' +
+        'Declare exact versions in mcp/package.json.',
+    );
+    error.code = 'OATLAS_MCP_SOURCE_DEPENDENCIES_MISSING';
+    return error;
+  }
+  const unpinned = issues.filter(({ status }) => status === 'unpinned');
+  if (unpinned.length > 0) {
+    const details = unpinned.map(
+      ({ dependency, declaredVersion }) =>
+        `${dependency} declares ${JSON.stringify(declaredVersion)}`,
+    );
+    const error = new Error(
+      `Source-checkout MCP dependencies are not exactly pinned (${details.join(', ')}). ` +
+        `Pin them in mcp/package.json, then run: ${SOURCE_CHECKOUT_MCP_INSTALL_COMMAND}`,
+    );
+    error.code = 'OATLAS_MCP_SOURCE_DEPENDENCIES_MISSING';
+    return error;
+  }
+  const hasStaleDependency = issues.some(({ status }) => status === 'stale');
+  const details = hasStaleDependency
+    ? issues.map(({ dependency, status, declaredVersion, installedVersion }) =>
+        status === 'stale'
+          ? `${dependency} expected ${declaredVersion}, found ${installedVersion ?? 'unknown'}`
+          : `${dependency} not installed`,
+      )
+    : issues.map(({ dependency }) => dependency);
   const error = new Error(
-    `Source-checkout MCP dependencies are missing (${missing.join(', ')}). ` +
+    `Source-checkout MCP dependencies are ${hasStaleDependency ? 'missing or stale' : 'missing'} ` +
+      `(${details.join(', ')}). ` +
       `Run: ${SOURCE_CHECKOUT_MCP_INSTALL_COMMAND}`,
   );
   error.code = 'OATLAS_MCP_SOURCE_DEPENDENCIES_MISSING';
@@ -70,9 +140,9 @@ function makeSourceCheckoutMcpDependencyError(missing) {
  * @param {string} mcpRoot absolute source-checkout MCP package root
  */
 export function assertSourceCheckoutMcpDependencies(mcpRoot = sourceCheckoutMcpRoot) {
-  const missing = findMissingSourceCheckoutMcpDependencies(mcpRoot);
-  if (missing.length === 0) return;
-  throw makeSourceCheckoutMcpDependencyError(missing);
+  const issues = inspectSourceCheckoutMcpDependencies(mcpRoot);
+  if (issues.length === 0) return;
+  throw makeSourceCheckoutMcpDependencyError(issues);
 }
 
 /**
@@ -94,11 +164,14 @@ export function sourceCheckoutMcpDependencyError(
   const stderrText = String(stderr ?? '');
   if (!stderrText.includes('ERR_MODULE_NOT_FOUND')) return null;
 
-  const missing = findMissingSourceCheckoutMcpDependencies(mcpRoot);
-  if (missing.length === 0 || !missing.some((dependency) => stderrText.includes(dependency))) {
+  const issues = inspectSourceCheckoutMcpDependencies(mcpRoot);
+  if (
+    issues.length === 0 ||
+    !issues.some(({ dependency }) => stderrText.includes(dependency))
+  ) {
     return null;
   }
-  return makeSourceCheckoutMcpDependencyError(missing);
+  return makeSourceCheckoutMcpDependencyError(issues);
 }
 
 /** Resolved module namespaces, keyed by file name. */
