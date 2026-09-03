@@ -3,7 +3,7 @@ started: 2026-09-01
 decision_target: 20
 decision_deadline: 2026-09-15
 sparse_extension_deadline: 2026-09-22
-outcome: pending
+outcome: adjust
 ---
 
 # Atlas PO routing pilot

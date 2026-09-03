@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — The PO routing pilot closes at its 20th decision as adjust
+
+**Why**: the register reached its 20-decision target on 2026-09-03 with the map label reservation change. The evaluator reports review delta 93%, reversible decisions avoiding council 100%, zero boundary misses, but recovery proofs resolved at 75% against the 80% floor and owner-facing clarity at 65% against 100%, so `keep` is not a valid outcome.
+**Prior**: 2026-09-01 (the pilot's own record) stands; this closes the window it opened.
+**Decision**: the outcome is `adjust`. The router, the two-reviewer default, and the typed register stay. What changes is the follow-through: a run's recovery proof and later result are recorded when its pull request merges, not left pending, and every owner-facing summary is judged for clarity before the run is logged.
+**Dissent**: `revert` to the full council, because 75% proof resolution means a quarter of decisions shipped without a recorded proof. It lost because the unresolved rows are bookkeeping debt on merged work, not evidence that routing sent the wrong reviewers.
+**Falsifier**: a shipped recovery-proof failure, or proof resolution still under 80% after the next ten logged decisions.
+**Owner**: stark
+
 ## 2026-09-03 — The map's ink ladder rises so a dimmed background node still reads
 
 **Why**: the owner showed the expanded map as a dark cloud in which nodes could not be found. The leaf ring sat at 3.2:1 on its own and the expanded-state background dim of 0.42 took it to about 1.5:1; only the ego and the expanded disc kept any light.
