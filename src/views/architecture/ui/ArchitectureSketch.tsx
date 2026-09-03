@@ -153,6 +153,8 @@ const PAIRED_SIDE_ROOM = 180;
 const PAIRED_SIDE_ROOM_MIN = 48;
 /** The most ground the observation lane takes for its arcs and sentences when the canvas has it. */
 const PAIRED_TRAIL_ROOM_MAX = 360;
+/** Air the narrow ladder keeps between its face and the canvas edge on each side. */
+const NARROW_LADDER_EDGE = 16;
 /* The two lanes' adjacent sentences share the gutter row gap from opposite ends; this keeps a
    rule sentence and a count sentence apart even when both are long. */
 const GAP_BETWEEN_LANE_SENTENCES = 24;
@@ -443,11 +445,28 @@ export function ArchitectureSketch({
       ? (boxWidth - PAD_X * 2 - (ranks - 1) * COL_GAP) / ranks
       : preferredBoxW;
   const minimumAcrossBoxW = hasLedger ? BOX_W_LEDGER_FIT : BOX_W;
+  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
+  /*
+   * ⚠️ **A phone gets the ladder's face, not the tablet's fallback.** Below the paired width a
+   * single-lane chain drew 148px faces beside a 180px lane reserved for sentences that could not
+   * fit in it: every caption and every rule sentence was cut while half the canvas stayed empty
+   * (390px, 2026-09-03). The narrow ladder keeps one lane, gives the face the canvas width up to
+   * the reviewed face's 280px, and seats each rule sentence beside its arrow like the ladder does.
+   */
+  const usesNarrowLadder = axis === 'down' && lanes === 1 && !usesPairedDown && boxWidth > 0;
+  const narrowFaceW = usesNarrowLadder
+    ? Math.max(BOX_W, Math.min(PAIRED_CONTRACT_W, boxWidth - PAD_X * 2 - NARROW_LADDER_EDGE))
+    : preferredBoxW;
+  /* An across chain takes the width its canvas gives it, up to the roomy face: a 1790px canvas
+     held seven 151px faces with every caption cut while 200px per face was free (1920x700,
+     2026-09-03). The roomy mode still needs the whole roomy row to fit; between the two the
+     face simply grows. */
   const boxW =
     axis === 'across'
-      ? Math.max(minimumAcrossBoxW, Math.min(preferredBoxW, fittedAcrossBoxW))
-      : preferredBoxW;
-  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
+      ? Math.max(minimumAcrossBoxW, Math.min(usesRoomyBoxes ? preferredBoxW : roomyBoxW, fittedAcrossBoxW))
+      : usesNarrowLadder
+        ? narrowFaceW
+        : preferredBoxW;
   /*
    * Which of the two ladder densities this canvas can hold. Below xl `restHeight` is 0 and the
    * roomy rows stand, exactly as before; the tight rows are the answer only where the canvas was
@@ -466,11 +485,13 @@ export function ArchitectureSketch({
     ? usesTightLadder
       ? PAIRED_ROW_GAP_TIGHT
       : PAIRED_ROW_GAP
-    : axis === 'down'
-      ? 8
-      : hasLedger
-        ? ROW_GAP_LEDGER
-        : ROW_GAP_PLAIN;
+    : usesNarrowLadder
+      ? PAIRED_ROW_GAP
+      : axis === 'down'
+        ? 8
+        : hasLedger
+          ? ROW_GAP_LEDGER
+          : ROW_GAP_PLAIN;
   const padY = usesPairedDown
     ? usesTightLadder
       ? PAIRED_PAD_Y_TIGHT
@@ -486,6 +507,8 @@ export function ArchitectureSketch({
       ? usesTightLadder
         ? BOX_H_PAIRED_TIGHT
         : BOX_H
+    : usesNarrowLadder
+      ? BOX_H
     : axis === 'down'
       ? 64
       : hasLedger
@@ -498,7 +521,7 @@ export function ArchitectureSketch({
      and on the tight ladder it closed the gap its count sentence needs. */
   const observationBoxH = usesPairedDown ? boxH : OBSERVATION_BOX_H;
   const summaryLineCount =
-    usesTightLadder || (axis === 'down' && !usesPairedDown) ? 1 : SUMMARY_LINES;
+    usesTightLadder || (axis === 'down' && !usesPairedDown && !usesNarrowLadder) ? 1 : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
      the reserved width first. This follows the animated grid on every ResizeObserver frame, so the
      chain neither turns nor loses its last role behind a 380px dock at the 1512px app width. */
@@ -572,8 +595,8 @@ export function ArchitectureSketch({
     PAIRED_SIDE_ROOM_MIN,
     Math.min(PAIRED_TRAIL_ROOM_MAX, pairedSlack - pairedLeadRoom),
   );
-  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : leadRoom;
-  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : trailRoom;
+  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : usesNarrowLadder ? 0 : leadRoom;
+  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : usesNarrowLadder ? 0 : trailRoom;
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
@@ -936,12 +959,15 @@ export function ArchitectureSketch({
         /* On the comparison ladder an adjacent rule's sentence sits beside its own arrow, with
            the half face, the delta gutter and the observation face as its room; the row gap
            between the two faces is clear ground by construction. */
-        adjacentSeat: usesPairedDown ? 'connector' : 'lead',
+        adjacentSeat: usesPairedDown || usesNarrowLadder ? 'connector' : 'lead',
         /* The contract lane reads right over the gutter; the observation lane reads left into the
            gutter, keeping its right side free for the skip arcs. */
-        connectorSide: lane === placed ? 'right' : 'left',
-        connectorRoom:
-          lane === placed
+        connectorSide: usesNarrowLadder ? 'split' : lane === placed ? 'right' : 'left',
+        /* On the narrow ladder the sentence may run to the canvas edge: half the face, the edge
+           air and the canvas padding, which is what a nineteen-glyph Korean rule needs. */
+        connectorRoom: usesNarrowLadder
+          ? contractBoxW / 2 + NARROW_LADDER_EDGE + PAD_X
+          : lane === placed
             ? contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
             : observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES,
         sentenceOf: edgeSentence,
@@ -987,6 +1013,7 @@ export function ArchitectureSketch({
     skipLane,
     splitsEvidence,
     toSentenceEdge,
+    usesNarrowLadder,
     usesPairedDown,
   ]);
 
