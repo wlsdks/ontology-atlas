@@ -18,6 +18,7 @@ import { usePanelPresence } from "@/shared/lib/use-presence";
 import {
   listboxBottomIsHidden,
   listboxGrowth,
+  listboxLeft,
   listboxTopIsHidden,
   type ListboxGrowth,
 } from "./select-growth";
@@ -164,6 +165,9 @@ export function Select({
   const [activeIndex, setActiveIndex] = useState(0);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [growth, setGrowth] = useState<ListboxGrowth | null>(null);
+  // The list's measured left edge once it has a width; `null` means the trigger's edge.
+  // It is remeasured before paint on every open, so a stale slide is never drawn.
+  const [listLeft, setListLeft] = useState<number | null>(null);
   // Edge affordances turn on **only when something is genuinely hidden**; right
   // after opening that is the bottom edge alone.
   const [edges, setEdges] = useState<{ top: boolean; bottom: boolean }>({
@@ -255,6 +259,15 @@ export function Select({
     const list = listRef.current;
     if (!list) return;
     const remeasure = () => {
+      // The list's own width decides whether it still fits to the right of the
+      // trigger; that is known only once rows are rendered, like the height.
+      const left = listboxLeft({
+        triggerLeft: anchor.left,
+        listWidth: list.getBoundingClientRect().width,
+        viewportWidth: window.innerWidth || 0,
+        pad: VIEWPORT_PAD,
+      });
+      setListLeft((current) => (current === left ? current : left));
       const next = readGrowth(list, anchor.availableHeight);
       setGrowth((current) =>
         current &&
@@ -403,7 +416,8 @@ export function Select({
 
   const anchorStyle: CSSProperties | undefined = anchor
     ? {
-        left: anchor.left,
+        // Measured after the rows render (`listboxLeft`); until then the trigger's edge.
+        left: listLeft ?? anchor.left,
         /*
          * **The list never gets narrower than its own items** (owner report,
          * 2026-08-16).
