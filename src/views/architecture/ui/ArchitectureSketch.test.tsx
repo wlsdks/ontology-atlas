@@ -174,7 +174,9 @@ describe('the evidence split plane', () => {
       const graph = screen.getByTestId('architecture-graph');
       expect(graph).toHaveAttribute('data-architecture-axis', 'down');
       expect(graph).toHaveAttribute('data-evidence-layout', 'paired-ladder');
-      expect(graph).toHaveAttribute('width', '1008');
+      /* 56 + 280 + 72 + 240 faces, a 48px contract lane (no declared skip needs more), and the
+         360px observation lane that carries the measured arcs and their sentences. */
+      expect(graph).toHaveAttribute('width', '1056');
       /* 8 + 20 + 7×72 + 6×24 + 8: the row gap carries the rule sentence beside its arrow. */
       expect(graph).toHaveAttribute('height', '684');
       expect(screen.getByTestId('architecture-paired-lane-headings')).toHaveTextContent(

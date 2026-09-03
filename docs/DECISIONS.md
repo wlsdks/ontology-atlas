@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — A ladder skip leaves the face's side, the count sentence sits on its arrow, and the lanes go where the arcs are
+
+**Why**: the rebuilt macOS app with a real receipt showed the measured count sentences 40px right of the observation column and cut to "import…", a chosen role's three nested skip arcs launching from the face's foot straight through the adjacent count sentence, and every skip sentence cut while 188px of contract-side lane stayed empty.
+**Prior**: 2026-09-03 (the ladder is chosen by height, sentences sit on arrows) stands and is extended to the observation lane; 2026-08-30 (a violation is drawn, the canvas with docks) stands.
+**Decision**: on the ladder both lanes seat an adjacent sentence beside its own arrow; a skip leaves and arrives at the face's side edge, mid-height, with a side port, so no arc enters a row gap; the count sentence reads "{from} → {to} import {n}" in both the canvas and the dock; the contract lane keeps its 48px minimum unless the profile declares a skip, and the observation lane takes the remaining canvas up to 360px. The observation face never stands taller than its row.
+**Dissent**: symmetric lanes keep the ladder centred and predictable; they lost because an empty lane on one side and cut sentences on the other is not symmetry a reader can use.
+**Falsifier**: a drawn arc crosses any sentence or face at 1512 with the role dock open, a count sentence is cut on a canvas 1024px or wider, or a reader cannot tell which face a side-launched arc leaves.
+**Owner**: stark
+
 ## 2026-09-03 — Every role is one rounded face, and a caption wraps by the width its script needs
 
 **Why**: the owner pointed at the first Korean role sentences running past both outlines of a 280px face, and at the two face shapes (a stadium at each end of the chain, a rectangle between) asking what the difference meant. The caption budget counted characters at a 4.8px Latin glyph while a Hangul syllable measures about 8px; the shapes were ISO 5807 terminators and processes, explained only in the rules dock legend.

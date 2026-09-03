@@ -84,8 +84,22 @@ export interface SentenceLayoutInput {
    * the lead-lane sentence ended 160px from its arrow and read as a floating caption).
    */
   adjacentSeat?: 'lead' | 'connector';
-  /** Ground to the right of the arrow that a `connector` sentence may use, in SVG units. */
+  /** Ground beside the arrow that a `connector` sentence may use, in SVG units. */
   connectorRoom?: number;
+  /**
+   * Which side of the arrow a `connector` sentence reads on. The contract lane reads to the right,
+   * over the gutter; the observation lane reads to the left, into the gutter, because its right
+   * side is the lane the skip arcs travel in (e2e, 2026-09-03: the outermost arc ran through the
+   * sentence beside the last adjacent arrow).
+   */
+  connectorSide?: 'right' | 'left';
+  /**
+   * Rectangles another lane already holds, in the same units. The ladder places its two lanes in
+   * two calls; without this the rule sentence reading right and the count sentence reading left
+   * met in the shared gutter and touched (e2e, 2026-09-03). A later lane gives way, as a later
+   * sentence in one lane always did.
+   */
+  occupied?: readonly { x: number; y: number; width: number; height: number }[];
   sentenceOf: (edge: SentenceEdge) => string;
   /**
    * The role a reader is pointing at or has chosen. Its strokes' sentences place first, so a
@@ -148,11 +162,13 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
     skipSide = 'positive',
     adjacentSeat = 'lead',
     connectorRoom = 0,
+    connectorSide = 'right',
+    occupied = [],
     sentenceOf,
     focus = null,
   } = input;
   const boxes = [...placed.values()].map((p) => ({ x: p.x, y: p.y, width: boxW, height: boxH }));
-  const taken: { x: number; y: number; width: number; height: number }[] = [];
+  const taken: { x: number; y: number; width: number; height: number }[] = [...occupied];
   const pitch = axis === 'across' ? boxW + colGap : boxH + rowGap;
 
   /* Rules first, then the busiest traffic: when two sentences compete for one place the one a
@@ -216,12 +232,15 @@ export function placeEdgeSentences(input: SentenceLayoutInput): SentencePlacemen
          * reviewed policy reads on the left, measured traffic on the right.
          */
         const isTraffic = edge.kind === 'traffic';
-        if (!isTraffic && adjacentSeat === 'connector') {
+        if (adjacentSeat === 'connector') {
           /* Beside the arrow: it leaves the lower face's centre, so the words start just right
-             of that line and run over the gap that the two faces leave between them. */
-          x = Math.min(a.x, b.x) + boxW / 2 + GAP_TO_ARC;
+             of that line and run over the gap that the two faces leave between them. The
+             observation lane seats its measured count the same way (installed app, 2026-09-03:
+             the count sentence sat 40px right of the column and was cut to "import…"). */
+          const centre = Math.min(a.x, b.x) + boxW / 2;
+          x = connectorSide === 'left' ? centre - GAP_TO_ARC : centre + GAP_TO_ARC;
           y = (sy + ty) / 2 + 4;
-          anchor = 'start';
+          anchor = connectorSide === 'left' ? 'end' : 'start';
           roomPx = connectorRoom - GAP_TO_ARC - 12;
         } else {
           x = isTraffic

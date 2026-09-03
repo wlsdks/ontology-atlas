@@ -516,7 +516,11 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   recedes the unrelated roles and strokes to 0.7, so every receded word stays at or
   above 3:1. Every role is one rounded face (the stadium ends were retired on
   2026-09-03), and captions wrap by the width their script needs, so a Korean
-  sentence stays inside its face.
+  sentence stays inside its face. Both lanes seat an adjacent sentence beside its
+  own arrow; a skip arc leaves and arrives at the face's side with a side port,
+  so no arc crosses a row gap; the count sentence reads "{from} → {to} import
+  {n}"; and the side lanes go where the arcs are, a 48px contract lane unless the
+  profile declares a skip and up to 360px for the observation lane.
 - **A role's sentence can be written in the reader's language** (2026-09-03). Beside
   `summary_<role>`, a profile may carry `summary_<role>_<locale>`, such as
   `summary_views_ko`. The screen shows the locale line to a reader in that locale

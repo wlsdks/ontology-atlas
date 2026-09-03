@@ -392,7 +392,7 @@
     "legendSkipHint": "A crossing that skips a role appears when you choose one of its ends.",
     "legendTraffic": "measured imports; thickness is how many",
     "permittedEdge": "{from} may depend on {to}",
-    "trafficEdge": "{from} reaches {to} in {count, plural, one {# import} other {# imports}}",
+    "trafficEdge": "{from} → {to}: {count, plural, one {# import} other {# imports}}",
     "selectRoleHint": "Choose a role above to read what it is for, where it lives, and what it contains.",
     "roleNotInProfile": "This profile has no role called “{role}”. The link may be for a different profile.",
     "sourceListingUnavailable": "Source modules appear once a project source folder is connected. A browser cannot read a source folder; open this ontology folder in the installed Atlas app and this fills in.",

@@ -152,6 +152,11 @@ const PAIRED_SIDE_ROOM = 180;
  * may take a canvas as narrow as its faces plus this much lane on each side.
  */
 const PAIRED_SIDE_ROOM_MIN = 48;
+/** The most ground the observation lane takes for its arcs and sentences when the canvas has it. */
+const PAIRED_TRAIL_ROOM_MAX = 360;
+/* The two lanes' adjacent sentences share the gutter row gap from opposite ends; this keeps a
+   rule sentence and a count sentence apart even when both are long. */
+const GAP_BETWEEN_LANE_SENTENCES = 24;
 const PAIRED_FIXED_W =
   PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
 const PAIRED_MIN_W = PAIRED_FIXED_W + PAIRED_SIDE_ROOM_MIN * 2;
@@ -233,6 +238,7 @@ function ConnectionPort({
   active,
   tone,
   lane,
+  side,
 }: {
   axis: FlowAxis;
   at: Placed;
@@ -242,10 +248,14 @@ function ConnectionPort({
   active: boolean;
   tone: string;
   lane: 'contract' | 'observation';
+  /** A ladder skip leaves and arrives at the face's side; the port sits there, mid-height. */
+  side?: 'left' | 'right';
 }) {
   const incoming = direction === 'incoming';
-  const cx = axis === 'across' ? at.x + (incoming ? 0 : boxW) : at.x + boxW / 2;
-  const cy = axis === 'across' ? at.y + boxH / 2 : at.y + (incoming ? 0 : boxH);
+  const cx = side
+    ? side === 'left' ? at.x : at.x + boxW
+    : axis === 'across' ? at.x + (incoming ? 0 : boxW) : at.x + boxW / 2;
+  const cy = side || axis === 'across' ? at.y + boxH / 2 : at.y + (incoming ? 0 : boxH);
 
   return (
     <circle
@@ -261,6 +271,7 @@ function ConnectionPort({
       pointerEvents="none"
       data-architecture-port={lane}
       data-port-direction={direction}
+      data-port-side={side}
     />
   );
 }
@@ -452,7 +463,6 @@ export function ArchitectureSketch({
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
   const contractBoxW = usesPairedDown ? PAIRED_CONTRACT_W : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
-  const observationBoxH = usesPairedDown ? PAIRED_OBSERVATION_H : OBSERVATION_BOX_H;
   const rowGap = usesPairedDown
     ? usesTightLadder
       ? PAIRED_ROW_GAP_TIGHT
@@ -484,6 +494,11 @@ export function ArchitectureSketch({
         : BOX_H;
   /* The tight row pays for its height with the sentence's second line, not with its face width:
      one line of summary keeps every role's first clause, which cutting the faces would not. */
+  /* The observation face never stands taller than its row: on the tight ladder a 64px face in a
+     58px row closed the gap its count sentence needs. */
+  const observationBoxH = usesPairedDown
+    ? Math.min(PAIRED_OBSERVATION_H, boxH)
+    : OBSERVATION_BOX_H;
   const summaryLineCount =
     usesTightLadder || (axis === 'down' && !usesPairedDown) ? 1 : SUMMARY_LINES;
   /* Keep the role faces fixed while a desktop dock opens, but let their empty handoff space absorb
@@ -541,12 +556,26 @@ export function ArchitectureSketch({
       ? 28
       : SENTENCE_TRAIL_ROOM
     : 0;
-  const pairedSideRoom =
-    usesPairedDown && boxWidth > 0
-      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, (boxWidth - PAIRED_FIXED_W) / 2))
-      : PAIRED_SIDE_ROOM;
-  const layoutLeadRoom = usesPairedDown ? pairedSideRoom : leadRoom;
-  const layoutTrailRoom = usesPairedDown ? pairedSideRoom : trailRoom;
+  /*
+   * ⚠️ **Side lanes are given where the arcs are.** Two equal 180px lanes left 188px of empty
+   * ground on the contract side while three nested observation arcs and their sentences fought
+   * for the same 188px on the other side and every sentence was cut (installed app, 1512 with the
+   * role dock open, 2026-09-03). The contract lane only needs room when the profile declares a
+   * skip; otherwise it keeps the minimum and the observation lane takes the rest, up to a cap.
+   */
+  const contractNeedsLane = graph.edges.some(
+    (edge) => edge.kind === 'permitted' && edge.columnSpan > 1,
+  );
+  const pairedSlack = usesPairedDown && boxWidth > 0 ? Math.max(0, boxWidth - PAIRED_FIXED_W) : PAIRED_SIDE_ROOM * 2;
+  const pairedLeadRoom = contractNeedsLane
+    ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, pairedSlack / 2))
+    : PAIRED_SIDE_ROOM_MIN;
+  const pairedTrailRoom = Math.max(
+    PAIRED_SIDE_ROOM_MIN,
+    Math.min(PAIRED_TRAIL_ROOM_MAX, pairedSlack - pairedLeadRoom),
+  );
+  const layoutLeadRoom = usesPairedDown ? pairedLeadRoom : leadRoom;
+  const layoutTrailRoom = usesPairedDown ? pairedTrailRoom : trailRoom;
 
   const placed = useMemo(() => {
     const map = new Map<string, Placed>();
@@ -887,8 +916,10 @@ export function ArchitectureSketch({
       laneBoxW: number,
       laneBoxH: number,
       skipSide: 'negative' | 'positive' = 'positive',
+      occupied: readonly { x: number; y: number; width: number; height: number }[] = [],
     ) =>
       placeEdgeSentences({
+        occupied,
         axis,
         edges: edges.map(toSentenceEdge),
         placed: lane,
@@ -907,25 +938,37 @@ export function ArchitectureSketch({
         /* On the comparison ladder an adjacent rule's sentence sits beside its own arrow, with
            the half face, the delta gutter and the observation face as its room; the row gap
            between the two faces is clear ground by construction. */
-        adjacentSeat: usesPairedDown && lane === placed ? 'connector' : 'lead',
-        connectorRoom: contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW,
+        adjacentSeat: usesPairedDown ? 'connector' : 'lead',
+        /* The contract lane reads right over the gutter; the observation lane reads left into the
+           gutter, keeping its right side free for the skip arcs. */
+        connectorSide: lane === placed ? 'right' : 'left',
+        connectorRoom:
+          lane === placed
+            ? contractBoxW / 2 + PAIRED_GUTTER_W + observationBoxW / 2 - GAP_BETWEEN_LANE_SENTENCES
+            : observationBoxW / 2 + PAIRED_GUTTER_W - GAP_BETWEEN_LANE_SENTENCES,
         sentenceOf: edgeSentence,
         focus,
       });
     if (!splitsEvidence) return place(graph.edges, placed, contractBoxW, boxH);
+    const rules = place(
+      graph.edges.filter((edge) => edge.kind === 'permitted'),
+      placed,
+      contractBoxW,
+      boxH,
+      usesPairedDown ? 'negative' : 'positive',
+    );
+    /* The rule lane places first and holds its ground; a count sentence that would touch a rule
+       sentence in the shared gutter gives way. */
+    const held = rules.flatMap((placement) => (placement.rect ? [placement.rect] : []));
     return [
-      ...place(
-        graph.edges.filter((edge) => edge.kind === 'permitted'),
-        placed,
-        contractBoxW,
-        boxH,
-        usesPairedDown ? 'negative' : 'positive',
-      ),
+      ...rules,
       ...place(
         graph.edges.filter((edge) => edge.kind === 'traffic'),
         observedPlaced,
         observationBoxW,
         observationBoxH,
+        'positive',
+        held,
       ),
     ];
   }, [
@@ -1265,6 +1308,24 @@ export function ArchitectureSketch({
                 (sx + tx) / 2
               } ${midY} C ${tx - colGap} ${midY}, ${tx - colGap} ${ty}, ${tx} ${ty}`;
             }
+            if (usesPairedDown) {
+              /*
+               * On the ladder a skip leaves the face's side, not its foot: a foot-launched arc
+               * swept through the row gap where the adjacent sentence now sits (installed app,
+               * 2026-09-03: three arcs crossed "views reaches widgets"). The apex stays where the
+               * sentence model expects it, one swing past the face's centre line.
+               */
+              const negative = isDeclared;
+              const edgeX = (face: Placed) => (negative ? face.x : face.x + edgeBoxW);
+              const psx = edgeX(a);
+              const psy = a.y + edgeBoxH / 2;
+              const ptx = edgeX(b);
+              const pty = b.y + edgeBoxH / 2;
+              const apex = negative
+                ? Math.min(a.x, b.x) - (swing - edgeBoxW / 2)
+                : Math.max(a.x, b.x) + edgeBoxW + (swing - edgeBoxW / 2);
+              return `M ${psx} ${psy} C ${apex} ${psy}, ${apex} ${pty}, ${ptx} ${pty}`;
+            }
             const midX = usesPairedDown && isDeclared
               ? Math.min(sx, tx) - swing
               : Math.max(sx, tx) + swing;
@@ -1539,7 +1600,20 @@ export function ArchitectureSketch({
                   strokeWidth={isSelected ? 1.6 : 1}
                   className="architecture-canvas-node architecture-node-face"
                   data-node-selected={isSelected ? 'true' : 'false'}
-                />              {contractIncoming.length > 0 ? (
+                />              {usesPairedDown && contractPortEdges.some((edge) => edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+                <ConnectionPort
+                  axis={axis}
+                  at={at}
+                  boxW={contractBoxW}
+                  boxH={boxH}
+                  direction="outgoing"
+                  active={focus === box.id}
+                  tone={portTone}
+                  lane="contract"
+                  side="left"
+                />
+              ) : null}
+              {contractIncoming.length > 0 ? (
                 <ConnectionPort
                   axis={axis}
                   at={at}
@@ -1742,6 +1816,19 @@ export function ArchitectureSketch({
                     data-testid={`architecture-observation-box-${box.id}`}
                     data-observation-state={ledger?.state ?? 'missing'}
                   />
+                  {usesPairedDown && visibleEdges.some((edge) => edge.kind === 'traffic' && edge.columnSpan > 1 && (edge.from === box.id || edge.to === box.id)) ? (
+                    <ConnectionPort
+                      axis={axis}
+                      at={observedAt}
+                      boxW={observationBoxW}
+                      boxH={observationBoxH}
+                      direction="outgoing"
+                      active={focus === box.id}
+                      tone={portTone}
+                      lane="observation"
+                      side="right"
+                    />
+                  ) : null}
                   {observationIncoming.length > 0 ? (
                     <ConnectionPort
                       axis={axis}

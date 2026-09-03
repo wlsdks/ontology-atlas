@@ -71,6 +71,33 @@ describe('placeEdgeSentences', () => {
     expect(s.rect!.y + s.rect!.height).toBeLessThanOrEqual(placed.get('app')!.y - 4);
   });
 
+  it('seats a measured count beside its own observation arrow on the ladder', () => {
+    /* Installed app, 2026-09-03: the count sentence sat 40px right of the observation column and
+       was cut to "import…"; on the ladder both lanes seat their sentence beside the arrow. */
+    const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
+    const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
+    const [s] = placeEdgeSentences({
+      axis: 'down',
+      edges: [traffic],
+      placed,
+      ...BOX,
+      rowGap: 24,
+      swingOf: () => 0,
+      leadRoom: 180,
+      trailRoom: 180,
+      adjacentSeat: 'connector',
+      connectorSide: 'left',
+      /* Half a face plus a wide gutter: enough for the Latin fixture sentence in full. */
+      connectorRoom: BOX.boxW / 2 + 150,
+      sentenceOf: sentence,
+    });
+    expect(s.hidden).toBeUndefined();
+    /* Reads to the left, into the gutter: the right side is the skip arcs' lane. */
+    expect(s.anchor).toBe('end');
+    expect(s.x).toBe(600 + BOX.boxW / 2 - 10);
+    expect(s.text).toBe('routing reaches app in 75 imports');
+  });
+
   it('gives a skip its sentence beside its own arc, right of the column', () => {
     const placed = chainDown(400);
     const skip: SentenceEdge = { from: 'entities', to: 'widgets', kind: 'traffic', count: 2, columnSpan: 2, violated: true };
@@ -289,5 +316,20 @@ describe('placeEdgeSentences', () => {
       first.x + first.width + 4 <= second.x || second.x + second.width + 4 <= first.x;
     expect(apart).toBe(true);
     expect(out.some((sentence) => sentence.text.endsWith('…'))).toBe(true);
+  });
+});
+
+describe('placeEdgeSentences across lanes', () => {
+  it('lets a count sentence give way to a rule sentence another lane already holds', () => {
+    /* e2e, 2026-09-03: the rule read right from the contract arrow and the count read left from
+       the observation arrow into the same gutter row gap, and the two touched. */
+    const placed = new Map(IDS.map((id, i) => [id, { x: 600, y: 20 + i * (BOX.boxH + 24) }]));
+    const traffic: SentenceEdge = { from: 'routing', to: 'app', kind: 'traffic', count: 75, columnSpan: 1, violated: false };
+    const settings = { axis: 'down' as const, placed, ...BOX, rowGap: 24, swingOf: () => 0, leadRoom: 180, trailRoom: 180, adjacentSeat: 'connector' as const, connectorSide: 'left' as const, connectorRoom: BOX.boxW / 2 + 150, sentenceOf: sentence };
+    const free = placeEdgeSentences({ ...settings, edges: [traffic] })[0];
+    expect(free.hidden).toBeUndefined();
+    const ruleRect = { x: free.rect!.x - 40, y: free.rect!.y, width: 60, height: free.rect!.height };
+    const yielding = placeEdgeSentences({ ...settings, edges: [traffic], occupied: [ruleRect] })[0];
+    expect(yielding.hidden === 'collision' || yielding.text.length < free.text.length).toBe(true);
   });
 });
