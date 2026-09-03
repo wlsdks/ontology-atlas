@@ -21,7 +21,9 @@ import type {
   ArchitectureAgentRoute,
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
+import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
+import { transientSurface } from '@/shared/ui/transient-surface';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 
@@ -74,8 +76,10 @@ function readArchitectureRole(): string | null {
   return new URL(window.location.href).searchParams.get('role');
 }
 type CopyState = 'idle' | 'pending' | 'copied' | 'error';
-/** The same window `useCopyFeedback` gives every other copy control before it returns to rest. */
-const COPY_FEEDBACK_MS = 1600;
+/* Long enough to read a sentence that names the task: a product-manager walker saw a 1.6s
+   confirmation vanish before finishing it (2026-09-03). Deliberately longer than the 1.5s the
+   shared `useCopyFeedback` gives a one-word confirmation; the chosen task then stays on the button. */
+const COPY_FEEDBACK_MS = 4000;
 
 export function ArchitectureWorkbench({
   profiles,
@@ -90,6 +94,7 @@ export function ArchitectureWorkbench({
   agentLabel = null,
   onAgentRequest,
   agentActivity = null,
+  copyFeedbackMs = COPY_FEEDBACK_MS,
 }: {
   profiles: ArchitectureProfile[];
   handoffContexts?: Readonly<Record<string, ArchitectureHandoffContext | undefined>>;
@@ -109,6 +114,8 @@ export function ArchitectureWorkbench({
   agentLabel?: string | null;
   onAgentRequest?: (request: ArchitectureAgentRequest) => void;
   agentActivity?: AcpTurnActivity | null;
+  /** How long a copy confirmation stays before the button returns to rest. Tests shorten it. */
+  copyFeedbackMs?: number;
 }) {
   const t = useTranslations('architecture');
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
@@ -183,17 +190,22 @@ export function ArchitectureWorkbench({
     setInspector(null);
     writeArchitectureAddress(null);
     window.requestAnimationFrame(() => inspectorTriggerRef.current?.focus());
-  }, []);
+    /* The compiler reads the setter as a dependency; it is stable, and naming it keeps the
+       memoization it can verify. */
+  }, [setInspector]);
 
   const closeEvidence = useCallback(() => {
     setEvidenceOpen(false);
     window.requestAnimationFrame(() => evidenceTriggerRef.current?.focus());
-  }, []);
+  }, [setEvidenceOpen]);
 
   const [copyState, setCopyState] = useState<CopyState>('idle');
   /* Which task the last copy carried, so the confirmation names it (a source-hidden walker chose
      "find improvements" and the button only said "copied", 2026-09-03). */
   const [copiedTaskLabel, setCopiedTaskLabel] = useState<string | null>(null);
+  /* The last request wins: a second copy started while the first is still pending must not let
+     the first one's result name the second one's task (review, 2026-09-03). */
+  const copyRequest = useRef(0);
   /*
    * ⚠️ **A confirmation that never leaves is a lost button.** The copied sentence replaced the
    * button label for good; the same walker waited thirty seconds and could not tell how to copy
@@ -204,9 +216,9 @@ export function ArchitectureWorkbench({
     const timer = window.setTimeout(() => {
       setCopyState('idle');
       setCopiedTaskLabel(null);
-    }, COPY_FEEDBACK_MS);
+    }, copyFeedbackMs);
     return () => window.clearTimeout(timer);
-  }, [copyState]);
+  }, [copyFeedbackMs, copyState]);
   const evidencePanelRef = useRef<HTMLElement>(null);
   const selected = useMemo(
     () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
@@ -273,7 +285,12 @@ export function ArchitectureWorkbench({
    */
   const primaryAgentKind: ArchitectureAgentTaskKind =
     selectedRecord?.brief.conformance.status === 'conforms' ? 'change' : 'verify';
-  const requestedAgentKind: ArchitectureAgentTaskKind = primaryAgentKind;
+  /* A task chosen from the menu stays chosen: the button carries it until the person picks another
+     (walkers on 2026-09-03 could not tell afterwards which task they had copied). */
+  const [chosenAgent, setChosenAgent] = useState<{ slug: string; kind: ArchitectureAgentTaskKind } | null>(null);
+  /* Derived, not reset: a choice made for one profile must not follow the person to another. */
+  const chosenAgentKind = chosenAgent && chosenAgent.slug === selected?.slug ? chosenAgent.kind : null;
+  const requestedAgentKind: ArchitectureAgentTaskKind = chosenAgentKind ?? primaryAgentKind;
   const [taskMenuOpen, setTaskMenuOpen] = useState(false);
   const taskMenuRef = useRef<HTMLDivElement>(null);
   const taskMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -284,7 +301,8 @@ export function ArchitectureWorkbench({
         setTaskMenuOpen(false);
       }
     };
-    /* Escape closes the menu only; the docks keep their own Escape (capture + stop). */
+    /* Escape closes the menu only: this listener runs in the capture phase on the document and
+       stops propagation, so the docks' window listeners never see the key. */
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       event.stopPropagation();
@@ -334,7 +352,6 @@ export function ArchitectureWorkbench({
           },
         )
       : '';
-  const handoff = promptFor(requestedAgentKind);
   const agentTasks: { kind: ArchitectureAgentTaskKind; label: string; hint: string }[] = [
     {
       kind: 'verify',
@@ -582,21 +599,25 @@ export function ArchitectureWorkbench({
   const roleLabel = (id: string) =>
     t.has(`roleLabels.${id}`) ? t(`roleLabels.${id}`) : id;
 
-  async function copyHandoff(text: string = handoff, taskLabel: string | null = null) {
+  async function copyHandoff(text: string, taskLabel: string | null = null) {
+    const token = ++copyRequest.current;
     setCopyState('pending');
     setCopiedTaskLabel(taskLabel);
+    let ok = false;
     try {
-      await navigator.clipboard.writeText(text);
-      setCopyState('copied');
+      ok = await copyText(text);
     } catch {
-      setCopyState('error');
+      ok = false;
     }
+    if (token !== copyRequest.current) return;
+    setCopyState(ok ? 'copied' : 'error');
   }
 
   /* One path for every task: a verified agent takes it as the opening turn, anything else copies
      the same bounded sentence. The chooser and the button both end here. */
   function runAgentTask(kind: ArchitectureAgentTaskKind, taskLabel: string | null = null) {
     if (!selected) return;
+    setTaskMenuOpen(false);
     if (agentRoute === 'agent') {
       setInspector(null);
       setEvidenceOpen(false);
@@ -692,9 +713,15 @@ export function ArchitectureWorkbench({
                   const items = [
                     ...event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'),
                   ];
+                  if (items.length === 0) return;
                   const at = items.indexOf(document.activeElement as HTMLButtonElement);
-                  const next = event.key === 'ArrowDown' ? at + 1 : at - 1;
-                  items[(next + items.length) % items.length]?.focus();
+                  /* From the trigger (focus not on an item) ArrowDown enters at the top and
+                     ArrowUp at the bottom, the way a native menu does. */
+                  const next =
+                    at === -1
+                      ? event.key === 'ArrowDown' ? 0 : items.length - 1
+                      : (at + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+                  items[next]?.focus();
                   event.preventDefault();
                 }}
               >
@@ -705,7 +732,12 @@ export function ArchitectureWorkbench({
                   disabled={agentRoute === 'checking' || copyState === 'pending'}
                   data-testid="architecture-agent-action"
                   data-architecture-copy-state={agentRoute === 'clipboard' ? copyState : undefined}
-                  onClick={() => runAgentTask(requestedAgentKind)}
+                  onClick={() =>
+                    runAgentTask(
+                      requestedAgentKind,
+                      agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? null,
+                    )
+                  }
                 >
                   <Bot size={ICON_SIZE.sm} aria-hidden />
                   {agentRoute === 'checking'
@@ -719,12 +751,11 @@ export function ArchitectureWorkbench({
                             : t('copiedHandoff')
                           : copyState === 'error'
                             ? t('copyHandoffError')
-                            : t('copyAgentTask')
-                      : conformance?.status === 'conforms'
-                        ? t('planChangeAction')
-                        : conformance
-                          ? t('reviewDeltaAction')
-                          : t('inspectSourceAction')}
+                            : t('copyTaskSentence', {
+                                task: agentTasks.find((task) => task.kind === requestedAgentKind)?.label ?? '',
+                              })
+                      : agentTasks.find((task) => task.kind === requestedAgentKind)?.label ??
+                        t('inspectSourceAction')}
                 </Button>
                 <Button
                   ref={taskMenuTriggerRef}
@@ -752,6 +783,7 @@ export function ArchitectureWorkbench({
                   origin="top right"
                   role="menu"
                   aria-label={t('agentTaskMenu')}
+                  {...transientSurface('menu')}
                   data-testid="architecture-agent-task-popover"
                   className="absolute right-0 top-full z-20 mt-1 flex w-80 flex-col gap-0.5 rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-1 shadow-[var(--shadow-elevation-1)]"
                 >
@@ -764,8 +796,10 @@ export function ArchitectureWorkbench({
                       data-architecture-agent-task={task.kind}
                       aria-current={task.kind === requestedAgentKind ? 'true' : undefined}
                       onClick={() => {
-                        setTaskMenuOpen(false);
+                        if (selected) setChosenAgent({ slug: selected.slug, kind: task.kind });
                         runAgentTask(task.kind, task.label);
+                        /* The menu is leaving; focus goes back to what opened it, not to body. */
+                        taskMenuTriggerRef.current?.focus();
                       }}
                       className={controlClass({
                         shape: 'row',

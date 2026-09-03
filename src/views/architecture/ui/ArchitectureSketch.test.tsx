@@ -207,6 +207,19 @@ describe('the evidence split plane', () => {
    * decided are preferred whenever the canvas at rest is tall enough for them.
    */
   it('prefers the comparison ladder over an across chain when the rows fit the height', () => {
+    /* The height rule applies only at workbench width (xl), where the canvas column is
+       height-bounded; below it the column is content-sized and the width rule alone decides. */
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes('1280'),
+      media: query,
+      onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
+    })) as typeof window.matchMedia;
     const geometry: Record<string, number> = {
       clientWidth: 1792,
       scrollWidth: 1792,
@@ -236,6 +249,7 @@ describe('the evidence split plane', () => {
       expect(sentences.every((node) => node.getAttribute('data-edge-sentence') === 'drawn')).toBe(true);
       expect(sentences.every((node) => node.getAttribute('text-anchor') === 'start')).toBe(true);
     } finally {
+      window.matchMedia = originalMatchMedia;
       for (const [key, descriptor] of Object.entries(originals)) {
         if (descriptor) Object.defineProperty(HTMLElement.prototype, key, descriptor);
         else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[key];

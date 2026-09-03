@@ -25,6 +25,7 @@ function renderWorkbench(handoffContext?: ArchitectureHandoffContext) {
       <ArchitectureWorkbench
         profiles={[profile]}
         handoffContexts={handoffContext ? { [profile.slug]: handoffContext } : undefined}
+        copyFeedbackMs={300}
       />
     </NextIntlClientProvider>,
   );
@@ -270,7 +271,7 @@ describe('ArchitectureWorkbench', () => {
     expect(screen.getAllByText('Source check required').length).toBeGreaterThanOrEqual(2);
     expect(
       screen.getByText(
-        'Rules apply to value imports; type-only imports stay visible without counting as violations.',
+        'Rules apply to connections that pull in running code. Connections that pull in only type definitions are shown but never counted as violations.',
       ),
     ).toBeInTheDocument();
     expect(screen.getByTestId('architecture-bottom-tab-reserve')).toHaveClass(
@@ -544,14 +545,14 @@ describe('ArchitectureWorkbench', () => {
       vaultRoot: '/Users/dana/Atlas Source/docs/ontology',
       cliEntry: '/Users/dana/Atlas Source/cli/src/index.mjs',
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Copy task for your agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the “Inspect source” task' }));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining('This is a verification task'));
     expect(writeText).toHaveBeenCalledWith(expect.stringContaining("--profile 'atlas-web' --json"));
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("--vault '/Users/dana/Atlas Source/docs/ontology'"),
     );
     await waitFor(() => {
-      const buttons = screen.getAllByRole('button', { name: 'Copied. Paste it into your agent' });
+      const buttons = screen.getAllByRole('button', { name: 'Copied “Inspect source”. Paste it into your agent' });
       expect(buttons).toHaveLength(1);
       for (const button of buttons) {
         expect(button).toHaveAttribute('data-architecture-copy-state', 'copied');
@@ -594,16 +595,19 @@ describe('ArchitectureWorkbench', () => {
         screen.getByRole('button', { name: 'Copied “Find improvements”. Paste it into your agent' }),
       ).toBeInTheDocument(),
     );
+    /* The confirmation leaves, and the chosen task stays on the button. */
     await waitFor(
-      () => expect(screen.getByRole('button', { name: 'Copy task for your agent' })).toBeInTheDocument(),
-      { timeout: 3000 },
+      () => expect(screen.getByRole('button', { name: 'Copy the “Find improvements” task' })).toBeInTheDocument(),
+      { timeout: 2000 },
     );
+    /* Activating an item returns focus to the trigger, never to body. */
+    expect(screen.getByRole('button', { name: 'Choose another agent task' })).toHaveFocus();
   });
 
   it('keeps a retryable clipboard error on screen', async () => {
     Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) } });
     renderWorkbench();
-    fireEvent.click(screen.getByRole('button', { name: 'Copy task for your agent' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy the “Inspect source” task' }));
     await waitFor(() => {
       const buttons = screen.getAllByRole('button', { name: 'Could not copy. Try again' });
       expect(buttons).toHaveLength(1);

@@ -137,7 +137,10 @@ export function ArchitectureRoleDetail({
   });
 
   const roleModules = modules ?? [];
-  const modulePreviewCount = Math.max(modulePreview, OCCUPANT_PREVIEW_MIN);
+  /* Whole rows only: a three-column grid previews six, never four with two empty cells. */
+  const wholeRows = (columns: number) =>
+    Math.ceil(OCCUPANT_PREVIEW_MIN / Math.max(1, columns)) * Math.max(1, columns);
+  const modulePreviewCount = wholeRows(modulePreview);
   const visibleModules = showAllModules ? roleModules : roleModules.slice(0, modulePreviewCount);
   const hiddenModules = roleModules.length - modulePreviewCount;
 
@@ -153,7 +156,7 @@ export function ArchitectureRoleDetail({
     : concepts;
   const visibleConcepts = showAllConcepts
     ? orderedConcepts
-    : orderedConcepts.slice(0, Math.max(conceptPreview, OCCUPANT_PREVIEW_MIN));
+    : orderedConcepts.slice(0, wholeRows(conceptPreview));
   const hiddenConcepts = concepts.length - visibleConcepts.length;
 
   return (

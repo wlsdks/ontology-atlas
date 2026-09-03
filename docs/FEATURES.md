@@ -508,12 +508,15 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
   chain runs down as that ladder — at 1512×945 and at 1920×1080 alike — and each
   rule sentence sits beside the arrow it describes, in the 24px gap between the
   two faces it joins. A canvas too short for the rows, or a profile with parallel
-  lanes, still draws the across chain. Choosing a role recedes the unrelated roles
-  to 0.65 and their strokes to 0.55, so every title stays readable.
+  lanes, still draws the across chain. The ladder needs only its faces plus 48px of
+  side lane each side, so a tablet canvas from 744px draws it too. Choosing a role
+  recedes the unrelated roles and strokes to 0.7, so every receded word stays at or
+  above 3:1.
 - **The agent task is the person's to choose** (2026-09-03). The button keeps its
   derived default — inspect source, review delta, or plan change — and a chooser
   beside it lists three tasks with one line each: inspect or re-inspect source,
-  plan change, and find improvements. Find improvements names where the reviewed
+  plan change, and find improvements. The chosen task stays on the button and the
+  copy confirmation names it. Find improvements names where the reviewed
   profile and the observed imports disagree, plus unmapped, unruled and empty
   roles, with literal paths, and asks the person what the rule should be; it
   proposes no rule, role name or pattern and writes nothing. A verified agent takes

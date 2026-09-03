@@ -205,9 +205,7 @@ test('a measured profile separates each role contract and receipt, whole chain o
       /* Direction B: the strokes say their sentences, and none of them touches anything. */
       expect(measured.sentenceOffenders, `${where} ${measured.sentenceOffenders.join('\n')}`).toEqual([]);
       expect(measured.sentencesDrawn, where).toBeGreaterThanOrEqual(6);
-      expect(measured.evidenceLayout, where).toBe(
-        'paired-ladder',
-      );
+      expect(measured.evidenceLayout, where).toBe('paired-ladder');
     }
 
     /* Hover answers locally; only a committed selection may dim the rest of the graph. */
@@ -227,11 +225,11 @@ test('a measured profile separates each role contract and receipt, whole chain o
 
       await routing.click();
       await expect(routing).toHaveAttribute('data-architecture-role-state', 'selected');
-      /* 0.65, not 0.35 (2026-09-03): at 0.35 a receded title measured 3.0:1 and its sentence
-         1.7:1; the rest of the chain steps back but stays readable. */
+      /* 0.7, not 0.35 (2026-09-03): at 0.35 a receded title measured 3.0:1 and its sentence
+         1.7:1; at 0.7 every receded word stays at or above 3:1 while still stepping back. */
       await expect
         .poll(() => receded.evaluate((el) => getComputedStyle(el).opacity), { timeout: 2000 })
-        .toBe('0.65');
+        .toBe('0.7');
       const duration = await receded.evaluate((el) => getComputedStyle(el).transitionDuration);
       expect(duration, `${locale}: selected recede runs at the feedback step`).toBe('0.12s');
       await routing.click();
@@ -404,6 +402,9 @@ test('a skip sentence never sits on another arc, sampled along the strokes', asy
   for (const size of [
     { width: 1512, height: 945 },
     { width: 1920, height: 1080 },
+    /* A wide but short canvas is the one place the split across chain still draws (2026-09-03);
+       its sentence and arc separation is measured here, where the one-screen claim is not made. */
+    { width: 1920, height: 800 },
   ]) {
     await page.setViewportSize(size);
     await page.waitForTimeout(500);

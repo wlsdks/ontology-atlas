@@ -173,7 +173,10 @@ test('a real viewport resize may reflow the chain without losing the selected ro
   await role.click();
   await expect(role).toHaveAttribute('aria-pressed', 'true');
 
-  await page.setViewportSize({ width: 1112, height: 834 });
+  /* Since 2026-09-03 the comparison ladder takes any canvas from 744px wide whose rows fit its
+     height, so a tablet in landscape keeps the chain down; only a canvas too short for the rows
+     turns it across. The subject here is the selection surviving the turn, so turn it. */
+  await page.setViewportSize({ width: 1400, height: 420 });
   await page.evaluate(
     () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
   );

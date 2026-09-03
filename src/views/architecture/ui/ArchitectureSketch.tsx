@@ -122,18 +122,26 @@ const PAIRED_ROW_GAP = 24;
  * emphasised by its indigo face and stroke, so the rest only needs to step back, not vanish:
  * 0.65 keeps a receded title above 7:1 and its sentence above 3:1 on the canvas ground.
  */
-const RECEDED_ROLE_OPACITY = 0.65;
-const RECEDED_STROKE_OPACITY = 0.55;
+/* Re-measured 2026-09-03 after the first pass: 0.65/0.55 still left a receded index at 2.8:1 and
+   a receded sentence at 2.6:1. 0.7 keeps every receded word at or above 3:1 while the selected
+   pair still wins through its indigo face and stroke. */
+const RECEDED_ROLE_OPACITY = 0.7;
+const RECEDED_STROKE_OPACITY = 0.7;
 const PAIRED_HEADER_H = 20;
 const PAIRED_PAD_Y = 8;
 /* Long edge sentences and focused skip arcs share one bounded outside lane on each side. */
 const PAIRED_SIDE_ROOM = 180;
-const PAIRED_NATURAL_W =
-  PAD_X * 2 +
-  PAIRED_SIDE_ROOM * 2 +
-  PAIRED_CONTRACT_W +
-  PAIRED_GUTTER_W +
-  PAIRED_OBSERVATION_W;
+/*
+ * ⚠️ **The ladder needs its faces, not its full side lanes.** A 1112px tablet gave the canvas
+ * 984px; the ladder asked for 1008 and the drawing fell back to 148px combined boxes with every
+ * summary and sentence cut (re-audit, 2026-09-03). The side lanes only hold skip arcs revealed on
+ * selection and their sentences, which are stated as held when they have no room, so the ladder
+ * may take a canvas as narrow as its faces plus this much lane on each side.
+ */
+const PAIRED_SIDE_ROOM_MIN = 48;
+const PAIRED_FIXED_W =
+  PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
+const PAIRED_MIN_W = PAIRED_FIXED_W + PAIRED_SIDE_ROOM_MIN * 2;
 /*
  * ⚠️ **A scrollbar for empty ground is noise.** Measured 2026-08-30 at 1440×900: the chain fit but
  * the drawing's own bottom padding did not, so the canvas scrolled 13px and showed a bar for dot
@@ -385,7 +393,7 @@ export function ArchitectureSketch({
     PAIRED_PAD_Y * 2 + PAIRED_HEADER_H + ranks * BOX_H + (ranks - 1) * PAIRED_ROW_GAP;
   const pairedRowsFit =
     lanes === 1 &&
-    axisWidth >= PAIRED_NATURAL_W &&
+    axisWidth >= PAIRED_MIN_W &&
     restHeight > 0 &&
     restHeight >= pairedNaturalH;
   const axis: FlowAxis = pairedRowsFit
@@ -408,7 +416,7 @@ export function ArchitectureSketch({
     axis === 'across'
       ? Math.max(minimumAcrossBoxW, Math.min(preferredBoxW, fittedAcrossBoxW))
       : preferredBoxW;
-  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_NATURAL_W;
+  const usesPairedDown = axis === 'down' && lanes === 1 && axisWidth >= PAIRED_MIN_W;
   const splitsEvidence = (axis === 'across' && axisWidth > 0) || usesPairedDown;
   const contractBoxW = usesPairedDown ? PAIRED_CONTRACT_W : boxW;
   const observationBoxW = usesPairedDown ? PAIRED_OBSERVATION_W : boxW;
@@ -492,11 +500,9 @@ export function ArchitectureSketch({
       ? 28
       : SENTENCE_TRAIL_ROOM
     : 0;
-  const pairedFixedWidth =
-    PAD_X * 2 + PAIRED_CONTRACT_W + PAIRED_GUTTER_W + PAIRED_OBSERVATION_W;
   const pairedSideRoom =
     usesPairedDown && boxWidth > 0
-      ? Math.max(0, Math.min(PAIRED_SIDE_ROOM, (boxWidth - pairedFixedWidth) / 2))
+      ? Math.max(PAIRED_SIDE_ROOM_MIN, Math.min(PAIRED_SIDE_ROOM, (boxWidth - PAIRED_FIXED_W) / 2))
       : PAIRED_SIDE_ROOM;
   const layoutLeadRoom = usesPairedDown ? pairedSideRoom : leadRoom;
   const layoutTrailRoom = usesPairedDown ? pairedSideRoom : trailRoom;
@@ -618,9 +624,18 @@ export function ArchitectureSketch({
         )
       : 0;
     setRestWidth(element.clientWidth + dockWidth);
-    /* The column around the scroller keeps its height whether or not a hidden-count row is shown,
-       and no dock changes it at xl (docks open beside the canvas, never above it). */
-    setRestHeight(element.parentElement?.clientHeight ?? element.clientHeight);
+    /*
+     * The column around the scroller keeps its height whether or not a hidden-count row is shown,
+     * and no dock changes it at xl (docks open beside the canvas, never above it). Below xl the
+     * column is content-sized, so its height is the drawing's own and would only ratify whichever
+     * axis drew first (review, 2026-09-03: the same 1100px window drew two different chains
+     * depending on its history). There the width rule alone decides, deterministically.
+     */
+    setRestHeight(
+      window.matchMedia('(min-width: 1280px)').matches
+        ? element.parentElement?.clientHeight ?? element.clientHeight
+        : 0,
+    );
     /*
      * ⚠️ **Measured along the axis the chain runs.** These readings were written when a drawing
      * could only be cut on the right; a chain that runs down is cut at the bottom instead, and a

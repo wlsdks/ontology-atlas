@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-03 — Receded ink stays at or above 3:1, the ladder takes a tablet canvas, and the chosen task stays on the button
+
+**Why**: the re-audit of the same day measured receded sentences at 2.6:1 and receded indices at 2.8:1 with the 0.65/0.55 opacities; a 1112px tablet gave the canvas 984px, the ladder asked for 1008 and fell back to 148px combined boxes with every summary and sentence cut; and two source-hidden walkers (a developer, a product manager) could not tell afterwards which agent task they had copied, one saw the confirmation vanish before reading it, and both named dependency, import and type-only as words the screen never explained.
+**Prior**: 2026-09-03 (ladder by height, sentences on arrows, person picks the task) stands; this record moves its two opacities and its width gate.
+**Decision**: receded roles and strokes hold 0.7 so every receded word measures at least 3:1; the ladder needs only its faces plus 48px of side lane on each side (744px), since side lanes hold only selection-revealed skips whose sentences are stated as held; the task chosen from the menu stays on the button as "Copy the … task" and the confirmation names it for four seconds; column headings read "reviewed by a person" and "observed in code", the empty face says "not inspected yet", and the rules and hints say "pull in code" where they said import or dependency, with the arrow legend defining dependency once.
+**Dissent**: a stronger recede separates the selected pair faster than an indigo face can; it lost because a word a reader cannot read is not de-emphasised, it is gone. Keeping "import" is more precise for developers; it lost because the developer walker did not need the word and the non-developer could not use it.
+**Falsifier**: a reader at 1512 cannot tell the selected pair from the rest within a glance; a 834px canvas hides a role's name or cuts a rule sentence on the ladder; or five walkers still ask what dependency means after the legend.
+**Owner**: stark
+
 ## 2026-09-03 — The ladder is chosen by height, sentences sit on arrows, and the person picks the agent task
 
 **Why**: at 1920×1080 "across while it fits across" drew 151px cards, 205px of ink in a 918px canvas, every role sentence cut and lane labels repeated fourteen times; at 1512 each rule sentence ended 160px from its arrow; a chosen role receded the rest to 3.0:1 titles and 1.2:1 sentences; and the one agent button decided its own task, so nobody could ask for a re-check or for where the reviewed structure needs a decision.
