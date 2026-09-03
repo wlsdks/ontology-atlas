@@ -59,6 +59,15 @@ export function GatewayReadingLinks({ className }: { className?: string }) {
             className={controlClass({
               shape: 'link',
               tone: active ? 'default' : 'secondary',
+              // These two are drawn only below `sm`, which is where the pointer is a finger:
+              // measured 390x844 with a coarse pointer, "Guide" was 29x24 and "Changelog"
+              // 53x24, and a probe 20px above or below either one landed on the footer, not
+              // the link. The row is the only route to /guide and /changelog at that width,
+              // so the smallest target on the page guarded the only door. `touch-hit-expand`
+              // raises the hit box to `--touch-target-min` without moving any ink; the pair's
+              // 16px `gap-x-4` keeps the widened boxes apart (60.5 vs 69 at 390), which is the
+              // overlap the utility was rejected for elsewhere in `globals.css`.
+              className: 'touch-hit-expand',
             })}
           >
             {item.label}

@@ -173,45 +173,62 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
    * signal that coarse promotion is missing from the new-surface checklist, so the
    * registry is widened to here.
    */
-  test("관문(/download)의 모든 컨트롤이 44px 히트 영역을 갖는다", async ({ page }) => {
-    await page.goto("/ko/download/?guides=off");
-    await expect(page.getByTestId("download-gnb")).toBeVisible();
+  /**
+   * Two viewports, because the gateway's control set is width-conditional.
+   *
+   * This case ran only at the file's 768 default until 2026-09-04, and that is
+   * where it went blind: `GatewayReadingLinks` — the guide/changelog pair that is
+   * the *only* route to those two pages once `GatewayNav` collapses them — is
+   * `sm:hidden`, so at 768 it is not drawn, has a zero rect, and the filter below
+   * drops it. The gate therefore scanned /download at the one width where the
+   * component under test does not exist, and stayed green while the pair measured
+   * 29x24 and 53x24 on a real phone.
+   *
+   * 390 is the phone band; 768 keeps the tablet coverage this case already had.
+   * A control that appears on only one side of `sm` is now measured on that side.
+   */
+  for (const width of [390, 768]) {
+    test(`관문(/download) ${width}px 의 모든 컨트롤이 44px 히트 영역을 갖는다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.goto("/ko/download/?guides=off");
+      await expect(page.getByTestId("download-gnb")).toBeVisible();
 
-    const short = await page.evaluate((min) => {
-      const hit = (el: Element) => {
-        const r = el.getBoundingClientRect();
-        const a = getComputedStyle(el, "::after");
-        if (a.content && a.content !== "none" && a.position === "absolute") {
-          return {
-            w: Math.max(r.width, parseFloat(a.width) || 0),
-            h: Math.max(r.height, parseFloat(a.height) || 0),
-          };
-        }
-        return { w: r.width, h: r.height };
-      };
-      return Array.from(document.querySelectorAll("button:not([disabled]), a[href]"))
-        .filter((el) => {
+      const short = await page.evaluate((min) => {
+        const hit = (el: Element) => {
           const r = el.getBoundingClientRect();
-          const cs = getComputedStyle(el);
-          return (
-            r.width > 0 &&
-            r.height > 0 &&
-            cs.visibility !== "hidden" &&
-            !el.closest(".sr-only")
-          );
-        })
-        .map((el) => ({
-          id:
-            el.getAttribute("data-testid") ||
-            (el.textContent || "").trim().slice(0, 24) ||
-            el.tagName,
-          ...hit(el),
-        }))
-        .filter((b) => b.w < min || b.h < min);
-    }, MIN);
+          const a = getComputedStyle(el, "::after");
+          if (a.content && a.content !== "none" && a.position === "absolute") {
+            return {
+              w: Math.max(r.width, parseFloat(a.width) || 0),
+              h: Math.max(r.height, parseFloat(a.height) || 0),
+            };
+          }
+          return { w: r.width, h: r.height };
+        };
+        return Array.from(document.querySelectorAll("button:not([disabled]), a[href]"))
+          .filter((el) => {
+            const r = el.getBoundingClientRect();
+            const cs = getComputedStyle(el);
+            return (
+              r.width > 0 &&
+              r.height > 0 &&
+              cs.visibility !== "hidden" &&
+              !el.closest(".sr-only")
+            );
+          })
+          .map((el) => ({
+            id:
+              el.getAttribute("data-testid") ||
+              (el.textContent || "").trim().slice(0, 24) ||
+              el.tagName,
+            ...hit(el),
+          }))
+          .filter((b) => b.w < min || b.h < min);
+      }, MIN);
 
-    expect(short, `44px 미만 히트 영역: ${JSON.stringify(short)}`).toEqual([]);
-  });
+      expect(short, `44px 미만 히트 영역: ${JSON.stringify(short)}`).toEqual([]);
+    });
+  }
 });
 
 interface Audit258Result {
