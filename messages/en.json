@@ -3636,7 +3636,9 @@
     "batchLabel": "Batch changes",
     "batchHint": "Select each item to review it. Allow or reject applies to the whole batch.",
     "unknownTarget": "Unknown target",
-    "moreFields": "{count} more items"
+    "moreFields": "{count} more items",
+    "showMore": "Show more",
+    "showLess": "Show less"
   },
   "meaningEditor": {
     "ariaLabel": "Edit {name} relations",

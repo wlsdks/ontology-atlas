@@ -3636,7 +3636,9 @@
     "batchLabel": "묶음 변경 항목",
     "batchHint": "항목을 눌러 하나씩 확인합니다. 허용과 거절은 이 묶음 전체에 적용돼요.",
     "unknownTarget": "대상을 확인할 수 없음",
-    "moreFields": "그 밖의 항목 {count}개"
+    "moreFields": "그 밖의 항목 {count}개",
+    "showMore": "더 보기",
+    "showLess": "접기"
   },
   "meaningEditor": {
     "ariaLabel": "{name} 관계 편집",
