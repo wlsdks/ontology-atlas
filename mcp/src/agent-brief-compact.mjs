@@ -76,13 +76,23 @@ function lexicalTokens(value) {
 
 function taskTerms(task) {
   const seen = new Set();
-  const terms = [];
+  const collected = [];
   for (const term of lexicalTokens(task)) {
     if (term.length < 2 || TASK_STOP_WORDS.has(term) || seen.has(term)) continue;
     seen.add(term);
-    terms.push(term);
-    if (terms.length >= 24) break;
+    collected.push(term);
+    if (collected.length >= 24) break;
   }
+  // `lexicalTokens` emits a word and its canonical form, so "lists" arrives as
+  // both `lists` and `list` and every document that writes either one matches
+  // both. Scoring them separately paid twice for one task word: measured
+  // 2026-09-04, one repeated Includes noun reached 12 points and tied a
+  // capability whose own name stated the surface, and a tie returns nothing.
+  // Keep only the canonical representative; document tokens carry it too.
+  const canonicalForms = new Set(collected.map((term) => canonicalToken(term)));
+  const terms = collected.filter((term) => (
+    canonicalToken(term) === term || !canonicalForms.has(canonicalToken(term))
+  ));
   const expansions = [];
   if (terms.some((term) => (
     ['encode', 'encoding', 'encoder'].includes(term)
@@ -269,16 +279,43 @@ function scoreCapabilityClaim(doc, intent) {
     doc.frontmatter?.path || '',
   ].join(' ')));
   const positive = new Set([...definition, ...includes, ...excerpt, ...identity]);
-  const desiredPositive = matchedTermsOnlyIn(intent.desiredTerms, positive, excludes);
+  // An `Excludes` bullet bounds what a capability does with its subject; it
+  // does not withdraw the subject. Capabilities write their own name into
+  // their boundary routinely — "Git write operations" under Git History, "the
+  // tools that own them" under MCP Server — and subtracting that word cancelled
+  // the strongest ownership evidence the vault holds, the name a person chose,
+  // leaving the capability below the support bar. Identity survives the
+  // subtraction; Definition, Includes, and excerpt prose stay cancellable, so
+  // an explicit boundary still beats a described one.
+  const cancellablePositive = new Set([...definition, ...includes, ...excerpt]);
+  const desiredPositive = intent.desiredTerms.filter((term) => (
+    identity.has(term) || (cancellablePositive.has(term) && !excludes.has(term))
+  ));
   const desiredExcluded = matchedTermsOnlyIn(intent.desiredTerms, excludes, positive);
   const desiredTermSet = new Set(intent.desiredTerms);
   const distinctNonGoalTerms = intent.nonGoalTerms.filter((term) => !desiredTermSet.has(term));
   const nonGoalPositive = matchedTermsOnlyIn(distinctNonGoalTerms, positive, excludes);
   const nonGoalExcluded = matchedTermsOnlyIn(distinctNonGoalTerms, excludes, positive);
   const identitySupport = desiredPositive.filter((term) => identity.has(term));
-  const hasClaimSupport = desiredPositive.length >= 2
-    || (desiredPositive.length >= 1 && nonGoalExcluded.length >= 1)
-    || identitySupport.length >= 1;
+  const includesSupport = desiredPositive.filter((term) => includes.has(term));
+  // A name and an `Includes` bullet are claims a person wrote about what this
+  // capability owns; Definition prose also describes what it merely touches.
+  // Selecting on prose alone is how a source-receipt capability whose
+  // Definition name-drops "map datasheets, full details" won a task about the
+  // map's full-detail panel (measured 2026-09-04 on the dogfood vault, four
+  // incidental nouns at 16 points against the named owner's 6). The 2026-09-02
+  // record's falsifier — "an ambiguous claim is selected" — pre-authorises
+  // exactly this narrowing to stricter refusal. Prose still scores; it can no
+  // longer qualify a candidate on its own. An `Excludes` hit on a stated
+  // non-goal stays qualifying: it is a reviewed boundary, not description.
+  //
+  // One shared word is still never a claim of ownership. `node`, `panel`, and
+  // `detail` belong to most of this vault, so a lone named term reproduces the
+  // same confident wrong answer from the other side; a named claim needs a
+  // second desired term behind it, or an explicit non-goal boundary.
+  const namedSupport = new Set([...identitySupport, ...includesSupport]);
+  const hasClaimSupport = (namedSupport.size >= 1 && desiredPositive.length >= 2)
+    || (desiredPositive.length >= 1 && nonGoalExcluded.length >= 1);
   const conflict = desiredExcluded.length > 0 || nonGoalPositive.length > 0;
   const termWeight = (term) => (
     includes.has(term) || identity.has(term) ? 6 : definition.has(term) ? 4 : 2

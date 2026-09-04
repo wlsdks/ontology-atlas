@@ -5,7 +5,7 @@ kind: capability
 title: Local Folder Mounting
 display_ko: 내 폴더 열기
 domain: domains/local-vault-management
-elements: [elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
+elements: [elements/docs-quick-drawer, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 path: src/features/docs-vault-local
 created_by: human
 relation_notes: { elements/native-vault-filesystem-bridge: The local folder mount of the installed app is evidence of native implementation performing actual file/directory mutation. }
@@ -13,6 +13,11 @@ relation_notes: { elements/native-vault-filesystem-bridge: The local folder moun
 
 ## Definition
 The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under `<project>/atlas`, that child is persisted and built as the canonical vault; direct standalone vault folders remain valid. A new manifest replaces the old source atomically rather than combining roots or falling back to a bundled sample.
+
+## Includes
+
+- Selecting, restoring, and reopening one local Markdown folder as the live source of truth, including the `<project>/atlas` child rule and the atomic manifest replacement.
+- Reading that mounted vault's documents in the workbench: the `/docs` shell, the document tree and editor, and the docs quick drawer (`elements/docs-quick-drawer`) that browses and jumps to a document from anywhere.
 
 ## Evidence
 - src/features/docs-vault-local (entry UI: open/create/guide/starter actions)

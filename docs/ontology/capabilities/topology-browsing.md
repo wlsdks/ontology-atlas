@@ -5,7 +5,7 @@ kind: capability
 title: "Topology Map Rendering & Search"
 display_ko: 지도 그리기와 검색
 domain: domains/topology-navigation
-elements: [elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
+elements: [elements/full-detail-a1, elements/global-search, elements/search-palette, elements/topology-controls, elements/topology-index-panel, elements/topology-map-v2]
 path: src/widgets/topology-map-v2
 created_by: "agent:unknown"
 dependencies: [capabilities/design-token-ramps, capabilities/vault-ontology]
@@ -14,6 +14,11 @@ relation_notes: { capabilities/vault-ontology: "The map renderer and search cons
 
 ## Definition
 The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required).
+
+## Includes
+
+- Selecting a node on the map: the compact node datasheet popover shown beside the clicked node, and the explicit escalation from that popover to the opt-in full detail panel (`elements/full-detail-a1`); full detail is never the click default.
+- The INDEX panel, search palette, and map controls that surround the canvas, as the same browsing surface.
 
 ## Evidence
 - src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)

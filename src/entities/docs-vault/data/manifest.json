@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 30501,
+      "wordCount": 30560,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 99863,
+      "wordCount": 100159,
       "updatedAt": "2026-09-04",
       "linksOut": [
         "slug"
@@ -1615,6 +1615,7 @@
         "display_ko": "내 폴더 열기",
         "domain": "domains/local-vault-management",
         "elements": [
+          "elements/docs-quick-drawer",
           "elements/docs-vault-entity",
           "elements/docs-vault-view",
           "elements/docs-vault-widget",
@@ -1630,8 +1631,8 @@
       },
       "headings": [],
       "excerpt": "The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under <project/atlas, that child is persisted and built as the canonical vault; direct standalon",
-      "wordCount": 113,
-      "updatedAt": "2026-08-31",
+      "wordCount": 172,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1957,6 +1958,7 @@
         "display_ko": "지도 그리기와 검색",
         "domain": "domains/topology-navigation",
         "elements": [
+          "elements/full-detail-a1",
           "elements/global-search",
           "elements/search-palette",
           "elements/topology-controls",
@@ -1975,9 +1977,9 @@
         }
       },
       "headings": [],
-      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
-      "wordCount": 1253,
-      "updatedAt": "2026-09-03",
+      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). Selecting a node on the map: the compact node datasheet popover shown beside the clicke",
+      "wordCount": 1311,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3729,7 +3731,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1818,
+      "wordCount": 1873,
       "updatedAt": "2026-09-04",
       "linksOut": [
         "DECISIONS"
@@ -4742,6 +4744,18 @@
         "linkText": "elements/download"
       }
     ],
+    "ontology/elements/docs-quick-drawer": [
+      {
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[elements/docs-quick-drawer]**",
+        "linkText": "elements/docs-quick-drawer"
+      },
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/docs-quick-drawer]**",
+        "linkText": "elements/docs-quick-drawer"
+      }
+    ],
     "ontology/elements/docs-vault-entity": [
       {
         "fromSlug": "ontology/capabilities/docs-vault-local",
@@ -5067,6 +5081,18 @@
         "fromSlug": "ontology/domains/graph-modeling",
         "context": "frontmatter · **[elements/status]**",
         "linkText": "elements/status"
+      }
+    ],
+    "ontology/elements/full-detail-a1": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/full-detail-a1]**",
+        "linkText": "elements/full-detail-a1"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/full-detail-a1]**",
+        "linkText": "elements/full-detail-a1"
       }
     ],
     "ontology/elements/global-search": [
@@ -5453,13 +5479,6 @@
         "linkText": "elements/bottom-tab-bar"
       }
     ],
-    "ontology/elements/docs-quick-drawer": [
-      {
-        "fromSlug": "ontology/domains/onboarding-and-shell",
-        "context": "frontmatter · **[elements/docs-quick-drawer]**",
-        "linkText": "elements/docs-quick-drawer"
-      }
-    ],
     "ontology/elements/gateway-chrome": [
       {
         "fromSlug": "ontology/domains/onboarding-and-shell",
@@ -5563,13 +5582,6 @@
         "fromSlug": "ontology/domains/topology-navigation",
         "context": "frontmatter · **[elements/domain-capacity-bar]**",
         "linkText": "elements/domain-capacity-bar"
-      }
-    ],
-    "ontology/elements/full-detail-a1": [
-      {
-        "fromSlug": "ontology/domains/topology-navigation",
-        "context": "frontmatter · **[elements/full-detail-a1]**",
-        "linkText": "elements/full-detail-a1"
       }
     ],
     "ontology/elements/gesture-hint": [

@@ -535,7 +535,9 @@ element/path anchors, explicit impact/verification unknowns, one bounded
 full-body read, and an exact `detail:"full"` follow-up. Desired work must be
 supported by Definition or Includes; explicit non-goals may align with Excludes.
 A desired/negative boundary conflict, an unsupported claim, or a tied top claim
-returns no capability. It does not persist or echo raw task text, treat this
+returns no capability. Definition prose corroborates but never selects on its
+own: at least one desired word must also reach the capability's own title, slug,
+path, or `Includes`, and one shared word is never enough. It does not persist or echo raw task text, treat this
 claim compatibility as behavior proof, inspect raw source generally, or write
 the vault. An element may record human-reviewable
 Evidence coordinates as `Primary implementation`, `Supporting implementation`,

@@ -34,7 +34,7 @@ The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read a
 
 ## Excludes
 
-- An AST or source-search engine; structural code questions belong to the tools that own them.
+- An AST or source-search engine; structural code questions belong to CodeGraph, grep, and language servers.
 - An embedding store or any semantic index built over source code.
 - Model selection, an agent loop, or any model execution inside the server.
 - A backend, accounts, or any canonical store other than the user's Markdown files.

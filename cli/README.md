@@ -107,7 +107,10 @@ its persisted Definition/Includes/Excludes are compatible with the task, cited
 element/path anchors, explicit impact and verification unknowns, a bounded
 full-body next read, and an exact full-detail follow-up. A desired/negative
 boundary conflict, an unsupported claim, or a tied top claim returns no
-capability.
+capability. Definition prose describes what a capability touches, so it
+corroborates but never selects on its own: at least one desired word must reach
+the capability's own title, slug, path, or `Includes`, and one shared word is
+never enough.
 When the selected element's Markdown contains reviewed `Primary
 implementation`, `Supporting implementation`, and `Focused test` Evidence
 coordinates and the bound source is current, `taskNavigation` verifies only
