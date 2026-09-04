@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Vault data model entity. Implementation evidence for capabilities/docs-vault-local.
+
+## Evidence
+
+- Primary implementation: `src/entities/docs-vault/lib/build-local-manifest.ts#buildLocalManifest`
+- Supporting implementation: `src/entities/docs-vault/lib/build-vault-markdown.ts#buildVaultMarkdown`
+- Focused test: `src/entities/docs-vault/lib/build-local-manifest.backlinks.test.ts#counts folder-prefixed frontmatter refs (dependencies/relates/describes) as backlinks to the target doc`
+- Focused test: `src/entities/docs-vault/lib/build-local-manifest.backlinks.test.ts#does NOT mint phantom backlinks for element/file-path refs that match no doc slug`

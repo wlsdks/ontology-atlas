@@ -19,6 +19,8 @@ The machine-readable `architecture-profile/v1` contract and conformance evaluato
 - `cli/src/lib/architecture-results.mjs`: fail-closed consumer validation for governed usages, receipt counts, and unknown usage
 - `tests/contract/architecture-profile.contract.test.ts`: web/MCP parser parity and legacy default behavior
 - `mcp/src/architecture-profile.test.mjs`: type-only exclusion, upward value violation, and unknown-usage probes
+- Primary implementation: `mcp/src/architecture-profile.mjs#evaluateArchitectureConformance`
+- Supporting implementation: `mcp/src/architecture-profile.mjs#parseArchitectureProfile`
 
 ## Boundary
 Pattern names and governed usages are reviewed declarations, never inferred from folders or current imports. Missing v1 `dependency_usages` preserves value-plus-type-only behavior. Unsupported languages, unknown import usage, unmapped edges, unruled edges, and empty roles remain unknown instead of becoming green compliance.

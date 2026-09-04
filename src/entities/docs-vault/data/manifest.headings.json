@@ -12471,6 +12471,11 @@
     },
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
       "text": "User Outcomes",
       "slug": "user-outcomes"
     },
@@ -12486,8 +12491,13 @@
     },
     {
       "depth": 2,
-      "text": "Inclusions / Exclusions",
-      "slug": "inclusions-exclusions"
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -12750,6 +12760,21 @@
     },
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
       "text": "User Outcomes",
       "slug": "user-outcomes"
     },
@@ -12817,11 +12842,6 @@
       "depth": 2,
       "text": "Constraints: Relation rationale, read equals write",
       "slug": "constraints-relation-rationale-read-equals-write"
-    },
-    {
-      "depth": 2,
-      "text": "Inclusions / Exclusions",
-      "slug": "inclusions-exclusions"
     },
     {
       "depth": 2,
@@ -13304,6 +13324,13 @@
       "slug": "confidence"
     }
   ],
+  "ontology/elements/acp-ontology-write-review": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
   "ontology/elements/agents-destination": [
     {
       "depth": 2,
@@ -13334,6 +13361,11 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/elements/app-nav-rail": [
@@ -13356,6 +13388,13 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    }
+  ],
+  "ontology/elements/app-settings-menu": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/elements/architecture-profile-contract": [
@@ -13402,6 +13441,34 @@
       "slug": "confidence"
     }
   ],
+  "ontology/elements/atlas-git-panel": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/bottom-tab-bar": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/category": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/concurrent-ledger-conflict-resolver": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
   "ontology/elements/construction-qualification-evaluator": [
     {
       "depth": 2,
@@ -13417,6 +13484,11 @@
       "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/elements/design-proof-router": [
@@ -13434,6 +13506,104 @@
       "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
+    }
+  ],
+  "ontology/elements/docs-quick-drawer": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/docs-vault-entity": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/docs-vault-view": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/docs-vault-widget": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/domain-capacity-bar": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/download": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/first-run": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/full-detail-a1": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/gateway-chrome": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/gateway-doc": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/gesture-hint": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/git": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/global-search": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/home": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/elements/installed-mcp-identity-gate": [
@@ -13463,6 +13633,20 @@
       "slug": "uncertainty"
     }
   ],
+  "ontology/elements/knowledge-graph": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/local-fs-handle": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
   "ontology/elements/meaning-proposal-evaluator": [
     {
       "depth": 2,
@@ -13483,6 +13667,116 @@
       "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/native-tray-control": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/native-vault-filesystem-bridge": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/ontology-change-review": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/ontology-class": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/ontology-edit-redirect": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/ontology-insights": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/ontology-meaning-editor": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/ontology-redirect": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/private-vault-sidecar-boundary": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/project": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/project-detail": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/project-drawer": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/project-editor": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/project-selector": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/public-quick-actions": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/elements/qualification-handoff-helper": [
@@ -13500,6 +13794,34 @@
       "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
+    }
+  ],
+  "ontology/elements/recent-node-row": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/root-entry": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/search-hint": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/search-palette": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/elements/semantic-evidence-selector": [
@@ -13529,6 +13851,20 @@
       "slug": "verification"
     }
   ],
+  "ontology/elements/shortcut-sheet": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/status": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
   "ontology/elements/task-scoped-agent-brief-projection": [
     {
       "depth": 2,
@@ -13554,6 +13890,34 @@
       "depth": 2,
       "text": "Uncertainty",
       "slug": "uncertainty"
+    }
+  ],
+  "ontology/elements/topology-controls": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/topology-index-panel": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/topology-map-v2": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/vault-agent-panel": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
     }
   ],
   "ontology/ontology-atlas": [

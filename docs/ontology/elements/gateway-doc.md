@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Gateway documentation/marketing page.
+
+## Evidence
+
+- Primary implementation: `src/views/gateway-doc/ui/GatewayDocPage.tsx#GatewayDocPage`
+- Supporting implementation: `src/views/gateway-doc/model/guide-pages.ts#GUIDE_PAGES`

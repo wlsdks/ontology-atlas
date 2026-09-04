@@ -1421,8 +1421,8 @@
       },
       "headings": [],
       "excerpt": "An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal. Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local che",
-      "wordCount": 490,
-      "updatedAt": "2026-09-03",
+      "wordCount": 588,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1737,9 +1737,9 @@
         "display_en": "AI Connection Server"
       },
       "headings": [],
-      "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3219,
-      "updatedAt": "2026-09-02",
+      "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The MCP server is the stdio JSON-RPC surface that lets an AI coding age",
+      "wordCount": 3559,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1907,6 +1907,7 @@
         "slug": "capabilities/summary-freshness",
         "kind": "capability",
         "title": "Summary Freshness",
+        "display_ko": "요약 최신성 알림",
         "domain": "domains/graph-modeling",
         "elements": [],
         "path": "mcp/src/stale-parent.mjs",
@@ -1915,7 +1916,7 @@
       "headings": [],
       "excerpt": "Reports a domain or project whose containment list changed after its body prose was last re-written, so its description may no longer cover what it holds. Advisory only: nothing is blocked, no model is called, and no rewrite is proposed, because a summary body is a human judgement that someone accepted. mcp/src/stale-p",
       "wordCount": 311,
-      "updatedAt": "2026-08-28",
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2354,8 +2355,8 @@
       },
       "headings": [],
       "excerpt": "The ACP permission boundary that lets Atlas read tools continue automatically but pauses every Atlas write tool on a typed change review. It offers allowonce or rejectonce and deliberately hides allowalways for semantic writes. Since 2026-09-01 the same boundary also stops a non-Atlas tool whose declared kind is not re",
-      "wordCount": 91,
-      "updatedAt": "2026-09-01",
+      "wordCount": 101,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2376,8 +2377,8 @@
       },
       "headings": [],
       "excerpt": "A single location (/agents/) on this computer where you receive, install, attach, fix, and initiate conversations with AI coding tools. It is the eighth destination of the rail. Until 2026-08-20, this task occupied two cells in the settings sheet (\"Executor\"·\"MCP Connection\"), while a separate connection sheet on the m",
-      "wordCount": 481,
-      "updatedAt": "2026-09-01",
+      "wordCount": 487,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2398,8 +2399,8 @@
       },
       "headings": [],
       "excerpt": "The persistent desktop workbench navigation rail. It exposes seven primary destinations in one stable order: Map, Architecture, Docs, Insights, Projects, Agents, and Git. Architecture is additive; Git retains its active-route state, uncommitted-change badge, G G shortcut, and guided entry. src/widgets/app-nav-rail: rai",
-      "wordCount": 164,
-      "updatedAt": "2026-08-30",
+      "wordCount": 188,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2418,9 +2419,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "App settings menu widget.",
-      "wordCount": 4,
-      "updatedAt": "2026-08-23",
+      "excerpt": "App settings menu widget. Primary implementation: src/widgets/app-settings-menu/ui/AppSettingsMenu.tsxAppSettingsMenu Supporting implementation: src/widgets/app-settings-menu/ui/AiConnectionPanel.tsxAiConnectionPanel Focused test: src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsxroutes the hosted browser vault ",
+      "wordCount": 44,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2441,8 +2442,8 @@
       },
       "headings": [],
       "excerpt": "The machine-readable architecture-profile/v1 contract and conformance evaluator that keeps declared pattern axes, scoped roles, dependency rules, governed import usages, observed imports, violations, and unknowns in one fail-closed result. It differs from the workbench element because it produces usage-qualified typed ",
-      "wordCount": 164,
-      "updatedAt": "2026-08-28",
+      "wordCount": 172,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2463,8 +2464,8 @@
       },
       "headings": [],
       "excerpt": "The human-readable implementation-architecture workbench at /architecture. It is a comparison surface, not the ontology map: a solid canvas keeps each reviewed role beside source observation and names the delta between them. Whenever the paired rows fit the canvas height at rest, a downward chain uses one repeated 280p",
-      "wordCount": 1151,
-      "updatedAt": "2026-09-03",
+      "wordCount": 1189,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2483,9 +2484,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Panel widget displaying the vault's git status/snapshot.",
-      "wordCount": 7,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Panel widget displaying the vault's git status/snapshot. Primary implementation: src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsxAtlasGitPanelProps Supporting implementation: src/widgets/atlas-git-panel/model/build-concept-ego.tsbuildConceptEgo Focused test: src/widgets/atlas-git-panel/ui/AtlasGitPanel.test.tsxexpands ",
+      "wordCount": 33,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2504,9 +2505,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Mobile/web bottom tab navigation widget.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Mobile/web bottom tab navigation widget. Primary implementation: src/widgets/bottom-tab-bar/ui/BottomTabBar.tsxTABS Supporting implementation: src/widgets/bottom-tab-bar/lib/is-tab-active.tsisBottomTabActive Focused test: src/widgets/bottom-tab-bar/lib/is-tab-active.test.tshides mobile app navigation only on the standa",
+      "wordCount": 45,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2525,9 +2526,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Kind/category classification data entity. Implementation evidence for capabilities/taxonomy.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Kind/category classification data entity. Implementation evidence for capabilities/taxonomy. Primary implementation: src/entities/category/model/types.tsCategory Supporting implementation: src/entities/category/model/defaults.tsDEFAULTCATEGORIES",
+      "wordCount": 18,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2540,14 +2541,15 @@
         "slug": "elements/concurrent-ledger-conflict-resolver",
         "kind": "element",
         "title": "Concurrent Ledger Conflict Resolver",
+        "display_ko": "동시 작업 장부 충돌 해결기",
         "domain": "domains/agent-integration",
         "path": "scripts/resolve-docs-vault-conflicts.mjs",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "A fail-closed repository helper for concurrent worktrees. It semantically merges only complete dated records prepended to the append-only CHANGELOG and DECISIONS ledgers, refuses historical or unrelated conflicts, rebuilds deterministic docs-vault artifacts, and stages the verified result without continuing the Git ope",
-      "wordCount": 41,
-      "updatedAt": "2026-08-29",
+      "wordCount": 51,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2560,14 +2562,15 @@
         "slug": "elements/construction-qualification-evaluator",
         "kind": "element",
         "title": "Construction Qualification Evaluator",
+        "display_ko": "구축 자격 판정기",
         "domain": "domains/project-portfolio",
         "path": "mcp/src/construction-qualification.mjs",
         "created_by": "agent:codex"
       },
       "headings": [],
       "excerpt": "The construction qualification evaluator is the pure categorical policy engine for constructionQualification:v1. It validates purpose authority, independent actors, motivating scenarios, human-approved competency questions, current witnesses, exact claims and citations, target coverage, source-hidden execution, seven i",
-      "wordCount": 154,
-      "updatedAt": "2026-09-02",
+      "wordCount": 164,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2588,8 +2591,8 @@
       },
       "headings": [],
       "excerpt": "The Design Proof Router is the deterministic source-checkout classifier behind pnpm design:route. It translates one or more observable Atlas UI change classes into the smallest required proof bundle: build and audit skills, rendered-window instruments, specialist seats, and concrete artifacts. scripts/lib/design-proof-",
-      "wordCount": 116,
-      "updatedAt": "2026-09-01",
+      "wordCount": 120,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2608,9 +2611,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Document quick access drawer widget.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Document quick access drawer widget. Primary implementation: src/widgets/docs-quick-drawer/ui/DocsQuickDrawer.tsxDocsQuickDrawer Supporting implementation: src/widgets/docs-quick-drawer/lib/tree-utils.tsflattenDocs Focused test: src/widgets/docs-quick-drawer/lib/tree-utils.test.tspre-order: dirs descended in definition",
+      "wordCount": 34,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2629,9 +2632,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Vault data model entity. Implementation evidence for capabilities/docs-vault-local.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Vault data model entity. Implementation evidence for capabilities/docs-vault-local. Primary implementation: src/entities/docs-vault/lib/build-local-manifest.tsbuildLocalManifest Supporting implementation: src/entities/docs-vault/lib/build-vault-markdown.tsbuildVaultMarkdown Focused test: src/entities/docs-vault/lib/bui",
+      "wordCount": 48,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2656,9 +2659,9 @@
         }
       },
       "headings": [],
-      "excerpt": "/docs page. Implementation evidence for capabilities/docs-vault-local.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-29",
+      "excerpt": "/docs page. Implementation evidence for capabilities/docs-vault-local. Primary implementation: src/views/docs-vault/ui/DocsVaultPage.tsxDocsVaultPage Supporting implementation: src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsxDocFrontmatterBlock Focused test: src/views/docs-vault/ui/DocsVaultPage.vault-status-banne",
+      "wordCount": 36,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2677,9 +2680,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-local.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-local. Primary implementation: src/widgets/docs-vault/ui/DocsVaultEditor.tsxDocsVaultEditor Supporting implementation: src/widgets/docs-vault/ui/DocsVaultBacklinks.tsxDocsVaultBacklinks Focused test: src/widgets/docs-vault/lib/server-doc-con",
+      "wordCount": 41,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2698,9 +2701,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Widget displaying node density per domain.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Widget displaying node density per domain. Primary implementation: src/widgets/domain-capacity-bar/ui/DomainCapacityBar.tsxDomainCapacityBarLabels Focused test: src/widgets/domain-capacity-bar/ui/DomainCapacityBar.test.tsxrenders the domain title, total, and capability/element breakdown Focused test: src/widgets/domain",
+      "wordCount": 38,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2720,8 +2723,8 @@
       },
       "headings": [],
       "excerpt": "/download page. Implementation evidence for capabilities/desktop-download-decision. The pre-install hero pairs the real graph object with the static raised-hand pixel mascot; the object assembles as the typing echo of the headline (each typed character lights the next dots of the vault graph, apex first and then each p",
-      "wordCount": 227,
-      "updatedAt": "2026-08-30",
+      "wordCount": 262,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2740,9 +2743,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Installed-app first run screen. It offers only local create/open paths and reveals the workbench after a real vault exists; bundled sample exploration remains on the web. Evidence of implementation for capabilities/first-run-starter.",
-      "wordCount": 31,
-      "updatedAt": "2026-08-30",
+      "excerpt": "Installed-app first run screen. It offers only local create/open paths and reveals the workbench after a real vault exists; bundled sample exploration remains on the web. Evidence of implementation for capabilities/first-run-starter. Primary implementation: src/views/first-run/ui/FirstRunPage.tsxFirstRunPage Focused te",
+      "wordCount": 54,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2761,9 +2764,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Full node detail opt-in panel widget.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Full node detail opt-in panel widget. Primary implementation: src/widgets/full-detail-a1/ui/FullDetailA1.tsxFullDetailA1Props Supporting implementation: src/widgets/full-detail-a1/lib/full-detail-groups.tsbuildFullDetailGroups",
+      "wordCount": 16,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2783,8 +2786,8 @@
       },
       "headings": [],
       "excerpt": "Persistent chrome widget for uninstalled web visitors across the root, download, guide, and changelog surfaces. Its home link carries the compact pixel mascot and product name; this gateway identity is separate from the installed workbench rail, which intentionally begins with destinations and carries no repeated logo.",
-      "wordCount": 46,
-      "updatedAt": "2026-08-29",
+      "wordCount": 52,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2803,9 +2806,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Gateway documentation/marketing page.",
-      "wordCount": 3,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Gateway documentation/marketing page. Primary implementation: src/views/gateway-doc/ui/GatewayDocPage.tsxGatewayDocPage Supporting implementation: src/views/gateway-doc/model/guide-pages.tsGUIDEPAGES",
+      "wordCount": 13,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2824,9 +2827,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Map gesture hint overlay widget.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Map gesture hint overlay widget. Primary implementation: src/widgets/gesture-hint/ui/GestureHint.tsxSTORAGEKEY",
+      "wordCount": 11,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2845,9 +2848,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Git status/history page.",
-      "wordCount": 3,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Git status/history page. Primary implementation: src/views/git/ui/GitPage.tsxGitPage",
+      "wordCount": 9,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2866,9 +2869,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Global search widget. Evidence of implementation for capabilities/topology-browsing.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Global search widget. Evidence of implementation for capabilities/topology-browsing. Primary implementation: src/widgets/global-search/ui/GlobalSearch.tsxGlobalSearch Supporting implementation: src/widgets/global-search/lib/use-global-search-hotkey.tsuseGlobalSearchHotkey",
+      "wordCount": 18,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2893,9 +2896,9 @@
         }
       },
       "headings": [],
-      "excerpt": "/ Home entry page.",
-      "wordCount": 4,
-      "updatedAt": "2026-08-29",
+      "excerpt": "/ Home entry page. Primary implementation: src/views/home/ui/HomePage.tsxHomePage Supporting implementation: src/views/home/model/use-home-route-state.tsuseHomeRouteState Focused test: src/views/home/ui/HomePage.accessibility.test.tskeeps the visible label inside the longer accessible name Focused test: src/views/home/",
+      "wordCount": 39,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2908,14 +2911,15 @@
         "slug": "elements/installed-mcp-identity-gate",
         "kind": "element",
         "title": "Installed MCP Identity Gate",
+        "display_ko": "설치 앱 MCP 신원 검사",
         "domain": "domains/agent-integration",
         "path": "scripts/deploy-macos-app-local.mjs",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "Installed MCP identity gate is the local delivery check that binds the copied macOS app to the exact built bundle and verifies the bundled MCP still preserves repository source-path case before and after first launch. scripts/lib/macos-app-bundle-identity.mjs scripts/deploy-macos-app-local.mjs scripts/verify-mcp-binary",
-      "wordCount": 161,
-      "updatedAt": "2026-09-02",
+      "wordCount": 169,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2934,9 +2938,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Graph node/edge data structure entity. Evidence of implementation for capabilities/vault-ontology.",
-      "wordCount": 10,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Graph node/edge data structure entity. Evidence of implementation for capabilities/vault-ontology. Primary implementation: src/entities/knowledge-graph/model/build-edge-type-rows.tsbuildEdgeTypeRows Supporting implementation: src/entities/knowledge-graph/model/use-edge-type-label.tsuseEdgeTypeLabel Focused test: src/en",
+      "wordCount": 52,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2955,9 +2959,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.",
-      "wordCount": 11,
-      "updatedAt": "2026-08-23",
+      "excerpt": "File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local. Primary implementation: src/entities/local-fs-handle/api/permission.tsverifyHandlePermission Supporting implementation: src/entities/local-fs-handle/api/store.tsgetLocalFsHandle Focused test: src/entities/local-fs-handle",
+      "wordCount": 36,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2970,14 +2974,15 @@
         "slug": "elements/meaning-proposal-evaluator",
         "kind": "element",
         "title": "Meaning Proposal Evaluator",
+        "display_ko": "뜻 제안 판정기",
         "domain": "domains/project-portfolio",
         "path": "mcp/src/meaning-evaluation.mjs",
         "created_by": "agent:codex"
       },
       "headings": [],
       "excerpt": "The meaning proposal evaluator validates proposed project, domain, capability, element, relation, and competency meaning against bounded repository analysis, then derives the exact non-writing review plan and any later released write plan. A Definition, Includes, Excludes, relation rationale, or answered competency tha",
-      "wordCount": 200,
-      "updatedAt": "2026-09-02",
+      "wordCount": 210,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2990,14 +2995,15 @@
         "slug": "elements/native-tray-control",
         "kind": "element",
         "title": "Native Tray Control",
+        "display_ko": "네이티브 메뉴 막대 컨트롤",
         "domain": "domains/onboarding-and-shell",
         "path": "src-tauri/src/lib.rs",
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "A macOS menu-bar control that uses the mascot micro template to reopen the existing Atlas workbench or quit the app. It is static and state-free: no activity badge, background-service promise, close-to-tray behavior, new window, or webview tray permission.",
-      "wordCount": 38,
-      "updatedAt": "2026-08-29",
+      "excerpt": "A macOS menu-bar control that uses the mascot micro template to reopen the existing Atlas workbench or quit the app. It is static and state-free: no activity badge, background-service promise, close-to-tray behavior, new window, or webview tray permission. Primary implementation: src-tauri/src/lib.rsinstallnativetray S",
+      "wordCount": 48,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3017,8 +3023,8 @@
       },
       "headings": [],
       "excerpt": "Native bridge that allows the Tauri WebView to read and write files and directories within the selected vault. Unix mutations hold canonical roots and relative parent directories as no-follow directory file descriptors, complete regular files with umask-based temporary inodes for atomic replacement within the same pare",
-      "wordCount": 201,
-      "updatedAt": "2026-09-01",
+      "wordCount": 211,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3037,9 +3043,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "A transient pre-write review that renders the exact typed ontology change requested by either the map editor or ACP. It never persists a second approval record: confirmed Markdown frontmatter remains the source of truth.",
-      "wordCount": 34,
-      "updatedAt": "2026-08-23",
+      "excerpt": "A transient pre-write review that renders the exact typed ontology change requested by either the map editor or ACP. It never persists a second approval record: confirmed Markdown frontmatter remains the source of truth. Primary implementation: src/features/ontology-change-review/ui/OntologyChangeReview.tsxformatValue ",
+      "wordCount": 71,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3058,9 +3064,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Kind-specific schema class definition entity. Evidence of implementation for capabilities/vault-ontology.",
-      "wordCount": 10,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Kind-specific schema class definition entity. Evidence of implementation for capabilities/vault-ontology. Primary implementation: src/entities/ontology-class/model/icons.tsgetOntologyKindIcon Supporting implementation: src/entities/ontology-class/model/labels.tsgetOntologyKindLabel Focused test: src/entities/ontology-c",
+      "wordCount": 45,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3079,9 +3085,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ontology/edit and /ontology/studio are static-export compatibility entries. OntologyEditRedirectPage translates legacy node/mode/edit/via/review parameters into /topology p/workbench/edit state; neither old address is a navigation destination or write surface.",
-      "wordCount": 26,
-      "updatedAt": "2026-08-23",
+      "excerpt": "/ontology/edit and /ontology/studio are static-export compatibility entries. OntologyEditRedirectPage translates legacy node/mode/edit/via/review parameters into /topology p/workbench/edit state; neither old address is a navigation destination or write surface. Primary implementation: src/views/ontology-edit-redirect/u",
+      "wordCount": 59,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3101,8 +3107,8 @@
       },
       "headings": [],
       "excerpt": "Six-tab maintenance board: five measured questions plus Flow. The Do-next tab is one flat list under one count (owner decision, 2026-09-01): each row is a concept or document title, one sentence naming the observed fact, and actions in a fixed order (hand it to the in-app AI chat through the ask deep link for missing d",
-      "wordCount": 159,
-      "updatedAt": "2026-09-01",
+      "wordCount": 195,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3122,8 +3128,8 @@
       },
       "headings": [],
       "excerpt": "A contextual relation editor that shares space with the compact inspector of the selected node on the map. When you select the relation type, target, and reason, it draws a dashed directional preview on the actual map geometry, then writes to frontmatter with expectedMtime after passing the Ontology Change Review. It h",
-      "wordCount": 70,
-      "updatedAt": "2026-08-23",
+      "wordCount": 80,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3142,9 +3148,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Compatible redirect from /ontology to /topology?index=expanded.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Compatible redirect from /ontology to /topology?index=expanded. Primary implementation: src/views/ontology-redirect/ui/OntologyRedirectPage.tsxOntologyRedirectPage Focused test: src/views/ontology-redirect/ui/OntologyRedirectPage.test.tsxredirects to /topology with INDEX expanded and no ?p= when there is no ?node= Focu",
+      "wordCount": 39,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3164,8 +3170,8 @@
       },
       "headings": [],
       "excerpt": "The common file boundary where MCP and CLI handle private receipts and activity logs under .ontology-atlas. It closes symlink/junctions between the sidecar directory and final files, handles file identity changes and hardlink aliases, and provides atomic replacement and conflict detection. Due to limitations of the pur",
-      "wordCount": 73,
-      "updatedAt": "2026-08-23",
+      "wordCount": 83,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3184,9 +3190,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Project node data model entity. Implementation evidence for capabilities/project-data-source.",
-      "wordCount": 9,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Project node data model entity. Implementation evidence for capabilities/project-data-source. Primary implementation: src/entities/project/model/integrity.tsgetProjectIntegrityIssues Supporting implementation: src/entities/project/model/relationships.tsresolveProjectRelationshipKind Focused test: src/entities/project/l",
+      "wordCount": 38,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3206,8 +3212,8 @@
       },
       "headings": [],
       "excerpt": "Project detail page. Beyond the project's own description, composition, and connections, it allows users to read the selected construction qualification envelope only for the current session, enabling judgment of current decisions, first blockers, human approvals, and exact plans alongside evidence from the same artifa",
-      "wordCount": 59,
-      "updatedAt": "2026-08-23",
+      "wordCount": 102,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3226,9 +3232,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Project drawer panel widget.",
-      "wordCount": 4,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Project drawer panel widget. Primary implementation: src/widgets/project-drawer/ui/ProjectDrawer.tsxProjectDrawer Supporting implementation: src/widgets/project-drawer/lib/detail-preview.tsgetProjectDetailPreview Focused test: src/widgets/project-drawer/lib/detail-preview.test.tsreturns empty preview for blank detail F",
+      "wordCount": 32,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3247,9 +3253,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Project editing page. Implementation evidence for capabilities/project-edit.",
-      "wordCount": 7,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Project editing page. Implementation evidence for capabilities/project-edit. Primary implementation: src/views/project-editor/ui/ProjectEditorPage.tsxnormalizeReturnTo",
+      "wordCount": 13,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3268,9 +3274,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Project selection/list page.",
-      "wordCount": 3,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Project selection/list page. Primary implementation: src/views/project-selector/lib/project-card-facts.tsbuildProjectCardFacts Supporting implementation: src/views/project-selector/lib/use-vault-docs.tsuseVaultDocs Focused test: src/views/project-selector/ui/ProjectSelectorPage.test.tsxrenders a full-width project card",
+      "wordCount": 42,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3289,9 +3295,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Quick action widget for unauthenticated visitors.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Quick action widget for unauthenticated visitors. Primary implementation: src/widgets/public-quick-actions/ui/PublicQuickActions.tsxPublicQuickActions",
+      "wordCount": 12,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3311,8 +3317,8 @@
       },
       "headings": [],
       "excerpt": "The qualification handoff helper is the private source-checkout transport that validates and packages one exact ontology construction candidate from coverage and seal through isolated hidden/audit join, human acceptance, and bounded release calls. Its file-backed contract names complete manifest-claim assignment, the s",
-      "wordCount": 123,
-      "updatedAt": "2026-08-30",
+      "wordCount": 131,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3331,9 +3337,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Recently viewed node list row widget.",
-      "wordCount": 6,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Recently viewed node list row widget. Primary implementation: src/widgets/recent-node-row/ui/RecentNodeRow.tsxRecentNodeRowProps",
+      "wordCount": 12,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3352,9 +3358,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ Smart entry logic (branches based on identity).",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "/ Smart entry logic (branches based on identity). Primary implementation: src/views/root-entry/ui/RootEntryPage.tsxRootEntryPage Focused test: src/views/root-entry/ui/RootEntryPage.test.tsxshows the first-run surface in the desktop shell when no vault is loaded Focused test: src/views/root-entry/ui/RootEntryPage.test.t",
+      "wordCount": 43,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3373,9 +3379,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Search hint overlay widget.",
-      "wordCount": 4,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Search hint overlay widget. Primary implementation: src/widgets/search-hint/ui/SearchHint.tsxSearchHint Focused test: src/widgets/search-hint/ui/SearchHint.test.tsxreads 3D while the flat view is on Focused test: src/widgets/search-hint/ui/SearchHint.test.tsxexposes utility-lane token contracts on search and auto-arran",
+      "wordCount": 33,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3394,9 +3400,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Search palette (Command-K style) widget. Implementation evidence for capabilities/topology-browsing.",
-      "wordCount": 9,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Search palette (Command-K style) widget. Implementation evidence for capabilities/topology-browsing. Primary implementation: src/widgets/search-palette/ui/SearchPalette.tsxSearchPalette Supporting implementation: src/widgets/search-palette/model/fuzzy-search.tssearchProjects",
+      "wordCount": 19,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3409,14 +3415,15 @@
         "slug": "elements/semantic-evidence-selector",
         "kind": "element",
         "title": "Semantic Evidence Selector",
+        "display_ko": "의미 근거 선별기",
         "domain": "domains/project-portfolio",
         "path": "mcp/src/analyze/semantic-evidence.mjs",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "The bounded analyzer role that selects claim-relevant Markdown and reStructuredText sections, keeps current claim units separate from review-only policy units, and assigns trust only over the exact model-visible text. Prefer document-title, purpose, architecture, and ability sections, with a bounded eligible-section fa",
-      "wordCount": 263,
-      "updatedAt": "2026-09-02",
+      "wordCount": 271,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3435,9 +3442,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Keyboard shortcut guide sheet widget.",
-      "wordCount": 5,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Keyboard shortcut guide sheet widget. Primary implementation: src/widgets/shortcut-sheet/lib/shortcut-scope.tssurfaceForPathname Supporting implementation: src/widgets/shortcut-sheet/ui/ShortcutSheet.tsxGLOSSARYTERMS",
+      "wordCount": 15,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3456,9 +3463,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Node status value entity. Implementation evidence for capabilities/taxonomy.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Node status value entity. Implementation evidence for capabilities/taxonomy. Primary implementation: src/entities/status/model/defaults.tsDEFAULTSTATUSES Supporting implementation: src/entities/status/model/types.tsStatus",
+      "wordCount": 18,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3471,14 +3478,15 @@
         "slug": "elements/task-scoped-agent-brief-projection",
         "kind": "element",
         "title": "Task-scoped agent brief projection",
+        "display_ko": "작업별 에이전트 브리핑",
         "domain": "domains/agent-integration",
         "path": "mcp/src/agent-brief-compact.mjs",
         "created_by": "agent:codex"
       },
       "headings": [],
       "excerpt": "Task-scoped agent brief projection is the read-side implementation that turns one selected project and one request-local coding task into a bounded handoff of currentness, broad capability meaning, cited implementation anchors, explicit unknowns, and exact next reads. mcp/src/agent-brief-compact.mjs mcp/src/index.js mc",
-      "wordCount": 323,
-      "updatedAt": "2026-09-03",
+      "wordCount": 393,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3497,9 +3505,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Map pan/zoom/reset control widget. Implementation evidence for capabilities/topology-browsing.",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Map pan/zoom/reset control widget. Implementation evidence for capabilities/topology-browsing. Primary implementation: src/widgets/topology-controls/ui/HubRail.tsxHubRail Supporting implementation: src/widgets/topology-controls/ui/TopologyEmptyState.tsxTopologyEmptyState Focused test: src/widgets/topology-controls/ui/H",
+      "wordCount": 39,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3518,9 +3526,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Map index (INDEX) panel widget. Implementation evidence for capabilities/topology-browsing.",
-      "wordCount": 9,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Map index (INDEX) panel widget. Implementation evidence for capabilities/topology-browsing. Primary implementation: src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsxTopologyIndexPanel Supporting implementation: src/widgets/topology-index-panel/ui/TopologyIndexTab.tsxTopologyIndexTab Focused test: src/widgets/t",
+      "wordCount": 42,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3546,8 +3554,8 @@
       },
       "headings": [],
       "excerpt": "Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: \"The graph renderer is ours\". The opt-in 3D view lives inside this widget rather than in a second renderer: model/dome-view.ts lays the ownership arrangement out as a cone tree (height = containm",
-      "wordCount": 109,
-      "updatedAt": "2026-09-03",
+      "wordCount": 139,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3567,8 +3575,8 @@
       },
       "headings": [],
       "excerpt": "Panel widget showing agent connection status, actual tool reads, audit logs, timeouts, and mandatory read failures. Restores only absolute paths without a read manifest, downgrading to the existing no-folder lock to prevent divergence between bundle sample screens and hidden local body/audit logs. Local models that ski",
-      "wordCount": 72,
-      "updatedAt": "2026-08-23",
+      "wordCount": 108,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {

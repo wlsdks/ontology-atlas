@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 A transient pre-write review that renders the exact typed ontology change requested by either the map editor or ACP. It never persists a second approval record: confirmed Markdown frontmatter remains the source of truth.
+
+## Evidence
+
+- Primary implementation: `src/features/ontology-change-review/ui/OntologyChangeReview.tsx#formatValue`
+- Focused test: `src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx#keeps readable field keys in a 96px key track while retaining emergency wrapping`
+- Focused test: `src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx#wraps values at word boundaries and keeps emergency wrapping for unbroken slugs`

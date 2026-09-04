@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Project drawer panel widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/project-drawer/ui/ProjectDrawer.tsx#ProjectDrawer`
+- Supporting implementation: `src/widgets/project-drawer/lib/detail-preview.ts#getProjectDetailPreview`
+- Focused test: `src/widgets/project-drawer/lib/detail-preview.test.ts#returns empty preview for blank detail`
+- Focused test: `src/widgets/project-drawer/lib/detail-preview.test.ts#keeps fenced code block lines together`

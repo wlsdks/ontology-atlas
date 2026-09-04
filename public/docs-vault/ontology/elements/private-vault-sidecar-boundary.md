@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 The common file boundary where MCP and CLI handle private receipts and activity logs under `.ontology-atlas`. It closes symlink/junctions between the sidecar directory and final files, handles file identity changes and hardlink aliases, and provides atomic replacement and conflict detection. Due to limitations of the pure Node path API, it does not claim complete directory handle isolation against race conditions where an attacker with the same UID changes the parent name between checks.
+
+## Evidence
+
+- Primary implementation: `mcp/src/vault-sidecar.mjs#readVaultSidecarText`
+- Supporting implementation: `mcp/src/vault-sidecar.mjs#createVaultSidecarTextExclusive`

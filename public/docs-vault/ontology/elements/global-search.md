@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Global search widget. Evidence of implementation for capabilities/topology-browsing.
+
+## Evidence
+
+- Primary implementation: `src/widgets/global-search/ui/GlobalSearch.tsx#GlobalSearch`
+- Supporting implementation: `src/widgets/global-search/lib/use-global-search-hotkey.ts#useGlobalSearchHotkey`

@@ -56,3 +56,7 @@ This mirrors the separation of skills from documentation (2026-08-09): different
 ## Confidence
 
 high (0.9): The route, migration, and gate are aligned with the contract and end-to-end; I opened both screens directly in the installed app to verify. The scene where the rail badge actually appears in the installed app was substituted with unit tests and browser navigation persistence measurements. That spot still lacks real-world installation verification.
+
+## Evidence
+
+- Primary implementation: `src/views/agents/ui/AgentsPage.tsx#AgentsPage`

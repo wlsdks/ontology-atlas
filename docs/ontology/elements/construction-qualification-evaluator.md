@@ -3,6 +3,7 @@ uid: 899d10d4-289c-4b79-a3f1-c3a9304ef24b
 slug: elements/construction-qualification-evaluator
 kind: element
 title: Construction Qualification Evaluator
+display_ko: 구축 자격 판정기
 domain: domains/project-portfolio
 path: mcp/src/construction-qualification.mjs
 created_by: "agent:codex"
@@ -19,3 +20,8 @@ Executive, employee, and agent are required across at least four cases. FDE rema
 ## Boundary
 
 The evaluator reads no repository source, invokes no MCP tool, writes no vault, and authenticates no human identity. It judges only the supplied digest-bound packet and keeps missing, stale, unsupported, conflicting, partial, unknown, refused, or unowned evidence visible and fail-closed.
+
+## Evidence
+
+- Primary implementation: `mcp/src/construction-qualification.mjs#evaluateConstructionQualification`
+- Supporting implementation: `mcp/src/construction-qualification.mjs#CONSTRUCTION_QUALIFICATION_CONTRACT`
