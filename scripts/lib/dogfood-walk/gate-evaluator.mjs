@@ -34,6 +34,8 @@ import {
   toolsListInventoryFailure,
   toolsListSchemaFailure,
   validateVaultFailure,
+  validationCodeSummary,
+  formatCount,
   workspaceBriefSummary,
 } from "../../../mcp/scripts/verify.mjs";
 import {
@@ -101,6 +103,25 @@ import {
 // gate receives a deliberate contract update.
 const NON_BLOCKING_ADVISORY_CHECKS = new Set(["meaning_assessment"]);
 const NON_BLOCKING_ADVISORY_ACTIONS = new Set(["meaning_assessment"]);
+
+
+// The public `mcp-verify` warns on warning-level vault diagnostics and fails
+// only on errors (2026-09-04, matching `validate`). The dogfood walk is this
+// repository's own release gate: its vault must carry no warning at all, so
+// the stricter reading lives here and nowhere else.
+function dogfoodVaultWarningsFailure(list) {
+  const warnings = list?.vaultWarnings;
+  if (!warnings || !Number.isInteger(warnings.warningCount) || warnings.warningCount === 0) return null;
+  return `list_concepts vaultWarnings present: errors ${warnings.errorCount}, warnings ${warnings.warningCount}. Run validate_vault for file-level diagnostics before writing.`;
+}
+
+function dogfoodValidateVaultFailure(validation) {
+  const summary = validation?.summary;
+  if (!summary || !Number.isInteger(summary.problemFiles) || summary.problemFiles === 0) return null;
+  const codeSummary = validationCodeSummary(summary.byCode ?? {});
+  const suffix = codeSummary ? ` · codes ${codeSummary}` : "";
+  return `validate_vault found ${formatCount(summary.problemFiles, "problem file")}: errors ${summary.errorFiles}, warnings ${summary.warningFiles}${suffix}`;
+}
 
 function isAdvisoryOnlyChecks(checks) {
   return Array.isArray(checks) && checks.length > 0 && checks.every((check) => (
@@ -457,7 +478,7 @@ export function evaluateDogfoodGate({
     else recordStructuredContentFailure(failures, "list_kinds", kinds, kindsStructured);
   }
   if (list) {
-    const listFailure = listConceptsFailure(list);
+    const listFailure = listConceptsFailure(list) ?? dogfoodVaultWarningsFailure(list);
     if (listFailure) failures.push(listFailure);
     else recordStructuredContentFailure(failures, "list_concepts", list, listStructured);
   }
@@ -540,7 +561,7 @@ export function evaluateDogfoodGate({
     else recordStructuredContentFailure(failures, "infer_imports", inferredImports, inferredImportsStructured);
   }
   if (validation) {
-    const validationFailure = validateVaultFailure(validation);
+    const validationFailure = validateVaultFailure(validation) ?? dogfoodValidateVaultFailure(validation);
     if (validationFailure) failures.push(validationFailure);
     else recordStructuredContentFailure(failures, "validate_vault", validation, validationStructured);
   }

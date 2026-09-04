@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-04 — A stale receipt may emit coordinates the live source verifies, and a capability's name is part of its claim
+
+**Why**: the 2026-09-04 audit ran three task sentences against the dogfood vault and got the wrong capability three times: a 25k-character document with no `## Definition` was scored on its whole body and beat the capability whose title named the task. Navigation stayed `source_not_current` while all 119 witness paths still resolved, because the receipt was one commit behind, so "Primary: unknown" was the permanent answer on an active repository.
+**Prior**: 2026-09-02 "Compact task handoff follows persisted capability boundaries" stands. 2026-08-30 "Exact task navigation is reviewed evidence" stands except its clause that a stale receipt never emits an exact target, overturned narrowly here.
+**Decision**: title, slug, and path join the positive claim before the Excludes subtraction; a document without Definition/Includes/Excludes is scored on its first paragraph, and `Inclusions / Exclusions` bullets count as Includes/Excludes; declared element names add a bounded score only after the parent claim qualified. When the receipt is stale but the same probe finds every witness path, coordinates are verified against the live files and returned as `live_verified` with `receipt: stale`; the receipt is never restamped and the `source_changed` warning stays. `mcp-verify` fails only on vault errors; `init` installs skills by the config containment rule; `bootstrap` reports an undeliverable import graph as omitted, not zero.
+**Dissent**: po-steward — witness existence proves files exist, not that recorded meaning is still true; accepted, only the navigation gate changed. po-evidence — identity weight can turn one right winner into a tie on internals-phrased tasks; measured, those wait on the MCP server document stating a Definition.
+**Falsifier**: a `live_verified` coordinate that does not resolve in the live file, or a second prospectively built vault where the named capability's Excludes cover the task.
+**Owner**: jinan
+
 ## 2026-09-03 — Codex chat pins the last adapter whose read-only mode holds the installed permission matrix
 
 **Why**: the installed current `@agentclientprotocol/codex-acp@1.8.0` advertised `read-only` but sent `workspaceWrite` and created a direct file with no permission request; 1.7.0 carried the same mapping, while 1.6.2 sent an actual `readOnly` sandbox. The rebuilt installed app on exact 1.6.2 then held direct-file reject, allow-once, and ask-again, plus typed Atlas MCP reject, allow-once, and ask-again with byte-level checks.

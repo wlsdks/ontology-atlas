@@ -9067,11 +9067,16 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns) {
 }
 
 function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash) {
-  if (
-    projectSource?.status !== 'verified_current'
-    || projectSource?.currentness !== 'current'
-    || typeof projectSource?.receipt?.sourceId !== 'string'
-  ) return null;
+  const receiptCurrent = projectSource?.status === 'verified_current'
+    && projectSource?.currentness === 'current';
+  // A receipt behind the source still opens the bound root when the live
+  // probe confirms every recorded witness resolves: coordinates are then
+  // verified against the live files, and the response says which revision.
+  const liveSupported = !receiptCurrent
+    && projectSource?.topGap?.id === 'source_changed'
+    && projectSource?.live?.status === 'witnesses_supported'
+    && typeof projectSource?.live?.sourceFingerprint === 'string';
+  if ((!receiptCurrent && !liveSupported) || typeof projectSource?.receipt?.sourceId !== 'string') return null;
   const sidecar = readProjectSourceBindings(VAULT_ROOT);
   if (sidecar.status !== 'ok') return null;
   const matches = sidecar.bindings.filter((binding) => (
@@ -9083,8 +9088,14 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
   if (matches.length !== 1) return null;
   return {
     rootPath: matches[0].rootPath,
+    mode: liveSupported ? 'live' : 'receipt',
     confirmCurrent() {
       const refreshed = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
+      if (liveSupported) {
+        return refreshed?.live?.status === 'witnesses_supported'
+          && refreshed.live.sourceFingerprint === projectSource.live.sourceFingerprint
+          && refreshed.live.sourceRevision === projectSource.live.sourceRevision;
+      }
       return projectSourceSnapshotUnchanged(projectSource, refreshed);
     },
   };
@@ -9166,8 +9177,9 @@ function queryOntologyTool(args = {}) {
         docs: agentBriefInput.scope.docs,
         sourceRoot: sourceAccess?.rootPath ?? null,
         confirmSourceCurrent: sourceAccess?.confirmCurrent ?? null,
-        sourceAccessRequired: result.projectSource?.status === 'verified_current'
-          && result.projectSource?.currentness === 'current',
+        sourceAccessRequired: (result.projectSource?.status === 'verified_current'
+          && result.projectSource?.currentness === 'current')
+          || result.projectSource?.live?.status === 'witnesses_supported',
         task: args.task,
       });
     }
@@ -9270,6 +9282,17 @@ function meaningReadinessCheck(artifact) {
         projectSlug,
         status: context.meaningAssessment?.status ?? 'invalid',
         topGap: context.meaningAssessment?.topGap?.id ?? 'assessment_input_invalid',
+        // What the changed source says right now about the recorded witnesses,
+        // so "source changed" is not the whole story a person gets.
+        ...(context.projectSource?.live
+          ? {
+              sourceLive: {
+                status: context.projectSource.live.status,
+                sourceRevision: String(context.projectSource.live.sourceRevision ?? '').slice(0, 12),
+                witnessSummary: context.projectSource.live.witnessSummary,
+              },
+            }
+          : {}),
         // The remedy was already computed and was being discarded here
         // (2026-08-17), so the reader — person or agent — got only an error code.
         nextAction: context.meaningAssessment?.nextAction?.id ?? 'repair_assessment_input',
@@ -9303,6 +9326,13 @@ function meaningReadinessCheck(artifact) {
   const firstHint = first.nextAction === 'author_competency_answers' && first.competencyAuthored
     ? MEANING_AUTHORED_NOT_FINALIZED_HINT
     : MEANING_NEXT_ACTION_HINTS[first.nextAction] ?? `Next: ${first.nextAction}.`;
+  const liveNote = first.sourceLive
+    ? first.sourceLive.status === 'witnesses_supported'
+      ? ` All ${first.sourceLive.witnessSummary?.total ?? 0} recorded witness paths still resolve at ${first.sourceLive.sourceRevision}; the receipt is behind the source, not broken.`
+      : first.sourceLive.status === 'witnesses_missing'
+        ? ` ${first.sourceLive.witnessSummary?.missing ?? 0} of ${first.sourceLive.witnessSummary?.total ?? 0} recorded witness paths no longer resolve at ${first.sourceLive.sourceRevision}.`
+        : ''
+    : '';
   return {
     status: 'warn',
     count: unresolved.length,
@@ -9311,7 +9341,7 @@ function meaningReadinessCheck(artifact) {
     message:
       `${unresolved.length} project meaning assessment(s) require review; `
       + `first ${first.projectSlug}: ${first.status} (${first.topGap}). `
-      + `${firstHint}`,
+      + `${firstHint}${liveNote}`,
     assessments,
   };
 }

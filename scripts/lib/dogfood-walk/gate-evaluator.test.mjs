@@ -4041,6 +4041,27 @@ describe("evaluateDogfoodGate", () => {
     ]);
   });
 
+  it("fails on warning-only validate_vault problem files (the dogfood vault must be clean)", () => {
+    const failures = evaluateDogfoodGate({
+      ...okShape,
+      validation: {
+        scanned: 2,
+        problems: [{ slug: "loose", issues: [{ code: "dangling-graph-reference", severity: "warning" }] }],
+        summary: {
+          problemFiles: 1,
+          errorFiles: 0,
+          warningFiles: 1,
+          byCode: {
+            "dangling-graph-reference": { severity: "warning", count: 1, files: ["loose"] },
+          },
+        },
+      },
+    });
+    assert.deepEqual(failures, [
+      "validate_vault found 1 problem file: errors 0, warnings 1 · codes dangling-graph-reference:warning:1",
+    ]);
+  });
+
   it("fails on malformed vault warnings", () => {
     const failures = evaluateDogfoodGate({
       ...okShape,

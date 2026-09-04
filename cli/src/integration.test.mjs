@@ -378,6 +378,23 @@ await test('init --locale=ko — Korean starter bodies, identical graph, English
         assert.equal(outside.code, 0, `stdout: ${outside.stdout}\nstderr: ${outside.stderr}`);
         assert.ok(!/--vault '?\.'?\s/.test(outside.stdout), 'follow-ups must not target cwd');
         assert.ok(outside.stdout.includes('ov'), 'follow-ups must name the scaffolded vault');
+        // cwd is merely where the person stood: no skills, no config, nothing
+        // (measured 2026-09-04: six skill files landed in an unrelated repository).
+        assert.deepEqual(
+          readdirSync(standDir).filter((name) => name !== '.DS_Store'),
+          [],
+          `cwd must stay untouched, found: ${readdirSync(standDir).join(', ')}`,
+        );
+        for (const tree of ['.claude', '.agents']) {
+          assert.ok(
+            existsSync(join(outsideVault, 'ov', tree, 'skills', 'atlas-review', 'SKILL.md')),
+            `an outside vault carries its own ${tree}/skills`,
+          );
+        }
+        assert.ok(
+          !/reviewed ontology in `[^`]*\.\.\//.test(outside.stdout),
+          'the paste block must not carry a cwd-relative climb',
+        );
       } finally {
         rmSync(standDir, { recursive: true, force: true });
       }

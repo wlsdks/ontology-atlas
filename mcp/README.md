@@ -542,12 +542,24 @@ Evidence coordinates as `Primary implementation`, `Supporting implementation`,
 and `Focused test` bullets. With a current bound source, `taskNavigation:v1`
 checks only those named files, requires each symbol/test to resolve uniquely,
 and returns current line locators plus the element's reviewed non-exhaustive
-Includes/Excludes boundary. Stale, missing, ambiguous, outside-root, symlinked,
-or unrecorded evidence emits no exact target; task text never creates one.
-After the complete named-file batch, Atlas rechecks the same source id,
-fingerprint, revision, and graph hash. Any mismatch detected by the exact-file
-guards or that final recheck withdraws the batch and downgrades outer
-source/meaning/readiness rather than mixing snapshots. A ready
+Includes/Excludes boundary. Missing, ambiguous, outside-root, symlinked, or
+unrecorded evidence emits no exact target; task text never creates one. A
+receipt that is behind the source (`source_changed`) does not by itself hide
+coordinates: the same bounded probe that found the change re-checks every
+recorded witness path against the live inventory, and when all of them still
+resolve the coordinates are verified against the live files and returned with
+`currentness:"live_verified"`, `receipt:"stale"`, and the live revision, while
+`currentness.source` keeps the stale receipt beside a `live` witness summary.
+`current` is reserved for a receipt a person measured; one missing witness
+keeps navigation blocked. After the complete named-file batch, Atlas rechecks
+the same source id, fingerprint, revision, and graph hash (or, for a live
+check, the same live fingerprint and revision). Any mismatch detected by the
+exact-file guards or that final recheck withdraws the batch and downgrades
+outer source/meaning/readiness rather than mixing snapshots. The capability is
+selected from its persisted Definition/Includes/Excludes, its own title, slug,
+and path, and the names of the elements it declares; a document that states no
+Definition/Includes/Excludes (or only the older `Inclusions / Exclusions`
+bullets) is read on its first paragraph, never its whole body. A ready
 handoff batches any verified runner manifest, asks for separately named
 positive/negative regressions with exact observable output, and avoids
 overlapping full checks.
@@ -580,8 +592,13 @@ fingerprint and source-relative witness paths.
 A fresh MCP process locally repeats the installed app's bounded source probe against
 that human-bound private root. If source kind, identity, revision, and fingerprint all
 match the saved receipt, it reports `current`; if any differ, it fails closed as
-`review_required` / `source_changed` and asks the app to remeasure. The root and raw
-inspection inventory never cross the public MCP boundary. A permission, filesystem,
+`review_required` / `source_changed`, asks for a remeasure, and attaches `live`: the
+status of the receipt's witness paths against the live inventory
+(`witnesses_supported`, `witnesses_missing`, `inventory_truncated`, `no_witnesses`), the
+live revision, a witness summary, and up to five missing relative paths. `health`
+and `workspace_brief` repeat that answer in the `meaning_assessment` message, so a
+receipt that is merely behind reads differently from one whose paths vanished. The
+root and raw inspection inventory never cross the public MCP boundary. A permission, filesystem,
 or Git failure preserves the last valid receipt but reports
 `currentness:"unavailable"`: unavailable means “could not recheck,” not “known stale.”
 MCP also reports `stale` when a complete current project graph hash differs from the

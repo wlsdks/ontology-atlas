@@ -19,9 +19,15 @@ function normalizedRelativePath(value) {
  * carrying a second copy; `tests/contract/project-source-connect.contract.test.ts`
  * pins the two entry points to byte-identical output.
  */
-export function buildProjectSourceReceipt(input) {
+/**
+ * Every path a probe inventory can support: each file plus every ancestor
+ * folder, so a declared `path: src/features/x` counts as present when any file
+ * beneath it exists. Shared by minting and by the live re-check a stale receipt
+ * gets on read, so the two can never disagree about what "supported" means.
+ */
+export function witnessInventoryPaths(probe) {
   const files = new Set(['.']);
-  for (const sourcePath of input.probe.files ?? []) {
+  for (const sourcePath of probe?.files ?? []) {
     const normalized = normalizedRelativePath(sourcePath);
     files.add(normalized);
     const segments = normalized.split('/');
@@ -29,6 +35,11 @@ export function buildProjectSourceReceipt(input) {
       files.add(segments.slice(0, index).join('/'));
     }
   }
+  return files;
+}
+
+export function buildProjectSourceReceipt(input) {
+  const files = witnessInventoryPaths(input.probe);
   const witnesses = (input.witnesses ?? []).map((candidate) => {
     const path = normalizedRelativePath(candidate.path);
     return { ...candidate, path, supported: files.has(path) };
