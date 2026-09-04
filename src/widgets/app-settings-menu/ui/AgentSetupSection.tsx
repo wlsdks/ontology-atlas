@@ -143,11 +143,13 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
             {t('cliPlaceholderHint')}
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
+            {/* Neutral on purpose: the card's own ask is "Open my folder" above, and
+                measured on 2026-09-04 an indigo-tinted chip here was the only chromatic
+                control in the card and outranked it. One emphasis per region. */}
             <Chip
-              tone="accentOnTint"
               data-testid="agents-terminal-setup-copy"
               onClick={() => void copy(CLI_TERMINAL_SETUP)}
-              className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-mono hover:bg-[color:var(--color-indigo-a24)]"
+              className="font-mono"
             >
               {copyState === 'copied' ? (
                 <Check size={ICON_SIZE.sm} aria-hidden />
@@ -157,20 +159,23 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
               {copyState === 'copied' ? t('agentTerminalCopied') : t('agentTerminalCopy')}
             </Chip>
             {/* The app path stays in the same place as the terminal path — someone who
-                does not want either the browser folder or the terminal still has one. */}
-            <Link
-              href="/download/"
-              onClick={onBeforeNavigate}
-              data-testid="agents-terminal-setup-download"
-              className={controlClass({
-                shape: 'link',
-                tone: 'secondary',
-                hoverInk: 'strong',
-                className: 'h-8',
-              })}
-            >
-              {t('agentTerminalAppLink')}
-            </Link>
+                does not want either the browser folder or the terminal still has one.
+                Only where there is no bundled server: the installed app must never
+                offer its own download (AGENTS.md), and `launch` is non-null exactly there. */}
+            {serverAvailability.launch === null ? (
+              <Link
+                href="/download/"
+                onClick={onBeforeNavigate}
+                data-testid="agents-terminal-setup-download"
+                className={controlClass({
+                  shape: 'link',
+                  tone: 'accent',
+                  className: 'h-8 font-[var(--font-weight-signature)]',
+                })}
+              >
+                {t('agentTerminalAppLink')}
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>

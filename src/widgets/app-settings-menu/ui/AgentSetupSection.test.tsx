@@ -15,6 +15,7 @@ import { AgentSetupSection } from './AgentSetupSection';
  */
 
 const vaultStatus = { current: 'idle' as 'idle' | 'loaded' };
+const serverState = { launch: null as null | { command: string; args: string[] } };
 
 vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session/model/LocalVaultProvider')>()),
@@ -22,7 +23,7 @@ vi.mock('@/entities/vault-session/model/LocalVaultProvider', async (importOrigin
 }));
 vi.mock('@/entities/vault-session/model/use-agent-server', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/entities/vault-session/model/use-agent-server')>()),
-  useAgentServer: () => ({ launch: null }),
+  useAgentServer: () => ({ launch: serverState.launch }),
 }));
 vi.mock('@/features/docs-vault-local', () => ({
   OpenVaultCta: ({ testId }: { testId: string }) => <button data-testid={testId} />,
@@ -51,6 +52,26 @@ describe('MCP 연결 칸', () => {
     renderSection();
     expect(screen.getByText('agentStatusNoVault')).toBeInTheDocument();
     expect(screen.queryByTestId('vault-agent-setup-panel')).toBeNull();
+  });
+
+  /**
+   * **The installed app must not offer its own download** (AGENTS.md). The
+   * terminal block's app link is for the browser, where no server is bundled;
+   * `launch` is non-null exactly when one is (design audit 2026-09-04).
+   */
+  it('shows the app link only where no server is bundled', () => {
+    vaultStatus.current = 'idle';
+    serverState.launch = null;
+    const { unmount } = renderSection();
+    expect(screen.getByTestId('agents-terminal-setup-download')).toBeInTheDocument();
+    expect(screen.getByTestId('agents-terminal-setup-copy')).toBeInTheDocument();
+    unmount();
+
+    serverState.launch = { command: '/Applications/Ontology Atlas.app/Contents/MacOS/ontology-atlas-mcp', args: [] };
+    renderSection();
+    expect(screen.queryByTestId('agents-terminal-setup-download')).toBeNull();
+    expect(screen.getByTestId('agents-terminal-setup-copy')).toBeInTheDocument();
+    serverState.launch = null;
   });
 
   /**
