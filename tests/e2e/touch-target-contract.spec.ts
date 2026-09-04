@@ -104,6 +104,51 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
     expect(measured.short, `44px 미만 히트 영역: ${JSON.stringify(measured.short)}`).toEqual([]);
   });
 
+  /**
+   * The tab strip is the one control on the insights board a finger meets first, and it
+   * was 28px tall until 2026-09-05 — the `atlas-touch-floor` promotion had never reached
+   * `src/shared/ui/tab-bar.tsx`. Measuring it at 390 rather than at a desktop width is the
+   * point: a strip that fits at 1440 is not the strip a phone gets, and the earlier gate's
+   * blind spot was exactly a control that only exists narrow.
+   */
+  test("인사이트 탭 줄이 좁은 화면에서도 44px 높이를 갖는다", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedFirstRunSeen(page);
+    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+    const strip = page.locator('[role="tablist"]').first();
+    await expect(strip).toBeVisible({ timeout: 20_000 });
+
+    const measured = await strip.evaluate((element, min) => {
+      const tabs = [...element.querySelectorAll('[role="tab"]')];
+      return {
+        scanned: tabs.length,
+        // A tab that wrapped to two lines is also tall, so height alone would pass a
+        // broken strip. The line count is measured with it.
+        short: tabs
+          .map((tab) => {
+            const rect = tab.getBoundingClientRect();
+            return {
+              id: (tab.textContent ?? "").trim().slice(0, 16),
+              h: Math.round(rect.height),
+              lines: Math.round(rect.height / Number.parseFloat(getComputedStyle(tab).lineHeight)),
+            };
+          })
+          .filter((tab) => tab.h < min),
+        wrapped: tabs.filter((tab) => {
+          const rect = tab.getBoundingClientRect();
+          return rect.height / Number.parseFloat(getComputedStyle(tab).lineHeight) > 3.5;
+        }).length,
+        pageScrollsSideways:
+          document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    }, MIN);
+
+    expect(measured.scanned, "탭을 충분히 재지 못했다").toBeGreaterThan(4);
+    expect(measured.short, `44px 미만 탭: ${JSON.stringify(measured.short)}`).toEqual([]);
+    expect(measured.wrapped, "탭 라벨이 줄바꿈했다 — 밑줄이 한 탭 아래에 있지 않다").toBe(0);
+    expect(measured.pageScrollsSideways, "탭 줄이 페이지를 가로로 밀었다").toBe(false);
+  });
+
   test("첫 실행 패널의 모든 컨트롤이 44px 히트 영역을 갖는다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await expect(page.getByTestId("topology-index-panel")).toBeVisible();
@@ -327,7 +372,15 @@ const AUDIT_258 = `(() => {
 test.describe("최소 타깃 계약 (pointer: fine — WCAG 2.5.8 AA)", () => {
   test.use({ hasTouch: false, isMobile: false, viewport: { width: 1280, height: 860 } });
 
-  for (const route of ["/ko/topology/?guides=off", "/ko/download/?guides=off", "/ko/docs/?guides=off", "/ko/guide/?guides=off"]) {
+  for (const route of [
+    "/ko/topology/?guides=off",
+    "/ko/download/?guides=off",
+    "/ko/docs/?guides=off",
+    "/ko/guide/?guides=off",
+    // The not-held list's hide control is an icon button with no label beside it, so it is
+    // the shape 2.5.8 catches first. Inventory taken before switching it on: zero.
+    "/ko/ontology/insights/?tab=unmatched&guides=off",
+  ]) {
     test(`${route} 의 타깃이 24×24 미달이면 인라인 면제·간격 예외 중 하나를 증명해야 한다`, async ({ page }) => {
       await page.goto(route);
       await page.waitForLoadState("networkidle");

@@ -208,6 +208,13 @@ export function TabBar({
       role="tablist"
       aria-orientation="horizontal"
       aria-label={ariaLabel}
+      /*
+       * Declares this a deliberate horizontal strip. `responsive-overflow-audit` exempts a
+       * declared strip's children from the "nothing past the viewport" rule and nothing
+       * else — keying on computed `overflow-x` matched the page's vertical scroll
+       * container too, and the sweep stopped being able to fail.
+       */
+      data-scroll-x="true"
       data-edge-overflow={
         edgeOverflow.left && edgeOverflow.right
           ? 'both'
