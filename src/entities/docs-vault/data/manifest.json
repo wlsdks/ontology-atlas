@@ -1615,6 +1615,7 @@
         "display_ko": "내 폴더 열기",
         "domain": "domains/local-vault-management",
         "elements": [
+          "elements/docs-quick-drawer",
           "elements/docs-vault-entity",
           "elements/docs-vault-view",
           "elements/docs-vault-widget",
@@ -1630,8 +1631,8 @@
       },
       "headings": [],
       "excerpt": "The ability to select, restore, and reopen one local Markdown vault as the real-time source of truth. On desktop, picker, recent-vault, and cold-restore ingress apply the same rule: when a selected project contains Markdown under <project/atlas, that child is persisted and built as the canonical vault; direct standalon",
-      "wordCount": 113,
-      "updatedAt": "2026-08-31",
+      "wordCount": 172,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1976,8 +1977,8 @@
         }
       },
       "headings": [],
-      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). Selecting a node on the map: the compact node datasheet popover a click opens beside th",
-      "wordCount": 1313,
+      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). Selecting a node on the map: the compact node datasheet popover shown beside the clicke",
+      "wordCount": 1311,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -4743,6 +4744,18 @@
         "linkText": "elements/download"
       }
     ],
+    "ontology/elements/docs-quick-drawer": [
+      {
+        "fromSlug": "ontology/capabilities/docs-vault-local",
+        "context": "frontmatter · **[elements/docs-quick-drawer]**",
+        "linkText": "elements/docs-quick-drawer"
+      },
+      {
+        "fromSlug": "ontology/domains/onboarding-and-shell",
+        "context": "frontmatter · **[elements/docs-quick-drawer]**",
+        "linkText": "elements/docs-quick-drawer"
+      }
+    ],
     "ontology/elements/docs-vault-entity": [
       {
         "fromSlug": "ontology/capabilities/docs-vault-local",
@@ -5464,13 +5477,6 @@
         "fromSlug": "ontology/domains/onboarding-and-shell",
         "context": "frontmatter · **[elements/bottom-tab-bar]**",
         "linkText": "elements/bottom-tab-bar"
-      }
-    ],
-    "ontology/elements/docs-quick-drawer": [
-      {
-        "fromSlug": "ontology/domains/onboarding-and-shell",
-        "context": "frontmatter · **[elements/docs-quick-drawer]**",
-        "linkText": "elements/docs-quick-drawer"
       }
     ],
     "ontology/elements/gateway-chrome": [

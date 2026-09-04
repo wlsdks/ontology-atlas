@@ -627,6 +627,71 @@ DER parsing and unrelated encodings.
     assert.deepEqual(proseOnly.focus.evidenceAnchors, []);
   });
 
+  it('keeps a capability its own name even when its Excludes prose repeats it', () => {
+    // A capability writes its own subject into its boundary all the time:
+    // "Git write operations" under Git History, "the tools that own them"
+    // under MCP Server. Subtracting that word cancelled the strongest evidence
+    // the vault has about ownership — the name a person chose — and the
+    // capability then fell below the support bar and refused. An Excludes
+    // bullet bounds what the capability does with its subject; it does not
+    // withdraw the subject. Includes bullets stay cancellable.
+    const boundaryNameDocs = [
+      docs[0],
+      {
+        slug: 'capabilities/git-history',
+        frontmatter: { kind: 'capability', title: 'Git History', path: 'src/features/git-history' },
+        body: [
+          '## Definition',
+          '',
+          'Show which commits touched a concept.',
+          '',
+          '## Excludes',
+          '',
+          '- Git write operations such as commit or push.',
+          '',
+        ].join('\n'),
+      },
+    ];
+    const named = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: boundaryNameDocs,
+      task: 'Show which git commits touched a node.',
+    });
+    assert.equal(named.focus.capability?.slug, 'capabilities/git-history');
+    assert.ok(named.focus.capability.matchedTerms.includes('git'));
+
+    // Same word, claimed only by an Includes bullet: the boundary still wins.
+    const includesOnly = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [
+        docs[0],
+        {
+          slug: 'capabilities/registry',
+          frontmatter: { kind: 'capability', title: 'Registry', path: 'src/features/registry' },
+          body: [
+            '## Definition',
+            '',
+            'Announce the registry inventory to a caller.',
+            '',
+            '## Includes',
+            '',
+            '- Tool registration and the inventory contract.',
+            '',
+            '## Excludes',
+            '',
+            '- Structural code questions, which belong to the tools that own them.',
+            '',
+          ].join('\n'),
+        },
+      ],
+      task: 'Add a registry tool to the inventory contract.',
+    });
+    assert.equal(includesOnly.focus.capability?.slug, 'capabilities/registry');
+    assert.equal(includesOnly.focus.capability.matchedTerms.includes('tool'), false);
+  });
+
   it('counts a task word and its inflected form once', () => {
     // "lists" contributes both `lists` and `list`; scoring them separately let
     // one repeated noun in an Includes bullet tie a capability whose own name

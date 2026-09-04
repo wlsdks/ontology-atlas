@@ -279,7 +279,18 @@ function scoreCapabilityClaim(doc, intent) {
     doc.frontmatter?.path || '',
   ].join(' ')));
   const positive = new Set([...definition, ...includes, ...excerpt, ...identity]);
-  const desiredPositive = matchedTermsOnlyIn(intent.desiredTerms, positive, excludes);
+  // An `Excludes` bullet bounds what a capability does with its subject; it
+  // does not withdraw the subject. Capabilities write their own name into
+  // their boundary routinely — "Git write operations" under Git History, "the
+  // tools that own them" under MCP Server — and subtracting that word cancelled
+  // the strongest ownership evidence the vault holds, the name a person chose,
+  // leaving the capability below the support bar. Identity survives the
+  // subtraction; Definition, Includes, and excerpt prose stay cancellable, so
+  // an explicit boundary still beats a described one.
+  const cancellablePositive = new Set([...definition, ...includes, ...excerpt]);
+  const desiredPositive = intent.desiredTerms.filter((term) => (
+    identity.has(term) || (cancellablePositive.has(term) && !excludes.has(term))
+  ));
   const desiredExcluded = matchedTermsOnlyIn(intent.desiredTerms, excludes, positive);
   const desiredTermSet = new Set(intent.desiredTerms);
   const distinctNonGoalTerms = intent.nonGoalTerms.filter((term) => !desiredTermSet.has(term));

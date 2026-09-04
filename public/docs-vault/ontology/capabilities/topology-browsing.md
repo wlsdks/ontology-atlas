@@ -17,7 +17,7 @@ The capability to render, pan/zoom, and search the entire vault graph on a custo
 
 ## Includes
 
-- Selecting a node on the map: the compact node datasheet popover a click opens beside the node, and the explicit escalation from that popover to the opt-in full detail panel (`elements/full-detail-a1`). A click never opens full detail by itself.
+- Selecting a node on the map: the compact node datasheet popover shown beside the clicked node, and the explicit escalation from that popover to the opt-in full detail panel (`elements/full-detail-a1`); full detail is never the click default.
 - The INDEX panel, search palette, and map controls that surround the canvas, as the same browsing surface.
 
 ## Evidence
