@@ -2191,6 +2191,53 @@ describe('답하다 죽은 것과 다 끝난 것은 다른 말이다', () => {
     });
   });
 
+  it('names the mode the tool moved this conversation into', async () => {
+    /*
+     * The sentence has to point at something the person can find in the tool itself, so the mode id
+     * travels into the copy verbatim. Without the mode in the interpolation the line reads as a
+     * general warning and the reader has no way to tell which mode to leave.
+     *
+     * `mcpServers` here carries no `OATLAS_WRITE_CONSENT`, which is the real shape for a
+     * config-isolated runtime — so the variant without the server-checkpoint promise is the one
+     * that must render.
+     */
+    render(
+      <AcpChatPanel
+        runtimeId="claude-acp"
+        runtimeLabel="Claude Code"
+        vaultRoot="/vault"
+        mcpServers={[{ name: 'atlas-vault' }]}
+      />,
+    );
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'initialize')).toBe(true));
+    replyTo('initialize', { protocolVersion: 1 });
+    await waitFor(() => expect(bridge.sent.some((m) => m.method === 'session/new')).toBe(true));
+    replyTo('session/new', {
+      sessionId: 's-1',
+      modes: {
+        currentModeId: 'acceptEdits',
+        availableModes: [
+          { id: 'default', name: 'Manual', _meta: { kind: 'standard' } },
+          { id: 'acceptEdits', name: 'Accept edits', _meta: { kind: 'standard' } },
+        ],
+      },
+    });
+
+    await waitFor(() => {
+      const said = [...document.querySelectorAll('[data-acp-entry="notice"]')].map((n) =>
+        n.getAttribute('data-notice'),
+      );
+      expect(said, 'the conversation opened without the gate and said nothing').toContain(
+        'mode-moved',
+      );
+    });
+    expect(screen.getByText('notice.modeMoved:{"mode":"acceptEdits"}')).toBeInTheDocument();
+    // The server-checkpoint promise is not made where the checkpoint is switched off.
+    expect(screen.queryByText(/notice\.modeMovedServerGate/)).toBeNull();
+    // And `gate-off` keeps its own job rather than being borrowed for this.
+    expect(screen.queryByText('notice.gateOff')).toBeNull();
+  });
+
   it('차례가 안 도는 중에 죽으면 그 말은 안 한다 — 없는 사건을 지어내지 않는다', async () => {
     await bootSession();
     bridge.exit?.(0);

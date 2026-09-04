@@ -31,6 +31,8 @@ const bridge = vi.hoisted(() => ({
   exits: new Map<string, () => void>(),
   /** Reproduces a failure to apply the session-mode permission gate. */
   failSetMode: false,
+  /** The `modes` block `session/new` answers with. Null means the adapter advertised none. */
+  sessionModes: null as unknown,
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
@@ -68,7 +70,7 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
     }
     const result =
       message.method === 'session/new' || message.method === 'session/load'
-        ? { sessionId: 's-1' }
+        ? { sessionId: 's-1', ...(bridge.sessionModes ? { modes: bridge.sessionModes } : {}) }
         : { protocolVersion: 1 };
     queueMicrotask(() =>
       bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: message.id, result })),
@@ -110,6 +112,7 @@ afterEach(() => {
   bridge.notice = null;
   bridge.exits.clear();
   bridge.failSetMode = false;
+  bridge.sessionModes = null;
   bridge.stopped = [];
   bridge.sent = [];
 });
@@ -619,6 +622,243 @@ describe('권한 카드 — 겹친 요청도 하나씩, 둘 다 답을 받는다
     await waitFor(() =>
       expect(bridge.sent.some((m) => m.id === 102 && 'result' in m)).toBe(true),
     );
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
+/**
+ * **The adapter can move the session on its own, and the screen has to follow it.**
+ *
+ * Read from `@agentclientprotocol/claude-agent-acp@0.74.0` `dist/session-mode.js` on 2026-09-05:
+ * `AUTO_MODE_FALLBACK = "acceptEdits"`. Selecting `auto` on a model without `supportsAutoMode`, or
+ * switching to such a model afterwards, silently moves the session to `acceptEdits` and announces it
+ * with `{ sessionUpdate: "current_mode_update", currentModeId }` — nothing else.
+ *
+ * The dispatcher ignored that notification. So the session could land in a mode this repository
+ * measured to remove the permission gate while the dropdown still read whatever was picked, and
+ * nothing on screen said the promise had stopped being kept. `gate-off` is the sentence that already
+ * exists for exactly this fact; it is reused rather than invented.
+ */
+describe('the adapter moves the session itself', () => {
+  const CLAUDE_MODES = {
+    currentModeId: 'default',
+    availableModes: [
+      { id: 'default', name: 'Manual', _meta: { kind: 'standard' } },
+      { id: 'plan', name: 'Plan', _meta: { kind: 'plan' } },
+      { id: 'auto', name: 'Auto', _meta: { kind: 'auto_review' } },
+    ],
+  };
+
+  async function started() {
+    bridge.sessionModes = CLAUDE_MODES;
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const first = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    return hook;
+  }
+
+  function moveTo(currentModeId: string) {
+    act(() => {
+      bridge.listener?.(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: { sessionId: 's-1', update: { sessionUpdate: 'current_mode_update', currentModeId } },
+        }),
+      );
+    });
+  }
+
+  it('follows a clamp into a gate-removing mode and stops claiming the gate stands', async () => {
+    const { result } = await started();
+    expect(result.current.choices.currentModeId).toBe('default');
+    // `auto` never reaches the list in the first place.
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
+
+    moveTo('acceptEdits');
+
+    await waitFor(() => expect(result.current.choices.currentModeId).toBe('acceptEdits'));
+    // Following the session is not the same as offering the mode back: it stays unselectable.
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
+    /*
+     * ⚠️ Not the `gate-off` sentence. That one says *"the tool follows the settings you gave it
+     * directly"* — on this path the person gave no such setting, the adapter moved the session — and
+     * it speaks only of files outside the folder, while `acceptEdits` accepts edits **inside** it.
+     * Reusing it here would have been wrong in both halves (council, 2026-09-05).
+     */
+    const moved = result.current.events.find((e) => e.kind === 'notice');
+    expect(moved, 'the screen still claims a gate it no longer has').toMatchObject({
+      text: 'mode-moved',
+      mode: 'acceptEdits',
+      // Claude's isolated configuration owns the checkpoint, so no server gate is passed and none
+      // is claimed. The sentence and the wiring say the same thing or neither is worth having.
+      serverGate: false,
+    });
+    expect(result.current.diagnostics.join(' ')).toContain('acceptEdits');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('claims the Atlas server checkpoint only when it is actually passed', async () => {
+    /*
+     * The reassurance is read back from the env that produces it, never guessed from the runtime
+     * name: `vaultMcpServers` sets `OATLAS_WRITE_CONSENT=on` only where the runtime's own
+     * configuration does **not** already ask. Codex is that case, and codex-acp 1.9.0 gave the clamp
+     * a real shape — its `agent` mode carries `_meta.kind: "auto_review"`.
+     */
+    bridge.sessionModes = {
+      currentModeId: 'read-only',
+      availableModes: [
+        { id: 'read-only', name: 'Ask for approval', _meta: { kind: 'standard' } },
+        { id: 'agent', name: 'Approve for me', _meta: { kind: 'auto_review' } },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'codex-acp',
+        vaultRoot: '/vault',
+        mcpServers: [
+          {
+            name: 'atlas-vault',
+            command: 'node',
+            args: [],
+            env: [{ name: 'OATLAS_WRITE_CONSENT', value: 'on' }],
+          },
+        ],
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    moveTo('agent');
+
+    await waitFor(() => expect(result.current.choices.currentModeId).toBe('agent'));
+    expect(result.current.events.find((e) => e.kind === 'notice')).toMatchObject({
+      text: 'mode-moved',
+      mode: 'agent',
+      serverGate: true,
+    });
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('follows a move into an offered mode without crying gate-off', async () => {
+    const { result } = await started();
+
+    moveTo('plan');
+
+    await waitFor(() => expect(result.current.choices.currentModeId).toBe('plan'));
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('ignores a notification carrying no mode id', async () => {
+    const { result } = await started();
+
+    moveTo('');
+
+    expect(result.current.choices.currentModeId).toBe('default');
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});
+
+/**
+ * **A session can *begin* in a gate-removing mode, and nothing was judging that.**
+ *
+ * The clamp path above re-runs the safety verdict, but the start path did not: whatever
+ * `session/new` or `session/load` reported as `currentModeId` went straight into the state. Only
+ * `GATED_SESSION_MODE` was consulted, and that names `codex-acp` alone — so a claude session that
+ * opened on `acceptEdits` (a resumed conversation is the obvious way: `session/load` reports the
+ * mode the conversation was left in) set the value with no verdict, raised no notice, and left the
+ * Select rendering its placeholder because the mode is not on the offered list. The screen went
+ * quiet on exactly the value that decides whether a person is asked.
+ *
+ * Beginning in a mode and being moved into it are the same fact about the same session, so they get
+ * the same treatment: state it, never offer it back, and say `gate-off`.
+ */
+describe('a session that begins in a mode the filter hides', () => {
+  const AVAILABLE = [
+    { id: 'default', name: 'Manual', _meta: { kind: 'standard' } },
+    { id: 'plan', name: 'Plan', _meta: { kind: 'plan' } },
+    { id: 'auto', name: 'Auto', _meta: { kind: 'auto_review' } },
+  ];
+
+  async function startedWith(modes: unknown) {
+    bridge.sessionModes = modes;
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const first = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    return hook;
+  }
+
+  it('states an opening gate-removing mode and stops claiming the gate stands', async () => {
+    const { result } = await startedWith({ currentModeId: 'acceptEdits', availableModes: AVAILABLE });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.choices.currentModeId).toBe('acceptEdits');
+    // Stating where the session is never means handing the mode back as a choice.
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
+    expect(
+      result.current.events.find((e) => e.kind === 'notice'),
+      'the conversation opened with no gate and said nothing',
+    ).toMatchObject({ text: 'mode-moved', mode: 'acceptEdits' });
+    expect(result.current.diagnostics.join(' ')).toContain('mode-initial:acceptEdits');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('shows an opening mode nobody advertised, marked unchecked', async () => {
+    const { result } = await startedWith({
+      currentModeId: 'brand-new',
+      availableModes: [AVAILABLE[0], AVAILABLE[1]],
+    });
+
+    expect(result.current.choices.currentModeId).toBe('brand-new');
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan', 'brand-new']);
+    expect(result.current.choices.unverifiedModeIds).toContain('brand-new');
+    // Unmeasured is not the same as measured dangerous — no alarm is raised for it.
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('says nothing when the session opens on a mode that still asks', async () => {
+    const { result } = await startedWith({ currentModeId: 'default', availableModes: AVAILABLE });
+
+    expect(result.current.choices.currentModeId).toBe('default');
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
 
     await act(async () => {
       await result.current.stop();

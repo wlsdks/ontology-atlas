@@ -84,6 +84,28 @@ export function vaultAlreadyRegisters(
 }
 
 /**
+ * Is the **server-side** write checkpoint on for this session?
+ *
+ * Derived from the same value that produces it, never from the runtime name: `vaultMcpServers`
+ * writes `OATLAS_WRITE_CONSENT=on` only for a runtime whose own configuration does not already ask.
+ * The screen's reassurance that "changes through Atlas tools still stop at the server" is true only
+ * while that env is actually being passed, so it is read back rather than assumed — a sentence the
+ * machinery does not keep is the failure this repository keeps catching.
+ */
+export function vaultWriteConsentOn(servers: readonly unknown[] | null | undefined): boolean {
+  if (!Array.isArray(servers)) return false;
+  return servers.some((server) => {
+    const env = (server as { env?: unknown } | null)?.env;
+    if (!Array.isArray(env)) return false;
+    return env.some(
+      (entry) =>
+        (entry as { name?: unknown } | null)?.name === 'OATLAS_WRITE_CONSENT' &&
+        (entry as { value?: unknown }).value === 'on',
+    );
+  });
+}
+
+/**
  * The one MCP server that reads this vault. **An empty array** when there is no known way to launch
  * it — passing a path that does not exist gives a session that starts while its tools are quietly absent.
  *

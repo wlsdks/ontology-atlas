@@ -15,6 +15,14 @@
  * preserved absence, one-time approval wrote once, and the next write asked again. We set the mode
  * both at process start and here before the conversation becomes usable.
  *
+ * ⚠️ **This named 1.8.0 alone until 2026-09-05, and that read like one bad release.** 1.9.0 ships
+ * the same shape: `AgentMode.ReadOnly` keeps the id `read-only` and the name "Ask for approval"
+ * while its `sandboxPolicy` is `workspaceWrite`. The id is the only part that held still. The pin
+ * is retained on the reviewed 1.6.2, and `src-tauri/src/acp.rs` carries the same note beside the
+ * config it writes — including the fact that the pinned adapter depends on `@openai/codex`
+ * `^0.148.0`, so the CLI an app-opened session actually runs is 0.148, not the 0.153 named in the
+ * `approval_policy` history there.
+ *
  * The earlier conclusion that this made Codex guarded was overturned by installed-app acceptance
  * on 2026-08-24. A self-registered Atlas `add_relation` produced no `session/request_permission`, no review
  * card, and changed the vault immediately. A mode can be called read-only while an MCP child still

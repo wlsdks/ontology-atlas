@@ -23,8 +23,12 @@
  * | `bypassPermissions` | Bypass Permissions | Bypass all permission checks |
  * | `read-only` | Read-only | (codex) |
  *
- * The last two never reach the screen at all — they let things through without asking, so
- * `mode-safety.ts` filters them out.
+ * `acceptEdits` and `bypassPermissions` never reach the screen at all — they let things through
+ * without asking, so `mode-safety.ts` filters them out. **`auto` joined them on 2026-09-05**: read
+ * from `claude-agent-acp` 0.74.0, it is advertised to every session and its approvals never arrive
+ * as an ACP permission request. Its words are kept here rather than deleted because a person can
+ * still be resuming an older adapter, and because a name that is only sometimes translated is worse
+ * than one always translated — the filter, not this table, decides what is offered.
  *
  * ## The rule: translate only what is known
  *

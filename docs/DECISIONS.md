@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — A session mode is judged by the class the adapter states, not only its name, and a moved session is announced
+
+**Why**: claude-agent-acp 0.71+ advertises `auto` ("Claude handles permission decisions", `_meta.kind: auto_review`) to every session and the app pins 0.74.0; `mode-safety.ts` judged modes by id alone, so Auto sat in the shipped dropdown as a selectable row, while a silent adapter clamp (`auto` to `acceptEdits`, `current_mode_update`) was dropped and the screen kept the old mode.
+**Prior**: 2026-08-17 (53) "does it let things through without asking" stands as the criterion; its stance that an unmeasured mode is shown and labelled, never hidden, is narrowed for modes whose adapter-declared kind says they do not ask. 2026-09-03 and 2026-09-05 codex records stand.
+**Decision**: `auto_review` and `full_access` kinds are gate-removing regardless of id; the kind outranks a measured-safe id; an unmeasured kind leaves a measured id unverified; `auto` is refused by id too. The app follows `current_mode_update` and the mode a session opens in, states a gate-removing move with its own notice and never re-offers the mode; the server-checkpoint sentence appears only when `OATLAS_WRITE_CONSENT` is passed. The contract tests pin the transcribed adapter versions to the registry.
+**Dissent**: po-evidence and po-steward, accepted: the behavioural half is unmeasured on 0.74.0 (source reading plus one confounded 2026-08-16 run), and hiding on vendor metadata is the bar (53) refused to lower; it loses because being wrong costs one convenience mode, the other way the review promise. Both seats asked for the session-start verdict, the vault paragraph, and the version pins; all landed.
+**Falsifier**: an installed session on 0.74.0 where `auto` still raises `session/request_permission` for an ordinary edit returns it to unverified and narrows the kind rule to `full_access`; a resumed session with a blank mode dropdown means the start path fired.
+**Owner**: jinan
+
 ## 2026-09-05 — codex-acp 1.9.0 is reviewed and refused: its read-only mode still writes, so the 1.6.2 pin stays
 
 **Why**: the v1.0.5 release admission refused the tag because upstream `@agentclientprotocol/codex-acp` moved from the reviewed 1.8.0 to 1.9.0 while the app launches 1.6.2; the registry gate demands that a person inspect the new adapter before either advancing or retaining the pin.
