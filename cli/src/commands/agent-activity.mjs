@@ -110,10 +110,12 @@ function buildHeartbeat(parsed) {
 function showActivity({ vaultRoot, activityPath, json }) {
   const stored = readVaultSidecarText(vaultRoot, ACTIVITY_FILENAME);
   if (!stored) {
+    // Nothing recorded yet is the ordinary state before the first heartbeat, not
+    // a failure of the read (audit 2026-09-04). `exists: false` carries the fact.
     const result = baseResult({ vaultRoot, sideEffect: false, exists: false });
     if (json) process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-    else process.stdout.write(`${COLORS.yellow}missing${COLORS.reset} ${ACTIVITY_RELATIVE_PATH}\n`);
-    return 1;
+    else process.stdout.write(`${COLORS.dim}no heartbeat yet${COLORS.reset} ${ACTIVITY_RELATIVE_PATH} does not exist\n`);
+    return 0;
   }
   const raw = stored.text;
   const parsed = parseHeartbeatRaw(raw);

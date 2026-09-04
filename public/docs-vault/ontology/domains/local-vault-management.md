@@ -5,7 +5,7 @@ kind: domain
 title: Local Vault & Data Source Management
 display_ko: 로컬 볼트 및 데이터소스 관리
 display_en: Local Vault & Data Source Management
-capabilities: [capabilities/data-source-mode, capabilities/docs-vault-local, capabilities/project-data-source, capabilities/vault-sample-source]
+capabilities: [capabilities/data-source-mode, capabilities/docs-vault-local, capabilities/project-data-source, capabilities/vault-git-history, capabilities/vault-sample-source]
 elements: [elements/atlas-git-panel, elements/docs-vault-entity, elements/docs-vault-view, elements/docs-vault-widget, elements/git, elements/local-fs-handle, elements/native-vault-filesystem-bridge, elements/private-vault-sidecar-boundary]
 created_by: human
 relation_notes: { elements/native-vault-filesystem-bridge: The native vault filesystem bridge is a direct implementation element of the local vault/data source domain. }

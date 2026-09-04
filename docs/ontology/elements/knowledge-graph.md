@@ -17,3 +17,15 @@ Graph node/edge data structure entity. Evidence of implementation for capabiliti
 - Supporting implementation: `src/entities/knowledge-graph/model/use-edge-type-label.ts#useEdgeTypeLabel`
 - Focused test: `src/entities/knowledge-graph/lib/code-locations.test.ts#includes the node's OWN title when the node itself is a path-titled element`
 - Focused test: `src/entities/knowledge-graph/lib/code-locations.test.ts#dedupes when the same path is reachable via more than one contains edge`
+
+## Includes
+
+- The graph node/edge data model built from vault frontmatter, including edge-type distribution rollups (`buildEdgeTypeRows`) feeding the insights edge-type panel.
+- Locating a node's implementation code path(s) for the map and full-detail surfaces (`code-locations`).
+- Deduplicating and ordering canonical edge types ahead of foreign types for display.
+
+## Excludes
+
+- Rendering the graph on canvas, owned by elements/topology-map-v2.
+- Parsing raw Markdown frontmatter into fields, owned by the shared `parse-frontmatter` library.
+- Ontology class/kind labeling and iconography, owned by elements/ontology-class.

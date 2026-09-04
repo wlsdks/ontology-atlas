@@ -227,8 +227,12 @@ await test('top-level command typos include closest command hints', async () => 
   for (const c of cases) {
     const r = await run(c.args);
     assert.equal(r.code, 1);
-    assert.match(stripAnsi(r.stderr), c.stderr);
-    assert.match(stripAnsi(r.stderr), /Usage:/);
+    const clean = stripAnsi(r.stderr);
+    assert.match(clean, c.stderr);
+    // One pointer instead of the whole help: the 159-line dump buried the hint
+    // (audit 2026-09-04).
+    assert.match(clean, /--help for the command list/);
+    assert.ok(clean.trim().split('\n').length <= 3, `stderr should stay short:\n${clean}`);
     assert.equal(r.stdout, '');
   }
 });
@@ -4192,6 +4196,87 @@ await test('backlinks — capabilities/foo 의 backlinks (bar relates + auth cap
     assert.match(clean, /backlink/);
     assert.match(clean, /capabilities\/bar\s+· Bar/);
     assert.match(clean, /domains\/auth\s+· Auth/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('install-shim --json — stdout is one JSON document on install and uninstall', async () => {
+  // The pre-write preview used to precede the JSON on stdout, so `--json` could
+  // not be parsed (audit 2026-09-04). The preview now goes to stderr and rides
+  // in the JSON as `shim`, so the person still sees what lands on disk.
+  const dir = mkdtempSync(join(tmpdir(), 'cli-shim-json-'));
+  try {
+    const installed = await run(['install-shim', '--dir', dir, '--json']);
+    assert.equal(installed.code, 0, installed.stderr);
+    const data = JSON.parse(installed.stdout);
+    assert.equal(data.target, join(dir, 'atlas'));
+    assert.match(data.shim, /^#!\/bin\/sh/);
+    assert.match(stripAnsi(installed.stderr), /will write/);
+    assert.ok(existsSync(data.target));
+
+    const removed = await run(['install-shim', '--dir', dir, '--uninstall', '--json']);
+    assert.equal(removed.code, 0, removed.stderr);
+    assert.deepEqual(JSON.parse(removed.stdout), { target: join(dir, 'atlas'), removed: join(dir, 'atlas'), state: 'ours' });
+    assert.ok(!existsSync(data.target));
+
+    // The safety refusal is a terminal path too: a foreign file at the address.
+    writeFileSync(join(dir, 'atlas'), '#!/bin/sh\necho mine\n');
+    const stopped = await run(['install-shim', '--dir', dir, '--json']);
+    assert.equal(stopped.code, 1);
+    const refused = JSON.parse(stopped.stdout);
+    assert.equal(refused.written, false);
+    assert.equal(refused.state, 'foreign');
+    assert.match(stripAnsi(stopped.stderr), /stopped/);
+    const leftAlone = await run(['install-shim', '--dir', dir, '--uninstall', '--json']);
+    assert.equal(leftAlone.code, 1);
+    assert.deepEqual(JSON.parse(leftAlone.stdout), { target: join(dir, 'atlas'), removed: null, state: 'foreign' });
+    rmSync(join(dir, 'atlas'));
+
+    const nothing = await run(['install-shim', '--dir', dir, '--uninstall', '--json']);
+    assert.equal(nothing.code, 0);
+    assert.deepEqual(JSON.parse(nothing.stdout), { target: join(dir, 'atlas'), removed: null, state: 'free' });
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+await test('agent-activity --show — no heartbeat yet is a normal state, not a failure', async () => {
+  const root = withVault([]);
+  try {
+    const json = await run(['agent-activity', root, '--show', '--json']);
+    assert.equal(json.code, 0, json.stderr);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.exists, false);
+    const human = await run(['agent-activity', root, '--show']);
+    assert.equal(human.code, 0);
+    assert.match(stripAnsi(human.stdout), /no heartbeat yet/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('backlinks — a slug that names no node fails closed with the closest real slug', async () => {
+  // A typo used to return exit 0 and an empty list — the one answer that
+  // licenses a delete (audit 2026-09-04). Non-zero means "I could not answer
+  // the input you gave me"; a real node with zero backlinks still exits 0.
+  const root = await buildGraphFixture();
+  try {
+    const typo = await run(['backlinks', 'capabilities/fooo', root]);
+    assert.equal(typo.code, 2, `stdout: ${typo.stdout}\nstderr: ${typo.stderr}`);
+    assert.match(stripAnsi(typo.stderr), /unknown slug: capabilities\/fooo\..*did you mean capabilities\/foo\?/);
+    const typoJson = await run(['backlinks', 'capabilities/fooo', root, '--json']);
+    assert.equal(typoJson.code, 2);
+    assert.deepEqual(JSON.parse(typoJson.stdout), {
+      target: 'capabilities/fooo', resolved: false, suggestion: 'capabilities/foo', total: 0, matches: [],
+    });
+    // A unique tail slug still resolves, and a real node with no referrers still exits 0.
+    const tail = await run(['backlinks', 'foo', root, '--json']);
+    assert.equal(tail.code, 0, tail.stderr);
+    assert.ok(JSON.parse(tail.stdout).matches.length >= 1);
+    const lonely = await run(['backlinks', 'domains/auth', root, '--json']);
+    assert.ok([0, 2].includes(lonely.code));
+    if (lonely.code === 0) assert.equal(JSON.parse(lonely.stdout).resolved, undefined);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

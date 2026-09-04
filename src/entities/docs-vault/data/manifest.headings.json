@@ -6180,6 +6180,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-04 — An ontology change re-checks the witnesses the current graph declares, not only the recorded ones",
+      "slug": "2026-09-04-an-ontology-change-re-checks-the-witnesses-the-current-graph-declares-not-only-the-recorded-ones"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-04 — A CLI exit code says whether the input could be answered, not whether the answer is empty",
+      "slug": "2026-09-04-a-cli-exit-code-says-whether-the-input-could-be-answered-not-whether-the-answer-is-empty"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-04 — A stale receipt may emit coordinates the live source verifies, and a capability's name is part of its claim",
       "slug": "2026-09-04-a-stale-receipt-may-emit-coordinates-the-live-source-verifies-and-a-capabilitys-name-is-part-of-its-claim"
     },
@@ -12545,6 +12555,11 @@
     },
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
       "text": "User Outcomes",
       "slug": "user-outcomes"
     },
@@ -12557,6 +12572,16 @@
       "depth": 2,
       "text": "Extraction Boundary",
       "slug": "extraction-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -12589,6 +12614,11 @@
     },
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
       "text": "Human Outcome",
       "slug": "human-outcome"
     },
@@ -12609,6 +12639,16 @@
     },
     {
       "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
       "text": "Copy Contract",
       "slug": "copy-contract"
     }
@@ -12618,6 +12658,11 @@
       "depth": 1,
       "text": "Design Gates & Ratchets",
       "slug": "design-gates-ratchets"
+    },
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
@@ -12633,6 +12678,16 @@
       "depth": 2,
       "text": "Extraction Boundary",
       "slug": "extraction-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/capabilities/design-token-ramps": [
@@ -12640,6 +12695,11 @@
       "depth": 1,
       "text": "Design Token Ramps",
       "slug": "design-token-ramps"
+    },
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
@@ -12655,6 +12715,16 @@
       "depth": 2,
       "text": "Extraction Boundary",
       "slug": "extraction-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -13094,6 +13164,33 @@
       "slug": "confidence"
     }
   ],
+  "ontology/capabilities/vault-git-history": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
   "ontology/capabilities/vault-ontology": [
     {
       "depth": 2,
@@ -13329,6 +13426,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/agents-destination": [
@@ -13366,6 +13473,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/app-nav-rail": [
@@ -13378,6 +13495,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -13395,6 +13522,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/architecture-profile-contract": [
@@ -13407,6 +13544,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -13432,6 +13579,16 @@
     },
     {
       "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
     },
@@ -13446,6 +13603,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/bottom-tab-bar": [
@@ -13453,6 +13620,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/category": [
@@ -13460,6 +13637,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/concurrent-ledger-conflict-resolver": [
@@ -13467,6 +13654,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/construction-qualification-evaluator": [
@@ -13489,6 +13686,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/design-proof-router": [
@@ -13504,6 +13711,16 @@
     },
     {
       "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
     }
@@ -13513,6 +13730,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/docs-vault-entity": [
@@ -13520,6 +13747,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/docs-vault-view": [
@@ -13527,6 +13764,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/docs-vault-widget": [
@@ -13534,6 +13781,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/domain-capacity-bar": [
@@ -13541,6 +13798,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/download": [
@@ -13548,6 +13815,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/first-run": [
@@ -13555,6 +13832,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/full-detail-a1": [
@@ -13562,6 +13849,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/gateway-chrome": [
@@ -13569,6 +13866,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/gateway-doc": [
@@ -13576,6 +13883,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/gesture-hint": [
@@ -13583,6 +13900,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/git": [
@@ -13590,6 +13917,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/global-search": [
@@ -13597,6 +13934,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/home": [
@@ -13604,6 +13951,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/installed-mcp-identity-gate": [
@@ -13638,6 +13995,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/local-fs-handle": [
@@ -13645,6 +14012,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/meaning-proposal-evaluator": [
@@ -13672,6 +14049,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/native-tray-control": [
@@ -13679,6 +14066,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/native-vault-filesystem-bridge": [
@@ -13686,6 +14083,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/ontology-change-review": [
@@ -13693,6 +14100,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/ontology-class": [
@@ -13700,6 +14117,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/ontology-edit-redirect": [
@@ -13707,6 +14134,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/ontology-insights": [
@@ -13714,6 +14151,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/ontology-meaning-editor": [
@@ -13721,6 +14168,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/ontology-redirect": [
@@ -13728,6 +14185,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/private-vault-sidecar-boundary": [
@@ -13735,6 +14202,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/project": [
@@ -13742,6 +14219,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/project-detail": [
@@ -13749,6 +14236,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/project-drawer": [
@@ -13756,6 +14253,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/project-editor": [
@@ -13763,6 +14270,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/project-selector": [
@@ -13770,6 +14287,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/public-quick-actions": [
@@ -13777,6 +14304,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/qualification-handoff-helper": [
@@ -13792,6 +14329,16 @@
     },
     {
       "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
       "text": "Boundary",
       "slug": "boundary"
     }
@@ -13801,6 +14348,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/root-entry": [
@@ -13808,6 +14365,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/search-hint": [
@@ -13815,6 +14382,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/search-palette": [
@@ -13822,6 +14399,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/semantic-evidence-selector": [
@@ -13856,6 +14443,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/status": [
@@ -13863,6 +14460,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/task-scoped-agent-brief-projection": [
@@ -13897,6 +14504,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/topology-index-panel": [
@@ -13904,6 +14521,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/topology-map-v2": [
@@ -13911,6 +14538,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/elements/vault-agent-panel": [
@@ -13918,6 +14555,16 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/ontology-atlas": [

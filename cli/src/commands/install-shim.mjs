@@ -141,7 +141,11 @@ export async function runInstallShim(args) {
 
   if (parsed.uninstall) {
     if (found.state === 'free') {
-      process.stdout.write(`nothing to remove at ${target}\n`);
+      if (parsed.json) {
+        process.stdout.write(JSON.stringify({ target, removed: null, state: 'free' }, null, 2) + '\n');
+      } else {
+        process.stdout.write(`nothing to remove at ${target}\n`);
+      }
       return 0;
     }
     if (found.state !== 'ours') {
@@ -150,24 +154,40 @@ export async function runInstallShim(args) {
         `${COLORS.yellow}left alone${COLORS.reset}  ${target} was not written by this command.\n` +
           `Delete it yourself if you are sure.\n`,
       );
+      if (parsed.json) {
+        process.stdout.write(JSON.stringify({ target, removed: null, state: found.state }, null, 2) + '\n');
+      }
       return 1;
     }
     rmSync(target);
-    process.stdout.write(`removed ${target}\n`);
+    if (parsed.json) {
+      process.stdout.write(JSON.stringify({ target, removed: target, state: 'ours' }, null, 2) + '\n');
+    } else {
+      process.stdout.write(`removed ${target}\n`);
+    }
     return 0;
   }
 
   const entrypoint = cliEntrypoint();
   const body = shimBody(entrypoint);
 
-  // Condition 2: the exact contents, before anything is written.
-  process.stdout.write(`${COLORS.bold}will write${COLORS.reset} ${target}\n\n${body}\n`);
+  // Condition 2: the exact contents, before anything is written. With --json the
+  // preview goes to stderr and the same body rides in the JSON as `shim`, so
+  // stdout stays one parseable document (audit 2026-09-04: the preview made
+  // `--json` unparseable) and the person still sees what lands on disk.
+  const previewStream = parsed.json ? process.stderr : process.stdout;
+  previewStream.write(`${COLORS.bold}will write${COLORS.reset} ${target}\n\n${body}\n`);
 
   if (found.state === 'foreign' && !parsed.force) {
     process.stderr.write(
       `${COLORS.yellow}stopped${COLORS.reset}  ${target} already exists and was not written by this command.\n` +
         `Pass --force to replace it, or --dir to pick another directory.\n`,
     );
+    // The refusal is the path where somebody else's file sits at that address;
+    // a parser must get a document here too, not an empty stdout.
+    if (parsed.json) {
+      process.stdout.write(JSON.stringify({ target, entrypoint, written: false, state: 'foreign', shim: body }, null, 2) + '\n');
+    }
     return 1;
   }
 
@@ -177,7 +197,7 @@ export async function runInstallShim(args) {
 
   const reachable = onPath(dir);
   if (parsed.json) {
-    process.stdout.write(JSON.stringify({ target, entrypoint, onPath: reachable }, null, 2) + '\n');
+    process.stdout.write(JSON.stringify({ target, entrypoint, written: true, state: found.state, onPath: reachable, shim: body }, null, 2) + '\n');
     return 0;
   }
   process.stdout.write(`${COLORS.green}ok${COLORS.reset}    ${target}\n`);

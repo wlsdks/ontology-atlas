@@ -78,6 +78,7 @@ function validProjectSourceLive(value) {
   if (value === undefined) return true;
   return isPlainObject(value)
     && PROJECT_SOURCE_LIVE_STATUSES.has(value.status)
+    && (value.basis === undefined || ['receipt', 'current_graph'].includes(value.basis))
     && (value.sourceRevision === null || hasNonEmptyString(value.sourceRevision))
     && isPlainObject(value.witnessSummary)
     && ['total', 'supported', 'missing'].every((field) => validCount(value.witnessSummary[field]))

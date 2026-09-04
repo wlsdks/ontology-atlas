@@ -16,3 +16,14 @@ A transient pre-write review that renders the exact typed ontology change reques
 - Primary implementation: `src/features/ontology-change-review/ui/OntologyChangeReview.tsx#formatValue`
 - Focused test: `src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx#keeps readable field keys in a 96px key track while retaining emergency wrapping`
 - Focused test: `src/features/ontology-change-review/ui/OntologyChangeReview.test.tsx#wraps values at word boundaries and keeps emergency wrapping for unbroken slugs`
+
+## Includes
+
+- Rendering the transient pre-write review of an exact typed ontology change requested by either the map editor or ACP.
+- Formatting field keys and values with wrapping that keeps long slugs and unbroken tokens readable in a narrow key/value layout.
+
+## Excludes
+
+- Persisting a second approval record: confirmed Markdown frontmatter after write remains the sole source of truth; this component holds no durable state.
+- Deciding whether an ACP write pauses at all, owned by elements/acp-ontology-write-review.
+- The relation-editing form that produces the change being reviewed, owned by elements/ontology-meaning-editor.

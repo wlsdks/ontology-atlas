@@ -238,3 +238,34 @@ test('readProjectSourceView marks a receipt stale when the ontology graph change
   assert.deepEqual(result.topGap, { id: 'ontology_changed' });
   assert.deepEqual(result.nextAction, { id: 'remeasure_source' });
 });
+
+test('readProjectSourceView re-checks the witnesses the current graph declares after an ontology change', () => {
+  const root = vault();
+  const sourceRoot = gitSource();
+  const inspection = inspectProjectSource(sourceRoot);
+  writeState(root, [boundInspection(sourceRoot, inspection)]);
+  // Same source, new graph hash: a capability was added since the receipt.
+  const withCurrent = readProjectSourceView(root, 'music-streaming', 'graph-b', {
+    currentWitnesses: [
+      { id: 'player-entry', nodeSlug: 'capabilities/play', role: 'entrypoint', path: 'src/player.ts' },
+      { id: 'history-entry', nodeSlug: 'capabilities/history', role: 'entrypoint', path: 'src/does-not-exist.ts' },
+    ],
+  });
+  assert.deepEqual(withCurrent.topGap, { id: 'ontology_changed' });
+  assert.equal(withCurrent.currentness, 'stale');
+  assert.equal(withCurrent.live.basis, 'current_graph');
+  assert.equal(withCurrent.live.status, 'witnesses_missing');
+  assert.deepEqual(withCurrent.live.missingPaths, ['src/does-not-exist.ts']);
+  assert.doesNotMatch(JSON.stringify(withCurrent), new RegExp(sourceRoot));
+
+  const supported = readProjectSourceView(root, 'music-streaming', 'graph-b', {
+    currentWitnesses: [{ id: 'player-entry', nodeSlug: 'capabilities/play', role: 'entrypoint', path: './src/player.ts' }],
+  });
+  assert.equal(supported.live.status, 'witnesses_supported');
+  assert.equal(supported.live.witnessSummary.total, 1);
+
+  // Without the current witnesses the recorded set is re-checked and the basis says so.
+  const recorded = readProjectSourceView(root, 'music-streaming', 'graph-b');
+  assert.equal(recorded.live.basis, 'receipt');
+  assert.equal(recorded.live.status, 'witnesses_supported');
+});

@@ -17,3 +17,14 @@ Project drawer panel widget.
 - Supporting implementation: `src/widgets/project-drawer/lib/detail-preview.ts#getProjectDetailPreview`
 - Focused test: `src/widgets/project-drawer/lib/detail-preview.test.ts#returns empty preview for blank detail`
 - Focused test: `src/widgets/project-drawer/lib/detail-preview.test.ts#keeps fenced code block lines together`
+
+## Includes
+
+- The slide-in project drawer: metadata grid, integrity issues, relationship kind, related docs, and impact insights for one project.
+- Rendering the preview of a project's detail text, including fenced-code-block-aware truncation.
+
+## Excludes
+
+- The full `/project/[slug]` page, owned by elements/project-detail.
+- Project creation/editing forms, owned by elements/project-editor.
+- Computing project integrity issues themselves, owned by elements/project (entity).

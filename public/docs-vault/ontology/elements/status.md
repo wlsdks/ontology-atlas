@@ -15,3 +15,14 @@ Node status value entity. Implementation evidence for capabilities/taxonomy.
 
 - Primary implementation: `src/entities/status/model/defaults.ts#DEFAULT_STATUSES`
 - Supporting implementation: `src/entities/status/model/types.ts#Status`
+
+## Includes
+
+- The `Status` type and the eight seeded lifecycle statuses (idea through deprecated) with stable IDs and dot colours.
+- Keeping status IDs byte-compatible with the earlier literal union so stored project records keep resolving.
+
+## Excludes
+
+- Category/cluster taxonomy, a separate entity: elements/category.
+- Rendering the status dot or label in any specific surface: those are consumers of this data, not part of it.
+- Project integrity checks that reference status IDs, owned by elements/project.

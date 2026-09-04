@@ -19,3 +19,15 @@ The gateway's localized 44-second demo starts from the already-open public examp
 - Supporting implementation: `src/views/download/ui/DemoStage.tsx#DemoStage`
 - Focused test: `src/views/download/ui/DownloadPage.test.tsx#makes the browser map the strongest action while nothing is published`
 - Focused test: `src/views/download/ui/DownloadPage.test.tsx#keeps operator-only release-pipeline status off the public page`
+
+## Includes
+
+- The `/download` marketing page: platform CTAs (macOS/Windows x64 beta), the typing-echo hero graph animation, and the scroll-revealed feature sections.
+- The localized capability demo stage (44s EN/KO tour and separate 23s Korean X asset) driven from a read-only public example vault.
+- Keeping operator-only release-pipeline status off the public page and making the browser map the strongest action while nothing is published.
+
+## Excludes
+
+- The gateway chrome (nav, mascot mark) shared across root/download/guide/changelog, owned by elements/gateway-chrome.
+- The actual release/build pipeline that produces the downloadable binaries; this page only reads and displays their published state.
+- The installed-app first-run flow after download, owned by elements/first-run.
