@@ -33,6 +33,39 @@ export const ROUTE_VIEW_TRANSITION_SETTLE_TIMEOUT_MS = 900;
 
 type StartViewTransition = (update: () => Promise<void> | void) => unknown;
 
+/**
+ * The object `startViewTransition` hands back. Every field is optional because
+ * this module also accepts the fakes the tests pass and older implementations
+ * that return nothing.
+ */
+interface ViewTransitionHandle {
+  ready?: Promise<unknown>;
+  finished?: Promise<unknown>;
+  updateCallbackDone?: Promise<unknown>;
+}
+
+/**
+ * **A skipped transition is not an error here** (installed app, 2026-09-04).
+ *
+ * When the document is hidden the browser refuses to run the transition and
+ * *rejects* `ready` (and, depending on when it is skipped, `finished` and
+ * `updateCallbackDone`). Nothing awaited them, so the WebView logged
+ * `webview unhandledrejection: View transition was skipped because document
+ * visibility state is hidden.` on an ordinary background navigation.
+ *
+ * The navigation itself already happened inside the update callback, so there
+ * is nothing to recover: the only correct response is to stop the rejection
+ * from escaping. Handlers are attached to whichever promises the handle
+ * actually carries.
+ */
+function silenceSkippedTransition(handle: unknown): void {
+  if (!handle || typeof handle !== 'object') return;
+  const { ready, finished, updateCallbackDone } = handle as ViewTransitionHandle;
+  for (const promise of [ready, finished, updateCallbackDone]) {
+    if (typeof promise?.catch === 'function') promise.catch(() => undefined);
+  }
+}
+
 let pendingSettle: (() => void) | null = null;
 
 function viewTransitionApi(): StartViewTransition | null {
@@ -59,7 +92,7 @@ export function navigateWithViewTransition(
   // A transition already waiting is released first — two clicks in a row must
   // not chain two held snapshots.
   pendingSettle?.();
-  start(
+  const handle = start(
     () =>
       new Promise<void>((resolve) => {
         let done = false;
@@ -74,6 +107,7 @@ export function navigateWithViewTransition(
         navigate();
       }),
   );
+  silenceSkippedTransition(handle);
   return "transition";
 }
 
