@@ -15,6 +15,7 @@ Full node detail opt-in panel widget.
 
 - Primary implementation: `src/widgets/full-detail-a1/ui/FullDetailA1.tsx#FullDetailA1Props`
 - Supporting implementation: `src/widgets/full-detail-a1/lib/full-detail-groups.ts#buildFullDetailGroups`
+- Focused test: `src/widgets/full-detail-a1/ui/FullDetailA1.test.tsx#renders a heading + row for each code path when codeLocations is non-empty`
 
 ## Includes
 

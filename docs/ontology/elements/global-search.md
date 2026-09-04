@@ -15,6 +15,7 @@ Global search widget. Evidence of implementation for capabilities/topology-brows
 
 - Primary implementation: `src/widgets/global-search/ui/GlobalSearch.tsx#GlobalSearch`
 - Supporting implementation: `src/widgets/global-search/lib/use-global-search-hotkey.ts#useGlobalSearchHotkey`
+- Focused test: `src/widgets/global-search/ui/GlobalSearch.test.tsx#names the single loaded project beside the indexed count`
 
 ## Includes
 

@@ -15,6 +15,7 @@ Search palette (Command-K style) widget. Implementation evidence for capabilitie
 
 - Primary implementation: `src/widgets/search-palette/ui/SearchPalette.tsx#SearchPalette`
 - Supporting implementation: `src/widgets/search-palette/model/fuzzy-search.ts#searchProjects`
+- Focused test: `src/widgets/search-palette/ui/SearchPalette.test.tsx#열리면 role=dialog 로 렌더된다`
 
 ## Includes
 

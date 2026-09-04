@@ -60,6 +60,7 @@ high (0.9): The route, migration, and gate are aligned with the contract and end
 ## Evidence
 
 - Primary implementation: `src/views/agents/ui/AgentsPage.tsx#AgentsPage`
+- Focused test: `tests/e2e/retired-skills-route.spec.ts#the surviving Agents destination still owns its route`
 
 ## Includes
 
