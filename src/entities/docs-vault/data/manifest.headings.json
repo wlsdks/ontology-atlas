@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-04 — A CLI exit code says whether the input could be answered, not whether the answer is empty",
+      "slug": "2026-09-04-a-cli-exit-code-says-whether-the-input-could-be-answered-not-whether-the-answer-is-empty"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-04 — A stale receipt may emit coordinates the live source verifies, and a capability's name is part of its claim",
       "slug": "2026-09-04-a-stale-receipt-may-emit-coordinates-the-live-source-verifies-and-a-capabilitys-name-is-part-of-its-claim"
     },
