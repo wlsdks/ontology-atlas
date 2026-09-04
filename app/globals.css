@@ -3723,6 +3723,10 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     .topology-chrome-out {
       animation-name: overlayFadeOut !important;
       animation-duration: calc(var(--topology-motion-panel-duration) * 0.67) !important;
+      /* The shorthand above lists the movement first, so the surviving fade would inherit
+         the exit curve; brightness keeps the settling family here as it does with motion on
+         (measured 2026-09-05 on the real recording, r5-motion-verify-C). */
+      animation-timing-function: var(--motion-ease) !important;
     }
 
     /* Select list — removes only the shaking axis (scaleY) and restores brightness time.
