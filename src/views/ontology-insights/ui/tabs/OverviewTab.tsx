@@ -149,7 +149,7 @@ export function OverviewTab({
           {domainRows.length === 0 ? (
             /*
              * **The "composition" tab had zero pressable controls** (census 2026-08-12 — the only
-             * one of the five tabs). This empty state in particular is the most common first
+             * tab of the board's then-five with none). This empty state in particular is the most common first
              * screen: a freshly created vault has no domains. Saying only "there are none" without
              * offering a way to create one is what this repository named "no next step". It uses
              * the same grammar as the boundaries tab's empty state

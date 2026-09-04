@@ -9298,6 +9298,11 @@
     },
     {
       "depth": 3,
+      "text": "Tab strip tokens (`--tabbar-*`, 2026-09-05)",
+      "slug": "tab-strip-tokens---tabbar--2026-09-05"
+    },
+    {
+      "depth": 3,
       "text": "App-embedded terminal dock tokens — Removed (2026-07-26)",
       "slug": "app-embedded-terminal-dock-tokens-removed-2026-07-26"
     },

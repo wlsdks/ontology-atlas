@@ -79,7 +79,7 @@ type PendingFocus = { kind: "row"; id: string } | { kind: "heading" } | { kind: 
  * because "2, one of which you are not looking at" is one fact and reading it in two
  * places is reading it twice. Dismissing moves focus to the next row, then the previous,
  * then the heading — a control that deletes itself and leaves focus on `<body>` drops a
- * keyboard user back at the top of the document, which on this page is six tabs away.
+ * keyboard user back at the top of the document, which on this page is seven tabs away.
  */
 export function UnmatchedTab({
   board,
@@ -258,7 +258,13 @@ function UnmatchedRowItem({
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <div className="flex min-w-0 items-baseline gap-2">
-          <span className="min-w-0 truncate font-mono text-body-lg text-[color:var(--color-text-primary)]">
+          {/*
+            ⚠️ **Below `sm` the name wraps rather than truncating.** A slug is the row's whole
+            identity, and at 390 `capabilities/holds-position` truncates to something that
+            names nothing — a fix nobody can act on. Above `sm` there is room, so truncation
+            keeps the count and the hide control on one line.
+          */}
+          <span className="min-w-0 font-mono text-body-lg text-[color:var(--color-text-primary)] [overflow-wrap:anywhere] sm:truncate sm:[overflow-wrap:normal]">
             {row.name}
           </span>
           {row.count > 1 ? (

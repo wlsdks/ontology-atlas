@@ -71,7 +71,7 @@ const AUTH_ROW = {
 
 /**
  * **The "composition" tab's domain capacity — the empty and filled states never state each other's
- * content** (census 2026-08-12: this was the only one of the five tabs with zero pressable
+ * content** (census 2026-08-12: of the board's then-five tabs this was the only one with zero pressable
  * controls, and its empty state is the most common first screen — a freshly created vault has no
  * domains).
  */
