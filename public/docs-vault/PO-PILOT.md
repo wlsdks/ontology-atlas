@@ -83,6 +83,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 20 | 2026-09-03 | Every drawn map node reserves its disc so a passive label never paints across a neighbouring shape | two-way | solo | explain | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 21 | 2026-09-04 | A stale receipt may emit coordinates the live source verifies, and a capability's own name is part of its claim | one-way | review | orient | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 | 22 | 2026-09-04 | A CLI exit code says whether the input could be answered, not whether the answer is empty | one-way | review | handoff | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 23 | 2026-09-04 | An ontology change re-checks the witnesses the current graph declares, not only the recorded ones | one-way | review | orient | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | unchanged | none |
 
 ## Outcome updates
 
@@ -122,3 +123,4 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 20 | 2026-09-03 | pending | yes | no | pending |
 | 21 | 2026-09-04 | pending | yes | no | pending |
 | 22 | 2026-09-04 | pending | yes | no | pending |
+| 23 | 2026-09-04 | pending | yes | no | pending |

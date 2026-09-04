@@ -379,6 +379,7 @@ function compactSourceCurrentness(projectSource) {
       ? {
           live: {
             status: live.status,
+            ...(live.basis ? { basis: live.basis } : {}),
             sourceRevision: typeof live.sourceRevision === 'string' ? live.sourceRevision.slice(0, 12) : null,
             witnessSummary: live.witnessSummary,
             ...(Array.isArray(live.missingPaths) && live.missingPaths.length > 0

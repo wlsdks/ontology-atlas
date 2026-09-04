@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-04 — An ontology change re-checks the witnesses the current graph declares, not only the recorded ones
+
+**Why**: the live witness check landed for `source_changed` in the morning; the first vault edit after it (a new capability) made the receipt `ontology_changed` instead, and task navigation was blocked again until someone remeasured, reopening "Primary: unknown" for every vault edit.
+**Prior**: 2026-09-04 "A stale receipt may emit coordinates the live source verifies" stands and is extended; its receipt-never-restamped and `current`-only-for-a-measured-receipt rules are unchanged.
+**Decision**: for `ontology_changed` the view runs the same bounded probe and checks the witnesses the current graph declares (handed in by the brief), reporting `basis: "current_graph"`; without them it re-checks the recorded set and says `basis: "receipt"`. `agent_brief` opens the bound root for coordinate verification in both gaps under the same witnesses-all-supported condition.
+**Dissent**: po-steward's morning note still applies and is accepted: witness existence proves the paths exist, not that recorded meaning is still true, so the `ontology_changed` warning and the remeasure advice stay visible.
+**Falsifier**: a `live_verified` coordinate emitted after an ontology change that does not resolve in the live file, or a current-graph witness set that omits a path the receipt would have flagged as missing.
+**Owner**: jinan
+
 ## 2026-09-04 — A CLI exit code says whether the input could be answered, not whether the answer is empty
 
 **Why**: a second CLI audit found `backlinks <typo>` exiting 0 with an empty list, the one answer that licenses a delete, while `install-shim --json` printed a shell body before its JSON and `agent-activity --show` exited 1 on the ordinary first run with no heartbeat yet, the exact step Atlas's own guidance tells an agent to script.
