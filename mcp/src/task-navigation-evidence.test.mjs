@@ -213,6 +213,85 @@ Everything else.
     assert.equal(result.readPlan.targetCount, 0);
   });
 
+  test('a stale receipt emits targets only when the live probe supports every witness', () => {
+    const root = box();
+    write(root, 'src/a.ts', 'export function exactTarget() {}\n');
+    const docs = [doc('elements/a', `
+## Evidence
+- Primary implementation: \`src/a.ts#exactTarget\`
+## Includes
+One target.
+## Excludes
+Everything else.
+`)];
+    const live = buildTaskNavigationEvidence({
+      docs,
+      sourceRoot: root,
+      sourceStatus: 'review_required',
+      sourceCurrentness: 'stale',
+      sourceLive: { status: 'witnesses_supported', sourceRevision: 'a'.repeat(40) },
+    });
+    assert.equal(live.status, 'partial');
+    assert.equal(live.currentness, 'live_verified');
+    assert.equal(live.receipt, 'stale');
+    assert.equal(live.sourceRevision, 'a'.repeat(12));
+    assert.equal(live.primary.symbol, 'exactTarget');
+    assert.equal(live.primary.sourceStatus, 'supported_current');
+
+    const missing = buildTaskNavigationEvidence({
+      docs,
+      sourceRoot: root,
+      sourceStatus: 'review_required',
+      sourceCurrentness: 'stale',
+      sourceLive: { status: 'witnesses_missing', sourceRevision: 'b'.repeat(40) },
+    });
+    assert.equal(missing.status, 'blocked');
+    assert.equal(missing.blockedBy, 'source_not_current');
+    assert.equal(missing.primary, null);
+
+    const noRoot = buildTaskNavigationEvidence({
+      docs,
+      sourceRoot: null,
+      sourceStatus: 'review_required',
+      sourceCurrentness: 'stale',
+      sourceLive: { status: 'witnesses_supported', sourceRevision: 'c'.repeat(40) },
+    });
+    assert.equal(noRoot.status, 'blocked');
+  });
+
+  test('reads one element\'s coordinates per handoff instead of tripping the cap across anchors', () => {
+    const root = box();
+    write(root, 'src/a.ts', 'export function alpha() {}\n');
+    write(root, 'src/b.ts', 'export function beta() {}\n');
+    const result = current(root, [
+      doc('capabilities/cap', '## Definition\n\nA capability.\n'),
+      doc('elements/a', '## Evidence\n- Primary implementation: `src/a.ts#alpha`\n'),
+      doc('elements/b', '## Evidence\n- Primary implementation: `src/b.ts#beta`\n'),
+    ]);
+    assert.equal(result.status, 'partial');
+    assert.equal(result.evidenceElement, 'elements/a');
+    assert.equal(result.primary.symbol, 'alpha');
+    assert.equal(result.readPlan.targetCount, 1);
+  });
+
+  test('a JSX closing tag is not the start of a regex literal', () => {
+    const root = box();
+    write(root, 'src/Card.tsx', [
+      "export function Card({ title }: { title: string }) {",
+      '  return (',
+      '    <section>',
+      '      <h2>{title}</h2>',
+      '    </section>',
+      '  );',
+      '}',
+      '',
+    ].join('\n'));
+    const result = current(root, [doc('elements/card', '## Evidence\n- Primary implementation: `src/Card.tsx#Card`\n')]);
+    assert.equal(result.status, 'partial');
+    assert.equal(result.primary.line, 1);
+    assert.equal(result.primary.endLine, 7);
+  });
+
   test('missing and ambiguous declarations never become exact targets', () => {
     const root = box();
     write(root, 'src/a.ts', [

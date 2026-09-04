@@ -110,18 +110,29 @@ export function parseTaskNavigationEvidenceSource(value) {
 function reviewedCoordinates(docs) {
   const coordinates = [];
   const diagnostics = [];
+  // One element's coordinates per handoff. The brief hands over the selected
+  // capability plus up to three ranked element anchors; once every element
+  // carries its own `Primary implementation`, reading them as one list tripped
+  // the 1/1/3 cardinality cap and blocked every multi-anchor brief (measured
+  // 2026-09-04). The first element in ranked order that records any coordinate
+  // is the navigation source; the rest stay reachable through nextReads.
+  let sourceDoc = null;
   for (const doc of Array.isArray(docs) ? docs : []) {
     if (doc?.frontmatter?.kind !== 'element') continue;
     const section = markdownSection(doc?.body, 'Evidence');
     if (!section) continue;
+    if (sourceDoc && sourceDoc !== doc) continue;
+    let recorded = false;
     for (const line of section.split('\n')) {
       const match = line.match(/^\s*-\s*(Primary implementation|Supporting implementation|Focused test):\s*`([^`]+)`(?:\s+.*)?$/);
       if (!match) continue;
       const role = LABEL_TO_ROLE.get(match[1]);
       const parsed = parseCoordinate(match[2], role, doc);
+      recorded = true;
       if (parsed.coordinate) coordinates.push(parsed.coordinate);
       else diagnostics.push(parsed.diagnostic);
     }
+    if (recorded && !sourceDoc) sourceDoc = doc;
   }
   const unique = [];
   const seen = new Set();
@@ -131,7 +142,7 @@ function reviewedCoordinates(docs) {
     seen.add(key);
     unique.push(coordinate);
   }
-  return { coordinates: unique, diagnostics };
+  return { coordinates: unique, diagnostics, sourceSlug: sourceDoc?.slug ?? null };
 }
 
 function outside(root, target) {
@@ -246,6 +257,12 @@ function javascriptSourcePath(path) {
 function javascriptRegexLiteralStart(line, index) {
   const prefix = line.slice(0, index).trimEnd();
   if (!prefix) return true;
+  // `</div>` is a JSX closing tag, not `<` followed by a regex literal. Read
+  // as a regex it swallowed the rest of the line, left the brace depth odd,
+  // and every React component with an odd number of `/` characters resolved
+  // to `symbol_span_unresolved` (measured 2026-09-04: three dogfood elements
+  // could record no coordinate at all).
+  if (prefix.endsWith('<')) return false;
   if ('([{:;,=!?&|+\-*%^~<>'.includes(prefix.at(-1))) return true;
   if (prefix.endsWith(')')) {
     let depth = 0;
@@ -676,6 +693,11 @@ export function verifyTaskNavigationEvidencePath(sourceRoot, value) {
     : { ok: false, diagnostic: { code: source.code, role: 'path' } };
 }
 
+function shortRevision(value) {
+  const text = typeof value === 'string' ? value : '';
+  return /^[0-9a-f]{40}$/i.test(text) ? text.slice(0, 12) : text.slice(0, 24);
+}
+
 function cardinalityProblem(coordinates) {
   return Object.entries(COORDINATE_LIMITS).some(([role, limit]) => (
     coordinates.filter((coordinate) => coordinate.role === role).length > limit
@@ -683,20 +705,39 @@ function cardinalityProblem(coordinates) {
 }
 
 export function buildTaskNavigationEvidence(input = {}) {
-  if (input.sourceStatus !== 'verified_current' || input.sourceCurrentness !== 'current') {
+  const receiptCurrent = input.sourceStatus === 'verified_current' && input.sourceCurrentness === 'current';
+  // A receipt that is behind the source is not a reason to hide coordinates the
+  // live files still carry: when the same probe that found the change confirms
+  // every recorded witness still resolves, verification runs against those
+  // live files and says so. The receipt itself stays stale; the word `current`
+  // is reserved for a receipt a person measured (2026-09-04, overturning the
+  // 2026-08-30 clause that a stale receipt never emits a target).
+  const liveVerified = !receiptCurrent
+    && typeof input.sourceRoot === 'string'
+    && input.sourceRoot.length > 0
+    && input.sourceLive?.status === 'witnesses_supported';
+  if (!receiptCurrent && !liveVerified) {
     return empty('blocked', {
       blockedBy: input.sourceBlockedBy ?? 'source_not_current',
       currentness: input.sourceCurrentness ?? 'unavailable',
     });
   }
+  const currentness = liveVerified ? 'live_verified' : 'current';
   const reviewed = reviewedCoordinates(input.docs);
+  const provenance = {
+    ...(liveVerified
+      ? { receipt: 'stale', sourceRevision: shortRevision(input.sourceLive.sourceRevision) }
+      : {}),
+    ...(reviewed.sourceSlug ? { evidenceElement: reviewed.sourceSlug } : {}),
+  };
   if (reviewed.coordinates.length === 0 && reviewed.diagnostics.length === 0) {
-    return empty('unknown', { currentness: 'current' });
+    return empty('unknown', { currentness, ...provenance });
   }
   if (cardinalityProblem(reviewed.coordinates)) {
     return empty('blocked', {
       blockedBy: 'coordinate_cardinality',
-      currentness: 'current',
+      currentness,
+      ...provenance,
       diagnostics: [{ code: 'coordinate_cardinality', role: 'projection' }],
     });
   }
@@ -705,7 +746,8 @@ export function buildTaskNavigationEvidence(input = {}) {
   if (diagnostics.length > 0) {
     return empty('blocked', {
       blockedBy: 'coordinate_verification',
-      currentness: 'current',
+      currentness,
+      ...provenance,
       diagnostics: diagnostics.sort((left, right) => left.code.localeCompare(right.code)),
     });
   }
@@ -726,7 +768,8 @@ export function buildTaskNavigationEvidence(input = {}) {
     ? 'ready'
     : 'partial';
   return empty(status, {
-    currentness: 'current',
+    currentness,
+    ...provenance,
     primary,
     supporting,
     tests,

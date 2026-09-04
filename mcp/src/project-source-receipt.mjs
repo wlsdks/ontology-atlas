@@ -1,4 +1,5 @@
 import { inspectProjectSource } from './project-source-inspection.mjs';
+import { witnessInventoryPaths } from './project-source-mint.mjs';
 import {
   SidecarPathError,
   createVaultSidecarTextExclusive,
@@ -261,15 +262,18 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
     || probe.fingerprint !== receipt.sourceFingerprint
     || probe.revision !== receipt.sourceRevision
   ) {
-    return base(
-      projectSlug,
-      1,
-      'review_required',
-      'stale',
-      { id: 'source_changed' },
-      { id: 'remeasure_source' },
-      receipt,
-    );
+    return {
+      ...base(
+        projectSlug,
+        1,
+        'review_required',
+        'stale',
+        { id: 'source_changed' },
+        { id: 'remeasure_source' },
+        receipt,
+      ),
+      live: liveWitnessCheck(probe, receipt),
+    };
   }
   return base(
     projectSlug,
@@ -280,6 +284,48 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
     receipt.nextAction,
     receipt,
   );
+}
+
+/**
+ * What the changed source says *right now* about the receipt's witnesses.
+ *
+ * A receipt goes stale on the first commit after it was measured, which on an
+ * actively developed repository is every day. The receipt stays stale — only
+ * `connect_project_source` may restamp it — but the same bounded probe that
+ * detected the change already holds the live inventory, so the witnesses are
+ * re-checked against it here, in memory. `agent_brief` uses the answer to
+ * verify reviewed coordinates against the live files instead of returning
+ * `Primary: unknown` while every declared path still resolves (2026-09-04).
+ *
+ * Only relative witness paths and the probe's revision cross this boundary;
+ * the absolute root never does.
+ */
+function liveWitnessCheck(probe, receipt) {
+  const files = witnessInventoryPaths(probe);
+  const witnesses = Array.isArray(receipt?.witnesses) ? receipt.witnesses : [];
+  const missing = witnesses
+    .filter((witness) => typeof witness?.path !== 'string' || !files.has(witness.path))
+    .map((witness) => witness?.path ?? '')
+    .sort((left, right) => left.localeCompare(right));
+  const status = witnesses.length === 0
+    ? 'no_witnesses'
+    : probe.truncated
+      ? 'inventory_truncated'
+      : missing.length === 0
+        ? 'witnesses_supported'
+        : 'witnesses_missing';
+  return {
+    contract: 'projectSourceLiveWitnesses:v1',
+    status,
+    sourceRevision: probe.revision,
+    sourceFingerprint: probe.fingerprint,
+    witnessSummary: {
+      total: witnesses.length,
+      supported: witnesses.length - missing.length,
+      missing: missing.length,
+    },
+    missingPaths: missing.slice(0, 5),
+  };
 }
 
 // ── Minting and persisting a binding ──────────────────────────────────────

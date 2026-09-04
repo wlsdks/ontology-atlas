@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
@@ -135,6 +135,21 @@ test('readProjectSourceView marks a changed bound Git source stale instead of re
   assert.equal(result.currentness, 'stale');
   assert.deepEqual(result.topGap, { id: 'source_changed' });
   assert.deepEqual(result.nextAction, { id: 'remeasure_source' });
+  // The receipt stays stale, and the same probe reports what the live source
+  // says about the recorded witnesses — without the absolute root.
+  assert.equal(result.live.contract, 'projectSourceLiveWitnesses:v1');
+  assert.equal(result.live.status, 'witnesses_supported');
+  assert.equal(result.live.witnessSummary.total, result.receipt.witnessSummary.total);
+  assert.equal(result.live.witnessSummary.missing, 0);
+  assert.notEqual(result.live.sourceFingerprint, result.receipt.sourceFingerprint);
+  assert.doesNotMatch(JSON.stringify(result), new RegExp(sourceRoot));
+
+  rmSync(join(sourceRoot, 'src', 'player.ts'));
+  const missing = readProjectSourceView(root, 'music-streaming', 'graph-a');
+  assert.equal(missing.currentness, 'stale');
+  assert.equal(missing.live.status, 'witnesses_missing');
+  assert.equal(missing.live.witnessSummary.missing, 1);
+  assert.deepEqual(missing.live.missingPaths, ['src/player.ts']);
 });
 
 test('readProjectSourceView verifies and invalidates a bound non-Git folder source', () => {
