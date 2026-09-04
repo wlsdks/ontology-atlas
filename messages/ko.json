@@ -801,8 +801,7 @@
   },
   "topologyWidgets": {
     "controls": {
-      "fitViewTooltip": "지도 전체 맞추기",
-      "fitViewAriaLabel": "지도 전체 맞추기"
+      "fitViewTooltip": "지도 전체 맞추기"
     },
     "hubRail": {
       "label": "허브",
@@ -2440,11 +2439,8 @@
       "changeAnnouncement": "개념 {count}개 갱신됨: 반영됨",
       "close": "닫기",
       "replayGrowthTooltip": "자라는 순서로 다시 보기",
-      "replayGrowthAriaLabel": "온톨로지가 담긴 순서대로 나타나는 것을 다시 보기",
       "tourTooltip": "가이드 투어",
-      "tourAriaLabel": "가이드 투어 시작",
       "shortcutsTooltip": "키보드 단축키 (?)",
-      "shortcutsAriaLabel": "키보드 단축키 보기",
       "spotlightWindowSummary": "최근 {days}일 · {count}"
     },
     "empty": {

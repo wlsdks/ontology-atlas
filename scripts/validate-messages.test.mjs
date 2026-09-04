@@ -247,15 +247,17 @@ describe('i18n message catalog', () => {
     // The old topologyWidgets.controls shortcut/depth copy (depthHop,
     // shortcutDepthAll, shortcutDoubleClick, shortcutEsc) went with the removal of the
     // dead map-controls panel (2026-07-21). Only the Fit tile remains, so only
-    // fitViewTooltip/fitViewAriaLabel are verified.
-    assert.equal(ko.topologyWidgets.controls.fitViewAriaLabel, '지도 전체 맞추기');
+    // fitViewTooltip is verified — its `fitViewAriaLabel` twin went on 2026-09-05 when
+    // the rail tiles started showing their labels: a `ChromeTile` in label mode takes
+    // its accessible name from the word on screen, so a second name could only differ
+    // from it (WCAG 2.5.3).
+    assert.equal(ko.topologyWidgets.controls.fitViewTooltip, '지도 전체 맞추기');
     assert.equal(ko.topology.analysis.overviewAgentReadiness, 'AI가 이어서 작업할 준비');
     assert.equal(ko.topology.analysis.overviewAgentReadinessReady, '준비됨');
     assert.equal(ko.topology.analysis.overviewAgentReadinessPreflight, '사전 점검');
     assert.doesNotMatch(
       [
         ko.topologyWidgets.controls.fitViewTooltip,
-        ko.topologyWidgets.controls.fitViewAriaLabel,
         ko.topology.analysis.overviewAgentReadiness,
         ko.topology.analysis.overviewAgentReadinessReady,
         ko.topology.analysis.overviewAgentReadinessPreflight,

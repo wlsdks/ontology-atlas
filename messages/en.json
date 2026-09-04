@@ -801,8 +801,7 @@
   },
   "topologyWidgets": {
     "controls": {
-      "fitViewTooltip": "Fit map to view",
-      "fitViewAriaLabel": "Fit map to view"
+      "fitViewTooltip": "Fit map to view"
     },
     "hubRail": {
       "label": "Hubs",
@@ -2440,11 +2439,8 @@
       "changeAnnouncement": "{count} concepts updated: synced",
       "close": "Close",
       "replayGrowthTooltip": "Replay how it grew",
-      "replayGrowthAriaLabel": "Replay the ontology appearing in containment order",
       "tourTooltip": "Guided tour",
-      "tourAriaLabel": "Start the guided tour",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
-      "shortcutsAriaLabel": "View keyboard shortcuts",
       "spotlightWindowSummary": "Last {days}d · {count}"
     },
     "empty": {

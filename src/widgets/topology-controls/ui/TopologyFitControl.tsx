@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Maximize2 } from 'lucide-react';
-import { ChromeTile, Tooltip } from '@/shared/ui';
+import { ChromeTile } from '@/shared/ui';
 
 interface TopologyFitControlProps {
   /** The "fit the whole map" callback — fits the camera to the graph's bounds on click. */
@@ -33,14 +33,20 @@ export function TopologyFitControl({ onFitView, density = 'default' }: TopologyF
     >
       {/* Desktop only — mobile can fit by pinch-zoom. */}
       <div className="hidden md:block">
-        <Tooltip content={t('fitViewTooltip')} side="left" withProvider={false}>
-          <ChromeTile
-            icon={<Maximize2 />}
-            title={t('fitViewTooltip')}
-            aria-label={t('fitViewAriaLabel')}
-            onClick={onFitView}
-          />
-        </Tooltip>
+        {/*
+         * The tooltip is gone because the label replaced it. A tooltip names one
+         * tile after a hover and a wait; `.chrome-rail` names the whole rail the
+         * moment the pointer or the focus ring arrives, and an OS tooltip repeating
+         * a label already on screen is the popup soup `.claude/rules/design.md`
+         * forbids. `title` and `label` carry the same string, so the accessible
+         * name *is* the visible one (WCAG 2.5.3) — see `ChromeTile`'s `label`.
+         */}
+        <ChromeTile
+          icon={<Maximize2 />}
+          title={t('fitViewTooltip')}
+          label={t('fitViewTooltip')}
+          onClick={onFitView}
+        />
       </div>
     </div>
   );
