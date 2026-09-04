@@ -1346,7 +1346,10 @@
   "ontologyPages": {
     "insights": {
       "title": "Graph insights",
+      "titleSample": "Sample analysis",
+      "documentTitleSample": "Sample analysis · Ontology Atlas",
       "subtitle": "Your whole folder at a glance. Every number is computed from the documents.",
+      "subtitleSample": "The loaded sample at a glance. Every number is computed from that sample's documents.",
       "audienceBanner": "This board is for the people and AI agents who tend the map.",
       "censusConcepts": "Concepts",
       "censusRelations": "Relations",

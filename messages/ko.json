@@ -1346,7 +1346,10 @@
   "ontologyPages": {
     "insights": {
       "title": "내 폴더 분석",
+      "titleSample": "샘플 분석",
+      "documentTitleSample": "샘플 분석 · Ontology Atlas",
       "subtitle": "내 폴더 전체를 한눈에 봐요. 모든 숫자는 문서에서 자동으로 계산돼요.",
+      "subtitleSample": "지금 열어 둔 샘플 전체를 한눈에 봐요. 모든 숫자는 그 샘플의 문서에서 자동으로 계산돼요.",
       "audienceBanner": "이 화면은 지도를 가꾸는 사람과 AI 에이전트를 위한 정비 보드예요.",
       "censusConcepts": "개념",
       "censusRelations": "관계",
