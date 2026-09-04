@@ -19,6 +19,8 @@ The qualification handoff helper is the private source-checkout transport that v
 - `.agents/skills/ontology-bootstrap/scripts/rooted-mcp-read.mjs`
 - Primary implementation: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs#sealCandidate`
 - Supporting implementation: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs#buildHiddenPacket`
+- Focused test: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.test.mjs#schema documents commands, atomic output, quantifiers, and all exit codes`
+- Focused test: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.test.mjs#derives hidden CQ/evidence boilerplate, joins verified evidence, accepts, and releases exact rows`
 
 ## Includes
 

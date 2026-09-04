@@ -15,6 +15,8 @@ Kind/category classification data entity. Implementation evidence for capabiliti
 
 - Primary implementation: `src/entities/category/model/types.ts#Category`
 - Supporting implementation: `src/entities/category/model/defaults.ts#DEFAULT_CATEGORIES`
+- Focused test: `src/features/project-edit/model/placement.test.ts#returns a position inside the category bounds`
+- Focused test: `src/features/project-edit/model/placement.test.ts#detects whether a project card is fully inside a category`
 
 ## Includes
 

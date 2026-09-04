@@ -15,6 +15,8 @@ Keyboard shortcut guide sheet widget.
 
 - Primary implementation: `src/widgets/shortcut-sheet/lib/shortcut-scope.ts#surfaceForPathname`
 - Supporting implementation: `src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx#GLOSSARY_TERMS`
+- Focused test: `src/widgets/shortcut-sheet/ui/ShortcutSheet.test.tsx#describes Enter for every search result type, not projects only`
+- Focused test: `src/widgets/shortcut-sheet/ui/ShortcutSheet.test.tsx#defines ontology first, before the three kinds`
 
 ## Includes
 

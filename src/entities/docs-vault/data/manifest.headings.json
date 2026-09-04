@@ -12550,6 +12550,11 @@
     },
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
       "text": "User Outcomes",
       "slug": "user-outcomes"
     },
@@ -12562,6 +12567,16 @@
       "depth": 2,
       "text": "Extraction Boundary",
       "slug": "extraction-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -12594,6 +12609,11 @@
     },
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
       "text": "Human Outcome",
       "slug": "human-outcome"
     },
@@ -12614,6 +12634,16 @@
     },
     {
       "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
       "text": "Copy Contract",
       "slug": "copy-contract"
     }
@@ -12623,6 +12653,11 @@
       "depth": 1,
       "text": "Design Gates & Ratchets",
       "slug": "design-gates-ratchets"
+    },
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
@@ -12638,6 +12673,16 @@
       "depth": 2,
       "text": "Extraction Boundary",
       "slug": "extraction-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     }
   ],
   "ontology/capabilities/design-token-ramps": [
@@ -12645,6 +12690,11 @@
       "depth": 1,
       "text": "Design Token Ramps",
       "slug": "design-token-ramps"
+    },
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
     },
     {
       "depth": 2,
@@ -12660,6 +12710,16 @@
       "depth": 2,
       "text": "Extraction Boundary",
       "slug": "extraction-boundary"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,

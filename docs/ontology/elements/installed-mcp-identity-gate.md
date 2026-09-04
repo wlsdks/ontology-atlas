@@ -23,6 +23,8 @@ Installed MCP identity gate is the local delivery check that binds the copied ma
 - `scripts/verify-mcp-binary.test.mjs`
 - Primary implementation: `scripts/deploy-macos-app-local.mjs#buildDeployMacosAppPlan`
 - Supporting implementation: `scripts/deploy-macos-app-local.mjs#summarizeDeployMacosAppEvidence`
+- Focused test: `scripts/deploy-macos-app-local.test.mjs#local deploy identity rejects a mixed app bundle before MCP use`
+- Focused test: `scripts/deploy-macos-app-local.test.mjs#local macOS app deploy builds without release updater signing, installs, and verifies the map route`
 
 ## Includes
 

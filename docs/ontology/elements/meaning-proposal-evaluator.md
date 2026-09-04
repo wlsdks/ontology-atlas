@@ -31,6 +31,8 @@ This evaluator neither writes a vault nor authenticates human acceptance. Unknow
 
 - Primary implementation: `mcp/src/meaning-evaluation.mjs#evaluateMeaningProposal`
 - Supporting implementation: `mcp/src/meaning-evaluation.mjs#validateMeaningProposalAgainstAnalysis`
+- Focused test: `mcp/src/meaning-evaluation.test.mjs#gold proposal passes every meaning-quality gate`
+- Focused test: `mcp/src/meaning-evaluation.test.mjs#repository write-plan bodies round-trip through the canonical vault parser byte-exactly`
 
 ## Includes
 

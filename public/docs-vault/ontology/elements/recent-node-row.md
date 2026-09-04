@@ -14,6 +14,8 @@ Recently viewed node list row widget.
 ## Evidence
 
 - Primary implementation: `src/widgets/recent-node-row/ui/RecentNodeRow.tsx#RecentNodeRowProps`
+- Focused test: `src/widgets/recent-node-row/ui/RecentNodeRow.test.tsx#stacks title over subtitle and shows trailing metadata`
+- Focused test: `src/widgets/recent-node-row/ui/RecentNodeRow.test.tsx#renders as a link when href is provided`
 
 ## Includes
 

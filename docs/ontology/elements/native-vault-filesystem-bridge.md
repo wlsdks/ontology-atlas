@@ -17,6 +17,8 @@ The same bridge owns the vault watcher (`start_vault_watch`): a recursive FSEven
 
 - Primary implementation: `src-tauri/src/lib.rs#write_vault_text_file`
 - Supporting implementation: `src-tauri/src/lib.rs#read_vault_text_file`
+- Focused test: `src-tauri/src/lib.rs#vault_commands_reject_symlink_escapes`
+- Focused test: `src-tauri/src/lib.rs#vault_write_is_not_redirected_when_parent_is_replaced_after_validation`
 
 ## Includes
 

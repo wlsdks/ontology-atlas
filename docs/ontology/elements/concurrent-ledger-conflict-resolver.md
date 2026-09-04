@@ -15,6 +15,8 @@ A fail-closed repository helper for concurrent worktrees. It semantically merges
 
 - Primary implementation: `scripts/resolve-docs-vault-conflicts.mjs#resolveRepositoryConflicts`
 - Supporting implementation: `scripts/resolve-docs-vault-conflicts.mjs#mergeAppendOnlyLedger`
+- Focused test: `scripts/resolve-docs-vault-conflicts.test.mjs#keeps both concurrent records in one deterministic merge`
+- Focused test: `scripts/resolve-docs-vault-conflicts.test.mjs#resolves a real Git merge, regenerates outputs, and stages the complete result`
 
 ## Includes
 

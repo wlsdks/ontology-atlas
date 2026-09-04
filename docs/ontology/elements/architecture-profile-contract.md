@@ -21,6 +21,8 @@ The machine-readable `architecture-profile/v1` contract and conformance evaluato
 - `mcp/src/architecture-profile.test.mjs`: type-only exclusion, upward value violation, and unknown-usage probes
 - Primary implementation: `mcp/src/architecture-profile.mjs#evaluateArchitectureConformance`
 - Supporting implementation: `mcp/src/architecture-profile.mjs#parseArchitectureProfile`
+- Focused test: `mcp/src/architecture-profile.test.mjs#feature-sliced profile accepts lower dependencies and rejects an upward edge`
+- Focused test: `mcp/src/architecture-profile.test.mjs#profile-declared usages exclude type-only verdicts while unknown stays fail-closed`
 
 ## Includes
 

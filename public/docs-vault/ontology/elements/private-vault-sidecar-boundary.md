@@ -15,6 +15,8 @@ The common file boundary where MCP and CLI handle private receipts and activity 
 
 - Primary implementation: `mcp/src/vault-sidecar.mjs#readVaultSidecarText`
 - Supporting implementation: `mcp/src/vault-sidecar.mjs#createVaultSidecarTextExclusive`
+- Focused test: `mcp/src/vault-sidecar.test.mjs#rejects read, create, replace, append, and remove through an external sidecar symlink`
+- Focused test: `mcp/src/vault-sidecar.test.mjs#canonicalizes a vault-root symlink alias and writes only inside the real vault`
 
 ## Includes
 

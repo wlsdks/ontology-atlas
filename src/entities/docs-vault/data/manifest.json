@@ -1477,9 +1477,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "A component layer that prevents screen creators from manually writing className. Values are provided by controlClass()/fieldClass() (cva), and behavior (default type · forced access names · error wiring · keyboard contracts) is handled by the components. Controls with the same meaning do not appear in different sizes/c",
-      "wordCount": 270,
-      "updatedAt": "2026-08-29",
+      "excerpt": "A component layer that prevents screen creators from manually writing className. Values are provided by controlClass()/fieldClass() (cva), and behavior (default type · forced access names · error wiring · keyboard contracts) is handled by the components. Control & Form Primitives is the component layer that prevents sc",
+      "wordCount": 465,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1527,9 +1527,9 @@
         }
       },
       "headings": [],
-      "excerpt": "The entry contract that routes an Atlas UI change from observable change facts to the smallest proof bundle before implementation begins. It keeps design work tied to what changed, what a person must be able to judge again, and which rendered evidence can prove that outcome. A person can inspect what an agent actually ",
-      "wordCount": 339,
-      "updatedAt": "2026-09-01",
+      "excerpt": "The entry contract that routes an Atlas UI change from observable change facts to the smallest proof bundle before implementation begins. It keeps design work tied to what changed, what a person must be able to judge again, and which rendered evidence can prove that outcome. Design Build Handoff is the entry contract t",
+      "wordCount": 522,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1550,9 +1550,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "The layer that turns red if the spec is violated. This is the most irreplaceable part of this design system (as of 2026-08-15 PO Council measurement: parts and token deployments are common, but no one deploys enforcement as a whole), and simultaneously the hardest part to port. If the screen created by the agent deviat",
-      "wordCount": 310,
-      "updatedAt": "2026-08-23",
+      "excerpt": "The layer that turns red if the spec is violated. This is the most irreplaceable part of this design system (as of 2026-08-15 PO Council measurement: parts and token deployments are common, but no one deploys enforcement as a whole), and simultaneously the hardest part to port. Design Gates & Ratchets is the enforcemen",
+      "wordCount": 496,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1573,9 +1573,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Ladders with predefined values available for use. Lint blocks any other values. No varying font sizes, border radii, or shadows across screens. Light comes from one direction, and elements above cast darker shadows. Font size (8 steps) · Line height (10 steps, 1:1 ratio with size) · Letter-spacing · Weight (3 steps) · ",
-      "wordCount": 231,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Ladders with predefined values available for use. Lint blocks any other values. Design Token Ramps are the fixed value ladders (font size, line height, letter-spacing, weight, radius, shadow, motion, control height, layering, icon size, and dialog width) available for every screen to use. Lint blocks any value outside ",
+      "wordCount": 400,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2442,7 +2442,7 @@
       },
       "headings": [],
       "excerpt": "The machine-readable architecture-profile/v1 contract and conformance evaluator that keeps declared pattern axes, scoped roles, dependency rules, governed import usages, observed imports, violations, and unknowns in one fail-closed result. It differs from the workbench element because it produces usage-qualified typed ",
-      "wordCount": 254,
+      "wordCount": 279,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2526,8 +2526,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Kind/category classification data entity. Implementation evidence for capabilities/taxonomy. Primary implementation: src/entities/category/model/types.tsCategory Supporting implementation: src/entities/category/model/defaults.tsDEFAULTCATEGORIES The Category type: cluster-box id, label/labelEn, order, map position, siz",
-      "wordCount": 90,
+      "excerpt": "Kind/category classification data entity. Implementation evidence for capabilities/taxonomy. Primary implementation: src/entities/category/model/types.tsCategory Supporting implementation: src/entities/category/model/defaults.tsDEFAULTCATEGORIES Focused test: src/features/project-edit/model/placement.test.tsreturns a p",
+      "wordCount": 113,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2548,7 +2548,7 @@
       },
       "headings": [],
       "excerpt": "A fail-closed repository helper for concurrent worktrees. It semantically merges only complete dated records prepended to the append-only CHANGELOG and DECISIONS ledgers, refuses historical or unrelated conflicts, rebuilds deterministic docs-vault artifacts, and stages the verified result without continuing the Git ope",
-      "wordCount": 151,
+      "wordCount": 177,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2569,7 +2569,7 @@
       },
       "headings": [],
       "excerpt": "The construction qualification evaluator is the pure categorical policy engine for constructionQualification:v1. It validates purpose authority, independent actors, motivating scenarios, human-approved competency questions, current witnesses, exact claims and citations, target coverage, source-hidden execution, seven i",
-      "wordCount": 267,
+      "wordCount": 295,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2591,7 +2591,7 @@
       },
       "headings": [],
       "excerpt": "The Design Proof Router is the deterministic source-checkout classifier behind pnpm design:route. It translates one or more observable Atlas UI change classes into the smallest required proof bundle: build and audit skills, rendered-window instruments, specialist seats, and concrete artifacts. scripts/lib/design-proof-",
-      "wordCount": 205,
+      "wordCount": 227,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2918,7 +2918,7 @@
       },
       "headings": [],
       "excerpt": "Installed MCP identity gate is the local delivery check that binds the copied macOS app to the exact built bundle and verifies the bundled MCP still preserves repository source-path case before and after first launch. scripts/lib/macos-app-bundle-identity.mjs scripts/deploy-macos-app-local.mjs scripts/verify-mcp-binary",
-      "wordCount": 169,
+      "wordCount": 201,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2981,7 +2981,7 @@
       },
       "headings": [],
       "excerpt": "The meaning proposal evaluator validates proposed project, domain, capability, element, relation, and competency meaning against bounded repository analysis, then derives the exact non-writing review plan and any later released write plan. A Definition, Includes, Excludes, relation rationale, or answered competency tha",
-      "wordCount": 307,
+      "wordCount": 329,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3002,7 +3002,7 @@
       },
       "headings": [],
       "excerpt": "A macOS menu-bar control that uses the mascot micro template to reopen the existing Atlas workbench or quit the app. It is static and state-free: no activity badge, background-service promise, close-to-tray behavior, new window, or webview tray permission. Primary implementation: src-tauri/src/lib.rsinstallnativetray S",
-      "wordCount": 117,
+      "wordCount": 121,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3023,7 +3023,7 @@
       },
       "headings": [],
       "excerpt": "Native bridge that allows the Tauri WebView to read and write files and directories within the selected vault. Unix mutations hold canonical roots and relative parent directories as no-follow directory file descriptors, complete regular files with umask-based temporary inodes for atomic replacement within the same pare",
-      "wordCount": 319,
+      "wordCount": 327,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3170,7 +3170,7 @@
       },
       "headings": [],
       "excerpt": "The common file boundary where MCP and CLI handle private receipts and activity logs under .ontology-atlas. It closes symlink/junctions between the sidecar directory and final files, handles file identity changes and hardlink aliases, and provides atomic replacement and conflict detection. Due to limitations of the pur",
-      "wordCount": 171,
+      "wordCount": 201,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3317,7 +3317,7 @@
       },
       "headings": [],
       "excerpt": "The qualification handoff helper is the private source-checkout transport that validates and packages one exact ontology construction candidate from coverage and seal through isolated hidden/audit join, human acceptance, and bounded release calls. Its file-backed contract names complete manifest-claim assignment, the s",
-      "wordCount": 224,
+      "wordCount": 252,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3337,8 +3337,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Recently viewed node list row widget. Primary implementation: src/widgets/recent-node-row/ui/RecentNodeRow.tsxRecentNodeRowProps The shared two-line row grammar (title over kind·domain, trailing date, optional secondary trailing text) for \"a concept changed recently\" lists. Rendering as a map-focus link when a graph no",
-      "wordCount": 112,
+      "excerpt": "Recently viewed node list row widget. Primary implementation: src/widgets/recent-node-row/ui/RecentNodeRow.tsxRecentNodeRowProps Focused test: src/widgets/recent-node-row/ui/RecentNodeRow.test.tsxstacks title over subtitle and shows trailing metadata Focused test: src/widgets/recent-node-row/ui/RecentNodeRow.test.tsxre",
+      "wordCount": 134,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3422,7 +3422,7 @@
       },
       "headings": [],
       "excerpt": "The bounded analyzer role that selects claim-relevant Markdown and reStructuredText sections, keeps current claim units separate from review-only policy units, and assigns trust only over the exact model-visible text. Prefer document-title, purpose, architecture, and ability sections, with a bounded eligible-section fa",
-      "wordCount": 271,
+      "wordCount": 295,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3442,8 +3442,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Keyboard shortcut guide sheet widget. Primary implementation: src/widgets/shortcut-sheet/lib/shortcut-scope.tssurfaceForPathname Supporting implementation: src/widgets/shortcut-sheet/ui/ShortcutSheet.tsxGLOSSARYTERMS Classifying keyboard shortcuts into contextual scope tabs (current screen, topology, docs, all) so the ",
-      "wordCount": 129,
+      "excerpt": "Keyboard shortcut guide sheet widget. Primary implementation: src/widgets/shortcut-sheet/lib/shortcut-scope.tssurfaceForPathname Supporting implementation: src/widgets/shortcut-sheet/ui/ShortcutSheet.tsxGLOSSARYTERMS Focused test: src/widgets/shortcut-sheet/ui/ShortcutSheet.test.tsxdescribes Enter for every search resu",
+      "wordCount": 152,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },

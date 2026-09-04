@@ -20,6 +20,8 @@ The Design Proof Router is the deterministic source-checkout classifier behind `
 - `scripts/design-proof-router.mjs`: command-line entry point
 - `tests/contract/design-proof-router.contract.test.ts`: routing and failure contracts
 - Primary implementation: `scripts/lib/design-proof-router.mjs#routeDesignProof`
+- Focused test: `tests/contract/design-proof-router.contract.test.ts#routes distinct failure modes to distinct instruments`
+- Focused test: `tests/contract/design-proof-router.contract.test.ts#fails closed on an omitted or invented change class`
 
 ## Includes
 

@@ -25,6 +25,8 @@ The evaluator reads no repository source, invokes no MCP tool, writes no vault, 
 
 - Primary implementation: `mcp/src/construction-qualification.mjs#evaluateConstructionQualification`
 - Supporting implementation: `mcp/src/construction-qualification.mjs#CONSTRUCTION_QUALIFICATION_CONTRACT`
+- Focused test: `mcp/src/construction-qualification.test.mjs#a complete independently evaluated packet qualifies without an aggregate score`
+- Focused test: `mcp/src/construction-qualification.test.mjs#FDE is optional and requires exact current project-owned audience authority when used`
 
 ## Includes
 

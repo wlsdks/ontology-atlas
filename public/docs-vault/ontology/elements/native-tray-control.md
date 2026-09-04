@@ -15,6 +15,7 @@ A macOS menu-bar control that uses the mascot micro template to reopen the exist
 
 - Primary implementation: `src-tauri/src/lib.rs#install_native_tray`
 - Supporting implementation: `src-tauri/src/lib.rs#native_tray_labels`
+- Focused test: `src-tauri/src/lib.rs#native_tray_labels_follow_the_system_language_hint`
 
 ## Includes
 
