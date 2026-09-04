@@ -18,6 +18,10 @@ The persistent desktop workbench navigation rail. It exposes seven primary desti
 - `src/shared/config/destinations.ts`: shared destination, route, and leader-key registry
 - `src/app/providers/AppShell.tsx`: Git changeset badge and destination-shortcut wiring
 - `tests/e2e/destination-shortcuts.spec.ts`: keyboard traversal across all seven destinations
+- Primary implementation: `src/widgets/app-nav-rail/ui/AppNavRail.tsx#AppNavRailProps`
+- Supporting implementation: `src/widgets/app-nav-rail/ui/GitStatusTile.tsx#GitStatusTile`
+- Focused test: `src/widgets/app-nav-rail/lib/resolve-active-item.test.ts#matches root and /topology to map`
+- Focused test: `src/widgets/app-nav-rail/lib/resolve-active-item.test.ts#matches /docs to docs`
 
 ## Boundary
 The desktop rail owns the complete seven-destination workbench inventory and scrolls when height or UI scale requires it. In the installed app it stays hidden until a real local manifest exists, preventing bundled web destinations from becoming an accidental sandbox. The mobile bottom bar keeps its measured five persistent destinations; Git and Agents retain their existing narrow-screen entry paths rather than adding new bottom slots.

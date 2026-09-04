@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Project selection/list page.
+
+## Evidence
+
+- Primary implementation: `src/views/project-selector/lib/project-card-facts.ts#buildProjectCardFacts`
+- Supporting implementation: `src/views/project-selector/lib/use-vault-docs.ts#useVaultDocs`
+- Focused test: `src/views/project-selector/ui/ProjectSelectorPage.test.tsx#renders a full-width project card with fact strip and domain composition row`
+- Focused test: `src/views/project-selector/ui/ProjectSelectorPage.test.tsx#links the card footer to the project detail and topology pages`

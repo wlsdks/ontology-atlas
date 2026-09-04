@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Panel widget showing agent connection status, actual tool reads, audit logs, timeouts, and mandatory read failures. Restores only absolute paths without a read manifest, downgrading to the existing no-folder lock to prevent divergence between bundle sample screens and hidden local body/audit logs. Local models that skip reading are corrected once; if skipped again, no answer is displayed. This serves as the human judgment surface for capabilities/vault-agent, with implementation spanning src/widgets/vault-agent-panel and src/features/vault-agent/model.
+
+## Evidence
+
+- Primary implementation: `src/widgets/vault-agent-panel/ui/VaultAgentPanel.tsx#VaultAgentPanel`
+- Supporting implementation: `src/widgets/vault-agent-panel/ui/AgentProposalCard.tsx#AgentProposalCard`
+- Focused test: `src/widgets/vault-agent-panel/model/use-vault-agent.test.ts#releases running and the elapsed clock`
+- Focused test: `src/widgets/vault-agent-panel/model/use-vault-agent.test.ts#marks the turn failed and says so in the panel, without swallowing the error`

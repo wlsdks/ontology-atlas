@@ -3,6 +3,7 @@ uid: 864cb667-c65c-4e94-aea2-2026d7abdef6
 slug: elements/task-scoped-agent-brief-projection
 kind: element
 title: Task-scoped agent brief projection
+display_ko: 작업별 에이전트 브리핑
 domain: domains/agent-integration
 path: mcp/src/agent-brief-compact.mjs
 created_by: "agent:codex"

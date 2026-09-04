@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Full node detail opt-in panel widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/full-detail-a1/ui/FullDetailA1.tsx#FullDetailA1Props`
+- Supporting implementation: `src/widgets/full-detail-a1/lib/full-detail-groups.ts#buildFullDetailGroups`

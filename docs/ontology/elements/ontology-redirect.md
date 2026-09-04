@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 Compatible redirect from /ontology to /topology?index=expanded.
+
+## Evidence
+
+- Primary implementation: `src/views/ontology-redirect/ui/OntologyRedirectPage.tsx#OntologyRedirectPage`
+- Focused test: `src/views/ontology-redirect/ui/OntologyRedirectPage.test.tsx#redirects to /topology with INDEX expanded and no ?p= when there is no ?node=`
+- Focused test: `src/views/ontology-redirect/ui/OntologyRedirectPage.test.tsx#translates a canonical ?node= into ?p= unchanged`

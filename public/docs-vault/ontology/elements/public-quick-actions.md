@@ -10,3 +10,7 @@ created_by: "agent:unknown"
 ---
 
 Quick action widget for unauthenticated visitors.
+
+## Evidence
+
+- Primary implementation: `src/widgets/public-quick-actions/ui/PublicQuickActions.tsx#PublicQuickActions`

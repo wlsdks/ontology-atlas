@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 App settings menu widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/app-settings-menu/ui/AppSettingsMenu.tsx#AppSettingsMenu`
+- Supporting implementation: `src/widgets/app-settings-menu/ui/AiConnectionPanel.tsx#AiConnectionPanel`
+- Focused test: `src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx#routes the hosted browser vault action to the app download page`
+- Focused test: `src/widgets/app-settings-menu/ui/AppSettingsMenu.test.tsx#keeps the installed desktop app vault action on the native local picker path`

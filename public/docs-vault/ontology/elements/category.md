@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Kind/category classification data entity. Implementation evidence for capabilities/taxonomy.
+
+## Evidence
+
+- Primary implementation: `src/entities/category/model/types.ts#Category`
+- Supporting implementation: `src/entities/category/model/defaults.ts#DEFAULT_CATEGORIES`

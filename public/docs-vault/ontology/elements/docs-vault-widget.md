@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-local.
+
+## Evidence
+
+- Primary implementation: `src/widgets/docs-vault/ui/DocsVaultEditor.tsx#DocsVaultEditor`
+- Supporting implementation: `src/widgets/docs-vault/ui/DocsVaultBacklinks.tsx#DocsVaultBacklinks`
+- Focused test: `src/widgets/docs-vault/lib/server-doc-content.test.ts#includes root and relative static-export candidates for locale docs routes`
+- Focused test: `src/widgets/docs-vault/lib/server-doc-content.test.ts#encodes path segments without flattening nested slugs`

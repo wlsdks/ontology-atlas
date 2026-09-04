@@ -12,3 +12,10 @@ relation_notes: { elements/docs-vault-entity: "The Docs workbench view reads doc
 ---
 
 /docs page. Implementation evidence for capabilities/docs-vault-local.
+
+## Evidence
+
+- Primary implementation: `src/views/docs-vault/ui/DocsVaultPage.tsx#DocsVaultPage`
+- Supporting implementation: `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx#DocFrontmatterBlock`
+- Focused test: `src/views/docs-vault/ui/DocsVaultPage.vault-status-banner.test.ts#reads the source it is judging`
+- Focused test: `src/views/docs-vault/ui/DocsVaultPage.vault-status-banner.test.ts#never interpolates a cause that may not exist`
