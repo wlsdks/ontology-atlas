@@ -2006,6 +2006,37 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/vault-git-history",
+      "path": "docs/ontology/capabilities/vault-git-history.md",
+      "title": "Vault Git History",
+      "tags": [],
+      "frontmatter": {
+        "uid": "572f5a65-1313-43ee-b0ba-df9202426306",
+        "slug": "capabilities/vault-git-history",
+        "kind": "capability",
+        "title": "Vault Git History",
+        "display_ko": "볼트 기록",
+        "domain": "domains/local-vault-management",
+        "elements": [
+          "elements/atlas-git-panel",
+          "elements/git"
+        ],
+        "path": "src/widgets/atlas-git-panel",
+        "created_by": "agent:claude",
+        "dependencies": [
+          "capabilities/docs-vault-local"
+        ],
+        "relation_notes": {
+          "capabilities/docs-vault-local": "History is read from the mounted vault folder; without a mounted local vault there is no repository to read, so the History screen degrades to setup guidance."
+        }
+      },
+      "headings": [],
+      "excerpt": "The ability to see what changed in the vault and when: the History destination and its panel read the vault-scoped Git status, snapshot summary, and commit history through the installed app and the read-only MCP git tools (gitstatus, githistory), and show them as concept-level changes a person can review. In a browser ",
+      "wordCount": 216,
+      "updatedAt": "2026-09-04",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/vault-ontology",
       "path": "docs/ontology/capabilities/vault-ontology.md",
       "title": "Vault Ontology Schema Authoring",
@@ -2201,6 +2232,7 @@
           "capabilities/data-source-mode",
           "capabilities/docs-vault-local",
           "capabilities/project-data-source",
+          "capabilities/vault-git-history",
           "capabilities/vault-sample-source"
         ],
         "elements": [
@@ -2221,7 +2253,7 @@
       "headings": [],
       "excerpt": "A local-first, backend-0 data source layer that selects markdown folders on the local disk (File System Access API), uses git as the source of truth, and provides demo sample vaults. README.md: \"A folder of Markdown files. Each file's frontmatter declares what it is... That is the whole database.\" docs/ARCHITECTURE.md:",
       "wordCount": 124,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -4636,6 +4668,11 @@
         "linkText": "domains/local-vault-management"
       },
       {
+        "fromSlug": "ontology/capabilities/vault-git-history",
+        "context": "frontmatter · **[domains/local-vault-management]**",
+        "linkText": "domains/local-vault-management"
+      },
+      {
         "fromSlug": "ontology/capabilities/vault-sample-source",
         "context": "frontmatter · **[domains/local-vault-management]**",
         "linkText": "domains/local-vault-management"
@@ -4921,6 +4958,11 @@
         "linkText": "capabilities/docs-vault-local"
       },
       {
+        "fromSlug": "ontology/capabilities/vault-git-history",
+        "context": "frontmatter · **[capabilities/docs-vault-local]**",
+        "linkText": "capabilities/docs-vault-local"
+      },
+      {
         "fromSlug": "ontology/domains/local-vault-management",
         "context": "frontmatter · **[capabilities/docs-vault-local]**",
         "linkText": "capabilities/docs-vault-local"
@@ -5178,6 +5220,30 @@
         "linkText": "elements/vault-agent-panel"
       }
     ],
+    "ontology/elements/atlas-git-panel": [
+      {
+        "fromSlug": "ontology/capabilities/vault-git-history",
+        "context": "frontmatter · **[elements/atlas-git-panel]**",
+        "linkText": "elements/atlas-git-panel"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/atlas-git-panel]**",
+        "linkText": "elements/atlas-git-panel"
+      }
+    ],
+    "ontology/elements/git": [
+      {
+        "fromSlug": "ontology/capabilities/vault-git-history",
+        "context": "frontmatter · **[elements/git]**",
+        "linkText": "elements/git"
+      },
+      {
+        "fromSlug": "ontology/domains/local-vault-management",
+        "context": "frontmatter · **[elements/git]**",
+        "linkText": "elements/git"
+      }
+    ],
     "ontology/elements/knowledge-graph": [
       {
         "fromSlug": "ontology/capabilities/vault-ontology",
@@ -5324,18 +5390,11 @@
         "linkText": "capabilities/project-data-source"
       }
     ],
-    "ontology/elements/atlas-git-panel": [
+    "ontology/capabilities/vault-git-history": [
       {
         "fromSlug": "ontology/domains/local-vault-management",
-        "context": "frontmatter · **[elements/atlas-git-panel]**",
-        "linkText": "elements/atlas-git-panel"
-      }
-    ],
-    "ontology/elements/git": [
-      {
-        "fromSlug": "ontology/domains/local-vault-management",
-        "context": "frontmatter · **[elements/git]**",
-        "linkText": "elements/git"
+        "context": "frontmatter · **[capabilities/vault-git-history]**",
+        "linkText": "capabilities/vault-git-history"
       }
     ],
     "ontology/capabilities/app-update": [
@@ -6343,6 +6402,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/vault-agent",
                 "title": "Agent Connect & Vault Access"
+              },
+              {
+                "name": "vault-git-history",
+                "path": "ontology/capabilities/vault-git-history",
+                "type": "doc",
+                "slug": "ontology/capabilities/vault-git-history",
+                "title": "Vault Git History"
               },
               {
                 "name": "vault-ontology",
