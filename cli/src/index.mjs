@@ -1010,7 +1010,10 @@ async function main() {
     `unknown command: ${SUBCOMMAND}.` +
       (commandSuggestion ? ` Did you mean ${commandSuggestion}?` : ''),
   );
-  printHelp(stderr);
+  // One pointer, not the whole command list: the ninety-line help used to bury
+  // the one line that mattered (audit 2026-09-04). An unknown flag on a real
+  // command already prints only that command's usage.
+  stderr.write(`Run ${COLORS.bold}${CLI} --help${COLORS.reset} for the command list.\n`);
   return 1;
 }
 

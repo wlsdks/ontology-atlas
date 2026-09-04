@@ -352,7 +352,7 @@ function parseArgs(args) {
 function printImportUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  ontology-atlas import <path...> [--vault path] [--kind K] [--raw-slug] [--rename] [--dry-run]\n` +
+      `  ontology-atlas import <path...> [--vault path] [--kind K] [--auto-prefix|--raw-slug] [--rename] [--dry-run]\n` +
       `\n` +
       `  Settle an outside .md file into the vault. Its frontmatter kind/slug/title wins;\n` +
       `  only what is missing is filled from --kind, the filename, or the first H1. The\n` +
@@ -361,7 +361,8 @@ function printImportUsage(stream = process.stderr) {
       `\n${COLORS.bold}options:${COLORS.reset}\n` +
       `  --vault path    target vault (default: cwd)\n` +
       `  --kind K        fallback kind when input frontmatter has no kind\n` +
-      `  --raw-slug      opt out of default kind folder prefix (capability → capabilities/)\n` +
+      `  --auto-prefix   prepend the kind folder to a bare slug (capability → capabilities/); the default\n` +
+      `  --raw-slug      opt out of that prefix (alias: --no-auto-prefix)\n` +
       `  --rename        when the slug is already taken, fall back to -2 / -3 ...\n` +
       `  --dry-run       print the import plan without touching the disk\n` +
       `\n${COLORS.bold}examples:${COLORS.reset}\n` +
