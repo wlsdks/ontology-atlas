@@ -14,7 +14,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.73.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.74.0",
         "args": []
       }
     },
@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.143.0",
+        "package": "@tencent-ai/codebuddy-code@2.144.0",
         "args": [
           "--acp"
         ]
@@ -255,7 +255,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dimcode@0.3.26",
+        "package": "dimcode@0.3.28",
         "args": [
           "acp"
         ]
@@ -273,7 +273,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.2",
+        "package": "dirac-cli@0.5.6",
         "args": [
           "--acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.210.0",
+        "package": "droid@0.212.0",
         "args": [
           "exec",
           "--output-format",
@@ -415,7 +415,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.17",
+        "package": "@xai-official/grok@1.0.18",
         "args": [
           "agent",
           "stdio"
@@ -471,7 +471,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.5.6",
+        "package": "@kilocode/cli@7.5.13",
         "args": [
           "acp"
         ]
@@ -629,7 +629,7 @@
       "cli": "qwen",
       "launch": {
         "kind": "npx",
-        "package": "@qwen-code/qwen-code@0.22.3",
+        "package": "@qwen-code/qwen-code@0.23.0",
         "args": [
           "--acp",
           "--experimental-skills"

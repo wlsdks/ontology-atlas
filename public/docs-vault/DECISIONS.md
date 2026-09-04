@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — codex-acp 1.9.0 is reviewed and refused: its read-only mode still writes, so the 1.6.2 pin stays
+
+**Why**: the v1.0.5 release admission refused the tag because upstream `@agentclientprotocol/codex-acp` moved from the reviewed 1.8.0 to 1.9.0 while the app launches 1.6.2; the registry gate demands that a person inspect the new adapter before either advancing or retaining the pin.
+**Prior**: 2026-09-03 "Codex chat pins the last adapter whose read-only mode holds the installed permission matrix" stands; this record is the inspection it requires and changes no boundary.
+**Decision**: keep launching exact 1.6.2 and record 1.9.0 as the reviewed upstream identity. Inspection (isolated `CODEX_HOME`, `INITIAL_AGENT_MODE=read-only`, `session/set_mode(read-only)` accepted): 1.9.0's `read-only` mode sends `{"type":"workspace-write"}` in the turn context, the 1.8.0 mapping in the shipped `AgentMode.ReadOnly`; no selectable mode maps to `readOnly` any more. 1.6.2 sends `{"type":"read-only"}`. The rest of the registry is regenerated to current upstream, including claude-agent-acp 0.74.0.
+**Dissent**: the owner asked for the newest versions everywhere; refused for this one adapter because adopting 1.9.0 would let an in-app Codex turn write inside the vault without a permission request, the exact failure that removed 1.8.0. The behavioural half of the matrix could not run: the account's Codex credits are exhausted until 2026-09-07; the sandbox mapping alone decides this.
+**Falsifier**: a codex-acp release whose `read-only` mode sends a `readOnly` sandbox and passes the full installed matrix, or a measured 1.6.2 turn that writes before approval, reopens the pin. Separately, `mode-safety.ts` still trusts the mode id `read-only` by name; if the app ever launches an adapter where that id means `workspaceWrite`, the safety list lies and must key on adapter version as well.
+**Owner**: jinan
+
 ## 2026-09-04 — A named claim selects the task capability; prose corroborates and a capability keeps its own name
 
 **Why**: "Open a node's full detail panel from the map popover" selected the source-receipt capability at 16 points on four incidental Definition nouns against the map capability's 6; "Change what the INDEX panel lists" went to git history the same way; and `mcp-server` lost `tool` because its own Excludes sentence used the word in another sense, leaving one term and a refusal.

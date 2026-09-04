@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — codex-acp 1.9.0 is reviewed and refused: its read-only mode still writes, so the 1.6.2 pin stays",
+      "slug": "2026-09-05-codex-acp-190-is-reviewed-and-refused-its-read-only-mode-still-writes-so-the-162-pin-stays"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-04 — A named claim selects the task capability; prose corroborates and a capability keeps its own name",
       "slug": "2026-09-04-a-named-claim-selects-the-task-capability-prose-corroborates-and-a-capability-keeps-its-own-name"
     },
