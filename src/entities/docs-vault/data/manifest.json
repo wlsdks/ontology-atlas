@@ -1316,8 +1316,8 @@
       },
       "headings": [],
       "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch those with verified app-owned permission gates (currently Claude Agent and Codex), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscripti",
-      "wordCount": 1868,
-      "updatedAt": "2026-09-03",
+      "wordCount": 2043,
+      "updatedAt": "2026-09-05",
       "linksOut": [
         "ontology/elements/agents-destination"
       ]
