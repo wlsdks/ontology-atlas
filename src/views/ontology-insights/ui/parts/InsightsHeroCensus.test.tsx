@@ -24,6 +24,8 @@ describe("InsightsHeroCensus accessibility", () => {
         islandCount={0}
         kindsSummary={[]}
         relationsSummary={[]}
+        relationsTotal={0}
+        onSeeAllRelations={() => {}}
         labels={{
           concepts: "Concepts",
           relations: "Relations",
@@ -34,6 +36,8 @@ describe("InsightsHeroCensus accessibility", () => {
           densityGloss: "2.06 connections per concept",
           evidenceLinked: "Evidence linked",
           islands: "Disconnected groups",
+          relationsHidden: (hidden: number) => `${hidden} more relation types are not on this strip`,
+          relationsHiddenRoute: "All relation types",
         }}
       />,
     );

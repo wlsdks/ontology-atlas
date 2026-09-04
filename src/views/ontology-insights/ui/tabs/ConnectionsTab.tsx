@@ -39,6 +39,13 @@ export interface ConnectionsTabLabels {
   hubsTitle: string;
   noHubs: string;
   noHubsHint: string;
+  /**
+   * The one door each empty card offers. Both cards are empty for the same
+   * reason — no relation has been written yet — so both send the reader to the
+   * one screen where a relation can be written, the same address the
+   * composition and boundaries tabs already use for their own empty states.
+   */
+  emptyAction: string;
   hubTruncated: (shown: number, total: number) => string;
   hubDegreeCaption: string;
   /** The evidence-layer badge — from the **same i18n key** as the impact ranking (one set of copy). */
@@ -120,6 +127,7 @@ export function ConnectionsTab({
               skeleton
               title={labels.noRelationTypes}
               description={labels.noRelationTypesHint}
+              action={<EmptyRelationAction label={labels.emptyAction} testId="connections-relation-types-empty-action" />}
             />
           </div>
         ) : (
@@ -190,6 +198,7 @@ export function ConnectionsTab({
               skeleton
               title={labels.noHubs}
               description={labels.noHubsHint}
+              action={<EmptyRelationAction label={labels.emptyAction} testId="connections-hubs-empty-action" />}
             />
           ) : (
             hubs.map((hub, i) => {
@@ -264,5 +273,31 @@ function CardHead({ label, count }: { label: string; count?: number }) {
         </span>
       )}
     </div>
+  );
+}
+
+/**
+ * The single door out of an empty relations card.
+ *
+ * Both cards on this tab used to end in prose that named the remedy ("connect
+ * concepts on the map") without offering it, while the composition and
+ * boundaries tabs already linked to exactly that screen from their own empty
+ * states. The sibling with the link was right; these two were the copies that
+ * lost it.
+ */
+function EmptyRelationAction({ label, testId }: { label: string; testId: string }) {
+  return (
+    <Link
+      href="/topology/?workbench=create"
+      data-testid={testId}
+      className={controlClass({
+        shape: "link",
+        tone: "accent",
+        hoverInk: "strong",
+        className: "rounded-chip hover:underline",
+      })}
+    >
+      {label}
+    </Link>
   );
 }

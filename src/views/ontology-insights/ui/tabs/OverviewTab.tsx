@@ -48,6 +48,10 @@ export interface OverviewTabProps {
   kindRows: Array<{ kind: string; count: number }>;
   domainRows: DomainCapacityRow[];
   edgeTypeSummary: Array<{ key: string; label: string; count: number }>;
+  /** Every relation type the vault holds — `edgeTypeSummary` shows only the four largest. */
+  edgeTypeTotal: number;
+  /** Switches this page to the connections tab, which lists every relation type. */
+  onSeeAllRelations: () => void;
   kindLabel: (kind: string) => string;
   /** Required — no row is left quietly without a way back. */
   domainLink: OverviewTabDomainLink;
@@ -76,6 +80,8 @@ export function OverviewTab({
   kindRows,
   domainRows,
   edgeTypeSummary,
+  edgeTypeTotal,
+  onSeeAllRelations,
   kindLabel,
   domainLink,
   labels,
@@ -91,6 +97,8 @@ export function OverviewTab({
         islandCount={islandCount}
         kindsSummary={kindRows.map((r) => ({ key: r.kind, label: kindLabel(r.kind), count: r.count }))}
         relationsSummary={edgeTypeSummary}
+        relationsTotal={edgeTypeTotal}
+        onSeeAllRelations={onSeeAllRelations}
         labels={labels}
       />
 

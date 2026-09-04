@@ -65,6 +65,13 @@ export interface FreshnessSummary {
    */
   recentEvidence: RecentUpdateRow[];
   /** The evidence layer's total — the folded toggle carries the scale in its label. */
+  /**
+   * How many concept-layer rows are datable in all — `recent` is capped at
+   * `recentLimit`. The number used to be computed one line above the cap and
+   * thrown away, so the list truncated in silence while the evidence layer
+   * right below it stated its own total (2026-09-05 audit).
+   */
+  recentTotal: number;
   recentEvidenceTotal: number;
   /** How many domain/capability/element nodes have a known update date older than STALE_DAYS.
    * A node with an unknown date is "unknown", not "old", so it is excluded from the tally — missing
@@ -221,6 +228,7 @@ export function computeFreshnessSummary(
   return {
     domainRows,
     recent,
+    recentTotal: ownDocRows.length,
     recentEvidence,
     recentEvidenceTotal: evidenceRows.length,
     staleCount,

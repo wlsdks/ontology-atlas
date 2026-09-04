@@ -758,6 +758,23 @@ export function ProjectDetailPage({
                   icon={<Layers size={ICON_SIZE.lg} aria-hidden />}
                   title={t("domainEmptyTitle")}
                   description={t("domainEmptyHint")}
+                  /* The hint said where to do it — "connect a domain on the
+                     map" — and then made the reader go find the map. One door,
+                     the same address the insights empty states use. */
+                  action={
+                    <Link
+                      href="/topology/?workbench=create"
+                      data-testid="project-detail-composition-empty-action"
+                      className={controlClass({
+                        shape: "link",
+                        tone: "accent",
+                        hoverInk: "strong",
+                        className: "rounded-chip hover:underline",
+                      })}
+                    >
+                      {t("domainEmptyAction")}
+                    </Link>
+                  }
                 />
               </div>
             )}
@@ -856,6 +873,22 @@ export function ProjectDetailPage({
                    * so the rule is applied narrowly through the span wrapped here.
                    */
                   description={<span className="break-keep">{t("connectedEmptyHint")}</span>}
+                  /* A second project is what unblocks this card, and the
+                     project list is where one is made. */
+                  action={
+                    <Link
+                      href="/projects/"
+                      data-testid="project-detail-connected-empty-action"
+                      className={controlClass({
+                        shape: "link",
+                        tone: "accent",
+                        hoverInk: "strong",
+                        className: "rounded-chip hover:underline",
+                      })}
+                    >
+                      {t("connectedEmptyAction")}
+                    </Link>
+                  }
                 />
               </div>
             )}
