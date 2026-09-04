@@ -1927,10 +1927,12 @@ function TranscriptEntry({
    * in the middle of the conversation. Those are not for a person to read, and reading
    * them leaves nothing to do — they now go to the error block's 「Details」 (details).
    *
-   * The one that remains (`gate-off`) is not a diagnostic but **a fact about a
-   * promise**: in this conversation we cannot ask on your behalf before touching
-   * anything outside the folder. Folded away quietly, the screen would keep making a
-   * promise it cannot keep.
+   * The ones that remain are not diagnostics but **facts about a promise**. `gate-off` says the
+   * isolated configuration could not be written, so we cannot ask on your behalf before anything
+   * outside the folder is touched. `mode-moved` says the tool moved this conversation into a mode
+   * that accepts edits without asking — a different fact, in a different place, which is why it got
+   * its own sentence instead of borrowing that one (council, 2026-09-05). Folded away quietly,
+   * either would leave the screen making a promise it cannot keep.
    */
   return (
     <p
@@ -1938,7 +1940,11 @@ function TranscriptEntry({
       data-notice={event.text}
       className="break-keep rounded-chip border border-[color:var(--color-amber-source-a30)] bg-[color:var(--color-amber-source-a08)] px-2.5 py-1.5 text-label leading-prose text-[color:var(--color-text-secondary)]"
     >
-      {t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
+      {event.text === 'mode-moved'
+        ? t(event.serverGate ? 'notice.modeMovedServerGate' : 'notice.modeMoved', {
+            mode: event.mode ?? '',
+          })
+        : t(event.text === 'died-mid-turn' ? 'notice.diedMidTurn' : 'notice.gateOff')}
     </p>
   );
 }

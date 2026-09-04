@@ -107,3 +107,125 @@ describe('실측한 어댑터 — codex-acp 1.6.2', () => {
     expect(partitionModes(CODEX_ACP_1_6_2_MODES).offered).toHaveLength(1);
   });
 });
+
+/**
+ * **The id is not the whole verdict any more — the adapter now states a kind.**
+ *
+ * Read from the shipped distributions (2026-09-05):
+ *
+ * - `@agentclientprotocol/claude-agent-acp@0.74.0` `dist/session-mode.js` attaches
+ *   `_meta.kind` to every mode it builds: `standard` (`default`, `acceptEdits`), `plan`,
+ *   `auto_review` (`auto`), and `full_access` (`bypassPermissions`, only with `ALLOW_BYPASS`).
+ * - `@agentclientprotocol/codex-acp@1.9.0` `dist/index.js` does the same on its three modes:
+ *   `read-only` is `standard`, `agent` is `auto_review`, `agent-full-access` is `full_access`.
+ *
+ * `auto_review` means the adapter approves on the person's behalf, and its own source records that
+ * such an approval **never becomes an ACP permission request** — so Atlas would draw no card at all.
+ * `full_access` says the same thing without the euphemism. Both are the gate-removing class, and the
+ * class travels on the kind, not on the name: `codex-acp` calls the first one `agent` and
+ * `claude-agent-acp` calls it `auto`, and the next adapter will call it something else again.
+ *
+ * So the kind **wins over the id in both directions**: an id nobody has measured is dropped when its
+ * kind says gate-removing, and an id on the measured-safe list is dropped for the same reason.
+ */
+const kindMode = (id: string, metaKind: string | null) => ({ id, name: id, metaKind });
+
+describe('mode kind — the adapter states its own safety class', () => {
+  it('drops `auto` by id: claude 0.74.0 advertises it to every session', () => {
+    const out = partitionModes([kindMode('default', 'standard'), kindMode('auto', 'auto_review')]);
+    expect(out.offered.map((m) => m.id)).toEqual(['default']);
+    expect(out.unverified).toEqual([]);
+  });
+
+  it('drops an unknown id whose kind is `auto_review`', () => {
+    const out = partitionModes([kindMode('default', 'standard'), kindMode('brand-new', 'auto_review')]);
+    expect(out.offered.map((m) => m.id)).toEqual(['default']);
+  });
+
+  it('drops an unknown id whose kind is `full_access`', () => {
+    const out = partitionModes([kindMode('default', 'standard'), kindMode('brand-new', 'full_access')]);
+    expect(out.offered.map((m) => m.id)).toEqual(['default']);
+  });
+
+  it('lets the kind override a measured-safe id — `read-only` claiming `auto_review` is not safe', () => {
+    const out = partitionModes([kindMode('read-only', 'auto_review')]);
+    expect(out.offered).toEqual([]);
+  });
+
+  it('keeps `default` with a `standard` kind safe — the kind agrees with the id', () => {
+    const out = partitionModes([kindMode('default', 'standard')]);
+    expect(out.offered.map((m) => m.id)).toEqual(['default']);
+    expect(out.unverified).toEqual([]);
+  });
+
+  it('marks a measured-safe id unverified when its kind is one nobody measured', () => {
+    // Unknown is unverified, never safe — the 2026-08-17 stance, now on the kind axis too.
+    const out = partitionModes([kindMode('default', 'turbo')]);
+    expect(out.offered.map((m) => m.id)).toEqual(['default']);
+    expect(out.unverified).toEqual(['default']);
+  });
+
+  it('falls back to the id alone when the adapter states no kind', () => {
+    // codex-acp 1.6.2, the pinned launch snapshot, attaches no `_meta` at all.
+    const out = partitionModes([kindMode('read-only', null), kindMode('agent', null)]);
+    expect(out.offered.map((m) => m.id)).toEqual(['read-only']);
+    expect(out.unverified).toEqual([]);
+  });
+});
+
+/**
+ * The measured mode list of the claude adapter, pinned the way the codex one above is.
+ *
+ * Read from `@agentclientprotocol/claude-agent-acp@0.74.0` `dist/session-mode.js`
+ * `buildAvailableModes()` on 2026-09-05. `bypassPermissions` is appended only when the adapter's
+ * `ALLOW_BYPASS` is set, so both shapes are pinned. `dontAsk` — the strict mode this repository
+ * used to offer because it fails toward a refusal — **no longer exists** in the built list.
+ */
+describe('measured adapter — claude-agent-acp 0.74.0', () => {
+  const CLAUDE_ACP_0_74_0_MODES = [
+    { id: 'default', name: 'Manual', metaKind: 'standard' },
+    { id: 'acceptEdits', name: 'Accept edits', metaKind: 'standard' },
+    { id: 'plan', name: 'Plan', metaKind: 'plan' },
+    { id: 'auto', name: 'Auto', metaKind: 'auto_review' },
+  ];
+  const WITH_BYPASS = [
+    ...CLAUDE_ACP_0_74_0_MODES,
+    { id: 'bypassPermissions', name: 'Bypass permissions', metaKind: 'full_access' },
+  ];
+
+  it('offers only the two that still ask — Auto is not one of them', () => {
+    const out = partitionModes(CLAUDE_ACP_0_74_0_MODES);
+    expect(out.offered.map((m) => m.id)).toEqual(['default', 'plan']);
+    expect(out.unverified).toEqual([]);
+  });
+
+  it('is unchanged by the bypass build — the extra mode is hidden too', () => {
+    expect(partitionModes(WITH_BYPASS).offered.map((m) => m.id)).toEqual(['default', 'plan']);
+  });
+
+  /* This one comes first: if the adapter ever ships only safe modes the checks above measure nothing. */
+  it('really does carry something to hide — otherwise the checks above idle', () => {
+    expect(CLAUDE_ACP_0_74_0_MODES).toHaveLength(4);
+    expect(partitionModes(CLAUDE_ACP_0_74_0_MODES).offered).toHaveLength(2);
+  });
+});
+
+/**
+ * `codex-acp` 1.9.0, read on 2026-09-05. It is **not** the pinned launch snapshot (1.6.2 is), but its
+ * modes are pinned here because the id set did not change while the meaning did: the same
+ * `read-only` id now sends `workspaceWrite`, and `agent` gained the `auto_review` kind. The mode
+ * filter is not what keeps that adapter out — `runtime-gate.ts` and the launch pin are.
+ */
+describe('measured adapter — codex-acp 1.9.0', () => {
+  const CODEX_ACP_1_9_0_MODES = [
+    { id: 'read-only', name: 'Ask for approval', metaKind: 'standard' },
+    { id: 'agent', name: 'Approve for me', metaKind: 'auto_review' },
+    { id: 'agent-full-access', name: 'Full access', metaKind: 'full_access' },
+  ];
+
+  it('offers read-only alone, now for two independent reasons', () => {
+    const out = partitionModes(CODEX_ACP_1_9_0_MODES);
+    expect(out.offered.map((m) => m.id)).toEqual(['read-only']);
+    expect(out.unverified).toEqual([]);
+  });
+});

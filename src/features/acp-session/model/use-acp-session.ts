@@ -12,10 +12,12 @@ import {
 } from '@/shared/lib/tauri-acp';
 
 import { GATED_SESSION_MODE } from './runtime-gate';
+import { modeKeepsGate } from './mode-safety';
 import { isDiagnosticStderr } from './acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
-import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
+import { VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './vault-mcp-server';
 import {
+  applyCurrentMode,
   createAcpClient,
   type AcpClient,
   type AcpPermissionRequest,
@@ -62,7 +64,19 @@ export type AcpEvent =
        */
       rawInput?: unknown;
     }
-  | { kind: 'notice'; id: string; text: string };
+  | {
+      kind: 'notice';
+      id: string;
+      text: string;
+      /**
+       * The mode the adapter moved this session into, verbatim as the adapter names it. Present
+       * only on `mode-moved`. Not translated: it is the id the tool itself shows, and inventing a
+       * friendly name for a mode this app refuses to offer would name something nobody can pick.
+       */
+      mode?: string;
+      /** Whether the server-side Atlas write checkpoint is actually on for this session. */
+      serverGate?: boolean;
+    };
 
 export type AcpSessionStatus =
   | 'idle'
@@ -387,6 +401,41 @@ export function useAcpSession({
     });
   }, []);
 
+  /**
+   * **The screen stops claiming a gate it no longer has.**
+   *
+   * One sentence, two ways to arrive at it: the adapter moved a standing session
+   * (`current_mode_update`), or the session opened in such a mode already. Both are the same fact
+   * about the same conversation, so both say it the same way; `reason` separates them in the folded
+   * diagnostics, where a person looking for the cause will read it.
+   *
+   * ⚠️ **It is not the `gate-off` sentence** (council, 2026-09-05). That one reads *"Atlas cannot
+   * ask you before a file outside this folder is touched. The tool follows the settings you gave it
+   * directly"* — and on these two paths **both halves are wrong**. The person gave no such setting;
+   * the adapter moved the session on its own. And the mode it moves into accepts edits **inside**
+   * the folder, which is the half the outside-the-folder sentence never mentions. `gate-off` keeps
+   * its own job: the isolated configuration could not be written.
+   *
+   * The mode is named verbatim so the sentence points at something the person can find in the tool
+   * itself, and the reassurance about the Atlas server checkpoint is attached **only when that
+   * checkpoint is actually on** (`vaultWriteConsentOn`) — for a config-isolated runtime it is
+   * deliberately switched off, and promising it there would be a sentence the machinery does not
+   * keep.
+   */
+  const noteModeMoved = useCallback(
+    (modeId: string, reason: string) => {
+      push({
+        kind: 'notice',
+        id: nextEventId(),
+        text: 'mode-moved',
+        mode: modeId,
+        serverGate: vaultWriteConsentOn(mcpServers),
+      });
+      keepDiagnostic(`gate-off:${reason}`);
+    },
+    [keepDiagnostic, mcpServers, push],
+  );
+
   const applyUpdate = useCallback(
     (update: Record<string, unknown>) => {
       // Any update at all counts as the turn speaking; what it says does not matter here.
@@ -399,6 +448,28 @@ export function useAcpSession({
         // What `/` can invoke. It holds **only what arrived** — with nothing, typing `/` in the
         // composer does nothing (`slash-commands.ts`).
         setSlashCommands(readSlashCommands(update));
+        return;
+      }
+      if (kind === 'current_mode_update') {
+        /*
+         * ⚠️ **The adapter moves the session on its own, and this used to be dropped on the floor.**
+         *
+         * Read from `claude-agent-acp` 0.74.0 `dist/session-mode.js` (2026-09-05):
+         * `AUTO_MODE_FALLBACK = "acceptEdits"`. Choosing `auto` on a model without `supportsAutoMode`
+         * — or switching to such a model mid-conversation — silently moves the session there and
+         * announces it with nothing but this notification. Ignoring it left the dropdown stating a
+         * mode the session had already left, on the one value that decides whether a person is asked
+         * before something outside the folder is touched.
+         *
+         * So two things happen, and they are separate. The state follows the session
+         * (`applyCurrentMode`), and when the verdict says the new mode removes the gate the screen
+         * **says so in the sentence it already has** — the same `gate-off` notice raised when the
+         * isolated config could not be written. The detail is kept as a diagnostic beside it.
+         */
+        const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
+        if (!modeId) return;
+        setChoices((prev) => applyCurrentMode(prev, modeId));
+        if (!modeKeepsGate(modeId)) noteModeMoved(modeId, `mode-clamped:${modeId}`);
         return;
       }
       if (kind === 'agent_message_chunk' && text) {
@@ -467,7 +538,7 @@ export function useAcpSession({
         }
       }
     },
-    [emitWorkReceipt, push, setApprovedOntologyWriteTracked],
+    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked],
   );
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
@@ -793,8 +864,26 @@ export function useAcpSession({
         }
       }
 
+      /*
+       * ⚠️ **A session can *begin* in a mode the filter hides, and nothing judged that** (evidence
+       * review, 2026-09-05). Only `GATED_SESSION_MODE` was consulted here, and it names `codex-acp`
+       * alone — so whatever `session/new` or `session/load` reported went into the state unexamined.
+       * A resumed conversation reports the mode it was left in, so a claude session could open on
+       * `acceptEdits` with no verdict, no notice, and a Select rendering its placeholder because
+       * that mode is not on the offered list. The screen fell silent on the one value that decides
+       * whether a person is asked.
+       *
+       * Beginning in a mode and being moved into it are the same fact about the same session, so the
+       * verdict and the sentence are the same as the clamp path's. This runs **after** the gate above
+       * because what was just applied, not what `session/new` answered, is where the session is.
+       */
+      const openingMode = choices.currentModeId;
+      const openedWithoutGate = openingMode !== null && !modeKeepsGate(openingMode);
+      if (openingMode !== null) choices = applyCurrentMode(choices, openingMode);
+
       if (!disposedRef.current) {
         setChoices(choices);
+        if (openedWithoutGate) noteModeMoved(openingMode, `mode-initial:${openingMode}`);
         setStatusTracked('ready');
       }
       // The list is filled after the session stands, so it does not hold up the frame the screen appears in.
@@ -847,6 +936,7 @@ export function useAcpSession({
     askUser,
     keepDiagnostic,
     mcpServers,
+    noteModeMoved,
     push,
     resetDiagnostics,
     runtimeId,
