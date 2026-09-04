@@ -408,6 +408,15 @@ function copyTree(srcRoot, destRoot, { skip = () => false } = {}) {
   return { created, skipped };
 }
 
+/** Canonical path when it exists, the resolved path when it does not (yet). */
+function realpathOrSelf(path) {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
 async function runInit(targetArg, opts = {}) {
   const quickStart = Boolean(opts.quickStart);
   const target = resolve(cwd(), targetArg ?? 'vault');
@@ -441,10 +450,18 @@ async function runInit(targetArg, opts = {}) {
   // code repository, copying them into the vault would leave three files nobody
   // can invoke while the README promises they appear "with no extra setup". So
   // in that case they are skipped here and installed at the root below.
-  const vaultIsRepoRoot = resolve(target) === resolve(cwd());
+  // ⚠️ Same containment rule as the agent configs below (`cwdBindingScope`).
+  // Measured 2026-09-04: `init <folder outside cwd>` run from this repository
+  // wrote six skill files into *this repository's* `.claude/skills/` and
+  // `.agents/skills/` while the config writer, one screen lower, correctly
+  // refused to touch cwd for the same reason. A vault outside cwd is its own
+  // root: its skills go with it, and cwd is left exactly as it was.
+  const skillsScope = cwdBindingScope(realpathOrSelf(cwd()), realpathOrSelf(target));
+  const vaultIsRepoRoot = skillsScope.reason === 'same';
+  const skillsStayInVault = vaultIsRepoRoot || skillsScope.reason === 'outside';
   const skillsRelativeRoot = join('.claude', 'skills');
   const { created, skipped } = copyTree(templateRoot, target, {
-    skip: (rel) => !vaultIsRepoRoot && (rel === skillsRelativeRoot || rel.startsWith(`${skillsRelativeRoot}${sep}`)),
+    skip: (rel) => !skillsStayInVault && (rel === skillsRelativeRoot || rel.startsWith(`${skillsRelativeRoot}${sep}`)),
   });
 
   // The same three skills, put where the agent will actually look for them.
@@ -463,21 +480,31 @@ async function runInit(targetArg, opts = {}) {
   const skillsSource = join(templateRoot, skillsRelativeRoot);
   if (existsSync(skillsSource)) {
     for (const name of readdirSync(skillsSource)) installedSkills.push(name);
-    const destinations = vaultIsRepoRoot
+    // Where the agent will be started from: cwd when the vault sits inside it,
+    // the vault itself when the vault is its own root or lies elsewhere.
+    const skillsRoot = skillsStayInVault ? target : cwd();
+    const destinations = skillsStayInVault
       // The template already wrote `.claude/skills` here; only the mirror is missing.
       ? [agentsSkillsRelativeRoot]
       : [skillsRelativeRoot, agentsSkillsRelativeRoot];
     const written = [];
     for (const relativeRoot of destinations) {
-      if (copyTree(skillsSource, join(cwd(), relativeRoot)).created > 0) written.push(relativeRoot);
+      if (copyTree(skillsSource, join(skillsRoot, relativeRoot)).created > 0) written.push(relativeRoot);
     }
     if (written.length > 0) {
-      const where = vaultIsRepoRoot ? '' : ' (installed where the agent runs, not in the vault)';
-      ok(`  ${written.map((relativeRoot) => `${relativeRoot}/`).join(' + ')} — ${installedSkills.join(', ')}${where}`);
+      const where = skillsStayInVault
+        ? skillsScope.reason === 'outside' ? ' (in the vault: it is outside cwd, so cwd is untouched)' : ''
+        : ' (installed where the agent runs, not in the vault)';
+      ok(`  ${skillsStayInVault ? 'vault' : 'cwd'} ${written.map((relativeRoot) => `${relativeRoot}/`).join(' + ')} — ${installedSkills.join(', ')}${where}`);
     }
   }
 
-  const briefingSnippet = `${COLORS.dim}${indentBriefing(rootBriefing(relative(cwd(), target)))}${COLORS.reset}`;
+  // The paste block names the vault from the root it will be pasted into: the
+  // codebase root when the vault lives inside it, otherwise the vault itself
+  // (a `../../..` chain only ever resolved from the directory `init` ran in).
+  const briefingSnippet = `${COLORS.dim}${indentBriefing(rootBriefing(
+    skillsScope.write ? skillsScope.relativeVault.replace(/^\.\//, '') : '.',
+  ))}${COLORS.reset}`;
 
   if (created === 0) {
     warn(`no new files written: target already has matching files`);
