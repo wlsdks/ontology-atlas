@@ -26,7 +26,6 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 - Supporting implementation: `mcp/src/index.js#queryOntologyTool`
 - Focused test: `mcp/src/task-navigation-evidence.test.mjs#resolves reviewed JavaScript functions and named tests without source snippets`
 - Focused test: `mcp/src/agent-brief-compact.test.mjs#routes by persisted responsibility and boundaries instead of noun overlap`
-- Focused test: `mcp/src/integration.test.mjs#query_ontology agent_brief: persisted claim boundaries outrank task noun overlap`
 
 ## Includes
 
