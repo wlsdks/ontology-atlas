@@ -4,6 +4,7 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
+import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from "@/shared/ui/page-frame";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -46,6 +47,10 @@ import {
   type InsightsTab,
 } from "../lib/insights-tab-state";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
+import {
+  selectInsightsDocumentTitle,
+  selectInsightsScopeTitle,
+} from "../lib/insights-scope-title";
 import { buildImpactRanking } from "../lib/impact-ranking";
 import {
   buildDoNextQueue,
@@ -296,6 +301,26 @@ export function OntologyInsightsPage() {
     [dataSourceMode],
   );
   useNavRailSettingsSlot(navRailSettingsSlot);
+
+  /*
+   * **The board must not call a bundled sample the person's folder** (2026-09-04).
+   *
+   * On the Online Store sample the tab read "My folder analysis · Ontology Atlas"
+   * and the heading and lede said the same in both locales, while the map's INDEX
+   * two clicks away said the sample is read-only and not theirs. Every number here
+   * is the sample's, so the name is the sample's; the folder wording is untouched
+   * for someone who actually opened a folder. Static export bakes one <title> per
+   * route, so the sample tab title can only be applied on the client.
+   */
+  const scopeTitle = selectInsightsScopeTitle(dataSourceMode, {
+    sample: t("titleSample"),
+    folder: t("title"),
+  });
+  const scopeSubtitle = selectInsightsScopeTitle(dataSourceMode, {
+    sample: t("subtitleSample"),
+    folder: t("subtitle"),
+  });
+  useDocumentTitle(selectInsightsDocumentTitle(dataSourceMode, t("documentTitleSample")));
 
   const nodes = insight?.nodes ?? EMPTY_NODES;
   const edges = insight?.edges ?? EMPTY_EDGES;
@@ -932,10 +957,10 @@ export function OntologyInsightsPage() {
         <header className={PAGE_HEADER_ROW}>
           <div className={PAGE_TITLE_ROW}>
             <h1 className="text-display font-[var(--font-weight-signature)] tracking-[var(--tracking-card)] text-[color:var(--color-text-primary)]">
-              {t("title")}
+              {scopeTitle}
             </h1>
             <p className="max-w-xl text-body text-[color:var(--color-text-tertiary)]">
-              {t("subtitle")}
+              {scopeSubtitle}
             </p>
           </div>
           {insight ? (

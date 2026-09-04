@@ -360,3 +360,137 @@ describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Footer scope contract (owner report, 2026-09-04).
+ *
+ * The dialog title is visually hidden for Radix, so before this the scope was named
+ * only inside the zero-result sentence; "0 MATCHES" on a sample that simply lacks
+ * the word read as a broken search. The footer is the one line present in every
+ * state, so the corpus name rides along with the count there.
+ */
+describe("GlobalSearch — footer names the searched scope", () => {
+  const nodes: KnowledgeGraphNode[] = [
+    node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),
+    node({ id: "capability:checkout", title: "Checkout", kind: "capability" }),
+  ];
+
+  function footerText(): string {
+    // The count, the separator, and the scope are three spans with a CSS gap;
+    // join them the way the eye reads them.
+    return Array.from(screen.getByTestId("global-search-footer-count").children)
+      .map((child) => child.textContent?.trim() ?? "")
+      .join(" ");
+  }
+
+  it("names the single loaded project beside the indexed count", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    expect(footerText()).toBe("3 indexed · Online Store");
+  });
+
+  it("never breaks the number and lets only the scope name truncate", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+    // Measured 2026-09-04: "172.9px + 186.9px of hints" in a 346px footer wrapped
+    // the proper noun mid-phrase on every phone width. The count keeps its width,
+    // the hints keep theirs, the name is the one thing that yields.
+    const count = screen.getByTestId("global-search-footer-count");
+    expect(count.className).toContain("min-w-0");
+    expect(count.children[0]?.className).toContain("shrink-0");
+    const scope = screen.getByTestId("global-search-footer-scope");
+    expect(scope.className).toContain("truncate");
+    expect(scope.className).toContain("min-w-0");
+    expect(count.nextElementSibling?.className).toContain("shrink-0");
+  });
+
+  it("reads the scope name in the reader's locale, like the map label does", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={[
+          ...nodes,
+          node({
+            id: "project:storefront",
+            title: "Online Store",
+            kind: "project",
+            displayLocales: { en: "Online Store (EN)" },
+          }),
+        ]}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+    expect(footerText()).toBe("3 indexed · Online Store (EN)");
+  });
+
+  it("counts only what the map draws, so a starter README is not an indexed concept", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={[...nodes, node({ id: "vault-readme:README", title: "My ontology vault", kind: "vault-readme" })]}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+    expect(footerText()).toBe("3 indexed · Online Store");
+  });
+
+  it("keeps the name beside the match count once a query narrows the list", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+      target: { value: "mcp server" },
+    });
+
+    expect(footerText()).toBe("1 matches · Online Store");
+  });
+
+  it("falls back to \"this map\" when no single project names the scope", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[
+          project({ slug: "storefront", name: "Online Store" }),
+          project({ slug: "atlas", name: "Ontology Atlas" }),
+        ]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    expect(footerText()).toBe("4 indexed · this map");
+  });
+});

@@ -55,6 +55,25 @@ export function daysAgoFromIso(updatedAtIso: string, nowMs: number): number {
   return Math.max(0, Math.floor((nowMs - updatedMs) / DAY_MS));
 }
 
+/**
+ * The kinds that own a document but are never drawn as a node — `document` is
+ * evidence and `vault-readme` is the reader guide a scaffolded folder gets. Both
+ * are filtered out by `buildOntologyTree` before a row is drawn, and
+ * `computeCanonicalCensus` leaves `vault-readme` out of the concept count.
+ *
+ * The lens has to agree with them (owner report, 2026-09-04). Right after the
+ * starter files are written, the INDEX segment read "Last 1d · 5" while the
+ * census said 4 concepts and the segment drew 4 rows: the fifth was the
+ * starter's own README.md, changed but never a node. A count nobody can point
+ * at on screen is a miscount, so a kind that is not drawn is not counted.
+ */
+const NON_GRAPH_NODE_KINDS: ReadonlySet<string> = new Set(["document", "vault-readme"]);
+
+/** Whether this kind is drawn as a node, and so may be counted by the lens. */
+export function isGraphDrawnKind(kind: string): boolean {
+  return !NON_GRAPH_NODE_KINDS.has(kind);
+}
+
 interface RecentChangeRow {
   id: string;
   title: string;
@@ -76,7 +95,8 @@ export interface RecentChangesResult {
  * as `use-vault-doc-freshness.ts`), so the date is looked up indirectly through
  * `freshnessIndex` (slug → real `updatedAt` ISO). A node with no `evidenceIds`,
  * or one absent from `freshnessIndex`, is treated as unknown and left out of the
- * lens rather than assumed present.
+ * lens rather than assumed present, and so is a kind that is never drawn as a
+ * node (`isGraphDrawnKind`).
  */
 export function computeRecentChanges(
   nodes: readonly KnowledgeGraphNode[],
@@ -88,6 +108,9 @@ export function computeRecentChanges(
   const rows: RecentChangeRow[] = [];
 
   for (const node of nodes) {
+    // A kind the map and the INDEX tree never draw cannot be one of the rows the
+    // segment shows, so counting it would make the label disagree with the list.
+    if (!isGraphDrawnKind(node.kind)) continue;
     const slug = node.evidenceIds[0];
     if (!slug) continue;
     const updatedAt = freshnessIndex.get(slug);
@@ -128,7 +151,10 @@ export function computeAdaptiveRecentChanges(
   nowMs: number,
   maxShare = 0.5,
 ): AdaptiveRecentChangesResult {
-  const total = nodes.length;
+  // The denominator is the same population as the numerator — nodes that are
+  // actually drawn — so "what share of the map is lit" cannot be diluted by
+  // documents the map never shows.
+  const total = nodes.filter((node) => isGraphDrawnKind(node.kind)).length;
   let last: AdaptiveRecentChangesResult | null = null;
   for (const windowDays of RECENT_CHANGES_ADAPTIVE_LADDER_DAYS) {
     const result = computeRecentChanges(nodes, freshnessIndex, nowMs, windowDays);

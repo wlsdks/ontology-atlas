@@ -102,6 +102,7 @@ export {
   flattenTree,
   filterTreeByNodeIds,
   filterTreeByQuery,
+  isGraphDrawnKind,
 } from "./lib/ontology-tree";
 export type {
   OntologyTreeNode,

@@ -51,6 +51,7 @@ export {
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   computeAdaptiveRecentChanges,
   computeRecentChanges,
+  isGraphDrawnKind,
   isWithinRecentWindow,
   selectRecentVaultDocs,
 } from "./recent-changes";
