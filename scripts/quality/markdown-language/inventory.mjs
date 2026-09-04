@@ -8,6 +8,8 @@ const HANGUL = /[\u1100-\u11ff\u3130-\u318f\ua960-\ua97f\uac00-\ud7af\ud7b0-\ud7
  * this build happens to ship. Anything else carrying Hangul is still counted as a violation.
  */
 const TYPED_LOCALE_KEY = /^(?:display|summary_[a-z][a-z0-9-]*)_[a-z]{2}\s*:/;
+/** `- Focused test: `path#title`` on an element's Evidence list, title quoted from a test file. */
+const QUOTED_EVIDENCE_COORDINATE = /^\s*-\s*Focused test:\s*(`[^`\n]+#[^`\n]+`)\s*$/;
 
 const OPERATIONAL_PATHS = new Set([
   'AGENTS.md',
@@ -58,6 +60,7 @@ function emptyScopeSummary() {
     unexpectedFiles: 0,
     unexpectedLines: 0,
     unexpectedHangulCodePoints: 0,
+    quotedEvidenceLines: 0,
   };
 }
 
@@ -70,6 +73,7 @@ export function auditMarkdownEntries(entries) {
     mirrorFiles: 0,
     localeTemplateFiles: 0,
     allowedLocaleLines: 0,
+    quotedEvidenceLines: 0,
     unexpectedFiles: 0,
     unexpectedLines: 0,
     unexpectedHangulCodePoints: 0,
@@ -125,6 +129,22 @@ export function auditMarkdownEntries(entries) {
       if (inLeadingFrontmatter && TYPED_LOCALE_KEY.test(line)) {
         result.allowedLocaleLines += 1;
         continue;
+      }
+      // A focused-test coordinate quotes a test title from source. When that
+      // title is Korean, the Hangul is quoted evidence, the same class as the
+      // path beside it, not contributor-facing prose: `docs:language` held
+      // these at zero and thirteen vault elements could cite no test at all
+      // (2026-09-04). Only the exact bullet shape qualifies, only when every
+      // Hangul code point sits inside the backticks, and the lines are counted
+      // under their own ratchet so the carve-out cannot widen into prose.
+      if (!inLeadingFrontmatter && QUOTED_EVIDENCE_COORDINATE.test(line)) {
+        const quoted = line.match(QUOTED_EVIDENCE_COORDINATE)[1];
+        const outside = line.replace(quoted, '');
+        if (![...outside.matchAll(HANGUL)].length) {
+          result.quotedEvidenceLines += 1;
+          scope.quotedEvidenceLines += 1;
+          continue;
+        }
       }
 
       fileHasUnexpectedHangul = true;
