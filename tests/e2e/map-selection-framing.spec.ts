@@ -52,7 +52,7 @@ test.beforeEach(async ({ page }) => {
 
 test("a node picked from the search palette is framed left of the detail panel", async ({ page }) => {
   // The map's search chip opens the unified palette (an `aria-modal` dialog).
-  const palette = page.getByRole("dialog", { name: "글로벌 검색" });
+  const palette = page.getByRole("dialog", { name: "이 지도에서 검색" });
   await expect
     .poll(
       async () => {

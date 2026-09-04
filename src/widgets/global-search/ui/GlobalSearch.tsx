@@ -36,7 +36,8 @@ export interface GlobalSearchProps {
 }
 
 /**
- * Global search (cmdk based).
+ * The map's search palette (cmdk based). It searches one scope — the vault or
+ * sample currently loaded — and says so, in the title and in the empty state.
  *
  * Our own matchers (`matchOntologyNodes`, `matchProjects`) do the scoring and
  * sorting, and cmdk handles display and keyboard nav only (`shouldFilter={false}`) —
@@ -123,6 +124,20 @@ export function GlobalSearch({
     [nodes],
   );
   const totalCorpus = ontologySize + Math.max(0, projectSize - projectNodeCount);
+  /**
+   * **Name what was actually searched** (owner report, 2026-09-04).
+   *
+   * A visitor on the bundled "Online Store" sample typed "MCP" under a palette
+   * titled "Global search" and read "0 MATCHES · 125 INDEXED". Nothing was
+   * broken — MCP is not in that sample — but the title promised a search wider
+   * than the loaded vault, so the empty result read as a defect in the search.
+   *
+   * The scope has a name whenever exactly one project is loaded (the sample, or
+   * a single-project vault); it is already on screen as the project chip. With
+   * several projects there is no single honest name, so the copy falls back to
+   * "this map".
+   */
+  const scopeName = projects?.length === 1 ? projects[0].name.trim() || null : null;
   const totalMatches = ontologyResults.length + projectResults.length;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
@@ -416,7 +431,9 @@ export function GlobalSearch({
                 : t('emptyIndexed', { count: totalCorpus })
               : hasFilter
                 ? t('emptyNoMatchFiltered', { query })
-                : t('emptyNoMatch', { query })}
+                : scopeName
+                  ? t('emptyNoMatchScoped', { query, name: scopeName })
+                  : t('emptyNoMatch', { query })}
           </Command.Empty>
 
           {ontologyResults.length > 0 ? (
