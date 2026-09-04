@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { GitBranch, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -13,6 +13,7 @@ import {
 } from '@/entities/knowledge-graph';
 import { OntologyChangeReview } from '@/features/ontology-change-review';
 import { Button, IconButton, Select, Surface, Textarea } from '@/shared/ui';
+import { fieldLabel } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 
 export interface MeaningEditorNode {
@@ -243,35 +244,66 @@ export function MeaningEditorPanel({
             />
           ) : (
             <>
-              <Select
-                size="lg"
-                value={relation}
-                onChange={(value) => {
-                  setRelation(value as MeaningEditRelation);
-                  setPlan(null);
-                }}
-                ariaLabel={t('relation')}
-                options={RELATIONS.map((value) => ({
-                  value,
-                  label: t(`relationName.${value}`),
-                }))}
-                data-testid="meaning-editor-relation"
-              />
-              <Select
-                size="lg"
-                value={targetId}
-                onChange={(value) => {
-                  setTargetId(value);
-                  setPlan(null);
-                }}
-                ariaLabel={t('target')}
-                options={eligible.map((candidate) => ({
-                  value: candidate.id,
-                  label: candidate.title,
-                  description: candidate.slug,
-                }))}
-                data-testid="meaning-editor-target"
-              />
+              {/*
+                Both selects used to carry an `ariaLabel` and nothing visible.
+                A person reading the panel saw two unnamed dropdowns and no
+                statement of what either value goes on to do. The label says
+                what the field is; the help line says which program reads it
+                and what that program does with it — derived from the code, not
+                from intention (`tests/contract/field-help-consumers.contract.test.ts`
+                pins each named consumer to the file that performs it).
+              */}
+              <FieldWithHelp
+                id="meaning-editor-relation-field"
+                label={t('relation')}
+                help={t('relationHelp')}
+                testId="meaning-editor-relation-help"
+              >
+                {(id, describedBy) => (
+                  <Select
+                    id={id}
+                    size="lg"
+                    value={relation}
+                    onChange={(value) => {
+                      setRelation(value as MeaningEditRelation);
+                      setPlan(null);
+                    }}
+                    ariaLabel={t('relation')}
+                    ariaDescribedby={describedBy}
+                    options={RELATIONS.map((value) => ({
+                      value,
+                      label: t(`relationName.${value}`),
+                    }))}
+                    data-testid="meaning-editor-relation"
+                  />
+                )}
+              </FieldWithHelp>
+              <FieldWithHelp
+                id="meaning-editor-target-field"
+                label={t('target')}
+                help={t('targetHelp')}
+                testId="meaning-editor-target-help"
+              >
+                {(id, describedBy) => (
+                  <Select
+                    id={id}
+                    size="lg"
+                    value={targetId}
+                    onChange={(value) => {
+                      setTargetId(value);
+                      setPlan(null);
+                    }}
+                    ariaLabel={t('target')}
+                    ariaDescribedby={describedBy}
+                    options={eligible.map((candidate) => ({
+                      value: candidate.id,
+                      label: candidate.title,
+                      description: candidate.slug,
+                    }))}
+                    data-testid="meaning-editor-target"
+                  />
+                )}
+              </FieldWithHelp>
               <Textarea
                 label={t('why')}
                 className="w-full"
@@ -331,5 +363,44 @@ export function MeaningEditorPanel({
         </footer>
       </section>
     </Surface>
+  );
+}
+
+/**
+ * A labelled field whose help line names the program that reads the value.
+ *
+ * `Select` carries no label or hint of its own (unlike `Input`/`Textarea`), so
+ * this wraps it in the same three-part shape the field primitives use — label,
+ * control, quaternary help — and hands the control both ids so the help reaches
+ * a screen reader as the field's description rather than as loose text beside it.
+ */
+function FieldWithHelp({
+  id,
+  label,
+  help,
+  testId,
+  children,
+}: {
+  id: string;
+  label: string;
+  help: string;
+  testId: string;
+  children: (id: string, describedBy: string) => ReactNode;
+}) {
+  const helpId = `${id}-help`;
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={id} className={fieldLabel()}>
+        {label}
+      </label>
+      {children(id, helpId)}
+      <p
+        id={helpId}
+        data-testid={testId}
+        className="text-label leading-label text-[color:var(--color-text-quaternary)]"
+      >
+        {help}
+      </p>
+    </div>
   );
 }

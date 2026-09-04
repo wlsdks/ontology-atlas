@@ -320,6 +320,8 @@ export function DocFrontmatterBlock({
   // not read as clickable like the `REFERENCE_KEYS` tokens above). Filtered
   // through `looksLikeCodePath` so a folder-prefixed vault ref accidentally
   // placed in `elements:` doesn't masquerade as a code path.
+  const hasReferenceField = fields.some((f) => REFERENCE_KEYS.has(f.key));
+
   const codeLocations: string[] = [];
   {
     const raw = doc.frontmatter?.elements;
@@ -671,6 +673,25 @@ export function DocFrontmatterBlock({
           <div className="text-[color:var(--color-text-quaternary)]" aria-hidden>
             ---
           </div>
+          {/*
+            What the relation keys above go on to do, stated once for the group
+            rather than per key. `depends_on`, `relates_to`, `contains`,
+            `belongs_to` and `evidence` are all read by the same consumer — the
+            compiler, which turns each entry into a typed edge and reports one
+            that resolves to no document in this folder. It reports; it does not
+            refuse (`ontology-compiler.mjs` emits `dangling-graph-reference` at
+            severity `warning`), and the sentence must not promise otherwise.
+            `tests/contract/field-help-consumers.contract.test.ts` holds both
+            halves.
+          */}
+          {hasReferenceField ? (
+            <p
+              data-testid="doc-frontmatter-relations-help"
+              className="mt-2 border-t border-[color:var(--color-divider)] pt-2 font-sans text-label leading-label text-[color:var(--color-text-quaternary)]"
+            >
+              {t("relationsConsumerHelp")}
+            </p>
+          ) : null}
         </div>
         {codeLocations.length > 0 ? (
           <div
@@ -692,6 +713,18 @@ export function DocFrontmatterBlock({
                 />
               ))}
             </ul>
+            {/* Who reads these paths: `deriveProjectSourceWitnessesFromDocs`
+                turns each one into a source-role witness, and the receipt marks
+                it supported only when the connected code folder actually holds
+                it. A path that is not there turns the receipt to
+                `review_required` — that is the consequence a person can act on,
+                so it is what the sentence says. */}
+            <p
+              data-testid="doc-frontmatter-code-locations-help"
+              className="text-label leading-label text-[color:var(--color-text-quaternary)]"
+            >
+              {t("codeLocationsConsumerHelp")}
+            </p>
           </div>
         ) : null}
         {quickPatchSection}
