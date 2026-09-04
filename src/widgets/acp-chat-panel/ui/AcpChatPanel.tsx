@@ -59,6 +59,8 @@ import {
   modeCopyKey,
   withoutErrorEcho,
   linkSlugs,
+  readToolFallbackTarget,
+  readToolOutcome,
   readToolTargets,
   deriveAcpTurnActivity,
   type AcpTurnActivity,
@@ -1870,15 +1872,31 @@ function TranscriptEntry({
      * from what was actually done.
      */
     const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
-    const done = event.status === 'completed';
+    const outcome = readToolOutcome(event.rawOutput, event.status);
+    const done = outcome.kind === 'count' || outcome.status !== 'running';
     const toolTargets = knownSlugs ? readToolTargets(event.rawInput, knownSlugs) : [];
+    /*
+     * The second lane, used only when no node of this vault was named: a file path, the
+     * slug of a concept being created, or what was searched for. Plain text, never a
+     * marker — it names something the vault may not contain (`tool-targets.ts`).
+     */
+    const fallbackTarget = toolTargets.length === 0 ? readToolFallbackTarget(event.rawInput) : null;
     return (
       <p
         data-acp-entry="tool"
         data-tool-kind={event.toolKind}
         data-tool-status={event.status}
         data-tool-label={label.kind}
-        className="flex items-center gap-1.5 break-all text-label leading-label text-[color:var(--color-text-quaternary)]"
+        data-tool-outcome={outcome.kind === 'count' ? String(outcome.count) : outcome.status}
+        /*
+         * ⚠️ **Tertiary, not quaternary** (2026-09-05). This row used to be the weakest ink
+         * in the app because it lived folded inside a disclosure nobody opened. Standing in
+         * the transcript it has a job — it is the only thing that can say the search found
+         * nothing under a confident paragraph — and an ink chosen for 「ignorable」 cannot do
+         * a job. The answer above still wins: it is `--color-text-primary` at body size
+         * against this one line of `text-label`.
+         */
+        className="flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
       >
         {/* Finished and running are separated by **one dot** — another badge would make
             the tool lines noisier than the conversation. */}
@@ -1891,14 +1909,16 @@ function TranscriptEntry({
               : 'bg-[color:var(--color-indigo-accent)]',
           )}
         />
-        {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+        <span className="shrink-0">
+          {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+        </span>
         {/*
           **Which node was touched** (2026-08-17). If this line only says 「Read a concept」 (read a concept) without naming the target, reading the transcript later tells you nothing about what happened and there is nothing to wire to the map. The value was already arriving in `rawInput`.
 
           It uses the same dotted underline — it means the same thing as a name in the answer (something that exists on the map), so there is no reason to give it a different shape.
         */}
         {toolTargets.length > 0 ? (
-          <span className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
+          <span className="min-w-0 flex-1 truncate">
             {toolTargets.map((slug, i) => (
               <span key={slug}>
                 {i === 0 ? ' · ' : ', '}
@@ -1915,6 +1935,30 @@ function TranscriptEntry({
             ))}
           </span>
         ) : null}
+        {fallbackTarget ? (
+          <span
+            data-testid="acp-chat-tool-target"
+            data-tool-target={fallbackTarget.kind}
+            className="min-w-0 flex-1 truncate"
+          >
+            {` · ${fallbackTarget.value}`}
+          </span>
+        ) : null}
+        {/*
+          **What came back** (2026-09-05). Right-aligned so the counts form one column down
+          the transcript: a `0` beside a paragraph that answers confidently is a
+          contradiction a person can see without opening anything. `tool-outcome.ts` reads
+          the number the tool itself reported and otherwise says only the status, so this
+          slot never invents a result.
+        */}
+        <span
+          data-testid="acp-chat-tool-outcome"
+          className="ml-auto shrink-0 tabular-nums"
+        >
+          {outcome.kind === 'count'
+            ? t('toolOutcome.found', { count: outcome.count })
+            : t(`toolOutcome.${outcome.status}`)}
+        </span>
       </p>
     );
   }

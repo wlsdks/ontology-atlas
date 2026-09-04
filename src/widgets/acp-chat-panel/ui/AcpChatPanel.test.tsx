@@ -144,14 +144,6 @@ function answerFor(id: number) {
 }
 
 /** The work detail is collapsed by default. Checks that measure a tool row expand it explicitly first. */
-async function openLatestWorkGroup() {
-  const groups = await screen.findAllByTestId('acp-chat-work-group');
-  const group = groups.at(-1)!;
-  if (group.getAttribute('aria-expanded') !== 'true') fireEvent.click(group);
-  await waitFor(() => expect(group).toHaveAttribute('aria-expanded', 'true'));
-  return group;
-}
-
 afterEach(() => {
   cleanup();
   bridge.available = true;
@@ -300,7 +292,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getByText('어디부터').tagName).toBe('STRONG');
   });
 
-  it('도구 줄은 부른 뒤에 생기고, 상태는 알려 준 대로만 바뀐다', async () => {
+  it('a tool line appears once the call is made, and its status only changes when told', async () => {
     await bootSession();
     emit({
       jsonrpc: '2.0',
@@ -309,7 +301,6 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
         update: { sessionUpdate: 'tool_call', toolCallId: 'tc1', title: 'Read notes.md', kind: 'read', status: 'pending' },
       },
     });
-    await openLatestWorkGroup();
     await waitFor(() => {
       const row = document.querySelector('[data-acp-entry="tool"]');
       expect(row).toHaveAttribute('data-tool-status', 'pending');
@@ -329,6 +320,147 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
     // The row count does not grow — it is the same tool call.
     expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(1);
+  });
+
+  it('stands the tool line in the transcript — no disclosure is created for a turn that only called tools', async () => {
+    /*
+     * The trace only works if it is read without being asked for. Folded away, a `0 found`
+     * beside a confident paragraph costs a click nobody makes.
+     */
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-standing',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('acp-chat-work-group')).toBeNull();
+  });
+
+  it('says how much came back, using the number the tool itself reported', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-count',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { kind: 'domain' },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toContain(
+        'toolOutcome.running',
+      ),
+    );
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tc-count',
+          status: 'completed',
+          // Exactly what the live server answers: one text block of pretty-printed JSON.
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 8, nodes: [] }, null, 2) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        '8',
+      ),
+    );
+    expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toContain(
+      'toolOutcome.found',
+    );
+  });
+
+  it('a search that found nothing says so, instead of reading like every other line', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-zero',
+          title: 'mcp__atlas-vault__find_backlinks',
+          kind: 'read',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 0, matches: [] }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        '0',
+      ),
+    );
+  });
+
+  it('never puts a count beside a call that failed', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-fail',
+          title: 'mcp__atlas-vault__add_relation',
+          kind: 'other',
+          status: 'failed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 8 }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        'failed',
+      ),
+    );
+  });
+
+  it('names a target the vault does not hold yet as plain text, never as a map marker', async () => {
+    await bootSession({ knownSlugs: new Set(['capabilities/invoice']) });
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-new',
+          title: 'mcp__atlas-vault__add_concept',
+          kind: 'other',
+          status: 'pending',
+          rawInput: { slug: 'capabilities/not-yet-written' },
+        },
+      },
+    });
+    const target = await screen.findByTestId('acp-chat-tool-target');
+    expect(target).toHaveAttribute('data-tool-target', 'name');
+    expect(target.textContent).toContain('capabilities/not-yet-written');
+    expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
   });
 });
 
@@ -1049,8 +1181,6 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
-    await openLatestWorkGroup();
-
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
       expect(el).not.toBeNull();
@@ -1077,7 +1207,6 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
-    await openLatestWorkGroup();
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
       expect(el).not.toBeNull();
@@ -2023,8 +2152,6 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
       },
     });
 
-    await openLatestWorkGroup();
-
     const mark = await screen.findByTestId('acp-chat-slug');
     expect(mark.getAttribute('data-slug')).toBe('capabilities/invoice');
     fireEvent.pointerEnter(mark);
@@ -2059,7 +2186,6 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
         },
       },
     });
-    await openLatestWorkGroup();
     await waitFor(() =>
       expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
     );

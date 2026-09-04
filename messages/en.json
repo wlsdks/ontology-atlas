@@ -3750,6 +3750,13 @@
       "mergeNodes": "Merged two concepts",
       "addRelation": "Linked a relation"
     },
+    "toolOutcome": {
+      "found": "{count} found",
+      "running": "running",
+      "done": "done",
+      "failed": "failed",
+      "cancelled": "stopped"
+    },
     "workGroup": "Work details · {count} steps",
     "workGroupActive": "Working · {count} steps",
     "resize": "Resize the chat panel",
