@@ -169,6 +169,27 @@ export function ProjectSelectorPage() {
         <p className="mt-2 max-w-[720px] text-body leading-title text-[color:var(--color-text-tertiary)]">
           {t("lede")}
         </p>
+        {/*
+         * **"1 project" is true and still reads as a miscount** (owner report, 2026-09-04).
+         *
+         * Without a folder this screen lists the bundled sample the map is currently showing,
+         * while the map's own first-run card offers two of them. The count is honest — one
+         * sample is loaded — but nothing on this screen says the number is a sample's, so it
+         * looks like the other sample went missing.
+         *
+         * `useProjects` reads only the selected bundled vault, and loading both would mean
+         * carrying a second manifest through the read adapter for a line of prose. So the
+         * count stays exactly as measured and one caption says which sample it counted and
+         * where the other one is. Same footnote ramp as the domain-overlap note below.
+         */}
+        {dataSourceMode === "static" ? (
+          <p
+            data-testid="project-selector-sample-scope-note"
+            className="mt-1.5 max-w-[720px] text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
+            {t("sampleScopeNote")}
+          </p>
+        ) : null}
 
         {/* Project cards are this page's primary content and recent activity is a secondary feed
             beneath them. The activity feed used to sit above the cards and competed for focus — a

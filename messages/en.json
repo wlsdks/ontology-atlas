@@ -1598,6 +1598,7 @@
       "censusLineDomainsLabel": "{count, plural, one {domain} other {domains}}",
       "ctaNewProject": "New project",
       "lede": "Project documents from your folder show up here. Domain, capability, and element counts are computed automatically from how the documents are linked.",
+      "sampleScopeNote": "Showing the loaded sample. The other sample is one click away on the map's first-run card.",
       "activityHeading": "Recent activity",
       "activityCaption": "Last 7 days · when it was last edited",
       "activityAgoToday": "Today",

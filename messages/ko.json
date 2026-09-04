@@ -1598,6 +1598,7 @@
       "censusLineDomainsLabel": "도메인",
       "ctaNewProject": "새 프로젝트",
       "lede": "내 폴더의 프로젝트 문서가 여기 나타납니다. 도메인·역량·요소 수는 문서 사이의 연결에서 자동으로 계산됩니다.",
+      "sampleScopeNote": "지금 열어 둔 샘플 하나만 세었어요. 다른 샘플은 지도 첫 화면 카드에서 한 번에 바꿀 수 있어요.",
       "activityHeading": "최근 활동",
       "activityCaption": "최근 7일 · 마지막으로 고친 때",
       "activityAgoToday": "오늘",
