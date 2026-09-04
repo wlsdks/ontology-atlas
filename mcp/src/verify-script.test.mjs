@@ -11354,6 +11354,37 @@ Continue.`;
       }),
       'agent_brief projectSource exposes private source coordinates',
     );
+    const liveWitnesses = {
+      contract: 'projectSourceLiveWitnesses:v1',
+      status: 'witnesses_supported',
+      basis: 'current_graph',
+      sourceRevision: 'a'.repeat(40),
+      sourceFingerprint: `sha256:${'b'.repeat(64)}`,
+      witnessSummary: { total: 3, supported: 3, missing: 0 },
+      missingPaths: [],
+    };
+    assert.equal(
+      agentBriefFailure({ ...payload, projectSource: { ...payload.projectSource, live: liveWitnesses } }),
+      null,
+      'a live witness check beside the receipt is part of the contract',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        projectSource: { ...payload.projectSource, live: { ...liveWitnesses, basis: 'guess' } },
+      }),
+      'agent_brief response malformed categorical projectSource',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        projectSource: {
+          ...payload.projectSource,
+          live: { ...liveWitnesses, witnessSummary: { total: 3, supported: 1, missing: 1 } },
+        },
+      }),
+      'agent_brief response malformed categorical projectSource',
+    );
     assert.equal(
       agentBriefFailure({ ...payload, meaningAssessment: undefined }),
       'agent_brief response missing categorical meaningAssessment',
