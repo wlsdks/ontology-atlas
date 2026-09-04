@@ -165,6 +165,36 @@ describe("GuidedTourOverlay", () => {
     expect(strips[0].style.height).toBe("384px");
   });
 
+  it("keeps the full scrim and the button fallback when the canvas anchor projects outside the viewport", () => {
+    // Round 4, 2026-09-04. The probe has a real size but the domain it tracks is
+    // panned off-screen, so a cutout drawn at that rect is invisible and the copy
+    // ("one dot keeps a ring around it and stays lit") describes nothing on screen.
+    // An off-viewport anchor must read as unresolved, exactly as the testid path
+    // already reads it, so the full-block fallback and the card button stay.
+    vi.useFakeTimers();
+    const onActivateAnchor = vi.fn();
+    render(<Harness onActivateAnchor={onActivateAnchor} />);
+    act(() => screen.getByTestId("test-start").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    act(() => screen.getByTestId("guided-tour-next").click());
+    expect(screen.getByTestId("guided-tour-overlay")).toHaveAttribute("data-tour-step", "try-click");
+
+    const probe = screen.getByTestId("test-canvas-anchor");
+    probe.getBoundingClientRect = () =>
+      ({ top: 400, left: 1600, width: 48, height: 48, right: 1648, bottom: 448, x: 1600, y: 400, toJSON: () => ({}) }) as DOMRect;
+    act(() => {
+      vi.advanceTimersToNextFrame();
+      vi.advanceTimersToNextFrame();
+    });
+
+    expect(screen.queryAllByTestId("guided-tour-blocker-strip")).toHaveLength(0);
+    expect(screen.getByTestId("guided-tour-blocker")).toHaveAttribute("data-blocking", "true");
+    expect(screen.queryByTestId("guided-tour-cutout")).not.toBeInTheDocument();
+    expect(screen.getByTestId("guided-tour-scrim")).toBeInTheDocument();
+    expect(screen.getByTestId("guided-tour-activate-target")).toBeInTheDocument();
+  });
+
   it("applies the reduced-motion utility class to the scrim and cutout so transitions are removed for those users", () => {
     render(<Harness />);
     act(() => screen.getByTestId("test-start").click());

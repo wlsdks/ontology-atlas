@@ -2818,7 +2818,7 @@
       },
       "headings": [],
       "excerpt": "Persistent chrome widget for uninstalled web visitors across the root, download, guide, and changelog surfaces. Its home link carries the compact pixel mascot and product name; this gateway identity is separate from the installed workbench rail, which intentionally begins with destinations and carries no repeated logo.",
-      "wordCount": 130,
+      "wordCount": 174,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2859,8 +2859,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Map gesture hint overlay widget. Primary implementation: src/widgets/gesture-hint/ui/GestureHint.tsxSTORAGEKEY Showing a one-time, auto-dismissing (10s) touch-gesture hint overlay on coarse-pointer environments. Persisting dismissal in local storage so the hint does not repeat once seen. Any pointer/mouse-only environm",
-      "wordCount": 73,
+      "excerpt": "Map gesture hint overlay widget. Primary implementation: src/widgets/gesture-hint/ui/GestureHint.tsxGestureHint Focused test: src/widgets/gesture-hint/ui/GestureHint.test.tsxnever appears on a fine pointer, however long the page stays open Focused test: src/widgets/gesture-hint/ui/GestureHint.test.tsxshows the touch hi",
+      "wordCount": 105,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2880,8 +2880,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Git status/history page. Primary implementation: src/views/git/ui/GitPage.tsxGitPage The /git destination page: composing elements/atlas-git-panel as the route body under the shared shell height contract. Being reachable as a first-class rail destination for every audience, not gated to a \"development\" role. The actual",
-      "wordCount": 83,
+      "excerpt": "Git status/history page. Primary implementation: src/views/git/ui/GitPage.tsxGitPage Focused test: src/views/git/ui/GitPage.test.tsxhands the vault git context to the panel it composes Focused test: src/views/git/ui/GitPage.test.tsxtakes the height the shell offers instead of collapsing to its content The /git destinat",
+      "wordCount": 111,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3327,8 +3327,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Quick action widget for unauthenticated visitors. Primary implementation: src/widgets/public-quick-actions/ui/PublicQuickActions.tsxPublicQuickActions The quick-action row (new project, edit project) shown to unauthenticated/public visitors, preserving the current route as returnTo. Building the target project-edit hre",
-      "wordCount": 109,
+      "excerpt": "Quick action widget for unauthenticated visitors. Primary implementation: src/widgets/public-quick-actions/ui/PublicQuickActions.tsxPublicQuickActions Focused test: src/widgets/public-quick-actions/ui/PublicQuickActions.test.tsxcarries the current route and its query back as returnTo Focused test: src/widgets/public-qu",
+      "wordCount": 153,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },

@@ -14,6 +14,9 @@ Persistent chrome widget for uninstalled web visitors across the root, download,
 ## Evidence
 
 - Primary implementation: `src/widgets/gateway-chrome/ui/GatewayNav.tsx#GatewayNav`
+- Focused test: `src/widgets/gateway-chrome/ui/GatewayNav.test.tsx#carries the gateway brand identity at every gateway address`
+- Focused test: `src/widgets/gateway-chrome/ui/GatewayNav.test.tsx#names the current page in the breadcrumb everywhere except the gateway root`
+- Focused test: `src/widgets/gateway-chrome/ui/GatewayNav.test.tsx#offers the changelog chip only where the page does not already carry the changelog`
 
 ## Includes
 

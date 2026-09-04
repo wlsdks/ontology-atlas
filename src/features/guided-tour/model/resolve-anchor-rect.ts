@@ -36,11 +36,45 @@ export function resolveAnchorRect(
   const el = doc.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
   if (!el) return null;
   const rect = el.getBoundingClientRect();
-  if (rect.width <= 0 || rect.height <= 0) return null;
   const view = doc.defaultView;
-  const vw = view?.innerWidth ?? Number.POSITIVE_INFINITY;
-  const vh = view?.innerHeight ?? Number.POSITIVE_INFINITY;
-  if (rect.right <= 0 || rect.bottom <= 0 || rect.left >= vw || rect.top >= vh) {
+  return visibleAnchorBox(
+    { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+    view?.innerWidth ?? Number.POSITIVE_INFINITY,
+    view?.innerHeight ?? Number.POSITIVE_INFINITY,
+  );
+}
+
+/**
+ * The single viewport test both anchor kinds share: a box is usable as a spotlight
+ * target only when it has real size **and** some part of it is inside the viewport.
+ *
+ * It exists as its own pure function because the two anchor kinds arrive by
+ * different routes. The testid kind is measured here from the DOM; the canvas-node
+ * kind arrives as a per-frame `worldToScreen` projection written into the probe div
+ * by `use-topology-loop.ts`, which `GuidedTourOverlay` reads in its own rAF tick.
+ * That second route used to check size only (round 4, 2026-09-04), so a first
+ * domain panned off-screen still counted as resolved: the cutout was drawn outside
+ * the viewport, every pixel on screen was scrimmed uniformly, and step 4's copy —
+ * "one dot keeps a ring around it and stays lit" — described nothing the person
+ * could see. Returning `null` here routes that case to the existing fallback (full
+ * scrim, full blocker, and the card's "open that dot from here" button) instead of
+ * an invisible hole.
+ *
+ * A partly-visible box is kept: part of the ring is still on screen, and clamping or
+ * rejecting it would make the cutout jump while the camera spring is running.
+ */
+export function visibleAnchorBox(
+  rect: AnchorBox,
+  viewportWidth: number,
+  viewportHeight: number,
+): AnchorBox | null {
+  if (rect.width <= 0 || rect.height <= 0) return null;
+  if (
+    rect.left + rect.width <= 0 ||
+    rect.top + rect.height <= 0 ||
+    rect.left >= viewportWidth ||
+    rect.top >= viewportHeight
+  ) {
     return null;
   }
   return { top: rect.top, left: rect.left, width: rect.width, height: rect.height };

@@ -14,6 +14,9 @@ Quick action widget for unauthenticated visitors.
 ## Evidence
 
 - Primary implementation: `src/widgets/public-quick-actions/ui/PublicQuickActions.tsx#PublicQuickActions`
+- Focused test: `src/widgets/public-quick-actions/ui/PublicQuickActions.test.tsx#carries the current route and its query back as returnTo`
+- Focused test: `src/widgets/public-quick-actions/ui/PublicQuickActions.test.tsx#omits the edit action entirely when no project is in context`
+- Focused test: `src/widgets/public-quick-actions/ui/PublicQuickActions.test.tsx#offers the edit action for the project in context and drops the create action`
 
 ## Includes
 
