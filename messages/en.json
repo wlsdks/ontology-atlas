@@ -175,7 +175,7 @@
         "reset": "Reset to defaults"
       },
       "section": {
-        "screen": "Display",
+        "screen": "Screen · language",
         "background": "Map background",
         "expand": "Expansion",
         "footprint": "Footprints (path walked)",
