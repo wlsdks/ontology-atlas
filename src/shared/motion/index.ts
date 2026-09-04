@@ -34,8 +34,18 @@
  * slow.
  */
 
-/** Value copy of `--motion-ease` (cubic-bezier(0.25, 0.1, 0.25, 1)). */
+/** Value copy of `--motion-ease` (cubic-bezier(0.25, 0.1, 0.25, 1)) — the entry family. */
 export const MOTION_EASE = [0.25, 0.1, 0.25, 1] as const;
+
+/**
+ * Value copy of `--motion-ease-exit` (cubic-bezier(0.4, 0, 1, 1)) — the exit family.
+ *
+ * Accelerates away where `MOTION_EASE` decelerates into place. Not a general-purpose
+ * option: surfaces reach it only through {@link EXIT_TRANSITION}, and
+ * `motion-token-mirror.contract.test.ts` fails any file outside `src/shared/motion` that
+ * names it, so an entrance cannot borrow the leaving curve.
+ */
+export const MOTION_EASE_EXIT = [0.4, 0, 1, 1] as const;
 
 export const MOTION = {
   /** Acknowledge — hover, focus, colour. `--motion-fast`. */
@@ -125,14 +135,9 @@ export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;
  * name rather than as `MOTION.fast` is the point — an exit is not "acknowledge a hover",
  * and `framer-exit-asymmetry.contract.test.ts` can require *this* name at every exit.
  *
- * ⚠️ **What is still missing: the curve.** The reference behaviour an exit wants is
- * *accelerate away* — start at the surface's resting speed and leave the screen — while
- * every easing this repository owns decelerates (`--motion-ease`
- * `cubic-bezier(0.25, 0.1, 0.25, 1)`, `--topology-motion-ease-out`
- * `cubic-bezier(0.16, 1, 0.3, 1)`). There is no accelerating step on the ramp, and one
- * invented here would be exactly the off-ramp literal the mirror contract exists to
- * stop. So the exit keeps the family curve and the gap is written down instead: the
- * value wanted is `cubic-bezier(0.4, 0, 1, 1)` and it needs a ramp name
- * (`--motion-ease-exit`) from the design-system seat before any surface may use it.
+ * **The curve is the exit family.** `--motion-ease` decelerates into place; a surface
+ * leaving on it slows down while still on screen. `MOTION_EASE_EXIT` accelerates away,
+ * the same `--motion-ease-exit` the inspector's CSS movement exit (`topologyChromeOut`)
+ * runs, so a framer exit and a CSS exit share one curve as well as one clock.
  */
-export const EXIT_TRANSITION = { duration: MOTION.fast.duration, ease: MOTION_EASE } as const;
+export const EXIT_TRANSITION = { duration: MOTION.fast.duration, ease: MOTION_EASE_EXIT } as const;

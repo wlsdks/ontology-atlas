@@ -291,7 +291,10 @@ absence of a class, or rendered geometry. Current owners include:
 - topology-panel ink hierarchy: `topology-panel-ink-ladder`;
 - quaternary text by composited surface: `quaternary-ink-surface` plus
   `a11y-open-surfaces`;
-- filled-brand contrast: `brand-fill-ink-license`.
+- filled-brand contrast: `brand-fill-ink-license`;
+- motion ramp mirror and easing direction (CSS `var()` shorthand and framer
+  objects, which class lint cannot see): `motion-token-mirror` plus
+  `framer-exit-asymmetry`.
 
 An unknown utility such as `text-large` produces no CSS and silently falls back
 to 16px, so hardcoded-value lint sees nothing. Spacing is deliberately not
@@ -339,6 +342,11 @@ diagnostic fallback only.
   completed change. Default Tailwind transitions already use fast; omit a class.
   Camera/drag values 420/720ms are canvas-only.
 - Duration and easing move as one family. Respect the global reduced-motion rule.
+- Exits accelerate away on `--motion-ease-exit` (JS: `EXIT_TRANSITION`); entries
+  keep `--motion-ease`. Only `-out` / `[data-state="closed"]` rules on a `*Out`
+  keyframe may reference the exit token, never a `transition:`, and no file
+  outside `src/shared/motion` imports `MOTION_EASE_EXIT`;
+  `motion-token-mirror.contract.test.ts` owns both directions.
 - The attention winner moves first. A protagonist hard-cut while the background
   eases is a defect; a measured popover once completed 88.8% in its first frame
   while the map received 100ms.

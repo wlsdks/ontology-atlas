@@ -1818,11 +1818,16 @@
   }
 
   /* Exit path also uses separation from entry path — brightness reverses app-wide ramp,
-     movement uses chrome family curve. Separating only one makes exit syntax differ from entry. */
+     movement takes the exit family. Separating only one makes exit syntax differ from entry.
+     2026-09-05: movement moved off `--topology-motion-ease-out` (an entry curve: 61.5% of the
+     3px/0.98 travel landed in the first frame, so the panel jumped and then idled) onto
+     `--motion-ease-exit`, the same curve every framer `EXIT_TRANSITION` runs. Brightness stays
+     on `--motion-ease`: `reduced-motion-equivalent` pins it, and a fade that accelerates would
+     hold 79% opacity into its final frame while the movement is already gone. */
   .topology-chrome-out {
     animation:
       topologyChromeOut calc(var(--topology-motion-panel-duration) * 0.67)
-        var(--topology-motion-ease-out) both,
+        var(--motion-ease-exit) both,
       overlayFadeOut var(--motion-fast) var(--motion-ease) both;
     transform-origin: var(--topology-chrome-in-origin, center top);
     pointer-events: none;
@@ -2613,6 +2618,19 @@
     --motion-base: 180ms;
     --motion-settle: 240ms;
     --motion-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    /* Exit easing (design-system seat, 2026-09-05) — the one licensed second family.
+       `--motion-ease` decelerates into place, which is right for arriving. A leaving
+       surface run on it is the entrance clock played backwards: it slows down while it
+       is still on screen. An exit accelerates away — starts at resting speed, leaves at
+       full speed. Paired with the exit clock every CSS exit already uses,
+       `calc(var(--motion-base) * 0.67)` (= `--motion-fast`); JS copy `MOTION_EASE_EXIT`
+       reaches surfaces only through `EXIT_TRANSITION`. At 120.6ms this curve puts 3.4%
+       of the travel in the first frame and 21.3% in the last; the previous inspector
+       movement exit (`--topology-motion-ease-out`) spent 61.5% in its first frame, a
+       hard cut wearing an easing. Direction is the contract, not the four numbers:
+       `motion-token-mirror.contract.test.ts` lets only `-out` / `[data-state="closed"]`
+       rules reference it, only on a `*Out` keyframe, never in a `transition`. */
+    --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
     /* --topology-card-scale is injected by SigmaSkeletonCards into container based on viewport width — CSS pipeline drops custom property without utility reference, so not declared here. */
 
     /*
