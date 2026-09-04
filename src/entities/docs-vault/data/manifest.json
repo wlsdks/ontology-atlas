@@ -2387,7 +2387,7 @@
       },
       "headings": [],
       "excerpt": "The ACP permission boundary that lets Atlas read tools continue automatically but pauses every Atlas write tool on a typed change review. It offers allowonce or rejectonce and deliberately hides allowalways for semantic writes. Since 2026-09-01 the same boundary also stops a non-Atlas tool whose declared kind is not re",
-      "wordCount": 200,
+      "wordCount": 210,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2409,7 +2409,7 @@
       },
       "headings": [],
       "excerpt": "A single location (/agents/) on this computer where you receive, install, attach, fix, and initiate conversations with AI coding tools. It is the eighth destination of the rail. Until 2026-08-20, this task occupied two cells in the settings sheet (\"Executor\"·\"MCP Connection\"), while a separate connection sheet on the m",
-      "wordCount": 602,
+      "wordCount": 613,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2796,8 +2796,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Full node detail opt-in panel widget. Primary implementation: src/widgets/full-detail-a1/ui/FullDetailA1.tsxFullDetailA1Props Supporting implementation: src/widgets/full-detail-a1/lib/full-detail-groups.tsbuildFullDetailGroups The opt-in \"expanded datasheet\" full node detail surface: header, engraved metric strip, four",
-      "wordCount": 123,
+      "excerpt": "Full node detail opt-in panel widget. Primary implementation: src/widgets/full-detail-a1/ui/FullDetailA1.tsxFullDetailA1Props Supporting implementation: src/widgets/full-detail-a1/lib/full-detail-groups.tsbuildFullDetailGroups Focused test: src/widgets/full-detail-a1/ui/FullDetailA1.test.tsxrenders a heading + row for ",
+      "wordCount": 139,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2838,8 +2838,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Gateway documentation/marketing page. Primary implementation: src/views/gateway-doc/ui/GatewayDocPage.tsxGatewayDocPage Supporting implementation: src/views/gateway-doc/model/guide-pages.tsGUIDEPAGES Rendering one page of gateway reading material (/guide, /changelog) with prose-optimized measure, leading, and section r",
-      "wordCount": 81,
+      "excerpt": "Gateway documentation/marketing page. Primary implementation: src/views/gateway-doc/ui/GatewayDocPage.tsxGatewayDocPage Supporting implementation: src/views/gateway-doc/model/guide-pages.tsGUIDEPAGES Focused test: tests/e2e/gateway-reading-reach.spec.ts좁은 폭 차례가 넓은 폭 차례와 같은 장을 담는다 Rendering one page of gateway reading m",
+      "wordCount": 93,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -2901,8 +2901,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Global search widget. Evidence of implementation for capabilities/topology-browsing. Primary implementation: src/widgets/global-search/ui/GlobalSearch.tsxGlobalSearch Supporting implementation: src/widgets/global-search/lib/use-global-search-hotkey.tsuseGlobalSearchHotkey The ⌘K command palette searching ontology nodes",
-      "wordCount": 106,
+      "excerpt": "Global search widget. Evidence of implementation for capabilities/topology-browsing. Primary implementation: src/widgets/global-search/ui/GlobalSearch.tsxGlobalSearch Supporting implementation: src/widgets/global-search/lib/use-global-search-hotkey.tsuseGlobalSearchHotkey Focused test: src/widgets/global-search/ui/Glob",
+      "wordCount": 118,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3160,7 +3160,7 @@
       },
       "headings": [],
       "excerpt": "A contextual relation editor that shares space with the compact inspector of the selected node on the map. When you select the relation type, target, and reason, it draws a dashed directional preview on the actual map geometry, then writes to frontmatter with expectedMtime after passing the Ontology Change Review. It h",
-      "wordCount": 172,
+      "wordCount": 185,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3285,8 +3285,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Project editing page. Implementation evidence for capabilities/project-edit. Primary implementation: src/views/project-editor/ui/ProjectEditorPage.tsxnormalizeReturnTo The /project/new and /project/[slug]/edit form page for creating and editing project frontmatter. Normalizing the returnTo navigation target back to a s",
-      "wordCount": 74,
+      "excerpt": "Project editing page. Implementation evidence for capabilities/project-edit. Primary implementation: src/views/project-editor/ui/ProjectEditorPage.tsxnormalizeReturnTo Focused test: src/views/project-editor/ui/ProjectEditorPage.loading.test.tsx초기 fallback not-found 뒤 로컬 project가 도착하면 편집 폼으로 회복한다 The /project/new and /p",
+      "wordCount": 87,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3432,8 +3432,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Search palette (Command-K style) widget. Implementation evidence for capabilities/topology-browsing. Primary implementation: src/widgets/search-palette/ui/SearchPalette.tsxSearchPalette Supporting implementation: src/widgets/search-palette/model/fuzzy-search.tssearchProjects The map's Command-K style palette searching ",
-      "wordCount": 97,
+      "excerpt": "Search palette (Command-K style) widget. Implementation evidence for capabilities/topology-browsing. Primary implementation: src/widgets/search-palette/ui/SearchPalette.tsxSearchPalette Supporting implementation: src/widgets/search-palette/model/fuzzy-search.tssearchProjects Focused test: src/widgets/search-palette/ui/",
+      "wordCount": 104,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3495,8 +3495,8 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Node status value entity. Implementation evidence for capabilities/taxonomy. Primary implementation: src/entities/status/model/defaults.tsDEFAULTSTATUSES Supporting implementation: src/entities/status/model/types.tsStatus The Status type and the eight seeded lifecycle statuses (idea through deprecated) with stable IDs ",
-      "wordCount": 96,
+      "excerpt": "Node status value entity. Implementation evidence for capabilities/taxonomy. Primary implementation: src/entities/status/model/defaults.tsDEFAULTSTATUSES Supporting implementation: src/entities/status/model/types.tsStatus Focused test: tests/contract/taxonomy-locale-label.contract.test.ts모든 상태 기본값이 한국어·영문 라벨을 다 갖는다 The",
+      "wordCount": 106,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
