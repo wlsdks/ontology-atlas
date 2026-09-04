@@ -19,3 +19,14 @@ relation_notes: { elements/docs-vault-entity: "The Docs workbench view reads doc
 - Supporting implementation: `src/views/docs-vault/ui/parts/DocFrontmatterBlock.tsx#DocFrontmatterBlock`
 - Focused test: `src/views/docs-vault/ui/DocsVaultPage.vault-status-banner.test.ts#reads the source it is judging`
 - Focused test: `src/views/docs-vault/ui/DocsVaultPage.vault-status-banner.test.ts#never interpolates a cause that may not exist`
+
+## Includes
+
+- The `/docs` page shell: document viewer chrome, frontmatter block display, and the local-vault starter CTA.
+- Composing the docs-vault entity's manifest and the docs-vault widget's editor/backlinks panels into one page.
+
+## Excludes
+
+- Building the manifest or backlink data itself, owned by elements/docs-vault-entity.
+- The actual markdown editing surface and tree navigation, owned by elements/docs-vault-widget.
+- The quick-access drawer reachable from other routes, owned by elements/docs-quick-drawer.

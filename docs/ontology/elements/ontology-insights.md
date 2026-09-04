@@ -17,3 +17,15 @@ Six-tab maintenance board: five measured questions plus Flow. The Do-next tab is
 - Supporting implementation: `src/views/ontology-insights/ui/parts/FixRow.tsx#FixRow`
 - Focused test: `src/views/ontology-insights/lib/census-health.test.ts#excludes the reserved reader guide from kind sums and density`
 - Focused test: `src/views/ontology-insights/lib/census-health.test.ts#derives edge/concept ratio, orphans, cycles, domain membership %, evidence %`
+
+## Includes
+
+- The six-tab maintenance board: five measured questions plus Flow, with a single flat Do-next list under one count.
+- Deriving census health metrics (edge/concept ratio, orphans, cycles, domain membership %, evidence %) and excluding the reserved reader guide from those sums.
+- Handing a Do-next row to the in-app AI chat via an ask deep link, or opening the installed app's agent dock with a pre-filled request.
+
+## Excludes
+
+- Fixing an issue directly outside the "fix it here" action rows: most repairs route to the relevant editor surface, not this page.
+- The readiness meter, repair-queue counter band, activity digest, and agent footer: all removed in the 2026-09-01 redesign.
+- The ACP agent runtime itself, owned by the agent-integration domain's vault-agent-panel.

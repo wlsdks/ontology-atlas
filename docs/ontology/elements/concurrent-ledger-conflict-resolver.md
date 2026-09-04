@@ -15,3 +15,17 @@ A fail-closed repository helper for concurrent worktrees. It semantically merges
 
 - Primary implementation: `scripts/resolve-docs-vault-conflicts.mjs#resolveRepositoryConflicts`
 - Supporting implementation: `scripts/resolve-docs-vault-conflicts.mjs#mergeAppendOnlyLedger`
+- Focused test: `scripts/resolve-docs-vault-conflicts.test.mjs#keeps both concurrent records in one deterministic merge`
+- Focused test: `scripts/resolve-docs-vault-conflicts.test.mjs#resolves a real Git merge, regenerates outputs, and stages the complete result`
+
+## Includes
+
+- Fail-closed merging of concurrent-worktree conflicts limited to complete, dated records prepended to the append-only CHANGELOG and DECISIONS ledgers.
+- Refusing historical or unrelated conflicts rather than guessing a resolution.
+- Rebuilding deterministic docs-vault artifacts and staging the verified result without continuing the git operation itself.
+
+## Excludes
+
+- Committing or pushing the resolved state: the caller's git operation (merge/rebase) completes separately after this script stages the result.
+- Resolving conflicts in generated JSON under `src/entities/docs-vault/data/` or `public/docs-vault/` outside the ledger-only scope.
+- Any conflict shape other than a prepended dated ledger record; those are refused, not merged.

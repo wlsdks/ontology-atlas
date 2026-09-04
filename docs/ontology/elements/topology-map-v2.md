@@ -21,3 +21,14 @@ The opt-in 3D view lives inside this widget rather than in a second renderer: `m
 - Supporting implementation: `src/widgets/topology-map-v2/ui/use-topology-loop.ts#useTopologyLoop`
 - Focused test: `src/widgets/topology-map-v2/ui/TopologyMapV2.test.tsx#mounts a canvas inside a data-map-engine=v2 container without throwing`
 - Focused test: `src/widgets/topology-map-v2/ui/TopologyMapV2.test.tsx#marks minimal mode via data-minimal`
+
+## Includes
+
+- The custom canvas-2D graph renderer: draw loop, hit-testing, and the `?e2e=1` inspection hook sharing one per-frame position map.
+- The opt-in 3D view inside the same widget: cone-tree ownership layout, relation-driven coupling cloud, and morphing between 2D and 3D projections of the same world state.
+
+## Excludes
+
+- Any alternative graph-rendering library (xyflow, Sigma): Graphology supplies only ForceAtlas2 layout, never rendering, per AGENTS.md.
+- The INDEX panel, hub rail, and search overlays that surround the canvas, each a separate widget.
+- The knowledge-graph node/edge model this widget draws, owned by elements/knowledge-graph.

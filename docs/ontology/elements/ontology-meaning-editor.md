@@ -15,3 +15,14 @@ A contextual relation editor that shares space with the compact inspector of the
 
 - Primary implementation: `src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx#MeaningEditorPanel`
 - Supporting implementation: `src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx#candidateAllowed`
+
+## Includes
+
+- The contextual single-relation editor sharing space with the map's compact node inspector: type, target, and reason fields with a live dashed directional preview.
+- Writing the confirmed relation to frontmatter with `expectedMtime` only after the change passes Ontology Change Review.
+
+## Excludes
+
+- Multi-relation or bulk editing: deliberately scoped to one relation at a time, unlike the retired Studio surface.
+- Rendering the pre-write review card itself, owned by elements/ontology-change-review.
+- Deciding whether a candidate relation is allowed at all beyond its own `candidateAllowed` check; schema-level validity is `mcp/src/schema.mjs`.

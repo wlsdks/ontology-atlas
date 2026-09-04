@@ -31,3 +31,17 @@ This evaluator neither writes a vault nor authenticates human acceptance. Unknow
 
 - Primary implementation: `mcp/src/meaning-evaluation.mjs#evaluateMeaningProposal`
 - Supporting implementation: `mcp/src/meaning-evaluation.mjs#validateMeaningProposalAgainstAnalysis`
+- Focused test: `mcp/src/meaning-evaluation.test.mjs#gold proposal passes every meaning-quality gate`
+- Focused test: `mcp/src/meaning-evaluation.test.mjs#repository write-plan bodies round-trip through the canonical vault parser byte-exactly`
+
+## Includes
+
+- Validating a proposed project, domain, capability, element, relation, or competency meaning against bounded repository analysis.
+- Requiring claim-local current semantic evidence for any Definition/Includes/Excludes/rationale overlapping `reviewRequiredEvidence`, and deriving both the non-writing review plan and the later write plan.
+- The canonical-body whitespace contract keeping `reviewPlan.body`, `writePlan.body`, and persisted reads byte-identical.
+
+## Excludes
+
+- Writing the vault or authenticating human acceptance; this evaluator only validates and derives plans.
+- Judging construction-wide qualification axes (witnesses, citations, coverage), owned by elements/construction-qualification-evaluator.
+- Repository source analysis itself, performed by the analyze pipeline this evaluator consumes rather than runs.

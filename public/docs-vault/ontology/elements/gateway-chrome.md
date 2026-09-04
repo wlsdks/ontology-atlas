@@ -14,3 +14,14 @@ Persistent chrome widget for uninstalled web visitors across the root, download,
 ## Evidence
 
 - Primary implementation: `src/widgets/gateway-chrome/ui/GatewayNav.tsx#GatewayNav`
+
+## Includes
+
+- The persistent nav chrome for uninstalled web visitors across root, download, guide, and changelog surfaces, carrying the compact pixel mascot and product name.
+- The reading-links component surfaced alongside the gateway nav on prose pages.
+
+## Excludes
+
+- The installed workbench rail, which intentionally omits a repeated logo and begins with destinations (elements/app-nav-rail).
+- The gateway prose pages themselves (guide/changelog content), owned by elements/gateway-doc.
+- The download page hero and demo stage, owned by elements/download.

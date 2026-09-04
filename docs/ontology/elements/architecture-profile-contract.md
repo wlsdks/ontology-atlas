@@ -21,6 +21,20 @@ The machine-readable `architecture-profile/v1` contract and conformance evaluato
 - `mcp/src/architecture-profile.test.mjs`: type-only exclusion, upward value violation, and unknown-usage probes
 - Primary implementation: `mcp/src/architecture-profile.mjs#evaluateArchitectureConformance`
 - Supporting implementation: `mcp/src/architecture-profile.mjs#parseArchitectureProfile`
+- Focused test: `mcp/src/architecture-profile.test.mjs#feature-sliced profile accepts lower dependencies and rejects an upward edge`
+- Focused test: `mcp/src/architecture-profile.test.mjs#profile-declared usages exclude type-only verdicts while unknown stays fail-closed`
+
+## Includes
+
+- Parsing the `architecture-profile/v1` frontmatter contract into declared pattern axes, scoped roles, and dependency rules.
+- Evaluating conformance against governed and observed imports and producing `architectureConformance:v1`: violations plus explicit unknowns.
+- Backing the public `inspect_architecture` MCP tool and the CLI's fail-closed consumer validation.
+
+## Excludes
+
+- The human-facing architecture comparison surface, owned by elements/architecture-workbench.
+- Inferring a pattern from folder names or current imports; only reviewed declarations are read.
+- Approving or writing an architecture profile: this evaluator is read-only.
 
 ## Boundary
 Pattern names and governed usages are reviewed declarations, never inferred from folders or current imports. Missing v1 `dependency_usages` preserves value-plus-type-only behavior. Unsupported languages, unknown import usage, unmapped edges, unruled edges, and empty roles remain unknown instead of becoming green compliance.
