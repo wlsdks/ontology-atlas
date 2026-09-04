@@ -547,7 +547,7 @@
     "nextLabel": "Next",
     "skipLabel": "Skip",
     "finishLabel": "Finish",
-    "waitingForClickLabel": "Click the dot that's still bright",
+    "waitingForClickLabel": "Or open that dot from here",
     "clickSuccessLabel": "Nice: you just opened that dot’s card",
     "finishTourAction": "Done: back to the map",
     "devBranchAction": "I'm a developer",
@@ -566,7 +566,7 @@
       },
       "tryClick": {
         "title": "Try clicking one",
-        "body": "Click the dot that's still bright on the map. Its story (what it is and what it connects to) opens in a card."
+        "body": "One dot keeps a ring around it and stays lit while the rest of the map dims. Click that one and its story (what it is and what it connects to) opens in a card."
       },
       "datasheet": {
         "title": "The card is the front of the document",
