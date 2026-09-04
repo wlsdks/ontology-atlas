@@ -1258,7 +1258,8 @@
         "topologyLinkTitle": "Open this concept on the map",
         "notOnMapAria": "Not on the map",
         "notOnMapLabel": "Not on the map",
-        "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there."
+        "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there.",
+      "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
       },
       "sidebar": {
         "treeHeader": "Document list",
@@ -1316,7 +1317,9 @@
           "actionConfirm": "I checked this",
           "actionRelease": "I decided this",
           "unverifiableHeader": "Confirmed, but could not be checked · {count}",
-          "unverifiablePlain": "This file could not be read, so whether it changed is unknown"
+          "unverifiablePlain": "This file could not be read, so whether it changed is unknown",
+        "reviewedOn": "checked {date}",
+        "reviewedOnTitle": "The day a person read this document and said the meaning was right"
         }
       },
       "empty": {
@@ -1381,6 +1384,8 @@
       "agentCopyFailed": "Copy failed: the clipboard was blocked",
       "heroConcepts": "Concepts",
       "heroRelations": "Relations",
+      "heroRelationsHidden": "{count} more relation types are not on this strip",
+      "heroRelationsHiddenRoute": "All relation types",
       "heroDensityGloss": "{ratio} connections per concept, on average",
       "heroMembershipLabel": "in a domain",
       "heroHealth": "Health",
@@ -1480,6 +1485,8 @@
       "weekCellCurrent": "This week · {count} updates",
       "recentUpdatesTitle": "Recent updates",
       "noRecentUpdates": "No known update dates yet.",
+      "recentUpdatesHidden": "{count} more concepts changed than this list shows",
+      "recentUpdatesHiddenRoute": "All documents",
       "staleCountLabel": "Not updated in 90+ days",
       "trendTitle": "Weekly trend",
       "trendCaption": "Total updates per week, summed across every domain: same {weeks}w window as the heatstrip.",
@@ -1685,6 +1692,7 @@
       "connectedRelation": "Relates",
       "connectedEmpty": "Not connected to any other project yet.",
       "connectedEmptyHint": "Create a second project document and link the two to see it here.",
+      "connectedEmptyAction": "Open the project list",
       "connectedMoreNote": "{count} more connections",
       "handoffTitle": "Continue with your AI",
       "handoffDesc": "Paste the copied text into an AI tool like Claude or Cursor: it picks up this project's map and continues from here.",
@@ -1762,7 +1770,8 @@
         "composition": "Composition"
       },
       "domainEmptyTitle": "No domains yet",
-      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here."
+      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here.",
+      "domainEmptyAction": "Connect a domain on the map"
     },
     "editor": {
       "documentTitleEdit": "Edit project · Ontology Atlas",
@@ -1876,6 +1885,8 @@
       "exampleCopied": "Copied",
       "exampleCopyAriaLabel": "Copy the example info block",
       "codeLocationsHeading": "Code location",
+      "codeLocationsConsumerHelp": "Atlas checks each of these paths against the connected code folder. A path that is not there leaves this document waiting for a look instead of confirmed against the code.",
+      "relationsConsumerHelp": "Each of these lines becomes one connection on the map. Folder validation reports a target no document in this folder answers to: it warns, it does not block the file.",
       "codeLocationsCopy": "Copy",
       "codeLocationsCopied": "Copied",
       "codeLocationsCopyAriaLabel": "Copy the path {path}",
@@ -2717,7 +2728,9 @@
       "mostlyOne": "mostly in {a} ({aCount}).",
       "mostlyTwo": "mostly in {a} ({aCount}) and {b} ({bCount}).",
       "selfDomainLabel": "this domain",
-      "noDomainLabel": "no domain"
+      "noDomainLabel": "no domain",
+      "domainsHidden": "{count} more domains are reached than these bars show",
+      "domainsHiddenRoute": "Domain boundaries"
     },
     "handoff": {
       "label": "Agent handoff",
@@ -3658,7 +3671,9 @@
     "editBody": "Choose one relation to see on the map.",
     "reviewBody": "Review only what will change before writing Markdown.",
     "relation": "Relation type",
+    "relationHelp": "This becomes one typed line in the Markdown. Folder validation reports a line whose target no document here answers to: it warns, it does not block the write.",
     "target": "Connected concept",
+    "targetHelp": "Only documents already in this folder can be picked, so the line always resolves. An impact query walks it when it answers what a change to this concept reaches.",
     "why": "Why this relation exists",
     "whyHint": "Add the reason when you know it so the next person does not have to infer the line.",
     "whyRequiredHint": "A dependency needs a reason for relying on the target.",

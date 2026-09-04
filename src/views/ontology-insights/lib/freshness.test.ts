@@ -98,6 +98,7 @@ describe("computeFreshnessSummary", () => {
     expect(summary).toEqual({
       domainRows: [],
       recent: [],
+      recentTotal: 0,
       recentEvidence: [],
       recentEvidenceTotal: 0,
       staleCount: 0,

@@ -14,6 +14,7 @@ vi.mock("@/i18n/navigation", () => ({
 const labels: FreshnessTabLabels = {
   domainFreshnessTitle: "Domain freshness",
   windowCaption: "12 weeks",
+  noDomainsAction: "Create a domain on the map",
   noDomains: "No domains yet",
   stale: "stale",
   currentWeek: "This week",
@@ -34,6 +35,8 @@ const labels: FreshnessTabLabels = {
   evidenceCaption: "The date belongs to the document that wrote the name down.",
   evidenceTruncated: (shown, total) => `Top ${shown} / ${total}`,
   evidenceBadge: "No document",
+  recentHidden: (hidden: number) => `${hidden} more concepts changed than this list shows`,
+  recentHiddenRoute: "All documents",
   evidenceBadgeHint: "Another document wrote this name down.",
 };
 
@@ -68,6 +71,7 @@ describe("FreshnessTab", () => {
             updatedAt: "2026-07-20T18:12:00.000Z",
           },
         ]}
+        recentTotal={0}
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
@@ -96,6 +100,7 @@ describe("FreshnessTab", () => {
             updatedAt: "2026-07-19T00:00:00.000Z",
           },
         ]}
+        recentTotal={0}
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
@@ -131,6 +136,7 @@ describe("FreshnessTab", () => {
           },
         ]}
         recent={[]}
+        recentTotal={0}
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
@@ -155,6 +161,7 @@ describe("FreshnessTab", () => {
       <FreshnessTab
         domainRows={[]}
         recent={[]}
+        recentTotal={0}
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
@@ -181,6 +188,7 @@ describe("FreshnessTab", () => {
             updatedAt: "2026-07-19T00:00:00.000Z",
           },
         ]}
+        recentTotal={0}
         recentEvidence={[
           {
             nodeId: "element:hook-a",
@@ -233,6 +241,7 @@ describe("FreshnessTab", () => {
       <FreshnessTab
         domainRows={[]}
         recent={[]}
+        recentTotal={0}
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}

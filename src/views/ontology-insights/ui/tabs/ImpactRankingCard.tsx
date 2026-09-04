@@ -18,6 +18,8 @@ export interface ImpactRankingLabels {
   transitiveLabel: string;
   empty: string;
   emptyHint: string;
+  /** The one door out of the empty card — the screen where a relation is written. */
+  emptyAction: string;
   truncated: (shown: number, total: number) => string;
   /** Opens the evidence layer — collapsed state. The count is in the label so the scale is not hidden. */
   evidenceShow: (count: number) => string;
@@ -153,6 +155,23 @@ export function ImpactRankingCard({
               skeleton
               title={labels.empty}
               description={labels.emptyHint}
+              /* The hint already named the remedy — "add a leans-on relation on
+                 the map" — and then left the reader to find that screen. One
+                 door, the same address the sibling empty states use. */
+              action={
+                <Link
+                  href="/topology/?workbench=create"
+                  data-testid="impact-ranking-empty-action"
+                  className={controlClass({
+                    shape: "link",
+                    tone: "accent",
+                    hoverInk: "strong",
+                    className: "rounded-chip hover:underline",
+                  })}
+                >
+                  {labels.emptyAction}
+                </Link>
+              }
             />
           </div>
         ) : (

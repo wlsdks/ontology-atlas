@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { useCountUp } from "@/shared/lib/use-count-up";
+import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
+import { controlClass } from "@/shared/ui/control-class";
 import type { CensusHealthSummary } from "../../lib/census-health";
 
 /**
@@ -21,6 +23,14 @@ export interface InsightsHeroCensusLabels {
   evidenceLinked: string;
   /** The same verdict as the "to do" tab's repair queue — the count of separated groups. */
   islands: string;
+  /**
+   * The remainder sentence for the relation strip, which draws only the four
+   * largest types. Takes the difference the line computed, so the sentence and
+   * the number can never be written apart.
+   */
+  relationsHidden: (hidden: number) => string;
+  /** Where every relation type is drawn in full — the connections tab of this same page. */
+  relationsHiddenRoute: string;
 }
 
 export function InsightsHeroCensus({
@@ -30,6 +40,8 @@ export function InsightsHeroCensus({
   islandCount,
   kindsSummary,
   relationsSummary,
+  relationsTotal,
+  onSeeAllRelations,
   labels,
 }: {
   totalNodes: number;
@@ -45,8 +57,17 @@ export function InsightsHeroCensus({
   /** The summary subline — e.g. "250 elements · 36 capabilities · 6 domains · 3 documents · 1 project". */
   kindsSummary: Array<{ key: string; label: string; count: number }>;
   relationsSummary: Array<{ key: string; label: string; count: number }>;
+  /**
+   * How many relation types the vault actually holds. `relationsSummary` is
+   * capped at the four largest; before 2026-09-05 the rest vanished with no
+   * mark, even though the uncapped list was already in scope one component up.
+   */
+  relationsTotal: number;
+  /** Switches this page to the connections tab, where every type is listed. */
+  onSeeAllRelations: () => void;
   labels: InsightsHeroCensusLabels;
 }) {
+  const relationsShown = relationsSummary.length;
   return (
     <div className="flex flex-col items-stretch gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-4 sm:flex-row sm:gap-0">
       <HeroSegment label={labels.concepts}>
@@ -56,6 +77,22 @@ export function InsightsHeroCensus({
       <HeroSegment label={labels.relations}>
         <BigNum value={totalEdges} />
         <SubStrip items={relationsSummary} />
+        <HiddenCountLine
+          data-testid="insights-relations-hidden"
+          total={relationsTotal}
+          shown={relationsShown}
+          label={labels.relationsHidden}
+          route={
+            <button
+              type="button"
+              onClick={onSeeAllRelations}
+              data-testid="insights-relations-hidden-route"
+              className={controlClass({ shape: "link", size: "sm", hoverInk: "secondary" })}
+            >
+              {labels.relationsHiddenRoute}
+            </button>
+          }
+        />
       </HeroSegment>
       {/* The health segment — the main number is the membership rate (the share of concepts held in
           a domain) plus a "well connected" summary, rather than the density ratio (2.34
