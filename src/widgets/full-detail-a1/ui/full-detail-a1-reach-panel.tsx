@@ -6,6 +6,8 @@ import type {
   FullDetailReachModel,
 } from "../lib/full-detail-reach";
 import { controlClass } from "@/shared/ui/control-class";
+import { HiddenCountLine } from "@/shared/ui/hidden-count-line";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Full-detail A1 "reach = sentence instrument" — replaces the rejected
@@ -26,6 +28,14 @@ export interface FullDetailA1ReachLabels {
   mostlyTwo: (a: string, aCount: number, b: string, bCount: number) => string;
   selfDomainLabel: string;
   noDomainLabel: string;
+  /**
+   * The remainder sentence for the domain bars, which stop at
+   * `DOMAIN_ROW_LIMIT`. Until 2026-09-05 the eighth domain onward simply
+   * vanished, while the sentence above the bars proved the true count was known.
+   */
+  domainsHidden: (hidden: number) => string;
+  /** Where every domain-to-domain relation is drawn — the insights boundaries tab. */
+  domainsHiddenRoute: string;
 }
 
 const STEPS: readonly FullDetailReachDepth[] = [1, 2, 3];
@@ -120,6 +130,22 @@ export function FullDetailA1ReachPanel({
           ))}
         </div>
       ) : null}
+      <HiddenCountLine
+        data-testid="fulldetail-reach-domains-hidden"
+        className="mt-2.5"
+        total={atDepth.domainRows.length}
+        shown={topRows.length}
+        label={labels.domainsHidden}
+        route={
+          <Link
+            href="/ontology/insights/?tab=boundaries"
+            data-testid="fulldetail-reach-domains-hidden-route"
+            className={controlClass({ shape: "link", size: "sm", scope: "panel", hoverInk: "secondary" })}
+          >
+            {labels.domainsHiddenRoute}
+          </Link>
+        }
+      />
     </section>
   );
 }

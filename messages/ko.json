@@ -1381,6 +1381,8 @@
       "agentCopyFailed": "복사 실패: 클립보드가 막혔어요",
       "heroConcepts": "개념",
       "heroRelations": "관계",
+      "heroRelationsHidden": "이 줄에 없는 관계 유형이 {count}개 더 있습니다",
+      "heroRelationsHiddenRoute": "관계 유형 전체",
       "heroDensityGloss": "개념 1개당 평균 연결 {ratio}개",
       "heroMembershipLabel": "도메인에 담김",
       "heroHealth": "건강",
@@ -1480,6 +1482,8 @@
       "weekCellCurrent": "이번 주 · 갱신 {count}건",
       "recentUpdatesTitle": "최근 갱신",
       "noRecentUpdates": "알려진 갱신일이 없습니다.",
+      "recentUpdatesHidden": "이 목록에 없는 최근 변경 개념이 {count}개 더 있습니다",
+      "recentUpdatesHiddenRoute": "문서 전체",
       "staleCountLabel": "90일 이상 미갱신",
       "trendTitle": "주간 추이",
       "trendCaption": "전 도메인 합산 주간 갱신 건수: 히트스트립과 같은 {weeks}주 창.",
@@ -2717,7 +2721,9 @@
       "mostlyOne": "대부분 {a}({aCount})에 있다.",
       "mostlyTwo": "대부분 {a}({aCount})와 {b}({bCount})에 있다.",
       "selfDomainLabel": "도메인 내부",
-      "noDomainLabel": "소속 없음"
+      "noDomainLabel": "소속 없음",
+      "domainsHidden": "이 막대에 없는 도메인이 {count}개 더 닿습니다",
+      "domainsHiddenRoute": "도메인 경계"
     },
     "handoff": {
       "label": "AI에게 이어서 맡기기",

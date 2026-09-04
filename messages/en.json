@@ -1381,6 +1381,8 @@
       "agentCopyFailed": "Copy failed: the clipboard was blocked",
       "heroConcepts": "Concepts",
       "heroRelations": "Relations",
+      "heroRelationsHidden": "{count} more relation types are not on this strip",
+      "heroRelationsHiddenRoute": "All relation types",
       "heroDensityGloss": "{ratio} connections per concept, on average",
       "heroMembershipLabel": "in a domain",
       "heroHealth": "Health",
@@ -1480,6 +1482,8 @@
       "weekCellCurrent": "This week · {count} updates",
       "recentUpdatesTitle": "Recent updates",
       "noRecentUpdates": "No known update dates yet.",
+      "recentUpdatesHidden": "{count} more concepts changed than this list shows",
+      "recentUpdatesHiddenRoute": "All documents",
       "staleCountLabel": "Not updated in 90+ days",
       "trendTitle": "Weekly trend",
       "trendCaption": "Total updates per week, summed across every domain: same {weeks}w window as the heatstrip.",
@@ -2717,7 +2721,9 @@
       "mostlyOne": "mostly in {a} ({aCount}).",
       "mostlyTwo": "mostly in {a} ({aCount}) and {b} ({bCount}).",
       "selfDomainLabel": "this domain",
-      "noDomainLabel": "no domain"
+      "noDomainLabel": "no domain",
+      "domainsHidden": "{count} more domains are reached than these bars show",
+      "domainsHiddenRoute": "Domain boundaries"
     },
     "handoff": {
       "label": "Agent handoff",

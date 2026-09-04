@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { formatDate } from "@/shared/lib/format-date";
-import { EvidenceOnlyBadge, TopologyV2KindGlyph } from "@/shared/ui";
+import { EvidenceOnlyBadge, HiddenCountLine, TopologyV2KindGlyph } from "@/shared/ui";
+import { Link } from "@/i18n/navigation";
 import { controlClass } from "@/shared/ui/control-class";
 import { RecentNodeRow } from "@/widgets/recent-node-row";
 import type { DomainFreshnessRow, RecentUpdateRow } from "../../lib/freshness";
@@ -35,6 +36,10 @@ export interface FreshnessTabLabels {
   weekCellCurrent: (count: number) => string;
   recentUpdatesTitle: string;
   noRecentUpdates: string;
+  /** The remainder sentence for the capped concept list, formatted from the difference. */
+  recentHidden: (hidden: number) => string;
+  /** Where the rest are readable — every vault document, each carrying its own dates. */
+  recentHiddenRoute: string;
   staleCountLabel: string;
   trendTitle: string;
   trendCaption: string;
@@ -58,6 +63,12 @@ interface FreshnessTabRecentLink {
 export interface FreshnessTabProps {
   domainRows: DomainFreshnessRow[];
   recent: RecentUpdateRow[];
+  /**
+   * How many concept rows carry a date in all. `recent` is capped, and until
+   * 2026-09-05 the overflow was dropped without a word — while the evidence
+   * layer directly below stated its own truncation.
+   */
+  recentTotal: number;
   /** The evidence layer — the folded area. `computeFreshnessSummary` already separates it. */
   recentEvidence: RecentUpdateRow[];
   recentEvidenceTotal: number;
@@ -78,6 +89,7 @@ export interface FreshnessTabProps {
 export function FreshnessTab({
   domainRows,
   recent,
+  recentTotal,
   recentEvidence,
   recentEvidenceTotal,
   staleCount,
@@ -210,6 +222,22 @@ export function FreshnessTab({
               />
             ))
           )}
+          <HiddenCountLine
+            data-testid="insights-recent-hidden"
+            className="mt-1.5"
+            total={recentTotal}
+            shown={recent.length}
+            label={labels.recentHidden}
+            route={
+              <Link
+                href="/docs"
+                data-testid="insights-recent-hidden-route"
+                className={controlClass({ shape: "link", size: "sm", hoverInk: "secondary" })}
+              >
+                {labels.recentHiddenRoute}
+              </Link>
+            }
+          />
         </div>
 
         {/* The evidence layer — the same quiet toggle and the same copy as the impact ranking on the
