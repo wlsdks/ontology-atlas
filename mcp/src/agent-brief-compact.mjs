@@ -200,10 +200,6 @@ function scoreLexicalDocument(doc, terms) {
   return { score, matchedTerms, matchedFields: [...matchedFields].sort() };
 }
 
-function sectionTokens(doc, heading) {
-  return new Set(lexicalTokens(markdownSection(doc.body, heading)));
-}
-
 function matchedTermsIn(terms, tokens) {
   return terms.filter((term) => tokens.has(term));
 }
