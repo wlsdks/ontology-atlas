@@ -11,7 +11,7 @@ import {
   useDragControls,
   useReducedMotion,
 } from "framer-motion";
-import { MOTION, OVERLAY_SPRING } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING } from "@/shared/motion";
 import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { cn } from "@/shared/lib/cn";
@@ -383,7 +383,7 @@ export function ProjectDrawer({
           aria-describedby={project ? `project-drawer-summary-${project.slug}` : undefined}
           initial={{ x: "100%", opacity: 0 }}
           animate={{ x: 0, opacity: 1, y: 0 }}
-          exit={{ x: "100%", opacity: 0 }}
+          exit={{ x: "100%", opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
           // Migrated to the critically damped overlay spring (2026-07-28). The old
           // `SPRING.sheet` (stiffness 280 / damping 30) was underdamped and overshot, and
           // it was an **unregistered exception** with this as its only consumer — this
@@ -455,7 +455,7 @@ export function ProjectDrawer({
               key={project.slug}
               initial={{ opacity: 0, x: 18, y: 6 }}
               animate={{ opacity: 1, x: 0, y: 0 }}
-              exit={{ opacity: 0, x: -14, y: -4 }}
+              exit={{ opacity: 0, x: -14, y: -4, pointerEvents: "none", transition: EXIT_TRANSITION }}
               transition={MOTION.base}
               className="flex-1 px-4 py-4 md:px-6 md:py-6"
             >
@@ -743,7 +743,7 @@ export function ProjectDrawer({
                               key={impactModeHelpKey}
                               initial={{ opacity: 0 }}
                               animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
+                              exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
                               transition={MOTION.fast}
                             >
                               {t(impactModeHelpKey)}

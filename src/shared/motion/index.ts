@@ -102,3 +102,37 @@ export const SCRIM_FADE = MOTION.base;
 
 /** The reduced-motion equivalent — the same 120ms linear as the overlay rule. */
 export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;
+
+/**
+ * **Leaving is not arriving rewound.**
+ *
+ * `app/globals.css` has said this since 2026-07-28 for the surfaces that leave through a
+ * CSS class: an exit plays forward under its own keyframe name at
+ * `calc(var(--motion-base) * 0.67)`. Every surface that leaves through
+ * `AnimatePresence` was outside that sentence, because framer's `exit` prop reuses the
+ * element's single `transition` — the same clock, the same curve, backwards.
+ *
+ * Measured 2026-09-05 (1440×900, WAAPI `getTiming()` on the exiting element):
+ *
+ * | Surface | entry | exit |
+ * |---|---|---|
+ * | node inspector — `Surface`, CSS | 180 ms | 120.6 ms, own keyframe |
+ * | docs quick drawer scrim — framer | 180 ms | **180 ms, same curve** |
+ * | search palette panel — framer | 180 ms | **180 ms, same curve** |
+ *
+ * 180 × 0.67 = 120.6 ms, which is the ramp's `fast` step, so the JS mirror introduces no
+ * off-ramp value: it names the step the CSS formula already lands on. Reading it as a
+ * name rather than as `MOTION.fast` is the point — an exit is not "acknowledge a hover",
+ * and `framer-exit-asymmetry.contract.test.ts` can require *this* name at every exit.
+ *
+ * ⚠️ **What is still missing: the curve.** The reference behaviour an exit wants is
+ * *accelerate away* — start at the surface's resting speed and leave the screen — while
+ * every easing this repository owns decelerates (`--motion-ease`
+ * `cubic-bezier(0.25, 0.1, 0.25, 1)`, `--topology-motion-ease-out`
+ * `cubic-bezier(0.16, 1, 0.3, 1)`). There is no accelerating step on the ramp, and one
+ * invented here would be exactly the off-ramp literal the mirror contract exists to
+ * stop. So the exit keeps the family curve and the gap is written down instead: the
+ * value wanted is `cubic-bezier(0.4, 0, 1, 1)` and it needs a ramp name
+ * (`--motion-ease-exit`) from the design-system seat before any surface may use it.
+ */
+export const EXIT_TRANSITION = { duration: MOTION.fast.duration, ease: MOTION_EASE } as const;

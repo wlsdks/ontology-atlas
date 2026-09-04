@@ -9,7 +9,7 @@ import { BookOpen, Search, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui';
-import { OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
+import { EXIT_TRANSITION, OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
@@ -327,7 +327,7 @@ function SearchPaletteDialog({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
   // rank2 — the scrim is an opacity crossfade matched to
   // --topology-motion-panel-duration (180ms). reduced-motion uses 120ms (OVERLAY_SPRING_REDUCED).
       transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
@@ -353,7 +353,7 @@ function SearchPaletteDialog({
         ref={dialogRef}
         initial={{ y: 8, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 8, opacity: 0 }}
+        exit={{ y: 8, opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
         transition={panelTransition}
         data-overlay-spring="true"
         data-search-palette-panel="true"

@@ -10,7 +10,7 @@ import {
   NAV_LEADER_KEY,
 } from "@/shared/config/destinations";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
@@ -410,13 +410,13 @@ export function ShortcutSheet({ open, onClose }: Props) {
     ? {
         initial: { opacity: 0, y: 0, scale: 1 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 0, scale: 1 },
+        exit: { opacity: 0, y: 0, scale: 1, pointerEvents: "none", transition: EXIT_TRANSITION },
         transition: OVERLAY_SPRING_REDUCED,
       }
     : {
         initial: { opacity: 0, y: 12, scale: 0.985 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 12, scale: 0.985 },
+        exit: { opacity: 0, y: 12, scale: 0.985, pointerEvents: "none", transition: EXIT_TRANSITION },
         transition: MOTION.base,
       };
 
@@ -427,7 +427,7 @@ export function ShortcutSheet({ open, onClose }: Props) {
           data-interactive-overlay="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
           transition={reducedMotion ? OVERLAY_SPRING_REDUCED : MOTION.base}
           data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"
           data-shortcut-sheet-floating-width-token="--topology-shortcut-sheet-floating-width"

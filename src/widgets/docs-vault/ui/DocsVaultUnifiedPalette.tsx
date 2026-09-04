@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { fieldClass } from '@/shared/ui/control-class';
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
@@ -495,7 +495,7 @@ export function DocsVaultUnifiedPalette({
       key="unified-backdrop"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
       transition={MOTION.fast}
       className="fixed inset-0 z-50 flex items-start justify-center bg-[color:var(--color-scrim-a50)] p-4 pt-[12vh]"
       onClick={onClose}
@@ -504,7 +504,7 @@ export function DocsVaultUnifiedPalette({
         key="unified-palette"
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+        exit={{ opacity: 0, y: -8, scale: 0.98, pointerEvents: "none", transition: EXIT_TRANSITION }}
       // 0.14 with an unnamed easing curve → the ramp's "movement" step (2026-07-28).
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}

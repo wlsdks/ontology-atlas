@@ -6,7 +6,7 @@ import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { MOTION } from '@/shared/motion';
+import { EXIT_TRANSITION, MOTION } from '@/shared/motion';
 import { Button, controlClass } from '@/shared/ui';
 
 export interface RecentChangesNeedsVaultDialogProps {
@@ -77,7 +77,7 @@ export function RecentChangesNeedsVaultDialog({
           data-interactive-overlay="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
           transition={MOTION.base}
           onClick={onClose}
           data-testid="recent-changes-needs-vault-scrim"
@@ -86,7 +86,7 @@ export function RecentChangesNeedsVaultDialog({
           <motion.section
             initial={{ opacity: 0, y: 12, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.985 }}
+            exit={{ opacity: 0, y: 12, scale: 0.985, pointerEvents: "none", transition: EXIT_TRANSITION }}
             transition={MOTION.base}
             onClick={(event) => event.stopPropagation()}
             role="dialog"

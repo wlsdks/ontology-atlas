@@ -38,7 +38,7 @@ import {
   flattenDocs,
   flattenTreeSlugs,
 } from "../lib/tree-utils";
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { cn } from "@/shared/lib/cn";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
@@ -510,7 +510,7 @@ export function DocsQuickDrawer({
           data-interactive-overlay="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
           transition={MOTION.base}
           className="pointer-events-auto fixed inset-0 z-40 bg-[color:var(--color-backdrop-medium)]"
           onClick={onClose}
@@ -522,7 +522,7 @@ export function DocsQuickDrawer({
             aria-label={t("ariaLabel")}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+            exit={{ x: "100%", pointerEvents: "none", transition: EXIT_TRANSITION }}
             transition={MOTION.base}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}

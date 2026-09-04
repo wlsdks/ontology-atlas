@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { isPickerAbort } from "@/shared/lib/picker-abort";
 import {
@@ -304,7 +304,7 @@ export function BlockImportModule() {
             data-interactive-overlay="true"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
             transition={MOTION.base}
             className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-6"
             onClick={() => {
@@ -314,7 +314,7 @@ export function BlockImportModule() {
             <motion.section
               initial={{ opacity: 0, y: 12, scale: 0.985 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.985 }}
+              exit={{ opacity: 0, y: 12, scale: 0.985, pointerEvents: "none", transition: EXIT_TRANSITION }}
               transition={MOTION.base}
               onClick={(event) => event.stopPropagation()}
               role="dialog"
