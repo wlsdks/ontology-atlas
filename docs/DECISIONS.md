@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-04 — A CLI exit code says whether the input could be answered, not whether the answer is empty
+
+**Why**: a second CLI audit found `backlinks <typo>` exiting 0 with an empty list, the one answer that licenses a delete, while `install-shim --json` printed a shell body before its JSON and `agent-activity --show` exited 1 on the ordinary first run with no heartbeat yet, the exact step Atlas's own guidance tells an agent to script.
+**Prior**: none on this surface; the 2026-08-30 CLI/MCP module unification stands and is untouched.
+**Decision**: one rule for the CLI: non-zero means the input could not be answered, zero means it was answered even when the answer is empty or absent. `backlinks` fails closed on a slug that names no node (exit 2, closest slug named, `resolved:false` in JSON), CLI-side only since MCP `find_backlinks` keeps its shape; a real node with no referrers still exits 0. `install-shim --json` emits one JSON document on every terminal path and moves the pre-write preview to stderr while carrying the shim body in the JSON. `agent-activity --show` before the first heartbeat exits 0 with `exists:false`. An unknown command prints its suggestion and one `--help` pointer instead of the full help.
+**Dissent**: po-steward — a cleanup loop over stale slugs now aborts on the first typo where it used to get an orderly zero; kept because no such caller exists in the repository and the JSON body still carries `resolved:false` for one that appears. po-evidence — the help-dump removal has no observed harm and could have been left out; kept as a two-line change in a file the slice already touched.
+**Falsifier**: a real caller that treats `backlinks` exit 0 with `total:0` as "safe to delete" and breaks on the refusal, or MCP `find_backlinks` still answering an unresolvable slug with `total:0` a month on, which would make the CLI guard a divergence rather than a repair.
+**Owner**: jinan
+
 ## 2026-09-04 — A stale receipt may emit coordinates the live source verifies, and a capability's name is part of its claim
 
 **Why**: the 2026-09-04 audit ran three task sentences against the dogfood vault and got the wrong capability three times: a 25k-character document with no `## Definition` was scored on its whole body and beat the capability whose title named the task. Navigation stayed `source_not_current` while all 119 witness paths still resolved, because the receipt was one commit behind, so "Primary: unknown" was the permanent answer on an active repository.
