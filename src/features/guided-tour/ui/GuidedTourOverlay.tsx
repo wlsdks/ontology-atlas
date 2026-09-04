@@ -7,6 +7,7 @@ import type { UseGuidedTourResult } from "../model/use-guided-tour";
 import {
   computeCardPlacement,
   resolveAnchorRect,
+  visibleAnchorBox,
   type AnchorBox,
 } from "../model/resolve-anchor-rect";
 import { GuidedTourCard } from "./GuidedTourCard";
@@ -124,7 +125,16 @@ export function GuidedTourOverlay({
 
   // Canvas node anchors follow every frame (inheriting the camera spring's
   // rhythm, no CSS transition). While the probe is still unprojected (zero-size)
-  // this is null and the full scrim is the fallback.
+  // — or while the node it tracks is panned outside the viewport — this is null
+  // and the full scrim is the fallback.
+  //
+  // The viewport half of that test is `visibleAnchorBox` (round 4, 2026-09-04).
+  // Size alone was not enough: a first domain sitting off-screen produced a real
+  // rect, so the cutout and the four blocker strips were laid out outside the
+  // window and the person saw one uniformly dark screen while the copy promised a
+  // lit dot. The viewport is read live from `window` rather than from the
+  // `viewport` state, because this tick already runs at frame rate and must not
+  // wait a resize event to notice that the anchor left the screen.
   useEffect(() => {
     if (!open || !step || step.anchor?.type !== "canvas-node") return undefined;
     // Canvas node anchors are map-only — destination guides pass no probe.
@@ -134,16 +144,13 @@ export function GuidedTourOverlay({
       const el = canvasAnchorRef.current;
       if (el) {
         const r = el.getBoundingClientRect();
+        const box = visibleAnchorBox(
+          { top: r.top, left: r.left, width: r.width, height: r.height },
+          window.innerWidth,
+          window.innerHeight,
+        );
         setMeasurements((current) =>
-          current.key === anchorKey
-            ? {
-                ...current,
-                canvasRect:
-                  r.width > 0 && r.height > 0
-                    ? { top: r.top, left: r.left, width: r.width, height: r.height }
-                    : null,
-              }
-            : current,
+          current.key === anchorKey ? { ...current, canvasRect: box } : current,
         );
       }
       raf = window.requestAnimationFrame(tick);
