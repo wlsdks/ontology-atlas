@@ -15,6 +15,7 @@ A contextual relation editor that shares space with the compact inspector of the
 
 - Primary implementation: `src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx#MeaningEditorPanel`
 - Supporting implementation: `src/features/ontology-meaning-editor/ui/MeaningEditorPanel.tsx#candidateAllowed`
+- Focused test: `src/features/ontology-meaning-editor/ui/MeaningEditorPanel.test.tsx#관계 하나의 변경안을 먼저 보여 주고 승인 뒤에만 apply를 부른다`
 
 ## Includes
 

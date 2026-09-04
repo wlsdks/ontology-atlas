@@ -15,6 +15,7 @@ Node status value entity. Implementation evidence for capabilities/taxonomy.
 
 - Primary implementation: `src/entities/status/model/defaults.ts#DEFAULT_STATUSES`
 - Supporting implementation: `src/entities/status/model/types.ts#Status`
+- Focused test: `tests/contract/taxonomy-locale-label.contract.test.ts#모든 상태 기본값이 한국어·영문 라벨을 다 갖는다`
 
 ## Includes
 

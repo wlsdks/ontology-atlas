@@ -15,6 +15,7 @@ Gateway documentation/marketing page.
 
 - Primary implementation: `src/views/gateway-doc/ui/GatewayDocPage.tsx#GatewayDocPage`
 - Supporting implementation: `src/views/gateway-doc/model/guide-pages.ts#GUIDE_PAGES`
+- Focused test: `tests/e2e/gateway-reading-reach.spec.ts#좁은 폭 차례가 넓은 폭 차례와 같은 장을 담는다`
 
 ## Includes
 

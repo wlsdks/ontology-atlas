@@ -14,6 +14,7 @@ Project editing page. Implementation evidence for capabilities/project-edit.
 ## Evidence
 
 - Primary implementation: `src/views/project-editor/ui/ProjectEditorPage.tsx#normalizeReturnTo`
+- Focused test: `src/views/project-editor/ui/ProjectEditorPage.loading.test.tsx#초기 fallback not-found 뒤 로컬 project가 도착하면 편집 폼으로 회복한다`
 
 ## Includes
 

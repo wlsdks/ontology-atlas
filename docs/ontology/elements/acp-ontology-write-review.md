@@ -15,6 +15,7 @@ The ACP permission boundary that lets Atlas read tools continue automatically bu
 
 - Primary implementation: `src/features/acp-session/model/atlas-tool-policy.ts#atlasToolMode`
 - Supporting implementation: `src/features/acp-session/model/permission-intent.ts#permissionIntent`
+- Focused test: `src/widgets/acp-chat-panel/ui/AcpPermissionCard.test.tsx#typed change를 보여 주고 계속 허용은 숨긴다`
 
 ## Includes
 
