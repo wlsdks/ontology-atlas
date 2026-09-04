@@ -124,18 +124,31 @@ async function printApprovalRequiredPlan({
       assertInferImportsResult(importsResult);
       applyImportThreshold(importsResult, parsed.threshold);
     } catch (err) {
+      const omitted = omittedLargeImports(err, { target, vaultRoot });
+      if (!omitted) {
+        process.stderr.write(
+          `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        return 2;
+      }
+      // The review plan is still valid without the import graph; say what was
+      // left out instead of exiting 2 with an empty stdout (audit 2026-09-04).
+      importsResult = omitted;
       process.stderr.write(
-        `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
+        `${COLORS.yellow}warn${COLORS.reset}   infer_imports omitted: ${omitted.reason}\n`
+          + `        ${omitted.retry.join('\n        ')}\n`,
       );
-      return 2;
     }
   }
 
+  const importsOmitted = importsResult?.status === 'omitted_large';
   const payload = {
     mode: 'review',
     apply: false,
     writeEligible: false,
     reason: 'approval_required',
+    // Top-level as the README promises; `next.writes` stays for existing readers.
+    writes: 0,
     rootPath: analyzeResult.rootPath,
     vaultRoot,
     guard: {
@@ -147,15 +160,19 @@ async function printApprovalRequiredPlan({
     plan: {
       concepts: concepts.length,
       suggestedRelations: analyzeResult.suggestedRelations?.length ?? 0,
-      importRelations:
-        importsResult?.moduleEdges?.length ??
-        importsResult?.scanSummary?.moduleEdges ??
-        importsResult?.reviewQueue?.total ??
-        0,
-      unresolvedImports:
-        importsResult?.unresolved?.length ??
-        importsResult?.scanSummary?.unresolvedImports ??
-        0,
+      // `null`, never 0, when the import graph was omitted: an absent count is
+      // not "no imports found".
+      importRelations: importsOmitted
+        ? null
+        : importsResult?.moduleEdges?.length ??
+          importsResult?.scanSummary?.moduleEdges ??
+          importsResult?.reviewQueue?.total ??
+          0,
+      unresolvedImports: importsOmitted
+        ? null
+        : importsResult?.unresolved?.length ??
+          importsResult?.scanSummary?.unresolvedImports ??
+          0,
       readmeOnlyDomains: heldReadmeDomains.map((domain) => domain.slug),
     },
     analyze: analyzeResult,
@@ -174,11 +191,35 @@ async function printApprovalRequiredPlan({
       `${COLORS.bold}bootstrap review${COLORS.reset} ${COLORS.dim}repo=${target}\n` +
         `                 vault=${vaultRoot}${COLORS.reset}\n\n` +
         `  ${COLORS.yellow}approval required${COLORS.reset} — ${concepts.length} semantic candidates remain review-only.\n` +
-        `  writes: 0 · suggested relations: ${payload.plan.suggestedRelations} · import candidates: ${payload.plan.importRelations}\n` +
+        `  writes: 0 · suggested relations: ${payload.plan.suggestedRelations} · import candidates: ${importsOmitted ? 'omitted (see warning)' : payload.plan.importRelations}\n` +
         `  ${COLORS.dim}${payload.next.review}${COLORS.reset}\n`,
     );
   }
   return 3;
+}
+
+const LARGE_IMPORT_RESPONSE_RE = /exceeds the automatic 128 KiB delivery limit/u;
+
+/**
+ * Turns the MCP "response too large without a loadable vault" refusal into a
+ * review-only envelope instead of a crash. Without `--vault`, `bootstrap` runs
+ * against a scratch vault the server cannot reconcile against, so a large
+ * repository's import graph cannot be compacted. The plan totals from the
+ * structure stage are still valid; the import stage reports itself omitted
+ * and names both ways to get it back.
+ */
+export function omittedLargeImports(err, { target, vaultRoot } = {}) {
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  if (!LARGE_IMPORT_RESPONSE_RE.test(message)) return null;
+  return {
+    status: 'omitted_large',
+    reason: message,
+    retry: [
+      `node cli/src/index.mjs bootstrap ${target ?? '<rootPath>'} --vault <your vault> --json`,
+      `node cli/src/index.mjs infer-imports ${target ?? '<rootPath>'} --full --json`,
+    ],
+    ...(vaultRoot ? { vaultRootTried: vaultRoot } : {}),
+  };
 }
 
 /**
