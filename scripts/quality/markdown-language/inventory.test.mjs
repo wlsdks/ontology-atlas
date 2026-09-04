@@ -91,6 +91,32 @@ test('reports Korean prose, owner quotes, and display_ko outside frontmatter', (
   );
 });
 
+test('counts a Korean focused-test title quoted in an Evidence coordinate apart from prose', () => {
+  const result = auditMarkdownEntries([
+    {
+      path: 'docs/ontology/elements/search-palette.md',
+      content: [
+        '---',
+        'kind: element',
+        '---',
+        '## Evidence',
+        '- Primary implementation: `src/widgets/search-palette/ui/SearchPalette.tsx#SearchPalette`',
+        '- Focused test: `src/widgets/search-palette/ui/SearchPalette.test.tsx#열리면 role=dialog 로 렌더된다`',
+        '- Focused test: `src/a.test.ts#타이틀` 그리고 설명',
+        '- Supporting implementation: `src/x.ts#한글`',
+        '한국어 산문',
+        '',
+      ].join('\n'),
+    },
+  ]);
+  // The quoted coordinate is counted on its own ratchet, never as prose.
+  assert.equal(result.quotedEvidenceLines, 1);
+  assert.equal(result.scopes.current.quotedEvidenceLines, 1);
+  // Hangul outside the backticks, a non-test coordinate, and plain prose stay violations.
+  assert.equal(result.unexpectedLines, 3);
+  assert.deepEqual(result.violations.map((row) => row.line), [7, 8, 9]);
+});
+
 test('fails closed when no canonical Markdown is scanned', () => {
   const result = auditMarkdownEntries([
     { path: 'public/docs-vault/README.md', content: '# Generated\n' },
