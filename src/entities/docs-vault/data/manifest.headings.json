@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-04 — A stale receipt may emit coordinates the live source verifies, and a capability's name is part of its claim",
+      "slug": "2026-09-04-a-stale-receipt-may-emit-coordinates-the-live-source-verifies-and-a-capabilitys-name-is-part-of-its-claim"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-03 — Codex chat pins the last adapter whose read-only mode holds the installed permission matrix",
       "slug": "2026-09-03-codex-chat-pins-the-last-adapter-whose-read-only-mode-holds-the-installed-permission-matrix"
     },
