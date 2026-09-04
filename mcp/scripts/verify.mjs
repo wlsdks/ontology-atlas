@@ -8643,13 +8643,44 @@ function agentBriefPrivateSourceCoordinate(value) {
   return false;
 }
 
+const AGENT_BRIEF_LIVE_WITNESS_STATUSES = new Set([
+  'witnesses_supported', 'witnesses_missing', 'no_witnesses', 'inventory_truncated',
+]);
+
+// `projectSource.live` (projectSourceLiveWitnesses:v1) appears only when the
+// receipt is behind the source or the ontology: it says whether the recorded
+// witness paths still resolve in the live checkout. The dogfood vault in CI has
+// no bound source, so a release rehearsal against the real vault is the first
+// place this object is seen; it must be part of the categorical contract there.
+function validAgentBriefLiveWitnesses(live) {
+  return agentBriefExactKeys(live, [
+    'contract', 'status', 'basis', 'sourceRevision', 'sourceFingerprint', 'witnessSummary', 'missingPaths',
+  ])
+    && live.contract === 'projectSourceLiveWitnesses:v1'
+    && AGENT_BRIEF_LIVE_WITNESS_STATUSES.has(live.status)
+    && ['receipt', 'current_graph'].includes(live.basis)
+    && (live.sourceRevision === null || hasNonEmptyString(live.sourceRevision))
+    && hasNonEmptyString(live.sourceFingerprint)
+    && agentBriefPlainObject(live.witnessSummary)
+    && ['total', 'supported', 'missing'].every(
+      (field) => Number.isInteger(live.witnessSummary[field]) && live.witnessSummary[field] >= 0,
+    )
+    && live.witnessSummary.supported + live.witnessSummary.missing === live.witnessSummary.total
+    && Array.isArray(live.missingPaths)
+    && live.missingPaths.length <= 5
+    && live.missingPaths.every((path) => hasNonEmptyString(path));
+}
+
 function validAgentBriefProjectSource(value, projectSlug) {
+  const baseKeys = [
+    'contractVersion', 'projectSlug', 'status', 'currentness', 'measuredAt',
+    'topGap', 'nextAction', 'bindingCardinality', 'receipt',
+  ];
+  const hasLive = agentBriefPlainObject(value) && Object.hasOwn(value, 'live');
   if (
     !hasNonEmptyString(projectSlug)
-    || !agentBriefExactKeys(value, [
-      'contractVersion', 'projectSlug', 'status', 'currentness', 'measuredAt',
-      'topGap', 'nextAction', 'bindingCardinality', 'receipt',
-    ])
+    || !agentBriefExactKeys(value, hasLive ? [...baseKeys, 'live'] : baseKeys)
+    || (hasLive && !validAgentBriefLiveWitnesses(value.live))
     || value.contractVersion !== 1
     || value.projectSlug !== projectSlug
     || !AGENT_BRIEF_SOURCE_STATUSES.has(value.status)
