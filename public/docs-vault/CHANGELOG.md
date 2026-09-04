@@ -45,6 +45,10 @@
 
 ---
 
+## 2026-09-05 · Unreleased: changes since v1.0.5
+
+**Fixed**: The in-app Claude chat no longer offers the Auto mode that decides permissions by itself; a mode is judged by the class its adapter states, not only its name, and when the tool moves a conversation into a mode that accepts edits without asking, the screen says so and never offers that mode back.
+
 ## 2026-09-04 · v1.0.5: the map replays and cones its ontology, and a task handoff follows reviewed claims
 
 **Added**: A play tile replays the ontology appearing piece by piece; `+`, `-` and `0` zoom and fit the map; an architecture profile can carry a role's sentence per locale.

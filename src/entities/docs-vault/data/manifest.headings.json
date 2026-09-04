@@ -3849,6 +3849,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 · Unreleased: changes since v1.0.5",
+      "slug": "2026-09-05-unreleased-changes-since-v105"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-04 · v1.0.5: the map replays and cones its ontology, and a task handoff follows reviewed claims",
       "slug": "2026-09-04-v105-the-map-replays-and-cones-its-ontology-and-a-task-handoff-follows-reviewed-claims"
     },
@@ -6177,6 +6182,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-05 — A session mode is judged by the class the adapter states, not only its name, and a moved session is announced",
+      "slug": "2026-09-05-a-session-mode-is-judged-by-the-class-the-adapter-states-not-only-its-name-and-a-moved-session-is-announced"
     },
     {
       "depth": 2,
