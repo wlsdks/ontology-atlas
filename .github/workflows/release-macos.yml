@@ -372,8 +372,21 @@ jobs:
       - name: Install bundled MCP server dependencies
         run: pnpm --dir mcp install --frozen-lockfile
 
+      # Observed three times (2026-09-04): a registry.npmjs.org socket timeout fails this
+      # step after pnpm audit's own two retries, killing the whole ~20-minute job for a
+      # transient network blip. A bounded outer retry keeps the same scope/level and still
+      # fails the step on a real advisory (the final attempt's exit code is honoured).
       - name: Audit JavaScript production dependencies
-        run: pnpm audit --prod --audit-level=high
+        shell: pwsh
+        run: |
+          for ($attempt = 1; $attempt -le 4; $attempt++) {
+            pnpm audit --prod --audit-level=high
+            if ($LASTEXITCODE -eq 0) { break }
+            if ($attempt -eq 4) { exit $LASTEXITCODE }
+            $delaySeconds = $attempt * 30
+            Write-Host "pnpm audit failed (exit $LASTEXITCODE); retrying in $delaySeconds s (attempt $attempt of 4)..."
+            Start-Sleep -Seconds $delaySeconds
+          }
 
       - name: Audit Rust dependencies
         uses: rustsec/audit-check@69366f33c96575abad1ee0dba8212993eecbe998 # v2.0.0
