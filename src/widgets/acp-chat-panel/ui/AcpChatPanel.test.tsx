@@ -531,6 +531,43 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(runs[0]).toHaveAttribute('data-tool-run-count', '3');
   });
 
+  it('a very long provider tool name never pushes the transcript sideways', async () => {
+    /*
+     * ⚠️ **`shrink-0` on the label was a promise the row could not keep** (measured at
+     * `CHAT_WIDTH_MIN`, 320). Someone else's adapter is free to name a tool anything; a
+     * 90-character title held its full width and the outcome column — the diagnostic half
+     * of the row — was pushed off the right edge, where a dock has no horizontal scrollbar
+     * to get it back.
+     */
+    await bootSession();
+    const longTitle = `Run${'ExtremelyVerboseProviderToolName'.repeat(3)}`;
+    expect(longTitle.length).toBeGreaterThan(90);
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-long',
+          title: longTitle,
+          kind: 'execute',
+          status: 'completed',
+        },
+      },
+    });
+    const row = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="tool"]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    const label = row.querySelector('[data-tool-label-text]');
+    expect(label, 'the label has no element of its own to constrain').not.toBeNull();
+    // The row's own contract: the label yields, the outcome does not.
+    expect(label!.className).toContain('truncate');
+    expect(label!.className).toContain('min-w-0');
+    expect(screen.getByTestId('acp-chat-tool-outcome').className).toContain('shrink-0');
+  });
+
   it('frames a listing filter so it does not read as a concept that was read', async () => {
     await bootSession();
     emit({

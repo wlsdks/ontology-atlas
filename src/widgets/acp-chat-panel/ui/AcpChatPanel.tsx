@@ -1946,7 +1946,18 @@ function TranscriptEntry({
             className="size-1.5 shrink-0 rounded-full border border-[color:var(--color-indigo-accent)]"
           />
         ) : null}
-        <span className="shrink-0">
+        {/*
+          ⚠️ **`shrink-0` here was a promise the row could not keep** (measured at
+          `CHAT_WIDTH_MIN`, 320). Someone else's adapter may name a tool anything, and a
+          90-character title held its full width and pushed the outcome — the diagnostic
+          half of the row — off the right edge, where a dock has no horizontal scrollbar to
+          get it back. Our own labels are short sentences that never reach the cap, so the
+          share only ever bites on a foreign name, which is exactly the case that needed it.
+        */}
+        <span
+          data-tool-label-text
+          className="min-w-0 max-w-[45%] shrink truncate"
+        >
           {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
         </span>
         {/*
