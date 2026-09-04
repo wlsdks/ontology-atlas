@@ -4814,9 +4814,12 @@ function HomePageImpl() {
                       folderDocCount: (count) => t("bootstrap.folderDocCount", { count }),
                       summary: (docCount, projectFile) =>
                         t("bootstrap.summary", { count: docCount, projectFile }),
+                      summaryExistingProject: (docCount, projectFile) =>
+                        t("bootstrap.summaryExistingProject", { count: docCount, projectFile }),
                       bodyUntouched: t("bootstrap.bodyUntouched"),
                       alreadyTyped: (count) => t("bootstrap.alreadyTyped", { count }),
                       runtimeSkills: (count) => t("bootstrap.runtimeSkills", { count }),
+                      agentPointers: (count) => t("bootstrap.agentPointers", { count }),
                       confirm: t("bootstrap.confirm"),
                       cancel: t("bootstrap.cancel"),
                       errorPrefix: t("bootstrap.errorPrefix"),

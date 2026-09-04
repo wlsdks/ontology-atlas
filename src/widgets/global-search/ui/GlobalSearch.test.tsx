@@ -103,7 +103,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Global search" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
       target: { value: "mcp server" },
     });
 
@@ -123,7 +123,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Global search" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
       target: { value: "mcp server" },
     });
     const option = findOntologyOption("capability:mcp-server");
@@ -146,7 +146,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Global search" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
       target: { value: "mcp" },
     });
     // Without a filter, all 2 capabilities and 1 element are visible.
@@ -174,7 +174,7 @@ describe("GlobalSearch", () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole("combobox", { name: "Global search" }), {
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
       target: { value: "mcp" },
     });
 
@@ -355,7 +355,7 @@ describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
     const onOpenChange = vi.fn();
     renderPalette(onOpenChange);
 
-    fireEvent.pointerDown(screen.getByRole("combobox", { name: "Global search" }));
+    fireEvent.pointerDown(screen.getByRole("combobox", { name: "Search this map" }));
 
     expect(onOpenChange).not.toHaveBeenCalled();
   });

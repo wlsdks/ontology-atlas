@@ -247,7 +247,7 @@ const OPENERS: readonly Opener[] = [
     surface: '[role="dialog"]',
   },
   {
-    name: "글로벌 검색",
+    name: "이 지도에서 검색",
     route: "/ko/topology/",
     trigger: "topology-concept-search",
     surface: '[role="dialog"]',
