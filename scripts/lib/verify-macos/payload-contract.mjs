@@ -245,7 +245,7 @@ export function validateWebviewVerifyPayload(payload, {
  * so a tab added without updating this number fails in a unit run rather than
  * eight minutes into a packaged-app verification.
  */
-const INSIGHTS_TAB_COUNT = 6;
+const INSIGHTS_TAB_COUNT = 7;
 
   const rawRelationTypePattern =
     /^(contains|depends_on|depends-on|depends|relates|relates_to|related_to|describes|uses|belongs_to|belongs-to)$/i;

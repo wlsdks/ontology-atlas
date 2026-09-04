@@ -1356,6 +1356,7 @@
       "tabsAriaLabel": "분석 탭",
       "tab": {
         "do-next": "할 일",
+        "unmatched": "안 맞는 이름",
         "composition": "구성",
         "connections": "연결",
         "boundaries": "경계",
@@ -1365,9 +1366,37 @@
       },
       "tabCountTitle": {
         "do-next": "손볼 항목 수",
+        "unmatched": "이 폴더에 없는 이름 수",
         "composition": "개념 수",
         "connections": "관계 수",
         "boundaries": "도메인을 넘나드는 관계 수"
+      },
+      "unmatched": {
+        "title": "찾았지만 없는 것",
+        "caption": "각 줄은 이 폴더에 적혔지만 어떤 개념도 답하지 않는 이름이거나, 아무도 자리를 정해 주지 않은 개념입니다. 에이전트가 지어낸 관계 종류는 파일에 닿기 전에 거절되고 어디에도 남지 않으므로 여기에 올릴 수 없습니다.",
+        "kind": {
+          "unresolved-reference": {
+            "title": "이름만 있고 문서가 없음",
+            "caption": "이름으로 가리켰지만 이 폴더에 그 문서가 없습니다. 여러 개념이 같은 이름을 찾고 있다면 오타가 아니라 아직 쓰지 않은 개념입니다."
+          },
+          "missing-containment": {
+            "title": "한쪽만 이어짐",
+            "caption": "개념은 도메인을 적었는데 그 도메인은 이 개념을 다시 가리키지 않습니다. 관계가 한 방향으로만 남아 있습니다."
+          },
+          "unassigned-node": {
+            "title": "아무도 자리를 정하지 않음",
+            "caption": "도메인도 없고 담고 있는 것도 없는 개념입니다. 어딘가에 속하거나, 일부러 전역으로 둔 것입니다."
+          }
+        },
+        "occurrences": "×{count}",
+        "askedBy": "찾은 곳: {names}",
+        "shouldHold": "다시 가리켜야 할 곳: {names}",
+        "writtenUnder": "적힌 자리: {keys}",
+        "dismiss": "{name} 을(를) 이 컴퓨터에서 숨깁니다",
+        "restoreAll": "모두 다시 보기",
+        "hiddenNote": "{count}개를 이 컴퓨터에서 숨겼습니다. 위 숫자는 폴더에 있는 그대로입니다.",
+        "emptyTitle": "모든 이름이 문서로 이어집니다",
+        "emptyDescription": "없는 개념을 가리키는 곳이 없고, 모든 개념이 어딘가에 속해 있습니다."
       },
       "errorAlert": "그래프를 불러오지 못했습니다: {message}",
       "loading": "그래프를 불러오는 중입니다…",

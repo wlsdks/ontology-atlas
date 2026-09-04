@@ -593,3 +593,99 @@ export function computeVaultHealth(docs: readonly VaultHealthDoc[]): VaultHealth
     islands,
   };
 }
+
+/**
+ * **What an agent asked this vault for and did not get.**
+ *
+ * ## Why (2026-09-05)
+ *
+ * A relation *type* an agent invents never lands here — the write tools reject an
+ * unknown `type` with a closest-value hint before touching a file, and that refusal is
+ * returned to the caller and persisted nowhere. So the vault cannot say which relation
+ * types agents keep reaching for.
+ *
+ * What it *can* say is the other half of the same question, and that half is on disk:
+ * **a name written into frontmatter that no node in this vault answers to.** An agent
+ * wrote `dependencies: [capabilities/holds-position]` because it believed that concept
+ * existed. The reference is durable, dated by Git, and reviewable as a diff — and a
+ * name three different nodes reached for is a concept this ontology is missing, not a
+ * typo to swat.
+ *
+ * `computeVaultHealth` already counts these as `summary.unresolvedEdges` and stops at
+ * the number. This returns the names behind it, grouped, so a person can read them.
+ * It is the browser-side twin of the MCP maintenance plan's `resolve_dangling_reference`
+ * action and resolves references exactly the way `compile()` does — the same aliases,
+ * the same source-path exemption for `elements:` — so the two never disagree about what
+ * is missing.
+ */
+export interface UnmatchedGraphAsk {
+  /** The name written in frontmatter, verbatim. This vault has no node for it. */
+  ref: string;
+  /** The frontmatter keys it was written under, sorted. What the writer meant by it. */
+  relations: string[];
+  /** How many `(node, key)` references asked for it. */
+  count: number;
+  /** The nodes that asked, sorted. */
+  sources: string[];
+}
+
+export function unmatchedGraphAsks(docs: readonly VaultHealthDoc[]): UnmatchedGraphAsk[] {
+  const graph = compile(docs);
+  const grouped = new Map<string, { relations: Set<string>; sources: Set<string>; count: number }>();
+  for (const edge of graph.edges) {
+    // `external` is an `elements:` source path — evidence pointing at code, not a
+    // concept this vault failed to hold.
+    if (edge.resolved || edge.external) continue;
+    const entry = grouped.get(edge.ref) ?? {
+      relations: new Set<string>(),
+      sources: new Set<string>(),
+      count: 0,
+    };
+    entry.relations.add(edge.via);
+    entry.sources.add(edge.from);
+    entry.count += 1;
+    grouped.set(edge.ref, entry);
+  }
+  return [...grouped]
+    .map(([ref, entry]) => ({
+      ref,
+      relations: [...entry.relations].sort(),
+      count: entry.count,
+      sources: [...entry.sources].sort(),
+    }))
+    .sort((a, b) => b.count - a.count || a.ref.localeCompare(b.ref));
+}
+
+/**
+ * **Capabilities and elements nothing placed.**
+ *
+ * The browser-side twin of the maintenance plan's `unassigned_node`, mirroring the MCP
+ * predicate exactly: a `capability` or `element` with no resolvable `domain:` and no
+ * containment parent. A `domain:` pointing at a node that does not exist is not a
+ * placement — that is the case this check exists to catch, so it is not softened.
+ */
+export function unassignedNodeSlugs(docs: readonly VaultHealthDoc[]): string[] {
+  const graph = compile(docs);
+  const slugSet = new Set(graph.nodes.map((node) => node.slug));
+  const resolveOptional = (input: unknown): string | null => {
+    if (typeof input !== 'string' || !input.trim()) return null;
+    const candidate = input.trim();
+    if (slugSet.has(candidate)) return candidate;
+    return graph.aliasToSlug.get(candidate) ?? null;
+  };
+  const parented = new Set(
+    graph.edges
+      .filter(
+        (edge) =>
+          edge.resolved &&
+          (edge.via === 'contains' || edge.via === 'capabilities' || edge.via === 'elements'),
+      )
+      .map((edge) => edge.to),
+  );
+
+  return graph.nodes
+    .filter((node) => node.kind === 'capability' || node.kind === 'element')
+    .filter((node) => !resolveOptional(node.domain) && !parented.has(node.slug))
+    .map((node) => node.slug)
+    .sort();
+}

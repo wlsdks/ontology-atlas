@@ -1356,6 +1356,7 @@
       "tabsAriaLabel": "Insights tabs",
       "tab": {
         "do-next": "Do next",
+        "unmatched": "Unmatched",
         "composition": "Inventory",
         "connections": "Connections",
         "boundaries": "Boundaries",
@@ -1365,9 +1366,37 @@
       },
       "tabCountTitle": {
         "do-next": "Items to fix",
+        "unmatched": "Names this folder does not hold",
         "composition": "Concepts",
         "connections": "Relations",
         "boundaries": "Relations crossing domains"
+      },
+      "unmatched": {
+        "title": "Asked for, not held",
+        "caption": "Each row is a name written into this folder that no concept answers to, or a concept nothing placed. A relation type an agent invents is refused before it reaches a file and is recorded nowhere, so it cannot be listed here.",
+        "kind": {
+          "unresolved-reference": {
+            "title": "Named, never written",
+            "caption": "A concept was referenced by name and this folder has no document for it. Several concepts reaching for the same name is a concept to write, not a typo to swat."
+          },
+          "missing-containment": {
+            "title": "Placed one way only",
+            "caption": "A concept names its domain and that domain never names it back, so the link is held in one direction."
+          },
+          "unassigned-node": {
+            "title": "Nothing placed these",
+            "caption": "A concept with no domain and nothing containing it. Either it belongs somewhere, or it is deliberately global."
+          }
+        },
+        "occurrences": "×{count}",
+        "askedBy": "asked by {names}",
+        "shouldHold": "{names} should name it back",
+        "writtenUnder": "written under {keys}",
+        "dismiss": "Hide {name} on this computer",
+        "restoreAll": "Show all again",
+        "hiddenNote": "{count} hidden on this computer. The counts above still say what the folder holds.",
+        "emptyTitle": "Every name here resolves",
+        "emptyDescription": "Nothing references a concept this folder is missing, and every concept sits somewhere."
       },
       "errorAlert": "Could not load the graph: {message}",
       "loading": "Loading the graph…",

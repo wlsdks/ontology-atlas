@@ -62,8 +62,13 @@ export {
   type ConceptDocFacts,
   type MeaningGapKind,
 } from "./lib/meaning-gaps";
-export { capabilitiesWithoutImplementationEvidence, computeVaultHealth } from "./lib/vault-health";
-export type { VaultHealthResult } from "./lib/vault-health";
+export {
+  capabilitiesWithoutImplementationEvidence,
+  computeVaultHealth,
+  unassignedNodeSlugs,
+  unmatchedGraphAsks,
+} from "./lib/vault-health";
+export type { UnmatchedGraphAsk, VaultHealthResult } from "./lib/vault-health";
 export {
   isContainmentRelation,
   computeAdaptiveRecentChanges,
