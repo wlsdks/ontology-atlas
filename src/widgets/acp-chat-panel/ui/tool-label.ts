@@ -57,6 +57,18 @@ export interface ToolLabel {
  * `mcp__other__do_thing`          → `{ kind: 'raw',   text: 'do_thing' }`
  * `Terminal`                      → `{ kind: 'raw',   text: 'Terminal' }`
  */
+/**
+ * Did this call go to the vault server we wired in?
+ *
+ * It exists beside `toolLabel` because both answers turn on the same prefix, and a second
+ * copy of that string is how they come to disagree. `tool-outcome.ts` needs it to decide
+ * whether `total` in the answer is a result count or somebody else's field with the same
+ * name.
+ */
+export function isVaultTool(title: string, vaultServerName: string): boolean {
+  return title.trim().startsWith(`mcp__${vaultServerName}__`);
+}
+
 export function toolLabel(title: string, vaultServerName: string): ToolLabel {
   const trimmed = title.trim();
   if (!trimmed) return { kind: 'raw', text: '' };

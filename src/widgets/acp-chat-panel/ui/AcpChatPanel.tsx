@@ -75,7 +75,7 @@ import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 import { AcpPermissionCard } from './AcpPermissionCard';
 import { groupEvents } from './group-events';
-import { toolLabel } from './tool-label';
+import { isVaultTool, toolLabel } from './tool-label';
 
 /**
  * Markdown inside the conversation — one set of values tuned to **chat density**.
@@ -1895,7 +1895,11 @@ function TranscriptEntry({
      * from what was actually done.
      */
     const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
-    const outcome = readToolOutcome(event.rawOutput, event.status);
+    const outcome = readToolOutcome(
+      event.rawOutput,
+      event.status,
+      isVaultTool(event.title, VAULT_MCP_SERVER_NAME),
+    );
     const running = outcome.kind === 'status' && outcome.status === 'running';
     const broke =
       outcome.kind === 'status' && (outcome.status === 'failed' || outcome.status === 'cancelled');

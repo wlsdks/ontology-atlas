@@ -11,7 +11,14 @@
  * A count makes the same line diagnostic: 「found 0」 under a confident paragraph is a
  * visible contradiction, and a person can act on it without reading a transcript dump.
  *
- * ## It counts only what the tool itself counted
+ * ## It counts only our own server's answer, and only what that answer counted
+ *
+ * ⚠️ `total` and `count` are **our** field names. On anything else the wire carries
+ * somebody else's JSON, where those words can mean a byte count, a token budget or a page
+ * index — and the row would print that beside 「Read the map」 as a result count. A number
+ * that is confidently wrong is worse on a diagnostic row than no number at all, because
+ * this row exists to be believed. So `fromVaultServer` is a required argument rather than
+ * an option with a default: every caller has to say whose answer it is holding.
  *
  * The count is read from the tool's **own** top-level `total` or `count` field and from
  * nowhere else. Measured against the live server: `list_concepts({kind:'domain',limit:1})`
@@ -77,12 +84,17 @@ function resultObject(rawOutput: unknown): Record<string, unknown> | null {
   return null;
 }
 
-export function readToolOutcome(rawOutput: unknown, status: string): ToolOutcome {
+export function readToolOutcome(
+  rawOutput: unknown,
+  status: string,
+  /** Did this call go to the vault server we wired in? Only then is a count readable. */
+  fromVaultServer: boolean,
+): ToolOutcome {
   if (!TERMINAL.has(status)) return { kind: 'status', status: 'running' };
   if (status === 'failed') return { kind: 'status', status: 'failed' };
   if (status === 'cancelled') return { kind: 'status', status: 'cancelled' };
 
-  const result = resultObject(rawOutput);
+  const result = fromVaultServer ? resultObject(rawOutput) : null;
   if (result) {
     for (const key of COUNT_KEYS) {
       const value = result[key];

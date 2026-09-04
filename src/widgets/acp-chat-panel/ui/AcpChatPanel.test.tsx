@@ -454,7 +454,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
   });
 
-  it('a search that found nothing breaks the number column instead of joining it', async () => {
+  it('reports the number our server gave, and zero is a number', async () => {
     await bootSession();
     emit({
       jsonrpc: '2.0',
@@ -470,12 +470,59 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
         },
       },
     });
-    const outcome = await screen.findByTestId('acp-chat-tool-outcome');
-    expect(outcome.textContent).toBe('toolOutcome.foundNone');
-    expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
-      'data-tool-outcome',
-      '0',
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        '0',
+      ),
     );
+  });
+
+  it('a search that found nothing says so, instead of reading like every other line', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-none-words',
+          title: 'mcp__atlas-vault__find_backlinks',
+          kind: 'read',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 0, matches: [] }) }],
+        },
+      },
+    });
+    const outcome = await screen.findByTestId('acp-chat-tool-outcome');
+    // Not "0 found" — the long form is what pushes this row out of the number column.
+    expect(outcome.textContent).toBe('toolOutcome.foundNone');
+  });
+
+  it('never prints a number a foreign tool happened to call total', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-foreign',
+          title: 'Grep',
+          kind: 'search',
+          status: 'completed',
+          // Somebody else's JSON. `total` there may be bytes, tokens, or a page index.
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 8, count: 2 }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        'done',
+      ),
+    );
+    expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toBe('toolOutcome.done');
   });
 
   it('a call that did not land gets a seam, never a colour on the word', async () => {
