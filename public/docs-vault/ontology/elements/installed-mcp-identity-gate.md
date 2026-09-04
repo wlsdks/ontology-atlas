@@ -3,6 +3,7 @@ uid: 4b2f5668-0f0d-4478-9f07-8efa13a80351
 slug: elements/installed-mcp-identity-gate
 kind: element
 title: Installed MCP Identity Gate
+display_ko: 설치 앱 MCP 신원 검사
 domain: domains/agent-integration
 path: scripts/deploy-macos-app-local.mjs
 created_by: "agent:unknown"
@@ -20,6 +21,8 @@ Installed MCP identity gate is the local delivery check that binds the copied ma
 - `scripts/sign-macos-app.mjs`
 - `scripts/deploy-macos-app-local.test.mjs`
 - `scripts/verify-mcp-binary.test.mjs`
+- Primary implementation: `scripts/deploy-macos-app-local.mjs#buildDeployMacosAppPlan`
+- Supporting implementation: `scripts/deploy-macos-app-local.mjs#summarizeDeployMacosAppEvidence`
 
 ## Includes
 

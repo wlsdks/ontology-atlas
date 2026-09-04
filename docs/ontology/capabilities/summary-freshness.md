@@ -3,6 +3,7 @@ uid: 26202cf9-ffbd-48c0-be8b-86173638d678
 slug: capabilities/summary-freshness
 kind: capability
 title: Summary Freshness
+display_ko: 요약 최신성 알림
 domain: domains/graph-modeling
 elements: []
 path: mcp/src/stale-parent.mjs

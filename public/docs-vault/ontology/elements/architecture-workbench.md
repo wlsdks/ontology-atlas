@@ -30,6 +30,10 @@ Motion explains state rather than decorating it. Contract roles reveal together,
 - `src/views/architecture/model/architecture-agent.ts`: ready/verified/guarded runtime selection and clipboard degradation
 - `app/globals.css`: evidence reveal, selection feedback, dock-column transition, active-session scan, and reduced-motion equivalents
 - `tests/e2e/architecture-workbench.spec.ts` and `tests/e2e/architecture-role-ledger.spec.ts`: direct-path reachability, task chooser, keyboard recovery, URL state, 320px/rotation/1512px/1920px ladder geometry, sentence separation, and whole-chain checks
+- Primary implementation: `src/views/architecture/ui/ArchitecturePage.tsx#ArchitecturePage`
+- Supporting implementation: `src/views/architecture/ui/ArchitectureWorkbench.tsx#buildArchitectureHref`
+- Focused test: `src/views/architecture/ui/ArchitectureWorkbench.test.tsx#states the whole policy through the columns and the spine, drawing no skip`
+- Focused test: `src/views/architecture/ui/ArchitectureWorkbench.test.tsx#draws every permitted edge when the policy is an explicit graph`
 
 ## Boundary
 The workbench renders an implementation-architecture projection from three authorities that never merge: a profile is reviewed intent, a persisted receipt describes one dated source revision, and live agent activity is volatile. A find-improvements answer is a fourth thing, proposed questions, and it lives only in the agent conversation until a person writes the rule. The app does not infer a pattern from folder names, approve a proposal, convert an active chat into a receipt, or write a profile before human naming and approval. A browser cannot spawn a local process or enumerate a bound source tree and says so through its copy fallback. Missing, stale, unsupported, empty-role, and unruled evidence remains visibly unknown rather than animated or styled as current.

@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Node status value entity. Implementation evidence for capabilities/taxonomy.
+
+## Evidence
+
+- Primary implementation: `src/entities/status/model/defaults.ts#DEFAULT_STATUSES`
+- Supporting implementation: `src/entities/status/model/types.ts#Status`

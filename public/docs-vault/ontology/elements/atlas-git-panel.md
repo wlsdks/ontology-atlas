@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 Panel widget displaying the vault's git status/snapshot.
+
+## Evidence
+
+- Primary implementation: `src/widgets/atlas-git-panel/ui/AtlasGitPanel.tsx#AtlasGitPanelProps`
+- Supporting implementation: `src/widgets/atlas-git-panel/model/build-concept-ego.ts#buildConceptEgo`
+- Focused test: `src/widgets/atlas-git-panel/ui/AtlasGitPanel.test.tsx#expands a history item to its full hash + iso time on click`

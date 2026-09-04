@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Project node data model entity. Implementation evidence for capabilities/project-data-source.
+
+## Evidence
+
+- Primary implementation: `src/entities/project/model/integrity.ts#getProjectIntegrityIssues`
+- Supporting implementation: `src/entities/project/model/relationships.ts#resolveProjectRelationshipKind`
+- Focused test: `src/entities/project/lib/detail-href.test.ts#origin + canonical path`
+- Focused test: `src/entities/project/model/cycles.test.ts#returns true when the dependency already reaches the project`

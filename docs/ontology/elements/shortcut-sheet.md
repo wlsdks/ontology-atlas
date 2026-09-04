@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Keyboard shortcut guide sheet widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/shortcut-sheet/lib/shortcut-scope.ts#surfaceForPathname`
+- Supporting implementation: `src/widgets/shortcut-sheet/ui/ShortcutSheet.tsx#GLOSSARY_TERMS`

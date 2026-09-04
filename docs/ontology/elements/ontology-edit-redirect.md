@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 `/ontology/edit` and `/ontology/studio` are static-export compatibility entries. OntologyEditRedirectPage translates legacy node/mode/edit/via/review parameters into `/topology` `p/workbench/edit` state; neither old address is a navigation destination or write surface.
+
+## Evidence
+
+- Primary implementation: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.tsx#OntologyEditRedirectPage`
+- Supporting implementation: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.tsx#buildTopologyWorkbenchRedirect`
+- Focused test: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.test.tsx#redirects the bare compatibility route to the map`
+- Focused test: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.test.tsx#translates a canonical ?node= deep-link to the contextual editor`

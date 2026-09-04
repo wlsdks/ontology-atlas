@@ -10,3 +10,7 @@ created_by: "agent:unknown"
 ---
 
 Project editing page. Implementation evidence for capabilities/project-edit.
+
+## Evidence
+
+- Primary implementation: `src/views/project-editor/ui/ProjectEditorPage.tsx#normalizeReturnTo`

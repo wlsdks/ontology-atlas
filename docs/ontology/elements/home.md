@@ -12,3 +12,10 @@ relation_notes: { elements/knowledge-graph: "The topology view renders the graph
 ---
 
 / Home entry page.
+
+## Evidence
+
+- Primary implementation: `src/views/home/ui/HomePage.tsx#HomePage`
+- Supporting implementation: `src/views/home/model/use-home-route-state.ts#useHomeRouteState`
+- Focused test: `src/views/home/ui/HomePage.accessibility.test.ts#keeps the visible label inside the longer accessible name`
+- Focused test: `src/views/home/ui/HomePage.docs-drawer-shortcut.test.ts#does not toggle the drawer over an open agent dock`

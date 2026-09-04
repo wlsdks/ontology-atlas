@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Installed-app first run screen. It offers only local create/open paths and reveals the workbench after a real vault exists; bundled sample exploration remains on the web. Evidence of implementation for capabilities/first-run-starter.
+
+## Evidence
+
+- Primary implementation: `src/views/first-run/ui/FirstRunPage.tsx#FirstRunPage`
+- Focused test: `src/views/first-run/ui/FirstRunPage.test.tsx#renders only local-vault actions and the trust line, with no demo or download CTA`

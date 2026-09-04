@@ -16,6 +16,8 @@ display_en: Terminal Commands
 
 # CLI Developer Entry
 
+## Definition
+
 An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal.
 
 ## User Outcomes
@@ -42,12 +44,23 @@ An operational entry point that allows inspecting, querying, and writing local m
    When import delivery is compact, `bootstrap --json` keeps review-candidate and unresolved totals from the validated scan summary/review queue instead of treating omitted full arrays as zero.
 5. Verify connections, impacts, and local Git checkpoints with `mcp-verify`, `preflight`, and `snapshot`.
 
-## Inclusions / Exclusions
+## Includes
 
-- Included: vault scaffold/import/validate, MCP connection diagnostics, deterministic graph queries and
-  agent handoff, repo analysis suggestions, explicit write/apply, vault scope Git preflight/snapshot.
-- Excluded: npm global distribution, remote backends, model execution, automatic push, semantic
-  generation/storage without user approval, replacement of source structure search tools.
+- Vault scaffold, import, and validation on one command surface.
+- MCP connection diagnostics, including `agent-setup`, `mcp-verify`, and `preflight`.
+- Deterministic compiler output, graph queries, and the agent handoff brief, with `--json` for automation.
+- Repository analysis suggestions offered as review candidates, never as approved dependencies.
+- Explicit write and apply commands for changes a person approved.
+- Vault-scope Git preflight and local snapshot checkpoints.
+
+## Excludes
+
+- npm global distribution; this surface exists only in a source checkout or the installed app.
+- Remote backends and any store other than the user's Markdown files.
+- Model execution or an agent loop.
+- Automatic push, or any Git operation the user did not ask for.
+- Semantic generation or storage without user approval, including `infer-imports --apply`.
+- Replacement of source-structure search tools such as grep, an AST index, or a language server.
 
 ## Implementation Basis
 

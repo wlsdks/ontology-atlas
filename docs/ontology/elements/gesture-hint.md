@@ -10,3 +10,7 @@ created_by: "agent:unknown"
 ---
 
 Map gesture hint overlay widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/gesture-hint/ui/GestureHint.tsx#STORAGE_KEY`

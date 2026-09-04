@@ -10,3 +10,7 @@ created_by: "agent:unknown"
 ---
 
 Recently viewed node list row widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/recent-node-row/ui/RecentNodeRow.tsx#RecentNodeRowProps`

@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 Widget displaying node density per domain.
+
+## Evidence
+
+- Primary implementation: `src/widgets/domain-capacity-bar/ui/DomainCapacityBar.tsx#DomainCapacityBarLabels`
+- Focused test: `src/widgets/domain-capacity-bar/ui/DomainCapacityBar.test.tsx#renders the domain title, total, and capability/element breakdown`
+- Focused test: `src/widgets/domain-capacity-bar/ui/DomainCapacityBar.test.tsx#renders all nine current English Storefront tails inside the measured 192px column`

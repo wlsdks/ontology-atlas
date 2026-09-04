@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 File System Access API handle entity. Evidence of implementation for capabilities/docs-vault-local.
+
+## Evidence
+
+- Primary implementation: `src/entities/local-fs-handle/api/permission.ts#verifyHandlePermission`
+- Supporting implementation: `src/entities/local-fs-handle/api/store.ts#getLocalFsHandle`
+- Focused test: `src/entities/local-fs-handle/api/store.test.ts#web FSA records with different folders both stay in the recent list`

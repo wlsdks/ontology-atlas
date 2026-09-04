@@ -3,6 +3,7 @@ uid: c048a18a-3730-436e-a806-fa01231d648e
 slug: elements/meaning-proposal-evaluator
 kind: element
 title: Meaning Proposal Evaluator
+display_ko: 뜻 제안 판정기
 domain: domains/project-portfolio
 path: mcp/src/meaning-evaluation.mjs
 created_by: "agent:codex"
@@ -25,3 +26,8 @@ Generated concept bodies use the parser canonical full-body representation with 
 ## Boundary
 
 This evaluator neither writes a vault nor authenticates human acceptance. Unknown evidence remains a gap, project exclusions still require source-backed meaning, and canonical whitespace cannot substitute for claim, citation, source-hidden, or approval checks.
+
+## Evidence
+
+- Primary implementation: `mcp/src/meaning-evaluation.mjs#evaluateMeaningProposal`
+- Supporting implementation: `mcp/src/meaning-evaluation.mjs#validateMeaningProposalAgainstAnalysis`

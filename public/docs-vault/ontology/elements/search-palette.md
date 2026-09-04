@@ -10,3 +10,8 @@ created_by: "agent:unknown"
 ---
 
 Search palette (Command-K style) widget. Implementation evidence for capabilities/topology-browsing.
+
+## Evidence
+
+- Primary implementation: `src/widgets/search-palette/ui/SearchPalette.tsx#SearchPalette`
+- Supporting implementation: `src/widgets/search-palette/model/fuzzy-search.ts#searchProjects`

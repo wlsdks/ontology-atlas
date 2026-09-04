@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 Search hint overlay widget.
+
+## Evidence
+
+- Primary implementation: `src/widgets/search-hint/ui/SearchHint.tsx#SearchHint`
+- Focused test: `src/widgets/search-hint/ui/SearchHint.test.tsx#reads 3D while the flat view is on`
+- Focused test: `src/widgets/search-hint/ui/SearchHint.test.tsx#exposes utility-lane token contracts on search and auto-arrange actions`

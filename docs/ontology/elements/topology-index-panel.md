@@ -10,3 +10,10 @@ created_by: "agent:unknown"
 ---
 
 Map index (INDEX) panel widget. Implementation evidence for capabilities/topology-browsing.
+
+## Evidence
+
+- Primary implementation: `src/widgets/topology-index-panel/ui/TopologyIndexPanel.tsx#TopologyIndexPanel`
+- Supporting implementation: `src/widgets/topology-index-panel/ui/TopologyIndexTab.tsx#TopologyIndexTab`
+- Focused test: `src/widgets/topology-index-panel/lib/domain-subcounts.test.ts#counts capability/element descendants recursively, not just direct children`
+- Focused test: `src/widgets/topology-index-panel/lib/domain-subcounts.test.ts#returns zero counts for a domain with no children`

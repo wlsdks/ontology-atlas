@@ -14,3 +14,10 @@ relation_notes: { elements/knowledge-graph: "The canvas renderer draws the node/
 Custom canvas-2D graph renderer core. Core implementation evidence for capabilities/topology-browsing. AGENTS.md Tech stack: "The graph renderer is ours".
 
 The opt-in 3D view lives inside this widget rather than in a second renderer: `model/dome-view.ts` lays the ownership arrangement out as a cone tree (height = containment tier, each parent the apex of its own cone since 2026-09-02) and the coupling arrangement as a relation-driven cloud, projects both into the same world 2D the camera already handles, and morphs between them; `render/dome-rings.ts` draws the cone bases. Draw, hit-testing, and the `?e2e=1` inspection hook read one per-frame map, which is what keeps a click during rotation landing where the node was drawn.
+
+## Evidence
+
+- Primary implementation: `src/widgets/topology-map-v2/ui/TopologyMapV2.tsx#TopologyMapV2Props`
+- Supporting implementation: `src/widgets/topology-map-v2/ui/use-topology-loop.ts#useTopologyLoop`
+- Focused test: `src/widgets/topology-map-v2/ui/TopologyMapV2.test.tsx#mounts a canvas inside a data-map-engine=v2 container without throwing`
+- Focused test: `src/widgets/topology-map-v2/ui/TopologyMapV2.test.tsx#marks minimal mode via data-minimal`

@@ -3,6 +3,7 @@ uid: 97a10b3b-6099-4120-8ed8-38c856e40896
 slug: elements/semantic-evidence-selector
 kind: element
 title: Semantic Evidence Selector
+display_ko: 의미 근거 선별기
 domain: domains/project-portfolio
 path: mcp/src/analyze/semantic-evidence.mjs
 created_by: "agent:unknown"
@@ -29,6 +30,8 @@ The bounded analyzer role that selects claim-relevant Markdown and reStructuredT
 - `mcp/src/analyze/scan-guards.mjs`: exact entry selection and ambiguous/non-file refusal.
 - `mcp/src/analyze.test.mjs`: selected-section breadth, lowercase root/workspace case, ambiguity, non-file, escape, deterministic budget, and RST peer-section controls.
 - `mcp/src/analyze-adversarial.test.mjs`: mixed policy, selected deprecation, hostile, and over-bound fail-closed controls.
+- Primary implementation: `mcp/src/analyze/semantic-evidence.mjs#collectSemanticEvidence`
+- Supporting implementation: `mcp/src/analyze/semantic-evidence.mjs#semanticEvidenceTrust`
 
 ## Verification
 
