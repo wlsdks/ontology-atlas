@@ -14,6 +14,7 @@ vi.mock("@/i18n/navigation", () => ({
 const labels: FreshnessTabLabels = {
   domainFreshnessTitle: "Domain freshness",
   windowCaption: "12 weeks",
+  noDomainsAction: "Create a domain on the map",
   noDomains: "No domains yet",
   stale: "stale",
   currentWeek: "This week",

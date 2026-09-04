@@ -1689,6 +1689,7 @@
       "connectedRelation": "Relates",
       "connectedEmpty": "Not connected to any other project yet.",
       "connectedEmptyHint": "Create a second project document and link the two to see it here.",
+      "connectedEmptyAction": "Open the project list",
       "connectedMoreNote": "{count} more connections",
       "handoffTitle": "Continue with your AI",
       "handoffDesc": "Paste the copied text into an AI tool like Claude or Cursor: it picks up this project's map and continues from here.",
@@ -1766,7 +1767,8 @@
         "composition": "Composition"
       },
       "domainEmptyTitle": "No domains yet",
-      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here."
+      "domainEmptyHint": "Connect a domain to this project on the map and its composition shows up here.",
+      "domainEmptyAction": "Connect a domain on the map"
     },
     "editor": {
       "documentTitleEdit": "Edit project · Ontology Atlas",

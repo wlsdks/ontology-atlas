@@ -1688,6 +1688,7 @@
       "connectedTitle": "연결된 프로젝트",
       "connectedRelation": "서로 연결",
       "connectedEmpty": "아직 다른 프로젝트와 연결되지 않았습니다.",
+      "connectedEmptyAction": "프로젝트 목록 열기",
       "connectedEmptyHint": "두 번째 프로젝트 문서를 만들어 서로 연결하면 여기 나타납니다.",
       "connectedMoreNote": "그 외 연결 {count}개 더",
       "handoffTitle": "AI에게 이어서 맡기기",
@@ -1766,6 +1767,7 @@
         "composition": "구성"
       },
       "domainEmptyTitle": "아직 도메인이 없어요",
+      "domainEmptyAction": "지도에서 도메인 연결하기",
       "domainEmptyHint": "지도에서 도메인을 이 프로젝트에 연결하면 여기에 구성이 나타나요."
     },
     "editor": {

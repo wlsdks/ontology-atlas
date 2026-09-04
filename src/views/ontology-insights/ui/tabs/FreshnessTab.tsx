@@ -22,6 +22,12 @@ export interface FreshnessTabLabels {
   domainFreshnessTitle: string;
   windowCaption: string;
   noDomains: string;
+  /**
+   * The same door the composition tab already offers for this identical fact.
+   * Stating "there are no domains" and stopping is the copy that lost its
+   * sibling's link (2026-09-05 empty-state audit).
+   */
+  noDomainsAction: string;
   stale: string;
   currentWeek: string;
   unknownDate: string;
@@ -112,7 +118,21 @@ export function FreshnessTab({
           <span className="ml-auto font-mono text-label text-[color:var(--color-text-quaternary)]">{labels.windowCaption}</span>
         </div>
         {domainRows.length === 0 ? (
-          <p className="mt-3.5 flex-1 text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
+          <div className="mt-3.5 flex flex-1 flex-col items-start">
+            <p className="text-body text-[color:var(--color-text-quaternary)]">{labels.noDomains}</p>
+            <Link
+              href="/topology/?workbench=create"
+              data-testid="freshness-no-domains-action"
+              className={controlClass({
+                shape: "link",
+                tone: "accent",
+                hoverInk: "strong",
+                className: "mt-2.5 rounded-chip hover:underline",
+              })}
+            >
+              {labels.noDomainsAction}
+            </Link>
+          </div>
         ) : (
           <div className="mt-3.5 flex flex-1 flex-col justify-evenly gap-1.5">
             {domainRows.map((row) => (
