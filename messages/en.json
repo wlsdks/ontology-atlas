@@ -3786,7 +3786,9 @@
     },
     "notice": {
       "gateOff": "In this conversation Atlas cannot ask you before a file outside this folder is touched. The tool follows the settings you gave it directly.",
-      "diedMidTurn": "The agent stopped in the middle of answering. What you see is everything that arrived. Start a new chat above and ask again."
+      "diedMidTurn": "The agent stopped in the middle of answering. What you see is everything that arrived. Start a new chat above and ask again.",
+      "modeMoved": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first.",
+      "modeMovedServerGate": "The tool moved this conversation into {mode}, a mode that accepts file edits without asking you first. Changes made through Atlas tools still stop at the server for your approval."
     },
     "suggest": {
       "heading": "Spotted on the map · press to fill the message box",

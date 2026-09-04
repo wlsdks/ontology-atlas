@@ -15,7 +15,7 @@ import { GATED_SESSION_MODE } from './runtime-gate';
 import { modeKeepsGate } from './mode-safety';
 import { isDiagnosticStderr } from './acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
-import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
+import { VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './vault-mcp-server';
 import {
   applyCurrentMode,
   createAcpClient,
@@ -64,7 +64,19 @@ export type AcpEvent =
        */
       rawInput?: unknown;
     }
-  | { kind: 'notice'; id: string; text: string };
+  | {
+      kind: 'notice';
+      id: string;
+      text: string;
+      /**
+       * The mode the adapter moved this session into, verbatim as the adapter names it. Present
+       * only on `mode-moved`. Not translated: it is the id the tool itself shows, and inventing a
+       * friendly name for a mode this app refuses to offer would name something nobody can pick.
+       */
+      mode?: string;
+      /** Whether the server-side Atlas write checkpoint is actually on for this session. */
+      serverGate?: boolean;
+    };
 
 export type AcpSessionStatus =
   | 'idle'
@@ -396,13 +408,32 @@ export function useAcpSession({
    * (`current_mode_update`), or the session opened in such a mode already. Both are the same fact
    * about the same conversation, so both say it the same way; `reason` separates them in the folded
    * diagnostics, where a person looking for the cause will read it.
+   *
+   * ⚠️ **It is not the `gate-off` sentence** (council, 2026-09-05). That one reads *"Atlas cannot
+   * ask you before a file outside this folder is touched. The tool follows the settings you gave it
+   * directly"* — and on these two paths **both halves are wrong**. The person gave no such setting;
+   * the adapter moved the session on its own. And the mode it moves into accepts edits **inside**
+   * the folder, which is the half the outside-the-folder sentence never mentions. `gate-off` keeps
+   * its own job: the isolated configuration could not be written.
+   *
+   * The mode is named verbatim so the sentence points at something the person can find in the tool
+   * itself, and the reassurance about the Atlas server checkpoint is attached **only when that
+   * checkpoint is actually on** (`vaultWriteConsentOn`) — for a config-isolated runtime it is
+   * deliberately switched off, and promising it there would be a sentence the machinery does not
+   * keep.
    */
-  const noteGateOff = useCallback(
-    (reason: string) => {
-      push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
+  const noteModeMoved = useCallback(
+    (modeId: string, reason: string) => {
+      push({
+        kind: 'notice',
+        id: nextEventId(),
+        text: 'mode-moved',
+        mode: modeId,
+        serverGate: vaultWriteConsentOn(mcpServers),
+      });
       keepDiagnostic(`gate-off:${reason}`);
     },
-    [keepDiagnostic, push],
+    [keepDiagnostic, mcpServers, push],
   );
 
   const applyUpdate = useCallback(
@@ -438,7 +469,7 @@ export function useAcpSession({
         const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
         if (!modeId) return;
         setChoices((prev) => applyCurrentMode(prev, modeId));
-        if (!modeKeepsGate(modeId)) noteGateOff(`mode-clamped:${modeId}`);
+        if (!modeKeepsGate(modeId)) noteModeMoved(modeId, `mode-clamped:${modeId}`);
         return;
       }
       if (kind === 'agent_message_chunk' && text) {
@@ -507,7 +538,7 @@ export function useAcpSession({
         }
       }
     },
-    [emitWorkReceipt, noteGateOff, push, setApprovedOntologyWriteTracked],
+    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked],
   );
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
@@ -852,7 +883,7 @@ export function useAcpSession({
 
       if (!disposedRef.current) {
         setChoices(choices);
-        if (openedWithoutGate) noteGateOff(`mode-initial:${openingMode}`);
+        if (openedWithoutGate) noteModeMoved(openingMode, `mode-initial:${openingMode}`);
         setStatusTracked('ready');
       }
       // The list is filled after the session stands, so it does not hold up the frame the screen appears in.
@@ -905,7 +936,7 @@ export function useAcpSession({
     askUser,
     keepDiagnostic,
     mcpServers,
-    noteGateOff,
+    noteModeMoved,
     push,
     resetDiagnostics,
     runtimeId,

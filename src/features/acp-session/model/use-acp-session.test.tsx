@@ -687,11 +687,71 @@ describe('the adapter moves the session itself', () => {
     await waitFor(() => expect(result.current.choices.currentModeId).toBe('acceptEdits'));
     // Following the session is not the same as offering the mode back: it stays unselectable.
     expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
-    expect(
-      result.current.events.some((e) => e.kind === 'notice' && e.text === 'gate-off'),
-      'the screen still claims a gate it no longer has',
-    ).toBe(true);
+    /*
+     * ⚠️ Not the `gate-off` sentence. That one says *"the tool follows the settings you gave it
+     * directly"* — on this path the person gave no such setting, the adapter moved the session — and
+     * it speaks only of files outside the folder, while `acceptEdits` accepts edits **inside** it.
+     * Reusing it here would have been wrong in both halves (council, 2026-09-05).
+     */
+    const moved = result.current.events.find((e) => e.kind === 'notice');
+    expect(moved, 'the screen still claims a gate it no longer has').toMatchObject({
+      text: 'mode-moved',
+      mode: 'acceptEdits',
+      // Claude's isolated configuration owns the checkpoint, so no server gate is passed and none
+      // is claimed. The sentence and the wiring say the same thing or neither is worth having.
+      serverGate: false,
+    });
     expect(result.current.diagnostics.join(' ')).toContain('acceptEdits');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('claims the Atlas server checkpoint only when it is actually passed', async () => {
+    /*
+     * The reassurance is read back from the env that produces it, never guessed from the runtime
+     * name: `vaultMcpServers` sets `OATLAS_WRITE_CONSENT=on` only where the runtime's own
+     * configuration does **not** already ask. Codex is that case, and codex-acp 1.9.0 gave the clamp
+     * a real shape — its `agent` mode carries `_meta.kind: "auto_review"`.
+     */
+    bridge.sessionModes = {
+      currentModeId: 'read-only',
+      availableModes: [
+        { id: 'read-only', name: 'Ask for approval', _meta: { kind: 'standard' } },
+        { id: 'agent', name: 'Approve for me', _meta: { kind: 'auto_review' } },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'codex-acp',
+        vaultRoot: '/vault',
+        mcpServers: [
+          {
+            name: 'atlas-vault',
+            command: 'node',
+            args: [],
+            env: [{ name: 'OATLAS_WRITE_CONSENT', value: 'on' }],
+          },
+        ],
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    moveTo('agent');
+
+    await waitFor(() => expect(result.current.choices.currentModeId).toBe('agent'));
+    expect(result.current.events.find((e) => e.kind === 'notice')).toMatchObject({
+      text: 'mode-moved',
+      mode: 'agent',
+      serverGate: true,
+    });
 
     await act(async () => {
       await result.current.stop();
@@ -766,9 +826,9 @@ describe('a session that begins in a mode the filter hides', () => {
     // Stating where the session is never means handing the mode back as a choice.
     expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
     expect(
-      result.current.events.some((e) => e.kind === 'notice' && e.text === 'gate-off'),
+      result.current.events.find((e) => e.kind === 'notice'),
       'the conversation opened with no gate and said nothing',
-    ).toBe(true);
+    ).toMatchObject({ text: 'mode-moved', mode: 'acceptEdits' });
     expect(result.current.diagnostics.join(' ')).toContain('mode-initial:acceptEdits');
 
     await act(async () => {
