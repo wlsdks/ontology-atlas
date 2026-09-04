@@ -12,10 +12,12 @@ import {
 } from '@/shared/lib/tauri-acp';
 
 import { GATED_SESSION_MODE } from './runtime-gate';
+import { modeKeepsGate } from './mode-safety';
 import { isDiagnosticStderr } from './acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 import {
+  applyCurrentMode,
   createAcpClient,
   type AcpClient,
   type AcpPermissionRequest,
@@ -401,6 +403,31 @@ export function useAcpSession({
         setSlashCommands(readSlashCommands(update));
         return;
       }
+      if (kind === 'current_mode_update') {
+        /*
+         * ⚠️ **The adapter moves the session on its own, and this used to be dropped on the floor.**
+         *
+         * Read from `claude-agent-acp` 0.74.0 `dist/session-mode.js` (2026-09-05):
+         * `AUTO_MODE_FALLBACK = "acceptEdits"`. Choosing `auto` on a model without `supportsAutoMode`
+         * — or switching to such a model mid-conversation — silently moves the session there and
+         * announces it with nothing but this notification. Ignoring it left the dropdown stating a
+         * mode the session had already left, on the one value that decides whether a person is asked
+         * before something outside the folder is touched.
+         *
+         * So two things happen, and they are separate. The state follows the session
+         * (`applyCurrentMode`), and when the verdict says the new mode removes the gate the screen
+         * **says so in the sentence it already has** — the same `gate-off` notice raised when the
+         * isolated config could not be written. The detail is kept as a diagnostic beside it.
+         */
+        const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
+        if (!modeId) return;
+        setChoices((prev) => applyCurrentMode(prev, modeId));
+        if (!modeKeepsGate(modeId)) {
+          push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
+          keepDiagnostic(`gate-off:mode-clamped:${modeId}`);
+        }
+        return;
+      }
       if (kind === 'agent_message_chunk' && text) {
         push({ kind: 'agent', id: nextEventId(), text });
         return;
@@ -467,7 +494,7 @@ export function useAcpSession({
         }
       }
     },
-    [emitWorkReceipt, push, setApprovedOntologyWriteTracked],
+    [emitWorkReceipt, keepDiagnostic, push, setApprovedOntologyWriteTracked],
   );
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */

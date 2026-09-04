@@ -22,7 +22,7 @@
  *    the browser side cannot resolve symlinks and not-yet-existing paths correctly anyway.
  */
 
-import { partitionModes } from './mode-safety';
+import { modeKeepsGate, partitionModes } from './mode-safety';
 import { atlasToolMode } from './atlas-tool-policy';
 
 /** The channel that carries lines. A process or a fake, as long as it satisfies this. */
@@ -139,6 +139,41 @@ export function readSessionChoices(result: Record<string, unknown>): AcpSessionC
     currentModeId: currentId(result.modes, 'currentModeId'),
     unverifiedModeIds: modePartition.unverified,
     droppedModeCount: modeChoices.dropped + modePartition.dropped,
+  };
+}
+
+/**
+ * The choices after **the adapter moved the session itself** (`current_mode_update`).
+ *
+ * Why this is not one line. `claude-agent-acp` 0.74.0 clamps a session whose model cannot do `auto`
+ * into `AUTO_MODE_FALLBACK = "acceptEdits"` and says so only through this notification, so three
+ * different things can arrive and they must not be treated alike:
+ *
+ * - **A mode already on the list** — the person or the adapter picked something offered. Follow it.
+ * - **A mode measured to remove the gate** — say where the session is, because a screen that keeps
+ *   displaying the old mode is simply wrong about the one value that decides whether it asks. But
+ *   **do not put the row back in the list**: offering it would hand the person a way to return to
+ *   it, which is the whole thing `mode-safety.ts` exists to prevent. `use-acp-session.ts` raises the
+ *   `gate-off` notice for this case; the state change alone is not the announcement.
+ * - **A mode nobody advertised** — show it, marked unchecked, exactly as an unmeasured advertised
+ *   mode is shown. Leaving it out would blank the dropdown while the session sits in it, and
+ *   blocking a perfectly good new mode is a lie too (2026-08-17).
+ */
+export function applyCurrentMode(
+  choices: AcpSessionChoices,
+  modeId: string,
+): AcpSessionChoices {
+  const id = modeId.trim();
+  if (!id) return choices;
+  if (choices.modes.some((mode) => mode.id === id)) return { ...choices, currentModeId: id };
+  if (!modeKeepsGate(id)) return { ...choices, currentModeId: id };
+  return {
+    ...choices,
+    currentModeId: id,
+    modes: [...choices.modes, { id, name: id, description: null, metaKind: null, meta: null }],
+    unverifiedModeIds: choices.unverifiedModeIds.includes(id)
+      ? choices.unverifiedModeIds
+      : [...choices.unverifiedModeIds, id],
   };
 }
 

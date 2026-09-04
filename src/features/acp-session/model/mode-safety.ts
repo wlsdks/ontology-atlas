@@ -121,6 +121,18 @@ export interface ModePartition<T extends AcpModeChoice = AcpModeChoice> {
   dropped: number;
 }
 
+/**
+ * Re-runs the verdict for **one** mode id — the shape `current_mode_update` arrives in.
+ *
+ * ⚠️ The notification carries the id and nothing else: no name, no description, no `_meta`. So this
+ * is the id-only half of `partitionModes`, and it answers the question the screen actually has when
+ * the adapter moves a session by itself — *may this screen still say it asks first?* An id nobody
+ * measured answers yes, the same as in the list: unknown is unverified, not forbidden.
+ */
+export function modeKeepsGate(modeId: string): boolean {
+  return partitionModes([{ id: modeId }]).offered.length > 0;
+}
+
 export function partitionModes<T extends AcpModeChoice>(
   modes: readonly T[],
 ): ModePartition<T> {
