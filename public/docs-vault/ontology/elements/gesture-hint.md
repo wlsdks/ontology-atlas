@@ -13,7 +13,9 @@ Map gesture hint overlay widget.
 
 ## Evidence
 
-- Primary implementation: `src/widgets/gesture-hint/ui/GestureHint.tsx#STORAGE_KEY`
+- Primary implementation: `src/widgets/gesture-hint/ui/GestureHint.tsx#GestureHint`
+- Focused test: `src/widgets/gesture-hint/ui/GestureHint.test.tsx#never appears on a fine pointer, however long the page stays open`
+- Focused test: `src/widgets/gesture-hint/ui/GestureHint.test.tsx#shows the touch hint once and remembers the dismissal so it does not return`
 
 ## Includes
 
