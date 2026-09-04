@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-04 — An ontology change re-checks the witnesses the current graph declares, not only the recorded ones",
+      "slug": "2026-09-04-an-ontology-change-re-checks-the-witnesses-the-current-graph-declares-not-only-the-recorded-ones"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-04 — A CLI exit code says whether the input could be answered, not whether the answer is empty",
       "slug": "2026-09-04-a-cli-exit-code-says-whether-the-input-could-be-answered-not-whether-the-answer-is-empty"
     },
