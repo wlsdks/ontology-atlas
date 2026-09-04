@@ -191,7 +191,19 @@ export async function verifyMcpExactCase({ binaryPath, timeoutMs = 25_000 }) {
       }, timeoutMs);
     });
   } finally {
-    fs.rmSync(fixtureRoot, { recursive: true, force: true });
+    removeFixtureRoot(fixtureRoot);
+  }
+}
+
+// The probe passed and then the release run failed on this line (Windows, 2026-09-05): EPERM
+// while removing the fixture, because the just-exited child or Defender still held a handle.
+// Node retries EBUSY/EPERM-style removals only when asked; and a scratch folder that stays
+// behind is not a verification failure, so the last resort is a warning, not an exit code.
+function removeFixtureRoot(fixtureRoot) {
+  try {
+    fs.rmSync(fixtureRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  } catch (error) {
+    console.warn(`[verify-mcp-binary] left the exact-case fixture behind: ${fixtureRoot} (${error.code ?? error.message})`);
   }
 }
 
