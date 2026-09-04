@@ -281,6 +281,9 @@ Everything else.
       '  return (',
       '    <section>',
       '      <h2>{title}</h2>',
+      '      <Badge',
+      '        tone="soft"',
+      '      />',
       '    </section>',
       '  );',
       '}',
@@ -289,7 +292,7 @@ Everything else.
     const result = current(root, [doc('elements/card', '## Evidence\n- Primary implementation: `src/Card.tsx#Card`\n')]);
     assert.equal(result.status, 'partial');
     assert.equal(result.primary.line, 1);
-    assert.equal(result.primary.endLine, 7);
+    assert.equal(result.primary.endLine, 10);
   });
 
   test('missing and ambiguous declarations never become exact targets', () => {

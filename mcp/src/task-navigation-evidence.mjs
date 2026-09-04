@@ -255,14 +255,15 @@ function javascriptSourcePath(path) {
 }
 
 function javascriptRegexLiteralStart(line, index) {
+  // `/>` closes a self-closing JSX element and `</div>` opens a closing tag;
+  // neither is `/` followed by a regex literal. Read as a regex they swallowed
+  // the rest of the line, left the brace depth odd, and every React component
+  // with an odd number of `/` characters resolved to `symbol_span_unresolved`
+  // (measured 2026-09-04: three dogfood elements could record no coordinate).
+  if (line[index + 1] === '>') return false;
   const prefix = line.slice(0, index).trimEnd();
-  if (!prefix) return true;
-  // `</div>` is a JSX closing tag, not `<` followed by a regex literal. Read
-  // as a regex it swallowed the rest of the line, left the brace depth odd,
-  // and every React component with an odd number of `/` characters resolved
-  // to `symbol_span_unresolved` (measured 2026-09-04: three dogfood elements
-  // could record no coordinate at all).
   if (prefix.endsWith('<')) return false;
+  if (!prefix) return true;
   if ('([{:;,=!?&|+\-*%^~<>'.includes(prefix.at(-1))) return true;
   if (prefix.endsWith(')')) {
     let depth = 0;
