@@ -77,9 +77,15 @@ export function useVaultHealth(): VaultHealthResult {
  */
 export interface VaultUnmatchedAsks {
   asks: readonly UnmatchedGraphAsk[];
+  /**
+   * Has a manifest actually been read? Without this, an empty list is indistinguishable
+   * from an unread folder, and the screen shows "every name resolves" — the most
+   * reassuring sentence it has — at the one moment it cannot know that.
+   */
+  manifestRead: boolean;
 }
 
-const EMPTY_ASKS: VaultUnmatchedAsks = { asks: [] };
+const EMPTY_ASKS: VaultUnmatchedAsks = { asks: [], manifestRead: false };
 const unmatchedCache = new WeakMap<VaultManifest, VaultUnmatchedAsks>();
 
 export function useVaultUnmatchedAsks(): VaultUnmatchedAsks {
@@ -88,7 +94,10 @@ export function useVaultUnmatchedAsks(): VaultUnmatchedAsks {
     if (!manifest) return EMPTY_ASKS;
     const cached = unmatchedCache.get(manifest);
     if (cached) return cached;
-    const computed: VaultUnmatchedAsks = { asks: unmatchedGraphAsks(manifest.docs) };
+    const computed: VaultUnmatchedAsks = {
+      asks: unmatchedGraphAsks(manifest.docs),
+      manifestRead: true,
+    };
     unmatchedCache.set(manifest, computed);
     return computed;
   }, [manifest]);

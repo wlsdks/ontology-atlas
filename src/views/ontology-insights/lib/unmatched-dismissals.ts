@@ -20,6 +20,15 @@ import { useCallback, useSyncExternalStore } from "react";
  * refused outright rather than falling back to a shared slot — a fallback is how the
  * global key comes back.
  *
+ * ⚠️ **The scope is the folder's *name*, not the folder.** `useVaultIdentityScope` derives
+ * it from `handle.name` because that is the only part of a directory handle that survives
+ * being persisted, so two folders both called `ontology/` under different parents share
+ * one dismissal set: hiding a row in one hides it in the other. That is a bounded wrong
+ * answer — it hides, never writes, and the count beside the heading still reports what the
+ * open folder holds — and it is the same trade every persisted per-vault slot in this
+ * repository already makes. Narrowing it needs a persistable identity, which is
+ * `useVaultSessionIdentityScope`'s explicit non-goal (that value must never be stored).
+ *
  * Persistence grammar follows `shared/lib/audience-preference.ts`: localStorage is the
  * truth, a custom event plus `storage` drives live updates, and the server snapshot is
  * empty so a static export hydrates without a mismatch.

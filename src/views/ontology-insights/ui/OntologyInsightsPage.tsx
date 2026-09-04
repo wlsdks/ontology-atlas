@@ -422,11 +422,12 @@ export function OntologyInsightsPage() {
       title: t("unmatched.title"),
       caption: t("unmatched.caption"),
       occurrences: (count) => t("unmatched.occurrences", { count }),
-      askedBy: (names) => t("unmatched.askedBy", { names }),
+      askedByPrefix: t("unmatched.askedByPrefix"),
       writtenUnder: (keys) => t("unmatched.writtenUnder", { keys }),
       dismiss: (name) => t("unmatched.dismiss", { name }),
-      restoreAll: (count) => t("unmatched.restoreAll", { count }),
+      hiddenMarker: (count) => t("unmatched.hiddenMarker", { count }),
       hiddenNote: (count) => t("unmatched.hiddenNote", { count }),
+      pending: t("unmatched.pending"),
       footnote: t("unmatched.footnote"),
       emptyTitle: t("unmatched.emptyTitle"),
       emptyDescription: t("unmatched.emptyDescription"),
@@ -1154,8 +1155,11 @@ export function OntologyInsightsPage() {
             {tab === "unmatched" ? (
               <UnmatchedTab
                 board={unmatchedBoard}
+                // No manifest yet is not "nothing is missing"; the tab says which it is.
+                pending={!unmatchedAsks.manifestRead}
                 onDismiss={(id) => setUnmatchedDismissed(id, true)}
                 onRestoreAll={() => writeUnmatchedDismissals(vaultScope, new Set())}
+                sourceHref={(slug) => buildDocsVaultHref({ slug })}
                 labels={unmatchedLabels}
               />
             ) : null}

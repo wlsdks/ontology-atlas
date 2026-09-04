@@ -1,7 +1,9 @@
 "use client";
 
-import { X } from "lucide-react";
+import { useCallback, useLayoutEffect, useRef } from "react";
+import { EyeOff } from "lucide-react";
 
+import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
@@ -15,12 +17,19 @@ export interface UnmatchedTabLabels {
   caption: string;
   /** `×N` beside a name — how many references asked for it. */
   occurrences: (count: number) => string;
-  /** Which concepts reached for this name. */
-  askedBy: (names: string) => string;
+  /**
+   * Introduces the concepts that reached for this name. A prefix rather than a sentence
+   * with a slot, because each name after it is its own link to that document.
+   */
+  askedByPrefix: string;
   writtenUnder: (keys: string) => string;
   dismiss: (name: string) => string;
-  restoreAll: (count: number) => string;
+  /** The inline control beside the count: how many are hidden, and the way back. */
+  hiddenMarker: (count: number) => string;
+  /** The same fact as a sentence, for the live region only. */
   hiddenNote: (count: number) => string;
+  /** Shown while the folder has not been read yet. */
+  pending: string;
   /** What this list cannot carry, and why. Sits under the list, not above it. */
   footnote: string;
   emptyTitle: string;
@@ -29,10 +38,20 @@ export interface UnmatchedTabLabels {
 
 export interface UnmatchedTabProps {
   board: UnmatchedBoard;
+  /**
+   * The folder has not been read yet, so the list has **no answer** — which is a
+   * different fact from having nothing to say. See the render branch below.
+   */
+  pending?: boolean;
   onDismiss: (id: string) => void;
   onRestoreAll: () => void;
+  /** Where a concept that asked for a missing name is read. */
+  sourceHref: (slug: string) => string;
   labels: UnmatchedTabLabels;
 }
+
+/** Where focus should land once the board has been rebuilt. */
+type PendingFocus = { kind: "row"; id: string } | { kind: "heading" } | { kind: "first" };
 
 /**
  * **Names this folder was asked for and does not hold** — one flat list.
@@ -53,8 +72,85 @@ export interface UnmatchedTabProps {
  * the number separates those, so it is the heaviest thing in the row — emphasis weight at
  * body-large beside the name — and `×1` is not drawn at all, because a multiplier that
  * never varies is decoration.
+ *
+ * ## Hiding does not move the count, and never strands the keyboard
+ *
+ * The hidden marker sits **beside the count it qualifies** rather than in a footer,
+ * because "2, one of which you are not looking at" is one fact and reading it in two
+ * places is reading it twice. Dismissing moves focus to the next row, then the previous,
+ * then the heading — a control that deletes itself and leaves focus on `<body>` drops a
+ * keyboard user back at the top of the document, which on this page is six tabs away.
  */
-export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: UnmatchedTabProps) {
+export function UnmatchedTab({
+  board,
+  pending = false,
+  onDismiss,
+  onRestoreAll,
+  sourceHref,
+  labels,
+}: UnmatchedTabProps) {
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  const buttonsRef = useRef(new Map<string, HTMLButtonElement>());
+  const pendingFocusRef = useRef<PendingFocus | null>(null);
+  const visibleIds = board.rows.map((row) => row.id);
+
+  const registerButton = useCallback((id: string, node: HTMLButtonElement | null) => {
+    if (node) buttonsRef.current.set(id, node);
+    else buttonsRef.current.delete(id);
+  }, []);
+
+  const dismiss = useCallback(
+    (id: string) => {
+      const at = visibleIds.indexOf(id);
+      const next = visibleIds[at + 1] ?? visibleIds[at - 1] ?? null;
+      pendingFocusRef.current = next ? { kind: "row", id: next } : { kind: "heading" };
+      onDismiss(id);
+    },
+    [onDismiss, visibleIds],
+  );
+
+  const restore = useCallback(() => {
+    pendingFocusRef.current = { kind: "first" };
+    onRestoreAll();
+  }, [onRestoreAll]);
+
+  // Runs after the rebuilt list is in the DOM; the row that had focus is gone by now.
+  useLayoutEffect(() => {
+    const target = pendingFocusRef.current;
+    if (!target) return;
+    pendingFocusRef.current = null;
+    if (target.kind === "heading") {
+      headingRef.current?.focus();
+      return;
+    }
+    const id = target.kind === "first" ? board.rows[0]?.id : target.id;
+    const button = id ? buttonsRef.current.get(id) : null;
+    (button ?? headingRef.current)?.focus();
+  }, [board.rows]);
+
+  /*
+   * ⚠️ **"Nothing is missing" and "nothing has been read" are opposite facts.** While the
+   * folder's manifest is still null this list has no answer, and the empty state asserts
+   * one — the most reassuring sentence on the tab, shown at the one moment it cannot be
+   * true. So the page's own reading-state block is drawn instead.
+   */
+  if (pending) {
+    /*
+     * A line, not a bordered box. The page frame already draws this tab's boundary, and a
+     * hand-written card here would be the first entry in a debt ledger written to stay at
+     * zero for new files (`static-card-adoption-ratchet`).
+     */
+    return (
+      <p
+        role="status"
+        aria-live="polite"
+        className="text-body-lg text-[color:var(--color-text-tertiary)]"
+      >
+        {labels.pending}
+      </p>
+    );
+  }
+
   if (board.totalCount === 0) {
     return (
       <EmptyState
@@ -73,10 +169,12 @@ export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: Unmatch
       </p>
 
       <section data-testid="unmatched-list">
-        <div className="flex items-baseline gap-2 border-b border-[color:var(--color-divider)] pb-2">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-b border-[color:var(--color-divider)] pb-2">
           <InsightsSectionTitle
             level={2}
-            className="text-label uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)]"
+            ref={headingRef}
+            tabIndex={-1}
+            className="text-label uppercase tracking-[var(--tracking-label)] text-[color:var(--color-text-quaternary)] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[color:var(--color-indigo-a42)]"
           >
             {labels.title}
           </InsightsSectionTitle>
@@ -86,23 +184,11 @@ export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: Unmatch
           >
             {board.totalCount}
           </span>
-        </div>
-
-        <ul className="flex flex-col">
-          {board.rows.map((row) => (
-            <UnmatchedRowItem key={row.id} row={row} onDismiss={onDismiss} labels={labels} />
-          ))}
-        </ul>
-      </section>
-
-      <div className="flex flex-col gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
-        {board.dismissedCount > 0 ? (
-          <p data-testid="unmatched-hidden-note" className="flex flex-wrap items-center gap-2">
-            {labels.hiddenNote(board.dismissedCount)}
+          {board.dismissedCount > 0 ? (
             <button
               type="button"
               data-testid="unmatched-restore-all"
-              onClick={onRestoreAll}
+              onClick={restore}
               className={controlClass({
                 shape: "link",
                 size: "sm",
@@ -110,10 +196,35 @@ export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: Unmatch
                 hoverInk: "secondary",
               })}
             >
-              {labels.restoreAll(board.dismissedCount)}
+              {labels.hiddenMarker(board.dismissedCount)}
             </button>
-          </p>
+          ) : null}
+        </div>
+
+        {board.rows.length > 0 ? (
+          <ul className="flex flex-col">
+            {board.rows.map((row) => (
+              <UnmatchedRowItem
+                key={row.id}
+                row={row}
+                onDismiss={dismiss}
+                registerButton={registerButton}
+                sourceHref={sourceHref}
+                labels={labels}
+              />
+            ))}
+          </ul>
         ) : null}
+      </section>
+
+      <div className="flex flex-col gap-1.5 text-label text-[color:var(--color-text-quaternary)]">
+        {/*
+          One polite announcement for a change that is otherwise silent: the row simply
+          stops existing, and the marker beside the count is not where focus went.
+        */}
+        <p data-testid="unmatched-hidden-note" role="status" aria-live="polite" className="sr-only">
+          {board.dismissedCount > 0 ? labels.hiddenNote(board.dismissedCount) : ""}
+        </p>
         {/*
           The limit belongs under the list, not in front of it. Read first, it explains a
           screen nobody has seen yet; read after, it answers the question the list raises.
@@ -129,10 +240,14 @@ export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: Unmatch
 function UnmatchedRowItem({
   row,
   onDismiss,
+  registerButton,
+  sourceHref,
   labels,
 }: {
   row: UnmatchedRow;
   onDismiss: (id: string) => void;
+  registerButton: (id: string, node: HTMLButtonElement | null) => void;
+  sourceHref: (slug: string) => string;
   labels: UnmatchedTabLabels;
 }) {
   return (
@@ -155,9 +270,30 @@ function UnmatchedRowItem({
             </span>
           ) : null}
         </div>
+        {/*
+          Every asking concept is a document in this folder, so each name is the way to go
+          read why it asked. `buildDocsVaultHref` is the same destination the Do-next rows
+          use; the map href is not, because these are slugs and that one takes a graph id.
+        */}
         {row.sources.length > 0 ? (
-          <span className="truncate text-label text-[color:var(--color-text-quaternary)]">
-            {labels.askedBy(row.sources.join(", "))}
+          <span className="min-w-0 text-label text-[color:var(--color-text-quaternary)]">
+            {labels.askedByPrefix}{" "}
+            {row.sources.map((slug, index) => (
+              <span key={slug}>
+                {index > 0 ? ", " : null}
+                <Link
+                  href={sourceHref(slug)}
+                  className={controlClass({
+                    shape: "link",
+                    size: "sm",
+                    tone: "muted",
+                    hoverInk: "secondary",
+                  })}
+                >
+                  {slug}
+                </Link>
+              </span>
+            ))}
           </span>
         ) : null}
         {row.relations.length > 0 ? (
@@ -168,6 +304,7 @@ function UnmatchedRowItem({
       </div>
       <button
         type="button"
+        ref={(node) => registerButton(row.id, node)}
         data-testid="unmatched-dismiss"
         aria-label={labels.dismiss(row.name)}
         title={labels.dismiss(row.name)}
@@ -177,10 +314,12 @@ function UnmatchedRowItem({
           size: "sm",
           tone: "muted",
           hoverInk: "secondary",
+          hoverSurface: "lift",
           className: "flex-none",
         })}
       >
-        <X size={ICON_SIZE.sm} aria-hidden />
+        {/* Hiding is not deleting, and an X says deleting. */}
+        <EyeOff size={ICON_SIZE.sm} aria-hidden />
       </button>
     </li>
   );
