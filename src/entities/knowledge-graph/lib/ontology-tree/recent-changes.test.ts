@@ -4,6 +4,7 @@ import {
   computeAdaptiveRecentChanges,
   computeRecentChanges,
   daysAgoFromIso,
+  isGraphDrawnKind,
   isWithinRecentWindow,
   RECENT_CHANGES_DEFAULT_WINDOW_DAYS,
   selectRecentVaultDocs,
@@ -218,5 +219,67 @@ describe("computeAdaptiveRecentChanges (M-8 — 렌즈 창 적응화)", () => {
     const r = computeAdaptiveRecentChanges([], new Map(), now);
     expect(r.windowDays).toBe(7);
     expect(r.rows).toEqual([]);
+  });
+});
+
+/**
+ * The starter-vault miscount (owner report, 2026-09-04): straight after the five
+ * starter files were written, the INDEX segment said "Last 1d · 5" while the census
+ * said 4 concepts and the segment drew 4 rows. The fifth was the starter's own
+ * README.md — `kind: vault-readme`, changed like the rest, never drawn as a node.
+ */
+describe("computeRecentChanges — counts only the kinds that are drawn", () => {
+  const STARTER_FRESHNESS = new Map([
+    ["README", "2026-07-21T11:00:00.000Z"],
+    ["project", "2026-07-21T11:00:00.000Z"],
+    ["domains/example-domain", "2026-07-21T11:00:00.000Z"],
+    ["capabilities/example-capability", "2026-07-21T11:00:00.000Z"],
+    ["elements/example-element", "2026-07-21T11:00:00.000Z"],
+  ]);
+  const STARTER_NODES: KnowledgeGraphNode[] = [
+    node("vault-readme:README", { kind: "vault-readme", evidenceIds: ["README"] }),
+    node("project:my-project", { kind: "project", evidenceIds: ["project"] }),
+    node("domain:example-domain", { kind: "domain", evidenceIds: ["domains/example-domain"] }),
+    node("capability:example-capability", {
+      kind: "capability",
+      evidenceIds: ["capabilities/example-capability"],
+    }),
+    node("element:example-element", {
+      kind: "element",
+      evidenceIds: ["elements/example-element"],
+    }),
+  ];
+
+  it("names every kind that reaches a drawn row", () => {
+    expect(isGraphDrawnKind("project")).toBe(true);
+    expect(isGraphDrawnKind("domain")).toBe(true);
+    expect(isGraphDrawnKind("capability")).toBe(true);
+    expect(isGraphDrawnKind("element")).toBe(true);
+    expect(isGraphDrawnKind("unknown")).toBe(true);
+  });
+
+  it("excludes the kinds buildOntologyTree drops before drawing", () => {
+    expect(isGraphDrawnKind("vault-readme")).toBe(false);
+    expect(isGraphDrawnKind("document")).toBe(false);
+  });
+
+  it("counts the starter vault as the four rows the segment draws, not five", () => {
+    const result = computeRecentChanges(STARTER_NODES, STARTER_FRESHNESS, NOW, 1);
+
+    expect(result.recentNodeIds.size).toBe(4);
+    expect(result.recentNodeIds.has("vault-readme:README")).toBe(false);
+    expect(result.rows.map((row) => row.id).sort()).toEqual([
+      "capability:example-capability",
+      "domain:example-domain",
+      "element:example-element",
+      "project:my-project",
+    ]);
+  });
+
+  it("keeps the adaptive ladder's pass rate on the drawn nodes only", () => {
+    const result = computeAdaptiveRecentChanges(STARTER_NODES, STARTER_FRESHNESS, NOW);
+
+    expect(result.recentNodeIds.has("vault-readme:README")).toBe(false);
+    expect(result.recentNodeIds.size).toBe(result.rows.length);
   });
 });
