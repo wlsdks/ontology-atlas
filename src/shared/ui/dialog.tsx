@@ -121,7 +121,7 @@ export function Dialog({
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+          exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
           data-overlay-spring="true"
           className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-4"
@@ -131,7 +131,7 @@ export function Dialog({
             ref={containerRef}
             initial={{ y: 8, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 8, opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+            exit={{ y: 8, opacity: 0, transition: EXIT_TRANSITION }}
             transition={reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING}
             role="dialog"
             aria-modal="true"
