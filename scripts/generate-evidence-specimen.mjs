@@ -119,7 +119,12 @@ function countNodes() {
       if (entry.isDirectory()) walk(full);
       else if (entry.name.endsWith('.md')) {
         const text = fs.readFileSync(full, 'utf8');
-        if (/^---\n[\s\S]*?^kind:/m.test(text)) total += 1;
+        // "Files like this" are concept files. The vault README carries a
+        // `kind:` too (`vault-readme`) but is not a node the map draws, so
+        // counting it said 97 here while the map said 96 concepts (audit
+        // 2026-09-04). Count what the map counts.
+        const kind = text.match(/^---\n[\s\S]*?^kind:\s*"?([^"\n]+)"?\s*$/m)?.[1]?.trim();
+        if (kind && kind !== 'vault-readme') total += 1;
       }
     }
   };
