@@ -3849,8 +3849,8 @@
     },
     {
       "depth": 2,
-      "text": "2026-09-05 · Unreleased: changes since v1.0.5",
-      "slug": "2026-09-05-unreleased-changes-since-v105"
+      "text": "2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate",
+      "slug": "2026-09-05-v106-the-in-app-claude-chat-keeps-its-permission-gate"
     },
     {
       "depth": 2,
