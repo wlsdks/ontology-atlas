@@ -2,7 +2,10 @@
 
 import { useTranslations } from 'next-intl';
 
+import { Link } from '@/i18n/navigation';
+
 import { Chip } from '@/shared/ui';
+import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { Check, Copy } from 'lucide-react';
@@ -77,6 +80,24 @@ const MCP_FIRST_CALLS_PACKET = [
   'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
 ].join('\n');
 
+/**
+ * **The terminal path, for someone who will not hand the browser a folder.**
+ *
+ * Measured 2026-09-04: `/en/agents/` with no folder open showed exactly two things — "No
+ * workspace connected" and "Open my folder". A person who does not want to grant a browser
+ * File System Access, which is most of the people this destination is written for, had no way
+ * to see how an agent connects at all. The whole point of this pane is that MCP attaches to the
+ * folder rather than to an Atlas screen, and that is precisely what the terminal can do without
+ * the browser being involved.
+ *
+ * Two lines, copied as one block so the order survives the paste: `init` makes the vault,
+ * `agent-setup --write` writes the config files that point the coding tools at it.
+ */
+const CLI_TERMINAL_SETUP = [
+  'node $ATLAS/cli/src/index.mjs init my-vault',
+  'node $ATLAS/cli/src/index.mjs agent-setup my-vault --write',
+].join('\n');
+
 export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () => void } = {}) {
   const t = useTranslations('nav.settingsMenu');
   const localVault = useLocalVault();
@@ -104,6 +125,53 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
         */}
         <div className="mt-3">
           <OpenVaultCta testId="agents-open-vault" />
+        </div>
+        <div
+          data-testid="agents-terminal-setup"
+          className="mt-4 border-t border-[color:var(--color-divider)] pt-3"
+        >
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            {t('agentTerminalTitle')}
+          </p>
+          <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {t('agentTerminalBody')}
+          </p>
+          <pre className="mt-2 overflow-x-auto rounded-chip border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] px-3 py-2 font-mono text-label leading-prose text-[color:var(--color-text-secondary)] shadow-[inset_0_1px_2px_var(--color-shadow-a35)]">
+            {CLI_TERMINAL_SETUP}
+          </pre>
+          <p className="mt-2 text-label leading-prose text-[color:var(--color-text-quaternary)]">
+            {t('cliPlaceholderHint')}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Chip
+              tone="accentOnTint"
+              data-testid="agents-terminal-setup-copy"
+              onClick={() => void copy(CLI_TERMINAL_SETUP)}
+              className="border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-mono hover:bg-[color:var(--color-indigo-a24)]"
+            >
+              {copyState === 'copied' ? (
+                <Check size={ICON_SIZE.sm} aria-hidden />
+              ) : (
+                <Copy size={ICON_SIZE.sm} aria-hidden />
+              )}
+              {copyState === 'copied' ? t('agentTerminalCopied') : t('agentTerminalCopy')}
+            </Chip>
+            {/* The app path stays in the same place as the terminal path — someone who
+                does not want either the browser folder or the terminal still has one. */}
+            <Link
+              href="/download/"
+              onClick={onBeforeNavigate}
+              data-testid="agents-terminal-setup-download"
+              className={controlClass({
+                shape: 'link',
+                tone: 'secondary',
+                hoverInk: 'strong',
+                className: 'h-8',
+              })}
+            >
+              {t('agentTerminalAppLink')}
+            </Link>
+          </div>
         </div>
       </div>
     );

@@ -197,6 +197,9 @@ describe("CLI 자리 표시 안내 — 두 로케일에 다 있다", () => {
   const PATHS = [
     ["atlasGit", HINT_KEY],
     ["projectPages", "selector", HINT_KEY],
+    // The agents destination's terminal block draws the same placeholder for a
+    // visitor who will not give the browser a folder (2026-09-04).
+    ["nav", "settingsMenu", HINT_KEY],
   ] as const;
 
   it.each(["ko", "en"])("%s 에 안내 문구가 있다", (locale) => {
