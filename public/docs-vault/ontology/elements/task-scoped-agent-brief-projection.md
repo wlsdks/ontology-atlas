@@ -36,6 +36,8 @@ Task-scoped agent brief projection is the read-side implementation that turns on
 - Only task-matched element anchors after the parent capability claim is compatible.
 - A source-current task-navigation receipt for reviewed implementation, supporting, and focused-test coordinates.
 - Whole-vault validation, source and meaning currentness, approval guards, and explicit unknowns.
+- Capability selection from the persisted Definition/Includes/Excludes, the capability's own title, slug, and path, and the names of the elements it declares; a document without those sections is read on its first paragraph, never its whole body.
+- Coordinates from the one element whose Evidence is read, verified against the measured receipt or, when the receipt is behind the source and every witness still resolves, against the live files (`live_verified`).
 
 ## Excludes
 

@@ -95,7 +95,7 @@ Source receipts retain safe explicit repository-root directory paths from frontm
 
 ## Constraints: Source binding and currentness
 
-After the installed app binds a human-selected source root to the sidecar, new MCP processes reproduce the same bounded fingerprint locally. Source currentness is read as `current` only when matching the storage receipt exactly; changes fail-closed as `source_changed`. Private absolute paths and raw source inventory are not included in MCP responses.
+After the installed app binds a human-selected source root to the sidecar, new MCP processes reproduce the same bounded fingerprint locally. Source currentness is read as `current` only when matching the storage receipt exactly; changes fail-closed as `source_changed`, and the receipt is never restamped by a read. Since 2026-09-04 that stale view also carries a `live` witness re-check from the same probe: when every recorded witness path still resolves, `agent_brief` verifies reviewed coordinates against the live files and labels them `live_verified` with `receipt: stale`; one missing witness keeps navigation blocked. Private absolute paths and raw source inventory are not included in MCP responses.
 
 ## Constraints: Competency qualification
 

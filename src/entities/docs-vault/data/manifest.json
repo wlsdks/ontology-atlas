@@ -1738,7 +1738,7 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The MCP server is the stdio JSON-RPC surface that lets an AI coding age",
-      "wordCount": 3507,
+      "wordCount": 3559,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
@@ -3485,7 +3485,7 @@
       },
       "headings": [],
       "excerpt": "Task-scoped agent brief projection is the read-side implementation that turns one selected project and one request-local coding task into a bounded handoff of currentness, broad capability meaning, cited implementation anchors, explicit unknowns, and exact next reads. mcp/src/agent-brief-compact.mjs mcp/src/index.js mc",
-      "wordCount": 323,
+      "wordCount": 393,
       "updatedAt": "2026-09-04",
       "linksOut": []
     },
