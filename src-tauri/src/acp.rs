@@ -163,6 +163,17 @@ pub(crate) const ISOLATION: &[IsolationSpec] = &[
 // `read-only` mode sends an actual `readOnly` sandbox (1.6.2), forces that mode before the session is
 // usable, and keeps Atlas MCP writes behind the server checkpoint (`mcp/src/write-consent.mjs`).
 //
+// **1.9.0 does the same thing, so the pin stays** (adapter source reviewed 2026-09-05). Its
+// `AgentMode.ReadOnly` still carries the id `read-only` and the name "Ask for approval" while its
+// `sandboxPolicy` is `workspaceWrite` and its `sandboxMode` is `workspace-write`. Naming 1.8.0 alone
+// here read like a single bad release; it is the shape both later versions ship, and only the id
+// stayed the same while the meaning under it moved.
+//
+// 1.9.0 also began declaring each mode's class in `_meta.kind` — `read-only` is `standard`, `agent`
+// is `auto_review`, `agent-full-access` is `full_access`. `mode-safety.ts` reads that field, so a
+// future bump would hide the two writable modes on the kind as well as on the id. That is a
+// dropdown verdict, not a sandbox verdict: it says nothing about what `read-only` sends on the wire.
+//
 // ⚠️ **Listing it here is not the same as offering in-app chat.** This entry only lets the app
 // control the config directory. Whether the UI offers a conversation is decided separately in
 // `runtime-gate.ts`. Codex remains eligible only while the exact launch pin and the installed
@@ -241,8 +252,16 @@ const ISOLATED_CLAUDE_SETTINGS: &str = r#"{
 ///
 /// `approval_policy = "on-request"` keeps the escalation path alive for the commands codex may still
 /// legitimately propose, so a blocked action surfaces as a question rather than a silent failure.
-/// Codex CLI 0.153.0 refuses the former `untrusted` value before login or session startup; the
-/// read-only sandbox and the server checkpoint below remain the write boundaries.
+/// The former `untrusted` value was dropped because Codex CLI 0.153.0 refuses it before login or
+/// session startup; the read-only sandbox and the server checkpoint below remain the write
+/// boundaries.
+///
+/// ⚠️ **0.153.0 is history, not the CLI this app runs** (read 2026-09-05). The pinned adapter's own
+/// `package.json` depends on `@openai/codex` at `^0.148.0`, and npm's caret on a `0.x` version
+/// allows only `0.148.x` — so an app-opened session executes 0.148, and 0.153 is simply where the
+/// `untrusted` refusal was first seen. Anything measured against 0.153 has to be re-measured before
+/// it can be claimed about what runs here. (codex-acp 1.8.0 asks for `^0.152.0` and 1.9.0 for
+/// `^0.153.2`; neither is the pin.)
 ///
 /// ⚠️ **The `ontology-atlas` block is how the *vault's own* registration gets a gate.** A vault
 /// written by `init` registers that server in its project `.codex/config.toml`, and a session loads
