@@ -10,3 +10,9 @@ created_by: "agent:unknown"
 ---
 
 / Smart entry logic (branches based on identity).
+
+## Evidence
+
+- Primary implementation: `src/views/root-entry/ui/RootEntryPage.tsx#RootEntryPage`
+- Focused test: `src/views/root-entry/ui/RootEntryPage.test.tsx#shows the first-run surface in the desktop shell when no vault is loaded`
+- Focused test: `src/views/root-entry/ui/RootEntryPage.test.tsx#opens the topology hub when a vault is already loaded`

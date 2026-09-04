@@ -13550,6 +13550,13 @@
       "slug": "evidence"
     }
   ],
+  "ontology/elements/first-run": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
   "ontology/elements/full-detail-a1": [
     {
       "depth": 2,
@@ -13572,6 +13579,13 @@
     }
   ],
   "ontology/elements/gesture-hint": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/git": [
     {
       "depth": 2,
       "text": "Evidence",
@@ -13783,6 +13797,13 @@
     }
   ],
   "ontology/elements/recent-node-row": [
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    }
+  ],
+  "ontology/elements/root-entry": [
     {
       "depth": 2,
       "text": "Evidence",

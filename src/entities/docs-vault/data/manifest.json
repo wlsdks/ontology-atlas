@@ -2743,9 +2743,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Installed-app first run screen. It offers only local create/open paths and reveals the workbench after a real vault exists; bundled sample exploration remains on the web. Evidence of implementation for capabilities/first-run-starter.",
-      "wordCount": 31,
-      "updatedAt": "2026-08-30",
+      "excerpt": "Installed-app first run screen. It offers only local create/open paths and reveals the workbench after a real vault exists; bundled sample exploration remains on the web. Evidence of implementation for capabilities/first-run-starter. Primary implementation: src/views/first-run/ui/FirstRunPage.tsxFirstRunPage Focused te",
+      "wordCount": 54,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -2848,9 +2848,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Git status/history page.",
-      "wordCount": 3,
-      "updatedAt": "2026-08-23",
+      "excerpt": "Git status/history page. Primary implementation: src/views/git/ui/GitPage.tsxGitPage",
+      "wordCount": 9,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -3358,9 +3358,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "/ Smart entry logic (branches based on identity).",
-      "wordCount": 8,
-      "updatedAt": "2026-08-23",
+      "excerpt": "/ Smart entry logic (branches based on identity). Primary implementation: src/views/root-entry/ui/RootEntryPage.tsxRootEntryPage Focused test: src/views/root-entry/ui/RootEntryPage.test.tsxshows the first-run surface in the desktop shell when no vault is loaded Focused test: src/views/root-entry/ui/RootEntryPage.test.t",
+      "wordCount": 43,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {

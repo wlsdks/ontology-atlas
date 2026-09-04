@@ -10,3 +10,7 @@ created_by: "agent:unknown"
 ---
 
 Git status/history page.
+
+## Evidence
+
+- Primary implementation: `src/views/git/ui/GitPage.tsx#GitPage`
