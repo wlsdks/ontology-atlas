@@ -205,3 +205,70 @@ describe('런타임이 소유한 SKILL.md 는 후보에 넣지 않는다', () =>
     expect(plan.elements.map((e) => e.slug)).toEqual(['notes/SKILL']);
   });
 });
+
+/**
+ * **The starter must not flag its own instruction files** (measured 2026-09-04).
+ *
+ * "Start from an empty folder" writes `AGENTS.md` plus the `CLAUDE.md` bridge that points at it
+ * (`entities/vault-session/lib/ontology-starter.ts`). Neither carries a `kind:`, so one click later
+ * the INDEX offered "2 docs not on the map · add to map" and the dialog proposed stamping
+ * `kind: element` onto both. Those files are addressed to an agent, not to the graph, and the next
+ * starter run rewrites them — the same failure mode as the runtime-owned `SKILL.md` above.
+ */
+describe('에이전트 안내 파일은 후보에 넣지 않는다', () => {
+  const STARTER_OUTPUT = [
+    doc('project', 'My project', { kind: 'project' }),
+    doc('AGENTS'),
+    doc('CLAUDE'),
+    doc('domains/example', '예시 영역', { kind: 'domain' }),
+  ];
+
+  it('빈 폴더로 시작한 직후 「지도에 없는 문서」가 0이다', () => {
+    const plan = deriveBootstrapPlan(STARTER_OUTPUT, 'my-vault');
+    expect(plan.elements, '스타터가 쓴 안내 파일이 후보로 올라왔다').toEqual([]);
+    expect(plan.agentPointerSkipped).toBe(2);
+  });
+
+  it('에이전트 런타임 폴더 안의 문서도 후보가 아니다', () => {
+    const plan = deriveBootstrapPlan(
+      [
+        doc('.claude/rules/design'),
+        doc('.agents/skills/atlas-review/README'),
+        doc('.codex/config'),
+        doc('GEMINI'),
+        doc('notes/handover', '인계'),
+      ],
+      'vault',
+    );
+    expect(plan.elements.map((e) => e.slug)).toEqual(['notes/handover']);
+    expect(plan.agentPointerSkipped).toBe(4);
+  });
+
+  it('사람이 쓴 문서는 이름이 비슷해도 그대로 후보다', () => {
+    const plan = deriveBootstrapPlan(
+      [doc('docs/AGENTS', '우리 팀 에이전트 정리'), doc('claude-notes', '메모')],
+      'vault',
+    );
+    expect(plan.elements.map((e) => e.slug).sort()).toEqual(['claude-notes', 'docs/AGENTS']);
+    expect(plan.agentPointerSkipped).toBe(0);
+  });
+});
+
+/**
+ * **A vault that already has a project never gets a second one.** `executeBootstrapPlan` merges
+ * into the existing document, and the plan must report the same thing so the confirmation screen
+ * cannot promise a file the run will not write.
+ */
+describe('이미 project 문서가 있을 때', () => {
+  it('기존 project 를 가리키고 새 파일을 만들지 않는다', () => {
+    const plan = deriveBootstrapPlan(
+      [
+        doc('project', 'My project', { kind: 'project', title: 'My project' }),
+        doc('notes/todo', 'TODO'),
+      ],
+      'my-vault',
+    );
+    expect(plan.existingProjectSlug).toBe('project');
+    expect(plan.projectTitle).toBe('My project');
+  });
+});

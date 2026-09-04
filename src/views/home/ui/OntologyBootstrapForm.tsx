@@ -30,9 +30,12 @@ export interface OntologyBootstrapFormLabels {
   folders: string;
   folderDocCount: (count: number) => string;
   summary: (docCount: number, projectFile: string) => string;
+  /** Used instead of `summary` when the vault already has a `kind: project` document. */
+  summaryExistingProject: (docCount: number, projectFile: string) => string;
   bodyUntouched: string;
   alreadyTyped: (count: number) => string;
   runtimeSkills: (count: number) => string;
+  agentPointers: (count: number) => string;
   confirm: string;
   cancel: string;
   errorPrefix: string;
@@ -63,7 +66,13 @@ export function OntologyBootstrapForm({
     () => selectedElements(plan, accepted).length,
     [plan, accepted],
   );
-  const projectFileName = `${plan.projectSlug}.md`;
+  // ⚠️ **Never offer to create a second project file.** `executeBootstrapPlan` already merges the
+  // approved domains into an existing `kind: project` document instead of writing a new one, but
+  // this summary named `plan.projectSlug` unconditionally — so a folder that already held
+  // `project.md` was told "and creates one new project file (ontology-project.md)", a file the run
+  // never creates (measured on the starter's own output, 2026-09-04). The name and the sentence
+  // both follow the branch the execution actually takes.
+  const projectFileName = `${plan.existingProjectSlug ?? plan.projectSlug}.md`;
   const canConfirm = projectTitle.trim().length > 0 && pickedCount > 0 && !busy;
 
   const toggleDomain = (name: string) => {
@@ -171,7 +180,9 @@ export function OntologyBootstrapForm({
 
         <div className="rounded-[var(--radius-chip)] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2">
           <p className="text-label leading-prose text-[color:var(--color-text-secondary)]" data-testid="ontology-bootstrap-summary">
-            {labels.summary(pickedCount, projectFileName)}
+            {plan.existingProjectSlug
+              ? labels.summaryExistingProject(pickedCount, projectFileName)
+              : labels.summary(pickedCount, projectFileName)}
           </p>
           <p className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]">
             {labels.bodyUntouched}
@@ -189,6 +200,17 @@ export function OntologyBootstrapForm({
               className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
             >
               {labels.runtimeSkills(plan.runtimeOwnedSkipped)}
+            </p>
+          ) : null}
+          {/* Same reason as the line above: `AGENTS.md` and `CLAUDE.md` are addressed to an agent,
+              and the starter writes them itself — say they were left alone rather than letting them
+              vanish without explanation. */}
+          {plan.agentPointerSkipped > 0 ? (
+            <p
+              data-testid="ontology-bootstrap-agent-pointers"
+              className="mt-1 text-label leading-prose text-[color:var(--color-text-tertiary)]"
+            >
+              {labels.agentPointers(plan.agentPointerSkipped)}
             </p>
           ) : null}
         </div>

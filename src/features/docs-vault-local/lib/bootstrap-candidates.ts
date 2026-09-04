@@ -59,6 +59,8 @@ export interface BootstrapPlan {
   alreadyTypedCount: number;
   /** How many were excluded as runtime-owned `SKILL.md` — so the screen can say **why** they are missing. */
   runtimeOwnedSkipped: number;
+  /** How many were excluded as agent pointer documents (`AGENTS.md`, `CLAUDE.md`, `.claude/**` …). */
+  agentPointerSkipped: number;
 }
 
 function hasOwnKind(fm: Record<string, unknown>): boolean {
@@ -104,6 +106,33 @@ function isRuntimeOwnedSkill(slug: string, fm: Record<string, unknown>): boolean
 }
 
 /**
+ * **Is this document an agent pointer rather than a concept?**
+ *
+ * The starter itself writes `AGENTS.md` and its `CLAUDE.md` bridge into every new folder
+ * (`entities/vault-session/lib/ontology-starter.ts`, mirroring `cli/templates/vault/`). Those two
+ * files carry no `kind:`, so "start an ontology from my documents" counted them as ordinary
+ * uncataloged documents — and one click after "start from an empty folder" the INDEX offered to
+ * put **the starter's own instruction files** on the map. Measured on 2026-09-04: a freshly
+ * started folder showed "2 docs not on the map" and the dialog proposed stamping `kind:` on
+ * `AGENTS.md` and `CLAUDE.md`.
+ *
+ * They are addressed to a program, not to a person building a graph: an agent reads them to learn
+ * how to use the vault. Stamping `kind: element` on them adds a node that means nothing, and the
+ * next starter run (or a CLI template refresh) rewrites the file anyway — the same failure mode as
+ * the runtime-owned `SKILL.md` above.
+ *
+ * The rule stays narrow so a user's own writing is never swallowed: only the three root-level
+ * pointer names, plus anything inside an agent runtime's own directory.
+ */
+const AGENT_POINTER_ROOT_SLUGS = new Set(['agents', 'claude', 'gemini']);
+const AGENT_RUNTIME_DIRS = ['.claude/', '.agents/', '.codex/'];
+
+function isAgentPointerDoc(slug: string): boolean {
+  if (AGENT_RUNTIME_DIRS.some((dir) => slug.startsWith(dir))) return true;
+  return !slug.includes('/') && AGENT_POINTER_ROOT_SLUGS.has(slug.toLowerCase());
+}
+
+/**
  * Manifest document list → a bootstrap plan. Safe even when the input already contains documents
  * with ontology nodes (those drop out of the candidates and are only tallied into
  * `alreadyTypedCount`).
@@ -119,6 +148,7 @@ export function deriveBootstrapPlan(
   let projectTitle = vaultName.trim() || 'my-project';
   let alreadyTypedCount = 0;
   let runtimeOwnedSkipped = 0;
+  let agentPointerSkipped = 0;
   const domainCounts = new Map<string, number>();
   const elements: BootstrapElementCandidate[] = [];
 
@@ -130,6 +160,11 @@ export function deriveBootstrapPlan(
     if (isRuntimeOwnedSkill(doc.slug, doc.frontmatter)) {
       // Someone else's file — excluded from the candidates, and counted so the screen can say how many.
       runtimeOwnedSkipped += 1;
+      continue;
+    }
+    if (isAgentPointerDoc(doc.slug)) {
+      // The starter's own instruction files — excluded, and counted so the screen can say how many.
+      agentPointerSkipped += 1;
       continue;
     }
     if (isRootReadme(doc.slug)) {
@@ -160,6 +195,7 @@ export function deriveBootstrapPlan(
     elements,
     alreadyTypedCount,
     runtimeOwnedSkipped,
+    agentPointerSkipped,
   };
 }
 
