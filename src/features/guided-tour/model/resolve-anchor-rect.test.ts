@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeCardPlacement, resolveAnchorRect } from "./resolve-anchor-rect";
+import { computeCardPlacement, resolveAnchorRect, visibleAnchorBox } from "./resolve-anchor-rect";
 
 describe("resolveAnchorRect", () => {
   it("returns null when the testid element is absent", () => {
@@ -95,5 +95,51 @@ describe("computeCardPlacement", () => {
     expect(placement.left).toBeGreaterThanOrEqual(16);
     expect(placement.top).toBeGreaterThanOrEqual(16);
     expect(placement.left + 360).toBeLessThanOrEqual(400 + 1); // clamp keeps mostly on-screen
+  });
+});
+
+/**
+ * The shared viewport test both anchor paths use. The testid path always ran it;
+ * the canvas-node path (the per-frame probe in `GuidedTourOverlay`) checked only
+ * for zero size, so a domain projected outside the viewport still produced a
+ * "resolved" rect and the cutout was drawn off-screen (round 4, 2026-09-04).
+ */
+describe("visibleAnchorBox", () => {
+  it("returns the box when it lies inside the viewport", () => {
+    expect(visibleAnchorBox({ top: 400, left: 700, width: 48, height: 48 }, 1440, 900)).toEqual({
+      top: 400,
+      left: 700,
+      width: 48,
+      height: 48,
+    });
+  });
+
+  it("returns null for a zero-size box", () => {
+    expect(visibleAnchorBox({ top: 400, left: 700, width: 0, height: 0 }, 1440, 900)).toBeNull();
+  });
+
+  it("returns null when the box sits entirely past the right edge", () => {
+    expect(visibleAnchorBox({ top: 400, left: 1600, width: 48, height: 48 }, 1440, 900)).toBeNull();
+  });
+
+  it("returns null when the box sits entirely past the left edge", () => {
+    expect(visibleAnchorBox({ top: 400, left: -200, width: 48, height: 48 }, 1440, 900)).toBeNull();
+  });
+
+  it("returns null when the box sits entirely below the viewport", () => {
+    expect(visibleAnchorBox({ top: 1200, left: 700, width: 48, height: 48 }, 1440, 900)).toBeNull();
+  });
+
+  it("returns null when the box sits entirely above the viewport", () => {
+    expect(visibleAnchorBox({ top: -90, left: 700, width: 48, height: 48 }, 1440, 900)).toBeNull();
+  });
+
+  it("keeps a box that is only partly on screen, because part of the ring is still visible", () => {
+    expect(visibleAnchorBox({ top: 400, left: -20, width: 48, height: 48 }, 1440, 900)).toEqual({
+      top: 400,
+      left: -20,
+      width: 48,
+      height: 48,
+    });
   });
 });

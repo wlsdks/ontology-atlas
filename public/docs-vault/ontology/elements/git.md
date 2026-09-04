@@ -14,6 +14,8 @@ Git status/history page.
 ## Evidence
 
 - Primary implementation: `src/views/git/ui/GitPage.tsx#GitPage`
+- Focused test: `src/views/git/ui/GitPage.test.tsx#hands the vault git context to the panel it composes`
+- Focused test: `src/views/git/ui/GitPage.test.tsx#takes the height the shell offers instead of collapsing to its content`
 
 ## Includes
 
