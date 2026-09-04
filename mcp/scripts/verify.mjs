@@ -4316,6 +4316,7 @@ function log(level, msg) {
   const tag =
     level === 'ok' ? '\x1b[32m✓\x1b[0m' :
     level === 'fail' ? '\x1b[31m✗\x1b[0m' :
+    level === 'warn' ? '\x1b[33m▲\x1b[0m' :
     level === 'info' ? '·' : '?';
   console.log(`${tag} ${msg}`);
 }
@@ -5824,9 +5825,22 @@ export function vaultWarningsFailure(parsed) {
     return 'list_concepts vaultWarnings missing warningCount';
   }
   const errorCount = warnings.errorCount;
-  const warningCount = warnings.warningCount;
-  if (errorCount === 0 && warningCount === 0) return null;
-  return `list_concepts vaultWarnings present: errors ${errorCount}, warnings ${warningCount}. Run validate_vault for file-level diagnostics before writing.`;
+  if (errorCount === 0) return null;
+  return `list_concepts vaultWarnings present: errors ${errorCount}, warnings ${warnings.warningCount}. Run validate_vault for file-level diagnostics before writing.`;
+}
+
+/**
+ * Warning-level vault diagnostics (a dangling reference, a non-canonical
+ * array) do not fail verification: `ontology-atlas validate` exits 0 on the
+ * same vault, and a pre-commit hook wired to it would otherwise pass what the
+ * agent's verification then fails (audit 2026-09-04). They are still printed,
+ * because a warning the reader never sees is one nobody repairs.
+ */
+export function vaultWarningsNotice(parsed) {
+  const warnings = parsed?.vaultWarnings;
+  if (!warnings || typeof warnings !== 'object' || Array.isArray(warnings)) return null;
+  if (warnings.errorCount !== 0 || !Number.isInteger(warnings.warningCount) || warnings.warningCount <= 0) return null;
+  return `list_concepts vaultWarnings: ${warnings.warningCount} warning(s), 0 errors. Run validate_vault for file-level diagnostics; warnings do not block verification.`;
 }
 
 export function listKindsFailure(parsed) {
@@ -7279,9 +7293,24 @@ export function validateVaultFailure(parsed) {
   if (Object.keys(summary.byCode).length === 0) {
     return 'validate_vault response missing byCode entries for problem files';
   }
+  // Warning-only problem files warn (see `validateVaultNotice`); a file with
+  // an error is what fails verification, matching `ontology-atlas validate`.
+  if (summary.errorFiles === 0) return null;
   const codeSummary = validationCodeSummary(summary.byCode);
   const suffix = codeSummary ? ` · codes ${codeSummary}` : '';
   return `validate_vault found ${formatCount(problemFiles, 'problem file')}: errors ${summary.errorFiles}, warnings ${summary.warningFiles}${suffix}`;
+}
+
+/** Warning-only validation problems, printed but never fatal (2026-09-04). */
+export function validateVaultNotice(parsed) {
+  const summary = parsed?.summary;
+  if (!summary || !Number.isInteger(summary.problemFiles) || summary.problemFiles === 0) return null;
+  if (summary.errorFiles !== 0) return null;
+  const codeSummary = summary.byCode && typeof summary.byCode === 'object' && !Array.isArray(summary.byCode)
+    ? validationCodeSummary(summary.byCode)
+    : '';
+  const suffix = codeSummary ? ` · codes ${codeSummary}` : '';
+  return `validate_vault found ${formatCount(summary.problemFiles, 'problem file')} with warnings only (errors 0, warnings ${summary.warningFiles})${suffix}; warnings do not block verification.`;
 }
 
 export function compileSummaryFailure(parsed) {
@@ -10390,6 +10419,8 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const warningNotice = vaultWarningsNotice(parsed);
+        if (warningNotice) log('warn', warningNotice);
         const structuredFailure = structuredContentFailure(callRes, parsed, 'list_concepts');
         if (structuredFailure) {
           log('fail', structuredFailure);
@@ -10795,6 +10826,8 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const validateNotice = validateVaultNotice(parsed);
+        if (validateNotice) log('warn', validateNotice);
         const structuredFailure = structuredContentFailure(validateRes, parsed, 'validate_vault');
         if (structuredFailure) {
           log('fail', structuredFailure);

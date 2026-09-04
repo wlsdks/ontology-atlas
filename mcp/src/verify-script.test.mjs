@@ -153,6 +153,8 @@ import {
   verifyVaultPathError,
   emptyVerifyVaultFailure,
   vaultWarningsFailure,
+  vaultWarningsNotice,
+  validateVaultNotice,
   workspaceBriefSummary,
 } from '../scripts/verify.mjs';
 
@@ -9698,6 +9700,14 @@ Continue.`;
   });
 
   it('fails malformed list_concepts vaultWarnings payloads', () => {
+    // Warning-level diagnostics warn; only errors fail (2026-09-04, matching `validate`).
+    assert.equal(vaultWarningsFailure({ vaultWarnings: { errorCount: 0, warningCount: 2 } }), null);
+    assert.equal(
+      vaultWarningsNotice({ vaultWarnings: { errorCount: 0, warningCount: 2 } }),
+      'list_concepts vaultWarnings: 2 warning(s), 0 errors. Run validate_vault for file-level diagnostics; warnings do not block verification.',
+    );
+    assert.equal(vaultWarningsNotice({ vaultWarnings: { errorCount: 0, warningCount: 0 } }), null);
+    assert.equal(vaultWarningsNotice({ vaultWarnings: { errorCount: 1, warningCount: 2 } }), null);
     assert.equal(vaultWarningsFailure({ vaultWarnings: [] }), 'list_concepts vaultWarnings malformed');
     assert.equal(
       vaultWarningsFailure({ vaultWarnings: { warningCount: 0 } }),
@@ -9729,6 +9739,24 @@ Continue.`;
       }),
       'validate_vault found 2 problem files: errors 1, warnings 1 · codes dangling-graph-reference:warning:2, missing-kind:error:1',
     );
+  });
+
+  it('warns instead of failing when validate_vault reports warning-only problem files', () => {
+    const warningOnly = {
+      scanned: 3,
+      summary: {
+        problemFiles: 1,
+        errorFiles: 0,
+        warningFiles: 1,
+        byCode: { 'dangling-graph-reference': { severity: 'warning', count: 1, files: ['b'] } },
+      },
+    };
+    assert.equal(validateVaultFailure(warningOnly), null);
+    assert.equal(
+      validateVaultNotice(warningOnly),
+      'validate_vault found 1 problem file with warnings only (errors 0, warnings 1) · codes dangling-graph-reference:warning:1; warnings do not block verification.',
+    );
+    assert.equal(validateVaultNotice({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: {} } }), null);
   });
 
   it('fails when validate_vault reports problems without byCode entries', () => {

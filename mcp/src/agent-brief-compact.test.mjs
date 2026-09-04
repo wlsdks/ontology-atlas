@@ -407,10 +407,26 @@ DER parsing and unrelated encodings.
         ].join('\n'),
       },
     ];
-    const ambiguous = buildCompactAgentBrief({
+    // The two documents make the same persisted claim but carry different
+    // names, and the task repeats one of those names. A title is a reviewed
+    // claim too (2026-09-04), so the named capability wins instead of a tie.
+    const namedByTitle = buildCompactAgentBrief({
       brief,
       artifact,
       docs: boundaryDocs,
+      task: 'Retain accepted records in the local cache.',
+    });
+    assert.equal(namedByTitle.focus.capability?.slug, 'capabilities/retain-cache');
+
+    // Same claim, names that match the task equally: still ambiguous, still refused.
+    const ambiguous = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: boundaryDocs.map((doc, index) => (
+        index === 0
+          ? doc
+          : { ...doc, slug: `capabilities/local-cache-${index}`, frontmatter: { ...doc.frontmatter, title: `Local Cache ${index}` } }
+      )),
       task: 'Retain accepted records in the local cache.',
     });
     assert.equal(ambiguous.focus.status, 'not_recorded');
@@ -489,6 +505,71 @@ DER parsing and unrelated encodings.
     assert.equal(weak.focus.capability, null);
   });
 
+  it('reads a titled claim over a long unstructured body and legacy Inclusions bullets', () => {
+    // Measured 2026-09-04 on the dogfood vault: a 25k-character capability with
+    // no `## Definition` was scored on its whole body and won every task on
+    // generic nouns, beating the capability whose title named the task.
+    const longBody = [
+      '# Agent Server',
+      '',
+      'Provides a stdio interface so an agent can read and update local vaults.',
+      '',
+      '## User Outcomes',
+      '',
+      '- The agent finds meaning nodes and reads relationships, evidence, and impact scope together.',
+      '- Search results, display names, and map state are never invented by the server.',
+      '',
+      '## Inclusions / Exclusions',
+      '',
+      '- Included: tool registration and I/O contracts, vault parser and writer,',
+      '  deterministic compiler and graph query.',
+      '- Excluded: map rendering, search palette layout, embedding store.',
+      '',
+      '## Constraints',
+      '',
+      'Display names, result rows, and search keep their canonical slugs in every response.',
+      '',
+    ].join('\n');
+    const shapedDocs = [
+      docs[0],
+      {
+        slug: 'capabilities/agent-server',
+        frontmatter: { kind: 'capability', title: 'Agent Server', path: 'server/src' },
+        body: longBody,
+      },
+      {
+        slug: 'capabilities/map-search',
+        frontmatter: { kind: 'capability', title: 'Map Rendering & Search', path: 'src/widgets/map' },
+        body: '## Definition\n\nRender, pan, and search the vault graph on a canvas.\n',
+      },
+    ];
+    const palette = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: shapedDocs,
+      task: 'Fix the map search palette so results keep display names.',
+    });
+    assert.equal(palette.focus.capability?.slug, 'capabilities/map-search');
+    assert.ok(palette.focus.capability.matchedTerms.includes('map'));
+
+    const registration = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: shapedDocs,
+      task: 'Add a new agent server tool registration contract.',
+    });
+    assert.equal(registration.focus.capability?.slug, 'capabilities/agent-server');
+
+    // `Excluded:` inside the legacy combined section is still a boundary.
+    const excluded = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [docs[0], shapedDocs[1]],
+      task: 'Change the embedding store.',
+    });
+    assert.equal(excluded.focus.capability, null);
+  });
+
   it('returns not_recorded when two capability matches tie', () => {
     const tiedDocs = [
       docs[0],
@@ -565,6 +646,68 @@ DER parsing and unrelated encodings.
     assert.equal(result.focus.taskNavigation.status, 'blocked');
     assert.equal(result.focus.taskNavigation.blockedBy, 'source_not_current');
     assert.equal(result.focus.taskNavigation.primary, null);
+  });
+
+  it('verifies coordinates against the live source when a stale receipt still finds every witness', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-compact-live-'));
+    try {
+      mkdirSync(join(root, 'src'), { recursive: true });
+      writeFileSync(join(root, 'src/writer.ts'), 'export function writeDerSet() { return true; }\n');
+      const navigationDocs = docs.map((row) => row.slug !== 'elements/writer' ? row : {
+        ...row,
+        body: '## Definition\n\nWriter implementation.\n\n## Evidence\n\n- Primary implementation: `src/writer.ts#writeDerSet`\n',
+      });
+      const staleBrief = structuredClone(brief);
+      staleBrief.projectSource.status = 'review_required';
+      staleBrief.projectSource.currentness = 'stale';
+      staleBrief.projectSource.topGap = { id: 'source_changed' };
+      staleBrief.projectSource.nextAction = { id: 'remeasure_source' };
+      staleBrief.projectSource.live = {
+        contract: 'projectSourceLiveWitnesses:v1',
+        status: 'witnesses_supported',
+        sourceRevision: 'f'.repeat(40),
+        sourceFingerprint: 'sha256:live',
+        witnessSummary: { total: 1, supported: 1, missing: 0 },
+        missingPaths: [],
+      };
+      const result = buildCompactAgentBrief({
+        brief: staleBrief,
+        artifact,
+        docs: navigationDocs,
+        sourceRoot: root,
+        confirmSourceCurrent: () => true,
+        sourceAccessRequired: true,
+        task: 'Encode an optional DER SET.',
+      });
+      assert.equal(result.currentness.source.currentness, 'stale');
+      assert.equal(result.currentness.source.live.status, 'witnesses_supported');
+      assert.equal(result.currentness.source.live.sourceRevision, 'f'.repeat(12));
+      assert.equal(result.focus.evidenceAnchors[0].sourceStatus, 'supported_live');
+      assert.equal(result.focus.taskNavigation.currentness, 'live_verified');
+      assert.equal(result.focus.taskNavigation.receipt, 'stale');
+      assert.equal(result.focus.taskNavigation.primary.symbol, 'writeDerSet');
+      assert.match(result.handoffPrompt, /receipt stale; coordinates verified against live source ffffffffffff/);
+      assert.match(result.handoffPrompt, /Current source: review_required\/stale \(live ffffffffffff: 1\/1 witnesses resolve\)/);
+      assert.equal(JSON.stringify(result).includes(root), false);
+      assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+
+      // The live answer is re-confirmed after the named-file reads; a source
+      // that moved again in between withdraws every coordinate.
+      const raced = buildCompactAgentBrief({
+        brief: staleBrief,
+        artifact,
+        docs: navigationDocs,
+        sourceRoot: root,
+        confirmSourceCurrent: () => false,
+        sourceAccessRequired: true,
+        task: 'Encode an optional DER SET.',
+      });
+      assert.equal(raced.focus.taskNavigation.status, 'blocked');
+      assert.equal(raced.focus.taskNavigation.blockedBy, 'source_changed_during_navigation');
+      assert.equal(raced.focus.evidenceAnchors[0].sourceStatus, 'stale_or_unavailable');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it('rejects oversized tasks before projection', () => {

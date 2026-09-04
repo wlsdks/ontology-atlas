@@ -56,12 +56,43 @@ const MEANING_REPAIR_PACKET_MAX_BYTES = 5 * 1024;
 const AGENT_BRIEF_COMPACT_MAX_BYTES = 12_000;
 const AGENT_BRIEF_EVIDENCE_SOURCE_STATUSES = new Set([
   'supported_current',
+  // Verified against the live source while the person's receipt is stale (2026-09-04).
+  'supported_live',
   'stale_or_unavailable',
   'missing_or_changed',
   'not_measured',
 ]);
 const TASK_NAVIGATION_STATUSES = new Set(['ready', 'partial', 'blocked', 'unknown']);
-const TASK_NAVIGATION_CURRENTNESS = new Set(['current', 'stale', 'unavailable']);
+// `live_verified` is reserved for a stale receipt whose witnesses the live
+// probe still supports; `current` stays the word for a receipt a person measured.
+const TASK_NAVIGATION_CURRENTNESS = new Set(['current', 'live_verified', 'stale', 'unavailable']);
+const PROJECT_SOURCE_LIVE_STATUSES = new Set([
+  'witnesses_supported',
+  'witnesses_missing',
+  'inventory_truncated',
+  'no_witnesses',
+]);
+
+/** The live re-check a stale receipt carries: relative paths and a revision only. */
+function validProjectSourceLive(value) {
+  if (value === undefined) return true;
+  return isPlainObject(value)
+    && PROJECT_SOURCE_LIVE_STATUSES.has(value.status)
+    && (value.sourceRevision === null || hasNonEmptyString(value.sourceRevision))
+    && isPlainObject(value.witnessSummary)
+    && ['total', 'supported', 'missing'].every((field) => validCount(value.witnessSummary[field]))
+    && value.witnessSummary.supported + value.witnessSummary.missing === value.witnessSummary.total
+    && (value.missingPaths === undefined
+      || (Array.isArray(value.missingPaths)
+        && value.missingPaths.length <= 5
+        && value.missingPaths.every((path) => hasNonEmptyString(path) && !/^(?:\/|[A-Za-z]:[\\/]|\.\.\/)/.test(path))))
+    && !containsPrivateSourceField(value);
+}
+
+function liveWitnessesSupported(source) {
+  return source?.live?.status === 'witnesses_supported'
+    && !(source.status === 'verified_current' && source.currentness === 'current');
+}
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -331,6 +362,7 @@ export function assertAgentBriefCompactShape(result) {
     || !PROJECT_SOURCE_CURRENTNESS.has(source.currentness)
     || !isPlainObject(source.witnessSummary)
     || !['total', 'supported', 'missing'].every((field) => validCount(source.witnessSummary[field]))
+    || !validProjectSourceLive(source.live)
   ) {
     throw new Error('agent_brief compact currentness.source must preserve categorical source state and witness counts');
   }
@@ -384,6 +416,9 @@ export function assertAgentBriefCompactShape(result) {
       && (source.status !== 'verified_current' || source.currentness !== 'current')
     ) {
       throw new Error('agent_brief compact evidenceAnchors cannot claim supported_current when outer source currentness is not current');
+    }
+    if (row.sourceStatus === 'supported_live' && !liveWitnessesSupported(source)) {
+      throw new Error('agent_brief compact evidenceAnchors cannot claim supported_live without a live witness check that supports every witness');
     }
   }
   if (
@@ -669,6 +704,7 @@ function validProjectSourceView(value, projectSlug) {
     || !validCount(value.bindingCardinality)
     || !validProjectSourceGap(value.topGap)
     || !validProjectSourceAction(value.nextAction)
+    || !validProjectSourceLive(value.live)
     || containsPrivateSourceField(value)
   ) return false;
 
@@ -1806,7 +1842,21 @@ function assertTaskNavigationShape(navigation, source) {
   ) {
     throw new Error('agent_brief compact taskNavigation cannot be current when outer source currentness is not current');
   }
-  if (navigation.currentness !== 'current' && exactTargets.length > 0) {
+  if (navigation.currentness === 'live_verified') {
+    if (
+      !liveWitnessesSupported(source)
+      || navigation.receipt !== 'stale'
+      || !(navigation.sourceRevision === null || navigation.sourceRevision === undefined || hasNonEmptyString(navigation.sourceRevision))
+    ) {
+      throw new Error('agent_brief compact taskNavigation can be live_verified only over a stale receipt whose witnesses the live probe supports');
+    }
+  } else if (navigation.receipt !== undefined || navigation.sourceRevision !== undefined) {
+    throw new Error('agent_brief compact taskNavigation carries receipt provenance only when live_verified');
+  }
+  if (navigation.evidenceElement !== undefined && !hasNonEmptyString(navigation.evidenceElement)) {
+    throw new Error('agent_brief compact taskNavigation evidenceElement must name the element whose coordinates were read');
+  }
+  if (!['current', 'live_verified'].includes(navigation.currentness) && exactTargets.length > 0) {
     throw new Error('agent_brief compact taskNavigation cannot emit exact targets from stale or unavailable source');
   }
   if (
