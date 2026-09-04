@@ -1356,7 +1356,7 @@
       "tabsAriaLabel": "분석 탭",
       "tab": {
         "do-next": "할 일",
-        "unmatched": "안 맞는 이름",
+        "unmatched": "없는 이름",
         "composition": "구성",
         "connections": "연결",
         "boundaries": "경계",
@@ -1380,6 +1380,7 @@
         "dismiss": "{name} 을(를) 이 컴퓨터에서 숨깁니다",
         "restoreAll": "모두 다시 보기",
         "hiddenNote": "{count}개를 이 컴퓨터에서 숨겼습니다. 위 숫자는 폴더에 있는 그대로입니다.",
+        "footnote": "에이전트가 지어낸 관계 종류는 파일에 닿기 전에 거절되고 어디에도 남지 않으므로 여기에 올릴 수 없습니다.",
         "emptyTitle": "모든 이름이 문서로 이어집니다",
         "emptyDescription": "이 폴더에 없는 개념을 가리키는 곳이 없습니다."
       },

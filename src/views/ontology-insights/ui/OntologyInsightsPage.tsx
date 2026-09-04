@@ -427,6 +427,7 @@ export function OntologyInsightsPage() {
       dismiss: (name) => t("unmatched.dismiss", { name }),
       restoreAll: (count) => t("unmatched.restoreAll", { count }),
       hiddenNote: (count) => t("unmatched.hiddenNote", { count }),
+      footnote: t("unmatched.footnote"),
       emptyTitle: t("unmatched.emptyTitle"),
       emptyDescription: t("unmatched.emptyDescription"),
     }),

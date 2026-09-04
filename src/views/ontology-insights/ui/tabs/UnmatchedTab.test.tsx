@@ -15,6 +15,7 @@ const labels: UnmatchedTabLabels = {
   dismiss: (name) => `Hide ${name}`,
   restoreAll: () => "Show all again",
   hiddenNote: (count) => `${count} hidden`,
+  footnote: "an invented relation type is recorded nowhere",
   emptyTitle: "Every name here resolves",
   emptyDescription: "nothing missing",
 };
@@ -61,6 +62,24 @@ describe("UnmatchedTab — the count is the point of the row", () => {
     renderBoard();
     expect(screen.getAllByTestId("unmatched-list")).toHaveLength(1);
     expect(screen.getByTestId("unmatched-group-count").textContent).toBe("2");
+  });
+
+  it("puts the limit under the list, where it answers a question the list raised", () => {
+    renderBoard();
+    const caption = screen.getByText("caption");
+    const footnote = screen.getByTestId("unmatched-footnote");
+    expect(caption.compareDocumentPosition(footnote) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      screen.getByTestId("unmatched-list").compareDocumentPosition(footnote) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("draws the count heavier than the name it qualifies", () => {
+    renderBoard();
+    const count = screen.getByTestId("unmatched-row-count");
+    expect(count.className).toContain("font-[var(--font-weight-emphasis)]");
+    expect(count.className).toContain("text-body-lg");
   });
 
   it("says who asked and under which keys", () => {

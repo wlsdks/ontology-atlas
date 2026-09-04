@@ -1356,7 +1356,7 @@
       "tabsAriaLabel": "Insights tabs",
       "tab": {
         "do-next": "Do next",
-        "unmatched": "Unmatched",
+        "unmatched": "Not held",
         "composition": "Inventory",
         "connections": "Connections",
         "boundaries": "Boundaries",
@@ -1380,6 +1380,7 @@
         "dismiss": "Hide {name} on this computer",
         "restoreAll": "Show all again",
         "hiddenNote": "{count} hidden on this computer. The counts above still say what the folder holds.",
+        "footnote": "A relation type an agent invents is refused before it reaches a file and is recorded nowhere, so it cannot be listed here.",
         "emptyTitle": "Every name here resolves",
         "emptyDescription": "Nothing in this folder references a concept it does not hold."
       },
