@@ -23,6 +23,18 @@ The persistent desktop workbench navigation rail. It exposes seven primary desti
 - Focused test: `src/widgets/app-nav-rail/lib/resolve-active-item.test.ts#matches root and /topology to map`
 - Focused test: `src/widgets/app-nav-rail/lib/resolve-active-item.test.ts#matches /docs to docs`
 
+## Includes
+
+- Rendering the persistent desktop rail with the seven ordered destinations (Map, Architecture, Docs, Insights, Projects, Agents, Git) and the active-item indicator.
+- Owning overflow handling, destination badges (including the Git changeset badge), and the contextual Docs href.
+- Staying hidden in the installed app until a real local manifest exists, so no bundled sample destinations leak into the desktop shell.
+
+## Excludes
+
+- The narrow-screen navigation surface, which stays elements/bottom-tab-bar with its own five-destination set.
+- The shared destination/route registry itself (`src/shared/config/destinations.ts`), which other navigation surfaces also read.
+- Git status computation and history rendering, owned by elements/atlas-git-panel.
+
 ## Boundary
 The desktop rail owns the complete seven-destination workbench inventory and scrolls when height or UI scale requires it. In the installed app it stays hidden until a real local manifest exists, preventing bundled web destinations from becoming an accidental sandbox. The mobile bottom bar keeps its measured five persistent destinations; Git and Agents retain their existing narrow-screen entry paths rather than adding new bottom slots.
 

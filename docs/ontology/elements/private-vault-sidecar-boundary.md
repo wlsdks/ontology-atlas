@@ -15,3 +15,15 @@ The common file boundary where MCP and CLI handle private receipts and activity 
 
 - Primary implementation: `mcp/src/vault-sidecar.mjs#readVaultSidecarText`
 - Supporting implementation: `mcp/src/vault-sidecar.mjs#createVaultSidecarTextExclusive`
+
+## Includes
+
+- The common MCP/CLI file boundary for private receipts and activity logs under `.ontology-atlas`.
+- Closing symlink/junction traversal between the sidecar directory and its final files, and detecting file-identity changes or hardlink aliases.
+- Atomic replacement and conflict detection for sidecar writes.
+
+## Excludes
+
+- Complete directory-handle isolation against a same-UID attacker racing a parent rename between checks: an explicitly named residual gap.
+- Vault Markdown content itself, which is never routed through the sidecar boundary.
+- The LLM audit log's content/schema, only its file-safety mechanics.

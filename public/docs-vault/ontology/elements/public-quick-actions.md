@@ -14,3 +14,14 @@ Quick action widget for unauthenticated visitors.
 ## Evidence
 
 - Primary implementation: `src/widgets/public-quick-actions/ui/PublicQuickActions.tsx#PublicQuickActions`
+
+## Includes
+
+- The quick-action row (new project, edit project) shown to unauthenticated/public visitors, preserving the current route as `returnTo`.
+- Building the target project-edit href only when a `projectSlug` is present, so the edit action is absent rather than broken with no project in context.
+
+## Excludes
+
+- The full project editor form these actions link to, owned by elements/project-editor.
+- Any write action itself: this widget only builds hrefs, it performs no mutation.
+- Authenticated-only actions; there is no login gate in Layer 1, so this widget has no "private" counterpart to exclude beyond itself.

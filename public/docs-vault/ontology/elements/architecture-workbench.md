@@ -35,6 +35,18 @@ Motion explains state rather than decorating it. Contract roles reveal together,
 - Focused test: `src/views/architecture/ui/ArchitectureWorkbench.test.tsx#states the whole policy through the columns and the spine, drawing no skip`
 - Focused test: `src/views/architecture/ui/ArchitectureWorkbench.test.tsx#draws every permitted edge when the policy is an explicit graph`
 
+## Includes
+
+- Rendering the `/architecture` comparison canvas: a solid ladder or split-lane chain pairing each reviewed role with its observed source delta.
+- The role selection, evidence disclosure dock, and derived-default agent handoff (inspect source, plan change, find improvements) controls.
+- Responsive geometry across paired-width, narrow, and short-canvas layouts, plus reduced-motion equivalents.
+
+## Excludes
+
+- Computing conformance facts themselves: those come from elements/architecture-profile-contract; this workbench only renders them.
+- Writing a new architecture profile or approving a proposed rule; find-improvements only proposes questions for a person to answer.
+- The ACP agent runtime and permission gating, owned by the agent-integration domain.
+
 ## Boundary
 The workbench renders an implementation-architecture projection from three authorities that never merge: a profile is reviewed intent, a persisted receipt describes one dated source revision, and live agent activity is volatile. A find-improvements answer is a fourth thing, proposed questions, and it lives only in the agent conversation until a person writes the rule. The app does not infer a pattern from folder names, approve a proposal, convert an active chat into a receipt, or write a profile before human naming and approval. A browser cannot spawn a local process or enumerate a bound source tree and says so through its copy fallback. Missing, stale, unsupported, empty-role, and unruled evidence remains visibly unknown rather than animated or styled as current.
 

@@ -25,3 +25,15 @@ The evaluator reads no repository source, invokes no MCP tool, writes no vault, 
 
 - Primary implementation: `mcp/src/construction-qualification.mjs#evaluateConstructionQualification`
 - Supporting implementation: `mcp/src/construction-qualification.mjs#CONSTRUCTION_QUALIFICATION_CONTRACT`
+
+## Includes
+
+- The pure categorical `constructionQualification:v1` policy: purpose authority, independent actors, motivating scenarios, competency questions, witnesses, citations, coverage, and seven quality axes.
+- Keeping missing, stale, unsupported, conflicting, or unowned evidence visible and fail-closed rather than averaged into a score.
+- The project-owned FDE compatibility path, gated on declared `audience:fde` purpose authority and current `audience-authority:fde` evidence.
+
+## Excludes
+
+- Reading repository source or invoking any MCP tool: the evaluator only judges a supplied digest-bound packet.
+- Writing the vault or authenticating a human identity; that is the caller's and the qualification-handoff helper's responsibility.
+- Evaluating a meaning proposal's content, owned by elements/meaning-proposal-evaluator.

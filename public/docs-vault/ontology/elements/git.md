@@ -14,3 +14,14 @@ Git status/history page.
 ## Evidence
 
 - Primary implementation: `src/views/git/ui/GitPage.tsx#GitPage`
+
+## Includes
+
+- The `/git` destination page: composing elements/atlas-git-panel as the route body under the shared shell height contract.
+- Being reachable as a first-class rail destination for every audience, not gated to a "development" role.
+
+## Excludes
+
+- The actual git status/history rendering and diff formatting, owned by elements/atlas-git-panel.
+- The rail badge and `G G` shortcut entry, owned by elements/app-nav-rail.
+- Any write action on vault content; this destination is read-only history.

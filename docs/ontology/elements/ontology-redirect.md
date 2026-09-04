@@ -16,3 +16,14 @@ Compatible redirect from /ontology to /topology?index=expanded.
 - Primary implementation: `src/views/ontology-redirect/ui/OntologyRedirectPage.tsx#OntologyRedirectPage`
 - Focused test: `src/views/ontology-redirect/ui/OntologyRedirectPage.test.tsx#redirects to /topology with INDEX expanded and no ?p= when there is no ?node=`
 - Focused test: `src/views/ontology-redirect/ui/OntologyRedirectPage.test.tsx#translates a canonical ?node= into ?p= unchanged`
+
+## Includes
+
+- Redirecting `/ontology` (no edit/studio suffix) to `/topology?index=expanded`, translating a canonical `?node=` into `?p=` unchanged.
+- Preserving `?p=` absence when no `?node=` is present, so a bare `/ontology` visit lands on the map with the INDEX expanded rather than a broken query.
+
+## Excludes
+
+- The `/ontology/edit` and `/ontology/studio` compatibility redirects, a separate route: elements/ontology-edit-redirect.
+- Resolving whether the linked node exists in the live vault: `/topology` (HomePage) owns that check and the miss toast.
+- Any node detail rendering; this route only redirects.

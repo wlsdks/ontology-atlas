@@ -19,3 +19,15 @@ relation_notes: { elements/knowledge-graph: "The topology view renders the graph
 - Supporting implementation: `src/views/home/model/use-home-route-state.ts#useHomeRouteState`
 - Focused test: `src/views/home/ui/HomePage.accessibility.test.ts#keeps the visible label inside the longer accessible name`
 - Focused test: `src/views/home/ui/HomePage.docs-drawer-shortcut.test.ts#does not toggle the drawer over an open agent dock`
+
+## Includes
+
+- The `/` topology hub page composing the map, INDEX panel, and datasheet for a user with a loaded vault.
+- Owning route-level navigation state (selected node, panel open/closed) via `useHomeRouteState`.
+- Keeping the visible accessible label consistent and preventing the docs drawer from toggling over an open agent dock.
+
+## Excludes
+
+- Rendering the canvas graph itself, owned by elements/topology-map-v2.
+- The root `/` branch decision between gateway/first-run/home, owned by elements/root-entry.
+- The knowledge-graph model this page renders, owned by elements/knowledge-graph.

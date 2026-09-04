@@ -17,3 +17,15 @@ The same bridge owns the vault watcher (`start_vault_watch`): a recursive FSEven
 
 - Primary implementation: `src-tauri/src/lib.rs#write_vault_text_file`
 - Supporting implementation: `src-tauri/src/lib.rs#read_vault_text_file`
+
+## Includes
+
+- Reading and writing vault files/directories from the Tauri WebView with symlink-safe, no-follow-directory-descriptor mutations and atomic file replacement.
+- Running the recursive FSEvents vault watcher (`start_vault_watch`) that debounces and emits `vault-changed` to the WebView on the async runtime, not the main thread.
+- Installing a panic hook that records thread/file/line/message to the app log so a packed dSYM can symbolicate a crash report.
+
+## Excludes
+
+- Windows reparse-point race conditions, an explicitly named residual boundary this bridge does not close.
+- The browser File System Access API path used on the web, owned by elements/local-fs-handle.
+- The macOS menu-bar tray control, a separate Tauri surface: elements/native-tray-control.
