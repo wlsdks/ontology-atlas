@@ -170,7 +170,7 @@ function sanitizeReceipt(value, projectSlug) {
  * currentness is checked only when the caller could derive a complete
  * project-scoped hash; a bounded/unknown scope is not evidence of drift.
  */
-export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
+export function readProjectSourceView(vaultRoot, projectSlug, graphHash, options = {}) {
   let parsed;
   try {
     const stored = readVaultSidecarText(vaultRoot, PROJECT_SOURCE_STATE_FILENAME);
@@ -227,23 +227,37 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
   if (!receipt || receipt.sourceId !== binding.sourceId || receipt.sourceKind !== binding.kind) {
     return malformed(projectSlug, 1);
   }
-  if (typeof graphHash === 'string' && receipt.graphHash !== graphHash) {
-    return base(
-      projectSlug,
-      1,
-      'review_required',
-      'stale',
-      { id: 'ontology_changed' },
-      { id: 'remeasure_source' },
-      receipt,
-    );
-  }
   let probe = null;
   try {
     probe = inspectProjectSource(binding.rootPath);
   } catch {
     // A transient permission, filesystem, or Git failure must not erase a
     // previously valid receipt. It stays usable with unavailable currentness.
+  }
+  if (typeof graphHash === 'string' && receipt.graphHash !== graphHash) {
+    // The ontology moved since the receipt was measured (a new capability, a
+    // renamed path). The receipt's witnesses describe the old graph, so the
+    // live check uses the witnesses the current graph declares when the caller
+    // hands them in; without them it falls back to the recorded set and says so.
+    const currentWitnesses = Array.isArray(options.currentWitnesses) ? options.currentWitnesses : null;
+    return {
+      ...base(
+        projectSlug,
+        1,
+        'review_required',
+        'stale',
+        { id: 'ontology_changed' },
+        { id: 'remeasure_source' },
+        receipt,
+      ),
+      ...(probe
+        ? {
+            live: currentWitnesses
+              ? liveWitnessCheck(probe, { witnesses: currentWitnesses }, 'current_graph')
+              : liveWitnessCheck(probe, receipt, 'receipt'),
+          }
+        : {}),
+    };
   }
   if (!probe) {
     return base(
@@ -272,7 +286,7 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
         { id: 'remeasure_source' },
         receipt,
       ),
-      live: liveWitnessCheck(probe, receipt),
+      live: liveWitnessCheck(probe, receipt, 'receipt'),
     };
   }
   return base(
@@ -300,9 +314,14 @@ export function readProjectSourceView(vaultRoot, projectSlug, graphHash) {
  * Only relative witness paths and the probe's revision cross this boundary;
  * the absolute root never does.
  */
-function liveWitnessCheck(probe, receipt) {
+function normalizeWitnessPath(value) {
+  return String(value ?? '').replaceAll('\\', '/').replace(/^\.\//, '').replace(/^\/+/, '');
+}
+
+function liveWitnessCheck(probe, receipt, basis) {
   const files = witnessInventoryPaths(probe);
-  const witnesses = Array.isArray(receipt?.witnesses) ? receipt.witnesses : [];
+  const witnesses = (Array.isArray(receipt?.witnesses) ? receipt.witnesses : [])
+    .map((witness) => ({ ...witness, path: normalizeWitnessPath(witness?.path) }));
   const missing = witnesses
     .filter((witness) => typeof witness?.path !== 'string' || !files.has(witness.path))
     .map((witness) => witness?.path ?? '')
@@ -317,6 +336,9 @@ function liveWitnessCheck(probe, receipt) {
   return {
     contract: 'projectSourceLiveWitnesses:v1',
     status,
+    // `receipt`: the witnesses a person measured; `current_graph`: the witnesses
+    // the ontology declares right now, used when the graph moved since then.
+    basis,
     sourceRevision: probe.revision,
     sourceFingerprint: probe.fingerprint,
     witnessSummary: {

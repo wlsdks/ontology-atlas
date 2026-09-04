@@ -595,7 +595,10 @@ match the saved receipt, it reports `current`; if any differ, it fails closed as
 `review_required` / `source_changed`, asks for a remeasure, and attaches `live`: the
 status of the receipt's witness paths against the live inventory
 (`witnesses_supported`, `witnesses_missing`, `inventory_truncated`, `no_witnesses`), the
-live revision, a witness summary, and up to five missing relative paths. `health`
+live revision, a witness summary, up to five missing relative paths, and a `basis`:
+`receipt` when the recorded witnesses were re-checked, `current_graph` when the ontology
+itself moved since the receipt (`ontology_changed`) and the witnesses the current graph
+declares were checked instead. `health`
 and `workspace_brief` repeat that answer in the `meaning_assessment` message, so a
 receipt that is merely behind reads differently from one whose paths vanished. The
 root and raw inspection inventory never cross the public MCP boundary. A permission, filesystem,

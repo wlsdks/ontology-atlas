@@ -9066,14 +9066,14 @@ function scopedAgentBriefInput(artifact, args, ontologyAtlasIgnorePatterns) {
   return { projectSlug, scope, scopedArtifact, result };
 }
 
-function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash) {
+function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash, viewOptions = {}) {
   const receiptCurrent = projectSource?.status === 'verified_current'
     && projectSource?.currentness === 'current';
   // A receipt behind the source still opens the bound root when the live
   // probe confirms every recorded witness resolves: coordinates are then
   // verified against the live files, and the response says which revision.
   const liveSupported = !receiptCurrent
-    && projectSource?.topGap?.id === 'source_changed'
+    && ['source_changed', 'ontology_changed'].includes(projectSource?.topGap?.id)
     && projectSource?.live?.status === 'witnesses_supported'
     && typeof projectSource?.live?.sourceFingerprint === 'string';
   if ((!receiptCurrent && !liveSupported) || typeof projectSource?.receipt?.sourceId !== 'string') return null;
@@ -9090,7 +9090,7 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
     rootPath: matches[0].rootPath,
     mode: liveSupported ? 'live' : 'receipt',
     confirmCurrent() {
-      const refreshed = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
+      const refreshed = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash, viewOptions);
       if (liveSupported) {
         return refreshed?.live?.status === 'witnesses_supported'
           && refreshed.live.sourceFingerprint === projectSource.live.sourceFingerprint
@@ -9170,6 +9170,7 @@ function queryOntologyTool(args = {}) {
         result.projectSlug,
         result.projectSource,
         agentBriefInput.scope.graphHash,
+        { currentWitnesses: deriveProjectSourceWitnessesFromDocs({ projectSlug: result.projectSlug, docs: agentBriefInput.scope.docs }) },
       );
       result = buildCompactAgentBrief({
         brief: result,
@@ -9434,7 +9435,9 @@ function projectSourceScope(artifact, projectSlug, allDocs = null) {
 
 function projectMeaningContext(artifact, projectSlug, structureStatus, scopedProject = null) {
   const { scope, docs, graphHash } = scopedProject ?? projectSourceScope(artifact, projectSlug);
-  const projectSource = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash);
+  const projectSource = readProjectSourceView(VAULT_ROOT, projectSlug, graphHash, {
+    currentWitnesses: deriveProjectSourceWitnessesFromDocs({ projectSlug, docs }),
+  });
   const inventoryResult = buildProjectMeaningInventory({
     projectSlug,
     graphHash,
