@@ -570,6 +570,100 @@ DER parsing and unrelated encodings.
     assert.equal(excluded.focus.capability, null);
   });
 
+  it('refuses a claim carried only by passing prose and keeps the named claim', () => {
+    // Measured 2026-09-04 on the dogfood vault: "Open a node's full detail
+    // panel from the map popover" selected a source-receipt capability whose
+    // Definition merely name-drops map datasheets and full details, because
+    // four incidental prose nouns outweighed the capability whose own name and
+    // Includes carry the surface. Prose describes; a name and an Includes line
+    // claim. Only a named claim can be selected.
+    const proseDocs = [
+      docs[0],
+      {
+        slug: 'capabilities/source-receipt',
+        frontmatter: { kind: 'capability', title: 'Source Evidence Receipt', path: 'src/shared/lib/receipt.ts' },
+        body: [
+          '## Definition',
+          '',
+          'Compare declared implementation paths against the actual source list.',
+          'Map datasheets, full node details, and every panel read the same receipt.',
+          '',
+        ].join('\n'),
+      },
+      {
+        slug: 'capabilities/map-browsing',
+        frontmatter: { kind: 'capability', title: 'Map Rendering & Search', path: 'src/widgets/map' },
+        body: [
+          '## Definition',
+          '',
+          'Render, pan, and search the whole graph on one canvas.',
+          '',
+          '## Includes',
+          '',
+          '- The compact node popover a map click opens, and the opt-in full detail panel it escalates to.',
+          '',
+        ].join('\n'),
+      },
+    ];
+    const named = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: proseDocs,
+      task: "Open a node's full detail panel from the map popover",
+    });
+    assert.equal(named.focus.capability?.slug, 'capabilities/map-browsing');
+    assert.ok(named.focus.capability.matchedTerms.includes('popover'));
+
+    // With the named claim removed nothing owns the surface: the brief refuses
+    // instead of presenting the prose document as a confident starting point.
+    const proseOnly = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: [proseDocs[0], proseDocs[1]],
+      task: "Open a node's full detail panel from the map popover",
+    });
+    assert.equal(proseOnly.focus.status, 'not_recorded');
+    assert.equal(proseOnly.focus.capability, null);
+    assert.deepEqual(proseOnly.focus.evidenceAnchors, []);
+  });
+
+  it('counts a task word and its inflected form once', () => {
+    // "lists" contributes both `lists` and `list`; scoring them separately let
+    // one repeated noun in an Includes bullet tie a capability whose own name
+    // states the surface, and a tie returns nothing.
+    const inflectionDocs = [
+      docs[0],
+      {
+        slug: 'capabilities/index-panel',
+        frontmatter: { kind: 'capability', title: 'Index Panel' },
+        body: '## Definition\n\nBrowse the index panel beside the map.\n',
+      },
+      {
+        slug: 'capabilities/inventory',
+        frontmatter: { kind: 'capability', title: 'Inventory' },
+        body: [
+          '## Definition',
+          '',
+          'Return inventories to a caller.',
+          '',
+          '## Includes',
+          '',
+          '- Every list of lists the server returns.',
+          '',
+        ].join('\n'),
+      },
+    ];
+    const result = buildCompactAgentBrief({
+      brief,
+      artifact,
+      docs: inflectionDocs,
+      task: 'Change what the index panel lists.',
+    });
+    assert.equal(result.focus.capability?.slug, 'capabilities/index-panel');
+    const canonicalDuplicates = result.task.terms.filter((term) => term.endsWith('s') && result.task.terms.includes(term.slice(0, -1)));
+    assert.deepEqual(canonicalDuplicates, []);
+  });
+
   it('returns not_recorded when two capability matches tie', () => {
     const tiedDocs = [
       docs[0],

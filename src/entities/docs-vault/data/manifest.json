@@ -1957,6 +1957,7 @@
         "display_ko": "지도 그리기와 검색",
         "domain": "domains/topology-navigation",
         "elements": [
+          "elements/full-detail-a1",
           "elements/global-search",
           "elements/search-palette",
           "elements/topology-controls",
@@ -1975,9 +1976,9 @@
         }
       },
       "headings": [],
-      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). src/widgets/topology-map-v2, topology-controls, global-search (implementation evidence)",
-      "wordCount": 1253,
-      "updatedAt": "2026-09-03",
+      "excerpt": "The capability to render, pan/zoom, and search the entire vault graph on a custom canvas-2D engine. There is no dedicated folder in src/features/, but it is proposed via widget evidence + documentation description (review-required). Selecting a node on the map: the compact node datasheet popover a click opens beside th",
+      "wordCount": 1313,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -5069,6 +5070,18 @@
         "linkText": "elements/status"
       }
     ],
+    "ontology/elements/full-detail-a1": [
+      {
+        "fromSlug": "ontology/capabilities/topology-browsing",
+        "context": "frontmatter · **[elements/full-detail-a1]**",
+        "linkText": "elements/full-detail-a1"
+      },
+      {
+        "fromSlug": "ontology/domains/topology-navigation",
+        "context": "frontmatter · **[elements/full-detail-a1]**",
+        "linkText": "elements/full-detail-a1"
+      }
+    ],
     "ontology/elements/global-search": [
       {
         "fromSlug": "ontology/capabilities/topology-browsing",
@@ -5563,13 +5576,6 @@
         "fromSlug": "ontology/domains/topology-navigation",
         "context": "frontmatter · **[elements/domain-capacity-bar]**",
         "linkText": "elements/domain-capacity-bar"
-      }
-    ],
-    "ontology/elements/full-detail-a1": [
-      {
-        "fromSlug": "ontology/domains/topology-navigation",
-        "context": "frontmatter · **[elements/full-detail-a1]**",
-        "linkText": "elements/full-detail-a1"
       }
     ],
     "ontology/elements/gesture-hint": [
