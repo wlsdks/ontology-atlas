@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-04 — A named claim selects the task capability; prose corroborates and a capability keeps its own name
+
+**Why**: "Open a node's full detail panel from the map popover" selected the source-receipt capability at 16 points on four incidental Definition nouns against the map capability's 6; "Change what the INDEX panel lists" went to git history the same way; and `mcp-server` lost `tool` because its own Excludes sentence used the word in another sense, leaving one term and a refusal.
+**Prior**: 2026-09-02 "Compact task handoff follows persisted capability boundaries, not noun overlap" stands; its "an ambiguous claim is selected" falsifier fired and its narrower remedy is taken. 2026-09-04 "a capability's name is part of its claim" stands and is sharpened.
+**Decision**: a candidate qualifies only with named support (title, slug, path, or an Includes bullet) plus a second desired term, or an explicit Excludes non-goal hit; Definition prose still scores but cannot qualify alone; each canonical task term counts once; title, slug, and path terms are never cancelled by the capability's own Excludes, while Includes terms remain cancellable. The vault owns the rest: `full-detail-a1` and `docs-quick-drawer` gain owning capabilities and the ambiguous Excludes sentence names the tools it means.
+**Dissent**: the implementing agent's, accepted as a cost: a vault whose capabilities are described only in prose now gets `not_recorded` where it used to get a confident wrong answer, and 21 of 58 dogfood elements still belong to no capability, so their evidence stays unreachable until a later vault pass.
+**Falsifier**: a task whose correct capability is stated only in Definition prose is refused on the dogfood vault, or the eight-task control table (MCP tool, INDEX panel, git history, popover to full detail, docs drawer, palette search) loses a correct selection it has today.
+**Owner**: jinan
+
 ## 2026-09-04 — An ontology change re-checks the witnesses the current graph declares, not only the recorded ones
 
 **Why**: the live witness check landed for `source_changed` in the morning; the first vault edit after it (a new capability) made the receipt `ontology_changed` instead, and task navigation was blocked again until someone remeasured, reopening "Primary: unknown" for every vault edit.

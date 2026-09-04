@@ -6180,6 +6180,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-04 — A named claim selects the task capability; prose corroborates and a capability keeps its own name",
+      "slug": "2026-09-04-a-named-claim-selects-the-task-capability-prose-corroborates-and-a-capability-keeps-its-own-name"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-04 — An ontology change re-checks the witnesses the current graph declares, not only the recorded ones",
       "slug": "2026-09-04-an-ontology-change-re-checks-the-witnesses-the-current-graph-declares-not-only-the-recorded-ones"
     },
