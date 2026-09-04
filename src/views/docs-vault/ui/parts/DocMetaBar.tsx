@@ -58,6 +58,35 @@ export function DocMetaBar({
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
   const readingMinutes = estimateReadingMinutes(doc.wordCount);
   const updated = new Date(doc.updatedAt);
+  /*
+   * **Two clocks, one row** (2026-09-05).
+   *
+   * Atlas keeps two different times about the same document and, until now,
+   * showed only one of them. `reviewed_at` is *meaning* time — the day a person
+   * looked at this document and said the meaning was right. `updatedAt` is
+   * *record* time — when the bytes were last written, by anyone, for any
+   * reason including a typo. A reader seeing one date alone cannot tell an
+   * approval from a save, and the two answer different questions: "is this
+   * still judged correct?" versus "has anything changed?".
+   *
+   * They sit on the same row so the gap between them is readable at a glance,
+   * with the meaning date in secondary ink and the record date dimmed — the
+   * record is the weaker claim, since nothing about a save says the meaning
+   * still holds. The dimmed column keeps `--color-text-quaternary` (#82828a),
+   * measured at 5.00:1 on `--color-panel` and 6.16:1 on `--color-canvas`, both
+   * above the 4.5:1 floor; `two-clock-row.contract.test.ts` recomputes it.
+   *
+   * Absent `reviewed_at` nothing extra renders: a document nobody has reviewed
+   * has one clock, and inventing a second would be the lie this row exists to
+   * avoid.
+   */
+  const reviewedAtRaw = doc.frontmatter?.reviewed_at;
+  const reviewedAt =
+    typeof reviewedAtRaw === "string" && !Number.isNaN(Date.parse(reviewedAtRaw))
+      ? new Date(reviewedAtRaw)
+      : null;
+  const formatDay = (value: Date) =>
+    value.toLocaleDateString(numberLocale, { year: "numeric", month: "2-digit", day: "2-digit" });
   // The topology renders the whole ontology graph, so project, domain, capability, and element
   // all have 1:1 nodes and can be jumped to (`buildTopologyDeeplinkForDoc` handles each kind).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
@@ -250,15 +279,22 @@ export function DocMetaBar({
             {doc.tags.map((tag) => `#${tag}`).join(" ")}
           </span>
         ) : null}
-        <span
-          className="ml-auto font-mono tabular-nums"
-          title={updated.toLocaleString(numberLocale)}
-        >
-          {updated.toLocaleDateString(numberLocale, {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-          })}
+        <span className="ml-auto flex min-w-0 items-baseline gap-2 font-mono tabular-nums">
+          {reviewedAt ? (
+            <span
+              data-testid="doc-meaning-time"
+              className="text-[color:var(--color-text-secondary)]"
+              title={tReview("reviewedOnTitle")}
+            >
+              {tReview("reviewedOn", { date: formatDay(reviewedAt) })}
+            </span>
+          ) : null}
+          <span
+            data-testid="doc-record-time"
+            title={t("recordTimeTitle", { at: updated.toLocaleString(numberLocale) })}
+          >
+            {formatDay(updated)}
+          </span>
         </span>
       </div>
     </section>

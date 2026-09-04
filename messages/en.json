@@ -1258,7 +1258,8 @@
         "topologyLinkTitle": "Open this concept on the map",
         "notOnMapAria": "Not on the map",
         "notOnMapLabel": "Not on the map",
-        "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there."
+        "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there.",
+      "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
       },
       "sidebar": {
         "treeHeader": "Document list",
@@ -1316,7 +1317,9 @@
           "actionConfirm": "I checked this",
           "actionRelease": "I decided this",
           "unverifiableHeader": "Confirmed, but could not be checked · {count}",
-          "unverifiablePlain": "This file could not be read, so whether it changed is unknown"
+          "unverifiablePlain": "This file could not be read, so whether it changed is unknown",
+        "reviewedOn": "checked {date}",
+        "reviewedOnTitle": "The day a person read this document and said the meaning was right"
         }
       },
       "empty": {

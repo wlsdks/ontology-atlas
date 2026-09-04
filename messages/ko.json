@@ -1258,7 +1258,8 @@
         "topologyLinkTitle": "이 개념을 지도에서 열기",
         "notOnMapAria": "지도에 없음",
         "notOnMapLabel": "지도에 없음",
-        "notOnMapBody": "이 문서는 아직 지도에 그려지지 않아요. 위 진단에 나온 빠진 항목을 채우면 지도에 나타납니다."
+        "notOnMapBody": "이 문서는 아직 지도에 그려지지 않아요. 위 진단에 나온 빠진 항목을 채우면 지도에 나타납니다.",
+        "recordTimeTitle": "{at}에 마지막으로 저장되었습니다. 파일이 바뀐 때이며, 확인한 때와는 다릅니다"
       },
       "sidebar": {
         "treeHeader": "문서 목록",
@@ -1316,7 +1317,9 @@
           "actionConfirm": "확인했어요",
           "actionRelease": "내가 정했어요",
           "unverifiableHeader": "확인했지만 점검 못 한 것 · {count}",
-          "unverifiablePlain": "파일을 읽지 못해 바뀌었는지 알 수 없어요"
+          "unverifiablePlain": "파일을 읽지 못해 바뀌었는지 알 수 없어요",
+          "reviewedOn": "{date} 확인",
+          "reviewedOnTitle": "사람이 이 문서를 읽고 뜻이 맞다고 말한 날입니다"
         }
       },
       "empty": {
