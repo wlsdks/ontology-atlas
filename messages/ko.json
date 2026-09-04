@@ -547,7 +547,7 @@
     "nextLabel": "다음",
     "skipLabel": "건너뛰기",
     "finishLabel": "완료",
-    "waitingForClickLabel": "밝게 남은 점을 눌러보세요",
+    "waitingForClickLabel": "여기서 그 점 열기",
     "clickSuccessLabel": "잘했어요. 방금 그 점의 카드를 연 거예요",
     "finishTourAction": "구경 끝: 지도로",
     "devBranchAction": "저는 개발자예요",
@@ -566,7 +566,7 @@
       },
       "tryClick": {
         "title": "직접 눌러보세요",
-        "body": "지도에서 밝게 남아 있는 점을 눌러보세요. 그 점의 이야기(무엇이고, 무엇과 이어져 있는지)가 카드로 열려요."
+        "body": "지도가 어두워져도 점 하나만 테두리를 두른 채 밝게 켜져 있어요. 그 점을 누르면 이야기(무엇이고, 무엇과 이어져 있는지)가 카드로 열려요."
       },
       "datasheet": {
         "title": "카드 = 문서의 앞면",

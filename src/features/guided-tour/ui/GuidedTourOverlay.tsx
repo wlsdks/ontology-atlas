@@ -170,7 +170,11 @@ export function GuidedTourOverlay({
   // the viewport. The previous constants overestimated try-click by 36.5px
   // (220px vs a measured 183.5px — safe but with needlessly large slack) and
   // underestimated recent by 11.5px (240px vs a measured 251.5px).
-  const cardHeight = step.id === "recent" ? 255 : step.interactive ? 195 : 205;
+  // 2026-09-04: try-click's body now names the ring, so its rendered card grew to
+  // 248px at 1440x900 (measured). 195 underestimated it by 53px, the direction the
+  // note above calls unsafe for a "below" placement, so the interactive constant
+  // moves to 250.
+  const cardHeight = step.id === "recent" ? 255 : step.interactive ? 250 : 205;
   const placement = computeCardPlacement({
     targetRect: anchorRect,
     cardWidth,
