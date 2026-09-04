@@ -1421,8 +1421,8 @@
       },
       "headings": [],
       "excerpt": "An operational entry point that allows inspecting, querying, and writing local markdown vaults without an app or MCP client, and reproducing agent connections and graph operations in the terminal. Developers and agents perform new vault creation, verification, semantic queries, relationship analysis, and safe local che",
-      "wordCount": 490,
-      "updatedAt": "2026-09-03",
+      "wordCount": 588,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {
@@ -1737,9 +1737,9 @@
         "display_en": "AI Connection Server"
       },
       "headings": [],
-      "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The agent accurately finds meaning nodes in the project and reads relat",
-      "wordCount": 3219,
-      "updatedAt": "2026-09-02",
+      "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The MCP server is the stdio JSON-RPC surface that lets an AI coding age",
+      "wordCount": 3507,
+      "updatedAt": "2026-09-04",
       "linksOut": []
     },
     {

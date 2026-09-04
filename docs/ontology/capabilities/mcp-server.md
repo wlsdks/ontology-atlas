@@ -17,6 +17,30 @@ display_en: AI Connection Server
 
 It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop.
 
+## Definition
+
+The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read and safely change a local Markdown vault through the same files a person reads. It registers the tool inventory, parses and writes vault frontmatter, compiles the graph, and answers questions about meaning, relationships, evidence, and impact scope. It owns no separate database, no embedding index, and no model execution loop; every write passes a read-first, dry-run, and human-approval gate.
+
+## Includes
+
+- MCP tool registration, annotations, and the `tools/list` inventory contract, including the read-only server variant that advertises no write tools.
+- The vault Markdown parser and writer, the deterministic compiler, and graph queries over meaning, relationships, evidence, and impact.
+- Connection-time verification of the actual vault and repository coordinates and of the advertised tool inventory, so an incorrect folder or a stale client is detected.
+- Project source binding and unbinding through `connect_project_source` and `disconnect_project_source`, with source-currentness receipts.
+- Concurrency guards, dry-runs, and structured errors that refuse duplicates, broken relationships, and destructive changes before a write lands.
+- The bundled server carried by the installed macOS app, including the delivery check that the installed bundle is the exact built bundle and preserves repository source-path case.
+- The ontology construction lifecycle: an exact review plan, digest-bound qualification by an evaluator separated from the maker, human approval, and only then the released write plan.
+- Permanent `uid` and editable `slug` identity, preserved across rename, reclassify, and merge.
+
+## Excludes
+
+- An AST or source-search engine; structural code questions belong to the tools that own them.
+- An embedding store or any semantic index built over source code.
+- Model selection, an agent loop, or any model execution inside the server.
+- A backend, accounts, or any canonical store other than the user's Markdown files.
+- Auto-saving creation proposals without human approval, or any write before `confirm: true`.
+- Proof of runtime behaviour, reverse or transitive dependency, or business truth from a declared import edge alone.
+
 ## User Outcomes
 
 - The agent accurately finds meaning nodes in the project and reads relationships, evidence, and impact scope together.
@@ -108,13 +132,6 @@ Rust repositories expose bounded static source receipts through the same `infer_
 ## Constraints: Relation rationale, read equals write
 
 `add_relation(why)` and `add_relations` store the sentence in the source document's `relation_notes` map in the same frontmatter write as the edge, and refuse a new `depends_on` without one. Every read surface returns that same sentence as an optional `rationale` string: `find_path().edges[]`, `get_concept().outgoingEdges[]`, `get_concepts` rows, and `query_ontology` path and impact rows. The key is omitted when no note is stored, never `null`, and never generated to fill a blank. `validate_vault` reports a value that swallowed the next entry (`swallowed-relation-note`) and a key that names no declared relation (`orphaned-relation-note`) as errors, because a note no edge carries is a sentence every reader drops. The parsers also report a scalar whose opening quote does not close as its last character (`malformed-quoted-scalar`, error; on 2026-08-31 `display_ko: "Agents" destination` rendered the stray quote on every surface while validation stayed green) and stay silent for a closed pair with inner quotes, which every reader already renders as written.
-
-## Inclusions / Exclusions
-
-- Included: MCP tool registration and I/O contracts, Vault parser/writer, deterministic compiler and
-  graph query, concurrency/dry-run/validation safeguards, bundled server for installed apps.
-- Excluded: AST/source search engine, embedding store, model selection/agent loop, backend/accounts,
-  auto-saving creation proposals without human approval.
 
 ## Implementation Basis
 
