@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { VaultHealthDoc } from './vault-health';
-import { unassignedNodeSlugs, unmatchedGraphAsks } from './vault-health';
+import { computeVaultHealth, unmatchedGraphAsks } from './vault-health';
 
 const doc = (slug: string, frontmatter: Record<string, unknown>): VaultHealthDoc => ({
   slug,
@@ -79,39 +79,29 @@ describe('unmatchedGraphAsks — names an agent wrote that this vault has no nod
   });
 });
 
-describe('unassignedNodeSlugs — a capability or element nothing placed', () => {
-  it('names a capability with neither a resolved domain nor a containment parent', () => {
-    expect(
-      unassignedNodeSlugs([
-        doc('shop', { kind: 'project', contains: ['domains/payment'] }),
-        doc('domains/payment', { kind: 'domain' }),
-        doc('capabilities/floating', { kind: 'capability' }),
-        doc('capabilities/placed', { kind: 'capability', domain: 'domains/payment' }),
-      ]),
-    ).toEqual(['capabilities/floating']);
+describe('unmatchedGraphAsks — the same walk the health count already made', () => {
+  /*
+   * ⚠️ Two readings of one fact. `computeVaultHealth` counts unresolved references and
+   * keeps a number; this keeps the names behind it. If they ever disagree, one of the two
+   * screens is lying about the same folder — so the identity is asserted, not assumed.
+   */
+  it('accounts for every unresolved edge the health summary counted', () => {
+    const total = unmatchedGraphAsks(VAULT).reduce((sum, row) => sum + row.count, 0);
+    expect(total).toBe(computeVaultHealth(VAULT).summary.unresolvedEdges);
+    expect(total).toBeGreaterThan(0);
   });
 
-  it('counts a containment parent as placement even without a domain field', () => {
-    expect(
-      unassignedNodeSlugs([
-        doc('domains/payment', { kind: 'domain', capabilities: ['capabilities/held'] }),
-        doc('capabilities/held', { kind: 'capability' }),
-      ]),
-    ).toEqual([]);
+  it('returns one row per distinct name, not one per reference', () => {
+    const rows = unmatchedGraphAsks(VAULT);
+    expect(rows).toHaveLength(new Set(rows.map((row) => row.ref)).size);
+    // Four references, two names — the grouping is what makes the count readable.
+    expect(rows).toHaveLength(2);
   });
 
-  it('does not ask a domain or a project to be placed', () => {
-    expect(
-      unassignedNodeSlugs([
-        doc('shop', { kind: 'project' }),
-        doc('domains/loose', { kind: 'domain' }),
-      ]),
-    ).toEqual([]);
-  });
-
-  it('refuses a domain reference that does not resolve — an unplaced node is still unplaced', () => {
-    expect(
-      unassignedNodeSlugs([doc('capabilities/x', { kind: 'capability', domain: 'domains/gone' })]),
-    ).toEqual(['capabilities/x']);
+  it('never names something this folder actually holds', () => {
+    const held = new Set(VAULT.map((doc) => doc.slug));
+    for (const row of unmatchedGraphAsks(VAULT)) {
+      expect(held.has(row.ref)).toBe(false);
+    }
   });
 });

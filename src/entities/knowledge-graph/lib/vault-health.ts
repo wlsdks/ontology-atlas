@@ -655,37 +655,3 @@ export function unmatchedGraphAsks(docs: readonly VaultHealthDoc[]): UnmatchedGr
     }))
     .sort((a, b) => b.count - a.count || a.ref.localeCompare(b.ref));
 }
-
-/**
- * **Capabilities and elements nothing placed.**
- *
- * The browser-side twin of the maintenance plan's `unassigned_node`, mirroring the MCP
- * predicate exactly: a `capability` or `element` with no resolvable `domain:` and no
- * containment parent. A `domain:` pointing at a node that does not exist is not a
- * placement — that is the case this check exists to catch, so it is not softened.
- */
-export function unassignedNodeSlugs(docs: readonly VaultHealthDoc[]): string[] {
-  const graph = compile(docs);
-  const slugSet = new Set(graph.nodes.map((node) => node.slug));
-  const resolveOptional = (input: unknown): string | null => {
-    if (typeof input !== 'string' || !input.trim()) return null;
-    const candidate = input.trim();
-    if (slugSet.has(candidate)) return candidate;
-    return graph.aliasToSlug.get(candidate) ?? null;
-  };
-  const parented = new Set(
-    graph.edges
-      .filter(
-        (edge) =>
-          edge.resolved &&
-          (edge.via === 'contains' || edge.via === 'capabilities' || edge.via === 'elements'),
-      )
-      .map((edge) => edge.to),
-  );
-
-  return graph.nodes
-    .filter((node) => node.kind === 'capability' || node.kind === 'element')
-    .filter((node) => !resolveOptional(node.domain) && !parented.has(node.slug))
-    .map((node) => node.slug)
-    .sort();
-}

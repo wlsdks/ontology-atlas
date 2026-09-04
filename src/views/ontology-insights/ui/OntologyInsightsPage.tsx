@@ -398,10 +398,12 @@ export function OntologyInsightsPage() {
   );
 
   /*
-   * **What agents asked this vault for and did not get.** `vaultHealth` already walked
+   * **What agents asked this folder for and did not get.** `vaultHealth` already walked
    * these references and kept only `summary.unresolvedEdges`, a number; the board needs
    * the names behind it. Both readings take the same manifest (`useHealthManifest`), so
-   * the count and the list cannot describe different vaults.
+   * the count and the list cannot describe different folders — and the list carries only
+   * that one fact, because missing containment and unplaced concepts already raise the
+   * Do-next badge and must not be counted twice on one screen (2026-08-07 (3)).
    *
    * Dismissals are this viewer's, in this browser, scoped to this vault
    * (`unmatched-dismissals.ts`). They never reach the folder, and they never move
@@ -412,25 +414,15 @@ export function OntologyInsightsPage() {
   const [unmatchedDismissed, setUnmatchedDismissed] = useUnmatchedDismissals(vaultScope);
   const unmatchedBoard = useMemo(
     () =>
-      buildUnmatchedBoard(
-        {
-          asks: unmatchedAsks.asks,
-          missingContainment: vaultHealth.missingContainment,
-          unassigned: unmatchedAsks.unassigned,
-        },
-        unmatchedDismissed,
-      ),
-    [unmatchedAsks, vaultHealth.missingContainment, unmatchedDismissed],
+      buildUnmatchedBoard({ asks: unmatchedAsks.asks }, unmatchedDismissed),
+    [unmatchedAsks, unmatchedDismissed],
   );
   const unmatchedLabels: UnmatchedTabLabels = useMemo(
     () => ({
       title: t("unmatched.title"),
       caption: t("unmatched.caption"),
-      kindTitle: (kind) => t(`unmatched.kind.${kind}.title`),
-      kindCaption: (kind) => t(`unmatched.kind.${kind}.caption`),
       occurrences: (count) => t("unmatched.occurrences", { count }),
       askedBy: (names) => t("unmatched.askedBy", { names }),
-      shouldHold: (names) => t("unmatched.shouldHold", { names }),
       writtenUnder: (keys) => t("unmatched.writtenUnder", { keys }),
       dismiss: (name) => t("unmatched.dismiss", { name }),
       restoreAll: (count) => t("unmatched.restoreAll", { count }),

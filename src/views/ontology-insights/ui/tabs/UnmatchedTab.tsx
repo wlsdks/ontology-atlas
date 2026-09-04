@@ -5,21 +5,17 @@ import { X } from "lucide-react";
 import { EmptyState } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { controlClass } from "@/shared/ui/control-class";
-import type { UnmatchedBoard, UnmatchedRow, UnmatchedRowKind } from "../../lib/unmatched-board";
+import type { UnmatchedBoard, UnmatchedRow } from "../../lib/unmatched-board";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 export interface UnmatchedTabLabels {
   title: string;
   /** One sentence saying where these rows come from and what the screen refuses to claim. */
   caption: string;
-  kindTitle: (kind: UnmatchedRowKind) => string;
-  kindCaption: (kind: UnmatchedRowKind) => string;
   /** `×3` beside a name — how many references asked for it. */
   occurrences: (count: number) => string;
   /** Which concepts reached for this name. */
   askedBy: (names: string) => string;
-  /** The domain that names a concept without being named back. */
-  shouldHold: (names: string) => string;
   writtenUnder: (keys: string) => string;
   dismiss: (name: string) => string;
   restoreAll: (count: number) => string;
@@ -35,29 +31,22 @@ export interface UnmatchedTabProps {
   labels: UnmatchedTabLabels;
 }
 
-/** The order the groups are read in: a missing concept outranks a one-sided link. */
-const GROUP_ORDER: readonly UnmatchedRowKind[] = [
-  "unresolved-reference",
-  "missing-containment",
-  "unassigned-node",
-];
-
 /**
  * **What agents asked this vault for and did not get** — one standing place with counts.
  *
- * `unmatched-board.ts` owns which three facts qualify and why a fourth (the relation type
- * an agent invented) cannot be listed: that refusal never reaches disk. This file only
- * draws them.
+ * `unmatched-board.ts` owns which fact qualifies, why the two the first draft also carried
+ * belong to Do-next instead, and why the relation type an agent invented cannot be listed
+ * at all: that refusal never reaches disk. This file only draws the list.
  *
  * The count is the point of the screen. A name three separate nodes reached for is a
  * concept this ontology is missing, and one reached for once is probably a typo — the
  * two need different work, and only the number separates them. So the number sits in the
  * row, not in a tooltip.
  *
- * **Dismiss hides, and says so.** The group counts and the tab badge keep reporting what
- * the vault says; the footer states how many rows this viewer chose not to look at, with
- * one control to bring them all back. A dismissal that silently shrank the count would
- * make the board agree with whoever last clicked instead of with the folder.
+ * **Dismiss hides, and says so.** The list count and the tab badge keep reporting what the
+ * folder says; the footer states how many rows this viewer chose not to look at, with one
+ * control to bring them all back. A dismissal that silently shrank the count would make
+ * the board agree with whoever last clicked instead of with the folder.
  */
 export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: UnmatchedTabProps) {
   if (board.totalCount === 0) {
@@ -71,55 +60,34 @@ export function UnmatchedTab({ board, onDismiss, onRestoreAll, labels }: Unmatch
     );
   }
 
-  const groups = GROUP_ORDER.map((kind) => ({
-    kind,
-    total: board.counts[kind],
-    rows: board.rows.filter((row) => row.kind === kind),
-  })).filter((group) => group.total > 0);
-
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
       <p className="max-w-3xl text-body text-[color:var(--color-text-tertiary)]">
         {labels.caption}
       </p>
 
-      {groups.map((group) => (
-        <section
-          key={group.kind}
-          data-testid="unmatched-group"
-          data-unmatched-kind={group.kind}
-          className="flex min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
-        >
-          <div className="flex items-baseline gap-2">
-            <InsightsSectionTitle
-              level={2}
-              className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
-            >
-              {labels.kindTitle(group.kind)}
-            </InsightsSectionTitle>
-            <span
-              data-testid="unmatched-group-count"
-              className="font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]"
-            >
-              {group.total}
-            </span>
-          </div>
-          <p className="mt-1 text-label text-[color:var(--color-text-quaternary)]">
-            {labels.kindCaption(group.kind)}
-          </p>
+      <section data-testid="unmatched-list">
+        <div className="flex items-baseline gap-2">
+          <InsightsSectionTitle
+            level={2}
+            className="text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+          >
+            {labels.title}
+          </InsightsSectionTitle>
+          <span
+            data-testid="unmatched-group-count"
+            className="font-mono text-label tabular-nums text-[color:var(--color-text-tertiary)]"
+          >
+            {board.totalCount}
+          </span>
+        </div>
 
-          <ul className="mt-3 flex flex-col gap-1.5">
-            {group.rows.map((row) => (
-              <UnmatchedRowItem
-                key={row.id}
-                row={row}
-                onDismiss={onDismiss}
-                labels={labels}
-              />
-            ))}
-          </ul>
-        </section>
-      ))}
+        <ul className="mt-3 flex flex-col gap-1.5">
+          {board.rows.map((row) => (
+            <UnmatchedRowItem key={row.id} row={row} onDismiss={onDismiss} labels={labels} />
+          ))}
+        </ul>
+      </section>
 
       {board.dismissedCount > 0 ? (
         <p
@@ -180,9 +148,7 @@ function UnmatchedRowItem({
         </div>
         {row.sources.length > 0 ? (
           <span className="truncate text-caption text-[color:var(--color-text-quaternary)]">
-            {row.kind === "missing-containment"
-              ? labels.shouldHold(row.sources.join(", "))
-              : labels.askedBy(row.sources.join(", "))}
+            {labels.askedBy(row.sources.join(", "))}
           </span>
         ) : null}
         {row.relations.length > 0 ? (

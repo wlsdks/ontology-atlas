@@ -5,7 +5,6 @@ import { useDataSourceMode, useSampleSource, useLocalVault } from '@/entities/va
 import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
 import {
   computeVaultHealth,
-  unassignedNodeSlugs,
   unmatchedGraphAsks,
   type UnmatchedGraphAsk,
   type VaultHealthResult,
@@ -78,10 +77,9 @@ export function useVaultHealth(): VaultHealthResult {
  */
 export interface VaultUnmatchedAsks {
   asks: readonly UnmatchedGraphAsk[];
-  unassigned: readonly string[];
 }
 
-const EMPTY_ASKS: VaultUnmatchedAsks = { asks: [], unassigned: [] };
+const EMPTY_ASKS: VaultUnmatchedAsks = { asks: [] };
 const unmatchedCache = new WeakMap<VaultManifest, VaultUnmatchedAsks>();
 
 export function useVaultUnmatchedAsks(): VaultUnmatchedAsks {
@@ -90,10 +88,7 @@ export function useVaultUnmatchedAsks(): VaultUnmatchedAsks {
     if (!manifest) return EMPTY_ASKS;
     const cached = unmatchedCache.get(manifest);
     if (cached) return cached;
-    const computed: VaultUnmatchedAsks = {
-      asks: unmatchedGraphAsks(manifest.docs),
-      unassigned: unassignedNodeSlugs(manifest.docs),
-    };
+    const computed: VaultUnmatchedAsks = { asks: unmatchedGraphAsks(manifest.docs) };
     unmatchedCache.set(manifest, computed);
     return computed;
   }, [manifest]);

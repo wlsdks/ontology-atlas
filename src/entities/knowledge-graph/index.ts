@@ -65,7 +65,6 @@ export {
 export {
   capabilitiesWithoutImplementationEvidence,
   computeVaultHealth,
-  unassignedNodeSlugs,
   unmatchedGraphAsks,
 } from "./lib/vault-health";
 export type { UnmatchedGraphAsk, VaultHealthResult } from "./lib/vault-health";
