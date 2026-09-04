@@ -16,7 +16,48 @@ const user = (id: string): AcpEvent => ({ kind: 'user', id, text: `question-${id
 
 const kinds = (events: readonly AcpEvent[]) => groupEvents(events).map((item) => item.kind);
 const ids = (events: readonly AcpEvent[]) =>
-  groupEvents(events).map((item) => (item.kind === 'event' ? item.event.id : item.id));
+  groupEvents(events).flatMap((item) =>
+    item.kind === 'event'
+      ? [item.event.id]
+      : item.kind === 'toolRun'
+        ? item.events.map((event) => event.id)
+        : [item.id],
+  );
+
+describe('groupEvents — consecutive tool calls read as one run', () => {
+  /*
+   * Standing rows won the diagnosis, then cost the transcript its shape: four dim lines
+   * with nothing tying them together read as four unrelated interruptions. One left rule
+   * down the side says "this is one stretch of work" without folding any of it away.
+   */
+  it('collects tool calls that arrived back to back into one run', () => {
+    const out = groupEvents([user('u'), tool('a'), tool('b'), tool('c'), agent('m')]);
+    expect(out.map((item) => item.kind)).toEqual(['event', 'toolRun', 'event']);
+    const run = out[1];
+    expect(run.kind === 'toolRun' && run.events.map((event) => event.id)).toEqual([
+      'a',
+      'b',
+      'c',
+    ]);
+  });
+
+  it('closes the run at the answer and opens a new one after it', () => {
+    const out = groupEvents([user('u'), tool('a'), agent('m1'), tool('b'), agent('m2')]);
+    expect(out.map((item) => item.kind)).toEqual([
+      'event',
+      'toolRun',
+      'event',
+      'toolRun',
+      'event',
+    ]);
+  });
+
+  it('gives a lone tool call a run of its own — one rule, not a special case', () => {
+    const out = groupEvents([user('u'), tool('a'), agent('m')]);
+    const run = out.find((item) => item.kind === 'toolRun');
+    expect(run?.kind === 'toolRun' && run.events).toHaveLength(1);
+  });
+});
 
 describe('groupEvents — a tool call stands where it happened', () => {
   it('never folds a tool call into the thinking disclosure', () => {
@@ -24,16 +65,13 @@ describe('groupEvents — a tool call stands where it happened', () => {
      * The whole point of the trace: one dim standing line per call, so a wrong answer is
      * diagnosable without a click. A tool row hidden behind a disclosure cannot do that.
      */
-    const out = groupEvents([user('u'), thought('a'), tool('b'), agent('m')]);
+    const out = groupEvents([user("u"), thought("a"), tool("b"), agent("m")]);
     const group = out.find((item) => item.kind === 'workGroup');
     expect(group?.kind === 'workGroup' && group.events.map((event) => event.id)).toEqual(['a']);
     expect(ids([user('u'), thought('a'), tool('b'), agent('m')])).toEqual(['u', 'a', 'b', 'm']);
   });
 
   it('keeps tool calls in the order they arrived, between the answers they preceded', () => {
-    expect(
-      kinds([user('u'), tool('a'), agent('m1'), tool('b'), agent('m2')]),
-    ).toEqual(['event', 'event', 'event', 'event', 'event']);
     expect(ids([user('u'), tool('a'), agent('m1'), tool('b'), agent('m2')])).toEqual([
       'u',
       'a',
@@ -43,8 +81,12 @@ describe('groupEvents — a tool call stands where it happened', () => {
     ]);
   });
 
-  it('makes no work group at all for a turn that only called tools', () => {
-    expect(kinds([user('u'), tool('a'), agent('m')])).toEqual(['event', 'event', 'event']);
+  it('makes no thinking disclosure at all for a turn that only called tools', () => {
+    expect(kinds([user('u'), tool('a'), agent('m')])).toEqual([
+      'event',
+      'toolRun',
+      'event',
+    ]);
   });
 });
 

@@ -3767,7 +3767,8 @@
       "addRelation": "관계를 이었어요"
     },
     "toolOutcome": {
-      "found": "{count}개 찾음",
+      "foundUnit": "개 찾음",
+      "foundNone": "찾은 것 없음",
       "running": "진행 중",
       "done": "완료",
       "failed": "실패",

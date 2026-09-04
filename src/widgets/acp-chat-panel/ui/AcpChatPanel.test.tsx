@@ -393,30 +393,6 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
   });
 
-  it('a search that found nothing says so, instead of reading like every other line', async () => {
-    await bootSession();
-    emit({
-      jsonrpc: '2.0',
-      method: 'session/update',
-      params: {
-        update: {
-          sessionUpdate: 'tool_call',
-          toolCallId: 'tc-zero',
-          title: 'mcp__atlas-vault__find_backlinks',
-          kind: 'read',
-          status: 'completed',
-          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 0, matches: [] }) }],
-        },
-      },
-    });
-    await waitFor(() =>
-      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
-        'data-tool-outcome',
-        '0',
-      ),
-    );
-  });
-
   it('never puts a count beside a call that failed', async () => {
     await bootSession();
     emit({
@@ -439,6 +415,140 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
         'failed',
       ),
     );
+  });
+
+  it('marks only a running call, and says the outcome in words on the rest', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-dot',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeInTheDocument(),
+    );
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tc-dot',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 2 }) }],
+        },
+      },
+    });
+    // A mark that varies reads as a mark that means something; "done" is already in words.
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeNull(),
+    );
+  });
+
+  it('a search that found nothing breaks the number column instead of joining it', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-none',
+          title: 'mcp__atlas-vault__find_backlinks',
+          kind: 'read',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 0, matches: [] }) }],
+        },
+      },
+    });
+    const outcome = await screen.findByTestId('acp-chat-tool-outcome');
+    expect(outcome.textContent).toBe('toolOutcome.foundNone');
+    expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+      'data-tool-outcome',
+      '0',
+    );
+  });
+
+  it('a call that did not land gets a seam, never a colour on the word', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-broke',
+          title: 'mcp__atlas-vault__add_relation',
+          kind: 'other',
+          status: 'failed',
+        },
+      },
+    });
+    const row = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="tool"]');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    expect(row.className).toContain('border-[color:var(--color-danger-a50)]');
+    // The ink stays tertiary: danger text against it measures 1.04:1.
+    expect(row.className).toContain('text-[color:var(--color-text-tertiary)]');
+    expect(screen.getByTestId('acp-chat-tool-outcome').className).toContain(
+      'font-[var(--font-weight-emphasis)]',
+    );
+  });
+
+  it('draws consecutive calls as one run', async () => {
+    await bootSession();
+    for (const id of ['r1', 'r2', 'r3']) {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: id,
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            status: 'completed',
+          },
+        },
+      });
+    }
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(3),
+    );
+    const runs = document.querySelectorAll('[data-acp-entry="tool-run"]');
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toHaveAttribute('data-tool-run-count', '3');
+  });
+
+  it('frames a listing filter so it does not read as a concept that was read', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-kind',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { kind: 'capability' },
+        },
+      },
+    });
+    const target = await screen.findByTestId('acp-chat-tool-target');
+    expect(target.textContent).toContain('kind: capability');
   });
 
   it('names a target the vault does not hold yet as plain text, never as a map marker', async () => {

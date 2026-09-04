@@ -3767,7 +3767,8 @@
       "addRelation": "Linked a relation"
     },
     "toolOutcome": {
-      "found": "{count} found",
+      "foundUnit": " found",
+      "foundNone": "nothing found",
       "running": "running",
       "done": "done",
       "failed": "failed",

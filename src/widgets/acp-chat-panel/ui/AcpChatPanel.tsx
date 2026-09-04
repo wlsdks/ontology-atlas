@@ -1077,6 +1077,29 @@ export function AcpChatPanel({
           screen is erasing the agent's words, so it is not widened.
         */}
         {transcriptItems.map((item, index) => {
+          if (item.kind === 'toolRun')
+            return (
+              /*
+                One rule beside a stretch of work. Four standing dim lines with nothing
+                tying them together read as four unrelated interruptions; the rule says
+                they are one run, and folds nothing away to say it.
+              */
+              <div
+                key={item.id}
+                data-acp-entry="tool-run"
+                data-tool-run-count={item.events.length}
+                className="flex flex-col gap-0.5 border-l border-[color:var(--color-divider)] pl-2"
+              >
+                {item.events.map((event) => (
+                  <TranscriptEntry
+                    key={event.id}
+                    event={event}
+                    knownSlugs={knownSlugs}
+                    onHoverSlug={onHoverSlug}
+                  />
+                ))}
+              </div>
+            );
           if (item.kind === 'workGroup')
             return (
               <WorkGroup
@@ -1873,7 +1896,9 @@ function TranscriptEntry({
      */
     const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
     const outcome = readToolOutcome(event.rawOutput, event.status);
-    const done = outcome.kind === 'count' || outcome.status !== 'running';
+    const running = outcome.kind === 'status' && outcome.status === 'running';
+    const broke =
+      outcome.kind === 'status' && (outcome.status === 'failed' || outcome.status === 'cancelled');
     const toolTargets = knownSlugs ? readToolTargets(event.rawInput, knownSlugs) : [];
     /*
      * The second lane, used only when no node of this vault was named: a file path, the
@@ -1896,19 +1921,31 @@ function TranscriptEntry({
          * a job. The answer above still wins: it is `--color-text-primary` at body size
          * against this one line of `text-label`.
          */
-        className="flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]"
+        className={cn(
+          'flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]',
+          /*
+           * A call that did not land gets **a seam, not a coloured word**. Painting the
+           * outcome in `--color-danger-text` measures 1.04:1 against the tertiary ink beside
+           * it: a colour nobody can read as different from its neighbour is decoration, and
+           * on this row it would be decoration claiming to be a warning. A 1px rule at the
+           * row's leading edge is a mark, not an ink change, so the sentence stays legible.
+           */
+          broke && '-ml-2 border-l border-[color:var(--color-danger-a50)] pl-1.5',
+        )}
       >
-        {/* Finished and running are separated by **one dot** — another badge would make
-            the tool lines noisier than the conversation. */}
-        <span
-          aria-hidden
-          className={cn(
-            'size-1.5 shrink-0 rounded-full',
-            done
-              ? 'bg-[color:var(--color-text-quaternary)]'
-              : 'bg-[color:var(--color-indigo-accent)]',
-          )}
-        />
+        {/*
+          **The dot means "still going", so a finished row has none.** It used to be drawn on
+          every row in two greys, which made a mark that varies read as a mark that means
+          something — and the thing it meant was already said, in words, at the end of the
+          line. A hollow ring while running is one mark for one fact.
+        */}
+        {running ? (
+          <span
+            aria-hidden
+            data-tool-running
+            className="size-1.5 shrink-0 rounded-full border border-[color:var(--color-indigo-accent)]"
+          />
+        ) : null}
         <span className="shrink-0">
           {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
         </span>
@@ -1941,7 +1978,7 @@ function TranscriptEntry({
             data-tool-target={fallbackTarget.kind}
             className="min-w-0 flex-1 truncate"
           >
-            {` · ${fallbackTarget.value}`}
+            {` · ${fallbackTarget.frame ? `${fallbackTarget.frame}: ` : ''}${fallbackTarget.value}`}
           </span>
         ) : null}
         {/*
@@ -1953,11 +1990,37 @@ function TranscriptEntry({
         */}
         <span
           data-testid="acp-chat-tool-outcome"
-          className="ml-auto shrink-0 tabular-nums"
+          className={cn(
+            'ml-auto shrink-0 tabular-nums',
+            broke && 'font-[var(--font-weight-emphasis)]',
+          )}
         >
-          {outcome.kind === 'count'
-            ? t('toolOutcome.found', { count: outcome.count })
-            : t(`toolOutcome.${outcome.status}`)}
+          {outcome.kind === 'count' ? (
+            outcome.count === 0 ? (
+              /*
+                **Zero gets the long form.** With every other row ending in a short
+                right-aligned figure, `0 found` sat in the same column as `8 found` and read
+                as one more number. `nothing found` is longer, so right alignment pushes it
+                left of every neighbour — the one row that contradicts a confident paragraph
+                is the one that breaks the column.
+              */
+              t('toolOutcome.foundNone')
+            ) : (
+              <>
+                {/*
+                  Emphasis lands on the numeral alone. The word after it repeats down the
+                  column and carries no information; the digit is the whole message. Both
+                  locales put the number first, so one order serves them.
+                */}
+                <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
+                  {outcome.count}
+                </span>
+                {t('toolOutcome.foundUnit')}
+              </>
+            )
+          ) : (
+            t(`toolOutcome.${outcome.status}`)
+          )}
         </span>
       </p>
     );

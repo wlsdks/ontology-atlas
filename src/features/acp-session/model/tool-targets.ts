@@ -90,7 +90,15 @@ export function readToolTargets(
  *   Without those last two the most common read in the app, 「list every capability」,
  *   arrives with an empty target.
  */
-export type ToolFallbackTarget = { kind: 'path' | 'name' | 'query'; value: string };
+export type ToolFallbackTarget = {
+  kind: 'path' | 'name' | 'query';
+  value: string;
+  /**
+   * The argument name, when the value alone would not say what it is. `capability` on its
+   * own reads as a target; `kind: capability` reads as the filter it actually was.
+   */
+  frame?: string;
+};
 
 /** Path argument names, kept identical to the permission gate's measured list. */
 const PATH_ARG_KEYS = ['file_path', 'filePath', 'rootPath', 'root_path', 'path', 'targetPath'] as const;
@@ -142,8 +150,18 @@ export function readToolFallbackTarget(rawInput: unknown): ToolFallbackTarget | 
   const name = firstString(input, SLUG_ARG_KEYS);
   if (name) return { kind: 'name', value: clamp(name) };
 
-  const query = firstString(input, QUERY_ARG_KEYS);
-  if (query) return { kind: 'query', value: clamp(query) };
+  for (const key of QUERY_ARG_KEYS) {
+    const value = input[key];
+    if (typeof value !== 'string' || !value.trim()) continue;
+    /*
+     * ⚠️ `Read the map · capability` reads as "it read the concept called capability",
+     * which is not what happened — that was a listing narrowed to a kind. The two filter
+     * names are framed by their argument; a path, a slug, and a search term say what they
+     * are on sight and are left alone.
+     */
+    const framed = key === 'kind' || key === 'domain';
+    return { kind: 'query', value: clamp(value.trim()), ...(framed ? { frame: key } : {}) };
+  }
 
   return null;
 }

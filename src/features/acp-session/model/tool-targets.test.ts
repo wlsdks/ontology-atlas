@@ -118,15 +118,28 @@ describe('readToolFallbackTarget — a tool with no vault node still names what 
     });
   });
 
-  it('names the filter a listing was narrowed by — measured: list_concepts takes kind and domain', () => {
+  it('names the filter a listing was narrowed by, and frames it as a filter', () => {
+    /*
+     * `capability` alone reads as a concept that was read. It was a listing narrowed to a
+     * kind, so the argument name comes with it (measured: `list_concepts` takes kind and
+     * domain).
+     */
     expect(readToolFallbackTarget({ kind: 'capability' })).toEqual({
       kind: 'query',
       value: 'capability',
+      frame: 'kind',
     });
     expect(readToolFallbackTarget({ domain: 'domains/payment' })).toEqual({
       kind: 'query',
       value: 'domains/payment',
+      frame: 'domain',
     });
+  });
+
+  it('leaves a path, a slug and a search term unframed — they say what they are', () => {
+    expect(readToolFallbackTarget({ pattern: 'readToolOutcome' })).not.toHaveProperty('frame');
+    expect(readToolFallbackTarget({ path: 'notes.md' })).not.toHaveProperty('frame');
+    expect(readToolFallbackTarget({ slug: 'capabilities/x' })).not.toHaveProperty('frame');
   });
 
   it('prefers a path over a query when a tool carries both', () => {
