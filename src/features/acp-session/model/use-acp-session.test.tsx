@@ -724,3 +724,84 @@ describe('the adapter moves the session itself', () => {
     });
   });
 });
+
+/**
+ * **A session can *begin* in a gate-removing mode, and nothing was judging that.**
+ *
+ * The clamp path above re-runs the safety verdict, but the start path did not: whatever
+ * `session/new` or `session/load` reported as `currentModeId` went straight into the state. Only
+ * `GATED_SESSION_MODE` was consulted, and that names `codex-acp` alone — so a claude session that
+ * opened on `acceptEdits` (a resumed conversation is the obvious way: `session/load` reports the
+ * mode the conversation was left in) set the value with no verdict, raised no notice, and left the
+ * Select rendering its placeholder because the mode is not on the offered list. The screen went
+ * quiet on exactly the value that decides whether a person is asked.
+ *
+ * Beginning in a mode and being moved into it are the same fact about the same session, so they get
+ * the same treatment: state it, never offer it back, and say `gate-off`.
+ */
+describe('a session that begins in a mode the filter hides', () => {
+  const AVAILABLE = [
+    { id: 'default', name: 'Manual', _meta: { kind: 'standard' } },
+    { id: 'plan', name: 'Plan', _meta: { kind: 'plan' } },
+    { id: 'auto', name: 'Auto', _meta: { kind: 'auto_review' } },
+  ];
+
+  async function startedWith(modes: unknown) {
+    bridge.sessionModes = modes;
+    const hook = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault' }));
+    const first = hook.result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+    return hook;
+  }
+
+  it('states an opening gate-removing mode and stops claiming the gate stands', async () => {
+    const { result } = await startedWith({ currentModeId: 'acceptEdits', availableModes: AVAILABLE });
+
+    expect(result.current.status).toBe('ready');
+    expect(result.current.choices.currentModeId).toBe('acceptEdits');
+    // Stating where the session is never means handing the mode back as a choice.
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
+    expect(
+      result.current.events.some((e) => e.kind === 'notice' && e.text === 'gate-off'),
+      'the conversation opened with no gate and said nothing',
+    ).toBe(true);
+    expect(result.current.diagnostics.join(' ')).toContain('mode-initial:acceptEdits');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('shows an opening mode nobody advertised, marked unchecked', async () => {
+    const { result } = await startedWith({
+      currentModeId: 'brand-new',
+      availableModes: [AVAILABLE[0], AVAILABLE[1]],
+    });
+
+    expect(result.current.choices.currentModeId).toBe('brand-new');
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan', 'brand-new']);
+    expect(result.current.choices.unverifiedModeIds).toContain('brand-new');
+    // Unmeasured is not the same as measured dangerous — no alarm is raised for it.
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('says nothing when the session opens on a mode that still asks', async () => {
+    const { result } = await startedWith({ currentModeId: 'default', availableModes: AVAILABLE });
+
+    expect(result.current.choices.currentModeId).toBe('default');
+    expect(result.current.choices.modes.map((m) => m.id)).toEqual(['default', 'plan']);
+    expect(result.current.events.some((e) => e.kind === 'notice')).toBe(false);
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+});

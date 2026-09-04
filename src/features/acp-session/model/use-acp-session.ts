@@ -389,6 +389,22 @@ export function useAcpSession({
     });
   }, []);
 
+  /**
+   * **The screen stops claiming a gate it no longer has.**
+   *
+   * One sentence, two ways to arrive at it: the adapter moved a standing session
+   * (`current_mode_update`), or the session opened in such a mode already. Both are the same fact
+   * about the same conversation, so both say it the same way; `reason` separates them in the folded
+   * diagnostics, where a person looking for the cause will read it.
+   */
+  const noteGateOff = useCallback(
+    (reason: string) => {
+      push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
+      keepDiagnostic(`gate-off:${reason}`);
+    },
+    [keepDiagnostic, push],
+  );
+
   const applyUpdate = useCallback(
     (update: Record<string, unknown>) => {
       // Any update at all counts as the turn speaking; what it says does not matter here.
@@ -422,10 +438,7 @@ export function useAcpSession({
         const modeId = typeof update.currentModeId === 'string' ? update.currentModeId.trim() : '';
         if (!modeId) return;
         setChoices((prev) => applyCurrentMode(prev, modeId));
-        if (!modeKeepsGate(modeId)) {
-          push({ kind: 'notice', id: nextEventId(), text: 'gate-off' });
-          keepDiagnostic(`gate-off:mode-clamped:${modeId}`);
-        }
+        if (!modeKeepsGate(modeId)) noteGateOff(`mode-clamped:${modeId}`);
         return;
       }
       if (kind === 'agent_message_chunk' && text) {
@@ -494,7 +507,7 @@ export function useAcpSession({
         }
       }
     },
-    [emitWorkReceipt, keepDiagnostic, push, setApprovedOntologyWriteTracked],
+    [emitWorkReceipt, noteGateOff, push, setApprovedOntologyWriteTracked],
   );
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
@@ -820,8 +833,26 @@ export function useAcpSession({
         }
       }
 
+      /*
+       * ⚠️ **A session can *begin* in a mode the filter hides, and nothing judged that** (evidence
+       * review, 2026-09-05). Only `GATED_SESSION_MODE` was consulted here, and it names `codex-acp`
+       * alone — so whatever `session/new` or `session/load` reported went into the state unexamined.
+       * A resumed conversation reports the mode it was left in, so a claude session could open on
+       * `acceptEdits` with no verdict, no notice, and a Select rendering its placeholder because
+       * that mode is not on the offered list. The screen fell silent on the one value that decides
+       * whether a person is asked.
+       *
+       * Beginning in a mode and being moved into it are the same fact about the same session, so the
+       * verdict and the sentence are the same as the clamp path's. This runs **after** the gate above
+       * because what was just applied, not what `session/new` answered, is where the session is.
+       */
+      const openingMode = choices.currentModeId;
+      const openedWithoutGate = openingMode !== null && !modeKeepsGate(openingMode);
+      if (openingMode !== null) choices = applyCurrentMode(choices, openingMode);
+
       if (!disposedRef.current) {
         setChoices(choices);
+        if (openedWithoutGate) noteGateOff(`mode-initial:${openingMode}`);
         setStatusTracked('ready');
       }
       // The list is filled after the session stands, so it does not hold up the frame the screen appears in.
@@ -874,6 +905,7 @@ export function useAcpSession({
     askUser,
     keepDiagnostic,
     mcpServers,
+    noteGateOff,
     push,
     resetDiagnostics,
     runtimeId,
