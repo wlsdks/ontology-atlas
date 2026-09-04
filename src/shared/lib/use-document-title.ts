@@ -21,7 +21,6 @@ export function useDocumentTitle(title: string | null | undefined): void {
     if (typeof document === "undefined") return;
     const trimmed = title?.trim();
     if (!trimmed) return;
-    const previous = document.title;
     document.title = trimmed;
     const titleEl = document.querySelector("title");
     let observer: MutationObserver | null = null;
@@ -37,9 +36,13 @@ export function useDocumentTitle(title: string | null | undefined): void {
         characterData: true,
       });
     }
+    // Only the observer is torn down. Restoring the title captured at mount
+    // wrote this route's metadata title over the next route's own after Next
+    // had already applied it: leaving the insights board on the sample left
+    // "My folder analysis" on /git and /architecture (design audit
+    // 2026-09-04). The destination route's metadata owns the title from here.
     return () => {
       observer?.disconnect();
-      document.title = previous;
     };
   }, [title]);
 }

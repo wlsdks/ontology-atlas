@@ -376,7 +376,11 @@ describe("GlobalSearch — footer names the searched scope", () => {
   ];
 
   function footerText(): string {
-    return screen.getByTestId("global-search-footer-count").textContent ?? "";
+    // The count, the separator, and the scope are three spans with a CSS gap;
+    // join them the way the eye reads them.
+    return Array.from(screen.getByTestId("global-search-footer-count").children)
+      .map((child) => child.textContent?.trim() ?? "")
+      .join(" ");
   }
 
   it("names the single loaded project beside the indexed count", () => {
@@ -391,6 +395,65 @@ describe("GlobalSearch — footer names the searched scope", () => {
       />,
     );
 
+    expect(footerText()).toBe("3 indexed · Online Store");
+  });
+
+  it("never breaks the number and lets only the scope name truncate", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+    // Measured 2026-09-04: "172.9px + 186.9px of hints" in a 346px footer wrapped
+    // the proper noun mid-phrase on every phone width. The count keeps its width,
+    // the hints keep theirs, the name is the one thing that yields.
+    const count = screen.getByTestId("global-search-footer-count");
+    expect(count.className).toContain("min-w-0");
+    expect(count.children[0]?.className).toContain("shrink-0");
+    const scope = screen.getByTestId("global-search-footer-scope");
+    expect(scope.className).toContain("truncate");
+    expect(scope.className).toContain("min-w-0");
+    expect(count.nextElementSibling?.className).toContain("shrink-0");
+  });
+
+  it("reads the scope name in the reader's locale, like the map label does", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={[
+          ...nodes,
+          node({
+            id: "project:storefront",
+            title: "Online Store",
+            kind: "project",
+            displayLocales: { en: "Online Store (EN)" },
+          }),
+        ]}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+    expect(footerText()).toBe("3 indexed · Online Store (EN)");
+  });
+
+  it("counts only what the map draws, so a starter README is not an indexed concept", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={[...nodes, node({ id: "vault-readme:README", title: "My ontology vault", kind: "vault-readme" })]}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
     expect(footerText()).toBe("3 indexed · Online Store");
   });
 

@@ -22,12 +22,17 @@ describe("useDocumentTitle", () => {
     expect(document.title).toBe("Untouched");
   });
 
-  it("unmount 시 직전 값으로 복원", () => {
+  it("unmount 시 다음 화면이 이미 쓴 제목을 덮지 않는다", () => {
+    // Restoring the title captured at mount wrote this route's metadata title
+    // over the next route's own after Next had applied it (design audit
+    // 2026-09-04: leaving the insights board left "My folder analysis" on
+    // /git). The destination route owns the title from unmount on.
     document.title = "Before";
     const { unmount } = renderHook(() => useDocumentTitle("During"));
     expect(document.title).toBe("During");
+    document.title = "Next route";
     unmount();
-    expect(document.title).toBe("Before");
+    expect(document.title).toBe("Next route");
   });
 
   it("입력값 변경 시 새 값 반영", () => {

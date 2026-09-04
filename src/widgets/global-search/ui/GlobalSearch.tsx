@@ -8,8 +8,8 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "framer-motion";
 import { Search, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { useTranslations } from "next-intl";
-import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { useLocale, useTranslations } from "next-intl";
+import { isGraphDrawnKind, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
 import { cn } from "@/shared/lib/cn";
@@ -100,13 +100,18 @@ export function GlobalSearch({
     });
   }, []);
 
+  // What the map draws is what the palette searches and counts: a starter's
+  // README (`vault-readme`) is a document, not a node, and counting it said
+  // "5 indexed" beside a census of 4 concepts (design audit 2026-09-04). The
+  // predicate is the one the recent-changes lens uses, so the two agree.
+  const drawnNodes = useMemo(() => nodes.filter((node) => isGraphDrawnKind(node.kind)), [nodes]);
   const ontologyResults = useMemo(
     () =>
-      matchOntologyNodes(query, nodes, 20, {
+      matchOntologyNodes(query, drawnNodes, 20, {
         kinds: selectedKinds,
         projectIds: selectedProjectIds,
       }),
-    [query, nodes, selectedKinds, selectedProjectIds],
+    [query, drawnNodes, selectedKinds, selectedProjectIds],
   );
   const projectResults = useMemo(
     () => (projects ? matchProjects(query, projects, 20) : []),
@@ -114,15 +119,15 @@ export function GlobalSearch({
   );
 
   const isEmptyQuery = query.trim() === "";
-  const ontologySize = nodes.length;
+  const ontologySize = drawnNodes.length;
   const projectSize = projects?.length ?? 0;
   // M-6 — a project card is the same entity as ontology's kind:project node. Adding
   // them straight gives "296 indexed", one more than the canonical inventory (295) —
   // the same species as the P0c map double-count. Projects already counted as nodes
   // are subtracted before summing.
   const projectNodeCount = useMemo(
-    () => nodes.filter((node) => node.kind === "project").length,
-    [nodes],
+    () => drawnNodes.filter((node) => node.kind === "project").length,
+    [drawnNodes],
   );
   const totalCorpus = ontologySize + Math.max(0, projectSize - projectNodeCount);
   /**
@@ -138,7 +143,18 @@ export function GlobalSearch({
    * several projects there is no single honest name, so the copy falls back to
    * "this map".
    */
-  const scopeName = projects?.length === 1 ? projects[0].name.trim() || null : null;
+  const locale = useLocale();
+  const scopeName = useMemo(() => {
+    if (projects?.length !== 1) return null;
+    const project = projects[0];
+    // The project node already carries `display_<locale>`; the footer reads the
+    // same name the map label and the INDEX row show, not the canonical title.
+    const projectNode = drawnNodes.find(
+      (node) => node.kind === "project" && (node.id === `project:${project.slug}` || node.id.endsWith(`:${project.slug}`)),
+    );
+    const localized = projectNode?.displayLocales?.[locale]?.trim();
+    return localized || project.name.trim() || null;
+  }, [projects, drawnNodes, locale]);
   const totalMatches = ontologyResults.length + projectResults.length;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
@@ -432,9 +448,7 @@ export function GlobalSearch({
                 : t('emptyIndexed', { count: totalCorpus })
               : hasFilter
                 ? t('emptyNoMatchFiltered', { query })
-                : scopeName
-                  ? t('emptyNoMatchScoped', { query, name: scopeName })
-                  : t('emptyNoMatch', { query })}
+                : t('emptyNoMatch', { query })}
           </Command.Empty>
 
           {ontologyResults.length > 0 ? (
@@ -549,14 +563,21 @@ export function GlobalSearch({
            * `scopeName` is the loaded project when there is exactly one; with several
            * there is no honest single name, so the copy falls back to "this map".
            */}
-          <span data-testid="global-search-footer-count">
-            {isEmptyQuery
-              ? t('indexed', { count: totalCorpus })
-              : t('matches', { count: totalMatches })}
-            {" · "}
-            {scopeName ?? t('scopeFallback')}
+          {/* The number never truncates and the hints never shrink; only the
+              name yields, and it yields by truncating, not by breaking mid-word
+              (measured 2026-09-04: "ONLINE / STORE" on every phone width). */}
+          <span data-testid="global-search-footer-count" className="flex min-w-0 items-center gap-1">
+            <span className="shrink-0">
+              {isEmptyQuery
+                ? t('indexed', { count: totalCorpus })
+                : t('matches', { count: totalMatches })}
+            </span>
+            <span aria-hidden className="shrink-0">·</span>
+            <span data-testid="global-search-footer-scope" className="min-w-0 truncate">
+              {scopeName ?? t('scopeFallback')}
+            </span>
           </span>
-          <span className="flex items-center gap-3">
+          <span className="flex shrink-0 items-center gap-3">
             <span>{t('shortcutMove')}</span>
             <span>{t('shortcutSelect')}</span>
             <span>{t('shortcutClose')}</span>
