@@ -37,7 +37,8 @@ export interface GlobalSearchProps {
 
 /**
  * The map's search palette (cmdk based). It searches one scope — the vault or
- * sample currently loaded — and says so, in the title and in the empty state.
+ * sample currently loaded — and says so in the footer beside the count, in every
+ * state, as well as in the empty state sentence.
  *
  * Our own matchers (`matchOntologyNodes`, `matchProjects`) do the scoring and
  * sorting, and cmdk handles display and keyboard nav only (`shouldFilter={false}`) —
@@ -535,10 +536,25 @@ export function GlobalSearch({
         </Command.List>
 
         <div className="flex items-center justify-between gap-3 border-t border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-2 font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-quaternary)]">
-          <span>
+          {/*
+           * **The count and the scope travel together** (owner report, 2026-09-04).
+           *
+           * The dialog title ("Search this map") is visually hidden for Radix, so the
+           * only place the scope was ever written was the zero-result sentence. A
+           * visitor reading "0 MATCHES" under a palette that names nothing read it as
+           * a broken search rather than as a sample that does not contain the word.
+           * A visible title bar was rejected — it pushes the input down — so the name
+           * joins the number that is already permanent, in every state.
+           *
+           * `scopeName` is the loaded project when there is exactly one; with several
+           * there is no honest single name, so the copy falls back to "this map".
+           */}
+          <span data-testid="global-search-footer-count">
             {isEmptyQuery
               ? t('indexed', { count: totalCorpus })
               : t('matches', { count: totalMatches })}
+            {" · "}
+            {scopeName ?? t('scopeFallback')}
           </span>
           <span className="flex items-center gap-3">
             <span>{t('shortcutMove')}</span>

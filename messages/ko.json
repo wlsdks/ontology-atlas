@@ -840,6 +840,7 @@
       "groupProjectMatch": "프로젝트 · 매치",
       "hub": "허브",
       "project": "프로젝트",
+      "scopeFallback": "이 지도",
       "indexed": "{count} 색인",
       "matches": "{count} 매치",
       "shortcutMove": "↑↓ 이동",

@@ -840,6 +840,7 @@
       "groupProjectMatch": "Project · matches",
       "hub": "Hub",
       "project": "Project",
+      "scopeFallback": "this map",
       "indexed": "{count} indexed",
       "matches": "{count} matches",
       "shortcutMove": "↑↓ move",

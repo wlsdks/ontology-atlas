@@ -360,3 +360,74 @@ describe("GlobalSearch — 스크림 클릭 닫기 계약", () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Footer scope contract (owner report, 2026-09-04).
+ *
+ * The dialog title is visually hidden for Radix, so before this the scope was named
+ * only inside the zero-result sentence; "0 MATCHES" on a sample that simply lacks
+ * the word read as a broken search. The footer is the one line present in every
+ * state, so the corpus name rides along with the count there.
+ */
+describe("GlobalSearch — footer names the searched scope", () => {
+  const nodes: KnowledgeGraphNode[] = [
+    node({ id: "capability:mcp-server", title: "MCP Server", kind: "capability" }),
+    node({ id: "capability:checkout", title: "Checkout", kind: "capability" }),
+  ];
+
+  function footerText(): string {
+    return screen.getByTestId("global-search-footer-count").textContent ?? "";
+  }
+
+  it("names the single loaded project beside the indexed count", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    expect(footerText()).toBe("3 indexed · Online Store");
+  });
+
+  it("keeps the name beside the match count once a query narrows the list", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[project({ slug: "storefront", name: "Online Store" })]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Search this map" }), {
+      target: { value: "mcp server" },
+    });
+
+    expect(footerText()).toBe("1 matches · Online Store");
+  });
+
+  it("falls back to \"this map\" when no single project names the scope", () => {
+    render(
+      <GlobalSearch
+        open
+        onOpenChange={() => {}}
+        nodes={nodes}
+        onSelectNode={() => {}}
+        projects={[
+          project({ slug: "storefront", name: "Online Store" }),
+          project({ slug: "atlas", name: "Ontology Atlas" }),
+        ]}
+        onSelectProject={() => {}}
+      />,
+    );
+
+    expect(footerText()).toBe("4 indexed · this map");
+  });
+});
