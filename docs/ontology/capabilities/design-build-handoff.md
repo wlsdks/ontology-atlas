@@ -16,6 +16,10 @@ relation_notes: { elements/design-proof-router: Design Build Handoff uses the ro
 
 The entry contract that routes an Atlas UI change from observable change facts to the smallest proof bundle before implementation begins. It keeps design work tied to what changed, what a person must be able to judge again, and which rendered evidence can prove that outcome.
 
+## Definition
+
+Design Build Handoff is the entry contract that routes an Atlas UI change from observable change facts to the smallest required proof bundle before implementation begins. It keeps design work tied to what changed, what a person must be able to judge again, and which rendered evidence can prove that outcome.
+
 ## Human Outcome
 
 - A person can inspect what an agent actually built instead of reconstructing it from code or trusting an agent's description.
@@ -41,6 +45,18 @@ The entry contract that routes an Atlas UI change from observable change facts t
 ## Extraction Boundary
 
 **extractable in protocol, Atlas-specific in routing data.** The capture-measure-correct loop applies across repositories, but the current change classes, specialist seats, topology instruments, and council thresholds encode Atlas surfaces and must be re-censused before reuse elsewhere.
+
+## Includes
+
+- Routing an observable UI change class, via `pnpm design:route`, to the required proof bundle: baseline capture, build-and-inspect loop, DOM/computed-style/rect measurement, and motion recording.
+- Deciding when a design council with specific specialist seats is required, versus ordinary local visual work.
+- The capture-measure-correct build loop contract itself: baseline, one coherent slice, fresh inspection, correction, repeat, never a whole UI imagined and inspected only at the end.
+
+## Excludes
+
+- Judging whether a specific rendered design is good; the router only decides which proof is required, not whether a change passes.
+- The actual screenshot, DOM-measurement, and motion-recording tooling, owned by the named instruments (Computer Use, the motion-verification protocol) this router selects.
+- The change-class registry's Atlas-specific routing data, which must be re-censused before reuse outside this repository.
 
 ## Copy Contract
 

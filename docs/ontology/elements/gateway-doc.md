@@ -15,3 +15,14 @@ Gateway documentation/marketing page.
 
 - Primary implementation: `src/views/gateway-doc/ui/GatewayDocPage.tsx#GatewayDocPage`
 - Supporting implementation: `src/views/gateway-doc/model/guide-pages.ts#GUIDE_PAGES`
+
+## Includes
+
+- Rendering one page of gateway reading material (`/guide`, `/changelog`) with prose-optimized measure, leading, and section rhythm.
+- Extracting and trimming vault-doc entries (headings, recent-sections) for the guide/changelog content source.
+
+## Excludes
+
+- The persistent gateway nav chrome itself, owned by elements/gateway-chrome.
+- The download page and its demo stage, owned by elements/download.
+- The installed-app docs workbench, a separate dense work surface owned by elements/docs-vault-view.

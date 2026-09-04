@@ -17,3 +17,15 @@ Vault tree/list UI widget. Implementation evidence for capabilities/docs-vault-l
 - Supporting implementation: `src/widgets/docs-vault/ui/DocsVaultBacklinks.tsx#DocsVaultBacklinks`
 - Focused test: `src/widgets/docs-vault/lib/server-doc-content.test.ts#includes root and relative static-export candidates for locale docs routes`
 - Focused test: `src/widgets/docs-vault/lib/server-doc-content.test.ts#encodes path segments without flattening nested slugs`
+
+## Includes
+
+- The document editor (markdown toolbar, mention-relation autocomplete, save with `expectedMtime` conflict detection) and its tree/list navigation.
+- The backlinks panel showing documents referencing the open document.
+- Static-export-compatible content resolution for locale-prefixed docs routes.
+
+## Excludes
+
+- Building the vault manifest or backlink data, owned by elements/docs-vault-entity.
+- The page-level shell and frontmatter block composition, owned by elements/docs-vault-view.
+- The quick-access drawer used for jumping to a document from elsewhere, owned by elements/docs-quick-drawer.

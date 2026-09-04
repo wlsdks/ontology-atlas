@@ -60,3 +60,15 @@ high (0.9): The route, migration, and gate are aligned with the contract and end
 ## Evidence
 
 - Primary implementation: `src/views/agents/ui/AgentsPage.tsx#AgentsPage`
+
+## Includes
+
+- The `/agents/` rail destination: executor list, connection check, app-specific install progress, and MCP connection configuration in one screen.
+- Keeping install/connection progress visible across window close/reopen and gating the MCP configuration panel on an open vault.
+- Enforcing the eight-rail cap and explaining, on the web build, which of these actions require the installed app.
+
+## Excludes
+
+- API keys and workspace settings, which stay in the settings sheet under a separate freeze/highlight policy.
+- The actual ACP session UI once a tool is connected (elements/vault-agent-panel and the acp-chat-panel widget own that).
+- Launching a program on the web build; this destination only explains why it cannot and where to go instead.

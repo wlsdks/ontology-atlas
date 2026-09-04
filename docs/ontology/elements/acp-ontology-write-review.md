@@ -15,3 +15,15 @@ The ACP permission boundary that lets Atlas read tools continue automatically bu
 
 - Primary implementation: `src/features/acp-session/model/atlas-tool-policy.ts#atlasToolMode`
 - Supporting implementation: `src/features/acp-session/model/permission-intent.ts#permissionIntent`
+
+## Includes
+
+- Deciding, per ACP tool call, whether a write pauses on a typed change-review card or continues automatically.
+- Classifying a non-Atlas tool as read-only or as edit/delete/move/execute/unknown by its declared kind, independent of path containment.
+- Offering `allow_once`/`reject_once` on a paused card while withholding `allow_always` for semantic writes.
+
+## Excludes
+
+- Rendering the review card body itself (elements/ontology-change-review formats the typed diff shown on the card).
+- Writing the approved change to vault frontmatter (the MCP write tools and CLI own the actual mutation).
+- Deciding which relation types or values are valid (mcp/src/schema.mjs owns that).

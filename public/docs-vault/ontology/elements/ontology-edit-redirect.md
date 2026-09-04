@@ -17,3 +17,14 @@ created_by: "agent:unknown"
 - Supporting implementation: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.tsx#buildTopologyWorkbenchRedirect`
 - Focused test: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.test.tsx#redirects the bare compatibility route to the map`
 - Focused test: `src/views/ontology-edit-redirect/ui/OntologyEditRedirectPage.test.tsx#translates a canonical ?node= deep-link to the contextual editor`
+
+## Includes
+
+- Translating legacy `/ontology/edit` and `/ontology/studio` node/mode/edit/via/review query parameters into `/topology`'s workbench-edit state.
+- Redirecting client-side (required by the static export) without ever becoming a navigation destination or write surface itself.
+
+## Excludes
+
+- The relation-editing surface it redirects into, owned by elements/ontology-meaning-editor.
+- The `/ontology` (non-edit) legacy redirect, a separate route owned by elements/ontology-redirect.
+- Resolving whether the deep-linked node actually exists in the live vault: that check happens on `/topology` (HomePage), not here.

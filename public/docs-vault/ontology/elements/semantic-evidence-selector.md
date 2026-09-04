@@ -32,6 +32,8 @@ The bounded analyzer role that selects claim-relevant Markdown and reStructuredT
 - `mcp/src/analyze-adversarial.test.mjs`: mixed policy, selected deprecation, hostile, and over-bound fail-closed controls.
 - Primary implementation: `mcp/src/analyze/semantic-evidence.mjs#collectSemanticEvidence`
 - Supporting implementation: `mcp/src/analyze/semantic-evidence.mjs#semanticEvidenceTrust`
+- Focused test: `mcp/src/analyze.test.mjs#README semantic evidence reserves purpose, architecture, and feature prose`
+- Focused test: `mcp/src/analyze.test.mjs#decorative-only README evidence does not invent a repository purpose`
 
 ## Verification
 

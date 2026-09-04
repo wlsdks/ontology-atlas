@@ -15,3 +15,14 @@ Full node detail opt-in panel widget.
 
 - Primary implementation: `src/widgets/full-detail-a1/ui/FullDetailA1.tsx#FullDetailA1Props`
 - Supporting implementation: `src/widgets/full-detail-a1/lib/full-detail-groups.ts#buildFullDetailGroups`
+
+## Includes
+
+- The opt-in "expanded datasheet" full node detail surface: header, engraved metric strip, four direction groups, reach sentence, and agent handoff row.
+- Sharing one `groups`/`reach` fact model (`buildFullDetailGroups`, reach lib) between its two entry points: the topology datasheet's full-detail action and the legacy `/ontology` node detail.
+
+## Excludes
+
+- The default compact node popover shown on a map click; full detail is an explicit escalation from it, never the click default (forbidden.md).
+- Building the reach/group facts from the graph itself, owned by the referenced `lib/full-detail-groups` and `lib/full-detail-reach` modules as computation, consumed here as rendering.
+- Editing node meaning or relations, owned by elements/ontology-meaning-editor.

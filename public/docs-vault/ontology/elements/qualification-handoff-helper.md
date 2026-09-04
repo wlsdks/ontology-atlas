@@ -19,6 +19,19 @@ The qualification handoff helper is the private source-checkout transport that v
 - `.agents/skills/ontology-bootstrap/scripts/rooted-mcp-read.mjs`
 - Primary implementation: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs#sealCandidate`
 - Supporting implementation: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.mjs#buildHiddenPacket`
+- Focused test: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.test.mjs#schema documents commands, atomic output, quantifiers, and all exit codes`
+- Focused test: `.agents/skills/ontology-bootstrap/scripts/qualification-handoff.test.mjs#derives hidden CQ/evidence boilerplate, joins verified evidence, accepts, and releases exact rows`
+
+## Includes
+
+- The private source-checkout transport that seals one exact ontology construction candidate through coverage, isolated hidden/audit join, human acceptance, and bounded release.
+- Defining the file-backed contract for manifest-claim assignment, the seven quality axes, mandatory vs. human-gap-eligible axes, and separate witness/claim/target/diagnostic namespaces.
+
+## Excludes
+
+- Invoking any MCP tool, granting identity or permission, or authoring a meaning judgment: the helper only packages and transports.
+- Writing vault content; release is a bounded call the helper prepares, not a vault mutation it performs.
+- Evaluating the qualification axes themselves, owned by elements/construction-qualification-evaluator.
 
 ## Boundary
 
