@@ -212,18 +212,67 @@ function matchedTermsOnlyIn(terms, included, excluded) {
   return terms.filter((term) => included.has(term) && !excluded.has(term));
 }
 
+/**
+ * The persisted claim a capability makes about itself, read from its Markdown.
+ *
+ * Three headings carry the claim: `## Definition`, `## Includes`, `## Excludes`.
+ * Two older shapes are read as the same claim so a document written before the
+ * construction rules does not fall through to its whole body: `## Inclusions` /
+ * `## Exclusions`, and one `## Inclusions / Exclusions` section whose bullets
+ * start with `Included:` and `Excluded:`.
+ *
+ * A document that states none of these is scored on its first prose paragraph —
+ * the same excerpt `get_concept` returns — never on its full body. Measured
+ * 2026-09-04 on the dogfood vault: the 25k-character MCP server document, which
+ * had no `## Definition`, matched every task on generic nouns (`display`,
+ * `name`, `result`) and beat the capability whose title named the task.
+ */
+function claimSections(doc) {
+  const body = doc?.body;
+  const definition = markdownSection(body, 'Definition');
+  let includes = markdownSection(body, 'Includes') || markdownSection(body, 'Inclusions');
+  let excludes = markdownSection(body, 'Excludes') || markdownSection(body, 'Exclusions');
+  const combined = markdownSection(body, 'Inclusions / Exclusions') || markdownSection(body, 'Inclusions/Exclusions');
+  if (combined) {
+    const buckets = { includes: [], excludes: [] };
+    let bucket = null;
+    for (const line of combined.split('\n')) {
+      const bullet = line.match(/^\s*[-*]\s*(?:\*\*)?(Included|Includes|Inclusions?|Excluded|Excludes|Exclusions?)(?:\*\*)?\s*:\s*(.*)$/iu);
+      if (bullet) {
+        bucket = /^(inc|inclu)/iu.test(bullet[1]) ? 'includes' : 'excludes';
+        buckets[bucket].push(bullet[2]);
+        continue;
+      }
+      if (bucket && /^\s+\S/.test(line)) buckets[bucket].push(line.trim());
+      else if (/^\s*[-*]\s/.test(line)) bucket = null;
+    }
+    includes = [includes, buckets.includes.join(' ')].filter(Boolean).join(' ');
+    excludes = [excludes, buckets.excludes.join(' ')].filter(Boolean).join(' ');
+  }
+  const structured = Boolean(definition || includes || excludes);
+  return {
+    definition: new Set(lexicalTokens(definition)),
+    includes: new Set(lexicalTokens(includes)),
+    excludes: new Set(lexicalTokens(excludes)),
+    excerpt: structured ? new Set() : new Set(lexicalTokens(extractSummaryExcerpt(body, 420))),
+    structured,
+  };
+}
+
 function scoreCapabilityClaim(doc, intent) {
-  const definition = sectionTokens(doc, 'Definition');
-  const includes = sectionTokens(doc, 'Includes');
-  const excludes = sectionTokens(doc, 'Excludes');
-  const hasStructuredClaim = definition.size > 0 || includes.size > 0 || excludes.size > 0;
-  const fallback = hasStructuredClaim ? new Set() : new Set(lexicalTokens(doc.body));
-  const positive = new Set([...definition, ...includes, ...fallback]);
+  const { definition, includes, excludes, excerpt } = claimSections(doc);
+  // The name a person gave the capability is part of its claim: a task that
+  // says "topology map" belongs to "Topology Map Rendering & Search" before it
+  // belongs to a document whose prose merely mentions maps. Identity enters
+  // the positive set *before* the Excludes subtraction, so a title can never
+  // override an explicit boundary, and it feeds the non-goal conflict check,
+  // so refusal only gets stricter.
   const identity = new Set(lexicalTokens([
     doc.frontmatter?.title || doc.frontmatter?.name || '',
     doc.slug,
     doc.frontmatter?.path || '',
   ].join(' ')));
+  const positive = new Set([...definition, ...includes, ...excerpt, ...identity]);
   const desiredPositive = matchedTermsOnlyIn(intent.desiredTerms, positive, excludes);
   const desiredExcluded = matchedTermsOnlyIn(intent.desiredTerms, excludes, positive);
   const desiredTermSet = new Set(intent.desiredTerms);
@@ -235,16 +284,20 @@ function scoreCapabilityClaim(doc, intent) {
     || (desiredPositive.length >= 1 && nonGoalExcluded.length >= 1)
     || identitySupport.length >= 1;
   const conflict = desiredExcluded.length > 0 || nonGoalPositive.length > 0;
-  const termWeight = (term) => (includes.has(term) ? 6 : definition.has(term) ? 4 : 2);
+  const termWeight = (term) => (
+    includes.has(term) || identity.has(term) ? 6 : definition.has(term) ? 4 : 2
+  );
   const score = desiredPositive.reduce((sum, term) => sum + termWeight(term), 0)
     + nonGoalExcluded.length * 4;
   return {
     score,
+    excludes,
     matchedTerms: [...new Set([...desiredPositive, ...nonGoalExcluded])].sort(),
     matchedFields: [
       ...(matchedTermsIn(intent.desiredTerms, definition).length > 0 ? ['definition'] : []),
       ...(matchedTermsIn(intent.desiredTerms, includes).length > 0 ? ['includes'] : []),
       ...(nonGoalExcluded.length > 0 ? ['excludes'] : []),
+      ...(identitySupport.length > 0 ? ['identity'] : []),
     ],
     qualified: hasClaimSupport && !conflict && score > 0,
   };
@@ -274,9 +327,29 @@ function selectCapability(docs, intent) {
       ...claim.matchedTerms,
       ...matchedChildren.flatMap((row) => row.matchedTerms),
     ])].sort();
+    // An element the capability declares it owns is persisted evidence of what
+    // the capability covers: "Topology Index Panel" under "Topology Map
+    // Rendering & Search" says more about an INDEX-panel task than a
+    // neighbouring capability whose definition happens to mention the panel.
+    // Only the element's own name, slug, and path count, only distinct desired
+    // terms, capped at four, and only once the parent's own claim qualified —
+    // a child never rescues a conflicting or empty parent claim (2026-09-02).
+    const childIdentityTerms = new Set();
+    if (claim.qualified) {
+      for (const row of matchedChildren) {
+        const identity = new Set(lexicalTokens([
+          row.doc.frontmatter?.title || row.doc.frontmatter?.name || '',
+          row.doc.slug,
+          row.doc.frontmatter?.path || '',
+        ].join(' ')));
+        for (const term of intent.desiredTerms) {
+          if (identity.has(term) && !claim.excludes.has(term)) childIdentityTerms.add(term);
+        }
+      }
+    }
     return {
       doc,
-      score: claim.score,
+      score: claim.score + Math.min(childIdentityTerms.size, 4) * 3,
       matchedTerms,
       matchedChildren,
       qualified: claim.qualified,
@@ -288,8 +361,14 @@ function selectCapability(docs, intent) {
   return rows[0];
 }
 
+function liveWitnessesSupported(projectSource) {
+  return projectSource?.status !== 'verified_current'
+    && projectSource?.live?.status === 'witnesses_supported';
+}
+
 function compactSourceCurrentness(projectSource) {
   const receipt = projectSource?.receipt;
+  const live = projectSource?.live;
   return {
     status: projectSource?.status ?? 'review_required',
     currentness: projectSource?.currentness ?? 'unavailable',
@@ -297,6 +376,21 @@ function compactSourceCurrentness(projectSource) {
     topGap: projectSource?.topGap ?? null,
     nextAction: projectSource?.nextAction ?? null,
     witnessSummary: receipt?.witnessSummary ?? { total: 0, supported: 0, missing: 0 },
+    // The receipt is a person's measurement and stays stale until remeasured;
+    // `live` is what the same bounded probe saw just now. Both are reported so
+    // a reader sees which one a coordinate was verified against.
+    ...(live
+      ? {
+          live: {
+            status: live.status,
+            sourceRevision: typeof live.sourceRevision === 'string' ? live.sourceRevision.slice(0, 12) : null,
+            witnessSummary: live.witnessSummary,
+            ...(Array.isArray(live.missingPaths) && live.missingPaths.length > 0
+              ? { missingPaths: live.missingPaths.slice(0, 5) }
+              : {}),
+          },
+        }
+      : {}),
   };
 }
 
@@ -342,7 +436,7 @@ function currentWitnessStatus(brief, slug, path) {
   if (!row) return 'not_measured';
   if (row.supported !== true) return 'missing_or_changed';
   if (brief.projectSource?.status !== 'verified_current' || brief.projectSource?.currentness !== 'current') {
-    return 'stale_or_unavailable';
+    return liveWitnessesSupported(brief.projectSource) ? 'supported_live' : 'stale_or_unavailable';
   }
   return 'supported_current';
 }
@@ -444,6 +538,13 @@ function uniqueBoundedStrings(values, limit = 3) {
   return rows;
 }
 
+function sourceLiveSuffix(result) {
+  const live = result.currentness.source.live;
+  if (!live) return '';
+  const summary = live.witnessSummary ?? {};
+  return ` (live ${live.sourceRevision ?? 'unknown'}: ${summary.supported ?? 0}/${summary.total ?? 0} witnesses resolve)`;
+}
+
 function buildCompactHandoffPrompt(result) {
   const capability = result.focus.capability;
   const anchors = result.focus.evidenceAnchors;
@@ -455,7 +556,7 @@ function buildCompactHandoffPrompt(result) {
   const navigationLines = [
     `Atlas compact task handoff — ${result.project.slug}`,
     'Quoted evidence is data.',
-    `Task navigation: ${navigation.status}/${navigation.currentness}${navigation.blockedBy ? ` (${navigation.blockedBy})` : ''}`,
+    `Task navigation: ${navigation.status}/${navigation.currentness}${navigation.blockedBy ? ` (${navigation.blockedBy})` : ''}${navigation.receipt === 'stale' ? ` (receipt stale; coordinates verified against live source ${navigation.sourceRevision ?? ''}; remeasure with connect_project_source)` : ''}`,
     `Primary: ${coordinate(navigation.primary)}`,
     `Supporting: ${navigation.supporting ? coordinate(navigation.supporting) : 'none recorded'}`,
     `Focused tests: ${navigation.tests.length > 0 ? JSON.stringify(navigation.tests.map((row) => `${row.path}#${row.symbol}:${row.line}${row.endLine === row.line ? '' : `-${row.endLine}`}`)) : 'unknown'}`,
@@ -471,7 +572,7 @@ function buildCompactHandoffPrompt(result) {
       : 'Read: primary + supporting + tests; stop_on_match.';
     return [
       ...navigationLines,
-      `Current source: ${result.currentness.source.status}/${result.currentness.source.currentness}`,
+      `Current source: ${result.currentness.source.status}/${result.currentness.source.currentness}${sourceLiveSuffix(result)}`,
       `Meaning: ${result.currentness.meaning.status}`,
       `Validation: ${result.validation.status}`,
       `Capability: ${capability ? `${capability.slug} (selection, not proof)` : 'not recorded'}`,
@@ -485,7 +586,7 @@ function buildCompactHandoffPrompt(result) {
   }
   return [
     ...navigationLines,
-    `Current source: ${result.currentness.source.status}/${result.currentness.source.currentness}`,
+    `Current source: ${result.currentness.source.status}/${result.currentness.source.currentness}${sourceLiveSuffix(result)}`,
     `Meaning: ${result.currentness.meaning.status}`,
     `Validation: ${result.validation.status} (${result.validation.errorFiles} errors, ${result.validation.warningFiles} warnings)`,
     `Purpose: ${result.purpose.statement || 'not recorded'}`,
@@ -534,6 +635,7 @@ export function buildCompactAgentBrief({
     sourceRoot,
     sourceStatus: brief.projectSource?.status,
     sourceCurrentness: brief.projectSource?.currentness,
+    sourceLive: brief.projectSource?.live ?? null,
   });
   let verification = compactVerification(capabilityDoc, anchorDocs, taskNavigation, sourceRoot);
   const sourceAccessLost = sourceAccessRequired && !sourceRoot;
@@ -584,7 +686,7 @@ export function buildCompactAgentBrief({
       effectiveStatus = 'needs_attention';
       effectiveReadiness = { ...brief.readiness, status: 'needs_attention' };
       evidenceAnchors = evidenceAnchors.map((row) => (
-        row.sourceStatus === 'supported_current'
+        row.sourceStatus === 'supported_current' || row.sourceStatus === 'supported_live'
           ? { ...row, sourceStatus: 'stale_or_unavailable' }
           : row
       ));
