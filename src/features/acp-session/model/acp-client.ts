@@ -37,6 +37,21 @@ export interface AcpChoice {
   id: string;
   name: string;
   description: string | null;
+  /**
+   * `_meta.kind` as the adapter stated it, or null when it stated none.
+   *
+   * ⚠️ **The safety verdict reads this, so dropping it here would silently disarm the verdict**
+   * (2026-09-05). Both shipped adapters now declare a mode's class — `auto_review` for one that
+   * approves in the person's place, `full_access` for one that stops asking — and that class does
+   * **not** travel on the name. `mode-safety.ts` owns what the values mean.
+   */
+  metaKind?: string | null;
+  /**
+   * The adapter's `_meta` verbatim. Kept whole because the next field we need will arrive inside it,
+   * and a parser that keeps only the fields it already understands has to be edited before anyone
+   * can even see what changed.
+   */
+  meta?: Record<string, unknown> | null;
 }
 
 /**
@@ -82,10 +97,13 @@ function toChoices(raw: unknown, listKey: string): ParsedChoices {
       dropped += 1;
       continue;
     }
+    const meta = asPlainRecord(row._meta);
     out.push({
       id,
       name: typeof row.name === 'string' && row.name.trim() ? row.name : id,
       description: typeof row.description === 'string' ? row.description : null,
+      metaKind: typeof meta?.kind === 'string' ? meta.kind : null,
+      meta,
     });
   }
   return { choices: out, dropped };

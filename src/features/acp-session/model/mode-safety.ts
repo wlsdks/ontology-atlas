@@ -26,11 +26,20 @@
  */
 
 /**
- * Requires the bare minimum for the verdict — it discriminates on `id` alone. So the caller's wider
- * type (`AcpChoice`) can go in and come back out unchanged.
+ * Requires the bare minimum for the verdict. So the caller's wider type (`AcpChoice`) can go in and
+ * come back out unchanged.
  */
 export interface AcpModeChoice {
   id: string;
+  /**
+   * The adapter's own `_meta.kind` for this mode, or null/absent when it states none.
+   *
+   * ⚠️ **This is the second axis, and it outranks the id** (2026-09-05). The id was the only thing
+   * to go on until the adapters started declaring what class a mode belongs to; now they say it
+   * outright, and the class travels on the kind rather than the name — `claude-agent-acp` calls its
+   * self-approving mode `auto` while `codex-acp` calls the same class `agent`.
+   */
+  metaKind?: string | null;
 }
 
 /**
@@ -51,15 +60,54 @@ const GATE_REMOVING = new Set([
    * left open ("our gate measurements were taken on the old versions"). In the installed app this
    * line was briefly removed, a session opened on `agent`, and it was asked to *"write hello to
    * /tmp/atlas-gate-probe.txt"* — the file appeared (contents `hello`) with **no permission card at
-   * all**. This adapter offers only two modes (`Read-only`, `Agent`). `Read-only` is safer for
-   * direct files but does not guard MCP writes, so mode classification alone never makes Codex
-   * eligible for in-app chat (`runtime-gate.ts`).
+   * all**. `Read-only` is safer for direct files but does not guard MCP writes, so mode
+   * classification alone never makes Codex eligible for in-app chat (`runtime-gate.ts`).
+   *
+   * ⚠️ *"This adapter offers only two modes (`Read-only`, `Agent`)"* stood here until 2026-09-05 and
+   * was never true. Read from the pinned distribution, `codex-acp` 1.6.2 builds **three**
+   * (`read-only`, `agent`, `agent-full-access`), and 1.9.0 builds the same three while renaming them
+   * (`Ask for approval`, `Approve for me`, `Full access`) and adding the kinds below.
    */
   'agent',
+
+  /*
+   * `auto` — claude's, and it is advertised to **every** session (`claude-agent-acp` 0.74.0
+   * `buildAvailableModes()`, read 2026-09-05: *"Auto" / "Claude handles permission decisions"*).
+   * The adapter's own source records that a mode-level auto-approval never reaches the ACP client as
+   * `session/request_permission`, so Atlas would draw no card at all — the gate-removing class
+   * exactly. It also carries `_meta.kind: "auto_review"`, so the rule below would catch it anyway;
+   * the id is listed because a measured name belongs in the measured list.
+   *
+   * Its neighbour is worth knowing: `AUTO_MODE_FALLBACK = "acceptEdits"`. Selecting `auto` on a model
+   * without `supportsAutoMode` silently moves the session to `acceptEdits` — already on this list —
+   * and announces it only through a `current_mode_update` notification (`use-acp-session.ts`).
+   */
+  'auto',
 ]);
+
+/**
+ * Kinds **measured to remove the gate**, whatever the mode is called.
+ *
+ * Where they come from (read from the shipped distributions, 2026-09-05):
+ * `claude-agent-acp` 0.74.0 `dist/session-mode.js` attaches `standard` / `plan` / `auto_review`
+ * (`auto`) / `full_access` (`bypassPermissions`), and `codex-acp` 1.9.0 `dist/index.js` attaches
+ * `standard` (`read-only`) / `auto_review` (`agent`) / `full_access` (`agent-full-access`).
+ *
+ * `auto_review` says the adapter approves in the person's place; `full_access` says it stops asking.
+ * Either way the request never arrives and the screen has nothing to show, so **the kind is decisive
+ * even when the id is on the safe list below** — a future `read-only` that reviews for you is not
+ * read-only in the sense this screen promises.
+ */
+const GATE_REMOVING_KINDS = new Set(['auto_review', 'full_access']);
 
 /** Modes measured not to widen direct adapter access inside an already guarded runtime. */
 const VERIFIED_SAFE = new Set(['default', 'read-only', 'readonly', 'plan', 'ask']);
+
+/**
+ * Kinds measured to leave the gate standing. A mode whose kind is **not** here is unverified even
+ * when its id is — the same stance as the ids, applied to the axis the adapters added.
+ */
+const VERIFIED_SAFE_KINDS = new Set(['standard', 'plan']);
 
 const normalize = (id: unknown): string =>
   typeof id === 'string' ? id.trim().toLowerCase() : '';
@@ -85,9 +133,12 @@ export function partitionModes<T extends AcpModeChoice>(
       dropped += 1;
       continue;
     }
-    if (GATE_REMOVING.has(key)) continue;
+    const kind = normalize(mode?.metaKind);
+    if (GATE_REMOVING.has(key) || GATE_REMOVING_KINDS.has(kind)) continue;
     offered.push(mode);
-    if (!VERIFIED_SAFE.has(key)) unverified.push(mode.id);
+    // A stated kind is judged too: an unmeasured one makes an otherwise measured id unverified.
+    const measured = VERIFIED_SAFE.has(key) && (kind.length === 0 || VERIFIED_SAFE_KINDS.has(kind));
+    if (!measured) unverified.push(mode.id);
   }
   return { offered, unverified, dropped };
 }

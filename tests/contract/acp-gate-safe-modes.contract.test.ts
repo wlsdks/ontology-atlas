@@ -28,14 +28,30 @@ import {
  * ⚠️ This does not block strict modes. `dontAsk` **refuses** anything not
  * pre-approved, so it fails safe and is allowed through. The one criterion is
  * **"does it let things through without asking".**
+ *
+ * ## What changed on 2026-09-05
+ *
+ * Two things, both read out of the shipped distributions rather than guessed.
+ *
+ * ① `auto` is now on the hidden side. It was let through here because it *sounded* like a
+ * classifier that still asks. `claude-agent-acp` 0.74.0 advertises it to **every** session
+ * (*"Auto" / "Claude handles permission decisions"*) and its own source records that a mode-level
+ * auto-approval never reaches the ACP client as `session/request_permission` — so Atlas would draw
+ * no card at all. That is the one criterion above, failed.
+ *
+ * ② The adapters now state a mode's class in `_meta.kind`, and the class does not travel on the
+ * name: `claude-agent-acp` calls the self-approving mode `auto` and `codex-acp` calls it `agent`.
+ * `mode-safety.ts` therefore reads the kind and lets it outrank the id in both directions, which
+ * only works while `readSessionChoices` actually carries `_meta` through — pinned below.
  */
 
-function choice(id: string, name = id): AcpChoice {
-  return { id, name, description: null };
+function choice(id: string, name = id, metaKind: string | null = null): AcpChoice {
+  return { id, name, description: null, metaKind, meta: metaKind ? { kind: metaKind } : null };
 }
 
 describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다', () => {
   it('실측에서 실제로 온 claude 모드 목록을 그대로 넣어 본다', () => {
+    // The 0.69-era list, kept because a person resuming an older adapter still meets it.
     const measured = [
       choice('auto', 'Auto'),
       choice('default', 'Manual'),
@@ -48,8 +64,25 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
 
     expect(kept).not.toContain('bypassPermissions');
     expect(kept).not.toContain('acceptEdits');
+    // `auto` joined the hidden side on 2026-09-05 — see the block at the top of this file.
+    expect(kept).not.toContain('auto');
     // What fails safe, and what is useful, stays.
-    expect(kept).toEqual(['auto', 'default', 'plan', 'dontAsk']);
+    expect(kept).toEqual(['default', 'plan', 'dontAsk']);
+  });
+
+  it('claude-agent-acp 0.74.0 이 실제로 짓는 목록을 그대로 넣어 본다', () => {
+    /*
+     * Read from `dist/session-mode.js` `buildAvailableModes()` on 2026-09-05. `bypassPermissions`
+     * is appended only under `ALLOW_BYPASS`, and `dontAsk` is gone from the built list entirely.
+     */
+    const kept = keepGateSafeModes([
+      choice('default', 'Manual', 'standard'),
+      choice('acceptEdits', 'Accept edits', 'standard'),
+      choice('plan', 'Plan', 'plan'),
+      choice('auto', 'Auto', 'auto_review'),
+      choice('bypassPermissions', 'Bypass permissions', 'full_access'),
+    ]).map((m) => m.id);
+    expect(kept).toEqual(['default', 'plan']);
   });
 
   it('실측에서 실제로 온 codex 모드 목록을 그대로 넣어 본다', () => {
@@ -79,8 +112,9 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
      */
     const choices = readSessionChoices({
       modes: {
-        currentModeId: 'auto',
+        currentModeId: 'default',
         availableModes: [
+          { id: 'default', name: 'Manual' },
           { id: 'auto', name: 'Auto' },
           { id: 'bypassPermissions', name: 'Bypass Permissions' },
         ],
@@ -91,7 +125,7 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
       },
     });
 
-    expect(choices.modes.map((m) => m.id)).toEqual(['auto']);
+    expect(choices.modes.map((m) => m.id)).toEqual(['default']);
     // Models are unrelated to safety and pass through untouched — the filter is not over-reaching.
     expect(choices.models.map((m) => m.id)).toEqual(['gpt-5.6-sol[xhigh]']);
     expect(choices.currentModelId).toBe('gpt-5.6-sol[xhigh]');
@@ -102,6 +136,27 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
     const choices = readSessionChoices({ modes: { currentModeId: 'default', availableModes: [] } });
     expect(choices.models).toEqual([]);
     expect(choices.currentModelId).toBeNull();
+  });
+
+  it('`_meta` 가 필터까지 실제로 도착한다 — 종류가 이름을 이긴다', () => {
+    /*
+     * The kind rule is only worth anything while the parser carries `_meta` from the wire to the
+     * verdict. Feeding a raw session response with an id on the measured-safe list and a kind that
+     * contradicts it pins both halves at once: drop the parse and this goes green-for-nothing.
+     */
+    const choices = readSessionChoices({
+      modes: {
+        currentModeId: 'read-only',
+        availableModes: [
+          { id: 'read-only', name: 'Ask for approval', _meta: { kind: 'auto_review' } },
+          { id: 'plan', name: 'Plan', _meta: { kind: 'plan' } },
+        ],
+      },
+    });
+
+    expect(choices.modes.map((m) => m.id)).toEqual(['plan']);
+    // The raw block survives the trip, so the next field the adapter adds is already on hand.
+    expect(choices.modes[0]?.meta).toEqual({ kind: 'plan' });
   });
 
   it('모양이 깨진 줄은 버린다', () => {
