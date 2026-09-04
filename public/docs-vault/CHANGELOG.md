@@ -45,7 +45,7 @@
 
 ---
 
-## 2026-09-05 · Unreleased: changes since v1.0.5
+## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
 **Fixed**: The in-app Claude chat no longer offers the Auto mode that decides permissions by itself; a mode is judged by the class its adapter states, not only its name, and when the tool moves a conversation into a mode that accepts edits without asking, the screen says so and never offers that mode back.
 
