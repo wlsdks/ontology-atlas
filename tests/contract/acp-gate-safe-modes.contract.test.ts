@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -164,5 +167,57 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
       models: { availableModels: [{ name: '이름만 있고 id 가 없다' }, 'not-an-object', null] },
     });
     expect(choices.models).toEqual([]);
+  });
+});
+
+/**
+ * **The transcription is pinned to the version it was transcribed from.**
+ *
+ * Every array in this file was read by hand out of a shipped tarball. That is the only way to get
+ * the real shape, and it is also how a fixture quietly becomes a fiction: the registry gets bumped,
+ * the adapter changes what it builds, and these arrays keep passing while describing a version
+ * nobody runs any more. This repository has the failure on record already, in the words the
+ * permission tests use: *a gate that passes on invented input is not a gate*. A stale transcription
+ * is invented input that used to be real.
+ *
+ * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
+ * app actually launches from. A bump turns this red, and the person doing the bump has to open the
+ * new tarball and re-transcribe rather than discover the drift in an installed session.
+ */
+const TRANSCRIBED_FROM = {
+  claude: '@agentclientprotocol/claude-agent-acp@0.74.0',
+  /** The pinned launch, whose mode list carries no `_meta` at all. */
+  codexLaunch: '@agentclientprotocol/codex-acp@1.6.2',
+  /** The reviewed-but-not-launched upstream, whose kinds the tables above transcribe. */
+  codexReviewed: '@agentclientprotocol/codex-acp@1.9.0',
+};
+
+const REPO_ROOT = join(import.meta.dirname, '..', '..');
+
+function registryLaunchPackage(id: string): string | null {
+  const registry = JSON.parse(
+    readFileSync(join(REPO_ROOT, 'src-tauri/src/acp-registry.json'), 'utf8'),
+  ) as { agents: Array<{ id: string; launch?: { package?: string } }> };
+  return registry.agents.find((agent) => agent.id === id)?.launch?.package ?? null;
+}
+
+describe('transcribed adapter versions', () => {
+  it('reads the claude modes from the version the app actually launches', () => {
+    expect(registryLaunchPackage('claude-acp')).toBe(TRANSCRIBED_FROM.claude);
+  });
+
+  it('reads the codex modes from the pinned launch, not from whatever is newest', () => {
+    expect(registryLaunchPackage('codex-acp')).toBe(TRANSCRIBED_FROM.codexLaunch);
+  });
+
+  it('reads the codex kinds from the reviewed upstream the pin was measured against', () => {
+    /*
+     * `RUNTIME_LAUNCH_PINS` is not exported, and that file is the authority on which upstream was
+     * reviewed, so the identity is read out of its source the way `acp-runtime-gate.contract.test.ts`
+     * reads the session-start code. Reviewing a newer upstream without re-reading its `AgentMode`
+     * table is the drift this catches.
+     */
+    const source = readFileSync(join(REPO_ROOT, 'scripts/build-acp-registry.mjs'), 'utf8');
+    expect(source).toContain(`reviewedUpstreamPackage: '${TRANSCRIBED_FROM.codexReviewed}'`);
   });
 });

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -333,5 +336,33 @@ describe('permission options — the app picks the one that ends with this call'
     const exitPlan = CASES.find((entry) => entry.tool.startsWith('ExitPlanMode (plan, auto'));
     expect(exitPlan?.options.map((option) => option.optionId)).toContain(OPTION_ID.exitPlanAuto);
     expect(exitPlan?.options.filter((option) => option.kind === 'allow_always')).toHaveLength(2);
+  });
+});
+
+/**
+ * **The option arrays are pinned to the version they were transcribed from.**
+ *
+ * Every array above was read by hand out of `dist/permissions/options/*.js` in one shipped tarball.
+ * That is the only way to get the real shape, and it is also how a fixture quietly becomes a
+ * fiction: the registry gets bumped, the builders change, and these arrays keep passing while
+ * describing a version nobody runs. The rule this file measures would then be measured against
+ * nothing. `ExitPlanMode` in particular grew its `exit-plan-clear-*` entries between releases.
+ *
+ * So the version is asserted against `src-tauri/src/acp-registry.json`, the committed snapshot the
+ * app launches from: a bump turns this red and the arrays get re-read.
+ */
+const TRANSCRIBED_FROM = '@agentclientprotocol/claude-agent-acp@0.74.0';
+
+describe('transcribed adapter version', () => {
+  it('reads the option builders from the version the app actually launches', () => {
+    const registry = JSON.parse(
+      readFileSync(
+        join(import.meta.dirname, '..', '..', 'src-tauri/src/acp-registry.json'),
+        'utf8',
+      ),
+    ) as { agents: Array<{ id: string; launch?: { package?: string } }> };
+    expect(registry.agents.find((agent) => agent.id === 'claude-acp')?.launch?.package).toBe(
+      TRANSCRIBED_FROM,
+    );
   });
 });
