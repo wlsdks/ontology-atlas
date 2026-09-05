@@ -187,8 +187,18 @@ roadmap promise. It summarizes current product behavior documented in the
   dry-run writes, bounded traversal, blast radius, commit preflight,
   vault-scoped git snapshots, agent handoff. [CLI reference](cli/README.md).
 - **The workbench surfaces, all reading one folder** — Map, Architecture, Docs,
-  Insights, Projects, Agents, and Git History. Architecture is additive: the
-  existing Git destination, change badge, and keyboard path remain available.
+  Library, Insights, Projects, Agents, MCP, and Git History. Architecture is
+  additive: the existing Git destination, change badge, and keyboard path remain
+  available.
+- **Project documents of any format gather in the Library.** A PDF, a
+  spreadsheet, a Word file or a page you pulled from a wiki is kept under
+  `sources/` byte for byte, and a wiki page written from it cites the source on
+  every fact. The same template is handed to whoever writes the page, a person
+  or the in-app agent, and `wiki-validate` names the lines that do not fit.
+- **External MCP servers attach to the in-app chat.** The MCP screen lists the
+  servers your coding tools already know and lets you add your own; a switch per
+  server, off by default, a token only in the keychain, and the list handed to
+  the agent at the start of a conversation. Atlas never sits in that path.
 - **Insights Flow can become an evidence-bound presentation in the installed app.**
   The request remains visible and is never auto-sent. After the person sends it,
   only a current ACP turn whose tool record proves Atlas-only full-body reads can
@@ -288,13 +298,25 @@ Docs is the same folder without the canvas: preview or edit Markdown, inspect th
 frontmatter that becomes the graph, follow backlinks, and jump back to the same
 concept on the map. There is no imported copy to synchronize.
 
+The **Library** is where the documents *around* the code live: the plan, the
+design file, the export from the tool the team used before. **Add files** copies
+them in as they are; **Find documents** proposes candidates from the folders you
+have connected, by name and size only, and copies nothing until you approve;
+**Compile** starts one conversation with the in-app agent that reads the sources
+and writes a wiki page in the shape `wiki/_template.md` holds, one permission
+card per write. Each source says whether it has been written up, whether the
+page went stale after the source changed, and each page says which template
+lines it breaks.
+
 ### 2. Connect your agent
 
 ![The current Agents screen in the installed macOS app, listing the coding tools found on this computer with their readiness, the option to show the rest, and the three-step MCP connection flow for the selected folder](docs/assets/readme/agent-connect.png)
 
-Atlas finds the coding agents already installed on this computer, lets you open
-the supported ones beside the map, and keeps MCP setup scoped to the selected
-folder.
+Two screens share the work. **Agents** finds the coding tools already installed
+on this computer, checks them, and opens a conversation beside the map. **MCP**
+holds the folder's own connection, the setup for each client, and the
+Connectors that attach external MCP servers to that conversation. Both read in
+one 960px column, so a row you read across and act on at the end stays short.
 
 - **Connect once, with visible scope.** The flow shows which folder and client
   config it will change. The resulting files are plain text you can inspect.
@@ -423,10 +445,13 @@ touched, and the screen says so.
 
 ![The current Insights screen in the installed macOS app, with its Do next, Inventory, Connections, Boundaries, Recent changes and Flow tabs, three review priorities, an agent-readiness bar, a repair queue, and the fixes that need no code](docs/assets/readme/graph-insights.png)
 
-Insights opens on **Do next**, which is a work queue rather than a dashboard:
-the few things worth reviewing today, how much of the folder an agent can
-actually rely on, the repair queue behind that number, and the fixes that need
-no code at all — two names that may mean the same thing, a concept with no home.
+Insights opens on four measurements above the tabs: how many concepts and of
+which kinds, how many relations and of which types, the folder's health in
+words rather than a score, and the last twelve weeks of change. Below them
+**Do next** is one row per kind of finding with its count, and opening a row
+shows the documents behind it; the counts add up to the title, always. Where
+every missing back-link can be repaired from two facts already on disk, one
+sheet names each file it would touch, and nothing is written until you apply.
 The other tabs answer the standing questions: Inventory for what the folder is
 made of, Connections and Boundaries for how it hangs together, Recent changes
 and Flow for what moved. In the installed app, every Analysis tab can seat its
@@ -573,7 +598,7 @@ where people and agents judge the same facts.
 | Structure | Freeform notes and links | Vendor-defined types | Project → domain → capability → element, documents, typed relations |
 | Graph questions | Note traversal | Graph engine | Blast radius, reachability, cycles, paths, centrality, health |
 | Evidence from code | Hand-authored | Corpus ingestion | Bounded read-only proposals; nothing lands until approval |
-| Human surface | Notes app | Vendor console | Local Map, Architecture, Docs, Insights, Projects, Agents, and contextual History |
+| Human surface | Notes app | Vendor console | Local Map, Architecture, Docs, Library, Insights, Projects, Agents, MCP, and contextual History |
 
 If you only need an agent to remember conversations, a notes tool is lighter.
 Atlas is for modeling the product your code implements. The argument and its
@@ -624,8 +649,8 @@ right proof. Curated, not exhaustive.
 
 ### Three kinds of file, and only one is the graph
 
-A folder also holds the project documents a team already has, and they are not
-nodes:
+A folder also holds the project documents a team already has. They gather in the
+Library, and they are not nodes:
 
 | Kind | Where | What makes it that | In the graph? |
 |---|---|---|---|
