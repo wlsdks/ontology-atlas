@@ -2462,6 +2462,26 @@
      */
     --chrome-tile-label-max: 9rem;
     --chrome-tile-label-gap: 0.5rem;
+    /*
+     * **The expanded rail has one width** (2026-09-05 audit, F14).
+     *
+     * Shrink-to-fit made the four tiles 122 / 104 / 161 / 141px, and because the rail
+     * is anchored to the right edge that put their **left** edges 56px apart — a
+     * stack whose ragged edge encodes nothing but which label happens to be longer.
+     * `design.md`, "Dimensional regularity": repeated controls of one role take one
+     * size step, and variation must carry hierarchy or state.
+     *
+     * The value is **derived, not measured**, so it cannot be outgrown: the label is
+     * already clipped at `--chrome-tile-label-max`, so tile + gap + that cap is the
+     * widest an expanded tile can ever be, in any locale. Setting the floor to the
+     * ceiling makes every expanded tile exactly that width by construction, and a
+     * longer translation changes nothing. The cost is 27px of hover-state width over
+     * the widest label today; the tile centres its content, so a short label reads as
+     * a centred pill rather than a left-heavy one.
+     */
+    --chrome-tile-expanded-min: calc(
+      var(--chrome-tile-size) + var(--chrome-tile-label-gap) + var(--chrome-tile-label-max)
+    );
     /* `active` (selected/in-progress) indicator for ChromeTile/ChromeChip — adhering to the single-hue principle using only indigo, differing only in alpha. */
     --chrome-active-surface: var(--color-indigo-a12);
     --chrome-active-border: var(--color-indigo-a40);
@@ -2914,7 +2934,21 @@
     --topology-v2-label-project: #d4b478;
     --topology-v2-label-domain: #b8b8c1;
     --topology-v2-label-capability: #84848c;
-    --topology-v2-label-element: #6a6a73; /* Guardian follow-up B: 2.76:1 → 3.16:1 (AA-large) — element labels only appear at max zoom but still meet the contrast lower bound */
+    /*
+     * 2026-09-05: `#6a6a73` measured **3.69:1** on `--topology-v2-canvas-bg-near`,
+     * and the "AA-large" the old comment claimed does not exist at this size —
+     * `LABEL_FONT_SIZE.element` is 9.5px, while the large-text rule starts at
+     * 18.66px bold / 24px regular. An element label is a word someone reads, so it
+     * owes WCAG 1.4.3's 4.5:1.
+     *
+     * The gateway's `#9a9aa4` (7.09:1) was not promoted here: it would put element —
+     * the quietest tier — **above** capability's 5.33:1 and invert the ladder the map
+     * uses to say which tier you are looking at. `#7e7e87` is the dimmest step that
+     * clears the text floor (4.92:1) while staying under capability, so the fix pays
+     * the floor without spending the hierarchy. Gate:
+     * `tests/contract/topology-ink-contrast.contract.test.ts`.
+     */
+    --topology-v2-label-element: #7e7e87;
     /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
        long element title (file path) from clipping the right edge / colliding
        with its horizontal neighbor (Design Guardian readability rejection). */
@@ -4459,6 +4493,18 @@ html[data-gateway-stage] {
  *
  * Since it's `min-height`, controls **actually grow and push each other** — unlike expanding transparent hit areas (`touch-hit-expand`), they can't overlap. That was the reason for rejecting that approach first: among 38 places, **21 were less than 12px apart from neighbors** (EN/KO toggle 1px), so invisible hit areas overlapped and caused **missed touches**.
  */
+/*
+ * The expanded rail tile's shared width — **unlayered on purpose**, exactly like
+ * `.atlas-touch-floor` below and for the same reason. `ChromeTile`'s labelled shape
+ * carries `min-w-[var(--chrome-tile-size)]`, a Tailwind utility, and layer order
+ * beats specificity: written inside `@layer base` this rule would be built, shipped,
+ * and silently overridden. Rationale for the value: `--chrome-tile-expanded-min`.
+ */
+.chrome-rail:hover .chrome-tile-labelled,
+.chrome-rail:focus-within .chrome-tile-labelled {
+  min-width: var(--chrome-tile-expanded-min);
+}
+
 @media (pointer: coarse) {
   .atlas-touch-floor {
     min-height: var(--touch-target-min);

@@ -85,9 +85,17 @@ const TILE_CLASS =
 const DISABLED_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none disabled:hover:border-[color:var(--chrome-border)] disabled:hover:bg-[color:var(--chrome-surface)] disabled:hover:text-[color:var(--color-text-tertiary)]';
 
+/**
+ * `chrome-tile-labelled` is the hook for the **expanded width**, which cannot live in
+ * this string: it applies only while a `.chrome-rail` ancestor is hovered or holds
+ * focus, and that ancestor is a plain class rather than a Tailwind `group`. The rule
+ * and the reason for the value live beside `--chrome-tile-expanded-min` in
+ * `app/globals.css`; without it the four rail tiles were 122 / 104 / 161 / 141px and
+ * their left edges 56px apart (measured 2026-09-05).
+ */
 const LABELLED_TILE_CLASS = TILE_CLASS.replace(
   'size-[var(--chrome-tile-size)]',
-  'h-[var(--chrome-tile-size)] min-w-[var(--chrome-tile-size)] px-[calc((var(--chrome-tile-size)-var(--chrome-icon))/2-1px)] text-label tracking-label',
+  'chrome-tile-labelled h-[var(--chrome-tile-size)] min-w-[var(--chrome-tile-size)] px-[calc((var(--chrome-tile-size)-var(--chrome-icon))/2-1px)] text-label tracking-label',
 );
 
 const ACTIVE_CLASS =

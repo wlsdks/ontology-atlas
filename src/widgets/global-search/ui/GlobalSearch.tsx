@@ -485,7 +485,13 @@ export function GlobalSearch({
                       onSelectNode(node);
                       closeAndClear();
                     }}
-                    className="flex cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
+                    // A result row is a control, so it stands on the control ladder rather than
+                    // on whatever its padding happens to add up to: `px-3 py-2` measured
+                    // **38px**, a step that does not exist (24/28/32/36/40/44), and it stayed
+                    // 38 under a coarse pointer because nothing here read a height token
+                    // (measured 2026-09-05). `--control-h-lg` is 40 on a mouse and the coarse
+                    // block already redefines it to 44, so one reference pays both.
+                    className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-text-tertiary)]">
                       {kindLabel(node.kind)}
@@ -529,7 +535,9 @@ export function GlobalSearch({
                     onSelectProject(project);
                     closeAndClear();
                   }}
-                  className="flex cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
+                  // Same ladder height as the concept rows above — the two result kinds are one
+                  // row role and must not differ by which block introduced them.
+                  className="flex min-h-[var(--control-h-lg)] cursor-pointer items-center gap-2 rounded-chip px-3 py-2 text-body-lg text-[color:var(--color-text-secondary)] aria-selected:bg-[color:var(--color-indigo-a14)] aria-selected:text-[color:var(--color-text-primary)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-indigo-a20)] bg-[color:var(--color-indigo-a06)] px-1.5 py-[1px] font-mono text-caption uppercase tracking-[var(--tracking-caps-10)] text-[color:var(--color-indigo-text-strong)]">
                     {project.isHub ? t('hub') : t('project')}

@@ -1223,7 +1223,13 @@ export function TopologyV2DetailPanel({
               shape: "link",
               size: "sm",
               className:
-                "ml-[34px] mt-0.5 font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
+                // `atlas-touch-floor`, not `touch-hit-expand`: measured 302×24 under a
+                // coarse pointer (2026-09-05), and the row above it is `mt-0.5` — two
+                // pixels away. A transparent 44px hit area there would reach 18px into
+                // that row and a later element in DOM order steals the earlier one's
+                // tap, which is the trade `globals.css` already rejected for the other
+                // 21 dense places. Growing the box actually pushes its neighbours apart.
+                "atlas-touch-floor ml-[34px] mt-0.5 font-mono text-label text-[color:var(--topology-v2-panel-text-tertiary)] hover:text-[color:var(--topology-v2-panel-text-secondary)]",
             })}
           >
             {expanded ? labels.groupShowFewer : `+${overflow} ${labels.groupShowMore}`}

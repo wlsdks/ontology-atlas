@@ -157,7 +157,7 @@ const MountedGlobalSearch = dynamic(
 const importFullDetailA1 = () => import("@/widgets/full-detail-a1");
 type FullDetailA1Component = Awaited<ReturnType<typeof importFullDetailA1>>["FullDetailA1"];
 import { GestureHint } from "@/widgets/gesture-hint";
-import { AGENT_DOCK_INSET_SURFACE_CLASS, ChromeChip, ChromeTile, LiveAnnouncer, Surface, Tooltip, WidgetErrorFallback, controlClass, useToast } from "@/shared/ui";
+import { AGENT_DOCK_INSET_SURFACE_CLASS, CHROME_CHIP_COMPACT_BELOW_XL, ChromeChip, ChromeTile, LiveAnnouncer, Surface, Tooltip, WidgetErrorFallback, controlClass, useToast } from "@/shared/ui";
 import { ErrorBoundary } from "@/shared/ui/error-boundary";
 import { MOTION } from "@/shared/motion";
 import { usePrefersReducedMotion } from "@/shared/lib/use-prefers-reduced-motion";
@@ -4585,7 +4585,15 @@ function HomePageImpl() {
                           // 1365 (measured: 35px intrusion at 1280). The aria-label and
                           // tooltip preserve the meaning, and the first-run card's CTA
                           // exposes the same action with a permanent label.
-                          className="max-2xl:[&_[data-chip-kbd]]:hidden max-xl:[&_[data-chip-label]]:hidden"
+                          // ⚠️ The width half of the fold is **not optional** (2026-09-05
+                          // audit, F15). Hiding the label alone left `px-3.5` around a
+                          // 16px icon, so below `xl` this chip measured **44×36** while
+                          // every other icon-only control in the same lane measured
+                          // 36×36 — one role, two sizes, and the difference recorded
+                          // only which file collapsed it. `CHIP_COMPACT_BOX` is the same
+                          // box `ChromeChip`'s own `compact` prop applies; the two paths
+                          // now end in the same rectangle.
+                          className={`max-2xl:[&_[data-chip-kbd]]:hidden max-xl:[&_[data-chip-label]]:hidden ${CHROME_CHIP_COMPACT_BELOW_XL}`}
                         >
                           {t('controls.switchToMyDataLabel')}
                         </ChromeChip>

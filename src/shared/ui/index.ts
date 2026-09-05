@@ -53,7 +53,7 @@ export {
 } from './topology-v2-kind-glyph';
 export { TabBar } from './tab-bar';
 export { ChromeTile } from './chrome-tile';
-export { ChromeChip, CHROME_STATUS_CHIP_CLASS } from './chrome-chip';
+export { ChromeChip, CHROME_STATUS_CHIP_CLASS, CHROME_CHIP_COMPACT_BELOW_XL } from './chrome-chip';
 export { GithubMark } from './github-mark';
 export { XMark } from './x-mark';
 export { CompactCopyButton } from './compact-copy-button';
