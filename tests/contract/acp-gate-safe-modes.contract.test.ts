@@ -185,11 +185,15 @@ describe('작업 방식 목록 — 관문을 없애는 것은 안 내놓는다',
  * new tarball and re-transcribe rather than discover the drift in an installed session.
  */
 const TRANSCRIBED_FROM = {
-  claude: '@agentclientprotocol/claude-agent-acp@0.74.0',
+  claude: '@agentclientprotocol/claude-agent-acp@0.75.0',
   /** The pinned launch, whose mode list carries no `_meta` at all. */
   codexLaunch: '@agentclientprotocol/codex-acp@1.6.2',
-  /** The reviewed-but-not-launched upstream, whose kinds the tables above transcribe. */
-  codexReviewed: '@agentclientprotocol/codex-acp@1.9.0',
+  /**
+   * The reviewed-but-not-launched upstream, whose kinds the tables above transcribe. 1.10.0 was
+   * inspected on 2026-09-05 and its `AgentMode.ts` is byte-identical to 1.9.0, so the transcription
+   * below still describes it.
+   */
+  codexReviewed: '@agentclientprotocol/codex-acp@1.10.0',
 };
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..');

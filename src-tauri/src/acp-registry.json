@@ -14,7 +14,7 @@
       "cli": "claude",
       "launch": {
         "kind": "npx",
-        "package": "@agentclientprotocol/claude-agent-acp@0.74.0",
+        "package": "@agentclientprotocol/claude-agent-acp@0.75.0",
         "args": []
       }
     },
@@ -132,7 +132,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@tencent-ai/codebuddy-code@2.144.0",
+        "package": "@tencent-ai/codebuddy-code@2.145.0",
         "args": [
           "--acp"
         ]
@@ -273,7 +273,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "dirac-cli@0.5.6",
+        "package": "dirac-cli@0.5.9",
         "args": [
           "--acp"
         ]
@@ -291,7 +291,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "droid@0.212.0",
+        "package": "droid@0.213.0",
         "args": [
           "exec",
           "--output-format",
@@ -347,7 +347,7 @@
       "cli": "copilot",
       "launch": {
         "kind": "npx",
-        "package": "@github/copilot@1.0.82",
+        "package": "@github/copilot@1.0.83",
         "args": [
           "--acp"
         ]
@@ -415,7 +415,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@xai-official/grok@1.0.18",
+        "package": "@xai-official/grok@1.0.21",
         "args": [
           "agent",
           "stdio"
@@ -471,7 +471,7 @@
       "cli": null,
       "launch": {
         "kind": "npx",
-        "package": "@kilocode/cli@7.5.13",
+        "package": "@kilocode/cli@7.5.14",
         "args": [
           "acp"
         ]

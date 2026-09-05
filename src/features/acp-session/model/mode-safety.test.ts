@@ -211,7 +211,7 @@ describe('measured adapter — claude-agent-acp 0.74.0', () => {
 });
 
 /**
- * `codex-acp` 1.9.0, read on 2026-09-05. It is **not** the pinned launch snapshot (1.6.2 is), but its
+ * `codex-acp` 1.9.0, read on 2026-09-05 (1.10.0, read the same day, ships the identical mode table). It is **not** the pinned launch snapshot (1.6.2 is), but its
  * modes are pinned here because the id set did not change while the meaning did: the same
  * `read-only` id now sends `workspaceWrite`, and `agent` gained the `auto_review` kind. The mode
  * filter is not what keeps that adapter out — `runtime-gate.ts` and the launch pin are.
