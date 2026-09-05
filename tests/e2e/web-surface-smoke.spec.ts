@@ -356,6 +356,32 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     destinationText: /맥 앱을 받으면/,
     alsoHereNamesSettingsSection: true,
   },
+  {
+    // **"Connectors"** (registered 2026-09-05) — external MCP servers a person lets the
+    // in-app agent reach.
+    //
+    // Two abilities are app-only here and **neither is the feature itself**: reading
+    // `~/.claude.json` to find what is already registered needs a program on this computer,
+    // and keeping a token needs an OS keychain. The list lives in the vault folder, which a
+    // browser holds, so adding and removing connectors work here — and the card has to say
+    // that, or it repeats the 2026-08-01 falsehood of calling a working path unavailable.
+    name: "연결 도구 — 웹은 이미 등록된 MCP 서버를 찾아 주지 못한다",
+    url: "/ko/topology/",
+    open: async (page) => {
+      await page.getByTestId("first-run-starter-open").click();
+      await page.getByTestId("vault-guide-pick-existing").click();
+      await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("connectors-panel").waitFor({ timeout: 15_000 });
+    },
+    needsVault: true,
+    card: "connectors-discovery-unavailable",
+    // ⚠️ The card **does not name the browser** — `surface-naming-ratchet` counts strings that
+    // do, and this sentence is true wherever it renders, so it states the fact instead: a
+    // program on this computer is what reads those files.
+    reason: /이 컴퓨터에서 도는 프로그램이 있어야 하고[\s\S]*토큰을 담아 둘 자리도 여기에는 없습니다/,
+    destination: "connectors-web-get-app",
+  },
 ];
 
 test.describe("웹 스모크 ③ 정직한 강등", () => {
