@@ -43,13 +43,18 @@ test("찾았지만 없는 이름 목록 — 손가락·키보드·숫자가 모�
   await seedFirstRunSeen(page);
   await stubDirectoryPicker(page, SEED);
 
-  await page.goto("/ko/topology/?e2e=1&guides=off", { waitUntil: "domcontentloaded" });
+  await page.goto("/ko/topology/?e2e=1&guides=off");
+  await page.waitForLoadState("networkidle");
   await page.getByTestId("first-run-starter-open").click();
+  await expect(page.getByTestId("vault-guide-sheet")).toBeVisible();
   await page.getByTestId("vault-guide-pick-existing").click();
+  // The picked folder is persisted only once the starter has gone; navigating before
+  // that lands the next route on an empty session (measured under the static export,
+  // which reloads faster than the dev server and made this a CI-only failure).
+  await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 20_000 });
 
-  await page.goto("/ko/ontology/insights/?tab=unmatched&guides=off", {
-    waitUntil: "domcontentloaded",
-  });
+  await page.goto("/ko/ontology/insights/?tab=unmatched&guides=off");
+  await page.waitForLoadState("networkidle");
   const list = page.getByTestId("unmatched-list");
   await expect(list, "찾았지만 없는 이름 목록이 그려지지 않았다").toBeVisible({
     timeout: 30_000,
