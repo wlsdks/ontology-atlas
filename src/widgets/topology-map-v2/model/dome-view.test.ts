@@ -13,7 +13,7 @@ import {
   DOME_PITCH_DEFAULT,
   DOME_PITCH_MAX,
   DOME_PITCH_MIN,
-  DOME_NODE_R,
+  DOME_NODE_PX,
   DOME_PLANE,
   domeEgoWorldBounds,
   domeFocusYaw,
@@ -155,8 +155,9 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
      */
     runtime.entryArmed = false;
     const BASE_R = 10;
-    updateDomeFrame(runtime, NODES as unknown as Array<{ id: string; kind: DomeViewKind; x: number; y: number }>, () => BASE_R);
-    const camera = cam(37.5, -18.25, 0.85);
+    const CAM_SCALE = 0.85;
+    updateDomeFrame(runtime, NODES as unknown as Array<{ id: string; kind: DomeViewKind; x: number; y: number }>, () => BASE_R, 0, CAM_SCALE);
+    const camera = cam(37.5, -18.25, CAM_SCALE);
     for (const n of NODES) {
       const off = runtime.frame.get(n.id)!;
       const direct = projectDomeCoord(model, model.coords.get(n.id)!, runtime.yaw, runtime.pitch);
@@ -164,14 +165,11 @@ describe("dome-view — 프레임 맵은 worldToScreen 과 등가다 (드로우/
       const want = worldToScreen(camera, 1512, 900, direct.wx, direct.wy);
       expect(via.x).toBeCloseTo(want.x, 9);
       expect(via.y).toBeCloseTo(want.y, 9);
-      // s is a radius multiplier — base × s = the hero dot radius
-      // (NODE_R × 2.1 × unit × perspective). The project is clamped to 1.1× so its
-      // compass-cross glyph does not span the screen.
-      const expected =
-        n.kind === "project"
-          ? Math.min(DOME_NODE_R[n.kind] * 2.1 * model.unit * direct.s, 1.1 * BASE_R)
-          : DOME_NODE_R[n.kind] * 2.1 * model.unit * direct.s;
-      expect(off.s * BASE_R).toBeCloseTo(expected, 9);
+      // `s` is a radius multiplier, and base × s × cameraScale is what the draw
+      // paints — so the drawn radius is `DOME_NODE_PX[kind] × perspective` SCREEN
+      // pixels, whatever the zoom. That is the whole point of the table: fitting
+      // the cone bigger must buy spacing, not ink.
+      expect(off.s * BASE_R * CAM_SCALE).toBeCloseTo(DOME_NODE_PX[n.kind] * direct.s, 9);
       expect(off.a).toBe(1);
       expect(off.u).toBeGreaterThanOrEqual(0);
       expect(off.u).toBeLessThanOrEqual(1);

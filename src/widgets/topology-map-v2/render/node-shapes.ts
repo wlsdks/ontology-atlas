@@ -216,6 +216,23 @@ export interface NodeShapeDrawState {
    * mid-rotation.
    */
   detail?: number;
+  /**
+   * 3D view — **the rim's floor against depth fog**, ≥ 1. At 1 (the default) the
+   * result is pixel-identical to before.
+   *
+   * Depth fog multiplies the whole node, rim included, and bottoms out at 0.09.
+   * Measured on the sample vault at 1920 (2026-09-05): the median node rim stood
+   * at 1.15 : 1 against the background beside it, 117 of 125 nodes were under
+   * 3 : 1, and 92 were under 1.5 : 1 — a hundred shapes whose edge you cannot
+   * see. The caller passes `max(1, DOME_RIM_FOG_FLOOR / fog)` here and the
+   * outline is drawn at that share of its unfogged alpha, overriding the
+   * far-side detail fade as well: a mark with no visible edge is not a mark.
+   *
+   * The fill, the depth shading, the halo, the line-width attenuation, the
+   * perspective size and the draw order all still carry depth, so this costs the
+   * cue nothing it was the only carrier of.
+   */
+  rimAlphaScale?: number;
 }
 
 /** Pure descriptor for render style only; the kind→silhouette mapping is invariant. */
@@ -649,6 +666,7 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
     glyphStyle,
     depthShade = 0,
     detail = 1,
+    rimAlphaScale = 1,
   } = state;
 
   const { lineOnly, lineWidthScale } = glyphStyleDescriptor(glyphStyle);
@@ -723,13 +741,18 @@ export function draw(ctx: CanvasRenderingContext2D, state: NodeShapeDrawState, t
    * contract rests on this stroke.
    */
   const strokeFade = lineOnly ? 1 : detail;
-  if (strokeFade >= 0.999) {
+  // The rim floor outranks the far-side fade (`rimAlphaScale` doc-block): the
+  // fade may take a supplementary stroke away, but not the edge that says a node
+  // is there. With `rimAlphaScale` at 1 this is `entryAlpha × strokeFade`, the
+  // previous expression exactly.
+  const rimAlpha = Math.min(1, entryAlpha * Math.max(strokeFade, rimAlphaScale));
+  if (Math.abs(rimAlpha - entryAlpha) < 1e-6) {
     ctx.strokeStyle = stroke;
     ctx.lineWidth = lineWidth * lineWidthScale;
     ctx.stroke();
-  } else if (strokeFade > 0.01) {
+  } else if (rimAlpha > 0.01) {
     const prevAlpha = ctx.globalAlpha;
-    ctx.globalAlpha = prevAlpha * strokeFade;
+    ctx.globalAlpha = rimAlpha;
     ctx.strokeStyle = stroke;
     ctx.lineWidth = lineWidth * lineWidthScale;
     ctx.stroke();

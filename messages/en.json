@@ -512,7 +512,7 @@
       "reason": "all of it comes from real documents"
     },
     "readout": {
-      "projectUnit": "project",
+      "conceptUnit": "concepts",
       "domainUnit": "domains",
       "tier_spine": "Domains only",
       "tier_circuit": "Down to capabilities",

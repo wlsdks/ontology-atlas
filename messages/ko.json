@@ -512,7 +512,7 @@
       "reason": "전부 진짜 문서에서 나왔어요"
     },
     "readout": {
-      "projectUnit": "프로젝트",
+      "conceptUnit": "개념",
       "domainUnit": "도메인",
       "tier_spine": "도메인까지 보기",
       "tier_circuit": "역량까지 보기",
