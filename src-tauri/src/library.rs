@@ -267,15 +267,16 @@ fn write_source_bytes(root_path: &str, relative_path: &str, bytes: &[u8]) -> Res
     crate::agent_setup::write_entry_bytes_atomically(&parent, &file_name, bytes, 0o666)
 }
 
+/// The same write on a target without POSIX descriptor operations.
+///
+/// Windows has no `openat`/`O_NOFOLLOW`/`renameat`, so the escape check happens on the
+/// path instead: `resolve_write_target_inside` canonicalises the nearest existing
+/// ancestor and refuses anything that resolves outside the folder. That is the same
+/// helper `write_vault_text_file` already uses on this target, so imported bytes and
+/// written Markdown are bounded by one rule rather than two.
 #[cfg(not(unix))]
 fn write_source_bytes(root_path: &str, relative_path: &str, bytes: &[u8]) -> Result<(), String> {
-    let root = canonical_root(root_path)?;
-    let relative = crate::normalize_relative_path(relative_path)?;
-    let target = root.join(&relative);
-    let parent = target
-        .parent()
-        .ok_or_else(|| "import target must have a parent directory".to_string())?;
-    fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    let target = crate::resolve_write_target_inside(root_path, relative_path)?;
     fs::write(&target, bytes).map_err(|err| err.to_string())
 }
 
@@ -529,10 +530,21 @@ pub fn reveal_vault_file(root_path: String, relative_path: String) -> Result<(),
 
     #[cfg(not(target_os = "macos"))]
     {
+        // A **code**, not a sentence, for the same reason `vault-root-rejected:` is one:
+        // composing human-readable copy here traps the translation in Rust, and the
+        // screen already turns a rejected reveal into its own toast. Windows and Linux
+        // reach this arm; nothing is launched on either.
         let _ = path;
-        Err("Finder reveal is only available on macOS".into())
+        Err(REVEAL_UNSUPPORTED.into())
     }
 }
+
+/// Returned when this platform has no reveal-in-file-manager path Atlas will use.
+///
+/// `#[cfg]`-scoped to the arm that returns it: on macOS nothing reads this, and an
+/// unconditional constant would be dead code there rather than a boundary.
+#[cfg(not(target_os = "macos"))]
+pub(crate) const REVEAL_UNSUPPORTED: &str = "reveal-unsupported-on-this-platform";
 
 #[cfg(test)]
 mod tests {
@@ -576,6 +588,32 @@ mod tests {
         for name in ["index.ts", "README.md", "Cargo.toml", "data.json"] {
             assert!(!discovery_accepts_file(name), "{name} is not a document");
         }
+    }
+
+    /**
+     * The cfg split is a build-time fact, so the test asserts what this build actually
+     * compiled rather than what the source says. On unix the descriptor writer exists and
+     * is what `write_source_bytes` reaches; elsewhere the path-checked writer is. Either
+     * way the same bytes land inside `sources/` and nowhere else, which is the property
+     * the two halves share.
+     */
+    #[test]
+    fn the_platform_writer_lands_inside_sources_and_nowhere_else() {
+        let root = std::env::temp_dir().join(format!("atlas-lib-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join(SOURCES_DIR)).unwrap();
+        let root_path = fs::canonicalize(&root).unwrap().to_string_lossy().to_string();
+
+        write_source_bytes(&root_path, "sources/plan.pdf", b"%PDF-1.7\n").unwrap();
+        assert_eq!(
+            fs::read(root.join("sources/plan.pdf")).unwrap(),
+            b"%PDF-1.7\n".to_vec()
+        );
+
+        // An escape is refused on both halves, by different means and with one outcome.
+        assert!(write_source_bytes(&root_path, "../escaped.pdf", b"x").is_err());
+
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[test]

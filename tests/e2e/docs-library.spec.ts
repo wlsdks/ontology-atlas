@@ -182,9 +182,16 @@ test.describe("the Docs library", () => {
     await expect(wiki.getByRole("button")).toHaveCount(2);
     await expect(wiki).toContainText("Quarter plan");
     await expect(wiki).toContainText("Handover notes");
-    // `handover.md` has no `## Not in sources`, and the row says which rule it missed
-    // using the same code `wiki-validate` prints.
-    await expect(page.getByTestId("docs-library-wiki-off-template")).toContainText("section-order");
+    // The pill says one fixed word. A badge carrying the code changed shape row by row
+    // and asked a reader to learn a vocabulary just to scan the list, so the code moved
+    // off it — and this asserts that it stays off.
+    await expect(page.getByTestId("docs-library-wiki-off-template")).toHaveText("off-template");
+    // Which rule the page missed is a different fact, announced with the row rather than
+    // reachable only by a pointer that hovers. `handover.md` has no `## Not in sources`.
+    await expect(page.getByTestId("docs-library-wiki-wiki/handover")).toHaveAttribute(
+      "aria-description",
+      /section-order/,
+    );
     await expect(page.getByTestId("docs-library-off-template-count")).toBeVisible();
   });
 

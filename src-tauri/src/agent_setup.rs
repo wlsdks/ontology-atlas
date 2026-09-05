@@ -281,6 +281,12 @@ pub(crate) fn write_entry_atomically(
 /// through an already-open parent descriptor, `O_NOFOLLOW` refuses a symlink planted at
 /// the name, and the rename is atomic, so a torn file is never left in a person's folder.
 /// Splitting text off as a thin caller keeps one implementation of that guarantee.
+///
+/// **`#[cfg(unix)]` like its caller**, and the omission broke the Windows build: every
+/// protection named above is a POSIX descriptor operation (`openat`, `O_NOFOLLOW`,
+/// `renameat`), so the body cannot exist on a target without them. Windows takes the
+/// `resolve_write_target_inside` path in `library.rs` instead.
+#[cfg(unix)]
 pub(crate) fn write_entry_bytes_atomically(
     parent: &fs::File,
     file_name: &std::ffi::CStr,

@@ -4300,7 +4300,8 @@
       "transfer": "Traffic goes from the coding agent straight to its provider; Atlas is not in the middle and .ontology-atlas/llm-audit.jsonl does not record it. Every write still stops at your permission card.",
       "compileFailed": "Could not start the agent turn: {reason}",
       "compileWebLimit": "Writing pages needs a coding agent running on this computer, which only the app can start. Reading and editing the pages works here.",
-      "compileWebGetApp": "Get the app"
+      "compileWebGetApp": "Get the app",
+      "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change."
     },
     "find": {
       "title": "Documents in the folders you granted",

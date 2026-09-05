@@ -372,7 +372,7 @@ pub(crate) fn resolve_existing_inside(root_path: &str, relative_path: &str) -> R
 }
 
 #[cfg(not(unix))]
-fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
     let path = resolve_inside(root_path, relative_path)?;
     if path.exists() {
         return ensure_inside_canonical(root_path, &path);

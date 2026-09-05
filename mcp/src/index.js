@@ -4661,10 +4661,13 @@ const TOOLS = [
       properties: {
         paths: {
           type: 'array',
+          maxItems: 50,
           items: { type: 'string', minLength: 1 },
           description:
-            'Vault-relative page paths to judge (`wiki/quarter-plan.md`). Omit to judge every page under `wiki/`. ' +
-            'A path outside `wiki/` is reported as a problem rather than silently skipped.',
+            'Vault-relative page paths to judge (`wiki/quarter-plan.md`). Omit to judge every page under `wiki/`, ' +
+            'which has no cap because the folder decides how many there are. Max 50 when naming them, the same ' +
+            'ceiling `get_concepts.uids` uses: past that, asking for the whole folder is one call instead of a ' +
+            'list somebody has to assemble. A path outside `wiki/` is reported as a problem rather than silently skipped.',
         },
       },
       additionalProperties: false,

@@ -348,6 +348,23 @@ export function LibrarySection({
                     aria-current={active ? "true" : undefined}
                     data-testid={`docs-library-wiki-${page.slug}`}
                     onClick={() => onSelect(page.slug)}
+                    /*
+                     * The pill says one fixed word; **which** rule the page missed is a
+                     * different fact and lives here until the page's own block carries it
+                     * on screen. `aria-description` rather than a bare title alone: a
+                     * screen reader announces it with the row, so the reason is not
+                     * reachable only by a pointer that hovers.
+                     */
+                    aria-description={
+                      verdict && !verdict.ok && verdict.firstProblem
+                        ? t("wiki.offTemplateReason", { code: verdict.firstProblem })
+                        : undefined
+                    }
+                    title={
+                      verdict && !verdict.ok && verdict.firstProblem
+                        ? t("wiki.offTemplateReason", { code: verdict.firstProblem })
+                        : undefined
+                    }
                     className="group relative hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                   >
                     <BookText size={ICON_SIZE.sm} className="flex-none opacity-60" aria-hidden />
