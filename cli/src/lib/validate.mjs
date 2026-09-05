@@ -10,3 +10,4 @@ const validate = await loadMcpModule('validate.mjs');
 /* Only what the CLI actually consumes; the MCP module keeps the full surface. */
 export const suppressParentedExpectedFieldIssues = validate.suppressParentedExpectedFieldIssues;
 export const validateVaultDocument = validate.validateVaultDocument;
+export const suppressLibraryKindIssues = validate.suppressLibraryKindIssues;

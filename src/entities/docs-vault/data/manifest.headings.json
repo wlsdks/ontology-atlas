@@ -12399,6 +12399,36 @@
       "depth": 2,
       "text": "10. Non-goals of this specification",
       "slug": "10-non-goals-of-this-specification"
+    },
+    {
+      "depth": 2,
+      "text": "11. Wiki pages — a project document written up in our shape",
+      "slug": "11-wiki-pages-a-project-document-written-up-in-our-shape"
+    },
+    {
+      "depth": 3,
+      "text": "11.1 Frontmatter",
+      "slug": "111-frontmatter"
+    },
+    {
+      "depth": 3,
+      "text": "11.2 Body — five sections, always, in this order",
+      "slug": "112-body-five-sections-always-in-this-order"
+    },
+    {
+      "depth": 3,
+      "text": "11.3 Citation syntax",
+      "slug": "113-citation-syntax"
+    },
+    {
+      "depth": 3,
+      "text": "11.4 Validation",
+      "slug": "114-validation"
+    },
+    {
+      "depth": 3,
+      "text": "11.5 Example",
+      "slug": "115-example"
     }
   ],
   "ONTOLOGY-CONSTRUCTION-QUALIFICATION": [

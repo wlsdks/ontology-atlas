@@ -1183,9 +1183,17 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Status: RFC (Request for Comments). This is a v2.0 release candidate, not a ratified standard — see §0 RFC status and feedback for the review window and how to comment. This document promotes an already-shipped, already-enforced de-facto schema into a formal specification. v2 makes immutable node uid mandatory; this is",
-      "wordCount": 6437,
-      "updatedAt": "2026-09-01",
-      "linksOut": []
+      "wordCount": 7271,
+      "updatedAt": "2026-09-05",
+      "linksOut": [
+        "src:sources/<path>",
+        "wikilink",
+        "src:sources/plan.pdf",
+        "src:sources/budget.xlsx",
+        "src:sources/orders.csv",
+        "src:sources/spec.docx",
+        "src:sources/log.txt"
+      ]
     },
     {
       "slug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
@@ -4097,6 +4105,55 @@
         "fromSlug": "FOUNDATIONS",
         "context": "The re-executable evaluator packet, categorical verdict, privacy boundary, and representative fixture are specified in **[Ontology Construction Qualification v1]**. For Atlas, the conservative direct-subsumption test is executable prose, not a reasoner claim: both endpoints have th",
         "linkText": "Ontology Construction Qualification v1"
+      }
+    ],
+    "src:sources/<path>": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "nded sentence are deletion (loses information) and the fact list (worse than losing it). ### 11.3 Citation syntax ``` **[src:sources/<path>]** ``` `src:` distinguishes a citation from an ordinary `[[wikilink]]` between documents. **An anchor is required** — \"th",
+        "linkText": "src:sources/<path>"
+      }
+    ],
+    "wikilink": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": ". ### 11.3 Citation syntax ``` [[src:sources/<path>#<anchor>]] ``` `src:` distinguishes a citation from an ordinary `**[wikilink]**` between documents. **An anchor is required** — \"this document says so somewhere\" is not something a reader can check.",
+        "linkText": "wikilink"
+      }
+    ],
+    "src:sources/plan.pdf": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "says so somewhere\" is not something a reader can check. | Anchor | Means | Example | |---|---|---| | `p<n>` | page | `**[src:sources/plan.pdf]**` | | `s<n>` | sheet | `[[src:sources/budget.xlsx#s2]]` | | `s<n>r<n>` | sheet and row | `[[src:sources/budget.xlsx#s2r1",
+        "linkText": "src:sources/plan.pdf"
+      }
+    ],
+    "src:sources/budget.xlsx": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "eck. | Anchor | Means | Example | |---|---|---| | `p<n>` | page | `[[src:sources/plan.pdf#p12]]` | | `s<n>` | sheet | `**[src:sources/budget.xlsx]**` | | `s<n>r<n>` | sheet and row | `[[src:sources/budget.xlsx#s2r14]]` | | `r<n>` | row | `[[src:sources/orders.csv#r89]",
+        "linkText": "src:sources/budget.xlsx"
+      }
+    ],
+    "src:sources/orders.csv": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "[src:sources/budget.xlsx#s2]]` | | `s<n>r<n>` | sheet and row | `[[src:sources/budget.xlsx#s2r14]]` | | `r<n>` | row | `**[src:sources/orders.csv]**` | | `h:<heading-slug>` | heading | `[[src:sources/spec.docx#h:error-handling]]` | | `l<n>` | line | `[[src:sources/log",
+        "linkText": "src:sources/orders.csv"
+      }
+    ],
+    "src:sources/spec.docx": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "rc:sources/budget.xlsx#s2r14]]` | | `r<n>` | row | `[[src:sources/orders.csv#r89]]` | | `h:<heading-slug>` | heading | `**[src:sources/spec.docx]**` | | `l<n>` | line | `[[src:sources/log.txt#l204]]` | ### 11.4 Validation `validateWikiPage` (`mcp/src/wiki-schema.mj",
+        "linkText": "src:sources/spec.docx"
+      }
+    ],
+    "src:sources/log.txt": [
+      {
+        "fromSlug": "ONTOLOGY-ATLAS-SPEC",
+        "context": "/orders.csv#r89]]` | | `h:<heading-slug>` | heading | `[[src:sources/spec.docx#h:error-handling]]` | | `l<n>` | line | `**[src:sources/log.txt]**` | ### 11.4 Validation `validateWikiPage` (`mcp/src/wiki-schema.mjs`, mirrored in `src/shared/lib/wiki-page-schema.ts",
+        "linkText": "src:sources/log.txt"
       }
     ],
     "BACKLOG": [

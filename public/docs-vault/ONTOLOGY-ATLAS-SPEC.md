@@ -676,6 +676,141 @@ v2.0-rc; tracked as a possible N1+ follow-up, not a v2.0-rc requirement).
   implementation is single-user/local-first by design (`.claude/rules/local-first.md`);
   a future collaboration layer would extend, not replace, this document.
 
+## 11. Wiki pages — a project document written up in our shape
+
+A vault holds three kinds of file and **only one is the graph** (decision
+ledger, 2026-09-05). Sections 2–5 define the third kind, the ontology node. This
+section defines the second: the **wiki page**.
+
+| Kind | Where | Identified by | In the graph? |
+|---|---|---|---|
+| Raw source | `sources/**` | any format, kept verbatim | no — a parser MUST read only `.md` |
+| Wiki page | `wiki/**.md` | Markdown with **no `kind:`** | no — `kind:` is what makes a node |
+| Ontology node | anywhere else | `kind:` in frontmatter | yes, and only these |
+
+Raw wins on *what a document said*; a node wins on *what we mean*; a human edit
+wins over an agent compile. A wiki page sits between them: it is a write-up of
+one or more raw sources, every claim tied back to a place inside one of them.
+
+**A wiki page MUST NOT carry `kind:`.** That single absence is what keeps the
+folder out of the graph, and a conformant reader MUST NOT promote a page to a
+node because of its folder, its frontmatter, or its prose.
+
+### 11.1 Frontmatter
+
+| Key | Required | Value |
+|---|---|---|
+| `title` | yes | the page name a person reads |
+| `created_by` | yes | `agent:<runtime>`, `model:<name>`, or `human` |
+| `compiled_at` | yes | ISO-8601 timestamp of the run that produced the text |
+| `sources` | yes | list of vault-relative paths under `sources/`; MAY be empty |
+| `source_hash` | yes | map of those paths to the sha256 of the bytes read; MAY be empty |
+| `status` | yes | `draft` until a person has read it, `reviewed` after |
+| `summary` | yes | one sentence about what the page is about |
+| `describes` | no | ontology slugs the page speaks for; allowed only on a `reviewed` page |
+
+`source_hash` is what lets a page go stale **out loud**: a reader hashes the file
+on disk and compares. Without it, a citation says only "somebody once read
+something with this name."
+
+`describes` on a `draft` is an unapproved claim about the graph and MUST be
+reported (`describes-needs-approval`). A person raises the status; a compiler
+does not.
+
+### 11.2 Body — five sections, always, in this order
+
+```
+## Summary          two or three sentences
+## Facts            bullets; every bullet carries at least one citation
+## Decisions        decisions the sources record
+## Open questions   raised by the sources, not settled by them
+## Not in sources   anything the writer could not ground — here and nowhere else
+```
+
+Empty sections are kept, not dropped. A reader scanning ten pages finds
+"Open questions" in the same place on all ten, and an empty one says *nothing
+open* — which a missing one does not.
+
+`## Not in sources` exists because the alternative homes for an ungrounded
+sentence are deletion (loses information) and the fact list (worse than losing
+it).
+
+### 11.3 Citation syntax
+
+```
+[[src:sources/<path>#<anchor>]]
+```
+
+`src:` distinguishes a citation from an ordinary `[[wikilink]]` between
+documents. **An anchor is required** — "this document says so somewhere" is not
+something a reader can check.
+
+| Anchor | Means | Example |
+|---|---|---|
+| `p<n>` | page | `[[src:sources/plan.pdf#p12]]` |
+| `s<n>` | sheet | `[[src:sources/budget.xlsx#s2]]` |
+| `s<n>r<n>` | sheet and row | `[[src:sources/budget.xlsx#s2r14]]` |
+| `r<n>` | row | `[[src:sources/orders.csv#r89]]` |
+| `h:<heading-slug>` | heading | `[[src:sources/spec.docx#h:error-handling]]` |
+| `l<n>` | line | `[[src:sources/log.txt#l204]]` |
+
+### 11.4 Validation
+
+`validateWikiPage` (`mcp/src/wiki-schema.mjs`, mirrored in
+`src/shared/lib/wiki-page-schema.ts`, run by `ontology-atlas wiki-validate`)
+returns these codes. Wording MAY differ between implementations; **codes MUST
+NOT**.
+
+| Code | Means |
+|---|---|
+| `kind-present` | the page carries `kind:` and would enter the graph |
+| `missing-field:<key>` | a required key is absent |
+| `section-order` | the five sections are not all present in order |
+| `uncited-fact` | a bullet under `## Facts` carries no citation |
+| `bad-citation` | text shaped like a citation the syntax cannot resolve |
+| `citation-target-missing` | a cited path is not in `sources:`, or not in the folder |
+| `describes-needs-approval` | `describes:` on a page that is not `reviewed` |
+
+`wiki/_template.md` is the copy-ready page `init` writes and every writer is
+handed; it is skipped by validation because its own citations name a placeholder.
+
+### 11.5 Example
+
+```md
+---
+title: Quarter plan
+created_by: agent:claude
+compiled_at: 2026-09-05T10:00:00Z
+sources:
+  - sources/plan.pdf
+source_hash:
+  sources/plan.pdf: 3b1f0a…ab
+status: draft
+summary: What the quarter plan commits the team to.
+---
+
+## Summary
+
+The plan names three deliverables and one date.
+
+## Facts
+
+- Three deliverables are named. [[src:sources/plan.pdf#p2]]
+- The date is the last Friday of March. [[src:sources/plan.pdf#p4]]
+
+## Decisions
+
+- Hiring is deferred to the next quarter. [[src:sources/plan.pdf#p6]]
+
+## Open questions
+
+- Who owns the second deliverable?
+
+## Not in sources
+
+- The budget figure people quote in meetings is not in this document.
+```
+
 ---
 
 *This document lives at `docs/ONTOLOGY-ATLAS-SPEC.md` in the

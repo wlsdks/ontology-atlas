@@ -198,6 +198,7 @@ import {
   VAULT_ISSUE_CODE_VALUES,
   isValidVaultTitle,
   validateVaultDocument,
+  suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
 } from './validate.mjs';
 import {
@@ -7212,6 +7213,8 @@ function listConcepts({ kind, domain, since, summary, offset = 0, limit = 100 })
     issuesBySlugForCount.set(slug, [...(issuesBySlugForCount.get(slug) ?? []), ...issues]);
   }
   suppressParentedExpectedFieldIssues(issuesBySlugForCount, docs);
+  // A wiki page carries no `kind:` by contract; the absence is the rule, not a finding.
+  suppressLibraryKindIssues(issuesBySlugForCount);
   for (const issues of issuesBySlugForCount.values()) {
     for (const issue of issues) {
       if (issue.severity === 'error') errorCount += 1;
@@ -10245,6 +10248,7 @@ function validateVaultTool({ repoRoot } = {}) {
    * A single-file check cannot know; this one holds the whole vault.
    */
   suppressParentedExpectedFieldIssues(docIssues, docs);
+  suppressLibraryKindIssues(docIssues);
   const problems = [];
   let errorFiles = 0;
   let warningFiles = 0;

@@ -498,7 +498,7 @@
     ]
   },
   "cli": {
-    "commandCount": 58,
+    "commandCount": 59,
     "commands": [
       "absorb",
       "add",
@@ -557,6 +557,7 @@
       "snapshot",
       "topological-order",
       "validate",
+      "wiki-validate",
       "workspace-brief"
     ]
   }

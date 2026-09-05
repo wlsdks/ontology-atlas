@@ -615,6 +615,30 @@ The goal is not to index every symbol — a source artifact earns a node when it
 helps a person or an agent understand a capability, trace impact, or run the
 right proof. Curated, not exhaustive.
 
+### Three kinds of file, and only one is the graph
+
+A folder also holds the project documents a team already has, and they are not
+nodes:
+
+| Kind | Where | What makes it that | In the graph? |
+|---|---|---|---|
+| Raw source | `sources/**` | any format, kept exactly as it arrived | no — only `.md` reaches the parser |
+| Wiki page | `wiki/**.md` | Markdown with **no `kind:`** | no — `kind:` is what makes a node |
+| Ontology node | anywhere else | `kind:` in frontmatter | yes, and only these |
+
+A wiki page is a write-up of one or more raw sources in one fixed shape: seven
+frontmatter fields including the sha256 of each source it read, five sections in
+a fixed order, and a citation on every fact —
+`[[src:sources/plan.pdf#p12]]`. The shape is the same whoever wrote it, an agent
+or a person, because writers are handed the same template the validator
+enforces: `wiki/_template.md`, written into every new vault by `init`.
+
+```bash
+node $ATLAS wiki-validate .   # 0 = every page fits · 1 = at least one does not
+```
+
+The full contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11.
+
 ## Ontology quality contract
 
 - **There is no vault-wide or project-wide node cap.** Node count is an

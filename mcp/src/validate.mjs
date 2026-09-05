@@ -386,6 +386,33 @@ const CONTAINMENT_KEYS = ['contains', 'capabilities', 'elements', 'domains'];
  * expected fields other than `domain` are untouched: containment establishes a
  * parent, nothing more.
  */
+/**
+ * `missing-kind` is not a defect on a library file — **it is the contract.**
+ *
+ * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
+ * 2026-09-05). A wiki page under `wiki/` MUST NOT carry `kind:`; that absence is what
+ * keeps it out of the map. Warning about it would tell a person to break the one rule
+ * the page has to follow, and once a folder holds twenty pages the warning is twenty
+ * lines of noise in front of the frontmatter problems that are real.
+ *
+ * Only that one code is dropped, and only for that one folder. Everything else a wiki
+ * page can get wrong — malformed frontmatter, an unclosed block — is still reported here,
+ * and whether the page fits its own contract is `wiki-schema.mjs`'s separate answer.
+ */
+function isLibraryPageSlug(slug) {
+  return typeof slug === 'string' && slug.startsWith('wiki/');
+}
+
+/** Drops `missing-kind` from wiki pages, where the absence is the rule. */
+export function suppressLibraryKindIssues(issuesBySlug) {
+  for (const [slug, issues] of issuesBySlug) {
+    if (!isLibraryPageSlug(slug) || !Array.isArray(issues)) continue;
+    const kept = issues.filter((issue) => issue?.code !== 'missing-kind');
+    if (kept.length !== issues.length) issuesBySlug.set(slug, kept);
+  }
+  return issuesBySlug;
+}
+
 export function suppressParentedExpectedFieldIssues(issuesBySlug, docs) {
   const parented = parentedSlugs(docs);
   if (parented.size === 0) return issuesBySlug;
