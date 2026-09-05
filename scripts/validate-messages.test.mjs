@@ -326,7 +326,7 @@ describe('i18n message catalog', () => {
     // sentences, this scans **the whole section-name set**.
     const visibleCopy = [
       JSON.stringify(settings.section),
-      settings.goToAgents,
+      settings.goToMcp,
       settings.agentStatusNoVault,
       settings.agentNoVaultHint,
       settings.mcpProofTitle,
@@ -347,7 +347,12 @@ describe('i18n message catalog', () => {
      * separate the two rows by first character? That they cannot when both start with
      * the same character was the basis for the rename.
      */
-    assert.notEqual(settings.goToAgents[0], settings.section.ai[0]);
+    /*
+     * ⚠️ The signpost row became `goToMcp` on 2026-09-05 (PO council) when it was re-aimed at the
+     * MCP destination. **The locked property is unchanged**: inside the connect group, can the eye
+     * separate the two rows by first character?
+     */
+    assert.notEqual(settings.goToMcp[0], settings.section.ai[0]);
     assert.doesNotMatch(visibleCopy, /\bAgent\b|\bFallback\b|\bclient\b|\bnamespace\b|\breload\b|\brestart\b|graph DB gate/);
   });
 
@@ -749,7 +754,7 @@ describe('i18n message catalog', () => {
      * ⚠️ **The `assert.equal` on `agentNoVaultHint` was removed on 2026-09-05**, for the reason
      * this test's own comments give twice: freezing a sentence takes the gate with it when the
      * sentence changes, and it fires on correct edits. It fired on one — the design council
-     * replaced 「작업공간」 with 「폴더」, which is the vocabulary rule
+     * replaced the Korean word for "workspace" with the word for "folder", which is the vocabulary rule
      * (`user-facing-vocabulary.contract.test.ts`) being followed, not broken.
      *
      * The string stays in `mixedLanguageCopy` below, so what this test is actually for — no
