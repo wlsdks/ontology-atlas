@@ -27,11 +27,17 @@ import {
   useVaultConceptFacts,
   useVaultDocFreshnessIndex,
   useVaultHealth,
+  useVaultUnmatchedAsks,
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
 import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import type { VaultDocumentIssue } from "@/shared/lib/validate-vault-document";
-import { useDataSourceMode, VaultSourceHydrationBoundary, useLocalVault } from "@/entities/vault-session";
+import {
+  useDataSourceMode,
+  VaultSourceHydrationBoundary,
+  useLocalVault,
+  useVaultIdentityScope,
+} from "@/entities/vault-session";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -46,6 +52,9 @@ import {
   parseInsightsTab,
   type InsightsTab,
 } from "../lib/insights-tab-state";
+import { buildUnmatchedBoard } from "../lib/unmatched-board";
+import { useUnmatchedDismissals, writeUnmatchedDismissals } from "../lib/unmatched-dismissals";
+import { UnmatchedTab, type UnmatchedTabLabels } from "./tabs/UnmatchedTab";
 import { computeDomainCapacityRows } from "../lib/domain-capacity";
 import {
   selectInsightsDocumentTitle,
@@ -182,6 +191,7 @@ const RECENT_UPDATES_EVIDENCE_LIMIT = 3;
  */
 const HANDOFF_PAYLOAD_KEY: Record<InsightsTab, keyof InsightsHandoffProse> = {
   "do-next": "tabDoNext",
+  unmatched: "tabUnmatched",
   composition: "tabComposition",
   connections: "tabConnections",
   boundaries: "tabBoundaries",
@@ -196,6 +206,11 @@ interface InsightsBadgeInput {
   totalNodes: number;
   totalEdges: number;
   crossDomainEdges: number;
+  /**
+   * What the vault says, not what this viewer left unhidden. A badge that shrank when
+   * someone dismissed a row would report a preference as a measurement.
+   */
+  unmatchedTotal: number;
 }
 
 /**
@@ -210,6 +225,7 @@ const INSIGHTS_TAB_BADGE: Record<
   (input: InsightsBadgeInput) => string | number | undefined
 > = {
   "do-next": (i) => i.verdictTotal,
+  unmatched: (i) => i.unmatchedTotal,
   composition: (i) => i.totalNodes,
   connections: (i) => i.totalEdges,
   boundaries: (i) => i.crossDomainEdges,
@@ -379,6 +395,44 @@ export function OntologyInsightsPage() {
   const healthRepair = useMemo(
     () => buildVaultHealthRepair(vaultHealth, nodes),
     [vaultHealth, nodes],
+  );
+
+  /*
+   * **What agents asked this folder for and did not get.** `vaultHealth` already walked
+   * these references and kept only `summary.unresolvedEdges`, a number; the board needs
+   * the names behind it. Both readings take the same manifest (`useHealthManifest`), so
+   * the count and the list cannot describe different folders — and the list carries only
+   * that one fact, because missing containment and unplaced concepts already raise the
+   * Do-next badge and must not be counted twice on one screen (2026-08-07 (3)).
+   *
+   * Dismissals are this viewer's, in this browser, scoped to this vault
+   * (`unmatched-dismissals.ts`). They never reach the folder, and they never move
+   * `totalCount` or the tab badge — hiding a row is not fixing one.
+   */
+  const unmatchedAsks = useVaultUnmatchedAsks();
+  const vaultScope = useVaultIdentityScope();
+  const [unmatchedDismissed, setUnmatchedDismissed] = useUnmatchedDismissals(vaultScope);
+  const unmatchedBoard = useMemo(
+    () =>
+      buildUnmatchedBoard({ asks: unmatchedAsks.asks }, unmatchedDismissed),
+    [unmatchedAsks, unmatchedDismissed],
+  );
+  const unmatchedLabels: UnmatchedTabLabels = useMemo(
+    () => ({
+      title: t("unmatched.title"),
+      caption: t("unmatched.caption"),
+      occurrences: (count) => t("unmatched.occurrences", { count }),
+      askedByPrefix: t("unmatched.askedByPrefix"),
+      writtenUnder: (keys) => t("unmatched.writtenUnder", { keys }),
+      dismiss: (name) => t("unmatched.dismiss", { name }),
+      hiddenMarker: (count) => t("unmatched.hiddenMarker", { count }),
+      hiddenNote: (count) => t("unmatched.hiddenNote", { count }),
+      pending: t("unmatched.pending"),
+      footnote: t("unmatched.footnote"),
+      emptyTitle: t("unmatched.emptyTitle"),
+      emptyDescription: t("unmatched.emptyDescription"),
+    }),
+    [t],
   );
 
   // `computeDomainCouplingMatrix` existed with unit tests but had no UI consumer —
@@ -1016,6 +1070,7 @@ export function OntologyInsightsPage() {
                     totalNodes,
                     totalEdges,
                     crossDomainEdges: domainCoupling.crossDomainEdgeCount,
+                    unmatchedTotal: unmatchedBoard.totalCount,
                   })
                 : 0,
               // What an unlabelled number counts — one line, surfaced only on hover and to assistive tech.
@@ -1102,6 +1157,17 @@ export function OntologyInsightsPage() {
                 // The read-only line says *"open your folder and you can finish these here"*, so
                 // the control that does that sits in the same box (2026-08-07, a dead-end CTA).
                 openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
+              />
+            ) : null}
+            {tab === "unmatched" ? (
+              <UnmatchedTab
+                board={unmatchedBoard}
+                // No manifest yet is not "nothing is missing"; the tab says which it is.
+                pending={!unmatchedAsks.manifestRead}
+                onDismiss={(id) => setUnmatchedDismissed(id, true)}
+                onRestoreAll={() => writeUnmatchedDismissals(vaultScope, new Set())}
+                sourceHref={(slug) => buildDocsVaultHref({ slug })}
+                labels={unmatchedLabels}
               />
             ) : null}
             {tab === "composition" ? (

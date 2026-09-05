@@ -16,6 +16,7 @@ describe("parseInsightsTab", () => {
   it("accepts every question tab", () => {
     expect(INSIGHTS_TABS).toEqual([
       "do-next",
+      "unmatched",
       "composition",
       "connections",
       "boundaries",

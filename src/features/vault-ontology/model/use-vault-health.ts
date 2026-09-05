@@ -5,6 +5,8 @@ import { useDataSourceMode, useSampleSource, useLocalVault } from '@/entities/va
 import { resolveStaticVaultSource, type VaultManifest } from '@/entities/docs-vault';
 import {
   computeVaultHealth,
+  unmatchedGraphAsks,
+  type UnmatchedGraphAsk,
   type VaultHealthResult,
 } from '@/entities/knowledge-graph';
 
@@ -31,7 +33,12 @@ function manifestHealth(manifest: VaultManifest): VaultHealthResult {
   return result;
 }
 
-export function useVaultHealth(): VaultHealthResult {
+/**
+ * The manifest the health verdict and its siblings are computed from — one mode
+ * selection, so two readings of the same vault can never disagree about which vault
+ * they read. `null` means there is nothing to read yet.
+ */
+function useHealthManifest(): VaultManifest | null {
   const mode = useDataSourceMode();
   const [sampleSource] = useSampleSource();
   const vault = useLocalVault();
@@ -43,11 +50,55 @@ export function useVaultHealth(): VaultHealthResult {
 
   return useMemo(() => {
     if (mode === 'static') {
-      return manifestHealth(sampleSource === 'storefront' ? storefrontManifest : staticManifest);
+      return sampleSource === 'storefront' ? storefrontManifest : staticManifest;
     }
-    if (localManifestUsable && vault.manifest) {
-      return manifestHealth(vault.manifest);
-    }
-    return computeVaultHealth([]);
+    if (localManifestUsable && vault.manifest) return vault.manifest;
+    return null;
   }, [mode, sampleSource, localManifestUsable, vault.manifest]);
+}
+
+export function useVaultHealth(): VaultHealthResult {
+  const manifest = useHealthManifest();
+  return useMemo(
+    () => (manifest ? manifestHealth(manifest) : computeVaultHealth([])),
+    [manifest],
+  );
+}
+
+/**
+ * **The names this vault was asked for and does not hold.**
+ *
+ * `computeVaultHealth` already walks these references and stops at
+ * `summary.unresolvedEdges`, a number. The insights board needs the names behind that
+ * number, so the same manifest is read again through `unmatchedGraphAsks`. Both readings
+ * take the same mode selection, which is the whole reason `useHealthManifest` exists —
+ * a count and a list that disagree about which vault they describe is the defect this
+ * file's header already records once.
+ */
+export interface VaultUnmatchedAsks {
+  asks: readonly UnmatchedGraphAsk[];
+  /**
+   * Has a manifest actually been read? Without this, an empty list is indistinguishable
+   * from an unread folder, and the screen shows "every name resolves" — the most
+   * reassuring sentence it has — at the one moment it cannot know that.
+   */
+  manifestRead: boolean;
+}
+
+const EMPTY_ASKS: VaultUnmatchedAsks = { asks: [], manifestRead: false };
+const unmatchedCache = new WeakMap<VaultManifest, VaultUnmatchedAsks>();
+
+export function useVaultUnmatchedAsks(): VaultUnmatchedAsks {
+  const manifest = useHealthManifest();
+  return useMemo(() => {
+    if (!manifest) return EMPTY_ASKS;
+    const cached = unmatchedCache.get(manifest);
+    if (cached) return cached;
+    const computed: VaultUnmatchedAsks = {
+      asks: unmatchedGraphAsks(manifest.docs),
+      manifestRead: true,
+    };
+    unmatchedCache.set(manifest, computed);
+    return computed;
+  }, [manifest]);
 }

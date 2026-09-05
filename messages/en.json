@@ -1359,6 +1359,7 @@
       "tabsAriaLabel": "Insights tabs",
       "tab": {
         "do-next": "Do next",
+        "unmatched": "Not held",
         "composition": "Inventory",
         "connections": "Connections",
         "boundaries": "Boundaries",
@@ -1368,9 +1369,24 @@
       },
       "tabCountTitle": {
         "do-next": "Items to fix",
+        "unmatched": "Names this folder does not hold",
         "composition": "Concepts",
         "connections": "Relations",
         "boundaries": "Relations crossing domains"
+      },
+      "unmatched": {
+        "title": "Asked for, not held",
+        "caption": "Each row is a name written into this folder that no concept answers to.",
+        "occurrences": "×{count}",
+        "askedByPrefix": "asked by",
+        "writtenUnder": "written under {keys}",
+        "dismiss": "Hide {name} on this computer",
+        "hiddenMarker": "{count} hidden · show",
+        "hiddenNote": "{count} hidden on this computer. The counts above still say what the folder holds.",
+        "pending": "Loading the graph…",
+        "footnote": "A relation type an agent invents is refused before it reaches a file and is recorded nowhere, so it cannot be listed here.",
+        "emptyTitle": "Every name here resolves",
+        "emptyDescription": "Nothing in this folder references a concept it does not hold."
       },
       "errorAlert": "Could not load the graph: {message}",
       "loading": "Loading the graph…",
@@ -3764,6 +3780,14 @@
       "renameNode": "Renamed a concept",
       "mergeNodes": "Merged two concepts",
       "addRelation": "Linked a relation"
+    },
+    "toolOutcome": {
+      "foundUnit": " found",
+      "foundNone": "nothing found",
+      "running": "running",
+      "done": "done",
+      "failed": "failed",
+      "cancelled": "stopped"
     },
     "workGroup": "Work details · {count} steps",
     "workGroupActive": "Working · {count} steps",

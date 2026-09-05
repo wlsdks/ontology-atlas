@@ -210,11 +210,12 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "Map and ACP writes must both stop on a typed pre-write change review; the map must preview the proposed relation without mutating layout, and ontology writes must never expose allow-always.",
   },
   // Replaced the old three-tab "insights-tabbed-handoff" check (2026-07-27). Insights
-  // has five measured maintenance questions (do next / composition / connections /
-  // boundaries / freshness) plus one agent-written Flow question. Neither a fixed
-  // three-tab dashboard nor a metrics-only five-tab board is the current contract.
-  // What must hold together is the exact six-tab set restorable from the URL, one
+  // has six measured maintenance questions (do next / unmatched / composition /
+  // connections / boundaries / freshness) plus one agent-written Flow question. Neither a
+  // fixed three-tab dashboard nor a metrics-only board is the current contract.
+  // What must hold together is the exact seven-tab set restorable from the URL, one
   // active tabpanel at a time, and an agent handoff matching the current question.
+  // `unmatched` joined on 2026-09-05: names this folder was asked for and does not hold.
   {
     id: "insights-maintenance-board",
     files: [
@@ -227,6 +228,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       [
         "export const INSIGHTS_TABS = [",
         '  "do-next",',
+        '  "unmatched",',
         '  "composition",',
         '  "connections",',
         '  "boundaries",',
@@ -253,7 +255,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "CopyAgentTextButton",
     ],
     reason:
-      "/ontology/insights must keep five measured maintenance tabs plus a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
+      "/ontology/insights must keep six measured maintenance tabs plus a rendered Flow panel with its visible request, person-owned prefill, browser copy fallback, and tab-scoped agent handoff.",
   },
   {
     id: "product-design-operating-system",

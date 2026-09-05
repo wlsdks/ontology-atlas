@@ -1137,6 +1137,45 @@ Forcing pages to remember `shrink-0` actually failed: after fixing one screen, t
 2. **Work area height is `min(content, remaining space)`.** Flex child default (`0 1 auto`) + `min-h-0` expresses this. Using `flex-1` creates a 500px empty gap with no one filling it in short lists. Columns scroll inside only when overflowing.
 3. **The 2-column gate is `xl` (1280)** — enabling 2 columns at `lg` (1024) consumes 600px for the evidence column, crushing the list to 430px and truncating concept names. **Truncated lists are not decision material** (just as truncated diffs are not evidence). 1024–1279 stacks vertically.
 
+### Tab strip tokens (`--tabbar-*`, 2026-09-05)
+
+One underline tab bar serves `/ontology/insights` and the project detail page
+(`src/shared/ui/tab-bar.tsx`), and the docs destination has its own strip of open
+documents. They answer one question — *which of these am I looking at, and is there more
+of them than fits* — so the width that answers the second half is one token.
+
+| Token | Value | What it defines |
+|---|---|---|
+| `--tabbar-underline` | 2px | Active-tab underline thickness. The only state marker: no pill, no fill, no colour badge |
+| `--tabbar-edge-fade` | 22px | Overflow edge-fade mask width. Mask alpha only — no colour, no glow, no motion, so reduced-motion is unaffected |
+
+`--docs-tab-edge-fade` is now an alias of `--tabbar-edge-fade` at the same 22px. It kept
+its name because the docs strip's own marker (`data-token="docs-tab"`) reads it; it did
+not keep its own value, because two names for one width is how two strips drift apart.
+
+**The fade is drawn only on the side that has hidden tabs.** Four states — both, left,
+right, neither — computed from `scrollLeft` against `scrollWidth - clientWidth`. A fade on
+an edge with nothing past it says "there is more this way" when there is not, which is the
+inverse of the affordance.
+
+**Three rules the strip cannot ship without** (measured 2026-09-05, `/ontology/insights` at
+seven tabs):
+
+1. `shrink-0 whitespace-nowrap` on the tab. A flex child in an `overflow-x-auto` row
+   shrinks to fit rather than overflowing, so a strip written to scroll silently wrapped
+   every label onto two lines at 390 and the underline stopped sitting under one tab.
+2. The active tab is scrolled into view on mount **and on resize**. Arriving at
+   `?tab=<last>` at en/390 left the strip at `scrollLeft` 0 with the selected tab 433px
+   past the right edge — the underline, the only marker of which tab is selected, was not
+   on screen. Resize is the other way it leaves the viewport, and rotating a phone is not a
+   remount.
+3. `items-end` on the tab, because `atlas-touch-floor` grows the box under a coarse
+   pointer and the underline rides its bottom edge. Baseline alignment pinned the label to
+   the top of the 44px tab and left the active underline **26px** below its own word —
+   further than the label is tall, and more than twice the 10px `pb-2.5` it keeps at 28px
+   on a mouse. A marker that far from its label stops reading as that label's marker. Both
+   children are one `text-label` line, so at the mouse height the result is unchanged.
+
 ### App-embedded terminal dock tokens — Removed (2026-07-26)
 
 The `--terminal-*` · `--agent-terminal-*` token group and `.agent-terminal-dock` surface were removed along with the bottom terminal dock. The rationale is in the reversal record section of `docs/AGENT-GRAPH-WORKFLOW.md` — the dock was a proper subset of the user's own terminal, and the sole advantage cited, "the map reacts when the agent fixes it," was already provided by the vault (user-chosen markdown folder) watcher regardless of location.

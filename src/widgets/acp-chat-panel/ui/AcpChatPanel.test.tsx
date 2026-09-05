@@ -144,14 +144,6 @@ function answerFor(id: number) {
 }
 
 /** The work detail is collapsed by default. Checks that measure a tool row expand it explicitly first. */
-async function openLatestWorkGroup() {
-  const groups = await screen.findAllByTestId('acp-chat-work-group');
-  const group = groups.at(-1)!;
-  if (group.getAttribute('aria-expanded') !== 'true') fireEvent.click(group);
-  await waitFor(() => expect(group).toHaveAttribute('aria-expanded', 'true'));
-  return group;
-}
-
 afterEach(() => {
   cleanup();
   bridge.available = true;
@@ -300,7 +292,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getByText('어디부터').tagName).toBe('STRONG');
   });
 
-  it('도구 줄은 부른 뒤에 생기고, 상태는 알려 준 대로만 바뀐다', async () => {
+  it('a tool line appears once the call is made, and its status only changes when told', async () => {
     await bootSession();
     emit({
       jsonrpc: '2.0',
@@ -309,7 +301,6 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
         update: { sessionUpdate: 'tool_call', toolCallId: 'tc1', title: 'Read notes.md', kind: 'read', status: 'pending' },
       },
     });
-    await openLatestWorkGroup();
     await waitFor(() => {
       const row = document.querySelector('[data-acp-entry="tool"]');
       expect(row).toHaveAttribute('data-tool-status', 'pending');
@@ -329,6 +320,357 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
     // The row count does not grow — it is the same tool call.
     expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(1);
+  });
+
+  it('stands the tool line in the transcript — no disclosure is created for a turn that only called tools', async () => {
+    /*
+     * The trace only works if it is read without being asked for. Folded away, a `0 found`
+     * beside a confident paragraph costs a click nobody makes.
+     */
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-standing',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('acp-chat-work-group')).toBeNull();
+  });
+
+  it('says how much came back, using the number the tool itself reported', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-count',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { kind: 'domain' },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toContain(
+        'toolOutcome.running',
+      ),
+    );
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tc-count',
+          status: 'completed',
+          // Exactly what the live server answers: one text block of pretty-printed JSON.
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 8, nodes: [] }, null, 2) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        '8',
+      ),
+    );
+    expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toContain(
+      'toolOutcome.found',
+    );
+  });
+
+  it('never puts a count beside a call that failed', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-fail',
+          title: 'mcp__atlas-vault__add_relation',
+          kind: 'other',
+          status: 'failed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 8 }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        'failed',
+      ),
+    );
+  });
+
+  it('marks only a running call, and says the outcome in words on the rest', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-dot',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeInTheDocument(),
+    );
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'tc-dot',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 2 }) }],
+        },
+      },
+    });
+    // A mark that varies reads as a mark that means something; "done" is already in words.
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"] [data-tool-running]')).toBeNull(),
+    );
+  });
+
+  it('reports the number our server gave, and zero is a number', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-none',
+          title: 'mcp__atlas-vault__find_backlinks',
+          kind: 'read',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 0, matches: [] }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        '0',
+      ),
+    );
+  });
+
+  it('a search that found nothing says so, instead of reading like every other line', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-none-words',
+          title: 'mcp__atlas-vault__find_backlinks',
+          kind: 'read',
+          status: 'completed',
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 0, matches: [] }) }],
+        },
+      },
+    });
+    const outcome = await screen.findByTestId('acp-chat-tool-outcome');
+    // Not "0 found" — the long form is what pushes this row out of the number column.
+    expect(outcome.textContent).toBe('toolOutcome.foundNone');
+  });
+
+  it('never prints a number a foreign tool happened to call total', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-foreign',
+          title: 'Grep',
+          kind: 'search',
+          status: 'completed',
+          // Somebody else's JSON. `total` there may be bytes, tokens, or a page index.
+          rawOutput: [{ type: 'text', text: JSON.stringify({ total: 8, count: 2 }) }],
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-outcome',
+        'done',
+      ),
+    );
+    expect(screen.getByTestId('acp-chat-tool-outcome').textContent).toBe('toolOutcome.done');
+  });
+
+  it('a call that did not land gets a seam, never a colour on the word', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-broke',
+          title: 'mcp__atlas-vault__add_relation',
+          kind: 'other',
+          status: 'failed',
+        },
+      },
+    });
+    const row = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="tool"]');
+      expect(el).not.toBeNull();
+      return el!;
+    });
+    expect(row.className).toContain('border-[color:var(--color-danger-a50)]');
+    // The ink stays tertiary: danger text against it measures 1.04:1.
+    expect(row.className).toContain('text-[color:var(--color-text-tertiary)]');
+    /*
+     * ⚠️ **The seam replaces the run's rule; it does not stand beside it.** The row is
+     * pulled out by the run's border plus its padding, and pays the same padding back, so
+     * the red hairline lands on the grey one and the words stay in the transcript's single
+     * left column. Measured 2026-09-05 before this pairing existed: the seam sat 1px right
+     * of the divider (two rules for one fact) and the row's text 1px left of every sibling.
+     * The two values are read off the wrapper rather than written twice, because the day
+     * they disagree is the day the left edge goes ragged.
+     */
+    const run = row.closest('[data-acp-entry="tool-run"]');
+    expect(run, 'a tool row outside its run has no rule to turn red').not.toBeNull();
+    expect(run!.className).toContain('border-l');
+    expect(run!.className).toContain('pl-2');
+    expect(row.className).toContain('pl-2');
+    // border-l (1) + pl-2 (8) = 9.
+    expect(row.className).toContain('-ml-[9px]');
+    expect(screen.getByTestId('acp-chat-tool-outcome').className).toContain(
+      'font-[var(--font-weight-emphasis)]',
+    );
+  });
+
+  it('draws consecutive calls as one run', async () => {
+    await bootSession();
+    for (const id of ['r1', 'r2', 'r3']) {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: id,
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            status: 'completed',
+          },
+        },
+      });
+    }
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(3),
+    );
+    const runs = document.querySelectorAll('[data-acp-entry="tool-run"]');
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toHaveAttribute('data-tool-run-count', '3');
+  });
+
+  it('a very long provider tool name never pushes the transcript sideways', async () => {
+    /*
+     * ⚠️ **`shrink-0` on the label was a promise the row could not keep** (measured at
+     * `CHAT_WIDTH_MIN`, 320). Someone else's adapter is free to name a tool anything; a
+     * 90-character title held its full width and the outcome column — the diagnostic half
+     * of the row — was pushed off the right edge, where a dock has no horizontal scrollbar
+     * to get it back.
+     */
+    await bootSession();
+    const longTitle = `Run${'ExtremelyVerboseProviderToolName'.repeat(3)}`;
+    expect(longTitle.length).toBeGreaterThan(90);
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-long',
+          title: longTitle,
+          kind: 'execute',
+          status: 'completed',
+        },
+      },
+    });
+    const row = await waitFor(() => {
+      const el = document.querySelector('[data-acp-entry="tool"]');
+      expect(el).not.toBeNull();
+      return el as HTMLElement;
+    });
+    const label = row.querySelector('[data-tool-label-text]');
+    expect(label, 'the label has no element of its own to constrain').not.toBeNull();
+    // The row's own contract: the label yields, the outcome does not.
+    expect(label!.className).toContain('truncate');
+    expect(label!.className).toContain('min-w-0');
+    expect(screen.getByTestId('acp-chat-tool-outcome').className).toContain('shrink-0');
+  });
+
+  it('frames a listing filter so it does not read as a concept that was read', async () => {
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-kind',
+          title: 'mcp__atlas-vault__list_concepts',
+          kind: 'read',
+          status: 'pending',
+          rawInput: { kind: 'capability' },
+        },
+      },
+    });
+    const target = await screen.findByTestId('acp-chat-tool-target');
+    expect(target.textContent).toContain('kind: capability');
+  });
+
+  it('names a target the vault does not hold yet as plain text, never as a map marker', async () => {
+    await bootSession({ knownSlugs: new Set(['capabilities/invoice']) });
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'tc-new',
+          title: 'mcp__atlas-vault__add_concept',
+          kind: 'other',
+          status: 'pending',
+          rawInput: { slug: 'capabilities/not-yet-written' },
+        },
+      },
+    });
+    const target = await screen.findByTestId('acp-chat-tool-target');
+    expect(target).toHaveAttribute('data-tool-target', 'name');
+    expect(target.textContent).toContain('capabilities/not-yet-written');
+    expect(screen.queryAllByTestId('acp-chat-slug')).toHaveLength(0);
   });
 });
 
@@ -1049,8 +1391,6 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
-    await openLatestWorkGroup();
-
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
       expect(el).not.toBeNull();
@@ -1077,7 +1417,6 @@ describe('대화 패널 — 사람이 읽는 화면이다', () => {
         },
       },
     });
-    await openLatestWorkGroup();
     const row = await waitFor(() => {
       const el = document.querySelector('[data-acp-entry="tool"]');
       expect(el).not.toBeNull();
@@ -2023,8 +2362,6 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
       },
     });
 
-    await openLatestWorkGroup();
-
     const mark = await screen.findByTestId('acp-chat-slug');
     expect(mark.getAttribute('data-slug')).toBe('capabilities/invoice');
     fireEvent.pointerEnter(mark);
@@ -2059,7 +2396,6 @@ describe('도구 줄 — 어느 노드를 만졌는지 말한다', () => {
         },
       },
     });
-    await openLatestWorkGroup();
     await waitFor(() =>
       expect(document.querySelectorAll('[data-acp-entry="tool"]').length).toBe(1),
     );

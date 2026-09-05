@@ -32,6 +32,13 @@ const ROUTES = [
   "/ko/topology/",
   "/ko/docs/",
   "/ko/ontology/insights/",
+  /*
+   * ⚠️ **The English strip was never swept** (2026-09-05). This list was Korean-only, and
+   * English tab labels are the longer ones — the insights strip measures 783px of content
+   * at en against 493px at ko, so every width at which the tab bar could break was a width
+   * this sweep did not visit. One route in the other locale is the whole fix.
+   */
+  "/en/ontology/insights/",
   "/ko/projects/",
   "/ko/download/",
 ] as const;
@@ -48,12 +55,38 @@ for (const vp of WIDTHS) {
 
       const report = await page.evaluate((selector) => {
         const vw = document.documentElement.clientWidth;
+        /*
+         * ⚠️ **A horizontal scroller's children are not page overflow** (2026-09-05).
+         *
+         * This predicate read "any rect past the viewport is a defect", and for a page that
+         * is right. Inside a deliberate `overflow-x: auto` strip it is exactly backwards:
+         * the tab past the right edge is *how a scrolling strip works*, and the only way to
+         * satisfy the old rule was to let the labels wrap — the defect the tab bar was
+         * rewritten to stop, and which this sweep had been quietly rewarding.
+         *
+         * ⚠️ **The exemption is opt-in through `data-scroll-x`, and that is the whole
+         * point.** The first attempt keyed on computed `overflow-x`, and CSS computes
+         * `overflow-x: visible` to `auto` whenever `overflow-y` is not visible — so the
+         * page's own vertical scroll container matched, and a probe that removed
+         * `overflow-x-auto` from the tab strip still passed. A gate that cannot go red is
+         * not a gate. Only an element that has declared itself a horizontal strip exempts
+         * its children, so a new one must say so on purpose.
+         */
+        const reachableByScrolling = (el: Element): boolean => {
+          const strip = el.parentElement?.closest("[data-scroll-x]") ?? null;
+          if (!strip) return false;
+          if (strip.scrollWidth <= strip.clientWidth + 1) return false;
+          const box = strip.getBoundingClientRect();
+          // The strip itself must be on screen; only its content may sit past the edge.
+          return box.right <= vw + 1 && box.left >= -1;
+        };
         const offenders: { tag: string; text: string; left: number; right: number }[] = [];
         for (const el of Array.from(document.querySelectorAll(selector))) {
           const r = el.getBoundingClientRect();
           // Excludes sr-only (1px) and non-rendered elements.
           if (r.width < 2 || r.height < 2) continue;
           if (getComputedStyle(el).visibility === "hidden") continue;
+          if (reachableByScrolling(el)) continue;
           if (r.right > vw + 1 || r.left < -1) {
             offenders.push({
               tag: el.tagName,

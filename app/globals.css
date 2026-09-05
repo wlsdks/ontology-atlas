@@ -2128,6 +2128,13 @@
     /* RATIO-SYSTEM §3 Tab pattern — 2px indigo underline thickness for the active tab.
        Page-level ratio tokens (--page-max etc.) have a single source: the :root block above. */
     --tabbar-underline: 2px;
+    /* Tab strip overflow edge fade — the mask width that says "more this way" when the tabs
+       do not fit. Mask alpha only: no colour, no glow, no motion, so reduced-motion is
+       unaffected, and it is applied only to the side that actually has hidden tabs.
+       Promoted here on 2026-09-05 from --docs-tab-edge-fade (same 22px, now an alias):
+       the docs strip and the underline strip answer one question, and two names for one
+       width is how they drift apart. */
+    --tabbar-edge-fade: 22px;
 
     /* [Deleted, 2026-07-18] Legacy SigmaTopology graph mode ink
        (--topology-edge-hairline/-spoke, --topology-graph-edge-hairline/-spoke,
@@ -2592,8 +2599,9 @@
        data-token="docs-tab". */
     --docs-tab-min: 132px;
     --docs-tab-max: 208px;
-    /* Tab strip overflow edge fade — static mask width indicating "more available" when open documents overflow. Zero color/glow/motion (mask-image alpha only). Applied only to direction with hidden content (conditional on DocsVaultTabStrip scroll state). */
-    --docs-tab-edge-fade: 22px;
+    /* Tab strip overflow edge fade — static mask width indicating "more available" when open documents overflow. Zero color/glow/motion (mask-image alpha only). Applied only to direction with hidden content (conditional on DocsVaultTabStrip scroll state).
+       2026-09-05: the value moved up to --tabbar-edge-fade when the underline tab bar gained the same affordance; a second name for one width is how two strips drift apart. This alias stays because the docs strip's own marker (data-token="docs-tab") reads it. */
+    --docs-tab-edge-fade: var(--tabbar-edge-fade);
     /* Document audit modal — vertical 3-row stack, single width. Breakpoint 0 contract (discard 3-across grid), so use only this one value without viewport branching. Marker data-token="docs-audit-modal". */
     --docs-audit-modal-width: 680px;
     /* Document list aside expanded width — retract existing hardcoded w-[280px]. */

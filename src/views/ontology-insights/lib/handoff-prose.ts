@@ -25,6 +25,7 @@ export interface InsightsHandoffProse extends DoNextHandoffProse, MeaningGapPros
   cycle: string;
   cycleProof: string;
   tabDoNext: string;
+  tabUnmatched: string;
   tabComposition: string;
   tabConnections: string;
   tabBoundaries: string;
@@ -64,6 +65,8 @@ const EN: InsightsHandoffProse = {
   cycleProof: 'query_ontology({operation:"cycles"}) to confirm the cycle is gone',
   tabDoNext:
     'query_ontology({operation:"maintenance_plan"}) → work through the items → re-check with query_ontology({operation:"health"})',
+  tabUnmatched:
+    'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → for a name several nodes ask for, add_concept({slug:"«ref»", kind:"«kind»"}); for a one-sided placement, add_relation({from:"«domain»", to:"«node»", type:"capabilities"}) → re-check with query_ontology({operation:"health"})',
   tabComposition:
     'list_kinds({}) → query_ontology({operation:"overview"}) → check empty definitions via validate_vault({}) warnings',
   tabConnections:
@@ -108,6 +111,8 @@ const KO: InsightsHandoffProse = {
   cycleProof: 'query_ontology({operation:"cycles"}) 로 사이클 해소 확인',
   tabDoNext:
     'query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인',
+  tabUnmatched:
+    'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → 여러 노드가 찾는 이름은 add_concept({slug:"«ref»", kind:"«kind»"}), 한쪽만 이어진 배치는 add_relation({from:"«domain»", to:"«node»", type:"capabilities"}) → query_ontology({operation:"health"}) 로 재확인',
   tabComposition:
     'list_kinds({}) → query_ontology({operation:"overview"}) → 빈 정의는 validate_vault({}) 의 warnings 로 확인',
   tabConnections:

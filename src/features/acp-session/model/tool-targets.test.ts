@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { readToolTargets } from './tool-targets';
+import { readToolFallbackTarget, readToolTargets } from './tool-targets';
 
 /**
  * Makes the tool row state **which node it touched.**
@@ -65,5 +65,101 @@ describe('도구가 만진 노드를 집는다', () => {
       many,
     );
     expect(out.length).toBeLessThanOrEqual(3);
+  });
+});
+
+describe('readToolFallbackTarget — a tool with no vault node still names what it aimed at', () => {
+  it('reads a file path and shows the tail, not the whole absolute path', () => {
+    expect(
+      readToolFallbackTarget({ file_path: '/Users/me/work/atlas/src/shared/lib/cn.ts' }),
+    ).toEqual({ kind: 'path', value: 'lib/cn.ts' });
+  });
+
+  it('accepts every path argument name our own tools use', () => {
+    // Measured in acp-client.ts: our MCP server writes `filePath`, the sweep tools `rootPath`.
+    expect(readToolFallbackTarget({ filePath: '/a/b/notes.md' })).toEqual({
+      kind: 'path',
+      value: 'b/notes.md',
+    });
+    expect(readToolFallbackTarget({ rootPath: '/a/b/project' })).toEqual({
+      kind: 'path',
+      value: 'b/project',
+    });
+  });
+
+  it('keeps a short relative path whole', () => {
+    expect(readToolFallbackTarget({ path: 'notes.md' })).toEqual({
+      kind: 'path',
+      value: 'notes.md',
+    });
+  });
+
+  it('names the concept an agent is creating — the slug is not in the vault yet, and that is the row that most needs a name', () => {
+    expect(readToolFallbackTarget({ slug: 'capabilities/not-yet-written' })).toEqual({
+      kind: 'name',
+      value: 'capabilities/not-yet-written',
+    });
+    expect(
+      readToolFallbackTarget({ from: 'capabilities/a', to: 'domains/b' }),
+    ).toEqual({ kind: 'name', value: 'capabilities/a' });
+  });
+
+  it('falls through to the search pattern when there is no path', () => {
+    expect(readToolFallbackTarget({ pattern: 'readToolOutcome' })).toEqual({
+      kind: 'query',
+      value: 'readToolOutcome',
+    });
+  });
+
+  it('names the graph operation our query tool was asked for', () => {
+    expect(readToolFallbackTarget({ operation: 'maintenance_plan' })).toEqual({
+      kind: 'query',
+      value: 'maintenance_plan',
+    });
+  });
+
+  it('names the filter a listing was narrowed by, and frames it as a filter', () => {
+    /*
+     * `capability` alone reads as a concept that was read. It was a listing narrowed to a
+     * kind, so the argument name comes with it (measured: `list_concepts` takes kind and
+     * domain).
+     */
+    expect(readToolFallbackTarget({ kind: 'capability' })).toEqual({
+      kind: 'query',
+      value: 'capability',
+      frame: 'kind',
+    });
+    expect(readToolFallbackTarget({ domain: 'domains/payment' })).toEqual({
+      kind: 'query',
+      value: 'domains/payment',
+      frame: 'domain',
+    });
+  });
+
+  it('leaves a path, a slug and a search term unframed — they say what they are', () => {
+    expect(readToolFallbackTarget({ pattern: 'readToolOutcome' })).not.toHaveProperty('frame');
+    expect(readToolFallbackTarget({ path: 'notes.md' })).not.toHaveProperty('frame');
+    expect(readToolFallbackTarget({ slug: 'capabilities/x' })).not.toHaveProperty('frame');
+  });
+
+  it('prefers a path over a query when a tool carries both', () => {
+    expect(readToolFallbackTarget({ pattern: 'todo', path: 'src' })).toEqual({
+      kind: 'path',
+      value: 'src',
+    });
+  });
+
+  it('shortens a long query rather than letting one line run away', () => {
+    const long = 'x'.repeat(200);
+    const out = readToolFallbackTarget({ query: long });
+    expect(out?.kind).toBe('query');
+    expect(out!.value.length).toBeLessThanOrEqual(60);
+    expect(out!.value.endsWith('…')).toBe(true);
+  });
+
+  it('returns nothing when the tool said nothing usable', () => {
+    expect(readToolFallbackTarget(undefined)).toBeNull();
+    expect(readToolFallbackTarget({ limit: 10 })).toBeNull();
+    expect(readToolFallbackTarget({ path: '   ' })).toBeNull();
   });
 });
