@@ -89,6 +89,8 @@ const labels = {
   foldAria: "Collapse INDEX",
   searchPlaceholder: "Search concepts",
   censusConcepts: "concepts",
+  sourceDocuments: "documents",
+  sourceDocumentsPartialTitle: "partially read",
   censusRelations: "relations",
   censusDomains: "domains",
   capabilitiesShort: "caps",
@@ -148,6 +150,65 @@ describe("TopologyIndexPanel", () => {
 
     const tree = screen.getByRole("tree", { name: labels.label });
     expect(tree.tagName).toBe("DIV");
+  });
+
+  /*
+   * Audit, 2026-09-05: opening a folder from the first-run panel redrew the map with the
+   * person's own concepts, and nothing on the screen said which folder had been read. The panel
+   * that had said 「sample」 a second earlier simply stopped saying anything, so the one visible
+   * confirmation that the pick landed disappeared at the moment it was wanted.
+   */
+  describe("naming the folder the rows came from", () => {
+    const base = {
+      treeResult: buildFixtureTree(),
+      totalConcepts: 4,
+      totalRelations: 3,
+      domainCount: 1,
+      changedSlugs: new Set<string>(),
+      selectedId: null,
+      onSelect: () => {},
+      onCollapse: () => {},
+      labels,
+    };
+
+    it("says the folder basename and how many documents came out of it", () => {
+      render(<TopologyIndexPanel {...base} sourceName="my-vault" sourceDocumentCount={99} />);
+
+      const line = screen.getByTestId("topology-index-source");
+      expect(line).toHaveTextContent("my-vault");
+      expect(line).toHaveTextContent("99 documents");
+    });
+
+    /*
+     * `entities/docs-vault/model/types.ts` sets the rule: a screen saying "N documents" must be
+     * able to say in the same place whether N is all of them.
+     */
+    it("marks a count the walk did not finish rather than presenting it as the whole folder", () => {
+      render(
+        <TopologyIndexPanel
+          {...base}
+          sourceName="huge-repo"
+          sourceDocumentCount={500}
+          sourceDocumentCountPartial
+        />,
+      );
+
+      expect(screen.getByTestId("topology-index-source")).toHaveTextContent("500+ documents");
+    });
+
+    it("stays silent with no folder open — the sample keeps its own badge", () => {
+      render(<TopologyIndexPanel {...base} />);
+
+      expect(screen.queryByTestId("topology-index-source")).not.toBeInTheDocument();
+    });
+
+    it("names the folder even before the document count is known", () => {
+      render(<TopologyIndexPanel {...base} sourceName="my-vault" sourceDocumentCount={null} />);
+
+      const line = screen.getByTestId("topology-index-source");
+      expect(line).toHaveTextContent("my-vault");
+      expect(line, "숫자를 모를 때 0을 지어내면 안 된다").not.toHaveTextContent("documents");
+    });
   });
 
   it("does not render the retired agent/growth/handoff footer", () => {

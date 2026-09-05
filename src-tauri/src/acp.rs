@@ -330,6 +330,46 @@ pub(crate) const LOGIN_PROBE: &[(&str, &[&str])] = &[
     ("codex-acp", &["login", "status"]),
 ];
 
+/**
+ * The exit code both measured CLIs return when **nobody is signed in**.
+ *
+ * Measured on macOS 2026-09-05, with a throwaway config home so the machine's real login is
+ * untouched:
+ *
+ * ```text
+ * CLAUDE_CONFIG_DIR=$(mktemp -d) claude auth status  → 1   (signed in: 0)
+ * CODEX_HOME=$(mktemp -d) codex login status         → 1   (signed in: 0)
+ * ```
+ *
+ * Neither `claude auth status --help` nor `codex login status --help` documents an exit-code
+ * table, so this constant records the measurement rather than a promise. Any *other* non-zero
+ * code is something else going wrong — a wrapper that could not find its interpreter (127), a
+ * killed process, an argument the vendor changed — and reading that as "not signed in" is the
+ * defect this constant exists to prevent.
+ */
+pub(crate) const LOGIN_LOGGED_OUT_EXIT: i32 = 1;
+
+/**
+ * Turns a login probe's exit status into a verdict — **the only place non-zero is interpreted.**
+ *
+ * ⚠️ Previously this was `Some(status.success())`, which turned *every* failure into "not signed
+ * in". Owner report, 2026-09-05: with a load average around 10, right after an in-app ACP session
+ * ended, both Claude Agent and Codex showed 「Sign in needed」 while `claude auth status` and
+ * `codex login status` exited 0 from a shell moments later; relaunching the app cleared it. A
+ * transient failure has to read as **unknown**, because that answer costs a caption while the
+ * wrong answer erases a working tool from the list.
+ *
+ * `None` (terminated by a signal) is also unknown — a process the OS killed under memory pressure
+ * says nothing about credentials.
+ */
+pub(crate) fn classify_login_exit(code: Option<i32>) -> Option<bool> {
+    match code {
+        Some(0) => Some(true),
+        Some(LOGIN_LOGGED_OUT_EXIT) => Some(false),
+        _ => None,
+    }
+}
+
 fn login_probe_args(runtime_id: &str) -> Option<&'static [&'static str]> {
     LOGIN_PROBE
         .iter()
@@ -523,7 +563,8 @@ pub(crate) struct AcpRuntimeStatus {
     pub brand_ink: Option<String>,
     /// `npx` · `uvx` · `binary`
     pub launch_kind: String,
-    /// `ready` · `cli-unknown` · `cli-missing` · `node-missing` · `uvx-missing` · `binary-missing`
+    /// `ready` · `login-needed` · `login-unknown` · `cli-unknown` · `cli-missing` · `node-missing` ·
+    /// `uvx-missing` · `binary-missing`
     ///
     /// There are six because **the user's required action differs for each**. Collapsing into "installed/not installed"
     /// leaves the UI unsure what to tell the user. And `cli-unknown`
@@ -600,9 +641,8 @@ pub(crate) fn detect_runtimes(
              * executors we have measured (`LOGIN_PROBE`). What we did not ask is `None`,
              * and that means "unknown", not "not logged in".
              */
-            let login_ok = cli
-                .as_deref()
-                .zip(login_probe_args(&agent.id))
+            let login_question = cli.as_deref().zip(login_probe_args(&agent.id));
+            let login_ok = login_question
                 .and_then(|(path, args)| (probe.login_ok)(&agent.id, path, args, &child_path));
 
             let state = if agent.cli.is_some() && cli.is_none() {
@@ -617,6 +657,22 @@ pub(crate) fn detect_runtimes(
                  * (log in with that tool).
                  */
                 "login-needed"
+            } else if login_question.is_some() && login_ok.is_none() {
+                /*
+                 * ⚠️ **We asked and could not get an answer** — that is not the same as never
+                 * having asked, and it is not "not signed in" either.
+                 *
+                 * Owner report, 2026-09-05: under a load average around 10, right after an in-app
+                 * ACP session ended, both measured runtimes wore 「Sign in needed」 while
+                 * `claude auth status` and `codex login status` exited 0 from a shell; relaunching
+                 * cleared it. The old code mapped every non-zero exit onto "not signed in", so a
+                 * transient failure took a working tool off the screen and told the person to go
+                 * log in to something they were already logged in to.
+                 *
+                 * The tool is still present and still launchable, so this state stays usable —
+                 * it only stops the screen claiming a verdict it does not have.
+                 */
+                "login-unknown"
             } else if agent.cli.is_none() {
                 /*
                  * ⚠️ **This branch used to be "ready"** (owner's remark, 2026-08-16:
@@ -1698,6 +1754,90 @@ pub(crate) type RealProbe = (
     fn(&str, &Path, &[&str], &str) -> Option<bool>,
 );
 
+/**
+ * Runs one login probe and turns its exit status into a verdict.
+ *
+ * ⚠️ **Output is never read.** stdout/stderr go to `null`: `claude auth status` prints the email
+ * and organization ID (measured), and the trust charter has no reason to let that into process
+ * memory. The exit code is the whole answer.
+ *
+ * One line per probe reaches the app log so the next occurrence of a wrong verdict is
+ * diagnosable from a log an owner can send — the runtime id, the exit code, and how long it took.
+ * Never the output.
+ */
+fn run_login_probe(runtime_id: &str, path: &Path, args: &[&str], child_path: &str) -> Option<bool> {
+    use std::process::{Command, Stdio};
+    let started = std::time::Instant::now();
+    let mut command = Command::new(path);
+    command
+        .args(args)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    /*
+     * ⚠️ **We hand the child the PATH we rebuilt** (caught in the 2026-08-16 review). Previously
+     * we launched with the environment the app inherited as-is, and for exactly the reason
+     * written at the top of this file that only solved half the problem — the PATH of an app
+     * launched via Finder has no nvm location, and `claude` is a wrapper that finds node by
+     * name. That yields "exit code ≠ 0", we read it as **not logged in**, and erased a perfectly
+     * logged-in tool from the list entirely.
+     */
+    apply_runtime_environment(&mut command, runtime_id, child_path);
+    let mut child = match command.spawn() {
+        Ok(child) => child,
+        Err(err) => {
+            log::info!(
+                "acp login probe: runtime={runtime_id} exit=spawn-failed({}) duration_ms={}",
+                err.kind(),
+                started.elapsed().as_millis()
+            );
+            return None;
+        }
+    };
+
+    // Waiting on a nonresponsive tool freezes the screen. We set the bound at a multiple of the
+    // measured values (claude 300ms · codex 45ms); past it, kill and answer "unknown".
+    let deadline = started + LOGIN_PROBE_TIMEOUT;
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) => {
+                let verdict = classify_login_exit(status.code());
+                log::info!(
+                    "acp login probe: runtime={runtime_id} exit={:?} verdict={} duration_ms={}",
+                    status.code(),
+                    match verdict {
+                        Some(true) => "signed-in",
+                        Some(false) => "signed-out",
+                        None => "unknown",
+                    },
+                    started.elapsed().as_millis()
+                );
+                return verdict;
+            }
+            Ok(None) => {
+                if std::time::Instant::now() >= deadline {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    log::info!(
+                        "acp login probe: runtime={runtime_id} exit=timeout verdict=unknown duration_ms={}",
+                        started.elapsed().as_millis()
+                    );
+                    return None;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            Err(err) => {
+                log::info!(
+                    "acp login probe: runtime={runtime_id} exit=wait-failed({}) verdict=unknown duration_ms={}",
+                    err.kind(),
+                    started.elapsed().as_millis()
+                );
+                return None;
+            }
+        }
+    }
+}
+
 /// The default probe that looks at the real disk.
 pub(crate) fn real_probe() -> RealProbe {
     let is_executable = |path: &Path| -> bool {
@@ -1745,46 +1885,33 @@ pub(crate) fn real_probe() -> RealProbe {
      *
      * If it cannot be launched or times out, `None` — meaning **unknown**, not "not logged
      * in". Recording the unknown as "not working" makes a working tool unusable.
+     *
+     * The same discipline now covers the exit code itself: only the measured logged-out code
+     * (`LOGIN_LOGGED_OUT_EXIT`) is read as "not signed in", and even that answer is asked a
+     * second time before it is believed. See `run_login_probe` for why.
      */
     let login_ok =
         |runtime_id: &str, path: &Path, args: &[&str], child_path: &str| -> Option<bool> {
-            use std::process::{Command, Stdio};
-            let mut command = Command::new(path);
-            command
-                .args(args)
-                .stdin(Stdio::null())
-                .stdout(Stdio::null())
-                .stderr(Stdio::null());
-            /*
-             * ⚠️ **We hand the child the PATH we rebuilt** (caught in the 2026-08-16
-             * review). Previously we launched with the environment the app inherited as-is,
-             * and for exactly the reason written at the top of this file that only solved
-             * half the problem — the PATH of an app launched via Finder has no nvm
-             * location, and `claude` is a wrapper that finds node by name. That yields
-             * "exit code ≠ 0", we read it as **not logged in**, and erased a perfectly
-             * logged-in tool from the list entirely.
-             */
-            apply_runtime_environment(&mut command, runtime_id, child_path);
-            let mut child = command.spawn().ok()?;
-
-            // Waiting on a nonresponsive tool freezes the screen. We set the bound at a
-            // multiple of the measured values (claude 300ms · codex 45ms); past it, kill
-            // and answer "unknown".
-            let deadline = std::time::Instant::now() + LOGIN_PROBE_TIMEOUT;
-            loop {
-                match child.try_wait() {
-                    Ok(Some(status)) => return Some(status.success()),
-                    Ok(None) => {
-                        if std::time::Instant::now() >= deadline {
-                            let _ = child.kill();
-                            let _ = child.wait();
-                            return None;
-                        }
-                        std::thread::sleep(std::time::Duration::from_millis(20));
-                    }
-                    Err(_) => return None,
-                }
+            let first = run_login_probe(runtime_id, path, args, child_path);
+            if first != Some(false) {
+                return first;
             }
+            /*
+             * ⚠️ **"Not signed in" is confirmed once before it is shown.**
+             *
+             * Owner report, 2026-09-05: under a load average around 10, just after an in-app ACP
+             * session ended, both runtimes reported 「Sign in needed」 while the same commands
+             * exited 0 from a shell; relaunching the app cleared it. The exit-code table above
+             * catches the failures that come back as *some other* code, but a genuinely transient
+             * failure that happens to exit 1 would still erase a working tool.
+             *
+             * A second ask separates the two: a CLI with no credentials answers the same way
+             * twice, while a load spike does not. It costs one extra ~300ms run for people who
+             * really are signed out, and nothing at all for everyone else. Disagreement means
+             * unknown — we say we could not check rather than guess which run was right.
+             */
+            let second = run_login_probe(runtime_id, path, args, child_path);
+            if second == Some(false) { Some(false) } else { None }
         };
 
     (is_executable, list_dir, read_text, login_ok)
@@ -2250,7 +2377,9 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _, _| None,
+            // This test is about finding the tool, not about its sign-in, so answer the
+            // sign-in question plainly instead of leaving it unknown.
+            login_ok: &|_, _, _, _| Some(true),
         };
 
         // PATH is only the minimum a GUI app receives — nothing lives here.
@@ -2360,7 +2489,8 @@ mod tests {
         );
 
         // ③ **The unknown is not recorded as "not working".** Counting what we could not
-        //    ask as a failure makes a working tool unusable.
+        //    ask as a failure makes a working tool unusable — and it is not recorded as
+        //    "ready" either, because we did ask and got nothing back.
         let probe = FsProbe {
             is_executable: &is_exec,
             list_dir: &list,
@@ -2369,7 +2499,89 @@ mod tests {
         };
         let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
-        assert_eq!(claude.state, "ready");
+        assert_eq!(
+            claude.state, "login-unknown",
+            "물어보고 답을 못 받은 것을 「로그인 필요」로도 「준비됨」으로도 말하면 안 된다",
+        );
+    }
+
+    /**
+     * A failing login probe is **not** a signed-out one.
+     *
+     * Owner report, 2026-09-05: under a load average around 10, just after an in-app ACP session
+     * ended, Claude Agent and Codex both wore 「Sign in needed」 while `claude auth status` and
+     * `codex login status` exited 0 from a shell; relaunching the app cleared it. The old code was
+     * `Some(status.success())`, so every non-zero exit became "not signed in".
+     *
+     * The measured logged-out code (both CLIs, macOS 2026-09-05, throwaway config home) is 1.
+     * Everything else is unknown.
+     */
+    #[test]
+    fn only_the_measured_logged_out_code_means_signed_out() {
+        assert_eq!(classify_login_exit(Some(0)), Some(true), "0 은 로그인돼 있다");
+        assert_eq!(
+            classify_login_exit(Some(LOGIN_LOGGED_OUT_EXIT)),
+            Some(false),
+            "잰 로그아웃 코드까지 모르는 것으로 돌리면 진짜 로그아웃한 사람이 아무 말도 못 듣는다",
+        );
+        for code in [2, 3, 126, 127, 130, 255] {
+            assert_eq!(
+                classify_login_exit(Some(code)),
+                None,
+                "{code} 는 로그인 여부가 아니라 실행이 틀어졌다는 뜻이다",
+            );
+        }
+        assert_eq!(
+            classify_login_exit(None),
+            None,
+            "신호로 죽은 프로세스는 자격 증명에 대해 아무 말도 하지 않았다",
+        );
+    }
+
+    /// The unknown verdict must not take a launchable tool off the screen — it only removes the
+    /// claim. `login-unknown` still carries a CLI path and an adapter path.
+    #[test]
+    fn an_unknown_login_still_leaves_the_tool_launchable() {
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        files.insert(test_bin("npx"));
+        files.insert(test_bin("claude"));
+        let path_env = test_path_env();
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _, _, _| None,
+        };
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
+        let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
+        assert_eq!(claude.state, "login-unknown");
+        assert!(claude.cli_path.is_some(), "찾은 CLI 경로를 지우면 실행할 방법이 사라진다");
+        assert!(claude.adapter_path.is_some(), "어댑터 경로도 그대로 남아야 한다");
+    }
+
+    /// A runtime we never measured keeps `cli-unknown`; only the ones we asked can be
+    /// `login-unknown`. Merging the two would say "we could not check the sign-in" about a tool
+    /// whose sign-in command we never wrote down.
+    #[test]
+    fn we_never_asked_is_not_we_could_not_tell() {
+        let mut files: HashSet<PathBuf> = HashSet::new();
+        files.insert(test_bin("npx"));
+        let path_env = test_path_env();
+        let dirs = empty_dirs();
+        let (is_exec, list, read) = probe_with(&files, &dirs);
+        let probe = FsProbe {
+            is_executable: &is_exec,
+            list_dir: &list,
+            read_text: &read,
+            login_ok: &|_, _, _, _| None,
+        };
+        let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
+        assert!(
+            out.iter().all(|s| s.state != "login-unknown"),
+            "물어본 적 없는 실행기에까지 「로그인 확인 못 함」을 붙였다",
+        );
     }
 
     /// The login probe asks **only executors we have measured**.
@@ -2526,7 +2738,8 @@ mod tests {
             is_executable: &is_exec,
             list_dir: &list,
             read_text: &read,
-            login_ok: &|_, _, _, _| None,
+            // This test is about which adapter wins, not about sign-in.
+            login_ok: &|_, _, _, _| Some(true),
         };
         let out = detect_runtimes(None, Some(path_env.as_os_str()), &probe, None, None);
         let claude = out.iter().find(|r| r.id == "claude-acp").unwrap();
