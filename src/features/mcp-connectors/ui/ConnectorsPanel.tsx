@@ -33,7 +33,7 @@ import {
 } from '@/shared/lib/tauri-connector-secrets';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 
-import { useVaultConnectors } from '../model/use-vault-connectors';
+import type { VaultConnectorsState } from '../model/use-vault-connectors';
 
 /**
  * **Connectors — the external MCP servers a person lets their in-app agent reach.**
@@ -100,13 +100,21 @@ export function connectorDestination(connector: ConnectorRecord): string {
 
 export function ConnectorsPanel({
   handle,
+  store,
   testIdPrefix = 'connectors',
 }: {
   handle: FileSystemDirectoryHandle | null;
+  /**
+   * The connector list as screen state — **owned by the caller**, because the tab strip above
+   * this panel states how many are switched on and the two numbers have to come from the same
+   * read. A second `useVaultConnectors` inside here would be a second reader of one file that
+   * never hears about the first one's writes, which is the two-canonical-stores defect
+   * `.claude/rules/forbidden.md` forbids by name.
+   */
+  store: VaultConnectorsState;
   testIdPrefix?: string;
 }) {
   const t = useTranslations('connectors');
-  const store = useVaultConnectors(handle);
   const vaultPath = handle ? (getTauriVaultRootPath(handle) ?? null) : null;
   const canDiscover = isConnectorDiscoveryAvailable();
   const canStoreSecrets = isConnectorSecretBridgeAvailable();

@@ -12,7 +12,6 @@ import { Check, Copy } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
-import { ConnectorsPanel } from '@/features/mcp-connectors';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -36,10 +35,10 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  * absolute path**, and that is answered by building the config on screen for the
  * person to paste.
  *
- * The runners pane, when it says on the web that it cannot launch a program, points
- * at *"the "MCP Connection" pane on this screen…"* — and if that pane is not on the same
- * screen, **the sentence points at nothing.** That is why the destination brings
- * this pane along.
+ * The runners pane on `/agents`, when it says on the web that it cannot launch a
+ * program, still has to name a place a person can actually reach. Since 2026-09-05 that
+ * place is **another destination**, so the sentence carries a link to `/mcp` rather than
+ * a section name — a name is only guidance while the thing named is on the same screen.
  */
 /**
  * The AI agent's first-contact proof packet — a typed handoff pasted straight into
@@ -205,15 +204,6 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
       // re-decide «is it fine to omit this» every time.
       onOpenWorkflowGuide={onBeforeNavigate ?? (() => undefined)}
     />
-    </div>
-    {/*
-      **Connectors sit under the vault's own connection, not above it.** The vault server is
-      what this destination exists for and is wired without anyone asking; a connector is a
-      deliberate addition on top. Putting the optional thing second is what keeps the first
-      screen of this pane about the thing everybody needs.
-    */}
-    <div className="mt-4">
-      <ConnectorsPanel handle={localVault.handle ?? null} />
     </div>
     {/*
       **The first-contact proof packet** — instead of a human confirming by eye that

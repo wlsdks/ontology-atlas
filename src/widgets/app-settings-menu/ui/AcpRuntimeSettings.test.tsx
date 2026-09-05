@@ -16,6 +16,20 @@ vi.mock('next-intl', () => ({
     values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
+/*
+ * The locale-aware `Link` needs an intl provider this file deliberately does not mount (every
+ * string here is its own key, so a real catalogue would hide which key each assertion is about).
+ * A plain anchor keeps the href assertion below honest — what matters is the address the row
+ * offers, not who prefixes the locale.
+ */
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 
 type Runtime = Parameters<typeof makeRuntime>[0];
@@ -301,6 +315,12 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
     render(<AcpRuntimeSettings />);
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webLabel');
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webCaption');
+    /*
+     * ⚠️ **The place it names has to be reachable** (2026-09-05). The caption used to point at a
+     * section of this same screen; MCP became its own destination, and a name with no way there is
+     * the dead-end guidance `.claude/rules/surfaces.md` forbids in a degradation card.
+     */
+    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/mcp/');
     // In a browser it does not even set out to look.
     expect(bridge.detect).not.toHaveBeenCalled();
   });

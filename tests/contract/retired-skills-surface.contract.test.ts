@@ -26,6 +26,10 @@ describe("retired Skills product surface", () => {
       "insights",
       "projects",
       "agents",
+      // MCP joined 2026-09-05, which reopened the seven-cap decision (91) closed on the
+      // same day `/skills` was retired. That record moved the ceiling; it did not
+      // reinstate the retired surface, and the two assertions below still say so.
+      "mcp",
       "git",
     ]);
     expect(resolveActiveNavDestination("/skills")).toBeNull();
@@ -33,6 +37,7 @@ describe("retired Skills product surface", () => {
     expect(resolveActiveNavDestination("/agents")).toBe("agents");
     expect(resolveActiveNavDestination("/architecture")).toBe("architecture");
     expect(resolveActiveNavDestination("/git")).toBe("git");
+    expect(resolveActiveNavDestination("/mcp")).toBe("mcp");
   });
 
   it("removes the route and all three product implementation layers", () => {

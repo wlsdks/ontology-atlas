@@ -62,13 +62,23 @@ function sheetSectionNames(bundle: Bundle): Set<string> {
   return new Set(Object.values(section ?? {}));
 }
 
-/** The section headings the "agent" destination renders on screen. */
+/**
+ * The section headings a **destination** renders on screen.
+ *
+ * ⚠️ **Two namespaces, because the destination split** (2026-09-05). MCP left `/agents`
+ * for `/mcp`, and reading only `agents` would report the MCP screen's own section names
+ * as places that do not exist. The rule is unchanged — a name may be pointed at only
+ * while something on screen really carries it; what changed is which screens exist.
+ */
+const DESTINATION_NAMESPACES = ['agents', 'mcp'] as const;
+
 function destinationSectionNames(bundle: Bundle): Set<string> {
-  const agents = bundle.agents as Record<string, string> | undefined;
   return new Set(
-    Object.entries(agents ?? {})
-      .filter(([key]) => key.endsWith('Heading'))
-      .map(([, value]) => value),
+    DESTINATION_NAMESPACES.flatMap((namespace) =>
+      Object.entries((bundle[namespace] as Record<string, string> | undefined) ?? {})
+        .filter(([key]) => key.endsWith('Heading'))
+        .map(([, value]) => value),
+    ),
   );
 }
 
@@ -116,7 +126,7 @@ describe.each([
     expect(sheetSectionNames(bundle).size, '시트 칸 이름이 0개다').toBeGreaterThan(5);
     expect(
       destinationSectionNames(bundle).size,
-      '「에이전트」 목적지의 절 제목이 0개다',
+      '목적지(에이전트 · MCP)의 절 제목이 0개다',
     ).toBeGreaterThan(1);
   });
 

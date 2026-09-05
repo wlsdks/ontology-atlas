@@ -197,35 +197,39 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   });
 
   /**
-   * **Seven is the ceiling** (owner correction, 2026-08-26).
+   * **Eight is the ceiling** (record of 2026-09-05, which overturns the seven-cap
+   * decision (91) of 2026-08-21 and upholds the 2026-08-26 record that Architecture
+   * is additive).
    *
-   * At the minimum window (`minHeight: 720`) the rail stacks logo + destination tiles
-   * + the utility layer vertically. The earlier seven/eight-item measurements prove
-   * why scroll handling is required under zoom. Architecture is additive, so seven
-   * remain primary; an eighth requires another measured navigation decision.
+   * At the app's minimum window (`minWidth: 1040`, `minHeight: 720`) the rail stacks
+   * eight destination tiles above the utility layer. That is not assumed here — it
+   * was measured on the rendered rail before the cap moved, and the destinations pane
+   * owns its own scroll (`min-h-0 overflow-y-auto overscroll-contain`, asserted
+   * below) for zoom, longer translations and every smaller effective viewport.
    *
-   * What this check blocks is an eighth arriving quietly. It does not permit a new
+   * What this check blocks is a ninth arriving quietly. It does not permit a new
    * destination to evict an existing one as an implementation shortcut.
    */
-  it("목적지는 일곱을 넘지 않는다 — 여덟째는 별도 결정을 요구한다", () => {
+  it("목적지는 여덟을 넘지 않는다 — 아홉째는 별도 결정을 요구한다", () => {
     expect(
       DESTINATION_IDS.length,
       `레일 목적지가 ${DESTINATION_IDS.length}개다 — ` +
-        `여덟째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
-    ).toBeLessThanOrEqual(7);
+        `아홉째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
+    ).toBeLessThanOrEqual(8);
   });
 
   it("상한이 헐겁지 않다 — 여유를 무료로 두지 않는다", () => {
     /*
      * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Seven exist today, and the owner explicitly required both Architecture
-     * and Git to remain.
+     * next. Eight exist today — the seven the owner required to remain, plus MCP,
+     * which the 2026-09-05 record added by splitting the two unrelated jobs `/agents`
+     * had grown into.
      */
     expect(
       DESTINATION_IDS.length,
-      "목적지가 줄었다 — Architecture 추가가 기존 목적지를 제거하면 안 된다",
-    ).toBe(7);
+      "목적지가 줄었다 — MCP 추가가 기존 목적지를 제거하면 안 된다",
+    ).toBe(8);
   });
 
   it("레일이 넘칠 때 스크롤할 수 있다 — 상한만으로는 배율을 못 막는다", () => {

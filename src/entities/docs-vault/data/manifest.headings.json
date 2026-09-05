@@ -11003,9 +11003,14 @@
       "slug": "agents-agent-new-2026-08-20-catalog-90"
     },
     {
+      "depth": 3,
+      "text": "`/mcp` — MCP (new 2026-09-05)",
+      "slug": "mcp-mcp-new-2026-09-05"
+    },
+    {
       "depth": 4,
-      "text": "Connectors — external MCP servers on the same screen (new 2026-09-05)",
-      "slug": "connectors-external-mcp-servers-on-the-same-screen-new-2026-09-05"
+      "text": "Connectors — the external MCP servers a folder may reach (new 2026-09-05)",
+      "slug": "connectors-the-external-mcp-servers-a-folder-may-reach-new-2026-09-05"
     },
     {
       "depth": 2,

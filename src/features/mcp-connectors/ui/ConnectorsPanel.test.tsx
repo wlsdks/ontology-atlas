@@ -49,6 +49,18 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
 });
 
 import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
+import { useVaultConnectors } from '../model/use-vault-connectors';
+
+/**
+ * **The list state is owned by the caller** (2026-09-05). The `/mcp` tab strip states how many
+ * connectors are switched on, and that number and the panel's rows have to come from one read —
+ * a second `useVaultConnectors` would never hear about the first one's writes. So the panel
+ * takes the state as a prop, and the harness plays the caller.
+ */
+function Panel({ handle }: { handle: FileSystemDirectoryHandle }) {
+  const store = useVaultConnectors(handle);
+  return <ConnectorsPanel handle={handle} store={store} />;
+}
 
 /** A folder handle backed by a map, enough for the store to read and write. */
 function fakeVault(seed?: string) {
@@ -124,7 +136,7 @@ afterEach(cleanup);
 describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다', () => {
   it('무엇이 실제로 실행되는지, 어디로 오가는지, 어떤 기록에 안 남는지 켜기 전에 말한다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item')).toBeInTheDocument(),
     );
@@ -145,7 +157,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
 
   it('켜면 폴더에 적히고, 그 전까지는 아무것도 붙지 않는다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('connectors-item-toggle'));
     await waitFor(() =>
@@ -175,7 +187,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       sources: [],
     };
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-collision')).toBeInTheDocument(),
     );
@@ -185,14 +197,14 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // A bare command finds nothing in the agent's sanitized environment, so switching it
     // on would produce a session whose tools are silently absent.
     const vault = fakeVault(seeded({ ...stdioRecord, command: 'npx' }));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-problem')).toBeInTheDocument());
     expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled();
   });
 
   it('토큰은 키체인으로 보내고 입력란에서 지운다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-secret-missing')).toBeInTheDocument(),
     );
@@ -219,7 +231,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * agent lists its tools, and every call is refused by a service that has no idea why.
      */
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled());
     expect(screen.getByTestId('connectors-item-problem')).toBeInTheDocument();
 
@@ -240,7 +252,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     const vault = fakeVault(
       seeded({ ...stdioRecord, env: [{ name: 'OPENAPI_MCP_HEADERS' }] }),
     );
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable')).toHaveAttribute(
         'data-variable-keychain',
@@ -265,7 +277,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // Forcing a version pin into a keychain would make somebody re-enter it per machine, and a
     // rule people route around stops protecting anything.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_VERSION' }] }));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-value')).toBeInTheDocument(),
     );
@@ -281,7 +293,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // The writer refuses a literal under this name, so a box would be somewhere to type
     // something that is then thrown away.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_TOKEN' }] }));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-refused')).toBeInTheDocument(),
     );
@@ -292,7 +304,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     bridge.discoveryAvailable = false;
     bridge.secretsAvailable = false;
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-discovery-unavailable')).toBeInTheDocument(),
     );
@@ -311,7 +323,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
 
   it('직접 추가한 연결 도구도 꺼진 채로 들어간다', async () => {
     const vault = fakeVault();
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
     fireEvent.change(screen.getByTestId('connectors-custom-name'), {
       target: { value: 'github' },
@@ -361,7 +373,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       sources: [],
     };
     const vault = fakeVault();
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(2));
     // The deprecated transport is shown and explained, never offered.
     const rows = screen.getAllByTestId('connectors-found-item');

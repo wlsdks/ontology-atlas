@@ -221,7 +221,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Even here, the “MCP connection” section below lets you point a tool you started yourself at this folder.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP screen.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -237,7 +237,8 @@
         "installGuide": "How to install",
         "openChat": "Open a chat with this tool",
         "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here.",
-        "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place."
+        "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place.",
+        "webMcpLink": "Open MCP"
       },
       "appUpdate": {
         "intro": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now.",
@@ -265,6 +266,7 @@
     "insights": "Insights",
     "projects": "Projects",
     "agents": "Agents",
+    "mcp": "MCP",
     "git": "History",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections: Windows is in progress"
@@ -631,6 +633,14 @@
       "agentsCheck": {
         "title": "If nothing connects, measure it here",
         "body": "“Check again” re-scans this computer. Each tool also has its own connection check that measures where things are stuck, step by step, and repairs what it can."
+      },
+      "mcpWhat": {
+        "title": "Everything MCP lives here",
+        "body": "MCP is the wire a coding agent uses. One end reaches this folder, the other reaches the services you attach. It attaches to the folder rather than to a screen, so what you set up here holds wherever Atlas is open."
+      },
+      "mcpTabs": {
+        "title": "Two tabs, two jobs",
+        "body": "“Share this folder” hands a coding tool the config that points it here. “Connectors” is the outside servers that agent may also reach, and the number beside it counts the ones switched on."
       }
     }
   },
@@ -925,6 +935,7 @@
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
         "goTo_agents": "Go to Agents",
+        "goTo_mcp": "Go to MCP",
         "goTo_git": "Go to git history",
         "openProjectPalette": "Open the search palette",
         "openGlobalPalette": "Search concepts, docs, and projects together",
@@ -3971,9 +3982,16 @@
   },
   "agents": {
     "title": "Agents",
-    "lede": "Atlas finds coding tools on this computer, shows which can open safely inside the app, and keeps agent-connection (MCP) setup available for the rest. If a supported tool is missing, you can install it here.",
-    "runtimesHeading": "Tools on this computer",
-    "mcpHeading": "MCP connection"
+    "lede": "Atlas finds coding tools on this computer, shows which of them can open safely inside the app, and installs a supported one that is missing.",
+    "runtimesHeading": "Tools on this computer"
+  },
+  "mcp": {
+    "title": "MCP",
+    "lede": "MCP is the wire an AI coding agent uses. One end reaches this folder, the other reaches the services you attach. Both ends live on this screen.",
+    "tablistAriaLabel": "MCP sections",
+    "shareHeading": "Share this folder",
+    "connectorsHeading": "Connectors",
+    "connectorsCountTitle": "Connectors switched on"
   },
   "nativeErrors": {
     "unsupported-provider": "That is not an AI provider this app knows. Pick Anthropic, OpenAI, or Gemini, or connect a local runner by its address.",

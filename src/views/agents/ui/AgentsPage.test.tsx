@@ -21,7 +21,6 @@ vi.mock('@/widgets/app-settings-menu', () => ({
   AcpRuntimeSettings: ({ embedded }: { embedded?: boolean }) => (
     <div data-testid="acp-runtimes" data-embedded={embedded ? 'true' : 'false'} />
   ),
-  AgentSetupSection: () => <div data-testid="agent-setup-section" />,
 }));
 
 function renderPage() {
@@ -85,21 +84,29 @@ describe('목적지의 기본 골격', () => {
 });
 
 /**
- * **Does what the degradation sentence points at actually exist?**
+ * **One job per destination** (2026-09-05).
  *
- * On the web the runner section says it cannot launch a program and points at
- * *"in this screen too, from the «MCP connection» section …"*. Without that section on the same screen,
- * the sentence is guidance pointing nowhere — the shape this repository forbids for degradation cards.
+ * This screen used to carry the MCP connection pane as well, and the two halves shared only the
+ * word "agent": one is about programs installed on this computer, the other about a wire that
+ * works identically in a browser. MCP moved to `/mcp`, and what this asserts is that the move
+ * really happened here rather than being drawn twice — two screens rendering the same pane is the
+ * duplicate-source defect this repository names by name.
+ *
+ * Where the runner row's web sentence now points is asserted by `AcpRuntimeSettings.test.tsx`
+ * (a link) and by `web-surface-smoke` (the link resolves), because that sentence belongs to the
+ * runner list, not to this page.
  */
-describe('강등 문장이 가리키는 곳', () => {
-  it('MCP 연결 칸을 같은 화면에 데려온다', () => {
+describe('한 목적지에 한 가지 일', () => {
+  it('MCP 칸을 더는 그리지 않는다 — 같은 칸을 두 화면이 그리면 어느 쪽이 현재인지 알 수 없다', () => {
     renderPage();
-    expect(screen.getByTestId('agent-setup-section')).toBeInTheDocument();
+    expect(screen.queryByTestId('agent-setup-section')).toBeNull();
+    expect(screen.queryByTestId('connectors-panel')).toBeNull();
   });
 
-  it('두 칸이 각자 제목을 갖는다 — 훑을 수 있어야 한다', () => {
+  it('남은 한 칸은 이름을 갖는다 — 훑을 수 있어야 한다', () => {
     renderPage();
-    const headings = screen.getAllByRole('heading', { level: 2 });
-    expect(headings.length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+      ko.agents.runtimesHeading,
+    );
   });
 });

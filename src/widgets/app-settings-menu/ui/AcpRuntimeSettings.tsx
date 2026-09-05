@@ -5,6 +5,9 @@ import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
+
 import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
@@ -175,7 +178,27 @@ export function AcpRuntimeSettings({
           label={t('webLabel')}
           caption={t('webCaption')}
           testId="app-settings-runtimes-web"
-          control={null}
+          /*
+           * ⚠️ **A link, because the place it names is no longer on this screen**
+           * (2026-09-05). The caption used to say "the «MCP connection» section on this
+           * screen", and a section name is guidance only while that section is here to be
+           * scrolled to. MCP became its own destination, so the row carries the way there
+           * instead of a name — the same rule that forbids a degradation card from stating
+           * a reason with nowhere to go.
+           */
+          control={
+            <Link
+              href={DESTINATION_HREF.mcp}
+              data-testid="app-settings-runtimes-mcp-link"
+              className={controlClass({
+                shape: 'link',
+                tone: 'accent',
+                className: 'font-[var(--font-weight-signature)]',
+              })}
+            >
+              {t('webMcpLink')}
+            </Link>
+          }
         />
       </SettingsGroup>
     );

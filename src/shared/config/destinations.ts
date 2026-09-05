@@ -39,12 +39,23 @@ export const DESTINATION_IDS = [
    * moved out of the settings sheet: settings is where values are chosen, while
    * this is operational work with progress (download, install, sign in, repair,
    * open a conversation).
-   *
-   * ⚠️ **Seven is the current ceiling** (owner correction, 2026-08-26).
-   * Architecture was added without removing Git; an eighth requires a new
-   * measured navigation decision, and the contract enforces that.
    */
   'agents',
+  /*
+   * MCP — added 2026-09-05. The folder's own MCP connection and the external
+   * connectors left `/agents`, which had grown into two unrelated jobs under one
+   * title: "which coding tools does this computer have" and "what does an agent
+   * reach through MCP". Owner: *"Agents itself needs a redesign — MCP separately
+   * (doesn't it need its own LNB tab?) …"*
+   *
+   * ⚠️ **Eight is the current ceiling.** The seven-cap that decision (91) closed on
+   * 2026-08-21 is reopened by this record, measured rather than assumed: at the
+   * app's minimum window (1040×720) the eight tiles plus the utility tier are
+   * drawn without clipping, and the destinations pane owns its own scroll for
+   * every case beyond that. A ninth requires another measured decision, and
+   * `destination-shortcuts.contract.test.ts` enforces that.
+   */
+  'mcp',
   'git',
 ] as const;
 
@@ -79,6 +90,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   insights: '/ontology/insights/',
   projects: '/projects/',
   agents: '/agents/',
+  mcp: '/mcp/',
   git: '/git/',
 };
 
@@ -95,6 +107,9 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   projects: 'p',
   // `a` — nothing collides with it.
   agents: 'a',
+  // `m` belongs to Map; `c` is the letter this destination's own name turns on
+  // (the connectors it holds), so the mnemonic survives the collision.
+  mcp: 'c',
   git: 'g',
 };
 
