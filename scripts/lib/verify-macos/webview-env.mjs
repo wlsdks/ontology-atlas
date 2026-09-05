@@ -71,7 +71,9 @@ const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
  */
 const WEBVIEW_MCP_WORKBENCH_MARKERS = [
   /MCP/,
-  /Share this folder|Connectors|이 폴더 공유|커넥터/,
+  // The tab strip renders its labels uppercase through CSS, and WebKit's innerText reports the
+  // transformed text, so the marker must not care about case (measured 2026-09-05: "SHARE THIS F…").
+  /Share this folder|Connectors|이 폴더 공유|커넥터/i,
 ];
 
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
