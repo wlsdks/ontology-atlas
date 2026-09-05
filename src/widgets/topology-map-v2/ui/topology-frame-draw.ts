@@ -34,6 +34,7 @@ import {
   DOME_RING_WIDTH_PX,
   domeDetailFactor,
   domeFogAlpha,
+  DOME_RIM_FOG_FLOOR,
   domeHaloPx,
   domeLineWidthFactor,
   type DomeNodeFrame,
@@ -1952,21 +1953,34 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // 3D view — the dot radius (perspective already folded into `s`) is geometry,
     // so it is always applied, while depth fog (near 1.0 → far 0.09) exempts
     // whatever the interaction is on (hover, ego, trail): anything that must be
-    // read brightens again. This deep attenuation falls outside the 2D ink-contrast
-    // floor (3:1) and is a waiver the owner granted for 3D only — see
-    // `docs/DECISIONS.md` "3D Waiver List" (the 3D waiver list).
+    // read brightens again. The 3D waiver that let this attenuation run past the
+    // 2D 3:1 ink floor (`docs/DECISIONS.md`, the 3D waiver list) now stops at the
+    // node's **rim**: the fill may still sink to 0.09, the edge may not
+    // (`DOME_RIM_FOG_FLOOR`, 2026-09-05).
     // perf 2026-08-19 — recovers the buffered frame by sort index, no map re-lookup.
     const nodeDome = domeOn ? domeNodeFrameReused[domeNodeIndexReused[drawPos]] : ZERO_DOME_FRAME;
     // Far-side detail ramp (`domeDetailFactor` doc-block) — folds the extra strokes
-    // of back-hemisphere nodes (depth halo, depth shading, metallic sheen, outline,
-    // domain pin tick) away continuously with depth. Same exemption rule as the
+    // of back-hemisphere nodes (depth halo, depth shading, metallic sheen, domain
+    // pin tick) away continuously with depth. The outline left that list on
+    // 2026-09-05 and is held at the rim floor instead. Same exemption rule as the
     // fog: hovered, trail, and ego nodes stay at 1.
     let domeDetail = 1;
+    /*
+     * The rim's share of its unfogged alpha (`NodeShapeDrawState.rimAlphaScale`).
+     * Fog multiplies the whole node and bottoms out at 0.09, which left the
+     * median rim at 1.15 : 1 against the background beside it and 117 of 125
+     * nodes under 3 : 1 (measured 2026-09-05, sample vault at 1920). The fill,
+     * shading, halo, line width, perspective size and draw order still carry
+     * depth; only the edge gets a floor.
+     */
+    let domeRimAlphaScale = 1;
     if (domeOn) {
       effRadius *= nodeDome.s;
       if (!isHoveredNode && !previewEndpoint && !isTrailKept(node.id) && egoState === "normal") {
-        realmClarityAlpha *= 1 + (domeFogAlpha(nodeDome.u) - 1) * nodeDome.a;
+        const domeFog = 1 + (domeFogAlpha(nodeDome.u) - 1) * nodeDome.a;
+        realmClarityAlpha *= domeFog;
         domeDetail = 1 + (domeDetailFactor(nodeDome.u) - 1) * nodeDome.a;
+        domeRimAlphaScale = domeFog > 1e-4 ? Math.max(1, DOME_RIM_FOG_FLOOR / domeFog) : 1;
       }
     }
 
@@ -2099,8 +2113,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         // hemisphere, continuously; the 0.01 threshold then skips the second
         // fill + translate pair entirely.
         depthShade: domeOn ? nodeDome.a * domeDetail : 0,
-        // Far-side detail ramp — the outline and the domain pin tick recede with it.
+        // Far-side detail ramp — the domain pin tick and the depth shading recede
+        // with it. The outline does not: `rimAlphaScale` holds it at the 3:1 floor.
         detail: domeDetail,
+        rimAlphaScale: domeRimAlphaScale,
         kind: node.kind,
         screenX: screen.x,
         screenY: screen.y,

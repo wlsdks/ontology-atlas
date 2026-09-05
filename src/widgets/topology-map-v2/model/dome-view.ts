@@ -549,6 +549,23 @@ export const DOME_NODE_PX: Readonly<Record<DomeViewKind, number>> = {
  */
 export const DOME_NODE_FIT_ALLOWANCE_PX = 12;
 
+/**
+ * **The floor depth fog may darken a node's rim to.**
+ *
+ * `domeFogAlpha` bottoms out at 0.09, and it multiplies the whole node — rim
+ * included. Measured on the sample vault at 1920 (2026-09-05): the median node rim
+ * stood at **1.15 : 1** against the background beside it and 117 of 125 nodes were
+ * under 3 : 1, so most of what is on screen is a shape you cannot see the edge of.
+ *
+ * The fill, the halo, the line-width attenuation, the perspective size and the
+ * draw order still carry depth. Only the rim gets a floor, and 0.75 is the number
+ * that keeps the dimmest rim token (`--topology-v2-node-stroke-element`, #7a7a86)
+ * at 3 : 1 or better once composited over the canvas ground — the same 3 : 1 ink
+ * floor the flat map holds itself to. `dome-rim-contrast.contract.test.ts` derives
+ * that number from the tokens rather than trusting this sentence.
+ */
+export const DOME_RIM_FOG_FLOOR = 0.75;
+
 /** Deterministic hash → [0,1) — the hero engine's FNV-1a jitter, unchanged (angle stability). */
 function domeHash01(str: string): number {
   let h = 2166136261;
