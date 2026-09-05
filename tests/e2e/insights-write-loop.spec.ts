@@ -123,8 +123,10 @@ test("인사이트의 「여기서 적기」가 내 폴더의 파일을 바꾼�
   // behind its group's disclosure. Opening every group is what a person does to reach a row.
   const toggles = page.getByTestId("do-next-group-toggle");
   await expect(toggles.first()).toBeVisible({ timeout: 30_000 });
+  // The first group starts open; a click on an open toggle would close it.
   for (let index = 0; index < (await toggles.count()); index += 1) {
-    await toggles.nth(index).click();
+    const toggle = toggles.nth(index);
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
   }
 
   const write = page.locator("button", { hasText: "직접 고치기" }).first();
