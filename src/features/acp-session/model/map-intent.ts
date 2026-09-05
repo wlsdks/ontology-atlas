@@ -1,6 +1,4 @@
-import { MCP_SERVER_NAME } from '@/shared/config';
-
-import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
+import { parseAtlasToolCall } from './atlas-tool-call';
 
 /**
  * Translates the Atlas read tool actually called by ACP into map state.
@@ -20,25 +18,6 @@ export interface AcpMapIntentEvent {
   title?: string;
   rawInput?: unknown;
   [key: string]: unknown;
-}
-
-const ATLAS_SERVER_NAMES = new Set([VAULT_MCP_SERVER_NAME, MCP_SERVER_NAME]);
-
-function atlasToolName(title: string | undefined): 'get_concept' | 'find_path' | null {
-  if (!title) return null;
-  for (const serverName of ATLAS_SERVER_NAMES) {
-    const prefix = `mcp__${serverName}__`;
-    if (!title.startsWith(prefix)) continue;
-    const name = title.slice(prefix.length);
-    if (name === 'get_concept' || name === 'find_path') return name;
-  }
-  return null;
-}
-
-function recordInput(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
 }
 
 /**
@@ -63,8 +42,11 @@ export function deriveAcpMapIntent(
   for (let index = turnStart; index < events.length; index += 1) {
     const event = events[index];
     if (!event || event.kind !== 'tool') continue;
-    const tool = atlasToolName(event.title);
-    const input = recordInput(event.rawInput);
+    const call = parseAtlasToolCall(event.title, event.rawInput);
+    const tool = call?.name === 'get_concept' || call?.name === 'find_path'
+      ? call.name
+      : null;
+    const input = call?.input ?? null;
     if (!tool || !input) continue;
     if (tool === 'get_concept') {
       const slug = input.slug;

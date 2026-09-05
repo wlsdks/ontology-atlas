@@ -4670,3 +4670,21 @@ record stays in Git history before commit `e4fb49a89`.
 **Dissent**: workflow stages could teach the intended process, replay could emphasize direction, and borderless rows could reduce card weight; they lost because the live screen made those features harder to understand than direct selection and made the evidence less distinct.
 **Falsifier**: reopen if five observed Architecture tasks require a removed stage/replay/walk path, if readers cannot distinguish reviewed intent from observed imports and delta, if a selected dependency cannot be recovered from canvas plus dock, or if 1512px hides a role, mismatches toolbar heights, or lets a dock cover the diagram.
 **Owner**: jinan
+
+## 2026-09-04 — Flow presentations are verified projections of one ACP turn
+
+**Why**: the owner wanted Analysis to use ACP for business understanding and make the ontology's DNA easier to explain like a presentation; the current Flow ended at a long chat answer, while live probes also showed an uncited preamble, 33 broad reads, and one attempted non-Atlas source action.
+**Prior**: 2026-08-31 “An analysis is a dated record beside the vault, not a concept inside it” and 2026-09-01 “Design proof follows the changed failure mode” stand; this presentation is neither that durable record nor an exception to rendered proof.
+**Decision**: keep Analysis > Flow as the entry and explicit Send as the authority boundary. Only the exact current Flow turn may become an ephemeral Back/Next view in the existing map-side ACP dock. Require an Atlas-only tool audit, 12 or fewer fully read concepts, cited scenes, current typed relations, and retained limitations; otherwise show why presentation is blocked. Scene navigation reuses map focus and read call ids. Do not add a route, saved deck, new ontology kind, automatic send, write, voice, or TTS. While presenting, suppress the selected-node inspector's competing primary agent action.
+**Dissent**: the cited transcript and existing map focus may already be enough, while a deck can amplify model-authored order and the final native motion proof remains deferred by the locked macOS session.
+**Falsifier**: reopen or remove the mode if a non-Atlas read, unread slug, nonexistent relation, or dropped qualifier reaches a scene; if source-hidden presenters recover no more business meaning than from the transcript; or if the installed 1040×720 workbench cannot keep the scene, map fact, and controls usable.
+**Owner**: jinan
+
+## 2026-09-04 — Analysis owns one ACP conversation; Map is an explicit continuation
+
+**Why**: the owner rejected making Analysis hand every explanation to Map and asked whether ACP could remain available across the Analysis tabs, especially for business understanding and the Ontology DNA presentation.
+**Prior**: overturns only the “existing map-side ACP dock” location in 2026-09-04 “Flow presentations are verified projections of one ACP turn”; its source-hidden qualification, explicit Send boundary, no-write rule, and ephemeral presentation contract remain.
+**Decision**: mount one vault-and-runtime-scoped ACP dock beside Analysis, outside the keyed six-tab panel. Switching tabs has no ACP side effect. An explicit tab action seats that tab's read-only question; a non-empty draft is never replaced without a second explicit choice, and the visible request origin remains the last explicitly seated tab. Flow presentation stays in Analysis, while following a cited fact on Map is optional and explicit. Browsers remain copy-only. Do not create six sessions, tab-owned transcripts, automatic prompts, writes, or a new route.
+**Dissent**: one conversation can mix questions from different tabs, while six tab-local sessions would preserve cleaner transcripts; it lost because separate sessions fragment context, multiply process cost, and turn navigation into hidden agent state.
+**Falsifier**: reopen if tab switching mutates or sends a draft, starts another ACP session, loses the transcript, obscures the request origin, or if the Analysis content and dock cannot both remain usable at the installed 1040×720 minimum.
+**Owner**: jinan

@@ -8779,6 +8779,16 @@
       "depth": 2,
       "text": "2026-09-03 — Architecture is a comparison workbench, not a demo canvas",
       "slug": "2026-09-03-architecture-is-a-comparison-workbench-not-a-demo-canvas"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-04 — Flow presentations are verified projections of one ACP turn",
+      "slug": "2026-09-04-flow-presentations-are-verified-projections-of-one-acp-turn"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-04 — Analysis owns one ACP conversation; Map is an explicit continuation",
+      "slug": "2026-09-04-analysis-owns-one-acp-conversation-map-is-an-explicit-continuation"
     }
   ],
   "DEMO-SCENARIO": [
@@ -10826,8 +10836,8 @@
     },
     {
       "depth": 4,
-      "text": "Bottom handoff row (`InsightsHandoffRow`, always visible)",
-      "slug": "bottom-handoff-row-insightshandoffrow-always-visible"
+      "text": "Bottom handoff row (`InsightsHandoffRow`)",
+      "slug": "bottom-handoff-row-insightshandoffrow"
     },
     {
       "depth": 3,
@@ -12996,6 +13006,33 @@
       "slug": "confidence"
     }
   ],
+  "ontology/capabilities/ontology-dna-presentation": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Behaviour Contract",
+      "slug": "behaviour-contract"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Boundaries",
+      "slug": "boundaries"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
   "ontology/capabilities/project-data-source": [
     {
       "depth": 2,
@@ -14224,6 +14261,11 @@
     }
   ],
   "ontology/elements/ontology-insights": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
     {
       "depth": 2,
       "text": "Evidence",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useSwapHeight } from "@/shared/lib/use-presence";
@@ -16,11 +16,10 @@ import {
   useEdgeTypeLabel,
   type KnowledgeGraphEdge,
   type KnowledgeGraphNode,
-  type MeaningGapKind,
   buildOntologyTree,
   computeEdgeTypeDistribution,
   rankAllByDegree,
-  buildBusinessFlowHref,
+  resolveNodeAgentTarget,
 } from "@/entities/knowledge-graph";
 import {
   useOntologyInsight,
@@ -30,9 +29,9 @@ import {
   useVaultUnmatchedAsks,
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
-import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 import type { VaultDocumentIssue } from "@/shared/lib/validate-vault-document";
 import {
+  useAgentServer,
   useDataSourceMode,
   VaultSourceHydrationBoundary,
   useLocalVault,
@@ -44,7 +43,7 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { AppSettingsMenu } from "@/widgets/app-settings-menu";
 import { useNavRailSettingsSlot } from "@/widgets/app-nav-rail";
-import { EmptyState, TabBar } from "@/shared/ui";
+import { Button, EmptyState, TabBar, useToast } from "@/shared/ui";
 import {
   DEFAULT_INSIGHTS_TAB,
   INSIGHTS_TABS,
@@ -99,12 +98,32 @@ import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
 import { FreshnessTab } from "./tabs/FreshnessTab";
 import { FlowTab } from "./tabs/FlowTab";
 import { buildBusinessFlowRequest } from "@/features/vault-agent";
-import { isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
+import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
+import {
+  presentationRelationKeysForGraphEdge,
+  runtimeOwnsWriteGate,
+  vaultMcpServers,
+  vaultSelfReadSlot,
+} from "@/features/acp-session";
 import { InsightsHandoffRow } from "./parts/InsightsHandoffRow";
+import { InsightsAgentDock } from "./parts/InsightsAgentDock";
 import { controlClass } from '@/shared/ui/control-class';
+import { ICON_SIZE } from '@/shared/ui/icon-size';
+import { MessageCircle } from 'lucide-react';
+import {
+  buildInsightsAgentPrompt,
+  planInsightsAgentPrompt,
+  resolveInsightsAgentRoute,
+  selectInsightsAgentRuntimes,
+  type InsightsAgentPrefill,
+} from '../lib/insights-agent';
 
 const EMPTY_NODES: KnowledgeGraphNode[] = [];
 const EMPTY_EDGES: KnowledgeGraphEdge[] = [];
+const subscribeAcpBridge = () => () => undefined;
+const readAcpBridge = () => isAcpBridgeAvailable();
+const readServerAcpBridge = () => false;
 const HUB_DISPLAY_LIMIT = 6;
 /**
  * How many impact-ranking rows to show — the ceiling that still reads inside the
@@ -251,6 +270,7 @@ const INSIGHTS_TAB_BADGE: Record<
  */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
+  const toast = useToast();
   // Locale-resolved handoff prose — typed locale data in code, not messages:
   // the templates embed literal MCP-call braces the ICU catalog gate rejects.
   const locale = useLocale();
@@ -307,6 +327,74 @@ export function OntologyInsightsPage() {
   const docFreshnessIndex = useVaultDocFreshnessIndex();
   const vault = useLocalVault();
   const dataSourceMode = useDataSourceMode();
+  const agentServer = useAgentServer();
+  const acpBridgeAvailable = useSyncExternalStore(
+    subscribeAcpBridge,
+    readAcpBridge,
+    readServerAcpBridge,
+  );
+  const gitVaultPath = vault.handle ? getTauriVaultRootPath(vault.handle) ?? null : null;
+  const [acpRuntimes, setAcpRuntimes] = useState<ReturnType<typeof selectInsightsAgentRuntimes>>([]);
+  const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
+  const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
+  const [agentOpen, setAgentOpen] = useState(false);
+  const [agentDraftPresent, setAgentDraftPresent] = useState(false);
+  const [agentPrefill, setAgentPrefill] = useState<InsightsAgentPrefill | null>(null);
+
+  useEffect(() => {
+    if (!acpBridgeAvailable) return;
+    let cancelled = false;
+    const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
+      if (cancelled) return;
+      const usable = selectInsightsAgentRuntimes(list);
+      setAcpRuntimes(usable);
+      setAcpRuntimeId((current) => (
+        current && usable.some((runtime) => runtime.id === current)
+          ? current
+          : (usable[0]?.id ?? null)
+      ));
+    };
+    void detectAcpRuntimes()
+      .then((fast) => {
+        apply(fast);
+        return detectAcpRuntimes({ probeLogin: true });
+      })
+      .then(apply)
+      .catch(() => apply(null))
+      .finally(() => {
+        if (!cancelled) setRuntimeCheckComplete(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [acpBridgeAvailable]);
+
+  const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
+  const acpMcpServers = useMemo(() => {
+    const registration = vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
+      ? {
+          command: vault.agentConfigStatus?.codexRegisteredCommand ?? null,
+          validForCurrentVault: vault.agentConfigStatus?.codexConfigValid === true,
+        }
+      : null;
+    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+    });
+  }, [
+    acpRuntimeId,
+    agentServer.launch,
+    gitVaultPath,
+    vault.agentConfigStatus?.codexConfigValid,
+    vault.agentConfigStatus?.codexRegisteredCommand,
+  ]);
+  const agentRoute = resolveInsightsAgentRoute({
+    bridgeAvailable: acpBridgeAvailable,
+    runtimeCheckComplete,
+    serverCheckComplete: agentServer.launch !== null || agentServer.reason !== null,
+    runtime: acpRuntime,
+    vaultRoot: gitVaultPath,
+    serverReady: agentServer.launch !== null,
+  });
 
   // At lg+ the nav rail's bottom gear opens settings, matching the map. Below lg
   // the chrome tile in the top utility lane takes over (the width where the rail is
@@ -350,6 +438,89 @@ export function OntologyInsightsPage() {
   );
   /** Is the tab body drawn at all? If it falls through to an empty state, the badge must not state a number either. */
   const hasConcepts = totalNodes > 0;
+  const agentSlugByNodeId = useMemo(
+    () => new Map(nodes.map((node) => [
+      node.id,
+      resolveNodeAgentTarget(node).ref ?? node.id,
+    ])),
+    [nodes],
+  );
+  const agentNodeIdBySlug = useMemo(
+    () => new Map([...agentSlugByNodeId].map(([nodeId, slug]) => [slug, nodeId])),
+    [agentSlugByNodeId],
+  );
+  const agentKnownSlugs = useMemo(
+    () => new Set(agentSlugByNodeId.values()),
+    [agentSlugByNodeId],
+  );
+  const agentKindByNodeId = useMemo(
+    () => new Map(nodes.map((node) => [node.id, node.kind])),
+    [nodes],
+  );
+  const agentKnownRelations = useMemo(
+    () => new Set(edges.flatMap((edge) => presentationRelationKeysForGraphEdge({
+      from: agentSlugByNodeId.get(edge.from) ?? edge.from,
+      to: agentSlugByNodeId.get(edge.to) ?? edge.to,
+      type: edge.type,
+      toKind: agentKindByNodeId.get(edge.to) ?? null,
+    }))),
+    [agentKindByNodeId, agentSlugByNodeId, edges],
+  );
+  const flowRequest = useMemo(
+    () => buildBusinessFlowRequest({ request: t('flow.request') }),
+    [t],
+  );
+  const agentPromptForTab = useCallback(
+    (kind: InsightsTab) => buildInsightsAgentPrompt({
+      locale,
+      kind,
+      handoff: handoffProse[HANDOFF_PAYLOAD_KEY[kind]],
+      flowRequest,
+    }),
+    [flowRequest, handoffProse, locale],
+  );
+  const commitAgentPrefill = useCallback((request: InsightsAgentPrefill) => {
+    setAgentPrefill(request);
+    setAgentOpen(true);
+  }, []);
+  const openAgentForTab = useCallback((kind: InsightsTab) => {
+    if (agentRoute !== 'agent') return;
+    const plan = planInsightsAgentPrompt({
+      current: agentPrefill,
+      draftPresent: agentDraftPresent,
+      kind,
+      text: agentPromptForTab(kind),
+    });
+    if (plan.action === 'open-current') {
+      setAgentOpen(true);
+      return;
+    }
+    if (plan.action === 'seat') {
+      commitAgentPrefill(plan.request);
+      return;
+    }
+    setAgentOpen(true);
+    toast.show(t('agentDraftHeld'), 'info', {
+      label: t('agentReplaceDraft'),
+      onClick: () => commitAgentPrefill(plan.request),
+    });
+  }, [
+    agentDraftPresent,
+    agentPrefill,
+    agentPromptForTab,
+    agentRoute,
+    commitAgentPrefill,
+    t,
+    toast,
+  ]);
+  const agentContextLabel = agentPrefill
+    ? t('agentContext', { tab: t(`tab.${agentPrefill.kind}`) })
+    : '';
+  const openPresentationOnMap = useCallback((slug: string) => {
+    const nodeId = agentNodeIdBySlug.get(slug);
+    if (!nodeId) return;
+    router.push(mapNodeHref(nodeId));
+  }, [agentNodeIdBySlug, mapNodeHref, router]);
 
   const kindRows = useMemo(
     () =>
@@ -596,23 +767,6 @@ export function OntologyInsightsPage() {
         })
       : null;
   };
-  /**
-   * The address that hands this row to the map's agent. It carries **the kind of
-   * intent, not a sentence**: the destination (the map) composes the sentence in the
-   * screen's language with its opening-line generator, so the chips in an empty
-   * conversation and a prefill arriving from here write one sentence. The address goes
-   * through the same builder as every other map-bound link and keeps the return
-   * marker, so the way back is never cut.
-   */
-  const askAgentHref = (nodeId: string, gap: MeaningGapKind | "missing-relations"): string | null =>
-    // The agent surface exists only in the desktop app; this item is not emitted in a
-    // browser. A link that goes somewhere and does nothing is a betrayal, not guidance.
-    isLlmChatBridgeAvailable()
-      ? buildOntologyNodeHref(nodeId, {
-          via: buildInsightsReturnMarker("do-next"),
-          ask: gap,
-        })
-      : null;
   const builderHref = (nodeId: string, exactReviewId?: string): string =>
     buildTopologyMeaningEditorNodeHref(nodeId, {
       via: exactReviewId ? buildInsightsReturnMarker("do-next") : null,
@@ -981,7 +1135,7 @@ export function OntologyInsightsPage() {
 
   return (
     <VaultSourceHydrationBoundary>
-    <div className="flex min-h-full w-full">
+    <div className="relative flex min-h-0 flex-1 overflow-hidden">
       {/* The rail lives in the layout (AppShell) since the persistent-shell work. */}
       {/*
         * **The height chain** (measured 2026-08-12). The vertical flex must run unbroken down
@@ -991,7 +1145,7 @@ export function OntologyInsightsPage() {
         * space (measured at 1512×900). It is a `min-h-full` chain, so long content still grows
         * and scrolling is unchanged.
         */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="@container/insights flex min-w-0 flex-1 flex-col overflow-y-auto">
         {/*
          * ⚠️ **The live indicator was removed** (2026-08-03, owner report — same reason as the
          * project list). "Live · N changed" is **the map's object**: it draws what changed onto
@@ -1011,7 +1165,7 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          className={`${PAGE_FRAME} flex min-h-0 flex-1 flex-col pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)] lg:pb-8`}
+          className={`${PAGE_FRAME} flex min-h-full shrink-0 flex-col pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)]`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 
@@ -1024,15 +1178,30 @@ export function OntologyInsightsPage() {
               {scopeSubtitle}
             </p>
           </div>
-          {insight ? (
-            <span className="font-mono text-label tracking-[var(--tracking-caps-10)] text-[color:var(--topology-v2-numeral-face)]">
-              {totalNodes} {t("censusConcepts")}
-              <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-              {totalEdges} {t("censusRelations")}
-              <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-              {domainCount} {t("censusDomains")}
-            </span>
-          ) : null}
+          <div className="flex shrink-0 items-center gap-3">
+            {insight ? (
+              <span className="font-mono text-label tracking-[var(--tracking-caps-10)] text-[color:var(--topology-v2-numeral-face)]">
+                {totalNodes} {t("censusConcepts")}
+                <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
+                {totalEdges} {t("censusRelations")}
+                <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
+                {domainCount} {t("censusDomains")}
+              </span>
+            ) : null}
+            {agentRoute === 'agent' && hasConcepts && tab !== 'flow' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                aria-label={t('agentOpenAria', { tab: t(`tab.${tab}`) })}
+                aria-pressed={agentOpen}
+                data-testid="insights-agent-open"
+                onClick={() => openAgentForTab(tab)}
+              >
+                <MessageCircle size={ICON_SIZE.sm} aria-hidden />
+                {t('agentOpen')}
+              </Button>
+            ) : null}
+          </div>
         </header>
         {/* This surface is a maintenance board for power users — people who curate an ontology,
             and AI agents. Rather than rewriting all the copy, it declares its audience honestly so
@@ -1117,13 +1286,13 @@ export function OntologyInsightsPage() {
           // The content crossfades in while **the box jumped in one frame** (measured 878.5 →
           // 605px, a 246px jump for the whole document). The height is set one step (base) later
           // so the crossfade wraps the reflow.
-          <div ref={insightsSwapHostRef} className="flex min-h-0 flex-1 flex-col">
+          <div ref={insightsSwapHostRef} className="flex flex-1 flex-col">
           <div
             key={tab}
             role="tabpanel"
             id={`insights-tabpanel-${tab}`}
             aria-labelledby={`insights-tab-${tab}`}
-            className="insights-tab-crossfade mt-[var(--section-gap)] flex min-h-0 flex-1 flex-col"
+            className="insights-tab-crossfade mt-[var(--section-gap)] flex flex-1 flex-col"
           >
             {tab === "do-next" ? (
               <DoNextTab
@@ -1139,7 +1308,6 @@ export function OntologyInsightsPage() {
                 mapHref={mapNodeHref}
                 sourceHref={sourceHref}
                 builderHref={builderHref}
-                askAgentHref={askAgentHref}
                 nodeTitle={cycleNodeTitle}
                 cycleHandoff={cycleHandoff}
                 reviewState={reviewState}
@@ -1268,6 +1436,7 @@ export function OntologyInsightsPage() {
                   lead: t("flow.lead"),
                   action: t("flow.action"),
                   actionHint: t("flow.actionHint"),
+                  checking: t("flow.checking"),
                   requestLabel: t("flow.requestLabel"),
                   unavailableTitle: t("flow.unavailableTitle"),
                   unavailableBody: t("flow.unavailableBody"),
@@ -1276,16 +1445,12 @@ export function OntologyInsightsPage() {
                   noVaultTitle: t("flow.noVaultTitle"),
                   noVaultBody: t("flow.noVaultBody"),
                 }}
-                request={buildBusinessFlowRequest({ request: t("flow.request") })}
+                request={flowRequest}
                 hasGraph={totalNodes > 0}
                 hasOwnFolder={vault.status === "loaded"}
-                canLaunchAgent={isAcpBridgeAvailable()}
-                onPrefill={() => {
-                  // The conversation lives beside the map, so pressing travels
-                  // there and the request is rebuilt on arrival. The return
-                  // marker is stamped so the map can offer the way back.
-                  router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));
-                }}
+                canLaunchAgent={agentRoute === 'agent'}
+                agentChecking={agentRoute === 'checking'}
+                onPrefill={() => openAgentForTab('flow')}
               />
             ) : null}
           </div>
@@ -1293,13 +1458,14 @@ export function OntologyInsightsPage() {
         )}
 
         {/*
-          * **Not on the "to do" tab** (owner decision, 2026-08-31). That tab now offers the agent
+          * **Not on the "to do" tab or beside an open ACP conversation.** The to-do tab offers the agent
           * per row, with the sentence already written; a second, tab-wide "hand this to an AI"
-          * band under it repeated the offer and was the last of the three ways the same work was
-          * shown. Every other tab answers a question rather than listing work, so the row still
-          * belongs there.
+          * band under it repeated the offer. The shared ACP dock now carries the same handoff for
+          * every other tab, so keeping this row while the dock is open duplicates the action and,
+          * at 1040×720, sits over the long Flow request. It returns when the dock closes and remains
+          * the browser/copy-only path.
           */}
-        {tab === "do-next" ? null : (
+        {tab === "do-next" || agentOpen ? null : (
         <InsightsHandoffRow
           label={t("handoffLabel")}
           caption={t("handoffCaption")}
@@ -1310,6 +1476,23 @@ export function OntologyInsightsPage() {
         )}
         </main>
       </div>
+      {acpRuntime && gitVaultPath ? (
+        <InsightsAgentDock
+          open={agentOpen}
+          runtime={acpRuntime}
+          runtimes={acpRuntimes}
+          onRuntimeChange={setAcpRuntimeId}
+          vaultRoot={gitVaultPath}
+          mcpServers={acpMcpServers}
+          prefillRequest={agentPrefill}
+          contextLabel={agentContextLabel}
+          knownSlugs={agentKnownSlugs}
+          knownRelations={agentKnownRelations}
+          onDraftPresenceChange={setAgentDraftPresent}
+          onPresentationOpenMap={openPresentationOnMap}
+          onClose={() => setAgentOpen(false)}
+        />
+      ) : null}
     </div>
     </VaultSourceHydrationBoundary>
   );

@@ -57,15 +57,15 @@ import { expect, test, type Page } from "@playwright/test";
  * ## How many surfaces can be opened — the denominator
  * ════════════════════════════════════════════════════════════════════
  *
- * The exhaustive source count is **22** (`censusAppearingSurfaces`, surfaces that
- * appear conditionally). This file opens **6** of them. Most of the rest cannot be
+ * The exhaustive source count is **34** (`censusAppearingSurfaces`, surfaces that
+ * appear conditionally). This file opens **7** of them. Most of the rest cannot be
  * opened here because they **need a vault** (document editor autocomplete, the agent
  * panel) or require canvas coordinates (map node popover, right-click menu — the
  * route through `?e2e=1`'s `window.__atlasMap` reached coordinate conversion this
  * round, but the click never landed on a node, so it was deferred).
  *
- * **Why the denominator is written into the code**: writing 6/22 lets the next person
- * ask "why are the other 16 not measured". Opening 6 and saying nothing makes that
+ * **Why the denominator is written into the code**: writing 7/34 lets the next person
+ * ask "why are the other 27 not measured". Opening 7 and saying nothing makes that
  * question disappear. When the denominator grows, `surface-motion-ratchet`'s "openable
  * surfaces never grow" turns red first — and that is the moment to review this list
  * too.
@@ -160,7 +160,15 @@ const MIN_RULES_PASSED = 15;
  * and bundled MCP server, so component tests plus the installed-app walkthrough
  * carry its accessibility proof.
  */
-const APPEARING_SURFACES_IN_SOURCE = 33;
+/*
+ * 33 → 34 (2026-09-04): the Flow presentation requires a Tauri vault path, an
+ * eligible ACP runtime, an exact completed Flow turn, and successful source-hidden
+ * qualification. It therefore cannot join this static single-click OPENERS grammar.
+ * `AcpChatPanel.test.tsx` opens the offer and presentation, checks the named region,
+ * progress and keyboard/focus path, and separately covers fail-closed qualification.
+ */
+// The Analysis dock is desktop-only; InsightsAgentDock tests and the native walkthrough cover it.
+const APPEARING_SURFACES_IN_SOURCE = 35;
 
 interface Opener {
   readonly name: string;
@@ -398,7 +406,7 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   ).toEqual([]);
 });
 
-test("측정 목록이 분모를 잃지 않는다 — 8/30 이라고 말할 수 있어야 한다", async () => {
+test("측정 목록이 분모를 잃지 않는다 — 7/34 라고 말할 수 있어야 한다", async () => {
   expect(OPENERS.length, "열 표면 목록이 비면 위 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
   expect(
     new Set(OPENERS.map((o) => o.route)).size,

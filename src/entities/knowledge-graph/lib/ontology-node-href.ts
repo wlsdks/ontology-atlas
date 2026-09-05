@@ -41,21 +41,6 @@ export function buildOntologyNodeHref(
 }
 
 /**
- * The one deeplink whose subject is the whole graph rather than a node.
- *
- * `buildOntologyNodeHref` needs an id because every other intent is about
- * something in particular; "explain what this product is and how it moves" is
- * about all of it, so there is nothing to put in `?node=`. It carries the same
- * `ask` key and obeys the same rule as its sibling above: the name travels, the
- * sentence is written at the destination.
- */
-export function buildBusinessFlowHref(via?: string): string {
-  const params = [`${ONTOLOGY_DEEPLINK_ASK_KEY}=${BUSINESS_FLOW_ASK_VALUE}`];
-  if (via) params.push(`${ONTOLOGY_DEEPLINK_VIA_KEY}=${encodeURIComponent(via)}`);
-  return `/ontology/?${params.join("&")}`;
-}
-
-/**
  * The `ask` value meaning "explain the whole product". Owned here beside the
  * builder that writes it, so the link and the route that reads it cannot drift
  * apart into two spellings of the same intent.

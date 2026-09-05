@@ -906,7 +906,8 @@ The usability motion for "verifying meaning" in the map contextual editor and in
   backdrops/docking entrance/exits). Matches Chrome's 180ms rhythm.
 - `--motion-settle: 240ms` — **Settling**. The signature that something is done (satellite repositioning (FLIP)·
   commit convergence/completion linger).
-- `--motion-ease: cubic-bezier(0.25,0.1,0.25,1)` — The common easing for the three above.
+- `--motion-ease: cubic-bezier(0.25,0.1,0.25,1)` — The common easing for the three above. Every **entry** rides it.
+- `--motion-ease-exit: cubic-bezier(0.4,0,1,1)` — **Exits only** (2026-09-05). Paired with the exit clock `calc(var(--motion-base) * 0.67)` (= `--motion-fast`); JS copy `MOTION_EASE_EXIT`, reached only through `EXIT_TRANSITION`. `--motion-ease` decelerates into place, so a surface leaving on it is the entrance clock played backwards, slowing down while still visible; this curve accelerates away. Measured at 120.6ms: 3.4% of the travel in the first frame, 21.3% in the last, against 61.5% first-frame for the `--topology-motion-ease-out` curve the inspector movement exit used before. Entries may not use it and a `transition:` may not reference it (a transition runs both ways on one curve); `motion-token-mirror.contract.test.ts` enforces both directions in CSS (`-out` / `[data-state="closed"]` rules on `*Out` keyframes only) and JS (no import outside `src/shared/motion`). The brightness axis of a split exit (`overlayFadeOut`) keeps `--motion-ease`: an accelerating fade holds 79% opacity into its last frame.
 - `--topology-motion-camera/drag-settle: 420/720ms` — **Map canvas only**
   continuity. Referencing this from a DOM surface is a defect.
 

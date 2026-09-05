@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { cn } from "@/shared/lib/cn";
 import { controlClass } from "./control-class";
 
@@ -40,12 +40,15 @@ export function SimilarNodeWarning({
   onCreateAnyway,
   className,
 }: SimilarNodeWarningProps) {
+  const { ref: exitLockoutRef, onAnimationStart } = useExitLockout<HTMLDivElement>();
   return (
     <motion.div
+      ref={exitLockoutRef}
       role="status"
+      onAnimationStart={onAnimationStart}
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 0, transition: MOTION.fast }}
+      exit={{ opacity: 0, y: 0, transition: EXIT_TRANSITION }}
       // 0.15 was not on the ramp. An entrance is a surface moving into place, so it takes
       // `base` (2026-07-28).
       transition={MOTION.base}
