@@ -75,9 +75,12 @@ import { useReviewQueue } from '../lib/use-review-queue';
 import { parseFrontmatter } from '@/shared/lib/parse-frontmatter';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultPersistence } from '../lib/use-docs-vault-persistence';
-import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
-import { useBackToTop } from '../lib/use-back-to-top';
-import { shouldShowOutlineRail } from '../lib/outline-rail';
+import {
+  DocReadingPane,
+  shouldShowOutlineRail,
+  useBackToTop,
+  useDocsVaultScrollSpy,
+} from '@/widgets/doc-reading-pane';
 import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
@@ -165,8 +168,6 @@ import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { useSkillParity } from "../lib/use-skill-parity";
 import { buildSkillParityHandoff } from "../lib/skill-parity-handoff";
 import type { SkillParityRow } from "../lib/skill-parity";
-import { DocReadingOutlineRail } from "./parts/DocReadingOutlineRail";
-import { BackToTopButton } from "./parts/BackToTopButton";
 import { SampleNotice } from "./parts/SampleNotice";
 import { SampleWelcomeNote } from "./parts/SampleWelcomeNote";
 import { EmptyState } from "./parts/EmptyState";
@@ -2859,30 +2860,24 @@ function DocsVaultContent() {
               </div>
 
               <div className="flex min-h-0 flex-1">
-                {/* The `relative` wrapper is the positioning reference for both the outline rail
-                    (absolutely positioned in the empty margin) and back-to-top (laid over, outside
-                    the scroll container, so it keeps the same screen position regardless of scroll).
-                    The body's max-w-760 still centres inside the overflow-auto container below and
-                    is not narrowed by the rail. */}
-                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
-                  {/* This rail is the sole owner of the outline. The document-info inspector used to
-                      hold a second copy, which required a rule demoting the rail whenever it opened —
-                      removing that panel on 2026-07-28 removed the double exposure itself. */}
-                  {!editing && showOutlineRail ? (
-                    <DocReadingOutlineRail
-                      headings={outlineHeadings}
-                      activeHeadingSlug={activeHeadingSlug}
-                      onHeadingClick={handleHeadingNavigate}
-                    />
-                  ) : null}
-                  <div
-                    ref={articleScrollRef}
-                    // Scroll-end reserve below lg — this container's bottom cut 17px behind the fixed
-                    // tab bar (measured identically at 768/834/600), hiding the last line at the end
-                    // of the scroll. The tab bar reserve plus 12px is taken as inner padding of the
-                    // scroll content.
-                    className="min-h-0 flex-1 overflow-auto max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+12px)]"
-                  >
+                {/* The reading pane is `@/widgets/doc-reading-pane` since 2026-09-06 — the
+                    Library reads a wiki page in the same shape, and the outline's
+                    no-intrusion arithmetic had to have one owner (its rail was being drawn
+                    over the body whenever the agent dock narrowed this pane). */}
+                <DocReadingPane
+                  data-testid="docs-reading-pane"
+                  scrollRef={articleScrollRef}
+                  outline={
+                    !editing && showOutlineRail
+                      ? {
+                          headings: outlineHeadings,
+                          activeHeadingSlug,
+                          onHeadingClick: handleHeadingNavigate,
+                        }
+                      : null
+                  }
+                  backToTop={!editing ? backToTop : null}
+                >
                     {editing && canEditCurrent && editResolver ? (
                       <DocsVaultEditor
                         key={`edit:${vaultScope}:${selectedDoc.slug}`}
@@ -2962,14 +2957,7 @@ function DocsVaultContent() {
                         />
                       </>
                     )}
-                  </div>
-                  {!editing ? (
-                    <BackToTopButton
-                      visible={backToTop.visible}
-                      onClick={backToTop.scrollToTop}
-                    />
-                  ) : null}
-                </div>
+                </DocReadingPane>
                 {/* Right side: heading outline, share, and file management. Closed by default so the
                     body comes first; opened from the header's inspector button when needed. Backlinks
                     are not here — the strip at the bottom of the pane is the single source. */}

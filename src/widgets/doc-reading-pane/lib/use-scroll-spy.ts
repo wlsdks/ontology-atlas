@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { scheduleStateSync } from "./persistence";
+import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
  * Tracks the current heading inside the docs page's article scroll container.
