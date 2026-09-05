@@ -39,9 +39,33 @@
  * the shell's scroll slot, whose `h1` is that container's first content.**
  */
 
-/** Document column — horizontal inset, max width, top padding. The bottom is entangled with the tab-bar reserve, so the page pays that. */
+/**
+ * Document column — horizontal inset, max width, top padding, and the desktop bottom breath.
+ *
+ * ⚠️ **The bottom was the one dimension this spec left out, and it drifted exactly as the other
+ * three had** (measured 2026-09-05, four members):
+ *
+ * | member | bottom at ≥lg |
+ * |---|---|
+ * | `/ontology/insights` | `lg:pb-[var(--page-bottom-breath)]` (40) |
+ * | `/projects` | `md:pb-10` (40, written as a literal) |
+ * | `/agents` | **nothing** |
+ * | `/mcp` | **nothing** |
+ *
+ * With a folder open, `/mcp`'s share tab is several screens tall, so the last card sat flush
+ * against the bottom of the installed app's window. The `scroll-end-gap` gate did not catch it and
+ * was not wrong to miss it: it opens these routes **with no folder**, and in that state they are
+ * shorter than the viewport, so the whole measurement is skipped. A gate that cannot reach a state
+ * cannot judge it, which is why the prescription is now also pinned in
+ * `page-frame.contract.test.ts` — the two-layer split this file's own header describes.
+ *
+ * `lg:` and not a plain `pb-*` because **below `lg` the reservation is a different quantity**: the
+ * bottom tab bar stands there, and how much a surface must reserve for it depends on the surface
+ * (the 2026-08-07 verdict against hoisting that into the shell still holds). The page keeps paying
+ * that half; this pays the half that has one answer everywhere.
+ */
 export const PAGE_FRAME =
-  "mx-auto w-full max-w-[var(--page-max)] px-5 pt-6 md:px-10 md:pt-12" as const;
+  "mx-auto w-full max-w-[var(--page-max)] px-5 pt-6 md:px-10 md:pt-12 lg:pb-[var(--page-bottom-breath)]" as const;
 
 /**
  * **Form / edit column** — same top padding, narrower width (2026-08-11).

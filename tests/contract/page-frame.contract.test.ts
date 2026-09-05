@@ -47,13 +47,18 @@ const MEMBERS = [
   "src/views/project-selector/ui/ProjectSelectorPage.tsx",
   "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
   "src/views/agents/ui/AgentsPage.tsx",
+  // MCP joined the family on 2026-09-05. A member missing from this list is a screen free to
+  // eyeball the frame again, which is the whole defect this file exists for.
+  "src/views/mcp/ui/McpPage.tsx",
 ] as const;
 
 const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), "utf8");
 
 describe("페이지 틀 규격", () => {
   it("값이 장부와 같다 — 바꾸려면 이 줄도 같이 고쳐라", () => {
-    expect(PAGE_FRAME).toBe("mx-auto w-full max-w-[var(--page-max)] px-5 pt-6 md:px-10 md:pt-12");
+    expect(PAGE_FRAME).toBe(
+      "mx-auto w-full max-w-[var(--page-max)] px-5 pt-6 md:px-10 md:pt-12 lg:pb-[var(--page-bottom-breath)]",
+    );
     expect(PAGE_HEADER_ROW).toBe("flex flex-wrap items-start justify-between gap-x-4 gap-y-2");
     expect(PAGE_TITLE_ROW).toBe("flex flex-wrap items-baseline gap-x-3 gap-y-1");
   });
@@ -78,6 +83,50 @@ describe("페이지 틀 규격", () => {
     expect(PAGE_HEADER_ROW).toContain("items-start");
     expect(PAGE_HEADER_ROW).not.toContain("items-end");
     expect(PAGE_TITLE_ROW).toContain("items-baseline");
+  });
+
+  /**
+   * **The bottom belongs to the frame at `lg`, and to the page below it** (2026-09-05).
+   *
+   * The frame owned three of four dimensions and left the bottom to each screen, so the four
+   * members answered it four ways: `lg:pb-[var(--page-bottom-breath)]`, a literal `md:pb-10`, and
+   * **nothing at all** on two of them. With a folder open, `/mcp` is several screens tall and its
+   * last card sat flush against the bottom edge of the installed app's window.
+   *
+   * ⚠️ **Why a class assertion and not only the rendered gate.** `scroll-end-gap.spec.ts` measures
+   * the pixels, and it did not catch this — not through a defect of its own, but because it opens
+   * every route **with no folder**, and in that state these two are shorter than the viewport, so
+   * its measurement is skipped before it begins. A gate that cannot reach the state cannot judge
+   * it. The pixel layer stays; this is the prescription layer beside it, the same pairing the
+   * frame file's own header describes.
+   *
+   * Below `lg` the reservation is a **different quantity** (the bottom tab bar stands there and
+   * how much to reserve depends on the surface), so the frame deliberately says nothing there and
+   * the page keeps paying that half.
+   */
+  it("바닥 여백은 lg 에서 틀이 낸다 — 화면마다 다시 정하지 않는다", () => {
+    expect(PAGE_FRAME, "틀이 lg 바닥 여백을 안 낸다").toContain(
+      "lg:pb-[var(--page-bottom-breath)]",
+    );
+    const css = read("app/globals.css");
+    expect(css, "`--page-bottom-breath` 가 정의돼 있지 않다 — 없는 값을 가리킨다").toMatch(
+      /--page-bottom-breath:\s*\S+/,
+    );
+    // Below `lg` the frame stays silent: a plain `pb-*` here would fight the per-surface tab-bar
+    // reserve, which is the half that genuinely differs per screen.
+    expect(PAGE_FRAME, "틀이 lg 아래 바닥까지 정하면 화면별 탭바 예약과 싸운다").not.toMatch(
+      /(^|\s)pb-/,
+    );
+  });
+
+  it("멤버가 lg 바닥 여백을 두 번째로 다시 적지 않는다", () => {
+    for (const member of MEMBERS) {
+      const source = read(member);
+      expect(
+        source,
+        `${member} 가 lg 바닥 여백을 다시 적는다 — 값이 두 곳에 있으면 그날부터 갈라진다`,
+      ).not.toContain("lg:pb-[var(--page-bottom-breath)]");
+    }
   });
 
   it("멤버 세 화면이 전부 이 틀을 입는다", () => {
