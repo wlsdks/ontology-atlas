@@ -3038,6 +3038,16 @@
        ratio (0.92) so the DEFAULT overview reads as CIRCUIT (farT ≈ 0), while
        tier visibility rides a separate zoom-ratio signal (model/tier-visibility). */
     --topology-v2-overview-entry-ratio: 0.95;
+    /* Cone (3D) fit — `topology-camera-math.ts#computeDomeFitCameraTarget`.
+       The cone is fitted into the FREE canvas (canvas minus the measured panels)
+       minus these two bands, and then spans this fraction of whichever axis binds.
+       Top band = the floating tool lane (Expand all / Cone / Search sits under
+       y=66 at every width); bottom band = the instrument readout row. There is no
+       second padding term: the 15% pad plus the 0.95 overview ratio the cone used
+       to inherit is what left it at 18.6% of the canvas (measured 2026-09-05). */
+    --topology-v2-dome-fit-fill: 0.98;
+    --topology-v2-dome-fit-inset-top: 80;
+    --topology-v2-dome-fit-inset-bottom: 32;
     --topology-v2-focus-fit-max-scale: 1.9;
     /* Dive-framing fix (owner: "diving too deep on click — over-zoom·label
        collision") — now MULTIPLICATIVE margin (previously fixed px padding 70): expand ego bbox

@@ -43,7 +43,7 @@ import { createAnimatedBackground, type AnimatedBackground } from "../render/ani
 import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type DustPoint } from "../render/starfield";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
-import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
+import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
 import { drawTopologyFrame, lastDrawnLabelBoxes } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
@@ -103,12 +103,14 @@ import {
   domeEgoWorldBounds,
   domeFocusYaw,
   domeNearestYawTurn,
+  DOME_NODE_FIT_ALLOWANCE_PX,
   domeWorldBounds,
   ORBIT_SMOOTH_TAU_MS,
   projectDomeCoord,
   stepDomeDragSpring,
   settleDomeRuntimeOffscreen,
   updateDomeFrame,
+  type DomeModel,
   type DomeModelBuild,
   type DomeRuntime,
 } from "../model/dome-view";
@@ -1149,6 +1151,54 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   }, []);
 
   /**
+   * **The camera target that puts the cone on the canvas** — one function for the
+   * three moments that frame it (entry, auto-align/fit, deselect), so they cannot
+   * drift apart.
+   *
+   * It hands `computeDomeFitCameraTarget` the *measured* left and right panel
+   * obstruction (`measureCanvasInsets`, the same measurement the 2D camera
+   * consumes) plus the cone's own top and bottom bands, and no padding beyond
+   * `domeFitFill`. The three call sites previously padded the bounds 15% a side
+   * and then went through the 2D overview fit, which reserves the tool lane, the
+   * docking chips and the 2D label row on top — none of which the cone draws.
+   * Measured 2026-09-05 at 1920x1080, that stack left the cone at 22.6% of the
+   * free canvas.
+   */
+  const domeFitTarget = useCallback(
+    (
+      model: DomeModel,
+      yaw: number,
+      pitch: number,
+      width: number,
+      height: number,
+      tokens: TopologyV2Tokens,
+    ): CameraTarget | null => {
+      const bounds = domeWorldBounds(model, yaw, pitch);
+      if (bounds === null) return null;
+      const canvasEl = canvasRef.current;
+      let left = tokens.safeInsetLeft;
+      let right = tokens.safeInsetRight;
+      if (canvasEl) {
+        const box = canvasEl.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0) {
+          const measured = measureCanvasInsets(canvasEl, { x: box.x, y: box.y, width: box.width, height: box.height });
+          left = measured.left;
+          right = measured.right;
+        }
+      }
+      return computeDomeFitCameraTarget(
+        bounds,
+        width,
+        height,
+        { left, right, top: tokens.domeFitInsetTop, bottom: tokens.domeFitInsetBottom },
+        DOME_NODE_FIT_ALLOWANCE_PX,
+        tokens,
+      );
+    },
+    [],
+  );
+
+  /**
    * Begin a cubic ease-in-out camera transition from the live camera to
    * `target` (van Wijk's principle: duration proportional to distance), driven
    * each frame by the rAF loop via `easeCameraKeyframe`. Under
@@ -1947,17 +1997,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       // the one place the attention spin is rearmed after user interaction
       // lowered `spinArmed`.
       dome.spinArmed = true;
-      const domeBounds = domeWorldBounds(dome.model, targetYaw, DOME_PITCH_DEFAULT);
-      if (domeBounds !== null) {
-        const padX = (domeBounds.maxX - domeBounds.minX) * 0.15;
-        const padY = (domeBounds.maxY - domeBounds.minY) * 0.15;
-        const target = computeOverviewCameraTarget(
-          { minX: domeBounds.minX - padX, minY: domeBounds.minY - padY, maxX: domeBounds.maxX + padX, maxY: domeBounds.maxY + padY },
-          width,
-          height,
-          tokens,
-          world.nodes.length,
-        );
+      const target = domeFitTarget(dome.model, targetYaw, DOME_PITCH_DEFAULT, width, height, tokens);
+      if (target !== null) {
         cameraTargetRef.current = target;
         dome.fitScale = target.tscale;
         userDrivenCameraRef.current = false;
@@ -1983,7 +2024,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // whatever a preceding wheel gesture left in interactive mode.
     cameraAngularFreqRef.current = tokens.cameraSpringAngFreqTransition;
     beginCameraTween(overviewTarget);
-  }, [beginCameraTween]);
+  }, [beginCameraTween, domeFitTarget]);
   useEffect(() => {
     if (growthReplayToken === growthReplayTokenSeenRef.current) return;
     growthReplayTokenSeenRef.current = growthReplayToken;
@@ -3073,22 +3114,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
             if (domeModelBuildRef.current === null) domeWorldSourceRef.current = world;
           }
           dome.active = domeTargetOn;
-          // Once, right after turning on: fit the camera so the whole dome sits
-          // on screen with 15% padding (the hero's "object centred, half of it
-          // air" judgement).
+          // Once, right after turning on: fit the camera so the cone fills the
+          // free canvas (`domeFitTarget`). It used to reserve the hero's "object
+          // centred, half of it air" 15% pad on top of the 2D overview fit's own
+          // reservations, which put the cone at 22.6% of the free area — an
+          // object adrift rather than a map (measured 2026-09-05).
           if (domeFitPendingRef.current && domeTargetOn) {
             domeFitPendingRef.current = false;
-            const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
-            if (b !== null) {
-              const padX = (b.maxX - b.minX) * 0.15;
-              const padY = (b.maxY - b.minY) * 0.15;
-              const target = computeOverviewCameraTarget(
-                { minX: b.minX - padX, minY: b.minY - padY, maxX: b.maxX + padX, maxY: b.maxY + padY },
-                width,
-                height,
-                tokens,
-                world.nodes.length,
-              );
+            const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, width, height, tokens);
+            if (target !== null) {
               cameraTargetRef.current = target;
               // If the fit scale is below the 2D floor, lower the floor to it.
               // Otherwise target ≠ value persists and the wheel anchor computes
@@ -3216,17 +3250,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 // viewpoint) and return only the camera to the whole-dome frame
                 // at the current pose — the equivalent of the 2D overview
                 // return.
-                const b = domeWorldBounds(dome.model, dome.yaw, dome.pitch);
-                if (b !== null) {
-                  const padX = (b.maxX - b.minX) * 0.15;
-                  const padY = (b.maxY - b.minY) * 0.15;
-                  const target = computeOverviewCameraTarget(
-                    { minX: b.minX - padX, minY: b.minY - padY, maxX: b.maxX + padX, maxY: b.maxY + padY },
-                    width,
-                    height,
-                    tokens,
-                    world.nodes.length,
-                  );
+                const target = domeFitTarget(dome.model, dome.yaw, dome.pitch, width, height, tokens);
+                if (target !== null) {
                   cameraTargetRef.current = target;
                   dome.fitScale = target.tscale;
                   userDrivenCameraRef.current = false;
@@ -3474,6 +3499,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
                 return w ? radiusForKind(w.kind, tokens) * w.magnitudeScale : 1;
               },
               now,
+              // A cone node is a fixed number of SCREEN pixels, so the zoom has
+              // to be divided back out here (`DOME_NODE_PX`).
+              cameraRef.current.scale.value,
             );
           } else if (dome.frame.size > 0) {
             dome.frame.clear();
@@ -5050,11 +5078,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       canvas.removeEventListener("contextlost", onContextLost);
       canvas.removeEventListener("contextrestored", onContextRestored);
     };
-    // `beginCameraTween` and `cameraTokens` are `useCallback`s with empty
-    // deps, so their references never change. They appear here only because the
-    // frame body calls them (3D fit-on, selection reframe); this effect never
-    // re-runs, so the loop is never remounted.
-  }, [beginCameraTween, cameraTokens]);
+    // `beginCameraTween`, `cameraTokens` and `domeFitTarget` are `useCallback`s
+    // with empty deps, so their references never change. They appear here only
+    // because the frame body calls them (3D fit-on, selection reframe); this
+    // effect never re-runs, so the loop is never remounted.
+  }, [beginCameraTween, cameraTokens, domeFitTarget]);
 
   // refs below are only dereferenced inside the returned event-handler
   // closures (pointerdown/move/up/wheel), never synchronously during this
