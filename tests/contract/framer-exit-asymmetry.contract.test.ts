@@ -118,7 +118,7 @@ describe('framer exit asymmetry contract', () => {
     ).toEqual([]);
   });
 
-  it.skip('a surface that leaves stops taking input from its first exit frame', () => {
+  it('a surface that leaves stops taking input from its first exit frame', () => {
     // Judged per target, not per file. `pointer-events` inherits, so locking a scrim does
     // cover the panel inside it — but a file usually holds more than one surface, and the
     // per-file form would let a second, independent one leave with its input still live.
