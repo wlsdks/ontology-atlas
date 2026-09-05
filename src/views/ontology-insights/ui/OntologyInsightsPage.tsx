@@ -26,6 +26,7 @@ import {
   useVaultConceptFacts,
   useVaultDocFreshnessIndex,
   useVaultHealth,
+  useVaultHealthDocs,
   useVaultUnmatchedAsks,
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
@@ -95,6 +96,16 @@ import {
 } from "./parts/InsightsCensusStrip";
 import { DoNextTab } from "./tabs/DoNextTab";
 import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
+import {
+  buildContainmentProposals,
+  planContainmentWrites,
+  type ContainmentProposal,
+} from "../lib/containment-batch";
+import {
+  ContainmentBatchSheet,
+  type ContainmentBatchLabels,
+  type ContainmentRowStatus,
+} from "./parts/ContainmentBatchSheet";
 import type { MeaningGapLabels } from "./tabs/MeaningGapSection";
 import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
@@ -585,6 +596,34 @@ export function OntologyInsightsPage() {
   );
 
   /*
+   * **The one batch repair on this board.** The documents come from the same manifest the health
+   * verdict was computed from (`useVaultHealthDocs`), so the repair can only touch the folder the
+   * verdict measured — reading the manifest a second way would be two canonical stores one hook
+   * apart. `buildContainmentProposals` decides nothing: both halves of each write are already on
+   * disk (the concept named its domain, the domain exists and does not list it back).
+   */
+  const healthDocs = useVaultHealthDocs();
+  const containmentProposals = useMemo(
+    () => buildContainmentProposals(vaultHealth.missingContainment, healthDocs),
+    [vaultHealth.missingContainment, healthDocs],
+  );
+  /*
+   * **What the sheet shows is frozen when it opens.** After a successful write the folder is
+   * re-read, the repaired concept stops being a proposal, and a live list would delete the very
+   * row that says "written" — leaving a person told that one thing landed with nothing on screen
+   * saying which. The run reports on the list it was given.
+   */
+  const [containmentSnapshot, setContainmentSnapshot] = useState<
+    readonly ContainmentProposal[]
+  >([]);
+  const [containmentSheetOpen, setContainmentSheetOpen] = useState(false);
+  const [containmentRunning, setContainmentRunning] = useState(false);
+  const [containmentFinished, setContainmentFinished] = useState(false);
+  const [containmentStatuses, setContainmentStatuses] = useState<
+    ReadonlyMap<string, ContainmentRowStatus>
+  >(() => new Map());
+
+  /*
    * **What agents asked this folder for and did not get.** `vaultHealth` already walked
    * these references and kept only `summary.unresolvedEdges`, a number; the board needs
    * the names behind it. Both readings take the same manifest (`useHealthManifest`), so
@@ -765,6 +804,59 @@ export function OntologyInsightsPage() {
     [vault],
   );
 
+  /**
+   * Applies the accepted containment repairs, **one document at a time**.
+   *
+   * Grouping first (`planContainmentWrites`) is not an optimisation: two writes to one file inside
+   * one run would make the second fail its own `expected_mtime` guard, and the person would read a
+   * conflict the app itself caused. Every write carries the mtime the sheet was built from, so a
+   * file a person or an agent touched in the meantime is refused rather than overwritten — and the
+   * run continues, because the remaining documents are independent and abandoning them would leave
+   * the folder in a state nobody chose.
+   */
+  const applyContainmentBatch = useCallback(
+    async (accepted: ReadonlySet<string>) => {
+      const writes = planContainmentWrites(containmentSnapshot, accepted, healthDocs);
+      if (writes.length === 0) return;
+      setContainmentRunning(true);
+      const statuses = new Map<string, ContainmentRowStatus>();
+      const mark = (ids: readonly string[], status: ContainmentRowStatus) => {
+        for (const id of ids) statuses.set(id, status);
+        setContainmentStatuses(new Map(statuses));
+      };
+      for (const write of writes) {
+        mark(write.proposalIds, { phase: "running" });
+        try {
+          await vault.updateFrontmatter(
+            write.domainSlug,
+            { [write.key]: write.members },
+            {
+              skipRefresh: true,
+              ...(write.expectedMtime === null ? {} : { expectedMtime: write.expectedMtime }),
+            },
+          );
+          mark(write.proposalIds, { phase: "done" });
+        } catch (error) {
+          if (error instanceof Error && error.name === "VaultConflictError") {
+            mark(write.proposalIds, { phase: "conflict" });
+          } else {
+            mark(write.proposalIds, {
+              phase: "failed",
+              message: error instanceof Error ? error.message : String(error),
+            });
+          }
+        }
+      }
+      // One reload at the end — `skipRefresh` held it off so the list did not jump under the
+      // sheet after every file. It runs after a conflict too, so a next attempt starts from what
+      // is actually on disk rather than from the stale baseline that refused this one.
+      await vault.refresh();
+      setContainmentRunning(false);
+      setContainmentFinished(true);
+    },
+    [containmentSnapshot, healthDocs, vault],
+  );
+
   // Dependency cycles — loops in the directed `depends_on` graph, computed on the
   // client from the already-loaded nodes/edges (the same semantics as MCP `cycles`).
   const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
@@ -920,6 +1012,24 @@ export function OntologyInsightsPage() {
     () => buildDoNextGroupCounts(insightsSignalCounts),
     [insightsSignalCounts],
   );
+
+  const containmentBatchLabels: ContainmentBatchLabels = {
+    title: (count: number) => t("doNext.containmentBatch.title", { count }),
+    lede: t("doNext.containmentBatch.lede"),
+    row: (concept: string, domain: string, key: string) =>
+      t("doNext.containmentBatch.row", { concept, domain, key }),
+    apply: (count: number) => t("doNext.containmentBatch.apply", { count }),
+    applying: t("doNext.containmentBatch.applying"),
+    cancel: t("doNext.containmentBatch.cancel"),
+    close: t("doNext.containmentBatch.close"),
+    statusDone: t("doNext.containmentBatch.statusDone"),
+    statusConflict: t("doNext.containmentBatch.statusConflict"),
+    statusFailed: (message: string) => t("doNext.containmentBatch.statusFailed", { message }),
+    outcome: (done: number, failed: number) =>
+      failed > 0
+        ? t("doNext.containmentBatch.outcomeWithLeft", { done, failed })
+        : t("doNext.containmentBatch.outcome", { done }),
+  };
 
   const censusStripLabels: InsightsCensusStripLabels = {
     concepts: t("heroConcepts"),
@@ -1349,6 +1459,30 @@ export function OntologyInsightsPage() {
                   domainLabels: meaningGapDomainLabels,
                 }}
                 labels={doNextLabels}
+                /*
+                 * The only whole-group action on this board, and only on the group whose repair is
+                 * already fully determined by two facts on disk. It appears only where it can act:
+                 * a session that cannot write the folder is not offered a write.
+                 */
+                groupAction={(group) =>
+                  group === "containment" &&
+                  abilities.canWriteVault &&
+                  containmentProposals.length > 0 ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="do-next-group-batch"
+                      onClick={() => {
+                        setContainmentSnapshot(containmentProposals);
+                        setContainmentStatuses(new Map());
+                        setContainmentFinished(false);
+                        setContainmentSheetOpen(true);
+                      }}
+                    >
+                      {t("doNext.containmentBatch.open")}
+                    </Button>
+                  ) : null
+                }
                 // The read-only line says *"open your folder and you can finish these here"*, so
                 // the control that does that sits in the same box (2026-08-07, a dead-end CTA).
                 openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
@@ -1496,6 +1630,16 @@ export function OntologyInsightsPage() {
         )}
         </main>
       </div>
+      <ContainmentBatchSheet
+        open={containmentSheetOpen}
+        proposals={containmentSnapshot}
+        statuses={containmentStatuses}
+        running={containmentRunning}
+        finished={containmentFinished}
+        onApply={applyContainmentBatch}
+        onClose={() => setContainmentSheetOpen(false)}
+        labels={containmentBatchLabels}
+      />
       {acpRuntime && gitVaultPath ? (
         <InsightsAgentDock
           open={agentOpen}

@@ -1572,6 +1572,21 @@
           "cycle": "Tangled loops"
         },
         "groupToggle": "{name}, {count} items",
+        "containmentBatch": {
+          "open": "Fix these together",
+          "title": "Add back-links to {count} domain entries",
+          "lede": "Each ticked row adds one concept slug to that domain document's list. Every other line and the body stay as they are, and nothing is written until you press Apply.",
+          "row": "{concept} → the {key} list in {domain}",
+          "apply": "Apply {count}",
+          "applying": "Writing…",
+          "cancel": "Cancel",
+          "close": "Close",
+          "statusDone": "Written",
+          "statusConflict": "The file changed meanwhile, so this was skipped",
+          "statusFailed": "Failed: {message}",
+          "outcome": "{done} written.",
+          "outcomeWithLeft": "{done} written, {failed} left as they were. Reopening proposes the rest against the files as they are now."
+        },
         "digestTitle": "What the agent did",
         "digestToday": "{count} today",
         "digestApproveHint": "See what changed in the History screen or your git history: this list comes from the record file (.ontology-atlas/activity.jsonl) inside your folder.",

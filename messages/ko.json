@@ -1572,6 +1572,21 @@
           "cycle": "서로 얽힌 고리"
         },
         "groupToggle": "{name} {count}개 펼치기",
+        "containmentBatch": {
+          "open": "한 번에 고치기",
+          "title": "도메인 {count}곳에 되가리키기 더하기",
+          "lede": "고를 때마다 도메인 문서의 목록에 개념 슬러그 한 줄이 더해져요. 다른 줄과 본문은 그대로예요. 적용을 누르기 전에는 파일이 바뀌지 않아요.",
+          "row": "{concept} → {domain} 문서의 {key} 목록",
+          "apply": "{count}개 적용",
+          "applying": "쓰는 중…",
+          "cancel": "취소",
+          "close": "닫기",
+          "statusDone": "적었어요",
+          "statusConflict": "그 사이에 파일이 바뀌어서 건너뛰었어요",
+          "statusFailed": "실패: {message}",
+          "outcome": "{done}개를 적었어요.",
+          "outcomeWithLeft": "{done}개를 적었고, {failed}개는 그대로예요. 다시 열면 지금 파일 기준으로 다시 제안해요."
+        },
         "digestTitle": "에이전트가 한 일",
         "digestToday": "오늘 {count}건",
         "digestApproveHint": "무엇이 바뀌었는지는 「기록」 화면이나 git 변경 이력에서 확인해요. 이 목록은 내 폴더 안의 기록 파일(.ontology-atlas/activity.jsonl)에서 옵니다.",
