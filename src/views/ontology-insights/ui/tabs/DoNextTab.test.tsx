@@ -152,7 +152,10 @@ const renderTab = (overrides: Partial<DoNextTabProps> = {}) =>
  */
 const renderExpanded = (overrides: Partial<DoNextTabProps> = {}) => {
   const result = renderTab(overrides);
-  for (const toggle of screen.queryAllByTestId("do-next-group-toggle")) fireEvent.click(toggle);
+  // The first group starts open; clicking it again would close it.
+  for (const toggle of screen.queryAllByTestId("do-next-group-toggle")) {
+    if (toggle.getAttribute("aria-expanded") === "false") fireEvent.click(toggle);
+  }
   return result;
 };
 
@@ -213,20 +216,28 @@ describe("DoNextTab — 한 목록, 한 총계", () => {
     expect(kinds).toEqual(["neglected-hub", "orphan"]);
   });
 
-  it("닫힌 묶음은 행을 만들지 않고, 펼치면 세던 행이 나온다", () => {
+  it("첫 묶음만 열려 이름을 말하고, 닫힌 묶음은 행을 만들지 않다가 펼치면 세던 행이 나온다", () => {
     renderTab();
-    expect(screen.queryByTestId("do-next-item")).toBeNull();
-    fireEvent.click(screen.getAllByTestId("do-next-group-toggle")[0]);
-    expect(screen.getAllByTestId("do-next-item").length).toBeGreaterThan(0);
+    const groups = screen.getAllByTestId("do-next-group");
+    expect(groups[0]).toHaveAttribute("data-group-open", "true");
+    const firstRows = within(groups[0]).getAllByTestId("do-next-item").length;
+    expect(firstRows).toBeGreaterThan(0);
+    // Every other group is closed and has drawn nothing.
+    for (const group of groups.slice(1)) {
+      expect(group).toHaveAttribute("data-group-open", "false");
+      expect(within(group).queryByTestId("do-next-item")).toBeNull();
+    }
+    fireEvent.click(screen.getAllByTestId("do-next-group-toggle")[1]);
+    expect(within(groups[1]).getAllByTestId("do-next-item").length).toBeGreaterThan(0);
   });
 
   it("펼침 버튼의 이름이 규모를 함께 말한다", () => {
     renderTab();
     const toggle = screen.getAllByTestId("do-next-group-toggle")[0];
     expect(toggle).toHaveAccessibleName("Hubs unchanged for a long time, 3 items");
-    expect(toggle).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 
   it("모든 행이 같은 모양이다 — 이름 한 줄, 관찰한 사실 한 문장", () => {

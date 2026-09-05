@@ -649,12 +649,13 @@ export function DoNextTab({
           </p>
         ) : (
           <div className="mt-3 flex flex-col">
-            {groups.map((group) => (
+            {groups.map((group, index) => (
               <FixGroup
                 key={group.key}
                 groupKey={group.key}
                 count={group.count}
                 rowLimit={groupRowLimit}
+                defaultOpen={index === 0}
                 forceOpen={reviewGroup === group.key}
                 rows={rowsOfGroup}
                 labels={labels}
@@ -683,6 +684,7 @@ function FixGroup({
   groupKey,
   count,
   rowLimit,
+  defaultOpen,
   forceOpen,
   rows,
   labels,
@@ -691,6 +693,13 @@ function FixGroup({
   groupKey: DoNextGroupKey;
   count: number;
   rowLimit: number;
+  /**
+   * The first group starts open. A closed list of group names says how much work there is but
+   * not what it is; the most urgent kind (blocked documents when there are any) names its files
+   * without a click, and the gates that read those rows (`vault-truth-telling`,
+   * `a11y-open-surfaces`) find them the way a person does.
+   */
+  defaultOpen: boolean;
   /** The group holding the row a person is returning to from the map opens by itself. */
   forceOpen: boolean;
   rows: (group: DoNextGroupKey) => ReactNode[];
@@ -698,7 +707,7 @@ function FixGroup({
   /** The group's one whole-group action, when it has an honest one. */
   groupAction?: ReactNode;
 }) {
-  const [opened, setOpened] = useState(false);
+  const [opened, setOpened] = useState(defaultOpen);
   const open = opened || forceOpen;
   const name = labels.groupName(groupKey);
   const body = useMemo(() => (open ? rows(groupKey) : []), [open, rows, groupKey]);
