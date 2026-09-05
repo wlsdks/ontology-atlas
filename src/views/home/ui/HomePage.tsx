@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
 import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
-import { useViewportBelow } from "@/shared/lib/use-viewport-below";
+import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import {
   consumeQueuedAgentChatIntent,
@@ -2915,6 +2915,22 @@ function HomePageImpl() {
     indexExpanded: renderedIndexState === "expanded",
   });
   /*
+   * `<lg` the selected-node sheet and the expanded INDEX are **not two surfaces
+   * sharing a screen** — the sheet is drawn over the INDEX. Measured 2026-09-05
+   * (390×844 and 834×1112, node picked from the INDEX tree): 24 of the INDEX's 25
+   * controls hit-tested to the sheet, so every one of them was a control the user
+   * could see, could reach with Tab, and could not press. At `lg` and above the two
+   * genuinely coexist — the approved chrome spec draws both over the map — so this
+   * is a width-bound demotion, not a new exclusivity rule.
+   *
+   * `inert` and `pointer-events-none` are one pair: `inert` removes the rows from the
+   * a11y tree and the focus order, `pointer-events-none` keeps a stray tap from
+   * landing on a row the sheet is painting over. The wrapper already uses exactly
+   * this pair for its exit frame.
+   */
+  const indexDemotedByNodeSheet =
+    useViewportBelow(LG_BREAKPOINT_PX) && nodePanelMounted && Boolean(panelDatasheetModel);
+  /*
    * The utility lane is raised one step **only while the activity inbox is open**.
    * Owner, 2026-08-17: *"Should the notification cover what is above?"* (the notification should cover what is
    * above). The lane's `z-20` creates a stacking context the inbox inside it cannot
@@ -5029,9 +5045,15 @@ function HomePageImpl() {
                 // and is zoomed at ≥1920px / ≥2400px. Without it this wrapper would stay
                 // at fixed px while the group grows proportionally under that zoom, and
                 // the two would overlap again — see the `--topology-index-top` comment.
-                className={`${frame.exiting ? "map-overlay-out pointer-events-none" : "map-overlay-in"} topology-ui-scale absolute z-20`}
+                className={`${frame.exiting ? "map-overlay-out pointer-events-none" : "map-overlay-in"} topology-ui-scale absolute z-20 ${
+                  // `indexDemotedByNodeSheet` — see its definition: below `lg` the node
+                  // sheet is painted over this stack, so it recedes rather than leaving
+                  // 24 reachable-looking controls under an opaque surface.
+                  indexDemotedByNodeSheet ? "pointer-events-none" : ""
+                }`}
+                data-index-demoted-by-node-sheet={indexDemotedByNodeSheet || undefined}
                 aria-hidden={frame.exiting || undefined}
-                inert={frame.exiting || undefined}
+                inert={frame.exiting || indexDemotedByNodeSheet || undefined}
                 style={{
                   left: frame.state === "expanded" ? "var(--topology-index-inset)" : 0,
                   // Owner report, 2026-07-23: after the permanent map header retired, 84px
@@ -5892,9 +5914,32 @@ function HomePageImpl() {
             // always applied (zoom 1 by default, real zoom only at ≥1920px / ≥2400px). It
             // must scale at the same ratio as the brand pill or the clearance against
             // `--topology-index-top` stops holding at those widths.
-            className="topology-ui-scale fixed inset-x-3 top-[72px] z-30 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
+            /*
+             * `<lg` this is a **bottom sheet**, not a top-anchored full-bleed one
+             * (2026-09-05 audit, F1/F4/F5). Three things changed together and they
+             * are one decision:
+             *
+             * ① `bottom-…` instead of `top-[72px]`. Anchored to the top, the sheet
+             *    grew downward with its content — measured 366×691 at 390×844, 76.8%
+             *    of the canvas with 93 of 125 nodes under it, and at taller content it
+             *    ran 41px past the bottom tab bar and took its own primary action out
+             *    of reach. Anchored to the bottom above
+             *    `--topology-v2-panel-bottom-reserve` (which already carries the tab
+             *    bar plus safe area below `lg`) the footer cannot reach the bar, and
+             *    the height cap on `--topology-v2-panel-max-height` decides the top
+             *    edge, so the ego graph stays on screen above it.
+             * ② `pointer-events-none` here with `pointer-events-auto` on the painted
+             *    child. This element is a positioning wrapper: at 834 it measured
+             *    810px wide while only 520px painted, so 290px of the map answered
+             *    taps as if it were the sheet.
+             * ③ The camera obstacle marker stays — `computeFreeArea` now reads the
+             *    measured width first and treats a full-width declaration as the bar
+             *    it is, so the same attribute means «right panel» at `lg` and «bottom
+             *    sheet» below it without a second marker.
+             */
+            className="topology-ui-scale pointer-events-none fixed inset-x-3 bottom-[var(--topology-v2-panel-bottom-reserve)] z-30 flex justify-center lg:inset-x-auto lg:bottom-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
-            <div className="grid">
+            <div className="pointer-events-auto grid">
             {panelDatasheetModel ? (
               <TopologyV2DetailPanel
                 key={panelDatasheetModel.slug}

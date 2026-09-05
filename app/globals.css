@@ -3454,6 +3454,32 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
       --topology-v2-panel-bottom-reserve: calc(
         var(--topology-mobile-bottom-tab-reserve) + 8px
       );
+      /*
+       * `<lg` the selected-node inspector is a **bottom sheet**, and this cap is the
+       * map's share rather than the sheet's appetite (2026-09-05 audit, F1).
+       *
+       * Anchored to the top at `72px` the sheet grew to whatever its content wanted
+       * and measured 366×691 at 390×844 — 93.8% of the width, 76.8% of the canvas,
+       * 93 of 125 nodes buried. That is the `dont:node-click-fullscreen-modal` shape
+       * this repository forbids, and the ego graph the click was about was the thing
+       * it covered.
+       *
+       * **Why not 60dvh.** Two independent ceilings meet here and the lower one wins.
+       * ① The sheet spans the column at phone width, so canvas coverage is almost
+       * exactly its height ratio: 60dvh would still cover 56%. ② The camera's
+       * free-area classifier calls anything at or above `SIDE_PANEL_HEIGHT_RATIO`
+       * (0.6) a panel rather than a bar, and a full-width panel is subtracted from
+       * nothing — at 60dvh the camera would stop making room and the count that
+       * matters would go straight back up. 45dvh clears both: measured 42.2% at
+       * 390×844 and 28.0% at 834×1112, with the sheet still on the bar branch.
+       *
+       * The zoom division is the same correction the desktop token carries — inside a
+       * `zoom`ed subtree `dvh` scales with the factor. Below `lg` the factor is 1, so
+       * this is identity today and stays correct if that ever changes.
+       */
+      --topology-v2-panel-max-height: calc(
+        45dvh / var(--topology-ui-scale-factor)
+      );
       /* Expanded INDEX bottom also rises above reservation in zones where tab bar exists (<lg)
          — raising only at 767 causes panel footer (AGENT HANDOFF) to penetrate 33px behind
          the tab bar at 768–1023 (owner empirical report 2026-07-23, tablet bottom overlap). */
