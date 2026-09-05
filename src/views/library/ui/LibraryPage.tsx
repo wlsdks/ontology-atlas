@@ -464,7 +464,21 @@ export function LibraryPage() {
   const narrowShowsReader = selected !== null;
 
   return (
-    <div className="topology-ui-scale flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
+    /*
+     * ⚠️ **`<main>` is the whole row, not just the reader.** Docs can put its tree in a
+     * sibling `<aside>` because its `<main>` always holds a document; here, below `lg`,
+     * the reader stands aside until something is chosen — and a `<main>` that is
+     * `display:none` is a landmark with nothing in it and a "skip to content" link that
+     * lands nowhere. Making the row the landmark also keeps the dock inside a box with
+     * height, which is the whole of what makes it visible (see its own comment below).
+     */
+    <main
+      id="main"
+      tabIndex={-1}
+      data-testid="library-page"
+      data-library-state={opened ? opened.kind : "nothing-open"}
+      className="topology-ui-scale flex min-h-0 w-full flex-1 bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]"
+    >
       {/*
         The index. Below `lg` it is the whole column and stands aside once something is
         open; the reader's back control is what brings it back.
@@ -503,11 +517,8 @@ export function LibraryPage() {
         </div>
       </aside>
 
-      <main
-        id="main"
-        tabIndex={-1}
-        data-testid="library-page"
-        data-library-state={opened ? opened.kind : "nothing-open"}
+      <div
+        data-testid="library-reader"
         className={cn(
           "flex min-w-0 flex-1 flex-col overflow-hidden",
           !narrowShowsReader && "max-lg:hidden",
@@ -588,10 +599,10 @@ export function LibraryPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
       {/*
-        The dock is a **sibling of `<main>` inside this row**, which is the whole of what
+        The dock is a **sibling of the reader inside this row**, which is the whole of what
         makes it visible: its surface is `absolute inset-y-3 right-3`, so the frame needs a
         parent that gives it height. Measured in the installed app on 2026-09-05 — the
         first placement put it after the row, inside a flex **column**, where a frame whose
@@ -623,7 +634,7 @@ export function LibraryPage() {
         onAdd={handleAddCandidates}
         busy={busy}
       />
-    </div>
+    </main>
   );
 }
 
@@ -637,7 +648,10 @@ function LibraryHeader({ t }: { t: ReturnType<typeof useTranslations<"library">>
       <h1 className="mt-1 text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
         {t("title")}
       </h1>
-      <p className="mt-1.5 text-caption leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+      {/* `text-label`, not `text-caption`: 9.5px is the eyebrow's size, and measured in the
+          280px column this lede is three lines a person reads once and has to be able to
+          read. The chrome ladder's next step up is the one for a sentence. */}
+      <p className="mt-1.5 text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
         {t("lede")}
       </p>
     </div>

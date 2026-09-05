@@ -230,7 +230,10 @@ test.describe("Compile opens the agent dock", () => {
     const geometry = await page.evaluate(() => {
       const surface = document.querySelector('[data-testid="library-agent-dock"]');
       const frame = document.querySelector('[data-testid="library-agent-dock-frame"]');
-      const main = document.querySelector("main#main");
+      // The reader, not `<main>`. On this destination `<main>` **is** the row — below
+      // `lg` the reader stands aside and a landmark that can vanish is a landmark with
+      // nothing in it — so the sibling the dock has to share a parent with is the reader.
+      const main = document.querySelector('[data-testid="library-reader"]');
       if (!surface || !frame || !main) return null;
       const rect = (el: Element) => {
         const box = el.getBoundingClientRect();
@@ -249,7 +252,10 @@ test.describe("Compile opens the agent dock", () => {
     expect(geometry!.surface.height, "the surface has no height to paint into").toBeGreaterThan(200);
     expect(geometry!.surface.width).toBeGreaterThan(200);
     // Same row as the reader: the frame's top sits within the reader's band, not below it.
-    expect(geometry!.sharesParent, "the dock must be a sibling of <main>, not of the page").toBe(true);
+    expect(
+      geometry!.sharesParent,
+      "the dock must be a sibling of the reader inside the row, not of the page column",
+    ).toBe(true);
     expect(Math.abs(geometry!.frame.top - geometry!.main.top)).toBeLessThan(24);
   });
 
