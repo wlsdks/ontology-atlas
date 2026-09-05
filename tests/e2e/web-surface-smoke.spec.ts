@@ -432,7 +432,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       if ((await sampleDoor.count()) > 0 && (await sampleDoor.first().isVisible().catch(() => false))) {
         await sampleDoor.first().click();
       }
-      const pickerDoor = page.getByRole("button", { name: /기존 문서함 열기/ });
+      const pickerDoor = page.getByRole("button", { name: /기존 폴더 열기/ });
       await pickerDoor.first().waitFor({ timeout: 25_000 });
       await pickerDoor.first().click();
       await page.getByTestId("docs-library-find-documents").waitFor({ timeout: 20_000 });
