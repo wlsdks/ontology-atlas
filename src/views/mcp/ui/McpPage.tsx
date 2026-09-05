@@ -10,7 +10,7 @@ import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useLocalVault } from '@/entities/vault-session';
 import { TabBar } from '@/shared/ui';
 import { useSwapHeight } from '@/shared/lib/use-presence';
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 import { buildMcpTabHref, parseMcpTab, type McpTab } from '../lib/mcp-tab-state';
 
@@ -112,7 +112,7 @@ export function McpPage() {
       tabIndex={-1}
       data-testid="mcp-page"
       data-mcp-tab={tab}
-      className={`${PAGE_FRAME} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+      className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/* The description sits outside the header: `PAGE_HEADER_ROW` is one `justify-between`
           row, so a paragraph placed inside it is pushed to the opposite end from the title. */}

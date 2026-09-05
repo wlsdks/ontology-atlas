@@ -3999,8 +3999,10 @@
   },
   "agents": {
     "title": "에이전트",
-    "lede": "Atlas 가 이 컴퓨터의 코딩 도구를 찾아, 앱 안에서 안전하게 열리는 것이 무엇인지 보여 주고, 지원하는 도구가 없으면 여기서 설치합니다.",
-    "runtimesHeading": "이 컴퓨터의 도구"
+    "lede": "Atlas 가 이 컴퓨터에 이미 있는 코딩 도구를 찾습니다.",
+    "runtimesHeading": "이 컴퓨터의 도구",
+    "ledeMore": "이 화면이 하는 일",
+    "ledeDetail": "그중 앱 안에서 안전하게 열리는 것이 무엇인지 보여 주고, 지원하는 도구가 없으면 여기서 설치하고, 고른 도구로 대화를 엽니다. API 키와 폴더는 여기서 정하지 않습니다."
   },
   "nativeErrors": {
     "unsupported-provider": "이 앱이 아는 제공자가 아니에요. Anthropic, OpenAI, Gemini 중에서 고르거나, 주소를 적어서 이 컴퓨터의 러너에 연결해 주세요.",

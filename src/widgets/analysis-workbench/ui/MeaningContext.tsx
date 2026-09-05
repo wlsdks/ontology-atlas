@@ -1,9 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { Checkbox, Chip } from '@/shared/ui';
-
-import { Disclosure } from './Disclosure';
+import { Checkbox, Chip, Disclosure } from '@/shared/ui';
 
 /** Explanatory UI for the normative kinds and relation directions in the Atlas specification. */
 export function MeaningContext({ node, relations, onSelectRelation, onEvidence, showLabels, onShowLabelsChange }: {

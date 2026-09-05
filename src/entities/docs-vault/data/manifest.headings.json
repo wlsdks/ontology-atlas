@@ -9407,6 +9407,11 @@
     },
     {
       "depth": 3,
+      "text": "Caps tracking is a Latin device (owner, 2026-09-06)",
+      "slug": "caps-tracking-is-a-latin-device-owner-2026-09-06"
+    },
+    {
+      "depth": 3,
       "text": "Quiet scroller — `.atlas-scroll-quiet` (2026-09-06)",
       "slug": "quiet-scroller-atlas-scroll-quiet-2026-09-06"
     },
@@ -9574,6 +9579,11 @@
       "depth": 3,
       "text": "Page Column — Single `--page-max`",
       "slug": "page-column-single---page-max"
+    },
+    {
+      "depth": 3,
+      "text": "Which frame a screen wears — 960 for text, `--page-max` for canvases (owner, 2026-09-06)",
+      "slug": "which-frame-a-screen-wears-960-for-text---page-max-for-canvases-owner-2026-09-06"
     },
     {
       "depth": 4,

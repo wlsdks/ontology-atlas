@@ -27,7 +27,7 @@ import {
 } from 'react';
 import { useTranslations } from 'next-intl';
 
-import { Chip, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
+import { Chip, Disclosure, IconButton, RowButton, Select, Surface, Textarea } from '@/shared/ui';
 import { Tooltip, TooltipProvider } from '@/shared/ui/tooltip';
 import { formatDate } from '@/shared/lib/format-date';
 import { badgeClass } from '@/shared/ui/badge-class';
@@ -2217,28 +2217,15 @@ function TranscriptEntry({
           and the box would stop being a quotation.
         */}
         {parts.detail ? (
-          <details className="group mt-1 max-w-[85%] self-end">
-            <summary
-              data-testid="acp-chat-request-full"
-              className={controlClass({
-                shape: 'link',
-                size: 'sm',
-                tone: 'muted',
-                hoverInk: 'strong',
-                className: 'list-none gap-1.5 [&::-webkit-details-marker]:hidden',
-              })}
-            >
-              <ChevronRight
-                size={ICON_SIZE.sm}
-                aria-hidden
-                className="shrink-0 transition-transform group-open:rotate-90"
-              />
-              {t('fullRequest')}
-            </summary>
+          <Disclosure
+            className="mt-1 max-w-[85%] self-end"
+            summaryTestId="acp-chat-request-full"
+            summary={t('fullRequest')}
+          >
             <p className="mt-1.5 whitespace-pre-wrap break-words text-left font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
               {event.text}
             </p>
-          </details>
+          </Disclosure>
         ) : null}
       </>
     );

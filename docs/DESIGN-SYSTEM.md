@@ -1180,6 +1180,39 @@ seven tabs):
    on a mouse. A marker that far from its label stops reading as that label's marker. Both
    children are one `text-label` line, so at the mouse height the result is unchanged.
 
+### Caps tracking is a Latin device (owner, 2026-09-06)
+
+> Of the Korean workbench and the MCP tabs in the installed app: the uppercase eyebrow style is
+> applied to Korean strings and *"it spaces the syllables apart and reads broken."*
+
+The five `--tracking-caps-*` steps exist to open up **capital Latin letters**, whose forms are
+narrow and whose word boundaries survive the extra space. Hangul is written in syllable blocks that
+are already square and already separated; 0.14em pushes the blocks of one word as far apart as the
+space between two words, so a two-word label stops reading as two words and starts reading as five
+characters. `text-transform: uppercase` is a no-op on Hangul, which is why the pairing was never
+noticed: only half of the eyebrow specification ever applied, and it was the destructive half.
+
+| | letter-spacing on a 9.5–11px label |
+|---|---|
+| `--tracking-caps-12 … -16` — **zeroed under `:lang(ko)`** | was 1.14–1.76px |
+| `--tracking-caption` (0.04em), `--tracking-label` (0.02em) — **kept** | 0.38–0.44px |
+
+**Measured before the rule existed** (twelve `/ko/` routes at 1512×949): 26 distinct Hangul strings
+at 1.14–1.76px across eight routes, every one a caps-step consumer. The rule therefore lives on the
+tokens — `:root:lang(ko)` in `app/globals.css`, outside every layer — rather than in 26 class
+strings. A fix per site is 26 chances to miss one, and the twenty-seventh site would be born broken.
+The two type-ramp pairs are body-text pairs that apply to both scripts and were never part of the
+complaint, so they are untouched.
+
+The locale reaches `<html>` from a client effect (`LocaleHtmlLang`), so a Korean page shows Latin
+tracking for its first frames — the same window in which the web font has not loaded either.
+
+Gate: `tests/e2e/hangul-tracking.spec.ts` measures rendered `letter-spacing` on every leaf element
+whose own text contains Hangul, across the audited `/ko/` routes, at a **0.6px** threshold — above
+everything kept, below everything removed. Lint cannot see this: the class is the specification on
+`OVERVIEW` and the defect on a Korean label, and only the rendered page holds both facts. The spec
+probes its own detector in both directions.
+
 ### Quiet scroller — `.atlas-scroll-quiet` (2026-09-06)
 
 Owner, on the ACP panel in the installed app: *"a scrollbar keeps appearing on the right
@@ -1986,6 +2019,33 @@ Registration partners: `app/globals.css` + `src/shared/lib/cn.ts` `RADIUS_RAMP_S
 | Page Container | `--page-max` | 1600 |
 
 `--page-max` is the page width that leaves a 160px gutter on both sides based on a 1920px viewport.
+
+### Which frame a screen wears — 960 for text, `--page-max` for canvases (owner, 2026-09-06)
+
+> *"Agents and MCP should use the 960 centred column like the project editor, not the 1600 one —
+> title, lede, tabs and cards inside that column."*
+
+The rule the instruction generalises to, so the next screen does not ask again. The test is not
+how much data a screen holds but **which direction the eye travels**:
+
+| The screen is | Frame | Why |
+|---|---|---|
+| Text and settings — you read a sentence and act on a row | `PAGE_FRAME_FORM` (960) | A row you read across and act on at the end gets worse the wider it is. Measured on `/mcp` connectors at 2560: about 700px of every row was dead span between the name on the left and the switch on the right |
+| A canvas — map, graph, diagram | `PAGE_FRAME` (`--page-max` 1600), or no frame at all | The drawing uses the width. A cap on a canvas is a cap on how much of the ontology fits on screen |
+| A list of many short cards | `PAGE_FRAME` (1600) | Cards tile across the width; nothing is read left to right |
+
+Measured at 1512×949 in Korean when `/agents` and `/mcp` moved onto the 960 column: the column
+went from 1448px to 960, the `h1` from x=104 to x=348, and the widest ink from 1356px to 868.
+
+**Both frames pay the same bottom breath.** `PAGE_FRAME_FORM` gained
+`lg:pb-[var(--page-bottom-breath)]` in the same change: with a folder open these two screens are
+taller than a viewport, and leaving the value to each screen is how the four list screens once
+ended up with 40 / 40-as-a-literal / nothing / nothing. Below `lg` both frames stay silent, because
+there the reservation is the bottom tab bar and its size depends on the surface.
+
+Ownership and gates: `src/shared/ui/page-frame.ts` is the single definition site;
+`tests/contract/page-frame.contract.test.ts` pins each screen's membership and both frames'
+bottom breath, and `tests/e2e/page-frame.spec.ts` measures the rendered agreement.
 
 **`--page-col-utility`(960px) has been retired** (Design Council Verdict ③, 2026-07-29).
 The specification itself — "narrow the screen one more time from the inside for a single judgment view" — was not wrong, but **it produced the exact opposite result in its sole consumer.** The `/download` page is a surface that **attaches to the left** of the download panel, but centering only the footer with this token created two alignment references within the same page — measured (1920): panel x=160 · footer x=480. No element aligned with another.

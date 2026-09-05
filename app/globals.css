@@ -929,6 +929,39 @@
   --tracking-caps-14: 0.14em;
   --tracking-caps-16: 0.16em;
 
+  /*
+   * ── Caps tracking is a Latin device (owner, 2026-09-06) ────────────────────────────────────
+   *
+   * Owner, of the Korean workbench and the MCP tabs in the installed app: the uppercase eyebrow
+   * style is applied to Korean strings, and *"it spaces the syllables apart and reads broken."*
+   *
+   * The five steps above exist to open up **capital Latin letters**, whose forms are narrow and
+   * whose word boundaries survive the extra space. Hangul is written in syllable blocks that are
+   * already square and already separated; 0.14em pushes the blocks of one word as far apart as
+   * the space between two words, so a two-word label stops reading as two words and starts
+   * reading as five characters. `text-transform: uppercase` is a no-op on Hangul, which is why
+   * the pairing was never noticed: only half of the eyebrow specification ever applied, and it
+   * was the destructive half.
+   *
+   * ⚠️ **Measured before the rule existed** (2026-09-06, twelve `/ko/` routes at 1512x949): 26
+   * distinct Hangul strings rendered at 1.14-1.76px of tracking across eight routes, through four
+   * different `tracking-*` classes. Every one is a `--tracking-caps-*` consumer, so the rule
+   * lives on the tokens rather than in 26 class strings — a fix per site is 26 chances to miss
+   * one, and the twenty-seventh site would be born broken.
+   *
+   * The type-ramp pairs (`--tracking-caption` 0.04em, `--tracking-label` 0.02em) are **not**
+   * touched: they are body-text pairs, they apply to both scripts, and at 9.5px they come to
+   * 0.38px — below the threshold the gate measures and below what the complaint was about.
+   *
+   * `:root:lang(ko)` rather than a utility class: it beats this block on specificity, custom
+   * properties inherit, and no consumer has to opt in. `LocaleHtmlLang` plants the locale on
+   * `<html>` after hydration, so a Korean page shows Latin tracking for its first frames — the
+   * same window in which the web font has not loaded either.
+   *
+   * Gate: `tests/e2e/hangul-tracking.spec.ts` measures rendered letter-spacing on every element
+   * whose own text contains Hangul, across the `/ko/` routes, and probes its own detector.
+   */
+
   /* Line-height ramp — 7 px values + 2 free, 1:1 pair with type steps. Tailwind v4
      `--leading-*` namespace generates leading-<step> utilities.
 
@@ -4003,6 +4036,19 @@ body[data-no-tabbar] [data-tabbar="primary"] {
 }
 .atlas-scroll-quiet::-webkit-scrollbar {
   display: none;
+}
+
+/*
+ * Caps tracking is a Latin device — the rationale, the measurement and the gate are recorded with
+ * the `--tracking-caps-*` steps themselves, in the token block above. Only the override lives
+ * here, outside every layer, so nothing in a later layer can quietly win it back.
+ */
+:root:lang(ko) {
+  --tracking-caps-08: 0em;
+  --tracking-caps-10: 0em;
+  --tracking-caps-12: 0em;
+  --tracking-caps-14: 0em;
+  --tracking-caps-16: 0em;
 }
 
 /* ── Position of agent panel and selected-node inspector (2026-07-27) ──────────────────

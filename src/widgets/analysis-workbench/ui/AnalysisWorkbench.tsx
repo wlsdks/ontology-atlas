@@ -8,11 +8,9 @@ import remarkGfm from 'remark-gfm';
 import { analysisArchiveWritable, analysisScopeKey, appendAnalysisRecord, compareAnalysisBasis, latestFindingReview, readAnalysisHistory, serializeAnalysisRecord, verifyAnalysisEvidence, type AnalysisCompatibility, type AnalysisFinding, type AnalysisRecord, type AnalysisRun } from '@/entities/analysis-record';
 import { ANALYSIS_FINDINGS_INSTRUCTION, currentAnalysisBasis, type AnalysisCaptureContext, type AnalysisSaveState } from '@/features/acp-session';
 import { cn } from '@/shared/lib/cn';
-import { Button, Checkbox, Chip, IconButton, Select, TabBar, Textarea } from '@/shared/ui';
+import { Button, Checkbox, Chip, Disclosure, IconButton, Select, TabBar, Textarea } from '@/shared/ui';
 import { X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
-
-import { Disclosure } from './Disclosure';
 
 type Tab = 'meaning' | 'history' | 'conversation';
 const EMPTY_RECORDS: AnalysisRecord[] = [];

@@ -3999,8 +3999,10 @@
   },
   "agents": {
     "title": "Agents",
-    "lede": "Atlas finds coding tools on this computer, shows which of them can open safely inside the app, and installs a supported one that is missing.",
-    "runtimesHeading": "Tools on this computer"
+    "lede": "Atlas finds the coding tools already on this computer.",
+    "runtimesHeading": "Tools on this computer",
+    "ledeMore": "What this screen does",
+    "ledeDetail": "It shows which of them can open safely inside the app, installs a supported one that is missing, and opens a conversation with the one you pick. API keys and the folder itself are not set here."
   },
   "nativeErrors": {
     "unsupported-provider": "That is not an AI provider this app knows. Pick Anthropic, OpenAI, or Gemini, or connect a local runner by its address.",
