@@ -5534,17 +5534,12 @@ function HomePageImpl() {
                   ── The utility rail is one group, not four neighbours ──────────────
                   Fit, tour, shortcuts and replay are still positioned one by one from
                   `--topology-floating-control-desktop-top` plus the tile rhythm, so this
-                  wrapper changes no geometry: `absolute inset-0` is the same box as the
-                  map layer it sits in, and it takes no z-index, so nothing restacks.
-
-                  What it adds is a **hover and focus scope**. Each tile owns its own
-                  tooltip today, so reading the rail costs one hover and one wait per
-                  tile; with a group, touching any tile — or tabbing into it — names all
-                  four at once (`.chrome-rail` in `app/globals.css`). `pointer-events-none`
-                  keeps the map's drag surface: hover still resolves through the tiles,
-                  which set `pointer-events-auto` themselves.
-              */}
-              <div className="chrome-rail pointer-events-none absolute inset-0" data-testid="topology-utility-rail">
+                  wrapper has no box of its own: `display: contents` leaves each tile positioned
+                  against the map exactly as before, and gives the four tiles one DOM ancestor so
+                  `:hover` and `:focus-within` on it (through any descendant, label included) reveal
+                  four at once (`.chrome-rail` in `app/globals.css`). A full-inset box was tried first
+                  and every geometry probe read it as a panel covering the map (map-keyboard-walk). */}
+              <div className="chrome-rail contents" data-testid="topology-utility-rail">
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
