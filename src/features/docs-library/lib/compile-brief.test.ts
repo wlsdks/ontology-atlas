@@ -21,6 +21,8 @@ function row(path: string, state: LibrarySourceRow["state"]): LibrarySourceRow {
   };
 }
 
+const VAULT_ROOT = "/Users/probe/Ontology Atlas/launch";
+
 const SOURCES: LibrarySourceRow[] = [
   row("sources/plan.pdf", "not-compiled"),
   row("sources/budget.xlsx", "stale"),
@@ -37,20 +39,20 @@ describe("Compile acts on what is not written up", () => {
   });
 
   it("never sends a compiled source back to be rewritten", () => {
-    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude" });
+    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude", vaultRoot: VAULT_ROOT });
     expect(brief).not.toContain("sources/done.docx");
   });
 
   it("does not act on a source it has not finished measuring", () => {
     // `checking` means "a claim nothing has verified". Compiling it would be acting on a
     // guess, and the measurement finishes in milliseconds.
-    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude" });
+    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude", vaultRoot: VAULT_ROOT });
     expect(brief).not.toContain("sources/pending.pptx");
   });
 });
 
 describe("the brief carries the template rather than describing it", () => {
-  const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude" });
+  const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude", vaultRoot: VAULT_ROOT });
 
   it("embeds the template verbatim", () => {
     expect(brief).toContain(WIKI_PAGE_TEMPLATE.trimEnd());
@@ -70,7 +72,7 @@ describe("the brief carries the template rather than describing it", () => {
 
   it("carries the writer id that will land in created_by", () => {
     expect(
-      buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "model:llama3.1" }),
+      buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "model:llama3.1", vaultRoot: VAULT_ROOT }),
     ).toContain("created_by: model:llama3.1");
   });
 
@@ -122,7 +124,7 @@ describe("the six rules are all present, in both locales", () => {
 
   for (const { locale, probes } of CASES) {
     it(`${locale}: every rule a–f reaches the writer`, () => {
-      const brief = buildCompileBrief({ sources: SOURCES, locale, writerId: "agent:claude" });
+      const brief = buildCompileBrief({ sources: SOURCES, locale, writerId: "agent:claude", vaultRoot: VAULT_ROOT });
       for (const probe of probes) expect(brief).toContain(probe);
     });
   }
@@ -130,13 +132,39 @@ describe("the six rules are all present, in both locales", () => {
 
 describe("the brief names the files and nothing else about them", () => {
   it("lists the vault-relative path of each target", () => {
-    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude" });
+    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude", vaultRoot: VAULT_ROOT });
     expect(brief).toContain("- sources/plan.pdf");
     expect(brief).toContain("- sources/budget.xlsx");
   });
 
+  /**
+   * An agent's working directory is not guaranteed to be the folder a person opened. A
+   * brief that names only `sources/plan.pdf` resolves against wherever the session sits,
+   * and the miss reads as a missing document rather than a wrong root.
+   */
+  it("anchors every path to the folder, once, at the top", () => {
+    const brief = buildCompileBrief({
+      sources: SOURCES,
+      locale: "en",
+      writerId: "agent:claude",
+      vaultRoot: VAULT_ROOT,
+    });
+    expect(brief).toContain(`Folder: ${VAULT_ROOT}`);
+    const anchorAt = brief.indexOf(`Folder: ${VAULT_ROOT}`);
+    const firstPathAt = brief.indexOf("- sources/plan.pdf");
+    expect(anchorAt).toBeGreaterThan(-1);
+    expect(anchorAt, "no relative path may appear before the anchor that gives it a home")
+      .toBeLessThan(firstPathAt);
+  });
+
+  it("anchors the Korean brief too", () => {
+    expect(
+      buildCompileBrief({ sources: SOURCES, locale: "ko", writerId: "agent:claude", vaultRoot: VAULT_ROOT }),
+    ).toContain(`폴더: ${VAULT_ROOT}`);
+  });
+
   it("says the agent reads them itself, because Atlas converts nothing", () => {
-    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude" });
+    const brief = buildCompileBrief({ sources: SOURCES, locale: "en", writerId: "agent:claude", vaultRoot: VAULT_ROOT });
     expect(brief).toContain("Atlas converts nothing");
   });
 });

@@ -80,7 +80,16 @@ export function FindDocumentsDialog({
   const declined = candidates.filter((candidate) => !ticked.has(candidateKey(candidate)));
 
   return (
-    <Dialog open={open} onClose={onClose} labelledBy="find-documents-title" size="md">
+    <Dialog
+      open={open}
+      onClose={onClose}
+      labelledBy="find-documents-title"
+      size="md"
+      // A column bounded by the viewport: at 390 and 834 the candidate list is what
+      // scrolls, never the dialog past the bottom of the screen. `dvh` rather than `vh`
+      // because a mobile browser's chrome moves and `vh` does not notice.
+      className="flex max-h-[calc(100dvh-4rem)] flex-col"
+    >
       <h2
         id="find-documents-title"
         className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
@@ -126,7 +135,7 @@ export function FindDocumentsDialog({
 
       <div
         data-testid="find-documents-list"
-        className="mt-4 flex max-h-[46vh] flex-col gap-3 overflow-auto"
+        className="mt-4 flex min-h-0 flex-1 max-h-[46dvh] flex-col gap-3 overflow-auto"
       >
         {outcome === null ? (
           <p className="text-body text-[color:var(--color-text-tertiary)]">{t("walking")}</p>
@@ -150,34 +159,40 @@ export function FindDocumentsDialog({
               {rows.map((candidate) => {
                 const key = candidateKey(candidate);
                 return (
-                  <div
+                  /*
+                   * **The whole row is the label**, not just the box and the name. The
+                   * primitive's `label` takes a node, so the path and the size go inside
+                   * it — a person aiming at the row's empty middle hits the control, and
+                   * no second `<label>` is nested to get there.
+                   *
+                   * Equal height whatever the path length: a long path truncates rather
+                   * than wrapping, or one row grows taller than its neighbours.
+                   */
+                  <Checkbox
                     key={key}
-                    // Equal height whatever the path length: the row is a checkbox, a
-                    // name and two facts, and a two-line path must not make one row taller
-                    // than its neighbours.
-                    className="flex min-h-[var(--control-h-lg)] items-center gap-3 rounded-chip px-2 hover:bg-[color:var(--color-overlay-1)]"
-                  >
-                    <Checkbox
-                      data-testid={`find-documents-candidate-${candidate.relativePath}`}
-                      label={candidate.name}
-                      checked={ticked.has(key)}
-                      onChange={(event) =>
-                        setTicked((current) => {
-                          const next = new Set(current);
-                          if (event.target.checked) next.add(key);
-                          else next.delete(key);
-                          return next;
-                        })
-                      }
-                      className="min-w-0 flex-1"
-                    />
-                    <span className="flex-none truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
-                      {candidate.relativePath}
-                    </span>
-                    <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
-                      {candidate.extension.toUpperCase()} · {formatSourceBytes(candidate.size)}
-                    </span>
-                  </div>
+                    data-testid={`find-documents-candidate-${candidate.relativePath}`}
+                    checked={ticked.has(key)}
+                    onChange={(event) =>
+                      setTicked((current) => {
+                        const next = new Set(current);
+                        if (event.target.checked) next.add(key);
+                        else next.delete(key);
+                        return next;
+                      })
+                    }
+                    className="min-h-[var(--control-h-lg)] w-full gap-3 rounded-chip px-2 hover:bg-[color:var(--color-overlay-1)]"
+                    label={
+                      <>
+                        <span className="min-w-0 flex-1 truncate">{candidate.name}</span>
+                        <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                          {candidate.relativePath}
+                        </span>
+                        <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">
+                          {candidate.extension.toUpperCase()} · {formatSourceBytes(candidate.size)}
+                        </span>
+                      </>
+                    }
+                  />
                 );
               })}
             </section>

@@ -1,11 +1,14 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
+
+import { Link } from "@/i18n/navigation";
 import { BookText, FilePlus2, FileStack, FileText, Search, Sparkles } from "lucide-react";
 
 import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
 import { cn } from "@/shared/lib/cn";
 import { badgeClass } from "@/shared/ui/badge-class";
+import { controlClass } from "@/shared/ui/control-class";
 import { Chip, RowButton, Tooltip } from "@/shared/ui";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
@@ -208,7 +211,7 @@ export function LibrarySection({
             <ul
               data-testid="docs-library-source-list"
               aria-label={t("sources.listAria")}
-              className="flex max-h-[26vh] flex-col gap-0.5 overflow-auto px-2"
+              className="flex max-h-[22dvh] flex-col gap-0.5 overflow-auto px-2"
             >
               {model.sources.map((row) => (
                 <li key={row.path}>
@@ -252,19 +255,22 @@ export function LibrarySection({
             ) : null}
           </>
         ) : (
-          <p
-            data-testid="docs-library-sources-empty"
-            className="px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
-          >
-            {t("sources.empty")}
-          </p>
+          <>
+            <p
+              data-testid="docs-library-sources-empty"
+              className="px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            >
+              {t("sources.empty")}
+            </p>
+            {/* The folder is the interface, and this is the moment to say so: somebody
+                with nothing here yet is deciding how documents get in. Once rows exist
+                they have already done it, and the sentence is spent. */}
+            <p className="px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+              {t("sources.dropHint", { folder: vaultLabel })}
+            </p>
+          </>
         )}
-        {/* The folder is the interface. Saying so is not a footnote: a person who drags a
-            file in and sees the list change has learned that this is their folder, which
-            no button teaches. */}
-        <p className="px-3 pb-1 pt-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
-          {t("sources.dropHint", { folder: vaultLabel })}
-        </p>
+
       </section>
 
       <section
@@ -299,11 +305,38 @@ export function LibrarySection({
           }
         />
 
+        {/*
+          **Compile is app-only, so the web says so instead of describing it.** The empty
+          state used to open with "Compile turns the sources above into pages" on a
+          surface with no Compile button — a sentence about a door that is not there. The
+          degradation grammar in `.claude/rules/surfaces.md` replaces it: why it is
+          unavailable, where it works, and what still works here (the pages themselves
+          read and edit exactly as they do in the app).
+        */}
+        {onCompile === null ? (
+          <p
+            data-testid="docs-library-compile-web-limit"
+            className="px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+          >
+            {t("wiki.compileWebLimit")}{" "}
+            <Link
+              href="/download"
+              data-testid="docs-library-compile-web-get-app"
+              className={controlClass({
+                shape: "link",
+                hoverInk: "strong",
+                className: "rounded-chip px-1.5 py-0.5",
+              })}
+            >
+              {t("wiki.compileWebGetApp")}
+            </Link>
+          </p>
+        ) : null}
         {hasWiki ? (
           <ul
             data-testid="docs-library-wiki-list"
             aria-label={t("wiki.listAria")}
-            className="flex max-h-[26vh] flex-col gap-0.5 overflow-auto px-2"
+            className="flex max-h-[22dvh] flex-col gap-0.5 overflow-auto px-2"
           >
             {model.wikiPages.map((page) => {
               const active = page.slug === selectedSlug;
@@ -323,11 +356,16 @@ export function LibrarySection({
                       {page.createdBy ?? t("wiki.unknownAuthor")}
                     </span>
                     {verdict && !verdict.ok ? (
-                      // The problem code, not a paraphrase. It is what `wiki-validate`
-                      // prints and what an agent branches on, so one word means one
-                      // thing on every surface.
+                      /*
+                       * **One fixed word in the pill.** It used to carry the problem code,
+                       * which made a badge that changed shape row by row and asked a
+                       * reader to learn a vocabulary to scan a list. The code and its
+                       * sentence belong where a person can act on them — the page's own
+                       * frontmatter block — so the pill says only that this page does not
+                       * fit, and the row keeps its author beside it.
+                       */
                       <StateBadge tone="warning" testId="docs-library-wiki-off-template">
-                        {verdict.firstProblem ?? t("wiki.offTemplate")}
+                        {t("wiki.offTemplate")}
                       </StateBadge>
                     ) : null}
                   </RowButton>

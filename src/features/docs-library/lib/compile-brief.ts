@@ -42,6 +42,15 @@ export interface CompileBriefInput {
   locale: string;
   /** `agent:claude`, `model:llama3.1` — whatever will end up in `created_by`. */
   writerId: string;
+  /**
+   * The folder every path in this brief is relative to.
+   *
+   * An agent's working directory is not guaranteed to be the folder a person opened, and
+   * `sources/plan.pdf` alone resolves against wherever the session happens to sit — a
+   * miss there reads as a missing document rather than a wrong root. The anchor is stated
+   * once, at the top, so every path below it has a home.
+   */
+  vaultRoot: string;
 }
 
 /** Sources a Compile run acts on: the ones with no write-up, or one that no longer fits. */
@@ -80,7 +89,12 @@ function ruleLines(locale: string, writerId: string): string[] {
  * job than any converter shipped here, and whatever it does is visible in its own
  * transcript.
  */
-export function buildCompileBrief({ sources, locale, writerId }: CompileBriefInput): string {
+export function buildCompileBrief({
+  sources,
+  locale,
+  writerId,
+  vaultRoot,
+}: CompileBriefInput): string {
   const targets = selectCompileTargets(sources);
   const paths = targets.map((row) => `- ${row.path}`).join("\n");
   const sections = WIKI_SECTION_ORDER.join(" → ");
@@ -89,6 +103,8 @@ export function buildCompileBrief({ sources, locale, writerId }: CompileBriefInp
   if (locale === "ko") {
     return [
       "이 폴더의 원문을 읽고 위키 문서를 써 줘. 형식은 아래 템플릿 그대로여야 해.",
+      "",
+      `폴더: ${vaultRoot}`,
       "",
       "읽을 파일 (이 폴더 기준 경로):",
       paths,
@@ -111,6 +127,8 @@ export function buildCompileBrief({ sources, locale, writerId }: CompileBriefInp
 
   return [
     "Read the raw sources in this folder and write them up as wiki pages. The shape is the template below, exactly.",
+    "",
+    `Folder: ${vaultRoot}`,
     "",
     "Files to read (paths relative to this folder):",
     paths,

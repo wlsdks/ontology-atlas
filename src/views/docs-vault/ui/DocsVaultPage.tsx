@@ -2184,13 +2184,31 @@ function DocsVaultContent() {
     [manifest.docs],
   );
   const handleCompile = useCallback(() => {
-    const brief = buildCompileBrief({
-      sources: libraryModel.sources,
-      locale,
-      writerId: docsAgent.runtime ? `agent:${docsAgent.runtime.id}` : 'agent:unknown',
-    });
-    docsAgent.start(brief);
-  }, [docsAgent, libraryModel.sources, locale]);
+    /*
+     * **A press that does nothing must never be silent** (installed app, 2026-09-05). The
+     * first version of this handler had no catch, so anything thrown between the click and
+     * the dock — building the brief, seating the request — left a chip that looked pressed
+     * and a screen that did not change, which reads as a broken product rather than a
+     * failure with a cause.
+     */
+    try {
+      const brief = buildCompileBrief({
+        sources: libraryModel.sources,
+        locale,
+        writerId: docsAgent.runtime ? `agent:${docsAgent.runtime.id}` : 'agent:unknown',
+        // The dock is only drawn with an absolute path, so this is never the handle name.
+        vaultRoot: nativeVaultRootPath ?? '',
+      });
+      docsAgent.start(brief);
+    } catch (error) {
+      toast.show(
+        tLibrary('wiki.compileFailed', {
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+        'error',
+      );
+    }
+  }, [docsAgent, libraryModel.sources, locale, nativeVaultRootPath, tLibrary, toast]);
   const handleOpenSource = useCallback(
     (row: LibrarySourceRow) => {
       // Two surfaces, one intent: put the person in front of the file. The app selects it
@@ -2680,7 +2698,7 @@ function DocsVaultContent() {
         />
       ) : (
         <>
-          <div className="flex min-h-0 flex-1">
+          <div className="relative flex min-h-0 flex-1">
         {/* Source tree drawer — tree navigation is intentionally opt-in so the
             document/work surface stays primary on desktop and mobile. */}
         {/* It covers the whole screen, so it uses the **opacity-only** grammar (`motion="overlay"`):
@@ -3040,6 +3058,30 @@ function DocsVaultContent() {
             />
           )}
         </main>
+
+        {/*
+          The dock is a **sibling of `<main>` inside this row**, which is the whole of what
+          makes it visible: its surface is `absolute inset-y-3 right-3`, so the frame needs
+          a parent that gives it height. Measured in the installed app on 2026-09-05 — the
+          first placement put it after the row, inside the page's flex **column**, where a
+          frame whose only child is absolutely positioned collapses to zero height and
+          `overflow-hidden` finished the job. Compile ran, the session started, and nothing
+          appeared. Map's chat panel and the Architecture dock are the working precedents
+          and both sit exactly here.
+        */}
+        {docsAgent.route === 'agent' && docsAgent.runtime && nativeVaultRootPath ? (
+          <DocsAgentDock
+            open={docsAgent.open}
+            runtime={docsAgent.runtime}
+            runtimes={docsAgent.runtimes}
+            onRuntimeChange={docsAgent.setRuntimeId}
+            vaultRoot={nativeVaultRootPath}
+            mcpServers={docsAgent.mcpServers}
+            openingRequest={docsAgent.openingRequest}
+            knownSlugs={knownDocSlugs}
+            onClose={() => docsAgent.setOpen(false)}
+          />
+        ) : null}
           </div>
         </>
       )}
@@ -3071,22 +3113,6 @@ function DocsVaultContent() {
         onSelect={(kind) => void handleCreateNewDocWithKind(kind)}
         onClose={() => setNewDocKindDialogOpen(false)}
       />
-
-      {/* One in-app agent turn, docked beside the library it compiles. Drawn only when a
-          runtime, an absolute folder path and the folder's own MCP server are all there. */}
-      {docsAgent.route === 'agent' && docsAgent.runtime && nativeVaultRootPath ? (
-        <DocsAgentDock
-          open={docsAgent.open}
-          runtime={docsAgent.runtime}
-          runtimes={docsAgent.runtimes}
-          onRuntimeChange={docsAgent.setRuntimeId}
-          vaultRoot={nativeVaultRootPath}
-          mcpServers={docsAgent.mcpServers}
-          openingRequest={docsAgent.openingRequest}
-          knownSlugs={knownDocSlugs}
-          onClose={() => docsAgent.setOpen(false)}
-        />
-      ) : null}
 
       {/* Discovery proposes; this dialog is where a person approves. Blocking, because it
           is asking to take copies of their files. */}

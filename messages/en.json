@@ -4192,11 +4192,14 @@
       "listAria": "Wiki pages in this folder",
       "compile": "Compile",
       "compileTooltip": "Start one agent turn that reads the sources and writes wiki pages. Every write waits for you.",
-      "empty": "No wiki pages yet. Compile turns the sources above into pages that cite them, in the shape wiki/_template.md holds.",
+      "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",
       "unknownAuthor": "unknown",
       "offTemplate": "off-template",
       "offTemplateCount": "{count, plural, one {# page does not fit the template} other {# pages do not fit the template}}",
-      "transfer": "Traffic goes from the coding agent straight to its provider; Atlas is not in the middle and .ontology-atlas/llm-audit.jsonl does not record it. Every write still stops at your permission card."
+      "transfer": "Traffic goes from the coding agent straight to its provider; Atlas is not in the middle and .ontology-atlas/llm-audit.jsonl does not record it. Every write still stops at your permission card.",
+      "compileFailed": "Could not start the agent turn: {reason}",
+      "compileWebLimit": "Writing pages needs a coding agent running on this computer, which only the app can start. Reading and editing the pages works here.",
+      "compileWebGetApp": "Get the app"
     },
     "find": {
       "title": "Documents in the folders you granted",
