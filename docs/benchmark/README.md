@@ -27,6 +27,7 @@ Either way, **measurement before further investment**.
 | [`FINDINGS-2026-08-25.md`](FINDINGS-2026-08-25.md) | What we learned, what the numbers can and cannot show, and what to run next. |
 | [`tasks.md`](tasks.md) | 10 retrieval and meaning tasks — 4 categories (cross-cutting / semantic / negative-control / meaning). Each task has a known answer for human grading. |
 | [`rubric.md`](rubric.md) | How to score: correctness 0–3, tool-call count, hallucination count, subjective utility 1–5. |
+| [`FINDINGS-2026-09-06-wiki-probe.md`](FINDINGS-2026-09-06-wiki-probe.md) | The sealed five-question probe of compiled wiki pages against the raw folder: 5/5 both, pages in under half the time; the answer key's accent hue was wrong and the sources were right. |
 | [`FINDINGS-2026-08-31.md`](FINDINGS-2026-08-31.md) | The first paired greenfield/brownfield Atlas-present versus Atlas-absent measurement and its limits. |
 | [`FINDINGS-2026-08-31-change-flow.md`](FINDINGS-2026-08-31-change-flow.md) | The first end-to-end meaning → code/test → ontology update → commit → push → merge feasibility slice. |
 | [`FINDINGS-2026-08-31-metric-split.md`](FINDINGS-2026-08-31-metric-split.md) | **Read before quoting the run above.** Most of its published delta was vault vocabulary a control arm cannot write, not a comparison. |

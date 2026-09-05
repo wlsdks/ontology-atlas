@@ -2689,6 +2689,28 @@
       "slug": "examined-and-found-correct"
     }
   ],
+  "benchmark/FINDINGS-2026-09-06-wiki-probe": [
+    {
+      "depth": 1,
+      "text": "Findings 2026-09-06 · the sealed five-question wiki probe",
+      "slug": "findings-2026-09-06-the-sealed-five-question-wiki-probe"
+    },
+    {
+      "depth": 2,
+      "text": "Setup",
+      "slug": "setup"
+    },
+    {
+      "depth": 2,
+      "text": "Result",
+      "slug": "result"
+    },
+    {
+      "depth": 2,
+      "text": "What this does and does not show",
+      "slug": "what-this-does-and-does-not-show"
+    }
+  ],
   "benchmark/README": [
     {
       "depth": 1,
@@ -6246,6 +6268,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — The design system document catches up with the same-day accent revert, and the wiki probe keeps Compile",
+      "slug": "2026-09-06-the-design-system-document-catches-up-with-the-same-day-accent-revert-and-the-wiki-probe-keeps-compile"
     },
     {
       "depth": 2,
