@@ -12877,6 +12877,43 @@
       "slug": "confidence"
     }
   ],
+  "ontology/capabilities/mcp-connectors": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Four fences",
+      "slug": "four-fences"
+    },
+    {
+      "depth": 2,
+      "text": "What the person is told before switching one on",
+      "slug": "what-the-person-is-told-before-switching-one-on"
+    },
+    {
+      "depth": 2,
+      "text": "Runtime narrowing",
+      "slug": "runtime-narrowing"
+    },
+    {
+      "depth": 2,
+      "text": "Where the values live",
+      "slug": "where-the-values-live"
+    },
+    {
+      "depth": 2,
+      "text": "Implementation evidence",
+      "slug": "implementation-evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
   "ontology/capabilities/mcp-server": [
     {
       "depth": 1,

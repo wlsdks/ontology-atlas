@@ -1710,6 +1710,36 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/mcp-connectors",
+      "path": "docs/ontology/capabilities/mcp-connectors.md",
+      "title": "External MCP Connectors",
+      "tags": [],
+      "frontmatter": {
+        "uid": "b2242e13-b82e-40e2-aff7-ee15f5fcc911",
+        "slug": "capabilities/mcp-connectors",
+        "kind": "capability",
+        "title": "External MCP Connectors",
+        "display_ko": "외부 MCP 연결 도구",
+        "display_en": "External MCP Connectors",
+        "domain": "domains/agent-integration",
+        "elements": [],
+        "path": "src/features/mcp-connectors/ui/ConnectorsPanel.tsx",
+        "created_by": "agent:claude",
+        "dependencies": [
+          "capabilities/acp-runtime"
+        ],
+        "relation_notes": {
+          "capabilities/acp-runtime": "A connector is a descriptor this capability hands to the ACP session in session/new; that runtime spawns it. Connectors ride only a runtime whose configuration was measured to raise a permission request for an MCP child, which today is Claude alone."
+        },
+        "relates": []
+      },
+      "headings": [],
+      "excerpt": "The ability to attach an external MCP server (Notion, GitHub, Atlassian, or one somebody wrote themselves) to the in-app coding-agent conversation, so the agent can use it beside the server that reads this ontology folder. Atlas runs none of them: it passes the descriptor into the ACP handshake and the coding agent spa",
+      "wordCount": 743,
+      "updatedAt": "2026-09-05",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/mcp-server",
       "path": "docs/ontology/capabilities/mcp-server.md",
       "title": "MCP Server",
@@ -4355,6 +4385,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/capabilities/mcp-connectors",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/capabilities/mcp-server",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4884,6 +4919,18 @@
         "linkText": "capabilities/vault-sample-source"
       }
     ],
+    "ontology/capabilities/acp-runtime": [
+      {
+        "fromSlug": "ontology/capabilities/mcp-connectors",
+        "context": "frontmatter · **[capabilities/acp-runtime]**",
+        "linkText": "capabilities/acp-runtime"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/acp-runtime]**",
+        "linkText": "capabilities/acp-runtime"
+      }
+    ],
     "ontology/elements/installed-mcp-identity-gate": [
       {
         "fromSlug": "ontology/capabilities/mcp-server",
@@ -5329,13 +5376,6 @@
         "fromSlug": "ontology/domains/graph-modeling",
         "context": "frontmatter · **[elements/ontology-class]**",
         "linkText": "elements/ontology-class"
-      }
-    ],
-    "ontology/capabilities/acp-runtime": [
-      {
-        "fromSlug": "ontology/domains/agent-integration",
-        "context": "frontmatter · **[capabilities/acp-runtime]**",
-        "linkText": "capabilities/acp-runtime"
       }
     ],
     "ontology/capabilities/agent-work-visibility": [
@@ -6371,6 +6411,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/locale-switch",
                 "title": "Locale Switching"
+              },
+              {
+                "name": "mcp-connectors",
+                "path": "ontology/capabilities/mcp-connectors",
+                "type": "doc",
+                "slug": "ontology/capabilities/mcp-connectors",
+                "title": "External MCP Connectors"
               },
               {
                 "name": "mcp-server",
