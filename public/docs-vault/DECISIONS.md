@@ -61,6 +61,8 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: a Connectors section on /agents lists servers from ~/.claude.json (user + this folder), the vault's .mcp.json, ~/.codex/config.toml and ~/.cursor/mcp.json as names only; attached ones live in .ontology-atlas/connectors.json, default off, never a credential literal; a secret is a per-variable keychain choice resolved in Rust one line before session/new; connectors ride Claude sessions only until Codex is measured; the panel states transfer and write authority and that llm-audit.jsonl does not cover this traffic.
 **Dissent**: po-evidence, accepted: adapter behaviour had been read off version numbers, so an installed session came before merge. Measured 2026-09-05: stdio and http both attach (15 and 3 tools), the first connector tool call raised the permission card, no audit line was written.
 **Falsifier**: a connector tool executing in any offered runtime without a permission card; a token in connectors.json or in the WebView; or no connector switched on in the first ten installs that have one discoverable.
+**Owner**: jinan
+
 ## 2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn
 
 **Why**: the 3D cone filled 18.7% of the canvas at 1920 with 27 overlapping pairs and a median rim contrast of 1.75:1, and its readout described a zoom rule while it painted 125 concepts; the owner chose direction B2 (same geometry, corrected drawing).
