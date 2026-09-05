@@ -548,6 +548,22 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(row.className).toContain('border-[color:var(--color-danger-a50)]');
     // The ink stays tertiary: danger text against it measures 1.04:1.
     expect(row.className).toContain('text-[color:var(--color-text-tertiary)]');
+    /*
+     * ⚠️ **The seam replaces the run's rule; it does not stand beside it.** The row is
+     * pulled out by the run's border plus its padding, and pays the same padding back, so
+     * the red hairline lands on the grey one and the words stay in the transcript's single
+     * left column. Measured 2026-09-05 before this pairing existed: the seam sat 1px right
+     * of the divider (two rules for one fact) and the row's text 1px left of every sibling.
+     * The two values are read off the wrapper rather than written twice, because the day
+     * they disagree is the day the left edge goes ragged.
+     */
+    const run = row.closest('[data-acp-entry="tool-run"]');
+    expect(run, 'a tool row outside its run has no rule to turn red').not.toBeNull();
+    expect(run!.className).toContain('border-l');
+    expect(run!.className).toContain('pl-2');
+    expect(row.className).toContain('pl-2');
+    // border-l (1) + pl-2 (8) = 9.
+    expect(row.className).toContain('-ml-[9px]');
     expect(screen.getByTestId('acp-chat-tool-outcome').className).toContain(
       'font-[var(--font-weight-emphasis)]',
     );

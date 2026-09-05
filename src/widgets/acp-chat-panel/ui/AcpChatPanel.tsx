@@ -1933,8 +1933,16 @@ function TranscriptEntry({
            * it: a colour nobody can read as different from its neighbour is decoration, and
            * on this row it would be decoration claiming to be a warning. A 1px rule at the
            * row's leading edge is a mark, not an ink change, so the sentence stays legible.
+           *
+           * ⚠️ **The offset is the run's own `border-l` (1) plus its `pl-2` (8), so the
+           * seam lands *on* the group rule rather than beside it** (measured 2026-09-05:
+           * at `-ml-2` the red hairline sat at x=1 with the divider still drawn at x=0 —
+           * two stacked rules for one fact — and this row's text started at x=8 against
+           * every sibling's x=9, a 1px jog down the left edge of the transcript). At 9 the
+           * run's grey rule turns red for exactly the row that did not land, and the
+           * words stay in the same column. Change it only with the parent's padding.
            */
-          broke && '-ml-2 border-l border-[color:var(--color-danger-a50)] pl-1.5',
+          broke && '-ml-[9px] border-l border-[color:var(--color-danger-a50)] pl-2',
         )}
       >
         {/*

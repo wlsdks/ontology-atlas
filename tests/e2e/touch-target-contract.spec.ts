@@ -140,10 +140,38 @@ test.describe("터치 타깃 계약 (pointer: coarse)", () => {
         }).length,
         pageScrollsSideways:
           document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        /*
+         * ⚠️ **The finger floor grows the box, and the underline rides its bottom edge.**
+         * With the label aligned to the top of a 44px tab the active underline — the only
+         * marker of which tab is selected — stood 26px below its own word, more than twice
+         * the 10px it keeps on a mouse and further than the label is tall. Height alone
+         * passed that screen, so the distance is measured with it: it must stay the tab's
+         * own `padding-bottom`.
+         */
+        detachedUnderline: tabs
+          .map((tab) => {
+            const rect = tab.getBoundingClientRect();
+            const style = getComputedStyle(tab);
+            const range = document.createRange();
+            range.selectNodeContents(tab);
+            const ink = range.getBoundingClientRect();
+            const gap =
+              rect.bottom - Number.parseFloat(style.borderBottomWidth) - ink.bottom;
+            return {
+              id: (tab.textContent ?? "").trim().slice(0, 16),
+              gap: Math.round(gap),
+              pad: Math.round(Number.parseFloat(style.paddingBottom)),
+            };
+          })
+          .filter((tab) => tab.gap > tab.pad + 1),
       };
     }, MIN);
 
     expect(measured.scanned, "탭을 충분히 재지 못했다").toBeGreaterThan(4);
+    expect(
+      measured.detachedUnderline,
+      `밑줄이 라벨에서 떨어졌다: ${JSON.stringify(measured.detachedUnderline)}`,
+    ).toEqual([]);
     expect(measured.short, `44px 미만 탭: ${JSON.stringify(measured.short)}`).toEqual([]);
     expect(measured.wrapped, "탭 라벨이 줄바꿈했다 — 밑줄이 한 탭 아래에 있지 않다").toBe(0);
     expect(measured.pageScrollsSideways, "탭 줄이 페이지를 가로로 밀었다").toBe(false);

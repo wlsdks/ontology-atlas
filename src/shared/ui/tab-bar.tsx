@@ -272,9 +272,20 @@ export function TabBar({
              * `atlas-touch-floor` is the finger height. This is a `min-height` marker
              * rather than an expanded hit area on purpose (`app/globals.css`): the tabs sit
              * a `gap-7` apart, and phantom hit areas that overlap cause missed touches.
+             *
+             * ⚠️ **`items-end`, because the finger floor grows the box and the underline
+             * rides its bottom edge** (measured 2026-09-05, `/en/ontology/insights/` at
+             * 390 with `pointer: coarse`). With `items-baseline` the label was pinned at
+             * the top of the 44px box and the active underline — the only marker of which
+             * tab is selected — sat **26px** below the label instead of the `pb-2.5` 10px
+             * it sits at on a mouse. A marker further from its label than the label is
+             * tall stops reading as that label's marker. Bottom alignment puts the 16px
+             * of finger height above the words, where nothing has to read it, and both
+             * children are the same `text-label` line, so at the 28px mouse height this
+             * is byte-for-byte the previous baseline result.
              */
             className={
-              "atlas-touch-floor -mb-px inline-flex shrink-0 items-baseline gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] px-0.5 pb-2.5 font-mono text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
+              "atlas-touch-floor -mb-px inline-flex shrink-0 items-end gap-2 whitespace-nowrap border-b-[length:var(--tabbar-underline)] px-0.5 pb-2.5 font-mono text-label font-[var(--font-weight-emphasis)] uppercase tracking-[var(--tracking-caps-14)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)] " +
               (active
                 ? "border-[color:var(--color-indigo-accent)] text-[color:var(--color-text-primary)]"
                 : "border-transparent text-[color:var(--color-text-quaternary)] hover:text-[color:var(--color-text-secondary)]")

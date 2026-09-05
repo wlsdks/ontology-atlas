@@ -1158,7 +1158,7 @@ right, neither — computed from `scrollLeft` against `scrollWidth - clientWidth
 an edge with nothing past it says "there is more this way" when there is not, which is the
 inverse of the affordance.
 
-**Two rules the strip cannot ship without** (measured 2026-09-05, `/ontology/insights` at
+**Three rules the strip cannot ship without** (measured 2026-09-05, `/ontology/insights` at
 seven tabs):
 
 1. `shrink-0 whitespace-nowrap` on the tab. A flex child in an `overflow-x-auto` row
@@ -1169,6 +1169,12 @@ seven tabs):
    past the right edge — the underline, the only marker of which tab is selected, was not
    on screen. Resize is the other way it leaves the viewport, and rotating a phone is not a
    remount.
+3. `items-end` on the tab, because `atlas-touch-floor` grows the box under a coarse
+   pointer and the underline rides its bottom edge. Baseline alignment pinned the label to
+   the top of the 44px tab and left the active underline **26px** below its own word —
+   further than the label is tall, and more than twice the 10px `pb-2.5` it keeps at 28px
+   on a mouse. A marker that far from its label stops reading as that label's marker. Both
+   children are one `text-label` line, so at the mouse height the result is unchanged.
 
 ### App-embedded terminal dock tokens — Removed (2026-07-26)
 
