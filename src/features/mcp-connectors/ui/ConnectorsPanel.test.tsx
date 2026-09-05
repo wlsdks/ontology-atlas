@@ -10,6 +10,7 @@ const bridge = vi.hoisted(() => ({
   secretsAvailable: true,
   discovered: null as unknown,
   secretSets: [] as Array<{ ref: string; secret: string }>,
+  secretDeletes: [] as string[],
   stored: new Map<string, string>(),
 }));
 
@@ -36,6 +37,12 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
       stored: bridge.stored.has(secretRef),
       last4: bridge.stored.get(secretRef) ?? null,
     }),
+    connectorSecretDelete: async (secretRef: string) => {
+      bridge.secretDeletes.push(secretRef);
+      bridge.stored.delete(secretRef);
+      window.dispatchEvent(new Event('ontology-atlas:connector-secret-change'));
+      return { secretRef, stored: false, last4: null };
+    },
     connectorSecretSet: async (secretRef: string, secret: string) => {
       bridge.secretSets.push({ ref: secretRef, secret });
       bridge.stored.set(secretRef, secret.slice(-4));
@@ -116,6 +123,7 @@ beforeEach(() => {
   bridge.secretsAvailable = true;
   bridge.discovered = null;
   bridge.secretSets = [];
+  bridge.secretDeletes = [];
   bridge.stored = new Map();
 });
 
@@ -286,6 +294,61 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       expect(screen.getByTestId('connectors-item-variable-refused')).toBeInTheDocument(),
     );
     expect(screen.queryByTestId('connectors-item-variable-value')).toBeNull();
+  });
+
+  it('연결 도구를 지우면 그것이 가리키던 토큰도 이 컴퓨터에서 지운다', async () => {
+    /*
+     * Measured in the installed app on 2026-09-05: removing a connector took the row out of
+     * connectors.json and left the keychain item behind, so `security find-generic-password`
+     * still listed it. A token nobody can see any more, on a machine somebody hands on.
+     */
+    const vault = fakeVault(
+      seeded({
+        ...stdioRecord,
+        env: [
+          { name: 'NOTION_TOKEN', secretRef: 'connector:c1:NOTION_TOKEN' },
+          { name: 'OPENAPI_MCP_HEADERS', secretRef: 'connector:c1:OPENAPI_MCP_HEADERS' },
+          { name: 'NOTION_VERSION', value: '2022-06-28' },
+        ],
+      }),
+    );
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    bridge.stored.set('connector:c1:OPENAPI_MCP_HEADERS', 'ders');
+    draw(<ConnectorsPanel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-remove')).toBeInTheDocument());
+    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+
+    // Every reference the record carried, and only those - the plain value has nothing to forget.
+    await waitFor(() =>
+      expect([...bridge.secretDeletes].sort()).toEqual([
+        'connector:c1:NOTION_TOKEN',
+        'connector:c1:OPENAPI_MCP_HEADERS',
+      ]),
+    );
+    // …and a read afterwards says absent, which is what the person was promised.
+    expect(bridge.stored.size).toBe(0);
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').not.toContain('notion');
+  });
+
+  it('키체인 선택을 끄면 그 변수의 값도 이 컴퓨터에서 지운다', async () => {
+    // Turning the choice off is the person saying this value should not be on this machine.
+    // Dropping only the reference would leave the value with nothing on screen pointing at it.
+    const vault = fakeVault(seeded(stdioRecord));
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    draw(<ConnectorsPanel handle={vault.handle} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-item-variable-keychain')).toBeChecked(),
+    );
+    fireEvent.click(screen.getByTestId('connectors-item-variable-keychain'));
+    await waitFor(() => expect(bridge.secretDeletes).toEqual(['connector:c1:NOTION_TOKEN']));
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-item-variable')).toHaveAttribute(
+        'data-variable-keychain',
+        'false',
+      ),
+    );
+    expect(bridge.stored.size).toBe(0);
   });
 
   it('브라우저에서는 왜 못 보는지와 무엇은 되는지를 함께 말한다', async () => {
