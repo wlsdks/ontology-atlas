@@ -2532,6 +2532,8 @@
       "expandAria": "Expand INDEX",
       "searchPlaceholder": "Search concepts",
       "censusConcepts": "concepts",
+      "sourceDocuments": "documents",
+      "sourceDocumentsPartialTitle": "The folder is larger than one read covers, so more documents may be there.",
       "censusRelations": "relations",
       "censusDomains": "domains",
       "agentSync": "Updated with AI",
