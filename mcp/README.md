@@ -527,7 +527,10 @@ explicitly unavailable to MCP because the server does not own the loaded UI stat
 explicit `project`; Atlas does not silently pick the first project. Omitted
 `detail` and `detail:"full"` return the complete diagnostic contract. For a
 known coding task, `detail:"compact"` requires a request-local `task` of at most
-2,000 characters and returns no more than 12,000 UTF-8 JSON bytes. The compact
+2,000 characters and returns no more than 12,000 UTF-8 JSON bytes, measured as
+`Buffer.byteLength(JSON.stringify(completeCompactObject), "utf8")`, including
+`handoffPrompt`. Display indentation is excluded; the combined connection and
+compact wire response still stays below 20,000 characters. The compact
 v2 contract keeps final source/meaning currentness, `meaningRepair:v2`, approval
 and no-auto-write/finalize guards, one broad capability selected only when its
 persisted Definition/Includes/Excludes are compatible with the task, cited

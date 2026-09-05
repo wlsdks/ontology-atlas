@@ -54,7 +54,8 @@ record. Reviewer turns belong to their selected seats.
 - **Smallest slice:** prefer an integrated proof to speculative scope.
 - **Charter first:** repository rules beat an external reference.
 - **No union:** choose one proposal or something smaller.
-- **Removal required:** design review must remove, dim, collapse, or align.
+- **Evidence before changes:** keep a supported design unchanged; correct an
+  observed defect without inventing removal merely to show review activity.
 
 Evidence beats confidence language. An affected or unknown boundary fails closed;
 an omitted assessment is invalid.
@@ -73,9 +74,9 @@ The entire answer stays plain and begins:
 - **What you need to do**: usually nothing
 ```
 
-The verdict block does not belong in the conversation. The language rule
-applies to the entire answer. A clarification request is a failure signal:
-rewrite from the beginning. “What differs from your request” cannot be omitted.
+Keep internal verdict tables in the review artifact and explain the outcome
+plainly. Rewrite an unclear summary; ask a focused question when a real scope
+or authorization decision remains. Always disclose differences from the request.
 
 ## Record
 

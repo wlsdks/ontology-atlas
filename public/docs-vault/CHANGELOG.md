@@ -48,8 +48,8 @@
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
 **Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder does not hold and shares one ACP conversation across tabs; Flow presents a cited answer scene by scene without leaving Analysis.
-**Changed**: A closing panel, drawer, palette or dialog now leaves faster than it arrived on its own curve and stops taking clicks the moment it starts leaving; the map's right-hand tiles name themselves as a group on hover or keyboard focus; the insights tab strip scrolls instead of wrapping and keeps the open tab in view.
-**Fixed**: A truncated list says how many it is not showing and where the rest is; a document's meta row shows when its meaning was checked beside when the file changed; editor fields say which program reads them; six empty states carry the link that unblocks them.
+**Changed**: Closing panels, drawers, palettes and dialogs leave faster on their own curve and immediately stop taking clicks; the map's right-hand tiles name their group on hover or focus; the insights tab strip scrolls instead of wrapping and keeps the open tab in view.
+**Fixed**: Compact MCP budgets count transmitted JSON, excluding display indentation. A truncated list says how many it is not showing and where the rest is; a document's meta row shows when its meaning was checked beside when the file changed; editor fields say which program reads them; six empty states carry the link that unblocks them.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

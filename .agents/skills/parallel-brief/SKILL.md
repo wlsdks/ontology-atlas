@@ -29,7 +29,9 @@ competing baselines.
 ## 3. Worktrees and stash
 
 - Never run `git add -A`; a worktree directory can be staged as an empty gitlink.
-- Remove a temporary worktree when finished.
+- Subagents do not remove worktrees. The coordinating owner may remove a
+  task-created worktree only after confirming ownership, preserved changes,
+  and no active users. Otherwise report its path for later cleanup.
 - Never use `git stash`; stash is repository-wide and has erased another agent's
   work in this project.
 
@@ -58,7 +60,7 @@ Every delegated brief states:
 
 1. the unique server port, or that no server may run;
 2. which files are read-only;
-3. no stash, no `git add -A`, and how any worktree is removed;
+3. no stash, no `git add -A`, no subagent worktree deletion, and the cleanup owner;
 4. the external scratch location;
 5. which baselines must remain green and the commands that prove them;
 6. the primary sources the agent must read instead of trusting a relayed summary.

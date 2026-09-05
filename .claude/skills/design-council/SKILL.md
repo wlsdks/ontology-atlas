@@ -73,8 +73,10 @@ Give every selected seat the same literal brief:
 [Output] selected seat brief's exact format
 ```
 
-Keep first positions independent when independent reviewers are available. When
-they are not, run sequentially and disclose lost independence. Every rejection
+Keep first positions in separate reviewer contexts with the same evidence and
+without the other positions. Parallel or serial scheduling may preserve that
+isolation. If only one shared context is available, label the review as a
+single-agent perspective check and disclose that it is not independent. Every rejection
 names an implementable alternative and may use published principles without
 copying another product's assets, words, palette, layout, or motion signature.
 
@@ -88,8 +90,9 @@ repeated questions and no second round.
 ## Guardian decision and application
 
 The guardian chooses one proposal or something smaller, never a union. Repository
-charter and measured Atlas workflow evidence beat external taste. The decision
-must remove, dim, collapse, or align something; addition-only critique fails.
+charter and measured Atlas workflow evidence beat external taste. The decision may leave the design unchanged when the evidence supports it.
+When a defect is found, choose the smallest supported correction; do not invent
+a removal or visual change merely to demonstrate that review happened.
 
 After applying, rerun only the route proofs invalidated by the guardian's change.
 Do not repeat a full design audit, responsive matrix, recording, or installed-app
@@ -101,7 +104,7 @@ utility block goes in the pull-request rationale, never into the ledger.
 
 ## Council utility
 
-The ledger must expose whether the council earned its cost:
+The pull-request rationale must expose whether the council earned its cost:
 
 ```md
 **Pre-review decision**: …
@@ -125,9 +128,11 @@ Five consecutive no-delta councils trigger owner review of the threshold.
 - **What you need to do**: usually nothing
 ```
 
-The verdict block does not belong in the conversation. This plain-language rule
-applies to the entire answer. A clarification request is a failure signal;
-rewrite from the beginning. “What differs from your request” cannot be omitted.
+Keep internal verdict tables in the review artifact; explain the decision and
+its evidence plainly in the conversation. If the owner cannot understand the
+summary, rewrite that summary. A necessary scope or authorization question is
+valid; name the unresolved decision rather than treating every question as a
+failure. Always disclose any difference from the owner's request.
 
 ## Ledger record
 
