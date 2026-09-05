@@ -3995,7 +3995,8 @@
         }
       }
     },
-    "openingScopeChanged": "This request has not been sent because its folder or analysis scope changed. Check the current context before starting another analysis."
+    "openingScopeChanged": "This request has not been sent because its folder or analysis scope changed. Check the current context before starting another analysis.",
+    "dockTitle": "Conversation"
   },
   "agents": {
     "title": "Agents",
