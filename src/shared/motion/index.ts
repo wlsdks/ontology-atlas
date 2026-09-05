@@ -140,4 +140,17 @@ export const SCRIM_FADE_REDUCED = OVERLAY_SPRING_REDUCED;
  * the same `--motion-ease-exit` the inspector's CSS movement exit (`topologyChromeOut`)
  * runs, so a framer exit and a CSS exit share one curve as well as one clock.
  */
-export const EXIT_TRANSITION = { duration: MOTION.fast.duration, ease: MOTION_EASE_EXIT } as const;
+/*
+ * `pointerEvents` is in every exit target so a leaving surface stops taking input from
+ * its first exit frame. It is a string, not a number: left to the default per-value
+ * transition, framer tries to tween it on the exit curve and, under jsdom on the CI
+ * runner, the exit never reports completion (measured 2026-09-05: two dialog tests hung
+ * at their 5 s limit on Linux while passing locally; dropping the value made them pass).
+ * A zero-duration per-value transition applies it instantly, which is also what the
+ * lockout means.
+ */
+export const EXIT_TRANSITION = {
+  duration: MOTION.fast.duration,
+  ease: MOTION_EASE_EXIT,
+  pointerEvents: { duration: 0 },
+} as const;
