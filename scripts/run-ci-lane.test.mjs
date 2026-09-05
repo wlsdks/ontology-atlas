@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildImpactPlan } from './classify-change.mjs';
-import { commandsForLane, runCommands } from './run-ci-lane.mjs';
+import { buildImpactPlan, FULL_LANE_COMMANDS } from './classify-change.mjs';
+import { commandsForLane, MACOS_ONLY_GATE_COMMANDS, runCommands } from './run-ci-lane.mjs';
 
 test('affected unit lane uses the module graph and keeps filesystem contracts separate', () => {
   const plan = buildImpactPlan({
@@ -92,4 +92,31 @@ test('the lane runner reports every independent failure', () => {
 
   assert.equal(status, 1);
   assert.deepEqual(seen, ['first', 'second', 'third']);
+});
+
+/*
+ * The Linux gates runner has no GTK headers, so `cargo test` on the Tauri crate cannot even
+ * build there (glib-sys, 2026-09-05). The bridge contract belongs to the hosts that own a
+ * Tauri toolchain; on any other host it must leave the gates lane, and only it.
+ */
+test('the Tauri bridge gate leaves the gates lane on a host without a Tauri toolchain', () => {
+  const plan = buildImpactPlan({ files: ['src-tauri/src/lib.rs'] });
+  const onMac = commandsForLane({ lane: 'gates', plan, base: 'abc123', platform: 'darwin' });
+  const onLinux = commandsForLane({ lane: 'gates', plan, base: 'abc123', platform: 'linux' });
+
+  assert.ok(onMac.includes('pnpm test:desktop:bridge'), 'macOS keeps the bridge contract');
+  assert.ok(!onLinux.includes('pnpm test:desktop:bridge'), 'Linux cannot compile the crate');
+  assert.deepEqual(
+    onMac.filter((command) => !MACOS_ONLY_GATE_COMMANDS.includes(command)),
+    onLinux,
+    'nothing but the toolchain-bound command may differ between hosts',
+  );
+});
+
+test('a full plan keeps every full gate on Linux, because the bridge is not among them', () => {
+  const plan = { full: true, lanes: { gates: { commands: [] } } };
+  assert.deepEqual(
+    commandsForLane({ lane: 'gates', plan, platform: 'linux' }),
+    [...FULL_LANE_COMMANDS.gates],
+  );
 });
