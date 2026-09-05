@@ -185,6 +185,18 @@ pub fn connector_secret_delete(secret_ref: String) -> Result<ConnectorSecretStat
 /// Called from `acp_send`, which runs on the main thread, so the cheap substring check comes first:
 /// an ordinary line never touches JSON parsing or the keychain at all. Only `session/new` and
 /// `session/load` carry markers, and those are sent once per conversation.
+///
+/// ## It resolves in one place, not wherever the key appears
+///
+/// The marker is honoured **only at `params.mcpServers[*].env[*]` and
+/// `params.mcpServers[*].headers[*]`** — the two positions this app writes it in. A key with that
+/// spelling anywhere else in an outbound message is left exactly as it is.
+///
+/// A tree-wide walk would have made every path a person's own text can reach into a way to read
+/// this machine's keychain: a prompt, a tool result, a file the agent echoed back. None of those
+/// are written by us, and none of them should be able to name `connector:c1:NOTION_TOKEN` and get
+/// a token in return. Narrowing costs nothing, because the writer on the other side of this bridge
+/// only ever puts the marker in those two places.
 pub(crate) fn resolve_secret_refs(line: &str) -> Result<String, String> {
     resolve_secret_refs_with(line, &|reference| {
         entry(reference).ok()?.get_password().ok()
@@ -207,7 +219,7 @@ pub(crate) fn resolve_secret_refs_with(
         Err(_) => return Ok(line.to_string()),
     };
     let mut missing: Vec<String> = Vec::new();
-    substitute(&mut root, read, &mut missing);
+    substitute_in_servers(&mut root, read, &mut missing);
     if !missing.is_empty() {
         // The **variable name**, never the reference's value and never the token. Attaching the
         // server with an empty token instead would give an agent tools that are present and always
@@ -217,42 +229,61 @@ pub(crate) fn resolve_secret_refs_with(
     serde_json::to_string(&root).map_err(|err| coded("acp-line-rewrite-failed", err))
 }
 
-fn substitute(node: &mut Value, read: &dyn Fn(&str) -> Option<String>, missing: &mut Vec<String>) {
-    match node {
-        Value::Array(items) => {
-            for item in items.iter_mut() {
-                substitute(item, read, missing);
-            }
-        }
-        Value::Object(map) => {
-            let reference = map
-                .get(SECRET_REF_KEY)
-                .and_then(Value::as_str)
-                .map(str::to_string);
-            if let Some(reference) = reference {
-                map.remove(SECRET_REF_KEY);
-                let label = map
-                    .get("name")
-                    .and_then(Value::as_str)
-                    .unwrap_or("(unnamed)")
-                    .to_string();
-                match validate_secret_ref(&reference).ok().and_then(read) {
-                    Some(value) => {
-                        map.insert("value".to_string(), Value::String(value));
-                    }
-                    None => {
-                        // Leave no half-formed entry behind: the caller turns this into an error
-                        // and the line is never sent.
-                        missing.push(label);
-                    }
+/// Walk to `params.mcpServers[*]` and resolve inside each server's `env` and `headers` only.
+fn substitute_in_servers(
+    root: &mut Value,
+    read: &dyn Fn(&str) -> Option<String>,
+    missing: &mut Vec<String>,
+) {
+    let Some(servers) = root
+        .get_mut("params")
+        .and_then(|params| params.get_mut("mcpServers"))
+        .and_then(Value::as_array_mut)
+    else {
+        return;
+    };
+    for server in servers.iter_mut() {
+        for slot in ["env", "headers"] {
+            let Some(entries) = server.get_mut(slot).and_then(Value::as_array_mut) else {
+                continue;
+            };
+            for entry in entries.iter_mut() {
+                if let Some(map) = entry.as_object_mut() {
+                    substitute_entry(map, read, missing);
                 }
-                return;
-            }
-            for (_, child) in map.iter_mut() {
-                substitute(child, read, missing);
             }
         }
-        _ => {}
+    }
+}
+
+/// One `{ name, __atlasSecretRef }` becomes `{ name, value }`.
+fn substitute_entry(
+    map: &mut serde_json::Map<String, Value>,
+    read: &dyn Fn(&str) -> Option<String>,
+    missing: &mut Vec<String>,
+) {
+    let Some(reference) = map
+        .get(SECRET_REF_KEY)
+        .and_then(Value::as_str)
+        .map(str::to_string)
+    else {
+        return;
+    };
+    map.remove(SECRET_REF_KEY);
+    let label = map
+        .get("name")
+        .and_then(Value::as_str)
+        .unwrap_or("(unnamed)")
+        .to_string();
+    match validate_secret_ref(&reference).ok().and_then(read) {
+        Some(value) => {
+            map.insert("value".to_string(), Value::String(value));
+        }
+        None => {
+            // Leave no half-formed entry behind: the caller turns this into an error and the
+            // line is never sent.
+            missing.push(label);
+        }
     }
 }
 
@@ -336,8 +367,42 @@ mod tests {
     fn a_reference_that_is_not_shaped_like_ours_is_treated_as_missing() {
         // A malformed reference must not reach `Entry::new` as an account name, and it must not
         // silently become an empty value either.
-        let line = r#"{"env":[{"name":"X","__atlasSecretRef":"../../etc/passwd"}]}"#;
+        let line = r#"{"params":{"mcpServers":[{"name":"x","env":[{"name":"X","__atlasSecretRef":"../../etc/passwd"}]}]}}"#;
         assert!(resolve_secret_refs_with(line, &reader(&[("../../etc/passwd", "v")])).is_err());
+    }
+
+    #[test]
+    fn a_reference_outside_the_server_list_is_left_exactly_as_it_is() {
+        // The marker is honoured at two positions this app writes it in, and nowhere else. A
+        // tree-wide walk would have turned every path a person's own text reaches — a prompt, a
+        // tool result, a file the agent echoed back — into a way to read this machine's keychain
+        // by naming a reference.
+        for line in [
+            // In the prompt a person typed.
+            r#"{"params":{"prompt":[{"name":"NOTION_TOKEN","__atlasSecretRef":"connector:c1:NOTION_TOKEN"}]}}"#,
+            // Beside the server list rather than inside it.
+            r#"{"params":{"cwd":{"name":"NOTION_TOKEN","__atlasSecretRef":"connector:c1:NOTION_TOKEN"}}}"#,
+            // On a server, but not in `env` or `headers`.
+            r#"{"params":{"mcpServers":[{"name":"n","extra":[{"name":"NOTION_TOKEN","__atlasSecretRef":"connector:c1:NOTION_TOKEN"}]}]}}"#,
+            // At the top level, outside `params` entirely.
+            r#"{"env":[{"name":"NOTION_TOKEN","__atlasSecretRef":"connector:c1:NOTION_TOKEN"}]}"#,
+        ] {
+            let out = resolve_secret_refs_with(
+                line,
+                &reader(&[("connector:c1:NOTION_TOKEN", "ntn_live_value")]),
+            )
+            .unwrap();
+            // Compared as JSON rather than as text: re-serializing sorts object keys, so a
+            // string comparison would fail on an ordering change that means nothing. What is
+            // being asserted is that the marker is still there and no token took its place.
+            let before: Value = serde_json::from_str(line).unwrap();
+            let after: Value = serde_json::from_str(&out).unwrap();
+            assert_eq!(
+                after, before,
+                "a marker outside the server list was resolved"
+            );
+            assert!(!out.contains("ntn_live_value"));
+        }
     }
 
     #[test]
