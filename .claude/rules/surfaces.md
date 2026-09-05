@@ -56,6 +56,34 @@ action or renders an honest degradation card stating why and where it works.
 Every new desktop capability uses the existing `getInvoke()`/`isTauri()`
 convention. Do not create a parallel router or surface fork.
 
+### Reading the person's agent config files (2026-09-05)
+
+`.claude/rules/local-first.md` refuses reads outside the vault and names this as
+its one written exception. Attaching an external MCP server means naming a
+command, its arguments and its environment, and almost everyone who wants that
+has typed it once already — so the app reads what they registered rather than
+asking them to retype it, which is how a connector ends up pointing at a path
+that does not exist.
+
+The exception is exactly this, and nothing wider:
+
+| | |
+|---|---|
+| Files | `~/.claude.json` (user scope plus **only** the open folder's `projects[<path>]` block), `~/.codex/config.toml`, `~/.cursor/mcp.json`, and the open folder's `.mcp.json` |
+| Returned | server name, transport, command and arguments or URL, and environment/header **key names** |
+| Never returned | any `env` or `headers` **value**, and any other file |
+| Direction | read only; `discovery_never_writes_anything` fails the build if a writer appears in that module |
+| Gate | `no_env_value_survives_serialization` in `src-tauri/src/connectors.rs`, asserted against the serialized payload rather than the struct |
+
+Those files hold API tokens in plain text, which is why the boundary is drawn at
+key names and pinned by a test rather than by care. A fifth file, or a value,
+needs a new decision record — not an edit here.
+
+A connector's own token never joins them. It lives in the OS keychain
+(`src-tauri/src/connector_secrets.rs`) and becomes a value inside Rust one line
+before it leaves for the agent, so neither the WebView nor
+`.ontology-atlas/connectors.json` ever holds one.
+
 ### Folder watch is latency, not degradation
 
 The web eventually sees file changes; only timing differs.
