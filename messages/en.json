@@ -266,6 +266,7 @@
     "map": "Map",
     "architecture": "Architecture",
     "docs": "Docs",
+    "library": "Library",
     "insights": "Insights",
     "projects": "Projects",
     "agents": "Agents",
@@ -644,6 +645,14 @@
       "mcpTabs": {
         "title": "Two tabs, two jobs",
         "body": "“Share this folder” hands a coding tool the config that points it here. “Connectors” is the outside servers that agent may also reach, and the number beside it counts the ones switched on."
+      },
+      "libraryWhat": {
+        "title": "Library",
+        "body": "Project documents of any format live here, kept exactly as they arrived, together with the wiki pages written from them. The ontology's own Markdown is one tile up."
+      },
+      "librarySources": {
+        "title": "Sources come first",
+        "body": "Add files, or let Atlas propose what is already in the folders you granted. Each row says whether anybody has written that file up yet."
       }
     }
   },
@@ -944,6 +953,7 @@
         "goTo_map": "Go to map",
         "goTo_architecture": "Go to architecture",
         "goTo_docs": "Go to docs",
+        "goTo_library": "Go to library",
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
         "goTo_agents": "Go to Agents",
@@ -1342,7 +1352,8 @@
           "unverifiablePlain": "This file could not be read, so whether it changed is unknown",
           "reviewedOn": "checked {date}",
           "reviewedOnTitle": "The day a person read this document and said the meaning was right"
-        }
+        },
+        "libraryLink": "Gathered documents are in the Library"
       },
       "empty": {
         "eyebrow": "{count} documents",
@@ -4250,7 +4261,13 @@
       "value-missing": "A variable is set to come from the keychain and there is nothing behind it yet."
     }
   },
-  "docsLibrary": {
+  "library": {
+    "title": "Library",
+    "eyebrow": "In this folder",
+    "lede": "The project documents you gathered, in whatever format they arrived, and the wiki pages written from them. A source is kept byte for byte, and every claim on a page cites one.",
+    "emptyTitle": "Nothing gathered yet",
+    "emptyBody": "Bring in the documents this project already has: a spec, a slide deck, a spreadsheet, a page you exported. Atlas copies them into sources/ untouched and never opens them until you ask.",
+    "readerEmpty": "Pick a source or a wiki page on the left to read it here.",
     "sources": {
       "header": "Sources · {count}",
       "listAria": "Raw sources in this folder",
@@ -4301,7 +4318,12 @@
       "compileFailed": "Could not start the agent turn: {reason}",
       "compileWebLimit": "Writing pages needs a coding agent running on this computer, which only the app can start. Reading and editing the pages works here.",
       "compileWebGetApp": "Get the app",
-      "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change."
+      "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change.",
+      "offTemplateAriaLabel": "How this page differs from the wiki template",
+      "offTemplateTitle": "This page does not fit the wiki template",
+      "offTemplateBody": "It is still a document and still yours to edit. Fixing these lines makes it readable the same way every other page is; `ontology-atlas wiki-validate` and the `validate_wiki` tool report the same codes.",
+      "writtenBy": "Written by {author}",
+      "builtFrom": "Built from"
     },
     "find": {
       "title": "Documents in the folders you granted",
@@ -4319,6 +4341,27 @@
       "add": "{count, plural, =0 {Add selected} one {Add # file} other {Add # files}}",
       "webGetApp": "Get the app",
       "emptyAllDeclined": "{count, plural, one {The only document left here is one you passed on before.} other {The only documents left here are # you passed on before.}}"
-    }
+    },
+    "source": {
+      "path": "Path",
+      "format": "Format",
+      "size": "Size",
+      "state": "State",
+      "hash": "sha256",
+      "hashUnmeasured": "Not measured. Nothing has cited this file with a hash yet",
+      "citedBy": "Cited by",
+      "citedByNobody": "No wiki page yet",
+      "neverOpened": "Atlas has never opened this file. Everything below came from the folder listing, or from a hash it measured because a page claimed one.",
+      "reveal": "Show in Finder",
+      "download": "Open a copy"
+    },
+    "readerSourceHint": "A source is kept exactly as it arrived, so there is nothing here to render. What the folder already knows about it is below.",
+    "readerNoWikiTitle": "Nothing written up yet",
+    "readerNoWikiBody": "{count, plural, one {# source is waiting.} other {# sources are waiting.}} Compile starts one agent turn that reads them and drafts a page for each, and every write stops at your permission card before it lands.",
+    "kindsAria": "What this folder keeps",
+    "kindSourcesTitle": "Sources",
+    "kindSourcesBody": "The files as they arrived: any format, byte for byte, never parsed.",
+    "kindWikiTitle": "Wiki",
+    "kindWikiBody": "One page per source, in one shape, with every claim citing the file it came from."
   }
 }

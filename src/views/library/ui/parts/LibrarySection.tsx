@@ -15,15 +15,19 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import type { LibraryUiModel } from "../../lib/use-library-model";
 
 /**
- * The library, above the graph tree: **Sources** and **Wiki**.
+ * The library's index: **Sources** and **Wiki**.
  *
  * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
- * 2026-09-05). The tree below this has always drawn the third kind. These two sections
- * draw the other two, and they sit here — under the review queue, above the tree —
- * because that is the order of the work: what a person brought in, what was made of it,
- * then what it became.
+ * 2026-09-05). Docs draws the third kind; these two sections draw the other two, in the
+ * order of the work — what a person brought in, then what was made of it.
  *
- * **Sources is the only list in this sidebar whose rows are not documents.** A row is a
+ * ⚠️ **It stood inside the Docs sidebar until 2026-09-06.** The owner read that screen
+ * and said it was cluttered, and the measurement agreed: five capped lists were stacked
+ * in one 280px column, so Sources and Wiki each got 22dvh and the document tree — the
+ * thing Docs is for — was left with what remained. Two jobs were competing for one
+ * column. Here the same two sections own the column.
+ *
+ * **Sources is the only list here whose rows are not documents.** A row is a
  * file Atlas has never opened: its name, its format, its size, and one word about
  * whether anybody has written it up. That last word is the whole reason the section
  * exists — a folder of PDFs with no state is a folder of PDFs.
@@ -66,13 +70,13 @@ export interface LibrarySectionProps {
   /** How the drop hint names the folder — an absolute path in the app, the name on web. */
   vaultLabel: string;
   busy: boolean;
-  t: ReturnType<typeof useTranslations<"docsLibrary">>;
+  t: ReturnType<typeof useTranslations<"library">>;
 }
 
 /**
  * **The eyebrow keeps its own line** (measured 2026-09-05).
  *
- * The first build put the label and both action chips on one row. At the sidebar's 280px
+ * The first build put the label and both action chips on one row. At the column's 280px
  * the two chips took the width and the eyebrow truncated to `SO…` — the section lost its
  * name to its buttons. Actions therefore sit on a second row, where both keep their
  * words: an icon-only pair would have fitted, but these two are a brand-new capability
@@ -89,13 +93,15 @@ function SectionHeader({
 }) {
   return (
     <>
-      <div className="flex items-center gap-1.5 px-3 pb-1.5 pt-3">
+      <div className="flex flex-none items-center gap-1.5 px-3 pb-1.5 pt-3">
         {icon}
         <span className="min-w-0 flex-1 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
           {label}
         </span>
       </div>
-      {actions ? <div className="flex flex-wrap items-center gap-1 px-3 pb-2">{actions}</div> : null}
+      {actions ? (
+        <div className="flex flex-none flex-wrap items-center gap-1 px-3 pb-2">{actions}</div>
+      ) : null}
     </>
   );
 }
@@ -162,8 +168,8 @@ export function LibrarySection({
   return (
     <>
       <section
-        data-testid="docs-library-sources"
-        className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1"
+        data-testid="library-sources"
+        className="flex min-h-0 flex-col border-b border-[color:var(--color-overlay-2)] pb-1"
       >
         <SectionHeader
           icon={
@@ -178,7 +184,7 @@ export function LibrarySection({
             <>
               <Tooltip content={t("sources.addTooltip")}>
                 <Chip
-                  data-testid="docs-library-add-files"
+                  data-testid="library-add-files"
                   onClick={onAddFiles}
                   disabled={busy}
                   tone="muted"
@@ -191,7 +197,7 @@ export function LibrarySection({
               </Tooltip>
               <Tooltip content={t("sources.findTooltip")}>
                 <Chip
-                  data-testid="docs-library-find-documents"
+                  data-testid="library-find-documents"
                   onClick={onFindDocuments}
                   disabled={busy}
                   tone="muted"
@@ -209,14 +215,14 @@ export function LibrarySection({
         {hasSources ? (
           <>
             <ul
-              data-testid="docs-library-source-list"
+              data-testid="library-source-list"
               aria-label={t("sources.listAria")}
-              className="flex max-h-[22dvh] flex-col gap-0.5 overflow-auto px-2"
+              className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
             >
               {model.sources.map((row) => (
                 <li key={row.path}>
                   <RowButton
-                    data-testid={`docs-library-source-${row.path}`}
+                    data-testid={`library-source-${row.path}`}
                     onClick={() => onOpenSource(row)}
                     // The full name first: a 280px column truncates, and the row's own
                     // hover text is the only place the rest of the name exists.
@@ -237,7 +243,7 @@ export function LibrarySection({
                     </span>
                     <StateBadge
                       tone={stateTone[row.state]}
-                      testId={`docs-library-source-state-${row.state}`}
+                      testId={`library-source-state-${row.state}`}
                     >
                       {t(`sources.state.${row.state}.label`)}
                     </StateBadge>
@@ -247,8 +253,8 @@ export function LibrarySection({
             </ul>
             {model.needsCompileCount > 0 ? (
               <p
-                data-testid="docs-library-needs-compile"
-                className="px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
+                data-testid="library-needs-compile"
+                className="flex-none px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
               >
                 {t("sources.needsCompile", { count: model.needsCompileCount })}
               </p>
@@ -257,15 +263,17 @@ export function LibrarySection({
         ) : (
           <>
             <p
-              data-testid="docs-library-sources-empty"
-              className="px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+              data-testid="library-sources-empty"
+              className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
             >
               {t("sources.empty")}
             </p>
             {/* The folder is the interface, and this is the moment to say so: somebody
                 with nothing here yet is deciding how documents get in. Once rows exist
                 they have already done it, and the sentence is spent. */}
-            <p className="px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+            {/* The folder label is an absolute path in the app: one unbroken run of
+                slashes that keep-all alone would carry past the column edge. */}
+            <p className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]">
               {t("sources.dropHint", { folder: vaultLabel })}
             </p>
           </>
@@ -274,8 +282,8 @@ export function LibrarySection({
       </section>
 
       <section
-        data-testid="docs-library-wiki"
-        className="flex-none border-b border-[color:var(--color-overlay-2)] pb-1"
+        data-testid="library-wiki"
+        className="flex min-h-0 flex-col pb-1"
       >
         <SectionHeader
           icon={
@@ -290,7 +298,7 @@ export function LibrarySection({
             onCompile ? (
               <Tooltip content={t("wiki.compileTooltip")}>
                 <Chip
-                  data-testid="docs-library-compile"
+                  data-testid="library-compile"
                   onClick={onCompile}
                   disabled={busy || model.needsCompileCount === 0}
                   tone="muted"
@@ -315,13 +323,13 @@ export function LibrarySection({
         */}
         {onCompile === null ? (
           <p
-            data-testid="docs-library-compile-web-limit"
-            className="px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            data-testid="library-compile-web-limit"
+            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
             {t("wiki.compileWebLimit")}{" "}
             <Link
               href="/download"
-              data-testid="docs-library-compile-web-get-app"
+              data-testid="library-compile-web-get-app"
               className={controlClass({
                 shape: "link",
                 hoverInk: "strong",
@@ -334,9 +342,9 @@ export function LibrarySection({
         ) : null}
         {hasWiki ? (
           <ul
-            data-testid="docs-library-wiki-list"
+            data-testid="library-wiki-list"
             aria-label={t("wiki.listAria")}
-            className="flex max-h-[22dvh] flex-col gap-0.5 overflow-auto px-2"
+            className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
           >
             {model.wikiPages.map((page) => {
               const active = page.slug === selectedSlug;
@@ -346,7 +354,7 @@ export function LibrarySection({
                   <RowButton
                     active={active}
                     aria-current={active ? "true" : undefined}
-                    data-testid={`docs-library-wiki-${page.slug}`}
+                    data-testid={`library-wiki-${page.slug}`}
                     onClick={() => onSelect(page.slug)}
                     /*
                      * The pill says one fixed word; **which** rule the page missed is a
@@ -381,7 +389,7 @@ export function LibrarySection({
                        * frontmatter block — so the pill says only that this page does not
                        * fit, and the row keeps its author beside it.
                        */
-                      <StateBadge tone="warning" testId="docs-library-wiki-off-template">
+                      <StateBadge tone="warning" testId="library-wiki-off-template">
                         {t("wiki.offTemplate")}
                       </StateBadge>
                     ) : null}
@@ -392,24 +400,24 @@ export function LibrarySection({
           </ul>
         ) : (
           <p
-            data-testid="docs-library-wiki-empty"
-            className="px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
+            data-testid="library-wiki-empty"
+            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
             {t("wiki.empty")}
           </p>
         )}
         {transferNote ? (
           <p
-            data-testid="docs-library-transfer"
-            className="px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+            data-testid="library-transfer"
+            className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
           >
             {transferNote}
           </p>
         ) : null}
         {model.offTemplateCount > 0 ? (
           <p
-            data-testid="docs-library-off-template-count"
-            className="px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
+            data-testid="library-off-template-count"
+            className="flex-none px-3 pt-1 text-caption text-[color:var(--color-text-quaternary)]"
           >
             {t("wiki.offTemplateCount", { count: model.offTemplateCount })}
           </p>

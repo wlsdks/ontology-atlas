@@ -669,7 +669,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
       '(36, coarse 에서 max(36,44))을 그대로 진다. ChromeTile 의 문서함 형제.',
   },
   {
-    file: 'src/views/docs-vault/ui/parts/BackToTopButton.tsx',
+    file: 'src/widgets/doc-reading-pane/ui/BackToTopButton.tsx',
     count: 1,
     claim: 'chrome-token',
     proof: '--chrome-tile-size',

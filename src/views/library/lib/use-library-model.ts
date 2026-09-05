@@ -37,7 +37,11 @@ interface LibraryWikiVerdict {
   ok: boolean;
   /** The first problem's code, which is what a one-line row has room to say. */
   firstProblem: string | null;
+  /** Its sentence, so the reader can show a reason without asking for a hover. */
+  firstProblemMessage: string | null;
   problemCount: number;
+  /** Every problem, for the block drawn beside the page itself. */
+  problems: ReadonlyArray<{ code: string; message: string; line?: number }>;
 }
 
 export interface LibraryUiModel extends LibraryModel {
@@ -45,6 +49,15 @@ export interface LibraryUiModel extends LibraryModel {
   verdicts: Map<string, LibraryWikiVerdict>;
   /** Wiki pages that do not fit the contract, and have been measured. */
   offTemplateCount: number;
+  /**
+   * Measured sha256 by source path, for the rows the reader opens.
+   *
+   * The map is already built inside this hook to derive the state words; exposing it is
+   * what lets a source's own pane print the hash rather than measure it a second time,
+   * and a path absent from it means **not measured**, which the pane says in those words
+   * instead of showing an empty cell.
+   */
+  hashes: ReadonlyMap<string, string>;
 }
 
 const EMPTY_SOURCES: VaultSourceFile[] = [];
@@ -178,7 +191,9 @@ export function useLibraryModel({
         measured.set(page.slug, {
           ok,
           firstProblem: problems[0]?.code ?? null,
+          firstProblemMessage: problems[0]?.message ?? null,
           problemCount: problems.length,
+          problems,
         });
       }
       if (cancelled || measured.size === 0) return;
@@ -200,6 +215,6 @@ export function useLibraryModel({
     for (const [slug, verdict] of verdicts) {
       if (live.has(slug) && !verdict.ok) offTemplateCount += 1;
     }
-    return { ...model, verdicts, offTemplateCount };
-  }, [model, verdicts]);
+    return { ...model, verdicts, offTemplateCount, hashes };
+  }, [hashes, model, verdicts]);
 }

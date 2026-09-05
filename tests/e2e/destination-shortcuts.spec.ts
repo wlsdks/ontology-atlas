@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { seedFirstRunSeen } from "./first-run-seed";
 
 /**
- * Destination shortcuts — **all seven destinations reachable by keyboard alone.**
+ * Destination shortcuts — **every destination reachable by keyboard alone.**
  *
  * This spec is the feature's worth. The owner asked for *"Able to move everywhere and be tested with shortcuts
  * alone."* (able to move everywhere and be tested with shortcuts
@@ -18,9 +18,14 @@ const DESTINATIONS = [
   { key: "m", path: "/topology" },
   { key: "r", path: "/architecture" },
   { key: "d", path: "/docs" },
+  // Library, 2026-09-06. MCP had been missing from this list since 2026-09-05 — the one
+  // proof that a destination can be reached without a pointer, and two destinations were
+  // not in it. Both are here now.
+  { key: "l", path: "/library" },
   { key: "i", path: "/ontology/insights" },
   { key: "p", path: "/projects" },
   { key: "a", path: "/agents" },
+  { key: "c", path: "/mcp" },
   { key: "g", path: "/git" },
 ] as const;
 
@@ -55,7 +60,7 @@ test.describe("목적지 이동 단축키", () => {
     await seedFirstRunSeen(page);
   });
 
-  test("G + 글자로 일곱 목적지를 전부 간다", async ({ page }) => {
+  test("G + 글자로 목적지를 전부 간다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await page.waitForLoadState("domcontentloaded");
 
@@ -201,7 +206,7 @@ test.describe("목적지 이동 단축키", () => {
     expect(page.url(), "시간 제한이 안 걸렸다").toBe(before);
   });
 
-  test("단축키 시트가 일곱 목적지를 전부 안내한다", async ({ page }) => {
+  test("단축키 시트가 목적지를 전부 안내한다", async ({ page }) => {
     await page.goto("/ko/topology/?guides=off");
     await dismissBlockingSurface(page);
     // `?` is wired by the map (HomePage) through `useTypingShortcuts`. It does not

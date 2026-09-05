@@ -706,8 +706,8 @@ for the complete frontmatter contract.
 
 ## Product destinations, one vault
 
-Map, Architecture, Docs, Insights, Projects, Agents, contextual History, MCP,
-and CLI all read the same
+Map, Architecture, Docs, Library, Insights, Projects, Agents, contextual History,
+MCP, and CLI all read the same
 Markdown folder. The installed app is the full workbench; the hosted web app is
 the no-install gateway and a second-best workbench where native bridges are not
 available. MCP and CLI skip the screens and operate on the same files directly.

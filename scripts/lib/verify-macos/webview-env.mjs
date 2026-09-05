@@ -78,6 +78,17 @@ const WEBVIEW_MCP_WORKBENCH_MARKERS = [
   /MCP is the wire|AI 코딩 에이전트가 쓰는 선|Share this folder|Connectors|이 폴더 공유|커넥터/i,
 ];
 
+/*
+ * The Library became its own destination on 2026-09-06 and needs its own pair for the same
+ * reason MCP did: the generic markers are the map's, and a new route must not repeat map copy
+ * to satisfy a launch gate. Both markers are route-owned and user-visible in either locale —
+ * the destination's name, and the eyebrow or one of the two section headers it always draws.
+ */
+const WEBVIEW_LIBRARY_WORKBENCH_MARKERS = [
+  /Library|자료실/,
+  /In this folder|이 폴더 안|Sources|원문|Wiki|위키/i,
+];
+
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   /온톨로지|Ontology|Atlas/,
   /Map|지도|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
@@ -96,6 +107,9 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null) {
     }
     if (/\/(?:ko|en)\/mcp\/?$/.test(pathname)) {
       return WEBVIEW_MCP_WORKBENCH_MARKERS;
+    }
+    if (/\/(?:ko|en)\/library\/?$/.test(pathname)) {
+      return WEBVIEW_LIBRARY_WORKBENCH_MARKERS;
     }
     if (/\/(?:ko|en)\/topology\/?$/.test(pathname)) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;

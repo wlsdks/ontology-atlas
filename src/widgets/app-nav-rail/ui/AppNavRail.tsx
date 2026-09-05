@@ -26,6 +26,7 @@ import {
   // identifier resolves to the global DOM History constructor and crashes the screen
   // with "Illegal constructor". The alias cannot collide with that global.
   History as HistoryIcon,
+  Library,
   Map as MapIcon,
   Plug,
 } from "lucide-react";
@@ -119,8 +120,8 @@ function rememberRailRouteFocus(
 /**
  * The 64px left nav rail (feat/chrome-system,
  * `docs/prototypes/chrome-rail-combined.html`, final owner approval) — permanent
- * chrome owning the global destinations (map · docs vault · studio · insights ·
- * projects · trail) plus the agent status and settings tiles at the bottom. #375
+ * chrome owning the global destinations (map · docs vault · library · studio ·
+ * insights · projects · trail) plus the agent status and settings tiles at the bottom. #375
  * mounted it on the topology (HomePage) only, and feat/rail-rollout (#377) extended
  * it to every other page (docs vault, studio, insights, project list/detail/edit,
  * download), consolidating three navigation systems (the `OperationsNav` top tabs,
@@ -234,6 +235,22 @@ export function AppNavRail({
     { id: "map", href: DESTINATION_HREF.map, label: t("map"), Icon: MapIcon },
     { id: "architecture", href: DESTINATION_HREF.architecture, label: t("architecture"), Icon: Blocks },
     { id: "docs", href: contextHrefs?.docs ?? DESTINATION_HREF.docs, label: t("docs"), Icon: BookOpen },
+    /*
+     * Library — a new destination on 2026-09-06, standing next to Docs because that is
+     * where its rows came from. Docs is the graph's Markdown again; what a person
+     * gathered (any format, kept verbatim) and what was written from it live one tile
+     * down.
+     *
+     * Why the icon is `Library`: at 20px it has to be told apart from the eight
+     * silhouettes already here, and the nearest neighbour is the one directly above it
+     * — `BookOpen`, a single spread book. `Library` is a **row of upright spines**, so
+     * the two differ in orientation rather than in detail, which is the only difference
+     * that survives 20px. `Archive` and `Boxes` both read as a closed container and say
+     * nothing about documents; `FileStack` is already the Sources section's own glyph
+     * inside this destination, and reusing it in the rail would make the tile name one
+     * of the two lists it opens.
+     */
+    { id: "library", href: DESTINATION_HREF.library, label: t("library"), Icon: Library },
     { id: "insights", href: DESTINATION_HREF.insights, label: t("insights"), Icon: BarChart3 },
     { id: "projects", href: DESTINATION_HREF.projects, label: t("projects"), Icon: FolderKanban },
     // Agents — a new destination on 2026-08-20 (ledger 90). The install and connect
@@ -370,8 +387,19 @@ export function AppNavRail({
                      the box the ring wraps (including the label) to the icon tile, and
                      the box's dimensions do not change by a pixel because of
                      `ring-inset`. */
+                  /* ⚠️ **`py-1`, not `py-1.5` — the padding moved with the destination cap** (2026-09-06).
+                     The tile's fixed tokens did not change: 38×32 tile, 20px icon, 11px label. What
+                     changed is the button's own padding, and with it the list pitch: 64px → 60px.
+                     Measured on the rendered rail at the app's window floor (1040×720), where the
+                     destinations pane is 616px tall — eight tiles at 64 stood in 12–522; nine at 64
+                     reach 586 and leave 30px, nine at 60 stand in 12–550 and leave 66px. The gear
+                     stays 48px above the window edge in both, and nothing scrolls. Padding is what
+                     gives way here because it is the one quantity in the tile that carries no
+                     information: the icon must stay legible and the label must stay readable, while
+                     the gap between two tiles only has to keep them separate. Gate:
+                     `destination-shortcuts.contract.test.ts` and `desktop-shell-rail.spec.ts`. */
                   /* ⚠️ `border-0` — this position borrows `card` only for **the focus ring's geometry** (radius and ring box), exactly as the comment above says. But the #961 migration also brought along the 1px hairline the card shape carries, and the hand-written classes before the migration had no border — the owner caught it on the real thing (2026-08-08: "Why does this area have a border now?" — why does this area have a border now?). The visible tile is drawn by the inner span below. Gate: desktop-shell-rail.spec.ts. */
-                  className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 border-0 px-0 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]" })}
+                  className={controlClass({ shape: "card", className: "group relative w-full flex-col gap-1 border-0 px-0 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--color-indigo-focus-ring)]" })}
                 >
                   <span
                     className={cn(

@@ -28,6 +28,9 @@ import { seedFirstRunSeen } from "./first-run-seed";
 
 const DESTINATIONS = [
   { id: "docs", url: /\/docs\// },
+  // Library, 2026-09-06 — a new tile is exactly where an indicator drawn from an index
+  // times a constant row height would first go wrong, and the pitch moved 64 → 60 with it.
+  { id: "library", url: /\/library\// },
   { id: "insights", url: /\/ontology\/insights\// },
   { id: "projects", url: /\/projects\// },
   { id: "map", url: /\/topology\// },

@@ -224,8 +224,8 @@
     },
     {
       "depth": 3,
-      "text": "The library — three kinds of file in one folder (2026-09-05)",
-      "slug": "the-library-three-kinds-of-file-in-one-folder-2026-09-05"
+      "text": "The library — three kinds of file in one folder (2026-09-05), one destination (2026-09-06)",
+      "slug": "the-library-three-kinds-of-file-in-one-folder-2026-09-05-one-destination-2026-09-06"
     },
     {
       "depth": 2,
@@ -6249,6 +6249,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — The library becomes a place, the rail cap moves to nine, and the tile's padding pays for it",
+      "slug": "2026-09-06-the-library-becomes-a-place-the-rail-cap-moves-to-nine-and-the-tiles-padding-pays-for-it"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs",
       "slug": "2026-09-05-a-vault-holds-three-kinds-of-file-and-only-one-is-the-graph-project-documents-of-every-format-gather-in-docs"
     },
@@ -10818,11 +10823,6 @@
     },
     {
       "depth": 4,
-      "text": "The library — Sources and Wiki (2026-09-05, decision \"three kinds of file\")",
-      "slug": "the-library-sources-and-wiki-2026-09-05-decision-three-kinds-of-file"
-    },
-    {
-      "depth": 4,
       "text": "Sidebar (`DocsSidebarBody`, persistent 280px pane on lg+, docs-vault-final spec)",
       "slug": "sidebar-docssidebarbody-persistent-280px-pane-on-lg-docs-vault-final-spec"
     },
@@ -10860,6 +10860,11 @@
       "depth": 4,
       "text": "Visual / behavioral details",
       "slug": "visual-behavioral-details"
+    },
+    {
+      "depth": 3,
+      "text": "`/library` — Library (2026-09-06, its own destination)",
+      "slug": "library-library-2026-09-06-its-own-destination"
     },
     {
       "depth": 3,

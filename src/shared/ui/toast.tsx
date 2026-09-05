@@ -23,6 +23,16 @@ interface ToastAction {
 interface ToastApi {
   /** `action` is optional so the ~50 existing `useToast()` call sites are untouched. */
   show: (message: string, tone?: ToastTone, action?: ToastAction) => void;
+  /**
+   * Clears every toast on screen.
+   *
+   * For the one case a toast cannot handle: a **blocking** surface is about to open. A
+   * toast is a dismissible aside, so it sits above the scrim with nothing to dismiss it
+   * but time, and a person reading a dialog is asked to read two things at once — the
+   * "floating box soup" the design charter refuses. The caller clears before it opens
+   * rather than the dialog reaching out to hide things it does not own.
+   */
+  dismiss: () => void;
 }
 
 /**
@@ -138,5 +148,6 @@ export function useToast(): ToastApi {
           sonnerToast.success(message, options);
       }
     },
+    dismiss: () => sonnerToast.dismiss(),
   };
 }

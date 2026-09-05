@@ -212,12 +212,12 @@ export function escapeHtml(s: string): string {
 }
 
 /**
- * Defers a React state mutation to the next microtask. Named rather than calling
- * `queueMicrotask` at the call site, so the intent (deferred state sync) is explicit.
+ * Re-exported, not defined here. It moved to `@/shared/lib/schedule-state-sync` on
+ * 2026-09-06 because the reading pane's two scroll hooks became widget code and a
+ * widget cannot import a view. Keeping the name reachable from this module leaves the
+ * twenty call sites inside Docs untouched while the definition stays single.
  */
-export function scheduleStateSync(sync: () => void) {
-  queueMicrotask(sync);
-}
+export { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
  * The editor's save handler — persists the buffer through `saveDoc`.
