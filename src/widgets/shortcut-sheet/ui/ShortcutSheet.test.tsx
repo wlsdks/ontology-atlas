@@ -8,6 +8,8 @@ vi.mock("@/i18n/navigation", () => ({
 import enMessages from "../../../../messages/en.json";
 import { ShortcutSheet } from "./ShortcutSheet";
 
+const glossary = enMessages.searchWidgets.shortcuts.glossary;
+
 /**
  * W2-C — the "Terrain Map"/"Relief" (topology) section used to list interactions the v2
  * canvas never implemented (double-click local · Shift+click path · Tab neighbours ·
@@ -69,11 +71,7 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
   it("defines ontology first, before the three kinds", () => {
     renderSheet();
     expect(screen.getByText("Ontology")).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /documents recording what exists and how it connects/,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(glossary.ontologyDefinition)).toBeInTheDocument();
 
     const text = screen.getByText("Words used on the map").parentElement?.textContent ?? "";
     expect(text.indexOf("Ontology")).toBeGreaterThanOrEqual(0);
@@ -83,14 +81,10 @@ describe("ShortcutSheet — kind glossary (P1a-2)", () => {
   it("defines domain/capability/element in one line each", () => {
     renderSheet();
     expect(screen.getByText("Words used on the map")).toBeInTheDocument();
-    expect(screen.getByText("Domain")).toBeInTheDocument();
-    expect(screen.getByText("A large area that groups features")).toBeInTheDocument();
-    expect(screen.getByText("Capability")).toBeInTheDocument();
-    expect(screen.getByText("One thing a user can do")).toBeInTheDocument();
-    expect(screen.getByText("Element")).toBeInTheDocument();
-    expect(
-      screen.getByText("A piece of code or a doc that implements it"),
-    ).toBeInTheDocument();
+    for (const term of ['domain', 'capability', 'element'] as const) {
+      const label = screen.getByText(glossary[`${term}Term`]);
+      expect(label.parentElement).toHaveTextContent(glossary[`${term}Definition`]);
+    }
   });
 });
 
