@@ -213,6 +213,7 @@
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
         "intro": "Atlas finds the AI coding tools installed on this computer. Only a tool confirmed to ask before writing opens the chat beside the map; the rest can still be used for the agent connection (MCP) setup.",
+        "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, on the MCP screen",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
@@ -253,7 +254,7 @@
         "resultFailed": "Couldn't fetch the update information. Check your connection, then try again.",
         "resultInstallFailed": "The update could not finish installing. Try again in a moment."
       },
-      "goToAgents": "Agents"
+      "goToMcp": "MCP"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"

@@ -3,7 +3,14 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW, PAGE_FRAME_FORM, PAGE_TOP_PAD } from "@/shared/ui/page-frame";
+import {
+  PAGE_FRAME,
+  PAGE_HEADER_ROW,
+  PAGE_TITLE_ROW,
+  PAGE_COLUMN_FORM,
+  PAGE_FRAME_FORM,
+  PAGE_TOP_PAD,
+} from "@/shared/ui/page-frame";
 
 /**
  * **The page frame is defined in one place.**
@@ -173,6 +180,24 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
     expect(topPad(PAGE_FRAME)).toBe(topPad(PAGE_FRAME_FORM));
     expect(topPad(PAGE_FRAME)).toBe(topPad(`x ${PAGE_TOP_PAD}`));
     expect(topPad(PAGE_FRAME), "상단 여백을 못 읽었다 — 이 시험이 공회전한다").not.toBe("");
+  });
+
+  /**
+   * **960 is written once, and both constants read the same one** (PO council, 2026-09-05).
+   *
+   * `PAGE_COLUMN_FORM` arrived carrying its own `max-w-[960px]`, which is the second copy this
+   * file's header promises there will not be ("this file is the single definition site so no
+   * screen restates 960"). The two are bound rather than merged, because they are different
+   * roles — one is the page column, the other the column of rows inside a page-width card — and
+   * merging them would be the drift in the other direction. Binding them means a re-decided 960
+   * cannot move on one and stay on the other.
+   */
+  it("폼 폭 960 은 한 번만 정해진다 — 두 상수가 같은 값을 본다", () => {
+    const width = (spec: string) => spec.match(/max-w-\[\d+px\]/)?.[0] ?? "";
+    expect(width(PAGE_FRAME_FORM), "폼 프레임에서 폭을 못 읽었다 — 이 시험이 공회전한다").not.toBe(
+      "",
+    );
+    expect(width(PAGE_COLUMN_FORM), "행 컬럼에서 폭을 못 읽었다").toBe(width(PAGE_FRAME_FORM));
   });
 
   it("폼 컬럼은 좁고, 폭을 한 곳에서만 정한다", () => {

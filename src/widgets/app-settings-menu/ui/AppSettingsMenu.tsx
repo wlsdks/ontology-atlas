@@ -6,7 +6,6 @@ import { usePanelPresence } from '@/shared/lib/use-presence';
 import type { MouseEvent as ReactMouseEvent } from 'react';
 import {
   Bell,
-  Bot,
   ChevronRight,
   DownloadCloud,
   Expand,
@@ -15,6 +14,7 @@ import {
   Layers,
   MessageSquare,
   Monitor,
+  Plug,
   Settings,
   X,
 } from 'lucide-react';
@@ -767,13 +767,25 @@ export function AppSettingsMenu({
                       No viewport branching — one sheet becoming two shapes costs
                       more (the hierarchy seat's proviso).
                     */}
+                    {/*
+                      ⚠️ **Re-aimed to `/mcp` on 2026-09-05** (PO council). Two panes left this
+                      group in 2026-08 — `runtimes` and `agent` — and one row can only point at
+                      one place. It points at the MCP one, because that is the half this group is
+                      still about: what remains here is the folder and the key, both connection
+                      values, and MCP is the folder's connection.
+
+                      The runner list is one named hop further rather than lost: `/mcp`'s
+                      connector dialog carries "see your runtimes", and `/agents` links back here
+                      (`AcpRuntimeSettings`). Both directions exist, which is the property that
+                      matters — "blocking only half is the worst option".
+                    */}
                     {group.key === 'connect' ? (
                       <button
                         type="button"
-                        data-testid="app-settings-nav-agents"
+                        data-testid="app-settings-nav-mcp"
                         onClick={() => {
                           setOpen(false);
-                          router.push(buildRouteFocusHref(DESTINATION_HREF.agents));
+                          router.push(buildRouteFocusHref(DESTINATION_HREF.mcp));
                         }}
                         className={controlClass({
                           shape: 'row',
@@ -782,8 +794,9 @@ export function AppSettingsMenu({
                           className: `gap-2.5 rounded-card px-3 py-2 text-body-lg ${SETTINGS_NAV_ROW_HOVER}`,
                         })}
                       >
-                        <Bot size={16} aria-hidden className="shrink-0" />
-                        <span className="min-w-0 flex-1 text-left">{t('goToAgents')}</span>
+                        {/* The destination's own rail icon, so the row and the tile agree. */}
+                        <Plug size={16} aria-hidden className="shrink-0" />
+                        <span className="min-w-0 flex-1 text-left">{t('goToMcp')}</span>
                         <ChevronRight
                           size={16}
                           aria-hidden

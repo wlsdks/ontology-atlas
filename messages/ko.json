@@ -213,6 +213,7 @@
       "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다.",
       "runtimes": {
         "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾습니다. 쓰기 전에 먼저 묻는 것이 확인된 도구만 지도 옆에서 대화를 열고, 나머지는 에이전트 연결(MCP) 설정에 계속 쓸 수 있어요.",
+        "mcpLink": "직접 띄운 도구에 이 폴더를 내주거나 연결 도구를 붙이는 일은 MCP 화면에서 합니다",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
         "readyHeading": "이 컴퓨터에서 확인됐어요 ({count})",
@@ -253,7 +254,7 @@
         "resultFailed": "업데이트 정보를 가져오지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
         "resultInstallFailed": "업데이트 설치를 마치지 못했어요. 잠시 뒤 다시 시도해 주세요."
       },
-      "goToAgents": "에이전트"
+      "goToMcp": "MCP"
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"

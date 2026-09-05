@@ -81,6 +81,31 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(onOpenChat).toHaveBeenCalledWith('claude-acp');
   });
 
+  it('브릿지가 있는 화면에서도 MCP 로 갈 길이 있다 — 세 번 이름을 대고 못 가게 두지 않는다', async () => {
+    /*
+     * ⚠️ **Measured by the PO council, 2026-09-05.** `DESTINATION_HREF.mcp` had two production
+     * consumers: the rail tile, and the link in the no-bridge branch — which renders **only in a
+     * browser**. So in the installed app this screen named MCP setup three times (`intro`,
+     * `guardedExplainer`, `unknownExplainer`) and offered no way to follow any of them.
+     *
+     * The other case is covered by the degradation test below; this one asserts the half that was
+     * missing, on the path a real desktop session takes.
+     */
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/mcp/');
+    // The bridge really was available on this path — otherwise this test measures the browser
+    // branch and passes for the wrong reason.
+    expect(bridge.detect).toHaveBeenCalled();
+    expect(screen.queryByTestId('app-settings-runtimes-web')).toBeNull();
+  });
+
   it('바로 쓸 수 있는 것은 펼쳐 두고, 설치가 필요한 것은 접어 둔다', async () => {
     bridge.detect.mockResolvedValue([
       makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
