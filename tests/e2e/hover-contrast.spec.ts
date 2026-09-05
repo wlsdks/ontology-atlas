@@ -223,11 +223,40 @@ async function auditRoute(page: Page) {
   return { offenders, compared };
 }
 
-for (const route of AUDITED_ROUTES) {
+/**
+ * **The routes this instrument walks, and the one place it differs from the audited list.**
+ *
+ * Everything else in this file measures `AUDITED_ROUTES`, and it should: a route nobody hovers is
+ * a route whose hover contrast nobody knows. The one substitution below exists because this
+ * instrument has a floor, and a floor is only meaningful on a screen that has controls.
+ *
+ * ⚠️ **`/ko/agents/` came off on 2026-09-05.** MCP left that destination, and what remains of it
+ * **in the state this file opens it in** — a browser, which cannot launch a program — is a title,
+ * a sentence and one degradation row. Measured, that is below the floor of 3, and the floor going
+ * red there is the floor working: it says "this screen no longer has enough controls to prove
+ * anything", not "these controls fail". The hover-bearing controls did not disappear, they moved,
+ * so the audit follows them rather than lowering the number that noticed.
+ *
+ * Both MCP tabs are walked, because they are different populations: the share tab is the connect
+ * card's chips and links, the connectors tab is the tab strip plus the folder gate. Neither can
+ * seed a folder from here — `seedFirstRunSeen` is all this file has — so what is measured is the
+ * no-folder state of each, which is the state a first visit meets.
+ *
+ * `/ko/agents/` keeps its coverage in `contrast-ratchet` and `a11y-ratchet`, which measure resting
+ * state and have no such floor.
+ */
+const HOVER_ROUTES = [
+  ...AUDITED_ROUTES.filter((route) => route !== "/ko/agents/"),
+  "/ko/mcp/?tab=connectors",
+] as const;
+
+for (const route of HOVER_ROUTES) {
   test(`호버 대비 — ${route}`, async ({ page }) => {
     await seedFirstRunSeen(page);
     await page.setViewportSize(VIEWPORT);
-    await page.goto(`${route}?guides=off`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${route}${route.includes("?") ? "&" : "?"}guides=off`, {
+      waitUntil: "domcontentloaded",
+    });
     await page.waitForSelector("main", { timeout: 20_000 });
     await page.waitForTimeout(800);
     const { offenders, compared } = await auditRoute(page);
