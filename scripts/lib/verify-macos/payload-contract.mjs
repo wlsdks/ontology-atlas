@@ -67,6 +67,13 @@ export function validateWebviewVerifyPayload(payload, {
   if (payload.readyState !== "complete") {
     return `WebView document was not complete (readyState=${payload.readyState ?? "unknown"})`;
   }
+  if (payload.visibilityState === "hidden") {
+    return (
+      "WebView document is hidden: the display is locked or the window is occluded, so WebKit " +
+      "stops animation frames and the map never mounts. Unlock the display and run again; " +
+      "this run proves nothing about the app."
+    );
+  }
   if (typeof payload.bodyText !== "string" || payload.bodyText.trim().length === 0) {
     return "WebView body text was empty";
   }

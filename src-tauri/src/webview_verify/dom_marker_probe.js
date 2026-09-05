@@ -928,6 +928,10 @@
                                 bodyText: bodyText.slice(0, 240),
                                 bodyChildren: document.body ? document.body.children.length : null,
                                 readyState: document.readyState,
+                                // A locked display or an occluded window makes WebKit stop
+                                // animation frames, and the map mounts after one; without this
+                                // the verifier reports "marker missing" for a screen nobody saw.
+                                visibilityState: document.visibilityState,
                                 bg: getComputedStyle(document.body).backgroundColor,
                                 color: getComputedStyle(document.body).color,
                                 width: innerWidth,
@@ -967,7 +971,7 @@
                                   ),
                                   topologyRelief:
                                     location.pathname.includes("/topology") &&
-                                    /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시|개념 \d+개 · 관계 \d+개|CONCEPTS/.test(bodyText),
+                                    /Relief|Ontology relief map|concept cards|온톨로지 지형도|대표 카드|카드 골격|후보 \d+\/\d+개 표시|개념 \d+개 · 관계 \d+개|\d+ 개념 · \d+ 관계|\d+ concepts · \d+ relations|CONCEPTS/.test(bodyText),
                                   topologyAttentionWinner,
                                   topologySigmaViewportVisible: Boolean(
                                     sigmaViewportRect &&
@@ -2013,6 +2017,7 @@
                                   bodyText: "",
                                   bodyChildren: document.body ? document.body.children.length : null,
                                   readyState: document.readyState,
+                                  visibilityState: document.visibilityState,
                                   bg: "",
                                   color: "",
                                   width: innerWidth,
