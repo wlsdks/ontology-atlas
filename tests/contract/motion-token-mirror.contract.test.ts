@@ -1,9 +1,11 @@
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  EXIT_TRANSITION,
   MOTION,
   MOTION_EASE,
+  MOTION_EASE_EXIT,
   OVERLAY_SPRING,
   OVERLAY_SPRING_REDUCED,
 } from "../../src/shared/motion";
@@ -37,6 +39,13 @@ import {
  * 3. The spring copy equals the CSS tokens.
  * 4. Every step rides the same easing family (an element receiving a ramp duration
  *    also takes the family's easing — `design.md`).
+ * 5. **Exits are the one licensed second family.** `--motion-ease-exit` accelerates
+ *    away; entries keep decelerating. A leaving surface reached through `--motion-ease`
+ *    is the entrance clock played backwards (design-system seat, 2026-09-05), and an
+ *    arriving surface reached through the exit curve pops in on its last frame. The
+ *    rule is directional in both syntaxes: CSS may reference the exit token only from
+ *    a rule that leaves (`-out` / `[data-state="closed"]`) on a keyframe named `*Out`,
+ *    and JS may reach it only through `EXIT_TRANSITION`.
  */
 
 const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
@@ -86,6 +95,93 @@ describe("모션 토큰 거울 — CSS 램프와 JS 복사본", () => {
   it("세 스텝이 같은 이징 패밀리를 탄다", () => {
     const eases = Object.values(MOTION).map((m) => JSON.stringify(m.ease));
     expect(new Set(eases).size).toBe(1);
+  });
+
+  it("퇴장 이징이 `--motion-ease-exit` 의 값 복사다", () => {
+    const raw = cssVar("--motion-ease-exit");
+    const nums = raw.match(/[\d.]+/g)?.map(Number) ?? [];
+    expect(nums).toHaveLength(4);
+    expect([...MOTION_EASE_EXIT]).toEqual(nums);
+  });
+
+  // The families differ by *direction*, not by name. A cubic-bezier whose second control
+  // point sits on or below the diagonal (y2 <= x2) is still gaining speed when it ends; one
+  // whose second point sits above it (y2 > x2) is slowing down. Exits accelerate away,
+  // entries decelerate into place — the property, not the four numbers, is the contract.
+  it("퇴장 곡선은 끝까지 가속하고 등장 곡선은 감속한다", () => {
+    const [, , exitX2, exitY2] = MOTION_EASE_EXIT;
+    const [, , enterX2, enterY2] = MOTION_EASE;
+    expect(exitY2).toBeLessThanOrEqual(exitX2);
+    expect(enterY2).toBeGreaterThan(enterX2);
+    expect(JSON.stringify(MOTION_EASE_EXIT)).not.toBe(JSON.stringify(MOTION_EASE));
+  });
+
+  it("램프 세 스텝은 등장 패밀리를 타고, 퇴장 패밀리는 EXIT_TRANSITION 만 탄다", () => {
+    for (const [name, step] of Object.entries(MOTION)) {
+      expect(JSON.stringify(step.ease), `MOTION.${name} rides the exit curve`).toBe(
+        JSON.stringify(MOTION_EASE),
+      );
+    }
+    expect(JSON.stringify(EXIT_TRANSITION.ease)).toBe(JSON.stringify(MOTION_EASE_EXIT));
+  });
+
+  /**
+   * JS side of the directional rule. `framer-exit-asymmetry` already forces every framer
+   * `exit` onto `EXIT_TRANSITION`, so the only way an *entry* could take the exit curve is
+   * to import `MOTION_EASE_EXIT` directly and hand it to `transition=`. Closing the import
+   * closes that door without a second AST selector.
+   */
+  it("MOTION_EASE_EXIT 은 src/shared/motion 밖에서 직접 쓰이지 않는다 — 등장은 퇴장 곡선을 못 탄다", () => {
+    const root = path.join(process.cwd(), "src");
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        if (statSync(full).isDirectory()) walk(full);
+        else if (/\.(tsx?|mjs|jsx?)$/.test(entry)) files.push(full);
+      }
+    };
+    walk(root);
+    expect(files.length, "the source walk found nothing").toBeGreaterThan(100);
+    const offenders = files
+      .filter((file) => !file.startsWith(path.join(root, "shared", "motion") + path.sep))
+      .filter((file) => /\bMOTION_EASE_EXIT\b/.test(readFileSync(file, "utf8")))
+      .map((file) => path.relative(process.cwd(), file));
+    expect(offenders, `an entry can reach the exit curve from:\n${offenders.join("\n")}`).toEqual([]);
+  });
+
+  /**
+   * CSS side of the directional rule. Rules are read flat — the same `selector { body }`
+   * shape `exit-motion-restart` uses — and every `var(--motion-ease-exit)` reference must
+   * sit inside a leaving rule, on an `animation` shorthand whose keyframe name ends in
+   * `Out`. A `transition:` reference is refused too: a transition runs both ways on one
+   * curve, so it would hand the accelerating curve to the entrance as well.
+   */
+  it("CSS 에서 `var(--motion-ease-exit)` 는 나가는 규칙의 *Out 키프레임에만 붙는다", () => {
+    const rules = [...CSS.matchAll(/([^{}]*)\{([^{}]*)\}/g)]
+      .map(([, selector, body]) => ({
+        selector: selector.trim().split("\n").pop()!.trim(),
+        body,
+      }))
+      .filter((rule) => /var\(--motion-ease-exit\)/.test(rule.body));
+    expect(rules.length, "no CSS rule consumes --motion-ease-exit — an unused token is misinformation").toBeGreaterThan(0);
+
+    const offenders: string[] = [];
+    for (const rule of rules) {
+      const leaves = /-out(?![\w-])|\[data-state="closed"\]/.test(rule.selector);
+      if (!leaves) offenders.push(`${rule.selector} — not a leaving rule`);
+      if (/transition[^;]*var\(--motion-ease-exit\)/.test(rule.body)) {
+        offenders.push(`${rule.selector} — transition runs both ways; use an animation`);
+      }
+      // Each animation shorthand segment carrying the exit token names a `*Out` keyframe.
+      const animation = rule.body.match(/animation\s*:\s*([^;]*);/)?.[1] ?? "";
+      for (const segment of animation.split(",")) {
+        if (!/var\(--motion-ease-exit\)/.test(segment)) continue;
+        const name = segment.trim().match(/^([A-Za-z][\w-]*)/)?.[1] ?? "";
+        if (!/Out$/.test(name)) offenders.push(`${rule.selector} → ${name || "(no keyframe)"} is not an exit keyframe`);
+      }
+    }
+    expect(offenders, `the exit curve reached an entrance:\n${offenders.join("\n")}`).toEqual([]);
   });
 
   it("오버레이 스프링이 CSS 토큰의 값 복사다", () => {

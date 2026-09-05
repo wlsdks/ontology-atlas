@@ -7,7 +7,7 @@
     "cli:runtime:exports:src/lib/vault-sidecar.mjs:SidecarPathError",
     "cli:runtime:exports:src/lib/vault-sidecar.mjs:appendVaultSidecarLine",
     "cli:runtime:exports:src/lib/vault-sidecar.mjs:createVaultSidecarTextExclusive",
-    "frontend:runtime:duplicates:src/shared/motion/index.ts:OVERLAY_SPRING_REDUCED|SCRIM_FADE_REDUCED",
+    "frontend:runtime:duplicates:src/shared/motion/tokens.ts:OVERLAY_SPRING_REDUCED|SCRIM_FADE_REDUCED",
     "mcp:runtime:exports:src/construction-rules.mjs:CHAT_RULES_DELTA_EN",
     "mcp:runtime:exports:src/meaning-assessment.mjs:MEANING_ASSESSMENT_CONTRACT",
     "mcp:runtime:exports:src/meaning-assessment.mjs:normalizeMeaningStructureStatus",

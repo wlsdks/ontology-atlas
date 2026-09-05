@@ -526,14 +526,16 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
    */
   {
     file: 'src/views/home/ui/HomePage.tsx',
-    count: 3,
+    count: 1,
     claim: 'chrome-token',
     proof: '--chrome-tile-size',
     why:
-      '지도 우상단 크롬 타일 셋(투어 · 단축키 도움말 · 좁은 폭 레일 대체). ' +
+      '지도 우상단 크롬 타일(좁은 폭 레일 대체) 하나. ' +
       '36px 이고 coarse 포인터에서 `max(36px, --touch-target-min)` 으로 승격한다 ' +
       '— globals.css 에 선언이 둘이라 토큰 검사를 통과한다. 값 층은 포인터 ' +
-      '조건부 높이를 못 낸다.',
+      '조건부 높이를 못 낸다. 2026-09-05: 이 줄은 셋이었다. 투어 · 단축키 도움말 ' +
+      '타일이 `ChromeTile` 로 옮겨 갔다(우측 유틸 레일이 그룹으로 이름을 말하게 ' +
+      '되면서 라벨 모드가 프리미티브에 생겼다) — 등재 수는 갚은 만큼 내린다.',
     conditional: '값 층이 포인터 승격 축을 얻으면 다시 연다.',
   },
   {
@@ -696,7 +698,7 @@ const OUTSIDE_VALUE_LAYER: readonly OutsideEntry[] = [
  * directions. Raising the registered count requires editing this number **by
  * hand**, and that diff is where the "why" goes.
  */
-const BASELINE_REGISTERED = 28;
+const BASELINE_REGISTERED = 26;
 
 /**
  * **Only this number may fall.** The total (108) minus registered (30) minus
