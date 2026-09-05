@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/shared/ui/button";
 import { Checkbox } from "@/shared/ui/checkbox";
 import { Dialog } from "@/shared/ui/dialog";
-import type { ContainmentProposal } from "../../lib/containment-batch";
+import type { ContainmentProposal, ContainmentRowStatus } from "../../lib/containment-batch";
 
 /**
  * **The review sheet for the one batch repair on this board.**
@@ -25,16 +25,16 @@ import type { ContainmentProposal } from "../../lib/containment-batch";
  * ## What a row can end as
  *
  * `done` · `conflict` (the file changed since the sheet was opened — its `expected_mtime` refused
- * the write, which is the guard working, not a failure to hide) · `failed` with the message the
- * write threw. A run does not stop at the first refusal: the remaining documents are independent
- * files, and abandoning them would leave the vault in a state nobody chose.
+ * the write, which is the guard working, not a failure to hide) · `skipped` (never attempted, with
+ * the reason on the row) · `failed` with the message the write threw. A run does not stop at the
+ * first refusal: the remaining documents are independent files, and abandoning them would leave
+ * the vault in a state nobody chose.
+ *
+ * The status type itself lives with the plan (`lib/containment-batch`), because the run that
+ * produces these phases is decided there; it is re-exported here for the callers that already
+ * import it from the sheet.
  */
-export type ContainmentRowStatus =
-  | { phase: "pending" }
-  | { phase: "running" }
-  | { phase: "done" }
-  | { phase: "conflict" }
-  | { phase: "failed"; message: string };
+export type { ContainmentRowStatus };
 
 export interface ContainmentBatchLabels {
   /** The sheet's own title, carrying the scale of what is proposed. */
@@ -43,6 +43,12 @@ export interface ContainmentBatchLabels {
   lede: string;
   /** One row: this concept is added to that domain document's list. */
   row: (concept: string, domain: string, key: string) => string;
+  /**
+   * The same row, said in the names on disk: which file changes and which line is added. Titles
+   * repeat inside one folder, so without this a person cannot tell which of two documents the
+   * write lands in.
+   */
+  rowTarget: (domainPath: string, conceptSlug: string) => string;
   apply: (count: number) => string;
   applying: string;
   cancel: string;
@@ -134,8 +140,11 @@ function ContainmentBatchBody({
     });
 
   const done = [...statuses.values()].filter((status) => status.phase === "done").length;
+  // Everything that did not land counts the same to a person: the file is as it was. A refused
+  // guard, a row never attempted, and a thrown write all belong on that side of the sentence.
   const failed = [...statuses.values()].filter(
-    (status) => status.phase === "conflict" || status.phase === "failed",
+    (status) =>
+      status.phase === "conflict" || status.phase === "failed" || status.phase === "skipped",
   ).length;
 
   return (
@@ -169,8 +178,21 @@ function ContainmentBatchBody({
                 disabled={running || finished}
                 onChange={() => toggle(proposal.id)}
                 label={
-                  <span className="min-w-0 break-keep text-body text-[color:var(--color-text-secondary)]">
-                    {labels.row(proposal.conceptTitle, proposal.domainTitle, proposal.key)}
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="min-w-0 break-keep text-body text-[color:var(--color-text-secondary)]">
+                      {labels.row(proposal.conceptTitle, proposal.domainTitle, proposal.key)}
+                    </span>
+                    {/*
+                     * The names on disk, under the sentence. Titles repeat in one folder, so this
+                     * line is what tells a person which of two "Billing" documents the write
+                     * lands in — and it is the same string the run addresses the file by.
+                     */}
+                    <span
+                      data-testid="containment-batch-row-target"
+                      className="min-w-0 break-all text-label text-[color:var(--color-text-tertiary)]"
+                    >
+                      {labels.rowTarget(proposal.domainPath, proposal.conceptSlug)}
+                    </span>
                   </span>
                 }
               />
@@ -182,6 +204,11 @@ function ContainmentBatchBody({
               {status.phase === "conflict" ? (
                 <span className="shrink-0 text-label text-[color:var(--color-status-warning)]">
                   {labels.statusConflict}
+                </span>
+              ) : null}
+              {status.phase === "skipped" ? (
+                <span className="min-w-0 break-keep text-label text-[color:var(--color-status-warning)]">
+                  {status.message}
                 </span>
               ) : null}
               {status.phase === "failed" ? (

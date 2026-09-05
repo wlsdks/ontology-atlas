@@ -6,12 +6,21 @@ import {
   type ContainmentBatchLabels,
   type ContainmentRowStatus,
 } from "./ContainmentBatchSheet";
-import type { ContainmentProposal } from "../../lib/containment-batch";
+import {
+  buildContainmentPlan,
+  buildContainmentProposals,
+  runContainmentBatch,
+  selectContainmentWrites,
+  type ContainmentPlanDoc,
+  type ContainmentProposal,
+} from "../../lib/containment-batch";
+import { VaultConflictError } from "@/entities/vault-session";
 
 const LABELS: ContainmentBatchLabels = {
   title: (count) => `Add back-links to ${count} domain entries`,
   lede: "Nothing is written until you press Apply.",
   row: (concept, domain, key) => `${concept} → the ${key} list in ${domain}`,
+  rowTarget: (domain, concept) => `The file that changes is ${domain}, adding ${concept}.`,
   apply: (count) => `Apply ${count}`,
   applying: "Writing…",
   cancel: "Cancel",
@@ -29,6 +38,7 @@ const PROPOSALS: ContainmentProposal[] = [
     conceptTitle: "Pay",
     domainSlug: "domains/billing",
     domainTitle: "Billing",
+    domainPath: "domains/billing.md",
     key: "capabilities",
   },
   {
@@ -37,6 +47,7 @@ const PROPOSALS: ContainmentProposal[] = [
     conceptTitle: "Receipt",
     domainSlug: "domains/billing",
     domainTitle: "Billing",
+    domainPath: "domains/billing.md",
     key: "elements",
   },
 ];
@@ -128,5 +139,118 @@ describe("ContainmentBatchSheet", () => {
   it("닫혀 있으면 아무것도 그리지 않는다", () => {
     renderSheet({ open: false });
     expect(screen.queryByTestId("containment-batch-row")).toBeNull();
+  });
+});
+
+/**
+ * **The row names the file the write lands in, and a run says on each row what happened to it.**
+ *
+ * Two documents in one folder can carry the same title (the dogfood vault does), so a sentence
+ * built from titles cannot say which file changes. These cases take the plan and the run the page
+ * uses — no imitation of them — and check that what a person reads is what the write addresses,
+ * and that a refused guard on one file leaves the next one written.
+ */
+describe("ContainmentBatchSheet with the real plan", () => {
+  const DOCS: ContainmentPlanDoc[] = [
+    {
+      slug: "domains/billing",
+      path: "domains/billing.md",
+      title: "Billing",
+      frontmatter: { kind: "domain" },
+      mtime: 111,
+    },
+    {
+      slug: "domains/shop",
+      path: "domains/shop.md",
+      // The same title on another file — the reason a row must name the path.
+      title: "Billing",
+      frontmatter: { kind: "domain" },
+      mtime: 222,
+    },
+    {
+      slug: "capabilities/pay",
+      path: "capabilities/pay.md",
+      title: "Pay",
+      frontmatter: { kind: "capability", domain: "domains/billing" },
+    },
+    {
+      slug: "capabilities/browse",
+      path: "capabilities/browse.md",
+      title: "Browse",
+      frontmatter: { kind: "capability", domain: "domains/shop" },
+    },
+  ];
+  const proposals = buildContainmentProposals(
+    [
+      { slug: "capabilities/pay", domain: "domains/billing" },
+      { slug: "capabilities/browse", domain: "domains/shop" },
+    ],
+    DOCS,
+  );
+  const plan = buildContainmentPlan(proposals, DOCS);
+  const accepted = new Set(proposals.map((proposal) => proposal.id));
+
+  it("줄이 적는 파일 이름을 그대로 말한다 — 제목이 같은 문서가 둘이어도 어느 쪽인지 안다", () => {
+    const run = selectContainmentWrites(plan, accepted, DOCS);
+    render(
+      <ContainmentBatchSheet
+        open
+        proposals={plan.proposals}
+        statuses={new Map<string, ContainmentRowStatus>()}
+        running={false}
+        finished={false}
+        onApply={() => {}}
+        onClose={() => {}}
+        labels={LABELS}
+      />,
+    );
+    const rows = screen.getAllByTestId("containment-batch-row");
+    expect(rows).toHaveLength(2);
+    for (const write of run.writes) {
+      const row = rows.find((candidate) =>
+        candidate.textContent?.includes(write.proposalIds[0].split("::")[1] ?? ""),
+      );
+      // The string the run addresses the file by is on the row a person ticked.
+      expect(row?.textContent).toContain(write.domainPath);
+    }
+  });
+
+  it("앞 파일이 충돌해도 뒤 파일은 적히고, 마무리 문장이 몇 개를 적었는지 말한다", async () => {
+    const run = selectContainmentWrites(plan, accepted, DOCS);
+    expect(run.writes).toHaveLength(2);
+    const write = vi
+      .fn<(target: (typeof run.writes)[number]) => Promise<void>>()
+      .mockRejectedValueOnce(new VaultConflictError("domains/billing", 111, 999))
+      .mockResolvedValueOnce(undefined);
+
+    let statuses: ReadonlyMap<string, ContainmentRowStatus> = new Map();
+    await runContainmentBatch(run, {
+      write,
+      skipMessage: () => "not attempted",
+      onStatuses: (next) => {
+        statuses = next;
+      },
+    });
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(statuses.get(run.writes[0].proposalIds[0])).toEqual({ phase: "conflict" });
+    expect(statuses.get(run.writes[1].proposalIds[0])).toEqual({ phase: "done" });
+
+    render(
+      <ContainmentBatchSheet
+        open
+        proposals={plan.proposals}
+        statuses={statuses}
+        running={false}
+        finished
+        onApply={() => {}}
+        onClose={() => {}}
+        labels={LABELS}
+      />,
+    );
+    const rows = screen.getAllByTestId("containment-batch-row");
+    expect(rows[0]).toHaveAttribute("data-row-status", "conflict");
+    expect(rows[0]).toHaveTextContent("The file changed meanwhile");
+    expect(rows[1]).toHaveAttribute("data-row-status", "done");
+    expect(screen.getByTestId("containment-batch-outcome")).toHaveTextContent("1 written, 1 left");
   });
 });

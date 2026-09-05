@@ -1577,6 +1577,7 @@
           "title": "도메인 {count}곳에 되가리키기 더하기",
           "lede": "고를 때마다 도메인 문서의 목록에 개념 슬러그 한 줄이 더해져요. 다른 줄과 본문은 그대로예요. 적용을 누르기 전에는 파일이 바뀌지 않아요.",
           "row": "{concept} → {domain} 문서의 {key} 목록",
+          "rowTarget": "바뀌는 파일은 {domain}, 거기에 더해지는 줄은 {concept} 예요.",
           "apply": "{count}개 적용",
           "applying": "쓰는 중…",
           "cancel": "취소",
@@ -1584,6 +1585,8 @@
           "statusDone": "적었어요",
           "statusConflict": "그 사이에 파일이 바뀌어서 건너뛰었어요",
           "statusFailed": "실패: {message}",
+          "statusSkippedUnknownTime": "적지 않았어요: {domain} 가 마지막으로 바뀐 때를 알 수 없어서, 그 사이에 누가 고쳤는지 확인할 수 없었어요.",
+          "statusSkippedDomainChanged": "적지 않았어요: 이 개념이 더 이상 이 도메인을 가리키지 않아서, {domain} 에 아무것도 더하지 않았어요.",
           "outcome": "{done}개를 적었어요.",
           "outcomeWithLeft": "{done}개를 적었고, {failed}개는 그대로예요. 다시 열면 지금 파일 기준으로 다시 제안해요."
         },

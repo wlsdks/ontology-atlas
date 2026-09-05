@@ -97,9 +97,12 @@ import {
 import { DoNextTab } from "./tabs/DoNextTab";
 import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
 import {
+  buildContainmentPlan,
   buildContainmentProposals,
-  planContainmentWrites,
-  type ContainmentProposal,
+  runContainmentBatch,
+  selectContainmentWrites,
+  type ContainmentPlan,
+  type ContainmentSkip,
 } from "../lib/containment-batch";
 import {
   ContainmentBatchSheet,
@@ -608,14 +611,18 @@ export function OntologyInsightsPage() {
     [vaultHealth.missingContainment, healthDocs],
   );
   /*
-   * **What the sheet shows is frozen when it opens.** After a successful write the folder is
-   * re-read, the repaired concept stops being a proposal, and a live list would delete the very
-   * row that says "written" — leaving a person told that one thing landed with nothing on screen
-   * saying which. The run reports on the list it was given.
+   * **What the sheet shows, and what it will write, are both frozen when it opens.**
+   *
+   * The rows must be frozen because after a successful write the folder is re-read, the repaired
+   * concept stops being a proposal, and a live list would delete the very row that says "written".
+   *
+   * The write plan must be frozen for a stronger reason: `expectedMtime` is the promise that a
+   * write never lands on a file changed since the proposal. Reading it at Apply reads the mtime of
+   * a file that may already have been changed and re-ingested, so the guard would compare that
+   * state against itself and pass. `buildContainmentPlan` takes the members and the mtime here,
+   * once, and Apply may only carry that plan out.
    */
-  const [containmentSnapshot, setContainmentSnapshot] = useState<
-    readonly ContainmentProposal[]
-  >([]);
+  const [containmentPlan, setContainmentPlan] = useState<ContainmentPlan | null>(null);
   const [containmentSheetOpen, setContainmentSheetOpen] = useState(false);
   const [containmentRunning, setContainmentRunning] = useState(false);
   const [containmentFinished, setContainmentFinished] = useState(false);
@@ -807,46 +814,36 @@ export function OntologyInsightsPage() {
   /**
    * Applies the accepted containment repairs, **one document at a time**.
    *
-   * Grouping first (`planContainmentWrites`) is not an optimisation: two writes to one file inside
-   * one run would make the second fail its own `expected_mtime` guard, and the person would read a
-   * conflict the app itself caused. Every write carries the mtime the sheet was built from, so a
-   * file a person or an agent touched in the meantime is refused rather than overwritten — and the
-   * run continues, because the remaining documents are independent and abandoning them would leave
-   * the folder in a state nobody chose.
+   * Grouping (in the plan) is not an optimisation: two writes to one file inside one run would
+   * make the second fail its own `expected_mtime` guard, and the person would read a conflict the
+   * app itself caused. Every write carries the mtime read **when the sheet opened**, so a file a
+   * person or an agent touched in the meantime is refused rather than overwritten — and the run
+   * continues, because the remaining documents are independent and abandoning them would leave the
+   * folder in a state nobody chose.
+   *
+   * `selectContainmentWrites` gets the current documents for one purpose only: to check that each
+   * ticked concept still names this domain. That is the fact the proposal was made from, and a
+   * back-link written after it changed would state a containment nobody approved.
    */
   const applyContainmentBatch = useCallback(
     async (accepted: ReadonlySet<string>) => {
-      const writes = planContainmentWrites(containmentSnapshot, accepted, healthDocs);
-      if (writes.length === 0) return;
+      if (!containmentPlan) return;
+      const run = selectContainmentWrites(containmentPlan, accepted, healthDocs);
+      if (run.writes.length === 0 && run.skipped.length === 0) return;
       setContainmentRunning(true);
-      const statuses = new Map<string, ContainmentRowStatus>();
-      const mark = (ids: readonly string[], status: ContainmentRowStatus) => {
-        for (const id of ids) statuses.set(id, status);
-        setContainmentStatuses(new Map(statuses));
-      };
-      for (const write of writes) {
-        mark(write.proposalIds, { phase: "running" });
-        try {
-          await vault.updateFrontmatter(
+      await runContainmentBatch(run, {
+        write: (write) =>
+          vault.updateFrontmatter(
             write.domainSlug,
             { [write.key]: write.members },
-            {
-              skipRefresh: true,
-              ...(write.expectedMtime === null ? {} : { expectedMtime: write.expectedMtime }),
-            },
-          );
-          mark(write.proposalIds, { phase: "done" });
-        } catch (error) {
-          if (error instanceof Error && error.name === "VaultConflictError") {
-            mark(write.proposalIds, { phase: "conflict" });
-          } else {
-            mark(write.proposalIds, {
-              phase: "failed",
-              message: error instanceof Error ? error.message : String(error),
-            });
-          }
-        }
-      }
+            { skipRefresh: true, expectedMtime: write.expectedMtime },
+          ),
+        skipMessage: (skip: ContainmentSkip) =>
+          skip.reason === "unknown-mtime"
+            ? t("doNext.containmentBatch.statusSkippedUnknownTime", { domain: skip.domainPath })
+            : t("doNext.containmentBatch.statusSkippedDomainChanged", { domain: skip.domainPath }),
+        onStatuses: (statuses) => setContainmentStatuses(statuses),
+      });
       // One reload at the end — `skipRefresh` held it off so the list did not jump under the
       // sheet after every file. It runs after a conflict too, so a next attempt starts from what
       // is actually on disk rather than from the stale baseline that refused this one.
@@ -854,7 +851,7 @@ export function OntologyInsightsPage() {
       setContainmentRunning(false);
       setContainmentFinished(true);
     },
-    [containmentSnapshot, healthDocs, vault],
+    [containmentPlan, healthDocs, t, vault],
   );
 
   // Dependency cycles — loops in the directed `depends_on` graph, computed on the
@@ -1018,6 +1015,8 @@ export function OntologyInsightsPage() {
     lede: t("doNext.containmentBatch.lede"),
     row: (concept: string, domain: string, key: string) =>
       t("doNext.containmentBatch.row", { concept, domain, key }),
+    rowTarget: (domainPath: string, conceptSlug: string) =>
+      t("doNext.containmentBatch.rowTarget", { domain: domainPath, concept: conceptSlug }),
     apply: (count: number) => t("doNext.containmentBatch.apply", { count }),
     applying: t("doNext.containmentBatch.applying"),
     cancel: t("doNext.containmentBatch.cancel"),
@@ -1473,7 +1472,9 @@ export function OntologyInsightsPage() {
                       size="sm"
                       data-testid="do-next-group-batch"
                       onClick={() => {
-                        setContainmentSnapshot(containmentProposals);
+                        // The plan is read here, from the documents as they are at this moment.
+                        // Everything Apply may do is decided by it.
+                        setContainmentPlan(buildContainmentPlan(containmentProposals, healthDocs));
                         setContainmentStatuses(new Map());
                         setContainmentFinished(false);
                         setContainmentSheetOpen(true);
@@ -1632,7 +1633,7 @@ export function OntologyInsightsPage() {
       </div>
       <ContainmentBatchSheet
         open={containmentSheetOpen}
-        proposals={containmentSnapshot}
+        proposals={containmentPlan?.proposals ?? []}
         statuses={containmentStatuses}
         running={containmentRunning}
         finished={containmentFinished}

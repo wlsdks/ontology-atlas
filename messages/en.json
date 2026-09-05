@@ -1577,6 +1577,7 @@
           "title": "Add back-links to {count} domain entries",
           "lede": "Each ticked row adds one concept slug to that domain document's list. Every other line and the body stay as they are, and nothing is written until you press Apply.",
           "row": "{concept} → the {key} list in {domain}",
+          "rowTarget": "The file that changes is {domain}, and the line added to it is {concept}.",
           "apply": "Apply {count}",
           "applying": "Writing…",
           "cancel": "Cancel",
@@ -1584,6 +1585,8 @@
           "statusDone": "Written",
           "statusConflict": "The file changed meanwhile, so this was skipped",
           "statusFailed": "Failed: {message}",
+          "statusSkippedUnknownTime": "Not written: the app cannot tell when {domain} last changed, so it could not check whether someone edited it first.",
+          "statusSkippedDomainChanged": "Not written: this concept no longer names this domain, so nothing was added to {domain}.",
           "outcome": "{done} written.",
           "outcomeWithLeft": "{done} written, {failed} left as they were. Reopening proposes the rest against the files as they are now."
         },
