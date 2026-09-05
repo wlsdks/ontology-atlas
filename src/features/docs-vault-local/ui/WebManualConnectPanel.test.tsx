@@ -36,6 +36,43 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     expect(body.textContent).toContain('[폴더의 절대 경로]');
   });
 
+  /*
+   * Design-lead finding, 2026-09-05: `/mcp` carries the page's own tab bar directly above this
+   * panel, and the tool row underneath was a second `role="tablist"` — one screen announcing two
+   * tab lists. Measured on `/en/mcp/` with a folder open: two tablists, "MCP sections" and
+   * "Your tool". The inner one does not switch a section of the page; it parameterises one config
+   * block, which is a radiogroup.
+   */
+  it('도구 고르기는 두 번째 탭 묶음이 아니다 — 패널 안의 배타 선택은 radiogroup 이다', () => {
+    renderPanel();
+
+    expect(screen.queryAllByRole('tablist'), '패널이 자기 탭 묶음을 또 만든다').toHaveLength(0);
+    const group = screen.getByRole('radiogroup');
+    expect(within(group).getAllByRole('radio')).toHaveLength(4);
+    expect(screen.getByTestId('web-manual-connect-tool-claude-code')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
+  /*
+   * The `role="tab"` chips carried no key handler at all, so the role promised arrow-key
+   * movement that never happened — the failure `use-roving-radio-group.ts` measured across 18
+   * groups. Going through `SegmentedControl` brings the behaviour with the container.
+   */
+  it('화살표로 도구 사이를 옮길 수 있다 — 역할이 약속한 것을 실제로 한다', () => {
+    renderPanel();
+
+    const first = screen.getByTestId('web-manual-connect-tool-claude-code');
+    first.focus();
+    fireEvent.keyDown(first, { key: 'ArrowRight' });
+
+    expect(screen.getByTestId('web-manual-connect-tool-codex')).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+  });
+
   it('덜 채운 설정은 복사되지 않는다 — 붙지 않는 설정은 함정이다', () => {
     renderPanel();
     expect(screen.getByTestId('web-manual-connect-copy-config')).toBeDisabled();
