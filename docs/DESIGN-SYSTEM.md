@@ -542,17 +542,17 @@ Note: Type ramp utilities must be **strictly synchronized** with registration in
 
 ### Accent (the only color)
 
-⚠️ **2026-08-18: Accent changed from indigo to ember.** Token names are still `--color-indigo-*` but values are copper-toned — name cleanup follows in a separate commit (don't mix value changes with identifier changes in one commit, `git.md`). Basis and measurements in `docs/DECISIONS.md` 2026-08-18 record.
+The accent is indigo. On 2026-08-18 it moved to ember (`#c14a24`, decision 69) and was reverted the same day (decision 79) by swapping palettes, not by editing a constant; this document carried the ember values for eighteen days after the revert, which is why the wiki probe of 2026-09-06 read "ember" out of it. The values below are read from `app/globals.css`.
 
-- `--color-indigo-brand`: `#c14a24` (old `#5e6ad2`)
-- `--color-indigo-accent`: `#f0894e` (old `#7170ff`)
-- `--color-indigo-hover`: `#f5a06b` (old `#828fff`)
+- `--color-indigo-brand`: `#5e6ad2`
+- `--color-indigo-accent`: `#7170ff`
+- `--color-indigo-hover`: `#828fff`
 
-Values weren't hand-picked but obtained by **preserving L\*(lightness) and C\*(chroma) of the old indigo ramp while rotating hue angle to 44.9°**. So the app's contrast hierarchy doesn't shift even one step.
+The ember ramp had been derived by preserving L\* and C\* of the indigo ramp while rotating hue to 44.9°, so the contrast hierarchy was the same in both; that is what made the same-day swap safe.
 
-**Accent alpha steps** (registered 2026-08-04). Not new colors but transparency steps of the above `#f0894e` — brand accent (`--color-indigo-a*`) and line accent (`--color-indigo-line-a*`) have alpha ladders, but accent lacked one, so three needed places all had **hand-written** `rgba(240,137,78,·)`.
+**Accent alpha steps** (registered 2026-08-04). Not new colors but transparency steps of the above accent — brand accent (`--color-indigo-a*`) and line accent (`--color-indigo-line-a*`) have alpha ladders, but accent lacked one, so three needed places all had **hand-written** `rgba(240,137,78,·)`.
 
-- `--color-indigo-accent-a32`: `rgba(240, 137, 78, 0.32)`
+- `--color-indigo-accent-a32`: `rgba(113, 112, 255, 0.32)`
 - `--color-indigo-accent-a50`: `rgba(113, 112, 255, 0.5)`
 
 **Search match ink** (registered 2026-08-04).

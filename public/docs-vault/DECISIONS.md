@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The design system document catches up with the same-day accent revert, and the wiki probe keeps Compile
+
+**Why**: the sealed five-question probe read "ember" out of `docs/DESIGN-SYSTEM.md`: the 2026-08-18 note that moved the accent to ember was never followed by the revert recorded the same day, so for eighteen days the document stated values `app/globals.css` did not hold.
+**Prior**: 2026-08-18 (79) "Revert the app accent to indigo" stands and is the value this document now reads back from the tokens; 2026-09-05 "A vault holds three kinds of file…" stands, its falsifier tested and not fired.
+**Decision**: the Accent section states the token values as read from `app/globals.css` and names the move-and-revert in one sentence; the `decisions:check` spec trigger on this file is a correction, not a value change. The probe result is recorded in `docs/benchmark/FINDINGS-2026-09-06-wiki-probe.md`: raw folder 5/5 in about nine minutes, compiled pages 5/5 in about four; Compile stays.
+**Dissent**: one probe with sources the model may know from training proves less than it looks; kept as the gate's first pass, with the next probe on unfamiliar documents and questions not written by the compiler's operator.
+**Falsifier**: a documented token value that differs from `app/globals.css` for a week; or a second probe on unfamiliar documents where the pages lose a question the raw folder answers.
+**Owner**: jinan
+
 ## 2026-09-06 — The agent conversation loses its tabs and scrollbar, Agents and MCP read in a 960 column that carries the breath, and Korean is never tracked
 
 **Why**: the owner read the docked ACP panel as ugly: three tabs over one 362px column, a visible scrollbar during chat with jumps to the bottom, 90px of chrome above the view; Agents and MCP pinned their text to the left wall of a 1448px column; 26 Korean labels on 8 routes carried Latin caps tracking (1.14 to 1.76px).
