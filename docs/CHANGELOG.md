@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder does not hold and shares one ACP conversation across tabs; Flow presents a cited answer scene by scene without leaving Analysis.
-**Changed**: A closing panel, drawer, palette or dialog now leaves faster than it arrived on its own curve and stops taking clicks the moment it starts leaving; the map's right-hand tiles name themselves as a group on hover or keyboard focus; the insights tab strip scrolls instead of wrapping and keeps the open tab in view.
-**Fixed**: A truncated list says how many it is not showing and where the rest is; a document's meta row shows when its meaning was checked beside when the file changed; editor fields say which program reads them; six empty states carry the link that unblocks them.
+**Added**: In the agent chat, each lookup stands as one dim line above the answer with its target and result count; Insights gains a "Not held" tab listing names this folder was asked for and lacks; the Agents screen gains Connectors, which attach an external MCP server (one this machine already registers, or one written by hand) to the in-app Claude chat: off by default, token only in the keychain, traffic from the agent straight to that service.
+**Changed**: A closing panel or dialog leaves faster on its own curve and stops taking clicks as it leaves; the map's right-hand tiles name themselves as a group on hover; the insights tab strip scrolls instead of wrapping.
+**Fixed**: A truncated list says how many it hides; a meta row shows when meaning was checked; editor fields name the program that reads them; six empty states carry the link that unblocks them.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

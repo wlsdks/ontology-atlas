@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path
+
+**Why**: the in-app agent could reach only the vault server, so a person who wanted it to read a Notion or GitHub page had to leave Atlas and rerun the question in an external agent. The owner asked for connectors, custom ones included.
+**Prior**: 2026-07-23 owner direction (MCP servers run inside the agent the person already trusts; Atlas executes no third-party code) and 2026-07-27 "the app embeds MCP" stand; 2026-08-24 (111) stands as narrowed by the 2026-09-03 codex pin.
+**Decision**: a Connectors section on /agents lists servers from ~/.claude.json (user + this folder), the vault's .mcp.json, ~/.codex/config.toml and ~/.cursor/mcp.json as names only; attached ones live in .ontology-atlas/connectors.json, default off, never a credential literal; a secret is a per-variable keychain choice resolved in Rust one line before session/new; connectors ride Claude sessions only until Codex is measured; the panel states transfer and write authority and that llm-audit.jsonl does not cover this traffic.
+**Dissent**: po-evidence, accepted: adapter behaviour had been read off version numbers, so an installed session came before merge. Measured 2026-09-05: stdio and http both attach (15 and 3 tools), the first connector tool call raised the permission card, no audit line was written.
+**Falsifier**: a connector tool executing in any offered runtime without a permission card; a token in connectors.json or in the WebView; or no connector switched on in the first ten installs that have one discoverable.
+**Owner**: jinan
+
 ## 2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold
 
 **Why**: reviewing a wrong in-app answer, a person could not see which lookups the agent made or that one came back empty; and names agents reference that the vault lacks accumulated nowhere, only inside health totals. Observed in the deeplethe/utopia review (Apache-2.0, ideas only).

@@ -6190,6 +6190,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path",
+      "slug": "2026-09-05-a-person-attaches-external-mcp-servers-to-the-in-app-agent-atlas-hands-the-list-over-and-never-sits-in-the-path"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold",
       "slug": "2026-09-05-an-agents-lookups-stand-above-its-answer-and-the-folder-keeps-a-list-of-names-it-was-asked-for-and-does-not-hold"
     },
