@@ -132,9 +132,21 @@ class TauriFileHandle {
   }
 }
 
+/** One walked file: where it is, when it changed, how large it is. Never its bytes. */
+export interface NativeVaultStamp {
+  relativePath: string;
+  lastModified: number;
+  /**
+   * Byte length from the directory entry. Carried alongside the mtime because a raw
+   * source's size is the one fact the library list shows that the fingerprint does not
+   * already supply, and asking for it separately would walk the folder twice.
+   */
+  size: number;
+}
+
 /**
- * The vault fingerprint — **paths and mtimes only**, fetched from the native side in
- * one call.
+ * The vault fingerprint — **paths, mtimes and sizes only**, fetched from the native side
+ * in one call.
  *
  * The web has no equivalent (File System Access has no such batch API). Outside
  * `isTauri()` this returns `null` and the caller falls back to the existing path,
@@ -143,10 +155,114 @@ class TauriFileHandle {
  */
 export async function nativeVaultFingerprint(
   rootPath: string,
-): Promise<{ entries: Array<{ relativePath: string; lastModified: number }>; truncated: boolean; prunedDirs: string[] } | null> {
+): Promise<{ entries: NativeVaultStamp[]; truncated: boolean; prunedDirs: string[] } | null> {
   const invoke = getInvoke();
   if (!invoke) return null;
   return invoke('vault_fingerprint', { rootPath });
+}
+
+/**
+ * sha256 of vault files, computed natively.
+ *
+ * The web has no equivalent and returns `null`: a browser hashes the same bytes with
+ * `crypto.subtle`, which is not a degradation, only a different place to do the work.
+ * The bridge exists because `read_vault_binary_file` hands the WebView a JSON array of
+ * bytes — hashing a 20 MB scan that way would move 20 million numbers across IPC to
+ * produce 64 characters. Same reasoning as `vault_fingerprint`.
+ */
+export async function nativeVaultFileHashes(
+  rootPath: string,
+  relativePaths: readonly string[],
+): Promise<Map<string, string> | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  const rows = await invoke<Array<{ relativePath: string; sha256: string | null }>>(
+    'hash_vault_files',
+    { rootPath, relativePaths: [...relativePaths] },
+  );
+  const out = new Map<string, string>();
+  for (const row of rows) if (row.sha256) out.set(row.relativePath, row.sha256);
+  return out;
+}
+
+/**
+ * The native "add documents" picker. Returns the absolute paths a person chose, or an
+ * empty list when they cancelled; `null` outside the app, where `showOpenFilePicker`
+ * does the same job in the browser.
+ */
+export async function pickTauriSourceFiles(dialogTitle?: string): Promise<string[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<string[]>('pick_source_files', dialogTitle ? { dialogTitle } : undefined);
+}
+
+export interface TauriSourceImportResult {
+  pickedName: string;
+  status: 'added' | 'duplicate' | 'renamed' | 'failed';
+  relativePath: string | null;
+  sha256: string | null;
+  size: number | null;
+  reason: string | null;
+}
+
+/** Copies chosen files into `<vault>/sources/`, refusing bytes already there. */
+export async function importTauriSourceFiles(
+  rootPath: string,
+  sourcePaths: readonly string[],
+): Promise<TauriSourceImportResult[] | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<TauriSourceImportResult[]>('import_source_files', {
+    rootPath,
+    sourcePaths: [...sourcePaths],
+  });
+}
+
+export interface TauriSourceDiscoveryRoot {
+  rootPath: string;
+  label: string;
+  skipRelative?: string[];
+}
+
+interface TauriSourceCandidate {
+  rootPath: string;
+  rootLabel: string;
+  relativePath: string;
+  name: string;
+  extension: string;
+  size: number;
+  mtime: number;
+}
+
+export interface TauriSourceDiscoveryReport {
+  candidates: TauriSourceCandidate[];
+  truncated: boolean;
+  unreadableRoots: string[];
+}
+
+/**
+ * Proposes documents from roots a person already granted — **metadata only**. Nothing is
+ * opened and nothing is copied; the person picks from the list first.
+ */
+export async function discoverTauriSourceCandidates(
+  roots: readonly TauriSourceDiscoveryRoot[],
+): Promise<TauriSourceDiscoveryReport | null> {
+  const invoke = getInvoke();
+  if (!invoke) return null;
+  return invoke<TauriSourceDiscoveryReport>('discover_source_candidates', {
+    roots: roots.map((root) => ({ ...root, skipRelative: root.skipRelative ?? [] })),
+  });
+}
+
+/** Selects one vault file in Finder. Reveal, never open: Atlas launches no program. */
+export async function revealTauriVaultFile(
+  rootPath: string,
+  relativePath: string,
+): Promise<boolean> {
+  const invoke = getInvoke();
+  if (!invoke) return false;
+  await invoke('reveal_vault_file', { rootPath, relativePath });
+  return true;
 }
 
 /** Classifies the chosen folder as a canonical Git worktree or a bounded folder source. */

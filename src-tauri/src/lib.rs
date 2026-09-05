@@ -29,6 +29,9 @@ mod connector_secrets;
 mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
 mod git;
+/// The library half of a vault — raw sources under `sources/`, the documents a person may
+/// choose to bring in, and the hashes that say whether a wiki page still matches one.
+mod library;
 /// BYOK connection check — verifies authentication using the keychain key and logs to the Bolt audit log.
 mod llm;
 /// LLM call audit log — implementation of "do not send if logging fails."
@@ -228,7 +231,7 @@ struct TauriBinaryFile {
     last_modified: u128,
 }
 
-fn normalize_relative_path(relative_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn normalize_relative_path(relative_path: &str) -> Result<PathBuf, String> {
     let mut out = PathBuf::new();
     for component in Path::new(relative_path).components() {
         match component {
@@ -248,7 +251,7 @@ fn resolve_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, Strin
     Ok(root.join(relative))
 }
 
-fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
     let root = fs::canonicalize(root_path).map_err(|err| err.to_string())?;
     let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
     if !metadata.is_dir() {
@@ -361,7 +364,7 @@ fn ensure_inside_canonical(root_path: &str, path: &Path) -> Result<PathBuf, Stri
     Ok(canonical_path)
 }
 
-fn resolve_existing_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+pub(crate) fn resolve_existing_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
     let path = resolve_inside(root_path, relative_path)?;
     ensure_inside_canonical(root_path, &path)
 }
@@ -688,6 +691,18 @@ fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
         .duration_since(UNIX_EPOCH)
         .map_err(|err| err.to_string())?
         .as_millis())
+}
+
+/// Modification time **and** byte length in one `stat`. Two separate calls would read the
+/// same inode twice for every file in the walk.
+fn metadata_stamp(path: &Path) -> Result<(u128, u64), String> {
+    let metadata = fs::metadata(path).map_err(|err| err.to_string())?;
+    let modified = metadata.modified().map_err(|err| err.to_string())?;
+    let millis = modified
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_millis();
+    Ok((millis, metadata.len()))
 }
 
 /// Live ACP sessions. Terminate all remaining here when the app shuts down.
@@ -1829,6 +1844,10 @@ struct VaultStamp {
     relative_path: String,
     /// Same representation as `TauriTextFile::last_modified` — this vault has one type for mtime.
     last_modified: u128,
+    /// Byte length from the directory entry's metadata. Still no content: a raw source's
+    /// size is the one fact the library list shows that an mtime cannot supply, and
+    /// reading the file to learn it would undo the reason this command exists.
+    size: u64,
 }
 
 /// The result of `vault_fingerprint`. Truncation and pruning are returned
@@ -2151,6 +2170,26 @@ const VAULT_PRUNE_DIR_NAMES: &[&str] = &["node_modules"];
 const VAULT_CACHE_DIR_TAG: &str = "CACHEDIR.TAG";
 /// Same extension set as TS `IMAGE_EXT` (lowercase comparison).
 const VAULT_IMAGE_EXTS: &[&str] = &["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp"];
+/// Same value as TS `VAULT_SOURCES_DIR`.
+///
+/// A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
+/// 2026-09-05). This top-level folder holds the raw project documents verbatim, in
+/// whatever format they arrived in. The walk keeps their **name, size and mtime** so the
+/// library list updates when one is dropped in; nothing here is ever opened by the
+/// parser, which reads `.md` and nothing else. That is why an arbitrary format can sit in
+/// the vault without a single node appearing in the graph.
+const VAULT_SOURCES_DIR: &str = "sources";
+
+/// Whether a vault-relative path lies inside the top-level `sources/` folder.
+///
+/// The prefix is anchored: `sources/a.pdf` is a raw source and `notes/sources/a.pdf` is
+/// not, because one library per folder is what makes "everything under this name is raw"
+/// a rule a person can hold.
+fn vault_relative_is_source(relative: &str) -> bool {
+    relative
+        .strip_prefix(VAULT_SOURCES_DIR)
+        .is_some_and(|rest| rest.starts_with('/'))
+}
 
 fn vault_entry_is_tracked(name: &str) -> bool {
     if name.ends_with(".md") {
@@ -2216,11 +2255,12 @@ fn walk_vault_stamps(
                 continue;
             }
             walk_vault_stamps(&dir.join(&name), &relative, depth + 1, acc)?;
-        } else if vault_entry_is_tracked(&name) {
-            let last_modified = metadata_mtime_ms(&dir.join(&name))?;
+        } else if vault_entry_is_tracked(&name) || vault_relative_is_source(&relative) {
+            let (last_modified, size) = metadata_stamp(&dir.join(&name))?;
             acc.entries.push(VaultStamp {
                 relative_path: relative,
                 last_modified,
+                size,
             });
         }
     }
@@ -3469,6 +3509,11 @@ pub fn run() {
             vault_path_exists,
             open_vault_in_finder,
             ensure_default_vault_parent_dir,
+            library::hash_vault_files,
+            library::pick_source_files,
+            library::import_source_files,
+            library::discover_source_candidates,
+            library::reveal_vault_file,
             start_vault_watch,
             log_webview_error,
             secrets::secret_set,

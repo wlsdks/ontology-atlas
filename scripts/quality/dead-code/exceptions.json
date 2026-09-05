@@ -298,6 +298,12 @@
       "reason": "The UID migration (scripts/migrate-node-uids.mjs inventory) mints node UIDs through the CLI's schema shim; the cli runtime lane cannot see that cross-scope consumer. Dropping the export broke pnpm test:vault:migrate on 2026-08-31.",
       "consumer": "scripts/migrations/2026-08-02-add-node-uids.mjs",
       "witness": "generateNodeUid"
+    },
+    {
+      "key": "mcp:runtime:files:src/wiki-schema.mjs:src/wiki-schema.mjs",
+      "reason": "The wiki page contract is executed by the CLI through the runtime MCP-module resolver, which the analyzer cannot follow because the import path is built at call time. Same shape as schema.mjs and validate.mjs, both reached the same way.",
+      "consumer": "cli/src/lib/wiki-schema.mjs",
+      "witness": "src/wiki-schema.mjs"
     }
   ]
 }

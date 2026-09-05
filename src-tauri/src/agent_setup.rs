@@ -270,6 +270,23 @@ pub(crate) fn write_entry_atomically(
     contents: &str,
     create_mode: libc::mode_t,
 ) -> Result<(), String> {
+    write_entry_bytes_atomically(parent, file_name, contents.as_bytes(), create_mode)
+}
+
+/// The same guarded write for bytes that are not text.
+///
+/// A raw source imported into `sources/` is a PDF, a spreadsheet, a scan — never a
+/// string. It has to reach disk through **this** path and not `fs::write`, because every
+/// protection here is about the parent directory rather than the content: the write goes
+/// through an already-open parent descriptor, `O_NOFOLLOW` refuses a symlink planted at
+/// the name, and the rename is atomic, so a torn file is never left in a person's folder.
+/// Splitting text off as a thin caller keeps one implementation of that guarantee.
+pub(crate) fn write_entry_bytes_atomically(
+    parent: &fs::File,
+    file_name: &std::ffi::CStr,
+    contents: &[u8],
+    create_mode: libc::mode_t,
+) -> Result<(), String> {
     use std::os::fd::{AsRawFd, FromRawFd};
 
     static TEMP_SEQUENCE: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -324,7 +341,7 @@ pub(crate) fn write_entry_atomically(
     })?;
     let result = (|| -> std::io::Result<()> {
         ensure_private_temporary(&temporary, "before writing")?;
-        temporary.write_all(contents.as_bytes())?;
+        temporary.write_all(contents)?;
         temporary.sync_all()?;
         ensure_private_temporary(&temporary, "before commit")?;
         let renamed = unsafe {
