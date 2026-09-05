@@ -11,24 +11,19 @@ const WRITABLE = { canWriteVault: true, agentObserved: true };
 const READ_ONLY = { canWriteVault: false, agentObserved: false };
 
 describe("fixBlockOrder", () => {
-  it("차단되는 일이 먼저다 — 오늘 볼 일, 못 읽는 문서, 끊어진 연결 순", () => {
-    expect(fixBlockOrder(WRITABLE).slice(0, 3)).toEqual([
-      "touch-up",
-      "blocked-document",
-      "repair",
-    ]);
+  it("차단되는 일이 먼저다 — 못 읽는 문서, 끊어진 연결 순", () => {
+    expect(fixBlockOrder(WRITABLE).slice(0, 2)).toEqual(["blocked-document", "repair"]);
   });
 
   it("쓸 수 있는 세션은 뜻 작업이 먼저, 읽기 전용은 뒤집힌다", () => {
     const writable = fixBlockOrder(WRITABLE);
     const readOnly = fixBlockOrder(READ_ONLY);
-    expect(writable[3]).toBe("missing-definition");
-    expect(readOnly[3]).toBe("neglected-hub");
+    expect(writable[2]).toBe("missing-definition");
+    expect(readOnly[2]).toBe("neglected-hub");
   });
 
   it("모든 종류가 정확히 한 번씩 나온다 — 한 항목이 두 자리에 놓이지 않는다", () => {
     const expected: FixBlockKey[] = [
-      "touch-up",
       "blocked-document",
       "repair",
       "missing-definition",

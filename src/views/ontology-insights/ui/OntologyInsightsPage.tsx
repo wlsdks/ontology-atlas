@@ -78,12 +78,10 @@ import {
 import { resolveSessionAbilities } from "../lib/session-abilities";
 import type { QueueSectionKey } from "../lib/queue-work-groups";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
-import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { buildBlockedDocumentRows, countBlockedDocuments } from "../lib/fix-list";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import {
-  isDoNextReviewId,
   resolveDoNextReviewState,
 } from "../lib/review-loop";
 import { computeCensusHealth, computeInsightsCensus } from "../lib/census-health";
@@ -95,7 +93,8 @@ import {
   InsightsCensusStrip,
   type InsightsCensusStripLabels,
 } from "./parts/InsightsCensusStrip";
-import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
+import { DoNextTab } from "./tabs/DoNextTab";
+import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
 import type { MeaningGapLabels } from "./tabs/MeaningGapSection";
 import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
@@ -172,13 +171,14 @@ const DUPLICATE_DISPLAY_LIMIT = 3;
  */
 const DUPLICATE_DISCLOSURE_LIMIT = 24;
 /**
- * How many rows of one kind the "to do" list shows.
+ * How many rows of one kind the "to do" list holds.
  *
- * Three is the ceiling that keeps the tab inside the scroll contract (at most 1.3× the viewport)
- * whatever the folder's size. The heading states the full scale and one truncation line at the
- * bottom states what is not drawn, so nothing is hidden without saying so.
+ * Three was the ceiling that kept a **flat** list inside the scroll contract (at most 1.3× the
+ * viewport) whatever the folder's size. Since 2026-09-06 each kind is a collapsed group, so the
+ * viewport is bounded by the group heads rather than by the rows, and five rows is what an opened
+ * group can show before its own remainder line takes over.
  */
-const DO_NEXT_PER_KIND_LIMIT = 3;
+const DO_NEXT_PER_KIND_LIMIT = 5;
 /**
  * The validation codes that have a plain sentence of their own. An unlisted code falls back to
  * `blockedReason.other`, so a blocked row always says something rather than nothing.
@@ -870,27 +870,6 @@ export function OntologyInsightsPage() {
     [],
   );
 
-  // Today's touch-ups: a pure function handles priority, truncation, and the
-  // cold-start guard, and only the surface copy (`why`) is applied here. It is filled
-  // only when truncation leaves exactly three items.
-  const touchUpWhy = (item: TouchUpItem): string => {
-    switch (item.reason.kind) {
-      case "neglected-hub":
-        // What follows "reason ·" must be a sentence. It used to reuse the repair
-        // queue's metric copy ("8 connections · unchanged for 50 days"), so only
-        // someone reading the numbers could tell why this item was picked.
-        return t("doNext.touchUpWhyNeglectedHub", {
-          degree: item.reason.degree,
-          days: item.reason.agoDays,
-        });
-      case "cycle":
-        return t("doNext.touchUpWhyCycle", { length: item.reason.length });
-      case "promotion":
-        // State the reference count verbatim — "several places" made three rows repeat
-        // one phrase, and the number was already carried by the queue row.
-        return t("doNext.touchUpWhyPromotion", { count: item.reason.fanIn });
-    }
-  };
   /**
    * Per-section totals for the "to do" queue — **the single source on this screen.**
    *
@@ -919,30 +898,28 @@ export function OntologyInsightsPage() {
 
   // The single verdict for this screen. The tab badge, the empty-state copy, and the
   // health claim must all come from here, or they say different things about one dataset.
-  const insightsVerdict = useMemo(
-    () =>
-      buildInsightsVerdict({
-        islands: healthRepair.islandCount,
-        missingContainment: healthRepair.missingContainmentCount,
-        blockedDocuments: blockedDocumentCount,
-        sections: queueSectionTotals,
-      }),
+  const insightsSignalCounts = useMemo(
+    () => ({
+      islands: healthRepair.islandCount,
+      missingContainment: healthRepair.missingContainmentCount,
+      blockedDocuments: blockedDocumentCount,
+      sections: queueSectionTotals,
+    }),
     [healthRepair, blockedDocumentCount, queueSectionTotals],
   );
-  const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
-    totalNodes,
-    cycleTitle: cycleNodeTitle,
-    cycleHandoff,
-    reviewId: isDoNextReviewId(reviewId) ? reviewId : null,
-  }).map((item) => ({
-    id: item.id,
-    source: item.source,
-    nodeId: item.nodeId,
-    title: item.title,
-    nodeKind: item.nodeKind,
-    why: touchUpWhy(item),
-    handoffPayload: item.handoffPayload,
-  }));
+  const insightsVerdict = useMemo(
+    () => buildInsightsVerdict(insightsSignalCounts),
+    [insightsSignalCounts],
+  );
+  /**
+   * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
+   * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
+   * apart; `tests/contract/do-next-group-sum.contract.test.ts` pins the equality.
+   */
+  const doNextGroupCounts = useMemo(
+    () => buildDoNextGroupCounts(insightsSignalCounts),
+    [insightsSignalCounts],
+  );
 
   const censusStripLabels: InsightsCensusStripLabels = {
     concepts: t("heroConcepts"),
@@ -1036,6 +1013,10 @@ export function OntologyInsightsPage() {
   const doNextLabels = {
     listTitle: (count: number) => t("doNext.listTitle", { count }),
     moreCount: (count: number) => t("doNext.moreCount", { count }),
+    // One name per finding group. The sentence the rows inside repeat is said once, here.
+    groupName: (group: DoNextGroupKey) => t(`doNext.group.${group}`),
+    groupToggle: (name: string, count: number) =>
+      t("doNext.groupToggle", { name, count }),
     emptyQueue: t("doNext.emptyQueue"),
     readOnlyHint: t("doNext.groupMeaningHintReadOnly"),
     openDocument: t("doNext.openDocument"),
@@ -1344,7 +1325,7 @@ export function OntologyInsightsPage() {
               <DoNextTab
                 totalCount={insightsVerdict.total}
                 queue={doNextQueue}
-                touchUps={doNextTouchUps}
+                groupCounts={doNextGroupCounts}
                 cycles={dependencyCycles}
                 duplicates={duplicates.rows}
                 duplicateHandoff={duplicateHandoff}

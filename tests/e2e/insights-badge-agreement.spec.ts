@@ -55,8 +55,14 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
         "insights-repair-queue",
         "insights-activity-digest",
         "do-next-groups",
+        // The list-wide truncation line: each group states its own remainder now, and a second
+        // line adding them up again would be a third reading of one number.
+        "do-next-list-truncated",
       ].filter((id) => document.querySelector(`[data-testid="${id}"]`) !== null);
-      return { tab: num(text(tab ?? null)), heading: num(text(heading)), removed };
+      const groupCounts = [
+        ...document.querySelectorAll('[data-testid="do-next-group-count"]'),
+      ].map((el) => Number(text(el)));
+      return { tab: num(text(tab ?? null)), heading: num(text(heading)), removed, groupCounts };
     });
 
     // Idling guards — an unread badge makes the equation below hold because nothing was looked at.
@@ -73,6 +79,16 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
       `탭 배지(${seen.tab}) ≠ 목록 제목(${seen.heading}). 같은 일을 두 수로 세고 있다 — ` +
         "둘 다 `insightsVerdict.total` 한 곳에서만 갈라져 나가야 한다",
     ).toBe(seen.tab);
+
+    // 2026-09-06: the list is one row per finding group, each with its own count. A number beside
+    // a group is only safe while the numbers add up, so the third reading is measured here too —
+    // `do-next-group-sum.contract.test.ts` proves the arithmetic, this proves what is painted.
+    expect(seen.groupCounts.length, "묶음 줄이 하나도 없다 — 이 검사가 헛돈다").toBeGreaterThan(0);
+    expect(
+      seen.groupCounts.reduce((a, b) => a + b, 0),
+      `묶음 수의 합(${seen.groupCounts.join("+")}) ≠ 목록 제목(${seen.heading}). ` +
+        "한 화면이 같은 일을 두 수로 센다",
+    ).toBe(seen.heading);
   });
 });
 
