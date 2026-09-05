@@ -1258,7 +1258,7 @@
         "notOnMapAria": "Not on the map",
         "notOnMapLabel": "Not on the map",
         "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there.",
-      "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
+        "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
       },
       "sidebar": {
         "treeHeader": "Document list",
@@ -1317,8 +1317,8 @@
           "actionRelease": "I decided this",
           "unverifiableHeader": "Confirmed, but could not be checked · {count}",
           "unverifiablePlain": "This file could not be read, so whether it changed is unknown",
-        "reviewedOn": "checked {date}",
-        "reviewedOnTitle": "The day a person read this document and said the meaning was right"
+          "reviewedOn": "checked {date}",
+          "reviewedOnTitle": "The day a person read this document and said the meaning was right"
         }
       },
       "empty": {
@@ -4030,6 +4030,9 @@
     "remote-url-empty": "Type the repository address to send to.",
     "remote-url-leading-dash": "The address cannot start with a dash. Paste only the repository address.",
     "remote-url-has-whitespace": "The address has a space in it. Paste only the repository address.",
-    "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git."
+    "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git.",
+    "connector-secret-ref-invalid": "That connector reference is not a shape this machine can store. Remove the connector and add it again.",
+    "connector-secret-missing": "A token this connector needs is not in this machine’s keychain. Open Connectors, enter it again, or switch the connector off.",
+    "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again."
   }
 }
