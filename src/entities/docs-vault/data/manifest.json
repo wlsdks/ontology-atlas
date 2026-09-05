@@ -237,6 +237,18 @@
       "linksOut": []
     },
     {
+      "slug": "audits/AGENT-INSTRUCTION-REVIEW-2026-09-05",
+      "path": "docs/audits/AGENT-INSTRUCTION-REVIEW-2026-09-05.md",
+      "title": "Agent instruction review — 2026-09-05",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Scope: all 18 repository skill entrypoints, their relevant authority documents, and the coordinator/guardian briefs that repeated conflicting instructions. This is an instruction-consistency review, not a benchmark of model behavior or ontology quality. Installed third-party skill packages and saved scheduled-task prom",
+      "wordCount": 928,
+      "updatedAt": "2026-09-05",
+      "linksOut": []
+    },
+    {
       "slug": "audits/CASE-STUDY-AGENTS-MD-DRIFT",
       "path": "docs/audits/CASE-STUDY-AGENTS-MD-DRIFT.md",
       "title": "Case Study: Avoiding AGENTS.md / CLAUDE.md Drift",
@@ -746,7 +758,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29921,
+      "wordCount": 29950,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },
@@ -782,7 +794,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 101816,
+      "wordCount": 102007,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug"
@@ -876,8 +888,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Which command to run first for an area of this repository, what a pass proves, and when to escalate. The reasons a gate exists live in docs/DECISIONS.md and in the gate's own header, not here. Start every change with the planner, and let it run what it recommends: It reads the Git diff (tracked and untracked), prints t",
-      "wordCount": 5969,
-      "updatedAt": "2026-09-04",
+      "wordCount": 6052,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -888,7 +900,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 27055,
+      "wordCount": 27076,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug",
@@ -3783,7 +3795,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2055,
+      "wordCount": 2193,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "DECISIONS"
@@ -5854,6 +5866,13 @@
         "path": "audits",
         "type": "dir",
         "children": [
+          {
+            "name": "AGENT-INSTRUCTION-REVIEW-2026-09-05",
+            "path": "audits/AGENT-INSTRUCTION-REVIEW-2026-09-05",
+            "type": "doc",
+            "slug": "audits/AGENT-INSTRUCTION-REVIEW-2026-09-05",
+            "title": "Agent instruction review — 2026-09-05"
+          },
           {
             "name": "CASE-STUDY-AGENTS-MD-DRIFT",
             "path": "audits/CASE-STUDY-AGENTS-MD-DRIFT",

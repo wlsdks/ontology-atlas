@@ -834,7 +834,9 @@ export function buildCompactAgentBrief({
     },
   };
   const result = { ...compact, handoffPrompt: buildCompactHandoffPrompt(compact) };
-  const bytes = Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8');
+  // Measure the complete structured payload as serialized for transport.
+  // Presentation indentation is not sent; the separate wire gate includes wrappers.
+  const bytes = Buffer.byteLength(JSON.stringify(result), 'utf8');
   if (bytes > AGENT_BRIEF_COMPACT_MAX_BYTES) {
     const largestFields = Object.entries(result)
       .map(([key, value]) => [key, Buffer.byteLength(JSON.stringify(value), 'utf8')])

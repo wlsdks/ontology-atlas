@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import {
   changedPathsFromGit,
   collapsePlaywrightCommands,
+  collapseCoveredContractCommands,
   runFocusedChecks,
   runSuggestFocusedChecks,
   stripLeadingSeparator,
@@ -288,4 +289,52 @@ describe('collapsePlaywrightCommands', () => {
   const kept = merged[0].command.replace('pnpm exec playwright test ', '').split(' ');
   assert.deepEqual(kept.sort(), specs.slice().sort());
 });
+});
+
+
+describe('contract coverage within one focused run', () => {
+  const scripts = {
+    'test:contracts': 'vitest run tests/contract',
+    'test:design': 'vitest run tests/contract/a.test.ts tests/contract/b.test.ts',
+  };
+  const rows = (...commands) => commands.map((command) => ({ command }));
+  it('removes only later standard contract subsets and keeps their coverage visible', () => {
+    const input = rows('pnpm test:contracts', 'pnpm test:design',
+      'pnpm exec vitest run tests/contract/c.test.ts', 'pnpm lint');
+    const result = collapseCoveredContractCommands(input, scripts);
+    assert.deepEqual(result.commands, [input[0], input[3]]);
+    assert.deepEqual(result.covered, [input[1].command, input[2].command]);
+  });
+  it('keeps early focused checks and nonstandard invocations', () => {
+    const input = rows('pnpm test:design', 'pnpm test:contracts',
+      'pnpm exec vitest run tests/contract/a.test.ts --coverage',
+      'pnpm exec vitest run src/example.test.ts',
+      'pnpm exec vitest run tests/contract/../other.test.ts',
+      'CUSTOM=1 pnpm test:design', 'pnpm test:design -- --reporter=dot',
+      'pnpm test:design && pnpm lint');
+    assert.deepEqual(collapseCoveredContractCommands(input, scripts).commands, input);
+  });
+  it('executes the full suite before relying on coverage and stops on its failure', () => {
+    for (const status of [0, 3]) {
+      const ran = [];
+      const code = runFocusedChecks({
+        commands: rows('pnpm test:contracts', 'pnpm test:design', 'pnpm lint'), scripts,
+        stdout: { write() {} },
+        spawn(command) { ran.push(command); return { status: command === 'pnpm test:contracts' ? status : 0 }; },
+      });
+      assert.equal(code, status);
+      assert.deepEqual(ran, status === 0 ? ['pnpm test:contracts', 'pnpm lint'] : ['pnpm test:contracts']);
+    }
+  });
+  it('retains aliases with lifecycle hooks, flags, extra commands, or unverified full-suite definitions', () => {
+    const input = rows('pnpm test:contracts', 'pnpm test:design');
+    for (const overrides of [
+      { 'pretest:design': 'echo prepare' }, { 'posttest:design': 'echo done' },
+      { 'posttest:contracts': 'node mutate-input.mjs' },
+      { 'test:design': 'vitest run tests/contract/a.test.ts --config special.ts' },
+      { 'test:design': 'vitest run tests/contract/a.test.ts && node verify.mjs' },
+      { 'test:contracts': 'vitest run tests/contract --testNamePattern=partial' },
+    ]) assert.deepEqual(collapseCoveredContractCommands(input, { ...scripts, ...overrides }).commands, input);
+    assert.deepEqual(collapseCoveredContractCommands(input, {}).commands, input);
+  });
 });

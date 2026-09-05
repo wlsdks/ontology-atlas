@@ -125,10 +125,11 @@ references, or derive from code; never pin human prose.
 
 ## Verification, documentation, and Git
 
-Start focused: `pnpm checks:changed -- --run`. Escalate to full tests, lint,
-build, broad Playwright, or desktop packaging when shared contracts, routing,
-configuration, release surfaces, or user workflows require it. Do not claim
-completion from selected checks. Generated docs-vault output is created only by
+Run `pnpm checks:changed -- --run`; complete every recommendation. Finish
+after they pass unless a new edit, failure, or named unresolved risk requires
+more. Use `.claude/rules/testing.md` for escalation; never broaden or repeat
+checks by habit.
+Generated docs-vault output is created only by
 `pnpm docs-vault:build`; never hand-edit
 `src/entities/docs-vault/data/` or `public/docs-vault/`.
 

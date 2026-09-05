@@ -89,6 +89,12 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 26 | 2026-09-05 | An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold | one-way | review | judge | rollback-cheap+surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 | 27 | 2026-09-05 | A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path | one-way | review | handoff | public-contract | truth=unchanged;transfer=affected;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 
+| 27 | 2026-09-05 | Clarify existing agent authorization and verification scope; make hook recovery executable | two-way | solo | handoff | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
+
+| 28 | 2026-09-05 | Remove contradictory and excessive skill procedure while preserving evidence and approval boundaries | two-way | solo | handoff | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
+
+| 29 | 2026-09-05 | Measure compact budget on unchanged transmitted JSON rather than display indentation | one-way | review | handoff | public-contract | truth=unchanged;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 2 | redirected | po-evidence+po-steward |
+
 ## Outcome updates
 
 | Run | Date | Recovery proof | Owner clear | Boundary miss | Later result |
@@ -132,3 +138,5 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 25 | 2026-09-05 | pending | yes | no | pending |
 | 26 | 2026-09-05 | pending | yes | no | pending |
 | 27 | 2026-09-05 | pass | yes | no | pending |
+| 28 | 2026-09-05 | pass | yes | no | pending |
+| 29 | 2026-09-05 | pass | yes | no | pending |
