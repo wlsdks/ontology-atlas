@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder does not hold and shares one ACP conversation across tabs; Flow presents a cited answer scene by scene without leaving Analysis. The Agents screen gains Connectors, which attach an external MCP server (one this machine already registers, or one written by hand) to the in-app Claude chat: off by default, token only in the keychain, traffic from the agent straight to that service.
-**Changed**: Closing panels, drawers, palettes and dialogs leave faster on their own curve and immediately stop taking clicks; the map's right-hand tiles name their group on hover or focus; the insights tab strip scrolls instead of wrapping and keeps the open tab in view.
-**Fixed**: Compact MCP budgets count transmitted JSON, excluding display indentation. A truncated list says how many it is not showing and where the rest is; a document's meta row shows when its meaning was checked beside when the file changed; editor fields say which program reads them; six empty states carry the link that unblocks them.
+**Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder lacks, shares one ACP conversation across tabs, and Flow presents a cited answer scene by scene. The Agents screen gains Connectors: attach an external MCP server (one this machine registers, or one written by hand) to the in-app Claude chat, off by default, token only in the keychain, traffic from the agent straight to that service.
+**Changed**: Closing panels leave faster on their own curve and stop taking clicks at once; the map's right-hand tiles name their group on hover; the insights tab strip scrolls and keeps the open tab in view.
+**Fixed**: Compact MCP budgets count transmitted JSON, not indentation. A truncated list says how many it hides and where the rest is; a meta row shows when meaning was checked; editor fields name the program that reads them; six empty states carry the unblocking link.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
