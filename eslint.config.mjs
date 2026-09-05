@@ -430,6 +430,31 @@ const typographyAxisSelectors = [
  *
  * ⚠️ Pre-enable census: 17 arbitrary instances 20+ existed, all pre-replaced (0 violations).
  */
+/*
+ * ⚠️ **The arbitrary bracket was only half the door** (2026-09-05 audit, F17).
+ *
+ * The two selectors below saw `z-[N]`. In Tailwind v4 `z-*` is a **dynamic
+ * utility**, so `z-25`, `z-70` and `z-999` are equally valid class names that emit
+ * exactly the same declaration — measured in the browser on this build: 25, 70 and
+ * 999 respectively. So the whole ladder could be bypassed by dropping two brackets,
+ * and the syntax that read as "on the ramp" was the one nothing checked.
+ *
+ * **Named 20/30/40/50 stay legal.** `design-gates.md`, "z-index has a partial
+ * ramp": those four Tailwind steps *are* the names for sticky, map hints, map
+ * popovers and floating chrome, and tokenizing them was rejected because a token
+ * with zero consumers is misinformation. The new selector therefore blocks named
+ * layering at or above 20 that is **not** one of them — the values that duplicate a
+ * `--z-*` token (60/70/75/80/100) or invent a step between two tiers.
+ *
+ * Pre-enable census (src + app, `.ts`/`.tsx`/`.css`): z-0 ×2, z-10 ×17, z-20 ×19,
+ * z-30 ×18, z-40 ×16, z-50 ×18 — **zero off-ladder**, so lint signal does not grow.
+ * The four `z-70` hits in the repository are prose inside comments, which no
+ * `Literal`/`TemplateElement` selector reaches.
+ */
+const OFF_LADDER_NAMED_Z = '(?:[2-9][1-9]|[6-9]0|[1-9][0-9]{2,})';
+const NAMED_Z_MESSAGE =
+  '층위 20 이상은 앱 전역 계약이다 — 이름 있는 z-N 도 Tailwind v4 에서는 임의값과 같다(z-70 은 실제로 70 을 낸다). 20/30/40/50 은 sticky·map-hint·map-popover·overlay-chrome 의 이름이라 그대로 쓰고, 그 밖의 값은 --z-* 사다리를 쓴다(map-scrim < dialog < tour < tour-card < tooltip < skip-link). 한 표면 안에서만 유효한 지역 쌓임은 20 미만으로 쓴다.';
+
 const layerSelectors = [
   {
     selector: 'Literal[value=/z-\\[(?:[2-9][0-9]|[1-9][0-9]{2,})\\]/]',
@@ -439,6 +464,14 @@ const layerSelectors = [
   {
     selector: 'TemplateElement[value.raw=/z-\\[(?:[2-9][0-9]|[1-9][0-9]{2,})\\]/]',
     message: '층위 20 이상은 --z-* 사다리를 쓴다 (template literal).',
+  },
+  {
+    selector: `Literal[value=/(^|[^-\\w])z-${OFF_LADDER_NAMED_Z}([^-\\w]|$)/]`,
+    message: NAMED_Z_MESSAGE,
+  },
+  {
+    selector: `TemplateElement[value.raw=/(^|[^-\\w])z-${OFF_LADDER_NAMED_Z}([^-\\w]|$)/]`,
+    message: `${NAMED_Z_MESSAGE} (template literal)`,
   },
 ];
 

@@ -86,9 +86,20 @@ export function computeFreeArea(canvas: Rect, obstacles: readonly Rect[]): Rect 
     if (!intersects(panel, canvas)) continue;
 
     const explicitSidePanel = panel.cameraObstacle === "side-panel";
-    const tallEnough =
-      explicitSidePanel || panel.height >= canvas.height * SIDE_PANEL_HEIGHT_RATIO;
     const wideEnough = panel.width >= canvas.width * TOP_BAR_WIDTH_RATIO;
+    /*
+     * The declaration says «I am edge-attached, treat me as a panel even though my
+     * content is short». It cannot also decide **which** edge: below `lg` the very
+     * same inspector is a bottom sheet spanning the whole column, and measured width
+     * is the evidence that settles that. Letting the declaration force `tallEnough`
+     * on a full-width rectangle put it in the «both» branch, which is subtracted from
+     * nothing — so the camera made no room and the sheet sat on top of the ego graph
+     * it was describing (measured 2026-09-05 at 390×844: 93 of 125 nodes under the
+     * sheet). Width first, then the declaration.
+     */
+    const tallEnough =
+      (explicitSidePanel && !wideEnough) ||
+      panel.height >= canvas.height * SIDE_PANEL_HEIGHT_RATIO;
 
     if (tallEnough && !wideEnough) {
       // A side panel — subtracted from whichever side is nearer the canvas centre.
