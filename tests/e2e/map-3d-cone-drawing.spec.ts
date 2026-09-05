@@ -108,27 +108,75 @@ async function readCone(page: Page) {
     }
 
     /*
-     * A name **laid over** another node's disc, not merely grazing it. The
-     * product reserves each disc plus 1 px and each label box carries a side gap,
-     * and the drawn radius breathes by a fraction of a pixel — so a strict
-     * touch test reports the slack rather than the defect. Two pixels of real
-     * overlap on both axes is a name a reader sees on top of a shape.
+     * A name **laid over a disc**, not merely grazing one. The product reserves
+     * each disc plus 1 px and each label box carries a side gap, and the drawn
+     * radius breathes by a fraction of a pixel — so a strict touch test reports
+     * the slack rather than the defect. Two pixels of real overlap on both axes
+     * is a name a reader sees on top of a shape.
+     *
+     * **Its OWN disc counts.** The first version of this check excluded the owner
+     * (`n.id !== label.nodeId`), and that is exactly the hole the guardian walked
+     * through: at 1920 the project label was clamped up to the label safe rect and
+     * the apex ring ran straight through "e S" of "Online Store", while this gate
+     * stayed at zero. A name unreadable under its own node's ring is the same
+     * defect as a name unreadable under someone else's.
      */
     const TOUCH_SLACK_PX = 2;
-    let labelsOverForeign = 0;
+    let labelsOverAnyDisc = 0;
     const offenders: string[] = [];
     for (const label of labels) {
       const hit = nodes.find(
         (n) =>
-          n.id !== label.nodeId &&
           Math.min(n.x + n.radius, label.maxX) - Math.max(n.x - n.radius, label.minX) >
             TOUCH_SLACK_PX &&
           Math.min(n.y + n.radius, label.maxY) - Math.max(n.y - n.radius, label.minY) >
             TOUCH_SLACK_PX,
       );
       if (hit) {
-        labelsOverForeign += 1;
-        if (offenders.length < 4) offenders.push(`${label.text} over ${hit.id}`);
+        labelsOverAnyDisc += 1;
+        if (offenders.length < 4) {
+          offenders.push(`"${label.text}" over ${hit.id === label.nodeId ? "its own disc" : hit.id}`);
+        }
+      }
+    }
+
+    /*
+     * **A name is attached to its own shape, at the standard distance.**
+     *
+     * Overlap alone cannot see the other half of the defect: a label pushed 43 px
+     * below its own disc sits in clear space and touches nothing, while the disc
+     * it actually hugs belongs to somebody else — measured at 1440, where the
+     * project name landed 9 px under an unlabelled neighbour.
+     *
+     * The rule is the placer's own contract rather than "the nearest node centre
+     * wins". Nearest-centre is not satisfiable in a cone and does not describe how
+     * a reader pairs the two: a domain's children ring it at about 20 px while its
+     * own name is anchored at about 24 px, so `"Orders"` reads as the domain's
+     * name (it is centred under the domain) while a child disc is nominally
+     * closer — measured at all four sizes, on a healthy frame. What a reader does
+     * use is the alignment: `resolveLabelBaselineY` centres a label on its owner's
+     * x and puts it one offset step from the disc edge. Measured on a healthy
+     * frame at all four sizes: gap 6.0–9.5 px, horizontal offset 0.0 px. A clamped
+     * or displaced label breaks both at once.
+     */
+    const MAX_ANCHOR_GAP_PX = 24;
+    const MAX_ANCHOR_DX_PX = 2;
+    let labelsUnanchored = 0;
+    const unanchored: string[] = [];
+    for (const label of labels) {
+      const owner = nodes.find((n) => n.id === label.nodeId);
+      if (!owner) continue;
+      const centreX = (label.minX + label.maxX) / 2;
+      const below = label.minY >= owner.y;
+      const gap = below
+        ? label.minY - (owner.y + owner.radius)
+        : owner.y - owner.radius - label.maxY;
+      const dx = Math.abs(centreX - owner.x);
+      if (gap > MAX_ANCHOR_GAP_PX || dx > MAX_ANCHOR_DX_PX) {
+        labelsUnanchored += 1;
+        if (unanchored.length < 4) {
+          unanchored.push(`"${label.text}" gap ${gap.toFixed(1)}px dx ${dx.toFixed(1)}px`);
+        }
       }
     }
 
@@ -140,8 +188,10 @@ async function readCone(page: Page) {
       overlapPairs,
       sameTierPairs,
       labelsDrawn: labels.length,
-      labelsOverForeign,
+      labelsOverAnyDisc,
       labelOffenders: offenders,
+      labelsUnanchored,
+      unanchoredLabels: unanchored,
       readoutText: readout?.textContent ?? null,
       readoutDrawn: readout?.getAttribute("data-drawn-concepts") ?? null,
       readoutHasTier: readout?.querySelector('[data-testid="first-run-readout-tier"]') !== null,
@@ -178,11 +228,18 @@ for (const screen of SCREENS) {
     expect(cone.sameTierPairs, "같은 층 노드가 서로 뭉쳤다").toBeLessThanOrEqual(screen.sameTierMax);
     expect(cone.overlapPairs).toBeLessThanOrEqual(screen.overlapMax);
 
-    // ③ Resting names exist, and none of them is laid over a foreign disc.
-    // Before: zero labels at rest, so there was nothing to collide and nothing to
-    // read either.
+    // ③ Resting names exist, none of them is laid over a disc — its own included —
+    // and each one is still anchored to the node it names. Before: zero labels at
+    // rest, so there was nothing to collide and nothing to read either.
     expect(cone.labelsDrawn, "원뿔에 쉬는 이름이 하나도 없다").toBeGreaterThan(5);
-    expect(cone.labelsOverForeign, `이름이 남의 원판 위에 앉았다: ${cone.labelOffenders.join(", ")}`).toBe(0);
+    expect(
+      cone.labelsOverAnyDisc,
+      `이름이 원판 위에 앉았다: ${cone.labelOffenders.join(", ")}`,
+    ).toBe(0);
+    expect(
+      cone.labelsUnanchored,
+      `이름이 제 원판에서 떨어졌다: ${cone.unanchoredLabels.join(", ")}`,
+    ).toBe(0);
 
     // ④ The readout says what is drawn. Before: "1 project · 9 domains · Domains
     // only · zoom in to reveal elements" over 125 visible dots.

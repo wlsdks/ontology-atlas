@@ -48,7 +48,7 @@
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
 **Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder does not hold and shares one ACP conversation across tabs; Flow presents a cited answer scene by scene without leaving Analysis.
-**Changed**: The Cone view fills the free canvas (65% at 1920, was 23%), keeps dots one screen size, keeps a far node's edge visible, and counts what it draws; closing panels leave faster on their own curve and stop taking clicks; the map's right-hand tiles name their group on hover; the insights tab strip scrolls and keeps the open tab in view.
+**Changed**: The Cone view fills the free canvas (62% at 1920, was 23%), keeps dots one screen size, keeps a far node's edge visible, and counts what it draws; closing panels leave faster on their own curve and stop taking clicks; the map's right-hand tiles name their group on hover; the insights tab strip scrolls and keeps the open tab in view.
 **Fixed**: Compact MCP budgets count transmitted JSON, not display indentation. A truncated list says how many it hides and where the rest is; a meta row shows when meaning was checked; editor fields say which program reads them; six empty states carry the link that unblocks them.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate

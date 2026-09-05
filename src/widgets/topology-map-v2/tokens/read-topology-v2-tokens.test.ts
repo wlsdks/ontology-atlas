@@ -103,7 +103,7 @@ const FIXTURE_VALUES: Record<string, string> = {
   "--topology-v2-altitude-far-low-ratio": "0.62",
   "--topology-v2-overview-entry-ratio": "0.95",
   "--topology-v2-dome-fit-fill": "0.98",
-  "--topology-v2-dome-fit-inset-top": "80",
+  "--topology-v2-dome-fit-inset-top": "104",
   "--topology-v2-dome-fit-inset-bottom": "32",
   "--topology-v2-focus-fit-max-scale": "1.9",
   "--topology-v2-focus-bbox-margin": "70",

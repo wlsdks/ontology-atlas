@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+
 import { describe, expect, it } from "vitest";
 
 import {
@@ -60,24 +63,46 @@ const SCREENS = [
   { name: "834x1112", canvasW: 834, canvasH: 1112, insetLeft: 324, insetRight: 0, floor: 0.35 },
 ] as const;
 
-/** The token values `app/globals.css` ships; drift there is caught by the token reader's own test. */
+/**
+ * The token values are **read from `app/globals.css`**, not copied here.
+ *
+ * A hand-copied fixture proves the arithmetic for the numbers someone typed into
+ * a test, which is exactly the case where the shipped value has moved and this
+ * gate stays green. Reading the file means a retuned band or a widened padding
+ * term recomputes the truth of that moment. Same discipline as
+ * `accent-ink-contrast.contract.test.ts`.
+ */
+const CSS = readFileSync(path.join(process.cwd(), "app/globals.css"), "utf8");
+
+function cssNumber(name: string): number {
+  // First definition wins — the `:root` block, which is what the workbench map
+  // reads. Later blocks (the gateway stage) override it for that surface only.
+  const match = CSS.match(new RegExp(`${name}:\\s*(-?[0-9.]+)\\s*;`));
+  if (!match) throw new Error(`app/globals.css 에 ${name} 이 없다`);
+  return Number(match[1]);
+}
+
 const TOKENS = {
-  cameraScaleMin: 0.24,
-  cameraScaleMax: 6,
-  domeFitFill: 0.98,
-  domeFitInsetTop: 80,
-  domeFitInsetBottom: 32,
+  cameraScaleMin: cssNumber("--topology-v2-camera-scale-min"),
+  cameraScaleMax: cssNumber("--topology-v2-camera-scale-max"),
+  domeFitFill: cssNumber("--topology-v2-dome-fit-fill"),
+  domeFitInsetTop: cssNumber("--topology-v2-dome-fit-inset-top"),
+  domeFitInsetBottom: cssNumber("--topology-v2-dome-fit-inset-bottom"),
 };
 
 /**
  * The cone's silhouette aspect (width ÷ height of the node centres), measured on
  * the sample vault at all four sizes on 2026-09-05: 1.222, 1.223, 1.225, 1.226.
  * The window's two edges are where the fill floors break — 1920 cannot reach 60%
- * below 1.12 once the tool-lane and readout bands are reserved, and 834's narrow
- * free strip cannot reach 35% above 1.26. Both ends are asserted, so the fit is
- * proved for every shape the cone can currently take rather than for one sample.
+ * below 1.165 once the two bands are reserved, and 834's narrow free strip cannot
+ * reach 35% above 1.274. Both ends are asserted, so the fit is proved for every
+ * shape the cone can currently take rather than for one sample.
+ *
+ * The lower edge moved from 1.12 when the top band grew 80 → 104 to keep the apex
+ * out of the label safe rect: 24 px of height is 24 px the silhouette has to make
+ * up in width.
  */
-const ASPECT_WINDOW = [1.12, 1.26] as const;
+const ASPECT_WINDOW = [1.17, 1.26] as const;
 
 /** A deterministic 1 + 9 + 27 + 88 vault — the sample vault's shape, not its names. */
 function syntheticVault(): DomeInputNode[] {

@@ -3041,12 +3041,20 @@
     /* Cone (3D) fit — `topology-camera-math.ts#computeDomeFitCameraTarget`.
        The cone is fitted into the FREE canvas (canvas minus the measured panels)
        minus these two bands, and then spans this fraction of whichever axis binds.
-       Top band = the floating tool lane (Expand all / Cone / Search sits under
-       y=66 at every width); bottom band = the instrument readout row. There is no
-       second padding term: the 15% pad plus the 0.95 overview ratio the cone used
-       to inherit is what left it at 18.6% of the canvas (measured 2026-09-05). */
+       Bottom band = the instrument readout row. There is no second padding term:
+       the 15% pad plus the 0.95 overview ratio the cone used to inherit is what
+       left it at 18.6% of the canvas (measured 2026-09-05).
+       Top band 104, not the tool lane's own 66: the LABEL pipeline culls against
+       `--topology-v2-safe-inset-top`(148), and a project label is protected there
+       — it CLAMPS to the inset edge instead of culling, and the clamp shift is
+       then carried into the flipped slot. At 80 the apex centre landed at y=101
+       and y=99, above that line, so the apex ring ran through its own name at
+       1920 and the name sat 43px below its disc at 1440 (guardian measurement,
+       2026-09-05). 104 puts the apex near 125, its below-slot anchor near 159,
+       and it flips above with no clamp — the clean 1024 frame's behaviour at
+       every width. Fill stays over the 60% floor: 62% at 1920, 70% at 1440. */
     --topology-v2-dome-fit-fill: 0.98;
-    --topology-v2-dome-fit-inset-top: 80;
+    --topology-v2-dome-fit-inset-top: 104;
     --topology-v2-dome-fit-inset-bottom: 32;
     --topology-v2-focus-fit-max-scale: 1.9;
     /* Dive-framing fix (owner: "diving too deep on click — over-zoom·label
