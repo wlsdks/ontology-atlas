@@ -38,6 +38,28 @@ export interface VaultDoc {
   mtime?: number;
 }
 
+/**
+ * One raw source file — a project document kept verbatim under `sources/`.
+ *
+ * A vault holds three kinds of file and only one is the graph (`docs/DECISIONS.md`,
+ * 2026-09-05). This is the first kind: whatever format it arrived in, unconverted. The
+ * walk records what a directory listing already knows — name, format, byte length,
+ * mtime — and **never opens the file**, which is why a PDF can live in the folder
+ * without a node appearing in the map.
+ */
+export interface VaultSourceFile {
+  /** Vault-relative path, always beginning `sources/`. */
+  path: string;
+  /** File name as it sits on disk. */
+  name: string;
+  /** Lowercase extension without the dot (`pdf`), or `''` when the name has none. */
+  format: string;
+  /** Byte length from the directory entry. */
+  bytes: number;
+  /** `file.lastModified` in ms, the same representation `VaultDoc.mtime` uses. */
+  mtime: number;
+}
+
 export interface VaultTreeNode {
   name: string;
   path: string;
@@ -77,6 +99,16 @@ export interface VaultManifest {
    */
   sourceFileCount?: number;
   docs: VaultDoc[];
+  /**
+   * Raw sources under `sources/`, present only when the folder holds any.
+   *
+   * They are a **sibling of `docs`, never a member of it**: a document here has no
+   * frontmatter to parse and no slug to address, so nothing downstream — derivation,
+   * search, the tree — can mistake one for a concept. That separation is the
+   * construction that keeps arbitrary formats out of the graph, rather than a filter
+   * some later reader has to remember to apply.
+   */
+  sources?: VaultSourceFile[];
   backlinksDetail: Record<string, VaultBacklinkEntry[]>;
   tags: Record<string, string[]>;
   tree: VaultTreeNode;

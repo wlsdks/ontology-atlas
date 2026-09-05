@@ -12,6 +12,7 @@ import {
   buildLocalManifestWithEntries,
   rebuildLocalManifestIncremental,
   computeLocalVaultFingerprintWithStamps,
+  type VaultStampIndex,
   computeLocalVaultFingerprint,
   type BuiltVaultEntry,
   type LocalVaultBuild,
@@ -261,6 +262,12 @@ interface State {
   acpWorkReceipts: AcpWorkReceipt[];
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
+  /**
+   * Raw sources under `sources/`, keyed by vault-relative path. Nothing here is opened
+   * by the build; a handle is reached through only when a person asks to open or hash
+   * one file.
+   */
+  sourceHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
   /** Meaningful only in the error status — the key the picker uses to pick localized guidance. */
   errorCode: VaultErrorCode | null;
@@ -304,6 +311,7 @@ function emptyState(status: Status = 'idle'): State {
     acpWorkReceipts: [],
     fileHandles: new Map(),
     imageHandles: new Map(),
+    sourceHandles: new Map(),
     errorMessage: null,
     errorCode: null,
     lastLoadedAt: null,
@@ -738,7 +746,7 @@ export function useLocalVaultInternal() {
   /** Fingerprint of the last successful build — the comparison that lets auto-refresh skip. */
   const lastFingerprintRef = useRef<string | null>(null);
   /** One slot for `refresh()` to hand the native stamps it just fetched to `load()`. */
-  const pendingStampsRef = useRef<Map<string, number> | null>(null);
+  const pendingStampsRef = useRef<VaultStampIndex | null>(null);
 
   /**
    * The reusable entries of the last successful build and the handle they came from. The
@@ -799,7 +807,7 @@ export function useLocalVaultInternal() {
         result = await buildLocalManifestWithEntries(handle);
       }
       const { build, entries } = result;
-      const { manifest, fileHandles, imageHandles, fingerprint } = build;
+      const { manifest, fileHandles, imageHandles, sourceHandles, fingerprint } = build;
       const { agentConfigStatus, agentActivityStatus, agentActivityLog, acpWorkReceipts } =
         await readVaultSidecarStatuses(handle);
       lastFingerprintRef.current = fingerprint;
@@ -814,6 +822,7 @@ export function useLocalVaultInternal() {
         acpWorkReceipts,
         fileHandles,
         imageHandles,
+        sourceHandles,
         errorMessage: null,
         errorCode: null,
         lastLoadedAt: Date.now(),
@@ -836,6 +845,7 @@ export function useLocalVaultInternal() {
         acpWorkReceipts: [],
         fileHandles: new Map(),
         imageHandles: new Map(),
+    sourceHandles: new Map(),
         errorMessage: toErrorMessage(err),
         // A refusal by the operating system is not the same event as a broken folder, and sending
         // somebody to System Settings to fix a folder that is simply gone would be worse than vague.
@@ -1505,6 +1515,7 @@ export function useLocalVaultInternal() {
               acpWorkReceipts: [],
               fileHandles: new Map(),
               imageHandles: new Map(),
+    sourceHandles: new Map(),
               errorMessage: null,
               errorCode: 'path-missing',
               lastLoadedAt: null,
@@ -1541,6 +1552,7 @@ export function useLocalVaultInternal() {
           acpWorkReceipts: [],
           fileHandles: new Map(),
           imageHandles: new Map(),
+    sourceHandles: new Map(),
           errorMessage: null,
           errorCode: null,
           lastLoadedAt: null,
@@ -1569,6 +1581,7 @@ export function useLocalVaultInternal() {
           acpWorkReceipts: [],
           fileHandles: new Map(),
           imageHandles: new Map(),
+    sourceHandles: new Map(),
           // `path-missing` deliberately carries no cause string: the screen owns that sentence.
           errorMessage: missing ? null : error instanceof Error ? error.message : String(error),
           // Every path that can meet a protected folder classifies the same way; otherwise the app
@@ -1747,6 +1760,7 @@ export function useLocalVaultInternal() {
     recentVaults,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,
+    sourceHandles: state.sourceHandles,
     errorMessage: state.errorMessage,
     errorCode: state.errorCode,
     lastLoadedAt: state.lastLoadedAt,

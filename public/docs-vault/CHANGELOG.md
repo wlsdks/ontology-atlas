@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and counts above the answer; Insights lists names the folder lacks. A new MCP screen holds the folder's own connection and Connectors that attach an external MCP server to the in-app Claude chat, off by default, token only in the keychain. The map's INDEX names the folder it read and its document count.
-**Changed**: The Cone view fills the canvas (62% at 1920, was 23%) and counts what it draws; closing panels leave faster; map tiles name their group on hover; Agents keeps only tools and chat; the first screen names Claude Code and MCP; Korean uses one word for your folder and another for the Docs screen.
-**Fixed**: Pages keep a bottom margin on desktop; a failed sign-in probe reads "could not check", not "Sign in needed"; a tab's count no longer runs into its label for screen readers; the web connect panel keeps one tab set.
+**Added**: Agent lookups show targets and counts above the answer; Insights lists names the folder lacks and keeps versioned ACP analyses. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token only in the keychain. Docs lists Sources (project documents of any format, kept as they arrived, marked written up or not) and Wiki pages in the shape wiki/_template.md holds; Add files, Find documents and Compile start the work; wiki-validate checks a folder.
+**Changed**: The Cone view fills the canvas (62% at 1920, was 23%); closing panels leave faster; Agents keeps only tools and chat; the first screen names Claude Code and MCP.
+**Fixed**: Pages keep a bottom margin on desktop; a failed sign-in probe reads "could not check"; a tab's count stays apart from its label; INDEX names the folder it read.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

@@ -223,6 +223,11 @@
       "slug": "in-app-coding-agents-over-acp-2026-08-16"
     },
     {
+      "depth": 3,
+      "text": "The library — three kinds of file in one folder (2026-09-05)",
+      "slug": "the-library-three-kinds-of-file-in-one-folder-2026-09-05"
+    },
+    {
       "depth": 2,
       "text": "FSD layers",
       "slug": "fsd-layers"
@@ -6249,6 +6254,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs",
+      "slug": "2026-09-05-a-vault-holds-three-kinds-of-file-and-only-one-is-the-graph-project-documents-of-every-format-gather-in-docs"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — codex-acp 1.10.0 is reviewed and refused, so the 1.6.2 pin stays; claude-agent-acp 0.75.0 is adopted",
       "slug": "2026-09-05-codex-acp-1100-is-reviewed-and-refused-so-the-162-pin-stays-claude-agent-acp-0750-is-adopted"
     },
@@ -10828,6 +10838,11 @@
     },
     {
       "depth": 4,
+      "text": "The library — Sources and Wiki (2026-09-05, decision \"three kinds of file\")",
+      "slug": "the-library-sources-and-wiki-2026-09-05-decision-three-kinds-of-file"
+    },
+    {
+      "depth": 4,
       "text": "Sidebar (`DocsSidebarBody`, persistent 280px pane on lg+, docs-vault-final spec)",
       "slug": "sidebar-docssidebarbody-persistent-280px-pane-on-lg-docs-vault-final-spec"
     },
@@ -12451,6 +12466,36 @@
       "depth": 2,
       "text": "10. Non-goals of this specification",
       "slug": "10-non-goals-of-this-specification"
+    },
+    {
+      "depth": 2,
+      "text": "11. Wiki pages — a project document written up in our shape",
+      "slug": "11-wiki-pages-a-project-document-written-up-in-our-shape"
+    },
+    {
+      "depth": 3,
+      "text": "11.1 Frontmatter",
+      "slug": "111-frontmatter"
+    },
+    {
+      "depth": 3,
+      "text": "11.2 Body — five sections, always, in this order",
+      "slug": "112-body-five-sections-always-in-this-order"
+    },
+    {
+      "depth": 3,
+      "text": "11.3 Citation syntax",
+      "slug": "113-citation-syntax"
+    },
+    {
+      "depth": 3,
+      "text": "11.4 Validation",
+      "slug": "114-validation"
+    },
+    {
+      "depth": 3,
+      "text": "11.5 Example",
+      "slug": "115-example"
     }
   ],
   "ONTOLOGY-CONSTRUCTION-QUALIFICATION": [

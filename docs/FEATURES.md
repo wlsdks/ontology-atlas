@@ -39,7 +39,7 @@ agent task`.
 | Surface | Entry | Audience |
 |---|---|---|
 | **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
-| **CLI** (R12 / R14 / R15+ · 58 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
+| **CLI** (R12 / R14 / R15+ · 59 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
 
@@ -619,6 +619,45 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 - Visible when `source=local && (status='error' || status='permission-needed')`
 - Shows error message · "Open picker" button to reauth/re-pick
 - Stops the silent server-fallback that was confusing users
+
+#### The library — Sources and Wiki (2026-09-05, decision "three kinds of file")
+
+A vault holds three kinds of file and **only one is the graph**. The sidebar draws all
+three: two new sections above the tree, under the review queue.
+
+- **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
+  one state. Atlas never opens them; the walk records what a directory listing already
+  holds, which is why a folder of PDFs adds nothing to the map.
+  - `not compiled` — no wiki page cites it.
+  - `compiled` — a page cites it and the sha256 it recorded still matches the file.
+  - `stale` — the hashes disagree, or a page cites it without recording one.
+  - `checking` — cited with a hash, not yet measured. Hashing is lazy and only ever asked
+    for on cited files; the app hashes natively, a browser with `crypto.subtle`.
+  - A row opens the file: the app reveals it in Finder (reveal, never launch), the browser
+    hands over the bytes it was already granted.
+- **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
+  when the page does not fit the contract, the first problem code `wiki-validate` prints
+  (`section-order`, `uncited-fact`, …). The shape is `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
+  and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
+
+Three one-click doors:
+
+- **Add files** — app: a native panel, and Rust copies the bytes into `<vault>/sources/`
+  so the WebView never holds a document. Web: `showOpenFilePicker`, written through the
+  vault handle. A second copy of the same bytes is refused by sha256 and the refusal names
+  the file that already holds them. Under the button: the folder is the interface — drop
+  files into `<vault>/sources/` in Finder and the list updates by itself.
+- **Find documents** — proposes candidates from the open folder and from each bound
+  project root, **metadata only**, nothing copied until a person ticks a box in a blocking
+  dialog with every box unticked. Document formats only (`pdf docx doc xlsx xls csv pptx
+  ppt txt rtf odt ods odp epub`), dotfiles, dependency and build directories, and
+  credential-shaped names excluded. Refusals are remembered in `localStorage` per folder —
+  a per-machine convenience, never a second store in the vault. Project roots are app-only
+  (a binding is an absolute path); the dialog says so and links to `/download/`.
+- **Compile** — starts one in-app ACP turn whose brief embeds `wiki/_template.md`
+  verbatim and names `wiki-validate` as the acceptance test. Enabled only while some
+  source is not compiled or stale. Beside it: the coding agent's provider traffic is not
+  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card.
 
 #### Sidebar (`DocsSidebarBody`, persistent 280px pane on lg+, docs-vault-final spec)
 - Three sections always visible (2026-07-18 — previously Pinned/Recent were tucked inside a collapsible "filter & saved" disclosure; an Obsidian-style vault workspace uses pinned/recent as often as the tree itself):

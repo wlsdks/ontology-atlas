@@ -63,6 +63,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a form-column screen that must not reserve the breath; a Korean label a reader cannot tell from Latin caps without tracking; a person who cannot find the closed Meaning view once the tabs became a tablist.
 **Owner**: jinan
 
+## 2026-09-05 — A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs
+
+**Why**: the owner's goal is gather, structure, wiki, graph, and the connectors merged today are its intake with nothing flowing through; the vault holds zero `document` nodes although absorb paths shipped months ago, so the compile-to-graph step has never been measured.
+**Prior**: narrows 2026-08-25 "does not expand into unrelated organizational knowledge" to project documents inside the open folder; upholds 2026-09-05 connectors ("Atlas never sits in the path"), the same day's "ingest is a job, not a place", and 2026-08-21 (92) change proposals.
+**Decision**: three file kinds. A raw source lives verbatim under `sources/` with a Markdown shadow whose frontmatter carries origin, sha256, fetched_at and converter (provenance in Git; absolute roots only in `.ontology-atlas/`). A wiki page lives under `wiki/` with no `kind:` and a `created_by`, every claim citing a source anchor. An ontology node has `kind:` and is the only graph truth. Raw wins on what a document said, node on what we mean, a human edit over an agent compile. Docs lists Sources and Wiki; discovery proposes metadata-only candidates from the open folder and bound project roots and the person approves before any copy; Compile starts one in-app agent turn under the permission gate, approved page by page; no scheduled fetch; no ninth tile.
+**Dissent**: po-evidence: run the sealed-question probe before building anything; adopted as the gate for the wiki-to-graph step, not for the library.
+**Falsifier**: a compiled page that passes provenance yet loses a sealed five-question test to a raw-folder control retires Compile to a file list; a candidate proposed outside the granted roots, or a wiki page answering `get_concept`, breaks the rule.
+**Owner**: jinan
+
 ## 2026-09-05 — codex-acp 1.10.0 is reviewed and refused, so the 1.6.2 pin stays; claude-agent-acp 0.75.0 is adopted
 
 **Why**: upstream `@agentclientprotocol/codex-acp` moved from the reviewed 1.9.0 to 1.10.0 the same day, and the registry gate refuses a release until a person inspects the new adapter.

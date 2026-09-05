@@ -38,7 +38,7 @@
  * So the value lives here and **drift is caught by a test** — the same discipline as the CLI side.
  * Adding or removing a tool turns `release-facts.test.ts` red first.
  */
-export const MCP_TOOL_COUNT = 36;
+export const MCP_TOOL_COUNT = 37;
 
 /*
  * ⚠️ The fallback exists for tooling that renders this module without Next's build-time `env`

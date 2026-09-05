@@ -2,8 +2,10 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  VAULT_SOURCES_DIR,
   VAULT_WALK_MAX_DEPTH,
   VAULT_WALK_MAX_ENTRIES,
+  isVaultSourcePath,
 } from '@/entities/docs-vault/lib/build-local-manifest';
 
 const repoRoot = resolve(__dirname, '../..');
@@ -74,6 +76,27 @@ describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
     expect([...rustExts].sort()).toEqual([...tsExts].sort());
   });
 
+  /**
+   * The library folder is the one place the two walks keep a file the parser will never
+   * open. If only one side kept it, dropping a PDF into `sources/` would change the
+   * fingerprint on one surface and not the other — the list would refresh in the app and
+   * sit still on the web, or the reverse.
+   */
+  it('the sources folder is named identically on both sides', () => {
+    expect(VAULT_SOURCES_DIR).toBe('sources');
+    expect(tsSource).toMatch(/export const VAULT_SOURCES_DIR = 'sources';/);
+    expect(rustSource).toMatch(/const VAULT_SOURCES_DIR: &str = "sources";/);
+  });
+
+  it('both walks anchor the sources prefix at the vault root', () => {
+    // `notes/sources/a.pdf` must stay an ignored file on both sides.
+    expect(isVaultSourcePath('sources/a.pdf')).toBe(true);
+    expect(isVaultSourcePath('notes/sources/a.pdf')).toBe(false);
+    expect(rustSource).toMatch(
+      /fn vault_relative_is_source[\s\S]*?strip_prefix\(VAULT_SOURCES_DIR\)[\s\S]*?starts_with\('\/'\)/,
+    );
+  });
+
   it('숨김 파일(.으로 시작)을 둘 다 건너뛴다', () => {
     expect(tsSource).toMatch(/name\.startsWith\('\.'\)/);
     expect(rustSource).toMatch(/name\.starts_with\('\.'\)/);
@@ -85,5 +108,17 @@ describe('볼트 walk 규칙 — TS 와 Rust 가 같아야 한다', () => {
     expect(stamp).toMatch(/relative_path/);
     expect(stamp).toMatch(/last_modified/);
     expect(stamp, '지문에 본문이 들어가면 IPC 절약이 사라진다').not.toMatch(/\btext\b|\bbytes\b/);
+  });
+
+  /**
+   * The size rides along with the mtime for one reason: a raw source is listed by size
+   * and never opened. Without it the app would call `getFile()` on every PDF, and under
+   * Tauri that is `read_vault_binary_file` — the whole document across IPC for one
+   * number, exactly the waste this command exists to remove.
+   */
+  it('the fingerprint carries a size, and it is still metadata', () => {
+    const stamp = /struct VaultStamp \{[\s\S]*?\n\}/.exec(rustSource)?.[0] ?? '';
+    expect(stamp).toMatch(/size: u64/);
+    expect(tsSource).toMatch(/bytes: stamp\.size/);
   });
 });

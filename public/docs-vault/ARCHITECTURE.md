@@ -80,7 +80,7 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.11.0 — 58 commands)                      │
+│ CLI (cli/, v0.11.0 — 59 commands)                      │
 │ ├─ init/agent-activity/add/import/list/find/validate/query│
 │ ├─ mcp-verify/analyze/infer-imports/architecture       │
 │ ├─ bootstrap/compile                                   │
@@ -236,6 +236,34 @@ launched session runs against an app-owned config directory rather than the
 user's global one, which is what makes the permission gate exist at all;
 credentials are symlinked, never copied. And the child runs in its own process
 group, so quitting the app ends the adapter and everything it spawned.
+
+### The library — three kinds of file in one folder (2026-09-05)
+
+`docs/DECISIONS.md`, 2026-09-05: a vault holds three kinds of file and only one is the
+graph. The separation is a property of the **walk**, not a filter applied later.
+
+| Kind | Path | Reaches the parser? | Reaches the graph? |
+|---|---|---|---|
+| Raw source | `sources/**` (not `.md`) | no — the walk records path, size and mtime and never opens it | no |
+| Wiki page | `wiki/**.md` | yes, like any Markdown | no — `deriveDocNode` requires `kind:` |
+| Ontology node | anywhere, with `kind:` | yes | yes |
+
+- `build-local-manifest.ts` emits raw sources as `manifest.sources`, a **sibling of
+  `docs`**, so nothing downstream can mistake one for a concept. `walk_vault_stamps` in
+  `src-tauri/src/lib.rs` mirrors the rule, and
+  `tests/contract/vault-walk-rules.contract.test.ts` holds the two together — a
+  fingerprint that counted a different file set would make the app rebuild constantly or
+  miss a dropped document.
+- The wiki page contract is `docs/ONTOLOGY-ATLAS-SPEC.md` §11. Its machine half is
+  `mcp/src/wiki-schema.mjs` (executed by the CLI's `wiki-validate`), mirrored for the web
+  bundle by `src/shared/lib/wiki-page-schema.ts` and held together by
+  `tests/contract/wiki-page-schema.contract.test.ts`.
+- `tests/contract/library-never-enters-the-graph.contract.test.ts` runs one fixture
+  folder through both walkers and the derivation, so neither file kind can become a node
+  by accident.
+- `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
+  copy, metadata-only discovery, and Finder reveal. It writes nothing outside
+  `<vault>/sources/`, and its discovery walk contains no writer.
 
 ## FSD layers
 

@@ -4252,5 +4252,76 @@
       "secret-literal": "A token is written in plain text; move it into the keychain first.",
       "value-missing": "A variable is set to come from the keychain and there is nothing behind it yet."
     }
+  },
+  "docsLibrary": {
+    "sources": {
+      "header": "Sources · {count}",
+      "listAria": "Raw sources in this folder",
+      "add": "Add files",
+      "addTooltip": "Copy documents into this folder's sources/",
+      "find": "Find documents",
+      "findTooltip": "Propose documents already in this folder and in the project folders you bound. Nothing is copied until you pick.",
+      "empty": "No raw sources yet. Add the project documents you already have. Any format; Atlas keeps them exactly as they arrived.",
+      "noFormat": "FILE",
+      "needsCompile": "{count, plural, one {# not written up yet} other {# not written up yet}}",
+      "dropHint": "Or drop files into {folder}/sources/ in Finder; the list updates by itself.",
+      "state": {
+        "nobody": "nobody",
+        "not-compiled": {
+          "label": "not compiled",
+          "hint": "No wiki page cites this file yet."
+        },
+        "compiled": {
+          "label": "compiled",
+          "hint": "Written up in {pages}, and the file has not changed since."
+        },
+        "stale": {
+          "label": "stale",
+          "hint": "{pages} was written from a different version of this file, or recorded no hash for it."
+        },
+        "checking": {
+          "label": "checking",
+          "hint": "Reading this file to see whether the write-up still matches."
+        }
+      },
+      "added": "{count, plural, one {# document added to sources/} other {# documents added to sources/}}",
+      "duplicate": "{count, plural, one {# was already here} other {# were already here}}. Same bytes, so nothing was copied.",
+      "failed": "{count, plural, one {# could not be copied} other {# could not be copied}}",
+      "failedReason": "Could not add: {reason}",
+      "revealFailed": "Could not show it in Finder: {reason}",
+      "openFailed": "Could not open that file."
+    },
+    "wiki": {
+      "header": "Wiki · {count}",
+      "listAria": "Wiki pages in this folder",
+      "compile": "Compile",
+      "compileTooltip": "Start one agent turn that reads the sources and writes wiki pages. Every write waits for you.",
+      "empty": "No wiki pages yet. A page is Markdown with no kind:, in the shape wiki/_template.md holds.",
+      "unknownAuthor": "unknown",
+      "offTemplate": "off-template",
+      "offTemplateCount": "{count, plural, one {# page does not fit the template} other {# pages do not fit the template}}",
+      "transfer": "Traffic goes from the coding agent straight to its provider; Atlas is not in the middle and .ontology-atlas/llm-audit.jsonl does not record it. Every write still stops at your permission card.",
+      "compileFailed": "Could not start the agent turn: {reason}",
+      "compileWebLimit": "Writing pages needs a coding agent running on this computer, which only the app can start. Reading and editing the pages works here.",
+      "compileWebGetApp": "Get the app",
+      "offTemplateReason": "Does not fit the wiki template: {code}. Open the page to see what to change."
+    },
+    "find": {
+      "title": "Documents in the folders you granted",
+      "preamble": "Atlas listed these by name, format and size. It has not opened any of them. Nothing is copied until you pick.",
+      "webLimit": "Only the folder you opened can be walked here; a project folder you bound needs its absolute path, and the app is what holds it.",
+      "walkedRoots": "Also walked: {roots}",
+      "walking": "Reading the folder listings…",
+      "empty": "Nothing to propose. Every document in these folders is already in sources/, or none of them is a document format Atlas offers.",
+      "rootHeader": "{root} · {count}",
+      "truncated": "The list stopped at the first 500 files, so this is not all of them.",
+      "unreadable": "Could not be read: {roots}",
+      "declined": "{count, plural, one {# file you passed on before is hidden} other {# files you passed on before are hidden}}",
+      "forgetDeclined": "Show them again",
+      "cancel": "Cancel",
+      "add": "{count, plural, =0 {Add selected} one {Add # file} other {Add # files}}",
+      "webGetApp": "Get the app",
+      "emptyAllDeclined": "{count, plural, one {The only document left here is one you passed on before.} other {The only documents left here are # you passed on before.}}"
+    }
   }
 }

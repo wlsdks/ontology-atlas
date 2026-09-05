@@ -2,6 +2,7 @@ export type {
   VaultBacklinkEntry,
   VaultDoc,
   VaultManifest,
+  VaultSourceFile,
   VaultTreeNode,
 } from './model/types';
 export { default as vaultManifest } from './data/manifest.json';
@@ -32,7 +33,13 @@ export {
 export type {
   LocalVaultBuild,
   BuiltVaultEntry,
+  VaultStampIndex,
 } from './lib/build-local-manifest';
+export { VAULT_SOURCES_DIR } from './lib/build-local-manifest';
+export { buildLibraryModel, formatSourceBytes } from './lib/vault-library';
+export type { LibraryModel, LibrarySourceRow } from './lib/vault-library';
+export { candidateKey, discoverCandidatesInHandle } from './lib/source-discovery';
+export type { SourceCandidate, SourceDiscoveryReport } from './lib/source-discovery';
 export {
   buildProjectMarkdown,
   projectToFrontmatter,
