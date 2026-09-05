@@ -6,6 +6,19 @@ import { seedFirstRunSeen } from './first-run-seed';
 
 type CaptionBox = { edgeId: string; text: string; minX: number; maxX: number; minY: number; maxY: number };
 
+for (const width of [1280, 1440, 1512, 1680, 1728, 1920]) {
+  test(`expanded INDEX keeps search and meaning reachable at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('/en/topology/?e2e=1&guides=off&index=expanded');
+    await expect(page.getByTestId('topology-index-panel')).toBeVisible();
+    await page.getByTestId('topology-concept-search').click({ timeout: 8000 });
+    await expect(page.locator('[cmdk-item]').first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.getByTestId('topology-meaning-workbench-toggle').click({ timeout: 8000 });
+    await expect(page.getByTestId('analysis-workbench')).toBeVisible();
+  });
+}
+
 test.beforeEach(async ({ page }) => {
   await seedFirstRunSeen(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });

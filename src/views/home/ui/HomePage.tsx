@@ -4641,8 +4641,9 @@ function HomePageImpl() {
                     <ChromeChip
                       icon={<HelpCircle />}
                       aria-label={tWorkbench('meaningTitle')}
+                      title={tWorkbench('meaningTitle')}
                       active={meaningWorkbenchOpen}
-                      compact={topologyUtilityChromeCompact}
+                      compact={topologyUtilityChromeCompact || searchLaneCrowded}
                       data-testid="topology-meaning-workbench-toggle"
                       onClick={openMeaningWorkbench}
                     >{tWorkbench('meaningTitle')}</ChromeChip>
