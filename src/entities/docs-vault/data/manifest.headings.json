@@ -14231,6 +14231,11 @@
   "ontology/elements/ontology-insights": [
     {
       "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
     },

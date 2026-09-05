@@ -3162,9 +3162,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Six-tab maintenance board: five measured questions plus Flow. The Do-next tab is one flat list under one count (owner decision, 2026-09-01): each row is a concept or document title, one sentence naming the observed fact, and actions in a fixed order (hand it to the in-app AI chat through the ask deep link for missing d",
-      "wordCount": 320,
-      "updatedAt": "2026-09-04",
+      "excerpt": "The Analysis workbench answers seven questions through Do next, Not held, Inventory, Connections, Boundaries, Freshness, and Flow. One ACP conversation stays beside the tabs in the installed app; changing tabs preserves its draft and request origin. Explicit tab actions seat read-only questions, and the person owns Sen",
+      "wordCount": 167,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
