@@ -2217,3 +2217,100 @@ describe('탐지기 프로브 — 이 게이트가 실제로 무엇을 잡는가
     ).toBeGreaterThan(0);
   });
 });
+
+/**
+ * ════════════════════════════════════════════════════════════════════
+ * ## One surface, one close — **the seventh count is a rule, not a number** (2026-09-06)
+ * ════════════════════════════════════════════════════════════════════
+ *
+ * Measured in the installed app: the meaning dock drew **two identical X buttons a few pixels
+ * apart**, one from the workbench and one from the chat panel inside it. Both closed the same
+ * thing, and the inner one closed a surface the chat panel does not own — a control that acts on
+ * its host is a control that cannot be reasoned about from the file it lives in.
+ *
+ * This is not a hand-written-className problem, so it is not a count. It is an **ownership** rule,
+ * and it belongs beside the other control rules because the failure is the same shape: a control
+ * appears because a file could add one, not because the surface needed one.
+ *
+ * > **A panel rendered inside another surface does not draw that surface's close button.**
+ *
+ * The detector reads the JSX, not the prop list: `onClose` is a perfectly good prop name for a
+ * panel that owns its own dismissal, and the violation is a *host* handing it down. Both halves
+ * are checked — the hosts must not pass it, and the panel must not have a close control to pass it
+ * to, so the rule cannot be half-satisfied by a prop that is simply ignored.
+ */
+const WORKBENCH_HOSTED_PANEL = 'src/widgets/acp-chat-panel/ui/AcpChatPanel.tsx';
+const WORKBENCH_HOSTS = [
+  'src/views/home/ui/HomePage.tsx',
+  'src/views/ontology-insights/ui/parts/InsightsAgentDock.tsx',
+  'src/views/architecture/ui/ArchitectureAgentDock.tsx',
+] as const;
+
+/** Attribute names on every `<AcpChatPanel …>` element in a file. */
+function chatPanelAttributes(text: string): string[][] {
+  const found: string[][] = [];
+  // The opening tag ends at the first `>` outside braces and quotes — the same brace-depth walk
+  // `static-surface-census` uses, because `onClick={() => …}` contains a `>`.
+  for (const match of text.matchAll(/<AcpChatPanel\b/g)) {
+    let depth = 0;
+    let quote: string | null = null;
+    let end = text.length;
+    for (let index = match.index + 1; index < text.length; index += 1) {
+      const character = text[index];
+      if (quote) {
+        if (character === quote && text[index - 1] !== '\\') quote = null;
+      } else if (character === '"' || character === "'" || character === '`') quote = character;
+      else if (character === '{') depth += 1;
+      else if (character === '}') depth -= 1;
+      else if (character === '>' && depth === 0) {
+        end = index;
+        break;
+      }
+    }
+    const tag = text.slice(match.index, end);
+    found.push([...tag.matchAll(/(?:^|\s)([a-zA-Z][a-zA-Z0-9-]*)=/g)].map((attr) => attr[1]));
+  }
+  return found;
+}
+
+describe('컨트롤 소유권 — 한 화면에 닫기는 하나', () => {
+  it('탐지기가 공회전하지 않는다 — 세 호스트 모두에서 패널을 찾는다', () => {
+    for (const host of WORKBENCH_HOSTS) {
+      const tags = chatPanelAttributes(readFileSync(host, 'utf8'));
+      expect(tags.length, `${host} 에서 AcpChatPanel 을 못 찾았다`).toBeGreaterThan(0);
+      // A tag with no attributes read means the brace walk stopped early.
+      expect(tags[0].length, `${host} 의 속성을 못 읽었다`).toBeGreaterThan(3);
+    }
+  });
+
+  it('호스트는 자기 닫기를 패널에 넘기지 않는다', () => {
+    for (const host of WORKBENCH_HOSTS) {
+      for (const attributes of chatPanelAttributes(readFileSync(host, 'utf8'))) {
+        expect(
+          attributes,
+          `${host}: 워크벤치 안의 대화 패널에 onClose 를 넘겼다 — X 가 둘이 되고, 안쪽 것은 자기 것이 아닌 화면을 닫는다`,
+        ).not.toContain('onClose');
+      }
+    }
+  });
+
+  it('패널에는 넘겨줄 닫기 자체가 없다 — 규칙이 무시되는 prop 으로 반만 지켜지지 않게', () => {
+    const panel = readFileSync(WORKBENCH_HOSTED_PANEL, 'utf8');
+    expect(panel, '패널이 여전히 닫기 버튼을 그린다').not.toContain('data-testid="acp-chat-close"');
+    expect(panel, '패널이 여전히 onClose 를 받는다').not.toMatch(/^\s*onClose\??:/m);
+  });
+
+  /**
+   * ⚠️ **A gate that can only pass is not a gate.** The violation is planted in the shape it had:
+   * a host passing its own close down to the panel it contains.
+   */
+  it('탐지기 프로브 — 심은 위반을 잡고, 이웃 prop 은 놓아둔다', () => {
+    const host = readFileSync(WORKBENCH_HOSTS[1], 'utf8');
+    const planted = host.replace('onTurnStarted={capture.onTurnStarted}', 'onClose={onClose}');
+    expect(planted, '심을 자리를 못 찾았다 — 이 프로브가 헛돈다').not.toBe(host);
+    expect(chatPanelAttributes(planted).some((attrs) => attrs.includes('onClose'))).toBe(true);
+    // `onDraftPresenceChange` and friends are not close buttons; the detector must name the prop.
+    expect(chatPanelAttributes(host).some((attrs) => attrs.includes('onClose'))).toBe(false);
+    expect(chatPanelAttributes(host)[0]).toContain('onDraftPresenceChange');
+  });
+});

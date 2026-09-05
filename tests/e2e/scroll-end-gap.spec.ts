@@ -2,6 +2,10 @@ import { test, expect } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
 import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { PAGE_FRAME_FORM } from "@/shared/ui/page-frame";
+
+/** The form column's rendered max width, read from the spec so a re-decided value cannot drift. */
+const FORM_FRAME_WIDTH = /max-w-\[(\d+px)\]/.exec(PAGE_FRAME_FORM)?.[1] ?? "";
 import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
@@ -129,13 +133,22 @@ type Measured = {
    *
    * Frame membership is detected from the **rendered** max width rather than from a class name: a
    * class assertion belongs in `page-frame.contract.test.ts`, and this file's job is pixels.
+   *
+   * ⚠️ **There are two frames, and this detector once knew only one** (2026-09-06). It compared the
+   * root's max width with `--page-max` alone, so when `/agents` and `/mcp` moved onto the 960 form
+   * column they stopped being recognised as framed at all — and at 1040/1280/1512 the count of
+   * routes ④ judged fell to **zero**, which the idling guard below caught exactly as it was written
+   * to. The widths come from `page-frame.ts` rather than from a literal here, so a re-decided 960
+   * cannot leave this file measuring the old one.
    */
   framed: boolean;
+  /** The rendered max width that made `framed` true — which of the two frames this page wears. */
+  frameWidth: string;
   rootPaddingBottom: number;
 };
 
 async function measure(page: import("@playwright/test").Page): Promise<Measured> {
-  return page.evaluate(() => {
+  return page.evaluate((formWidth) => {
     const slot = [...document.querySelectorAll("div")].find(
       (d) =>
         getComputedStyle(d).overflowY === "auto" &&
@@ -150,6 +163,7 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
         gap: null,
         tabClearance: null,
         framed: false,
+        frameWidth: "",
         rootPaddingBottom: 0,
       };
     }
@@ -254,9 +268,11 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
     const slotRect = slot.getBoundingClientRect();
     const rootStyle = root ? getComputedStyle(root) : null;
     const pageMax = getComputedStyle(document.documentElement).getPropertyValue("--page-max").trim();
+    const widths = [pageMax, formWidth].filter(Boolean);
     return {
       slot: true,
-      framed: Boolean(rootStyle && pageMax && rootStyle.maxWidth === pageMax),
+      framed: Boolean(rootStyle && widths.includes(rootStyle.maxWidth)),
+      frameWidth: rootStyle && widths.includes(rootStyle.maxWidth) ? rootStyle.maxWidth : "",
       rootPaddingBottom: rootStyle ? Math.round(Number.parseFloat(rootStyle.paddingBottom) || 0) : 0,
       scrollable: slot.scrollHeight > slot.clientHeight + 1,
       rootHeight: Math.round(root?.getBoundingClientRect().height ?? 0),
@@ -267,7 +283,7 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
           ? Math.round(bottomBar.getBoundingClientRect().top - inkBottom)
           : null,
     };
-  });
+  }, FORM_FRAME_WIDTH);
 }
 
 for (const vp of VIEWPORTS) {
@@ -281,6 +297,8 @@ for (const vp of VIEWPORTS) {
     let slotRoutes = 0;
     /** How many routes ④ actually judged. 0 at a desktop width means that check never ran. */
     let framedRoutes = 0;
+    /** Which frame widths ④ actually saw — both must appear, or one frame is unmeasured. */
+    const framedWidths = new Set<string>();
     /** How many routes ③ actually judged. 0 means that check never ran. */
     let tabMeasured = 0;
 
@@ -312,6 +330,7 @@ for (const vp of VIEWPORTS) {
        */
       if (vp.w >= BOTTOM_TAB_BAR_MAX_WIDTH && m.framed) {
         framedRoutes += 1;
+        framedWidths.add(m.frameWidth);
         if (m.rootPaddingBottom < MIN_FRAME_RESERVE) {
           violations.push(
             `${label}: 페이지 틀을 입고도 데스크톱 바닥 예약이 ${m.rootPaddingBottom}px (< ${MIN_FRAME_RESERVE})`,
@@ -376,7 +395,25 @@ for (const vp of VIEWPORTS) {
         framedRoutes,
         `${vp.label}: 페이지 틀을 입은 라우트를 한 번도 못 찾았다 — ④ 검사가 통째로 공회전했다. ` +
           `틀이 사라졌거나(그러면 계약이 바뀐 것) --page-max 판별이 낡았다.`,
-      ).toBeGreaterThan(1);
+        ).toBeGreaterThan(1);
+      /*
+       * ⚠️ **The frame that moved is the one that must be seen.** `/agents` and `/mcp` are the two
+       * routes ④ has ever actually judged, and on 2026-09-06 they moved onto the 960 form column.
+       * A detector that still knew only `--page-max` would have kept passing on the day the
+       * reservation stopped being measured, so the width itself is asserted rather than only the
+       * count.
+       *
+       * ⚠️ **A named gap, not a silent one:** the two wide-frame members among the audited routes
+       * (`/ko/projects/`, `/ko/ontology/insights/`) are *not* reached by this measurement — their
+       * page root is not the slot child this function reads, which is why removing the two narrow
+       * members earlier took `framedRoutes` to **zero** rather than to two. That is older than this
+       * change and is left as it is rather than widened here; the class layer of the same
+       * prescription is covered by `page-frame.contract.test.ts` for every member.
+       */
+      expect(
+        [...framedWidths],
+        `${vp.label}: 960 폼 틀을 한 번도 계측하지 못했다 — 폭 판별이 옛 틀만 안다`,
+      ).toContain(FORM_FRAME_WIDTH);
     }
 
     if (vp.w < BOTTOM_TAB_BAR_MAX_WIDTH) {

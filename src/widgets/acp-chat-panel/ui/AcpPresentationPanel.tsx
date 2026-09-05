@@ -130,7 +130,7 @@ export function AcpPresentationPanel({
       <article
         key={scene.id}
         aria-live="polite"
-        className="agent-next-step-in flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
+        className="agent-next-step-in atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
       >
         <div className="grid gap-2">
           <span

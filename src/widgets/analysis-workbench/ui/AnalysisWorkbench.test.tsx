@@ -55,25 +55,25 @@ describe('analysis context workbench', () => {
   it('honors external section navigation and consuming a sent request does not pull history back to chat', async () => {
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, conversation: <div>Live conversation</div> };
     const view = render(wrapper(<AnalysisWorkbench {...props} requestNonce={1} sectionRequest={{ tab: 'conversation', nonce: 1 }} />));
-    fireEvent.click(screen.getByRole('radio', { name: 'Findings & history' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Findings & history' }));
     await screen.findByText('Current answer.');
     view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'conversation', nonce: 1 }} />));
-    expect(screen.getByRole('radio', { name: 'Findings & history' })).toBeChecked();
+    expect(screen.getByRole('tab', { name: 'Findings & history' })).toHaveAttribute('aria-selected', 'true');
     view.rerender(wrapper(<AnalysisWorkbench {...props} sectionRequest={{ tab: 'meaning', nonce: 2 }} />));
-    expect(screen.getByRole('radio', { name: 'Meaning' })).toBeChecked();
+    expect(screen.getByRole('tab', { name: 'Meaning' })).toHaveAttribute('aria-selected', 'true');
   });
   it('keeps the conversation mounted while opening history and restores an older exact answer', async () => {
     const mounted = vi.fn(); const unmounted = vi.fn();
     function Conversation() { useEffect(() => { mounted(); return unmounted; }, []); return <div>Conversation draft</div>; }
     render(wrapper(<AnalysisWorkbench context={context} contextLabel="Refund" open initialTab="conversation" conversation={<Conversation />} onClose={() => {}} />));
-    fireEvent.click(screen.getByRole('radio', { name: 'Findings & history' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Findings & history' }));
     await screen.findByText('Current answer.');
     fireEvent.click(screen.getByRole('combobox', { name: 'Analysis version' }));
     fireEvent.click(screen.getByRole('option', { name: /24e7bc39/ }));
     await screen.findByText('Original older answer.');
     expect(mounted).toHaveBeenCalledTimes(1);
     expect(unmounted).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('radio', { name: 'Conversation' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Conversation' }));
     expect(screen.getByText('Conversation draft')).toBeVisible();
   });
   it('never draws a stale question as a current map defect', async () => {

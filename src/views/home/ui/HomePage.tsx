@@ -6688,8 +6688,15 @@ function HomePageImpl() {
             onMapIntent={handleAcpMapIntent}
             onOntologyRelationPreviewChange={setAcpRelationPreview}
             onWorkReceipt={handleAcpWorkReceipt}
+            /*
+             * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
+             * own X beside the workbench's, so the dock had two identical buttons a few pixels
+             * apart doing exactly the same thing — and the inner one closed a surface it does not
+             * own. The chat is a tab inside this workbench; what closes it is the workbench's
+             * close button, and `contextLabel` is likewise the workbench header's `h2`, so the
+             * panel does not repeat it as a badge either.
+             */
             onTurnStarted={analysisCapture.onTurnStarted}
-            onClose={closeVaultAgent}
           /> : undefined}
           />
           </ErrorBoundary>

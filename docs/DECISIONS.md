@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The agent conversation loses its tabs and scrollbar, Agents and MCP read in a 960 column that carries the breath, and Korean is never tracked
+
+**Why**: the owner read the docked ACP panel as ugly: three tabs over one 362px column, a visible scrollbar during chat with jumps to the bottom, 90px of chrome above the view; Agents and MCP pinned their text to the left wall of a 1448px column; 26 Korean labels on 8 routes carried Latin caps tracking (1.14 to 1.76px).
+**Prior**: cites 2026-09-05 "MCP becomes its own destination… the page frame owns the desktop bottom" as standing and extends its breath to the form frame now that two members are taller than a viewport.
+**Decision**: the workbench keeps one 50px band: a tablist of sections, one close button, the version heading once; transcript, slash menu, history and presentation body scroll under `.atlas-scroll-quiet` (no bar, scrolling intact) and follow new text smoothly within one viewport, instantly beyond it, never under reduced motion; runs of three identical lookups fold onto one row with a count; the permission card caps at 45% with Don't and Allow outside its scroller. Agents and MCP wear `PAGE_FRAME_FORM` (960), which now carries `lg:pb-[var(--page-bottom-breath)]` itself; a member restating it fails the frame contract. `:root:lang(ko)` zeroes every caps tracking token; the Hangul gate holds the swept routes at 0 above 0.6px.
+**Dissent**: design-guardian: leave the breath on the two pages and the spec file untouched; rejected because a value with two homes is the drift the frame file was written after. No council: the shape was owner-specified and prescribed before the build; a post-hoc council would be theatre.
+**Falsifier**: a form-column screen that must not reserve the breath; a Korean label a reader cannot tell from Latin caps without tracking; a person who cannot find the closed Meaning view once the tabs became a tablist.
+**Owner**: jinan
+
 ## 2026-09-06 — The insights board leads with measurement, and the to-do list is one row per finding
 
 **Why**: on the dogfood folder at 1512x949 the board's first screen was eight rows, 1,230px wide and 80px tall, all carrying the same containment sentence; the only measurement was an 11px mono line in a corner. The owner: analysis should show indicators and flow; the to-do list only grows longer and runs sideways.

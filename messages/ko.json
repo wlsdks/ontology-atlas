@@ -3851,6 +3851,8 @@
       "mergeNodes": "개념 둘을 합쳤어요",
       "addRelation": "관계를 이었어요"
     },
+    "fullRequest": "요청 전문",
+    "toolRepeat": "같은 호출 {count}번",
     "toolOutcome": {
       "foundUnit": "개 찾음",
       "foundNone": "찾은 것 없음",
@@ -4036,12 +4038,15 @@
         }
       }
     },
-    "openingScopeChanged": "요청을 준비한 폴더나 분석 대상이 달라져 아직 보내지 않았습니다. 현재 대상을 확인하고 다시 분석하세요."
+    "openingScopeChanged": "요청을 준비한 폴더나 분석 대상이 달라져 아직 보내지 않았습니다. 현재 대상을 확인하고 다시 분석하세요.",
+    "dockTitle": "대화"
   },
   "agents": {
     "title": "에이전트",
-    "lede": "Atlas 가 이 컴퓨터의 코딩 도구를 찾아, 앱 안에서 안전하게 열리는 것이 무엇인지 보여 주고, 지원하는 도구가 없으면 여기서 설치합니다.",
-    "runtimesHeading": "이 컴퓨터의 도구"
+    "lede": "Atlas 가 이 컴퓨터에 이미 있는 코딩 도구를 찾습니다.",
+    "runtimesHeading": "이 컴퓨터의 도구",
+    "ledeMore": "이 화면이 하는 일",
+    "ledeDetail": "그중 앱 안에서 안전하게 열리는 것이 무엇인지 보여 주고, 지원하는 도구가 없으면 여기서 설치하고, 고른 도구로 대화를 엽니다. API 키와 폴더는 여기서 정하지 않습니다."
   },
   "nativeErrors": {
     "unsupported-provider": "이 앱이 아는 제공자가 아니에요. Anthropic, OpenAI, Gemini 중에서 고르거나, 주소를 적어서 이 컴퓨터의 러너에 연결해 주세요.",
@@ -4111,7 +4116,6 @@
     "meaning": "의미",
     "history": "이슈·기록",
     "conversation": "대화",
-    "noRecord": "저장된 분석 없음",
     "retrySave": "저장 재시도",
     "export": "Markdown 내보내기",
     "diagnosticOnly": "AI의 지적은 검토할 가설입니다. 온톨로지를 바꾸거나 코드 수정을 승인하지 않습니다.",
