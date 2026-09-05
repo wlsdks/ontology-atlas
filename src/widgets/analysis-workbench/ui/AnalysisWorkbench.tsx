@@ -177,12 +177,12 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
     {saved ? <div role="status" className="text-caption text-[color:var(--color-text-secondary)]">
       {t(`save.${saved.status}`)}{saved.status === 'error' ? <><p>{saved.error}</p>{saved.record ? <div className="mt-2 flex gap-2">{writable && !saved.record.qualification.reasons.includes('turn_origin_mismatch') ? <Chip onClick={() => { if (context.handle && saved.record) void appendAnalysisRecord(context.handle, saved.record, context.writable).then(() => setSaveState?.({ ...saved, status: 'saved', error: null })).catch((failure: Error) => setError(failure.message)); }}>{t('retrySave')}</Chip> : null}<Chip onClick={() => exportMarkdown(serializeAnalysisRecord(saved.record!), saved.record!.id)}>{t('export')}</Chip></div> : saved.rawAnswer ? <Chip onClick={() => exportMarkdown(saved.rawAnswer!, saved.id)}>{t('export')}</Chip> : null}</> : saved.status === 'saved' ? <Chip onClick={() => { setSelectedId(saved.id); setTab('history'); }}>{t('viewSaved')}</Chip> : null}
     </div> : null}
-    {tab === 'meaning' ? <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+    {tab === 'meaning' ? <div className="atlas-scroll-quiet min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
       {facts ?? <p>{context.mode === 'architecture' ? t('architectureCriteria') : glossary('ontologyDefinition')}</p>}
       <p className="text-caption text-[color:var(--color-text-secondary)]">{t('diagnosticOnly')}</p>
       {onRequest ? <Button size="sm" onClick={() => request(false)}>{t('analyze')}</Button> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('agentUnavailable')}</p>}
     </div> : null}
-    {tab === 'history' ? <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
+    {tab === 'history' ? <div className="atlas-scroll-quiet min-h-0 flex-1 space-y-4 overflow-y-auto pr-1" aria-busy={busy || readPending}>
       <div className="flex flex-wrap gap-2">{context.handle ? <Chip onClick={() => void refresh()}>{t('refresh')}</Chip> : null}{onRequest ? <Chip onClick={() => request(false)}>{t('reanalyze')}</Chip> : null}</div>
       {!context.handle ? <p>{t('openFolder')}</p> : null}
       {context.handle && readPending ? <p role="status">{t('loadingHistory')}</p> : null}

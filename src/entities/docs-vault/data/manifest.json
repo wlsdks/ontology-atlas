@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-05",
+  "generatedAt": "2026-09-06",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -874,8 +874,8 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 39673,
-      "updatedAt": "2026-09-05",
+      "wordCount": 40062,
+      "updatedAt": "2026-09-06",
       "linksOut": [
         "design-references/DESIGN-linear",
         "TOPOLOGY-V2-DESIGN",

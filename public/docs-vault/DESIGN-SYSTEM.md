@@ -1180,6 +1180,44 @@ seven tabs):
    on a mouse. A marker that far from its label stops reading as that label's marker. Both
    children are one `text-label` line, so at the mouse height the result is unchanged.
 
+### Quiet scroller — `.atlas-scroll-quiet` (2026-09-06)
+
+Owner, on the ACP panel in the installed app: *"a scrollbar keeps appearing on the right
+while we are talking … which AI chat does that? it should just move down smoothly. keep
+the scrollbar hidden — it still scrolls."*
+
+`.atlas-scroll-quiet` in `app/globals.css` is the promoted form of the two declarations
+`.docs-vault-tab-strip` already carried — `scrollbar-width: none` plus the WebKit
+pseudo-element. Both are required: Safari and the macOS WebView ignore `scrollbar-width`
+entirely, and the WebView is where the bar was seen. Nothing about reach changes; wheel,
+trackpad and keyboard scrolling are untouched.
+
+| Surface | Why the bar is redundant there |
+|---|---|
+| `acp-chat-transcript` | Pinned to its tail. Where the last line sits is the position report |
+| Slash-command menu | Bounded at `max-h-56`, and typing narrows it |
+| `AcpPresentationPanel` body | One scene at a time, with explicit scene controls |
+| Workbench meaning / history views | Content ends on a card boundary |
+| **Past-conversation list** | **Not redundant** — the bar was the only "more below" mark, so it is replaced by a `--tabbar-edge-fade` mask on the edge that has hidden rows, not by nothing |
+
+**Hiding a bar removes a mark, so each consumer states what carries the fact instead.** A
+scroller with nothing else saying "there is more" pairs the class with the same edge-fade
+mask the tab strips use. The transcript's *top* edge carries one for a different reason: a
+line leaving the top of the box was being cut across the glyphs, which reads as a rendering
+fault rather than as content above.
+
+**How the transcript follows.** `scroll-behavior` is chosen by distance, not by taste: a
+first follow after mount or a tab return is `auto` (a restore is where the reading already
+was), an arrival within one viewport is `smooth`, and anything further is `auto` — animating
+several screens is travel nobody asked for, and WCAG 2.3.3 counts it as motion. Reduced
+motion needs no branch here: the base layer's `scroll-behavior: auto !important` outranks
+the inline value.
+
+Gate: `tests/contract/chat-scroller-quiet.contract.test.ts` — the rule exists in both
+spellings, matches the strip rule it generalises, every vertical scroller in the three
+conversation sources carries the class, a planted scroller without it fails, and the two
+edge fades and the distance rule are pinned.
+
 ### App-embedded terminal dock tokens — Removed (2026-07-26)
 
 The `--terminal-*` · `--agent-terminal-*` token group and `.agent-terminal-dock` surface were removed along with the bottom terminal dock. The rationale is in the reversal record section of `docs/AGENT-GRAPH-WORKFLOW.md` — the dock was a proper subset of the user's own terminal, and the sole advantage cited, "the map reacts when the agent fixes it," was already provided by the vault (user-chosen markdown folder) watcher regardless of location.

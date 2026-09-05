@@ -583,6 +583,31 @@ export function AcpChatPanel({
     inputRef.current?.focus();
   };
   const [historyOpen, setHistoryOpen] = useState(false);
+  /**
+   * Does the past-conversation list have rows below the fold, and is it still above them?
+   *
+   * ⚠️ **This one surface cannot simply lose its scrollbar.** Everywhere else the quiet scroller
+   * removes a mark whose fact is stated elsewhere — the transcript is pinned to its tail, the
+   * workbench views end on a card edge. Here the bar was the *only* thing saying more
+   * conversations exist, and a list that ends flush at a container edge reads as a list that
+   * ended. So the bar is replaced by the affordance the tab strips already use rather than by
+   * nothing: a `--tabbar-edge-fade` mask on the edge that has hidden rows.
+   */
+  const historyListRef = useRef<HTMLUListElement | null>(null);
+  const [historyEdge, setHistoryEdge] = useState({ top: false, bottom: false });
+  const measureHistoryEdges = useCallback(() => {
+    const list = historyListRef.current;
+    if (!list) return;
+    const top = list.scrollTop > 1;
+    const bottom = list.scrollTop < list.scrollHeight - list.clientHeight - 1;
+    setHistoryEdge((previous) =>
+      previous.top === top && previous.bottom === bottom ? previous : { top, bottom },
+    );
+  }, []);
+  useEffect(() => {
+    if (!historyOpen) return;
+    measureHistoryEdges();
+  }, [historyOpen, measureHistoryEdges, sessions.length]);
   /** Presentation is an ephemeral projection of the current turn, never stored beside the session. */
   const [presentationOpen, setPresentationOpen] = useState(false);
   const [presentationSceneIndex, setPresentationSceneIndex] = useState(0);
@@ -592,6 +617,18 @@ export function AcpChatPanel({
   const listRef = useRef<HTMLDivElement | null>(null);
   /** Whether new transcript content should keep following the tail. Updated before content grows. */
   const transcriptPinnedToBottomRef = useRef(true);
+  /**
+   * **The first follow after this panel appears is a restore, not a movement** — arriving at a
+   * conversation already several screens long and watching it scroll past is the panel replaying
+   * somebody else's reading. Only the follows after that one glide.
+   */
+  const transcriptRestoredRef = useRef(false);
+  /**
+   * Is the transcript away from its own top? The top fade is drawn only then. Painted
+   * unconditionally it would blur the first line of a conversation that has nothing above it,
+   * which states the opposite of the fact it exists to state.
+   */
+  const [transcriptScrolled, setTranscriptScrolled] = useState(false);
   const postTurnSuggestionRef = useCallback((node: HTMLElement | null) => {
     if (!node || !transcriptPinnedToBottomRef.current) return;
     const list = listRef.current;
@@ -716,13 +753,36 @@ export function AcpChatPanel({
       postTurnSuggestionKey,
     ) ?? [];
 
-  // Follow new messages down only when the person was already following the tail.
-  // Measuring "near bottom" after a large chunk arrives mistakes the new height for
-  // a deliberate scroll-up, so `onScroll` records intent before the DOM grows.
+  /**
+   * Follow new messages down only when the person was already following the tail.
+   * Measuring "near bottom" after a large chunk arrives mistakes the new height for
+   * a deliberate scroll-up, so `onScroll` records intent before the DOM grows.
+   *
+   * ⚠️ **How it travels is the whole complaint** (owner, 2026-09-06: *"it should just move down
+   * smoothly"*). A jump is correct for a restore and wrong for an arrival: when one more paragraph
+   * lands, an instant `scrollTop` change gives the reader no thread between the line they were on
+   * and the line that is now at the bottom, and the transcript reads as replaced rather than
+   * extended. So the distance decides:
+   *
+   * | remaining distance | behaviour | why |
+   * |---|---|---|
+   * | first follow after mount / tab return | `auto` | a restore is where the reading already was, not a movement |
+   * | ≤ one viewport | `smooth` | one arrival, and the eye can carry the line across it |
+   * | > one viewport | `auto` | animating several screens is travel nobody asked for, and WCAG 2.3.3 counts it as motion |
+   *
+   * Reduced motion needs nothing here: the global base-layer rule in `app/globals.css` sets
+   * `scroll-behavior: auto !important`, which outranks this inline value in both directions.
+   */
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    if (transcriptPinnedToBottomRef.current) list.scrollTop = list.scrollHeight;
+    if (!transcriptPinnedToBottomRef.current) return;
+    const remaining = list.scrollHeight - list.scrollTop - list.clientHeight;
+    const glide =
+      transcriptRestoredRef.current && remaining > 0 && remaining <= list.clientHeight;
+    transcriptRestoredRef.current = true;
+    list.style.scrollBehavior = glide ? 'smooth' : 'auto';
+    list.scrollTop = list.scrollHeight;
   }, [events, pending, postTurnSuggestionKey, showPostTurnSuggestions]);
 
   /**
@@ -964,6 +1024,16 @@ export function AcpChatPanel({
     }));
     window.requestAnimationFrame(() => inputRef.current?.focus());
   };
+  // Four states — both edges, either, neither — written the way `TabBar` writes its own.
+  const historyFade = 'var(--tabbar-edge-fade)';
+  const historyMask =
+    historyEdge.top && historyEdge.bottom
+      ? `linear-gradient(to bottom, transparent 0, black ${historyFade}, black calc(100% - ${historyFade}), transparent 100%)`
+      : historyEdge.bottom
+        ? `linear-gradient(to bottom, black calc(100% - ${historyFade}), transparent 100%)`
+        : historyEdge.top
+          ? `linear-gradient(to bottom, transparent 0, black ${historyFade})`
+          : undefined;
   const transcriptItems = groupEvents(withoutErrorEcho(events, error));
   const lastWorkGroupId = [...transcriptItems]
     .reverse()
@@ -1113,14 +1183,33 @@ export function AcpChatPanel({
           const list = event.currentTarget;
           transcriptPinnedToBottomRef.current =
             list.scrollHeight - list.scrollTop - list.clientHeight < 120;
+          const scrolled = list.scrollTop > 1;
+          setTranscriptScrolled((previous) => (previous === scrolled ? previous : scrolled));
         }}
+        /*
+         * **The top edge fades instead of cutting** (2026-09-06). The transcript is the panel's
+         * own scroll box, so a line leaving the top left half a row of glyphs sliced across the
+         * boundary — a chopped letter reads as a rendering fault, not as "there is more above".
+         * The width is `--tabbar-edge-fade`, the same 22px the tab strips already fade by; a
+         * second number for one affordance is how two edges drift apart.
+         */
+        style={
+          transcriptScrolled
+            ? {
+                maskImage:
+                  'linear-gradient(to bottom, transparent 0, black var(--tabbar-edge-fade))',
+                WebkitMaskImage:
+                  'linear-gradient(to bottom, transparent 0, black var(--tabbar-edge-fade))',
+              }
+            : undefined
+        }
         /*
          * The transcript's spacing is **one step larger** (whitespace audit,
          * 2026-08-16). The reading text went from 12.5 to 14px while the gap stayed at
          * 8px, so messages clumped together. When the text grows the space between has
          * to grow with it — spacing reads as **a ratio to the text**, not an absolute.
          */
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
+        className="atlas-scroll-quiet flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto"
       >
         {/*
           A 「Starting」 (starting) chip alone is not enough for the first download (owner's
@@ -1546,7 +1635,7 @@ export function AcpChatPanel({
             data-testid="acp-chat-slash-menu"
             role="listbox"
             aria-label={t('composerLabel')}
-            className="max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
+            className="atlas-scroll-quiet max-h-56 shrink-0 overflow-y-auto rounded-card border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-1"
           >
             {slashMatches.map((command: AcpSlashCommand, index: number) => {
               const active = index === slashActiveIndex;
@@ -1768,7 +1857,22 @@ export function AcpChatPanel({
                 {sessions.length}
               </span>
             </div>
-            <ul data-testid="acp-chat-history-list" className="grid max-h-64 gap-0.5 overflow-y-auto p-1">
+            <ul
+              ref={historyListRef}
+              onScroll={measureHistoryEdges}
+              data-testid="acp-chat-history-list"
+              data-edge-overflow={
+                historyEdge.top && historyEdge.bottom
+                  ? 'both'
+                  : historyEdge.bottom
+                    ? 'bottom'
+                    : historyEdge.top
+                      ? 'top'
+                      : undefined
+              }
+              style={historyMask ? { maskImage: historyMask, WebkitMaskImage: historyMask } : undefined}
+              className="atlas-scroll-quiet grid max-h-64 gap-0.5 overflow-y-auto p-1"
+            >
               {sessions.map((session) => (
                 <li key={session.sessionId}>
                   <RowButton

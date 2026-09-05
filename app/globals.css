@@ -3977,6 +3977,34 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   display: none;
 }
 
+/*
+ * Quiet scroller — **the conversation scrolls, and the bar does not draw** (owner,
+ * 2026-09-06: *"a scrollbar appears on the right while we are talking … which AI chat
+ * does that? it should just move down smoothly. keep the scrollbar hidden (it still
+ * scrolls)"*).
+ *
+ * It is the same two declarations `.docs-vault-tab-strip` already carries, promoted to a
+ * name any scroller can wear, because the strip's rule is the repository's existing answer
+ * to "scrolls but shows no bar" and a second spelling is how two rules drift apart.
+ *
+ * ⚠️ **It removes a mark, not a behaviour.** Keyboard, trackpad and wheel scrolling are
+ * untouched, so nothing about reach changes. What does change is the only *visual* signal
+ * that more content exists below — so a surface where the bar was the sole "there is more"
+ * cue pairs this with a `--tabbar-edge-fade` mask (the history popover does). A transcript
+ * that is always pinned to its tail, and a view whose content ends at a card boundary, do
+ * not need one: the last line's position already says it.
+ *
+ * Applies to: the chat transcript, the slash menu, the past-conversation list, the
+ * presentation body, and the workbench's two view scrollers.
+ * Gate: `tests/contract/chat-scroller-quiet.contract.test.ts`.
+ */
+.atlas-scroll-quiet {
+  scrollbar-width: none;
+}
+.atlas-scroll-quiet::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Position of agent panel and selected-node inspector (2026-07-27) ──────────────────
    The inspector is a fixed surface attached to the right edge of the viewport, and the agent panel is a column taking width from the same side. If both remain as-is, the inspector covers the panel — but
    these two are **a pair that must be read together** (the basis of the proposal: looking at the node in the proposal while instructing the agent). So while the panel is open, the inspector stands inward by the panel's width.
