@@ -19,8 +19,10 @@ const read = (relative: string) => readFileSync(resolve(ROOT, relative), 'utf8')
 describe('the capped lists this round measured state their remainder', () => {
   const SITES: ReadonlyArray<readonly [string, string]> = [
     [
-      'insights hero census relation strip',
-      'src/views/ontology-insights/ui/parts/InsightsHeroCensus.tsx',
+      // Renamed on 2026-09-06: the three hero instruments became the board's four-tile census
+      // strip above the tab bar. The relation strip and its remainder line moved with it.
+      'insights census strip relation tile',
+      'src/views/ontology-insights/ui/parts/InsightsCensusStrip.tsx',
     ],
     [
       'insights freshness recently-updated list',
@@ -39,7 +41,7 @@ describe('the capped lists this round measured state their remainder', () => {
   }
 
   it('each site still caps its rows, so the line has something to report', () => {
-    expect(read('src/views/ontology-insights/ui/parts/InsightsHeroCensus.tsx')).toContain(
+    expect(read('src/views/ontology-insights/ui/parts/InsightsCensusStrip.tsx')).toContain(
       'relationsShown',
     );
     expect(read('src/views/ontology-insights/lib/freshness.ts')).toContain('recentTotal');

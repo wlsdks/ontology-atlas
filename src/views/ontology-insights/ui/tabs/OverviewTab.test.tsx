@@ -12,15 +12,6 @@ vi.mock("@/i18n/navigation", () => ({
 }));
 
 const LABELS = {
-  concepts: "개념",
-  relations: "관계",
-  health: "건강",
-  orphan: "외톨이 개념",
-  cycle: "서로 얽힌 고리",
-  membershipLabel: "도메인에 담김",
-  densityGloss: "개념 1개당 평균 연결",
-  evidenceLinked: "근거 연결",
-  islands: "따로 떨어진 무리",
   kindCensusTitle: "종류 분포",
   domainCapacityTitle: "도메인 용량",
   noDomains: "도메인 노드가 아직 없습니다.",
@@ -41,23 +32,11 @@ const DOMAIN_LINK = {
 
 const BASE = {
   totalNodes: 5,
-  totalEdges: 4,
-  health: {
-    edgesPerConcept: 0.8,
-    orphanCount: 0,
-    cycleCount: 0,
-    domainMembershipPct: 0,
-    evidenceLinkedPct: 100,
-  },
-  islandCount: 0,
   kindRows: [
     { kind: "capability", count: 3 },
     { kind: "element", count: 1 },
     { kind: "project", count: 1 },
   ],
-  edgeTypeSummary: [],
-  edgeTypeTotal: 0,
-  onSeeAllRelations: () => {},
   kindLabel: (kind: string) => kind,
   domainLink: DOMAIN_LINK,
   labels: LABELS,

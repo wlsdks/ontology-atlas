@@ -3,13 +3,11 @@ import { TopologyV2KindGlyph } from "@/shared/ui";
 import { controlClass } from "@/shared/ui/control-class";
 import { getOntologyKindTone } from "@/entities/ontology-class";
 import { DomainCapacityBar, DomainCapacityLegend } from "@/widgets/domain-capacity-bar";
-import { InsightsHeroCensus, type InsightsHeroCensusLabels } from "../parts/InsightsHeroCensus";
 import { InsightsBar } from "../parts/InsightsBar";
-import type { CensusHealthSummary } from "../../lib/census-health";
 import type { DomainCapacityRow } from "../../lib/domain-capacity";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
-export interface OverviewTabLabels extends InsightsHeroCensusLabels {
+export interface OverviewTabLabels {
   kindCensusTitle: string;
   domainCapacityTitle: string;
   noDomains: string;
@@ -41,17 +39,8 @@ interface OverviewTabDomainLink {
 
 export interface OverviewTabProps {
   totalNodes: number;
-  totalEdges: number;
-  health: CensusHealthSummary;
-  /** The number of separated groups, from the same verdict as the repair queue. */
-  islandCount: number;
   kindRows: Array<{ kind: string; count: number }>;
   domainRows: DomainCapacityRow[];
-  edgeTypeSummary: Array<{ key: string; label: string; count: number }>;
-  /** Every relation type the vault holds — `edgeTypeSummary` shows only the four largest. */
-  edgeTypeTotal: number;
-  /** Switches this page to the connections tab, which lists every relation type. */
-  onSeeAllRelations: () => void;
   kindLabel: (kind: string) => string;
   /** Required — no row is left quietly without a way back. */
   domainLink: OverviewTabDomainLink;
@@ -59,10 +48,15 @@ export interface OverviewTabProps {
 }
 
 /**
- * Tab 1, overview — the hero instruments (concepts/relations/health), the kind distribution (a
- * coloured stacked bar plus glyph and large meters), and domain capacity (a two-segment
- * capability/element stacked meter). Section gap 28px, card gap 20px, and cards fill the height
- * with `flex:1` (no empty bands).
+ * The "composition" tab — the kind distribution (a coloured stacked bar plus glyph and large
+ * meters) and domain capacity (a two-segment capability/element stacked meter). Card gap 20px, and
+ * cards fill the height with `flex:1` (no empty bands).
+ *
+ * **The census instruments left this tab on 2026-09-06.** Concepts, relations and health now sit
+ * in the board's four-tile strip above the tab bar (`InsightsCensusStrip`), where they are the
+ * first thing on *every* tab rather than a reward for leaving the default one. Drawing them here
+ * as well would be the same fact twice on one screen, so this tab answers only its own question:
+ * what kinds exist, and how full each domain is.
  *
  * **The kind palette survives only in the left "kinds" card.** The pieces of the top stacked strip
  * have no labels, so colour is the only channel linking a piece to the row below it, and five
@@ -74,14 +68,8 @@ export interface OverviewTabProps {
  */
 export function OverviewTab({
   totalNodes,
-  totalEdges,
-  health,
-  islandCount,
   kindRows,
   domainRows,
-  edgeTypeSummary,
-  edgeTypeTotal,
-  onSeeAllRelations,
   kindLabel,
   domainLink,
   labels,
@@ -89,19 +77,7 @@ export function OverviewTab({
   const kindMax = kindRows[0]?.count ?? 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-[var(--section-gap)]">
-      <InsightsHeroCensus
-        totalNodes={totalNodes}
-        totalEdges={totalEdges}
-        health={health}
-        islandCount={islandCount}
-        kindsSummary={kindRows.map((r) => ({ key: r.kind, label: kindLabel(r.kind), count: r.count }))}
-        relationsSummary={edgeTypeSummary}
-        relationsTotal={edgeTypeTotal}
-        onSeeAllRelations={onSeeAllRelations}
-        labels={labels}
-      />
-
+    <div className="flex min-h-0 flex-1 flex-col">
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-2">
         <section
           aria-label={labels.kindCensusTitle}

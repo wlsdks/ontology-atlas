@@ -79,25 +79,26 @@ test.describe("인사이트 할 일 — 탭 배지와 목록 제목이 같은 �
 /**
  * **The large numbers count the same folder** (regression measured 2026-08-12).
  *
- * The composition tab's large numbers (concepts, relations) reported **different
- * values** from the chips above — the chips showed the user's vault (5 concepts, 4
- * relations) while the large numbers showed the bundled sample (125, 258). The cause
- * was the count-up intro: the first render drew the sample and started counting
- * 0→125, and if the user's vault arrived **within** that 400ms the synchronising snap
- * was overwritten by the next frame and it settled permanently on 125. That screen's
- * subtitle says every number is computed from your documents, while the numbers were
+ * The census large numbers once reported **different values** from the smaller census line above
+ * them — the line showed the user's vault (5 concepts, 4 relations) while the large numbers showed
+ * the bundled sample (125, 258). The cause was the count-up intro: the first render drew the
+ * sample and started counting 0→125, and if the user's vault arrived **within** that 400ms the
+ * synchronising snap was overwritten by the next frame and it settled permanently on 125. That
+ * screen's subtitle says every number is computed from your documents, while the numbers were
  * counting the sample.
  *
- * The mechanism is locked by `use-count-up.test.ts`. This test covers the layer above
- * — **whether the same number is actually painted on screen.** It attaches a vault
- * (stubbed picker), waits for the intro to finish, and reads the large numbers and
- * the chips together. It asserts value agreement rather than timing, so it is
- * independent of machine speed.
+ * **What changed on 2026-09-06.** The monospace census line in the header corner is gone; the
+ * census moved into a four-tile strip above the tab bar, and the tab bar's own badges
+ * (`composition N` / `connections N`) are now the second reading of the same two facts. So this
+ * measures the tiles against the badges. The mechanism is locked by `use-count-up.test.ts`; this
+ * covers the layer above — **whether the same number is actually painted on screen.** It attaches
+ * a vault (stubbed picker), waits for the intro to finish, and reads both together. It asserts
+ * value agreement rather than timing, so it is independent of machine speed.
  */
-test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더를 센다", () => {
+test.describe("인사이트 인구조사 — 타일 큰 숫자와 탭 배지가 같은 폴더를 센다", () => {
   test.use({ viewport: { width: 1512, height: 900 } });
 
-  test("개념·관계 대형 숫자 = 상단 칩", async ({ page }) => {
+  test("개념·관계 대형 숫자 = 구성·연결 탭 배지", async ({ page }) => {
     const { seedFirstRunSeen } = await import("./first-run-seed");
     const { stubDirectoryPicker } = await import("./vault-picker-stub");
     await seedFirstRunSeen(page);
@@ -135,15 +136,17 @@ test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더
       timeout: 30_000,
     });
 
-    await page.goto("/ko/ontology/insights/?guides=off&tab=composition", {
-      waitUntil: "domcontentloaded",
-    });
+    await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
     // Long enough to outlast the 400ms intro — and the sample→vault swap falls inside it.
     await page.waitForTimeout(2_000);
 
     const seen = await page.evaluate(() => {
-      const chip = [...document.querySelectorAll("header span")].map((el) => (el.textContent ?? "").trim())
-        .find((text) => /개념/.test(text) && /관계/.test(text));
+      const text = (el: Element | null) => (el?.textContent ?? "").trim();
+      const badge = (label: RegExp) => {
+        const tab = [...document.querySelectorAll("button")].find((b) => label.test(text(b)));
+        const match = /(\d+)/.exec(text(tab ?? null));
+        return match ? Number(match[1]) : null;
+      };
       const bignums = [...document.querySelectorAll('[data-testid="insights-bignum"]')].map((el) => {
         const animated = el.querySelector("[data-insights-animated-value]");
         const exact = el.querySelector("[data-insights-exact-value]");
@@ -151,22 +154,38 @@ test.describe("인사이트 구성 — 큰 숫자와 상단 칩이 같은 폴더
           Number(/(\d[\d,]*)/.exec(node?.textContent ?? "")?.[1]?.replace(/,/g, "") ?? NaN);
         return { animated: read(animated), exact: read(exact) };
       });
-      return { chip: chip ?? null, bignums };
+      return {
+        composition: badge(/^구성/),
+        connections: badge(/^연결/),
+        bignums,
+        tiles: document.querySelectorAll('[data-testid="insights-census-tile"]').length,
+      };
     });
 
-    expect(seen.chip, "상단 칩을 못 찾았다 — 이 시험이 공회전한다").not.toBeNull();
-    const chipConcepts = Number(/(\d+)\s*개념/.exec(seen.chip!)?.[1]);
-    const chipRelations = Number(/(\d+)\s*관계/.exec(seen.chip!)?.[1]);
     console.log(
-      `[census-agreement] 칩 ${seen.chip} · painted ${seen.bignums.map((value) => value.animated).join(", ")} · exact ${seen.bignums.map((value) => value.exact).join(", ")}`,
+      `[census-agreement] badges ${seen.composition}/${seen.connections} · painted ${seen.bignums
+        .map((value) => value.animated)
+        .join(", ")} · exact ${seen.bignums.map((value) => value.exact).join(", ")}`,
     );
 
-    // Idling guard: with no large numbers present, nothing was measured.
+    // Idling guards: with no tiles or no badges, nothing was measured.
+    expect(seen.tiles, "인구조사 타일이 없다 — 이 시험이 공회전한다").toBe(4);
+    expect(seen.composition, "구성 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
+    expect(seen.connections, "연결 배지를 못 읽었다 — 셀렉터가 낡았다").not.toBeNull();
     expect(seen.bignums.length, "대형 숫자를 하나도 못 찾았다").toBeGreaterThanOrEqual(2);
-    expect(seen.bignums[0].animated, `화면의 개념 숫자가 칩(${chipConcepts})과 다르다`).toBe(chipConcepts);
-    expect(seen.bignums[1].animated, `화면의 관계 숫자가 칩(${chipRelations})과 다르다`).toBe(chipRelations);
-    expect(seen.bignums[0].exact, `접근성 개념 숫자가 칩(${chipConcepts})과 다르다`).toBe(chipConcepts);
-    expect(seen.bignums[1].exact, `접근성 관계 숫자가 칩(${chipRelations})과 다르다`).toBe(chipRelations);
+
+    expect(seen.bignums[0].animated, `화면의 개념 숫자가 구성 배지(${seen.composition})와 다르다`).toBe(
+      seen.composition,
+    );
+    expect(seen.bignums[1].animated, `화면의 관계 숫자가 연결 배지(${seen.connections})와 다르다`).toBe(
+      seen.connections,
+    );
+    expect(seen.bignums[0].exact, `접근성 개념 숫자가 구성 배지(${seen.composition})와 다르다`).toBe(
+      seen.composition,
+    );
+    expect(seen.bignums[1].exact, `접근성 관계 숫자가 연결 배지(${seen.connections})와 다르다`).toBe(
+      seen.connections,
+    );
   });
 });
 

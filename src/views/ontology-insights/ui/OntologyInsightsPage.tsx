@@ -91,6 +91,10 @@ import { buildVaultHealthRepair } from "../lib/vault-health-repair";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
+import {
+  InsightsCensusStrip,
+  type InsightsCensusStripLabels,
+} from "./parts/InsightsCensusStrip";
 import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
 import type { MeaningGapLabels } from "./tabs/MeaningGapSection";
 import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
@@ -542,7 +546,6 @@ export function OntologyInsightsPage() {
         .sort((a, b) => b.count - a.count),
     [kindDist],
   );
-  const domainCount = kindDist.get("domain") ?? 0;
 
   const treeResult = useMemo(() => buildOntologyTree(nodes, edges), [nodes, edges]);
   const health = useMemo(() => computeCensusHealth(nodes, edges, treeResult), [nodes, edges, treeResult]);
@@ -941,7 +944,7 @@ export function OntologyInsightsPage() {
     handoffPayload: item.handoffPayload,
   }));
 
-  const heroLabels = {
+  const censusStripLabels: InsightsCensusStripLabels = {
     concepts: t("heroConcepts"),
     relations: t("heroRelations"),
     health: t("heroHealth"),
@@ -953,9 +956,16 @@ export function OntologyInsightsPage() {
     islands: t("healthIslands"),
     relationsHidden: (hidden: number) => t("heroRelationsHidden", { count: hidden }),
     relationsHiddenRoute: t("heroRelationsHiddenRoute"),
+    statusHealthy: t("statusHealthy"),
+    statusNeedsAttention: t("statusNeedsAttention"),
+    statusBlocking: t("statusBlocking"),
+    statusAdvisory: t("statusAdvisory"),
+    recentTitle: t("recentWindowTitle", { weeks: FRESHNESS_WINDOW_WEEKS }),
+    recentThisWeek: (count: number) => t("recentThisWeek", { count }),
+    recentBarsAria: (weeks: number, total: number) =>
+      t("recentBarsAria", { weeks, total }),
   };
   const overviewLabels = {
-    ...heroLabels,
     kindCensusTitle: t("kindCensusTitle"),
     domainCapacityTitle: t("domainCapacityTitle"),
     noDomains: t("noDomains"),
@@ -1131,8 +1141,6 @@ export function OntologyInsightsPage() {
     recentHidden: (hidden: number) => t("recentUpdatesHidden", { count: hidden }),
     recentHiddenRoute: t("recentUpdatesHiddenRoute"),
     staleCountLabel: t("staleCountLabel"),
-    trendTitle: t("trendTitle"),
-    trendCaption: t("trendCaption", { weeks: FRESHNESS_WINDOW_WEEKS }),
     // The toggle and badge copy of the evidence layer uses the **same strings** as the
     // "connections" tab — naming one layer differently per tab makes a learner read it as
     // something else. Only the caption differs per tab: there it is "what the number means",
@@ -1195,15 +1203,14 @@ export function OntologyInsightsPage() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            {insight ? (
-              <span className="font-mono text-label tracking-[var(--tracking-caps-10)] text-[color:var(--topology-v2-numeral-face)]">
-                {totalNodes} {t("censusConcepts")}
-                <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-                {totalEdges} {t("censusRelations")}
-                <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-                {domainCount} {t("censusDomains")}
-              </span>
-            ) : null}
+            {/*
+             * **The 11px monospace census line was removed on 2026-09-06.** It stated concepts,
+             * relations and domains in the top-right corner, above the tab bar that already
+             * carried the same three numbers as badges, in the smallest ink on the page. The
+             * owner's reading of this board was that it shows work and not measurement; the
+             * answer was not a smaller number in a corner but the four-tile strip below, which
+             * states the same facts once, at the size a first glance can use.
+             */}
             {agentRoute === 'agent' && hasConcepts && tab !== 'flow' ? (
               <Button
                 variant="outline"
@@ -1219,15 +1226,38 @@ export function OntologyInsightsPage() {
             ) : null}
           </div>
         </header>
-        {/* This surface is a maintenance board for power users — people who curate an ontology,
-            and AI agents. Rather than rewriting all the copy, it declares its audience honestly so
-            expectations match, and an ordinary visitor does not wander here looking for something
-            like "my projects". */}
-        <p className="mt-1 max-w-2xl text-body text-[color:var(--color-text-quaternary)]">
-          {t("audienceBanner")}
-        </p>
+        {/*
+         * **The census strip leads the board** (owner, 2026-09-06: "isn't analysis supposed to
+         * show indicators and flow?"). It sits above the tab bar because it answers the question
+         * a person arrives with — how big is this folder and is it in trouble — before they pick
+         * which of the seven questions to open. The audience banner that used to stand here
+         * ("this board is for the people and agents who tend the map") went with it: a sentence
+         * announcing who a screen is for is not a measurement, and the strip now occupies the one
+         * band a reader looks at first.
+         */}
+        {insight && hasConcepts ? (
+          <div className="mt-4">
+            <InsightsCensusStrip
+              totalNodes={totalNodes}
+              totalEdges={totalEdges}
+              health={health}
+              islandCount={healthRepair.islandCount}
+              verdict={insightsVerdict}
+              weeklyTotals={freshness.weeklyTotals}
+              kindsSummary={kindRows.map((row) => ({
+                key: row.kind,
+                label: kindLabel(row.kind),
+                count: row.count,
+              }))}
+              relationsSummary={edgeTypeSummary}
+              relationsTotal={edgeTypeRows.length}
+              onSeeAllRelations={() => setTab("connections")}
+              labels={censusStripLabels}
+            />
+          </div>
+        ) : null}
 
-        <nav className="mt-4">
+        <nav className="mt-[var(--section-gap)]">
           <TabBar
             ariaLabel={t("tabsAriaLabel")}
             activeKey={tab}
@@ -1357,14 +1387,8 @@ export function OntologyInsightsPage() {
             {tab === "composition" ? (
               <OverviewTab
                 totalNodes={totalNodes}
-                totalEdges={totalEdges}
-                health={health}
-                islandCount={healthRepair.islandCount}
                 kindRows={kindRows}
                 domainRows={domainRows}
-                edgeTypeSummary={edgeTypeSummary}
-                edgeTypeTotal={edgeTypeRows.length}
-                onSeeAllRelations={() => setTab("connections")}
                 kindLabel={kindLabel}
                 domainLink={{
                   href: mapNodeHref,
@@ -1437,7 +1461,6 @@ export function OntologyInsightsPage() {
                 recentEvidence={freshness.recentEvidence}
                 recentEvidenceTotal={freshness.recentEvidenceTotal}
                 staleCount={freshness.staleCount}
-                weeklyTotals={freshness.weeklyTotals}
                 kindLabel={kindLabel}
                 recentLink={{
                   href: mapNodeHref,

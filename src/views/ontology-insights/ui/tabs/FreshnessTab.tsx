@@ -47,8 +47,6 @@ export interface FreshnessTabLabels {
   /** Where the rest are readable — every vault document, each carrying its own dates. */
   recentHiddenRoute: string;
   staleCountLabel: string;
-  trendTitle: string;
-  trendCaption: string;
   /** The toggle opening and closing the evidence layer — it shares its copy with the "connections" tab. */
   evidenceShow: (count: number) => string;
   evidenceHide: string;
@@ -79,9 +77,6 @@ export interface FreshnessTabProps {
   recentEvidence: RecentUpdateRow[];
   recentEvidenceTotal: number;
   staleCount: number;
-  /** Weekly update counts summed across all domains, on the same 12-week window as the heat strip —
-   * real data already computed by `computeFreshnessSummary` (`freshness.ts`). */
-  weeklyTotals: number[];
   kindLabel: (kind: string) => string;
   recentLink: FreshnessTabRecentLink;
   labels: FreshnessTabLabels;
@@ -99,7 +94,6 @@ export function FreshnessTab({
   recentEvidence,
   recentEvidenceTotal,
   staleCount,
-  weeklyTotals,
   kindLabel,
   recentLink,
   labels,
@@ -204,13 +198,13 @@ export function FreshnessTab({
           <i className="h-2.5 w-2.5 flex-none rounded-micro" style={{ backgroundColor: "var(--color-indigo-brand)" }} />
           <span>{labels.currentWeek}</span>
         </div>
-        <div className="mt-3 border-t border-[color:var(--color-divider)] pt-3">
-          <div className="flex items-baseline gap-2">
-            <span className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">{labels.trendTitle}</span>
-          </div>
-          <FreshnessTrendSparkline weeklyTotals={weeklyTotals} />
-          <p className="mt-1.5 text-caption text-[color:var(--color-text-quaternary)]">{labels.trendCaption}</p>
-        </div>
+        {/*
+          * **The aggregate trend line left this card on 2026-09-06.** The same 12-week series is
+          * now the board's fourth census tile, drawn above the tab bar and therefore on screen at
+          * the same time as this card. One screen does not draw one series twice
+          * (2026-08-07 (3)). What stays here is the per-domain heat strip, which is a different
+          * fact: *which* area moved, not how much moved in total.
+          */}
       </section>
 
       <section
@@ -334,40 +328,3 @@ export function FreshnessTab({
   );
 }
 
-const SPARKLINE_WIDTH = 240;
-const SPARKLINE_HEIGHT = 28;
-const SPARKLINE_PAD = 2;
-
-/**
- * The weekly update-count sparkline — it draws `weeklyTotals`, aggregated by
- * `computeFreshnessSummary` from real document update dates (no decorative randomness). A single
- * indigo line with a pale fill, on the same 12-week window as the heat strip.
- */
-function FreshnessTrendSparkline({ weeklyTotals }: { weeklyTotals: number[] }) {
-  if (weeklyTotals.length === 0) return null;
-  const max = Math.max(1, ...weeklyTotals);
-  const stepX = weeklyTotals.length > 1 ? (SPARKLINE_WIDTH - SPARKLINE_PAD * 2) / (weeklyTotals.length - 1) : 0;
-  const points = weeklyTotals.map((value, i) => {
-    const x = SPARKLINE_PAD + i * stepX;
-    const y = SPARKLINE_PAD + (1 - value / max) * (SPARKLINE_HEIGHT - SPARKLINE_PAD * 2);
-    return { x: Number(x.toFixed(2)), y: Number(y.toFixed(2)) };
-  });
-  const linePath = points.map((p) => `${p.x},${p.y}`).join(" ");
-  const areaPath = `${SPARKLINE_PAD},${SPARKLINE_HEIGHT - SPARKLINE_PAD} ${linePath} ${
-    points[points.length - 1].x
-  },${SPARKLINE_HEIGHT - SPARKLINE_PAD}`;
-
-  return (
-    <svg
-      width={SPARKLINE_WIDTH}
-      height={SPARKLINE_HEIGHT}
-      viewBox={`0 0 ${SPARKLINE_WIDTH} ${SPARKLINE_HEIGHT}`}
-      aria-hidden="true"
-      className="mt-1.5 w-full max-w-60"
-      preserveAspectRatio="none"
-    >
-      <polygon points={areaPath} fill="var(--color-indigo-a14)" stroke="none" />
-      <polyline points={linePath} fill="none" stroke="var(--color-indigo-brand)" strokeWidth={1.4} strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
