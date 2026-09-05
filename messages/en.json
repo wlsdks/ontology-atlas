@@ -4061,6 +4061,8 @@
     "runtimeNarrowing": "Connectors ride Claude sessions. Codex has not been measured for this yet, so a Codex session gets the folder's own server and nothing else.",
     "runtimeAgentsLink": "See your runtimes",
     "none": "Nothing attached yet.",
+    "noFolderTitle": "Open your folder first",
+    "noFolderBody": "Connectors are written into the folder you open. Open it, then attach one.",
     "loading": "Reading this folder’s connector list.",
     "scanning": "Reading what this computer already registers.",
     "onOfTotal": "{on} of {total} on",
@@ -4109,6 +4111,13 @@
     "customBody": "For a server that is not registered anywhere yet.",
     "transportLabel": "What it is",
     "customAdd": "Add connector",
+    "addFailed": "Nothing was saved: {reason}.",
+    "addFailReason": {
+      "noFolder": "no folder is open",
+      "malformed": "the connector file in that folder could not be read",
+      "writeFailed": "the folder refused the write",
+      "secret": "a token would have been written in plain text"
+    },
     "fieldName": "Name",
     "fieldCommand": "Command",
     "fieldCommandHint": "The full path. The agent runs without a PATH, so a bare name like npx finds nothing.",

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Info, MoreHorizontal, Plus } from 'lucide-react';
 
@@ -30,7 +30,10 @@ import {
   type ConnectorTransport,
   type ConnectorValueEntry,
 } from '@/shared/lib/connector-record';
-import { CONNECTORS_RELATIVE_PATH } from '@/shared/lib/connector-store';
+import {
+  CONNECTORS_RELATIVE_PATH,
+  type ConnectorWriteResult,
+} from '@/shared/lib/connector-store';
 import {
   discoverMcpConnectors,
   isAttachableTransport,
@@ -139,6 +142,7 @@ export function connectorDestination(connector: ConnectorRecord): string {
 export function ConnectorsPanel({
   handle,
   store,
+  openFolderAction,
   testIdPrefix = 'connectors',
 }: {
   handle: FileSystemDirectoryHandle | null;
@@ -150,6 +154,15 @@ export function ConnectorsPanel({
    * `.claude/rules/forbidden.md` forbids by name.
    */
   store: VaultConnectorsState;
+  /**
+   * The control that opens a folder, rendered by the caller.
+   *
+   * ⚠️ **A slot, not an import.** `OpenVaultCta` lives in `features/docs-vault-local`, and this
+   * panel is `features/mcp-connectors` — importing it would add a same-layer edge to a ledger
+   * that only falls (`same-layer-cross-import-ratchet`). The view owns both features and can hand
+   * one to the other, which is the direction FSD allows.
+   */
+  openFolderAction?: ReactNode;
   testIdPrefix?: string;
 }) {
   const t = useTranslations('connectors');
@@ -239,6 +252,8 @@ export function ConnectorsPanel({
    * control gone (it was inside the detail dialog, on a row that no longer exists) and fall back
    * to `main#main`, undoing the placement. Doing it from an effect puts it after that cleanup.
    */
+  /** No folder is open, so there is no file to write into — not "an empty list". */
+  const noFolder = store.status === 'unavailable';
   const [removedTick, setRemovedTick] = useState(0);
   useEffect(() => {
     if (removedTick === 0) return;
@@ -269,17 +284,44 @@ export function ConnectorsPanel({
         somebody who just chose to be there (design council, 2026-09-05). The one thing this panel
         asks of anybody stays where the eye lands.
       */}
-      <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
-        <Chip
-          ref={addOpenRef}
-          data-testid={`${testIdPrefix}-add-open`}
-          hoverSurface="lift"
-          onClick={() => setAddOpen(true)}
-        >
-          <Plus size={ICON_SIZE.sm} aria-hidden />
-          {t('addOpen')}
-        </Chip>
-      </div>
+      {/*
+        ⚠️ **With no folder open there is nowhere to save, so nothing here offers to**
+        (cold walkthrough, 2026-09-05). `useVaultConnectors` has no store without a folder, so
+        `upsert()` resolved to `null`, the add dialog closed anyway, and the list said "Nothing
+        attached yet" — which is what it says after a successful save of nothing, and after a
+        discarded one. A person could not tell the two apart. The Share tab already answers this
+        state by asking for the folder; this is the same answer on the same screen.
+      */}
+      {noFolder ? null : (
+        <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
+          <Chip
+            ref={addOpenRef}
+            data-testid={`${testIdPrefix}-add-open`}
+            hoverSurface="lift"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus size={ICON_SIZE.sm} aria-hidden />
+            {t('addOpen')}
+          </Chip>
+        </div>
+      )}
+      {noFolder ? (
+        /*
+         * The gate. Same shape and same ask as the Share tab's "No folder open" card, because it
+         * is the same missing thing — and the ask is the region's one emphasis, so the folder
+         * control is the indigo one.
+         */
+        <div data-testid={`${testIdPrefix}-no-folder`}>
+          <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
+            {t('noFolderTitle')}
+          </p>
+          <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
+            {t('noFolderBody')}
+          </p>
+          {openFolderAction ? <div className="mt-3">{openFolderAction}</div> : null}
+        </div>
+      ) : (
+        <>
       {/*
         ── The standing warning, cut to two sentences (design council, 2026-09-05) ──────────────
         Measured before the cut: this preamble was **296px, 35% of the 390 first screen**, standing
@@ -370,14 +412,14 @@ export function ConnectorsPanel({
         canDiscover={canDiscover}
         canStoreSecrets={canStoreSecrets}
         attachedNames={attachedNames}
-        onAddDiscovered={(server) => {
-          void addDiscovered(server);
-          setAddOpen(false);
-        }}
-        onAddCustom={(draft) => {
-          void store.upsert(draft);
-          setAddOpen(false);
-        }}
+        /*
+         * ⚠️ **The result decides whether the dialog closes** (cold walkthrough, 2026-09-05).
+         * Both of these used to be fire-and-forget: the dialog closed on the click, so a write
+         * that never happened looked exactly like one that did. `ConnectorWriteResult` already
+         * says which it was; nothing was reading it.
+         */
+        onAddDiscovered={(server) => addDiscovered(server)}
+        onAddCustom={(draft) => store.upsert(draft)}
         testIdPrefix={testIdPrefix}
       />
 
@@ -432,6 +474,8 @@ export function ConnectorsPanel({
 
       {/* Removal is silent otherwise: the row simply is not there any more. */}
       <LiveAnnouncer message={announcement} />
+        </>
+      )}
       </div>
     </section>
   );
@@ -883,6 +927,32 @@ export function shortSourceKey(
 type SourceKey = `source.${ReturnType<typeof shortSourceKey>}`;
 
 /**
+ * What to tell somebody when the folder saved nothing.
+ *
+ * The store already answers this — `null` means there was no store to ask (no folder), and every
+ * refusal carries its own status. Nothing was reading either, which is how a discarded write came
+ * to look identical to a successful one.
+ */
+type AddFailureReason = 'noFolder' | 'malformed' | 'writeFailed' | 'secret';
+type AddFailureKey = `addFailReason.${AddFailureReason}`;
+
+function addFailureReason(result: ConnectorWriteResult | null): AddFailureReason | null {
+  if (result === null) return 'noFolder';
+  switch (result.status) {
+    case 'saved':
+      return null;
+    case 'blocked_unavailable':
+      return 'noFolder';
+    case 'blocked_malformed':
+      return 'malformed';
+    case 'blocked_secret':
+      return 'secret';
+    default:
+      return 'writeFailed';
+  }
+}
+
+/**
  * **Adding a connector, as one errand.** Search, then what this machine already registers, then a
  * form for what it does not.
  *
@@ -908,12 +978,34 @@ function AddConnectorDialog({
   canDiscover: boolean;
   canStoreSecrets: boolean;
   attachedNames: Set<string>;
-  onAddDiscovered: (server: DiscoveredConnector) => void;
-  onAddCustom: (connector: ConnectorRecord) => void;
+  /** Resolves with what the folder actually did — `null` when there was no folder to ask. */
+  onAddDiscovered: (server: DiscoveredConnector) => Promise<ConnectorWriteResult | null>;
+  onAddCustom: (connector: ConnectorRecord) => Promise<ConnectorWriteResult | null>;
   testIdPrefix: string;
 }) {
   const t = useTranslations('connectors');
   const [query, setQuery] = useState('');
+  /**
+   * Why the last attempt saved nothing, or `null` when nothing has failed.
+   *
+   * ⚠️ **The alert is what closing used to hide.** A write that never happened and a write that
+   * succeeded both ended with the dialog gone and "Nothing attached yet" underneath, so the person
+   * had no way to tell them apart. `ConnectorWriteResult` already distinguishes them; this reads it
+   * and stays put when the answer is not `saved`.
+   */
+  const [failure, setFailure] = useState<AddFailureReason | null>(null);
+
+  /** Run one write, keep the dialog open with a reason unless the folder actually saved. */
+  const attempt = async (write: () => Promise<ConnectorWriteResult | null>) => {
+    const result = await write();
+    const reason = addFailureReason(result);
+    if (reason === null) {
+      setFailure(null);
+      onClose();
+      return;
+    }
+    setFailure(reason);
+  };
 
   const groups = useMemo(
     () => groupDiscovered((discovered ?? []).filter((server) => !attachedNames.has(server.name))),
@@ -1038,7 +1130,7 @@ function AddConnectorDialog({
                     {usable ? (
                       <Chip
                         data-testid={`${testIdPrefix}-found-add`}
-                        onClick={() => onAddDiscovered(server)}
+                        onClick={() => void attempt(() => onAddDiscovered(server))}
                       >
                         {t('add')}
                       </Chip>
@@ -1091,10 +1183,20 @@ function AddConnectorDialog({
       )}
 
       <CustomConnectorForm
-        onAdd={onAddCustom}
+        onAdd={(connector) => void attempt(() => onAddCustom(connector))}
         canStoreSecrets={canStoreSecrets}
         testIdPrefix={testIdPrefix}
       />
+
+      {failure ? (
+        <p
+          role="alert"
+          data-testid={`${testIdPrefix}-add-failed`}
+          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-status-danger)]"
+        >
+          {t('addFailed', { reason: t(`addFailReason.${failure}` as AddFailureKey) })}
+        </p>
+      ) : null}
 
       <div className="mt-4 flex justify-end">
         <Button variant="ghost" onClick={onClose}>

@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { AgentSetupSection } from '@/widgets/app-settings-menu';
 import { ConnectorsPanel, useVaultConnectors } from '@/features/mcp-connectors';
+import { OpenVaultCta } from '@/features/docs-vault-local';
 import { useLocalVault } from '@/entities/vault-session';
 import { TabBar } from '@/shared/ui';
 import { useSwapHeight } from '@/shared/lib/use-presence';
@@ -168,7 +169,23 @@ export function McpPage() {
         {tab === 'share' ? (
           <AgentSetupSection />
         ) : (
-          <ConnectorsPanel handle={handle} store={connectors} />
+          <ConnectorsPanel
+            handle={handle}
+            store={connectors}
+            /*
+             * The panel cannot import this itself: both are features, and a feature reaching
+             * sideways into another adds an edge to a ledger that only falls
+             * (`same-layer-cross-import-ratchet`). The view owns both, so it hands one to the
+             * other — and the ask is this region's one emphasis, so it wears the indigo.
+             */
+            openFolderAction={
+              <OpenVaultCta
+                testId="connectors-open-vault"
+                tone="accentOnTint"
+                className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
+              />
+            }
+          />
         )}
       </div>
     </main>

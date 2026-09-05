@@ -70,9 +70,16 @@ import { useVaultConnectors } from '../model/use-vault-connectors';
  * a second `useVaultConnectors` would never hear about the first one's writes. So the panel
  * takes the state as a prop, and the harness plays the caller.
  */
-function Panel({ handle }: { handle: FileSystemDirectoryHandle }) {
+function Panel({ handle }: { handle: FileSystemDirectoryHandle | null }) {
   const store = useVaultConnectors(handle);
-  return <ConnectorsPanel handle={handle} store={store} />;
+  return (
+    <ConnectorsPanel
+      handle={handle}
+      store={store}
+      /* The view's slot — stood in for here, since the panel may not import it (FSD). */
+      openFolderAction={<button type="button" data-testid="connectors-open-vault">open</button>}
+    />
+  );
 }
 
 /**
@@ -510,6 +517,54 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
     const live = document.querySelector('[role="status"][aria-live="polite"]');
     expect(live?.textContent ?? '').toContain('notion');
+  });
+
+  it('폴더가 없으면 빈 목록이 아니라 폴더를 열라고 말하고, 붙이라고 권하지 않는다', async () => {
+    /*
+     * ⚠️ **Measured in a cold walkthrough, 2026-09-05.** With no folder, `useVaultConnectors` has
+     * no store, so `upsert()` resolved to `null` — and the list said "Nothing attached yet", which
+     * is exactly what it says after a save that worked. A screen that reads the same whether the
+     * write happened or not is the phantom-save shape.
+     *
+     * The Share tab already answers this state by asking for the folder; this asserts the
+     * Connectors tab gives the same answer instead of an empty list, and does not offer a way to
+     * save into nowhere.
+     */
+    draw(<Panel handle={null} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-no-folder')).toBeInTheDocument());
+    expect(screen.getByTestId('connectors-open-vault')).toBeInTheDocument();
+    // Not an empty list, and no invitation to add into nothing.
+    expect(screen.queryByTestId('connectors-empty')).toBeNull();
+    expect(screen.queryByTestId('connectors-list')).toBeNull();
+    expect(screen.queryByTestId('connectors-add-open')).toBeNull();
+  });
+
+  it('저장이 안 되면 대화상자가 닫히지 않고 이유를 말한다 — 버린 것과 저장한 것이 같아 보이지 않게', async () => {
+    /*
+     * The defensive half of the same defect. Even with the gate above, a write can come back
+     * refused — a malformed file, a folder that will not take the write — and the dialog used to
+     * close on the click rather than on the result. `ConnectorWriteResult` already said which had
+     * happened; nothing read it.
+     *
+     * A malformed file is the reachable case here: the store refuses every write while it stands,
+     * and the folder is open, so the gate above does not apply.
+     */
+    const vault = fakeVault('{ not json');
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-malformed')).toBeInTheDocument());
+    openAdd();
+    fireEvent.change(screen.getByTestId('connectors-custom-name'), { target: { value: 'github' } });
+    fireEvent.change(screen.getByTestId('connectors-custom-command'), {
+      target: { value: '/usr/local/bin/github-mcp' },
+    });
+    fireEvent.click(screen.getByTestId('connectors-custom-add'));
+
+    const alert = await screen.findByTestId('connectors-add-failed');
+    expect(alert).toHaveAttribute('role', 'alert');
+    // The dialog is still there — the errand did not finish, so it does not close.
+    expect(screen.getByTestId('connectors-add-dialog')).toBeInTheDocument();
+    // And nothing was written.
+    expect(vault.files.get('.ontology-atlas/connectors.json')).toBe('{ not json');
   });
 
   it('브라우저에서는 왜 못 보는지와 무엇은 되는지를 함께 말한다', async () => {

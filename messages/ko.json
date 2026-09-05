@@ -4061,6 +4061,8 @@
     "runtimeNarrowing": "연결 도구는 Claude 세션에만 실립니다. Codex 는 아직 이 부분을 재지 않아, Codex 세션에는 온톨로지 폴더를 읽는 서버 하나만 갑니다.",
     "runtimeAgentsLink": "실행기 보기",
     "none": "아직 붙인 것이 없습니다.",
+    "noFolderTitle": "폴더를 먼저 여세요",
+    "noFolderBody": "연결 도구는 열어 둔 폴더 안에 적힙니다. 폴더를 열고 나서 붙이세요.",
     "loading": "이 폴더의 연결 도구 목록을 읽는 중입니다.",
     "scanning": "이 컴퓨터에 이미 등록된 것을 읽는 중입니다.",
     "onOfTotal": "{total}개 중 {on}개 켜짐",
@@ -4109,6 +4111,13 @@
     "customBody": "아직 어디에도 등록되지 않은 서버는 여기에 적습니다.",
     "transportLabel": "무엇인가요",
     "customAdd": "연결 도구 추가",
+    "addFailed": "아무것도 저장되지 않았습니다: {reason}.",
+    "addFailReason": {
+      "noFolder": "열려 있는 폴더가 없습니다",
+      "malformed": "그 폴더의 연결 도구 파일을 읽을 수 없습니다",
+      "writeFailed": "폴더가 쓰기를 거부했습니다",
+      "secret": "토큰이 평문으로 적힐 뻔했습니다"
+    },
     "fieldName": "이름",
     "fieldCommand": "실행할 것",
     "fieldCommandHint": "전체 경로를 적으십시오. 에이전트는 PATH 없이 돌기 때문에 npx 처럼 이름만 적으면 아무것도 찾지 못합니다.",
