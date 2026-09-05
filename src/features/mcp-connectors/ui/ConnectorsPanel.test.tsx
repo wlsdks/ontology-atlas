@@ -55,7 +55,60 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
   };
 });
 
-import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
+import {
+  ConnectorsPanel,
+  connectorDestination,
+  groupDiscovered,
+  shortSourceKey,
+  whatRuns,
+} from './ConnectorsPanel';
+import { useVaultConnectors } from '../model/use-vault-connectors';
+
+/**
+ * **The list state is owned by the caller** (2026-09-05). The `/mcp` tab strip states how many
+ * connectors are switched on, and that number and the panel's rows have to come from one read —
+ * a second `useVaultConnectors` would never hear about the first one's writes. So the panel
+ * takes the state as a prop, and the harness plays the caller.
+ */
+function Panel({ handle }: { handle: FileSystemDirectoryHandle | null }) {
+  const store = useVaultConnectors(handle);
+  return (
+    <ConnectorsPanel
+      handle={handle}
+      store={store}
+      /* The view's slot — stood in for here, since the panel may not import it (FSD). */
+      openFolderAction={<button type="button" data-testid="connectors-open-vault">open</button>}
+    />
+  );
+}
+
+/**
+ * **Two things left the row on 2026-09-05** and the tests follow them rather than dropping.
+ *
+ * A row now carries the service mark, the name, what runs, the switch, and one more-actions
+ * button; a connector's variables, keychain fields and removal live in that button's dialog, and
+ * everything about *adding* lives in the "Add a connector" dialog. The owner's report was that the
+ * previous panel - list, machine scan, and a five-field form all open at once - was hard to look
+ * at, and the assertions below say the same things they said before, one press further in.
+ */
+function openDetail() {
+  fireEvent.click(screen.getByTestId('connectors-item-menu'));
+}
+
+/**
+ * Removal asks first since 2026-09-05 (design council). One press used to delete this connector's
+ * keychain items and then drop its row, with nothing on the way saying either would happen; the
+ * keychain half cannot be undone. So the row's dialog opens the confirmation, and the confirmation
+ * is what removes.
+ */
+function confirmRemove() {
+  fireEvent.click(screen.getByTestId('connectors-item-remove'));
+  fireEvent.click(screen.getByTestId('connectors-remove-confirm'));
+}
+
+function openAdd() {
+  fireEvent.click(screen.getByTestId('connectors-add-open'));
+}
 
 /** A folder handle backed by a map, enough for the store to read and write. */
 function fakeVault(seed?: string) {
@@ -132,7 +185,7 @@ afterEach(cleanup);
 describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다', () => {
   it('무엇이 실제로 실행되는지, 어디로 오가는지, 어떤 기록에 안 남는지 켜기 전에 말한다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item')).toBeInTheDocument(),
     );
@@ -141,9 +194,29 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item-runs')).toHaveTextContent(
       '/opt/homebrew/bin/npx -y @notionhq/notion-mcp-server',
     );
-    // And the ledger sentence: a reader who has met `llm-audit.jsonl` elsewhere would
-    // otherwise assume it covered this traffic.
-    expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('llm-audit.jsonl');
+    /*
+     * And the ledger claim: a reader who has met Atlas's transfer log elsewhere in this app would
+     * otherwise assume it covered this traffic.
+     *
+     * ⚠️ **The claim is pinned, not the filename** (design council, 2026-09-05). The two sentences
+     * were rewritten to fit the block, and the path `.ontology-atlas/llm-audit.jsonl` left with
+     * the longer version — what a person needs before switching a connector on is that the log
+     * does not record this, not where the log lives. `docs/FEATURES.md` still names the file.
+     *
+     * ⚠️ **Two sentences, and the runtime line is not one of them.** The preamble measured 296px —
+     * 35% of the 390 first screen — before the first row. What a person cannot act safely without
+     * is where the traffic goes and what a token can do; which sessions carry connectors is a fact
+     * about a runtime, and it now stands where a runtime is being chosen.
+     */
+    expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('전송 기록에도 남지 않습니다');
+    expect(screen.getByTestId('connectors-transfer').querySelectorAll('p')).toHaveLength(2);
+    expect(screen.queryByTestId('connectors-runtime')).toBeNull();
+    openDetail();
+    expect(await screen.findByTestId('connectors-runtime')).toBeInTheDocument();
+    expect(screen.getByTestId('connectors-runtime-agents')).toHaveAttribute(
+      'href',
+      expect.stringContaining('/agents'),
+    );
     // The switch is off before anybody touches it.
     expect(screen.getByTestId('connectors-item')).toHaveAttribute(
       'data-connector-enabled',
@@ -153,7 +226,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
 
   it('켜면 폴더에 적히고, 그 전까지는 아무것도 붙지 않는다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeInTheDocument());
     fireEvent.click(screen.getByTestId('connectors-item-toggle'));
     await waitFor(() =>
@@ -183,7 +256,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       sources: [],
     };
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-collision')).toBeInTheDocument(),
     );
@@ -193,17 +266,20 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // A bare command finds nothing in the agent's sanitized environment, so switching it
     // on would produce a session whose tools are silently absent.
     const vault = fakeVault(seeded({ ...stdioRecord, command: 'npx' }));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-problem')).toBeInTheDocument());
     expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled();
   });
 
   it('토큰은 키체인으로 보내고 입력란에서 지운다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-secret-missing')).toBeInTheDocument(),
     );
+    openDetail();
     const input = screen.getByTestId('connectors-item-secret-input');
     fireEvent.change(input, { target: { value: 'ntn_live_value' } });
     fireEvent.click(screen.getByTestId('connectors-item-secret-save'));
@@ -227,11 +303,14 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * agent lists its tools, and every call is refused by a service that has no idea why.
      */
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled());
+    // The reason the switch will not move stays in the row - a disabled control whose reason is
+    // one press away is a control with no reason at all.
     expect(screen.getByTestId('connectors-item-problem')).toBeInTheDocument();
 
     bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    openDetail();
     fireEvent.change(screen.getByTestId('connectors-item-secret-input'), {
       target: { value: 'ntn_live_value' },
     });
@@ -248,7 +327,9 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     const vault = fakeVault(
       seeded({ ...stdioRecord, env: [{ name: 'OPENAPI_MCP_HEADERS' }] }),
     );
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable')).toHaveAttribute(
         'data-variable-keychain',
@@ -273,7 +354,9 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // Forcing a version pin into a keychain would make somebody re-enter it per machine, and a
     // rule people route around stops protecting anything.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_VERSION' }] }));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-value')).toBeInTheDocument(),
     );
@@ -289,7 +372,9 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // The writer refuses a literal under this name, so a box would be somewhere to type
     // something that is then thrown away.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_TOKEN' }] }));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-refused')).toBeInTheDocument(),
     );
@@ -301,6 +386,10 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
      * Measured in the installed app on 2026-09-05: removing a connector took the row out of
      * connectors.json and left the keychain item behind, so `security find-generic-password`
      * still listed it. A token nobody can see any more, on a machine somebody hands on.
+     *
+     * ⚠️ Removal moved into the row's own dialog on the same day, so the press is one step
+     * further in. What is asserted is unchanged: every reference the record carried is forgotten,
+     * and only those.
      */
     const vault = fakeVault(
       seeded({
@@ -314,9 +403,11 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
     bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
     bridge.stored.set('connector:c1:OPENAPI_MCP_HEADERS', 'ders');
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() => expect(screen.getByTestId('connectors-item-remove')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+    confirmRemove();
 
     // Every reference the record carried, and only those - the plain value has nothing to forget.
     await waitFor(() =>
@@ -336,7 +427,9 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // Dropping only the reference would leave the value with nothing on screen pointing at it.
     const vault = fakeVault(seeded(stdioRecord));
     bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-keychain')).toBeChecked(),
     );
@@ -351,20 +444,151 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(bridge.stored.size).toBe(0);
   });
 
+  it('지우기 전에 무엇이 사라지는지 이름으로 말하고 물어본다', async () => {
+    /*
+     * The two halves of Remove are not the same kind of act. Taking the row out of
+     * connectors.json is a line in a file somebody can retype; forgetting the tokens is an OS
+     * keychain delete with no read path back. A press that did both while naming neither is the
+     * unknown-reversibility pattern, so the confirmation names the keys by name.
+     */
+    const vault = fakeVault(
+      seeded({
+        ...stdioRecord,
+        env: [
+          { name: 'NOTION_TOKEN', secretRef: 'connector:c1:NOTION_TOKEN' },
+          { name: 'NOTION_VERSION', value: '2022-06-28' },
+        ],
+      }),
+    );
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
+    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+
+    const confirm = await screen.findByTestId('connectors-item-remove-confirm');
+    // An alert dialog, because the body **is** the warning — assistive tech reads it on open.
+    expect(confirm).toHaveAttribute('role', 'alertdialog');
+    expect(confirm).toHaveAttribute('aria-modal', 'true');
+    // The key it is about to forget, by name. The plain value is not named: nothing is lost there.
+    expect(confirm).toHaveTextContent('NOTION_TOKEN');
+    expect(confirm).not.toHaveTextContent('NOTION_VERSION');
+    // Nothing has happened yet.
+    expect(bridge.secretDeletes).toEqual([]);
+    expect(screen.getByTestId('connectors-item')).toBeInTheDocument();
+  });
+
+  it('취소하면 줄도 토큰도 그대로다 — 물어본 값이 있어야 대답이 의미가 있다', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
+    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+    fireEvent.click(await screen.findByTestId('connectors-remove-cancel'));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('connectors-item-remove-confirm')).toBeNull(),
+    );
+    expect(screen.getByTestId('connectors-item')).toBeInTheDocument();
+    expect(bridge.secretDeletes).toEqual([]);
+    expect(bridge.stored.has('connector:c1:NOTION_TOKEN')).toBe(true);
+    expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').toContain('notion');
+  });
+
+  it('지우고 나면 어디로 갔는지 말하고, 초점을 갈 곳에 놓는다', async () => {
+    /*
+     * ⚠️ Measured before this step existed: the row left and focus landed on `<body>`, so a
+     * keyboard or screen-reader user was returned to the top of the document with no word about
+     * what had happened. The control that opened the dialog is inside a dialog that closed and
+     * belonged to a row that no longer exists, so `Dialog`'s own restoration has nowhere correct
+     * to go — "Add a connector" is the nearest thing still on screen and the next thing anybody
+     * does here.
+     */
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
+    confirmRemove();
+
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByTestId('connectors-add-open')),
+    );
+    const live = document.querySelector('[role="status"][aria-live="polite"]');
+    expect(live?.textContent ?? '').toContain('notion');
+  });
+
+  it('폴더가 없으면 빈 목록이 아니라 폴더를 열라고 말하고, 붙이라고 권하지 않는다', async () => {
+    /*
+     * ⚠️ **Measured in a cold walkthrough, 2026-09-05.** With no folder, `useVaultConnectors` has
+     * no store, so `upsert()` resolved to `null` — and the list said "Nothing attached yet", which
+     * is exactly what it says after a save that worked. A screen that reads the same whether the
+     * write happened or not is the phantom-save shape.
+     *
+     * The Share tab already answers this state by asking for the folder; this asserts the
+     * Connectors tab gives the same answer instead of an empty list, and does not offer a way to
+     * save into nowhere.
+     */
+    draw(<Panel handle={null} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-no-folder')).toBeInTheDocument());
+    expect(screen.getByTestId('connectors-open-vault')).toBeInTheDocument();
+    // Not an empty list, and no invitation to add into nothing.
+    expect(screen.queryByTestId('connectors-empty')).toBeNull();
+    expect(screen.queryByTestId('connectors-list')).toBeNull();
+    expect(screen.queryByTestId('connectors-add-open')).toBeNull();
+  });
+
+  it('저장이 안 되면 대화상자가 닫히지 않고 이유를 말한다 — 버린 것과 저장한 것이 같아 보이지 않게', async () => {
+    /*
+     * The defensive half of the same defect. Even with the gate above, a write can come back
+     * refused — a malformed file, a folder that will not take the write — and the dialog used to
+     * close on the click rather than on the result. `ConnectorWriteResult` already said which had
+     * happened; nothing read it.
+     *
+     * A malformed file is the reachable case here: the store refuses every write while it stands,
+     * and the folder is open, so the gate above does not apply.
+     */
+    const vault = fakeVault('{ not json');
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-malformed')).toBeInTheDocument());
+    openAdd();
+    fireEvent.change(screen.getByTestId('connectors-custom-name'), { target: { value: 'github' } });
+    fireEvent.change(screen.getByTestId('connectors-custom-command'), {
+      target: { value: '/usr/local/bin/github-mcp' },
+    });
+    fireEvent.click(screen.getByTestId('connectors-custom-add'));
+
+    const alert = await screen.findByTestId('connectors-add-failed');
+    expect(alert).toHaveAttribute('role', 'alert');
+    // The dialog is still there — the errand did not finish, so it does not close.
+    expect(screen.getByTestId('connectors-add-dialog')).toBeInTheDocument();
+    // And nothing was written.
+    expect(vault.files.get('.ontology-atlas/connectors.json')).toBe('{ not json');
+  });
+
   it('브라우저에서는 왜 못 보는지와 무엇은 되는지를 함께 말한다', async () => {
     bridge.discoveryAvailable = false;
     bridge.secretsAvailable = false;
     const vault = fakeVault(seeded(stdioRecord));
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
+    /*
+     * ⚠️ **The card moved into the add dialog on 2026-09-05**, because finding what is already
+     * registered is what happens there. The claim is unchanged and so is the check: a reason and a
+     * place to go, beside a list that still works.
+     */
+    openAdd();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-discovery-unavailable')).toBeInTheDocument(),
     );
-    // Why + where, and the list itself is still there and usable.
     expect(screen.getByTestId('connectors-web-get-app')).toHaveAttribute(
       'href',
       expect.stringContaining('/download'),
     );
-    expect(screen.getByTestId('connectors-list')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    openDetail();
     expect(screen.getByTestId('connectors-item-secrets-unavailable')).toHaveTextContent(
       'NOTION_TOKEN',
     );
@@ -374,8 +598,9 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
 
   it('직접 추가한 연결 도구도 꺼진 채로 들어간다', async () => {
     const vault = fakeVault();
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    openAdd();
     fireEvent.change(screen.getByTestId('connectors-custom-name'), {
       target: { value: 'github' },
     });
@@ -424,12 +649,159 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       sources: [],
     };
     const vault = fakeVault();
-    draw(<ConnectorsPanel handle={vault.handle} />);
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
     await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(2));
     // The deprecated transport is shown and explained, never offered.
     const rows = screen.getAllByTestId('connectors-found-item');
     expect(rows[1]).toHaveAttribute('data-connector-transport', 'sse');
     expect(screen.getAllByTestId('connectors-found-add')).toHaveLength(1);
+  });
+
+  it('같은 것이 여러 파일에 등록돼 있어도 줄은 하나다 — 어디서 찾았는지는 함께 적는다', async () => {
+    /*
+     * Anyone who set up two coding tools has byte-identical entries in both config files. Drawing
+     * one row per file offers the same command twice, and choosing between identical rows teaches
+     * nothing. Measured on this machine on 2026-09-05: three of the registered servers appeared in
+     * two files each.
+     */
+    bridge.discovered = {
+      connectors: [
+        {
+          source: 'claude-user',
+          name: 'notion',
+          transport: 'stdio',
+          command: '/opt/homebrew/bin/npx',
+          args: ['-y', '@notionhq/notion-mcp-server'],
+          envKeys: [],
+          headerKeys: [],
+        },
+        {
+          source: 'codex-user',
+          // A different spelling of the same registration. The name is the part a person was free
+          // to invent, so it cannot be what decides whether two entries are the same server.
+          name: 'notion-mcp',
+          transport: 'stdio',
+          command: '/opt/homebrew/bin/npx',
+          args: ['-y', '@notionhq/notion-mcp-server'],
+          envKeys: [],
+          headerKeys: [],
+        },
+      ],
+      sources: [],
+    };
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
+    await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(1));
+    expect(screen.getByTestId('connectors-found-item')).toHaveAttribute(
+      'data-connector-sources',
+      'claude-user codex-user',
+    );
+    // Both tools are named, once each.
+    expect(screen.getAllByTestId('connectors-found-source').map((el) => el.textContent)).toEqual([
+      'claude',
+      'codex',
+    ]);
+  });
+
+  it('찾기로 목록을 좁힌다 — 이름으로도, 명령으로도', async () => {
+    bridge.discovered = {
+      connectors: [
+        {
+          source: 'claude-user',
+          name: 'notion',
+          transport: 'stdio',
+          command: '/opt/homebrew/bin/npx',
+          args: ['-y', '@notionhq/notion-mcp-server'],
+          envKeys: [],
+          headerKeys: [],
+        },
+        {
+          source: 'claude-user',
+          name: 'linear',
+          transport: 'http',
+          command: null,
+          args: [],
+          url: 'https://mcp.linear.app/mcp',
+          envKeys: [],
+          headerKeys: [],
+        },
+      ],
+      sources: [],
+    };
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
+    await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(2));
+
+    // By name.
+    fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'linear' } });
+    await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(1));
+
+    // …and by what actually runs, which is what somebody remembers about a server they set up
+    // months ago and renamed since.
+    fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'notionhq' } });
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-found-item')).toHaveTextContent('notion'),
+    );
+
+    fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'zzz' } });
+    await waitFor(() => expect(screen.getByTestId('connectors-found-empty')).toBeInTheDocument());
+  });
+});
+
+describe('one row per thing that actually runs', () => {
+  const base = {
+    transport: 'stdio' as const,
+    command: '/usr/bin/npx',
+    args: ['-y', 'pkg'],
+    url: null,
+    envKeys: [],
+    headerKeys: [],
+  };
+
+  it('collapses identical transport, command and arguments across files', () => {
+    const groups = groupDiscovered([
+      { ...base, source: 'claude-user', name: 'a' },
+      { ...base, source: 'codex-user', name: 'b' },
+      { ...base, source: 'claude-user', name: 'c' },
+    ]);
+    expect(groups).toHaveLength(1);
+    // The first spelling seen wins the row.
+    expect(groups[0].server.name).toBe('a');
+    // A file that reported it twice is still one chip.
+    expect(groups[0].sources).toEqual(['claude-user', 'codex-user']);
+  });
+
+  it('keeps a different command apart, and never merges across transports', () => {
+    const groups = groupDiscovered([
+      { ...base, source: 'claude-user', name: 'a' },
+      { ...base, source: 'claude-user', name: 'a', args: ['-y', 'other'] },
+      {
+        source: 'claude-user',
+        name: 'a',
+        transport: 'http' as const,
+        command: null,
+        args: [],
+        url: 'https://example.test/mcp',
+        envKeys: [],
+        headerKeys: [],
+      },
+    ]);
+    expect(groups).toHaveLength(3);
+  });
+
+  it('reduces a source id to the tool a person recognises', () => {
+    expect(shortSourceKey('claude-user')).toBe('claude');
+    expect(shortSourceKey('claude-project')).toBe('claude');
+    expect(shortSourceKey('codex-user')).toBe('codex');
+    expect(shortSourceKey('cursor-user')).toBe('cursor');
+    expect(shortSourceKey('vault-mcp-json')).toBe('folder');
+    expect(shortSourceKey('something-new')).toBe('other');
   });
 });
 

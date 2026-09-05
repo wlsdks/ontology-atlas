@@ -83,6 +83,15 @@ export const AUDITED_ROUTES = [
   // it is the only state the ratchet can see, and it is also what a first-time
   // visitor sees.
   "/ko/agents/",
+  // MCP (added 2026-09-05). The folder's own connection and the connectors left
+  // `/agents` for their own destination; a new route that is not on this list is a
+  // surface four gates (scroll padding, responsive overflow, cursor, Korean line
+  // breaking) cannot see at all, which is the blind spot this file exists to close.
+  //
+  // Measures the no-vault state: a browser cannot read this machine's agent config
+  // files or hold a token, so that is both what the ratchet can see and what a
+  // first-time visitor meets.
+  "/ko/mcp/",
   "/ko/download/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",

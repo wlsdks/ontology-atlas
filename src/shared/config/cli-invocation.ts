@@ -72,3 +72,27 @@ export const ATLAS_CLI = `node ${ATLAS_CHECKOUT_PLACEHOLDER}/cli/src/index.mjs`;
  */
 export const ATLAS_CLI_HINT_EN =
   "Set this once: export ATLAS=<path to your ontology-atlas source checkout>  (there is no npm package)";
+
+/**
+ * **Quote a path for a shell line inside a copied packet.**
+ *
+ * Lived privately inside `VaultAgentSetupPanel` until a second surface needed it (the MCP
+ * first-contact packet, 2026-09-05). Two copies of a quoting rule is how one of them ends up
+ * quoting a folder called `My Vault` and the other does not, and the failure only shows on the
+ * machine whose path has the space in it.
+ */
+export function shellQuoteForPacket(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+/**
+ * The vault path a packet should print — the real one when this surface knows it, and an
+ * instruction to fill in when it does not.
+ *
+ * A browser never knows the absolute path, so the placeholder is the honest value there; what is
+ * not honest is a command that silently means "wherever you happen to be", which is what a
+ * relative path in a copied packet becomes.
+ */
+export function vaultPathForPacket(vaultName: string, vaultPath?: string | null): string {
+  return vaultPath ?? `<absolute path to your ${vaultName} folder>`;
+}

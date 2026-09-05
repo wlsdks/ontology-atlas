@@ -354,6 +354,16 @@ export function unglossedAcronyms(messages: Json): string[] {
 const UNGLOSSED_BASELINE: readonly string[] = [
   'footer/MCP', // the technology list in the footer
   'gatewayNav/CLI', // the name of a guide page
+  /*
+   * 2026-09-05, the MCP destination. Both of these are **the destination's name**, not a
+   * sentence teaching anything: an 11px rail tile label and the shortcut sheet's row for
+   * reaching it. A gloss in a rail tile is a second line under a fixed-height 36px tile, and a
+   * shortcut row that explained the destination would be the only one on that sheet doing so.
+   * The screen the name leads to opens with the gloss (`mcp.lede`), which is where a person
+   * reading three capital letters actually needs it.
+   */
+  'navRail/MCP', // the rail tile's own name
+  'searchWidgets/MCP', // the shortcut sheet's row for reaching that destination
     'metadata/MCP', // search-engine descriptions, never drawn on a screen
   'projectPages/CLI', // a two-character column label beside the command itself
   'settings/MCP', // one of three example tags in a placeholder

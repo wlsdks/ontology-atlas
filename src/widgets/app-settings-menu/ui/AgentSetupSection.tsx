@@ -12,9 +12,10 @@ import { Check, Copy } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
-import { ConnectorsPanel } from '@/features/mcp-connectors';
+import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
+import { McpProofPacket } from './McpProofPacket';
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
 
 /**
@@ -36,51 +37,11 @@ import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
  * absolute path**, and that is answered by building the config on screen for the
  * person to paste.
  *
- * The runners pane, when it says on the web that it cannot launch a program, points
- * at *"the "MCP Connection" pane on this screen…"* — and if that pane is not on the same
- * screen, **the sentence points at nothing.** That is why the destination brings
- * this pane along.
+ * The runners pane on `/agents`, when it says on the web that it cannot launch a
+ * program, still has to name a place a person can actually reach. Since 2026-09-05 that
+ * place is **another destination**, so the sentence carries a link to `/mcp` rather than
+ * a section name — a name is only guidance while the thing named is on the same screen.
  */
-/**
- * The AI agent's first-contact proof packet — a typed handoff pasted straight into
- * an agent, rather than a card for a human to read.
- *
- * ⚠️ **Moved into this file** (2026-08-21, ledger 90). It used to live in the
- * settings sheet's MCP section, and when that section left for the "Agent"
- * destination it **nearly disappeared with it** — only the "Copy" button inside the
- * deleted branch used this constant, and lint's unused-variable warning is what
- * revealed that.
- *
- * The surface may move, but **the handoff lives** — this repository already wrote
- * that same sentence back in the five-tab era.
- */
-const MCP_FIRST_CALLS_PACKET = [
-  'Ontology Atlas MCP first-contact proof packet',
-  '',
-  'Direct MCP proof inside the current agent session:',
-  '1. codex mcp list',
-  '2. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
-  '3. query_ontology({"operation":"agent_brief"})',
-  '4. query_ontology({"operation":"workspace_brief"})',
-  '5. query_ontology({"operation":"health"})',
-  '',
-  'If direct MCP tools are missing, this is CLI fallback proof only:',
-  'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
-  '',
-  'Stale client cache hint:',
-  'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
-  '',
-  'Project ontology indexing checkpoint (side effect 0):',
-  'Replace [codebase-root] with the current checkout path before running project indexing.',
-  'index_project({"rootPath":"[codebase-root]"})',
-  'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
-  '',
-  'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
-  'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
-  'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
-  'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
-].join('\n');
-
 /**
  * **The terminal path, for someone who will not hand the browser a folder.**
  *
@@ -124,8 +85,17 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
           CTA" this repository forbids by name. The action being asked for happens
           right there.
         */}
+        {/*
+          ⚠️ **The ask is the indigo one** (design council, 2026-09-05). This card asks for a
+          folder, and it asked in neutral ink while "Get the macOS app" below it was the only
+          indigo on the screen — one emphasis per region, and it was on the wrong control.
+        */}
         <div className="mt-3">
-          <OpenVaultCta testId="agents-open-vault" />
+          <OpenVaultCta
+            testId="agents-open-vault"
+            tone="accentOnTint"
+            className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
+          />
         </div>
         <div
           data-testid="agents-terminal-setup"
@@ -147,10 +117,15 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
             {/* Neutral on purpose: the card's own ask is "Open my folder" above, and
                 measured on 2026-09-04 an indigo-tinted chip here was the only chromatic
                 control in the card and outranked it. One emphasis per region. */}
+            {/*
+              ⚠️ **No `font-mono` on the label** (2026-09-05). The block above is a command and
+              wears monospace correctly; the word on this button is prose, and in Korean a
+              monospace face only makes prose harder to read - there are no Hangul metrics for it
+              to align.
+            */}
             <Chip
               data-testid="agents-terminal-setup-copy"
               onClick={() => void copy(CLI_TERMINAL_SETUP)}
-              className="font-mono"
             >
               {copyState === 'copied' ? (
                 <Check size={ICON_SIZE.sm} aria-hidden />
@@ -168,10 +143,12 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
                 href="/download/"
                 onClick={onBeforeNavigate}
                 data-testid="agents-terminal-setup-download"
+                /* Secondary now: the folder above is what this card is asking for. */
                 className={controlClass({
                   shape: 'link',
-                  tone: 'accent',
-                  className: 'h-8 font-[var(--font-weight-signature)]',
+                  tone: 'muted',
+                  hoverInk: 'strong',
+                  className: 'h-8',
                 })}
               >
                 {t('agentTerminalAppLink')}
@@ -186,13 +163,12 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
   return (
     <>
     {/*
-      `agent-setup-section` wraps **the config panel only**. The proof packet card
-      below stays outside it, because the subject of the e2e inventory that measures
-      this name (`agent-connect-panel-census`) is 「the first screen of the pane you
-      attach from」. Putting the packet inside took the copy buttons from 4 to 5 and
-      blew the ratchet — and **the ratchet was right**: what that check counts is
-      "how many copy buttons someone attaching meets on the first screen", not the
-      whole page.
+      `agent-setup-section` wraps **the config panel only**. On this surface the proof packet
+      stays outside it, because the subject of the e2e inventory that measures this name
+      (`agent-connect-panel-census`) is 「the first screen of the pane you attach from」. Putting
+      the packet inside took the copy buttons from 4 to 5 and blew the ratchet — and **the ratchet
+      was right**: what that check counts is "how many copy buttons someone attaching meets on the
+      first screen", not the whole page.
     */}
     <div data-testid="agent-setup-section" className="min-w-0">
     <VaultAgentSetupPanel
@@ -207,40 +183,24 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
     />
     </div>
     {/*
-      **Connectors sit under the vault's own connection, not above it.** The vault server is
-      what this destination exists for and is wired without anyone asking; a connector is a
-      deliberate addition on top. Putting the optional thing second is what keeps the first
-      screen of this pane about the thing everybody needs.
+      **The proof packet, on the surface that has no step 3.** With a runnable server the packet
+      lives inside step 3, where confirming the connection is the step's whole job. Here there is
+      no step 3 to live in — `launch === null` is the exact condition the panel calls
+      `publicPackagesReady`, and without it steps 2 and 3 are not drawn at all — and the handoff
+      still has to be reachable, so the same component stands on its own.
     */}
-    <div className="mt-4">
-      <ConnectorsPanel handle={localVault.handle ?? null} />
-    </div>
-    {/*
-      **The first-contact proof packet** — instead of a human confirming by eye that
-      the agent attached, it is pasted in so **the agent proves it itself**. It came
-      along when this section moved from the sheet to the destination.
-    */}
-    <div className="mt-4 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]">
-      <p className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-        {t('mcpProofTitle')}
-      </p>
-      <p className="mt-1 break-keep text-label leading-label text-[color:var(--color-text-tertiary)]">
-        {t('mcpProofBody')}
-      </p>
-      <Chip
-        tone="accentOnTint"
-        data-testid="agents-mcp-proof-copy"
-        onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
-        className="mt-2 w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] font-mono hover:bg-[color:var(--color-indigo-a24)]"
-      >
-        {copyState === 'copied' ? (
-          <Check size={ICON_SIZE.sm} aria-hidden />
-        ) : (
-          <Copy size={ICON_SIZE.sm} aria-hidden />
-        )}
-        {copyState === 'copied' ? t('mcpProofCopied') : t('mcpProofCopy')}
-      </Chip>
-    </div>
+    {serverAvailability.launch === null ? (
+      <div className="mt-4">
+        {/*
+          `getTauriVaultRootPath` answers only inside the installed app; in a browser it is null
+          and the packet prints the fill-in-the-path instruction, which is the true state here.
+        */}
+        <McpProofPacket
+          vaultName={localVault.handle?.name ?? 'vault'}
+          vaultPath={localVault.handle ? getTauriVaultRootPath(localVault.handle) : null}
+        />
+      </div>
+    ) : null}
     </>
   );
 }

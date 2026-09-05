@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — MCP becomes its own destination, the rail cap moves to eight, and the page frame owns the desktop bottom
+
+**Why**: `/agents` carried two jobs sharing only the word "agent" (which coding tools this computer has, and what an agent reaches over MCP); the owner asked for the split and approved a longer rail. With a folder open the page reserved 0px at the bottom, so the last card sat on the window edge.
+**Prior**: overturns the seven-destination cap in 2026-08-21 (91); upholds 2026-08-20 (90), the 2026-08-26 record that Architecture is additive and Git stays primary, and 2026-08-01 "MCP attaches to the folder, not the screen".
+**Decision**: new route `/mcp` with two tabs on `?tab=`: Share this folder (three steps, step 3 ending in the vault-bound proof packet) and Connectors (attached rows only; adding, keychain fields and removal behind blocking dialogs, removal confirmed). Rail cap 7→8, measured at the 1040×720 floor: eight tiles in 12–522px of a 616px pane, gear drawn 48px above the edge, nothing scrolls; one slot remains at that floor. `/agents` keeps runtimes and chat and links to `/mcp`. `PAGE_FRAME` gains the desktop bottom breath token. Six-seat council approved with six corrections; only the GitHub mark ships, other services show a plug until their guideline is read.
+**Dissent**: design-interaction: the write-authority sentence belongs on the switch's own path (row-level aria-describedby), because the dialog is skippable and a preamble is read once; the guardian chose the two-sentence preamble for the 390 first screen.
+**Falsifier**: two of the first three cold walkers opening `/agents` for "let an agent reach this folder" (the first two went straight to MCP) folds the tabs back into `/agents` and leaves `/mcp` as a redirect; a 390 walkthrough enabling a connector with the authority sentence out of view ships the row-bound binding; a ninth tile asked for without a rail measurement, or as a job rather than a place (ingest is a job), reopens the cap.
+**Owner**: jinan
+
 ## 2026-09-05 — A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path
 
 **Why**: the in-app agent could reach only the vault server, so a person who wanted it to read a Notion or GitHub page had to leave Atlas and rerun the question in an external agent. The owner asked for connectors, custom ones included.

@@ -58,7 +58,18 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * otherwise the reduction becomes slack again and the next person spends it on a new
  * combination.
  */
-const BASELINE_SURFACE_COMBOS = 11;
+/*
+ * 2026-09-05 — 12 → 11 → **10**. MCP left `/agents` for its own destination, and the pane that
+ * moved took one surface combination off the routes this spec walks with it. Per this ratchet's
+ * own discipline the ceiling drops with the count: leaving it at 11 hands the reduction back as
+ * slack for whoever adds the next combination.
+ *
+ * ⚠️ `/ko/mcp/` is deliberately **not** added to `ROUTES` here. This list is a sample of the
+ * screens, not a mirror of `audited-routes`, and the connectors card reuses the same
+ * `border-soft + overlay-1` panel the routes below already contribute — adding it would grow the
+ * walk without growing what is measured.
+ */
+const BASELINE_SURFACE_COMBOS = 10;
 const BASELINE_CONTROL_COMBOS = 17;
 
 const ROUTES = [

@@ -2653,12 +2653,18 @@ The value is not preference but **the exact derived value from the root face**; 
 ```
 --dialog-w-sm: 420px;   /* Dialog default — convergence point of hardcoded cluster 360~448 */
 --dialog-w-md: 560px;   /* Topology «Add Concept» composer · wide sheet */
+--dialog-max-h: 44rem;  /* Ceiling before a dialog's own body scrolls (2026-09-05) */
 ```
 
 - **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, convening the "System" team comes first.
 - Single source of truth for centered modal/composer width; primary consumer is `Dialog`
   (`src/shared/ui/dialog.tsx`). Actual application wraps narrow viewports with
   `w-[min(var(--dialog-w-*), calc(100vw - 2rem))]`.
+- **Height** is `max-h-[min(80vh, var(--dialog-max-h))]` for a dialog long enough to scroll its own
+  body. `80vh` is a relationship to the viewport and stays at the call site; the ceiling is the
+  token. Added 2026-09-05 by the design council after the connectors add dialog was measured as
+  the only untokenized height clamp in the codebase — the same shape as the eight hardcoded widths
+  the scale above replaced.
 
 ### Consumption Norms (Hard)
 

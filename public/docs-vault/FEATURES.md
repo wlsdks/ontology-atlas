@@ -38,7 +38,7 @@ agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/ontology/insights`, `/projects`, and `/agents`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **Desktop app** (macOS · Windows x64 beta) | signed/notarized macOS DMG or unsigned Windows beta NSIS → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; primary workbench routes `/topology`, `/architecture`, `/docs`, `/ontology/insights`, `/projects`, `/agents`, and `/mcp`; `/git` remains a contextual workbench route | daily visual ontology work — pick a local vault folder, inspect reviewed architecture, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 58 commands) | `init / agent-setup / agent-files / agent-activity / add / import / list / find / validate / mcp-verify / query / compile / export` (vault basics + existing-vault Claude/Codex config repair + read-only agent-file map/drift readout + explicit live activity heartbeat + installed MCP health/graph-query smoke + deterministic graph compile + standard-format interop export) · `index / analyze / analysis / infer-imports / architecture / bootstrap / preflight / snapshot` (autonomous ingest, project ontology indexing, reviewed architecture conformance, commit preflight, and vault-scoped git snapshot commits) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / relate / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight + write) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, live agent activity handoff, architecture pre/post checks, commit-time vault impact preview, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | current runtime read/write inventory over JSON-RPC (`tools/list`; prove with `mcp-verify`) | AI agent (Claude Code, Codex, Cursor) — explicit vault/repo root proof · read for context · write back findings · vault-scoped Git status/local snapshots · safe relation removal/replacement and concept reclassification · bootstrap/index projects · finalize project competency receipts · compile/query/validator-backed health and fresh categorical meaning assessment |
 | **Website** | GitHub Pages static export / `/` + `/topology` + `/download` | With no active vault, `/` is the gateway; with a loaded local vault it is the topology map, as is explicit `/topology`. `/download` is the product intro + current release download path. Only `/docs`'s own separate local-source *browsing* tab stays desktop-only. |
@@ -992,9 +992,41 @@ When the screen first opens, only read-only tools are called (`git_status` / `gi
 
 **Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
 
-**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01).
+**On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place and links to it, because since 2026-09-05 the place is `/mcp` and not a section of this screen.
 
-#### Connectors — external MCP servers on the same screen (new 2026-09-05)
+**What left on 2026-09-05**: the folder's own MCP connection and the connectors moved to `/mcp`. This screen keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
+
+### `/mcp` — MCP (new 2026-09-05)
+
+**One sentence on what this screen does**: everything MCP — the folder's own server
+(share this folder with a coding tool) and the external connectors an in-app agent may
+reach — under one address, on two tabs (`?tab=`).
+
+- **Share this folder** — the three steps that put a ready config in front of each tool,
+  the connection status those files add up to, the first-contact proof packet an agent
+  pastes to prove it attached, and a collapsed "Not working?" fold holding file status,
+  CLI verification, and connecting from another code folder.
+- **Connectors** — the attached list: one line per connector carrying the service mark, the name,
+  what will actually run, the switch, and one more-actions button; that button's dialog holds the
+  keychain fields and removal, and removal confirms first because forgetting a token cannot be
+  undone. Adding opens one blocking dialog that searches what this machine already registers and
+  takes a by-hand entry.
+  A row wears a service's own mark **only where that service's published brand guideline was read
+  and permits monochrome use to show an integration** — GitHub today. Simple Icons is CC0, but CC0
+  waives copyright and not trademark, so every other service falls back to the generic connector
+  glyph rather than to an assumption that nobody would mind.
+
+**Why it came out of `/agents`**: that destination had grown two jobs sharing only the
+word "agent". "Which coding tools does this computer have" needs programs on this
+machine; "what does an agent reach over MCP" is a wire that behaves identically in a
+browser, and it was the taller half of the screen. The owner asked for the split and
+approved a longer rail: the desktop rail now carries eight destinations.
+
+**On the web**: the whole screen works, because MCP attaches to **the folder**, not to
+an Atlas screen. Two halves are app-only and each says so where it is missing — reading
+what this machine already registers, and keeping a token in the OS keychain.
+
+#### Connectors — the external MCP servers a folder may reach (new 2026-09-05)
 
 **One sentence**: attach an outside MCP server — Notion, GitHub, Atlassian, or one
 somebody wrote themselves — so the in-app conversation's agent can use it beside the
@@ -1335,10 +1367,10 @@ their viewport. `OperationsNav` and `OntologySubNav` are retired (deleted, not
 just unmounted).
 
 ### `AppNavRail` (desktop, `lg:` and up — left side, on every page)
-- 7 destinations: Map (`/`, `/topology`) · Architecture (`/architecture`) ·
+- 8 destinations: Map (`/`, `/topology`) · Architecture (`/architecture`) ·
   Docs (`/docs`) · Insights (`/ontology/insights`) · Projects (`/projects` or
-  `/project/*`) · Agents (`/agents`) · Git (`/git`). Workshop remains the map's
-  contextual relation-writing surface.
+  `/project/*`) · Agents (`/agents`) · MCP (`/mcp`) · Git (`/git`). Workshop
+  remains the map's contextual relation-writing surface.
 - Bottom utility tier: the `settingsSlot` plus the web-only Get App tile.
   `AppShell` supplies the app-wide settings trigger by default; a page can
   override the slot for a surface-specific control.
@@ -1412,8 +1444,8 @@ just unmounted).
 
 ### `BottomTabBar` (mobile only, `lg:` hidden)
 - 5 persistent destinations: Map · Architecture · Docs · Insights · Projects.
-  Contextual relation writing, Agents entry points, and Git keep their existing
-  narrow-screen paths. Web adds Get App as a sixth utility, not a destination.
+  Contextual relation writing, Agents and MCP entry points, and Git keep their
+  existing narrow-screen paths. Web adds Get App as a sixth utility, not a destination.
 - Min height 56 px (safe-area)
 - Hidden only on the standalone `/download/` surface. Root without a loaded
   vault is the gateway; after a vault loads, root shares the map destination.

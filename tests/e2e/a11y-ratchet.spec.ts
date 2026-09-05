@@ -193,8 +193,25 @@ const MIN_RULES_PASSED_PER_ROUTE = 15;
  * If a route drops below this floor, **ask why that screen is empty first** —
  * lowering the floor is right only when the answer is "that screen really is like
  * that".
+ *
+ * ## 15 → 13 (2026-09-05), and the answer really was "that screen is like that"
+ *
+ * MCP left `/agents` for its own destination, and what remains of `/agents` **in the
+ * state this list opens it in** — a browser, which cannot launch a program — is a
+ * title, one sentence, and one degradation row that says why and links to where the
+ * folder connection now lives. Measured: **14**.
+ *
+ * The question this floor asks is "did the body mount", and 14 answers it as clearly
+ * as 40 does; an empty screen is still 0. What 14 does *not* answer is whether the
+ * screen is worth its own destination on the web, and that is not this gate's
+ * question — the installed app draws the runner list here and is far above the floor.
+ * The barren web state is recorded as a design observation instead of being padded
+ * with elements to satisfy a number.
+ *
+ * 13 keeps one element of margin below today's thinnest real screen, so the next
+ * screen that loses its body still fails.
  */
-const MIN_MAIN_ELEMENTS_PER_ROUTE = 15;
+const MIN_MAIN_ELEMENTS_PER_ROUTE = 13;
 
 test("접근성 래칫 — 새 룰 위반 0, 기존 개수는 늘지 않는다", async ({ page }) => {
   // Routes went 8 → 17. At 2.5s of settle time per route plus the axe run, this

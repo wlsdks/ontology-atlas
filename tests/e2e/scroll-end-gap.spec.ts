@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 import { AUDITED_ROUTES } from "./audited-routes";
+import { FIXTURE_VAULT } from "./fixture-vault";
 import { seedFirstRunSeen } from "./first-run-seed";
+import { stubDirectoryPicker } from "./vault-picker-stub";
 
 /**
  * Whether the bottom gap survives at the end of a scroll — the shell body slot's
@@ -30,6 +32,16 @@ import { seedFirstRunSeen } from "./first-run-seed";
 
 /** The measured minimum reservation is 40px (`lg:pb-10`). 24 only absorbs subpixel jitter. */
 const MIN_GAP = 24;
+
+/**
+ * What a page wearing `PAGE_FRAME` must reserve at the bottom at `≥lg` — the frame's
+ * `--page-bottom-breath` (40px), minus the same subpixel slack `MIN_GAP` allows.
+ *
+ * It is deliberately **not** read from the token at runtime: a check that recomputes its own
+ * expectation from the thing it is checking cannot fail. If the breath is re-decided, this number
+ * moves in the same diff, and `page-frame.contract.test.ts` is where that decision is recorded.
+ */
+const MIN_FRAME_RESERVE = 36;
 
 /**
  * Uses the **canonical** audited-route list as is (2026-08-06).
@@ -107,6 +119,19 @@ type Measured = {
   gap: number | null;
   /** When a fixed bottom tab bar exists, how far the last ink sits above it. */
   tabClearance: number | null;
+  /**
+   * **What the page itself reserves at the bottom, and whether it wears the page frame.**
+   *
+   * `gap` alone cannot tell "the frame reserved 40px" from "the last card happened to have 28px of
+   * its own padding" — measured 2026-09-05 with the reservation deliberately removed, the gap on
+   * `/ko/mcp/` was **28px**, over `MIN_GAP` and therefore green, while the page reserved nothing at
+   * all. So the reservation is read directly.
+   *
+   * Frame membership is detected from the **rendered** max width rather than from a class name: a
+   * class assertion belongs in `page-frame.contract.test.ts`, and this file's job is pixels.
+   */
+  framed: boolean;
+  rootPaddingBottom: number;
 };
 
 async function measure(page: import("@playwright/test").Page): Promise<Measured> {
@@ -117,7 +142,16 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
         (d.parentElement?.className ?? "").includes("flex min-h-0 flex-1"),
     );
     if (!slot) {
-      return { slot: false, scrollable: false, rootHeight: 0, scrollHeight: 0, gap: null, tabClearance: null };
+      return {
+        slot: false,
+        scrollable: false,
+        rootHeight: 0,
+        scrollHeight: 0,
+        gap: null,
+        tabClearance: null,
+        framed: false,
+        rootPaddingBottom: 0,
+      };
     }
     /**
      * The page root — **not the first child.**
@@ -218,8 +252,12 @@ async function measure(page: import("@playwright/test").Page): Promise<Measured>
     });
 
     const slotRect = slot.getBoundingClientRect();
+    const rootStyle = root ? getComputedStyle(root) : null;
+    const pageMax = getComputedStyle(document.documentElement).getPropertyValue("--page-max").trim();
     return {
       slot: true,
+      framed: Boolean(rootStyle && pageMax && rootStyle.maxWidth === pageMax),
+      rootPaddingBottom: rootStyle ? Math.round(Number.parseFloat(rootStyle.paddingBottom) || 0) : 0,
       scrollable: slot.scrollHeight > slot.clientHeight + 1,
       rootHeight: Math.round(root?.getBoundingClientRect().height ?? 0),
       scrollHeight: Math.round(slot.scrollHeight),
@@ -241,6 +279,8 @@ for (const vp of VIEWPORTS) {
     let scrolledRoutes = 0;
     /** How many routes the shell body slot was actually found on. */
     let slotRoutes = 0;
+    /** How many routes ④ actually judged. 0 at a desktop width means that check never ran. */
+    let framedRoutes = 0;
     /** How many routes ③ actually judged. 0 means that check never ran. */
     let tabMeasured = 0;
 
@@ -256,6 +296,29 @@ for (const vp of VIEWPORTS) {
         continue;
       }
       slotRoutes += 1;
+
+      /*
+       * ④ **A page wearing the frame reserves the desktop breath, scrolling or not.**
+       *
+       * This sits **above** the `scrollable` guard on purpose. Two destinations (`/agents`,
+       * `/mcp`) are shorter than the viewport in the state this file opens them in — nothing is
+       * attached — so every check below was skipped for them on every desktop pass, and a real
+       * defect shipped underneath: `PAGE_FRAME` reserved nothing at the bottom at `lg`, and with a
+       * folder open the last card sat flush against the installed app's window edge. Planting that
+       * defect left all three desktop passes green.
+       *
+       * A reservation is measurable whether or not the page is long enough to need it today, which
+       * is exactly why it is the part that can be judged here.
+       */
+      if (vp.w >= BOTTOM_TAB_BAR_MAX_WIDTH && m.framed) {
+        framedRoutes += 1;
+        if (m.rootPaddingBottom < MIN_FRAME_RESERVE) {
+          violations.push(
+            `${label}: 페이지 틀을 입고도 데스크톱 바닥 예약이 ${m.rootPaddingBottom}px (< ${MIN_FRAME_RESERVE})`,
+          );
+        }
+      }
+
       if (!m.scrollable) continue;
       scrolledRoutes += 1;
 
@@ -302,6 +365,20 @@ for (const vp of VIEWPORTS) {
      * stayed hidden. At widths where the tab bar stands, at least one route must
      * actually be judged.
      */
+    /*
+     * ④'s idling guard, the same shape as ③'s. `framed` is detected from the rendered max width,
+     * so a shell change or a token rename would silently take every frame member out of view and
+     * this check would pass while measuring nothing — which is the exact failure mode that let the
+     * reservation defect through in the first place.
+     */
+    if (vp.w >= BOTTOM_TAB_BAR_MAX_WIDTH) {
+      expect(
+        framedRoutes,
+        `${vp.label}: 페이지 틀을 입은 라우트를 한 번도 못 찾았다 — ④ 검사가 통째로 공회전했다. ` +
+          `틀이 사라졌거나(그러면 계약이 바뀐 것) --page-max 판별이 낡았다.`,
+      ).toBeGreaterThan(1);
+    }
+
     if (vp.w < BOTTOM_TAB_BAR_MAX_WIDTH) {
       expect(
         tabMeasured,
@@ -309,6 +386,88 @@ for (const vp of VIEWPORTS) {
           `탭바가 사라졌거나(그러면 이 폭의 계약이 바뀐 것) 셀렉터가 낡았다.`,
       ).toBeGreaterThan(0);
     }
+
+    expect(violations, violations.join("\n")).toEqual([]);
+  });
+}
+
+/**
+ * **The routes above are opened with no folder, and two of them are short in that state.**
+ *
+ * Measured 2026-09-05 at 1040×720 and 1512×900: with nothing attached, `/mcp` is 533px and
+ * `/agents` 228px inside a 720px slot. `!m.scrollable` skips them before any assertion runs, so
+ * both were carried through every desktop pass **without being judged once** — and a defect
+ * shipped underneath that: `PAGE_FRAME` reserved nothing at the bottom at `lg`, so with a folder
+ * open the last card sat flush against the bottom edge of the installed app's window. Planting
+ * that exact defect and re-running the three desktop passes above left all three green.
+ *
+ * A gate that cannot reach a state cannot judge it. So this opens the folder first, which is the
+ * state those screens are actually used in, and measures the same three checks there. The routes
+ * are the frame family plus the two tabs of `/mcp`, because a tab is a different document height
+ * and the frame is what both of them lean on.
+ *
+ * Two viewports, both `≥lg`: the app's window floor and the width where content most reliably
+ * exceeds the viewport. Below `lg` the reservation is the per-surface tab-bar reserve, which the
+ * pass above already measures on every route.
+ */
+const VAULT_ROUTES = [
+  "/ko/mcp/",
+  "/ko/mcp/?tab=connectors",
+  "/ko/agents/",
+  "/ko/ontology/insights/",
+  "/ko/projects/",
+] as const;
+
+const VAULT_VIEWPORTS = [
+  { label: "desktop-1040x720", w: 1040, h: 720 },
+  { label: "desktop-1280x700", w: 1280, h: 700 },
+] as const;
+
+for (const vp of VAULT_VIEWPORTS) {
+  test(`스크롤 끝 하단 여백 — 폴더를 연 ${vp.label}`, async ({ page }) => {
+    test.setTimeout(180_000);
+    await stubDirectoryPicker(page, { ...FIXTURE_VAULT });
+    await seedFirstRunSeen(page);
+    await page.setViewportSize({ width: vp.w, height: vp.h });
+
+    await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+    await page.getByTestId("first-run-starter-open").click();
+    await page.getByTestId("vault-guide-pick-existing").click();
+    await expect(
+      page.getByTestId("first-run-starter"),
+      "볼트가 안 물렸다 — 아래 측정은 전부 무의미하다",
+    ).toHaveCount(0, { timeout: 30_000 });
+
+    const violations: string[] = [];
+    let scrolledRoutes = 0;
+
+    for (const url of VAULT_ROUTES) {
+      await page.goto(url, { waitUntil: "domcontentloaded" });
+      await page.waitForTimeout(1200);
+      const m = await measure(page);
+      expect(m.slot, `${url}: 셸 본문 슬롯을 못 찾았다 — 셸 구조가 바뀌었다`).toBe(true);
+      if (!m.scrollable) continue;
+      scrolledRoutes += 1;
+
+      if (m.rootHeight < m.scrollHeight - 1) {
+        violations.push(`${url}: 페이지 루트가 압축됐다 (박스 ${m.rootHeight} < 내용 ${m.scrollHeight})`);
+      }
+      if (m.gap === null) {
+        violations.push(`${url}: 잉크를 하나도 못 찾았다 — 계측 실패이지 통과가 아니다`);
+      } else if (m.gap < MIN_GAP) {
+        violations.push(`${url}: 스크롤 끝 하단 여백 ${m.gap}px (< ${MIN_GAP})`);
+      }
+    }
+
+    /*
+     * The idling guard this whole test exists because of. If the folder stopped attaching, or the
+     * screens became short again, every assertion above would pass while measuring nothing — which
+     * is precisely how the pass above stayed green over a live defect.
+     */
+    expect(
+      scrolledRoutes,
+      `${vp.label}: 폴더를 열고도 스크롤되는 라우트가 없다 — 이 검사가 통째로 공회전했다`,
+    ).toBeGreaterThan(0);
 
     expect(violations, violations.join("\n")).toEqual([]);
   });

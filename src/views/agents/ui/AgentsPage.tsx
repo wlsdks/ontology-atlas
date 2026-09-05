@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 
-import { AcpRuntimeSettings, AgentSetupSection } from '@/widgets/app-settings-menu';
+import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
@@ -33,8 +33,21 @@ import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-fr
  * **What this screen holds and does not.** Holds: the runner list, connection checks, app-only install,
  * reconnection, opening a conversation. Does not hold: **API keys** (the 2026-08-16 "freeze the path,
  * do not emphasize it" decision stands — promoting to a destination is itself emphasis and cannot
- * quietly reverse it) and **the workspace** (a vault answers a different axis; owned by
- * `local-vault-management`).
+ * quietly reverse it), **the workspace** (a vault answers a different axis; owned by
+ * `local-vault-management`), and — since 2026-09-05 — **MCP**.
+ *
+ * ## Why MCP left (2026-09-05)
+ *
+ * This destination had grown two jobs that only share a word. "Which coding tools does this
+ * computer have" is about programs on this machine and is the reason the screen exists. "What does
+ * an agent reach over MCP" — the folder's own server plus the external connectors — is about a wire
+ * that works the same in a browser, and it was the taller half of the page. The owner read the
+ * merged screen and asked for the split: *"Agents itself needs a redesign — MCP separately (doesn't
+ * it need its own LNB tab?)"*. It is now `/mcp`.
+ *
+ * The runner list's web row used to point at *"the «MCP connection» section on this screen"*. A
+ * section name is guidance only while that section is on the same screen, so that sentence now
+ * carries a **link** to the new destination instead (`AcpRuntimeSettings`).
  */
 export function AgentsPage() {
   const t = useTranslations('agents');
@@ -89,21 +102,6 @@ export function AgentsPage() {
         <AcpRuntimeSettings embedded onOpenChat={openChatOnMap} />
       </section>
 
-      {/*
-        "MCP connection" is on this screen because of what the section above says on the web:
-        *"in this screen too, from the «MCP connection» section …"*. Without that section here, that
-        sentence **points at nothing**. And this really does work on the web — MCP attaches to a folder,
-        not to a screen (2026-08-01 ledger).
-      */}
-      <section className="mt-8 min-w-0" aria-labelledby="agents-mcp-heading">
-        <h2
-          id="agents-mcp-heading"
-          className="mb-3 text-body-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]"
-        >
-          {t('mcpHeading')}
-        </h2>
-        <AgentSetupSection />
-      </section>
     </main>
   );
 }

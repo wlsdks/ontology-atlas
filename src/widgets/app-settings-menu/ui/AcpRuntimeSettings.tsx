@@ -5,6 +5,9 @@ import { ChevronDown, MessageSquare, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
+import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
+
 import { badgeClass } from '@/shared/ui/badge-class';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui/control-class';
@@ -175,7 +178,27 @@ export function AcpRuntimeSettings({
           label={t('webLabel')}
           caption={t('webCaption')}
           testId="app-settings-runtimes-web"
-          control={null}
+          /*
+           * ⚠️ **A link, because the place it names is no longer on this screen**
+           * (2026-09-05). The caption used to say "the «MCP connection» section on this
+           * screen", and a section name is guidance only while that section is here to be
+           * scrolled to. MCP became its own destination, so the row carries the way there
+           * instead of a name — the same rule that forbids a degradation card from stating
+           * a reason with nowhere to go.
+           */
+          control={
+            <Link
+              href={DESTINATION_HREF.mcp}
+              data-testid="app-settings-runtimes-mcp-link"
+              className={controlClass({
+                shape: 'link',
+                tone: 'accent',
+                className: 'font-[var(--font-weight-signature)]',
+              })}
+            >
+              {t('webMcpLink')}
+            </Link>
+          }
         />
       </SettingsGroup>
     );
@@ -205,14 +228,39 @@ export function AcpRuntimeSettings({
         In the sheet there is no title, so this line takes that place. So it is not
         deleted; **the caller decides.**
       */}
-      <div
-        className={`flex items-start gap-3 px-1 ${embedded ? 'justify-end' : 'justify-between'}`}
-      >
-        {embedded ? null : (
-          <p className="min-w-0 break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
-            {t('intro')}
-          </p>
-        )}
+      {/*
+        ⚠️ **The installed app had no way to `/mcp` from here** (PO council, 2026-09-05).
+        `DESTINATION_HREF.mcp` had exactly two production consumers: the rail tile, and one link
+        in the branch above — which only renders when the ACP bridge is **absent**, i.e. in a
+        browser. So on the surface where this screen matters most, three sentences named MCP setup
+        (`intro`, `guardedExplainer`, `unknownExplainer`) and none of them could be followed. A
+        name with no way there is the dead pointer `.claude/rules/surfaces.md` forbids in a
+        degradation card, and it is no better outside one.
+
+        The link is quiet and always drawn, so the row has a left slot in both shapes: on the
+        destination (`embedded`) the intro is the page's own lede and is not repeated, and the
+        link stands alone; in the sheet it sits under the intro.
+      */}
+      <div className="flex items-start justify-between gap-3 px-1">
+        <div className="min-w-0">
+          {embedded ? null : (
+            <p className="break-keep text-label leading-label text-[color:var(--color-text-quaternary)]">
+              {t('intro')}
+            </p>
+          )}
+          <Link
+            href={DESTINATION_HREF.mcp}
+            data-testid="app-settings-runtimes-mcp-link"
+            className={controlClass({
+              shape: 'link',
+              tone: 'muted',
+              hoverInk: 'strong',
+              className: `text-label ${embedded ? '' : 'mt-1'}`,
+            })}
+          >
+            {t('mcpLink')}
+          </Link>
+        </div>
         <Chip
           size="lg"
           tone="secondary"

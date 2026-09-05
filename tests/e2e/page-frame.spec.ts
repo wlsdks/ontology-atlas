@@ -30,6 +30,10 @@ const MEMBERS = [
   { route: "/ko/projects/", title: "프로젝트" },
   { route: "/ko/ontology/insights/", title: "그래프 인사이트" },
   { route: "/ko/agents/", title: "에이전트" },
+  // MCP (2026-09-05) — a new list destination wearing the same frame. A member that is
+  // not on this list is a screen free to pick its own top spacing again, which is the
+  // exact defect this spec exists for.
+  { route: "/ko/mcp/", title: "MCP" },
 ] as const;
 
 async function measureHeader(
@@ -80,7 +84,7 @@ test.describe("페이지 틀", () => {
    * the same title origin and inset. A string contract alone cannot catch a
    * difference in header interior height.
    */
-  test("세 목적지의 제목이 같은 y 에 선다 (1280 · 768)", async ({ page }) => {
+  test("목적지들의 제목이 같은 y 에 선다 (1280 · 768)", async ({ page }) => {
     await seedFirstRunSeen(page);
     for (const width of [1280, 768]) {
       await page.setViewportSize({ width, height: 900 });
@@ -89,7 +93,13 @@ test.describe("페이지 틀", () => {
         const m = await measureHeader(page, member.route);
         measured.push({ title: member.title, titleY: m.titleY, padLeft: m.padLeft });
       }
-      expect(measured.length, "라우트를 하나도 못 재면 이 시험이 헛돈다").toBe(3);
+      /*
+       * Derived from the member list rather than pinned by hand: MCP joined the family on
+       * 2026-09-05, and a hand-written 3 turns a new member into a failure instead of a
+       * measurement. The floor keeps "measured nothing" from reading as a pass.
+       */
+      expect(MEMBERS.length, "멤버가 비면 이 시험이 헛돈다").toBeGreaterThan(2);
+      expect(measured.length, "라우트를 하나도 못 재면 이 시험이 헛돈다").toBe(MEMBERS.length);
       expect(
         measured.filter((m) => m.titleY === null).map((m) => m.title),
         "틀 요소를 못 찾은 라우트가 있다 — 「못 쟀다」를 「통과」로 세지 않는다",

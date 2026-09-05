@@ -283,6 +283,14 @@ type DegradedSurface = {
    * `tests/contract/settings-section-reference.contract.test.ts`.
    */
   alsoHereNamesSettingsSection?: true;
+  /**
+   * The other half of ③ once **the place that works is another destination**
+   * (2026-09-05). `alsoHereNamesSettingsSection` can only check a name against this
+   * screen's own headings, and the MCP pane left `/agents` for `/mcp`. A name alone
+   * would then be a dead pointer, so the card carries the way there and this asserts
+   * the link is on screen and resolves to that destination.
+   */
+  alsoHereLink?: { testId: string; href: RegExp };
   /** This card only renders after a vault is open — attach the fixture folder first. */
   needsVault?: true;
 };
@@ -305,9 +313,10 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // the narrow claim (automatic saving). Whether the path that ends right there is
     // alive is checked by a separate spec below.
     //
-    // ⚠️ **Re-aimed 2026-08-21** (ledger 90). This card used to be opened by the
-    // connect sheet, which has since been retired. It is now drawn by the "MCP connection"
-    // section of the "Agent" destination — **after a vault is open.**
+    // ⚠️ **Re-aimed 2026-08-21** (ledger 90), then again 2026-09-05. This card used to
+    // be opened by the connect sheet, which was retired; it then moved to the "Agent"
+    // destination's "MCP connection" section, and now stands on its own destination
+    // `/mcp` — **after a vault is open.**
     //
     // Owner's call: *"It is right to draw it only when a vault exists."* It is also more accurate: **with no vault there is no config
     // to save.** In the sheet era this card showed without a vault, and the sentence
@@ -319,7 +328,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("first-run-starter-open").click();
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
-      await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
       await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
     },
     needsVault: true,
@@ -354,7 +363,11 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     card: "app-settings-runtimes-web",
     reason: /브라우저는[\s\S]*권한이 없어요/,
     destinationText: /맥 앱을 받으면/,
-    alsoHereNamesSettingsSection: true,
+    // ⚠️ **Re-aimed 2026-09-05.** The sentence used to name a section of this same
+    // screen; MCP became its own destination, so the row now names the place *and*
+    // carries a link to it. A name with no way there is the dead pointer this whole
+    // registry exists to prevent.
+    alsoHereLink: { testId: "app-settings-runtimes-mcp-link", href: /\/mcp\// },
   },
   {
     // **"Connectors"** (registered 2026-09-05) — external MCP servers a person lets the
@@ -371,8 +384,17 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("first-run-starter-open").click();
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
-      await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+      await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+      /*
+       * ⚠️ **Two presses further in since 2026-09-05.** Connectors are the second tab of the MCP
+       * destination, and this card moved into the "add a connector" dialog — finding what is
+       * already registered is what happens there, and a card about that step reads as a verdict on
+       * the whole panel when it stands outside it. The claim is unchanged; the address of the
+       * claim is not.
+       */
+      await page.getByRole("tab", { name: /연결 도구/ }).click();
       await page.getByTestId("connectors-panel").waitFor({ timeout: 15_000 });
+      await page.getByTestId("connectors-add-open").click();
     },
     needsVault: true,
     card: "connectors-discovery-unavailable",
@@ -405,6 +427,11 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
         await expect(destination).toHaveAttribute("href", /\/download\//);
       }
       if (surface.destinationText) await expect(card).toHaveText(surface.destinationText);
+      if (surface.alsoHereLink) {
+        const link = page.getByTestId(surface.alsoHereLink.testId);
+        await expect(link, "이 화면에서도 되는 곳으로 갈 링크가 없다").toBeVisible();
+        await expect(link).toHaveAttribute("href", surface.alsoHereLink.href);
+      }
       if (surface.alsoHereNamesSettingsSection) {
         /*
          * The name inside 「…」 must be **a place that really exists on the same screen**.
@@ -450,7 +477,7 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
     await page.getByTestId("first-run-starter-open").click();
     await page.getByTestId("vault-guide-pick-existing").click();
     await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
-    await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
+    await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
     await page.getByTestId("agent-setup-section").waitFor({ timeout: 15_000 });
 
     const panel = page.getByTestId("web-manual-connect");
@@ -500,7 +527,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
      * not be dropped into the middle of a document halfway through.
      */
     await expect(page.getByTestId("agent-setup-section")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/ko/agents/");
+    // 2026-09-05: the pane moved to its own destination.
+    expect(new URL(page.url()).pathname).toBe("/ko/mcp/");
   });
 
   /**

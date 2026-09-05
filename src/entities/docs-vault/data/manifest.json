@@ -81,7 +81,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4226,
+      "wordCount": 4357,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "../AGENTS",
@@ -758,7 +758,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29919,
+      "wordCount": 29924,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },
@@ -794,7 +794,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 102285,
+      "wordCount": 102611,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug"
@@ -859,7 +859,7 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 39593,
+      "wordCount": 39673,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -900,7 +900,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 27144,
+      "wordCount": 27543,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug",
@@ -3795,7 +3795,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2206,
+      "wordCount": 2264,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "DECISIONS"
