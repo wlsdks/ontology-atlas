@@ -1,4 +1,9 @@
 import {
+  ensureSidecarIgnore,
+  isNotFoundError,
+  VAULT_SIDECAR_DIR,
+} from "./vault-sidecar";
+import {
   deserializeProjectSourceState,
   serializeProjectSourceState,
   type ProjectSourceBinding,
@@ -152,22 +157,10 @@ export function createMemoryProjectSourceStore(seed: string | null = null): Proj
   });
 }
 
-export const PROJECT_SOURCES_VAULT_DIR = ".ontology-atlas";
+export const PROJECT_SOURCES_VAULT_DIR = VAULT_SIDECAR_DIR;
 export const PROJECT_SOURCES_VAULT_FILE = "project-sources.json";
 export const PROJECT_SOURCES_RELATIVE_PATH =
   `${PROJECT_SOURCES_VAULT_DIR}/${PROJECT_SOURCES_VAULT_FILE}`;
-const SIDECAR_IGNORE_FILE = ".gitignore";
-const SIDECAR_IGNORE_CONTENT =
-  "# Ontology Atlas local runtime state — not for commit.\n*\n";
-
-function isNotFound(error: unknown): boolean {
-  return Boolean(
-    error
-    && typeof error === "object"
-    && "name" in error
-    && error.name === "NotFoundError",
-  );
-}
 
 /**
  * Private project roots live in the vault sidecar, never in graph markdown.
@@ -182,17 +175,7 @@ export function createVaultFileProjectSourceStore(
   let ignoreEnsured = false;
   const ensureIgnore = async (directory: FileSystemDirectoryHandle) => {
     if (ignoreEnsured) return;
-    try {
-      await directory.getFileHandle(SIDECAR_IGNORE_FILE);
-      ignoreEnsured = true;
-      return;
-    } catch (error) {
-      if (!isNotFound(error)) throw error;
-    }
-    const file = await directory.getFileHandle(SIDECAR_IGNORE_FILE, { create: true });
-    const writable = await file.createWritable();
-    await writable.write(SIDECAR_IGNORE_CONTENT);
-    await writable.close();
+    await ensureSidecarIgnore(directory);
     ignoreEnsured = true;
   };
 
@@ -203,7 +186,7 @@ export function createVaultFileProjectSourceStore(
         const file = await directory.getFileHandle(PROJECT_SOURCES_VAULT_FILE);
         return await (await file.getFile()).text();
       } catch (error) {
-        if (isNotFound(error)) return null;
+        if (isNotFoundError(error)) return null;
         throw error;
       }
     },

@@ -994,6 +994,36 @@ When the screen first opens, only read-only tools are called (`git_status` / `gi
 
 **On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01).
 
+#### Connectors — external MCP servers on the same screen (new 2026-09-05)
+
+**One sentence**: attach an outside MCP server — Notion, GitHub, Atlassian, or one
+somebody wrote themselves — so the in-app conversation's agent can use it beside the
+vault server.
+
+- **Atlas runs none of them.** The descriptor is passed into the ACP handshake and the
+  coding agent spawns the process or opens the connection. This is the extension
+  mechanism `.claude/rules/forbidden.md` allows: MCP inside a program the person
+  already trusts, never third-party code inside Atlas.
+- **Found for you, in the app.** The already-registered servers in `~/.claude.json`,
+  the folder's `.mcp.json`, `~/.codex/config.toml`, and `~/.cursor/mcp.json` are read
+  **read-only**, and only their names, transports, commands, addresses and
+  environment/header **key names** — never a value.
+- **Off until switched on**, one at a time. Before the switch, the row states what will
+  actually run (the command and its arguments, or the address), where the traffic goes,
+  and that `.ontology-atlas/llm-audit.jsonl` records Atlas's own model calls only and
+  does not cover it.
+- **The list lives in the folder**, at `.ontology-atlas/connectors.json`, which carries
+  its own ignore rule. **No token is ever written there**: a credential-shaped variable
+  holds a keychain reference, and the writer refuses a literal.
+- **The token stays out of the browser process too.** The reference becomes a value in
+  Rust, one line before it leaves for the agent.
+- **Name collisions are called out first.** Codex silently drops an ACP-supplied server
+  whose name a config layer already holds.
+
+**On the web**: adding, editing and removing connectors work (the list is in the folder,
+which a browser holds). Finding what is already registered and keeping a token are
+app-only, and the panel says so with somewhere to go.
+
 ## 3. MCP server (current runtime inventory)
 
 AI agents read/write the same vault as humans. Two ways to get the server running, and only two:

@@ -12,6 +12,7 @@ import { Check, Copy } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
+import { ConnectorsPanel } from '@/features/mcp-connectors';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
 import { VaultAgentSetupPanel } from './VaultAgentSetupPanel';
@@ -204,6 +205,15 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
       // re-decide «is it fine to omit this» every time.
       onOpenWorkflowGuide={onBeforeNavigate ?? (() => undefined)}
     />
+    </div>
+    {/*
+      **Connectors sit under the vault's own connection, not above it.** The vault server is
+      what this destination exists for and is wired without anyone asking; a connector is a
+      deliberate addition on top. Putting the optional thing second is what keeps the first
+      screen of this pane about the thing everybody needs.
+    */}
+    <div className="mt-4">
+      <ConnectorsPanel handle={localVault.handle ?? null} />
     </div>
     {/*
       **The first-contact proof packet** — instead of a human confirming by eye that

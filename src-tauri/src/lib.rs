@@ -19,6 +19,12 @@ mod acp_doctor;
 mod managed_node;
 /// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
+/// Read-only discovery of MCP servers the person already registered elsewhere — names and key
+/// names, never secret values.
+mod connectors;
+/// Keychain entries behind an external connector's tokens, resolved into the outgoing ACP line so
+/// the WebView never holds one.
+mod connector_secrets;
 /// One shape for every failure a command hands to the WebView (`<code>: <detail>`).
 mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
@@ -1140,6 +1146,11 @@ fn acp_send(
     session_id: String,
     line: String,
 ) -> Result<(), String> {
+    // A connector's token reaches the agent as a **reference** from the WebView and becomes a
+    // value only here, one line before it leaves the process. `resolve_secret_refs` returns an
+    // ordinary line untouched after a single substring check, so this costs nothing on the
+    // per-turn path; only the once-per-conversation `session/new` carries markers.
+    let line = connector_secrets::resolve_secret_refs(&line)?;
     sessions.send_line(&session_id, &line)
 }
 
@@ -3478,6 +3489,10 @@ pub fn run() {
             git::git_fetch,
             agent_setup::mcp_bundled_server,
             agent_setup::verify_mcp_server,
+            connectors::discover_mcp_connectors,
+            connector_secrets::connector_secret_set,
+            connector_secrets::connector_secret_status,
+            connector_secrets::connector_secret_delete,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")

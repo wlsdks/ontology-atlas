@@ -15,7 +15,7 @@ import { GATED_SESSION_MODE } from './runtime-gate';
 import { modeKeepsGate } from './mode-safety';
 import { isDiagnosticStderr } from './acp-trouble';
 import { readSlashCommands, type AcpSlashCommand } from './slash-commands';
-import { VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './vault-mcp-server';
+import { hasVaultMcpServer, VAULT_MCP_SERVER_NAME, vaultWriteConsentOn } from './vault-mcp-server';
 import {
   applyCurrentMode,
   createAcpClient,
@@ -797,8 +797,15 @@ export function useAcpSession({
         return;
       }
 
-      /** Did we really wire the vault server? Both auto-allow and the instructions read this value. */
-      const hasVaultMcp = (mcpServers?.length ?? 0) > 0;
+      /**
+       * Did we really wire the vault server? Both auto-allow and the instructions read this value.
+       *
+       * ⚠️ **Looked up by name, not by the array being non-empty** (2026-09-05). External
+       * connectors now share this array, so a person with one switched on and no bundled MCP
+       * binary would have had a non-empty list — and this would have told the agent it had the
+       * vault, and auto-allowed the `atlas-vault` name for whatever else answered to it.
+       */
+      const hasVaultMcp = hasVaultMcpServer(mcpServers);
       const client = createAcpClient(transport, {
         onUpdate: applyUpdate,
         /*

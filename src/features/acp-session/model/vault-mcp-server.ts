@@ -84,6 +84,22 @@ export function vaultAlreadyRegisters(
 }
 
 /**
+ * Was the vault server itself wired into this session?
+ *
+ * ⚠️ **Not "is the list non-empty"** (2026-09-05). The list stopped being ours alone the moment
+ * external connectors could join it: a person with a Notion connector switched on and no bundled
+ * MCP binary would have had a non-empty array, so the session would have claimed a vault server it
+ * never wired — and passed `atlas-vault` as an auto-allowed name, handing that auto-allow to
+ * whatever else answers to it. The entry is looked for by name instead.
+ */
+export function hasVaultMcpServer(servers: readonly unknown[] | null | undefined): boolean {
+  if (!Array.isArray(servers)) return false;
+  return servers.some(
+    (server) => (server as { name?: unknown } | null)?.name === VAULT_MCP_SERVER_NAME,
+  );
+}
+
+/**
  * Is the **server-side** write checkpoint on for this session?
  *
  * Derived from the same value that produces it, never from the runtime name: `vaultMcpServers`
@@ -91,10 +107,16 @@ export function vaultAlreadyRegisters(
  * The screen's reassurance that "changes through Atlas tools still stop at the server" is true only
  * while that env is actually being passed, so it is read back rather than assumed — a sentence the
  * machinery does not keep is the failure this repository keeps catching.
+ *
+ * ⚠️ **Only the vault server's own entry is read** (2026-09-05). This used to scan every entry in
+ * the array. With external connectors in that array, any one of them carrying an environment
+ * variable of that name would have turned the screen's checkpoint claim on for a gate that is not
+ * there — a sentence made true by somebody else's config file.
  */
 export function vaultWriteConsentOn(servers: readonly unknown[] | null | undefined): boolean {
   if (!Array.isArray(servers)) return false;
   return servers.some((server) => {
+    if ((server as { name?: unknown } | null)?.name !== VAULT_MCP_SERVER_NAME) return false;
     const env = (server as { env?: unknown } | null)?.env;
     if (!Array.isArray(env)) return false;
     return env.some(

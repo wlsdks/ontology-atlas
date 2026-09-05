@@ -6217,6 +6217,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path",
+      "slug": "2026-09-05-a-person-attaches-external-mcp-servers-to-the-in-app-agent-atlas-hands-the-list-over-and-never-sits-in-the-path"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn",
       "slug": "2026-09-05-the-cone-fits-the-free-canvas-its-dots-stop-riding-the-zoom-a-fogged-rim-stays-visible-and-its-labels-and-readout-say-what-is-drawn"
     },
@@ -11040,6 +11045,11 @@
       "slug": "agents-agent-new-2026-08-20-catalog-90"
     },
     {
+      "depth": 4,
+      "text": "Connectors — external MCP servers on the same screen (new 2026-09-05)",
+      "slug": "connectors-external-mcp-servers-on-the-same-screen-new-2026-09-05"
+    },
+    {
       "depth": 2,
       "text": "3. MCP server (current runtime inventory)",
       "slug": "3-mcp-server-current-runtime-inventory"
@@ -12907,6 +12917,43 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/capabilities/mcp-connectors": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Four fences",
+      "slug": "four-fences"
+    },
+    {
+      "depth": 2,
+      "text": "What the person is told before switching one on",
+      "slug": "what-the-person-is-told-before-switching-one-on"
+    },
+    {
+      "depth": 2,
+      "text": "Runtime narrowing",
+      "slug": "runtime-narrowing"
+    },
+    {
+      "depth": 2,
+      "text": "Where the values live",
+      "slug": "where-the-values-live"
+    },
+    {
+      "depth": 2,
+      "text": "Implementation evidence",
+      "slug": "implementation-evidence"
     },
     {
       "depth": 2,

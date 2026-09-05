@@ -1258,7 +1258,7 @@
         "notOnMapAria": "Not on the map",
         "notOnMapLabel": "Not on the map",
         "notOnMapBody": "This document is not drawn on the map yet. Fill in what the diagnostic above says is missing and it will appear there.",
-      "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
+        "recordTimeTitle": "Last written {at}. That is when the file changed, which is not the same as when someone checked it."
       },
       "sidebar": {
         "treeHeader": "Document list",
@@ -1317,8 +1317,8 @@
           "actionRelease": "I decided this",
           "unverifiableHeader": "Confirmed, but could not be checked · {count}",
           "unverifiablePlain": "This file could not be read, so whether it changed is unknown",
-        "reviewedOn": "checked {date}",
-        "reviewedOnTitle": "The day a person read this document and said the meaning was right"
+          "reviewedOn": "checked {date}",
+          "reviewedOnTitle": "The day a person read this document and said the meaning was right"
         }
       },
       "empty": {
@@ -4030,6 +4030,67 @@
     "remote-url-empty": "Type the repository address to send to.",
     "remote-url-leading-dash": "The address cannot start with a dash. Paste only the repository address.",
     "remote-url-has-whitespace": "The address has a space in it. Paste only the repository address.",
-    "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git."
+    "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git.",
+    "connector-secret-ref-invalid": "That connector reference is not a shape this machine can store. Remove the connector and add it again.",
+    "connector-secret-missing": "A token this connector needs is not in this machine’s keychain. Open Connectors, enter it again, or switch the connector off.",
+    "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again."
+  },
+  "connectors": {
+    "title": "Connectors",
+    "intro": "Let this conversation's agent reach an external MCP server: Notion, GitHub, a server you wrote yourself. Atlas does not run any of them. It hands the description to the coding agent, and that agent starts them.",
+    "transfer": "Everything a connector does travels from the coding agent straight to that service. Atlas is not in the middle. Its transfer log at .ontology-atlas/llm-audit.jsonl records Atlas's own model calls only, and does not cover this traffic. Every connector starts off.",
+    "authority": "A token that can write lets the agent change things in that service too. Every call it makes still stops at your permission card first.",
+    "runtimeNarrowing": "Connectors ride Claude sessions. Codex has not been measured for this yet, so a Codex session gets the folder's own server and nothing else.",
+    "none": "Nothing attached yet.",
+    "on": "On",
+    "off": "Off",
+    "add": "Add",
+    "remove": "Remove",
+    "rowTransfer": "Once on, the agent talks to {destination} directly.",
+    "rowTransferStdio": "Once on, this runs on your computer, and whatever it reaches it reaches from there. Atlas is not in between.",
+    "collision": "This machine already registers a server called {name}. Codex drops a second one under that name without saying so. Rename this one.",
+    "malformed": "{path} could not be read, so nothing here can be saved. Open that file and fix or delete it.",
+    "plaintext": "{path} holds a token in plain text ({keys}). Enter it below to move it into this machine's keychain; the next save removes the plain text.",
+    "foundTitle": "Already on this machine",
+    "foundNone": "No MCP server is registered anywhere this app can read.",
+    "foundFrom": "Registered in {source}",
+    "foundUnsupported": "This is an {transport} server, and neither coding agent accepts that transport any more.",
+    "secretStored": "Stored on this machine, ending {last4}.",
+    "keepInKeychain": "Keep {name} in this machine's keychain",
+    "secretStoredPlain": "Stored on this machine.",
+    "valueNotInFile": "A value under this name is never written to the file. Turn the keychain on to enter it.",
+    "valuePlaceholder": "value",
+    "secretMissing": "No value on this machine yet. The connector will not start without it.",
+    "secretSave": "Save",
+    "secretsWeb": "This connector needs a value for {keys}. Keeping it needs the installed app.",
+    "customTitle": "Add one by hand",
+    "customBody": "For a server that is not registered anywhere yet.",
+    "customAdd": "Add connector",
+    "fieldName": "Name",
+    "fieldCommand": "Command",
+    "fieldCommandHint": "The full path. The agent runs without a PATH, so a bare name like npx finds nothing.",
+    "fieldArgs": "Arguments",
+    "fieldUrl": "Address",
+    "fieldEnvKeys": "Environment variable names",
+    "fieldHeaderKeys": "Header names",
+    "fieldKeysHint": "Names only. A value that looks like a credential goes in the keychain, never in the file.",
+    "fieldKeysHintWeb": "Names only. Keeping a value needs the installed app.",
+    "webTitle": "Finding what is already registered needs the installed app",
+    "webBody": "Reading ~/.claude.json or ~/.codex/config.toml needs a program running on this computer, and there is nowhere on this surface to keep a token. Adding a connector by hand still works, and the list is written into your folder.",
+    "webGetApp": "Get the app",
+    "transport": {
+      "stdio": "A program",
+      "http": "An address"
+    },
+    "problem": {
+      "name-empty": "Give it a name.",
+      "name-not-unique": "Another connector already uses this name.",
+      "command-missing": "Name the program to run.",
+      "command-not-absolute": "Write the full path: the agent runs without a PATH.",
+      "url-missing": "Give the address.",
+      "url-not-http": "The address has to start with http:// or https://.",
+      "secret-literal": "A token is written in plain text; move it into the keychain first.",
+      "value-missing": "A variable is set to come from the keychain and there is nothing behind it yet."
+    }
   }
 }

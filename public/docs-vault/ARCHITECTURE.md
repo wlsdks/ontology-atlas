@@ -158,6 +158,8 @@ ability. The canonical roster is the bridge table in
 | Keychain | `src/shared/lib/tauri-secrets.ts` | Impossible by design → degraded card |
 | LLM calls | `src/shared/lib/tauri-llm.ts` | Impossible by design → action not rendered |
 | In-app agent runtime (ACP) | `src/shared/lib/tauri-acp.ts` | A browser cannot spawn a process → one row states why and where |
+| Connector discovery | `src/shared/lib/tauri-connectors.ts` | Cannot read the person's own agent config files → degraded card; adding one by hand still works |
+| Connector secrets | `src/shared/lib/tauri-connector-secrets.ts` | No keychain in a browser → degraded card |
 
 Every bridge follows one convention: `getInvoke()` returns `null` when
 `isTauri()` is false, and the screen then says plainly that it cannot do this

@@ -26,13 +26,12 @@ provider-owned transfers.
 3. **The answer lives on the user's disk.** Vault frontmatter is the ontology.
    There is no server database, Firestore, or cloud store. Only the user's files
    and the browser's IndexedDB hold data.
-4. **Single-person first.** v0.x is a personal tool; see Login below.
+4. **Single-person first.** v0.x is a personal tool.
 
 ## While writing code
 
-- Before adding a capability, ask: “Can this work from vault files alone?”
-- If it appears to require Firestore, server sync, or another backend, redesign
-  it as Markdown on the user's disk.
+- Ask of every capability: can this work from vault files alone? If it seems to
+  need a backend, redesign it as Markdown on the user's disk.
 - `src/entities/vault-session/` and `src/features/docs-vault-local/` (entry
   UI) own local-folder access; new work joins them.
 
@@ -40,22 +39,23 @@ provider-owned transfers.
 
 - Vault frontmatter is the schema. Do not create a second canonical store or
   collection.
-- IndexedDB may cache the vault handle and user preferences. It never wins a
+- IndexedDB may cache the vault handle and preferences. It never wins a
   disagreement with the files on disk.
-- Prefer simple shapes. Cross-vault relation systems belong to a later phase.
+- Prefer simple shapes; cross-vault relations belong to a later phase.
 
 ## Login
 
 - No login route exists. R10 removed those routes and `@/features/user-auth`,
   `@/features/permissions`, and `@/features/account-scope` with them.
-- If cloud collaboration opens later, design its authentication then. Do not
-  pre-install it in Layer 1.
+- If cloud collaboration opens later, design its authentication then. Never
+  pre-install it.
 
 ## Security
 
 - Never scan password, credential, or key files from the user's disk.
   `permissions.deny` in `.claude/settings.json` enforces the read side; it needs
-  no path to resolve and outranks every hook.
+  no path to resolve and outranks every hook. One written exception
+  (`surfaces.md` table): agent config files, read-only, names not values.
 - Skip dotfiles and system directories such as `.env.local` and `.git/` while
   reading a vault.
 - Never send vault data over HTTP, WebSocket, or another external interface

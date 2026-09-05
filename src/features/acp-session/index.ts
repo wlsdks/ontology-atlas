@@ -2,6 +2,7 @@ export { deriveAcpTurnActivity } from "./model/acp-turn-activity";
 export type { AcpTurnActivity } from "./model/acp-turn-activity";
 export { isGuardedRuntime, runtimeOwnsWriteGate } from "./model/runtime-gate";
 export { vaultMcpServers, vaultSelfReadSlot, VAULT_MCP_SERVER_NAME } from "./model/vault-mcp-server";
+export { connectorAcpServers } from "./model/connector-servers";
 export { useChatSuggestions } from "./model/use-chat-suggestions";
 export type { ChatSuggestion } from "./model/chat-suggestions";
 export { useAcpSession } from "./model/use-acp-session";

@@ -70,6 +70,24 @@ export function runtimeOwnsWriteGate(runtimeId: string | null | undefined): bool
 }
 
 /**
+ * May this runtime be handed an **external** MCP server (`features/mcp-connectors`)?
+ *
+ * The condition is the one the table above already measures, so this is not a second hand-kept
+ * list: a connector's tools must reach a person as a `session/request_permission`, and only config
+ * isolation has been measured to produce that for an MCP child. Claude does
+ * (`CONFIG_ISOLATED_RUNTIMES`); Codex was measured **not** to, in the installed app on
+ * 2026-08-24 - a self-registered Atlas `add_relation` changed the vault with no request and no
+ * card. That verdict is about our own server; nobody has yet measured what it does with somebody
+ * else's, and the difference between "unmeasured" and "safe" is the whole point of this gate.
+ *
+ * So connectors ride only the runtime where the answer is known. An unmeasured runtime gets the
+ * vault server and nothing else, which is the same safe direction `runtimeOwnsWriteGate` takes.
+ */
+export function runtimeCarriesConnectors(runtimeId: string | null | undefined): boolean {
+  return typeof runtimeId === 'string' && CONFIG_ISOLATED_RUNTIMES.has(runtimeId);
+}
+
+/**
  * Runtimes whose configuration the app isolates. Mirrors `ISOLATION` in
  * `src-tauri/src/acp.rs`; `runtime-gate.test.ts` keeps the two from drifting.
  */
