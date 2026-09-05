@@ -4040,7 +4040,7 @@
     "intro": "Let this conversation's agent reach an external MCP server: Notion, GitHub, a server you wrote yourself. Atlas does not run any of them. It hands the description to the coding agent, and that agent starts them.",
     "transfer": "Everything a connector does travels from the coding agent straight to that service. Atlas is not in the middle. Its transfer log at .ontology-atlas/llm-audit.jsonl records Atlas's own model calls only, and does not cover this traffic. Every connector starts off.",
     "authority": "A token that can write lets the agent change things in that service too. Every call it makes still stops at your permission card first.",
-    "runtimeNarrowing": "Connectors ride Claude sessions. Codex has not been measured for this yet, so a Codex session gets the vault server and nothing else.",
+    "runtimeNarrowing": "Connectors ride Claude sessions. Codex has not been measured for this yet, so a Codex session gets the folder's own server and nothing else.",
     "none": "Nothing attached yet.",
     "on": "On",
     "off": "Off",
