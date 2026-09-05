@@ -414,7 +414,8 @@ export function LibraryPage() {
       >
         <div className={PAGE_COLUMN_STAGE}>
           <LibraryHeader t={t} />
-          <h2 className="mt-6 text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+          {/* One step under the h1 (14px): the hierarchy gate reads a tie as two titles. */}
+          <h2 className="mt-6 text-body font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
             {t("emptyTitle")}
           </h2>
           <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
@@ -588,7 +589,7 @@ export function LibraryPage() {
            */
           <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-10">
             <div className="max-w-[46ch] text-center">
-              <p className="text-body-lg font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
+              <p className="text-body font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
                 {model.sources.length > 0 ? t("readerNoWikiTitle") : t("emptyTitle")}
               </p>
               <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
