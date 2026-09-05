@@ -440,7 +440,7 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     },
     needsVault: true,
     card: "find-documents-web-limit",
-    reason: /브라우저에서는 지금 연 폴더만[\s\S]*절대 경로가 필요하고/,
+    reason: /여기서는 지금 연 폴더만[\s\S]*절대 경로가 필요하고/,
     destination: "find-documents-web-get-app",
   },
 ];
