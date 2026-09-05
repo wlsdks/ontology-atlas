@@ -731,7 +731,7 @@
     "heroTitleLine2": "사람의 인지 부채는 쌓여갑니다",
     "heroFactContains": "{parent} 안의 {child}",
     "heroFactDepends": "{from} → {to} 의존",
-    "heroLead": "Atlas에서 사람과 에이전트는 코드가 뜻하는 바를 검토 가능한 지도로 함께 남깁니다. 역량·경계·근거·미확인 사항을 살펴보고, 작업을 받아들이기 전에 무엇이 만들어졌는지 확인하세요.",
+    "heroLead": "Atlas에서 사람과 에이전트는 코드가 뜻하는 바 — 역량·경계·근거·미확인 사항 — 를 검토 가능한 지도로 함께 남깁니다. Claude Code처럼 이미 쓰는 코딩 에이전트가 MCP로 그 지도를 읽고 쓰기 때문에, 작업을 받아들이기 전에 무엇이 만들어졌는지 확인할 수 있습니다.",
     "heroDemoCta": "데모 먼저 보기",
     "factUnpublished": "아직 게시 전",
     "factVersionLabel": "버전",

@@ -731,7 +731,7 @@
     "heroTitleLine2": "People accumulate the cognitive debt.",
     "heroFactContains": "{parent} contains {child}",
     "heroFactDepends": "{from} depends on {to}",
-    "heroLead": "In Atlas, people and agents maintain a reviewable map of what the code means: its capabilities, boundaries, evidence, and unknowns. You can see what was built before accepting the work.",
+    "heroLead": "In Atlas, people and agents maintain a reviewable map of what the code means: its capabilities, boundaries, evidence, and unknowns. The coding agent you already use, such as Claude Code, reads and writes that map over MCP, so you can see what was built before accepting the work.",
     "heroDemoCta": "Watch the demo first",
     "factUnpublished": "not published yet",
     "factVersionLabel": "Version",

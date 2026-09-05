@@ -767,6 +767,28 @@ describe('i18n message catalog', () => {
     );
   });
 
+  /*
+   * Walkthrough, 2026-09-05: a first-time visitor read the whole first screen without meeting
+   * either word that says how Atlas is actually used — the coding agent they already run, and the
+   * protocol it speaks. "People and agents maintain a reviewable map" leaves both of those to be
+   * guessed, and the guess a walker made was that Atlas is a diagram editor.
+   *
+   * A property, not a sentence: the lede must name a coding agent and MCP. Anyone may rewrite the
+   * wording around them.
+   */
+  it('names the coding agent and the protocol on the gateway first screen, in both languages', async () => {
+    for (const locale of ['en', 'ko']) {
+      const messages = await readJson(path.join(MESSAGES_DIR, `${locale}.json`));
+      const lead = messages.download.heroLead;
+      assert.match(
+        lead,
+        /Claude Code/,
+        `${locale} gateway lede must name the coding agent the reader already runs`,
+      );
+      assert.match(lead, /\bMCP\b/, `${locale} gateway lede must name how the agent reaches Atlas`);
+    }
+  });
+
   // (Removed 2026-07-24) The builder inspector overview-tab jargon guard was
   // deleted with the retired ERD builder — its `ontologyPages.edit.inspector`
   // namespace no longer exists.
