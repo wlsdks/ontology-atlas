@@ -12,8 +12,10 @@ The vault is the Markdown folder whose files and typed frontmatter form the grap
 ## Run when
 
 - the user explicitly asks to turn supplied prose into ontology;
-- an RFC, meeting note, or PR states a new codebase concept;
-- a paragraph was pasted from a wiki or chat.
+- the user requests extraction from an RFC, meeting note, PR, wiki, or chat
+  that states a codebase concept.
+
+Pasted prose alone is not an extraction request; follow the requested task.
 
 Skip personal notes without domain/capability/element concepts, summary-only
 requests, and prose already living inside the target vault node.
@@ -48,7 +50,13 @@ source phrase, and whether it is new or a patch candidate.
 
 ## 3. Stop before writing
 
-Show one short numbered table and let the user choose:
+Reuse an explicit approval already given in this session only when the exact
+candidate content, relations, source evidence, and conditions are unchanged.
+A general request to extract meaning is not approval of unseen candidates.
+If no existing explicit approval covers the exact current candidates, show
+one short numbered table and ask the user to choose. Otherwise, proceed to
+step 4 without asking again. With zero candidates, report that result without
+requesting approval or writing anything:
 
 ```text
 Candidates from the supplied prose:

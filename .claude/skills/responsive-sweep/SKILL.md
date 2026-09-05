@@ -29,13 +29,15 @@ intercepted content. Only computed geometry and `elementFromPoint` proved them.
 | 1920×1080 | FHD |
 | 2560×1440 | QHD |
 
-Measure only affected bands for a narrow change; run the full matrix for chrome,
-layout, or breakpoint-contract changes.
+Use the router's returned bands. A local chrome or layout repair does not
+independently require the full matrix. If additional breakpoints are affected,
+update the change facts and use the resulting scope.
 
 ## Loop at each width
 
 1. Resize and navigate to a URL reproducing the exact state, such as
-   `?index=expanded` or `?recent=auto`. Always add `?guides=off`; the first-run
+   `?index=expanded` or `?recent=auto`. Set `guides=off` as a query parameter
+   (use `&` when a query already exists); the first-run
    overlay otherwise captures every `elementFromPoint`. Use `?guides=reset` only
    when testing the guide itself.
 2. Evaluate geometry:

@@ -73,8 +73,8 @@ camera, focus, panel, drag, and path, with a reduced-motion equivalent.
 
 ## After a council
 
-Choose one bench proposal or something smaller, never their union. Require an
-explicit remove/dim/collapse/align action. When opinions split, prefer the
+Choose one bench proposal or something smaller, never their union. Leave a supported
+design unchanged; require an evidence-backed correction only when a defect exists. When opinions split, prefer the
 smallest change that clarifies reading ontology in the installed app.
 
 **Remeasure after applying.** Rerun only the route proofs invalidated by the
