@@ -3176,6 +3176,23 @@ so leave it as is. */
       100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
         var(--topology-v2-panel-bottom-reserve)
     );
+    /*
+     * The **selected-node inspector's** own ceiling. It is an alias, not a copy: at
+     * `lg` and above the inspector and the meaning editor are the same anchored
+     * popover with the same ceiling, and writing the formula twice would let them
+     * drift the day one moves.
+     *
+     * It exists because the two surfaces stop agreeing below `lg`, where the
+     * inspector becomes a bottom sheet capped so the map keeps its majority (see the
+     * `<lg` override). The editor cannot take that cap: it is a **form**, and a form
+     * that cannot show its own submit row is broken rather than compact. Measured
+     * 2026-09-05 at 600×900 after the shared token was capped — the editor's content
+     * is 505px, the cap gave it 403, and the 「why」 textarea sat at y 756 under the
+     * panel's own sticky footer, which answered its centre instead
+     * (`contextual-meaning-editor.spec.ts`, "every control is reachable"). 768 and
+     * 834 were 46px and 7px from the same failure.
+     */
+    --topology-v2-inspector-max-height: var(--topology-v2-panel-max-height);
     /* 9→12px (feat/chrome-system §9, INDEX panel v2.1) — Promote the radius of the shared panel layer between datasheet and INDEX to the final step of the chrome system's 4-layer step
 (keycap4·inner7·tile/chip/field10·panel12). */
     --topology-v2-panel-radius: var(--radius-panel);
@@ -3510,8 +3527,15 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
        * The zoom division is the same correction the desktop token carries — inside a
        * `zoom`ed subtree `dvh` scales with the factor. Below `lg` the factor is 1, so
        * this is identity today and stays correct if that ever changes.
+       *
+       * ⚠️ **This caps the inspector, not every panel that shares the anchor.** The
+       * first version of this override moved `--topology-v2-panel-max-height`, which
+       * the meaning editor reads too — and the editor is a form, so 405px of ceiling
+       * put its own 「why」 textarea behind its own sticky footer at 600×900 (2026-09-05,
+       * caught by `contextual-meaning-editor.spec.ts`). The reason for the split lives
+       * with the token declaration above.
        */
-      --topology-v2-panel-max-height: calc(
+      --topology-v2-inspector-max-height: calc(
         45dvh / var(--topology-ui-scale-factor)
       );
       /* Expanded INDEX bottom also rises above reservation in zones where tab bar exists (<lg)

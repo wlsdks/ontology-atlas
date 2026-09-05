@@ -5934,8 +5934,11 @@ function HomePageImpl() {
              *    of reach. Anchored to the bottom above
              *    `--topology-v2-panel-bottom-reserve` (which already carries the tab
              *    bar plus safe area below `lg`) the footer cannot reach the bar, and
-             *    the height cap on `--topology-v2-panel-max-height` decides the top
-             *    edge, so the ego graph stays on screen above it.
+             *    the height cap on `--topology-v2-inspector-max-height` decides the
+             *    top edge, so the ego graph stays on screen above it. That cap is the
+             *    inspector's alone — the meaning editor shares this positioner and
+             *    keeps the full `--topology-v2-panel-max-height`, because a form must
+             *    be able to show its own submit row.
              * ② `pointer-events-none` here with `pointer-events-auto` on the painted
              *    child. This element is a positioning wrapper: at 834 it measured
              *    810px wide while only 520px painted, so 290px of the map answered

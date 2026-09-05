@@ -1368,7 +1368,10 @@ export function TopologyV2DetailPanel({
         // overflowed the viewport and pushed the "Full details" footer off screen,
         // out of the mouse's reach (measured at 1440×900, y=911). A viewport-based
         // max-height plus internal scrolling clamps the panel so it is always
-        // anchored wholly inside the viewport. Mockup redesign (2026-07-24) — the
+        // anchored wholly inside the viewport. The cap is
+        // `--topology-v2-inspector-max-height`, this surface's own alias — below `lg`
+        // it becomes a bottom sheet capped so the map keeps its majority, and the
+        // meaning editor sharing this anchor must not inherit that (it is a form). Mockup redesign (2026-07-24) — the
         // root has no padding and acts only as the scroll container, and each zone
         // (identity/ops/relations) carries its own padding. That is what lets the
         // full-bleed zone divider (`zdiv`) and the sticky footer anchor with no
@@ -1378,7 +1381,7 @@ export function TopologyV2DetailPanel({
           // className's responsive width override) — here it only fills that width
           // and carries the remaining material.
           "flex w-full flex-col",
-          "max-h-[var(--topology-v2-panel-max-height)] overflow-y-auto",
+          "max-h-[var(--topology-v2-inspector-max-height)] overflow-y-auto",
           "rounded-[var(--topology-v2-panel-radius)] border border-[color:var(--topology-v2-panel-border)]",
           "bg-[color:var(--topology-v2-panel-surface)]",
           "shadow-[var(--topology-v2-panel-shadow)]",
