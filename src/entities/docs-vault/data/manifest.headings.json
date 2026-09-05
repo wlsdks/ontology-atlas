@@ -10998,6 +10998,11 @@
       "slug": "agents-agent-new-2026-08-20-catalog-90"
     },
     {
+      "depth": 4,
+      "text": "Connectors — external MCP servers on the same screen (new 2026-09-05)",
+      "slug": "connectors-external-mcp-servers-on-the-same-screen-new-2026-09-05"
+    },
+    {
       "depth": 2,
       "text": "3. MCP server (current runtime inventory)",
       "slug": "3-mcp-server-current-runtime-inventory"

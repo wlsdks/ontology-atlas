@@ -81,8 +81,8 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4187,
-      "updatedAt": "2026-08-31",
+      "wordCount": 4226,
+      "updatedAt": "2026-09-05",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -888,7 +888,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 26770,
+      "wordCount": 27055,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug",

@@ -49,6 +49,8 @@ action or renders an honest degradation card stating why and where it works.
 | LLM call | `src/shared/lib/tauri-llm.ts` | impossible; action not rendered |
 | Agent setup | `src/shared/lib/tauri-agent-setup.ts` | cannot write a ready config without an absolute path; degradation card |
 | ACP runtime | `src/shared/lib/tauri-acp.ts`, `src-tauri/src/acp.rs` | cannot spawn a process; degradation card. A user may still attach an externally launched agent to the folder |
+| Connector discovery | `src/shared/lib/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | cannot read `~/.claude.json` or `~/.codex/config.toml`; degradation card. Adding a connector by hand still works, and the list lives in the vault folder |
+| Connector secrets | `src/shared/lib/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | no keychain in a browser; degradation card. The reference is resolved into the outgoing ACP line in Rust, so the WebView never holds a token |
 | Folder watch | `start_vault_watch` in `src-tauri/src/lib.rs`, `TauriVaultWatchBridge.tsx` | periodic reread: 1,500 ms after a burst, 5,000 ms while idle; delayed, not unavailable |
 
 Every new desktop capability uses the existing `getInvoke()`/`isTauri()`
