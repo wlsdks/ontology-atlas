@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-05",
+  "generatedAt": "2026-09-06",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -2228,6 +2228,7 @@
           "capabilities/agent-work-visibility",
           "capabilities/ai-analysis-review",
           "capabilities/cli-developer-entry",
+          "capabilities/mcp-connectors",
           "capabilities/mcp-server",
           "capabilities/ontology-dna-presentation",
           "capabilities/vault-agent"
@@ -2249,7 +2250,7 @@
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-09-05",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -5622,6 +5623,13 @@
         "fromSlug": "ontology/domains/agent-integration",
         "context": "frontmatter · **[capabilities/cli-developer-entry]**",
         "linkText": "capabilities/cli-developer-entry"
+      }
+    ],
+    "ontology/capabilities/mcp-connectors": [
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/mcp-connectors]**",
+        "linkText": "capabilities/mcp-connectors"
       }
     ],
     "ontology/capabilities/ontology-dna-presentation": [
