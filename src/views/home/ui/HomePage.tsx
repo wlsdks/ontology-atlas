@@ -10,6 +10,7 @@ import {
   subscribeAgentChatIntent,
 } from "@/shared/lib/agent-chat-intent";
 import {
+  connectorAcpServers,
   isGuardedRuntime,
   runtimeOwnsWriteGate,
   vaultMcpServers,
@@ -17,6 +18,7 @@ import {
   useChatSuggestions,
   presentationRelationKeysForGraphEdge,
 } from "@/features/acp-session";
+import { useVaultConnectors } from "@/features/mcp-connectors";
 import { agentChatDoor } from "../model/agent-chat-door";
 import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "../model/search-lane-density";
 import {
@@ -2477,6 +2479,12 @@ function HomePageImpl() {
    * `mcp.atlas-vault.*` produced identical results from two processes. The decision
    * and its evidence are in `vault-mcp-server.ts`.
    */
+  /*
+   * The external MCP servers this person attached to this vault. Read from the folder rather
+   * than from browser storage, so the answer travels with the vault and both surfaces see the
+   * same list (`.ontology-atlas/connectors.json`).
+   */
+  const vaultConnectors = useVaultConnectors(vault.handle);
   const acpMcpServers = useMemo(() => {
     const registration =
       vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
@@ -2487,15 +2495,26 @@ function HomePageImpl() {
         : null;
     // Claude's isolated config already asks before every tool call, so a second
     // server-side gate would double-prompt. Everything else gets the server gate.
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
-      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
-    });
+    return [
+      ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+        ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+      }),
+      /*
+       * **The vault first, then whatever the person attached.** Atlas runs none of these — the
+       * descriptor goes into the handshake and the agent spawns it (`connector-servers.ts`).
+       * Order matters twice: claude-agent-acp lets a later same-named entry override an earlier
+       * one, and the session's instructions name the vault server, so it must be the one that
+       * survives.
+       */
+      ...connectorAcpServers(vaultConnectors.connectors),
+    ];
   }, [
     agentServer.launch,
     gitVaultPath,
     acpRuntimeId,
     vault.agentConfigStatus?.codexConfigValid,
     vault.agentConfigStatus?.codexRegisteredCommand,
+    vaultConnectors.connectors,
   ]);
 
   /*
