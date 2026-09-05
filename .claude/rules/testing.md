@@ -65,9 +65,13 @@ still passes, only then look at server age (`design-gates.md`, stale
 
 ## TDD
 
-1. Write the failing test before a feature or bug fix.
+1. Write the failing test before a behavioral feature or regression fix.
 2. Make the narrowest scope green.
 3. Refactor only after it is green.
+
+For prose, mechanical edits, and isolated visual adjustments, use the relevant
+checks or rendered evidence. Do not add tests that merely duplicate the
+implementation. Required checks and meaningful regression coverage still apply.
 
 ## Focused-first verification
 

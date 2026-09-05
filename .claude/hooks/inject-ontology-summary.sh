@@ -33,14 +33,14 @@
 
 set -e
 
-CLI_BIN=""
+CLI_ARGS=()
 if command -v ontology-atlas >/dev/null 2>&1; then
-  CLI_BIN="ontology-atlas"
+  CLI_ARGS=(ontology-atlas)
 elif [ -f "$(pwd)/cli/src/index.mjs" ]; then
-  CLI_BIN="node $(pwd)/cli/src/index.mjs"
+  CLI_ARGS=(node "$(pwd)/cli/src/index.mjs")
 fi
 
-if [ -z "$CLI_BIN" ]; then
+if [ "${#CLI_ARGS[@]}" -eq 0 ]; then
   exit 0
 fi
 
@@ -60,6 +60,11 @@ if [ -z "$VAULT" ]; then
   exit 0
 fi
 
+# Keep the runnable argv and the displayed shell command aligned. Quoting is
+# required for vaults/checkouts whose paths contain spaces or shell syntax.
+printf -v HEALTH_COMMAND '%q ' "${CLI_ARGS[@]}" health "$VAULT"
+HEALTH_COMMAND="${HEALTH_COMMAND% }"
+
 # Compact census only. Keep SessionStart output short because it is injected
 # into agent context on every new session.
 #
@@ -71,7 +76,7 @@ fi
 CLI_STDERR="$(mktemp)"
 trap 'rm -f "$CLI_STDERR"' EXIT
 
-if ! JSON=$($CLI_BIN overview "$VAULT" --json 2>"$CLI_STDERR"); then
+if ! JSON=$("${CLI_ARGS[@]}" overview "$VAULT" --json 2>"$CLI_STDERR"); then
   ESC=$(printf '\033')
   REASON=$(
     sed "s/${ESC}\[[0-9;]*m//g" "$CLI_STDERR" \
@@ -81,16 +86,13 @@ if ! JSON=$($CLI_BIN overview "$VAULT" --json 2>"$CLI_STDERR"); then
   )
   [ -z "$REASON" ] && exit 0
 
-  # A fresh clone or a new worktree has no `mcp/node_modules`, so the MCP child
-  # dies on ERR_MODULE_NOT_FOUND before it ever reads the vault. That is not a
-  # broken vault and `health` will not repair it — `health` runs through the same
-  # missing module. Naming the wrong command is worse than naming none: it costs
-  # a round trip and teaches that this line is noise (2026-08-24 observation).
-  FIX="ontology-atlas health $VAULT"
+  # Missing packages can occur even when mcp/node_modules already exists.
+  # Install the locked dependencies before asking health to read the vault.
+  FIX="$HEALTH_COMMAND"
   case "$REASON" in
-    *ERR_MODULE_NOT_FOUND*|*"Cannot find module"*|*package_json_reader*)
-      if [ -f "$(pwd)/mcp/package.json" ] && [ ! -d "$(pwd)/mcp/node_modules" ]; then
-        FIX="pnpm --dir mcp install   # this checkout has no mcp/node_modules yet"
+    *ERR_MODULE_NOT_FOUND*|*"Cannot find module"*|*package_json_reader*|*"Source-checkout MCP dependencies are missing"*)
+      if [ -f "$(pwd)/mcp/package.json" ]; then
+        FIX="pnpm --dir mcp install --frozen-lockfile && $HEALTH_COMMAND"
       fi
       ;;
   esac
@@ -112,8 +114,8 @@ EOF
 fi
 
 # Quick summary via Python (kind distribution + domain distribution + top hubs). Standard python3.
-SUMMARY=$(printf '%s' "$JSON" | python3 -c "$(cat <<'PY'
-import json, sys
+SUMMARY=$(printf '%s' "$JSON" | ATLAS_HEALTH_COMMAND="$HEALTH_COMMAND" python3 -c "$(cat <<'PY'
+import json, os, sys
 try:
     d = json.load(sys.stdin)
 except Exception:
@@ -136,7 +138,7 @@ if issues:
 if ambiguous:
     drift.append(f"{ambiguous} ambiguous alias{'es' if ambiguous != 1 else ''}")
 if drift:
-    print('Needs attention: ' + ', '.join(drift) + ' — run `ontology-atlas health` before relying on the graph.')
+    print('Needs attention: ' + ', '.join(drift) + ' — run `' + os.environ['ATLAS_HEALTH_COMMAND'] + '` before relying on the graph.')
 PY
 )" 2>/dev/null)
 

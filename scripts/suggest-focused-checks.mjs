@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -166,11 +166,40 @@ export function collapsePlaywrightCommands(commands) {
   return out;
 }
 
+/** Equivalent default Vitest coverage only; no persisted pass cache or changed routing. */
+export function collapseCoveredContractCommands(commands, scripts = {}) {
+  const result = { commands: [], covered: [] };
+  let full = false;
+  const scriptBody = (command) => {
+    const name = /^pnpm ([a-z][a-z0-9:-]*)$/.exec(command)?.[1];
+    if (!name || scripts[`pre${name}`] || scripts[`post${name}`]) return null;
+    return scripts[name] ?? null;
+  };
+  for (const row of commands) {
+    const body = row.command.startsWith('pnpm exec ')
+      ? row.command.slice('pnpm exec '.length) : scriptBody(row.command);
+    const files = typeof body === 'string' && body.startsWith('vitest run ')
+      ? body.slice('vitest run '.length).split(' ') : [];
+    const subset = files.length > 0 && files.every((path) =>
+      /^tests\/contract\/(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_.-]+\.test\.[cm]?[jt]sx?$/.test(path));
+    if (full && subset) result.covered.push(row.command);
+    else result.commands.push(row);
+    if (row.command === 'pnpm test:contracts' && body === 'vitest run tests/contract') full = true;
+  }
+  return result;
+}
+
+function packageScripts(cwd) {
+  try { return JSON.parse(readFileSync(resolve(cwd, 'package.json'), 'utf8')).scripts ?? {}; }
+  catch { return {}; } // Unknown definitions retain every check.
+}
+
 export function runFocusedChecks({
   commands = [],
   cwd = process.cwd(),
   stdout = process.stdout,
   spawn = spawnSync,
+  scripts = packageScripts(cwd),
 } = {}) {
   if (commands.length === 0) {
     stdout.write('[focused-checks] nothing to run: no check matches the changed paths.\n');
@@ -183,6 +212,11 @@ export function runFocusedChecks({
       `[focused-checks] collapsed ${before - commands.length + 1} e2e commands into one Playwright run ` +
         `(${before} -> ${commands.length}). The same specs run the same number of times; only startup happens once.\n`,
     );
+  }
+  const coverage = collapseCoveredContractCommands(commands, scripts);
+  commands = coverage.commands;
+  for (const command of coverage.covered) {
+    stdout.write(`[focused-checks] planned coverage from earlier full contract command: ${command}\n`);
   }
   for (const [index, suggestion] of commands.entries()) {
     stdout.write(`\n[focused-checks] (${index + 1}/${commands.length}) ${suggestion.command}\n`);

@@ -61,6 +61,13 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: the cone fits the canvas minus the measured panels, a tool-lane band and a readout band, with tier heights scaled 0.8 so the silhouette is wider than tall; a node is a fixed number of screen pixels; depth fog keeps a rim at or above 3:1 against the canvas ground while the fill still sinks; resting labels use the flat map's placement, reservations and top-K budget with the nearer node winning; the readout names the concepts the frame painted. Measured fill 22.6→65.1% (1920), 23.9→75.0% (1440), 29.0→63.8% (1024), 13.9→35.1% (834); same-tier overlaps 27→0.
 **Dissent**: none convened (routes solo, no council); the builder's own reservation: the pixel-sampled rim median reaches 2.59:1, not 3:1, because the neighbour of a node in a 125-node cone is usually another stroke, so the floor is gated on the composited token, not the screen sample.
 **Falsifier**: a report that the cone reads as a text field reopens the label rule; a rim legible while depth stops reading reopens the fog floor; a vault whose silhouette leaves the 1.12–1.26 aspect window and misses the fill floors reopens the height scale.
+## 2026-09-05 — Budget compact handoffs by transmitted JSON, preserving every fact
+
+**Why**: the known-task read-only integration fails on both the branch and base main: one unchanged response is 13,697 bytes with display indentation but 10,238 bytes when serialized for transport. Even removing the entire handoff prompt leaves 12,048 pretty bytes.
+**Prior**: supersedes only the pretty-JSON accounting in 2026-08-30 "Compact v2 spends 12 KiB on exact evidence, below the 20 KiB task gate"; all evidence, approval, opt-in, and full-detail boundaries remain standing.
+**Decision**: retain 12,000 UTF-8 bytes for `JSON.stringify(completeCompactObject)`, including handoffPrompt and every typed field, and the unchanged 20,000-character combined connection/compact wire guard. Return identical data; this is an accounting change, not compression or a performance claim.
+**Dissent**: the old display-whitespace reserve limited future content growth; allowing that reserve to hold actual data relaxes the previous acceptance rule and must not justify further budget expansion. Evidence and Steward both require exact-object parity and genuinely oversized negative controls.
+**Falsifier**: reject the change if any parsed fact, qualifier, conflict guard, or approval state changes, UTF-8 bytes exceed 12,000, a genuinely oversized object passes, or the complete two-call wire reaches 20,000 characters.
 **Owner**: jinan
 
 ## 2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold

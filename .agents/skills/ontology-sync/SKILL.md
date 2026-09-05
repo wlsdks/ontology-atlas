@@ -25,7 +25,7 @@ human sees the change appear in their workbench.
 **Skip when**:
 - the change is a typo, comment tweak, or single-line style nudge
 - the change is purely test fixture / lint config / docs prose
-- the change reverts something already in the graph
+- a revert leaves the existing graph accurate; otherwise inspect its semantic delta
 
 ## Workflow
 
@@ -40,7 +40,7 @@ command to assume.
 
 ```
 list_kinds                                # how many of each kind
-list_concepts                             # full node table (paginated)
+list_concepts                             # narrow query for the changed domain/capability
 get_concept({ slug }) or ({ uid })        # current address or permanent identity
 find_backlinks(slug)                      # before renaming or merging
 ```
@@ -66,15 +66,23 @@ delta — most diffs add 0–2 nodes; very few add 5+.
 
 ### 3. Write back
 
-For each delta, prefer one tool:
+Ordinary sync covers confirmed additions and patches within the authorized
+scope. A proposed new meaning is not confirmed merely because code changed.
+Reuse existing authorization only while its content and conditions still apply.
+
+For each confirmed delta, prefer one tool:
 
 | Situation | Tool |
 |---|---|
 | New node | `add_concept` (frontmatter is auto-normalized to the per-kind shape — slug, kind, title, then arrays/domain — so don't hand-shape it) |
 | Existing node, new field or refined body | `patch_concept` (pass `expected_mtime` from a prior `get_concept`) |
-| Slug rename in code → mirror in graph | `rename_concept` (dry-run first; commit with `confirm: true`) |
-| Two near-duplicates collapse | `merge_concepts` (dry-run; commit with `confirm: true`) |
 | Edge between existing nodes | `add_relation(from, to, type)` |
+
+Rename, merge, and deletion are separate procedures, not ordinary sync steps.
+Require an explicit request covering the exact operation, perform its dry-run
+or preflight review, then use the operation's concurrency guards. For rename
+and merge, commit the reviewed operation with `confirm: true` only after those
+conditions hold; a code rename alone does not authorize a vault rename.
 
 `uid` is writer-owned permanent identity; `slug` is the readable current
 address. Never mint, copy, or patch `uid` yourself, and never patch
@@ -83,9 +91,16 @@ address. Never mint, copy, or patch `uid` yourself, and never patch
 arguments and graph links slug-based. Rename/reclassify preserve UID; merge
 preserves the target UID and absorbs the source identity history.
 
-`add_concept` returns `warnings: ["expected field \"domain\" missing for kind \"capability\""]` when a strongly-expected field is absent. Treat that as a follow-up `patch_concept` to fill it in, not a hard error.
+`add_concept` returns `warnings: ["expected field \"domain\" missing for kind \"capability\""]` when a strongly-expected field is absent. Patch only when the supported domain is already confirmed; otherwise report the missing evidence. A warning never authorizes inventing a domain.
 
 ### 4. Verify
+
+Validate the vault and complete compilation, then follow the root `AGENTS.md`
+meaning-finalization procedure: `finalize_project_meaning` judges
+`agent_brief.meaningAssessment`. Report unresolved meaning separately from
+successful writes; node and orphan counts alone cannot establish completion.
+
+Supplementary checks:
 
 ```
 list_kinds                                # the count moved as expected
@@ -98,24 +113,26 @@ human sees new nodes pulse and a toast appear without reloading.
 
 ## Reply shape
 
-Five lines max. Cover:
+For routine success, use about five lines. Include additional lines when
+needed to show an unresolved warning, exact approval scope, or verification
+failure; brevity never hides a blocker. Cover:
 
 1. What you read (`list_kinds` summary or the slug you focused on).
 2. What you added — uid + slug + kind + parent.
 3. What you patched / renamed — old → new.
 4. Any `warnings` returned (and whether you'll address them in a follow-up).
-5. Verify line — node count delta, orphan count delta.
+5. Verify line — validation, complete compile, meaning assessment, and any count deltas.
 
 Don't paste the full frontmatter back; the workbench shows it. The reply
 is a changelog.
 
 ## Failure modes worth catching
 
-- **Duplicate slugs**: `add_concept` throws on duplicate. Switch to `patch_concept`.
+- **Duplicate slugs**: read the existing node and compare its identity and meaning. Patch only if it is the confirmed target within scope; a collision alone does not authorize overwriting it.
 - **Duplicate identities**: never copy `uid` into a new node. Validation and compilation fail closed on primary/merged UID collisions.
 - **Dangling parent**: `domain: domains/foo` where `domains/foo.md` doesn't
-  exist. Either add the parent first, or accept the
-  `missing-expected-field` warning and tell the human.
+  exist. Add it only if that parent is independently supported and approved.
+  Otherwise report the unresolved parent and repair the proposal before writing.
 - **Concurrent edits**: every write tool accepts `expected_mtime` from
   `get_concept`. Use it on `patch_concept` / `rename_concept` /
   `merge_concepts` / `delete_concept` (`merge_concepts` additionally takes

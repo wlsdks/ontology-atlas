@@ -429,6 +429,12 @@ an existing symbol still does not prove the proposed behavior or impact.
 
 #### Seal once, then qualify in isolated parallel lanes
 
+Use one packaging path: the helper when available, otherwise the manual protocol.
+Both obey all evidence, isolation, and acceptance requirements below. Helper
+outputs satisfy the equivalent manual packaging steps; do not repeat evaluation
+or ask for the same acceptance twice. Repair invalid inputs before continuing;
+a helper rejection is not permission to bypass a failed gate.
+
 When this skill directory provides `scripts/qualification-handoff.mjs`, resolve
 that path relative to the directory containing this `SKILL.md`, never relative
 to the repository root, and reuse the resolved path for the whole run. Use its
@@ -523,8 +529,12 @@ after the preapproved CQ owner explicitly accepts that exact request, including
 its full question-approval projection, then resubmit the
 unchanged proposal and accepted qualification to `analyze_repo_structure`.
 Run `release` only on that current executable response; it emits bounded writer
-call data but does not execute it. If the helper is absent or rejects an input,
-use the manual protocol below without weakening any gate.
+call data but does not execute it. If the helper is absent, use the manual
+protocol below without weakening any gate. If it rejects input, inspect the
+reported defect and repair it; a manual envelope cannot make failed evidence,
+isolation, digests, or acceptance valid.
+
+##### Shared requirements for either packaging path
 
 After the first valid candidate is serialized and round-trip checked, freeze an
 external claim manifest before either qualification lane starts. Each row has
@@ -585,9 +595,12 @@ implementation structure. Semantic, structural, evidence-provenance,
 maintainability, and interoperability are mandatory; a real red result on one
 of them blocks the join rather than becoming a human-accepted gap.
 
-Only show gaps and record human acceptance after that clean join. If isolated
-parallel execution is unavailable, keep the same fail-closed lifecycle in
-serial; do not weaken independence to claim a faster first pass.
+Keep preliminary gaps visible during proposal review. Request final plan/gap
+acceptance only after the clean join; earlier disclosure is not acceptance.
+If isolated parallel execution is unavailable, keep the same fail-closed lifecycle in
+serial; do not weaken independence to claim a faster first pass. A serial run
+cannot satisfy the helper's measured-overlap condition: use the manual protocol
+with honest serial timing, or defer helper release. Never invent overlap.
 
 The builder cannot evaluate its own construction. If an independent evaluator
 cannot run, stop without writes and ask the user for an independent evaluation

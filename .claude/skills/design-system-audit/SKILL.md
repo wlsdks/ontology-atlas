@@ -20,6 +20,14 @@ Fixing values without closing entry holes guarantees recurrence. `/design-audit`
 measures one finished DOM change; `/responsive-sweep` measures breakpoint bands;
 this skill asks whether the system is enforceable.
 
+## Scope and requested action
+
+Use the scope returned by `pnpm design:route`, or the user's explicit audit
+scope. "Every" below refers to that scope, not every screen in the repository.
+An audit request produces findings and repair proposals. Apply repairs only
+when the task also authorizes them; the repair order below does not itself
+authorize edits. Report unmeasured areas rather than expanding the audit silently.
+
 ## 0. Read actual ramps
 
 Extract values from `app/globals.css`; do not audit from memory or a stale prose
@@ -72,8 +80,8 @@ models.
 ## 4. Inventory and probe
 
 Classify every hit before enabling. Plant one violating and one valid line and run
-the actual gate. Use `apply_patch` for temporary probes; never leave scratch under
-the repo.
+the actual gate. Use the available file-editing capability for temporary probes;
+restore each probe and keep generated scratch outside the repo.
 
 A zero count is not evidence until a planted violation turns red.
 
@@ -112,6 +120,8 @@ Unused tokens are misinformation and fail `unused-token-ratchet`.
 none / <name · value · N consumers · why existing steps fail>
 ```
 
-Never stop after value replacement, judge from source search alone, change every
-value at once, enable hundreds of warnings, or count test fixture classes as
-rendered product violations.
+When repair is authorized, do not call it complete after value replacement
+without checking the affected gate. For audits, report the identified holes and
+remaining proof. Do not judge rendered values from source alone, change every
+value at once, enable hundreds of warnings, or count fixture classes as product
+violations.

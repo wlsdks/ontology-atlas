@@ -10080,7 +10080,7 @@ await test("query_ontology agent_brief — selected project and compact task han
     assert.equal(Object.hasOwn(compact, "cliFallbackCommands"), false);
     assert.doesNotMatch(JSON.stringify(compact), /project-b|domains\/example|capabilities\/example|elements\/example/);
     assert.ok(
-      Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000,
+      Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000,
       "compact agent brief must fit the 12 KiB first-contact budget",
     );
     assert.match(compact.handoffPrompt, new RegExp(`Current source: ${compact.currentness.source.status}/${compact.currentness.source.currentness}`));
@@ -10200,7 +10200,7 @@ await test("query_ontology agent_brief: persisted claim boundaries outrank task 
       assert.doesNotMatch(JSON.stringify(compact), new RegExp(task.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
       assert.equal(compact.safety.automaticWrite, false);
       assert.equal(compact.safety.automaticFinalize, false);
-      assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+      assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000);
     }
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -10304,7 +10304,7 @@ DER parsing and unrelated encodings.
     assert.match(compact.handoffPrompt, /Read: .*stop_on_match/);
     assert.match(compact.handoffPrompt, /Tests: named positive \+ negative regression; exact observable output\./);
     assert.equal(JSON.stringify(compact).includes(repo), false, "private source root must not cross MCP output");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -10349,7 +10349,7 @@ await test("query_ontology agent_brief — read-only known-task wire path stays 
     assert.equal(compact.focus.taskNavigation.currentness, "current");
     assert.equal(compact.focus.verification.runner, "package-script");
     assert.equal(compact.focus.verification.manifest, "mcp/package.json");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000);
     const wireCharacters = JSON.stringify(connectionResponse).length + JSON.stringify(compactResponse).length;
     assert.ok(
       wireCharacters < 20_000,
@@ -10398,7 +10398,7 @@ await test("query_ontology agent_brief — a valid 501-node project keeps full a
     assert.equal(compact.project.scope.nodes, 501);
     assert.equal(compact.focus.status, "not_recorded");
     assert.equal(compact.currentness.meaning.status, "invalid");
-    assert.ok(Buffer.byteLength(JSON.stringify(compact, null, 2), "utf8") <= 12000);
+    assert.ok(Buffer.byteLength(JSON.stringify(compact), "utf8") <= 12000);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

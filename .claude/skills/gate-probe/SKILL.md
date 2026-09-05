@@ -61,7 +61,9 @@ expect(measured, 'the collector measured nothing').toBeGreaterThan(3);
 
 ## 5. Document it
 
-Add the command to `docs/DEVELOPMENT-CHECKS.md` and mention it in `README.md`.
+For a new command, add it to `docs/DEVELOPMENT-CHECKS.md` and mention it in
+`README.md`. For an existing command, update those entries only if its scope or
+invocation changed; adding a regression case does not require duplicate entries.
 When a contract covers a layer lint cannot see, register that layer in the design
 rule table too.
 

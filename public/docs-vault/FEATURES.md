@@ -1217,7 +1217,9 @@ An explicit project now scopes every handoff count, hub, entrypoint, and graph
 pack to that project's containment tree; a multi-project vault fails closed
 until `project` is supplied. The complete response remains the default. For a
 known coding task, opt-in `detail:"compact"` plus a request-local `task` returns
-an `agentBriefCompact:v2` projection capped at 12,000 UTF-8 JSON bytes. It keeps
+an `agentBriefCompact:v2` projection capped at 12,000 UTF-8 bytes of the complete
+serialized JSON object, including its handoff prompt. Display indentation is
+excluded; the combined two-call wire guard remains 20,000 characters. It keeps
 final source/meaning currentness, the compact meaning-repair and human-approval
 guards, a broad persisted capability only when its Definition/Includes/Excludes
 agree with the desired work and explicit non-goals, cited element/path evidence,
