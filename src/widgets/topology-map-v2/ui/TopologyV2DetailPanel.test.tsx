@@ -105,6 +105,7 @@ function renderPanel(
     projectSource?: ProjectSourceView | null;
     onProjectSourceAction?: () => void | Promise<void>;
     onAskAgent?: () => void;
+    suppressPrimaryAction?: boolean;
     onEditRelations?: () => void;
     onCreateLinked?: () => void;
     onEnterRealm?: () => void;
@@ -151,6 +152,7 @@ function renderPanel(
       onHoverEvidence={overrides.onHoverEvidence}
       onCopyHandoff={overrides.onCopyHandoff ?? (() => {})}
       onAskAgent={overrides.onAskAgent}
+      suppressPrimaryAction={overrides.suppressPrimaryAction}
       onEditRelations={overrides.onEditRelations}
       onCreateLinked={overrides.onCreateLinked}
       onClose={() => {}}
@@ -1230,6 +1232,21 @@ describe("TopologyV2DetailPanel — W2-A action row", () => {
     expect(handoff).toHaveAttribute("data-action-role", "primary");
     fireEvent.click(handoff);
     expect(onCopyHandoff).toHaveBeenCalledWith("node: domains/views");
+  });
+
+  it("suppresses the competing filled action while a guided presentation owns the next step", () => {
+    renderPanel(undefined, undefined, {
+      onAskAgent: vi.fn(),
+      onEditRelations: vi.fn(),
+      suppressPrimaryAction: true,
+    });
+
+    const actions = screen.getByTestId("topology-v2-detail-panel-actions");
+    expect(actions).toHaveAttribute("data-primary-action-suppressed", "true");
+    expect(actions.querySelectorAll('[data-action-role="primary"]')).toHaveLength(0);
+    expect(screen.queryByTestId("topology-v2-detail-panel-action-ask-agent")).toBeNull();
+    expect(screen.queryByTestId("topology-v2-detail-panel-action-handoff")).toBeNull();
+    expect(screen.getByTestId("topology-v2-detail-panel-edit-menu-trigger")).toBeInTheDocument();
   });
 
   it("links the 문서 menu item to the document href when the node has a backing doc", () => {

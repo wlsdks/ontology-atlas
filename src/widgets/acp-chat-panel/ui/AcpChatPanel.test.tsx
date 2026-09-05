@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ComponentProps } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -2494,6 +2494,265 @@ describe('도구 호출 — 지도를 정확한 대상으로 움직인다', () =
         toolCallId: 'path-1',
       }),
     );
+  });
+});
+
+describe('Ontology DNA 발표 — 같은 ACP turn을 장면으로 본다', () => {
+  it('지도 callback 없이도 분석 안에서 열리고 지도 이동은 별도 선택으로 남는다', async () => {
+    const onDraftPresenceChange = vi.fn();
+    const onPresentationOpenMap = vi.fn();
+    const slugs = ['ontology-atlas', 'domains/agent-integration', 'capabilities/mcp-server'];
+    await bootSession({
+      contextLabel: '분석 · 흐름',
+      knownSlugs: new Set(slugs),
+      knownRelations: new Set(),
+      presentationIntent: 'business-flow',
+      presentationRequest: '분석 안에서 설명해줘',
+      onDraftPresenceChange,
+      onPresentationOpenMap,
+    });
+    expect(screen.getByTestId('acp-chat-context')).toHaveTextContent('분석 · 흐름');
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: '분석 안에서 설명해줘' },
+    });
+    await waitFor(() => expect(onDraftPresenceChange).toHaveBeenLastCalledWith(true));
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    await waitFor(() => expect(onDraftPresenceChange).toHaveBeenLastCalledWith(false));
+
+    act(() => {
+      slugs.forEach((slug, index) => emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: `analysis-read-${index + 1}`,
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            status: 'completed',
+            rawInput: { slug, body: 'full' },
+          },
+        },
+      }));
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'agent_message_chunk',
+            content: {
+              text: [
+                '### 제품',
+                'ontology-atlas 설명.',
+                '',
+                '### 책임',
+                'domains/agent-integration 설명.',
+                '',
+                '### 구현',
+                'capabilities/mcp-server 설명.',
+              ].join('\n'),
+            },
+          },
+        },
+      });
+    });
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+
+    fireEvent.click(await screen.findByTestId('acp-presentation-open'));
+    const presentation = await screen.findByTestId('acp-presentation');
+    expect(within(presentation).getByTestId('acp-presentation-citation').tagName).toBe('SPAN');
+    fireEvent.click(within(presentation).getByTestId('acp-presentation-open-map'));
+    expect(onPresentationOpenMap).toHaveBeenCalledWith('ontology-atlas', 'analysis-read-1');
+  });
+
+  it('source-hidden full reads가 끝난 답변만 발표로 열고 장면마다 같은 노드를 포커스한다', async () => {
+    const onMapIntent = vi.fn();
+    const onPresentationVisibilityChange = vi.fn();
+    const slugs = [
+      'ontology-atlas',
+      'domains/agent-integration',
+      'capabilities/mcp-server',
+    ];
+    await bootSession({
+      knownSlugs: new Set(slugs),
+      knownRelations: new Set(),
+      presentationIntent: 'business-flow',
+      presentationRequest: 'DNA를 설명해줘',
+      onPresentationVisibilityChange,
+      onMapIntent,
+    });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: 'DNA를 설명해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    act(() => {
+      slugs.forEach((slug, index) => {
+        emit({
+          jsonrpc: '2.0',
+          method: 'session/update',
+          params: {
+            update: {
+              sessionUpdate: 'tool_call',
+              toolCallId: `read-${index + 1}`,
+              title: 'mcp__atlas-vault__get_concept',
+              kind: 'read',
+              status: 'completed',
+              rawInput: { slug, body: 'full' },
+            },
+          },
+        });
+      });
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'agent_message_chunk',
+            content: {
+              text: [
+                '### 왜 존재하나요?',
+                'ontology-atlas 는 제품 의미를 설명합니다.',
+                '',
+                '### 누가 책임지나요?',
+                'domains/agent-integration 이 연결 경계를 책임집니다.',
+                '',
+                '### 어떻게 구현되나요?',
+                'capabilities/mcp-server 가 구현하며 완전성은 unknown 입니다.',
+              ].join('\n'),
+            },
+          },
+        },
+      });
+    });
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+
+    const open = await screen.findByTestId('acp-presentation-open');
+    fireEvent.click(open);
+    const presentation = screen.getByTestId('acp-presentation');
+    expect(presentation).toBeInTheDocument();
+    await waitFor(() => expect(document.activeElement).toBe(presentation));
+    expect(onPresentationVisibilityChange).toHaveBeenLastCalledWith(true);
+    expect(screen.getByTestId('acp-chat-transcript')).toHaveAttribute('inert');
+    expect(within(presentation).getByText('왜 존재하나요?')).toBeInTheDocument();
+    expect(onMapIntent).toHaveBeenLastCalledWith({
+      kind: 'focus',
+      slug: 'ontology-atlas',
+      toolCallId: 'read-1',
+    });
+
+    fireEvent.keyDown(presentation, { key: 'ArrowRight' });
+    expect(within(presentation).getByText('누가 책임지나요?')).toBeInTheDocument();
+    expect(onMapIntent).toHaveBeenLastCalledWith({
+      kind: 'focus',
+      slug: 'domains/agent-integration',
+      toolCallId: 'read-2',
+    });
+
+    fireEvent.click(within(presentation).getByRole('button', { name: 'backToChat' }));
+    await waitFor(() => expect(screen.queryByTestId('acp-presentation')).toBeNull());
+    await waitFor(() => expect(document.activeElement).toBe(open));
+    expect(onPresentationVisibilityChange).toHaveBeenLastCalledWith(false);
+
+    fireEvent.click(open);
+    const reopened = await screen.findByTestId('acp-presentation');
+    fireEvent.keyDown(reopened, { key: 'ArrowRight' });
+    fireEvent.click(screen.getByTestId('acp-presentation-ask'));
+    await waitFor(() => expect(screen.queryByTestId('acp-presentation')).toBeNull());
+    const composer = screen.getByRole('textbox');
+    expect(composer).toHaveValue(
+      'presentation.askPrompt:{"title":"누가 책임지나요?"}',
+    );
+    await waitFor(() => expect(document.activeElement).toBe(composer));
+    expect(onPresentationVisibilityChange).toHaveBeenLastCalledWith(false);
+
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    act(() => {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'agent_message_chunk',
+            content: { text: '해당 장면을 같은 근거로 더 설명했습니다.' },
+          },
+        },
+      });
+    });
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+    await waitFor(() =>
+      expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'),
+    );
+    await waitFor(() => expect(screen.queryByTestId('acp-presentation-open')).toBeNull());
+    expect(screen.queryByTestId('acp-presentation-blocked')).toBeNull();
+  });
+
+  it('비-Atlas 도구가 섞인 turn은 이름 붙은 상태 설명으로 막고 발표 문을 열지 않는다', async () => {
+    await bootSession({
+      knownSlugs: new Set(['ontology-atlas']),
+      knownRelations: new Set(),
+      presentationIntent: 'business-flow',
+      presentationRequest: '정확한 Flow 요청',
+      onMapIntent: vi.fn(),
+    });
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '정확한 Flow 요청' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    act(() => {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: 'source-read',
+            title: 'Read src/secret.ts',
+            kind: 'read',
+            status: 'completed',
+            rawInput: { file_path: 'src/secret.ts' },
+          },
+        },
+      });
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: 'atlas-read',
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            status: 'completed',
+            rawInput: { slug: 'ontology-atlas', body: 'full' },
+          },
+        },
+      });
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'agent_message_chunk',
+            content: {
+              text: [
+                '### 1',
+                'ontology-atlas 설명.',
+                '',
+                '### 2',
+                'ontology-atlas 설명.',
+                '',
+                '### 3',
+                'ontology-atlas 설명.',
+              ].join('\n'),
+            },
+          },
+        },
+      });
+    });
+    act(() => replyTo('session/prompt', { stopReason: 'end_turn' }));
+
+    const blocked = await screen.findByTestId('acp-presentation-blocked');
+    expect(blocked).toHaveAttribute('role', 'status');
+    expect(blocked).toHaveTextContent('presentation.blockReason.source_hidden_unproven');
+    expect(screen.queryByTestId('acp-presentation-open')).toBeNull();
   });
 });
 

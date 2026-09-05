@@ -64,7 +64,7 @@ const EN: InsightsHandoffProse = {
     'Dependency cycle: %cycle%. query_ontology({operation:"cycles"}) to confirm → decide which direction to cut → fix dependencies with patch_concept',
   cycleProof: 'query_ontology({operation:"cycles"}) to confirm the cycle is gone',
   tabDoNext:
-    'query_ontology({operation:"maintenance_plan"}) → work through the items → re-check with query_ontology({operation:"health"})',
+    'query_ontology({operation:"maintenance_plan"}) → explain the top three priorities and their evidence without changing the vault',
   tabUnmatched:
     'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → for a name several nodes ask for, add_concept({slug:"«ref»", kind:"«kind»"}); for a one-sided placement, add_relation({from:"«domain»", to:"«node»", type:"capabilities"}) → re-check with query_ontology({operation:"health"})',
   tabComposition:
@@ -110,7 +110,7 @@ const KO: InsightsHandoffProse = {
     '의존 사이클: %cycle%. query_ontology({operation:"cycles"}) 로 확인 → 어느 방향을 끊을지 판단 → patch_concept 로 dependencies 수정',
   cycleProof: 'query_ontology({operation:"cycles"}) 로 사이클 해소 확인',
   tabDoNext:
-    'query_ontology({operation:"maintenance_plan"}) → 항목별 실행 → query_ontology({operation:"health"}) 로 재확인',
+    'query_ontology({operation:"maintenance_plan"}) → 볼트를 바꾸지 말고 근거와 함께 상위 세 가지 우선순위를 설명',
   tabUnmatched:
     'query_ontology({operation:"maintenance_plan", kinds:["resolve_dangling_reference","add_missing_relation","unassigned_node"]}) → 여러 노드가 찾는 이름은 add_concept({slug:"«ref»", kind:"«kind»"}), 한쪽만 이어진 배치는 add_relation({from:"«domain»", to:"«node»", type:"capabilities"}) → query_ontology({operation:"health"}) 로 재확인',
   tabComposition:

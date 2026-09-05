@@ -14,6 +14,7 @@ const labels: FlowTabLabels = {
   lead: "lead",
   action: "Draw the business flow",
   actionHint: "hint",
+  checking: "Checking the local agent",
   requestLabel: "The request that goes to the agent",
   unavailableTitle: "The app does this",
   unavailableBody: "A browser cannot start a process",
@@ -54,6 +55,23 @@ describe("FlowTab", () => {
       "a browser cannot start a process, so a press here could never finish",
     ).not.toBeInTheDocument();
     expect(screen.getByText(labels.unavailableTitle)).toBeInTheDocument();
+  });
+
+  it("does not call an unavailable app path while runtime checks are still running", () => {
+    render(
+      <FlowTab
+        labels={labels}
+        request={REQUEST}
+        hasGraph
+        hasOwnFolder
+        canLaunchAgent={false}
+        agentChecking
+        onPrefill={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(labels.checking);
+    expect(screen.queryByTestId('flow-prefill')).toBeNull();
+    expect(screen.queryByText(labels.unavailableTitle)).toBeNull();
   });
 
   it("shows the request in both cases, because that is what a reader checks the answer against", () => {

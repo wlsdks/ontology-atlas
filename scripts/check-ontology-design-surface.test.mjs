@@ -111,9 +111,9 @@ function writeCleanWorkbenchFixtures(root) {
       'role="tabpanel"',
       '{tab === "flow" ? (',
       "<FlowTab",
-      'request={buildBusinessFlowRequest({ request: t("flow.request") })}',
-      'canLaunchAgent={isAcpBridgeAvailable()}',
-      'router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));',
+      'request={flowRequest}',
+      "canLaunchAgent={agentRoute === 'agent'}",
+      '<InsightsAgentDock',
       "<InsightsHandoffRow",
       "<InsightsHeroCensus",
     ].join("\n"),
@@ -416,9 +416,9 @@ test("ontology design surface reports missing workbench structure markers", () =
       'missing marker: role="tabpanel"',
       'missing marker: {tab === "flow" ? (',
       "missing marker: <FlowTab",
-      'missing marker: request={buildBusinessFlowRequest({ request: t("flow.request") })}',
-      'missing marker: canLaunchAgent={isAcpBridgeAvailable()}',
-      'missing marker: router.push(buildBusinessFlowHref(buildInsightsReturnMarker("flow")));',
+      'missing marker: request={flowRequest}',
+      "missing marker: canLaunchAgent={agentRoute === 'agent'}",
+      'missing marker: <InsightsAgentDock',
       "missing marker: InsightsHandoffRow",
       'missing marker: data-insights-handoff="tab-query"',
       "missing marker: CopyAgentTextButton",
@@ -489,11 +489,11 @@ test("ontology design surface rejects a named Flow tab whose handoff no longer w
   );
   assert.match(
     report.violations.map((violation) => violation.source).join("\n"),
-    /buildBusinessFlowRequest/,
+    /flowRequest/,
   );
   assert.match(
     report.violations.map((violation) => violation.source).join("\n"),
-    /buildBusinessFlowHref/,
+    /InsightsAgentDock/,
   );
   assert.match(
     report.violations.map((violation) => violation.source).join("\n"),

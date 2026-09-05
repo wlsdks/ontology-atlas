@@ -37,6 +37,7 @@ export interface FlowTabLabels {
   lead: string;
   action: string;
   actionHint: string;
+  checking: string;
   requestLabel: string;
   unavailableTitle: string;
   unavailableBody: string;
@@ -70,6 +71,8 @@ export interface FlowTabProps {
    * than drawing a button that cannot finish.
    */
   canLaunchAgent: boolean;
+  /** The installed app is still checking its local runtime and bundled server. */
+  agentChecking?: boolean;
   /** Seats the request in the conversation. Absent means the control is not drawn. */
   onPrefill?: (text: string) => void;
 }
@@ -80,6 +83,7 @@ export function FlowTab({
   hasGraph,
   hasOwnFolder,
   canLaunchAgent,
+  agentChecking = false,
   onPrefill,
 }: FlowTabProps) {
   const [copied, setCopied] = useState(false);
@@ -113,7 +117,11 @@ export function FlowTab({
         <p className="max-w-[62ch] text-body text-[color:var(--color-text-secondary)]">{labels.lead}</p>
       </div>
 
-      {pressable ? (
+      {agentChecking ? (
+        <p role="status" className="text-label text-[color:var(--color-text-tertiary)]">
+          {labels.checking}
+        </p>
+      ) : pressable ? (
         <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"

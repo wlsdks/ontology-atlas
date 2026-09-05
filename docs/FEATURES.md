@@ -1,7 +1,7 @@
 # FEATURES — ontology-atlas
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-09-03 (chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser with a find-improvements task; earlier on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
+> Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser; on 2026-08-31 documented the six-tab Insights contract and verified the Flow-to-agent handoff; earlier replaced the compatibility brand with the full/compact/micro pixel mascot family and added one verified, finite agent-work motion sequence; earlier added the separate Architecture contract/workbench,
 > source-derived conformance, and its MCP/CLI agent handoff; re-verified current routes, installed app commitments,
 > and project meaning receipts — `/ontology` is a compatibility redirect to
 > `/topology?index=expanded`, `/ontology/edit` and
@@ -720,12 +720,15 @@ Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× 
 
 #### Tab 6 — Flow
 - Answers “what is this product and how does it move?” with an agent-written narrative rather than an invented graph score.
-- Shows the exact request before handoff. In the installed app, **Draw business flow** travels to the map, opens the existing agent dock, and prefills the composer without sending; the person still owns Send. The map keeps a return marker to this tab.
+- Analysis owns one ACP dock outside the keyed tab panel. Every tab can explicitly seat its own read-only question in that one conversation; merely switching tabs never sends, replaces a draft, changes the request origin, or starts another session. Replacing a non-empty draft requires a second explicit action.
+- Shows the exact Flow request before handoff. In the installed app, **Explain the flow with ACP** opens that Analysis-owned dock and prefills the composer without sending; the person still owns Send and stays on Analysis.
 - In the browser or built-in sample, where no local agent process can be launched, the same request remains visible and copyable instead of presenting a dead control.
-- The request asks the agent to read project/domain bodies and cite ontology slugs paragraph by paragraph, keeping the narrative judgeable against the local Markdown source.
+- The request asks the agent for exactly six `###` scenes over one representative meaning-to-implementation chain. It permits only Atlas MCP reads, caps full-body reads at 12 concepts, requires at least one exact fully-read slug per scene, and preserves `partial`, `visible-gap`, `unknown`, `stale`, and `unverified` limits.
+- A completed answer offers **Present this answer** only for the exact app-authored Flow request sent in the current turn. Each scene needs at least one `body: full` anchor from that turn; only fully read anchors become evidence badges. Mentioned neighbours are not promoted to read evidence. The tool audit accepts matching Claude and Codex Atlas envelopes, and written typed relations must match the loaded graph, including kind-checked containment aliases. Missing anchors, foreign tools, invented relations, and out-of-range scene counts fail closed.
+- Presentation is an ephemeral projection inside the Analysis ACP dock, not another result record or route. Back/Next changes only the current scene; citations remain visible evidence, and **Follow on the map** is a separate explicit action. Limited scenes use an explicit label and dashed amber boundary; **Ask about this scene** only prefills a follow-up. Nothing auto-sends, writes, or persists, and restored chat history does not recreate a presentation.
 
-#### Bottom handoff row (`InsightsHandoffRow`, always visible)
-- One copyable `query_ontology(...)` chain per active tab — the tab's question translated into the agent's execution order (connections → `centrality` then `blast_radius`; boundaries → `domain_matrix` then `match_edges`)
+#### Bottom handoff row (`InsightsHandoffRow`)
+- One copyable `query_ontology(...)` chain per active tab — the tab's question translated into the agent's execution order (connections → `centrality` then `blast_radius`; boundaries → `domain_matrix` then `match_edges`). It stays available in the browser and whenever the installed-app ACP dock is closed; the open dock replaces rather than duplicates it.
 
 Empty state (0 nodes): link to `/docs` (open vault).
 

@@ -182,6 +182,12 @@ roadmap promise. It summarizes current product behavior documented in the
 - **The workbench surfaces, all reading one folder** — Map, Architecture, Docs,
   Insights, Projects, Agents, and Git History. Architecture is additive: the
   existing Git destination, change badge, and keyboard path remain available.
+- **Insights Flow can become an evidence-bound presentation in the installed app.**
+  The request remains visible and is never auto-sent. After the person sends it,
+  only a current ACP turn whose tool record proves Atlas-only full-body reads can
+  open as Back/Next scenes in Analysis; each scene keeps its exact slug evidence
+  and any partial or unknown limit. Following a cited fact onto the map is an
+  explicit choice, and the presentation is not saved as a second truth.
 - **Export to standard graph formats.** JSON-LD and GraphML come off the same
   deterministic compile artifact, so the vault opens in rdflib, Protégé, Gephi,
   Cytoscape, NetworkX, or Neo4j without a converter of your own.
@@ -416,7 +422,11 @@ actually rely on, the repair queue behind that number, and the fixes that need
 no code at all — two names that may mean the same thing, a concept with no home.
 The other tabs answer the standing questions: Inventory for what the folder is
 made of, Connections and Boundaries for how it hangs together, Recent changes
-and Flow for what moved. Every number branches from the same compiled graph.
+and Flow for what moved. In the installed app, every Analysis tab can seat its
+question in one shared ACP conversation without changing tabs or navigating to
+the map. Flow can turn the qualified answer into a scene-by-scene presentation
+in that same dock; opening a cited fact on the map remains optional. Every number
+branches from the same compiled graph.
 
 ### 8. See the shape of the whole project
 

@@ -358,6 +358,8 @@ export interface TopologyV2DetailPanelProps {
    * becomes the primary action. Do not draw a door that won't open.
    */
   onAskAgent?: () => void;
+  /** Hide this panel's filled action while another surface owns the primary next step. */
+  suppressPrimaryAction?: boolean;
   onClose: () => void;
   /**
    * S4 "Expand Domain" secondary discovery path — allows expanding the domain from the datasheet
@@ -912,6 +914,7 @@ export function TopologyV2DetailPanel({
   onEditRelations,
   onCreateLinked,
   onAskAgent,
+  suppressPrimaryAction = false,
   onClose,
   onEnterRealm,
   onOpenFullDetail,
@@ -1583,11 +1586,12 @@ export function TopologyV2DetailPanel({
             role="group"
             aria-label={labels.actionsGroupLabel}
             data-testid="topology-v2-detail-panel-actions"
+            data-primary-action-suppressed={suppressPrimaryAction ? "true" : undefined}
             className={showProjectSource
               ? "flex items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-3"
               : "flex items-center gap-1.5"}
           >
-            {canAskAgent ? (
+            {!suppressPrimaryAction && canAskAgent ? (
               <Button
                 size="sm"
                 onClick={onAskAgent}
@@ -1600,7 +1604,7 @@ export function TopologyV2DetailPanel({
                 <MessageCircle size={ICON_SIZE.sm} aria-hidden />
                 <span className="truncate">{labels.actionAskAgent}</span>
               </Button>
-            ) : showInlineHandoff ? (
+            ) : !suppressPrimaryAction && showInlineHandoff ? (
               <Button
                 size="sm"
                 onClick={() => onCopyHandoff(handoffText)}

@@ -181,7 +181,15 @@ const BASELINE_HARD_CUTS = 0;
  * by the static-browser accessibility sweep; the Architecture ACP dock requires the installed
  * desktop bridge and is covered by its component contract plus actual-window journey evidence.
  */
-const BASELINE_APPEARING_SURFACES = 33;
+/*
+ * 33 → 34 (2026-09-04): Analysis > Flow gained one dock-local Ontology DNA
+ * presentation mode. Its offer, blocked explanation, and full-dock view are born
+ * as `Surface`; the exhaustive census is now 34 with hard cuts still at zero.
+ * The state requires a desktop ACP turn, so its accessibility path is covered by
+ * `AcpChatPanel.test.tsx` and the denominator note in a11y-open-surfaces.
+ */
+// Analysis owns one additional dock; native walkthrough and dock component tests cover its opening path.
+const BASELINE_APPEARING_SURFACES = 35;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

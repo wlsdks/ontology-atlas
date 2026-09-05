@@ -18,6 +18,15 @@ export { readToolFallbackTarget, readToolTargets } from "./model/tool-targets";
 export { readToolOutcome } from "./model/tool-outcome";
 export { deriveAcpMapIntent } from "./model/map-intent";
 export type { AcpMapIntent } from "./model/map-intent";
+export {
+  buildAcpPresentationTrace,
+  presentationRelationKeysForGraphEdge,
+} from "./model/presentation-trace";
+export type {
+  AcpPresentationIntent,
+  AcpPresentationScene,
+  AcpPresentationTrace,
+} from "./model/presentation-trace";
 export { permissionIntent } from "./model/permission-intent";
 export { permissionScope } from "./model/permission-scope";
 export { permissionLocality } from "./model/permission-locality";

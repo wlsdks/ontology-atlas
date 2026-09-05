@@ -5,7 +5,7 @@ kind: domain
 title: AI Agent Integration
 display_ko: AI 에이전트 연동
 display_en: AI Agent Integration
-capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/vault-agent]
+capabilities: [capabilities/acp-runtime, capabilities/agent-work-visibility, capabilities/cli-developer-entry, capabilities/mcp-server, capabilities/ontology-dna-presentation, capabilities/vault-agent]
 elements: [elements/agents-destination, elements/concurrent-ledger-conflict-resolver, elements/installed-mcp-identity-gate, elements/vault-agent-panel]
 created_by: human
 relation_notes: { capabilities/acp-runtime: "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.", capabilities/agent-work-visibility: Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs., elements/installed-mcp-identity-gate: The installed MCP identity gate is the concrete local delivery control that keeps the agent-integration domain bound to the exact app bundle and source evidence it ships. }
