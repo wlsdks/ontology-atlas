@@ -40,6 +40,12 @@ export interface SelectProps {
   /** Accessible name. Required wherever no visible form label is attached. */
   ariaLabel?: string;
   ariaLabelledby?: string;
+  /**
+   * The id of the line explaining what this value goes on to do. A select whose
+   * help sentence is only visual leaves a screen-reader user with the label
+   * alone, which is exactly the half that does not name the consumer.
+   */
+  ariaDescribedby?: string;
   disabled?: boolean;
   /** Trigger height. Default `lg` (40px, `--control-h-lg`); dense forms use `md` (32px). */
   size?: "md" | "lg";
@@ -149,6 +155,7 @@ export function Select({
   placeholder,
   ariaLabel,
   ariaLabelledby,
+  ariaDescribedby,
   disabled = false,
   size = "lg",
   className,
@@ -459,6 +466,7 @@ export function Select({
         role="listbox"
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
+        aria-describedby={ariaDescribedby}
         // Exiting frames leave the accessibility tree and tab order immediately —
         // motion is not paid for with accessibility (same contract as
         // `.ai-row-disclosure`).
@@ -532,6 +540,7 @@ export function Select({
         aria-controls={listboxId}
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledby}
+        aria-describedby={ariaDescribedby}
         aria-activedescendant={open ? optionDomId(activeIndex) : undefined}
         disabled={disabled}
         data-testid={dataTestid}

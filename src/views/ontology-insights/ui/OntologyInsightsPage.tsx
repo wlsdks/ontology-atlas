@@ -784,6 +784,8 @@ export function OntologyInsightsPage() {
     densityGloss: t("heroDensityGloss", { ratio: health.edgesPerConcept.toFixed(2) }),
     evidenceLinked: t("healthEvidenceLinked"),
     islands: t("healthIslands"),
+    relationsHidden: (hidden: number) => t("heroRelationsHidden", { count: hidden }),
+    relationsHiddenRoute: t("heroRelationsHiddenRoute"),
   };
   const overviewLabels = {
     ...heroLabels,
@@ -805,6 +807,7 @@ export function OntologyInsightsPage() {
     hubsTitle: t("hubsTitle"),
     noHubs: t("noHubs"),
     noHubsHint: t("noHubsHint"),
+    emptyAction: t("domainCouplingEmptyAction"),
     hubTruncated: (shown: number, total: number) => t("hubTruncated", { shown, total }),
     hubDegreeCaption: t("hubDegreeCaption"),
     evidenceBadge: t("evidenceBadge"),
@@ -818,6 +821,7 @@ export function OntologyInsightsPage() {
     empty: t("impactEmpty"),
     emptyHint: t("impactEmptyHint"),
     truncated: (shown: number, total: number) => t("impactTruncated", { shown, total }),
+    emptyAction: t("domainCouplingEmptyAction"),
     evidenceShow: (count: number) => t("evidenceShow", { count }),
     evidenceHide: t("evidenceHide"),
     evidenceCaption: t("impactEvidenceCaption"),
@@ -955,7 +959,10 @@ export function OntologyInsightsPage() {
     weekCell: (weeksAgo: number, count: number) => t("weekCell", { weeks: weeksAgo, count }),
     weekCellCurrent: (count: number) => t("weekCellCurrent", { count }),
     recentUpdatesTitle: t("recentUpdatesTitle"),
+    noDomainsAction: t("noDomainsAction"),
     noRecentUpdates: t("noRecentUpdates"),
+    recentHidden: (hidden: number) => t("recentUpdatesHidden", { count: hidden }),
+    recentHiddenRoute: t("recentUpdatesHiddenRoute"),
     staleCountLabel: t("staleCountLabel"),
     trendTitle: t("trendTitle"),
     trendCaption: t("trendCaption", { weeks: FRESHNESS_WINDOW_WEEKS }),
@@ -1172,6 +1179,8 @@ export function OntologyInsightsPage() {
                 kindRows={kindRows}
                 domainRows={domainRows}
                 edgeTypeSummary={edgeTypeSummary}
+                edgeTypeTotal={edgeTypeRows.length}
+                onSeeAllRelations={() => setTab("connections")}
                 kindLabel={kindLabel}
                 domainLink={{
                   href: mapNodeHref,
@@ -1240,6 +1249,7 @@ export function OntologyInsightsPage() {
                 labels={freshnessLabels}
                 domainRows={freshness.domainRows}
                 recent={freshness.recent}
+                recentTotal={freshness.recentTotal}
                 recentEvidence={freshness.recentEvidence}
                 recentEvidenceTotal={freshness.recentEvidenceTotal}
                 staleCount={freshness.staleCount}

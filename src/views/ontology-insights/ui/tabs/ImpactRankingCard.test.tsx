@@ -17,6 +17,7 @@ const labels: ImpactRankingLabels = {
   directLabel: "direct",
   transitiveLabel: "indirect",
   empty: "Nothing ripples yet",
+  emptyAction: "Connect concepts on the map",
   emptyHint: "Connect relations on the map.",
   truncated: (shown, total) => `Top ${shown} / ${total} total`,
   evidenceShow: (count) => `Show ${count} names without a document`,

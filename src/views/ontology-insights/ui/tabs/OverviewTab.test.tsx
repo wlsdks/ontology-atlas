@@ -56,6 +56,8 @@ const BASE = {
     { kind: "project", count: 1 },
   ],
   edgeTypeSummary: [],
+  edgeTypeTotal: 0,
+  onSeeAllRelations: () => {},
   kindLabel: (kind: string) => kind,
   domainLink: DOMAIN_LINK,
   labels: LABELS,
