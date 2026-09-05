@@ -51,7 +51,20 @@ model. Do not invoke it for generic “non-trivial” work, token swaps, copy ed
 spacing/layout fixes inside a selected shape, responsive repairs, or motion
 tuning.
 
-## Rules
+## Reuse an existing selection
+
+If the owner has already selected a concrete direction in this session, record
+that selection and proceed with its implementation. Reopen selection only when
+the requested structure or a material constraint changes; identify that change
+before requesting a decision. An implementation request without a selected
+structural direction still follows the rules below.
+
+## Rules for a new selection
+
+Apply this section only when a new owner selection is needed. The text-only
+restriction covers proposed alternatives; it does not prohibit reading source
+or inspecting the current baseline. An already selected direction proceeds to
+"After selection" without regenerating alternatives.
 
 1. Use text and ASCII only—no code, build, or screenshot. A built option wins by
    sunk cost.

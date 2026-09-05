@@ -1410,6 +1410,33 @@
       "slug": "5-결론"
     }
   ],
+  "audits/AGENT-INSTRUCTION-REVIEW-2026-09-05": [
+    {
+      "depth": 1,
+      "text": "Agent instruction review — 2026-09-05",
+      "slug": "agent-instruction-review-2026-09-05"
+    },
+    {
+      "depth": 2,
+      "text": "Reviewed skills",
+      "slug": "reviewed-skills"
+    },
+    {
+      "depth": 2,
+      "text": "Protected boundaries",
+      "slug": "protected-boundaries"
+    },
+    {
+      "depth": 2,
+      "text": "Verification",
+      "slug": "verification"
+    },
+    {
+      "depth": 2,
+      "text": "Bounded harness optimization",
+      "slug": "bounded-harness-optimization"
+    }
+  ],
   "audits/CASE-STUDY-AGENTS-MD-DRIFT": [
     {
       "depth": 1,
@@ -10564,6 +10591,11 @@
       "depth": 3,
       "text": "macOS release candidate smoke",
       "slug": "macos-release-candidate-smoke"
+    },
+    {
+      "depth": 3,
+      "text": "Design routing and agent wiring",
+      "slug": "design-routing-and-agent-wiring"
     }
   ],
   "FEATURES": [

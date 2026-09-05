@@ -72,6 +72,10 @@ Record `[step · screen · failed question · elapsed time · evidence]`.
 
 ## Two journeys
 
+Choose A, B, or both from the routed task. These are alternatives, not two
+mandatory journeys. Record local completion time for a changed-path walk; use
+link-to-first-citation timing only for the north-star or agent citation task.
+
 **A. Agent journey is a real user measurement.** A plain coding-agent session
 with only Atlas MCP receives: “Explain this repository's structure and cite vault
 nodes.” Measure from opening the link to the first accurate citation. The tested
@@ -101,7 +105,7 @@ automation alone does not satisfy the design evidence contract.
 **Walker**: <knowledge · context · concern> · **context isolation**: confirmed
 **Journey**: A agent / B human / both
 **Build**: <URL or installed app · commit>
-**North-star time**: <link to first accurate citation, target under five minutes>
+**Time**: <scoped task duration; north-star citation time only when applicable>
 
 | Step | Screen | Failed question | Time | Evidence |
 |---|---|---|---:|---|

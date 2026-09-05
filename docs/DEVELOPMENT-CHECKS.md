@@ -587,7 +587,7 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 ### Focused-check advisor helper contract
 
 **Run**: `pnpm test:checks:changed`
-**Proves**: The changed-path focused-check suggestion helper behaves correctly.
+**Proves**: Changed-path recommendations retain their coverage; within one stable-checkout run, an earlier default full contract suite covers later default contract-only invocations, while flags, environment overrides, lifecycle hooks, and extra commands remain separate.
 **Escalate**: none.
 **Fix**: Use the direct `pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs` or `scripts/suggest-focused-checks.test.mjs` first when printed.
 
@@ -943,3 +943,10 @@ before commit `5eb3ba9ff`, and its decisions are in the ledger.
 **Proves**: The local pre-tag gate (readiness, docs-vault freshness, vault validation, checker/runtime/bridge tests, build, route smoke, app launch, DMG mount, install smoke) passes, and the root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI dependencies so the local-only app package cannot silently absorb the separate Hosting deploy toolchain
 **Escalate**: `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` before publishing, which requires PR and tag evidence first
 **Fix**: Rerun the specific failing preflight step it names (desktop:check, desktop:doctor, build, or app/DMG verify) before proceeding to credentialed signing
+
+### Design routing and agent wiring
+
+**Run**: `pnpm test:design-gates`
+**Proves**: Executable routing, documented seat references, agent metadata, and mirrored files agree; it does not judge human prose or rendered quality.
+**Escalate**: `pnpm agents:check` when shared skill or agent wiring changes beyond the design bench.
+**Fix**: Repair the reported route, metadata, reference, or mirror mismatch; do not pin replacement prose.

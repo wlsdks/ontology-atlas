@@ -884,6 +884,10 @@ prints one record in full, `--since=` narrows the window. Decision numbers
 repeat in the ledger, so a bare `(n)` citation resolves to the nearest earlier
 record with that number.
 
+Within one stable-checkout `pnpm checks:changed -- --run`, an earlier full
+contract run covers later equivalent contract-only checks. The runner prints
+those planned coverage relationships; it never reuses success from a prior run.
+Design routing and agent wiring are checked by `pnpm test:design-gates`.
 Agent-workflow changes run `pnpm agents:check`; its `pnpm test:agent-skills`
 step proves that scratch readers stop on a wrong vault/repository binding before
 semantic reads and that qualification keeps explicit unknown/refusal behavior.

@@ -25,9 +25,11 @@ Seat briefs live at `../../agents/po-*.md`. Open only the selected files. From
 either mirrored skill tree, the relative path resolves to the matching agent
 tree. Never create a third copy.
 
-If parallel reviewers are available, run the selected pair together. If not,
-run them sequentially, give neither the other's output, and record that
-first-position independence was weakened.
+Run the selected pair in separate contexts and give neither the other's
+output before first positions are sealed. Use parallel scheduling when
+available; serial scheduling alone does not weaken independent contexts.
+If separate contexts are unavailable, disclose the missing independence and
+report a perspective check, never a completed independent review.
 
 ## Required use
 
@@ -89,7 +91,9 @@ One round maximum. Rebuttal without disagreement is convergence theatre.
 
 ## Accountable decision
 
-The caller, not the reviewers, decides.
+The human owner holds decision authority. The coordinating agent may carry out
+an already authorized decision and prepare a recommendation for an unresolved
+one; neither the caller role nor a reviewer verdict grants new authority.
 
 - Choose one proposal or something smaller, never a union.
 - The human owner remains able to accept, overturn, and sign.
