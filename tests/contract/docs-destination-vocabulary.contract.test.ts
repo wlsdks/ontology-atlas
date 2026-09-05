@@ -21,8 +21,8 @@ import ko from '../../messages/ko.json';
  * than to coin a third Korean word.
  *
  * ⚠️ **A real Library appeared the next day, and this table did not become wrong** (2026-09-06).
- * `/library` is now a destination with its own name in both languages — `Library` and 「자료실」 —
- * and that is exactly why the row above still stands: the settings card at
+ * `/library` is now a destination carrying its own name in both languages, and that is exactly
+ * why the row above still stands: the settings card at
  * `nav.settingsMenu.vaultTitle` still opens `/docs/`, so calling *it* "Library" would now name one
  * screen with another screen's name, which is worse than the ambiguity this file was written for.
  * The assertions below are unchanged and are what hold the two apart.
