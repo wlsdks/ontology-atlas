@@ -71,12 +71,17 @@ export interface AcpRuntimeStatus {
    *   fixes it. Without this branch the screen says "ready" and then dies with
    *   `Authentication required` only when a conversation opens (owner report,
    *   2026-08-16).
+   * `login-unknown` — we asked whether it is signed in and **could not get an answer**. Not the
+   *   same as `cli-unknown` (never asked) and not the same as `login-needed` (asked, told no).
+   *   Owner report, 2026-09-05: under load, right after an in-app session ended, both measured
+   *   runtimes wore 「Sign in needed」 while the same commands exited 0 from a shell. The tool is
+   *   present and launchable, so this row stays usable — only the claim is withdrawn.
    * `cli-missing` — the tool must be installed.
    * `node-missing` — the tool is there, but there is no Node to run the adapter.
    * `uvx-missing` — likewise, no uv.
    * `binary-missing` — a manually installed executable is absent.
    *
-   * These seven are never collapsed into installed/not-installed — each implies a
+   * These eight are never collapsed into installed/not-installed — each implies a
    * different next action. Merging `ready` with `cli-unknown` in particular makes the
    * screen **report as verified something it never checked** (2026-08-16: 20 of 38 were
    * in that state).
@@ -84,6 +89,7 @@ export interface AcpRuntimeStatus {
   state:
     | 'ready'
     | 'login-needed'
+    | 'login-unknown'
     | 'cli-unknown'
     | 'cli-missing'
     | 'node-missing'
