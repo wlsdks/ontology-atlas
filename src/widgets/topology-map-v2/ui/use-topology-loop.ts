@@ -44,7 +44,7 @@ import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type Dus
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { centerForInsets, computeClusterFitTarget, computeDomeFitCameraTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
-import { drawTopologyFrame, lastDrawnLabelBoxes } from "./topology-frame-draw";
+import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnNodeCount } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import { relaxNewlyVisible } from "../model/layout";
@@ -286,6 +286,12 @@ export interface UseTopologyLoopArgs {
   onVisibleCountChange?: (visible: number) => void;
   onGraphStatsChange?: (stats: { nodes: number; relations: number }) => void;
   /**
+   * How many concepts the frame just painted (`lastDrawnNodeCount`). Fired only
+   * when the number changes, so the bottom instrument readout can say what is on
+   * the canvas instead of restating the zoom tier's rule.
+   */
+  onDrawnCountChange?: (drawn: number) => void;
+  /**
    * The semantic-zoom altitude tier changed (spine → circuit → element). Fires
    * on transitions only, not per frame, and is driven by the same reveal bands
    * the draw pass uses to gate node visibility — so the corner readout can
@@ -476,7 +482,7 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
@@ -1103,6 +1109,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** Mirror the tier-change callback into a ref for the rAF closure, and
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
+  const onDrawnCountChangeRef = useRef<typeof onDrawnCountChange>(onDrawnCountChange);
+  /** The last count reported, so the callback fires on change rather than every frame. */
+  const drawnNodeCountRef = useRef(-1);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
   /** Tier gate config mirror, shared by the rAF closure and the pointer handlers. */
   const tierRevealRef = useRef<TierRevealConfig>(tierReveal);
@@ -1220,7 +1229,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
 
   useEffect(() => {
     onZoomTierChangeRef.current = onZoomTierChange;
-  }, [onZoomTierChange]);
+    onDrawnCountChangeRef.current = onDrawnCountChange;
+  }, [onZoomTierChange, onDrawnCountChange]);
 
   useEffect(() => {
     onEnterRealmRef.current = onEnterRealm;
@@ -5037,6 +5047,15 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           ctx.stroke();
           ctx.restore();
         }
+      }
+
+      // What the frame actually painted, reported only on change — the readout is
+      // an instrument, and an instrument that restates a rule instead of the
+      // screen is the defect this replaces.
+      const painted = lastDrawnNodeCount();
+      if (painted !== drawnNodeCountRef.current) {
+        drawnNodeCountRef.current = painted;
+        onDrawnCountChangeRef.current?.(painted);
       }
 
       handle = requestAnimationFrame(frame);

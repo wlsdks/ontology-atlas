@@ -284,6 +284,24 @@ export function lastDrawnNodeAlphas(): ReadonlyMap<string, number> {
 }
 
 /**
+ * **How many concepts this frame put on the canvas.**
+ *
+ * Counted in the node pass, past the collapsed-subtree skip and the tier-alpha
+ * floor, so it is the number of marks a person can point at — not the vault's
+ * node count and not the tier's nominal budget.
+ *
+ * Why it has to be counted rather than inferred: the bottom instrument readout
+ * used to say "Domains only · zoom in to reveal elements" from the zoom tier
+ * alone, and in the Cone view that sentence was simply false — every one of the
+ * 125 concepts was already drawn (measured 2026-09-05). An instrument that
+ * describes a rule instead of the screen is an instrument that lies.
+ */
+export function lastDrawnNodeCount(): number {
+  return drawnNodeCount;
+}
+let drawnNodeCount = 0;
+
+/**
  * The label boxes this frame actually **drew**, in CSS pixels.
  *
  * Why this has to exist: label collision is the one map-readability property that
@@ -1810,6 +1828,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     nodeDrawOrder = domeNodeOrderReused;
   }
 
+  drawnNodeCount = 0;
   for (let drawPos = 0; drawPos < nodeDrawOrder.length; drawPos += 1) {
     const node = nodeDrawOrder[drawPos];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
@@ -1821,6 +1840,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // The same constant the hit test and the label ramp floor on — a node that
     // survives this line is grabbable and nameable by construction.
     if (tierAlpha <= HITTABLE_MIN_TIER_ALPHA) continue;
+    drawnNodeCount += 1;
     const egoState = previewTarget
       ? "neighbor"
       : egoAllNormal
@@ -2503,6 +2523,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     revealAlpha: number;
     /** W6 agent visibility — this label's node matches the agent heartbeat's current focus. */
     agentFocus: boolean;
+    /** This frame's normalised depth, 0 near … 1 far (always 0 in 2D) — the paint order. */
+    depthU: number;
   }
   // Label top-K LOD: at the overview/spine and mid (circuit) bands the label budget
   // goes to the highest-degree nodes; at the deepest element zoom the budget lifts
@@ -2582,16 +2604,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   const labelCandidates: LabelCandidate<LabelPayload>[] = [];
   /** Per-frame bbox by node id — the instrument reads this after the draw. */
   const labelBboxById = new Map<string, { minX: number; minY: number; maxX: number; maxY: number }>();
-  // perf 2026-08-19 — when the early exit for on-demand 3D labels is valid: on a
-  // frame where a keep (hover, ego, trail) is impossible because there is no focus,
-  // pair, or lens, an assembly ramp a ≥ 0.98 gives 1 - a ≤ 0.02, and the label
-  // alpha is ≤ 1, so the product is ≤ 0.02 — **the same
-  // conclusion** as the existing `<= 0.02` rejection below. Reaching it before the
-  // ego classification, the alpha computation, and the projection stops 2,000 nodes
-  // from spinning through the front of the label pipeline every rotating frame.
-  // The resulting set is unchanged.
-  const domeLabelSkipEligible =
-    domeOn && focusedNodeId === null && selectedEdge === null && trailLensKeepIds === null;
+  /** Per candidate: the slot above its node, in case the one below is blocked. */
+  const labelFlipSlots = new Map<string, { baselineY: number; ascent: number; descent: number }>();
   for (let index = 0; index < world.nodes.length; index += 1) {
     const node = world.nodes[index];
     const previewEndpoint = isPreviewEndpoint(previewEdge, node.id);
@@ -2599,7 +2613,6 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // Density condition: a collapsed subtree's nodes get no label either, matching
     // the node and edge passes.
     if (isPreviewEndpointHidden(clusteredIds.has(node.id), previewEdge, node.id)) continue;
-    if (domeLabelSkipEligible && !previewEndpoint && node.id !== hoveredNodeId && domeNodeFrameReused[index].a >= 0.98) continue;
     // Uses the SAME effective alpha as the node draw pass (C1 A2) — an
     // ego-exempt capability that's now visible must also get a label, or it
     // reads as an unlabeled ghost circle. Also the SAME signal capability/
@@ -2635,23 +2648,28 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       ? spotlightSink(pathKept || isHovered || previewEndpoint)
       : 1;
     const labelRevealAlpha = revealAlpha * pathLabelSink;
-    let compactAlpha = computeLabelAlpha({
+    const compactAlpha = computeLabelAlpha({
       kind: node.kind,
       egoState,
       isHovered,
       revealAlpha: labelRevealAlpha,
     });
-    // 3D — labels are **on-demand** (heroic judgment: always-visible labels break the silhouette
-    // and draw the eye to text instead of shape). Only nodes highlighted by hover, focus (ego), or trail
-    // get names; others slowly recede along the assembly ramp. Ramp 0 = 2D
-    // unchanged. Labels are core to the product so they are not removed — only visibility mode
-    // determines when they appear.
-    const domeLabelKeep =
-      egoState === "center" || egoState === "neighbor" || isHovered || trailKept || pathKept;
+    /*
+     * 3D used to draw **no resting labels at all**: every node that was not
+     * hovered, ego or trail-kept had its label multiplied by `1 - assembly ramp`,
+     * which is 0 once the cone stands. The judgment behind it was that
+     * always-visible labels break the silhouette — but measured on the sample
+     * vault (2026-09-05) it meant 125 anonymous dots, and the reader had to point
+     * at each one to learn what it was.
+     *
+     * The flat map has never needed that trade, because it does not draw every
+     * label either: the greedy placer below drops a name that has no room
+     * (`render/label-layout.ts`), node discs are reserved so a name never lands on
+     * a foreign shape, and the top-K budget caps how many compete. The cone now
+     * uses the same three rules. Nothing here decides visibility any more.
+     */
     // perf 2026-08-19 — use index buffer (`nodeFrameAt`) instead of re-querying frames.
     const labelDome = nodeFrameAt(index);
-    const domeLabelGate = domeOn && !domeLabelKeep ? 1 - labelDome.a : 1;
-    compactAlpha *= domeLabelGate;
     // One label form per node since the domain watermark was retired
     // (2026-08-29, `render/labels.ts` header), so one alpha decides eligibility.
     // The `Math.max` that used to guard the watermark's separate visibility is
@@ -2754,24 +2772,32 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       minY: baselineY - vertical.ascent,
       maxY: baselineY + vertical.descent,
     });
-    // When the slot below is blocked by another node's shape, **flip above before
-    // discarding the name**. Suppressing outright would recreate the very
-    // "unlabelled shape" this work removes, so a label is dropped only after a
-    // second slot has been tried. The upper slot mirrors the same offset across the
-    // node — no new spacing, no new token.
-    let labelBaselineY = clampedAnchorY;
-    if (overlapsForeignReserved(boxAt(labelBaselineY), node.id, priority, nodeDiscReservations)) {
-      const flipped =
-        resolveFlippedLabelBaselineY(screen.y, screenRadius) + (clampedAnchorY - anchorY);
-      if (!overlapsForeignReserved(boxAt(flipped), node.id, priority, nodeDiscReservations)) {
-        labelBaselineY = flipped;
-      }
-    }
-    const candidateBbox = boxAt(labelBaselineY);
+    const candidateBbox = boxAt(clampedAnchorY);
     labelBboxById.set(node.id, candidateBbox);
+    /*
+     * The upper slot this label would take if the lower one turns out to be
+     * blocked. Deciding that here would mean scanning **every** node's disc
+     * reservation for **every** candidate — O(n²), and on a 2,000-node vault it
+     * took the 3D drag frame from 8.8 ms to 37 ms p95 (measured 2026-09-05, the
+     * frame the cone's resting labels were switched on). The decision moves below
+     * the top-K budget instead, where it runs for the labels that can still be
+     * placed rather than for every node on screen. The slot itself is unchanged.
+     */
+    labelFlipSlots.set(node.id, {
+      baselineY: resolveFlippedLabelBaselineY(screen.y, screenRadius) + (clampedAnchorY - anchorY),
+      ascent: vertical.ascent,
+      descent: vertical.descent,
+    });
     labelCandidates.push({
       priority,
-      order: index,
+      /*
+       * **Nearer wins the slot.** Within one priority band the placer settles ties
+       * by `order`, so in the cone that order is depth: a node at the front of the
+       * structure keeps its name and the one behind it yields, which is the same
+       * answer occlusion already gives the eye. In 2D there is no depth and the
+       * array index stands, exactly as before.
+       */
+      order: domeOn ? Math.round(labelDome.u * 100000) : index,
       ownerId: node.id,
       bbox: candidateBbox,
       payload: {
@@ -2781,13 +2807,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         screenX: screen.x + shiftX,
         screenY: screen.y + shiftY,
         // Pass the baseline the placer settled on: recomputing it inside `draw()`
-        // would undo the flipped slot.
-        baselineY: labelBaselineY,
+        // would undo the flipped slot. Rewritten by the flip pass below when the
+        // lower slot turns out to be blocked.
+        baselineY: clampedAnchorY,
         screenRadius,
         egoState,
         isHovered,
         revealAlpha: labelRevealAlpha,
         agentFocus,
+        depthU: domeOn ? labelDome.u : 0,
       },
     });
   }
@@ -2802,6 +2830,33 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         return labelCandidates.filter((candidate) => allowed.has(candidate.payload.nodeId));
       })()
     : labelCandidates;
+
+  /*
+   * **Blocked below, flip above** — for the candidates that survived the budget.
+   * Suppressing outright would recreate the very "unlabelled shape" this
+   * mechanism removes, so a label is dropped only after a second slot has been
+   * tried. The upper slot mirrors the same offset across the node: no new
+   * spacing, no new token. It runs here rather than inside the candidate loop for
+   * the cost reason given at `labelFlipSlots`.
+   */
+  for (const candidate of placedLabelCandidates) {
+    const nodeId = candidate.payload.nodeId;
+    if (!overlapsForeignReserved(candidate.bbox, nodeId, candidate.priority, nodeDiscReservations)) {
+      continue;
+    }
+    const slot = labelFlipSlots.get(nodeId);
+    if (slot === undefined) continue;
+    const flipped = {
+      minX: candidate.bbox.minX,
+      maxX: candidate.bbox.maxX,
+      minY: slot.baselineY - slot.ascent,
+      maxY: slot.baselineY + slot.descent,
+    };
+    if (overlapsForeignReserved(flipped, nodeId, candidate.priority, nodeDiscReservations)) continue;
+    candidate.bbox = flipped;
+    candidate.payload.baselineY = slot.baselineY;
+    labelBboxById.set(nodeId, flipped);
+  }
 
   // Greedy placement prefers what was placed on the previous frame (hysteresis),
   // which damps LOD churn within one priority band. The resulting placed-id set
@@ -2846,6 +2901,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     for (const c of placedResult) drawList.push({ payload: c.payload, presenceAlpha: 1 });
   }
   prevPlacedLabelIds = placedIds;
+
+  /*
+   * Nearer names land on top of farther ones, the same painter's order the node
+   * pass uses. Without it the paint order was the world array's, so a label from
+   * the back of the cone could cross one at the front and read as the front
+   * node's name. Stable, and a no-op in 2D where every `depthU` is 0.
+   */
+  if (domeOn) drawList.sort((a, b) => b.payload.depthU - a.payload.depthU);
 
   drawnLabelBoxes = [];
   for (const { payload, presenceAlpha } of drawList) {
