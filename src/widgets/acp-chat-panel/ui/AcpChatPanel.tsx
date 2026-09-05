@@ -1315,13 +1315,15 @@ export function AcpChatPanel({
               <div
                 key={item.id}
                 data-acp-entry="tool-run"
-                data-tool-run-count={item.events.length}
+                data-tool-run-count={item.count}
+                data-tool-run-rows={item.rows.length}
                 className="flex flex-col gap-0.5 border-l border-[color:var(--color-divider)] pl-2"
               >
-                {item.events.map((event) => (
+                {item.rows.map((row) => (
                   <TranscriptEntry
-                    key={event.id}
-                    event={event}
+                    key={row.event.id}
+                    event={row.event}
+                    repeat={row.repeat}
                     knownSlugs={knownSlugs}
                     onHoverSlug={onHoverSlug}
                   />
@@ -1564,7 +1566,23 @@ export function AcpChatPanel({
         Why `origin` is at the bottom: this card grows directly above the composer — it
         has to be born where the eyes and hands already are.
       */}
-      <Surface open={Boolean(pending)} origin="bottom center" motion="overlay">
+      {/*
+        ⚠️ **The answer has to stay on screen** (2026-09-06). The card is in the panel's flex
+        column with nothing bounding it, so a batch of ontology writes — a change review lists one
+        row per item — grew it until 「Don't」 and 「Allow once」 were below the bottom edge of a
+        1040×720 window. A checkpoint whose only two answers are unreachable is not a checkpoint;
+        it is a wall.
+
+        `shrink-0` keeps it from being squeezed by the transcript above, `max-h-[45%]` keeps it
+        from taking the panel, and the scroll lives **inside** the card so the buttons — which sit
+        after the scroller, not in it — never leave the frame.
+      */}
+      <Surface
+        open={Boolean(pending)}
+        origin="bottom center"
+        motion="overlay"
+        className="max-h-[45%] shrink-0"
+      >
         {pendingHeld ? (
           <AcpPermissionCard
             vaultPath={vaultRoot}
@@ -2136,12 +2154,19 @@ function TranscriptEntry({
   knownSlugs,
   onHoverSlug,
   streaming = false,
+  repeat = 1,
 }: {
   event: AcpEvent;
   knownSlugs?: ReadonlySet<string>;
   onHoverSlug?: (slug: string | null) => void;
   /** Is this the bubble the agent is still writing into? Only that one reveals gradually. */
   streaming?: boolean;
+  /**
+   * How many byte-identical calls this one tool row stands for (`group-events.ts`). Above one it
+   * draws `×N` beside the label, which is the whole of what folding a repeated run costs: the
+   * lines go, the count does not.
+   */
+  repeat?: number;
 }) {
   const t = useTranslations('acpChat');
   /*
@@ -2235,6 +2260,7 @@ function TranscriptEntry({
         data-tool-status={event.status}
         data-tool-label={label.kind}
         data-tool-outcome={outcome.kind === 'count' ? String(outcome.count) : outcome.status}
+        data-tool-repeat={repeat > 1 ? repeat : undefined}
         /*
          * ⚠️ **Tertiary, not quaternary** (2026-09-05). This row used to be the weakest ink
          * in the app because it lived folded inside a disclosure nobody opened. Standing in
@@ -2290,6 +2316,21 @@ function TranscriptEntry({
         >
           {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
         </span>
+        {/*
+          **How many times the same call happened**, in the label's own column. It is not a badge
+          and not a colour: a repeated lookup is not a status, it is a quantity, so it wears the
+          same tabular figures the outcome does one step quieter. The multiplication sign is read
+          aloud by nothing, so the count carries a stated name.
+        */}
+        {repeat > 1 ? (
+          <span
+            data-testid="acp-chat-tool-repeat"
+            aria-label={t('toolRepeat', { count: repeat })}
+            className="shrink-0 tabular-nums text-[color:var(--color-text-quaternary)]"
+          >
+            {`×${repeat}`}
+          </span>
+        ) : null}
         {/*
           **Which node was touched** (2026-08-17). If this line only says 「Read a concept」 (read a concept) without naming the target, reading the transcript later tells you nothing about what happened and there is nothing to wire to the map. The value was already arriving in `rawInput`.
 

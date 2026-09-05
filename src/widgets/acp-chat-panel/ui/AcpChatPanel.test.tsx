@@ -628,9 +628,13 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
   });
 
-  it('draws consecutive calls as one run', async () => {
+  it('draws consecutive calls on different targets as one run of standing rows', async () => {
     await bootSession();
-    for (const id of ['r1', 'r2', 'r3']) {
+    for (const [id, slug] of [
+      ['r1', 'domains/order'],
+      ['r2', 'domains/payment'],
+      ['r3', 'domains/delivery'],
+    ]) {
       emit({
         jsonrpc: '2.0',
         method: 'session/update',
@@ -641,6 +645,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
             title: 'mcp__atlas-vault__get_concept',
             kind: 'read',
             status: 'completed',
+            rawInput: { slug },
           },
         },
       });
@@ -651,6 +656,44 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     const runs = document.querySelectorAll('[data-acp-entry="tool-run"]');
     expect(runs).toHaveLength(1);
     expect(runs[0]).toHaveAttribute('data-tool-run-count', '3');
+    expect(runs[0]).toHaveAttribute('data-tool-run-rows', '3');
+    expect(document.querySelectorAll('[data-tool-repeat]')).toHaveLength(0);
+  });
+
+  /*
+   * ⚠️ **Only repetition collapses** (2026-09-06). Three byte-identical calls are one fact stated
+   * three times, and stating it three times pushes the *next*, different call out of view. The row
+   * still says how many, so nothing about what happened is hidden — which is what keeps this
+   * inside the 2026-09-05 decision that an agent's lookups stand above its answer.
+   */
+  it('folds a run of identical calls onto one row that says how many', async () => {
+    await bootSession();
+    for (const id of ['r1', 'r2', 'r3', 'r4']) {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: id,
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            status: 'completed',
+            rawInput: { slug: 'domains/order' },
+          },
+        },
+      });
+    }
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(1),
+    );
+    const run = document.querySelector('[data-acp-entry="tool-run"]')!;
+    expect(run).toHaveAttribute('data-tool-run-count', '4');
+    expect(run).toHaveAttribute('data-tool-run-rows', '1');
+    const repeat = screen.getByTestId('acp-chat-tool-repeat');
+    expect(repeat).toHaveTextContent('×4');
+    // The multiplication sign is read aloud by nothing, so the count carries a stated name.
+    expect(repeat).toHaveAttribute('aria-label', 'toolRepeat:{"count":4}');
   });
 
   it('a very long provider tool name never pushes the transcript sideways', async () => {
@@ -875,6 +918,41 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(previews.at(-1)).toBeNull());
     expect(previews.some((preview) => preview?.phase === 'committing')).toBe(false);
     expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  /**
+   * ⚠️ **The two answers must stay in the frame** (2026-09-06). The card sat unbounded in the
+   * panel's flex column, so a batch write — one review row per item — grew it until 「Don't」 and
+   * 「Allow once」 were below the bottom edge of a 1040×720 window. jsdom has no layout, so what is
+   * pinned here is the structure that produces the behaviour: the panel caps the card's height,
+   * the card scrolls **only its reading matter**, and the decision row sits after that scroller
+   * rather than inside it. Rendered geometry is the installed app's job.
+   */
+  it('권한 카드가 길어져도 답할 두 버튼은 스크롤 밖에 남는다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relation', 97, {
+        from: 'capabilities/a',
+        to: 'domains/b',
+        type: 'relates',
+        why: '같은 흐름이라서',
+      }),
+    );
+    const card = await screen.findByTestId('acp-permission-card');
+    const scroller = screen.getByTestId('acp-permission-body-scroll');
+    const reject = screen.getByTestId('acp-permission-reject');
+    const allow = screen.getByTestId('acp-permission-allow');
+
+    expect(scroller.className).toContain('overflow-y-auto');
+    expect(scroller.className).toContain('atlas-scroll-quiet');
+    expect(scroller.contains(reject)).toBe(false);
+    expect(scroller.contains(allow)).toBe(false);
+    expect(card.contains(reject)).toBe(true);
+    // The card yields its own height rather than the panel's, so the transcript is not evicted.
+    expect(card.className).toContain('max-h-full');
+    expect(card.closest('[data-surface-state]')?.className).toContain('max-h-[45%]');
   });
 
   it('온톨로지 쓰기의 사람 결정과 최종 도구 상태를 작업 영수증으로 내보낸다', async () => {

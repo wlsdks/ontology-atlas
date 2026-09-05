@@ -18,20 +18,37 @@ import { projectRootForVault } from './vault-mcp-server';
  */
 export type PermissionLocality = 'inside-project' | 'elsewhere';
 
+/** Boundary-aware containment: `/p/my-product-archive` is not inside `/p/my-product`, and equality counts. */
+function within(root: string, target: string): boolean {
+  const trimmed = root.replace(/[/\\]+$/, '');
+  if (!trimmed) return false;
+  return target === trimmed || target.startsWith(`${trimmed}/`) || target.startsWith(`${trimmed}\\`);
+}
+
 export function permissionLocality(
   vaultPath: string | null | undefined,
   filePath: string | null | undefined,
 ): PermissionLocality {
   if (typeof vaultPath !== 'string' || typeof filePath !== 'string') return 'elsewhere';
-  const projectRoot = projectRootForVault(vaultPath);
-  // No project above this vault — the old reading is the only true one.
-  if (!projectRoot) return 'elsewhere';
   const target = filePath.trim();
   if (!target) return 'elsewhere';
-  // Boundary-aware: `/p/my-product-archive` is not inside `/p/my-product`, and equality counts.
-  const root = projectRoot.replace(/[/\\]+$/, '');
-  if (target === root) return 'inside-project';
-  return target.startsWith(`${root}/`) || target.startsWith(`${root}\\`)
-    ? 'inside-project'
-    : 'elsewhere';
+  /*
+   * A `..` segment means the written path and the path on disk are not the same place, and this
+   * function has no filesystem to resolve the difference against. Answering "inside" from the
+   * prefix alone would let `<vault>/../../.ssh/id_rsa` wear the neutral card, so an unresolvable
+   * target keeps the warning — the one direction it is safe to be wrong in.
+   */
+  if (/(?:^|[/\\])\.\.(?:[/\\]|$)/.test(target)) return 'elsewhere';
+  /*
+   * ⚠️ **The chosen folder itself is the first thing that counts as inside** (2026-09-06). This
+   * used to be measured only against the *project above* the vault, so a folder that is not one of
+   * ours — someone's `~/notes`, or any vault outside a `<project>/atlas` layout — had no project
+   * root, and every request was answered `elsewhere`. The card then headed a write to a file the
+   * person had opened Atlas on with 「it wants to touch something outside this folder」, naming
+   * the folder as outside itself. Whatever else is true, a path inside the open folder is inside it.
+   */
+  if (within(vaultPath, target)) return 'inside-project';
+  const projectRoot = projectRootForVault(vaultPath);
+  // No project above this vault — beyond the folder itself, the old reading is the only true one.
+  return projectRoot && within(projectRoot, target) ? 'inside-project' : 'elsewhere';
 }
