@@ -769,12 +769,15 @@ agent one visible, reviewable request grounded in the same ontology. **One tab a
 different questions and grew to 2.2× the 14-inch viewport, so it was split into
 Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× viewport.
 
-#### Header (always visible)
-- Title + subtitle + right-aligned engraved census (`N concepts · N relations · N domains`)
+#### Census strip (always visible, 2026-09-06)
+- Four equal-height tiles above the tab bar (`InsightsCensusStrip`): concepts (kind chips and the share held by a domain), relations (top types, the hidden remainder named, density), health (the verdict in words, blocking and advisory counts, orphans · islands · cycles), and the last 12 weeks (hairline bars from `weeklyTotals`, a quiet week drawn as a baseline tick). It replaced the corner census line, the audience banner, the Composition hero and the Freshness aggregate trend, which all counted the same folder. Decision: `docs/DECISIONS.md` 2026-09-06.
+#### Header
+- Title + subtitle
 - `TabBar` — Do next (default) / Composition Inventory / Connection Connections / Boundary Boundaries / Freshness / Flow. Tab state in `?tab=`; the first four badges count what their tabs are about (verdict total / nodes / edges / cross-domain relations). Freshness and Flow leave the badge slot empty because neither has an honest single count. Legacy `?tab=structure|overview` → Composition, `?tab=relations` → Connection, so bookmarks and agent return-chip links stay alive.
 
 #### Tab 1 — Do next
-- Today's touch-ups, agent readiness gauge, repair queue, and the growth queue (see `DoNextTab`); the badge is the single verdict model (`insights-verdict`) shared with the body.
+- **One row per finding group** (2026-09-06, `lib/do-next-groups.ts`): name · count · disclosure, five rows per opened group with its own "N more"; the first group starts open so the most urgent files are named without a click. Group counts are the verdict's own signal counts re-keyed and `tests/contract/do-next-group-sum.contract.test.ts` pins their sum to the title count. The badge is the single verdict model (`insights-verdict`) shared with the body. The picks band and the readiness gauge are gone.
+- **Fix these together** (containment only): a blocking sheet lists one row per proposed write naming the domain document and the key, all ticked and untickable; the plan (members, mtime) freezes when the sheet opens, each row's justification is re-checked at Apply, and a file changed since or a concept whose domain moved is skipped and named rather than written. Writes go through `updateFrontmatter` with `expectedMtime`, one document at a time.
 - **「First My Share」 two work groups** — the queue is split by the *nature of the work*, not by who you are. **Meaning work / You can fix these right now** (meaning: missing definition · missing area · similar names · promotion candidates — answered by product knowledge) and **Code work / Hand these to a developer or an AI** (neglected hubs · unlinked concepts · dependency cycles — answered by reading the implementation or a dependency direction). With your own folder open the meaning group is **first on screen**, so "83 items, none of them mine" becomes "N mine + M to hand off". Same data, only the order is in human language. Group headings render only when that group has visible rows.
 - **Session-ability translation, not role gating** — there are no accounts (local-first, permanent). Three facts the app already knows drive the row actions: ① can this session write to the vault ② has an agent been observed in this folder (heartbeat) ③ does this concept own a document (`hasOwnDocument`). Read-only sample → 「Edit in Workshop」 becomes 「View in Workshop」 plus a copyable command, and the group order flips (hand-off work first, since hand-off is the only completion this session has). No agent observed → 「Verify as Agent」 becomes 「Copy Handoff Command」. **No greyed-out disabled buttons** — a disabled control that does not say why is the same dead end.
 - **One-sentence inline write / inline one-field write** (`MeaningGapSection`) — rows for **Meaning not specified** (no `description` *and* no body prose) and **Area not specified** (capability/element with no `domain:`) expand in place: a one-line input, or area chips built from the domains that actually exist in the vault. No new route, no modal, no trip to the workshop. Safety contract: the confirm line names the exact file and key before you press ("File to fix `capabilities/pay.md` · This sentence is in the description"), **cancel changes 0 files** (and a second press is required when you have typed something), the save locks in the pressed frame so double-clicks write once, and `expected_mtime` means a concurrent human/agent edit is never silently overwritten — the row says so and reloads, and the retry merges (their keys survive, only this one line is added). The write target is `resolveNodeDocument(node).ownSlug` — the same single source of truth the workshop uses, so a concept without its own document never gets someone else's file written to.
@@ -782,7 +785,6 @@ Composition / Connection / Boundary. Scroll contract: every tab stays ≤ 1.3× 
 - Queue sections show 3 rows each plus their total; the rest is the agent handoff's job (scroll contract).
 
 #### Tab 2 — Configuration Inventory
-- **Hero census** (`InsightsHeroCensus`) — concepts / relations / health facts (orphan count, cycle count, domain-membership rate, evidence-linked rate)
 - **Kind census** card — kind → glyph + bar + count, tallest bar highlighted
 - **Domain capacity** card — domain → bar (capability/element sub-counts), hidden when there are no domains
 
@@ -865,6 +867,8 @@ explain old screenshots and decisions; none of it is a current destination.
 - **Design**: Follows the same rules as the rest of the app — achromatic + one indigo + using only `--color-*` tokens. Amber (orange) is used solely as a signal for "places that should naturally be filled but are empty." **Glow · gradients · gems · particles · gold are prohibited** (the previously existing game-style exception was abolished on 2026-07-24). The only motion is a change in opacity and color over 200ms when filling a relationship slot, and even that stops under the `prefers-reduced-motion` setting. All screen text uses plain language ("What kind of thing is this node?").
 
 </details>
+
+**2026-09-06, the conversation and the workbench**: the meaning workbench keeps one 50px header band, a `tablist` of its sections (Meaning · Findings and history · Conversation) and one close button; the transcript, slash menu, history and presentation body scroll under `.atlas-scroll-quiet` (no visible bar, scrolling intact) and follow new text smoothly within one viewport, instantly beyond it, never under reduced motion; runs of three identical lookups fold onto one row with a count; the permission card caps at 45% of the panel with Don't and Allow outside its scroller. A dock with no header of its own (Library) wears `AcpDockHeader`, title and one close, so no screen has two.
 
 ### `/ontology/edit` and `/ontology/studio` — compatibility redirects
 
@@ -1069,6 +1073,8 @@ When the screen first opens, only read-only tools are called (`git_status` / `gi
 **Why it came out of settings**: Settings is **where you choose values**, and this is **an operational task with progress state**. A modal blocks the background and owns Esc, preventing you from seeing the map while receiving 52MB. **API Keys and workspaces remain in settings** — the former has a "Path Freezing" decision on 2026-08-16 (promoting destination is itself an emphasis), and the latter's axis answered by vault is different.
 
 **On the web**: The screen still appears, but states why it can't do what the browser can't (launching programs on this computer) along with the reason. It's not "Connection unavailable" — MCP is **attached to the folder**, not the screen, so web users are also connected (catalog 2026-08-01). That row names the place and links to it, because since 2026-09-05 the place is `/mcp` and not a section of this screen.
+
+**2026-09-06**: the screen wears `PAGE_FRAME_FORM` (960px) like `/mcp`, and the frame carries the desktop bottom breath itself.
 
 **What left on 2026-09-05**: the folder's own MCP connection and the connectors moved to `/mcp`. This screen keeps the runner list, the connection checks, the app-only install and repair, and opening a conversation.
 

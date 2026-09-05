@@ -10903,8 +10903,13 @@
     },
     {
       "depth": 4,
-      "text": "Header (always visible)",
-      "slug": "header-always-visible-2"
+      "text": "Census strip (always visible, 2026-09-06)",
+      "slug": "census-strip-always-visible-2026-09-06"
+    },
+    {
+      "depth": 4,
+      "text": "Header",
+      "slug": "header"
     },
     {
       "depth": 4,
@@ -10959,7 +10964,7 @@
     {
       "depth": 4,
       "text": "Header",
-      "slug": "header"
+      "slug": "header-2"
     },
     {
       "depth": 4,
@@ -11064,7 +11069,7 @@
     {
       "depth": 4,
       "text": "Header",
-      "slug": "header-2"
+      "slug": "header-3"
     },
     {
       "depth": 4,
