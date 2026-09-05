@@ -1,10 +1,37 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import ts from 'typescript';
 
 import { agentChatDoor, type AgentChatDoorInput } from './agent-chat-door';
 import { parseHomeRouteState } from './url-state';
 
 const homePageSource = readFileSync('src/views/home/ui/HomePage.tsx', 'utf8');
+
+function frameWidthOwners(source: string): string[] {
+  const file = ts.createSourceFile('HomePage.tsx', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const owners: string[] = [];
+  const visit = (node: ts.Node) => {
+    if (ts.isJsxOpeningElement(node)) {
+      const attributes = node.attributes.properties.filter(ts.isJsxAttribute);
+      if (attributes.some((attribute) => attribute.name.getText(file) === 'data-agent-dock-frame')) {
+        const style = attributes.find((attribute) => attribute.name.getText(file) === 'style')?.initializer;
+        const value = style && ts.isJsxExpression(style) ? style.expression : null;
+        const width = value && ts.isObjectLiteralExpression(value)
+          ? value.properties.find((property) => ts.isPropertyAssignment(property) && property.name.getText(file) === 'width') : null;
+        if (width && ts.isPropertyAssignment(width) && ts.isConditionalExpression(width.initializer)) {
+          const condition = width.initializer.condition;
+          if (ts.isBinaryExpression(condition) && condition.operatorToken.kind === ts.SyntaxKind.BarBarToken) {
+            for (const part of [condition.left, condition.right]) if (ts.isIdentifier(part)) owners.push(part.text);
+          }
+          expect(width.initializer.whenFalse.getText(file)).toMatch(/^['"]0px['"]$/);
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(file);
+  return owners.sort();
+}
 
 /** **Every combination** of the four inputs — 16. The invariant is held
  *  exhaustively, not by sampling. */
@@ -109,10 +136,11 @@ describe('대화창은 하나 — 어느 갈래가 그 창을 갖나', () => {
     expect(homePageSource).toMatch(
       /if \(agentChatUsesRuntime\)[\s\S]{0,220}setAcpDockFrameOpen\(true\)/,
     );
-    expect(homePageSource).toContain(
-      'width: acpDockFrameOpen ? `${chatWidth.width}px` : "0px"',
-    );
-    expect(homePageSource).toContain('open={acpDockFrameOpen}');
+    expect(frameWidthOwners(homePageSource)).toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
+    // The shared inset-surface contract checks its open binding; the route must
+    // also claim actual frame width when the meaning section is closed.
+    const missingRuntime = homePageSource.replace('width: acpDockFrameOpen || meaningWorkbenchOpen', 'width: meaningWorkbenchOpen');
+    expect(frameWidthOwners(missingRuntime)).not.toEqual(['acpDockFrameOpen', 'meaningWorkbenchOpen']);
   });
 
   it('흐름 요청은 두 대화 갈래 모두 입력칸에만 앉고 자동 전송 경로에는 들어가지 않는다', () => {
