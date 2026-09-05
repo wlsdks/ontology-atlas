@@ -49,7 +49,34 @@ describe("computeFreeArea", () => {
       cameraObstacle: "side-panel",
     };
 
-    expect(computeFreeArea(CANVAS, [mobileSheet])).toEqual(CANVAS);
+    const free = computeFreeArea(CANVAS, [mobileSheet]);
+    // The horizontal half is what this case has always guarded: a full-width sheet
+    // is never a left or right inset.
+    expect(free.x).toBe(CANVAS.x);
+    expect(free.width).toBe(CANVAS.width);
+  });
+
+  /**
+   * The `side-panel` declaration says «edge-attached, short content» — it does not
+   * say **which** edge. Below `lg` the same node inspector is a bottom sheet
+   * spanning the whole column, and while the declaration also forced `tallEnough`
+   * the rectangle landed in the «both» branch and was subtracted from nothing: the
+   * camera made no room and the sheet covered 93 of 125 nodes at 390×844
+   * (2026-09-05). Width is measured evidence and settles the edge.
+   */
+  it("전폭 시트는 명시가 있어도 붙어 있는 가장자리 쪽으로 뺀다", () => {
+    const bottomSheet: Rect = {
+      x: 76,
+      y: 526,
+      width: 1400,
+      height: 456,
+      cameraObstacle: "side-panel",
+    };
+
+    const free = computeFreeArea(CANVAS, [bottomSheet]);
+    expect(free.y).toBe(CANVAS.y);
+    expect(free.height).toBe(526 - CANVAS.y);
+    expect(free.width).toBe(CANVAS.width);
   });
 
   it("왼쪽 패널은 왼쪽에서 뺀다", () => {

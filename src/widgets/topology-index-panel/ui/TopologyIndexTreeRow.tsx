@@ -178,7 +178,14 @@ export function TopologyIndexTreeRow({
         }}
         onKeyDown={handleRowKeyDown}
         style={{ marginLeft: depth * 16 }}
-        className={`grid min-h-[34px] grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
+        // `min-h-9` (36) rather than the old `34px`: 34 is not a step of the control
+        // ladder (24/28/32/36/40/44 — `control-height-ladder-scope.contract.test.ts`
+        // derives it), and a single-line row already renders at exactly 36 from its own
+        // padding, so the floor now names the height the row actually has instead of a
+        // number two pixels under it. Rows with a subcount line stay taller: two
+        // vertical axes mean content decides, the same exemption the nav rail's 62px
+        // outer height takes.
+        className={`grid min-h-9 grid-cols-[22px_15px_1fr_auto] items-center gap-x-2 rounded-chip border py-1 pl-1 pr-2 text-body transition-colors ${
           selected
             ? "border-[color:var(--color-indigo-a55)] bg-[color:var(--topology-v2-panel-metric-surface)] text-[color:var(--topology-v2-panel-text-primary)]"
             : "border-transparent text-[color:var(--topology-v2-panel-text-secondary)] hover:border-[color:var(--topology-v2-panel-action-border)] hover:text-[color:var(--topology-v2-panel-text-primary)]"
@@ -200,7 +207,11 @@ export function TopologyIndexTreeRow({
           aria-hidden="true"
           tabIndex={-1}
           // The hit area is the full row height × a 22px column — the icon stays 11px.
-          className={`-my-1 flex h-[34px] w-full items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
+          // `self-stretch` rather than the old fixed `34px`: the row is 36 on one line
+          // and 47.5 with a subcount, so a fixed number was the full row height in
+          // neither case (measured 22×34 in both, 2026-09-05) and it was off the height
+          // ladder besides. Stretching says what the comment above already promised.
+          className={`-my-1 flex w-full items-center justify-center self-stretch text-[color:var(--topology-v2-panel-text-quaternary)] transition-transform ${
             hasChildren ? "" : "invisible"
           } ${open ? "rotate-90" : ""}`}
         >
