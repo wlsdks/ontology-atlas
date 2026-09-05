@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The library becomes a place, the rail cap moves to nine, and the tile's padding pays for it
+
+**Why**: the owner read the merged Docs a day after it shipped: "the screen is very cluttered … is it right that gathered data lands inside Docs? Docs was where ontology md gathered … text overlaps". One 280px column held five capped lists and the tree Docs exists for; the Finder hint ran an absolute path past the column edge.
+**Prior**: overturns the "no ninth tile" clause of 2026-09-05 "A vault holds three kinds of file…" and, for the shelf only, its "ingest is a job, not a place"; amends the eight-tile cap of 2026-09-05 "MCP becomes its own destination…" to nine under its own falsifier. File kinds, precedence, discovery approval and the Compile gate stand.
+**Decision**: `/library` is a destination beside Docs holding Sources (verbatim, any format; not compiled / stale / compiled) and Wiki (template-bound pages, off-template lines named). Docs keeps the Markdown tree and a one-row link to the Library, the only way in below lg; no mobile tab slot. Cap 8→9, measured at 1040×720 (pane 616px): eight at py-1.5 in 12–522; nine at py-1 (pitch 60) in 12–550, gear 48px clear, no scrolling. Tile 38×32, icon 20, label 11 unchanged. One reading pane serves both; the folder hint wraps in its column.
+**Dissent**: po-leverage: the honest fix for clutter is a Docs sidebar redesign, and a ninth tile spends the last slot on a screen with zero `document` nodes in the dogfood vault; rejected because the owner asked about placement, and reading gathered documents is a place even when gathering is a job. po-evidence: the proof is half inventory; narrowed to stale and off-template.
+**Falsifier**: compiled pages losing the sealed five-question probe to a raw folder move Wiki out of the Library; three cold walkers seeking a gathered PDF opening Docs first retire the tile to the Docs row; a tenth tile without a rail measurement reopens the cap.
+**Owner**: jinan
+
 ## 2026-09-05 — A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs
 
 **Why**: the owner's goal is gather, structure, wiki, graph, and the connectors merged today are its intake with nothing flowing through; the vault holds zero `document` nodes although absorb paths shipped months ago, so the compile-to-graph step has never been measured.

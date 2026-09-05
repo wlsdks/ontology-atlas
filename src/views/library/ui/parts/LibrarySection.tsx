@@ -271,7 +271,9 @@ export function LibrarySection({
             {/* The folder is the interface, and this is the moment to say so: somebody
                 with nothing here yet is deciding how documents get in. Once rows exist
                 they have already done it, and the sentence is spent. */}
-            <p className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all]">
+            {/* The folder label is an absolute path in the app: one unbroken run of
+                slashes that keep-all alone would carry past the column edge. */}
+            <p className="flex-none px-3 pb-1 text-caption text-[color:var(--color-text-quaternary)] [word-break:keep-all] [overflow-wrap:anywhere]">
               {t("sources.dropHint", { folder: vaultLabel })}
             </p>
           </>

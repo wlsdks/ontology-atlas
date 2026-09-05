@@ -1352,7 +1352,8 @@
           "unverifiablePlain": "파일을 읽지 못해 바뀌었는지 알 수 없어요",
           "reviewedOn": "{date} 확인",
           "reviewedOnTitle": "사람이 이 문서를 읽고 뜻이 맞다고 말한 날입니다"
-        }
+        },
+        "libraryLink": "모아 둔 문서는 자료실에 있습니다"
       },
       "empty": {
         "eyebrow": "문서 {count}개",
@@ -2268,8 +2269,7 @@
     "proofHealthOpenQueue": "할 일에서 보기",
     "review": {
       "writeFailed": "검토 표시를 파일에 저장하지 못했어요. 바뀐 건 없습니다."
-    },
-    "libraryLink": "모아 둔 문서는 자료실에 있습니다"
+    }
   },
   "topology": {
     "widgetError": {

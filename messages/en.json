@@ -1352,7 +1352,8 @@
           "unverifiablePlain": "This file could not be read, so whether it changed is unknown",
           "reviewedOn": "checked {date}",
           "reviewedOnTitle": "The day a person read this document and said the meaning was right"
-        }
+        },
+        "libraryLink": "Gathered documents are in the Library"
       },
       "empty": {
         "eyebrow": "{count} documents",
@@ -2268,8 +2269,7 @@
     "proofHealthOpenQueue": "Open in Do next",
     "review": {
       "writeFailed": "Could not save your review to the file. Nothing was changed."
-    },
-    "libraryLink": "Gathered documents are in the Library"
+    }
   },
   "topology": {
     "widgetError": {
