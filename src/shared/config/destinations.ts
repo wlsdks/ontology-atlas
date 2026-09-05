@@ -68,6 +68,19 @@ export type DestinationId = (typeof DESTINATION_IDS)[number];
  * Agents keeps its existing contextual mobile entry points rather than changing
  * the spatial order of this five-slot reading and planning ladder.
  */
+/*
+ * ⚠️ **MCP is deliberately absent, and 1024 is its width floor** (design council, 2026-09-05).
+ *
+ * Below `lg` the rail is replaced by five bottom tabs, and MCP is not one of them. That is a
+ * decision, not an omission: what the screen does is hand a coding tool a config and switch
+ * external servers on, and both are done at the desk with the tool open beside it. Its own
+ * contextual entry points reach it below `lg` — the runner row on `/agents` links to it, and the
+ * address works typed — so the route is never a trap at a narrow width; it is simply not one of
+ * the five things worth a permanent slot on a phone.
+ *
+ * `destination-shortcuts.contract.test.ts` asserts the absence so a later pass reads it as a
+ * choice rather than as something that fell out.
+ */
 export const MOBILE_DESTINATION_IDS = [
   'map',
   'architecture',

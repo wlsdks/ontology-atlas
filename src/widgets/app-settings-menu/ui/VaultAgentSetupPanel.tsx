@@ -40,7 +40,11 @@ import { useRowDisclosure } from '@/shared/lib/use-row-disclosure';
 import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import type { AgentServerAvailability } from '@/shared/config';
-import { ATLAS_CLI } from '@/shared/config/cli-invocation';
+import {
+  ATLAS_CLI,
+  shellQuoteForPacket,
+  vaultPathForPacket,
+} from '@/shared/config/cli-invocation';
 
 import { AgentSetupStep, type AgentSetupStepState } from './AgentSetupStep';
 import { McpProofPacket } from './McpProofPacket';
@@ -163,10 +167,6 @@ const AGENT_MCP_CONNECTED_PROOF_LINES = [
   'Use these MCP calls only after mcp-verify succeeds; if MCP is unavailable, use the CLI proof below.',
 ];
 
-function vaultPathForPacket(vaultName: string, vaultPath?: string | null): string {
-  return vaultPath ?? `<absolute path to your ${vaultName} folder>`;
-}
-
 function buildAgentSetupCliCommand(
   vaultName: string,
   mode: 'json' | 'write',
@@ -287,10 +287,6 @@ function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): st
     'Machine-readable config state check before repair:',
     setupStateCommand,
   ].join('\n');
-}
-
-function shellQuoteForPacket(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 interface VaultAgentSetupLocalVault {
@@ -1010,7 +1006,11 @@ export function VaultAgentSetupPanel({
                 config files' validity; the packet is how the agent answers for the rest, and that
                 is the same question this step asks.
               */}
-              <McpProofPacket frame="inline" />
+              <McpProofPacket
+                frame="inline"
+                vaultName={vaultNameForConfig}
+                vaultPath={vaultRootPath}
+              />
             </AgentSetupStep>
           </>
         ) : null}

@@ -43,6 +43,17 @@ import { useLocalVault } from "@/entities/vault-session";
 export interface OpenVaultCtaProps {
   /** The name a gate measuring this slot will look for. Given differently per slot. */
   testId: string;
+  /**
+   * The value layer's ink, for the one slot where this control is **the region's primary
+   * action** (2026-09-05, design council).
+   *
+   * On the MCP screen with no folder open, the card asked for a folder in neutral ink while the
+   * secondary "Get the macOS app" beside it was the only indigo on screen — the attention
+   * hierarchy read backwards. Ink is a `controlClass` axis, so it is passed rather than written:
+   * the tint that pairs with `accentOnTint` goes through `className`, exactly as the connect
+   * panel's own accent chip does.
+   */
+  tone?: "default" | "accentOnTint";
   className?: string;
 }
 
@@ -57,7 +68,7 @@ export interface OpenVaultCtaProps {
  */
 const CTA_SIZE = "md" as const;
 
-export function OpenVaultCta({ testId, className }: OpenVaultCtaProps) {
+export function OpenVaultCta({ testId, tone, className }: OpenVaultCtaProps) {
   const t = useTranslations("openVaultCta");
   const vault = useLocalVault();
   // `status` is the single source for the capability verdict — the runtime is not asked again.
@@ -66,6 +77,7 @@ export function OpenVaultCta({ testId, className }: OpenVaultCtaProps) {
   const ctaClassName = controlClass({
     shape: "chip",
     size: CTA_SIZE,
+    tone,
     hoverInk: "strong",
     hoverSurface: "lift",
     hoverBorder: "strong",

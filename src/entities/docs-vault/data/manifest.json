@@ -859,7 +859,7 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 39593,
+      "wordCount": 39673,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -900,7 +900,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 27456,
+      "wordCount": 27543,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug",

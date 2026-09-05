@@ -1,22 +1,25 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Info, MoreHorizontal, Plus } from 'lucide-react';
 
 import { Link } from '@/i18n/navigation';
+import { DESTINATION_HREF } from '@/shared/config/destinations';
 import {
   Button,
   Checkbox,
   Chip,
   Dialog,
   IconButton,
+  LiveAnnouncer,
   ServiceMark,
   resolveServiceMark,
 } from '@/shared/ui';
 import { badgeClass } from '@/shared/ui/badge-class';
 import { SegmentedControl } from '@/shared/ui/segmented-control';
 import { Input } from '@/shared/ui/input';
+import { PAGE_COLUMN_FORM } from '@/shared/ui/page-frame';
 import { controlClass } from '@/shared/ui/control-class';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import {
@@ -217,6 +220,30 @@ export function ConnectorsPanel({
   /** Which attached connector has its own dialog open. `null` is none. */
   const [detailId, setDetailId] = useState<string | null>(null);
   const detail = store.connectors.find((connector) => connector.id === detailId) ?? null;
+  /**
+   * Which connector is being confirmed for removal. `null` is none.
+   *
+   * ⚠️ **The record is held here, not looked up**, because the confirmation outlives the row: the
+   * moment removal succeeds the connector is gone from `store.connectors`, and a dialog that
+   * derived its title from that list would blank out mid-sentence.
+   */
+  const [pending, setPending] = useState<ConnectorRecord | null>(null);
+  /** What a screen reader is told after the row leaves. Empty until something has happened. */
+  const [announcement, setAnnouncement] = useState('');
+  const addOpenRef = useRef<HTMLButtonElement | null>(null);
+  /**
+   * Bumped when a removal completes, so focus is placed **after** the dialog has let go of it.
+   *
+   * ⚠️ Focusing inside the click handler does not survive: `useDialogFocusTrap` restores focus in
+   * its cleanup, which runs after the handler and after this render — it would find the opening
+   * control gone (it was inside the detail dialog, on a row that no longer exists) and fall back
+   * to `main#main`, undoing the placement. Doing it from an effect puts it after that cleanup.
+   */
+  const [removedTick, setRemovedTick] = useState(0);
+  useEffect(() => {
+    if (removedTick === 0) return;
+    addOpenRef.current?.focus();
+  }, [removedTick]);
 
   return (
     <section
@@ -224,43 +251,59 @@ export function ConnectorsPanel({
       className="rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]"
     >
       {/*
+        ⚠️ **The column holds the whole card, not only the rows** (2026-09-05). Measured at 2560,
+        a row box was 2,380px wide while its ink stopped near 1,680 — roughly 700px of dead span
+        between the name on the left and the switch on the right. Narrowing only the list fixed
+        that and created a worse thing: the rows sat 187px inset from the sentences above them, so
+        nothing on the card shared a left edge. One column, and everything lines up.
+      */}
+      <div className={PAGE_COLUMN_FORM}>
+      {/*
         **The title and the way in stand on one row.** Adding a connector is the only thing this
         panel asks of anybody, so it sits where the eye lands rather than under the list, where it
         moved down the screen every time a row appeared.
       */}
-      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-        <h3 className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {t('title')}
-        </h3>
-        <Chip data-testid={`${testIdPrefix}-add-open`} onClick={() => setAddOpen(true)}>
+      {/*
+        **No title inside the card.** The tab the person pressed to get here is already called
+        Connectors, and a card repeating the word under it spends a line saying where you are to
+        somebody who just chose to be there (design council, 2026-09-05). The one thing this panel
+        asks of anybody stays where the eye lands.
+      */}
+      <div className="flex flex-wrap items-start justify-end gap-x-4 gap-y-2">
+        <Chip
+          ref={addOpenRef}
+          data-testid={`${testIdPrefix}-add-open`}
+          hoverSurface="lift"
+          onClick={() => setAddOpen(true)}
+        >
           <Plus size={ICON_SIZE.sm} aria-hidden />
           {t('addOpen')}
         </Chip>
       </div>
-      <p className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]">
-        {t('intro')}
-      </p>
       {/*
-        **The transfer sentence.** It is not a footnote: it names who talks to whom, and it says
-        out loud that Atlas's own transfer ledger does not cover it. A reader who has met that
-        ledger elsewhere in this app would otherwise reasonably assume it did.
+        ── The standing warning, cut to two sentences (design council, 2026-09-05) ──────────────
+        Measured before the cut: this preamble was **296px, 35% of the 390 first screen**, standing
+        between the tab and the first row, and 83px over two rows in the installed app. A warning
+        nobody reaches the list past is not read more carefully; it is read less.
+
+        What survives is the pair a person cannot act safely without: **where the traffic goes and
+        who is not recording it**, and **what a token can do**. "Every connector starts off" left
+        with the intro paragraph — the rows say Off themselves, in the place the switch is. The
+        Claude-only sentence moved to the two places where a runtime is actually being chosen: the
+        connector's own dialog and the add dialog.
       */}
       <div
         data-testid={`${testIdPrefix}-transfer`}
-        className="mt-2 break-keep border-l border-[color:var(--color-divider)] pl-2 text-label leading-prose text-[color:var(--color-text-secondary)]"
+        /*
+         * A left rule rather than a filled box: measured, the boxed form was 59px at 1440 against
+         * the 40px the seat set, and 16px of that was vertical padding buying nothing but weight.
+         * The rule is the quiet-aside grammar this panel already used, and it carries the same two
+         * sentences in 33px.
+         */
+        className="mt-2 break-keep border-l border-[color:var(--color-border-strong)] pl-2.5 text-label leading-label text-[color:var(--color-text-secondary)]"
       >
         <p>{t('transfer')}</p>
-        {/*
-          **What the token can do, not only where it goes.** A read token and a write token travel
-          the same path and this screen cannot tell them apart, so the sentence names the authority
-          the person is handing over and where it is still stopped. It is true because connectors
-          ride only a runtime measured to raise a request for every tool call
-          (`runtimeCarriesConnectors`); the line below says which one that is.
-        */}
         <p className="mt-1">{t('authority')}</p>
-        <p data-testid={`${testIdPrefix}-runtime`} className="mt-1">
-          {t('runtimeNarrowing')}
-        </p>
       </div>
 
       {store.status === 'malformed' ? (
@@ -286,8 +329,24 @@ export function ConnectorsPanel({
         </p>
       ) : null}
 
+      {/*
+        **While this computer is being read, say so.** Discovery answers after the list does, and
+        an empty "Found on this computer" is a different claim from "still looking" (design
+        council, 2026-09-05).
+      */}
+      {canDiscover && discovered === null ? (
+        <p
+          role="status"
+          data-testid={`${testIdPrefix}-scanning`}
+          className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+        >
+          {t('scanning')}
+        </p>
+      ) : null}
+
       <AttachedList
         connectors={store.connectors}
+        status={store.status}
         registeredNames={registeredNames}
         storedRefs={storedRefs}
         onToggle={(id, enabled) => void store.setEnabled(id, enabled)}
@@ -334,19 +393,46 @@ export function ConnectorsPanel({
         onClose={() => setDetailId(null)}
         onUpsert={(connector) => void store.upsert(connector)}
         /*
-         * The tokens go before the row does. A record removed while its keychain items stayed
-         * behind leaves a token nobody can see any more on a machine somebody hands on (measured
-         * in the installed app, 2026-09-05); deleting first also means the file never stops
-         * naming a reference the keychain still answers to.
+         * **Remove asks first** (design council, 2026-09-05). One press used to delete this
+         * connector's keychain items and then its row, and nothing on the way said either would
+         * happen: `forgetSecrets` is not undoable — the value is gone from the OS store and Atlas
+         * has no read path back — while the row itself is only a line in a file the person could
+         * retype. So the destructive half is what the confirmation names.
+         *
+         * The detail dialog closes as the confirmation opens: two blocking surfaces at once is the
+         * stacked-modal shape `.claude/rules/design.md` forbids.
          */
         onRemove={(connector) => {
           setDetailId(null);
+          setPending(connector);
+        }}
+        testIdPrefix={testIdPrefix}
+      />
+
+      <RemoveConfirmDialog
+        connector={pending}
+        onCancel={() => setPending(null)}
+        onConfirm={(connector) => {
+          setPending(null);
+          /*
+           * Focus has to be put somewhere deliberately. The control that opened this is inside a
+           * dialog that has closed, and the row it belonged to is about to stop existing, so
+           * `Dialog`'s own restoration would fall through to `main#main`. "Add a connector" is
+           * the nearest thing that is still on screen and is the next thing anybody does here, so
+           * `removedTick` places focus there once the dialog has let go of it.
+           */
+          setRemovedTick((tick) => tick + 1);
+          setAnnouncement(t('removedAnnouncement', { name: connector.name }));
           void forgetSecrets([...connector.env, ...connector.headers]).then(() =>
             store.remove(connector.id),
           );
         }}
         testIdPrefix={testIdPrefix}
       />
+
+      {/* Removal is silent otherwise: the row simply is not there any more. */}
+      <LiveAnnouncer message={announcement} />
+      </div>
     </section>
   );
 }
@@ -364,6 +450,13 @@ export function ConnectorsPanel({
  */
 function AttachedList({
   connectors,
+  /*
+   * ⚠️ **Destructure it.** Left out of this list while used in the body, `status` silently
+   * resolved to the DOM's deprecated `window.status` global — so TypeScript was satisfied and the
+   * static export threw `ReferenceError: status is not defined` on the server, where no `window`
+   * exists (caught in the render loop, 2026-09-05).
+   */
+  status,
   registeredNames,
   storedRefs,
   onToggle,
@@ -371,6 +464,8 @@ function AttachedList({
   testIdPrefix,
 }: {
   connectors: ConnectorRecord[];
+  /** The store's own state - `loading` is not "none", and this list must not say it is. */
+  status: VaultConnectorsState['status'];
   registeredNames: Set<string>;
   /** `null` where no keychain could be read - "not asked", which is not "none". */
   storedRefs: ReadonlySet<string> | null;
@@ -379,6 +474,23 @@ function AttachedList({
   testIdPrefix: string;
 }) {
   const t = useTranslations('connectors');
+  /*
+   * ⚠️ **"Nothing attached yet" is a claim, and before the first read it is not one this screen
+   * can make** (design council, 2026-09-05). `useVaultConnectors` reports `loading` until the
+   * folder answers, and painting the empty sentence in that window tells somebody with five
+   * connectors that they have none.
+   */
+  if (status === 'loading') {
+    return (
+      <p
+        role="status"
+        data-testid={`${testIdPrefix}-loading`}
+        className="mt-3 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+      >
+        {t('loading')}
+      </p>
+    );
+  }
   if (connectors.length === 0) {
     return (
       <p
@@ -389,8 +501,26 @@ function AttachedList({
       </p>
     );
   }
+  const enabled = connectors.filter((connector) => connector.enabled).length;
   return (
-    <ul data-testid={`${testIdPrefix}-list`} className="mt-3 flex flex-col gap-2">
+    <>
+      {/*
+        **How many are on, in words.** The tab strip shows the same number as a bare badge, and a
+        number with no unit beside a word is a number somebody has to guess the meaning of
+        (design council, 2026-09-05). This says it once, where the rows it counts are.
+      */}
+      <p
+        data-testid={`${testIdPrefix}-on-of-total`}
+        className="mt-3 text-label leading-label text-[color:var(--color-text-quaternary)]"
+      >
+        {t('onOfTotal', { on: enabled, total: connectors.length })}
+      </p>
+    <ul
+      data-testid={`${testIdPrefix}-list`}
+      /* The card no longer carries a heading, so the list names itself for assistive tech. */
+      aria-label={t('title')}
+      className="mt-2 flex flex-col gap-2"
+    >
       {connectors.map((connector) => {
         const problems = connectorProblems(connector, connectors, storedRefs ?? undefined);
         const collides = registeredNames.has(connector.name.trim());
@@ -430,18 +560,34 @@ function AttachedList({
                   {runs}
                 </code>
               </div>
-              <div className="flex shrink-0 items-center gap-1">
+              {/*
+                ⚠️ **`gap-3`, not `gap-1`** (measured 2026-09-05 at 390 under a coarse pointer).
+                The more-actions button is 28px of box carrying a 44px hit area through
+                `touch-hit-expand`, so it overhung 8px each side into a 4px gap and the switch's
+                label sat under the button's phantom area. Widening the gap past the overhang is
+                the fix the touch contract already prescribes for this exact shape.
+              */}
+              <div className="flex shrink-0 items-center gap-3">
                 <Checkbox
                   data-testid={`${testIdPrefix}-item-toggle`}
                   label={connector.enabled ? t('on') : t('off')}
                   checked={connector.enabled}
                   disabled={problems.length > 0}
                   onChange={(event) => onToggle(connector.id, event.target.checked)}
-                  className="text-label text-[color:var(--color-text-secondary)]"
+                  /*
+                   * `atlas-touch-floor-wide` — the label is the target for a `Checkbox`, and
+                   * "On"/"Off" is short enough that the target measured 34–36px wide against the
+                   * 44 floor. Height already met it; width is the half the marker exists for
+                   * (`app/globals.css`, coarse-pointer block).
+                   */
+                  className="atlas-touch-floor-wide justify-center text-label text-[color:var(--color-text-secondary)]"
                 />
                 <IconButton
                   data-testid={`${testIdPrefix}-item-menu`}
                   label={t('detailOpen', { name: connector.name })}
+                  /* Rest and hover were the same pixels; the axes say the difference. */
+                  hoverSurface="lift"
+                  hoverBorder="strong"
                   onClick={() => onOpenDetail(connector.id)}
                 >
                   <MoreHorizontal size={ICON_SIZE.md} aria-hidden />
@@ -472,6 +618,7 @@ function AttachedList({
         );
       })}
     </ul>
+    </>
   );
 }
 
@@ -543,6 +690,26 @@ function ConnectorDetailDialog({
               ? t('rowTransfer', { destination: connectorDestination(connector) })
               : t('rowTransferStdio')}
           </p>
+          {/*
+            **Which sessions carry this at all** (moved here 2026-09-05). It stood in the panel's
+            preamble, where it was the third sentence somebody read before reaching any connector;
+            it belongs where a person is deciding about one, next to where that one's traffic goes.
+            The `/agents` link is beside it because "a Codex session gets the folder's own server
+            and nothing else" is only actionable if you can go and see which runtimes you have.
+          */}
+          <p
+            data-testid={`${testIdPrefix}-runtime`}
+            className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+          >
+            {t('runtimeNarrowing')}{' '}
+            <Link
+              href={DESTINATION_HREF.agents}
+              data-testid={`${testIdPrefix}-runtime-agents`}
+              className={controlClass({ shape: 'link', tone: 'accent', className: 'text-label' })}
+            >
+              {t('runtimeAgentsLink')}
+            </Link>
+          </p>
 
           <VariableFields
             connector={connector}
@@ -575,6 +742,82 @@ function ConnectorDetailDialog({
             </button>
             <Button variant="ghost" onClick={onClose}>
               {t('close')}
+            </Button>
+          </div>
+        </>
+      ) : null}
+    </Dialog>
+  );
+}
+
+/**
+ * **The confirmation, because one half of Remove cannot be undone.**
+ *
+ * Taking the row out of `connectors.json` is reversible by hand — it is a line in a file the
+ * person can read and retype. Forgetting its tokens is not: `connector_secret_delete` removes them
+ * from the OS keychain, Atlas never had a read path back, and nothing on screen carried the value
+ * to restore. A press that does both while naming neither is the unknown-reversibility pattern.
+ *
+ * So this names the connector, lists **the keys it is about to forget by name**, and offers the
+ * two answers. `role="alertdialog"` rather than `dialog` because the body is the warning, and
+ * assistive tech reads an alert dialog's body on open instead of waiting to be walked into it.
+ * `initialFocus="container"` keeps the caret off the destructive button (`Dialog`'s own note for
+ * exactly this case).
+ */
+function RemoveConfirmDialog({
+  connector,
+  onCancel,
+  onConfirm,
+  testIdPrefix,
+}: {
+  connector: ConnectorRecord | null;
+  onCancel: () => void;
+  onConfirm: (connector: ConnectorRecord) => void;
+  testIdPrefix: string;
+}) {
+  const t = useTranslations('connectors');
+  const keys = connector
+    ? [...connector.env, ...connector.headers]
+        .filter((entry) => typeof entry.secretRef === 'string')
+        .map((entry) => entry.name)
+    : [];
+  return (
+    <Dialog
+      open={connector !== null}
+      onClose={onCancel}
+      role="alertdialog"
+      labelledBy={`${testIdPrefix}-remove-title`}
+      testId={`${testIdPrefix}-item-remove-confirm`}
+      initialFocus="container"
+    >
+      {connector ? (
+        <>
+          <h2
+            id={`${testIdPrefix}-remove-title`}
+            className="text-title font-[var(--font-weight-strong)] text-[color:var(--color-text-primary)]"
+          >
+            {t('removeConfirmTitle', { name: connector.name })}
+          </h2>
+          <p className="mt-2 break-keep text-label leading-prose text-[color:var(--color-text-secondary)]">
+            {/*
+              Two different sentences, because there are two different facts. With keys, the
+              irreversible half is real and is named with the keys themselves; with none, saying
+              "and its tokens" would invent a loss that is not happening.
+            */}
+            {keys.length > 0
+              ? t('removeConfirmBodyKeys', { keys: keys.join(', ') })
+              : t('removeConfirmBody')}
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button variant="ghost" data-testid={`${testIdPrefix}-remove-cancel`} onClick={onCancel}>
+              {t('removeCancel')}
+            </Button>
+            <Button
+              variant="primary"
+              data-testid={`${testIdPrefix}-remove-confirm`}
+              onClick={() => onConfirm(connector)}
+            >
+              {t('remove')}
             </Button>
           </div>
         </>
@@ -699,7 +942,7 @@ function AddConnectorDialog({
       size="md"
       labelledBy={`${testIdPrefix}-add-title`}
       testId={`${testIdPrefix}-add-dialog`}
-      className="max-h-[min(80vh,44rem)] overflow-y-auto"
+      className="max-h-[min(80vh,var(--dialog-max-h))] overflow-y-auto"
     >
       <h2
         id={`${testIdPrefix}-add-title`}
@@ -707,6 +950,17 @@ function AddConnectorDialog({
       >
         {t('addTitle')}
       </h2>
+      {/*
+        The Claude-only sentence, second of the two places it now lives. Attaching is the other
+        moment a runtime matters: somebody who works in Codex should learn that here rather than
+        after a session comes back with the folder's server and nothing else.
+      */}
+      <p
+        data-testid={`${testIdPrefix}-add-runtime`}
+        className="mt-1 break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]"
+      >
+        {t('runtimeNarrowing')}
+      </p>
 
       {canDiscover ? (
         <>

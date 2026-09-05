@@ -140,6 +140,25 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
     expect(bottomTabs).toContain("DESTINATION_HREF[id]");
   });
 
+  /**
+   * **MCP's absence from the five mobile slots is a decision** (design council, 2026-09-05).
+   *
+   * Handing a coding tool a config and switching external servers on are both desk work with that
+   * tool open beside you; 1024 is the width floor the seat named. Its contextual entry points
+   * (the `/agents` runner row, and the address typed) still reach it below `lg`, so the route is
+   * never a trap there. Without this line the next person reads the absence as an oversight and
+   * "fixes" it.
+   */
+  it("MCP 는 모바일 다섯 자리에 일부러 없다 — 빠뜨린 것이 아니다", () => {
+    expect(DESTINATION_IDS).toContain("mcp");
+    expect(
+      MOBILE_DESTINATION_IDS as readonly string[],
+      "MCP 가 모바일 슬롯에 들어왔다 — 결정이 바뀐 것이라면 destinations.ts 의 주석부터 고쳐라",
+    ).not.toContain("mcp");
+    const table = read("src/shared/config/destinations.ts");
+    expect(table, "폭 하한(1024)이 표에 적혀 있지 않다").toContain("1024");
+  });
+
   it("레일이 주소를 손으로 다시 적지 않는다", () => {
     const rail = read("src/widgets/app-nav-rail/ui/AppNavRail.tsx");
     expect(rail, "레일이 표를 import 하지 않는다").toContain("DESTINATION_HREF");

@@ -88,6 +88,17 @@ function openDetail() {
   fireEvent.click(screen.getByTestId('connectors-item-menu'));
 }
 
+/**
+ * Removal asks first since 2026-09-05 (design council). One press used to delete this connector's
+ * keychain items and then drop its row, with nothing on the way saying either would happen; the
+ * keychain half cannot be undone. So the row's dialog opens the confirmation, and the confirmation
+ * is what removes.
+ */
+function confirmRemove() {
+  fireEvent.click(screen.getByTestId('connectors-item-remove'));
+  fireEvent.click(screen.getByTestId('connectors-remove-confirm'));
+}
+
 function openAdd() {
   fireEvent.click(screen.getByTestId('connectors-add-open'));
 }
@@ -176,9 +187,29 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item-runs')).toHaveTextContent(
       '/opt/homebrew/bin/npx -y @notionhq/notion-mcp-server',
     );
-    // And the ledger sentence: a reader who has met `llm-audit.jsonl` elsewhere would
-    // otherwise assume it covered this traffic.
-    expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('llm-audit.jsonl');
+    /*
+     * And the ledger claim: a reader who has met Atlas's transfer log elsewhere in this app would
+     * otherwise assume it covered this traffic.
+     *
+     * ⚠️ **The claim is pinned, not the filename** (design council, 2026-09-05). The two sentences
+     * were rewritten to fit the block, and the path `.ontology-atlas/llm-audit.jsonl` left with
+     * the longer version — what a person needs before switching a connector on is that the log
+     * does not record this, not where the log lives. `docs/FEATURES.md` still names the file.
+     *
+     * ⚠️ **Two sentences, and the runtime line is not one of them.** The preamble measured 296px —
+     * 35% of the 390 first screen — before the first row. What a person cannot act safely without
+     * is where the traffic goes and what a token can do; which sessions carry connectors is a fact
+     * about a runtime, and it now stands where a runtime is being chosen.
+     */
+    expect(screen.getByTestId('connectors-transfer')).toHaveTextContent('전송 기록에도 남지 않습니다');
+    expect(screen.getByTestId('connectors-transfer').querySelectorAll('p')).toHaveLength(2);
+    expect(screen.queryByTestId('connectors-runtime')).toBeNull();
+    openDetail();
+    expect(await screen.findByTestId('connectors-runtime')).toBeInTheDocument();
+    expect(screen.getByTestId('connectors-runtime-agents')).toHaveAttribute(
+      'href',
+      expect.stringContaining('/agents'),
+    );
     // The switch is off before anybody touches it.
     expect(screen.getByTestId('connectors-item')).toHaveAttribute(
       'data-connector-enabled',
@@ -369,7 +400,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
     openDetail();
     await waitFor(() => expect(screen.getByTestId('connectors-item-remove')).toBeInTheDocument());
-    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+    confirmRemove();
 
     // Every reference the record carried, and only those - the plain value has nothing to forget.
     await waitFor(() =>
@@ -404,6 +435,81 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       ),
     );
     expect(bridge.stored.size).toBe(0);
+  });
+
+  it('지우기 전에 무엇이 사라지는지 이름으로 말하고 물어본다', async () => {
+    /*
+     * The two halves of Remove are not the same kind of act. Taking the row out of
+     * connectors.json is a line in a file somebody can retype; forgetting the tokens is an OS
+     * keychain delete with no read path back. A press that did both while naming neither is the
+     * unknown-reversibility pattern, so the confirmation names the keys by name.
+     */
+    const vault = fakeVault(
+      seeded({
+        ...stdioRecord,
+        env: [
+          { name: 'NOTION_TOKEN', secretRef: 'connector:c1:NOTION_TOKEN' },
+          { name: 'NOTION_VERSION', value: '2022-06-28' },
+        ],
+      }),
+    );
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
+    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+
+    const confirm = await screen.findByTestId('connectors-item-remove-confirm');
+    // An alert dialog, because the body **is** the warning — assistive tech reads it on open.
+    expect(confirm).toHaveAttribute('role', 'alertdialog');
+    expect(confirm).toHaveAttribute('aria-modal', 'true');
+    // The key it is about to forget, by name. The plain value is not named: nothing is lost there.
+    expect(confirm).toHaveTextContent('NOTION_TOKEN');
+    expect(confirm).not.toHaveTextContent('NOTION_VERSION');
+    // Nothing has happened yet.
+    expect(bridge.secretDeletes).toEqual([]);
+    expect(screen.getByTestId('connectors-item')).toBeInTheDocument();
+  });
+
+  it('취소하면 줄도 토큰도 그대로다 — 물어본 값이 있어야 대답이 의미가 있다', async () => {
+    const vault = fakeVault(seeded(stdioRecord));
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
+    fireEvent.click(screen.getByTestId('connectors-item-remove'));
+    fireEvent.click(await screen.findByTestId('connectors-remove-cancel'));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('connectors-item-remove-confirm')).toBeNull(),
+    );
+    expect(screen.getByTestId('connectors-item')).toBeInTheDocument();
+    expect(bridge.secretDeletes).toEqual([]);
+    expect(bridge.stored.has('connector:c1:NOTION_TOKEN')).toBe(true);
+    expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').toContain('notion');
+  });
+
+  it('지우고 나면 어디로 갔는지 말하고, 초점을 갈 곳에 놓는다', async () => {
+    /*
+     * ⚠️ Measured before this step existed: the row left and focus landed on `<body>`, so a
+     * keyboard or screen-reader user was returned to the top of the document with no word about
+     * what had happened. The control that opened the dialog is inside a dialog that closed and
+     * belonged to a row that no longer exists, so `Dialog`'s own restoration has nowhere correct
+     * to go — "Add a connector" is the nearest thing still on screen and the next thing anybody
+     * does here.
+     */
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
+    confirmRemove();
+
+    await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByTestId('connectors-add-open')),
+    );
+    const live = document.querySelector('[role="status"][aria-live="polite"]');
+    expect(live?.textContent ?? '').toContain('notion');
   });
 
   it('브라우저에서는 왜 못 보는지와 무엇은 되는지를 함께 말한다', async () => {

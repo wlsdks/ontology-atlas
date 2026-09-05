@@ -2421,6 +2421,15 @@
      */
     --dialog-w-sm: 420px;
     --dialog-w-md: 560px;
+    /*
+     * How tall a dialog may grow before its own body scrolls. Added 2026-09-05 (design council):
+     * the add-a-connector dialog carried `max-h-[min(80vh,44rem)]`, the only height clamp in the
+     * codebase that was not a token, so a second long dialog would have eyeballed its own number
+     * exactly as the eight hardcoded widths above once did. `80vh` stays at the call site — it is
+     * a relationship to the viewport, not a value — and this is the absolute ceiling paired with
+     * it.
+     */
+    --dialog-max-h: 44rem;
     /* 44 → 36 (owner's 3rd report on 2026-07-23: "visibly too large" even after removing zoom)
        — Chrome density itself is set to pro-toolbar levels (32–36). Since this is a single token, all previous chrome
        fields/tiles/status chips/floating stacks decrease together. */

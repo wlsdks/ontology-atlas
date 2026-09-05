@@ -4,6 +4,12 @@ import { useTranslations } from 'next-intl';
 import { Check, Copy } from 'lucide-react';
 
 import { Chip } from '@/shared/ui';
+import {
+  ATLAS_CLI,
+  ATLAS_CLI_HINT_EN,
+  shellQuoteForPacket,
+  vaultPathForPacket,
+} from '@/shared/config/cli-invocation';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 
@@ -28,41 +34,76 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
  * lived on - only the "Copy" button inside a deleted branch used the constant, and lint's
  * unused-variable warning is what revealed it. The surface may move; the handoff lives.
  */
-const MCP_FIRST_CALLS_PACKET = [
-  'Ontology Atlas MCP first-contact proof packet',
-  '',
-  'Direct MCP proof inside the current agent session:',
-  '1. codex mcp list',
-  '2. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
-  '3. query_ontology({"operation":"agent_brief"})',
-  '4. query_ontology({"operation":"workspace_brief"})',
-  '5. query_ontology({"operation":"health"})',
-  '',
-  'If direct MCP tools are missing, this is CLI fallback proof only:',
-  'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
-  '',
-  'Stale client cache hint:',
-  'If the client still says 23 tools or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
-  '',
-  'Project ontology indexing checkpoint (side effect 0):',
-  'Replace [codebase-root] with the current checkout path before running project indexing.',
-  'index_project({"rootPath":"[codebase-root]"})',
-  'node cli/src/index.mjs index [codebase-root] --vault docs/ontology --json --threshold 2',
-  '',
-  'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
-  'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
-  'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
-  'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
-].join('\n');
+/**
+ * ⚠️ **The commands are built, not frozen** (2026-09-05, design council).
+ *
+ * This was a module constant, so it shipped two lines nobody could run:
+ * `pnpm cli:mcp-verify docs/ontology` needs the checkout as its working directory and exits
+ * "Vault root not found" from anywhere else, and `node cli/src/index.mjs` is a relative path to a
+ * file the reader does not have. A packet exists to be pasted into an agent that is somewhere
+ * else; a command that only works where it was written is not a proof step, it is a trap.
+ *
+ * So both lines go through the same three pieces the connect panel already uses — `ATLAS_CLI`
+ * (the repo's one invocation form, carrying `$ATLAS` plus the hint that says how to set it),
+ * `vaultPathForPacket` (the real absolute path when this surface knows it, an instruction to fill
+ * in when it does not), and `shellQuoteForPacket` (so a folder with a space in its name survives).
+ */
+function buildMcpFirstCallsPacket(vaultName: string, vaultPath: string | null): string {
+  const vaultArg = shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath));
+  return [
+    'Ontology Atlas MCP first-contact proof packet',
+    '',
+    ATLAS_CLI_HINT_EN,
+    '',
+    /*
+     * `codex mcp list` was the first step and is **one client's command**. Somebody in Claude Code
+     * or Cursor met an instruction naming a program they do not have as step 1 of proving their
+     * own connection. What every client can answer is `tools/list`, which is now step 1.
+     */
+    'Direct MCP proof inside the current agent session:',
+    '1. tools/list -> read toolCount from connection_info for the current number; finalize_project_meaning and query_ontology must be present',
+    '2. query_ontology({"operation":"agent_brief"})',
+    '3. query_ontology({"operation":"workspace_brief"})',
+    '4. query_ontology({"operation":"health"})',
+    '',
+    'If direct MCP tools are missing, this is CLI fallback proof only:',
+    `${ATLAS_CLI} mcp-verify ${vaultArg} --timeout-ms 15000`,
+    '',
+    /*
+     * The stale-cache hint used to name **23 tools**. `connection_info` reports 36 today, so the
+     * number was telling a reader that a correct client was broken. A count that has to be
+     * maintained by hand in prose is a count that will be wrong again, so the hint compares
+     * against what `connection_info` says instead of against a literal.
+     */
+    'Stale client cache hint:',
+    'If tools/list disagrees with connection_info toolCount, or query_ontology is not callable, reload/restart the agent or refresh cached MCP tools.',
+    '',
+    'Project ontology indexing checkpoint (side effect 0):',
+    'Replace [codebase-root] with the current checkout path before running project indexing.',
+    'index_project({"rootPath":"[codebase-root]"})',
+    `${ATLAS_CLI} index [codebase-root] --vault ${vaultArg} --json --threshold 2`,
+    '',
+    'Meaning gate: report the business/product domain and capability first, then cite code index rows as implementation evidence.',
+    'Business evidence: include meaningGate.businessOntology.evidence rows from README and docs/ontology.',
+    'Review queue: include meaningGate.implementationEvidence.reviewRequiredRows so humans can name folders that still lack product meaning.',
+    'Do not promote source folders to capabilities when existing ontology evidence maps them through matching slugs or capability elements.',
+  ].join('\n');
+}
 
 export function McpProofPacket({
   /** `boxed` draws its own card; `inline` sits inside a step that already has one. */
   frame = 'boxed',
+  vaultName,
+  /** The folder's absolute path where this surface knows it — `null` in a browser, which cannot. */
+  vaultPath = null,
 }: {
   frame?: 'boxed' | 'inline';
-} = {}) {
+  vaultName: string;
+  vaultPath?: string | null;
+}) {
   const t = useTranslations('nav.settingsMenu');
   const { state: copyState, copy } = useCopyFeedback();
+  const packet = buildMcpFirstCallsPacket(vaultName, vaultPath);
 
   return (
     <div
@@ -88,7 +129,7 @@ export function McpProofPacket({
       <Chip
         tone="accentOnTint"
         data-testid="agents-mcp-proof-copy"
-        onClick={() => void copy(MCP_FIRST_CALLS_PACKET)}
+        onClick={() => void copy(packet)}
         className="mt-2 w-full justify-center border-[color:var(--color-indigo-a46)] bg-[color:var(--color-indigo-a16)] hover:bg-[color:var(--color-indigo-a24)]"
       >
         {copyState === 'copied' ? (

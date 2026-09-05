@@ -1006,9 +1006,15 @@ reach — under one address, on two tabs (`?tab=`).
   the connection status those files add up to, the first-contact proof packet an agent
   pastes to prove it attached, and a collapsed "Not working?" fold holding file status,
   CLI verification, and connecting from another code folder.
-- **Connectors** — the attached list: what will actually run, on/off, and per-connector
-  removal and keychain fields. Adding opens one blocking dialog that searches what this
-  machine already registers and takes a by-hand entry.
+- **Connectors** — the attached list: one line per connector carrying the service mark, the name,
+  what will actually run, the switch, and one more-actions button; that button's dialog holds the
+  keychain fields and removal, and removal confirms first because forgetting a token cannot be
+  undone. Adding opens one blocking dialog that searches what this machine already registers and
+  takes a by-hand entry.
+  A row wears a service's own mark **only where that service's published brand guideline was read
+  and permits monochrome use to show an integration** — GitHub today. Simple Icons is CC0, but CC0
+  waives copyright and not trademark, so every other service falls back to the generic connector
+  glyph rather than to an assumption that nobody would mind.
 
 **Why it came out of `/agents`**: that destination had grown two jobs sharing only the
 word "agent". "Which coding tools does this computer have" needs programs on this

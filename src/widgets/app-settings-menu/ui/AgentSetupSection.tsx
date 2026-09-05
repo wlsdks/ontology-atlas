@@ -12,6 +12,7 @@ import { Check, Copy } from 'lucide-react';
 
 import { useAgentServer, useLocalVault } from '@/entities/vault-session';
 import { OpenVaultCta } from '@/features/docs-vault-local';
+import { getTauriVaultRootPath } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 
 import { McpProofPacket } from './McpProofPacket';
@@ -84,8 +85,17 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
           CTA" this repository forbids by name. The action being asked for happens
           right there.
         */}
+        {/*
+          ⚠️ **The ask is the indigo one** (design council, 2026-09-05). This card asks for a
+          folder, and it asked in neutral ink while "Get the macOS app" below it was the only
+          indigo on the screen — one emphasis per region, and it was on the wrong control.
+        */}
         <div className="mt-3">
-          <OpenVaultCta testId="agents-open-vault" />
+          <OpenVaultCta
+            testId="agents-open-vault"
+            tone="accentOnTint"
+            className="border-[color:var(--color-indigo-line-a35)] bg-[color:var(--color-indigo-a10)] hover:border-[color:var(--color-indigo-line-a54)] hover:bg-[color:var(--color-indigo-a16)]"
+          />
         </div>
         <div
           data-testid="agents-terminal-setup"
@@ -133,10 +143,12 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
                 href="/download/"
                 onClick={onBeforeNavigate}
                 data-testid="agents-terminal-setup-download"
+                /* Secondary now: the folder above is what this card is asking for. */
                 className={controlClass({
                   shape: 'link',
-                  tone: 'accent',
-                  className: 'h-8 font-[var(--font-weight-signature)]',
+                  tone: 'muted',
+                  hoverInk: 'strong',
+                  className: 'h-8',
                 })}
               >
                 {t('agentTerminalAppLink')}
@@ -179,7 +191,14 @@ export function AgentSetupSection({ onBeforeNavigate }: { onBeforeNavigate?: () 
     */}
     {serverAvailability.launch === null ? (
       <div className="mt-4">
-        <McpProofPacket />
+        {/*
+          `getTauriVaultRootPath` answers only inside the installed app; in a browser it is null
+          and the packet prints the fill-in-the-path instruction, which is the true state here.
+        */}
+        <McpProofPacket
+          vaultName={localVault.handle?.name ?? 'vault'}
+          vaultPath={localVault.handle ? getTauriVaultRootPath(localVault.handle) : null}
+        />
       </div>
     ) : null}
     </>

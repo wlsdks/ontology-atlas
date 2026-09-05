@@ -2071,20 +2071,24 @@ if (
 // chain holds**: the panel produces an absolute path → the glue renders the panel
 // → the destination renders the glue. If the location moves again it passes as
 // long as the chain is intact, and breaks when it is not.
+//
+// ⚠️ **And it moved again on 2026-09-05**: MCP became its own destination, so the glue is
+// rendered by `/mcp` rather than `/agents`. The gate went red here the same way, on the same
+// last link, which is the whole reason it names the chain instead of a location.
 const agentSetupSection = readText("src/widgets/app-settings-menu/ui/AgentSetupSection.tsx");
-const agentsPage = readText("src/views/agents/ui/AgentsPage.tsx");
+const mcpPage = readText("src/views/mcp/ui/McpPage.tsx");
 
 if (
   vaultAgentSetupPanel.includes("getTauriVaultRootPath") &&
   agentSetupSection.includes("import { VaultAgentSetupPanel }") &&
   agentSetupSection.includes("<VaultAgentSetupPanel") &&
-  agentsPage.includes("AgentSetupSection") &&
-  agentsPage.includes("<AgentSetupSection")
+  mcpPage.includes("AgentSetupSection") &&
+  mcpPage.includes("<AgentSetupSection")
 ) {
-  pass("desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the Agents destination");
+  pass("desktop agent setup surface derives the absolute Tauri vault path and is actually mounted by the MCP destination");
 } else {
   fail(
-    "the desktop agent setup surface must derive the selected absolute Tauri vault path AND be mounted through AgentSetupSection into the Agents destination — a file that no surface renders is not a shipped contract",
+    "the desktop agent setup surface must derive the selected absolute Tauri vault path AND be mounted through AgentSetupSection into the MCP destination — a file that no surface renders is not a shipped contract",
   );
 }
 

@@ -120,6 +120,21 @@ export const PAGE_FRAME_FORM =
 export const PAGE_COLUMN_STAGE = "mx-auto w-full max-w-[640px]" as const;
 
 /**
+ * **Reading column for a list of rows inside a page-width card** (2026-09-05, design council).
+ *
+ * A connector row is a name, one command, a switch and one more-actions button. Measured on the
+ * Connectors tab at 2560: the row box was 2,380px wide and its ink stopped at about 1,680, so
+ * roughly **700px of every row was dead span** between what the row says on the left and what it
+ * offers on the right — the eye crosses a third of the screen to answer "is this one on".
+ *
+ * It reuses `PAGE_FRAME_FORM`'s 960 rather than inventing a width: the reason is the same one
+ * recorded there (a row you read across and act on at the end is worse the wider it gets), and a
+ * value earns a second name only when the roles differ. The frame keeps owning the page; this
+ * owns the column of rows inside it.
+ */
+export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
+
+/**
  * **There are three columns, and this file does not own the third**
  * (2026-08-11 verdict).
  *
