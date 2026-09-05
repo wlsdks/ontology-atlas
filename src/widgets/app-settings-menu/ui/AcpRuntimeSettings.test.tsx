@@ -470,4 +470,39 @@ describe('실행기 목록 — 먼저 그리고 나중에 고친다', () => {
     await waitFor(() => expect(bridge.detect).toHaveBeenCalled());
     expect(bridge.detect.mock.calls[0][0]?.probeLogin).toBe(true);
   });
+
+  /*
+   * Owner report, 2026-09-05: with a load average around 10, right after an in-app session ended,
+   * both runtimes wore 「Sign in needed」 while `claude auth status` and `codex login status`
+   * exited 0 from a shell; relaunching cleared it. A failed check must not spend the person's
+   * afternoon logging in to something they are already logged in to.
+   */
+  it('로그인 확인이 실패하면 「확인 못 함」이라고 말하고, 도구는 그대로 쓸 수 있게 둔다', async () => {
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, state: 'login-unknown' }),
+    ]);
+    render(<AcpRuntimeSettings />);
+
+    const row = await screen.findByTestId('app-settings-runtime-claude-acp');
+
+    // ① The state is said in its own word — not borrowed from 「Sign in needed」.
+    expect(row.querySelector('[data-runtime-state]')).toHaveAttribute(
+      'data-runtime-state',
+      'login-unknown',
+    );
+    expect(row.textContent, '확인 못 한 것에 확인됐다는 초록 점을 달면 안 된다').not.toContain(
+      'state.ready',
+    );
+
+    // ② The caption says the check did not come back — not that the person is signed out.
+    expect(row.textContent).toContain('loginUnknownHint');
+    expect(row.textContent).not.toContain('loginHint');
+
+    // ③ It stays in the usable group and the chat door stays open.
+    expect(screen.getByText(/readyHeading.*"count":1/)).toBeInTheDocument();
+    expect(screen.getByTestId('app-settings-runtime-chat-claude-acp')).toBeInTheDocument();
+
+    // ④ Nobody is sent to install a tool that is already on the machine.
+    expect(screen.queryByTestId('app-settings-runtime-install')).toBeNull();
+  });
 });

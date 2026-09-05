@@ -63,6 +63,15 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a compiled page that passes provenance yet loses a sealed five-question test to a raw-folder control retires Compile to a file list; a candidate proposed outside the granted roots, or a wiki page answering `get_concept`, breaks the rule.
 **Owner**: jinan
 
+## 2026-09-05 — codex-acp 1.10.0 is reviewed and refused, so the 1.6.2 pin stays; claude-agent-acp 0.75.0 is adopted
+
+**Why**: upstream `@agentclientprotocol/codex-acp` moved from the reviewed 1.9.0 to 1.10.0 the same day, and the registry gate refuses a release until a person inspects the new adapter.
+**Prior**: 2026-09-05 "codex-acp 1.9.0 is reviewed and refused" and 2026-09-03 "Codex chat pins the last adapter whose read-only mode holds the installed permission matrix" stand; this is the inspection they require and changes no boundary.
+**Decision**: keep launching exact 1.6.2 and record 1.10.0 as the reviewed upstream. Static inspection of both tarballs: `AgentMode.ts` is byte-identical to 1.9.0, so `read-only` still builds `sandboxMode: "workspace-write"`; `session/request_permission` and `mcpServers` handling are unchanged (same-name servers still overwrite silently); the only functional change is a background-terminal "async tasks" feature and a Codex bump to ^0.153.3. claude-agent-acp 0.75.0 becomes the launch version: `session-mode.js` and every `permissions/options/*.js` are byte-identical to the transcribed 0.74.0 (auth-status extension, usage rendering and compaction lifecycle are the only additions), so the mode and option transcriptions stand.
+**Dissent**: the owner asked for the newest versions everywhere; refused for this adapter because 1.10.0 would let an in-app Codex turn write inside the vault without a permission request. The behavioural matrix still could not run: Codex credits are exhausted until 2026-09-07, so the reading is static.
+**Falsifier**: a codex-acp release whose `read-only` mode builds a `readOnly` sandbox and passes the installed matrix reopens the pin; a static reading that misses a runtime override would show as a 1.6.2 turn writing before approval.
+**Owner**: jinan
+
 ## 2026-09-05 — MCP becomes its own destination, the rail cap moves to eight, and the page frame owns the desktop bottom
 
 **Why**: `/agents` carried two jobs sharing only the word "agent" (which coding tools this computer has, and what an agent reaches over MCP); the owner asked for the split and approved a longer rail. With a folder open the page reserved 0px at the bottom, so the last card sat on the window edge.
