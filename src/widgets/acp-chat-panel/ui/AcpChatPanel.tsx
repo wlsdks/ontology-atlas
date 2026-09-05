@@ -1,5 +1,7 @@
 'use client';
 
+import type { AcpTurnStart, AcpTurnCompletion } from '@/features/acp-session';
+
 import {
   ArrowUp,
   ChevronRight,
@@ -244,6 +246,8 @@ export function AcpChatPanel({
   onRuntimeChange,
   prefillRequest,
   openingRequest,
+  requestScopeKey,
+  onOpeningRequestSent,
   suggestions = [],
   onSuggestionAction,
   knownSlugs,
@@ -259,6 +263,7 @@ export function AcpChatPanel({
   onMapIntent,
   onOntologyRelationPreviewChange,
   onWorkReceipt,
+  onTurnStarted,
   onClose,
 }: {
   runtimeId: string;
@@ -296,7 +301,9 @@ export function AcpChatPanel({
    * It waits for `ready`: sending into a session that is still starting would be swallowed, and
    * the person would watch a door do nothing.
    */
-  openingRequest?: { text: string; nonce: number } | null;
+  openingRequest?: { text: string; nonce: number; scopeKey?: string } | null;
+  requestScopeKey?: string;
+  onOpeningRequestSent?: (nonce: number) => void;
   /**
    * The answer to 「What should I ask?」 (what should I ask) — drawn from **this folder's
    * current state** (`useChatSuggestions`). It appears in the empty conversation and,
@@ -347,10 +354,17 @@ export function AcpChatPanel({
   onOntologyRelationPreviewChange?: (preview: AcpOntologyRelationPreview | null) => void;
   /** Durable local summary of each ontology-write allow/reject and terminal result. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
+  onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
   onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
   const reducedMotion = usePrefersReducedMotion();
+  const openingScopeMismatch = openingRequest?.scopeKey !== undefined && openingRequest.scopeKey !== requestScopeKey;
+  const captureTurnStart = useCallback((turn: AcpTurnStart) => {
+    const completion = onTurnStarted?.(turn) ?? null;
+    if (!openingScopeMismatch && openingRequest && turn.text === openingRequest.text) onOpeningRequestSent?.(openingRequest.nonce);
+    return completion;
+  }, [onTurnStarted, openingRequest, openingScopeMismatch, onOpeningRequestSent]);
   const {
     status,
     lastTurnUpdateAt,
@@ -375,6 +389,7 @@ export function AcpChatPanel({
     mcpServers,
     approvalSettleMs: reducedMotion ? 0 : MOTION.settle.duration * 1000,
     onWorkReceipt,
+    onTurnStarted: captureTurnStart,
   });
   const pendingChangeSet = useMemo(
     () =>
@@ -612,11 +627,12 @@ export function AcpChatPanel({
   const openingText = openingRequest?.text ?? null;
   useEffect(() => {
     if (openingNonce === null || !openingText) return;
+    if (openingScopeMismatch) return;
     if (status !== 'ready') return;
     if (sentOpeningNonceRef.current === openingNonce) return;
     sentOpeningNonceRef.current = openingNonce;
     void send(openingText);
-  }, [openingNonce, openingText, status, send]);
+  }, [openingNonce, openingText, openingScopeMismatch, status, send]);
 
   const prefillNonce = prefillRequest?.nonce ?? null;
   const prefillText = prefillRequest?.text ?? null;
@@ -1084,6 +1100,10 @@ export function AcpChatPanel({
           </TooltipProvider>
         </span>
       </header>
+
+      <Surface open={openingScopeMismatch} role="status" className="text-caption text-[color:var(--color-text-secondary)]">
+        {t('openingScopeChanged')}
+      </Surface>
 
       <div
         ref={listRef}

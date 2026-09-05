@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { AcpTurnActivity } from '@/features/acp-session';
+import { useAnalysisCapture, type AnalysisCaptureContext, type AcpTurnActivity } from '@/features/acp-session';
+import { AnalysisWorkbench } from '@/widgets/analysis-workbench';
 import { cn } from '@/shared/lib/cn';
 import { usePrefersReducedMotion } from '@/shared/lib/use-prefers-reduced-motion';
 import { usePanelPresence } from '@/shared/lib/use-presence';
@@ -34,6 +35,8 @@ export function InsightsAgentDock({
   onDraftPresenceChange,
   onPresentationOpenMap,
   onTurnActivityChange,
+  analysisContext,
+  onEvidence,
   onClose,
 }: {
   open: boolean;
@@ -49,11 +52,20 @@ export function InsightsAgentDock({
   onDraftPresenceChange: (present: boolean) => void;
   onPresentationOpenMap: (slug: string, toolCallId: string) => void;
   onTurnActivityChange?: (activity: AcpTurnActivity | null) => void;
+  analysisContext: AnalysisCaptureContext;
+  onEvidence: (slug: string) => void;
   onClose: () => void;
 }) {
   const chatWidth = useChatWidth();
   const reducedMotion = usePrefersReducedMotion();
   const presence = usePanelPresence(open);
+  const [openingRequest, setOpeningRequest] = useState<{ text: string; nonce: number; scopeKey: string } | null>(null);
+  const [parentRunId, setParentRunId] = useState<string | null>(null);
+  const [parentRequestText, setParentRequestText] = useState<string | null>(null);
+  const requestSerial = useRef(0);
+  if (!open && openingRequest !== null) setOpeningRequest(null);
+  const captureContext = useMemo(() => ({ ...analysisContext, parentRunId, parentRequestText }), [analysisContext, parentRunId, parentRequestText]);
+  const capture = useAnalysisCapture(captureContext);
   const [enabledRequestNonce, setEnabledRequestNonce] = useState<number | null>(null);
 
   useEffect(() => {
@@ -120,7 +132,17 @@ export function InsightsAgentDock({
               onCommit={chatWidth.commitWidth}
             />
           </div>
-          <AcpChatPanel
+          <AnalysisWorkbench
+            context={captureContext}
+            contextLabel={contextLabel}
+            capture={capture}
+            open={open}
+            initialTab="conversation"
+            requestNonce={prefillRequest.nonce}
+            onClose={onClose}
+            onEvidence={onEvidence}
+            onRequest={(text, parentId) => { setParentRunId(parentId); setParentRequestText(parentId ? text : null); setOpeningRequest({ text, nonce: ++requestSerial.current, scopeKey: JSON.stringify([vaultRoot, 'meaning']) }); }}
+            conversation={<AcpChatPanel
             key={`${vaultRoot}:${runtime.id}`}
             runtimeId={runtime.id}
             runtimeLabel={runtime.label}
@@ -132,6 +154,9 @@ export function InsightsAgentDock({
               open && enabledRequestNonce === prefillRequest.nonce
             }
             prefillRequest={prefillRequest}
+            openingRequest={openingRequest}
+            requestScopeKey={JSON.stringify([vaultRoot, 'meaning'])}
+            onOpeningRequestSent={(nonce) => setOpeningRequest((current) => current?.nonce === nonce ? null : current)}
             contextLabel={contextLabel}
             knownSlugs={knownSlugs}
             knownRelations={knownRelations}
@@ -140,7 +165,9 @@ export function InsightsAgentDock({
             onDraftPresenceChange={onDraftPresenceChange}
             onPresentationOpenMap={onPresentationOpenMap}
             onTurnActivityChange={onTurnActivityChange}
+            onTurnStarted={capture.onTurnStarted}
             onClose={onClose}
+          />}
           />
         </Surface>
       ) : null}

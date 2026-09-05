@@ -22,6 +22,8 @@ vi.mock('@/widgets/acp-chat-panel', () => ({
   }),
 }));
 
+vi.mock('@/widgets/analysis-workbench', () => ({ AnalysisWorkbench: ({ conversation }: { conversation: React.ReactNode }) => <div>{conversation}</div> }));
+
 import { InsightsAgentDock } from './InsightsAgentDock';
 
 const baseProps = {
@@ -37,6 +39,8 @@ const baseProps = {
   onDraftPresenceChange: vi.fn(),
   onPresentationOpenMap: vi.fn(),
   onClose: vi.fn(),
+  onEvidence: vi.fn(),
+  analysisContext: { mode: 'meaning' as const, surface: 'analysis' as const, handle: null, writable: false, fileHandles: new Map(), graph: { nodes: [], edges: [] }, scope: { projectSlug: null, projectUid: null, targetSlugs: [], profileSlug: null }, sourceFingerprint: null, profileHash: null },
 };
 
 afterEach(() => {

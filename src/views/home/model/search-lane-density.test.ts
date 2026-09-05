@@ -16,7 +16,7 @@ describe("search lane crowding — labels drop only where the map measured no ro
     expect(isSearchLaneCrowded({ viewportBelowCrowdedWidth: false, indexExpanded: false })).toBe(false);
   });
 
-  it("the band ends at 1440 px — the first measured width where the lane cleared the utility group", () => {
-    expect(SEARCH_LANE_CROWDED_BELOW_PX).toBe(1440);
+  it("reserves room for the Meaning review action beside the expanded-index search lane", () => {
+    expect(SEARCH_LANE_CROWDED_BELOW_PX).toBe(1728);
   });
 });

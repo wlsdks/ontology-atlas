@@ -290,12 +290,14 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'maintenance_plan',
   'agent_brief',
   'meaning_repair_review',
+  'analysis_history',
+  'analysis_record',
   'workspace_brief',
   'health',
 ]);
 export const QUERY_PLAN_TARGET_OPERATIONS = Object.freeze(
   QUERY_ONTOLOGY_OPERATIONS.filter((operation) => (
-    operation !== 'query_plan' && operation !== 'meaning_repair_review'
+    !['query_plan', 'meaning_repair_review', 'analysis_history', 'analysis_record'].includes(operation)
   )),
 );
 

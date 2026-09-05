@@ -1973,6 +1973,24 @@ describe('첫 내려받기 — 「켜는 중」만으로는 부족하다 (2026-0
     );
     expect(promptsWhileStarting()).toBe(1);
   });
+  it('holds a queued request for a different scope and acknowledges only a real turn start', async () => {
+    const view = await bootSession();
+    const consumed = vi.fn();
+    const openingRequest = { text: 'Review the captured scope.', nonce: 41, scopeKey: 'vault-A:profile-A' };
+    view.rerenderPanel({ openingRequest, requestScopeKey: 'vault-B:profile-B', onOpeningRequestSent: consumed });
+    expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(0);
+    expect(consumed).not.toHaveBeenCalled();
+    await screen.findByText('openingScopeChanged');
+    view.rerenderPanel({ openingRequest, requestScopeKey: openingRequest.scopeKey, onOpeningRequestSent: consumed });
+    await waitFor(() => expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(1));
+    expect(consumed).toHaveBeenCalledExactlyOnceWith(41);
+    view.rerenderPanel({ openingRequest: null, requestScopeKey: openingRequest.scopeKey, onOpeningRequestSent: consumed });
+    replyTo('session/prompt', { stopReason: 'end_turn' });
+    await waitFor(() => expect(screen.getByTestId('acp-chat-panel')).toHaveAttribute('data-acp-status', 'ready'));
+    cleanup(); bridge.sent = []; bridge.listener = null;
+    await bootSession({ openingRequest: null, requestScopeKey: openingRequest.scopeKey, onOpeningRequestSent: consumed });
+    expect(bridge.sent.filter((row) => row.method === 'session/prompt')).toHaveLength(0);
+  });
 });
 
 describe('권한 카드 — 놓칠 수 없어야 한다', () => {

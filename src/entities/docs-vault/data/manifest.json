@@ -63,6 +63,20 @@
       "linksOut": []
     },
     {
+      "slug": "ANALYSIS-RECORDS",
+      "path": "docs/ANALYSIS-RECORDS.md",
+      "title": "Analysis records",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "Atlas keeps each in-app ACP analysis as a separate Markdown file under .ontology-atlas/analyses/ in the folder captured when the request starts. Map, Analysis, and Architecture use the same format. An analysis can be reopened after a session closes, exported, inspected through MCP or CLI, or used as the parent of anoth",
+      "wordCount": 1288,
+      "updatedAt": "2026-09-05",
+      "linksOut": [
+        "ONTOLOGY-ATLAS-SPEC"
+      ]
+    },
+    {
       "slug": "ARCHITECTURE",
       "path": "docs/ARCHITECTURE.md",
       "title": "Architecture",
@@ -81,9 +95,10 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4598,
+      "wordCount": 4675,
       "updatedAt": "2026-09-05",
       "linksOut": [
+        "ANALYSIS-RECORDS",
         "../AGENTS",
         "PRODUCT-DIRECTION",
         "FEATURES",
@@ -794,7 +809,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 103156,
+      "wordCount": 103404,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug"
@@ -900,9 +915,10 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 27984,
+      "wordCount": 28090,
       "updatedAt": "2026-09-05",
       "linksOut": [
+        "ANALYSIS-RECORDS",
         "slug",
         "project:slug",
         "oldSlug"
@@ -1336,7 +1352,7 @@
       },
       "headings": [],
       "excerpt": "The ability to detect ACP (Agent Client Protocol) v1 coding-agent executors already installed on the device, directly launch those with verified app-owned permission gates (currently Claude Agent and Codex), and apply scoped permission review. No new Atlas API key or vendor integration is needed: it uses the subscripti",
-      "wordCount": 2043,
+      "wordCount": 2098,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "ontology/elements/agents-destination"
@@ -1363,6 +1379,38 @@
       "excerpt": "The ability for humans to read in one flow the AI agent's product name, verified current stage, work goals and targets, and next actions from the map. Only when there is a fresh heartbeat does it speak of plan/edit/verify/approval waits in present tense; if only write logs are recent, it does not infer \"in progress\" bu",
       "wordCount": 786,
       "updatedAt": "2026-08-29",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/ai-analysis-review",
+      "path": "docs/ontology/capabilities/ai-analysis-review.md",
+      "title": "AI Analysis Review and History",
+      "tags": [],
+      "frontmatter": {
+        "uid": "d20b10dd-60c6-4baf-b6f7-313373091278",
+        "slug": "capabilities/ai-analysis-review",
+        "kind": "capability",
+        "title": "AI Analysis Review and History",
+        "display_en": "AI Analysis Review and History",
+        "display_ko": "AI 분석 검토와 이력",
+        "domain": "domains/agent-integration",
+        "elements": [
+          "elements/analysis-record-archive",
+          "elements/analysis-review-workbench"
+        ],
+        "path": "src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx",
+        "created_by": "agent:unknown",
+        "relates": [
+          "capabilities/acp-runtime"
+        ],
+        "relation_notes": {
+          "capabilities/acp-runtime": "New in-app analyses execute through the guarded ACP runtime; stored results remain readable without starting another agent."
+        }
+      },
+      "headings": [],
+      "excerpt": "The ability for a person or successor agent to request a business-meaning or Architecture analysis, inspect what evidence supports each AI question, retain a reasoned judgment, and return to the original result or continue from a selected prior version. The user explicitly requested this review and Markdown-versioning ",
+      "wordCount": 174,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -1407,12 +1455,18 @@
           "elements/architecture-workbench"
         ],
         "path": "mcp/src/architecture-profile.mjs",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "relates": [
+          "capabilities/ai-analysis-review"
+        ],
+        "relation_notes": {
+          "capabilities/ai-analysis-review": "Architecture analysis uses the shared versioned review loop to retain its actual measurement, profile snapshot and unresolved questions."
+        }
       },
       "headings": [],
       "excerpt": "The ability for a developer and coding agent to compare human-reviewed architecture intent with a revision-stamped source observation, decide what should change, and verify the result against the same contract. The Architecture workbench starts the guarded Draft, Change, or Verify conversation inside its own route and ",
-      "wordCount": 380,
-      "updatedAt": "2026-09-02",
+      "wordCount": 458,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -2172,6 +2226,7 @@
         "capabilities": [
           "capabilities/acp-runtime",
           "capabilities/agent-work-visibility",
+          "capabilities/ai-analysis-review",
           "capabilities/cli-developer-entry",
           "capabilities/mcp-server",
           "capabilities/ontology-dna-presentation",
@@ -2187,7 +2242,8 @@
         "relation_notes": {
           "capabilities/acp-runtime": "Agent integration owns launching the user's already-installed coding agent inside the app over ACP with an isolated config and a vault-scoped permission gate.",
           "capabilities/agent-work-visibility": "Agent integration owns the human-visible projection of current and recent AI-agent work across ACP heartbeats and vault activity logs.",
-          "elements/installed-mcp-identity-gate": "The installed MCP identity gate is the concrete local delivery control that keeps the agent-integration domain bound to the exact app bundle and source evidence it ships."
+          "elements/installed-mcp-identity-gate": "The installed MCP identity gate is the concrete local delivery control that keeps the agent-integration domain bound to the exact app bundle and source evidence it ships.",
+          "capabilities/ai-analysis-review": "Agent integration owns the shared evidence and review history through which people and successor agents judge ACP analysis results."
         }
       },
       "headings": [],
@@ -2488,6 +2544,50 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/analysis-record-archive",
+      "path": "docs/ontology/elements/analysis-record-archive.md",
+      "title": "Analysis Record Archive",
+      "tags": [],
+      "frontmatter": {
+        "uid": "93354a50-2418-47d0-ac5f-98e10b4fc2db",
+        "slug": "elements/analysis-record-archive",
+        "kind": "element",
+        "title": "Analysis Record Archive",
+        "display_en": "Analysis Record Archive",
+        "display_ko": "분석 기록 보관소",
+        "domain": "domains/agent-integration",
+        "path": "src/entities/analysis-record/model/analysis-record.mts",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The cross-runtime diagnostic record format, bounded readers, and exclusive native persistence that preserve an ACP analysis as one immutable Markdown version. It retains the original final answer, actual full-body Atlas evidence, Architecture measurements and profile snapshots, request identity, outcome, and qualificat",
+      "wordCount": 151,
+      "updatedAt": "2026-09-05",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/analysis-review-workbench",
+      "path": "docs/ontology/elements/analysis-review-workbench.md",
+      "title": "Analysis Review Workbench",
+      "tags": [],
+      "frontmatter": {
+        "uid": "0f3252ed-c0e7-4575-8539-1d27e62a07a2",
+        "slug": "elements/analysis-review-workbench",
+        "kind": "element",
+        "title": "Analysis Review Workbench",
+        "display_en": "Analysis Review Workbench",
+        "display_ko": "분석 검토 워크벤치",
+        "domain": "domains/agent-integration",
+        "path": "src/widgets/analysis-workbench",
+        "created_by": "agent:unknown"
+      },
+      "headings": [],
+      "excerpt": "The shared context dock in which a reviewer reads concept criteria and relationship rationale, follows AI questions to their evidence, selects an earlier Markdown analysis, and continues the same ACP conversation. It composes Map, Analysis and Architecture without making navigation restart the agent. Meaning, findings/",
+      "wordCount": 136,
+      "updatedAt": "2026-09-05",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/app-nav-rail",
       "path": "docs/ontology/elements/app-nav-rail.md",
       "title": "App Nav Rail",
@@ -2570,8 +2670,8 @@
       },
       "headings": [],
       "excerpt": "The human-readable implementation-architecture workbench at /architecture. It is a comparison surface, not the ontology map: a solid canvas keeps each reviewed role beside source observation and names the delta between them. Whenever the paired rows fit the canvas height at rest, a downward chain uses one repeated 280p",
-      "wordCount": 1291,
-      "updatedAt": "2026-09-04",
+      "wordCount": 1371,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -3717,7 +3817,7 @@
       },
       "headings": [],
       "excerpt": "A local-first codebase ontology workbench that records what a codebase builds, why it is structured that way, and what a change will affect. It links product domains and capabilities to implementation evidence, dependencies, and impact in a computable Markdown graph that people and AI agents maintain together. README.m",
-      "wordCount": 750,
+      "wordCount": 800,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },
@@ -3803,7 +3903,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2324,
+      "wordCount": 2363,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "DECISIONS"
@@ -3965,6 +4065,40 @@
     }
   ],
   "backlinksDetail": {
+    "ONTOLOGY-ATLAS-SPEC": [
+      {
+        "fromSlug": "ANALYSIS-RECORDS",
+        "context": "do not enter the graph, and do not approve a meaning or implementation change. The kind and relation criteria remain in **[the Atlas specification]**. ## Reading and acting The map's **Meaning review** action opens the existing right context dock. Meaning, findings/h",
+        "linkText": "the Atlas specification"
+      },
+      {
+        "fromSlug": "FOUNDATIONS",
+        "context": "rable kinds, one reserved reader kind, relation support layers, `is_a` test, and inference boundary — lives only in **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. The name is earned by that shared meaning model, not by pretending the files implement a standard they do not. - *",
+        "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
+      },
+      {
+        "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
+        "context": "oun-extraction). This file owns the re-executable packet and verdict contract. The vault format itself remains owned by **[`ONTOLOGY-ATLAS-SPEC.md`]**. ## Qualification packet Every `constructionQualification:v1` packet is bound to one project plus the exact review-pl",
+        "linkText": "`ONTOLOGY-ATLAS-SPEC.md`"
+      },
+      {
+        "fromSlug": "PRODUCT-DIRECTION",
+        "context": "implements. The exact discriminator, `broader`/`is_a` support boundary, and non-inference contract have one authority: **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. This direction document decides why the product exists; it does not maintain a second schema glossary. ### What belon",
+        "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
+      }
+    ],
+    "ANALYSIS-RECORDS": [
+      {
+        "fromSlug": "ARCHITECTURE",
+        "context": "o ontology nodes. The Architecture view may reconstruct a dated observation only against its matching profile snapshot. **[Contract and boundaries]**. The app can launch a coding agent the user already installed (Claude Code, Codex, …) and speak the Agent Client Proto",
+        "linkText": "Contract and boundaries"
+      },
+      {
+        "fromSlug": "FEATURES",
+        "context": "ng. Architecture and Analysis use the same archive and keep their ACP conversation mounted across context sections. **[Record contract and limits]**. - **Guarded ACP runtime eligibility** — The app offers Claude Agent and Codex for in-app ACP chat only behind an app-o",
+        "linkText": "Record contract and limits"
+      }
+    ],
     "../AGENTS": [
       {
         "fromSlug": "ARCHITECTURE",
@@ -4081,23 +4215,6 @@
         "fromSlug": "FEATURES",
         "context": "d file's `slug:` key, rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `**[oldSlug]**` / `(oldSlug.md)`) - Tail-only references (`mcp-server` for `capabilities/mcp-server`) also redirected to the new t",
         "linkText": "oldSlug"
-      }
-    ],
-    "ONTOLOGY-ATLAS-SPEC": [
-      {
-        "fromSlug": "FOUNDATIONS",
-        "context": "rable kinds, one reserved reader kind, relation support layers, `is_a` test, and inference boundary — lives only in **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. The name is earned by that shared meaning model, not by pretending the files implement a standard they do not. - *",
-        "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
-      },
-      {
-        "fromSlug": "ONTOLOGY-CONSTRUCTION-QUALIFICATION",
-        "context": "oun-extraction). This file owns the re-executable packet and verdict contract. The vault format itself remains owned by **[`ONTOLOGY-ATLAS-SPEC.md`]**. ## Qualification packet Every `constructionQualification:v1` packet is bound to one project plus the exact review-pl",
-        "linkText": "`ONTOLOGY-ATLAS-SPEC.md`"
-      },
-      {
-        "fromSlug": "PRODUCT-DIRECTION",
-        "context": "implements. The exact discriminator, `broader`/`is_a` support boundary, and non-inference contract have one authority: **[`ONTOLOGY-ATLAS-SPEC.md` §2]**. This direction document decides why the product exists; it does not maintain a second schema glossary. ### What belon",
-        "linkText": "`ONTOLOGY-ATLAS-SPEC.md` §2"
       }
     ],
     "ONTOLOGY-CONSTRUCTION-QUALIFICATION": [
@@ -4449,6 +4566,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/capabilities/ai-analysis-review",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/capabilities/cli-developer-entry",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4479,6 +4601,16 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/elements/analysis-record-archive",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
+        "fromSlug": "ontology/elements/analysis-review-workbench",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/elements/concurrent-ledger-conflict-resolver",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4502,6 +4634,37 @@
         "fromSlug": "ontology/ontology-atlas",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
+      }
+    ],
+    "ontology/elements/analysis-record-archive": [
+      {
+        "fromSlug": "ontology/capabilities/ai-analysis-review",
+        "context": "frontmatter · **[elements/analysis-record-archive]**",
+        "linkText": "elements/analysis-record-archive"
+      }
+    ],
+    "ontology/elements/analysis-review-workbench": [
+      {
+        "fromSlug": "ontology/capabilities/ai-analysis-review",
+        "context": "frontmatter · **[elements/analysis-review-workbench]**",
+        "linkText": "elements/analysis-review-workbench"
+      }
+    ],
+    "ontology/capabilities/acp-runtime": [
+      {
+        "fromSlug": "ontology/capabilities/ai-analysis-review",
+        "context": "frontmatter · **[capabilities/acp-runtime]**",
+        "linkText": "capabilities/acp-runtime"
+      },
+      {
+        "fromSlug": "ontology/capabilities/mcp-connectors",
+        "context": "frontmatter · **[capabilities/acp-runtime]**",
+        "linkText": "capabilities/acp-runtime"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/acp-runtime]**",
+        "linkText": "capabilities/acp-runtime"
       }
     ],
     "ontology/domains/onboarding-and-shell": [
@@ -4618,6 +4781,18 @@
         "fromSlug": "ontology/domains/codebase-architecture",
         "context": "frontmatter · **[elements/architecture-workbench]**",
         "linkText": "elements/architecture-workbench"
+      }
+    ],
+    "ontology/capabilities/ai-analysis-review": [
+      {
+        "fromSlug": "ontology/capabilities/architecture-guided-development",
+        "context": "frontmatter · **[capabilities/ai-analysis-review]**",
+        "linkText": "capabilities/ai-analysis-review"
+      },
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/ai-analysis-review]**",
+        "linkText": "capabilities/ai-analysis-review"
       }
     ],
     "ontology/domains/codebase-architecture": [
@@ -4986,18 +5161,6 @@
         "fromSlug": "ontology/domains/local-vault-management",
         "context": "frontmatter · **[capabilities/vault-sample-source]**",
         "linkText": "capabilities/vault-sample-source"
-      }
-    ],
-    "ontology/capabilities/acp-runtime": [
-      {
-        "fromSlug": "ontology/capabilities/mcp-connectors",
-        "context": "frontmatter · **[capabilities/acp-runtime]**",
-        "linkText": "capabilities/acp-runtime"
-      },
-      {
-        "fromSlug": "ontology/domains/agent-integration",
-        "context": "frontmatter · **[capabilities/acp-runtime]**",
-        "linkText": "capabilities/acp-runtime"
       }
     ],
     "ontology/elements/installed-mcp-identity-gate": [
@@ -6391,6 +6554,13 @@
                 "title": "Agent Work Visibility"
               },
               {
+                "name": "ai-analysis-review",
+                "path": "ontology/capabilities/ai-analysis-review",
+                "type": "doc",
+                "slug": "ontology/capabilities/ai-analysis-review",
+                "title": "AI Analysis Review and History"
+              },
+              {
                 "name": "app-update",
                 "path": "ontology/capabilities/app-update",
                 "type": "doc",
@@ -6683,6 +6853,20 @@
                 "type": "doc",
                 "slug": "ontology/elements/agents-destination",
                 "title": "Agents Destination"
+              },
+              {
+                "name": "analysis-record-archive",
+                "path": "ontology/elements/analysis-record-archive",
+                "type": "doc",
+                "slug": "ontology/elements/analysis-record-archive",
+                "title": "Analysis Record Archive"
+              },
+              {
+                "name": "analysis-review-workbench",
+                "path": "ontology/elements/analysis-review-workbench",
+                "type": "doc",
+                "slug": "ontology/elements/analysis-review-workbench",
+                "title": "Analysis Review Workbench"
               },
               {
                 "name": "app-nav-rail",
@@ -7184,6 +7368,13 @@
         "type": "doc",
         "slug": "AGENT-GRAPH-WORKFLOW",
         "title": "Agent Graph Workflow"
+      },
+      {
+        "name": "ANALYSIS-RECORDS",
+        "path": "ANALYSIS-RECORDS",
+        "type": "doc",
+        "slug": "ANALYSIS-RECORDS",
+        "title": "Analysis records"
       },
       {
         "name": "ARCHITECTURE",

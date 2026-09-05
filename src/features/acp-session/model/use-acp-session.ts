@@ -108,6 +108,24 @@ export interface UseAcpSessionOptions {
   approvalSettleMs?: number;
   /** Human ontology-write decisions, emitted as bounded local receipt snapshots. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
+  /** Captures the initiating context and returns that turn's archival observer. */
+  onTurnStarted?: (turn: AcpTurnStart) => ((turn: AcpTurnCompletion) => void | Promise<void>) | null;
+}
+
+export interface AcpTurnStart {
+  runtimeId: string;
+  sessionId: string;
+  vaultRoot: string | null;
+  userEventId: string;
+  text: string;
+  startedAt: string;
+}
+
+export interface AcpTurnCompletion extends AcpTurnStart {
+  endedAt: string;
+  outcome: 'completed' | 'cancelled' | 'failed';
+  stopReason: string | null;
+  events: readonly AcpEvent[];
 }
 
 const RECEIPT_REQUEST_LIMIT = 160;
@@ -250,6 +268,7 @@ export function useAcpSession({
   mcpServers,
   approvalSettleMs = 0,
   onWorkReceipt,
+  onTurnStarted,
 }: UseAcpSessionOptions) {
   const [status, setStatus] = useState<AcpSessionStatus>('idle');
   /*
@@ -285,6 +304,17 @@ export function useAcpSession({
     if (next !== 'starting') setDownload(null);
   }, []);
   const [events, setEvents] = useState<AcpEvent[]>([]);
+  const eventsRef = useRef<AcpEvent[]>([]);
+  const updateEvents = useCallback((update: (previous: AcpEvent[]) => AcpEvent[]) => {
+    const next = update(eventsRef.current);
+    eventsRef.current = next;
+    setEvents(next);
+  }, []);
+  const activeTurnRef = useRef<{
+    start: AcpTurnStart;
+    observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null;
+    cancelRequested: boolean;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** Commands the agent found in this folder — putting skills in the vault makes them appear here. */
   const [slashCommands, setSlashCommands] = useState<AcpSlashCommand[]>([]);
@@ -396,7 +426,7 @@ export function useAcpSession({
   );
 
   const push = useCallback((event: AcpEvent) => {
-    setEvents((prev) => {
+    updateEvents((prev) => {
       const last = prev[prev.length - 1];
       // Text fragments are **appended** rather than becoming a new bubble per line — one sentence
       // arrives in several fragments.
@@ -405,7 +435,31 @@ export function useAcpSession({
       }
       return [...prev, event];
     });
-  }, []);
+  }, [updateEvents]);
+
+  const finishTurn = useCallback((outcome: AcpTurnCompletion['outcome'], stopReason: string | null) => {
+    const active = activeTurnRef.current;
+    if (!active) return;
+    activeTurnRef.current = null;
+    if (!active.observer) return;
+    const index = eventsRef.current.findIndex((event) => event.kind === 'user' && event.id === active.start.userEventId);
+    const completion: AcpTurnCompletion = {
+      ...active.start,
+      endedAt: new Date().toISOString(),
+      outcome: active.cancelRequested ? 'cancelled' : outcome,
+      stopReason,
+      events: (index < 0 ? [] : eventsRef.current.slice(index)).map((event) => ({ ...event })),
+    };
+    // Archival failure must not retry the prompt or turn a successful model
+    // response into an ACP transport error. The caller owns save/retry UI.
+    try {
+      void Promise.resolve(active.observer(completion)).catch((error) => {
+        keepDiagnostic(`analysis-archive: ${error instanceof Error ? error.message : String(error)}`);
+      });
+    } catch (error) {
+      keepDiagnostic(`analysis-archive: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }, [keepDiagnostic]);
 
   /**
    * **The screen stops claiming a gate it no longer has.**
@@ -512,7 +566,7 @@ export function useAcpSession({
         // and when input is complete, sends rawInput via **status-less** tool_call_update.
         // Merging only the status leaves only the tool name on screen, while the exact target and map intent
         // remain permanently empty. Overwrite existing fields with only the fields actually carried by the update.
-        setEvents((prev) =>
+        updateEvents((prev) =>
           prev.map((event) => {
             if (event.kind !== 'tool' || event.id !== id) return event;
             return {
@@ -549,7 +603,7 @@ export function useAcpSession({
         }
       }
     },
-    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked],
+    [emitWorkReceipt, noteModeMoved, push, setApprovedOntologyWriteTracked, updateEvents],
   );
 
   /** Creates the promise that waits until the screen answers. Concurrent asks queue up. */
@@ -767,6 +821,7 @@ export function useAcpSession({
           if (statusRef.current === 'thinking') {
             push({ kind: 'notice', id: nextEventId(), text: 'died-mid-turn' });
           }
+          finishTurn('failed', 'process_exited');
           setStatusTracked('exited');
           // A card awaiting an answer on a finished session is closed with a rejection.
           if (permissionDecisionTimerRef.current !== null) {
@@ -952,6 +1007,7 @@ export function useAcpSession({
   }, [
     applyUpdate,
     askUser,
+    finishTurn,
     keepDiagnostic,
     mcpServers,
     noteModeMoved,
@@ -973,7 +1029,7 @@ export function useAcpSession({
   const switchSession = useCallback(
     async (sessionId: string | null) => {
       await stopRef.current?.();
-      setEvents([]);
+      updateEvents(() => []);
       latestUserRequestRef.current = null;
       setApprovedOntologyWriteTracked(null);
       setError(null);
@@ -981,7 +1037,7 @@ export function useAcpSession({
       setChoices(EMPTY_CHOICES);
       await startRef.current?.();
     },
-    [setApprovedOntologyWriteTracked],
+    [setApprovedOntologyWriteTracked, updateEvents],
   );
 
   /**
@@ -1010,35 +1066,51 @@ export function useAcpSession({
     async (text: string) => {
       const client = clientRef.current;
       const sessionId = sessionIdRef.current;
-      if (!client || !sessionId || !text.trim()) return;
+      if (!client || !sessionId || !text.trim() || activeTurnRef.current) return;
+      const generation = generationRef.current;
+      const userEventId = nextEventId();
+      const start: AcpTurnStart = { runtimeId, sessionId, vaultRoot, userEventId, text, startedAt: new Date().toISOString() };
+      let observer: ((turn: AcpTurnCompletion) => void | Promise<void>) | null = null;
+      try { observer = onTurnStarted?.(start) ?? null; } catch (error) {
+        keepDiagnostic(`analysis-capture: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      activeTurnRef.current = { start, observer, cancelRequested: false };
       latestUserRequestRef.current = text.trim();
-      push({ kind: 'user', id: nextEventId(), text });
+      push({ kind: 'user', id: userEventId, text });
       setLastTurnUpdateAt(Date.now());
       setStatusTracked('thinking');
       try {
-        await client.prompt(sessionId, [{ type: 'text', text }]);
+        const result = await client.prompt(sessionId, [{ type: 'text', text }]);
+        if (generationRef.current !== generation) return;
+        const outcome = result.stopReason === 'cancelled' ? 'cancelled'
+          : result.stopReason && result.stopReason !== 'end_turn' ? 'failed' : 'completed';
+        finishTurn(outcome, result.stopReason ?? null);
         if (!disposedRef.current) {
           setApprovedOntologyWriteTracked(null);
           setLastTurnUpdateAt(null);
           setStatusTracked('ready');
         }
       } catch (err) {
+        if (generationRef.current !== generation || statusRef.current === 'exited') return;
+        finishTurn('failed', null);
         setApprovedOntologyWriteTracked(null);
         setLastTurnUpdateAt(null);
         setError(err instanceof Error ? err.message : String(err));
         setStatusTracked('error');
       }
     },
-    [push, setApprovedOntologyWriteTracked, setStatusTracked],
+    [finishTurn, keepDiagnostic, onTurnStarted, push, runtimeId, setApprovedOntologyWriteTracked, setStatusTracked, vaultRoot],
   );
 
   const cancel = useCallback(() => {
+    if (activeTurnRef.current) activeTurnRef.current.cancelRequested = true;
     const client = clientRef.current;
     const sessionId = sessionIdRef.current;
     if (client && sessionId) void client.cancel(sessionId);
   }, []);
 
   const stop = useCallback(async () => {
+    finishTurn('cancelled', 'session_closed');
     /*
      * **Bump the generation first.** Without this line, closing mid-start makes `stop()` clean up
      * something that does not exist yet and return, after which `start()` creates the process
@@ -1076,7 +1148,7 @@ export function useAcpSession({
     sessionIdRef.current = null;
     if (acpSessionId) await stopAcpSession(acpSessionId);
     setStatusTracked('idle');
-  }, [emitWorkReceipt, setApprovedOntologyWriteTracked, setStatusTracked]);
+  }, [emitWorkReceipt, finishTurn, setApprovedOntologyWriteTracked, setStatusTracked]);
 
   /*
    * Hold the latest in a ref so `switchSession` can call it without a circular dependency.

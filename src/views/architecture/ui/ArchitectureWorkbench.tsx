@@ -22,6 +22,7 @@ import type {
   ArchitectureAgentRoute,
 } from '../model/architecture-agent';
 import { cn } from '@/shared/lib/cn';
+import { LG_BREAKPOINT_PX, useViewportBelow } from '@/shared/lib/use-viewport-below';
 import { copyText } from '@/shared/lib/copy-text';
 import { controlClass } from '@/shared/ui/control-class';
 import { transientSurface } from '@/shared/ui/transient-surface';
@@ -32,7 +33,7 @@ import { ArchitectureRoleDetail } from './ArchitectureRoleDetail';
 /** The canvas owns which concepts take part in a relation; the panel does not rank by it. */
 const EMPTY_EDGE_PARTICIPANTS: ReadonlySet<string> = new Set();
 const EMPTY_PROFILE_PROBLEMS: ReadonlyArray<ArchitectureProfileProblem> = [];
-import { Button, EmptyState, RowButton, Surface } from '@/shared/ui';
+import { Button, Chip, EmptyState, RowButton, Surface } from '@/shared/ui';
 import { ArchitectureFlow } from './ArchitectureFlow';
 import { ArchitectureEvidencePlane } from './ArchitectureEvidencePlane';
 import { ArchitectureEvidenceRail } from './ArchitectureEvidenceRail';
@@ -97,6 +98,8 @@ export function ArchitectureWorkbench({
   agentRoute = 'clipboard',
   agentLabel = null,
   onAgentRequest,
+  onOpenReview,
+  contextDockOpen = false,
   agentActivity = null,
   copyFeedbackMs = COPY_FEEDBACK_MS,
   offersInstalledApp = false,
@@ -120,6 +123,8 @@ export function ArchitectureWorkbench({
   agentRoute?: ArchitectureAgentRoute;
   agentLabel?: string | null;
   onAgentRequest?: (request: ArchitectureAgentRequest) => void;
+  onOpenReview?: (profileSlug: string, roleId: string | null) => void;
+  contextDockOpen?: boolean;
   agentActivity?: AcpTurnActivity | null;
   /** How long a copy confirmation stays before the button returns to rest. Tests shorten it. */
   copyFeedbackMs?: number;
@@ -127,6 +132,8 @@ export function ArchitectureWorkbench({
   offersInstalledApp?: boolean;
 }) {
   const t = useTranslations('architecture');
+  const tReview = useTranslations('analysisWorkbench');
+  const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
   /*
    * The reader's own language decides which reviewed sentence is shown, and nothing else does.
    * `summary_<role>` stays the canonical fact every agent brief, prompt and CLI line prints; a
@@ -135,6 +142,11 @@ export function ArchitectureWorkbench({
   const locale = useLocale();
   const [draftCopyState, setDraftCopyState] = useState<CopyState>('idle');
   const [selectedSlug, setSelectedSlug] = useState(profiles[0]?.slug ?? null);
+  const selected = useMemo(
+    () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
+    [profiles, selectedSlug],
+  );
+
   const [evidenceOpen, setEvidenceOpen] = useState(false);
   /*
    * ⚠️ **At workbench width the screen stops being a document.** Everything that used to sit in a
@@ -149,7 +161,7 @@ export function ArchitectureWorkbench({
   const [inspector, setInspector] = useState<'role' | 'rules' | null>(() => {
     return readArchitectureRole() !== null ? 'role' : null;
   });
-  const inspectorOpen = inspector !== null;
+  const inspectorOpen = inspector !== null && !contextDockOpen;
   const rightDockOpen = inspectorOpen || evidenceOpen;
   const evidenceTriggerRef = useRef<HTMLButtonElement>(null);
   const inspectorTriggerRef = useRef<HTMLElement | SVGElement | null>(null);
@@ -190,6 +202,7 @@ export function ArchitectureWorkbench({
    */
 
   function openInspector(kind: 'role' | 'rules', trigger?: HTMLElement | SVGElement) {
+    if (contextDockOpen && selected) { onOpenReview?.(selected.slug, selectedRole); return; }
     if (trigger) inspectorTriggerRef.current = trigger;
     setEvidenceOpen(false);
     setInspector(kind);
@@ -237,10 +250,6 @@ export function ArchitectureWorkbench({
     return () => window.clearTimeout(timer);
   }, [copyFeedbackMs, copyState]);
   const evidencePanelRef = useRef<HTMLElement>(null);
-  const selected = useMemo(
-    () => profiles.find((profile) => profile.slug === selectedSlug) ?? profiles[0] ?? null,
-    [profiles, selectedSlug],
-  );
 
   const selectedRecord = selected ? recordsByProfile[selected.slug] ?? null : null;
   const roleTraffic = selectedRecord?.brief.conformance.observedRoleEdges;
@@ -662,14 +671,14 @@ export function ArchitectureWorkbench({
       setInspector(null);
       setEvidenceOpen(false);
       writeArchitectureAddress(selectedRole);
-      onAgentRequest?.({ kind, prompt: promptFor(kind) });
+      onAgentRequest?.({ kind, prompt: promptFor(kind), profileSlug: selected.slug, roleId: selectedRole });
       return;
     }
     void copyHandoff(promptFor(kind), taskLabel);
   }
 
   return (
-    <main className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]">
+    <main inert={contextDockOpen && reviewUsesSheet} className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[color:var(--color-canvas)]">
       <div
         data-testid="architecture-layout-scroll"
         className={cn(
@@ -681,8 +690,9 @@ export function ArchitectureWorkbench({
            * opens beside it. Below `xl` the stacked, scrolling document stays exactly as it was,
            * because a phone cannot put anything beside anything.
            */
-          'architecture-workbench-grid grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] lg:grid-cols-[220px_minmax(0,1fr)] xl:grid-rows-1 xl:overflow-hidden',
-          evidenceOpen
+          'architecture-workbench-grid grid min-h-0 flex-1 grid-cols-1 overflow-y-auto bg-[color:var(--color-canvas)] xl:grid-rows-1 xl:overflow-hidden',
+          contextDockOpen ? 'grid-rows-1 overflow-hidden' : 'lg:grid-cols-[220px_minmax(0,1fr)]',
+          contextDockOpen ? 'xl:grid-cols-1' : evidenceOpen
             ? XL_EVIDENCE_COLUMNS
             : XL_COLUMNS[inspectorOpen ? 'inspector' : 'closed'],
         )}
@@ -717,6 +727,7 @@ export function ArchitectureWorkbench({
               </p>
             </div>
             {profileNotices ? <div className="mt-3">{profileNotices}</div> : null}
+            {onOpenReview ? <div className="mt-3"><Chip data-testid="architecture-review-open" onClick={() => { setInspector(null); setEvidenceOpen(false); onOpenReview(selected.slug, selectedRole); }}>{tReview('history')}</Chip></div> : null}
           </header>
           {/*
             The provenance explanation is available in one press, but it does not own a permanent
@@ -945,6 +956,7 @@ export function ArchitectureWorkbench({
                   /* Choosing a role is the question the dock answers, so it opens with the
                      choice; clicking the same role again clears both. */
                   if (next === null) setInspector(null);
+                  else if (contextDockOpen) onOpenReview?.(selected.slug, next);
                   else openInspector('role', trigger);
                   writeArchitectureAddress(next);
                 }}
@@ -1034,7 +1046,7 @@ export function ArchitectureWorkbench({
           data-architecture-inspector-open={inspectorOpen ? 'true' : 'false'}
           data-architecture-inspector={inspector ?? 'none'}
           className={cn(
-            'contents',
+            contextDockOpen ? 'hidden' : 'contents',
             inspectorOpen
               ? [
                   'xl:col-start-2 xl:row-start-1 xl:flex xl:min-h-0 xl:flex-col xl:overflow-y-auto',
@@ -1353,7 +1365,7 @@ export function ArchitectureWorkbench({
                   data-testid="architecture-profile-option"
                   hoverInk="strong"
                   hoverSurface="lift"
-                  onClick={() => setSelectedSlug(profile.slug)}
+                  onClick={() => { setSelectedSlug(profile.slug); if (contextDockOpen) onOpenReview?.(profile.slug, null); }}
                   className="w-full justify-start px-3 py-2 text-left"
                 >
                   {content}

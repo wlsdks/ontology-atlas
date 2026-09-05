@@ -105,6 +105,9 @@ interface TopologyV2PreviewEdge {
 export interface TopologyMapV2Props {
   nodes: readonly TopologyV2Node[];
   edges: readonly TopologyV2Edge[];
+  /** Optional diagnostic annotations; these never change the force graph or ontology. */
+  relationCaptions?: ReadonlyMap<string, string> | null;
+  reviewQuestionIds?: ReadonlySet<string> | null;
   focus: TopologyV2Focus;
   /**
    * **Which vault this graph came from** — a changed value re-fits the overview.
@@ -129,7 +132,7 @@ export interface TopologyMapV2Props {
   /** P3b — an edge click (at a point that missed every node). */
   onSelectEdge?: (edge: { sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null }) => void;
   /** Edge selection = pair focus — only the two ends stay lit, everything else dims, and the selected edge is pale indigo. */
-  selectedEdge?: { sourceId: string; targetId: string } | null;
+  selectedEdge?: { sourceId: string; targetId: string; relationType?: string } | null;
   /** Pre-write relation overlay. It never enters the force/layout graph. */
   previewEdge?: TopologyV2PreviewEdge | null;
   /** P3c — the edge hover microcard (fires on an identity change; null clears it). */
@@ -503,6 +506,8 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
     useTopologyLoop({
       nodes,
       edges,
+      relationCaptions: props.relationCaptions,
+      reviewQuestionIds: props.reviewQuestionIds,
       onWalkDeadEnd: handleWalkDeadEnd,
       wheelIntent,
       ambientSleepDelayMs,

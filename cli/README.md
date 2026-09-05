@@ -1,5 +1,11 @@
 # ontology-atlas
 
+`analysis --vault=<dir> --history [--mode=meaning|architecture] --json` lists
+versioned in-app ACP analysis records. `--record=<UUID> --json` reads one exact
+run or review. These read-only flags use the archive inside the vault; the
+existing legacy `analysis` writer beside the vault is unchanged. See
+[analysis records](../docs/ANALYSIS-RECORDS.md) for cursor pagination and limits.
+
 > **Repo-native memory layer CLI** — scaffold, validate, compile, query, and
 > maintain the markdown ontology vault your AI coding agent reads through MCP.
 

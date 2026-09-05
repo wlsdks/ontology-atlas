@@ -196,7 +196,13 @@ const BASELINE_HARD_CUTS = 0;
  * browser sweep.
  */
 // Analysis owns one additional dock; native walkthrough and dock component tests cover its opening path.
-const BASELINE_APPEARING_SURFACES = 36;
+// 35 → 36: a mismatched queued ACP request now explains why it is held. Its exact
+// request/turn-start path is exercised in AcpChatPanel.test.tsx; native proof is separate.
+// 36 → 37: two branches each added one surface on the same day — the queued-request
+// explanation above and the Docs dock described in the block before it. Both are born as
+// `Surface`, so hard cuts stay at zero, and both need a desktop runtime, so neither joins
+// the static browser sweep.
+const BASELINE_APPEARING_SURFACES = 37;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

@@ -155,6 +155,13 @@ roadmap promise. It summarizes current product behavior documented in the
 
 ### Working today
 
+- **Meaning review and versioned AI analysis.** The map can label the meaning
+  and direction of its connections; one context dock brings together definitions,
+  rationale, AI questions, and conversation. Map, Analysis, and Architecture
+  retain each ACP result as local Markdown, with its evidence and selectable
+  history. Architecture retains measured violations and unknown coverage rather
+  than inventing a maintainability percentage. See [analysis records](docs/ANALYSIS-RECORDS.md)
+  for qualification, persistence, and MCP/CLI access.
 - **A Markdown folder is the whole database.** Point the app at one and it reads
   and writes in place — no import step, no index to build, no account. Starting
   from code creates that folder as `atlas/` inside the project, so the map
