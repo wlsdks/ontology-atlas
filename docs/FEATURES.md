@@ -234,9 +234,14 @@ dismiss (sessionStorage — reappears next session, not on reload).
 immediately open the OS file picker but instead open a **pre-informative sheet** (`VaultOpenGuideSheet`,
 `src/features/docs-vault-local/`) first — three lines to ease concerns (any markdown folder is fine / Atlas opens it locally and does not upload it to an Atlas backend; a connected coding agent is a separate provider boundary / if empty, starter docs are created automatically) and a branch to choose an existing folder or start fresh with an empty one. The card also includes a "2-minute tour" button and a "Show plain language" toggle (bringing the 'normal' mode from the gear menu into the card).
 Immediately after opening an empty vault, instead of text suggesting there's nothing more to do, a **start checklist** (`VaultStartChecklist`, `src/widgets/topology-controls/`) appears — per owner instruction (2026-07-24 2nd round), it's a **3-step process to attach AI agent first**: connect AI agent (determine actual connection via heartbeat file) → hand over first analysis (copy instructions to paste into the agent) → create directly (optional, project type preset writer).
-The incorrect guidance branch recommending macOS installation on the web has been removed. On first visit, the folder guide sheet opens automatically first (once only, with a skip option); if the user opens a folder directly in this session, the AI agent connection sheet follows automatically once. A brand-pill `SAMPLE` badge and a bottom-right map readout ("N project · N domains ·
-Spine view · zoom in to reveal elements") stay visible for the whole static
-session regardless of whether the starter module was dismissed. The former
+The incorrect guidance branch recommending macOS installation on the web has been removed. On first visit, the folder guide sheet opens automatically first (once only, with a skip option); if the user opens a folder directly in this session, the AI agent connection sheet follows automatically once. A brand-pill `SAMPLE` badge and a bottom-right map readout stay visible for the
+whole static session regardless of whether the starter module was dismissed. The
+readout names **what is on the canvas right now** ("125 concepts · 9 domains")
+and adds the zoom tier and its hint only while zooming still has something to
+reveal — in the Cone view every concept is already drawn, so it says the count
+and stops (2026-09-05; it used to open with the project count, which is 1 in
+every vault anyone has opened, and then tell the reader to zoom in and reveal
+125 dots that were already there). The former
 `LandingPage` and its hero/value-chain/evidence-instrument content moved to
 `/download` (see below) — a returning user whose vault handle restores from
 IndexedDB goes straight to their own workspace, no starter surfaces at all.
