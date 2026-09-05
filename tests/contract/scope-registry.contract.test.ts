@@ -204,6 +204,19 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "변경 baseline — 볼트별 그래프 스냅숏",
   },
   {
+    // Which proposed documents this person passed on. Per vault for the same reason as
+    // every slot below: a refusal in one folder must not hide a candidate in another.
+    // Deliberately **not** in the vault — it is a store of absences, and nothing in the
+    // folder could ever contradict it (`declined-candidates.ts` says so in full).
+    key: "atlas.library.declined:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/features/docs-library/lib/declined-candidates.ts",
+    provenBy: "src/features/docs-library/lib/declined-candidates.test.ts",
+    note: "문서 찾기에서 넘긴 후보 — 이 컴퓨터에만 남는 편의",
+  },
+  {
     // Which unmatched rows this reader chose not to look at. Per vault for the same
     // reason as the read-at slot below: the list of missing names is per folder, so a
     // dismissal in one folder must not hide a different folder's row.

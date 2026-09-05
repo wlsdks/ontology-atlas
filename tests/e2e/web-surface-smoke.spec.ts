@@ -39,6 +39,11 @@ async function gotoSettled(page: Page, url: string) {
 
 /** The smallest vault a person would plausibly pick — one project, one domain, one capability. */
 const SEED_VAULT: Record<string, string> = {
+  // A raw source and a document outside sources/, so the library draws and "Find
+  // documents" has something to propose. Neither is Markdown, so neither can reach the
+  // graph — which is the property the library rests on.
+  "sources/handbook.pdf": "%PDF-1.7 smoke\n",
+  "inbox/quarter plan.pdf": "%PDF-1.7 candidate\n",
   "project.md": [
     "---",
     "kind: project",
@@ -403,6 +408,40 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
     // program on this computer is what reads those files.
     reason: /이 컴퓨터에서 도는 프로그램이 있어야 하고[\s\S]*토큰을 담아 둘 자리도 여기에는 없습니다/,
     destination: "connectors-web-get-app",
+  },
+  {
+    /*
+     * **Finding documents outside the open folder** (registered 2026-09-05). "Find
+     * documents" walks the folder a person opened *and* the project roots they bound
+     * themselves — and a binding is an absolute path, which a browser does not have and
+     * cannot be given.
+     *
+     * The claim is deliberately narrow, the same way `agent-server-unavailable` was
+     * narrowed on 2026-08-01. The browser is **not** unable to find documents: it walks
+     * the open folder and proposes what it finds there, and the list under this sentence
+     * is that walk's result. What it cannot reach is a second folder, so that is what the
+     * sentence says.
+     */
+    name: "문서 찾기 — 브라우저는 연결해 둔 프로젝트 폴더까지 훑지 못한다",
+    url: "/ko/docs/",
+    open: async (page) => {
+      // Two presses, not one. Beside the read-only sample the first button switches the
+      // source preference; the picker is offered by the card that then appears.
+      await page.getByTestId("docs-sidebar-new-doc").waitFor({ timeout: 25_000 });
+      const sampleDoor = page.getByRole("button", { name: /내 폴더 열기/ });
+      if ((await sampleDoor.count()) > 0 && (await sampleDoor.first().isVisible().catch(() => false))) {
+        await sampleDoor.first().click();
+      }
+      const pickerDoor = page.getByRole("button", { name: /기존 문서함 열기/ });
+      await pickerDoor.first().waitFor({ timeout: 25_000 });
+      await pickerDoor.first().click();
+      await page.getByTestId("docs-library-find-documents").waitFor({ timeout: 20_000 });
+      await page.getByTestId("docs-library-find-documents").click();
+    },
+    needsVault: true,
+    card: "find-documents-web-limit",
+    reason: /브라우저에서는 지금 연 폴더만[\s\S]*절대 경로가 필요하고/,
+    destination: "find-documents-web-get-app",
   },
 ];
 

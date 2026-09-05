@@ -4144,5 +4144,71 @@
       "secret-literal": "토큰이 그대로 적혀 있습니다. 먼저 키체인으로 옮기십시오.",
       "value-missing": "키체인에서 가져오기로 한 변수인데 그 뒤에 아직 아무것도 없습니다."
     }
+  },
+  "docsLibrary": {
+    "sources": {
+      "header": "원문 · {count}",
+      "listAria": "이 폴더의 원문 파일",
+      "add": "파일 넣기",
+      "addTooltip": "이 폴더의 sources/ 안으로 문서를 복사합니다",
+      "find": "문서 찾기",
+      "findTooltip": "이 폴더와 연결해 둔 코드 폴더에서 문서를 후보로 제안합니다. 고르기 전에는 아무것도 복사하지 않습니다.",
+      "empty": "아직 원문이 없습니다. 이미 갖고 있는 문서를 넣으세요. 형식은 무엇이든 되고, 온 그대로 보관합니다.",
+      "noFormat": "파일",
+      "needsCompile": "{count}개는 아직 정리되지 않았습니다",
+      "dropHint": "Finder 에서 {folder}/sources/ 로 파일을 끌어다 놓아도 됩니다. 목록은 알아서 바뀝니다.",
+      "state": {
+        "nobody": "아무도",
+        "not-compiled": {
+          "label": "정리 전",
+          "hint": "이 파일을 인용한 위키 문서가 아직 없습니다."
+        },
+        "compiled": {
+          "label": "정리됨",
+          "hint": "{pages} 이(가) 정리했고, 그 뒤로 파일이 바뀌지 않았습니다."
+        },
+        "stale": {
+          "label": "달라짐",
+          "hint": "{pages} 은(는) 이 파일의 다른 판에서 쓰였거나, 해시를 남기지 않았습니다."
+        },
+        "checking": {
+          "label": "확인 중",
+          "hint": "정리본이 지금 파일과 같은지 확인하려고 읽는 중입니다."
+        }
+      },
+      "added": "문서 {count}개를 sources/ 에 넣었습니다",
+      "duplicate": "{count}개는 이미 있습니다. 내용이 같아서 복사하지 않았습니다.",
+      "failed": "{count}개는 복사하지 못했습니다",
+      "failedReason": "넣지 못했습니다: {reason}",
+      "revealFailed": "Finder 에서 보여 주지 못했습니다: {reason}",
+      "openFailed": "그 파일을 열지 못했습니다."
+    },
+    "wiki": {
+      "header": "위키 · {count}",
+      "listAria": "이 폴더의 위키 문서",
+      "compile": "정리 시작",
+      "compileTooltip": "원문을 읽고 위키 문서를 쓰는 에이전트 턴을 한 번 시작합니다. 쓰기는 모두 사람의 허락을 기다립니다.",
+      "empty": "아직 위키 문서가 없습니다. 정리를 시작하면 위 원문을 인용한 문서가 wiki/_template.md 의 서식대로 만들어집니다.",
+      "unknownAuthor": "미상",
+      "offTemplate": "서식 밖",
+      "offTemplateCount": "{count}개 문서가 서식에 맞지 않습니다",
+      "transfer": "통신은 코딩 에이전트에서 제공자로 곧장 갑니다. Atlas 는 그 사이에 없고 .ontology-atlas/llm-audit.jsonl 에도 남지 않습니다. 쓰기는 여전히 허락 카드에서 멈춥니다."
+    },
+    "find": {
+      "title": "허락한 폴더 안의 문서",
+      "preamble": "이름·형식·크기만 훑었습니다. 파일을 연 적은 없습니다. 고르기 전에는 아무것도 복사하지 않습니다.",
+      "webLimit": "여기서는 지금 연 폴더만 훑을 수 있습니다. 연결해 둔 코드 폴더는 절대 경로가 필요하고, 그건 앱이 갖고 있습니다.",
+      "walkedRoots": "함께 훑은 곳: {roots}",
+      "walking": "폴더 목록을 읽는 중…",
+      "empty": "제안할 것이 없습니다. 이 폴더의 문서가 이미 sources/ 에 있거나, Atlas 가 다루는 문서 형식이 없습니다.",
+      "rootHeader": "{root} · {count}",
+      "truncated": "500개에서 멈췄습니다. 이게 전부는 아닙니다.",
+      "unreadable": "읽지 못한 곳: {roots}",
+      "declined": "전에 넘긴 파일 {count}개는 숨겼습니다",
+      "forgetDeclined": "다시 보기",
+      "cancel": "취소",
+      "add": "{count, plural, =0 {고른 것 넣기} other {# 개 넣기}}",
+      "webGetApp": "앱 받기"
+    }
   }
 }

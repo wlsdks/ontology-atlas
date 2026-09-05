@@ -188,8 +188,15 @@ const BASELINE_HARD_CUTS = 0;
  * The state requires a desktop ACP turn, so its accessibility path is covered by
  * `AcpChatPanel.test.tsx` and the denominator note in a11y-open-surfaces.
  */
+/*
+ * 35 → 36 (2026-09-05): Docs gained a same-route ACP dock, the surface Compile opens. It
+ * is born as a `Surface`, so hard cuts stay at zero; it needs a verified desktop runtime
+ * and an absolute vault path, so its accessibility path is carried by `AcpChatPanel`'s
+ * own tests and the denominator note in a11y-open-surfaces rather than by the static
+ * browser sweep.
+ */
 // Analysis owns one additional dock; native walkthrough and dock component tests cover its opening path.
-const BASELINE_APPEARING_SURFACES = 35;
+const BASELINE_APPEARING_SURFACES = 36;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

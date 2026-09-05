@@ -167,8 +167,20 @@ const MIN_RULES_PASSED = 15;
  * `AcpChatPanel.test.tsx` opens the offer and presentation, checks the named region,
  * progress and keyboard/focus path, and separately covers fail-closed qualification.
  */
+/*
+ * 35 → 36 (2026-09-05): Docs gained a same-route ACP dock, the surface Compile opens.
+ * Like the Analysis and Architecture docks it needs a verified desktop ACP runtime, an
+ * absolute vault path and the bundled MCP server, so this static browser sweep cannot
+ * reach it; `DocsAgentDock` reuses `AcpChatPanel` verbatim, whose own tests carry the
+ * named region, keyboard path and prefill-without-send contract, and the installed-app
+ * walkthrough carries the rendered proof.
+ *
+ * The library's own two sections are **not** appearing surfaces — they are list sections
+ * in the sidebar, always drawn once a folder is open — and its one blocking dialog is a
+ * `Dialog`, which this gate counts separately.
+ */
 // The Analysis dock is desktop-only; InsightsAgentDock tests and the native walkthrough cover it.
-const APPEARING_SURFACES_IN_SOURCE = 35;
+const APPEARING_SURFACES_IN_SOURCE = 36;
 
 interface Opener {
   readonly name: string;
