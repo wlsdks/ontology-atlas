@@ -3903,7 +3903,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2363,
+      "wordCount": 2376,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "DECISIONS"
