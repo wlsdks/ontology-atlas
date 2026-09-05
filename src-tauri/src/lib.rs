@@ -19,6 +19,9 @@ mod acp_doctor;
 mod managed_node;
 /// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
+/// Read-only discovery of MCP servers the person already registered elsewhere — names and key
+/// names, never secret values.
+mod connectors;
 /// One shape for every failure a command hands to the WebView (`<code>: <detail>`).
 mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
@@ -3478,6 +3481,7 @@ pub fn run() {
             git::git_fetch,
             agent_setup::mcp_bundled_server,
             agent_setup::verify_mcp_server,
+            connectors::discover_mcp_connectors,
         ])
         .build(context)
         .expect("error while building ontology-atlas desktop app")
