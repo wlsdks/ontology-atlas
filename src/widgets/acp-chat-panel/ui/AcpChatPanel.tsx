@@ -59,6 +59,8 @@ import {
   modeCopyKey,
   withoutErrorEcho,
   linkSlugs,
+  readToolFallbackTarget,
+  readToolOutcome,
   readToolTargets,
   deriveAcpTurnActivity,
   type AcpTurnActivity,
@@ -73,7 +75,7 @@ import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 import { AcpPermissionCard } from './AcpPermissionCard';
 import { groupEvents } from './group-events';
-import { toolLabel } from './tool-label';
+import { isVaultTool, toolLabel } from './tool-label';
 
 /**
  * Markdown inside the conversation — one set of values tuned to **chat density**.
@@ -1075,6 +1077,29 @@ export function AcpChatPanel({
           screen is erasing the agent's words, so it is not widened.
         */}
         {transcriptItems.map((item, index) => {
+          if (item.kind === 'toolRun')
+            return (
+              /*
+                One rule beside a stretch of work. Four standing dim lines with nothing
+                tying them together read as four unrelated interruptions; the rule says
+                they are one run, and folds nothing away to say it.
+              */
+              <div
+                key={item.id}
+                data-acp-entry="tool-run"
+                data-tool-run-count={item.events.length}
+                className="flex flex-col gap-0.5 border-l border-[color:var(--color-divider)] pl-2"
+              >
+                {item.events.map((event) => (
+                  <TranscriptEntry
+                    key={event.id}
+                    event={event}
+                    knownSlugs={knownSlugs}
+                    onHoverSlug={onHoverSlug}
+                  />
+                ))}
+              </div>
+            );
           if (item.kind === 'workGroup')
             return (
               <WorkGroup
@@ -1870,35 +1895,90 @@ function TranscriptEntry({
      * from what was actually done.
      */
     const label = toolLabel(event.title, VAULT_MCP_SERVER_NAME);
-    const done = event.status === 'completed';
+    const outcome = readToolOutcome(
+      event.rawOutput,
+      event.status,
+      isVaultTool(event.title, VAULT_MCP_SERVER_NAME),
+    );
+    const running = outcome.kind === 'status' && outcome.status === 'running';
+    const broke =
+      outcome.kind === 'status' && (outcome.status === 'failed' || outcome.status === 'cancelled');
     const toolTargets = knownSlugs ? readToolTargets(event.rawInput, knownSlugs) : [];
+    /*
+     * The second lane, used only when no node of this vault was named: a file path, the
+     * slug of a concept being created, or what was searched for. Plain text, never a
+     * marker — it names something the vault may not contain (`tool-targets.ts`).
+     */
+    const fallbackTarget = toolTargets.length === 0 ? readToolFallbackTarget(event.rawInput) : null;
     return (
       <p
         data-acp-entry="tool"
         data-tool-kind={event.toolKind}
         data-tool-status={event.status}
         data-tool-label={label.kind}
-        className="flex items-center gap-1.5 break-all text-label leading-label text-[color:var(--color-text-quaternary)]"
+        data-tool-outcome={outcome.kind === 'count' ? String(outcome.count) : outcome.status}
+        /*
+         * ⚠️ **Tertiary, not quaternary** (2026-09-05). This row used to be the weakest ink
+         * in the app because it lived folded inside a disclosure nobody opened. Standing in
+         * the transcript it has a job — it is the only thing that can say the search found
+         * nothing under a confident paragraph — and an ink chosen for 「ignorable」 cannot do
+         * a job. The answer above still wins: it is `--color-text-primary` at body size
+         * against this one line of `text-label`.
+         */
+        className={cn(
+          'flex items-center gap-1.5 text-label leading-label text-[color:var(--color-text-tertiary)]',
+          /*
+           * A call that did not land gets **a seam, not a coloured word**. Painting the
+           * outcome in `--color-danger-text` measures 1.04:1 against the tertiary ink beside
+           * it: a colour nobody can read as different from its neighbour is decoration, and
+           * on this row it would be decoration claiming to be a warning. A 1px rule at the
+           * row's leading edge is a mark, not an ink change, so the sentence stays legible.
+           *
+           * ⚠️ **The offset is the run's own `border-l` (1) plus its `pl-2` (8), so the
+           * seam lands *on* the group rule rather than beside it** (measured 2026-09-05:
+           * at `-ml-2` the red hairline sat at x=1 with the divider still drawn at x=0 —
+           * two stacked rules for one fact — and this row's text started at x=8 against
+           * every sibling's x=9, a 1px jog down the left edge of the transcript). At 9 the
+           * run's grey rule turns red for exactly the row that did not land, and the
+           * words stay in the same column. Change it only with the parent's padding.
+           */
+          broke && '-ml-[9px] border-l border-[color:var(--color-danger-a50)] pl-2',
+        )}
       >
-        {/* Finished and running are separated by **one dot** — another badge would make
-            the tool lines noisier than the conversation. */}
+        {/*
+          **The dot means "still going", so a finished row has none.** It used to be drawn on
+          every row in two greys, which made a mark that varies read as a mark that means
+          something — and the thing it meant was already said, in words, at the end of the
+          line. A hollow ring while running is one mark for one fact.
+        */}
+        {running ? (
+          <span
+            aria-hidden
+            data-tool-running
+            className="size-1.5 shrink-0 rounded-full border border-[color:var(--color-indigo-accent)]"
+          />
+        ) : null}
+        {/*
+          ⚠️ **`shrink-0` here was a promise the row could not keep** (measured at
+          `CHAT_WIDTH_MIN`, 320). Someone else's adapter may name a tool anything, and a
+          90-character title held its full width and pushed the outcome — the diagnostic
+          half of the row — off the right edge, where a dock has no horizontal scrollbar to
+          get it back. Our own labels are short sentences that never reach the cap, so the
+          share only ever bites on a foreign name, which is exactly the case that needed it.
+        */}
         <span
-          aria-hidden
-          className={cn(
-            'size-1.5 shrink-0 rounded-full',
-            done
-              ? 'bg-[color:var(--color-text-quaternary)]'
-              : 'bg-[color:var(--color-indigo-accent)]',
-          )}
-        />
-        {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+          data-tool-label-text
+          className="min-w-0 max-w-[45%] shrink truncate"
+        >
+          {label.kind === 'known' ? t(`tool.${label.text}`) : label.text}
+        </span>
         {/*
           **Which node was touched** (2026-08-17). If this line only says 「Read a concept」 (read a concept) without naming the target, reading the transcript later tells you nothing about what happened and there is nothing to wire to the map. The value was already arriving in `rawInput`.
 
           It uses the same dotted underline — it means the same thing as a name in the answer (something that exists on the map), so there is no reason to give it a different shape.
         */}
         {toolTargets.length > 0 ? (
-          <span className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
+          <span className="min-w-0 flex-1 truncate">
             {toolTargets.map((slug, i) => (
               <span key={slug}>
                 {i === 0 ? ' · ' : ', '}
@@ -1915,6 +1995,56 @@ function TranscriptEntry({
             ))}
           </span>
         ) : null}
+        {fallbackTarget ? (
+          <span
+            data-testid="acp-chat-tool-target"
+            data-tool-target={fallbackTarget.kind}
+            className="min-w-0 flex-1 truncate"
+          >
+            {` · ${fallbackTarget.frame ? `${fallbackTarget.frame}: ` : ''}${fallbackTarget.value}`}
+          </span>
+        ) : null}
+        {/*
+          **What came back** (2026-09-05). Right-aligned so the counts form one column down
+          the transcript: a `0` beside a paragraph that answers confidently is a
+          contradiction a person can see without opening anything. `tool-outcome.ts` reads
+          the number the tool itself reported and otherwise says only the status, so this
+          slot never invents a result.
+        */}
+        <span
+          data-testid="acp-chat-tool-outcome"
+          className={cn(
+            'ml-auto shrink-0 tabular-nums',
+            broke && 'font-[var(--font-weight-emphasis)]',
+          )}
+        >
+          {outcome.kind === 'count' ? (
+            outcome.count === 0 ? (
+              /*
+                **Zero gets the long form.** With every other row ending in a short
+                right-aligned figure, `0 found` sat in the same column as `8 found` and read
+                as one more number. `nothing found` is longer, so right alignment pushes it
+                left of every neighbour — the one row that contradicts a confident paragraph
+                is the one that breaks the column.
+              */
+              t('toolOutcome.foundNone')
+            ) : (
+              <>
+                {/*
+                  Emphasis lands on the numeral alone. The word after it repeats down the
+                  column and carries no information; the digit is the whole message. Both
+                  locales put the number first, so one order serves them.
+                */}
+                <span className="font-[var(--font-weight-emphasis)] text-[color:var(--color-text-secondary)]">
+                  {outcome.count}
+                </span>
+                {t('toolOutcome.foundUnit')}
+              </>
+            )
+          ) : (
+            t(`toolOutcome.${outcome.status}`)
+          )}
+        </span>
       </p>
     );
   }

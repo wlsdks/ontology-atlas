@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { toolLabel } from './tool-label';
+import { isVaultTool, toolLabel } from './tool-label';
 
 /**
  * A tool line records **what happened, not a function name.**
@@ -61,5 +61,19 @@ describe('도구 줄 — 아는 것만 뜻으로 옮긴다', () => {
   it('서버 이름이 바뀌면 우리 도구도 남의 도구가 된다 — 이름을 박아 두지 않았다', () => {
     // The contract that the test is **the injected name**, not a literal.
     expect(toolLabel('mcp__atlas-vault__add_concept', 'other-name').kind).toBe('raw');
+  });
+});
+
+describe('isVaultTool — whose answer is this', () => {
+  it('recognises the server we wired in', () => {
+    expect(isVaultTool('mcp__atlas-vault__list_concepts', 'atlas-vault')).toBe(true);
+    expect(isVaultTool('  mcp__atlas-vault__add_concept  ', 'atlas-vault')).toBe(true);
+  });
+
+  it('refuses another server, a bare tool, and a name that only looks like ours', () => {
+    expect(isVaultTool('mcp__other__list_concepts', 'atlas-vault')).toBe(false);
+    expect(isVaultTool('Grep', 'atlas-vault')).toBe(false);
+    expect(isVaultTool('mcp__atlas-vault-evil__list_concepts', 'atlas-vault')).toBe(false);
+    expect(isVaultTool('', 'atlas-vault')).toBe(false);
   });
 });

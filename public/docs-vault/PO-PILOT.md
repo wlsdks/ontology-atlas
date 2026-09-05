@@ -86,6 +86,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 23 | 2026-09-04 | An ontology change re-checks the witnesses the current graph declares, not only the recorded ones | one-way | review | orient | public-contract+rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 0 | unchanged | none |
 | 24 | 2026-09-04 | A named claim selects the task capability; prose corroborates and a capability keeps its own name | two-way | solo | handoff | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | none | 0 | 0 | unchanged | none |
 | 25 | 2026-09-05 | A session mode is judged by the class the adapter states, not only its name, and a moved session is announced | one-way | review | correct | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
+| 26 | 2026-09-05 | An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold | one-way | review | judge | rollback-cheap+surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 
 ## Outcome updates
 
@@ -128,3 +129,4 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 23 | 2026-09-04 | pending | yes | no | pending |
 | 24 | 2026-09-04 | pending | yes | no | pending |
 | 25 | 2026-09-05 | pending | yes | no | pending |
+| 26 | 2026-09-05 | pending | yes | no | pending |

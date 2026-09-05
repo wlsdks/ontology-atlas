@@ -63,6 +63,12 @@ export type AcpEvent =
        * without being able to say which one.
        */
       rawInput?: unknown;
+      /**
+       * What the tool answered. **How much came back exists only here**
+       * (`tool-outcome.ts`): a line that cannot say the search found nothing leaves a
+       * confident wrong answer with no visible contradiction.
+       */
+      rawOutput?: unknown;
     }
   | {
       kind: 'notice';
@@ -488,6 +494,9 @@ export function useAcpSession({
           toolKind: typeof update.kind === 'string' ? update.kind : 'other',
           status: typeof update.status === 'string' ? update.status : 'pending',
           rawInput: update.rawInput,
+          // A call that arrives already finished carries its answer here rather than in a
+          // later update, and the row has to be able to say what came back either way.
+          rawOutput: update.rawOutput,
         });
         return;
       }
@@ -498,6 +507,7 @@ export function useAcpSession({
         const nextTitle = typeof update.title === 'string' ? update.title : null;
         const nextToolKind = typeof update.kind === 'string' ? update.kind : null;
         const hasRawInput = update.rawInput !== undefined;
+        const hasRawOutput = update.rawOutput !== undefined;
         // claude-agent-acp sends streamed tool_use as a pending row first,
         // and when input is complete, sends rawInput via **status-less** tool_call_update.
         // Merging only the status leaves only the tool name on screen, while the exact target and map intent
@@ -511,6 +521,7 @@ export function useAcpSession({
               ...(nextTitle ? { title: nextTitle } : {}),
               ...(nextToolKind ? { toolKind: nextToolKind } : {}),
               ...(hasRawInput ? { rawInput: update.rawInput } : {}),
+              ...(hasRawOutput ? { rawOutput: update.rawOutput } : {}),
             };
           }),
         );

@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29764,
+      "wordCount": 29928,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },
@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 100730,
+      "wordCount": 101054,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug"
@@ -847,7 +847,7 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 38724,
+      "wordCount": 39147,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -3731,7 +3731,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 1933,
+      "wordCount": 1995,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "DECISIONS"

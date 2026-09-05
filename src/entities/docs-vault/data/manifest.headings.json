@@ -3849,6 +3849,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 · Unreleased: changes since v1.0.6",
+      "slug": "2026-09-05-unreleased-changes-since-v106"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate",
       "slug": "2026-09-05-v106-the-in-app-claude-chat-keeps-its-permission-gate"
     },
@@ -6182,6 +6187,11 @@
       "depth": 2,
       "text": "Record format",
       "slug": "record-format"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold",
+      "slug": "2026-09-05-an-agents-lookups-stand-above-its-answer-and-the-folder-keeps-a-list-of-names-it-was-asked-for-and-does-not-hold"
     },
     {
       "depth": 2,
@@ -9295,6 +9305,11 @@
       "depth": 3,
       "text": "History destination tokens (`--git-*`, Workbench redesign 2026-07-27)",
       "slug": "history-destination-tokens---git--workbench-redesign-2026-07-27"
+    },
+    {
+      "depth": 3,
+      "text": "Tab strip tokens (`--tabbar-*`, 2026-09-05)",
+      "slug": "tab-strip-tokens---tabbar--2026-09-05"
     },
     {
       "depth": 3,

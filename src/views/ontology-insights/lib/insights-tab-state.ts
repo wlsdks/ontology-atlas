@@ -3,16 +3,24 @@
  * link must open the same tab, so parsing and serialization are pure functions rather than
  * component-local state.
  *
- * There are six tabs, **one per question**: to do (the default) · composition · connections ·
- * boundaries · freshness · flow. Flow is the only one whose answer is written by an agent rather
+ * There are seven tabs, **one per question**: to do (the default) · unmatched · composition ·
+ * connections · boundaries · freshness · flow. Flow is the only one whose answer is written by an agent rather
  * than computed from the graph: its question is "what is this product and how does it move", and
  * that is prose a person reads once on first contact, not a measurement. When one tab holds several questions, a user has to scroll past two
  * screens of unrelated material to answer their own — the former `structure` tab really did stack
  * "what exists / what is central / is the boundary healthy" into one column and grew to 2.2× the
  * viewport. One question per tab also removes any room for the scroll to grow long again.
  */
+/*
+ * `unmatched` is the second work question and sits deliberately beside the first: what did
+ * an agent ask this folder for that it does not hold. A count of names nothing answers to
+ * is repair work, not inventory, so it reads next to the repair queue rather than after
+ * the measurement tabs. The literal below is pinned character for character by
+ * `scripts/check-ontology-design-surface.mjs`, so nothing may be written inside it.
+ */
 export const INSIGHTS_TABS = [
   "do-next",
+  "unmatched",
   "composition",
   "connections",
   "boundaries",

@@ -34,6 +34,36 @@ describe('i18n message catalog', () => {
     }
   });
 
+  /*
+   * ⚠️ **A borrowed label is not a name.** "Unmatched" is the word the reference product
+   * this list was studied from puts in its own navigation. Shipping it here would make
+   * Atlas's screen quote a competitor's vocabulary for a fact Atlas states differently:
+   * these are names this folder was asked for and does not hold, not rows that failed to
+   * match something. The key stays `unmatched` because it is a URL parameter people have
+   * bookmarked; only what a person reads is checked (design-lead, 2026-09-05).
+   */
+  it('never puts the reference product\'s label in front of a person', async () => {
+    for (const locale of ['en', 'ko']) {
+      const messages = await readJson(path.join(MESSAGES_DIR, `${locale}.json`));
+      const offenders = [];
+      const walk = (node, trail) => {
+        if (typeof node === 'string') {
+          if (/unmatched/i.test(node)) offenders.push(trail);
+          return;
+        }
+        if (node && typeof node === 'object') {
+          for (const [key, value] of Object.entries(node)) walk(value, `${trail}.${key}`);
+        }
+      };
+      walk(messages, locale);
+      assert.deepEqual(
+        offenders,
+        [],
+        `these strings say "unmatched", which is the reference product's label: ${offenders.join(', ')}`,
+      );
+    }
+  });
+
   it('keeps hosted download copy honest about what is actually published', async () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));

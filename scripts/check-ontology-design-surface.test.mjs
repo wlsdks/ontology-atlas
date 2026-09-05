@@ -93,6 +93,7 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "export const INSIGHTS_TABS = [",
       '  "do-next",',
+      '  "unmatched",',
       '  "composition",',
       '  "connections",',
       '  "boundaries",',
@@ -401,6 +402,7 @@ test("ontology design surface reports missing workbench structure markers", () =
       [
         "missing marker: export const INSIGHTS_TABS = [",
         '  "do-next",',
+        '  "unmatched",',
         '  "composition",',
         '  "connections",',
         '  "boundaries",',
@@ -433,6 +435,7 @@ test("ontology design surface rejects a metrics-only board that omits Flow", () 
     [
       "export const INSIGHTS_TABS = [",
       '  "do-next",',
+      '  "unmatched",',
       '  "composition",',
       '  "connections",',
       '  "boundaries",',

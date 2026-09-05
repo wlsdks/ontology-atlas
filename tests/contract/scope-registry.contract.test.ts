@@ -204,6 +204,24 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     note: "변경 baseline — 볼트별 그래프 스냅숏",
   },
   {
+    // Which unmatched rows this reader chose not to look at. Per vault for the same
+    // reason as the read-at slot below: the list of missing names is per folder, so a
+    // dismissal in one folder must not hide a different folder's row.
+    key: "atlas.insights.unmatchedDismissed:",
+    kind: "storage",
+    scope: "vault-scoped",
+    scopedBy: "useVaultIdentityScope",
+    file: "src/views/ontology-insights/lib/unmatched-dismissals.ts",
+    provenBy: "src/views/ontology-insights/lib/unmatched-dismissals.test.ts",
+    note: "안 맞는 이름 목록에서 이 사람이 숨긴 줄 — 목록이 폴더별이라 숨김도 폴더별",
+  },
+  {
+    key: "ontology-atlas:insights-unmatched-dismissals-change",
+    kind: "event",
+    scope: "global",
+    note: "같은 탭 안에서 숨김 변경을 알리는 이벤트 — 저장 키가 아니다",
+  },
+  {
     key: "atlas.agentActivity.readAt:",
     kind: "storage",
     scope: "vault-scoped",

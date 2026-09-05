@@ -10,87 +10,111 @@ const tool = (id: string): AcpEvent => ({
   toolKind: 'other',
   status: 'completed',
 });
-const thought = (id: string): AcpEvent => ({ kind: 'thought', id, text: `생각-${id}` });
-const agent = (id: string): AcpEvent => ({ kind: 'agent', id, text: `답-${id}` });
-const user = (id: string): AcpEvent => ({ kind: 'user', id, text: `질문-${id}` });
+const thought = (id: string): AcpEvent => ({ kind: 'thought', id, text: `thought-${id}` });
+const agent = (id: string): AcpEvent => ({ kind: 'agent', id, text: `answer-${id}` });
+const user = (id: string): AcpEvent => ({ kind: 'user', id, text: `question-${id}` });
 
-describe('기록 묶기 — 답변과 작업 과정을 차례별로 분리한다', () => {
-  it('한 차례의 생각과 도구를 하나의 작업 과정으로 묶는다', () => {
-    const out = groupEvents([
-      user('u'),
-      thought('a'),
-      tool('b'),
-      agent('m1'),
-      thought('c'),
-      tool('d'),
-      agent('m2'),
-    ]);
+const kinds = (events: readonly AcpEvent[]) => groupEvents(events).map((item) => item.kind);
+const ids = (events: readonly AcpEvent[]) =>
+  groupEvents(events).flatMap((item) =>
+    item.kind === 'event'
+      ? [item.event.id]
+      : item.kind === 'toolRun'
+        ? item.events.map((event) => event.id)
+        : [item.id],
+  );
 
-    expect(out.map((item) => item.kind)).toEqual([
-      'event',
-      'workGroup',
-      'event',
-      'event',
-    ]);
-    expect(out[1].kind === 'workGroup' && out[1].events.map((event) => event.id)).toEqual([
+describe('groupEvents — consecutive tool calls read as one run', () => {
+  /*
+   * Standing rows won the diagnosis, then cost the transcript its shape: four dim lines
+   * with nothing tying them together read as four unrelated interruptions. One left rule
+   * down the side says "this is one stretch of work" without folding any of it away.
+   */
+  it('collects tool calls that arrived back to back into one run', () => {
+    const out = groupEvents([user('u'), tool('a'), tool('b'), tool('c'), agent('m')]);
+    expect(out.map((item) => item.kind)).toEqual(['event', 'toolRun', 'event']);
+    const run = out[1];
+    expect(run.kind === 'toolRun' && run.events.map((event) => event.id)).toEqual([
       'a',
       'b',
       'c',
-      'd',
     ]);
-    expect(out.slice(2).map((item) => item.kind === 'event' && item.event.id)).toEqual([
+  });
+
+  it('closes the run at the answer and opens a new one after it', () => {
+    const out = groupEvents([user('u'), tool('a'), agent('m1'), tool('b'), agent('m2')]);
+    expect(out.map((item) => item.kind)).toEqual([
+      'event',
+      'toolRun',
+      'event',
+      'toolRun',
+      'event',
+    ]);
+  });
+
+  it('gives a lone tool call a run of its own — one rule, not a special case', () => {
+    const out = groupEvents([user('u'), tool('a'), agent('m')]);
+    const run = out.find((item) => item.kind === 'toolRun');
+    expect(run?.kind === 'toolRun' && run.events).toHaveLength(1);
+  });
+});
+
+describe('groupEvents — a tool call stands where it happened', () => {
+  it('never folds a tool call into the thinking disclosure', () => {
+    /*
+     * The whole point of the trace: one dim standing line per call, so a wrong answer is
+     * diagnosable without a click. A tool row hidden behind a disclosure cannot do that.
+     */
+    const out = groupEvents([user("u"), thought("a"), tool("b"), agent("m")]);
+    const group = out.find((item) => item.kind === 'workGroup');
+    expect(group?.kind === 'workGroup' && group.events.map((event) => event.id)).toEqual(['a']);
+    expect(ids([user('u'), thought('a'), tool('b'), agent('m')])).toEqual(['u', 'a', 'b', 'm']);
+  });
+
+  it('keeps tool calls in the order they arrived, between the answers they preceded', () => {
+    expect(ids([user('u'), tool('a'), agent('m1'), tool('b'), agent('m2')])).toEqual([
+      'u',
+      'a',
       'm1',
+      'b',
       'm2',
     ]);
   });
 
-  it('작업이 하나뿐이어도 본문과 분리한다', () => {
-    const out = groupEvents([user('u'), thought('a'), agent('m')]);
-    expect(out.map((item) => item.kind)).toEqual(['event', 'workGroup', 'event']);
-  });
-
-  it('다음 사용자 말이 새 작업 과정의 경계다', () => {
-    const out = groupEvents([
-      user('u1'),
-      thought('a'),
-      agent('m1'),
-      user('u2'),
-      tool('b'),
-      agent('m2'),
-    ]);
-    expect(out.map((item) => item.kind)).toEqual([
+  it('makes no thinking disclosure at all for a turn that only called tools', () => {
+    expect(kinds([user('u'), tool('a'), agent('m')])).toEqual([
       'event',
-      'workGroup',
-      'event',
-      'event',
-      'workGroup',
+      'toolRun',
       'event',
     ]);
   });
+});
 
-  it('작업 과정 내부 순서와 본문 순서는 각각 보존한다', () => {
-    const out = groupEvents([
-      user('u'),
-      tool('a'),
-      agent('m1'),
-      thought('b'),
-      tool('c'),
-      agent('m2'),
-    ]);
-    const work = out.find((item) => item.kind === 'workGroup');
-    expect(work?.kind === 'workGroup' && work.events.map((event) => event.id)).toEqual([
+describe('groupEvents — thinking stays separated from the answer', () => {
+  it('collects one turn of thinking into one disclosure', () => {
+    const out = groupEvents([user('u'), thought('a'), agent('m1'), thought('c'), agent('m2')]);
+    expect(out.map((item) => item.kind)).toEqual(['event', 'workGroup', 'event', 'event']);
+    expect(out[1].kind === 'workGroup' && out[1].events.map((event) => event.id)).toEqual([
       'a',
-      'b',
       'c',
     ]);
-    expect(
-      out
-        .filter((item) => item.kind === 'event')
-        .map((item) => item.kind === 'event' && item.event.id),
-    ).toEqual(['u', 'm1', 'm2']);
   });
 
-  it('아무것도 없으면 아무것도 만들지 않는다', () => {
+  it('separates it from the body even when there is only one thought', () => {
+    expect(kinds([user('u'), thought('a'), agent('m')])).toEqual([
+      'event',
+      'workGroup',
+      'event',
+    ]);
+  });
+
+  it('starts a new disclosure at the next user message', () => {
+    expect(
+      kinds([user('u1'), thought('a'), agent('m1'), user('u2'), thought('b'), agent('m2')]),
+    ).toEqual(['event', 'workGroup', 'event', 'event', 'workGroup', 'event']);
+  });
+
+  it('makes nothing out of nothing', () => {
     expect(groupEvents([])).toEqual([]);
   });
 });

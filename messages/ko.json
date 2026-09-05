@@ -1358,6 +1358,7 @@
       "tabsAriaLabel": "분석 탭",
       "tab": {
         "do-next": "할 일",
+        "unmatched": "없는 이름",
         "composition": "구성",
         "connections": "연결",
         "boundaries": "경계",
@@ -1367,9 +1368,24 @@
       },
       "tabCountTitle": {
         "do-next": "손볼 항목 수",
+        "unmatched": "이 폴더에 없는 이름 수",
         "composition": "개념 수",
         "connections": "관계 수",
         "boundaries": "도메인을 넘나드는 관계 수"
+      },
+      "unmatched": {
+        "title": "찾았지만 없는 것",
+        "caption": "각 줄은 이 폴더에 적혔지만 어떤 개념도 답하지 않는 이름입니다.",
+        "occurrences": "×{count}",
+        "askedByPrefix": "찾은 곳:",
+        "writtenUnder": "적힌 자리: {keys}",
+        "dismiss": "{name} 을(를) 이 컴퓨터에서 숨깁니다",
+        "hiddenMarker": "{count}개 숨김 · 보기",
+        "hiddenNote": "{count}개를 이 컴퓨터에서 숨겼습니다. 위 숫자는 폴더에 있는 그대로입니다.",
+        "pending": "그래프를 불러오는 중입니다…",
+        "footnote": "에이전트가 지어낸 관계 종류는 파일에 닿기 전에 거절되고 어디에도 남지 않으므로 여기에 올릴 수 없습니다.",
+        "emptyTitle": "모든 이름이 문서로 이어집니다",
+        "emptyDescription": "이 폴더에 없는 개념을 가리키는 곳이 없습니다."
       },
       "errorAlert": "그래프를 불러오지 못했습니다: {message}",
       "loading": "그래프를 불러오는 중입니다…",
@@ -3760,6 +3776,14 @@
       "renameNode": "개념 이름을 바꿨어요",
       "mergeNodes": "개념 둘을 합쳤어요",
       "addRelation": "관계를 이었어요"
+    },
+    "toolOutcome": {
+      "foundUnit": "개 찾음",
+      "foundNone": "찾은 것 없음",
+      "running": "진행 중",
+      "done": "완료",
+      "failed": "실패",
+      "cancelled": "중지됨"
     },
     "workGroup": "작업 과정 · {count}단계",
     "workGroupActive": "작업 중 · {count}단계",
