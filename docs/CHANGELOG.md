@@ -32,8 +32,8 @@
 > ```md
 > ## YYYY-MM-DD · vX.Y.Z: <what this release means in one line>
 >
-> **Added**: Agent lookups show targets and counts above the answer; Insights lists names the folder lacks and keeps versioned ACP analyses. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token only in the keychain. Library, a ninth screen, holds Sources (project documents of any format, kept as they arrived, marked not compiled, stale or compiled) and Wiki pages in the shape wiki/_template.md holds; Add files, Find documents and Compile start the work. Docs is ontology Markdown again.
-> **Changed**: The Cone view fills the canvas (62% at 1920, was 23%); panels close faster; Agents keeps only tools and chat; the first screen names Claude Code and MCP.
+> **Added**: <a new user-visible capability or surface>
+> **Changed**: <behavior that differs from before>
 > **Fixed**: <what was wrong and is now right>
 > **Removed**: <what no longer exists>
 > ```
