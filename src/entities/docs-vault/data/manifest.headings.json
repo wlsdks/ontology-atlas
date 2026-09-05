@@ -6190,6 +6190,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn",
+      "slug": "2026-09-05-the-cone-fits-the-free-canvas-its-dots-stop-riding-the-zoom-a-fogged-rim-stays-visible-and-its-labels-and-readout-say-what-is-drawn"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold",
       "slug": "2026-09-05-an-agents-lookups-stand-above-its-answer-and-the-folder-keeps-a-list-of-names-it-was-asked-for-and-does-not-hold"
     },

@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder does not hold and shares one ACP conversation across tabs; Flow presents a cited answer scene by scene without leaving Analysis.
-**Changed**: A closing panel, drawer, palette or dialog now leaves faster than it arrived on its own curve and stops taking clicks the moment it starts leaving; the map's right-hand tiles name themselves as a group on hover or keyboard focus; the insights tab strip scrolls instead of wrapping and keeps the open tab in view.
-**Fixed**: A truncated list says how many it is not showing and where the rest is; a document's meta row shows when its meaning was checked beside when the file changed; editor fields say which program reads them; six empty states carry the link that unblocks them.
+**Added**: In the agent chat, each lookup stands as one dim line above the answer with its target and result count; Insights gains a "Not held" tab listing names this folder was asked for and lacks.
+**Changed**: The Cone view fills the free canvas (about 65% at 1920 instead of 23%), its dots keep one screen size at every zoom, a far node keeps a visible edge, resting labels return, and the readout counts what is drawn; a closing panel leaves faster and stops taking clicks; the map's right-hand tiles name themselves as a group on hover; the insights tab strip scrolls.
+**Fixed**: A truncated list says how many it hides; a meta row shows when meaning was checked; editor fields name the program that reads them; six empty states carry the link that unblocks them.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn
+
+**Why**: the 3D cone filled 18.7% of the canvas at 1920 with 27 overlapping pairs and a median rim contrast of 1.75:1, and its readout described a zoom rule ("Domains only") while it painted 125 concepts; owner chose direction B2 (same geometry, corrected drawing).
+**Prior**: 2026-09-02 "the 3D ownership arrangement becomes a cone tree" stands (geometry, sectors, base circles, morph-refit rule); only the height:width proportion changes. 2026-08-18 (76) is overturned for the cone only: its on-demand labels and the fog waiver over a node's rim, whose own falsifier (people reading in 3D) was observed.
+**Decision**: the cone fits the canvas minus the measured panels, a tool-lane band and a readout band, with tier heights scaled 0.8 so the silhouette is wider than tall; a node is a fixed number of screen pixels; depth fog keeps a rim at or above 3:1 against the canvas ground while the fill still sinks; resting labels use the flat map's placement, reservations and top-K budget with the nearer node winning; the readout names the concepts the frame painted. Measured fill 22.6→65.1% (1920), 23.9→75.0% (1440), 29.0→63.8% (1024), 13.9→35.1% (834); same-tier overlaps 27→0.
+**Dissent**: none convened (routes solo, no council); the builder's own reservation: the pixel-sampled rim median reaches 2.59:1, not 3:1, because the neighbour of a node in a 125-node cone is usually another stroke, so the floor is gated on the composited token, not the screen sample.
+**Falsifier**: a report that the cone reads as a text field reopens the label rule; a rim legible while depth stops reading reopens the fog floor; a vault whose silhouette leaves the 1.12–1.26 aspect window and misses the fill floors reopens the height scale.
+**Owner**: jinan
+
 ## 2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold
 
 **Why**: reviewing a wrong in-app answer, a person could not see which lookups the agent made or that one came back empty; and names agents reference that the vault lacks accumulated nowhere, only inside health totals. Observed in the deeplethe/utopia review (Apache-2.0, ideas only).
