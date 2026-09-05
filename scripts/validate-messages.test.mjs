@@ -268,10 +268,7 @@ describe('i18n message catalog', () => {
     assert.equal(ko.nav.settingsMenu.groupWorkspace, '작업공간');
     assert.equal(ko.nav.settingsMenu.workspaceFolderLabel, '작업공간 폴더');
     assert.equal(ko.nav.settingsMenu.vaultTitle, '문서함');
-    assert.equal(
-      ko.nav.settingsMenu.vaultBodyLocal,
-      '작업공간 문서를 열어 파일과 개념을 확인해요',
-    );
+    assert.equal(ko.nav.settingsMenu.vaultBodyLocal, '문서함을 열어 파일과 개념을 확인해요');
     assert.equal(ko.nav.settingsMenu.vaultCtaLocal, '열기');
     assert.equal(ko.topology.documentTitle, '지도');
     // The old topologyWidgets.controls shortcut/depth copy (depthHop,
@@ -363,11 +360,8 @@ describe('i18n message catalog', () => {
     const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
-    assert.equal(en.topology.controls.docsTooltip, 'Quick view of the doc library (D)');
-    assert.equal(
-      en.topology.controls.docsAriaLabel,
-      'Open the doc library quick view (D)',
-    );
+    assert.equal(en.topology.controls.docsTooltip, 'Quick view of Docs (D)');
+    assert.equal(en.topology.controls.docsAriaLabel, 'Open the Docs quick view (D)');
     assert.equal(en.topology.controls.docsLabel, 'Docs');
     assert.doesNotMatch(
       [
@@ -377,7 +371,7 @@ describe('i18n message catalog', () => {
       ].join('\n'),
       // `Quick view` came back in the 2026-07-26 plain-language pass. Unlike the rest of
       // the old ban list (vague labels of the See all / Pick one kind) it names its
-      // object ("Quick view of the doc library"). It conflicts with the current rule that
+      // object ("Quick view of Docs"). It conflicts with the current rule that
       // "Ontology" is not used outside brand positions, so this one entry is released.
       /See all|Pick one|See links|Clean up health|Source vault|source vault|^Source$/m,
     );
@@ -527,8 +521,8 @@ describe('i18n message catalog', () => {
       ].join('\n'),
       /문서 기록|기록 찾기/,
     );
-    assert.equal(commands.sourceServer, '샘플 문서함 보기');
-    assert.equal(commands.sourceLocal, '내 PC 문서함 열기');
+    assert.equal(commands.sourceServer, '샘플 폴더 보기');
+    assert.equal(commands.sourceLocal, '내 PC 폴더 열기');
     // folder-topology was removed; assert those command keys have not come back.
     assert.equal(commands.viewFolderTopology, undefined);
     assert.equal(commands.scaffoldTopology, undefined);
@@ -561,7 +555,7 @@ describe('i18n message catalog', () => {
       ko.docsVault.sourceContract.agentBody,
     ].join('\n');
 
-    assert.equal(ko.docsVault.desktopWelcome.title, '로컬 문서함을 열거나 만드세요');
+    assert.equal(ko.docsVault.desktopWelcome.title, '로컬 폴더를 열거나 만드세요');
     /*
      * ⚠️ **Wording is no longer pinned here** (2026-08-22). These two used to pin
      * 'Document Execution Contract' and 'Document Property Meaning Graph'. `docs/GLOSSARY.md` retired
@@ -573,11 +567,11 @@ describe('i18n message catalog', () => {
      */
     assert.doesNotMatch(ko.docsVault.desktopWelcome.contractAriaLabel, /계약/);
     assert.ok(ko.docsVault.desktopWelcome.contractAriaLabel.length > 0);
-    assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '문서함 파일');
+    assert.equal(ko.docsVault.desktopWelcome.contractFilesLabel, '폴더 파일');
     assert.doesNotMatch(ko.docsVault.desktopWelcome.contractGraphValue, /문서 속성|프론트매터/);
     assert.equal(ko.docsVault.desktopWelcome.contractAgentLabel, 'AI 확인');
-    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '문서함 시작 액션');
-    assert.equal(ko.docsVault.sourceContract.filesLabel, '문서함 파일');
+    assert.equal(ko.docsVault.desktopWelcome.actionsAriaLabel, '폴더 시작 액션');
+    assert.equal(ko.docsVault.sourceContract.filesLabel, '폴더 파일');
     assert.equal(ko.docsVault.sourceContract.graphValue, '개념 {nodes}개 · 관계 {edges}개');
     assert.equal(ko.docsVault.sourceContract.agentLabel, 'AI 확인');
     // The plain phrase replaced "Properties at the top of the document" / "Document Properties" — both screens now
@@ -647,7 +641,9 @@ describe('i18n message catalog', () => {
     // `ModeBadge` (feat/rail-rollout) — `navRail.docs` (shared by AppNavRail +
     // BottomTabBar) is the one surviving primary-nav label for this surface.
     assert.equal(en.navRail.docs, 'Docs');
-    assert.equal(en.nav.settingsMenu.vaultTitle, 'Library');
+    // 「Library」 was a second English name for the destination the rail already calls Docs, and
+    // this card navigates to `/docs/`. One destination, one name (2026-09-05).
+    assert.equal(en.nav.settingsMenu.vaultTitle, 'Docs');
     assert.equal(en.nav.settingsMenu.vaultCtaLocal, 'Open');
     assert.equal(en.nav.settingsMenu.vaultCtaStatic, 'Get started');
     assert.equal(en.docsVault.desktopWelcome.title, 'Open or create a local workspace');

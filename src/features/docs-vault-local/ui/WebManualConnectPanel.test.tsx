@@ -33,7 +33,7 @@ describe('WebManualConnectPanel — 브라우저는 경로를 모르지만 사�
     renderPanel();
     const body = screen.getByTestId('web-manual-connect-config-body');
     expect(body.textContent).toContain('mcpServers');
-    expect(body.textContent).toContain('[문서함 폴더의 절대 경로]');
+    expect(body.textContent).toContain('[폴더의 절대 경로]');
   });
 
   it('덜 채운 설정은 복사되지 않는다 — 붙지 않는 설정은 함정이다', () => {
