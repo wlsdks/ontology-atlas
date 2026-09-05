@@ -4208,7 +4208,8 @@
       "forgetDeclined": "다시 보기",
       "cancel": "취소",
       "add": "{count, plural, =0 {고른 것 넣기} other {# 개 넣기}}",
-      "webGetApp": "앱 받기"
+      "webGetApp": "앱 받기",
+      "emptyAllDeclined": "여기 남은 것은 전에 넘긴 {count}개뿐입니다."
     }
   }
 }

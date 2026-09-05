@@ -131,11 +131,15 @@ export function FindDocumentsDialog({
         {outcome === null ? (
           <p className="text-body text-[color:var(--color-text-tertiary)]">{t("walking")}</p>
         ) : candidates.length === 0 ? (
+          // Two different empty lists. "Nothing here matches" and "everything here is
+          // already hidden because you passed on it" send a person to different places,
+          // and the second one is a state they can undo — measured on the north-star
+          // walkthrough, where the generic sentence guessed while the count below it knew.
           <p
             data-testid="find-documents-empty"
             className="text-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]"
           >
-            {t("empty")}
+            {declinedCount > 0 ? t("emptyAllDeclined", { count: declinedCount }) : t("empty")}
           </p>
         ) : (
           byRoot.map(([rootLabel, rows]) => (
