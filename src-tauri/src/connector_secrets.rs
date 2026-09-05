@@ -461,6 +461,32 @@ mod tests {
     }
 
     #[test]
+    fn deleting_a_token_that_is_not_there_is_not_an_error() {
+        /*
+         * The screen deletes a connector's tokens **before** it removes the row, so the ordinary
+         * path deletes references the keychain may never have held: a variable somebody flagged
+         * for the keychain and never filled in, or one already cleared. If absence were an error
+         * the removal a person asked for would fail on the ordinary case.
+         *
+         * The judgment is `secrets.rs`'s and is shared rather than copied, so what is pinned here
+         * is that this module keeps using it and maps `NoEntry` to `Missing` rather than to a
+         * failure.
+         */
+        assert!(is_cleared(Step::Missing, Step::Failed));
+        assert!(is_cleared(Step::Missing, Step::Missing));
+        // …and a delete that could not be done is still reported as a failure. Saying a token is
+        // gone while it is still there is what makes somebody hand on a machine believing it.
+        assert!(!is_cleared(Step::Failed, Step::Failed));
+
+        let body = include_str!("connector_secrets.rs")
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap();
+        assert!(body.contains("Err(keyring::Error::NoEntry) => Step::Missing"));
+        assert!(body.contains("if is_cleared(deleted, readback)"));
+    }
+
+    #[test]
     fn the_connector_service_name_is_not_the_byok_one() {
         // Sharing the service would let a connector reference address a provider key, and would
         // put both groups in one undeletable pile in Keychain Access.

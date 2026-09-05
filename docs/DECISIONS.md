@@ -63,6 +63,24 @@ record stays in Git history before commit `e4fb49a89`.
 **Falsifier**: a connector tool executing in any offered runtime without a permission card; a token in connectors.json or in the WebView; or no connector switched on in the first ten installs that have one discoverable.
 **Owner**: jinan
 
+## 2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn
+
+**Why**: the 3D cone filled 18.7% of the canvas at 1920 with 27 overlapping pairs and a median rim contrast of 1.75:1, and its readout described a zoom rule while it painted 125 concepts; the owner chose direction B2 (same geometry, corrected drawing).
+**Prior**: 2026-09-02 "the 3D ownership arrangement becomes a cone tree" stands except the height:width proportion. 2026-08-18 (76) is overturned for the cone only: on-demand labels and the fog waiver over a node's rim; its own falsifier (people reading in 3D) was observed.
+**Decision**: the cone fits the canvas minus measured panels, a tool-lane band and a readout band, tier heights scaled 0.8 so the silhouette is wider than tall; a node is a fixed number of screen pixels; fog keeps a rim at or above 3:1 against the ground while the fill still sinks; resting labels use the flat map's placement, reservations and top-K budget, nearer node winning; the readout names the concepts painted. Fill 22.6→61.9% (1920), 23.9→70.5% (1440), 29.0→63.8% (1024), 13.9→35.1% (834); same-tier overlaps 27→0.
+**Dissent**: none convened (solo route); the builder's reservation: the pixel-sampled rim median is 2.59:1, not 3:1, because a node's neighbour in a 125-node cone is usually another stroke, so the floor is gated on the composited token.
+**Falsifier**: a report that the cone reads as a text field reopens the label rule; a rim legible while depth stops reading reopens the fog floor; a silhouette outside the 1.12–1.26 aspect window missing the fill floors reopens the height scale.
+**Owner**: jinan
+
+## 2026-09-05 — Budget compact handoffs by transmitted JSON, preserving every fact
+
+**Why**: the known-task read-only integration fails on both the branch and base main: one unchanged response is 13,697 bytes with display indentation but 10,238 bytes when serialized for transport. Even removing the entire handoff prompt leaves 12,048 pretty bytes.
+**Prior**: supersedes only the pretty-JSON accounting in 2026-08-30 "Compact v2 spends 12 KiB on exact evidence, below the 20 KiB task gate"; all evidence, approval, opt-in, and full-detail boundaries remain standing.
+**Decision**: retain 12,000 UTF-8 bytes for `JSON.stringify(completeCompactObject)`, including handoffPrompt and every typed field, and the unchanged 20,000-character combined connection/compact wire guard. Return identical data; this is an accounting change, not compression or a performance claim.
+**Dissent**: the old display-whitespace reserve limited future content growth; allowing that reserve to hold actual data relaxes the previous acceptance rule and must not justify further budget expansion. Evidence and Steward both require exact-object parity and genuinely oversized negative controls.
+**Falsifier**: reject the change if any parsed fact, qualifier, conflict guard, or approval state changes, UTF-8 bytes exceed 12,000, a genuinely oversized object passes, or the complete two-call wire reaches 20,000 characters.
+**Owner**: jinan
+
 ## 2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold
 
 **Why**: reviewing a wrong in-app answer, a person could not see which lookups the agent made or that one came back empty; and names agents reference that the vault lacks accumulated nowhere, only inside health totals. Observed in the deeplethe/utopia review (Apache-2.0, ideas only).

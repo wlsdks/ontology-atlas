@@ -18,7 +18,8 @@ proof for temporal output, not an optional craft review.
 - The surface is visible on a real monitor. Headless sequential screenshots may
   diagnose a defect but cannot approve motion; if recording is unavailable,
   report the proof as deferred.
-- `ffmpeg` is available at `/opt/homebrew/bin/ffmpeg`.
+- Resolve available `ffmpeg` and `ffprobe` executables; the Homebrew path is
+  an example, not a requirement. Report missing instrumentation before recording.
 - Put recordings and frames in an external session scratch directory.
 - Capture the same app/window/state through the computer-use capability so the accessibility
   owner and screenshot bind the recording to the reviewed surface.
@@ -65,31 +66,44 @@ for k, i in enumerate([1, 6, 11, 16, 21, 26]):
 strip.save("phase-strip.png")
 ```
 
-The marks should advance through each sample; otherwise the crop or animation is
-wrong.
+Identify the active transition or continuous-motion interval in the strip.
+Expected resting frames before or after a finite transition are not stalls.
+Select that active interval for statistics; report its bounds and retain the
+full recording so the selection can be checked.
 
 ## 5. Measure adjacent-frame change
 
 ```python
 from PIL import Image
 import statistics
+from pathlib import Path
 
+# Set start_frame/end_frame from the phase strip (zero-based, end exclusive).
+frames = sorted(Path("vidframes").glob("f*.png"))[start_frame:end_frame]
+if len(frames) < 2:
+    raise ValueError("Active interval needs at least two recorded frames")
 prev, diffs = None, []
-for i in range(1, 121):
-    frame = Image.open(f"vidframes/f{i:03d}.png").convert("L").crop(box)
+for path in frames:
+    frame = Image.open(path).convert("L").crop(box)
     if prev is not None:
         a, b = frame.tobytes(), prev.tobytes()
-        diffs.append(sum(abs(a[j] - b[j]) for j in range(0, len(a), 7)) / (len(a) / 7))
+        samples = [abs(a[j] - b[j]) for j in range(0, len(a), 7)]
+        if not samples:
+            raise ValueError("The crop contains no pixels")
+        diffs.append(statistics.mean(samples))
     prev = frame
 
 mean = statistics.mean(diffs)
+if mean == 0:
+    raise ValueError("No change in the selected active interval; verify target and motion")
 sd = statistics.pstdev(diffs)
 stalls = [i for i, d in enumerate(diffs) if d < mean * 0.25]
 spikes = [i for i, d in enumerate(diffs) if d > mean * 3]
 print(f"mean={mean:.3f} cv={sd/mean:.2f} min={min(diffs):.3f} stalls={len(stalls)} spikes={len(spikes)}")
 ```
 
-- `stalls == 0` is the primary pass condition.
+- `stalls == 0` is the primary pass condition within the declared active interval.
+  Do not apply it to an intentional hold or the settled state of a finite transition.
 - Consecutive stalls suggest idle-gate sleep or dropped browser frames; inspect
   `src/widgets/topology-map-v2/model/idle-gate.ts` activity flags first.
 - `cv <= 0.4` is usually compression noise. Periodic spikes may be another motion;

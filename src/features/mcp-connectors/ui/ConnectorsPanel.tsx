@@ -35,6 +35,7 @@ import {
   type DiscoveredConnector,
 } from '@/shared/lib/tauri-connectors';
 import {
+  connectorSecretDelete,
   connectorSecretRef,
   connectorSecretSet,
   connectorSecretStatus,
@@ -90,6 +91,30 @@ function newConnectorId(): string {
   return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID()
     : `c${Date.now().toString(36)}`;
+}
+
+/**
+ * Forget the tokens a connector's variables pointed at.
+ *
+ * ⚠️ **Measured in the installed app, 2026-09-05.** Removing a connector took its row out of
+ * `connectors.json` and left the keychain item behind, so `security find-generic-password -s
+ * "Ontology Atlas Connectors"` still listed it. The row's own promise is that the value lives on
+ * this machine because the person put it there; leaving it after they took the connector away
+ * makes that promise a one-way door, and an orphaned token nobody can see is worse than one they
+ * can.
+ *
+ * **Best effort, and before the file is written.** A keychain that refuses (locked, or the entry
+ * already gone) must not stop the removal the person asked for, and deleting first means the file
+ * never claims a reference the keychain still answers to. Absence already counts as success in
+ * `connector_secret_delete`, so the ordinary "there was nothing" path is not an error here either.
+ */
+async function forgetSecrets(entries: readonly ConnectorValueEntry[]): Promise<void> {
+  await Promise.all(
+    entries
+      .map((entry) => entry.secretRef)
+      .filter((reference): reference is string => typeof reference === 'string')
+      .map((reference) => connectorSecretDelete(reference).catch(() => null)),
+  );
 }
 
 /** `command arg arg` or the URL — **the thing that will actually run**, in one line. */
@@ -308,9 +333,17 @@ export function ConnectorsPanel({
         storedRefs={storedRefs}
         onClose={() => setDetailId(null)}
         onUpsert={(connector) => void store.upsert(connector)}
-        onRemove={(id) => {
-          void store.remove(id);
+        /*
+         * The tokens go before the row does. A record removed while its keychain items stayed
+         * behind leaves a token nobody can see any more on a machine somebody hands on (measured
+         * in the installed app, 2026-09-05); deleting first also means the file never stops
+         * naming a reference the keychain still answers to.
+         */
+        onRemove={(connector) => {
           setDetailId(null);
+          void forgetSecrets([...connector.env, ...connector.headers]).then(() =>
+            store.remove(connector.id),
+          );
         }}
         testIdPrefix={testIdPrefix}
       />
@@ -464,7 +497,8 @@ function ConnectorDetailDialog({
   storedRefs: ReadonlySet<string> | null;
   onClose: () => void;
   onUpsert: (connector: ConnectorRecord) => void;
-  onRemove: (id: string) => void;
+  /** Takes the whole record, not an id: what has to be forgotten is written on it. */
+  onRemove: (connector: ConnectorRecord) => void;
   testIdPrefix: string;
 }) {
   const t = useTranslations('connectors');
@@ -522,7 +556,7 @@ function ConnectorDetailDialog({
             <button
               type="button"
               data-testid={`${testIdPrefix}-item-remove`}
-              onClick={() => onRemove(connector.id)}
+              onClick={() => onRemove(connector)}
               /*
                * No hand-written hover. `controlClass`'s `hoverInk` axis has no danger option, and
                * inventing one here would be a value chosen by one author — the exact drift
@@ -947,16 +981,21 @@ function VariableFields({
                 label={t('keepInKeychain', { name: entry.name })}
                 checked={inKeychain}
                 disabled={!canStoreSecrets}
-                onChange={(event) =>
-                  change(slot, entry.name, (current) =>
-                    event.target.checked
-                      ? {
-                          name: current.name,
-                          secretRef: connectorSecretRef(connector.id, current.name),
-                        }
-                      : { name: current.name },
-                  )
-                }
+                onChange={(event) => {
+                  if (event.target.checked) {
+                    change(slot, entry.name, (current) => ({
+                      name: current.name,
+                      secretRef: connectorSecretRef(connector.id, current.name),
+                    }));
+                    return;
+                  }
+                  // Turning the choice off is the person saying this value should not be on
+                  // this machine. Dropping only the reference would leave the value behind
+                  // with nothing on screen pointing at it.
+                  void forgetSecrets([entry]).then(() =>
+                    change(slot, entry.name, (current) => ({ name: current.name })),
+                  );
+                }}
                 className="text-label text-[color:var(--color-text-secondary)]"
               />
               {!canStoreSecrets && inKeychain ? (

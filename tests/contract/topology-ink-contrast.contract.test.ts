@@ -27,6 +27,22 @@ const CSS = readFileSync(resolve(process.cwd(), "app/globals.css"), "utf8");
 /** WCAG 1.4.11 — the contrast floor for non-text UI elements. */
 const MIN_CONTRAST = 3;
 
+/**
+ * WCAG 1.4.3 — the floor for **text**, which the map's labels are.
+ *
+ * The 3:1 floor above is 1.4.11, and it applies to strokes and marks. A label is a
+ * word a person reads, so it owes the text floor instead. The large-text exemption
+ * (18.66px bold / 24px regular) does not reach any of them: `LABEL_FONT_SIZE` in
+ * `render/labels.ts` is 15 / 10.5 / 10 / 9.5px, and `labelZoomScale` caps the zoom
+ * multiplier at 1.9, so even the loudest label at full zoom is 28.5px only while
+ * the camera is pushed all the way in — the resting sizes are what must pass.
+ *
+ * Caught by this contract on 2026-09-05: `--topology-v2-label-element` was
+ * `#6a6a73` = **3.69:1** at 9.5px, carrying a comment that claimed "AA-large" for a
+ * size the AA-large rule cannot reach.
+ */
+const MIN_TEXT_CONTRAST = 4.5;
+
 /** Reads the raw declaration (a hex or a `var(...)`) as written. */
 function readRaw(name: string): string {
   // Reads definitions from the `:root` block only — later scoped overrides
@@ -64,6 +80,13 @@ const CANVAS = "#08090a";
 
 /** The ink ladder — its order is the hierarchy. The **order** is pinned, not the values. */
 const EDGE_LADDER = ["topology-v2-edge-contains-l2", "topology-v2-edge-contains", "topology-v2-edge-contains-l0"];
+/** The canvas **label** ladder — the same hierarchy, read as words rather than marks.
+ *  `project` is deliberately outside the order: it is Layer-0 amber, a different family. */
+const LABEL_LADDER = [
+  "topology-v2-label-element",
+  "topology-v2-label-capability",
+  "topology-v2-label-domain",
+];
 const NODE_LADDER = [
   "topology-v2-node-stroke-element",
   "topology-v2-node-stroke-capability",
@@ -78,6 +101,29 @@ describe("topology ink contrast contract", () => {
       .map((name) => ({ name, value: readToken(name), ratio: contrast(readToken(name), CANVAS) }))
       .filter((row) => row.ratio < MIN_CONTRAST);
     expect(failures.map((f) => `${f.name}=${f.value} (${f.ratio.toFixed(2)}:1)`)).toEqual([]);
+  });
+
+  it("캔버스 라벨이 모두 본문 대비 4.5:1 이상이다", () => {
+    // Measured against `--topology-v2-canvas-bg-near`, not the page canvas: that is
+    // the surface the labels are actually painted over, and it is the lighter of the
+    // two, so it is the conservative denominator.
+    const surface = readToken("topology-v2-canvas-bg-near");
+    const failures = LABEL_LADDER.concat("topology-v2-label-project")
+      .map((name) => ({ name, value: readToken(name), ratio: contrast(readToken(name), surface) }))
+      .filter((row) => row.ratio < MIN_TEXT_CONTRAST);
+    expect(failures.map((f) => `${f.name}=${f.value} (${f.ratio.toFixed(2)}:1)`)).toEqual([]);
+  });
+
+  it("라벨 잉크 사다리의 순서가 유지된다 (element < capability < domain)", () => {
+    // Raising a floor must not invert the hierarchy it sits in. The gateway's brighter
+    // element ink (7.09:1) would have done exactly that here — above capability's
+    // 5.33:1 — so the workbench takes the dimmest value that clears the text floor
+    // instead of the gateway's value.
+    const surface = readToken("topology-v2-canvas-bg-near");
+    const ratios = LABEL_LADDER.map((name) => contrast(readToken(name), surface));
+    for (let i = 1; i < ratios.length; i += 1) {
+      expect(ratios[i], LABEL_LADDER[i]).toBeGreaterThan(ratios[i - 1]);
+    }
   });
 
   it("containment 잉크 사다리의 순서가 유지된다 (l2 < 기본 < l0)", () => {

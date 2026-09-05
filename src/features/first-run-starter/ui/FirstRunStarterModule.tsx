@@ -589,7 +589,16 @@ export function FirstRunStarterModule({
           <FolderOpen size={ICON_SIZE.md} aria-hidden />
           {busy && !scaffolding ? t("openBusy") : t("openLabel")}
           {applePlatform ? (
-            <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-[var(--font-weight-signature)] opacity-80">
+            /*
+             * No `opacity`. The ink here is inherited `--color-text-on-accent` (#ffffff,
+             * 4.70:1 on `--color-indigo-brand` — `globals.css`, the token's own note),
+             * and `opacity-80` composited it down to **3.63:1** at 9.5px (measured
+             * 2026-09-05). Opacity never touches the computed `color`, so this read as a
+             * licensed pairing everywhere the licence is checked while failing on screen.
+             * The keycap is already the quieter half through its border and its box; it
+             * does not need to spend the contrast too.
+             */
+            <span className="rounded-micro border border-b-2 border-[color:var(--color-keycap-edge-on-accent)] px-1.5 py-px font-mono text-caption font-[var(--font-weight-signature)]">
               ⌘O
             </span>
           ) : null}

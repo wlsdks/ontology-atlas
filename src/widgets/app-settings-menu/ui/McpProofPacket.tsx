@@ -28,7 +28,7 @@ import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
  * lived on - only the "Copy" button inside a deleted branch used the constant, and lint's
  * unused-variable warning is what revealed it. The surface may move; the handoff lives.
  */
-export const MCP_FIRST_CALLS_PACKET = [
+const MCP_FIRST_CALLS_PACKET = [
   'Ontology Atlas MCP first-contact proof packet',
   '',
   'Direct MCP proof inside the current agent session:',

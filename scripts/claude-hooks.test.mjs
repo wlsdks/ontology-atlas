@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
 
@@ -233,7 +233,7 @@ describe('inject-ontology-summary health awareness', () => {
         assert.match(result.stdout, /unresolved edge/, `${hook}: names the unresolved edge`);
         assert.match(
           result.stdout,
-          /ontology-atlas health/,
+          /(?:ontology-atlas|index\.mjs) health/,
           `${hook}: points to a fix command`,
         );
       }
@@ -260,7 +260,7 @@ describe('inject-ontology-summary health awareness', () => {
         assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
         assert.match(result.stdout, /will not compile/, `${hook}: does not stay silent`);
         assert.match(result.stdout, /missing-uid/, `${hook}: names what is broken`);
-        assert.match(result.stdout, /ontology-atlas health/, `${hook}: names the command that fixes it`);
+        assert.match(result.stdout, /(?:ontology-atlas|index\.mjs) health/, `${hook}: names the command that fixes it`);
         assert.ok(result.stdout.length < 700, `${hook}: session context stays short`);
       }
     } finally {
@@ -271,33 +271,6 @@ describe('inject-ontology-summary health awareness', () => {
   // The silence convention itself must hold — adding no noise to a repository with
   // no vault is this hook's original contract. This measures that the check above
   // did not widen it.
-  /**
-   * A fresh clone and a new worktree both start without `mcp/node_modules`, so
-   * the MCP child dies on ERR_MODULE_NOT_FOUND before it reads anything. The
-   * hook used to answer that with `ontology-atlas health`, which runs through
-   * the same missing module and cannot repair it. Naming the wrong command
-   * costs a round trip and teaches that the line is noise, so the two cases are
-   * asserted apart.
-   */
-  it('names the install when the dependency is missing, not the vault doctor', async () => {
-    const source = await readFile('.claude/hooks/inject-ontology-summary.sh', 'utf8');
-    const mirror = await readFile('.codex/hooks/inject-ontology-summary.sh', 'utf8');
-    for (const [name, text] of [['claude', source], ['codex', mirror]]) {
-      assert.match(text, /ERR_MODULE_NOT_FOUND/, `${name}: does not recognise the missing-module failure`);
-      assert.match(text, /pnpm --dir mcp install/, `${name}: never names the command that fixes it`);
-      assert.match(
-        text,
-        /mcp\/node_modules/,
-        `${name}: does not check whether this checkout actually lacks the dependency`,
-      );
-      assert.match(
-        text,
-        /ontology-atlas health/,
-        `${name}: lost the vault doctor for the case that really is a broken vault`,
-      );
-    }
-  });
-
   it('stays silent, as before, when there is no vault at all', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'ontology-atlas-hook-empty-'));
     try {
@@ -900,3 +873,69 @@ describe('usage sensor', () => {
   });
 });
 
+
+// Execute the printed repair command with no globally installed Atlas CLI.
+// Spaces and shell metacharacters must reach the CLI as one unchanged path.
+describe('inject-ontology-summary executable recovery', () => {
+  for (const scenario of ['broken', 'drift', 'missing-current', 'missing-legacy']) {
+    it(`runs the suggested recovery for ${scenario} in a source checkout`, async () => {
+      const root = await mkdtemp(join(tmpdir(), 'atlas-hook-recovery-'));
+      const checkout = join(root, "checkout with 'quote $dollar;");
+      const vault = join(checkout, 'vault with spaces');
+      const bin = join(root, 'bin');
+      try {
+        await mkdir(join(checkout, 'cli', 'src'), { recursive: true });
+        await mkdir(join(checkout, 'mcp', 'node_modules'), { recursive: true });
+        await mkdir(vault);
+        await mkdir(bin);
+        await writeFile(join(checkout, 'mcp', 'package.json'), '{}');
+        for (const command of ['bash', 'cat', 'sed', 'grep', 'head', 'mktemp', 'rm', 'python3']) {
+          const found = spawnSync('which', [command], { encoding: 'utf8' });
+          assert.equal(found.status, 0, `fixture requires ${command}`);
+          await symlink(found.stdout.trim(), join(bin, command));
+        }
+        await symlink(process.execPath, join(bin, 'node'));
+        await writeFile(join(bin, 'pnpm'), '#!/usr/bin/env node\n' +
+          'require("fs").writeFileSync(process.env.INSTALL_LOG, JSON.stringify(process.argv.slice(2)));',
+          { mode: 0o755 });
+        await writeFile(join(checkout, 'cli', 'src', 'index.mjs'), `
+          if (process.argv[2] === 'health') {
+            console.log(JSON.stringify(process.argv.slice(2)));
+          } else if (process.env.SCENARIO === 'drift') {
+            console.log(JSON.stringify({ byKind: { capability: 1 }, graph: { nodes: 1, unresolvedEdges: 1 } }));
+          } else {
+            console.error(process.env.SCENARIO === 'missing-current'
+              ? 'Source-checkout MCP dependencies are missing (@modelcontextprotocol/core).'
+              : process.env.SCENARIO === 'missing-legacy' ? 'ERR_MODULE_NOT_FOUND' : 'missing-uid');
+            process.exit(1);
+          }
+        `);
+        for (const hook of INJECT_HOOKS) {
+          const installLog = join(root, 'install.json');
+          await rm(installLog, { force: true });
+          const env = { ...process.env, PATH: bin, OATLAS_VAULT: vault,
+            SCENARIO: scenario, INSTALL_LOG: installLog };
+          const result = spawnSync(join(bin, 'bash'), [resolve(hook)], {
+            cwd: checkout, env, encoding: 'utf8',
+          });
+          assert.equal(result.status, 0, result.stderr);
+          const command = result.stdout.match(/`([^`]+)`/u)?.[1];
+          assert.ok(command, `${hook}: no recovery command: ${result.stdout}`);
+          const repair = spawnSync(join(bin, 'bash'), ['-c', command], {
+            cwd: checkout, env, encoding: 'utf8',
+          });
+          assert.equal(repair.status, 0, `${hook}: ${repair.stderr}`);
+          assert.deepEqual(JSON.parse(repair.stdout), ['health', vault]);
+          if (scenario.startsWith('missing')) {
+            assert.deepEqual(JSON.parse(await readFile(installLog, 'utf8')),
+              ['--dir', 'mcp', 'install', '--frozen-lockfile']);
+          } else {
+            await assert.rejects(access(installLog));
+          }
+        }
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    });
+  }
+});

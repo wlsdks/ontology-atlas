@@ -62,6 +62,23 @@ const ACTIVE_CLASS =
 
 const COMPACT_CLASS = 'w-[var(--chrome-tile-size)] px-0';
 
+/**
+ * The **width half** of the `max-xl` icon-only fold, for callers that collapse by
+ * viewport rather than by the `compact` prop.
+ *
+ * Hiding `[data-chip-label]` with a responsive variant is only half of `compact`:
+ * the label goes, `px-3.5` stays, and the chip lands on a width that belongs to no
+ * role. Measured 2026-09-05 at 1024: the map's "switch to my data" chip was
+ * **44×36** beside four 36×36 icon-only tiles in the same lane. This constant is
+ * the same box `COMPACT_CLASS` applies, written with its variants so Tailwind's
+ * scanner sees the literal here rather than in a template at the call site.
+ *
+ * Pair it with the label hook; a contract test holds the two together
+ * (`tests/contract/chrome-chip-compact-pairing.contract.test.ts`).
+ */
+export const CHROME_CHIP_COMPACT_BELOW_XL =
+  'max-xl:w-[var(--chrome-tile-size)] max-xl:px-0';
+
 export const ChromeChip = forwardRef<HTMLButtonElement, ChromeChipProps>(
   ({ icon, badge, kbd, active, compact, children, className, ...rest }, ref) => (
     <button

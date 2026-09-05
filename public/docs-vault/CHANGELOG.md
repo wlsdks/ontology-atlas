@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: In the agent chat, each lookup stands as one dim line above the answer with its target and result count; Insights gains a "Not held" tab listing names this folder was asked for and lacks; the Agents screen gains Connectors, which attach an external MCP server (one this machine already registers, or one written by hand) to the in-app Claude chat: off by default, token only in the keychain, traffic from the agent straight to that service.
-**Changed**: A closing panel or dialog leaves faster on its own curve and stops taking clicks as it leaves; the map's right-hand tiles name themselves as a group on hover; the insights tab strip scrolls instead of wrapping.
-**Fixed**: A truncated list says how many it hides; a meta row shows when meaning was checked; editor fields name the program that reads them; six empty states carry the link that unblocks them.
+**Added**: Agent lookups show targets and result counts above the answer. Insights lists names the folder lacks, shares one ACP conversation across tabs, and Flow shows a cited answer scene by scene. Agents gains Connectors: an external MCP server (registered here or written by hand) joins the in-app Claude chat, off by default, token only in the keychain, traffic straight from the agent to that service.
+**Changed**: The Cone view fills the free canvas (62% at 1920, was 23%), keeps dots one size and far edges visible, and counts what it draws; closing panels leave faster and stop taking clicks; map tiles name their group on hover; the insights tabs scroll.
+**Fixed**: Compact MCP budgets count transmitted JSON, not indentation. A truncated list says how many are hidden; a meta row shows when meaning was checked; editor fields name their reader; six empty states carry the unblocking link.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 

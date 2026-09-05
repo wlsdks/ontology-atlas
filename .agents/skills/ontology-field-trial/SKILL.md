@@ -1,6 +1,6 @@
 ---
 name: ontology-field-trial
-description: Measure whether Atlas actually works on a repository nobody here knows, by building a vault with a real MCP agent and then handing that vault — without the source — to a second agent who must answer questions from it alone. Use when changing the construction rules, the MCP read/write contract, the bootstrap skill, or whenever someone asks "is this getting better?" and the honest answer is a number nobody has. Produces four measurements against a recorded baseline. Skip for UI work, copy edits, and anything that cannot change what a vault says.
+description: Measure Atlas ontology quality on an unfamiliar repository with a source-hidden handoff and four baseline measurements. Use for changes to meaning-construction rules or MCP read/write behavior that can change vault contents, or an explicit ontology-quality field trial. Skip UI work and wording-only clarifications that preserve the evidence, approval, and write contracts.
 ---
 
 # Field trial — does the vault survive being the only thing you have?
@@ -152,7 +152,9 @@ response as a rejected draft and repair it before the evaluation lanes start.
 The parallel receipts are scratch measurement evidence, not a new public MCP
 schema or an authenticated identity proof. If the two lanes cannot be isolated,
 run them serially and report that timing honestly; never count overlapping work
-that shared source or answers as a source-hidden pass.
+that shared source or answers as a source-hidden pass. A serial run cannot earn
+the helper's overlap receipt; use the bootstrap manual protocol or defer that
+helper result. Do not repeatedly retry `join` with unchanged serial timestamps.
 When the bootstrap skill's qualification helper is available, record each
 helper stage separately and require the `join` receipt to prove parallel overlap;
 helper runtime does not replace actor isolation, source hiding, or the four

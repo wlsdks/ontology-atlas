@@ -2462,6 +2462,26 @@
      */
     --chrome-tile-label-max: 9rem;
     --chrome-tile-label-gap: 0.5rem;
+    /*
+     * **The expanded rail has one width** (2026-09-05 audit, F14).
+     *
+     * Shrink-to-fit made the four tiles 122 / 104 / 161 / 141px, and because the rail
+     * is anchored to the right edge that put their **left** edges 56px apart — a
+     * stack whose ragged edge encodes nothing but which label happens to be longer.
+     * `design.md`, "Dimensional regularity": repeated controls of one role take one
+     * size step, and variation must carry hierarchy or state.
+     *
+     * The value is **derived, not measured**, so it cannot be outgrown: the label is
+     * already clipped at `--chrome-tile-label-max`, so tile + gap + that cap is the
+     * widest an expanded tile can ever be, in any locale. Setting the floor to the
+     * ceiling makes every expanded tile exactly that width by construction, and a
+     * longer translation changes nothing. The cost is 27px of hover-state width over
+     * the widest label today; the tile centres its content, so a short label reads as
+     * a centred pill rather than a left-heavy one.
+     */
+    --chrome-tile-expanded-min: calc(
+      var(--chrome-tile-size) + var(--chrome-tile-label-gap) + var(--chrome-tile-label-max)
+    );
     /* `active` (selected/in-progress) indicator for ChromeTile/ChromeChip — adhering to the single-hue principle using only indigo, differing only in alpha. */
     --chrome-active-surface: var(--color-indigo-a12);
     --chrome-active-border: var(--color-indigo-a40);
@@ -2914,7 +2934,21 @@
     --topology-v2-label-project: #d4b478;
     --topology-v2-label-domain: #b8b8c1;
     --topology-v2-label-capability: #84848c;
-    --topology-v2-label-element: #6a6a73; /* Guardian follow-up B: 2.76:1 → 3.16:1 (AA-large) — element labels only appear at max zoom but still meet the contrast lower bound */
+    /*
+     * 2026-09-05: `#6a6a73` measured **3.69:1** on `--topology-v2-canvas-bg-near`,
+     * and the "AA-large" the old comment claimed does not exist at this size —
+     * `LABEL_FONT_SIZE.element` is 9.5px, while the large-text rule starts at
+     * 18.66px bold / 24px regular. An element label is a word someone reads, so it
+     * owes WCAG 1.4.3's 4.5:1.
+     *
+     * The gateway's `#9a9aa4` (7.09:1) was not promoted here: it would put element —
+     * the quietest tier — **above** capability's 5.33:1 and invert the ladder the map
+     * uses to say which tier you are looking at. `#7e7e87` is the dimmest step that
+     * clears the text floor (4.92:1) while staying under capability, so the fix pays
+     * the floor without spending the hierarchy. Gate:
+     * `tests/contract/topology-ink-contrast.contract.test.ts`.
+     */
+    --topology-v2-label-element: #7e7e87;
     /* Max on-screen label width (px) before word-boundary ellipsis — keeps a
        long element title (file path) from clipping the right edge / colliding
        with its horizontal neighbor (Design Guardian readability rejection). */
@@ -3038,6 +3072,24 @@
        ratio (0.92) so the DEFAULT overview reads as CIRCUIT (farT ≈ 0), while
        tier visibility rides a separate zoom-ratio signal (model/tier-visibility). */
     --topology-v2-overview-entry-ratio: 0.95;
+    /* Cone (3D) fit — `topology-camera-math.ts#computeDomeFitCameraTarget`.
+       The cone is fitted into the FREE canvas (canvas minus the measured panels)
+       minus these two bands, and then spans this fraction of whichever axis binds.
+       Bottom band = the instrument readout row. There is no second padding term:
+       the 15% pad plus the 0.95 overview ratio the cone used to inherit is what
+       left it at 18.6% of the canvas (measured 2026-09-05).
+       Top band 104, not the tool lane's own 66: the LABEL pipeline culls against
+       `--topology-v2-safe-inset-top`(148), and a project label is protected there
+       — it CLAMPS to the inset edge instead of culling, and the clamp shift is
+       then carried into the flipped slot. At 80 the apex centre landed at y=101
+       and y=99, above that line, so the apex ring ran through its own name at
+       1920 and the name sat 43px below its disc at 1440 (guardian measurement,
+       2026-09-05). 104 puts the apex near 125, its below-slot anchor near 159,
+       and it flips above with no clamp — the clean 1024 frame's behaviour at
+       every width. Fill stays over the 60% floor: 62% at 1920, 70% at 1440. */
+    --topology-v2-dome-fit-fill: 0.98;
+    --topology-v2-dome-fit-inset-top: 104;
+    --topology-v2-dome-fit-inset-bottom: 32;
     --topology-v2-focus-fit-max-scale: 1.9;
     /* Dive-framing fix (owner: "diving too deep on click — over-zoom·label
        collision") — now MULTIPLICATIVE margin (previously fixed px padding 70): expand ego bbox
@@ -3142,6 +3194,23 @@ so leave it as is. */
       100dvh / var(--topology-ui-scale-factor) - var(--topology-node-popover-top) -
         var(--topology-v2-panel-bottom-reserve)
     );
+    /*
+     * The **selected-node inspector's** own ceiling. It is an alias, not a copy: at
+     * `lg` and above the inspector and the meaning editor are the same anchored
+     * popover with the same ceiling, and writing the formula twice would let them
+     * drift the day one moves.
+     *
+     * It exists because the two surfaces stop agreeing below `lg`, where the
+     * inspector becomes a bottom sheet capped so the map keeps its majority (see the
+     * `<lg` override). The editor cannot take that cap: it is a **form**, and a form
+     * that cannot show its own submit row is broken rather than compact. Measured
+     * 2026-09-05 at 600×900 after the shared token was capped — the editor's content
+     * is 505px, the cap gave it 403, and the 「why」 textarea sat at y 756 under the
+     * panel's own sticky footer, which answered its centre instead
+     * (`contextual-meaning-editor.spec.ts`, "every control is reachable"). 768 and
+     * 834 were 46px and 7px from the same failure.
+     */
+    --topology-v2-inspector-max-height: var(--topology-v2-panel-max-height);
     /* 9→12px (feat/chrome-system §9, INDEX panel v2.1) — Promote the radius of the shared panel layer between datasheet and INDEX to the final step of the chrome system's 4-layer step
 (keycap4·inner7·tile/chip/field10·panel12). */
     --topology-v2-panel-radius: var(--radius-panel);
@@ -3453,6 +3522,39 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     :root {
       --topology-v2-panel-bottom-reserve: calc(
         var(--topology-mobile-bottom-tab-reserve) + 8px
+      );
+      /*
+       * `<lg` the selected-node inspector is a **bottom sheet**, and this cap is the
+       * map's share rather than the sheet's appetite (2026-09-05 audit, F1).
+       *
+       * Anchored to the top at `72px` the sheet grew to whatever its content wanted
+       * and measured 366×691 at 390×844 — 93.8% of the width, 76.8% of the canvas,
+       * 93 of 125 nodes buried. That is the `dont:node-click-fullscreen-modal` shape
+       * this repository forbids, and the ego graph the click was about was the thing
+       * it covered.
+       *
+       * **Why not 60dvh.** Two independent ceilings meet here and the lower one wins.
+       * ① The sheet spans the column at phone width, so canvas coverage is almost
+       * exactly its height ratio: 60dvh would still cover 56%. ② The camera's
+       * free-area classifier calls anything at or above `SIDE_PANEL_HEIGHT_RATIO`
+       * (0.6) a panel rather than a bar, and a full-width panel is subtracted from
+       * nothing — at 60dvh the camera would stop making room and the count that
+       * matters would go straight back up. 45dvh clears both: measured 42.2% at
+       * 390×844 and 28.0% at 834×1112, with the sheet still on the bar branch.
+       *
+       * The zoom division is the same correction the desktop token carries — inside a
+       * `zoom`ed subtree `dvh` scales with the factor. Below `lg` the factor is 1, so
+       * this is identity today and stays correct if that ever changes.
+       *
+       * ⚠️ **This caps the inspector, not every panel that shares the anchor.** The
+       * first version of this override moved `--topology-v2-panel-max-height`, which
+       * the meaning editor reads too — and the editor is a form, so 405px of ceiling
+       * put its own 「why」 textarea behind its own sticky footer at 600×900 (2026-09-05,
+       * caught by `contextual-meaning-editor.spec.ts`). The reason for the split lives
+       * with the token declaration above.
+       */
+      --topology-v2-inspector-max-height: calc(
+        45dvh / var(--topology-ui-scale-factor)
       );
       /* Expanded INDEX bottom also rises above reservation in zones where tab bar exists (<lg)
          — raising only at 767 causes panel footer (AGENT HANDOFF) to penetrate 33px behind
@@ -4433,6 +4535,18 @@ html[data-gateway-stage] {
  *
  * Since it's `min-height`, controls **actually grow and push each other** — unlike expanding transparent hit areas (`touch-hit-expand`), they can't overlap. That was the reason for rejecting that approach first: among 38 places, **21 were less than 12px apart from neighbors** (EN/KO toggle 1px), so invisible hit areas overlapped and caused **missed touches**.
  */
+/*
+ * The expanded rail tile's shared width — **unlayered on purpose**, exactly like
+ * `.atlas-touch-floor` below and for the same reason. `ChromeTile`'s labelled shape
+ * carries `min-w-[var(--chrome-tile-size)]`, a Tailwind utility, and layer order
+ * beats specificity: written inside `@layer base` this rule would be built, shipped,
+ * and silently overridden. Rationale for the value: `--chrome-tile-expanded-min`.
+ */
+.chrome-rail:hover .chrome-tile-labelled,
+.chrome-rail:focus-within .chrome-tile-labelled {
+  min-width: var(--chrome-tile-expanded-min);
+}
+
 @media (pointer: coarse) {
   .atlas-touch-floor {
     min-height: var(--touch-target-min);

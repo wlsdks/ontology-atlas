@@ -514,7 +514,7 @@
       "reason": "전부 진짜 문서에서 나왔어요"
     },
     "readout": {
-      "projectUnit": "프로젝트",
+      "conceptUnit": "개념",
       "domainUnit": "도메인",
       "tier_spine": "도메인까지 보기",
       "tier_circuit": "역량까지 보기",
@@ -4087,7 +4087,6 @@
       "folder": "이 폴더",
       "other": "다른 파일"
     },
-    "foundFrom": "{source} 에 등록되어 있습니다",
     "foundUnsupported": "{transport} 방식 서버인데, 두 코딩 에이전트 모두 더는 이 방식을 받지 않습니다.",
     "secretStored": "이 컴퓨터에 저장되어 있습니다. 끝 네 자리는 {last4} 입니다.",
     "keepInKeychain": "{name} 값을 이 컴퓨터의 키체인에 둡니다",

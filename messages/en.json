@@ -514,7 +514,7 @@
       "reason": "all of it comes from real documents"
     },
     "readout": {
-      "projectUnit": "project",
+      "conceptUnit": "concepts",
       "domainUnit": "domains",
       "tier_spine": "Domains only",
       "tier_circuit": "Down to capabilities",
@@ -4087,7 +4087,6 @@
       "folder": "this folder",
       "other": "another file"
     },
-    "foundFrom": "Registered in {source}",
     "foundUnsupported": "This is an {transport} server, and neither coding agent accepts that transport any more.",
     "secretStored": "Stored on this machine, ending {last4}.",
     "keepInKeychain": "Keep {name} in this machine's keychain",

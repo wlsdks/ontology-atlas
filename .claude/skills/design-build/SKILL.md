@@ -19,7 +19,9 @@ combinations. Missing parts and an unwritten order—not model taste—were the 
 Conflicts then produced an exception axis and one screen ended with 8–9 control
 heights.
 
-Before proposing a dimension, colour, or spacing value:
+Before proposing a new primitive or ramp value (dimension, colour, or spacing),
+follow this sequence. Reusing an existing value does not require repeating the
+history review; verify its current role and use it:
 
 1. search `app/globals.css` for the role;
 2. read “System growth rules” in `docs/DESIGN-SYSTEM.md`;
@@ -186,7 +188,7 @@ pnpm checks:changed
 pnpm design:route -- --change=<every-observed-class>
 ```
 
-Run only the proof packet the router returns. Every rendered design class
+Run every recommended technical check plus the proof packet the router returns. Every rendered design class
 includes the completed Computer Use render loop above; the final proof points
 to its baseline, material checkpoints, and final state.
 

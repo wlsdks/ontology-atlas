@@ -343,15 +343,34 @@ export function orbitSnapTauMs(delta: number, yawVel: number): number {
 const ORBIT_VEL_EPS = 0.000005;
 
 /**
+ * **Cone height : width proportion** — the hero's tier heights multiplied by this.
+ *
+ * The hero's plane table was drawn for a square stage. On the workbench the free
+ * canvas is about 1.4 : 1 (measured 2026-09-05 at 1920x1080: 1532 x 1080 once the
+ * index panel is subtracted), and the cone's own outline measured 602 x 620 px —
+ * taller than wide. A shape that square cannot fill a landscape rectangle: even
+ * fitted with no padding at all it reaches 70% of the free area only by spending
+ * 100% of the height, which leaves the apex under the floating tool lane.
+ *
+ * Scaling the tier heights (the radii are normalised by `DOME_FIT_RADIUS`, so
+ * scaling them instead would cancel out) brings the outline to roughly 1.2 : 1,
+ * which fits the landscape frame with air left at top and bottom. What the height
+ * carries is unchanged: the four kind planes stay in order and stay separated by
+ * five to ten node diameters, so "project on top, element at the bottom" reads
+ * exactly as before — the cone is simply not as tall as it is wide any more.
+ */
+export const CONE_HEIGHT_SCALE = 0.8;
+
+/**
  * kind → ring height (y, up is positive) and radius — the hero engine's PLANE
- * table unchanged, in its 620-unit world. `DomeModel.unit` scales it to actual
- * world units.
+ * table, its heights scaled by `CONE_HEIGHT_SCALE`, in its 620-unit world.
+ * `DomeModel.unit` scales it to actual world units.
  */
 export const DOME_PLANE: Readonly<Record<DomeViewKind, { y: number; r: number }>> = {
-  project: { y: 148, r: 0 },
-  domain: { y: 56, r: 148 },
-  capability: { y: -48, r: 192 },
-  element: { y: -150, r: 224 },
+  project: { y: 148 * CONE_HEIGHT_SCALE, r: 0 },
+  domain: { y: 56 * CONE_HEIGHT_SCALE, r: 148 },
+  capability: { y: -48 * CONE_HEIGHT_SCALE, r: 192 },
+  element: { y: -150 * CONE_HEIGHT_SCALE, r: 224 },
 };
 
 /** The dome's nominal bottom radius (dome units) — the element ring. Denominator of the world scale. */
@@ -476,17 +495,76 @@ export function domeDetailFactor(u: number): number {
 }
 
 /**
- * kind → dot radius (dome units) — the hero's NODE_R unchanged. 3D is a layer for
- * reading **shape**, not a data table, so nodes are drawn as dots rather than
- * numbered chips (owner judgment: the feel of the hero). Screen radius is
- * `× 2.1 × unit × perspective s`, the hero's ratio.
+ * kind → dot radius (dome units) — the hero's NODE_R unchanged. Since 2026-09-05
+ * this table no longer decides what a node measures on screen (`DOME_NODE_PX`
+ * does); it survives as the **collision radius** the coupling cloud relaxes
+ * against, which is a dome-unit quantity and always was.
  */
-export const DOME_NODE_R: Readonly<Record<DomeViewKind, number>> = {
+const DOME_NODE_R: Readonly<Record<DomeViewKind, number>> = {
   project: 10.5,
   domain: 4.6,
   capability: 3.1,
   element: 2.05,
 };
+
+/**
+ * **kind → dot radius in SCREEN pixels** — what a node measures on the cone,
+ * whatever the camera is doing.
+ *
+ * `DOME_NODE_R` above is a dome-unit table, so a node's screen radius used to be
+ * `DOME_NODE_R × 2.1 × unit × perspective × cameraScale`: **the camera zoom was a
+ * factor**. Fitting the cone larger therefore grew the dots by exactly the amount
+ * it grew the gaps, and the picture came back with the same 27 overlapping pairs
+ * at every size (measured 2026-09-05 at 1920, 1440, 1024 and 834 — identical count
+ * at all four, which is the signature of a purely proportional zoom).
+ *
+ * Making the radius a screen quantity separates the two: fitting the cone to the
+ * canvas now buys **spacing only**. Perspective still scales a dot (`p.s`), because
+ * that is depth rather than zoom, and the assembly ramp still interpolates from the
+ * 2D radius, because that is the morph.
+ *
+ * The values are the ones the 1920 entry frame already drew (measured: project 18.7,
+ * domain 13.0, capability 8.8, element 5.8 px), taken down a step so the extra room
+ * the new fit buys is spent on air rather than on ink.
+ */
+export const DOME_NODE_PX: Readonly<Record<DomeViewKind, number>> = {
+  project: 13,
+  domain: 8.5,
+  capability: 5.8,
+  element: 4,
+};
+
+/**
+ * The disc allowance the fit reserves around the cone's centre bounds, screen px.
+ *
+ * The fit is solved from the node **centres** (`domeWorldBounds`), so it has to
+ * reserve the discs itself, and the drawn frame it would need to measure them
+ * exactly does not exist yet at the moment of the fit. One symmetric number is
+ * used instead, sized to the silhouette's actual edges rather than to its largest
+ * node: the extreme points left and right are ring-edge capability and element
+ * discs (6.8 and 4.6 px), the top point is the apex (15 px) and the bottom points
+ * are elements again. Reserving the apex on all four sides instead cost about 5%
+ * of the free width on a narrow canvas (measured 2026-09-05 at 834: outline 472
+ * where 491 fits).
+ */
+export const DOME_NODE_FIT_ALLOWANCE_PX = 12;
+
+/**
+ * **The floor depth fog may darken a node's rim to.**
+ *
+ * `domeFogAlpha` bottoms out at 0.09, and it multiplies the whole node — rim
+ * included. Measured on the sample vault at 1920 (2026-09-05): the median node rim
+ * stood at **1.15 : 1** against the background beside it and 117 of 125 nodes were
+ * under 3 : 1, so most of what is on screen is a shape you cannot see the edge of.
+ *
+ * The fill, the halo, the line-width attenuation, the perspective size and the
+ * draw order still carry depth. Only the rim gets a floor, and 0.75 is the number
+ * that keeps the dimmest rim token (`--topology-v2-node-stroke-element`, #7a7a86)
+ * at 3 : 1 or better once composited over the canvas ground — the same 3 : 1 ink
+ * floor the flat map holds itself to. `dome-rim-contrast.contract.test.ts` derives
+ * that number from the tokens rather than trusting this sentence.
+ */
+export const DOME_RIM_FOG_FLOOR = 0.75;
 
 /** Deterministic hash → [0,1) — the hero engine's FNV-1a jitter, unchanged (angle stability). */
 function domeHash01(str: string): number {
@@ -592,15 +670,24 @@ export interface DomeModel {
 const CONE_SPACING: Readonly<Record<DomeViewKind, number>> = {
   project: 0,
   domain: 0,
-  // Capability disc ≈ 6.5 dome units radius → 13 diameter; 16 leaves a hairline gap.
-  capability: 16,
+  // Capability disc ≈ 6.5 dome units radius → 13 diameter; 24 leaves a gap of one
+  // more disc between neighbours on the same base.
+  capability: 24,
   // Element disc ≈ 4.3 radius → 8.6 diameter.
-  element: 10,
+  element: 15,
 };
 /** Smallest base radius that still reads as a circle rather than a smear (dome units). */
 const CONE_MIN_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 10, element: 6 };
-/** Largest base radius per tier — a giant domain must not swallow its neighbours' room. */
-const CONE_MAX_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 64, element: 26 };
+/**
+ * Largest base radius per tier — a giant domain must not swallow its neighbours' room.
+ *
+ * Raised from 64/26 on 2026-09-05. The caps were what packed a crowded base into a
+ * clump while the space between sibling cones stayed empty: at 1024 the fitted cone
+ * still carried 10 overlapping node pairs where a domain cone had room to spare
+ * beside it. The `coneRoom` cap, not these numbers, is what keeps siblings apart,
+ * so raising the ceiling spends interior space rather than the silhouette.
+ */
+const CONE_MAX_R: Readonly<Record<DomeViewKind, number>> = { project: 0, domain: 0, capability: 96, element: 40 };
 /** Fraction of the available room a cone base may take — the rest is the gap between sibling cones. */
 const CONE_ROOM_FILL = 0.82;
 /** Above this many children on one base, alternate two radii. */
@@ -800,7 +887,7 @@ const CLOUD_REST_LENGTH = 92;
  * genuinely do not overlap**. It is a position correction rather than a force, so it
  * holds regardless of step size (the same grammar as d3-force's `forceCollide`).
  *
- * The radius comes from the per-kind dot radius (`DOME_NODE_R`) — the size drawn on
+ * The radius comes from the per-kind collision radius (`DOME_NODE_R`) — the size drawn on
  * screen has to be the size that occupies space, or it will not *look*
  * non-overlapping. The multiplier is the clearance on top: 1.0 makes discs touch,
  * 2.4 leaves room for another disc between them.
@@ -1620,7 +1707,7 @@ export interface DomeNodeFrame {
   /**
    * Radius multiplier — computed **by inversion**, so that multiplying the 2D base
    * radius (radiusForKind × magnitudeScale) by it yields the dome's dot radius
-   * (DOME_NODE_R ratio × perspective). Draw, hit and instrumentation all use
+   * (`DOME_NODE_PX` × perspective ÷ zoom). Draw, hit and instrumentation all use
    * base × s, so all three agree structurally.
    */
   s: number;
@@ -1642,6 +1729,12 @@ export function updateDomeFrame(
   baseRadiusFor: (node: { id: string; kind: DomeViewKind }) => number,
   /** Frame clock (`performance.now()`), only read while a morph is in flight. */
   nowMs = 0,
+  /**
+   * The live camera zoom. `s` is inverted through it so the drawn radius lands on
+   * `DOME_NODE_PX` **screen** pixels — see that table's doc-block for why the zoom
+   * must not be a factor in a node's size.
+   */
+  cameraScale = 1,
 ): void {
   const { model, frame } = runtime;
   // Morph progress — see `DomeMorph`. Ends itself the frame it reaches 1.
@@ -1723,12 +1816,14 @@ export function updateDomeFrame(
     let s = 1;
     if (p !== null) {
       const baseR = baseRadiusFor(node);
-      const domeR = DOME_NODE_R[node.kind] * 2.1 * model.unit * p.s;
-      // Clamp the project apex glyph (the compass cross) so it never exceeds the 2D
-      // radius — the hero's apex is "a slightly bigger dot", not a cross spanning the
-      // screen.
+      /*
+       * Screen px → world → the multiplier the draw applies to the 2D base radius.
+       * The apex clamp the dome-unit formula needed (its cross could span the
+       * screen at a large `unit`) is gone with the formula: `DOME_NODE_PX.project`
+       * IS the cap now, and it cannot grow with zoom or vault size.
+       */
+      const domeR = (DOME_NODE_PX[node.kind] * p.s) / (cameraScale > 0 ? cameraScale : 1);
       let target = baseR > 0 ? domeR / baseR : 1;
-      if (node.kind === "project") target = Math.min(target, 1.1);
       // The cloud needs smaller dots for density to read (doc-block above).
       if (model.arrangement === "coupling") target *= CLOUD_NODE_SCALE;
       s = 1 + (target - 1) * r;
