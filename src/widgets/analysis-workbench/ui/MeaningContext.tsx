@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import { Checkbox, Chip } from '@/shared/ui';
 
+import { Disclosure } from './Disclosure';
+
 /** Explanatory UI for the normative kinds and relation directions in the Atlas specification. */
 export function MeaningContext({ node, relations, onSelectRelation, onEvidence, showLabels, onShowLabelsChange }: {
   showLabels?: boolean;
@@ -25,8 +27,8 @@ export function MeaningContext({ node, relations, onSelectRelation, onEvidence, 
       <p>{glossary(`criteria.${selectedKind}`)}</p>
       <p className="whitespace-pre-wrap text-[color:var(--color-text-secondary)]">{node.summary?.trim() || t('definitionMissing')}</p>
       <Chip onClick={() => onEvidence(node.id)}>{t('openDefinition')}</Chip>
-    </section> : <details><summary className="content-center [@media(pointer:coarse)]:min-h-[var(--touch-target-min)]">{t('kindCriteria')}</summary><dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl></details>}
-    {onShowLabelsChange ? <div className="space-y-2"><Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />{node ? <details><summary className="content-center text-caption [@media(pointer:coarse)]:min-h-[var(--touch-target-min)]">{t('captionHelp')}</summary><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></details> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p>}</div> : null}
+    </section> : <Disclosure summary={t('kindCriteria')}><dl className="mt-3 space-y-3">{kinds.map((kind) => <div key={kind}><dt className="font-[var(--font-weight-strong)]">{kindsLabel(kind)}</dt><dd className="mt-1 text-[color:var(--color-text-secondary)]">{glossary(`criteria.${kind}`)}</dd></div>)}</dl></Disclosure>}
+    {onShowLabelsChange ? <div className="space-y-2"><Checkbox label={t('showRelationMeaning')} checked={showLabels === true} onChange={(event) => onShowLabelsChange(event.target.checked)} />{node ? <Disclosure summary={t('captionHelp')}><p className="mt-2 text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p></Disclosure> : <p className="text-caption text-[color:var(--color-text-secondary)]">{t('captionGuide')}</p>}</div> : null}
     <section className="space-y-3"><h3 className="text-body-lg font-[var(--font-weight-strong)]">{t('relations')}</h3>
       <p className="text-caption text-[color:var(--color-text-secondary)]">{t('relationGuide')}</p>
       {relations.length ? relations.map((relation) => <article key={relation.id} className="space-y-2 rounded-card border border-[color:var(--color-border-soft)] p-[var(--card-pad)]">

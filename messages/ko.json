@@ -4069,7 +4069,6 @@
     "meaning": "의미",
     "history": "이슈·기록",
     "conversation": "대화",
-    "noRecord": "저장된 분석 없음",
     "retrySave": "저장 재시도",
     "export": "Markdown 내보내기",
     "diagnosticOnly": "AI의 지적은 검토할 가설입니다. 온톨로지를 바꾸거나 코드 수정을 승인하지 않습니다.",

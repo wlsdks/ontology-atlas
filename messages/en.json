@@ -4069,7 +4069,6 @@
     "meaning": "Meaning",
     "history": "Findings & history",
     "conversation": "Conversation",
-    "noRecord": "No saved analysis",
     "retrySave": "Retry saving",
     "export": "Export Markdown",
     "diagnosticOnly": "AI findings are questions to review. They do not change the ontology or approve a code change.",

@@ -217,8 +217,15 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
 
     const choices = screen.getByTestId('acp-chat-choices');
-    expect(choices).toHaveClass('w-full', 'min-w-0');
+    // Equal slots decide the width, so a long option label cannot widen one picker past the
+    // other or push the send button off the composer row.
+    expect(choices).toHaveClass('flex', 'min-w-0', 'flex-1');
     expect(choices).not.toHaveClass('shrink-0');
+    // `className` lands on the Select's own wrapper; the trigger inside it is `w-full`.
+    for (const id of ['acp-chat-model', 'acp-chat-mode']) {
+      const wrapper = screen.getByTestId(id).closest('.relative')!;
+      expect(wrapper.className, id).toContain('flex-1 basis-0');
+    }
     expect(screen.getByTestId('acp-chat-model')).toHaveTextContent('model');
     expect(screen.getByTestId('acp-chat-mode')).toHaveTextContent('mode');
 
@@ -1662,21 +1669,22 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
     expect(box).toHaveAttribute('placeholder', 'composerPlaceholder');
   });
 
-  it('머리의 아이콘 버튼은 이름을 갖고, 작지 않다', async () => {
+  it('세션 제어 아이콘 버튼은 이름을 갖고, 작지 않다', async () => {
     /*
      * An icon-only button has no visible name. The accessible name is enforced by the
      * type (`IconButton.label`), but for **someone looking at the screen** the tooltip
      * plays that role.
      */
     await bootSession();
-    // Close exists only where `onClose` was passed — only the always-present ones are checked here.
+    // The panel no longer draws a close button: the workbench that hosts it owns closing.
+    expect(screen.queryByTestId('acp-chat-close')).toBeNull();
     for (const id of ['acp-chat-new']) {
       const button = screen.getByTestId(id);
       expect(button, id).toHaveAccessibleName();
       /*
-       * The icon-control ramp is 24 / 28 / 32 and `lg` is the top. This is the panel's
-       * primary chrome, so it uses the top — growing further would mean extending the
-       * ramp, and that is not decided alone in this place (the 「System」 seat's call).
+       * The icon-control ramp is 24 / 28 / 32 and `lg` is the top. These are the session's
+       * own controls, and they kept the top step when they moved down onto the composer row —
+       * the send button beside them is 32px too, and one row of controls has one height.
        */
       expect(button.className, `${id}: 크기가 한 단 내려갔다`).toContain('h-8 w-8');
     }

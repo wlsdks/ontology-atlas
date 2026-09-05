@@ -12,7 +12,6 @@ import {
   Square,
   SquarePen,
   TriangleAlert,
-  X,
 } from 'lucide-react';
 import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -264,7 +263,6 @@ export function AcpChatPanel({
   onOntologyRelationPreviewChange,
   onWorkReceipt,
   onTurnStarted,
-  onClose,
 }: {
   runtimeId: string;
   runtimeLabel: string;
@@ -355,7 +353,6 @@ export function AcpChatPanel({
   /** Durable local summary of each ontology-write allow/reject and terminal result. */
   onWorkReceipt?: (receipt: AcpWorkReceipt) => void;
   onTurnStarted?: (start: AcpTurnStart) => ((completion: AcpTurnCompletion) => void | Promise<void>) | null;
-  onClose?: () => void;
 }) {
   const t = useTranslations('acpChat');
   const reducedMotion = usePrefersReducedMotion();
@@ -857,19 +854,19 @@ export function AcpChatPanel({
          * properly and the position is odd).
          *
          * It used to be `flex-wrap`, so each widened only to its content, and a
-         * narrowed trigger narrowed the list too and clipped the options. On a grid
-         * the width is decided by the slot, and the row does not shift whether there
+         * narrowed trigger narrowed the list too and clipped the options. Equal slots
+         * decide the width instead, and the row does not shift whether there
          * is one picker or two — exactly this repository's discipline that dimensions
          * are decided by us, not by the content.
+         *
+         * ⚠️ It became a **flex** row of equal `basis-0 flex-1` slots when the runtime name moved
+         * down here from the retired header (2026-09-06). A grid could not carry that name too
+         * without the grid's own column count becoming a second thing to keep in step; equal
+         * flex slots give the same "the slot decides, not the content" property with one rule.
          */
         <div
           data-testid="acp-chat-choices"
-          className={cn(
-            'grid w-full min-w-0 gap-2',
-            choices.models.length > 0 && choices.modes.length > 0
-              ? 'grid-cols-2'
-              : 'grid-cols-1',
-          )}
+          className="flex min-w-0 flex-1 items-center gap-1.5"
         >
           {choices.models.length > 0 ? (
             <Select
@@ -880,7 +877,7 @@ export function AcpChatPanel({
               onChange={(value) => void chooseModel(value)}
               options={choices.models.map((model) => ({ value: model.id, label: model.name }))}
               data-testid="acp-chat-model"
-              className="min-w-0"
+              className="min-w-0 flex-1 basis-0"
             />
           ) : null}
           {choices.modes.length > 0 ? (
@@ -916,7 +913,7 @@ export function AcpChatPanel({
                 };
               })}
               data-testid="acp-chat-mode"
-              className="min-w-0"
+              className="min-w-0 flex-1 basis-0"
             />
           ) : null}
         </div>
@@ -1059,117 +1056,6 @@ export function AcpChatPanel({
       className="relative flex h-full min-h-0 flex-1 flex-col gap-3"
       aria-label={t('ariaLabel', { runtime: runtimeLabel })}
     >
-      <header className="flex items-center justify-between gap-2">
-        {/*
-          With two or more usable tools, **the name slot becomes the picker** — it is
-          already there to show the name, so no new chrome appears. With just one there
-          is nothing to choose, so it stays text (a one-option dropdown only pretends
-          to be a choice).
-        */}
-        <div className="flex min-w-0 items-center gap-2">
-          {runtimes.length > 1 && onRuntimeChange ? (
-            <Select
-              ariaLabel={t('runtimePicker')}
-              size="md"
-              value={runtimeId}
-              onChange={onRuntimeChange}
-              options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
-              data-testid="acp-chat-runtime"
-              className="min-w-0"
-            />
-          ) : (
-            <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-              {runtimeLabel}
-            </p>
-          )}
-          {contextLabel ? (
-            <span
-              data-testid="acp-chat-context"
-              className={badgeClass({
-                shape: 'micro',
-                className: 'max-w-36 truncate bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
-              })}
-            >
-              {contextLabel}
-            </span>
-          ) : null}
-        </div>
-        <span className="flex shrink-0 items-center gap-2">
-          <span
-            data-acp-status-badge={displayStatus}
-            aria-live="polite"
-            className={badgeClass({
-              shape: 'micro',
-              className:
-                'gap-1 bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
-            })}
-          >
-            {displayStatus === 'starting' ? (
-              <LoaderCircle
-                data-testid="acp-connection-spinner"
-                size={ICON_SIZE.sm}
-                className="motion-safe:animate-spin"
-                aria-hidden
-              />
-            ) : null}
-            {t(`status.${displayStatus}`)}
-          </span>
-          {/*
-            The door appears **only when past conversations exist** — no reason to show
-            a first-time user a list button that is always empty.
-          */}
-          {/*
-            An icon-only button has **no visible name.** A `title` is attached, but the
-            macOS webview's default tooltip takes a long wait, and until then the user
-            does not know what the button does (owner: *"A tooltip on hover is what makes it understandable"* — a tooltip on hover is what makes it understandable). It uses the tooltip already in the repository.
-
-            The size also goes up one step — these three are this panel's primary
-            chrome, and at `md` (32px) they do not read as things to press.
-          */}
-          <TooltipProvider delayDuration={200}>
-            {sessions.length > 0 ? (
-              <Tooltip content={t('history')} withProvider={false} side="bottom">
-                <IconButton
-                  size="lg"
-                  label={t('history')}
-                  data-testid="acp-chat-history"
-                  aria-expanded={historyOpen}
-                  onClick={() => setHistoryOpen((open) => !open)}
-                >
-                  <History size={ICON_SIZE.md} aria-hidden />
-                </IconButton>
-              </Tooltip>
-            ) : null}
-            <Tooltip content={t('newChat')} withProvider={false} side="bottom">
-              <IconButton
-                size="lg"
-                label={t('newChat')}
-                data-testid="acp-chat-new"
-                disabled={displayStatus === 'starting'}
-                onClick={() => {
-                  setHistoryOpen(false);
-                  setPresentationOpen(false);
-                  void switchSession(null);
-                }}
-              >
-                <SquarePen size={ICON_SIZE.md} aria-hidden />
-              </IconButton>
-            </Tooltip>
-            {onClose ? (
-              <Tooltip content={t('close')} withProvider={false} side="bottom">
-                <IconButton
-                  size="lg"
-                  label={t('close')}
-                  data-testid="acp-chat-close"
-                  onClick={onClose}
-                >
-                  <X size={ICON_SIZE.md} aria-hidden />
-                </IconButton>
-              </Tooltip>
-            ) : null}
-          </TooltipProvider>
-        </span>
-      </header>
 
       <Surface open={openingScopeMismatch} role="status" className="text-caption text-[color:var(--color-text-secondary)]">
         {t('openingScopeChanged')}
@@ -1781,9 +1667,113 @@ export function AcpChatPanel({
             {t('turnSilentHint')}
           </p>
         ) : null}
+        {/*
+          ⚠️ **The session's controls live where the hand already is** (2026-09-06). This panel
+          used to spend a whole band at the top on a name, a status chip and three icon buttons —
+          above a transcript that is the only reason the panel exists, and a second close button a
+          few pixels from the workbench's own. The name, the status and the two session actions
+          are all things you reach for *while writing*, so they sit on the composer's own row: the
+          tool and its pickers on the left, what the session is doing and what you can do to it on
+          the right, send at the end.
+
+          The row shrinks rather than wraps. Every left-hand slot is `min-w-0`, so a long runtime
+          or mode name truncates instead of pushing send off the edge — the same share the tool
+          row already keeps.
+        */}
         <div className="mt-2 flex min-w-0 items-center justify-between gap-2">
-          <span className="flex min-w-0 flex-1 items-center gap-2">{choicesRow}</span>
-          <span className="flex shrink-0 items-center gap-1.5">
+          <span className="flex min-w-0 flex-1 items-center gap-1.5">
+            {/*
+              With two or more usable tools, **the name slot becomes the picker** — it is already
+              there to show the name, so no new chrome appears. With just one there is nothing to
+              choose, so it stays text (a one-option dropdown only pretends to be a choice).
+            */}
+            {runtimes.length > 1 && onRuntimeChange ? (
+              <Select
+                ariaLabel={t('runtimePicker')}
+                size="md"
+                value={runtimeId}
+                onChange={onRuntimeChange}
+                options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
+                data-testid="acp-chat-runtime"
+                className="min-w-0 flex-1 basis-0"
+              />
+            ) : (
+              <span className="min-w-0 shrink truncate text-label leading-label text-[color:var(--color-text-tertiary)]">
+                {runtimeLabel}
+              </span>
+            )}
+            {contextLabel ? (
+              <span
+                data-testid="acp-chat-context"
+                className={badgeClass({
+                  shape: 'micro',
+                  className: 'min-w-0 shrink truncate bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
+                })}
+              >
+                {contextLabel}
+              </span>
+            ) : null}
+            {choicesRow}
+          </span>
+          <span className="flex shrink-0 items-center gap-1">
+            {/*
+              The status is a **sentence-weight word, not a chip**. Up in the header it was a
+              bordered badge competing with the title; on this row it is one of several controls,
+              and a filled box among buttons reads as another button. The spinner is what carries
+              「still starting」 — the word alone cannot show that time is passing.
+            */}
+            <span
+              data-acp-status-badge={displayStatus}
+              aria-live="polite"
+              className="flex shrink-0 items-center gap-1 text-label leading-label text-[color:var(--color-text-quaternary)]"
+            >
+              {displayStatus === 'starting' ? (
+                <LoaderCircle
+                  data-testid="acp-connection-spinner"
+                  size={ICON_SIZE.sm}
+                  className="motion-safe:animate-spin"
+                  aria-hidden
+                />
+              ) : null}
+              {t(`status.${displayStatus}`)}
+            </span>
+            <TooltipProvider delayDuration={200}>
+              {/*
+                The door appears **only when past conversations exist** — no reason to show a
+                first-time user a list button that is always empty. An icon-only button has no
+                visible name, and the macOS WebView's own tooltip takes a long wait, so the
+                repository's tooltip carries it (owner: *"a tooltip on hover is what makes it
+                understandable"*).
+              */}
+              {sessions.length > 0 ? (
+                <Tooltip content={t('history')} withProvider={false} side="top">
+                  <IconButton
+                    size="lg"
+                    label={t('history')}
+                    data-testid="acp-chat-history"
+                    aria-expanded={historyOpen}
+                    onClick={() => setHistoryOpen((open) => !open)}
+                  >
+                    <History size={ICON_SIZE.md} aria-hidden />
+                  </IconButton>
+                </Tooltip>
+              ) : null}
+              <Tooltip content={t('newChat')} withProvider={false} side="top">
+                <IconButton
+                  size="lg"
+                  label={t('newChat')}
+                  data-testid="acp-chat-new"
+                  disabled={displayStatus === 'starting'}
+                  onClick={() => {
+                    setHistoryOpen(false);
+                    setPresentationOpen(false);
+                    void switchSession(null);
+                  }}
+                >
+                  <SquarePen size={ICON_SIZE.md} aria-hidden />
+                </IconButton>
+              </Tooltip>
+            </TooltipProvider>
             {busy ? (
               <Chip size="md" tone="secondary" data-testid="acp-chat-stop" onClick={cancel}>
                 <Square size={ICON_SIZE.sm} aria-hidden />
@@ -1818,6 +1808,107 @@ export function AcpChatPanel({
             </Tooltip>
           </span>
         </div>
+        {/*
+          ⚠️ **A popover is born at the control that opened it** (`design-build` §2; 2026-09-06).
+          It used to hang from `top-11`, the height of a header that no longer exists — and now
+          that the history button sits on the composer, an origin at the top of the panel would
+          open the list at the far end of the panel from the finger that asked for it.
+
+          It is anchored to the composer (`bottom-full`) rather than to the panel, because the
+          composer grows with the text: any fixed offset from the bottom would drift the moment
+          somebody typed a third line. `z-10` is local stacking inside this panel — the scrim is a
+          later sibling and would otherwise paint over the list — and stays well below the 20 where
+          `--z-*` tokens begin.
+        */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-full z-10 mb-2 flex justify-end px-[var(--card-pad)]">
+          <Surface
+            open={historyOpen && sessions.length > 0}
+            origin="bottom right"
+            motion="overlay"
+            className="pointer-events-auto w-[min(320px,100%)]"
+          >
+            <div className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
+              {/*
+                A name is what tells you what the list is of.
+
+                ⚠️ It used to be the uppercase eyebrow specification (`font-mono` plus `uppercase` plus wide tracking). That specification assumes Latin script — Hangul has no uppercase, so `uppercase` does nothing and only the wide tracking remains, making **「Past」 and 「Conversation」 look like two separate words** (owner's screen, 2026-08-16). It is a plain label now.
+
+                Why the count sits beside it: once the list scrolls, how many there are is no longer visible.
+              */}
+              <div className="flex items-center justify-between gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
+                <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                  {t('history')}
+                </p>
+                <span
+                  className={badgeClass({
+                    shape: 'micro',
+                    className:
+                      'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
+                  })}
+                >
+                  {sessions.length}
+                </span>
+              </div>
+              <ul
+                ref={historyListRef}
+                onScroll={measureHistoryEdges}
+                data-testid="acp-chat-history-list"
+                data-edge-overflow={
+                  historyEdge.top && historyEdge.bottom
+                    ? 'both'
+                    : historyEdge.bottom
+                      ? 'bottom'
+                      : historyEdge.top
+                        ? 'top'
+                        : undefined
+                }
+                style={historyMask ? { maskImage: historyMask, WebkitMaskImage: historyMask } : undefined}
+                className="atlas-scroll-quiet grid max-h-64 gap-0.5 overflow-y-auto p-1"
+              >
+                {sessions.map((session) => (
+                  <li key={session.sessionId}>
+                    <RowButton
+                      data-testid="acp-chat-history-item"
+                      data-session-id={session.sessionId}
+                      onClick={() => {
+                        setHistoryOpen(false);
+                        void switchSession(session.sessionId);
+                      }}
+                      /*
+                       * The row under the mouse has to **respond** for you to know what
+                       * you are pressing (owner: *"A hover effect on each area would be good"* — a hover effect on each area would be good). Surface and text lift together — lifting only the surface tells you which row it is while its title stays receded.
+                       */
+                      hoverSurface="lift"
+                      hoverInk="strong"
+                      className="w-full"
+                    >
+                      <span className="grid min-w-0 flex-1 gap-0.5 text-left">
+                        <span className="truncate text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
+                          {session.title ?? t('untitled')}
+                        </span>
+                        {/*
+                          When a conversation happened is **a value we already receive**.
+                          Without it there is no basis for choosing among conversations
+                          with similar titles.
+                        */}
+                        {/*
+                          ⚠️ This line used to be drawn **only when a date existed**, which
+                          splits row heights in the same list between 56px and 38px — this
+                          repository's discipline that dimensions are decided by us, not by
+                          the content, forbids exactly that (review 2026-08-16). The line
+                          holds its place with no date.
+                        */}
+                        <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
+                          {session.updatedAt ? formatDate(session.updatedAt) : '\u00A0'}
+                        </span>
+                      </span>
+                    </RowButton>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Surface>
+        </div>
       </div>
 
       {/*
@@ -1846,95 +1937,6 @@ export function AcpChatPanel({
           className="absolute inset-0 cursor-default bg-[color:var(--color-overlay-1)]"
         />
       ) : null}
-      <div className="pointer-events-none absolute inset-x-0 top-11 flex justify-end">
-        <Surface
-          open={historyOpen && sessions.length > 0}
-          origin="top right"
-          motion="overlay"
-          className="pointer-events-auto w-[min(320px,100%)]"
-        >
-          <div className="overflow-hidden rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] shadow-[var(--shadow-elevation-2)]">
-            {/*
-              A name is what tells you what the list is of.
-
-              ⚠️ It used to be the uppercase eyebrow specification (`font-mono` plus `uppercase` plus wide tracking). That specification assumes Latin script — Hangul has no uppercase, so `uppercase` does nothing and only the wide tracking remains, making **「Past」 and 「Conversation」 look like two separate words** (owner's screen, 2026-08-16). It is a plain label now.
-
-              Why the count sits beside it: once the list scrolls, how many there are is no longer visible.
-            */}
-            <div className="flex items-center justify-between gap-2 border-b border-[color:var(--color-divider)] px-3 py-2">
-              <p className="text-label leading-label text-[color:var(--color-text-tertiary)]">
-                {t('history')}
-              </p>
-              <span
-                className={badgeClass({
-                  shape: 'micro',
-                  className:
-                    'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-quaternary)]',
-                })}
-              >
-                {sessions.length}
-              </span>
-            </div>
-            <ul
-              ref={historyListRef}
-              onScroll={measureHistoryEdges}
-              data-testid="acp-chat-history-list"
-              data-edge-overflow={
-                historyEdge.top && historyEdge.bottom
-                  ? 'both'
-                  : historyEdge.bottom
-                    ? 'bottom'
-                    : historyEdge.top
-                      ? 'top'
-                      : undefined
-              }
-              style={historyMask ? { maskImage: historyMask, WebkitMaskImage: historyMask } : undefined}
-              className="atlas-scroll-quiet grid max-h-64 gap-0.5 overflow-y-auto p-1"
-            >
-              {sessions.map((session) => (
-                <li key={session.sessionId}>
-                  <RowButton
-                    data-testid="acp-chat-history-item"
-                    data-session-id={session.sessionId}
-                    onClick={() => {
-                      setHistoryOpen(false);
-                      void switchSession(session.sessionId);
-                    }}
-                    /*
-                     * The row under the mouse has to **respond** for you to know what
-                     * you are pressing (owner: *"A hover effect on each area would be good"* — a hover effect on each area would be good). Surface and text lift together — lifting only the surface tells you which row it is while its title stays receded.
-                     */
-                    hoverSurface="lift"
-                    hoverInk="strong"
-                    className="w-full"
-                  >
-                    <span className="grid min-w-0 flex-1 gap-0.5 text-left">
-                      <span className="truncate text-body-lg leading-body-lg text-[color:var(--color-text-secondary)]">
-                        {session.title ?? t('untitled')}
-                      </span>
-                      {/*
-                        When a conversation happened is **a value we already receive**.
-                        Without it there is no basis for choosing among conversations
-                        with similar titles.
-                      */}
-                      {/*
-                        ⚠️ This line used to be drawn **only when a date existed**, which
-                        splits row heights in the same list between 56px and 38px — this
-                        repository's discipline that dimensions are decided by us, not by
-                        the content, forbids exactly that (review 2026-08-16). The line
-                        holds its place with no date.
-                      */}
-                      <span className="truncate text-label leading-label text-[color:var(--color-text-quaternary)]">
-                        {session.updatedAt ? formatDate(session.updatedAt) : '\u00A0'}
-                      </span>
-                    </span>
-                  </RowButton>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </Surface>
-      </div>
       <Surface
         open={presentationVisible}
         as="section"
@@ -1942,7 +1944,7 @@ export function AcpChatPanel({
         role="region"
         aria-label={t('presentation.ariaLabel')}
         data-testid="acp-presentation-surface"
-        className="absolute inset-x-0 bottom-0 top-11 flex min-h-0 flex-col bg-[color:var(--color-canvas)] pt-1"
+        className="absolute inset-0 flex min-h-0 flex-col bg-[color:var(--color-canvas)]"
       >
         <AcpPresentationPanel
           // `presentationVisible` can only be true with a ready trace. During exit,

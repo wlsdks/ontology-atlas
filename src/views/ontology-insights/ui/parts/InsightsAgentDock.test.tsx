@@ -11,6 +11,7 @@ vi.mock('@/widgets/acp-chat-panel', () => ({
         data-testid="mock-acp-chat"
         data-session-enabled={props.sessionEnabled ? 'true' : 'false'}
         data-context={String(props.contextLabel)}
+        data-close={props.onClose === undefined ? 'absent' : 'present'}
       />
     );
   },
@@ -22,7 +23,11 @@ vi.mock('@/widgets/acp-chat-panel', () => ({
   }),
 }));
 
-vi.mock('@/widgets/analysis-workbench', () => ({ AnalysisWorkbench: ({ conversation }: { conversation: React.ReactNode }) => <div>{conversation}</div> }));
+vi.mock('@/widgets/analysis-workbench', () => ({
+  AnalysisWorkbench: ({ conversation, contextLabel }: { conversation: React.ReactNode; contextLabel: string }) => (
+    <div data-testid="mock-workbench" data-workbench-context={contextLabel}>{conversation}</div>
+  ),
+}));
 
 import { InsightsAgentDock } from './InsightsAgentDock';
 
@@ -84,10 +89,17 @@ describe('InsightsAgentDock', () => {
     expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-session-enabled', 'false');
     expect(chat.props).toHaveBeenLastCalledWith(expect.objectContaining({
       prefillRequest: baseProps.prefillRequest,
-      contextLabel: 'Analysis · Flow',
       presentationIntent: 'business-flow',
       runtimeId: 'claude-acp',
     }));
+    /*
+     * ⚠️ The origin label and the close button belong to the **workbench** (2026-09-06). Passing
+     * them down as well drew the same words twice and put a second X a few pixels from the
+     * workbench's own — and the inner one closed a surface the chat panel does not own.
+     */
+    expect(screen.getByTestId('mock-workbench')).toHaveAttribute('data-workbench-context', 'Analysis · Flow');
+    expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-close', 'absent');
+    expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-context', 'undefined');
 
     fireEvent.transitionEnd(screen.getByTestId('insights-agent-dock-frame'), {
       propertyName: 'width',
@@ -110,8 +122,8 @@ describe('InsightsAgentDock', () => {
       />,
     );
     expect(screen.getByTestId('mock-acp-chat')).toBe(chatNode);
-    expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute(
-      'data-context',
+    expect(screen.getByTestId('mock-workbench')).toHaveAttribute(
+      'data-workbench-context',
       'Analysis · Connections',
     );
   });
@@ -144,8 +156,11 @@ describe('InsightsAgentDock', () => {
     });
     expect(chat.props).toHaveBeenLastCalledWith(expect.objectContaining({
       prefillRequest: nextRequest,
-      contextLabel: 'Analysis · Boundaries',
     }));
+    expect(screen.getByTestId('mock-workbench')).toHaveAttribute(
+      'data-workbench-context',
+      'Analysis · Boundaries',
+    );
   });
 
   it('uses a side dock at the installed-app minimum and a work-area sheet below lg', () => {
