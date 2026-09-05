@@ -609,6 +609,45 @@ Owner request: *"I wish each LNB tab had its own guide? Currently only the map s
 - Shows error message · "Open picker" button to reauth/re-pick
 - Stops the silent server-fallback that was confusing users
 
+#### The library — Sources and Wiki (2026-09-05, decision "three kinds of file")
+
+A vault holds three kinds of file and **only one is the graph**. The sidebar draws all
+three: two new sections above the tree, under the review queue.
+
+- **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
+  one state. Atlas never opens them; the walk records what a directory listing already
+  holds, which is why a folder of PDFs adds nothing to the map.
+  - `not compiled` — no wiki page cites it.
+  - `compiled` — a page cites it and the sha256 it recorded still matches the file.
+  - `stale` — the hashes disagree, or a page cites it without recording one.
+  - `checking` — cited with a hash, not yet measured. Hashing is lazy and only ever asked
+    for on cited files; the app hashes natively, a browser with `crypto.subtle`.
+  - A row opens the file: the app reveals it in Finder (reveal, never launch), the browser
+    hands over the bytes it was already granted.
+- **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
+  when the page does not fit the contract, the first problem code `wiki-validate` prints
+  (`section-order`, `uncited-fact`, …). The shape is `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
+  and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
+
+Three one-click doors:
+
+- **Add files** — app: a native panel, and Rust copies the bytes into `<vault>/sources/`
+  so the WebView never holds a document. Web: `showOpenFilePicker`, written through the
+  vault handle. A second copy of the same bytes is refused by sha256 and the refusal names
+  the file that already holds them. Under the button: the folder is the interface — drop
+  files into `<vault>/sources/` in Finder and the list updates by itself.
+- **Find documents** — proposes candidates from the open folder and from each bound
+  project root, **metadata only**, nothing copied until a person ticks a box in a blocking
+  dialog with every box unticked. Document formats only (`pdf docx doc xlsx xls csv pptx
+  ppt txt rtf odt ods odp epub`), dotfiles, dependency and build directories, and
+  credential-shaped names excluded. Refusals are remembered in `localStorage` per folder —
+  a per-machine convenience, never a second store in the vault. Project roots are app-only
+  (a binding is an absolute path); the dialog says so and links to `/download/`.
+- **Compile** — starts one in-app ACP turn whose brief embeds `wiki/_template.md`
+  verbatim and names `wiki-validate` as the acceptance test. Enabled only while some
+  source is not compiled or stale. Beside it: the coding agent's provider traffic is not
+  in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card.
+
 #### Sidebar (`DocsSidebarBody`, persistent 280px pane on lg+, docs-vault-final spec)
 - Three sections always visible (2026-07-18 — previously Pinned/Recent were tucked inside a collapsible "filter & saved" disclosure; an Obsidian-style vault workspace uses pinned/recent as often as the tree itself):
   - **Pinned** — pinned docs, unpin action

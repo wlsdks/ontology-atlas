@@ -196,6 +196,11 @@
       "slug": "in-app-coding-agents-over-acp-2026-08-16"
     },
     {
+      "depth": 3,
+      "text": "The library — three kinds of file in one folder (2026-09-05)",
+      "slug": "the-library-three-kinds-of-file-in-one-folder-2026-09-05"
+    },
+    {
       "depth": 2,
       "text": "FSD layers",
       "slug": "fsd-layers"
@@ -10773,6 +10778,11 @@
       "depth": 4,
       "text": "Status banner (R9 cut, below header)",
       "slug": "status-banner-r9-cut-below-header"
+    },
+    {
+      "depth": 4,
+      "text": "The library — Sources and Wiki (2026-09-05, decision \"three kinds of file\")",
+      "slug": "the-library-sources-and-wiki-2026-09-05-decision-three-kinds-of-file"
     },
     {
       "depth": 4,
