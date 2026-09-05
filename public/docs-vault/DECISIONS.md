@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The insights board leads with measurement, and the to-do list is one row per finding
+
+**Why**: on the dogfood folder at 1512x949 the board's first screen was eight rows, 1,230px wide and 80px tall, all carrying the same containment sentence; the only measurement was an 11px mono line in a corner. The owner: analysis should show indicators and flow; the to-do list only grows longer and runs sideways.
+**Prior**: overturns the "readiness meter is removed" clause of 2026-09-01 "The Do-next tab is one list, and the a58 indigo step retires with its meter" under its own falsifier (an owner unable to judge health without counting rows); its one-list clause stands. Cites 2026-08-07 (3) "one screen does not count the same thing two ways".
+**Decision**: four equal-height census tiles above the tab bar (concepts, relations, health in words with no total, last 12 weeks) replace the corner line, the audience banner, the composition hero and the freshness tab's trend. The to-do tab is one row per finding group with its count and a five-row disclosure; group counts are the verdict's own signal counts re-keyed, their sum pinned to the title. The picks band goes. Containment alone gains a batch: a blocking sheet names every write by file, all ticked and untickable; the plan (members, mtime) freezes at open, each row's justification is re-checked at Apply, a changed file or a moved concept is skipped and named, never written.
+**Dissent**: po-evidence: no owner word asked for a repair tool, and "indicators and flow" argues for fewer verbs on this board; kept because the batch is the one repair fully determined by two facts on disk. The picks band was the owner's own ordering (2026-08-31); it loses because a picks group has no count in the verdict record.
+**Falsifier**: a group count that does not sum to the title; a person still counting rows to judge health; a batch write landing on a file the sheet did not name, or on one changed since it opened.
+**Owner**: jinan
+
 ## 2026-09-06 — The library becomes a place, the rail cap moves to nine, and the tile's padding pays for it
 
 **Why**: the owner read the merged Docs a day after it shipped: "the screen is very cluttered … is it right that gathered data lands inside Docs? Docs was where ontology md gathered … text overlaps". One 280px column held five capped lists and the tree Docs exists for; the Finder hint ran an absolute path past the column edge.
