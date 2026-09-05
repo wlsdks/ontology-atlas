@@ -4,7 +4,11 @@ import { relative } from 'node:path';
 import { walkMd } from '../lib/walk-vault.mjs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { validateVaultDocument, suppressParentedExpectedFieldIssues } from '../lib/validate.mjs';
+import {
+  validateVaultDocument,
+  suppressLibraryKindIssues,
+  suppressParentedExpectedFieldIssues,
+} from '../lib/validate.mjs';
 import {
   formatUnknownFlagError,
   parseCsvListFlag,
@@ -203,6 +207,8 @@ export function runValidate(args) {
     fileBySlug.set(slug, file);
   }
   suppressParentedExpectedFieldIssues(issuesBySlugForParents, entries);
+  // A wiki page carries no `kind:` by contract, so the absence is not a finding here.
+  suppressLibraryKindIssues(issuesBySlugForParents);
   for (const [slug, issues] of issuesBySlugForParents) {
     const report = reportByFile.get(fileBySlug.get(slug));
     if (report) report.issues = issues;

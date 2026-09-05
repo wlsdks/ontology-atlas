@@ -2,8 +2,8 @@
   "_generatedBy": "pnpm docs:surface:build",
   "_contract": "Derived from the MCP tool registry and the CLI command registry. Never hand-edit — run `pnpm docs:surface:build` and commit the diff.",
   "mcp": {
-    "toolCount": 36,
-    "readToolCount": 20,
+    "toolCount": 37,
+    "readToolCount": 21,
     "writeToolCount": 16,
     "tools": [
       {
@@ -497,11 +497,19 @@
           "repoRoot"
         ],
         "required": []
+      },
+      {
+        "name": "validate_wiki",
+        "mode": "read",
+        "arguments": [
+          "paths"
+        ],
+        "required": []
       }
     ]
   },
   "cli": {
-    "commandCount": 58,
+    "commandCount": 59,
     "commands": [
       "absorb",
       "add",
@@ -560,6 +568,7 @@
       "snapshot",
       "topological-order",
       "validate",
+      "wiki-validate",
       "workspace-brief"
     ]
   }

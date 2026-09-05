@@ -9,6 +9,7 @@ function runner(moduleFile, exportName) {
 export const CLI_COMMAND_RUNNERS = Object.freeze({
   list: runner('list.mjs', 'runList'),
   validate: runner('validate.mjs', 'runValidate'),
+  'wiki-validate': runner('wiki-validate.mjs', 'runWikiValidate'),
   'mcp-verify': runner('mcp-verify.mjs', 'runMcpVerify'),
   'agent-setup': runner('agent-setup.mjs', 'runAgentSetup'),
   'agent-files': runner('agent-files.mjs', 'runAgentFiles'),

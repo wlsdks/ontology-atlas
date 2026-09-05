@@ -52,6 +52,9 @@ action or renders an honest degradation card stating why and where it works.
 | Connector discovery | `src/shared/lib/tauri-connectors.ts`, `src-tauri/src/connectors.rs` | cannot read `~/.claude.json` or `~/.codex/config.toml`; degradation card. Adding a connector by hand still works, and the list lives in the vault folder |
 | Connector secrets | `src/shared/lib/tauri-connector-secrets.ts`, `src-tauri/src/connector_secrets.rs` | no keychain in a browser; degradation card. The reference is resolved into the outgoing ACP line in Rust, so the WebView never holds a token |
 | Folder watch | `start_vault_watch` in `src-tauri/src/lib.rs`, `TauriVaultWatchBridge.tsx` | periodic reread: 1,500 ms after a burst, 5,000 ms while idle; delayed, not unavailable |
+| Library sources | `src/shared/lib/tauri-vault-fs.ts`, `src-tauri/src/library.rs` | different means, same ability: `showOpenFilePicker` picks and the vault handle writes, `crypto.subtle` hashes. Not a degradation — the app path exists because `read_vault_binary_file` would move a whole document across IPC to produce 64 characters |
+| Discovery outside the folder | `discover_source_candidates` in `src-tauri/src/library.rs` | the open folder is walked either way; a **bound project root** is an absolute path a browser does not have. Degradation card `find-documents-web-limit` states the narrower claim and links to `/download/` |
+| Reveal a file in Finder | `reveal_vault_file` in `src-tauri/src/library.rs` | no Finder; the browser hands over the file it was granted instead. Reveal, never launch — Atlas starts no program on somebody's behalf |
 
 Every new desktop capability uses the existing `getInvoke()`/`isTauri()`
 convention. Do not create a parallel router or surface fork.

@@ -23,6 +23,7 @@ import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 import { selectRecentVaultDocs } from "@/entities/knowledge-graph";
 import type { ReviewQueueRow } from "@/entities/docs-vault";
 import { ReviewQueueSection } from "./ReviewQueueSection";
+import { LibrarySection, type LibrarySectionProps } from "./LibrarySection";
 import { AGENT_TOOL_LABELS, type AgentFilesUiModel } from "../../lib/agent-files";
 import type { DocsVaultCollection } from "../../lib/docs-vault-collection";
 import { useAdvancedMenu } from "../../lib/use-advanced-menu";
@@ -89,6 +90,12 @@ export interface DocsSidebarBodyProps {
    * the existing editor; nothing is converted or repaired.
    */
   agentFiles?: AgentFilesUiModel | null;
+  /**
+   * The library — raw sources and wiki pages, the two vault file kinds that are not the
+   * graph. Null in the read-only sample and while no folder is open: there is nothing to
+   * add a document to, and a section offering to would be a door onto nothing.
+   */
+  library?: Omit<LibrarySectionProps, "t" | "selectedSlug" | "onSelect"> | null;
 }
 
 // Maximum rows in the "recently changed" strip. The 7-day window lets a bulk-commit
@@ -249,10 +256,12 @@ export function DocsSidebarBody({
   onSortChange,
   onGroupChange,
   agentFiles = null,
+  library = null,
 }: DocsSidebarBodyProps) {
   const t = useTranslations("vaultWidgets.parts.sidebar");
   const locale = useLocale();
   const tAgentFiles = useTranslations("agentFiles");
+  const tLibrary = useTranslations("docsLibrary");
   const [treeQuery, setTreeQuery] = useState("");
   // The search input is opened and closed by a toggle in the top icon row. A
   // surviving query forces it open, so a filter that is still applied is never invisible.
@@ -583,6 +592,16 @@ export function DocsSidebarBody({
           onSelect={onSelect}
           t={t}
         />
+        {/* The library sits between the review queue and the tree: what a person brought
+            in, what was made of it, then what it became. */}
+        {library ? (
+          <LibrarySection
+            {...library}
+            selectedSlug={selectedSlug}
+            onSelect={onSelect}
+            t={tLibrary}
+          />
+        ) : null}
         {/* Recently changed is a quiet section inside the list, collapsed by default, rather
             than its own stack taking the top. Unlike `recentSlugs` (visited this session),
             these are documents inside a real 7-day mtime window. */}
