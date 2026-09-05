@@ -143,7 +143,7 @@ export function DomainCouplingCard({
     // ceiling is max-content, so **the length of one caption sentence below the card** ends up
     // deciding the card width (measured 746px). Dimensions are a design decision, not a byproduct
     // of sentence length.
-    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] lg:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
+    <div className="grid min-h-0 flex-1 grid-cols-1 gap-[var(--card-gap)] @min-[960px]/insights:grid-cols-[minmax(0,34rem)_minmax(0,1fr)]">
       <section
         aria-label={labels.title}
         className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"

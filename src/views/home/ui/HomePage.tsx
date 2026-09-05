@@ -15,6 +15,7 @@ import {
   vaultMcpServers,
   vaultSelfReadSlot,
   useChatSuggestions,
+  presentationRelationKeysForGraphEdge,
 } from "@/features/acp-session";
 import { agentChatDoor } from "../model/agent-chat-door";
 import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "../model/search-lane-density";
@@ -1923,6 +1924,19 @@ function HomePageImpl() {
     [ontologyInsight],
   );
   const chatKnownSlugs = useMemo(() => new Set(chatNodeIndex.keys()), [chatNodeIndex]);
+  const chatKnownRelations = useMemo(() => {
+    const agentSlugByNodeId = new Map((ontologyInsight?.nodes ?? []).map((node) => [
+      node.id,
+      resolveNodeAgentTarget(node).ref ?? node.id,
+    ]));
+    const kindByNodeId = new Map((ontologyInsight?.nodes ?? []).map((node) => [node.id, node.kind]));
+    return new Set((ontologyInsight?.edges ?? []).flatMap((edge) => presentationRelationKeysForGraphEdge({
+      from: agentSlugByNodeId.get(edge.from) ?? edge.from,
+      to: agentSlugByNodeId.get(edge.to) ?? edge.to,
+      type: edge.type,
+      toKind: kindByNodeId.get(edge.to) ?? null,
+    })));
+  }, [ontologyInsight]);
   /* Identity changes only when the index does, which is only when the vault changes.
      Reading a ref during render would look cheaper but is the pattern that breaks
      under concurrent rendering. */
@@ -2374,6 +2388,7 @@ function HomePageImpl() {
     Array<{ id: string; label: string; icon: string | null; brandInk: string | null }>
   >([]);
   const [acpRuntimeId, setAcpRuntimeId] = useState<string | null>(null);
+  const [acpPresentationVisible, setAcpPresentationVisible] = useState(false);
   const [pendingAgentChatRuntimeId, setPendingAgentChatRuntimeId] = useState<string | null>(null);
   /**
    * A first turn the door asked to open with, held until the dock is actually up.
@@ -3015,6 +3030,10 @@ function HomePageImpl() {
    */
   /** Constant: the URL is constant, so the seat must not re-fire on every render. */
   const BUSINESS_FLOW_PREFILL_NONCE = 0;
+  const businessFlowRequest = useMemo(
+    () => buildBusinessFlowRequest({ request: businessFlowRequestText }),
+    [businessFlowRequestText],
+  );
 
   const askPrefill = useMemo(() => {
     /*
@@ -3025,7 +3044,7 @@ function HomePageImpl() {
      */
     if (llmBridgeAvailable && routeState.askBusinessFlow) {
       return {
-        text: buildBusinessFlowRequest({ request: businessFlowRequestText }),
+        text: businessFlowRequest,
         // Constant for a constant URL, so a re-render never overwrites a draft
         // the person has started editing.
         nonce: BUSINESS_FLOW_PREFILL_NONCE,
@@ -3045,7 +3064,7 @@ function HomePageImpl() {
     routeState.askIntent,
     selectedOntologyNode,
     firstWordsLabels,
-    businessFlowRequestText,
+    businessFlowRequest,
   ]);
 
   /**
@@ -6039,6 +6058,7 @@ function HomePageImpl() {
                 // In environments without an agent surface (web), we do not inject; handoff copy
                 // takes over as the primary action. We do not draw a door that will not open.
                 onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
+                suppressPrimaryAction={acpPresentationVisible}
                 onClose={handleDatasheetClose}
                 projectSource={projectSource.view}
                 projectSourceBusy={projectSource.busy}
@@ -6424,6 +6444,10 @@ function HomePageImpl() {
             suggestions={chatSuggestions}
             onSuggestionAction={handleChatSuggestionAction}
             knownSlugs={chatKnownSlugs}
+            knownRelations={chatKnownRelations}
+            presentationIntent={routeState.askBusinessFlow ? 'business-flow' : null}
+            presentationRequest={routeState.askBusinessFlow ? businessFlowRequest : null}
+            onPresentationVisibilityChange={setAcpPresentationVisible}
             onHoverSlug={handleChatHoverSlug}
             onTurnActivityChange={handleAcpTurnActivityChange}
             onMapIntent={handleAcpMapIntent}

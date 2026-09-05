@@ -146,9 +146,9 @@ export function ImpactRankingCard({
           Stretched to one column the row measure doubles and the gap between name and bar widens,
           so the width is folded to keep the same measure as the hub card next to it. Ranks read in
           DOM order, left→right then top→bottom (reading order). */}
-      <div className="mt-2 grid flex-1 auto-rows-min content-start gap-x-6 lg:grid-cols-2">
+      <div className="mt-2 grid flex-1 auto-rows-min content-start gap-x-6 @min-[960px]/insights:grid-cols-2">
         {rows.length === 0 ? (
-          <div className="lg:col-span-2">
+          <div className="@min-[960px]/insights:col-span-2">
             <EmptyState
               size="compact"
               icon={<Radar aria-hidden />}

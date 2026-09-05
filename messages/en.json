@@ -1397,6 +1397,11 @@
       "handoffCopy": "Copy next action",
       "agentCopied": "Copied",
       "agentCopyFailed": "Copy failed: the clipboard was blocked",
+      "agentOpen": "Analyze this tab with AI",
+      "agentOpenAria": "Analyze the {tab} tab with AI",
+      "agentContext": "Analysis · {tab}",
+      "agentDraftHeld": "Your draft was left unchanged.",
+      "agentReplaceDraft": "Use this tab's question",
       "heroConcepts": "Concepts",
       "heroRelations": "Relations",
       "heroRelationsHidden": "{count} more relation types are not on this strip",
@@ -1607,8 +1612,9 @@
       "flow": {
         "title": "Business flow",
         "lead": "Have the agent explain what this product is and how it flows, from the vault alone. It does not read the source.",
-        "action": "Draw the business flow",
-        "actionHint": "Puts this request in the conversation. You send it.",
+        "action": "Explain the flow with ACP",
+        "actionHint": "Puts this request in the conversation beside Analysis. You send it.",
+        "checking": "Checking which local agent can open here.",
         "requestLabel": "The request that goes to the agent",
         "unavailableTitle": "The app does this",
         "unavailableBody": "A browser cannot start a process, so no agent launches here. Copying the request below into the terminal you already use gets the same answer.",
@@ -1616,7 +1622,7 @@
         "copied": "Copied",
         "noVaultTitle": "Open a folder first",
         "noVaultBody": "There is no vault to explain yet.",
-        "request": "Read only this vault and explain this product's business flow. Do not read the source code.\n\n1) One paragraph on what this product is and who uses it.\n2) One paragraph per domain: what it is responsible for and which capabilities it holds.\n3) One paragraph on how these join into a single flow.\n\nRules:\n- Every paragraph names the node slugs it rests on, so I can open them and disagree.\n- Do not close an answer on a summary row; read bodies with get_concept with the body read in full.\n- If an answer is partial or a visible gap, carry that qualifier all the way through. In particular, do not state exclusions as settled fact when the vault records scope as partial.\n- A capability's excludes bound that capability only. Do not widen them to project scope.\n- When the vault cannot answer, say so and say why. Do not fill the gap from code."
+        "request": "Use only Atlas MCP read tools to explain this ontology's business flow. Never call shell, file, source, web, or other tools.\n\nReturn exactly six ### headings with one paragraph each:\n1) Why this product exists.\n2) Which domains own which responsibilities.\n3) How the main capabilities form a business flow.\n4) How those capabilities appear in elements or paths.\n5) Which declared dependencies explain impact, and what remains unknown.\n6) Which partial, visible-gap, stale, or unverified limits must be retained.\n\nRules:\n- Inspect the project map first and choose one representative meaning-to-implementation chain; do not enumerate every node.\n- Read at most 12 concepts with get_concept(body: full) or get_concepts(body: full).\n- Every paragraph names an exact full node slug whose complete body was read this turn.\n- Write a from --type--> to relation only when it exists in the current ontology.\n- Keep partial, visible-gap, and unknown qualifiers throughout.\n- A capability's excludes bound that capability only; do not widen them to project scope.\n- If the ontology cannot answer, say why instead of filling the gap from other knowledge."
       }
     }
   },
@@ -3790,6 +3796,42 @@
     "resize": "Resize the chat panel",
     "resizeHint": "Drag to widen or narrow. Arrow keys work too.",
     "closeHistory": "Close the past chats list",
+    "presentation": {
+      "ariaLabel": "Ontology DNA presentation",
+      "eyebrow": "Ontology DNA",
+      "title": "Business flow presentation",
+      "open": "Present this answer",
+      "openHint": "Follow this ontology-only answer through {count} scenes.",
+      "blocked": "This answer is not ready to present yet. {reason}",
+      "blockReason": {
+        "intent_inactive": "It was not requested as a presentation.",
+        "turn_incomplete": "The answer has not finished.",
+        "no_answer": "There is no completed explanation.",
+        "source_hidden_unproven": "The tool record does not prove an ontology-only read.",
+        "no_full_body_reads": "No concept body was read in full.",
+        "full_body_read_budget_exceeded": "More than 12 concept bodies were read. Narrow it to one representative flow.",
+        "scene_count_out_of_range": "The answer does not contain between three and seven explicit scenes.",
+        "scene_uncited": "At least one scene has no evidence slug.",
+        "citation_not_read": "A scene cites a concept whose full body was not read in this turn.",
+        "relation_not_in_graph": "The explanation uses a relation that is not in the current ontology."
+      },
+      "progress": "Scene {current} of {total}",
+      "progressAria": "Presentation progress",
+      "sourceHidden": "Ontology only · {count} full bodies",
+      "qualification": {
+        "cited": "Read in this turn",
+        "limited": "Includes a limit or unknown"
+      },
+      "sceneFallback": "Scene {current}",
+      "evidence": "Evidence for this scene",
+      "backToChat": "Back to chat",
+      "ask": "Ask about this scene",
+      "askPrompt": "Explain the “{title}” scene in more detail. Keep the same ontology evidence and limits.",
+      "previous": "Previous",
+      "next": "Next",
+      "finish": "Finish",
+      "openOnMap": "Follow on the map"
+    },
     "trouble": {
       "auth": {
         "title": "An old app-scoped sign-in is getting in the way",

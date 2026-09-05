@@ -79,6 +79,29 @@ describe('ACP tool call -> map intent', () => {
     ).toEqual({ kind: 'focus', slug: 'domains/checkout', toolCallId: 't1' });
   });
 
+  it('reads Codex ACP dotted MCP titles only through their matching envelope', () => {
+    expect(
+      deriveAcpMapIntent(
+        [
+          { kind: 'user', id: 'u1', text: '찾아줘' },
+          {
+            kind: 'tool',
+            id: 't1',
+            title: 'mcp.ontology-atlas.get_concept',
+            toolKind: 'execute',
+            status: 'completed',
+            rawInput: {
+              server: 'ontology-atlas',
+              tool: 'get_concept',
+              arguments: { slug: 'domains/checkout' },
+            },
+          },
+        ],
+        known,
+      ),
+    ).toEqual({ kind: 'focus', slug: 'domains/checkout', toolCallId: 't1' });
+  });
+
   it('fails closed for unknown slugs and foreign same-named tools', () => {
     expect(
       deriveAcpMapIntent(

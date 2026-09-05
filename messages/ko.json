@@ -1397,6 +1397,11 @@
       "handoffCopy": "다음 액션 복사",
       "agentCopied": "복사됨",
       "agentCopyFailed": "복사 실패: 클립보드가 막혔어요",
+      "agentOpen": "이 탭을 AI와 분석",
+      "agentOpenAria": "{tab} 탭을 AI와 분석",
+      "agentContext": "분석 · {tab}",
+      "agentDraftHeld": "작성 중인 문장은 그대로 뒀어요.",
+      "agentReplaceDraft": "이 탭 질문으로 바꾸기",
       "heroConcepts": "개념",
       "heroRelations": "관계",
       "heroRelationsHidden": "이 줄에 없는 관계 유형이 {count}개 더 있습니다",
@@ -1607,8 +1612,9 @@
       "flow": {
         "title": "비즈니스 흐름",
         "lead": "온톨로지에 적힌 것만으로 이 제품이 무엇이고 어떻게 흐르는지 설명하게 합니다. 소스는 읽지 않습니다.",
-        "action": "비즈니스 흐름 그리기",
-        "actionHint": "대화에 이 요청을 넣어 둡니다. 보내는 것은 직접 하세요.",
+        "action": "에이전트로 흐름 설명하기",
+        "actionHint": "이 분석 화면 옆 대화에 요청을 넣습니다. 보내는 것은 직접 하세요.",
+        "checking": "이 컴퓨터에서 사용할 수 있는 에이전트를 확인하고 있어요.",
         "requestLabel": "에이전트에게 보낼 요청",
         "unavailableTitle": "앱에서만 됩니다",
         "unavailableBody": "브라우저는 프로세스를 실행할 수 없어 에이전트를 띄우지 못합니다. 아래 요청을 복사해 쓰던 터미널에 붙여넣어도 같은 답을 받습니다.",
@@ -1616,7 +1622,7 @@
         "copied": "복사했습니다",
         "noVaultTitle": "먼저 폴더를 여세요",
         "noVaultBody": "설명할 온톨로지가 아직 없습니다.",
-        "request": "이 온톨로지만 읽고 이 제품의 비즈니스 흐름을 설명해줘. 소스 코드는 읽지 마.\n\n1) 이 제품이 무엇이고 누가 쓰는지 한 문단.\n2) 도메인마다 한 문단씩, 무엇을 책임지고 어떤 capability 를 갖는지.\n3) 이것들이 어떻게 이어져 하나의 흐름이 되는지 한 문단.\n\n규칙:\n- 모든 문단은 근거가 된 노드 슬러그를 적어. 내가 열어서 반박할 수 있어야 해.\n- 요약 목록으로 답을 닫지 말고 get_concept 로 본문 전체를 읽어 (body 를 full 로).\n- 어떤 답변이 partial 이나 visible-gap 이면 그 한정을 끝까지 달고 가. 특히 제외 항목은 온톨로지가 범위를 partial 로 적어놨으면 확정된 사실처럼 쓰지 마.\n- capability 의 제외는 그 capability 에만 해당해. 제품 전체 범위로 넓히지 마.\n- 온톨로지가 답할 수 없으면 그렇게 말하고 왜인지 적어. 코드를 뒤져 메우지 마."
+        "request": "Atlas의 온톨로지 읽기 도구만 사용해 이 온톨로지의 비즈니스 흐름을 설명해줘. shell·파일·소스·웹·다른 도구는 호출하지 마.\n\n정확히 여섯 개의 ### 제목과 각 한 문단으로 답해:\n1) 이 제품이 왜 존재하는가.\n2) 어느 도메인이 무엇을 책임지는가.\n3) 주요 capability가 어떤 비즈니스 흐름을 만드는가.\n4) 그 capability가 element나 path에서 어떻게 구현되는가.\n5) 선언된 dependency가 어떤 영향을 설명하며 무엇이 unknown인가.\n6) 다음 사람이 유지해야 할 partial, visible-gap, stale, unverified 한계는 무엇인가.\n\n규칙:\n- 먼저 전체 지도를 보고 대표 의미→구현 체인 하나를 골라. 모든 노드를 열거하지 마.\n- get_concept(body: full) 또는 get_concepts(body: full)는 합쳐서 최대 12개 개념만 읽어.\n- 모든 문단은 이번 턴에 본문 전체를 읽은 정확한 전체 노드 슬러그를 하나 이상 적어.\n- from --type--> to 관계는 현재 온톨로지에 실제로 있을 때만 적어.\n- partial, visible-gap, unknown 한정을 끝까지 유지해.\n- capability의 제외를 제품 전체 범위로 넓히지 마.\n- 답할 수 없으면 이유와 함께 모른다고 말하고, 다른 지식으로 메우지 마."
       }
     }
   },
@@ -3790,6 +3796,42 @@
     "resize": "대화 칸 너비 조절",
     "resizeHint": "끌어서 넓히거나 좁혀요. 화살표 키로도 돼요.",
     "closeHistory": "지난 대화 목록 닫기",
+    "presentation": {
+      "ariaLabel": "온톨로지 DNA 발표",
+      "eyebrow": "온톨로지 DNA",
+      "title": "비즈니스 흐름 발표",
+      "open": "발표로 보기",
+      "openHint": "온톨로지만 읽은 답을 {count}개 장면으로 따라갑니다.",
+      "blocked": "이 답은 아직 발표로 만들 수 없어요. {reason}",
+      "blockReason": {
+        "intent_inactive": "발표 요청이 아닙니다.",
+        "turn_incomplete": "답변이 아직 끝나지 않았습니다.",
+        "no_answer": "완료된 설명이 없습니다.",
+        "source_hidden_unproven": "온톨로지만 읽었다는 것을 도구 기록으로 확인할 수 없습니다.",
+        "no_full_body_reads": "본문 전체를 읽은 개념이 없습니다.",
+        "full_body_read_budget_exceeded": "본문 전체를 읽은 개념이 12개를 넘었습니다. 대표 흐름으로 다시 좁혀야 합니다.",
+        "scene_count_out_of_range": "명시된 장면 수가 3~7개 범위를 벗어났습니다.",
+        "scene_uncited": "근거 슬러그가 없는 장면이 있습니다.",
+        "citation_not_read": "이번 턴에서 본문 전체를 읽지 않은 개념을 인용했습니다.",
+        "relation_not_in_graph": "현재 온톨로지에 없는 관계를 설명에 사용했습니다."
+      },
+      "progress": "{current}/{total} 장면",
+      "progressAria": "발표 진행",
+      "sourceHidden": "온톨로지만 읽음 · 본문 {count}개",
+      "qualification": {
+        "cited": "현재 턴에서 읽은 근거",
+        "limited": "한정 또는 미확인 포함"
+      },
+      "sceneFallback": "장면 {current}",
+      "evidence": "이 장면의 근거",
+      "backToChat": "대화로",
+      "ask": "이 장면 질문하기",
+      "askPrompt": "「{title}」 장면을 더 자세히 설명해줘. 같은 온톨로지 근거와 한정을 유지해.",
+      "previous": "이전",
+      "next": "다음",
+      "finish": "끝내기",
+      "openOnMap": "지도에서 따라보기"
+    },
     "trouble": {
       "auth": {
         "title": "이 앱 몫으로 남은 옛 로그인이 가로막고 있어요",

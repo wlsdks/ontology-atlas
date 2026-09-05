@@ -746,7 +746,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29928,
+      "wordCount": 29911,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },
@@ -782,7 +782,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 101054,
+      "wordCount": 101561,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug"
@@ -887,9 +887,9 @@
       "tags": [],
       "frontmatter": {},
       "headings": [],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-03 (chose the architecture comparison ladder by canvas height, seated rule sentences beside their arrows, and added the agent task chooser with a find-improvements task; earlier on 2026-08-31 documented the six-tab Insights contract ",
-      "wordCount": 26520,
-      "updatedAt": "2026-09-03",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
+      "wordCount": 26770,
+      "updatedAt": "2026-09-05",
       "linksOut": [
         "slug",
         "project:slug",
@@ -1744,6 +1744,27 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/ontology-dna-presentation",
+      "path": "docs/ontology/capabilities/ontology-dna-presentation.md",
+      "title": "Ontology DNA Presentation",
+      "tags": [],
+      "frontmatter": {
+        "uid": "831f55df-dc9d-4e00-baa9-c846b2a11273",
+        "slug": "capabilities/ontology-dna-presentation",
+        "kind": "capability",
+        "title": "Ontology DNA Presentation",
+        "domain": "domains/agent-integration",
+        "elements": [],
+        "path": "src/features/acp-session/model/presentation-trace.ts",
+        "created_by": "agent:codex"
+      },
+      "headings": [],
+      "excerpt": "The ability to use one Analysis-owned ACP conversation across all Analysis tabs and turn one explicitly sent, completed Flow turn into an ephemeral guided explanation of the ontology business-to-implementation chain without requiring a move to the map. Analysis Flow remains the entry and the exact app-authored request ",
+      "wordCount": 335,
+      "updatedAt": "2026-09-05",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/project-data-source",
       "path": "docs/ontology/capabilities/project-data-source.md",
       "title": "Project Data Access",
@@ -2103,6 +2124,7 @@
           "capabilities/agent-work-visibility",
           "capabilities/cli-developer-entry",
           "capabilities/mcp-server",
+          "capabilities/ontology-dna-presentation",
           "capabilities/vault-agent"
         ],
         "elements": [
@@ -2121,7 +2143,7 @@
       "headings": [],
       "excerpt": "Surfaces enabling AI coding agents (Claude Code, Codex, Cursor) and developers to read and write the same ontology vault as humans: MCP servers, terminal CLI, in-app connect flow, and the ACP executor layer that directly launches coding agents already installed by the user. README.md: \"Your agent reads and maintains it",
       "wordCount": 259,
-      "updatedAt": "2026-09-02",
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -3140,9 +3162,9 @@
         "created_by": "agent:unknown"
       },
       "headings": [],
-      "excerpt": "Six-tab maintenance board: five measured questions plus Flow. The Do-next tab is one flat list under one count (owner decision, 2026-09-01): each row is a concept or document title, one sentence naming the observed fact, and actions in a fixed order (hand it to the in-app AI chat through the ask deep link for missing d",
-      "wordCount": 320,
-      "updatedAt": "2026-09-04",
+      "excerpt": "The Analysis workbench answers seven questions through Do next, Not held, Inventory, Connections, Boundaries, Freshness, and Flow. One ACP conversation stays beside the tabs in the installed app; changing tabs preserves its draft and request origin. Explicit tab actions seat read-only questions, and the person owns Sen",
+      "wordCount": 167,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -4338,6 +4360,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/capabilities/ontology-dna-presentation",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/capabilities/vault-agent",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -5323,6 +5350,13 @@
         "fromSlug": "ontology/domains/agent-integration",
         "context": "frontmatter · **[capabilities/cli-developer-entry]**",
         "linkText": "capabilities/cli-developer-entry"
+      }
+    ],
+    "ontology/capabilities/ontology-dna-presentation": [
+      {
+        "fromSlug": "ontology/domains/agent-integration",
+        "context": "frontmatter · **[capabilities/ontology-dna-presentation]**",
+        "linkText": "capabilities/ontology-dna-presentation"
       }
     ],
     "ontology/capabilities/vault-agent": [
@@ -6344,6 +6378,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/mcp-server",
                 "title": "MCP Server"
+              },
+              {
+                "name": "ontology-dna-presentation",
+                "path": "ontology/capabilities/ontology-dna-presentation",
+                "type": "doc",
+                "slug": "ontology/capabilities/ontology-dna-presentation",
+                "title": "Ontology DNA Presentation"
               },
               {
                 "name": "project-data-source",

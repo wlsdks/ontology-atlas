@@ -9,23 +9,27 @@ path: src/views/ontology-insights
 created_by: "agent:unknown"
 ---
 
-Six-tab maintenance board: five measured questions plus Flow. The Do-next tab is one flat list under one count (owner decision, 2026-09-01): each row is a concept or document title, one sentence naming the observed fact, and actions in a fixed order (hand it to the in-app AI chat through the ask deep link for missing definition, missing domain, and missing relations; fix it here; see it on the map). The readiness meter, the repair-queue counter band, the activity digest and the agent footer were removed; validation-blocked documents join the list by name with the failed check in plain words, and the tab badge counts what the list draws. In the installed app, the Flow handoff opens the existing agent dock with a visible, person-owned prefilled request; a verified ACP runtime is used when available, otherwise the key-backed agent panel is used. The web copy action stays explicit. docs/ARCHITECTURE.md: "maintenance on the six-tab Insights page: five measured questions plus Flow".
+## Definition
+
+The Analysis workbench answers seven questions through Do next, Not held, Inventory, Connections, Boundaries, Freshness, and Flow. One ACP conversation stays beside the tabs in the installed app; changing tabs preserves its draft and request origin. Explicit tab actions seat read-only questions, and the person owns Send.
 
 ## Evidence
 
-- Primary implementation: `src/views/ontology-insights/ui/OntologyInsightsPage.tsx#OntologyInsightsPage`
-- Supporting implementation: `src/views/ontology-insights/ui/parts/FixRow.tsx#FixRow`
-- Focused test: `src/views/ontology-insights/lib/census-health.test.ts#excludes the reserved reader guide from kind sums and density`
-- Focused test: `src/views/ontology-insights/lib/census-health.test.ts#derives edge/concept ratio, orphans, cycles, domain membership %, evidence %`
+- Primary implementation: src/views/ontology-insights/ui/OntologyInsightsPage.tsx#OntologyInsightsPage
+- Shared conversation: src/views/ontology-insights/ui/parts/InsightsAgentDock.tsx#InsightsAgentDock
+- Prompt planning: src/views/ontology-insights/lib/insights-agent.ts#planInsightsAgentPrompt
+- Layout regression: tests/e2e/insights-flow-scroll.spec.ts
 
 ## Includes
 
-- The six-tab maintenance board: five measured questions plus Flow, with a single flat Do-next list under one count.
-- Deriving census health metrics (edge/concept ratio, orphans, cycles, domain membership %, evidence %) and excluding the reserved reader guide from those sums.
-- Handing a Do-next row to the in-app AI chat via an ask deep link, or opening the installed app's agent dock with a pre-filled request.
+- A flat Do-next list with one count, and Not held names with occurrence and requester facts.
+- Derived inventory, connection, boundary, and freshness facts from the loaded ontology.
+- One vault-and-runtime-scoped ACP dock with explicit draft replacement and browser copy fallback.
+- An ephemeral, evidence-anchored Flow presentation with optional Map continuation.
+- Available-width card reflow and 40px desktop scroll-end space.
 
 ## Excludes
 
-- Fixing an issue directly outside the "fix it here" action rows: most repairs route to the relevant editor surface, not this page.
-- The readiness meter, repair-queue counter band, activity digest, and agent footer: all removed in the 2026-09-01 redesign.
-- The ACP agent runtime itself, owned by the agent-integration domain's vault-agent-panel.
+- Automatic prompt submission or write approval triggered by tab navigation.
+- The ACP process and permission boundary itself, owned by agent integration.
+- Saved presentations or certification of the agent explanation as semantic truth.

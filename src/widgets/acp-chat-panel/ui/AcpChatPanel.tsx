@@ -5,6 +5,7 @@ import {
   ChevronRight,
   History,
   LoaderCircle,
+  Presentation,
   RotateCcw,
   Square,
   SquarePen,
@@ -67,6 +68,9 @@ import {
   VAULT_MCP_SERVER_NAME,
   deriveAcpMapIntent,
   type AcpMapIntent,
+  buildAcpPresentationTrace,
+  type AcpPresentationIntent,
+  type AcpPresentationScene,
 } from '@/features/acp-session';
 import { isAgentDoctorAvailable, useAgentDoctor } from '@/features/acp-doctor';
 import type { ChatSuggestion } from '@/features/acp-session';
@@ -74,6 +78,7 @@ import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 
 
 import { AcpPermissionCard } from './AcpPermissionCard';
+import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
 import { isVaultTool, toolLabel } from './tool-label';
 
@@ -143,6 +148,7 @@ const WORK_MARKDOWN = [
  */
 const SLASH_MENU_LIMIT = 8;
 const EMPTY_KNOWN_SLUGS: ReadonlySet<string> = new Set();
+const EMPTY_KNOWN_RELATIONS: ReadonlySet<string> = new Set();
 
 interface SuggestionRowsProps {
   heading: string;
@@ -241,6 +247,13 @@ export function AcpChatPanel({
   suggestions = [],
   onSuggestionAction,
   knownSlugs,
+  knownRelations,
+  presentationIntent = null,
+  presentationRequest = null,
+  contextLabel = null,
+  onDraftPresenceChange,
+  onPresentationOpenMap,
+  onPresentationVisibilityChange,
   onHoverSlug,
   onTurnActivityChange,
   onMapIntent,
@@ -303,6 +316,20 @@ export function AcpChatPanel({
    * nowhere stops pressing the rest (`link-slugs.ts`).
    */
   knownSlugs?: ReadonlySet<string>;
+  /** Current graph relation keys (`from\0type\0to`) used to reject invented presentation edges. */
+  knownRelations?: ReadonlySet<string>;
+  /** Only the explicit whole-ontology Flow request can become a presentation in this slice. */
+  presentationIntent?: AcpPresentationIntent | null;
+  /** Exact app-authored Flow request; editing or following it up leaves presentation mode. */
+  presentationRequest?: string | null;
+  /** Immutable origin of the explicitly seated request, such as Analysis · Connections. */
+  contextLabel?: string | null;
+  /** Reports only whether unsent bytes exist; the draft itself stays owned by this panel. */
+  onDraftPresenceChange?: (present: boolean) => void;
+  /** Optional explicit continuation from an in-place presentation to Map. */
+  onPresentationOpenMap?: (slug: string, toolCallId: string) => void;
+  /** Lets the map demote competing actions while this dock-local mode owns attention. */
+  onPresentationVisibilityChange?: (visible: boolean) => void;
   /**
    * The mouse is over that name (`null` on leave). The map highlights that node
    * **exactly as it would on hover**. The caller holds it in a ref to avoid a render —
@@ -460,6 +487,14 @@ export function AcpChatPanel({
   const doctor = useAgentDoctor(runtimeId);
   const showDoctor = Boolean(runtimeId) && isAgentDoctorAvailable();
   const [draft, setDraft] = useState('');
+  const draftPresent = draft.trim().length > 0;
+  useEffect(() => {
+    onDraftPresenceChange?.(draftPresent);
+  }, [draftPresent, onDraftPresenceChange]);
+  useEffect(
+    () => () => onDraftPresenceChange?.(false),
+    [onDraftPresenceChange],
+  );
   /*
    * Is a `/` selection in progress? Only while the first character is `/` and there
    * is still no space — once arguments are being typed, the choosing step has passed
@@ -533,6 +568,10 @@ export function AcpChatPanel({
     inputRef.current?.focus();
   };
   const [historyOpen, setHistoryOpen] = useState(false);
+  /** Presentation is an ephemeral projection of the current turn, never stored beside the session. */
+  const [presentationOpen, setPresentationOpen] = useState(false);
+  const [presentationSceneIndex, setPresentationSceneIndex] = useState(0);
+  const presentationOfferRef = useRef<HTMLButtonElement | null>(null);
   /** Is the hand in the composer? The shortcut hint appears only then. */
   const [composerFocused, setComposerFocused] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -716,9 +755,11 @@ export function AcpChatPanel({
   const submit = useCallback(() => {
     const text = draft.trim();
     if (!text || status === 'thinking') return;
+    setPresentationOpen(false);
+    onPresentationVisibilityChange?.(false);
     setDraft('');
     void send(text);
-  }, [draft, send, status]);
+  }, [draft, onPresentationVisibilityChange, send, setPresentationOpen, status]);
 
       {/*
         Pickers — **only what actually arrived is drawn.** Measured: codex offers 33
@@ -844,6 +885,69 @@ export function AcpChatPanel({
   // the process effect has not yet started,
   // so the actual state is idle. While this panel is open, the user sees 「Waiting for Connection」 — we project only the screen state as starting without touching the protocol state. As long as sessionEnabled=true, 「Off」 does not flash during render cycles.
   const displayStatus = status === 'idle' ? 'starting' : status;
+  const presentationResult = useMemo(
+    () => buildAcpPresentationTrace({
+      intent: presentationIntent,
+      expectedUserText: presentationRequest,
+      sessionStatus: status,
+      events,
+      knownSlugs: knownSlugs ?? EMPTY_KNOWN_SLUGS,
+      knownRelations: knownRelations ?? EMPTY_KNOWN_RELATIONS,
+    }),
+    [events, knownRelations, knownSlugs, presentationIntent, presentationRequest, status],
+  );
+  const presentationTrace = presentationResult.status === 'ready' ? presentationResult : null;
+  const latestUserEvent = [...events].reverse().find((event) => event.kind === 'user');
+  const currentTurnIsPresentationRequest = latestUserEvent?.kind === 'user'
+    && latestUserEvent.text.trim() === presentationRequest?.trim();
+  const presentationBlocked = presentationIntent !== null
+    && currentTurnIsPresentationRequest
+    && status === 'ready'
+    && events.some((event) => event.kind === 'agent' && event.text.trim().length > 0)
+    && presentationResult.status === 'blocked'
+    ? presentationResult
+    : null;
+  const presentationKey = presentationTrace?.scenes.map((scene) => scene.id).join('|') ?? null;
+  const heldPresentationTrace = useHeldValue(presentationTrace, presentationKey);
+  const presentationVisible = presentationOpen && presentationTrace !== null;
+  useEffect(() => {
+    if (!presentationOpen || presentationTrace !== null) return;
+    onPresentationVisibilityChange?.(false);
+  }, [onPresentationVisibilityChange, presentationOpen, presentationTrace]);
+  useEffect(
+    () => () => onPresentationVisibilityChange?.(false),
+    [onPresentationVisibilityChange],
+  );
+  const activePresentationIndex = presentationTrace
+    ? Math.min(presentationSceneIndex, presentationTrace.scenes.length - 1)
+    : 0;
+  const focusPresentationScene = (index: number) => {
+    if (!presentationTrace) return;
+    const bounded = Math.min(Math.max(index, 0), presentationTrace.scenes.length - 1);
+    const scene = presentationTrace.scenes[bounded];
+    setPresentationSceneIndex(bounded);
+    onMapIntent?.({ kind: 'focus', ...scene.focus });
+  };
+  const openPresentation = () => {
+    if (!presentationTrace) return;
+    setHistoryOpen(false);
+    setPresentationOpen(true);
+    onPresentationVisibilityChange?.(true);
+    focusPresentationScene(0);
+  };
+  const closePresentation = () => {
+    setPresentationOpen(false);
+    onPresentationVisibilityChange?.(false);
+    window.requestAnimationFrame(() => presentationOfferRef.current?.focus());
+  };
+  const askAboutPresentationScene = (scene: AcpPresentationScene) => {
+    setPresentationOpen(false);
+    onPresentationVisibilityChange?.(false);
+    setDraft(t('presentation.askPrompt', {
+      title: scene.title ?? t('presentation.sceneFallback', { current: activePresentationIndex + 1 }),
+    }));
+    window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
   const transcriptItems = groupEvents(withoutErrorEcho(events, error));
   const lastWorkGroupId = [...transcriptItems]
     .reverse()
@@ -876,21 +980,34 @@ export function AcpChatPanel({
           is nothing to choose, so it stays text (a one-option dropdown only pretends
           to be a choice).
         */}
-        {runtimes.length > 1 && onRuntimeChange ? (
-          <Select
-            ariaLabel={t('runtimePicker')}
-            size="md"
-            value={runtimeId}
-            onChange={onRuntimeChange}
-            options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
-            data-testid="acp-chat-runtime"
-            className="min-w-0"
-          />
-        ) : (
-          <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
-            {runtimeLabel}
-          </p>
-        )}
+        <div className="flex min-w-0 items-center gap-2">
+          {runtimes.length > 1 && onRuntimeChange ? (
+            <Select
+              ariaLabel={t('runtimePicker')}
+              size="md"
+              value={runtimeId}
+              onChange={onRuntimeChange}
+              options={runtimes.map((r) => ({ value: r.id, label: r.label }))}
+              data-testid="acp-chat-runtime"
+              className="min-w-0"
+            />
+          ) : (
+            <p className="min-w-0 truncate text-body font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+              {runtimeLabel}
+            </p>
+          )}
+          {contextLabel ? (
+            <span
+              data-testid="acp-chat-context"
+              className={badgeClass({
+                shape: 'micro',
+                className: 'max-w-36 truncate bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-tertiary)]',
+              })}
+            >
+              {contextLabel}
+            </span>
+          ) : null}
+        </div>
         <span className="flex shrink-0 items-center gap-2">
           <span
             data-acp-status-badge={displayStatus}
@@ -945,6 +1062,7 @@ export function AcpChatPanel({
                 disabled={displayStatus === 'starting'}
                 onClick={() => {
                   setHistoryOpen(false);
+                  setPresentationOpen(false);
                   void switchSession(null);
                 }}
               >
@@ -970,6 +1088,7 @@ export function AcpChatPanel({
       <div
         ref={listRef}
         data-testid="acp-chat-transcript"
+        inert={presentationVisible ? true : undefined}
         onScroll={(event) => {
           const list = event.currentTarget;
           transcriptPinnedToBottomRef.current =
@@ -1140,6 +1259,52 @@ export function AcpChatPanel({
             </div>
           );
         })}
+        <Surface
+          as="section"
+          open={presentationTrace !== null && !presentationVisible}
+          origin="bottom center"
+          aria-label={t('presentation.open')}
+          data-testid="acp-presentation-offer"
+          className="mt-1 border-t border-[color:var(--color-divider)] pt-3"
+        >
+          <RowButton
+            ref={presentationOfferRef}
+            tone="secondary"
+            hoverInk="strong"
+            hoverSurface="lift"
+            hoverBorder="strong"
+            data-testid="acp-presentation-open"
+            className="w-full gap-3 text-left"
+            onClick={openPresentation}
+          >
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-chip border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] text-[color:var(--color-indigo-text-soft)]">
+              <Presentation size={ICON_SIZE.md} aria-hidden />
+            </span>
+            <span className="grid min-w-0 flex-1 gap-0.5">
+              <span className="text-body-lg leading-body-lg font-[var(--font-weight-emphasis)] text-[color:var(--color-text-primary)]">
+                {t('presentation.open')}
+              </span>
+              <span className="text-label leading-label text-[color:var(--color-text-tertiary)]">
+                {t('presentation.openHint', { count: heldPresentationTrace?.scenes.length ?? 0 })}
+              </span>
+            </span>
+            <ChevronRight size={ICON_SIZE.md} aria-hidden className="shrink-0" />
+          </RowButton>
+        </Surface>
+        <Surface
+          as="section"
+          open={presentationBlocked !== null && !presentationVisible}
+          origin="bottom center"
+          role="status"
+          data-testid="acp-presentation-blocked"
+          className="mt-1 border-l border-dashed border-[color:var(--color-border-strong)] pl-3"
+        >
+          <p className="text-label leading-prose text-[color:var(--color-text-tertiary)]">
+            {t('presentation.blocked', {
+              reason: t(`presentation.blockReason.${presentationBlocked?.reason ?? 'no_answer'}`),
+            })}
+          </p>
+        </Surface>
         <Surface
           ref={postTurnSuggestionRef}
           as="section"
@@ -1324,6 +1489,7 @@ export function AcpChatPanel({
       */}
       <div
         data-testid="acp-chat-composer"
+        inert={presentationVisible ? true : undefined}
         className="relative shrink-0 rounded-card border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)] transition-colors focus-within:border-[color:var(--color-indigo-a46)]"
       >
         {/*
@@ -1627,6 +1793,34 @@ export function AcpChatPanel({
           </div>
         </Surface>
       </div>
+      <Surface
+        open={presentationVisible}
+        as="section"
+        motion="overlay"
+        role="region"
+        aria-label={t('presentation.ariaLabel')}
+        data-testid="acp-presentation-surface"
+        className="absolute inset-x-0 bottom-0 top-11 flex min-h-0 flex-col bg-[color:var(--color-canvas)] pt-1"
+      >
+        <AcpPresentationPanel
+          // `presentationVisible` can only be true with a ready trace. During exit,
+          // `useHeldValue` retains that same trace until Surface unmounts the child.
+          trace={heldPresentationTrace!}
+          activeIndex={Math.min(
+            activePresentationIndex,
+            (heldPresentationTrace?.scenes.length ?? 1) - 1,
+          )}
+          onChangeScene={focusPresentationScene}
+            onFocusCitation={onMapIntent
+              ? (slug, toolCallId) => onMapIntent({ kind: 'focus', slug, toolCallId })
+              : undefined}
+            onOpenMap={onPresentationOpenMap
+              ? (scene) => onPresentationOpenMap(scene.focus.slug, scene.focus.toolCallId)
+              : undefined}
+          onAsk={askAboutPresentationScene}
+          onClose={closePresentation}
+        />
+      </Surface>
     </section>
   );
 }
