@@ -186,12 +186,23 @@ export function ConnectorsPanel({
         out loud that Atlas's own transfer ledger does not cover it. A reader who has met that
         ledger elsewhere in this app would otherwise reasonably assume it did.
       */}
-      <p
+      <div
         data-testid={`${testIdPrefix}-transfer`}
         className="mt-2 break-keep border-l border-[color:var(--color-divider)] pl-2 text-label leading-prose text-[color:var(--color-text-secondary)]"
       >
-        {t('transfer')}
-      </p>
+        <p>{t('transfer')}</p>
+        {/*
+          **What the token can do, not only where it goes.** A read token and a write token
+          travel the same path and this screen cannot tell them apart, so the sentence names the
+          authority the person is handing over and where it is still stopped. It is true because
+          connectors ride only a runtime measured to raise a request for every tool call
+          (`runtimeCarriesConnectors`); the line below says which one that is.
+        */}
+        <p className="mt-1">{t('authority')}</p>
+        <p data-testid={`${testIdPrefix}-runtime`} className="mt-1">
+          {t('runtimeNarrowing')}
+        </p>
+      </div>
 
       {store.status === 'malformed' ? (
         <p

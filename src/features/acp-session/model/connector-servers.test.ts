@@ -38,9 +38,20 @@ function http(overrides: Partial<ConnectorRecord> = {}): ConnectorRecord {
   };
 }
 
+/** The one runtime measured to raise a permission request for an MCP child's every call. */
+const CLAUDE = 'claude-acp';
+
 describe('connector servers', () => {
+  it('hands nothing to a runtime whose permission path was never measured', () => {
+    // The screen promises every call stops at a permission card. That promise is only true on a
+    // runtime measured to raise one, so an unmeasured one gets none of them rather than a
+    // sentence it cannot keep. `connector-runtime-narrowing.contract.test.ts` pins the pair.
+    expect(connectorAcpServers([stdio()], 'codex-acp')).toEqual([]);
+    expect(connectorAcpServers([stdio()])).toEqual([]);
+  });
+
   it('builds the stdio shape the ACP handshake takes, with a reference where the token goes', () => {
-    expect(connectorAcpServers([stdio()])).toEqual([
+    expect(connectorAcpServers([stdio()], CLAUDE)).toEqual([
       {
         name: 'notion',
         command: '/opt/homebrew/bin/npx',
@@ -51,7 +62,7 @@ describe('connector servers', () => {
   });
 
   it('builds the http shape with its type field, which is what both adapters key off', () => {
-    expect(connectorAcpServers([http()])).toEqual([
+    expect(connectorAcpServers([http()], CLAUDE)).toEqual([
       {
         type: 'http',
         name: 'linear',
@@ -63,14 +74,14 @@ describe('connector servers', () => {
 
   it('sends nothing for a connector that is off', () => {
     // Default off is the promise; this is where it becomes true rather than merely stated.
-    expect(connectorAcpServers([stdio({ enabled: false })])).toEqual([]);
+    expect(connectorAcpServers([stdio({ enabled: false })], CLAUDE)).toEqual([]);
   });
 
   it('refuses a connector that would shadow the vault server', () => {
     // claude-agent-acp lets an ACP-supplied server override a same-named caller one, so a
     // connector under this name would quietly replace the person's own map.
     const shadow = stdio({ id: 'c9', name: VAULT_MCP_SERVER_NAME });
-    expect(connectorAcpServers([shadow])).toEqual([]);
+    expect(connectorAcpServers([shadow], CLAUDE)).toEqual([]);
     expect(connectorsWithProblems([shadow])).toEqual([{ connector: shadow, reason: 'name-taken' }]);
   });
 
@@ -80,7 +91,7 @@ describe('connector servers', () => {
     // the other exists. Both are refused and both are reported.
     const first = stdio();
     const second = stdio({ id: 'c3' });
-    expect(connectorAcpServers([first, second])).toEqual([]);
+    expect(connectorAcpServers([first, second], CLAUDE)).toEqual([]);
     expect(connectorsWithProblems([first, second])).toEqual([
       { connector: first, reason: 'invalid' },
       { connector: second, reason: 'invalid' },
@@ -91,7 +102,7 @@ describe('connector servers', () => {
     // A bare command resolves to nothing in the agent's sanitized environment, so the session
     // would come up with that server's tools absent — which reads exactly like Atlas failing.
     const bare = stdio({ command: 'npx' });
-    expect(connectorAcpServers([bare])).toEqual([]);
+    expect(connectorAcpServers([bare], CLAUDE)).toEqual([]);
     expect(connectorsWithProblems([bare])).toEqual([{ connector: bare, reason: 'invalid' }]);
   });
 
@@ -100,7 +111,7 @@ describe('connector servers', () => {
     // send. Attaching it with the variable absent — or worse, set to an empty string — gives the
     // agent a tool that fails on every call for a reason nothing states.
     const pending = stdio({ env: [{ name: 'NOTION_TOKEN', secretLiteral: true }] });
-    expect(connectorAcpServers([pending])).toEqual([]);
+    expect(connectorAcpServers([pending], CLAUDE)).toEqual([]);
     expect(connectorsWithProblems([pending])).toEqual([{ connector: pending, reason: 'invalid' }]);
   });
 
@@ -114,9 +125,10 @@ describe('connector servers', () => {
   });
 
   it('passes a value that is not a credential straight through', () => {
-    const servers = connectorAcpServers([
-      stdio({ env: [{ name: 'NOTION_VERSION', value: '2022-06-28' }] }),
-    ]);
+    const servers = connectorAcpServers(
+      [stdio({ env: [{ name: 'NOTION_VERSION', value: '2022-06-28' }] })],
+      CLAUDE,
+    );
     expect(servers[0]).toMatchObject({ env: [{ name: 'NOTION_VERSION', value: '2022-06-28' }] });
   });
 });

@@ -2506,7 +2506,7 @@ function HomePageImpl() {
        * one, and the session's instructions name the vault server, so it must be the one that
        * survives.
        */
-      ...connectorAcpServers(vaultConnectors.connectors),
+      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId),
     ];
   }, [
     agentServer.launch,

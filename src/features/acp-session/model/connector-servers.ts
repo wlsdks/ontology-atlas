@@ -8,6 +8,15 @@
  * mechanism is MCP running inside a program the person already chose to trust, and Atlas only says
  * which ones.
  *
+ * ## Only a runtime whose permission path was measured
+ *
+ * A connector's tools have to reach a person as a `session/request_permission` before they run,
+ * and only Claude's isolated configuration has been measured to do that for an MCP child. Codex
+ * was measured not to for our own server (installed app, 2026-08-24: a self-registered
+ * `add_relation` changed the vault with no request and no card), and nobody has measured what it
+ * does with somebody else's. `runtimeCarriesConnectors` holds that line, reusing the table
+ * `runtime-gate.ts` already keeps rather than starting a second one.
+ *
  * ## The vault server goes first, and cannot be shadowed
  *
  * claude-agent-acp lets an ACP-supplied server override a same-named one from the caller, so a
@@ -26,6 +35,7 @@ import type { ConnectorRecord, ConnectorValueEntry } from '@/shared/lib/connecto
 import { connectorProblems } from '@/shared/lib/connector-record';
 import { ACP_SECRET_REF_KEY } from '@/shared/lib/tauri-connector-secrets';
 
+import { runtimeCarriesConnectors } from './runtime-gate';
 import { VAULT_MCP_SERVER_NAME } from './vault-mcp-server';
 
 /** A value the agent is given directly, or the reference Rust resolves on the way out. */
@@ -75,7 +85,14 @@ function toAcpEntries(entries: readonly ConnectorValueEntry[]): AcpValueEntry[] 
  */
 export function connectorAcpServers(
   connectors: readonly ConnectorRecord[],
+  /**
+   * The runtime this session will run on. **Anything unmeasured gets none of them** - see
+   * `runtimeCarriesConnectors`. Omitting it is the same as naming an unmeasured runtime, so a
+   * call site that forgets to pass one attaches nothing rather than attaching blind.
+   */
+  runtimeId?: string | null,
 ): AcpConnectorServer[] {
+  if (!runtimeCarriesConnectors(runtimeId)) return [];
   return attachable(connectors).map((connector) =>
     connector.transport === 'http'
       ? {

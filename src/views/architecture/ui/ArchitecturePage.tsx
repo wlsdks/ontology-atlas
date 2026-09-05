@@ -176,7 +176,7 @@ export function ArchitecturePage() {
       ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
         ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
       }),
-      ...connectorAcpServers(vaultConnectors.connectors),
+      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId),
     ];
   }, [
     acpRuntimeId,
