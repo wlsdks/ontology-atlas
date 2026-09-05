@@ -23,6 +23,9 @@ describe("retired Skills product surface", () => {
       "map",
       "architecture",
       "docs",
+      // Library joined 2026-09-06, beside Docs because that is where its two lists came
+      // from. Like MCP the day before, it moved the ceiling and reinstated nothing.
+      "library",
       "insights",
       "projects",
       "agents",
@@ -38,6 +41,10 @@ describe("retired Skills product surface", () => {
     expect(resolveActiveNavDestination("/architecture")).toBe("architecture");
     expect(resolveActiveNavDestination("/git")).toBe("git");
     expect(resolveActiveNavDestination("/mcp")).toBe("mcp");
+    expect(resolveActiveNavDestination("/library")).toBe("library");
+    expect(resolveActiveNavDestination("/ko/library/")).toBe("library");
+    // `/library` sits before `/docs` in the ladder; neither may swallow the other.
+    expect(resolveActiveNavDestination("/docs")).toBe("docs");
   });
 
   it("removes the route and all three product implementation layers", () => {

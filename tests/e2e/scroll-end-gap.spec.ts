@@ -453,6 +453,14 @@ const VAULT_ROUTES = [
   "/ko/agents/",
   "/ko/ontology/insights/",
   "/ko/projects/",
+  // Docs joined on 2026-09-05: with a folder open its sidebar grew two capped lists above
+  // the tree, so the column's own scroll end is a thing that can now be reached and cut.
+  "/ko/docs/",
+  // The Library joined on 2026-09-06, when those two lists left Docs for their own
+  // destination. Both halves of this screen can be taller than the window with a folder
+  // open — the index when the folder holds many files, and the reader on any long wiki
+  // page — and the no-folder pass above cannot reach either.
+  "/ko/library/",
 ] as const;
 
 const VAULT_VIEWPORTS = [

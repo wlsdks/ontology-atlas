@@ -32,6 +32,29 @@ export const DESTINATION_IDS = [
   'map',
   'architecture',
   'docs',
+  /*
+   * Library — added 2026-09-06. Gathering project documents of any format, and the
+   * wiki pages compiled from them, shipped inside Docs on 2026-09-05 and the owner
+   * read the result the next day: *"the screen is very cluttered … is it right that
+   * everything for gathering and scaling data collects inside the Docs tab, rather
+   * than being separated out? Docs was originally where ontology information (md)
+   * was gathered."* Docs is the graph's Markdown; a raw PDF, its shadow, and a wiki
+   * page are a different job with different rows, different doors and a different
+   * reader, and the two were competing for one 280px sidebar.
+   *
+   * ⚠️ **Nine is the current ceiling.** The eight-cap this table carried since
+   * 2026-09-05 is reopened by the 2026-09-06 record, measured rather than assumed.
+   * At the app's minimum window (1040×720) the destinations pane is 616px tall.
+   * Eight tiles at a 64px pitch stood in 12–522; nine at that pitch would reach 586
+   * and leave 30px, which is a ninth that fits and a tenth that does not — so the
+   * tile's own padding moved with the cap (`py-1.5` → `py-1` on the button, pitch
+   * 64 → 60). Nine tiles now stand in 12–550 with 66px to spare, the gear is still
+   * drawn 48px above the window edge, and nothing scrolls. The fixed tokens did not
+   * move: the tile is still 38×32, the icon 20 and the label 11. A tenth requires
+   * another measured decision, and `destination-shortcuts.contract.test.ts`
+   * enforces that.
+   */
+  'library',
   'insights',
   'projects',
   /*
@@ -47,13 +70,6 @@ export const DESTINATION_IDS = [
    * title: "which coding tools does this computer have" and "what does an agent
    * reach through MCP". Owner: *"Agents itself needs a redesign — MCP separately
    * (doesn't it need its own LNB tab?) …"*
-   *
-   * ⚠️ **Eight is the current ceiling.** The seven-cap that decision (91) closed on
-   * 2026-08-21 is reopened by this record, measured rather than assumed: at the
-   * app's minimum window (1040×720) the eight tiles plus the utility tier are
-   * drawn without clipping, and the destinations pane owns its own scroll for
-   * every case beyond that. A ninth requires another measured decision, and
-   * `destination-shortcuts.contract.test.ts` enforces that.
    */
   'mcp',
   'git',
@@ -70,6 +86,16 @@ export type DestinationId = (typeof DESTINATION_IDS)[number];
  */
 /*
  * ⚠️ **MCP is deliberately absent, and 1024 is its width floor** (design council, 2026-09-05).
+ *
+ * ⚠️ **The Library is absent too, and for a different reason** (2026-09-06). MCP is desk work;
+ * the Library is not — a person really may want to read a wiki page on a phone, and the route
+ * works at 390 (one column, selecting swaps it, a back control returns). What it is not is one
+ * of *five*: the five slots are the reading and planning ladder, and evicting Docs, Insights,
+ * Projects, Architecture or the map to seat it would cost more than it buys on a screen where
+ * gathering files is not what anyone is doing. So it keeps a contextual entry point instead, and
+ * that one is permanent rather than incidental: the Docs sidebar carries a row pointing at it
+ * (`docs-sidebar-library-link`), where its two lists used to be. Below `lg` that row is the way
+ * in, which is why it is a link and not a sentence.
  *
  * Below `lg` the rail is replaced by five bottom tabs, and MCP is not one of them. That is a
  * decision, not an omission: what the screen does is hand a coding tool a config and switch
@@ -104,6 +130,7 @@ export const DESTINATION_HREF: Record<DestinationId, string> = {
   projects: '/projects/',
   agents: '/agents/',
   mcp: '/mcp/',
+  library: '/library/',
   git: '/git/',
 };
 
@@ -123,6 +150,8 @@ export const DESTINATION_KEY: Record<DestinationId, string> = {
   // `m` belongs to Map; `c` is the letter this destination's own name turns on
   // (the connectors it holds), so the mnemonic survives the collision.
   mcp: 'c',
+  // `l` — nothing collides with it, and it is the destination's own first letter.
+  library: 'l',
   git: 'g',
 };
 

@@ -9,11 +9,13 @@ import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "@/widgets/acp-chat-panel";
 
 /**
- * The guarded ACP conversation, docked to Docs.
+ * The guarded ACP conversation, docked to the Library.
  *
- * Compile is a job, not a place (`docs/DECISIONS.md`, 2026-09-05): it starts one turn
- * beside the library it is compiling, rather than sending a person to another screen and
- * asking them to describe the folder they were already looking at.
+ * Compile is still a job and not a place (`docs/DECISIONS.md`, 2026-09-05): it starts one
+ * turn beside the library it is compiling, rather than sending a person to another screen
+ * and asking them to describe the folder they were already looking at. What changed on
+ * 2026-09-06 is which screen that is — the library became a destination, so the dock came
+ * with it rather than staying beside a document tree it never read.
  *
  * The shape is the one Analysis and Architecture already use, and for the same measured
  * reason: the outer frame claims its width first, and the agent process starts after
@@ -24,18 +26,18 @@ import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "
  * added here — the panel already says what the agent is doing, and a second indicator
  * that only says "something is happening" would compete with the one that says what.
  */
-export interface DocsAgentOpeningRequest {
+export interface LibraryAgentOpeningRequest {
   kind: "compile";
   text: string;
   nonce: number;
 }
 
-export interface DocsAgentRuntime {
+export interface LibraryAgentRuntime {
   id: string;
   label: string;
 }
 
-export function DocsAgentDock({
+export function LibraryAgentDock({
   open,
   runtime,
   runtimes,
@@ -47,12 +49,12 @@ export function DocsAgentDock({
   onClose,
 }: {
   open: boolean;
-  runtime: DocsAgentRuntime;
-  runtimes: readonly DocsAgentRuntime[];
+  runtime: LibraryAgentRuntime;
+  runtimes: readonly LibraryAgentRuntime[];
   onRuntimeChange: (runtimeId: string) => void;
   vaultRoot: string;
   mcpServers: unknown[];
-  openingRequest: DocsAgentOpeningRequest | null;
+  openingRequest: LibraryAgentOpeningRequest | null;
   knownSlugs: ReadonlySet<string>;
   onClose: () => void;
 }) {
@@ -81,8 +83,8 @@ export function DocsAgentDock({
 
   return (
     <div
-      data-testid="docs-agent-dock-frame"
-      data-right-dock={open || presence.mounted ? "docs-agent" : undefined}
+      data-testid="library-agent-dock-frame"
+      data-right-dock={open || presence.mounted ? "library-agent" : undefined}
       onTransitionEnd={(event) => {
         if (
           event.target === event.currentTarget &&
@@ -95,7 +97,7 @@ export function DocsAgentDock({
       }}
       style={
         {
-          "--docs-agent-chat-width": `${chatWidth.width}px`,
+          "--library-agent-chat-width": `${chatWidth.width}px`,
           transitionProperty: "width",
           transitionDuration: "var(--agent-panel-reflow-duration)",
           transitionTimingFunction: "var(--topology-motion-ease-out)",
@@ -105,7 +107,7 @@ export function DocsAgentDock({
         "absolute right-0 top-0 z-30 min-h-0 overflow-hidden bg-[color:var(--color-canvas)]",
         "bottom-[calc(var(--topology-mobile-bottom-tab-reserve)+0.75rem)] lg:bottom-0",
         "xl:relative xl:inset-auto xl:z-auto xl:shrink-0",
-        open ? "w-full xl:w-[var(--docs-agent-chat-width)]" : "pointer-events-none w-0 xl:w-0",
+        open ? "w-full xl:w-[var(--library-agent-chat-width)]" : "pointer-events-none w-0 xl:w-0",
       )}
     >
       {presence.mounted ? (
@@ -113,10 +115,10 @@ export function DocsAgentDock({
           open={open}
           as="aside"
           motion="overlay"
-          data-testid="docs-agent-dock"
+          data-testid="library-agent-dock"
           data-agent-dock-surface="inset"
           data-agent-request-kind={openingRequest?.kind}
-          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 xl:left-auto xl:w-[calc(var(--docs-agent-chat-width)-var(--chrome-inset))]`}
+          className={`${AGENT_DOCK_INSET_SURFACE_CLASS} left-3 flex min-h-0 w-auto shrink-0 flex-col p-4 xl:left-auto xl:w-[calc(var(--library-agent-chat-width)-var(--chrome-inset))]`}
         >
           <div className="hidden xl:contents">
             <AcpChatResizeHandle

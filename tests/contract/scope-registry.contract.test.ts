@@ -212,8 +212,8 @@ const STORAGE_KEY_REGISTRY: StorageEntry[] = [
     kind: "storage",
     scope: "vault-scoped",
     scopedBy: "useVaultIdentityScope",
-    file: "src/features/docs-library/lib/declined-candidates.ts",
-    provenBy: "src/features/docs-library/lib/declined-candidates.test.ts",
+    file: "src/features/library/lib/declined-candidates.ts",
+    provenBy: "src/features/library/lib/declined-candidates.test.ts",
     note: "문서 찾기에서 넘긴 후보 — 이 컴퓨터에만 남는 편의",
   },
   {

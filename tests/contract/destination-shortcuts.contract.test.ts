@@ -159,6 +159,31 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
     expect(table, "폭 하한(1024)이 표에 적혀 있지 않다").toContain("1024");
   });
 
+  /**
+   * **The Library is absent from the five for a different reason than MCP, and it pays
+   * for the absence with a link.**
+   *
+   * MCP is desk work. The Library is not — its route renders at 390 and a wiki page is
+   * worth reading on a phone. It is simply not one of *five*, and the price of that is a
+   * contextual entry point that exists at every width. Below `lg` the Docs sidebar's row
+   * is the only way in, so this asserts the row rather than the absence: an absence with
+   * no door is the dead pointer, not the decision.
+   */
+  it("자료실은 모바일 다섯 자리에 없는 대신 문 하나를 갖는다", () => {
+    expect(DESTINATION_IDS).toContain("library");
+    expect(
+      MOBILE_DESTINATION_IDS as readonly string[],
+      "자료실이 모바일 슬롯에 들어왔다 — 결정이 바뀐 것이라면 destinations.ts 의 주석부터 고쳐라",
+    ).not.toContain("library");
+    const sidebar = read("src/views/docs-vault/ui/parts/DocsSidebarBody.tsx");
+    expect(sidebar, "문서 화면에서 자료실로 가는 줄이 없다 — lg 아래에서는 이게 유일한 문이다").toContain(
+      'data-testid="docs-sidebar-library-link"',
+    );
+    expect(sidebar, "그 줄이 /library 를 가리키지 않는다").toMatch(
+      /href="\/library\/"/,
+    );
+  });
+
   it("레일이 주소를 손으로 다시 적지 않는다", () => {
     const rail = read("src/widgets/app-nav-rail/ui/AppNavRail.tsx");
     expect(rail, "레일이 표를 import 하지 않는다").toContain("DESTINATION_HREF");
@@ -216,39 +241,65 @@ describe("레일 · 시트 · 셸이 같은 표를 본다", () => {
   });
 
   /**
-   * **Eight is the ceiling** (record of 2026-09-05, which overturns the seven-cap
-   * decision (91) of 2026-08-21 and upholds the 2026-08-26 record that Architecture
-   * is additive).
+   * **Nine is the ceiling** (record of 2026-09-06, which amends the eight-cap of
+   * 2026-09-05, itself overturning the seven-cap decision (91) of 2026-08-21).
    *
-   * At the app's minimum window (`minWidth: 1040`, `minHeight: 720`) the rail stacks
-   * eight destination tiles above the utility layer. That is not assumed here — it
-   * was measured on the rendered rail before the cap moved, and the destinations pane
-   * owns its own scroll (`min-h-0 overflow-y-auto overscroll-contain`, asserted
-   * below) for zoom, longer translations and every smaller effective viewport.
+   * The number moved because the rail was measured again, and the tile's own padding
+   * moved with it. At the app's minimum window (`minWidth: 1040`, `minHeight: 720`)
+   * the destinations pane is 616px tall. Measured on the rendered rail, 2026-09-06:
    *
-   * What this check blocks is a ninth arriving quietly. It does not permit a new
+   * | tiles | button padding | pitch | stack | spare |
+   * |---|---|---|---|---|
+   * | 8 | `py-1.5` | 64px | 12–522 | 94px |
+   * | 9 | `py-1.5` | 64px | 12–586 | 30px |
+   * | 9 | `py-1`   | 60px | 12–550 | 66px |
+   *
+   * The gear is drawn 48px above the window edge in every one of those, and nothing
+   * scrolls. The fixed tokens did not move — 38×32 tile, 20px icon, 11px label — so
+   * what paid for the ninth tile is the one quantity in the tile carrying no
+   * information. The pane still owns its own scroll (`min-h-0 overflow-y-auto
+   * overscroll-contain`, asserted below) for zoom, longer translations and every
+   * smaller effective viewport.
+   *
+   * What this check blocks is a tenth arriving quietly. It does not permit a new
    * destination to evict an existing one as an implementation shortcut.
    */
-  it("목적지는 여덟을 넘지 않는다 — 아홉째는 별도 결정을 요구한다", () => {
+  it("목적지는 아홉을 넘지 않는다 — 열째는 별도 결정을 요구한다", () => {
     expect(
       DESTINATION_IDS.length,
       `레일 목적지가 ${DESTINATION_IDS.length}개다 — ` +
-        `아홉째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
-    ).toBeLessThanOrEqual(8);
+        `열째를 넣으려면 별도 결정을 남기고 이 상한을 같이 고쳐라`,
+    ).toBeLessThanOrEqual(9);
   });
 
   it("상한이 헐겁지 않다 — 여유를 무료로 두지 않는다", () => {
     /*
      * The same grammar the system seat used on other ratchets: a ceiling with the
      * measurement far below it turns that slack into a free pass for whatever arrives
-     * next. Eight exist today — the seven the owner required to remain, plus MCP,
-     * which the 2026-09-05 record added by splitting the two unrelated jobs `/agents`
-     * had grown into.
+     * next. Nine exist today — the seven the owner required to remain, MCP from the
+     * 2026-09-05 split, and the Library, which the 2026-09-06 record moved out of Docs
+     * after the owner read that screen as cluttered.
      */
     expect(
       DESTINATION_IDS.length,
-      "목적지가 줄었다 — MCP 추가가 기존 목적지를 제거하면 안 된다",
-    ).toBe(8);
+      "목적지가 줄었다 — 자료실 추가가 기존 목적지를 제거하면 안 된다",
+    ).toBe(9);
+  });
+
+  /**
+   * **The pitch is part of the cap, so it is asserted with it.**
+   *
+   * Nine tiles fit only because the button's padding fell from `py-1.5` to `py-1`.
+   * Putting the padding back without touching this file would silently return the
+   * stack to 12–586 of a 616px pane and leave 30px — a rail one translation away from
+   * scrolling, with nothing red to say so.
+   */
+  it("아홉이 들어가게 한 타일 여백이 그대로다", () => {
+    const rail = read("src/widgets/app-nav-rail/ui/AppNavRail.tsx");
+    const block = rail.slice(rail.indexOf('shape: "card", className: "group relative w-full'));
+    expect(block.slice(0, 200), "목적지 타일 버튼의 세로 여백이 py-1 이 아니다").toContain(
+      "px-0 py-1 ",
+    );
   });
 
   it("레일이 넘칠 때 스크롤할 수 있다 — 상한만으로는 배율을 못 막는다", () => {

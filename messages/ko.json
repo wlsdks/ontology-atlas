@@ -266,6 +266,7 @@
     "map": "지도",
     "architecture": "아키텍처",
     "docs": "문서함",
+    "library": "자료실",
     "insights": "분석",
     "projects": "프로젝트",
     "agents": "에이전트",
@@ -644,6 +645,14 @@
       "mcpTabs": {
         "title": "탭 둘, 하는 일 둘",
         "body": "「이 폴더 내주기」는 코딩 도구에 이 폴더를 가리키는 설정을 건네줘요. 「연결 도구」는 그 에이전트가 함께 닿을 바깥 서버이고, 옆의 숫자는 켜 둔 개수예요."
+      },
+      "libraryWhat": {
+        "title": "자료실",
+        "body": "형식을 가리지 않는 문서를 온 그대로 두고, 그 문서로 쓴 위키 문서를 함께 둡니다. 온톨로지 마크다운은 한 칸 위에 있습니다."
+      },
+      "librarySources": {
+        "title": "원문이 먼저입니다",
+        "body": "파일을 직접 넣거나, 허락한 폴더 안에서 후보를 제안받으세요. 줄마다 그 파일을 아직 아무도 정리하지 않았는지 알려 줍니다."
       }
     }
   },
@@ -944,6 +953,7 @@
         "goTo_map": "지도로",
         "goTo_architecture": "아키텍처로",
         "goTo_docs": "문서함으로",
+        "goTo_library": "자료실로",
         "goTo_insights": "분석으로",
         "goTo_projects": "프로젝트로",
         "goTo_agents": "에이전트로",
@@ -1342,7 +1352,8 @@
           "unverifiablePlain": "파일을 읽지 못해 바뀌었는지 알 수 없어요",
           "reviewedOn": "{date} 확인",
           "reviewedOnTitle": "사람이 이 문서를 읽고 뜻이 맞다고 말한 날입니다"
-        }
+        },
+        "libraryLink": "모아 둔 문서는 자료실에 있습니다"
       },
       "empty": {
         "eyebrow": "문서 {count}개",
@@ -4254,7 +4265,13 @@
       "value-missing": "키체인에서 가져오기로 한 변수인데 그 뒤에 아직 아무것도 없습니다."
     }
   },
-  "docsLibrary": {
+  "library": {
+    "title": "자료실",
+    "eyebrow": "이 폴더 안",
+    "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있습니다. 원문은 온 그대로 남고, 위키 문서의 문장은 저마다 원문을 인용합니다.",
+    "emptyTitle": "아직 모아 둔 것이 없습니다",
+    "emptyBody": "이미 갖고 있는 문서를 넣으세요. 기획서, 발표 자료, 표, 내려받아 둔 페이지 무엇이든 됩니다. sources/ 로 그대로 복사할 뿐, 부르기 전에는 열지 않습니다.",
+    "readerEmpty": "왼쪽에서 원문이나 위키 문서를 고르면 여기서 읽습니다.",
     "sources": {
       "header": "원문 · {count}",
       "listAria": "이 폴더의 원문 파일",
@@ -4305,7 +4322,12 @@
       "compileFailed": "에이전트 턴을 시작하지 못했습니다: {reason}",
       "compileWebLimit": "문서를 쓰려면 이 컴퓨터에서 도는 코딩 에이전트가 필요하고, 그건 앱만 띄울 수 있습니다. 문서를 읽고 고치는 일은 여기서도 됩니다.",
       "compileWebGetApp": "앱 받기",
-      "offTemplateReason": "위키 서식에 맞지 않습니다: {code}. 문서를 열면 무엇을 고칠지 볼 수 있습니다."
+      "offTemplateReason": "위키 서식에 맞지 않습니다: {code}. 문서를 열면 무엇을 고칠지 볼 수 있습니다.",
+      "offTemplateAriaLabel": "이 문서가 위키 서식과 다른 점",
+      "offTemplateTitle": "이 문서는 위키 서식에 맞지 않습니다",
+      "offTemplateBody": "그래도 문서이고 그대로 고칠 수 있습니다. 아래를 고치면 다른 문서와 같은 방식으로 읽힙니다. `ontology-atlas wiki-validate` 와 `validate_wiki` 도구가 같은 코드를 알려 줍니다.",
+      "writtenBy": "{author} 이(가) 씀",
+      "builtFrom": "바탕이 된 원문"
     },
     "find": {
       "title": "허락한 폴더 안의 문서",
@@ -4323,6 +4345,27 @@
       "add": "{count, plural, =0 {고른 것 넣기} other {# 개 넣기}}",
       "webGetApp": "앱 받기",
       "emptyAllDeclined": "여기 남은 것은 전에 넘긴 {count}개뿐입니다."
-    }
+    },
+    "source": {
+      "path": "경로",
+      "format": "형식",
+      "size": "크기",
+      "state": "상태",
+      "hash": "sha256",
+      "hashUnmeasured": "재지 않았습니다. 아직 이 파일을 해시와 함께 인용한 문서가 없습니다",
+      "citedBy": "인용한 문서",
+      "citedByNobody": "아직 없습니다",
+      "neverOpened": "Atlas 는 이 파일을 연 적이 없습니다. 아래는 모두 폴더 목록에서 읽었거나, 어떤 문서가 해시를 적어 두어 그것만 재어 본 값입니다.",
+      "reveal": "Finder 에서 보기",
+      "download": "사본 열기"
+    },
+    "readerSourceHint": "원문은 온 그대로 두므로 여기서 그려 낼 것이 없습니다. 폴더가 이미 아는 사실만 적습니다.",
+    "readerNoWikiTitle": "아직 정리한 문서가 없습니다",
+    "readerNoWikiBody": "원문 {count}개가 기다리고 있습니다. 「정리 시작」은 그 원문을 읽고 문서를 한 편씩 초안으로 쓰는 에이전트 턴을 한 번 띄웁니다. 쓰기는 저장 전에 모두 허락 카드에서 멈춥니다.",
+    "kindsAria": "이 폴더가 두는 것",
+    "kindSourcesTitle": "원문",
+    "kindSourcesBody": "온 그대로의 파일입니다. 형식을 가리지 않고, 한 바이트도 고치지 않고, 열어 보지도 않습니다.",
+    "kindWikiTitle": "위키",
+    "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다."
   }
 }

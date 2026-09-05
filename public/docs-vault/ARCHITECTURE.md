@@ -28,6 +28,7 @@ tags: [architecture, infra, overview]
 │ ├─ /topology               map + contextual write     │
 │ ├─ /architecture           reviewed roles + agent gate│
 │ ├─ /docs                   vault picker + editor       │
+│ ├─ /library                gathered sources + wiki     │
 │ ├─ /ontology               thin redirect → /topology   │
 │ ├─ /ontology/edit          compatibility redirect      │
 │ ├─ /ontology/studio        compatibility → topology    │
@@ -237,7 +238,7 @@ user's global one, which is what makes the permission gate exist at all;
 credentials are symlinked, never copied. And the child runs in its own process
 group, so quitting the app ends the adapter and everything it spawned.
 
-### The library — three kinds of file in one folder (2026-09-05)
+### The library — three kinds of file in one folder (2026-09-05), one destination (2026-09-06)
 
 `docs/DECISIONS.md`, 2026-09-05: a vault holds three kinds of file and only one is the
 graph. The separation is a property of the **walk**, not a filter applied later.
@@ -264,6 +265,13 @@ graph. The separation is a property of the **walk**, not a filter applied later.
 - `src-tauri/src/library.rs` owns the native half: hashing, the native picker, the import
   copy, metadata-only discovery, and Finder reveal. It writes nothing outside
   `<vault>/sources/`, and its discovery walk contains no writer.
+- **Where it is drawn moved on 2026-09-06.** The two lists shipped inside the Docs
+  sidebar and became `/library` the next day, after the owner read that screen as
+  cluttered. `src/views/library/` owns the destination: an index of Sources and Wiki on
+  the left, and on the right either the wiki page in the shared reading pane
+  (`src/widgets/doc-reading-pane/`) or, for a source, the six facts the folder holds
+  about a file Atlas has never opened. Compile's agent dock came with it. The file rules
+  above did not change — only which screen draws them.
 
 ## FSD layers
 
@@ -416,6 +424,17 @@ until a local manifest exists.
                            rather than to an Atlas screen; discovery of already-registered
                            servers and keychain storage are the app-only halves and each says
                            so where it is missing
+/library                   the project documents gathered into this folder and the wiki
+                           pages written from them. Two panes: Sources and Wiki on the
+                           left with the three doors (Add files, Find documents, Compile),
+                           and on the right either the selected wiki page in the shared
+                           reading pane or, for a source, what the folder knows about a
+                           file Atlas has never opened. Split out of /docs 2026-09-06:
+                           gathering documents of any format and reading the ontology's
+                           Markdown are different jobs, and five capped lists were
+                           competing for one 280px column. With no folder open it is one
+                           centred stage naming the two kinds of file and offering the
+                           picker
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor
@@ -438,11 +457,12 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/reset-password`, `/settings/*`.
 
 **One piece of code decides which nav item is active; each screen size shows a
-different list of buttons.** The desktop rail shows eight destinations: Map,
-Architecture, Docs, Insights, Projects, Agents, MCP, and Git. The mobile bottom bar shows
-five persistent destinations: Map, Architecture, Docs, Insights, and Projects;
+different list of buttons.** The desktop rail shows nine destinations: Map,
+Architecture, Docs, Library, Insights, Projects, Agents, MCP, and Git. The mobile bottom
+bar shows five persistent destinations: Map, Architecture, Docs, Insights, and Projects;
 web adds Get App as a separate utility. Contextual writing stays inside Map,
-Agents, MCP and Git keep their narrow-screen entry points.
+Agents, MCP and Git keep their narrow-screen entry points, and the Library's is the row in
+the Docs sidebar where its two lists used to be.
 Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The

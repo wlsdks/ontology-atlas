@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, it, vi } from "vitest";
-import koMessages from "../../../../../messages/ko.json";
+import koMessages from "../../../../messages/ko.json";
 import { BackToTopButton } from "./BackToTopButton";
 
 function renderButton(visible: boolean, onClick = vi.fn()) {

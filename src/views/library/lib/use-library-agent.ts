@@ -13,10 +13,10 @@ import { useVaultConnectors } from "@/features/mcp-connectors";
 import { useAgentServer, useLocalVault } from "@/entities/vault-session";
 import { detectAcpRuntimes, isAcpBridgeAvailable, type AcpRuntimeStatus } from "@/shared/lib/tauri-acp";
 
-import type { DocsAgentOpeningRequest, DocsAgentRuntime } from "../ui/parts/DocsAgentDock";
+import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/parts/LibraryAgentDock";
 
 /**
- * Whether Docs can start an in-app agent turn, and everything needed to start one.
+ * Whether the Library can start an in-app agent turn, and everything needed to start one.
  *
  * The same wiring Analysis and Architecture already carry, and deliberately not a fourth
  * spelling of it: which runtimes are usable, which MCP servers the session gets, and
@@ -33,11 +33,11 @@ import type { DocsAgentOpeningRequest, DocsAgentRuntime } from "../ui/parts/Docs
 const subscribeDesktopRuntime = () => () => undefined;
 const readServerDesktopRuntime = () => false;
 
-type DocsAgentRoute = "checking" | "agent" | "unavailable";
+type LibraryAgentRoute = "checking" | "agent" | "unavailable";
 
-function selectDocsAgentRuntimes(
+function selectLibraryAgentRuntimes(
   runtimes: readonly AcpRuntimeStatus[] | null | undefined,
-): DocsAgentRuntime[] {
+): LibraryAgentRuntime[] {
   return (runtimes ?? [])
     .filter(
       (runtime) =>
@@ -46,7 +46,7 @@ function selectDocsAgentRuntimes(
     .map(({ id, label }) => ({ id, label }));
 }
 
-export function useDocsAgent(vaultRoot: string | null) {
+export function useLibraryAgent(vaultRoot: string | null) {
   const localVault = useLocalVault();
   const agentServer = useAgentServer();
   const bridgeAvailable = useSyncExternalStore(
@@ -54,11 +54,11 @@ export function useDocsAgent(vaultRoot: string | null) {
     isAcpBridgeAvailable,
     readServerDesktopRuntime,
   );
-  const [runtimes, setRuntimes] = useState<DocsAgentRuntime[]>([]);
+  const [runtimes, setRuntimes] = useState<LibraryAgentRuntime[]>([]);
   const [runtimeId, setRuntimeId] = useState<string | null>(null);
   const [runtimeCheckComplete, setRuntimeCheckComplete] = useState(false);
   const [open, setOpen] = useState(false);
-  const [openingRequest, setOpeningRequest] = useState<DocsAgentOpeningRequest | null>(null);
+  const [openingRequest, setOpeningRequest] = useState<LibraryAgentOpeningRequest | null>(null);
 
   useEffect(() => {
     // With no bridge there is nothing to detect, and `runtimesChecked` below reads that
@@ -68,7 +68,7 @@ export function useDocsAgent(vaultRoot: string | null) {
     let cancelled = false;
     const apply = (list: Awaited<ReturnType<typeof detectAcpRuntimes>>) => {
       if (cancelled) return;
-      const usable = selectDocsAgentRuntimes(list);
+      const usable = selectLibraryAgentRuntimes(list);
       setRuntimes(usable);
       setRuntimeId((current) =>
         current && usable.some((runtime) => runtime.id === current) ? current : (usable[0]?.id ?? null),
@@ -117,7 +117,7 @@ export function useDocsAgent(vaultRoot: string | null) {
 
   const runtimesChecked = !bridgeAvailable || runtimeCheckComplete;
   const serverCheckComplete = agentServer.launch !== null || agentServer.reason !== null;
-  const route: DocsAgentRoute = !bridgeAvailable
+  const route: LibraryAgentRoute = !bridgeAvailable
     ? "unavailable"
     : !runtimesChecked || !serverCheckComplete
       ? "checking"
