@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs
+
+**Why**: the owner's goal is gather, structure, wiki, graph, and the connectors merged today are its intake with nothing flowing through; the vault holds zero `document` nodes although absorb paths shipped months ago, so the compile-to-graph step has never been measured.
+**Prior**: narrows 2026-08-25 "does not expand into unrelated organizational knowledge" to project documents inside the open folder; upholds 2026-09-05 connectors ("Atlas never sits in the path"), the same day's "ingest is a job, not a place", and 2026-08-21 (92) change proposals.
+**Decision**: three file kinds. A raw source lives verbatim under `sources/` with a Markdown shadow whose frontmatter carries origin, sha256, fetched_at and converter (provenance in Git; absolute roots only in `.ontology-atlas/`). A wiki page lives under `wiki/` with no `kind:` and a `created_by`, every claim citing a source anchor. An ontology node has `kind:` and is the only graph truth. Raw wins on what a document said, node on what we mean, a human edit over an agent compile. Docs lists Sources and Wiki; discovery proposes metadata-only candidates from the open folder and bound project roots and the person approves before any copy; Compile starts one in-app agent turn under the permission gate, approved page by page; no scheduled fetch; no ninth tile.
+**Dissent**: po-evidence: run the sealed-question probe before building anything; adopted as the gate for the wiki-to-graph step, not for the library.
+**Falsifier**: a compiled page that passes provenance yet loses a sealed five-question test to a raw-folder control retires Compile to a file list; a candidate proposed outside the granted roots, or a wiki page answering `get_concept`, breaks the rule.
+**Owner**: jinan
+
 ## 2026-09-05 — MCP becomes its own destination, the rail cap moves to eight, and the page frame owns the desktop bottom
 
 **Why**: `/agents` carried two jobs sharing only the word "agent" (which coding tools this computer has, and what an agent reaches over MCP); the owner asked for the split and approved a longer rail. With a folder open the page reserved 0px at the bottom, so the last card sat on the window edge.

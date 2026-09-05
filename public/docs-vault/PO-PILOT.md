@@ -96,6 +96,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 
 | 30 | 2026-09-05 | A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path | one-way | review | handoff | public-contract | truth=unchanged;transfer=affected;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | narrowed | po-evidence+po-steward |
 | 31 | 2026-09-05 | MCP becomes its own destination, the rail cap moves to eight, and the page frame owns the desktop bottom | one-way | review | orient | surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | scope | 2 | 0 | narrowed | po-evidence+po-leverage |
+| 32 | 2026-09-05 | A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs | one-way | review | handoff | substantial-investment+surface-inventory | truth=affected;transfer=affected;agent-write=affected;human-correction=affected | meaning | 2 | 2 | narrowed | po-evidence+po-steward |
 
 ## Outcome updates
 
@@ -144,3 +145,4 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 29 | 2026-09-05 | pass | yes | no | pending |
 | 30 | 2026-09-05 | pass | yes | no | pending |
 | 31 | 2026-09-05 | pass | yes | no | pending |
+| 32 | 2026-09-05 | pending | yes | no | pending |
