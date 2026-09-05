@@ -137,6 +137,13 @@ export function ConnectorsPanel({
     [store.connectors],
   );
 
+  /*
+   * Which keychain-backed variables this machine actually holds a value for. Read once here
+   * rather than per field, because the **row** needs the answer: a connector whose token is
+   * absent must not be switchable on, and that judgement belongs beside the switch.
+   */
+  const storedRefs = useConnectorSecretPresence(store.connectors, canStoreSecrets);
+
   const addDiscovered = useCallback(
     (server: DiscoveredConnector) => {
       const id = newConnectorId();
@@ -213,8 +220,10 @@ export function ConnectorsPanel({
         connectors={store.connectors}
         canStoreSecrets={canStoreSecrets}
         registeredNames={registeredNames}
+        storedRefs={storedRefs}
         onToggle={(id, enabled) => void store.setEnabled(id, enabled)}
         onRemove={(id) => void store.remove(id)}
+        onUpsert={(connector) => void store.upsert(connector)}
         testIdPrefix={testIdPrefix}
       />
 
@@ -278,15 +287,20 @@ function AttachedList({
   connectors,
   canStoreSecrets,
   registeredNames,
+  storedRefs,
   onToggle,
   onRemove,
+  onUpsert,
   testIdPrefix,
 }: {
   connectors: ConnectorRecord[];
   canStoreSecrets: boolean;
   registeredNames: Set<string>;
+  /** `null` where no keychain could be read - "not asked", which is not "none". */
+  storedRefs: ReadonlySet<string> | null;
   onToggle: (id: string, enabled: boolean) => void;
   onRemove: (id: string) => void;
+  onUpsert: (connector: ConnectorRecord) => void;
   testIdPrefix: string;
 }) {
   const t = useTranslations('connectors');
@@ -303,7 +317,7 @@ function AttachedList({
   return (
     <ul data-testid={`${testIdPrefix}-list`} className="mt-3 flex flex-col gap-2">
       {connectors.map((connector) => {
-        const problems = connectorProblems(connector, connectors);
+        const problems = connectorProblems(connector, connectors, storedRefs ?? undefined);
         const collides = registeredNames.has(connector.name.trim());
         return (
           <li
@@ -382,9 +396,11 @@ function AttachedList({
               </p>
             ) : null}
 
-            <SecretFields
+            <VariableFields
               connector={connector}
               canStoreSecrets={canStoreSecrets}
+              storedRefs={storedRefs}
+              onUpsert={onUpsert}
               testIdPrefix={testIdPrefix}
             />
           </li>
@@ -397,45 +413,47 @@ function AttachedList({
 type ProblemKey = `problem.${ConnectorProblem}`;
 
 /**
- * One field per variable that needs a token.
+ * Which keychain references this machine holds a value for.
  *
- * The value goes to the keychain and is cleared from this component the moment the call returns —
- * there is no read path back, so what is shown afterwards is only "stored" and the last four
- * characters, exactly as the BYOK panel does.
+ * Read at the panel rather than per field. The **row** is what needs the answer: a connector
+ * whose token is absent must not be switchable on, and a switch that says "on" over a credential
+ * that is not there is the exact failure this screen exists to prevent.
+ *
+ * `null` means the keychain was never asked - a browser has none. That is not the same as "none
+ * stored", and collapsing the two would call every healthy connector broken on the web.
  */
-function SecretFields({
-  connector,
-  canStoreSecrets,
-  testIdPrefix,
-}: {
-  connector: ConnectorRecord;
-  canStoreSecrets: boolean;
-  testIdPrefix: string;
-}) {
-  const t = useTranslations('connectors');
+function useConnectorSecretPresence(
+  connectors: readonly ConnectorRecord[],
+  canStoreSecrets: boolean,
+): ReadonlySet<string> | null {
   const refs = useMemo(
     () =>
-      [...connector.env, ...connector.headers].filter(
-        (entry): entry is ConnectorValueEntry & { secretRef: string } =>
-          typeof entry.secretRef === 'string',
-      ),
-    [connector.env, connector.headers],
+      connectors
+        .flatMap((connector) => [...connector.env, ...connector.headers])
+        .map((entry) => entry.secretRef)
+        .filter((reference): reference is string => typeof reference === 'string'),
+    [connectors],
   );
-  const [stored, setStored] = useState<Record<string, string | null>>({});
-  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const key = refs.join('\u0000');
+  const [stored, setStored] = useState<ReadonlySet<string> | null>(null);
 
-  const read = useCallback(
-    () =>
-      Promise.all(
-        refs.map(async (entry) => {
-          const status = await connectorSecretStatus(entry.secretRef);
-          return [entry.secretRef, status?.stored ? (status.last4 ?? '') : null] as const;
+  const read = useCallback(async () => {
+    const present = await Promise.all(
+      key
+        .split('\u0000')
+        .filter(Boolean)
+        .map(async (reference) => {
+          const status = await connectorSecretStatus(reference);
+          return status?.stored ? reference : null;
         }),
-      ).then(Object.fromEntries),
-    [refs],
-  );
+    );
+    return new Set(present.filter((reference): reference is string => reference !== null));
+  }, [key]);
 
   useEffect(() => {
+    if (!canStoreSecrets) {
+      return;
+    }
     let cancelled = false;
     const refresh = () => {
       void read().then((next) => {
@@ -450,76 +468,182 @@ function SecretFields({
       cancelled = true;
       stop();
     };
-  }, [read]);
+  }, [canStoreSecrets, read]);
 
-  if (refs.length === 0) return null;
-  if (!canStoreSecrets) {
-    return (
-      <p
-        data-testid={`${testIdPrefix}-item-secrets-unavailable`}
-        className="mt-2 break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
-      >
-        {t('secretsWeb', { keys: refs.map((entry) => entry.name).join(', ') })}
-      </p>
-    );
-  }
+  return canStoreSecrets ? stored : null;
+}
+
+/**
+ * Every variable this connector declares, and where its value lives.
+ *
+ * **The choice is per variable and the person makes it.** A name that reads like a credential
+ * suggests the keychain, but it does not decide: `OPENAPI_MCP_HEADERS` is the variable Notion's
+ * own server documents and it carries a bearer token, while `NOTION_VERSION` is a date. A rule
+ * that read only the name offered no field at all for the first one, so the connector attached
+ * with its credential absent and looked healthy (measured 2026-09-05).
+ *
+ * What the name still decides, absolutely, is that **a credential-shaped one is never written to
+ * the file**. With the keychain off for such a variable there is no field here at all, and the
+ * row says why rather than offering a box whose contents the writer would refuse.
+ */
+function VariableFields({
+  connector,
+  canStoreSecrets,
+  storedRefs,
+  onUpsert,
+  testIdPrefix,
+}: {
+  connector: ConnectorRecord;
+  canStoreSecrets: boolean;
+  storedRefs: ReadonlySet<string> | null;
+  onUpsert: (connector: ConnectorRecord) => void;
+  testIdPrefix: string;
+}) {
+  const t = useTranslations('connectors');
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+
+  const slots = [
+    { slot: 'env' as const, entries: connector.env },
+    { slot: 'headers' as const, entries: connector.headers },
+  ].filter(({ entries }) => entries.length > 0);
+  if (slots.length === 0) return null;
+
+  /** Rewrite one variable in place and hand the whole record back to the store. */
+  const change = (
+    slot: 'env' | 'headers',
+    name: string,
+    next: (entry: ConnectorValueEntry) => ConnectorValueEntry,
+  ) => {
+    onUpsert({
+      ...connector,
+      [slot]: connector[slot].map((entry) => (entry.name === name ? next(entry) : entry)),
+    });
+  };
+
   return (
     <div className="mt-2 flex flex-col gap-2">
-      {refs.map((entry) => {
-        const last4 = stored[entry.secretRef];
-        return (
-          <div key={entry.secretRef} className="flex flex-col gap-1">
-            {last4 ? (
-              <p
-                data-testid={`${testIdPrefix}-item-secret-stored`}
-                className="text-label leading-label text-[color:var(--color-text-tertiary)]"
-              >
-                {t('secretStored', { last4 })}
-              </p>
-            ) : (
-              <p
-                data-testid={`${testIdPrefix}-item-secret-missing`}
-                className="text-label leading-label text-[color:var(--color-status-warning)]"
-              >
-                {t('secretMissing')}
-              </p>
-            )}
-            <div className="flex items-center gap-2">
-              <Input
-                label={entry.name}
-                size="md"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                value={drafts[entry.secretRef] ?? ''}
+      {slots.flatMap(({ slot, entries }) =>
+        entries.map((entry) => {
+          const inKeychain = typeof entry.secretRef === 'string';
+          const stored = inKeychain && storedRefs !== null && storedRefs.has(entry.secretRef!);
+          const draftKey = `${slot}:${entry.name}`;
+          return (
+            <div
+              key={draftKey}
+              data-testid={`${testIdPrefix}-item-variable`}
+              data-variable-name={entry.name}
+              data-variable-keychain={inKeychain ? 'true' : 'false'}
+              className="flex flex-col gap-1"
+            >
+              <Checkbox
+                data-testid={`${testIdPrefix}-item-variable-keychain`}
+                label={t('keepInKeychain', { name: entry.name })}
+                checked={inKeychain}
+                disabled={!canStoreSecrets}
                 onChange={(event) =>
-                  setDrafts((previous) => ({
-                    ...previous,
-                    [entry.secretRef]: event.target.value,
-                  }))
+                  change(slot, entry.name, (current) =>
+                    event.target.checked
+                      ? {
+                          name: current.name,
+                          secretRef: connectorSecretRef(connector.id, current.name),
+                        }
+                      : { name: current.name },
+                  )
                 }
-                data-testid={`${testIdPrefix}-item-secret-input`}
-                className="w-full"
+                className="text-label text-[color:var(--color-text-secondary)]"
               />
-              <Chip
-                data-testid={`${testIdPrefix}-item-secret-save`}
-                disabled={!(drafts[entry.secretRef] ?? '').trim()}
-                onClick={() => {
-                  const value = (drafts[entry.secretRef] ?? '').trim();
-                  if (!value) return;
-                  void connectorSecretSet(entry.secretRef, value).then(() => {
-                    // Cleared the moment it is stored: this component has no reason to keep it,
-                    // and the keychain has no read path back into here.
-                    setDrafts((previous) => ({ ...previous, [entry.secretRef]: '' }));
-                  });
-                }}
-              >
-                {t('secretSave')}
-              </Chip>
+              {!canStoreSecrets && inKeychain ? (
+                <p
+                  data-testid={`${testIdPrefix}-item-secrets-unavailable`}
+                  className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                >
+                  {t('secretsWeb', { keys: entry.name })}
+                </p>
+              ) : null}
+              {canStoreSecrets && inKeychain ? (
+                <>
+                  {stored ? (
+                    <p
+                      data-testid={`${testIdPrefix}-item-secret-stored`}
+                      className="text-label leading-label text-[color:var(--color-text-tertiary)]"
+                    >
+                      {t('secretStoredPlain')}
+                    </p>
+                  ) : (
+                    <p
+                      data-testid={`${testIdPrefix}-item-secret-missing`}
+                      className="text-label leading-label text-[color:var(--color-status-warning)]"
+                    >
+                      {t('secretMissing')}
+                    </p>
+                  )}
+                  <div className="flex items-end gap-2">
+                    <Input
+                      label={entry.name}
+                      size="md"
+                      type="password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      value={drafts[draftKey] ?? ''}
+                      onChange={(event) =>
+                        setDrafts((previous) => ({ ...previous, [draftKey]: event.target.value }))
+                      }
+                      data-testid={`${testIdPrefix}-item-secret-input`}
+                      className="w-full"
+                    />
+                    <Chip
+                      data-testid={`${testIdPrefix}-item-secret-save`}
+                      disabled={!(drafts[draftKey] ?? '').trim()}
+                      onClick={() => {
+                        const value = (drafts[draftKey] ?? '').trim();
+                        if (!value || !entry.secretRef) return;
+                        void connectorSecretSet(entry.secretRef, value).then(() => {
+                          // Cleared the moment it is stored: this component has no reason to
+                          // keep it, and the keychain has no read path back into here.
+                          setDrafts((previous) => ({ ...previous, [draftKey]: '' }));
+                        });
+                      }}
+                    >
+                      {t('secretSave')}
+                    </Chip>
+                  </div>
+                </>
+              ) : null}
+              {!inKeychain && looksLikeSecretKey(entry.name) ? (
+                /*
+                 * No box here on purpose. The writer refuses a literal under this name, so a
+                 * field would be somewhere to type something that is then thrown away.
+                 */
+                <p
+                  data-testid={`${testIdPrefix}-item-variable-refused`}
+                  className="break-keep text-label leading-prose text-[color:var(--color-text-tertiary)]"
+                >
+                  {t('valueNotInFile')}
+                </p>
+              ) : null}
+              {!inKeychain && !looksLikeSecretKey(entry.name) ? (
+                <Input
+                  label={entry.name}
+                  size="md"
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={entry.value ?? ''}
+                  placeholder={t('valuePlaceholder')}
+                  data-testid={`${testIdPrefix}-item-variable-value`}
+                  onChange={(event) => {
+                    const next = event.target.value;
+                    change(slot, entry.name, (current) =>
+                      next ? { name: current.name, value: next } : { name: current.name },
+                    );
+                  }}
+                  className="w-full"
+                />
+              ) : null}
             </div>
-          </div>
-        );
-      })}
+          );
+        }),
+      )}
     </div>
   );
 }

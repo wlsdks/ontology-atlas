@@ -34,12 +34,28 @@ export const CONNECTOR_STORE_VERSION = 1;
 export const CONNECTOR_TRANSPORTS = ['stdio', 'http'] as const;
 export type ConnectorTransport = (typeof CONNECTOR_TRANSPORTS)[number];
 
-/** One environment variable or HTTP header. Exactly one of `value` / `secretRef`, or neither. */
+/**
+ * One environment variable or HTTP header.
+ *
+ * **`secretRef` is the person's decision, not a guess about the name.** Whether a value lives in
+ * this machine's keychain or in this file is a per-variable choice they make, and its presence
+ * here *is* that choice: a reference means the keychain holds it, its absence means the value (if
+ * any) is written beside the connector.
+ *
+ * ⚠️ **The name still decides one thing**, and only one: a credential-shaped name may never carry
+ * a literal in the file, so `serializeConnectorState` refuses one whether or not somebody turned
+ * the keychain off for it. The name is a **default suggestion** for the choice and a **hard floor**
+ * on what may be written; it is not the whole answer, which is what it used to be
+ * (measured 2026-09-05: `OPENAPI_MCP_HEADERS` - the variable Notion's own server documents, and
+ * which carries `Bearer ntn_...` - matched nothing, so the screen offered no field at all and the
+ * connector attached with its credential absent while looking perfectly healthy. `GH_PAT`,
+ * `JIRA_PAT`, `CONFLUENCE_PAT`, `LINEAR_PAT` and `COOKIE` all missed the same way.)
+ */
 export interface ConnectorValueEntry {
   name: string;
-  /** A literal — allowed only for a name that does not read like a credential. */
+  /** A literal. Refused at write time for a credential-shaped name. */
   value?: string;
-  /** The keychain account holding the value. The value itself is never in this file. */
+  /** The keychain account holding the value. Present exactly when the keychain holds this one. */
   secretRef?: string;
   /**
    * Set on read when the file held a plaintext value for a credential-shaped name. The value is
@@ -95,7 +111,8 @@ export type ConnectorProblem =
   | 'command-not-absolute'
   | 'url-missing'
   | 'url-not-http'
-  | 'secret-literal';
+  | 'secret-literal'
+  | 'value-missing';
 
 /**
  * What is wrong with this record, in codes rather than sentences.
@@ -109,6 +126,14 @@ export type ConnectorProblem =
 export function connectorProblems(
   record: ConnectorRecord,
   siblings: readonly ConnectorRecord[] = [],
+  /**
+   * The keychain references this machine actually holds a value for.
+   *
+   * **Omitted means "not asked", not "none"** - and the difference matters, because reporting
+   * every keychain-backed variable as missing on a surface that cannot see a keychain would call
+   * a healthy connector broken. Pass the set only where it was really read.
+   */
+  storedRefs?: ReadonlySet<string>,
 ): ConnectorProblem[] {
   const problems: ConnectorProblem[] = [];
   const name = record.name.trim();
@@ -131,6 +156,19 @@ export function connectorProblems(
   }
   if ([...record.env, ...record.headers].some(entryHoldsSecretLiteral)) {
     problems.push('secret-literal');
+  }
+  /*
+   * A variable the person put in the keychain, with nothing behind it. Left unsaid, the connector
+   * attaches with its credential absent and every call it makes is refused by a service that has
+   * no idea why - the failure this whole per-variable choice exists to prevent.
+   */
+  if (
+    storedRefs
+    && [...record.env, ...record.headers].some(
+      (entry) => typeof entry.secretRef === 'string' && !storedRefs.has(entry.secretRef),
+    )
+  ) {
+    problems.push('value-missing');
   }
   return problems;
 }

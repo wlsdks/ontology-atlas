@@ -4054,6 +4054,10 @@
     "foundFrom": "{source} 에 등록되어 있습니다",
     "foundUnsupported": "{transport} 방식 서버인데, 두 코딩 에이전트 모두 더는 이 방식을 받지 않습니다.",
     "secretStored": "이 컴퓨터에 저장되어 있습니다. 끝 네 자리는 {last4} 입니다.",
+    "keepInKeychain": "{name} 값을 이 컴퓨터의 키체인에 둡니다",
+    "secretStoredPlain": "이 컴퓨터에 저장되어 있습니다.",
+    "valueNotInFile": "이 이름의 값은 파일에 적지 않습니다. 입력하시려면 키체인을 켜십시오.",
+    "valuePlaceholder": "값",
     "secretMissing": "이 컴퓨터에 아직 값이 없습니다. 값 없이는 이 연결 도구가 뜨지 않습니다.",
     "secretSave": "저장",
     "secretsWeb": "이 연결 도구에는 {keys} 값이 필요합니다. 그 값을 담아 두려면 설치한 앱이 필요합니다.",
@@ -4083,7 +4087,8 @@
       "command-not-absolute": "전체 경로를 적으십시오. 에이전트는 PATH 없이 돕니다.",
       "url-missing": "주소를 적으십시오.",
       "url-not-http": "주소는 http:// 또는 https:// 로 시작해야 합니다.",
-      "secret-literal": "토큰이 그대로 적혀 있습니다. 먼저 키체인으로 옮기십시오."
+      "secret-literal": "토큰이 그대로 적혀 있습니다. 먼저 키체인으로 옮기십시오.",
+      "value-missing": "키체인에서 가져오기로 한 변수인데 그 뒤에 아직 아무것도 없습니다."
     }
   }
 }

@@ -158,6 +158,48 @@ describe('connector record', () => {
     expect(connectorProblems(stdio())).toEqual([]);
   });
 
+  it('lets any variable be keychain-backed, not only the ones a regex recognises', () => {
+    /*
+     * Measured 2026-09-05. `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
+     * documents, and it carries `Bearer ntn_...`. It matches nothing, so a name-only rule
+     * offered no field for it at all and the connector attached with its credential absent,
+     * looking perfectly healthy. `GH_PAT`, `JIRA_PAT`, `CONFLUENCE_PAT`, `LINEAR_PAT` and
+     * `COOKIE` all missed the same way.
+     */
+    for (const name of ['OPENAPI_MCP_HEADERS', 'GH_PAT', 'JIRA_PAT', 'CONFLUENCE_PAT', 'LINEAR_PAT', 'COOKIE']) {
+      expect(looksLikeSecretKey(name), name).toBe(false);
+      const record = stdio({ env: [{ name, secretRef: `connector:c1:${name}` }] });
+      // The choice is the reference's presence, and nothing about the name blocks it.
+      expect(connectorProblems(record)).toEqual([]);
+      expect(serializeConnectorState({ connectors: [record] })).toContain(`connector:c1:${name}`);
+    }
+  });
+
+  it('says a keychain-backed variable has nothing behind it, but only when it was asked', () => {
+    const record = stdio({
+      env: [{ name: 'OPENAPI_MCP_HEADERS', secretRef: 'connector:c1:OPENAPI_MCP_HEADERS' }],
+    });
+    // Asked, and the keychain does not hold it.
+    expect(connectorProblems(record, [], new Set())).toContain('value-missing');
+    // Asked, and it does.
+    expect(
+      connectorProblems(record, [], new Set(['connector:c1:OPENAPI_MCP_HEADERS'])),
+    ).toEqual([]);
+    // Not asked at all. Reporting it missing on a surface with no keychain to read would call a
+    // healthy connector broken.
+    expect(connectorProblems(record)).toEqual([]);
+  });
+
+  it('still refuses a literal under a credential-shaped name, keychain choice or not', () => {
+    // Turning the keychain off is a choice about where a value lives. It is not permission to
+    // put this one in a file that syncs and gets committed.
+    expect(() =>
+      serializeConnectorState({
+        connectors: [stdio({ env: [{ name: 'NOTION_TOKEN', value: 'ntn_live_value' }] })],
+      }),
+    ).toThrow(ConnectorSecretLiteralError);
+  });
+
   it('names the other ways a record cannot work', () => {
     expect(connectorProblems(stdio({ name: '  ' }))).toContain('name-empty');
     expect(connectorProblems(stdio({ command: '' }))).toContain('command-missing');

@@ -39,6 +39,10 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
     connectorSecretSet: async (secretRef: string, secret: string) => {
       bridge.secretSets.push({ ref: secretRef, secret });
       bridge.stored.set(secretRef, secret.slice(-4));
+      // The real bridge announces this so a panel mounted elsewhere re-asks the keychain rather
+      // than showing a stale "not stored". The stand-in has to announce it too, or the test
+      // would be measuring a screen the product never renders.
+      window.dispatchEvent(new Event('ontology-atlas:connector-secret-change'));
       return { secretRef, stored: true, last4: secret.slice(-4) };
     },
   };
@@ -209,6 +213,81 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     );
   });
 
+  it('키체인에 값이 없는 동안에는 켜지 못한다 — 자격 증명 없이 붙어 멀쩡해 보이는 일이 없게', async () => {
+    /*
+     * The failure this whole per-variable choice exists to prevent: the connector attaches, the
+     * agent lists its tools, and every call is refused by a service that has no idea why.
+     */
+    const vault = fakeVault(seeded(stdioRecord));
+    draw(<ConnectorsPanel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled());
+    expect(screen.getByTestId('connectors-item-problem')).toBeInTheDocument();
+
+    bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    fireEvent.change(screen.getByTestId('connectors-item-secret-input'), {
+      target: { value: 'ntn_live_value' },
+    });
+    fireEvent.click(screen.getByTestId('connectors-item-secret-save'));
+    await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeEnabled());
+  });
+
+  it('이름이 자격 증명처럼 안 보여도 키체인을 고를 수 있다', async () => {
+    /*
+     * Measured 2026-09-05. `OPENAPI_MCP_HEADERS` is the variable Notion's own MCP server
+     * documents and it carries `Bearer ntn_…`. A name-only rule offered no field for it at all,
+     * so the connector attached with its credential absent.
+     */
+    const vault = fakeVault(
+      seeded({ ...stdioRecord, env: [{ name: 'OPENAPI_MCP_HEADERS' }] }),
+    );
+    draw(<ConnectorsPanel handle={vault.handle} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-item-variable')).toHaveAttribute(
+        'data-variable-keychain',
+        'false',
+      ),
+    );
+    fireEvent.click(screen.getByTestId('connectors-item-variable-keychain'));
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-item-variable')).toHaveAttribute(
+        'data-variable-keychain',
+        'true',
+      ),
+    );
+    // The file now holds a reference to the keychain, and a field to type the value appears.
+    expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').toContain(
+      'connector:c1:OPENAPI_MCP_HEADERS',
+    );
+    expect(screen.getByTestId('connectors-item-secret-input')).toBeInTheDocument();
+  });
+
+  it('자격 증명이 아닌 변수의 값은 폴더 안 파일에 그대로 적힌다', async () => {
+    // Forcing a version pin into a keychain would make somebody re-enter it per machine, and a
+    // rule people route around stops protecting anything.
+    const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_VERSION' }] }));
+    draw(<ConnectorsPanel handle={vault.handle} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-item-variable-value')).toBeInTheDocument(),
+    );
+    fireEvent.change(screen.getByTestId('connectors-item-variable-value'), {
+      target: { value: '2022-06-28' },
+    });
+    await waitFor(() =>
+      expect(vault.files.get('.ontology-atlas/connectors.json') ?? '').toContain('2022-06-28'),
+    );
+  });
+
+  it('키체인을 끈 자격 증명 이름에는 적을 칸을 주지 않고 이유를 말한다', async () => {
+    // The writer refuses a literal under this name, so a box would be somewhere to type
+    // something that is then thrown away.
+    const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_TOKEN' }] }));
+    draw(<ConnectorsPanel handle={vault.handle} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-item-variable-refused')).toBeInTheDocument(),
+    );
+    expect(screen.queryByTestId('connectors-item-variable-value')).toBeNull();
+  });
+
   it('브라우저에서는 왜 못 보는지와 무엇은 되는지를 함께 말한다', async () => {
     bridge.discoveryAvailable = false;
     bridge.secretsAvailable = false;
@@ -226,6 +305,8 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     expect(screen.getByTestId('connectors-item-secrets-unavailable')).toHaveTextContent(
       'NOTION_TOKEN',
     );
+    // …and the choice itself cannot be made where there is no keychain to make it about.
+    expect(screen.getByTestId('connectors-item-variable-keychain')).toBeDisabled();
   });
 
   it('직접 추가한 연결 도구도 꺼진 채로 들어간다', async () => {

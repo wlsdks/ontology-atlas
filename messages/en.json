@@ -4054,6 +4054,10 @@
     "foundFrom": "Registered in {source}",
     "foundUnsupported": "This is an {transport} server, and neither coding agent accepts that transport any more.",
     "secretStored": "Stored on this machine, ending {last4}.",
+    "keepInKeychain": "Keep {name} in this machine's keychain",
+    "secretStoredPlain": "Stored on this machine.",
+    "valueNotInFile": "A value under this name is never written to the file. Turn the keychain on to enter it.",
+    "valuePlaceholder": "value",
     "secretMissing": "No value on this machine yet. The connector will not start without it.",
     "secretSave": "Save",
     "secretsWeb": "This connector needs a value for {keys}. Keeping it needs the installed app.",
@@ -4083,7 +4087,8 @@
       "command-not-absolute": "Write the full path: the agent runs without a PATH.",
       "url-missing": "Give the address.",
       "url-not-http": "The address has to start with http:// or https://.",
-      "secret-literal": "A token is written in plain text; move it into the keychain first."
+      "secret-literal": "A token is written in plain text; move it into the keychain first.",
+      "value-missing": "A variable is set to come from the keychain and there is nothing behind it yet."
     }
   }
 }
