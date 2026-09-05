@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 import { cn } from "@/shared/lib/cn";
+import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
 import {
@@ -13,6 +14,7 @@ import {
   OVERLAY_SPRING_REDUCED,
   SCRIM_FADE,
   SCRIM_FADE_REDUCED,
+  useExitLockout,
 } from "@/shared/motion";
 import { transientSurface } from "./transient-surface";
 
@@ -106,6 +108,8 @@ export function Dialog({
     onEscape: onClose,
     initialFocus,
   });
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: containerLockoutRef, onAnimationStart: containerLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   useBodyScrollLock(open);
   const mounted = useIsMounted();
 
@@ -119,19 +123,22 @@ export function Dialog({
     <AnimatePresence>
       {open ? (
         <motion.div
+          ref={scrimLockoutRef}
+          onAnimationStart={scrimLockoutOnAnimationStart}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+          exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
           data-overlay-spring="true"
           className="fixed inset-0 z-[var(--z-dialog)] flex items-center justify-center bg-[color:var(--overlay-scrim)] px-4"
           onClick={handleScrimClick}
         >
           <motion.div
-            ref={containerRef}
+            ref={mergeRefs(containerRef, containerLockoutRef)}
+            onAnimationStart={containerLockoutOnAnimationStart}
             initial={{ y: 8, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 8, opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+            exit={{ y: 8, opacity: 0, transition: EXIT_TRANSITION }}
             transition={reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING}
             role="dialog"
             aria-modal="true"

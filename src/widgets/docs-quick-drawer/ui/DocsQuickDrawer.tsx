@@ -38,7 +38,8 @@ import {
   flattenDocs,
   flattenTreeSlugs,
 } from "../lib/tree-utils";
-import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
+import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { cn } from "@/shared/lib/cn";
 import { resolveLocaleDisplayName } from "@/shared/lib/locale-display-name";
@@ -339,6 +340,8 @@ export function DocsQuickDrawer({
   const searchRef = useRef<HTMLInputElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
   useBodyScrollLock(open);
 
@@ -507,22 +510,25 @@ export function DocsQuickDrawer({
       {open && (
         <motion.div
           key="docs-quick-drawer"
+          ref={scrimLockoutRef}
           data-interactive-overlay="true"
+          onAnimationStart={scrimLockoutOnAnimationStart}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+          exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={MOTION.base}
           className="pointer-events-auto fixed inset-0 z-40 bg-[color:var(--color-backdrop-medium)]"
           onClick={onClose}
         >
           <motion.aside
-            ref={panelRef}
+            ref={mergeRefs(panelRef, panelLockoutRef)}
             role="dialog"
             aria-modal="true"
             aria-label={t("ariaLabel")}
+            onAnimationStart={panelLockoutOnAnimationStart}
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
-            exit={{ x: "100%", pointerEvents: "none", transition: EXIT_TRANSITION }}
+            exit={{ x: "100%", transition: EXIT_TRANSITION }}
             transition={MOTION.base}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}

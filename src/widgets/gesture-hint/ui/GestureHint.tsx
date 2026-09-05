@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Hand, Pointer, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { IconButton } from "@/shared/ui";
 
 const STORAGE_KEY = "demo:gesture-hint:dismissed:v1";
@@ -45,14 +45,18 @@ export function GestureHint({ disabled = false }: { disabled?: boolean }) {
     return () => window.clearTimeout(id);
   }, [visible]);
 
+  const { ref: exitLockoutRef, onAnimationStart } = useExitLockout<HTMLDivElement>();
+
   return (
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={exitLockoutRef}
           data-interactive-overlay="true"
+          onAnimationStart={onAnimationStart}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 12, pointerEvents: "none", transition: EXIT_TRANSITION }}
+          exit={{ opacity: 0, y: 12, transition: EXIT_TRANSITION }}
           transition={MOTION.base}
           className="pointer-events-auto fixed left-1/2 top-[calc(max(0.85rem,env(safe-area-inset-top))+4rem)] z-30 flex w-[min(320px,calc(100vw-2rem))] -translate-x-1/2 items-start gap-3 rounded-sheet border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3.5 py-3 shadow-[var(--shadow-elevation-1)] md:hidden"
           role="status"

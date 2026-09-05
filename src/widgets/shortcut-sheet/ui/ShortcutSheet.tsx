@@ -10,7 +10,8 @@ import {
   NAV_LEADER_KEY,
 } from "@/shared/config/destinations";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, OVERLAY_SPRING_REDUCED, useExitLockout } from "@/shared/motion";
+import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { usePathname } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
@@ -410,24 +411,28 @@ export function ShortcutSheet({ open, onClose }: Props) {
     ? {
         initial: { opacity: 0, y: 0, scale: 1 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 0, scale: 1, pointerEvents: "none", transition: EXIT_TRANSITION },
+        exit: { opacity: 0, y: 0, scale: 1, transition: EXIT_TRANSITION },
         transition: OVERLAY_SPRING_REDUCED,
       }
     : {
         initial: { opacity: 0, y: 12, scale: 0.985 },
         animate: { opacity: 1, y: 0, scale: 1 },
-        exit: { opacity: 0, y: 12, scale: 0.985, pointerEvents: "none", transition: EXIT_TRANSITION },
+        exit: { opacity: 0, y: 12, scale: 0.985, transition: EXIT_TRANSITION },
         transition: MOTION.base,
       };
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: dialogLockoutRef, onAnimationStart: dialogLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={scrimLockoutRef}
           data-interactive-overlay="true"
+          onAnimationStart={scrimLockoutOnAnimationStart}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+          exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={reducedMotion ? OVERLAY_SPRING_REDUCED : MOTION.base}
           data-shortcut-sheet-responsive-contract="mobile-sheet-sm-floating"
           data-shortcut-sheet-floating-width-token="--topology-shortcut-sheet-floating-width"
@@ -437,7 +442,8 @@ export function ShortcutSheet({ open, onClose }: Props) {
           onClick={onClose}
         >
           <motion.section
-            ref={dialogRef}
+            ref={mergeRefs(dialogRef, dialogLockoutRef)}
+            onAnimationStart={dialogLockoutOnAnimationStart}
             initial={surfaceMotion.initial}
             animate={surfaceMotion.animate}
             exit={surfaceMotion.exit}

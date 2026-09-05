@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { PackageOpen, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTranslations } from "next-intl";
-import { EXIT_TRANSITION, MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { isPickerAbort } from "@/shared/lib/picker-abort";
 import {
@@ -106,6 +106,8 @@ export function BlockImportModule() {
   });
   const [busy, setBusy] = useState(false);
   const [dialogError, setDialogError] = useState(false);
+  const { ref: blockImportScrimLockoutRef, onAnimationStart: blockImportScrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: blockImportDialogLockoutRef, onAnimationStart: blockImportDialogLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
   const existingSlugs = useMemo(
     () => new Set(manifest?.docs.map((d) => d.slug) ?? []),
@@ -301,10 +303,12 @@ export function BlockImportModule() {
       <AnimatePresence>
         {open && plan && preview ? (
           <motion.div
+            ref={blockImportScrimLockoutRef}
             data-interactive-overlay="true"
+            onAnimationStart={blockImportScrimLockoutOnAnimationStart}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+            exit={{ opacity: 0, transition: EXIT_TRANSITION }}
             transition={MOTION.base}
             className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-6"
             onClick={() => {
@@ -312,9 +316,11 @@ export function BlockImportModule() {
             }}
           >
             <motion.section
+              ref={blockImportDialogLockoutRef}
+              onAnimationStart={blockImportDialogLockoutOnAnimationStart}
               initial={{ opacity: 0, y: 12, scale: 0.985 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 12, scale: 0.985, pointerEvents: "none", transition: EXIT_TRANSITION }}
+              exit={{ opacity: 0, y: 12, scale: 0.985, transition: EXIT_TRANSITION }}
               transition={MOTION.base}
               onClick={(event) => event.stopPropagation()}
               role="dialog"

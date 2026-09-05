@@ -9,7 +9,8 @@ import { BookOpen, Search, X } from 'lucide-react';
 import { ICON_SIZE } from '@/shared/ui/icon-size';
 import { cn } from '@/shared/lib/cn';
 import { controlClass } from '@/shared/ui';
-import { EXIT_TRANSITION, OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED } from "@/shared/motion";
+import { EXIT_TRANSITION, OVERLAY_SPRING, OVERLAY_SPRING_REDUCED, SCRIM_FADE, SCRIM_FADE_REDUCED, useExitLockout } from "@/shared/motion";
+import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
@@ -173,6 +174,8 @@ function SearchPaletteDialog({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const { categoryLabel, statusLabel } = useTaxonomy();
   // rank2 — one critically damped overlay spring (zero overshoot) throughout. A
   // reduced-motion user gets a 120ms opacity crossfade with no translate.
@@ -325,9 +328,11 @@ function SearchPaletteDialog({
 
   return (
     <motion.div
+      ref={scrimLockoutRef}
+      onAnimationStart={scrimLockoutOnAnimationStart}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+      exit={{ opacity: 0, transition: EXIT_TRANSITION }}
   // rank2 — the scrim is an opacity crossfade matched to
   // --topology-motion-panel-duration (180ms). reduced-motion uses 120ms (OVERLAY_SPRING_REDUCED).
       transition={reducedMotion ? SCRIM_FADE_REDUCED : SCRIM_FADE}
@@ -350,10 +355,11 @@ function SearchPaletteDialog({
           `--overlay-spring-*` token comments in app/globals.css) — not "inheriting the
           same spring". */}
       <motion.div
-        ref={dialogRef}
+        ref={mergeRefs(dialogRef, panelLockoutRef)}
+        onAnimationStart={panelLockoutOnAnimationStart}
         initial={{ y: 8, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 8, opacity: 0, pointerEvents: "none", transition: EXIT_TRANSITION }}
+        exit={{ y: 8, opacity: 0, transition: EXIT_TRANSITION }}
         transition={panelTransition}
         data-overlay-spring="true"
         data-search-palette-panel="true"
