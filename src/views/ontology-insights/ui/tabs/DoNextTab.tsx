@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
-import { AlertTriangle, FileWarning, MessageCircle } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { AlertTriangle, ChevronRight, FileWarning, MessageCircle } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
 import { EvidenceOnlyBadge } from "@/shared/ui/evidence-only-badge";
@@ -13,7 +13,14 @@ import type { DependencyCycle, DependencyCyclesResult } from "../../lib/dependen
 import type { DuplicatePairRow } from "../../lib/duplicate-pairs";
 import type { DoNextReviewState } from "../../lib/review-loop";
 import type { DomainChoice, MeaningGapRow } from "../../lib/meaning-gap-rows";
-import { fixBlockOrder, type BlockedDocumentRow, type FixBlockKey } from "../../lib/fix-list";
+import type { BlockedDocumentRow } from "../../lib/fix-list";
+import {
+  doNextGroupOrder,
+  groupOfReviewId,
+  sumDoNextGroupCounts,
+  type DoNextGroupCounts,
+  type DoNextGroupKey,
+} from "../../lib/do-next-groups";
 import {
   RowActionMenu,
   type QueueRowAbilities,
@@ -30,7 +37,7 @@ import { MeaningGapSection, type MeaningGapLabels } from "./MeaningGapSection";
 import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
 
 /**
- * Tab 1, "to do" — one list of the things that need fixing.
+ * Tab 1, "to do" — **one list of finding groups, titled by one count.**
  *
  * ## Why it is one list (owner decision, 2026-08-31)
  *
@@ -38,25 +45,41 @@ import { InsightsSectionTitle } from "../parts/InsightsSectionTitle";
  * band, and a queue split into two labelled groups with a per-section header, a per-section count
  * and a per-section hint, plus an activity digest and a bottom handoff footer. The owner could not
  * say why the tab existed. Counting one body of work three times does not make it three answers.
+ * That decision stands: **the sources are unchanged, there is one list, and one count titles it.**
  *
- * So: **the sources are unchanged and the presentation is one flat list.** Every row states the
- * concept, one plain sentence naming the observed fact, and the same three actions in the same
- * order (hand it to the agent · fix it myself · look at it), with an overflow carrying the
- * copyable command for someone driving an external tool.
+ * ## Why the rows became groups (owner, 2026-09-06)
  *
- * Nothing an agent can read was removed with the meter and the counters: MCP `maintenance_plan`
- * and `health` still return the same ranking and the same verdict. What was removed was a screen
- * repeating itself to a person.
+ * The flat list was right about counting once and wrong about how it reads. Measured on the
+ * dogfood folder at 1512×949, the whole first screen was eight rows, each 1,230px wide and 80px
+ * tall, and all eight carried **the same sentence**. The owner: *"the to-do list just keeps
+ * getting longer and its content only runs sideways."*
  *
- * Automation contract, unchanged: the precise ranking is never reimplemented on the client. A
- * person chooses here and execution is handed to an agent.
+ * So each kind of finding is now **one row**: its name, its count, and a disclosure. Opening it
+ * draws exactly the rows the flat list drew — same sources, same sentence, same three actions in
+ * the same order (hand it to the agent · fix it myself · look at it) with the same overflow.
+ * Nothing was hidden that a person could act on; what was removed is eight repetitions of one
+ * sentence standing between them and the scale of the work.
+ *
+ * The counts are safe to print beside each group because they are **not a second census**: they
+ * are the verdict's own `InsightsSignalCounts`, re-keyed by `buildDoNextGroupCounts`, and their
+ * sum is asserted equal to the title count both here (a development-time invariant) and in
+ * `tests/contract/do-next-group-sum.contract.test.ts`. That is the guard against the accident of
+ * 2026-08-07 (3), where a badge read 7 above a heading reading 8.
+ *
+ * Nothing an agent can read was removed: MCP `maintenance_plan` and `health` still return the same
+ * ranking and the same verdict. Automation contract, unchanged: the precise ranking is never
+ * reimplemented on the client. A person chooses here and execution is handed to an agent.
  */
 
 export interface DoNextTabLabels extends FixRowLabels {
-  /** The one heading. States the scale of the list, and nothing else on the tab states a count. */
+  /** The one heading. It states the scale of the whole list; the group counts sum to it. */
   listTitle: (count: number) => string;
-  /** The one truncation line, when the list shows fewer rows than the heading counts. */
+  /** The remainder line inside an opened group, when it draws fewer rows than it counts. */
   moreCount: (count: number) => string;
+  /** One name per finding group — what the rows inside it have in common, said once. */
+  groupName: (group: DoNextGroupKey) => string;
+  /** The disclosure's accessible name, which must carry the group's own scale. */
+  groupToggle: (name: string, count: number) => string;
   emptyQueue: string;
   /** One line in a read-only session, in the same box as the control that opens a folder. */
   readOnlyHint: string;
@@ -92,21 +115,6 @@ export interface DoNextTabLabels extends FixRowLabels {
   evidenceBadgeHint: string;
 }
 
-/**
- * One row of the priority pick. The result of `pickTodaysTouchUps` is given a display `why` string
- * by the caller (the pure function knows only the reason; the surface knows the copy).
- */
-export interface DoNextTouchUp {
-  id: string;
-  source: "cycle" | "neglected-hub" | "promotion";
-  nodeId: string;
-  title: string;
-  nodeKind: string;
-  /** One line of "why was this picked" — display copy assembled from existing derived values. */
-  why: string;
-  handoffPayload: string;
-}
-
 export interface DoNextTabProps {
   /**
    * The «way to open a folder» placed beside the read-only line.
@@ -122,9 +130,25 @@ export interface DoNextTabProps {
    * badge reads (`insights-verdict`), so the heading and the badge can never disagree.
    */
   totalCount: number;
+  /**
+   * The scale of every finding group, from the same signal counts the verdict is built from. It
+   * arrives whole (a `Record`), so adding a group without deciding its count fails type checking
+   * rather than silently drawing a group the title does not count.
+   */
+  groupCounts: DoNextGroupCounts;
+  /**
+   * How many rows an opened group draws before it states its remainder. Five, because a group is
+   * closed by default: the old three-per-kind ceiling existed to stop a flat list pushing the
+   * viewport out, and a disclosure does that job now.
+   */
+  groupRowLimit?: number;
+  /**
+   * One whole-group action, for the groups that honestly have one. A group-level "view on the map"
+   * is deliberately **not** offered: it would have to pick an arbitrary member and call it the
+   * group.
+   */
+  groupAction?: (group: DoNextGroupKey, count: number) => ReactNode;
   queue: DoNextQueue;
-  /** The priority picks, which lead the list. An empty array simply contributes no rows. */
-  touchUps?: DoNextTouchUp[];
   /** Dependency cycles (loops in the directed `depends_on` graph). */
   cycles: DependencyCyclesResult;
   /**
@@ -250,8 +274,10 @@ function FixRowActions({
 
 export function DoNextTab({
   totalCount,
+  groupCounts,
+  groupRowLimit = 5,
+  groupAction,
   queue,
-  touchUps = [],
   cycles,
   duplicates = [],
   duplicateHandoff,
@@ -274,7 +300,6 @@ export function DoNextTab({
   const reviewStatusRef = useRef<HTMLParagraphElement | null>(null);
   const reviewRowRefs = useRef(new Map<string, HTMLDivElement>());
   const lastFocusedReviewKeyRef = useRef<string | null>(null);
-  const nextTouchUpId = touchUps[0]?.id;
   const reviewPhase = reviewState?.phase;
   const currentReviewId = reviewState?.id;
   const registerReviewRow = (id: string, element: HTMLDivElement | null) => {
@@ -293,10 +318,12 @@ export function DoNextTab({
       return;
     }
     if (reviewPhase === "cleared") {
-      if (nextTouchUpId) reviewRowRefs.current.get(nextTouchUpId)?.focus();
-      else reviewStatusRef.current?.focus();
+      // The row that was checked is gone from the list, so there is nothing left to land on
+      // inside its group. Focus goes to the status line, which is the sentence naming what was
+      // just cleared — the reader's own place in the page, not an arbitrary neighbouring row.
+      reviewStatusRef.current?.focus();
     }
-  }, [currentReviewId, reviewPhase, nextTouchUpId]);
+  }, [currentReviewId, reviewPhase]);
 
   const reviewStatus = reviewState
     ? reviewState.phase === "checking"
@@ -308,13 +335,8 @@ export function DoNextTab({
           : labels.reviewUnverified(reviewState.title)
     : null;
 
-  // Deduplicate the priority picks against the queue: they are truncated from the top of the queue
-  // and the cycles, so they overlap those rows exactly. Rows already on the list are filtered out
-  // so one item never appears twice.
-  const bandIds = new Set(touchUps.map((item) => item.id));
   const queueRowsOfKind = (rowKind: DoNextRow["rowKind"]) =>
-    queue.rows.filter((row) => row.rowKind === rowKind && !bandIds.has(row.id));
-  const visibleCycles = cycles.cycles.filter((cycle) => !bandIds.has(`cycle:${cycle.id}`));
+    queue.rows.filter((row) => row.rowKind === rowKind);
 
   const isActive = (id: string) => reviewState?.phase === "active" && reviewState.id === id;
 
@@ -336,45 +358,9 @@ export function DoNextTab({
     />
   );
 
-  /** Rows contributed by one block of the order. Empty blocks contribute nothing at all. */
-  const rowsOfBlock = (block: FixBlockKey): ReactNode[] => {
-    switch (block) {
-      case "touch-up":
-        return touchUps.map((item) => {
-          const candidate = { id: item.id, title: item.title };
-          return (
-            <FixRow
-              key={item.id}
-              kind={`touch-up-${item.source}`}
-              active={isActive(item.id)}
-              rowRef={(element) => registerReviewRow(item.id, element)}
-              glyph={
-                item.source === "cycle" ? (
-                  <AlertTriangle
-                    size={ICON_SIZE.sm}
-                    aria-hidden
-                    className="text-[color:var(--color-status-warning)]"
-                  />
-                ) : (
-                  <TopologyV2KindGlyph kind={item.nodeKind} size={13} />
-                )
-              }
-              title={item.title}
-              sentence={item.why}
-              actions={
-                <FixRowActions
-                  labels={labels}
-                  askAgentUrl={null}
-                  fixHref={builderHref(item.nodeId, item.id)}
-                  viewHref={mapHref(item.nodeId, item.id)}
-                  viewLabel={labels.viewOnMap}
-                  menu={rowMenu(candidate, item.nodeId, item.handoffPayload, item.id)}
-                />
-              }
-            />
-          );
-        });
-
+  /** The rows inside one finding group. They are built only when the group is open. */
+  const rowsOfGroup = (group: DoNextGroupKey): ReactNode[] => {
+    switch (group) {
       case "blocked-document":
         // No map link and no kebab: a document that fails validation is not a node yet, so the map
         // has nothing to show and there is no per-row command to hand over. The one honest next
@@ -402,8 +388,13 @@ export function DoNextTab({
           />
         ));
 
-      case "repair":
-        return repairTargets.map((target) => (
+      case "island":
+      case "containment":
+        // One block until 2026-09-06, because a flat list has nowhere to state two numbers. The
+        // CLI has always reported them apart, so the grouped list does too.
+        return repairTargets
+          .filter((target) => target.kind === group)
+          .map((target) => (
           <FixRow
             key={`repair:${target.kind}:${target.slug}`}
             kind={target.kind}
@@ -415,7 +406,7 @@ export function DoNextTab({
               />
             }
             title={target.title}
-            sentence={target.kind === "island" ? labels.whyIsland : labels.whyContainment}
+            sentence={group === "island" ? labels.whyIsland : labels.whyContainment}
             actions={
               <FixRowActions
                 labels={labels}
@@ -433,7 +424,7 @@ export function DoNextTab({
       case "missing-definition":
       case "missing-domain": {
         if (!meaningGaps) return [];
-        const definition = block === "missing-definition";
+        const definition = group === "missing-definition";
         const rows = definition ? meaningGaps.definitionRows : meaningGaps.domainRows;
         if (rows.length === 0) return [];
         // A run of meaning-gap rows shares one piece of state (which row is expanded, what is typed
@@ -441,8 +432,8 @@ export function DoNextTab({
         // component. It emits rows only, with no heading of its own.
         return [
           <MeaningGapSection
-            key={block}
-            gapKind={block}
+            key={group}
+            gapKind={group}
             rows={rows}
             sentence={definition ? labels.whyMissingDefinition : labels.whyMissingDomain}
             abilities={abilities}
@@ -487,7 +478,7 @@ export function DoNextTab({
         ));
 
       case "cycle":
-        return visibleCycles.map((cycle) => {
+        return cycles.cycles.map((cycle) => {
           const firstNodeId = cycle.nodeIds[0];
           const reviewId = `cycle:${cycle.id}`;
           const candidate = { id: reviewId, title: nodeTitle(firstNodeId) };
@@ -541,18 +532,18 @@ export function DoNextTab({
       case "promotion":
       case "neglected-hub":
       case "orphan":
-        return queueRowsOfKind(block).map((row) => {
+        return queueRowsOfKind(group).map((row) => {
           const candidate = { id: row.id, title: row.title };
           const sentence =
-            block === "promotion"
+            group === "promotion"
               ? labels.whyPromotion(row.degree ?? 0)
-              : block === "neglected-hub"
+              : group === "neglected-hub"
                 ? labels.whyNeglectedHub(row.degree ?? 0, row.agoDays ?? 0)
                 : labels.whyOrphan;
           return (
             <FixRow
               key={row.id}
-              kind={block}
+              kind={group}
               active={isActive(row.id)}
               rowRef={(element) => registerReviewRow(row.id, element)}
               glyph={<TopologyV2KindGlyph kind={row.nodeKind} size={13} />}
@@ -567,7 +558,7 @@ export function DoNextTab({
                 <FixRowActions
                   labels={labels}
                   askAgentUrl={
-                    block === "orphan"
+                    group === "orphan"
                       ? (askAgentHref?.(row.nodeId, "missing-relations") ?? null)
                       : null
                   }
@@ -583,23 +574,37 @@ export function DoNextTab({
     }
   };
 
-  const rows = fixBlockOrder(abilities).flatMap(rowsOfBlock);
+  const order = doNextGroupOrder(abilities);
+  const groups = order
+    .map((key) => ({ key, count: groupCounts[key] ?? 0 }))
+    .filter((group) => group.count > 0);
+
   /*
-   * The heading counts the whole list; the rows are truncated per kind. Rather than a count beside
-   * every section (which is what made one body of work read as several), the gap is stated once,
-   * at the bottom, in the grammar this repository already uses for truncation.
-   *
-   * A meaning-gap run is one React element carrying several rows, so `rows.length` undercounts it.
-   * The visible number is derived from the same arrays the rows came from.
+   * **The invariant, checked where it can still be seen.** Group counts and the title count come
+   * from one `InsightsSignalCounts`, so they cannot drift — but a caller can still pass a
+   * hand-built record. In development that is a loud console error rather than a screen quietly
+   * counting the same work two ways (2026-08-07 (3)); the contract test holds the production side.
    */
-  const shownCount =
-    rows.length -
-    (meaningGaps ? [meaningGaps.definitionRows, meaningGaps.domainRows].filter((r) => r.length > 0).length : 0) +
-    (meaningGaps ? meaningGaps.definitionRows.length + meaningGaps.domainRows.length : 0);
-  const hiddenCount = Math.max(0, totalCount - shownCount);
+  if (process.env.NODE_ENV !== "production") {
+    const summed = sumDoNextGroupCounts(groupCounts);
+    if (summed !== totalCount) {
+      console.error(
+        `[do-next] group counts sum to ${summed} but the list title says ${totalCount}. ` +
+          "Both must branch from one `InsightsSignalCounts`.",
+      );
+    }
+  }
+
+  const reviewGroup = groupOfReviewId(reviewState?.id);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-[var(--card-gap)]">
+    /*
+     * **The card hugs its content.** Every other tab fills the remaining height because its cards
+     * hold meters that grow; a list of collapsed groups does not, and stretching it drew a 550px
+     * empty band inside a bordered box (measured 1512×949, three groups). Growing the box does not
+     * grow the answer.
+     */
+    <div className="flex min-h-0 flex-col gap-[var(--card-gap)]">
       {reviewStatus ? (
         <p
           ref={reviewStatusRef}
@@ -616,7 +621,7 @@ export function DoNextTab({
       <section
         aria-label={labels.listTitle(totalCount)}
         data-testid="do-next-list"
-        className="flex min-h-0 min-w-0 flex-1 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
+        className="flex min-h-0 min-w-0 flex-col rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-[var(--card-pad)]"
       >
         <InsightsSectionTitle
           level={2}
@@ -630,7 +635,7 @@ export function DoNextTab({
          * 2026-08-07: this screen said "open your own folder and you can finish these right here"
          * while **zero** of its 25 controls opened a folder — a dead-end CTA.
          */}
-        {!abilities.canWriteVault && rows.length > 0 ? (
+        {!abilities.canWriteVault && groups.length > 0 ? (
           <div className="mt-1 flex flex-wrap items-center gap-2">
             <p className="min-w-0 flex-1 break-keep text-body leading-body text-[color:var(--color-text-quaternary)]">
               {labels.readOnlyHint}
@@ -638,22 +643,142 @@ export function DoNextTab({
             {openVaultAction}
           </div>
         ) : null}
-        {rows.length === 0 ? (
+        {groups.length === 0 ? (
           <p className="mt-2 text-body text-[color:var(--color-text-quaternary)]">
             {labels.emptyQueue}
           </p>
         ) : (
-          <div className="mt-3 flex flex-col">{rows}</div>
+          <div className="mt-3 flex flex-col">
+            {groups.map((group, index) => (
+              <FixGroup
+                key={group.key}
+                groupKey={group.key}
+                count={group.count}
+                rowLimit={groupRowLimit}
+                defaultOpen={index === 0}
+                forceOpen={reviewGroup === group.key}
+                rows={rowsOfGroup}
+                labels={labels}
+                groupAction={groupAction?.(group.key, group.count)}
+              />
+            ))}
+          </div>
         )}
-        {hiddenCount > 0 ? (
-          <p
-            data-testid="do-next-list-truncated"
-            className="pt-2 text-body text-[color:var(--color-text-quaternary)]"
-          >
-            {labels.moreCount(hiddenCount)}
-          </p>
-        ) : null}
       </section>
+    </div>
+  );
+}
+
+/**
+ * **One finding group: its name, its count, and a disclosure.**
+ *
+ * The whole head is the disclosure control, so the target is the row rather than a chevron — the
+ * count sits inside the accessible name (`groupToggle`), because a number a sighted reader gets in
+ * one glance must not be missing from the name a screen reader announces.
+ *
+ * The rows are built **inside the open branch**: a closed group computes no React elements at all,
+ * which is the same rule the map applies to its full-detail model (`.claude/rules/architecture.md`,
+ * "do not compute data for a surface that is not rendered").
+ */
+function FixGroup({
+  groupKey,
+  count,
+  rowLimit,
+  defaultOpen,
+  forceOpen,
+  rows,
+  labels,
+  groupAction,
+}: {
+  groupKey: DoNextGroupKey;
+  count: number;
+  rowLimit: number;
+  /**
+   * The first group starts open. A closed list of group names says how much work there is but
+   * not what it is; the most urgent kind (blocked documents when there are any) names its files
+   * without a click, and the gates that read those rows (`vault-truth-telling`,
+   * `a11y-open-surfaces`) find them the way a person does.
+   */
+  defaultOpen: boolean;
+  /** The group holding the row a person is returning to from the map opens by itself. */
+  forceOpen: boolean;
+  rows: (group: DoNextGroupKey) => ReactNode[];
+  labels: DoNextTabLabels;
+  /** The group's one whole-group action, when it has an honest one. */
+  groupAction?: ReactNode;
+}) {
+  const [opened, setOpened] = useState(defaultOpen);
+  const open = opened || forceOpen;
+  const name = labels.groupName(groupKey);
+  const body = useMemo(() => (open ? rows(groupKey) : []), [open, rows, groupKey]);
+  const shown = body.slice(0, rowLimit);
+  const hidden = Math.max(0, count - shown.length);
+  const panelId = `do-next-group-panel-${groupKey}`;
+
+  return (
+    <div
+      data-testid="do-next-group"
+      data-group-kind={groupKey}
+      data-group-open={open ? "true" : "false"}
+      className="border-b border-[color:var(--color-divider)] last:border-b-0"
+    >
+      <div data-testid="do-next-group-row" className="flex min-w-0 items-center gap-2">
+        <button
+          type="button"
+          data-testid="do-next-group-toggle"
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={labels.groupToggle(name, count)}
+          onClick={() => setOpened((value) => !value)}
+          className={controlClass({
+            shape: "row",
+            size: "lg",
+            hoverSurface: "lift",
+            className: "-mx-2 min-w-0 flex-1",
+          })}
+        >
+          <ChevronRight
+            size={ICON_SIZE.sm}
+            aria-hidden
+            className={`shrink-0 text-[color:var(--color-text-quaternary)] transition-transform ${
+              open ? "rotate-90" : ""
+            }`}
+          />
+        {/*
+          * Name and count sit **together**, not at opposite ends of a 1,330px row. A number pinned
+          * to the far right is the "content that only runs sideways" the owner named; this is the
+          * grammar the tab bar beside it already uses ("to do 15", "composition 102"), so one
+          * screen reads one way. The empty remainder is the click target, not a gap to fill.
+          */}
+          <span className="min-w-0 truncate text-left text-[color:var(--color-text-secondary)]">
+            {name}
+          </span>
+          <span
+            data-testid="do-next-group-count"
+            className="shrink-0 font-mono tabular-nums text-[color:var(--topology-v2-numeral-face)]"
+          >
+            {count}
+          </span>
+          <span className="flex-1" aria-hidden />
+        </button>
+        {groupAction}
+      </div>
+      <div id={panelId} hidden={!open}>
+        {open ? (
+          // Indented, so "inside this group" is carried by position and not by the chevron alone.
+          <div className="flex flex-col pb-1.5 pl-5">
+            {shown}
+            {hidden > 0 ? (
+              <p
+                data-testid="do-next-group-truncated"
+                className="pt-2 text-body text-[color:var(--color-text-quaternary)]"
+              >
+                {labels.moreCount(hidden)}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

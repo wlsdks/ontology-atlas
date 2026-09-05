@@ -26,6 +26,7 @@ import {
   useVaultConceptFacts,
   useVaultDocFreshnessIndex,
   useVaultHealth,
+  useVaultHealthDocs,
   useVaultUnmatchedAsks,
   useVaultValidationSummary,
 } from "@/features/vault-ontology";
@@ -78,12 +79,10 @@ import {
 import { resolveSessionAbilities } from "../lib/session-abilities";
 import type { QueueSectionKey } from "../lib/queue-work-groups";
 import { buildInsightsVerdict } from "../lib/insights-verdict";
-import { pickTodaysTouchUps, type TouchUpItem } from "../lib/todays-touch-ups";
 import { buildBlockedDocumentRows, countBlockedDocuments } from "../lib/fix-list";
 import { canonicalizeDomainRef } from "@/shared/lib/canonicalize-domain-ref";
 import { findDependencyCycles, type DependencyCycle } from "../lib/dependency-cycles";
 import {
-  isDoNextReviewId,
   resolveDoNextReviewState,
 } from "../lib/review-loop";
 import { computeCensusHealth, computeInsightsCensus } from "../lib/census-health";
@@ -91,7 +90,25 @@ import { buildVaultHealthRepair } from "../lib/vault-health-repair";
 import { buildDomainCouplingSummary } from "../lib/domain-coupling-rows";
 import { FRESHNESS_WINDOW_WEEKS, computeFreshnessSummary } from "../lib/freshness";
 import { OverviewTab } from "./tabs/OverviewTab";
-import { DoNextTab, type DoNextTouchUp } from "./tabs/DoNextTab";
+import {
+  InsightsCensusStrip,
+  type InsightsCensusStripLabels,
+} from "./parts/InsightsCensusStrip";
+import { DoNextTab } from "./tabs/DoNextTab";
+import { buildDoNextGroupCounts, type DoNextGroupKey } from "../lib/do-next-groups";
+import {
+  buildContainmentPlan,
+  buildContainmentProposals,
+  runContainmentBatch,
+  selectContainmentWrites,
+  type ContainmentPlan,
+  type ContainmentSkip,
+} from "../lib/containment-batch";
+import {
+  ContainmentBatchSheet,
+  type ContainmentBatchLabels,
+  type ContainmentRowStatus,
+} from "./parts/ContainmentBatchSheet";
 import type { MeaningGapLabels } from "./tabs/MeaningGapSection";
 import { ConnectionsTab, type ConnectionHubRow } from "./tabs/ConnectionsTab";
 import { DomainCouplingCard } from "./tabs/DomainCouplingCard";
@@ -168,13 +185,14 @@ const DUPLICATE_DISPLAY_LIMIT = 3;
  */
 const DUPLICATE_DISCLOSURE_LIMIT = 24;
 /**
- * How many rows of one kind the "to do" list shows.
+ * How many rows of one kind the "to do" list holds.
  *
- * Three is the ceiling that keeps the tab inside the scroll contract (at most 1.3× the viewport)
- * whatever the folder's size. The heading states the full scale and one truncation line at the
- * bottom states what is not drawn, so nothing is hidden without saying so.
+ * Three was the ceiling that kept a **flat** list inside the scroll contract (at most 1.3× the
+ * viewport) whatever the folder's size. Since 2026-09-06 each kind is a collapsed group, so the
+ * viewport is bounded by the group heads rather than by the rows, and five rows is what an opened
+ * group can show before its own remainder line takes over.
  */
-const DO_NEXT_PER_KIND_LIMIT = 3;
+const DO_NEXT_PER_KIND_LIMIT = 5;
 /**
  * The validation codes that have a plain sentence of their own. An unlisted code falls back to
  * `blockedReason.other`, so a blocked row always says something rather than nothing.
@@ -542,7 +560,6 @@ export function OntologyInsightsPage() {
         .sort((a, b) => b.count - a.count),
     [kindDist],
   );
-  const domainCount = kindDist.get("domain") ?? 0;
 
   const treeResult = useMemo(() => buildOntologyTree(nodes, edges), [nodes, edges]);
   const health = useMemo(() => computeCensusHealth(nodes, edges, treeResult), [nodes, edges, treeResult]);
@@ -580,6 +597,38 @@ export function OntologyInsightsPage() {
     () => buildVaultHealthRepair(vaultHealth, nodes),
     [vaultHealth, nodes],
   );
+
+  /*
+   * **The one batch repair on this board.** The documents come from the same manifest the health
+   * verdict was computed from (`useVaultHealthDocs`), so the repair can only touch the folder the
+   * verdict measured — reading the manifest a second way would be two canonical stores one hook
+   * apart. `buildContainmentProposals` decides nothing: both halves of each write are already on
+   * disk (the concept named its domain, the domain exists and does not list it back).
+   */
+  const healthDocs = useVaultHealthDocs();
+  const containmentProposals = useMemo(
+    () => buildContainmentProposals(vaultHealth.missingContainment, healthDocs),
+    [vaultHealth.missingContainment, healthDocs],
+  );
+  /*
+   * **What the sheet shows, and what it will write, are both frozen when it opens.**
+   *
+   * The rows must be frozen because after a successful write the folder is re-read, the repaired
+   * concept stops being a proposal, and a live list would delete the very row that says "written".
+   *
+   * The write plan must be frozen for a stronger reason: `expectedMtime` is the promise that a
+   * write never lands on a file changed since the proposal. Reading it at Apply reads the mtime of
+   * a file that may already have been changed and re-ingested, so the guard would compare that
+   * state against itself and pass. `buildContainmentPlan` takes the members and the mtime here,
+   * once, and Apply may only carry that plan out.
+   */
+  const [containmentPlan, setContainmentPlan] = useState<ContainmentPlan | null>(null);
+  const [containmentSheetOpen, setContainmentSheetOpen] = useState(false);
+  const [containmentRunning, setContainmentRunning] = useState(false);
+  const [containmentFinished, setContainmentFinished] = useState(false);
+  const [containmentStatuses, setContainmentStatuses] = useState<
+    ReadonlyMap<string, ContainmentRowStatus>
+  >(() => new Map());
 
   /*
    * **What agents asked this folder for and did not get.** `vaultHealth` already walked
@@ -762,6 +811,49 @@ export function OntologyInsightsPage() {
     [vault],
   );
 
+  /**
+   * Applies the accepted containment repairs, **one document at a time**.
+   *
+   * Grouping (in the plan) is not an optimisation: two writes to one file inside one run would
+   * make the second fail its own `expected_mtime` guard, and the person would read a conflict the
+   * app itself caused. Every write carries the mtime read **when the sheet opened**, so a file a
+   * person or an agent touched in the meantime is refused rather than overwritten — and the run
+   * continues, because the remaining documents are independent and abandoning them would leave the
+   * folder in a state nobody chose.
+   *
+   * `selectContainmentWrites` gets the current documents for one purpose only: to check that each
+   * ticked concept still names this domain. That is the fact the proposal was made from, and a
+   * back-link written after it changed would state a containment nobody approved.
+   */
+  const applyContainmentBatch = useCallback(
+    async (accepted: ReadonlySet<string>) => {
+      if (!containmentPlan) return;
+      const run = selectContainmentWrites(containmentPlan, accepted, healthDocs);
+      if (run.writes.length === 0 && run.skipped.length === 0) return;
+      setContainmentRunning(true);
+      await runContainmentBatch(run, {
+        write: (write) =>
+          vault.updateFrontmatter(
+            write.domainSlug,
+            { [write.key]: write.members },
+            { skipRefresh: true, expectedMtime: write.expectedMtime },
+          ),
+        skipMessage: (skip: ContainmentSkip) =>
+          skip.reason === "unknown-mtime"
+            ? t("doNext.containmentBatch.statusSkippedUnknownTime", { domain: skip.domainPath })
+            : t("doNext.containmentBatch.statusSkippedDomainChanged", { domain: skip.domainPath }),
+        onStatuses: (statuses) => setContainmentStatuses(statuses),
+      });
+      // One reload at the end — `skipRefresh` held it off so the list did not jump under the
+      // sheet after every file. It runs after a conflict too, so a next attempt starts from what
+      // is actually on disk rather than from the stale baseline that refused this one.
+      await vault.refresh();
+      setContainmentRunning(false);
+      setContainmentFinished(true);
+    },
+    [containmentPlan, healthDocs, t, vault],
+  );
+
   // Dependency cycles — loops in the directed `depends_on` graph, computed on the
   // client from the already-loaded nodes/edges (the same semantics as MCP `cycles`).
   const dependencyCycles = useMemo(() => findDependencyCycles(nodes, edges), [nodes, edges]);
@@ -867,27 +959,6 @@ export function OntologyInsightsPage() {
     [],
   );
 
-  // Today's touch-ups: a pure function handles priority, truncation, and the
-  // cold-start guard, and only the surface copy (`why`) is applied here. It is filled
-  // only when truncation leaves exactly three items.
-  const touchUpWhy = (item: TouchUpItem): string => {
-    switch (item.reason.kind) {
-      case "neglected-hub":
-        // What follows "reason ·" must be a sentence. It used to reuse the repair
-        // queue's metric copy ("8 connections · unchanged for 50 days"), so only
-        // someone reading the numbers could tell why this item was picked.
-        return t("doNext.touchUpWhyNeglectedHub", {
-          degree: item.reason.degree,
-          days: item.reason.agoDays,
-        });
-      case "cycle":
-        return t("doNext.touchUpWhyCycle", { length: item.reason.length });
-      case "promotion":
-        // State the reference count verbatim — "several places" made three rows repeat
-        // one phrase, and the number was already carried by the queue row.
-        return t("doNext.touchUpWhyPromotion", { count: item.reason.fanIn });
-    }
-  };
   /**
    * Per-section totals for the "to do" queue — **the single source on this screen.**
    *
@@ -916,32 +987,50 @@ export function OntologyInsightsPage() {
 
   // The single verdict for this screen. The tab badge, the empty-state copy, and the
   // health claim must all come from here, or they say different things about one dataset.
-  const insightsVerdict = useMemo(
-    () =>
-      buildInsightsVerdict({
-        islands: healthRepair.islandCount,
-        missingContainment: healthRepair.missingContainmentCount,
-        blockedDocuments: blockedDocumentCount,
-        sections: queueSectionTotals,
-      }),
+  const insightsSignalCounts = useMemo(
+    () => ({
+      islands: healthRepair.islandCount,
+      missingContainment: healthRepair.missingContainmentCount,
+      blockedDocuments: blockedDocumentCount,
+      sections: queueSectionTotals,
+    }),
     [healthRepair, blockedDocumentCount, queueSectionTotals],
   );
-  const doNextTouchUps: DoNextTouchUp[] = pickTodaysTouchUps(doNextQueue, dependencyCycles, {
-    totalNodes,
-    cycleTitle: cycleNodeTitle,
-    cycleHandoff,
-    reviewId: isDoNextReviewId(reviewId) ? reviewId : null,
-  }).map((item) => ({
-    id: item.id,
-    source: item.source,
-    nodeId: item.nodeId,
-    title: item.title,
-    nodeKind: item.nodeKind,
-    why: touchUpWhy(item),
-    handoffPayload: item.handoffPayload,
-  }));
+  const insightsVerdict = useMemo(
+    () => buildInsightsVerdict(insightsSignalCounts),
+    [insightsSignalCounts],
+  );
+  /**
+   * The scale of each finding group — the **same** `InsightsSignalCounts` the verdict is built
+   * from, re-keyed. One argument means the ten group counts and the one title count cannot drift
+   * apart; `tests/contract/do-next-group-sum.contract.test.ts` pins the equality.
+   */
+  const doNextGroupCounts = useMemo(
+    () => buildDoNextGroupCounts(insightsSignalCounts),
+    [insightsSignalCounts],
+  );
 
-  const heroLabels = {
+  const containmentBatchLabels: ContainmentBatchLabels = {
+    title: (count: number) => t("doNext.containmentBatch.title", { count }),
+    lede: t("doNext.containmentBatch.lede"),
+    row: (concept: string, domain: string, key: string) =>
+      t("doNext.containmentBatch.row", { concept, domain, key }),
+    rowTarget: (domainPath: string, conceptSlug: string) =>
+      t("doNext.containmentBatch.rowTarget", { domain: domainPath, concept: conceptSlug }),
+    apply: (count: number) => t("doNext.containmentBatch.apply", { count }),
+    applying: t("doNext.containmentBatch.applying"),
+    cancel: t("doNext.containmentBatch.cancel"),
+    close: t("doNext.containmentBatch.close"),
+    statusDone: t("doNext.containmentBatch.statusDone"),
+    statusConflict: t("doNext.containmentBatch.statusConflict"),
+    statusFailed: (message: string) => t("doNext.containmentBatch.statusFailed", { message }),
+    outcome: (done: number, failed: number) =>
+      failed > 0
+        ? t("doNext.containmentBatch.outcomeWithLeft", { done, failed })
+        : t("doNext.containmentBatch.outcome", { done }),
+  };
+
+  const censusStripLabels: InsightsCensusStripLabels = {
     concepts: t("heroConcepts"),
     relations: t("heroRelations"),
     health: t("heroHealth"),
@@ -953,9 +1042,16 @@ export function OntologyInsightsPage() {
     islands: t("healthIslands"),
     relationsHidden: (hidden: number) => t("heroRelationsHidden", { count: hidden }),
     relationsHiddenRoute: t("heroRelationsHiddenRoute"),
+    statusHealthy: t("statusHealthy"),
+    statusNeedsAttention: t("statusNeedsAttention"),
+    statusBlocking: t("statusBlocking"),
+    statusAdvisory: t("statusAdvisory"),
+    recentTitle: t("recentWindowTitle", { weeks: FRESHNESS_WINDOW_WEEKS }),
+    recentThisWeek: (count: number) => t("recentThisWeek", { count }),
+    recentBarsAria: (weeks: number, total: number) =>
+      t("recentBarsAria", { weeks, total }),
   };
   const overviewLabels = {
-    ...heroLabels,
     kindCensusTitle: t("kindCensusTitle"),
     domainCapacityTitle: t("domainCapacityTitle"),
     noDomains: t("noDomains"),
@@ -1026,6 +1122,10 @@ export function OntologyInsightsPage() {
   const doNextLabels = {
     listTitle: (count: number) => t("doNext.listTitle", { count }),
     moreCount: (count: number) => t("doNext.moreCount", { count }),
+    // One name per finding group. The sentence the rows inside repeat is said once, here.
+    groupName: (group: DoNextGroupKey) => t(`doNext.group.${group}`),
+    groupToggle: (name: string, count: number) =>
+      t("doNext.groupToggle", { name, count }),
     emptyQueue: t("doNext.emptyQueue"),
     readOnlyHint: t("doNext.groupMeaningHintReadOnly"),
     openDocument: t("doNext.openDocument"),
@@ -1131,8 +1231,6 @@ export function OntologyInsightsPage() {
     recentHidden: (hidden: number) => t("recentUpdatesHidden", { count: hidden }),
     recentHiddenRoute: t("recentUpdatesHiddenRoute"),
     staleCountLabel: t("staleCountLabel"),
-    trendTitle: t("trendTitle"),
-    trendCaption: t("trendCaption", { weeks: FRESHNESS_WINDOW_WEEKS }),
     // The toggle and badge copy of the evidence layer uses the **same strings** as the
     // "connections" tab — naming one layer differently per tab makes a learner read it as
     // something else. Only the caption differs per tab: there it is "what the number means",
@@ -1195,15 +1293,14 @@ export function OntologyInsightsPage() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            {insight ? (
-              <span className="font-mono text-label tracking-[var(--tracking-caps-10)] text-[color:var(--topology-v2-numeral-face)]">
-                {totalNodes} {t("censusConcepts")}
-                <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-                {totalEdges} {t("censusRelations")}
-                <span className="mx-1.5 text-[color:var(--color-text-quaternary)]">·</span>
-                {domainCount} {t("censusDomains")}
-              </span>
-            ) : null}
+            {/*
+             * **The 11px monospace census line was removed on 2026-09-06.** It stated concepts,
+             * relations and domains in the top-right corner, above the tab bar that already
+             * carried the same three numbers as badges, in the smallest ink on the page. The
+             * owner's reading of this board was that it shows work and not measurement; the
+             * answer was not a smaller number in a corner but the four-tile strip below, which
+             * states the same facts once, at the size a first glance can use.
+             */}
             {agentRoute === 'agent' && hasConcepts && tab !== 'flow' ? (
               <Button
                 variant="outline"
@@ -1219,15 +1316,38 @@ export function OntologyInsightsPage() {
             ) : null}
           </div>
         </header>
-        {/* This surface is a maintenance board for power users — people who curate an ontology,
-            and AI agents. Rather than rewriting all the copy, it declares its audience honestly so
-            expectations match, and an ordinary visitor does not wander here looking for something
-            like "my projects". */}
-        <p className="mt-1 max-w-2xl text-body text-[color:var(--color-text-quaternary)]">
-          {t("audienceBanner")}
-        </p>
+        {/*
+         * **The census strip leads the board** (owner, 2026-09-06: "isn't analysis supposed to
+         * show indicators and flow?"). It sits above the tab bar because it answers the question
+         * a person arrives with — how big is this folder and is it in trouble — before they pick
+         * which of the seven questions to open. The audience banner that used to stand here
+         * ("this board is for the people and agents who tend the map") went with it: a sentence
+         * announcing who a screen is for is not a measurement, and the strip now occupies the one
+         * band a reader looks at first.
+         */}
+        {insight && hasConcepts ? (
+          <div className="mt-4">
+            <InsightsCensusStrip
+              totalNodes={totalNodes}
+              totalEdges={totalEdges}
+              health={health}
+              islandCount={healthRepair.islandCount}
+              verdict={insightsVerdict}
+              weeklyTotals={freshness.weeklyTotals}
+              kindsSummary={kindRows.map((row) => ({
+                key: row.kind,
+                label: kindLabel(row.kind),
+                count: row.count,
+              }))}
+              relationsSummary={edgeTypeSummary}
+              relationsTotal={edgeTypeRows.length}
+              onSeeAllRelations={() => setTab("connections")}
+              labels={censusStripLabels}
+            />
+          </div>
+        ) : null}
 
-        <nav className="mt-4">
+        <nav className="mt-[var(--section-gap)]">
           <TabBar
             ariaLabel={t("tabsAriaLabel")}
             activeKey={tab}
@@ -1314,7 +1434,7 @@ export function OntologyInsightsPage() {
               <DoNextTab
                 totalCount={insightsVerdict.total}
                 queue={doNextQueue}
-                touchUps={doNextTouchUps}
+                groupCounts={doNextGroupCounts}
                 cycles={dependencyCycles}
                 duplicates={duplicates.rows}
                 duplicateHandoff={duplicateHandoff}
@@ -1338,6 +1458,32 @@ export function OntologyInsightsPage() {
                   domainLabels: meaningGapDomainLabels,
                 }}
                 labels={doNextLabels}
+                /*
+                 * The only whole-group action on this board, and only on the group whose repair is
+                 * already fully determined by two facts on disk. It appears only where it can act:
+                 * a session that cannot write the folder is not offered a write.
+                 */
+                groupAction={(group) =>
+                  group === "containment" &&
+                  abilities.canWriteVault &&
+                  containmentProposals.length > 0 ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      data-testid="do-next-group-batch"
+                      onClick={() => {
+                        // The plan is read here, from the documents as they are at this moment.
+                        // Everything Apply may do is decided by it.
+                        setContainmentPlan(buildContainmentPlan(containmentProposals, healthDocs));
+                        setContainmentStatuses(new Map());
+                        setContainmentFinished(false);
+                        setContainmentSheetOpen(true);
+                      }}
+                    >
+                      {t("doNext.containmentBatch.open")}
+                    </Button>
+                  ) : null
+                }
                 // The read-only line says *"open your folder and you can finish these here"*, so
                 // the control that does that sits in the same box (2026-08-07, a dead-end CTA).
                 openVaultAction={<OpenVaultCta testId="do-next-open-vault" />}
@@ -1357,14 +1503,8 @@ export function OntologyInsightsPage() {
             {tab === "composition" ? (
               <OverviewTab
                 totalNodes={totalNodes}
-                totalEdges={totalEdges}
-                health={health}
-                islandCount={healthRepair.islandCount}
                 kindRows={kindRows}
                 domainRows={domainRows}
-                edgeTypeSummary={edgeTypeSummary}
-                edgeTypeTotal={edgeTypeRows.length}
-                onSeeAllRelations={() => setTab("connections")}
                 kindLabel={kindLabel}
                 domainLink={{
                   href: mapNodeHref,
@@ -1437,7 +1577,6 @@ export function OntologyInsightsPage() {
                 recentEvidence={freshness.recentEvidence}
                 recentEvidenceTotal={freshness.recentEvidenceTotal}
                 staleCount={freshness.staleCount}
-                weeklyTotals={freshness.weeklyTotals}
                 kindLabel={kindLabel}
                 recentLink={{
                   href: mapNodeHref,
@@ -1492,6 +1631,16 @@ export function OntologyInsightsPage() {
         )}
         </main>
       </div>
+      <ContainmentBatchSheet
+        open={containmentSheetOpen}
+        proposals={containmentPlan?.proposals ?? []}
+        statuses={containmentStatuses}
+        running={containmentRunning}
+        finished={containmentFinished}
+        onApply={applyContainmentBatch}
+        onClose={() => setContainmentSheetOpen(false)}
+        labels={containmentBatchLabels}
+      />
       {acpRuntime && gitVaultPath ? (
         <InsightsAgentDock
           open={agentOpen}

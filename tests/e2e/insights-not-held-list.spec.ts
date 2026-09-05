@@ -91,8 +91,30 @@ test("찾았지만 없는 이름 목록 — 손가락·키보드·숫자가 모�
     const clearance = await page.evaluate(() => {
       const footnote = document.querySelector('[data-testid="unmatched-footnote"]');
       if (!footnote) return null;
-      const scroller =
-        document.scrollingElement ?? document.documentElement;
+      /*
+       * ⚠️ **Scroll the element that actually scrolls.** This board's scroller is an inner
+       * `overflow-y-auto` div inside the app shell, not the document — so the first version of
+       * this check pushed `document.scrollingElement` (which never moves here) and then measured
+       * the footnote where it happened to sit. It passed only while the tab's content was short
+       * enough to fit unscrolled, and reported a false pass the moment anything was added above
+       * it (2026-09-06: the census strip made the same page fail by 113px with the scroll
+       * position untouched). Walk up from the footnote to the first ancestor that can scroll.
+       */
+      let scroller: Element = document.scrollingElement ?? document.documentElement;
+      for (
+        let node: Element | null = footnote.parentElement;
+        node;
+        node = node.parentElement
+      ) {
+        const overflowY = getComputedStyle(node).overflowY;
+        if (
+          (overflowY === "auto" || overflowY === "scroll") &&
+          node.scrollHeight > node.clientHeight + 1
+        ) {
+          scroller = node;
+          break;
+        }
+      }
       scroller.scrollTop = scroller.scrollHeight;
       return new Promise<number>((resolve) => {
         requestAnimationFrame(() => {

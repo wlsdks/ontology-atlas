@@ -99,6 +99,7 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 32 | 2026-09-05 | Keep business meaning, AI questions and versioned evidence together in the existing workbench | one-way | review | judge | public-contract+positioning+surface-inventory | truth=affected;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
 | 33 | 2026-09-05 | A vault holds three kinds of file and only one is the graph; project documents of every format gather in Docs | one-way | review | handoff | substantial-investment+surface-inventory | truth=affected;transfer=affected;agent-write=affected;human-correction=affected | meaning | 2 | 2 | narrowed | po-evidence+po-steward |
 | 34 | 2026-09-06 | The library becomes a place, the rail cap moves to nine, and the tile's padding pays for it | one-way | review | orient | surface-inventory | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=unchanged | scope | 2 | 0 | verification-strengthened | po-evidence+po-leverage |
+| 35 | 2026-09-06 | The insights board leads with measurement, and the to-do list is one row per finding | one-way | review | judge | rollback-cheap | truth=unchanged;transfer=unchanged;agent-write=unchanged;human-correction=affected | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
 
 ## Outcome updates
 
@@ -150,3 +151,4 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 32 | 2026-09-05 | pending | yes | no | pending |
 | 33 | 2026-09-05 | pending | yes | no | pending |
 | 34 | 2026-09-06 | pass | yes | no | pending |
+| 35 | 2026-09-06 | pass | yes | no | pending |

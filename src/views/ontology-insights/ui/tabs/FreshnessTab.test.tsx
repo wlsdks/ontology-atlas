@@ -28,8 +28,6 @@ const labels: FreshnessTabLabels = {
   recentUpdatesTitle: "Recent updates",
   noRecentUpdates: "No recent updates",
   staleCountLabel: "Stale (90d+)",
-  trendTitle: "Trend",
-  trendCaption: "Weekly updates",
   evidenceShow: (count) => `Show ${count} names without a document`,
   evidenceHide: "Hide names without a document",
   evidenceCaption: "The date belongs to the document that wrote the name down.",
@@ -75,7 +73,6 @@ describe("FreshnessTab", () => {
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
-        weeklyTotals={[]}
         kindLabel={(kind) => kind}
         recentLink={recentLink}
         labels={labels}
@@ -104,7 +101,6 @@ describe("FreshnessTab", () => {
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
-        weeklyTotals={[]}
         kindLabel={(kind) => kind}
         recentLink={recentLink}
         labels={labels}
@@ -140,7 +136,6 @@ describe("FreshnessTab", () => {
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
-        weeklyTotals={[]}
         kindLabel={(kind) => kind}
         recentLink={recentLink}
         labels={labels}
@@ -165,7 +160,6 @@ describe("FreshnessTab", () => {
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
-        weeklyTotals={[]}
         kindLabel={(kind) => kind}
         recentLink={recentLink}
         labels={labels}
@@ -209,7 +203,6 @@ describe("FreshnessTab", () => {
         ]}
         recentEvidenceTotal={193}
         staleCount={0}
-        weeklyTotals={[]}
         kindLabel={(kind) => kind}
         recentLink={recentLink}
         labels={labels}
@@ -245,7 +238,6 @@ describe("FreshnessTab", () => {
         recentEvidence={[]}
         recentEvidenceTotal={0}
         staleCount={0}
-        weeklyTotals={[]}
         kindLabel={(kind) => kind}
         recentLink={recentLink}
         labels={labels}

@@ -119,6 +119,16 @@ test("인사이트의 「여기서 적기」가 내 폴더의 파일을 바꾼�
    */
   // 2026-09-01: the one-list Do-next tab labels the inline-write toggle with the shared
   // fix-here action word; the button still opens the same in-place editor.
+  // 2026-09-06: the list is one row per finding group, so the row carrying the inline editor is
+  // behind its group's disclosure. Opening every group is what a person does to reach a row.
+  const toggles = page.getByTestId("do-next-group-toggle");
+  await expect(toggles.first()).toBeVisible({ timeout: 30_000 });
+  // The first group starts open; a click on an open toggle would close it.
+  for (let index = 0; index < (await toggles.count()); index += 1) {
+    const toggle = toggles.nth(index);
+    if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
+  }
+
   const write = page.locator("button", { hasText: "직접 고치기" }).first();
   await expect(write, "인사이트가 뜻을 적을 자리를 주지 않는다").toBeVisible({ timeout: 30_000 });
   await write.click();
@@ -141,4 +151,120 @@ test("인사이트의 「여기서 적기」가 내 폴더의 파일을 바꾼�
 
   const hits = await filesContaining(page, SENTENCE);
   console.log(`[insights-write] 디스크에 쓴 파일: ${hits.join(", ")}`);
+});
+
+/**
+ * **"Fix these together" writes the back-links, one document at a time, and only what was ticked.**
+ *
+ * The batch is the first control on this board that changes more than one of the person's files,
+ * so the property under test is not that a dialog opened but that **the domain document on disk
+ * gained the members it was missing** — and that the run went through the same
+ * `updateFrontmatter` path, with `expected_mtime`, as every other write in the product.
+ *
+ * The seed is the exact shape `computeVaultHealth` calls a missing containment: two capabilities
+ * that declare `domain: domains/billing`, and a billing document that lists neither. Nothing is
+ * inferred from it — both halves of every write are already on disk, which is the whole reason
+ * this one repair may be batched at all.
+ */
+const CONTAINMENT_SEED: Record<string, string> = {
+  "domains/billing.md": [
+    "---",
+    "uid: 33333333-3333-4333-8333-333333333333",
+    "slug: domains/billing",
+    "kind: domain",
+    "title: Billing",
+    "---",
+    "",
+    "# Billing",
+    "",
+  ].join("\n"),
+  "capabilities/pay.md": [
+    "---",
+    "uid: 44444444-4444-4444-8444-444444444444",
+    "slug: capabilities/pay",
+    "kind: capability",
+    "title: Pay",
+    "domain: domains/billing",
+    "---",
+    "",
+    "# Pay",
+    "",
+  ].join("\n"),
+  "capabilities/refund.md": [
+    "---",
+    "uid: 55555555-5555-4555-8555-555555555555",
+    "slug: capabilities/refund",
+    "kind: capability",
+    "title: Refund",
+    "domain: domains/billing",
+    "---",
+    "",
+    "# Refund",
+    "",
+  ].join("\n"),
+};
+
+/** Reads one file out of the stubbed vault, so the assertion is about bytes and not about a screen. */
+async function readVaultFile(page: import("@playwright/test").Page, path: string) {
+  return page.evaluate(async (target: string) => {
+    const root = await navigator.storage.getDirectory();
+    let vault: FileSystemDirectoryHandle | null = null;
+    for await (const [name, handle] of root.entries()) {
+      if (name.startsWith("stub-vault-") && handle.kind === "directory") {
+        vault = handle as FileSystemDirectoryHandle;
+      }
+    }
+    if (!vault) return null;
+    const parts = target.split("/");
+    let dir = vault;
+    for (const part of parts.slice(0, -1)) {
+      dir = await dir.getDirectoryHandle(part);
+    }
+    const file = await dir.getFileHandle(parts[parts.length - 1]);
+    return (await (await file).getFile()).text();
+  }, path);
+}
+
+test("「한 번에 고치기」가 고른 것만 도메인 문서에 적는다", async ({ page }) => {
+  test.setTimeout(300_000);
+  await page.setViewportSize({ width: 1512, height: 900 });
+  await seedFirstRunSeen(page);
+  await stubDirectoryPicker(page, CONTAINMENT_SEED);
+
+  await page.goto("/ko/topology/?guides=off", { waitUntil: "domcontentloaded" });
+  await page.getByTestId("first-run-starter-open").click();
+  await page.getByTestId("vault-guide-pick-existing").click();
+  await expect(page.getByTestId("topology-index-panel")).toContainText("Billing", {
+    timeout: 30_000,
+  });
+
+  await page.goto("/ko/ontology/insights/?guides=off", { waitUntil: "domcontentloaded" });
+
+  const batch = page.getByTestId("do-next-group-batch");
+  await expect(batch, "되가리키지 않는 도메인 묶음에 한 번에 고치는 길이 없다").toBeVisible({
+    timeout: 30_000,
+  });
+  await batch.click();
+
+  const rows = page.getByTestId("containment-batch-row");
+  await expect(rows).toHaveCount(2, { timeout: 10_000 });
+
+  // Untick one row. Nothing may be written for it — "nothing auto" is the contract, and a batch
+  // that ignores an untick is a batch nobody can trust with the rest.
+  await rows.filter({ hasText: "Refund" }).getByRole("checkbox").uncheck();
+
+  await page.getByTestId("containment-batch-apply").click();
+  await expect(page.getByTestId("containment-batch-outcome")).toBeVisible({ timeout: 30_000 });
+
+  await expect
+    .poll(async () => (await readVaultFile(page, "domains/billing.md")) ?? "", { timeout: 30_000 })
+    .toContain("capabilities/pay");
+
+  const billing = (await readVaultFile(page, "domains/billing.md")) ?? "";
+  console.log(`[containment-batch] domains/billing.md:\n${billing}`);
+  expect(billing, "체크를 푼 줄까지 적혔다 — 자동으로 도는 것이 있다").not.toContain(
+    "capabilities/refund",
+  );
+  expect(billing, "본문이 사라졌다").toContain("# Billing");
+  expect(billing, "다른 프론트매터 줄이 사라졌다").toContain("uid: 33333333-3333-4333-8333-333333333333");
 });

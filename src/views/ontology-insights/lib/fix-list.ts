@@ -16,7 +16,6 @@ import { queueGroupOrder } from "./queue-work-groups";
  * appending itself at the bottom of the screen.
  */
 export type FixBlockKey =
-  | "touch-up"
   | "blocked-document"
   | "repair"
   | "missing-definition"
@@ -28,16 +27,20 @@ export type FixBlockKey =
   | "cycle";
 
 /**
- * The blocks that come before the queue's own sections, in this order:
+ * The blocks that come before the queue's own sections.
  *
- * 1. **touch-up** keeps the old priority band's picks at the top. It is the only ordering the
- *    owner named explicitly.
- * 2. **blocked-document** and **repair** carry what the removed counter band used to state.
- *    They are the blocking family (`insights-verdict`): a document that fails validation never
- *    becomes a usable node, and an island or a missing parent is what flips the same verdict the
- *    CLI reports to `needs_attention`. Blocking work sits above advisory work.
+ * **blocked-document** and **repair** carry what the removed counter band used to state. They are
+ * the blocking family (`insights-verdict`): a document that fails validation never becomes a
+ * usable node, and an island or a missing parent is what flips the same verdict the CLI reports
+ * to `needs_attention`. Blocking work sits above advisory work.
+ *
+ * A third block, **touch-up**, led this order until 2026-09-06. It drew the three highest-ranked
+ * items again at the top of the list, deduplicated out of the sections they came from. With the
+ * list grouped by finding (`do-next-groups.ts`), a picks band would be a group whose count is not
+ * in the verdict record — the one thing the sum contract forbids — and priority is now carried by
+ * the group order itself. `pickTodaysTouchUps` went with it.
  */
-const LEADING_BLOCKS: readonly FixBlockKey[] = ["touch-up", "blocked-document", "repair"];
+const LEADING_BLOCKS: readonly FixBlockKey[] = ["blocked-document", "repair"];
 
 /** The queue's own sections, in the order each group already rendered them. */
 const GROUP_BLOCKS = {

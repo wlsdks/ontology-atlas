@@ -62,7 +62,8 @@ const DEBT: ReadonlyArray<readonly [file: string, count: number]> = [
   ["src/views/home/ui/TopologyNoMatchesState.tsx", 1],
   ["src/views/ontology-insights/ui/OntologyInsightsPage.tsx", 2],
   ["src/views/ontology-insights/ui/parts/InsightsHandoffRow.tsx", 1],
-  ["src/views/ontology-insights/ui/parts/InsightsHeroCensus.tsx", 1],
+  // 2026-09-06: `InsightsHeroCensus.tsx` (1 hand inset) became `InsightsCensusStrip.tsx`,
+  // whose four tiles all take `p-[var(--card-pad)]`. A recovered file leaves the ledger.
   ["src/views/ontology-insights/ui/tabs/ImpactRankingCard.tsx", 1],
   ["src/views/project-detail/ui/construction-review/ConstructionReviewPanel.tsx", 2],
   ["src/views/project-detail/ui/ProjectDetailPage.tsx", 1],

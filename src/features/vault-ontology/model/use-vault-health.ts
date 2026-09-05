@@ -57,6 +57,19 @@ function useHealthManifest(): VaultManifest | null {
   }, [mode, sampleSource, localManifestUsable, vault.manifest]);
 }
 
+/**
+ * The documents the health verdict was computed from.
+ *
+ * Exposed because a repair the board offers must change **the same folder the verdict measured**.
+ * Reading the manifest a second way (through `useLocalVault` directly, say) would let a batch
+ * repair run against a folder the verdict never looked at — the "two canonical stores" mistake,
+ * one hook apart. Callers get the documents read-only and decide nothing about mode here.
+ */
+export function useVaultHealthDocs(): readonly VaultManifest['docs'][number][] {
+  const manifest = useHealthManifest();
+  return useMemo(() => manifest?.docs ?? [], [manifest]);
+}
+
 export function useVaultHealth(): VaultHealthResult {
   const manifest = useHealthManifest();
   return useMemo(
