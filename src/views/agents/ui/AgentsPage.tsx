@@ -78,7 +78,7 @@ export function AgentsPage() {
       id="main"
       tabIndex={-1}
       data-testid="agents-page"
-      className={`${PAGE_FRAME_FORM} lg:pb-[var(--page-bottom-breath)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+      className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/*
         ⚠️ **The description is «outside» the header.** `PAGE_HEADER_ROW` is a single

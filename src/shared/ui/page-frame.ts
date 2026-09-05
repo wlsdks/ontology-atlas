@@ -100,7 +100,7 @@ export const PAGE_FRAME =
  * paying it exactly once, so the interim cannot drift the way the list frame's bottom once did.
  */
 export const PAGE_FRAME_FORM =
-  "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12" as const;
+  "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12 lg:pb-[var(--page-bottom-breath)]" as const;
 
 /**
  * **Stage column** — the narrow column stood in the middle of the screen when

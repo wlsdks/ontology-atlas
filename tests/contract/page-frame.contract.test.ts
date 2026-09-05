@@ -135,37 +135,20 @@ describe("페이지 틀 규격", () => {
   });
 
   /**
-   * ⚠️ **The form column's members pay the breath, exactly once each** (2026-09-06).
+   * **The form column carries the desktop bottom breath itself** (2026-09-06 record).
    *
    * `/agents` and `/mcp` moved onto the 960 column and brought the taller-than-viewport case with
-   * them, so `scroll-end-gap` now requires them to reserve `--page-bottom-breath` at `lg`. The
-   * value's right home is `PAGE_FRAME_FORM` itself, beside the list frame's own — but changing a
-   * value in `page-frame.ts` is a specification change and owes an appended `docs/DECISIONS.md`
-   * record, which this round could not write. So the members pay it, and this holds them to the
-   * only property that matters in the interim: **every form member reserves it, and none reserves
-   * it twice.** The list frame's members must still never restate it, because theirs is in the
-   * constant.
+   * them, so `scroll-end-gap` requires them to reserve `--page-bottom-breath` at `lg`. For one
+   * round the two members paid it in their own `className`; the record moved the value into the
+   * constant beside the list frame's own, so it has one definition site again and a member that
+   * restates it is caught below with the list members.
    */
-  it("폼 멤버는 바닥 여백을 각자 한 번씩만 낸다", () => {
-    const BREATH = "lg:pb-[var(--page-bottom-breath)]";
-    expect(PAGE_FRAME_FORM, "폼 틀이 값을 가지면 멤버가 두 번 내게 된다").not.toContain(BREATH);
-    /*
-     * The editor is not on this list: it is a short form that has never been taller than a
-     * viewport, `scroll-end-gap` does not reach it as a framed route, and adding a reservation to
-     * it would be a rendering change with nothing measured behind it. The two that owe it are the
-     * two the gate actually judges.
-     */
-    const BREATH_OWING = FORM_MEMBERS.filter((member) => !member.includes("project-editor"));
-    expect(BREATH_OWING.length, "빚진 멤버가 비면 공회전이다").toBe(2);
-    for (const member of BREATH_OWING) {
-      const source = read(member);
-      const count = source.split(BREATH).length - 1;
-      expect(count, `${member} 가 lg 바닥 여백을 ${count} 번 적었다 — 정확히 한 번이어야 한다`).toBe(1);
-    }
+  it("폼 틀이 lg 바닥 여백을 스스로 낸다", () => {
+    expect(PAGE_FRAME_FORM).toContain("lg:pb-[var(--page-bottom-breath)]");
   });
 
   it("멤버가 lg 바닥 여백을 두 번째로 다시 적지 않는다", () => {
-    for (const member of MEMBERS) {
+    for (const member of [...MEMBERS, ...FORM_MEMBERS]) {
       const source = read(member);
       expect(
         source,
