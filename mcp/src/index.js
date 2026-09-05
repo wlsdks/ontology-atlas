@@ -44,7 +44,7 @@
 import { Server } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { listAnalysisRecords, readAnalysisRecord } from './analysis-records.mjs';
-import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
+import { basename, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
 import { SERVER_VERSION } from './server-version.mjs';
@@ -85,7 +85,7 @@ import {
   deriveMeaningAssessment,
 } from './meaning-assessment.mjs';
 
-import { existsSync, readFileSync, copyFileSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, copyFileSync, realpathSync, statSync } from 'node:fs';
 import {
   GRAPH_ARRAY_KEYS,
   NEIGHBOR_KEY_ALIASES,
@@ -202,6 +202,7 @@ import {
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
 } from './validate.mjs';
+import { WIKI_DIR, isWikiTemplateSlug, validateWikiPage } from './wiki-schema.mjs';
 import {
   buildFrontmatter,
   defaultBody,
@@ -4643,6 +4644,71 @@ const TOOLS = [
     },
   },
   {
+    name: 'validate_wiki',
+    description:
+      'Judge the pages under `wiki/` against the wiki page contract (`docs/ONTOLOGY-ATLAS-SPEC.md` §11): ' +
+      'no `kind:`, the seven required frontmatter fields, the five sections in order, a citation on every ' +
+      'bullet under `## Facts`, and a cited path that is both declared in `sources:` and present in the folder. ' +
+      'A wiki page is **not** an ontology node — it carries no `kind:` by contract, which is what keeps it out ' +
+      'of the graph — so `validate_vault` says nothing about whether one fits its own shape. This is that answer. ' +
+      'Problem codes: kind-present, missing-field:<key>, section-order, uncited-fact, bad-citation, ' +
+      'citation-target-missing, describes-needs-approval. ' +
+      'Returns `{ pageCount, failingCount, pages: [{path, problems: [{code, message, line?}]}] }` — the same shape ' +
+      '`ontology-atlas wiki-validate --json` prints, so a person and an agent read one report. ' +
+      'side effect 0. Use it after writing or editing a page, and before claiming a compile finished.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        paths: {
+          type: 'array',
+          items: { type: 'string', minLength: 1 },
+          description:
+            'Vault-relative page paths to judge (`wiki/quarter-plan.md`). Omit to judge every page under `wiki/`. ' +
+            'A path outside `wiki/` is reported as a problem rather than silently skipped.',
+        },
+      },
+      additionalProperties: false,
+    },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        pageCount: { type: 'integer', minimum: 0, description: 'Pages judged.' },
+        failingCount: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Pages with at least one problem. Zero means every page judged fits.',
+        },
+        pages: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              path: { type: 'string' },
+              ok: { type: 'boolean' },
+              problems: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    code: { type: 'string' },
+                    message: { type: 'string' },
+                    line: { type: 'integer', minimum: 1 },
+                  },
+                  required: ['code', 'message'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['path', 'ok', 'problems'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['pageCount', 'failingCount', 'pages'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'inspect_architecture',
     description:
       'Read one reviewed architecture-profile/v1 document from the active vault, scan the connected repository with the existing bounded static import analyzer, and return an architectureBrief:v1 for humans and coding agents. The profile declares scoped roles, intended dependency rules, and which known import usages those rules govern; source imports remain observed evidence with usage-qualified receipts. The result distinguishes conforms, violated, and unknown, and never treats unsupported languages, unclassified import usage, empty role mappings, or unmapped edges as compliance. Pattern labels are human/document declarations, not folder-name inference. side effect 0.',
@@ -6547,6 +6613,7 @@ const READ_TOOL_NAMES = new Set([
   'compile_ontology',
   'query_ontology',
   'validate_vault',
+  'validate_wiki',
   'inspect_architecture',
   'analyze_repo_structure',
   'infer_imports',
@@ -6839,6 +6906,8 @@ server.setRequestHandler('tools/call', async (request) => {
         return ok(await queryOntologyTool(args));
       case 'validate_vault':
         return ok(validateVaultTool(args));
+      case 'validate_wiki':
+        return ok(validateWikiTool(args));
       case 'inspect_architecture':
         return ok(inspectArchitectureTool(args));
       case 'analyze_repo_structure':
@@ -10244,6 +10313,97 @@ function buildSummaryFreshness(docs) {
         ? `${stale.length} summary node(s) declare a membership that changed after their description was last written. Nothing is blocked; read each against the nodes it contains and re-judge the body.`
         : `all ${summarySlugs.length} summary node(s) were described after their membership last changed.`,
   };
+}
+
+/**
+ * Judge the wiki pages against their own contract.
+ *
+ * `validate_vault` cannot answer this and should not try: a wiki page carries no `kind:`
+ * **by contract**, so to that validator it is a document with nothing to check, and
+ * `suppressLibraryKindIssues` deliberately drops the one issue it would raise. Whether a
+ * page fits the shape every writer was handed is a separate question with its own codes,
+ * and this tool is where an agent asks it — after writing a page, and before claiming a
+ * compile finished.
+ *
+ * The output is the shape `ontology-atlas wiki-validate --json` prints, so a person
+ * reading a terminal and an agent reading a tool result are reading one report.
+ */
+function validateWikiTool({ paths } = {}) {
+  if (paths !== undefined && !Array.isArray(paths)) {
+    throw new Error('validate_wiki: `paths` must be an array of vault-relative page paths.');
+  }
+  const wikiPrefix = `${WIKI_DIR}/`;
+  // Every raw source in the folder, so a citation naming a file nobody has is reported
+  // rather than trusted. Listing only — no source is opened here or anywhere below.
+  const knownSources = listVaultSourcePaths();
+  const docs = loadVaultDocs(VAULT_ROOT);
+  const bySlug = new Map(docs.map((doc) => [doc.slug, doc]));
+
+  const requested =
+    paths === undefined
+      ? docs
+          .map((doc) => `${doc.slug}.md`)
+          .filter((path) => path.startsWith(wikiPrefix) && !isWikiTemplateSlug(path))
+          .sort()
+      : paths.map((path) => String(path));
+
+  const pages = [];
+  for (const path of requested) {
+    if (!path.startsWith(wikiPrefix)) {
+      // Named, not skipped: an agent that asked about the wrong file must learn that,
+      // rather than reading an empty problem list as a pass.
+      pages.push({
+        path,
+        ok: false,
+        problems: [
+          {
+            code: 'not-a-wiki-page',
+            message: `\`${path}\` is not under \`${wikiPrefix}\`, so the wiki page contract does not apply to it.`,
+          },
+        ],
+      });
+      continue;
+    }
+    const doc = bySlug.get(path.replace(/\.md$/, ''));
+    if (!doc) {
+      pages.push({
+        path,
+        ok: false,
+        problems: [{ code: 'page-missing', message: `\`${path}\` is not in this folder.` }],
+      });
+      continue;
+    }
+    const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources });
+    pages.push({ path, ok, problems });
+  }
+
+  return {
+    pageCount: pages.length,
+    failingCount: pages.filter((page) => !page.ok).length,
+    pages,
+  };
+}
+
+/** Vault-relative paths under `sources/`. A listing, never a read. */
+function listVaultSourcePaths() {
+  const out = [];
+  const stack = [{ dir: join(VAULT_ROOT, 'sources'), prefix: 'sources' }];
+  while (stack.length > 0) {
+    const { dir, prefix } = stack.pop();
+    let entries;
+    try {
+      entries = readdirSync(dir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      const relative = `${prefix}/${entry.name}`;
+      if (entry.isDirectory()) stack.push({ dir: join(dir, entry.name), prefix: relative });
+      else if (entry.isFile()) out.push(relative);
+    }
+  }
+  return out;
 }
 
 function validateVaultTool({ repoRoot } = {}) {

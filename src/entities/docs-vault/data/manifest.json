@@ -1843,7 +1843,7 @@
       },
       "headings": [],
       "excerpt": "It provides a stdio JSON-RPC interface so that an AI coding agent can read and safely update local markdown vaults. People and agents use the same file as the source of truth, and the server does not own a separate database or model execution loop. The MCP server is the stdio JSON-RPC surface that lets an AI coding age",
-      "wordCount": 3585,
+      "wordCount": 3625,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },

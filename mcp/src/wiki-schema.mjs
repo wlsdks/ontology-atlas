@@ -44,7 +44,7 @@ export const WIKI_DIR = 'wiki';
  * file that is supposed to *be* the answer. A person renaming it to a real page name
  * loses the underscore and the page starts being judged, which is the moment it should.
  */
-export const WIKI_TEMPLATE_FILENAME = '_template.md';
+const WIKI_TEMPLATE_FILENAME = '_template.md';
 
 /** Whether a vault-relative slug names the shipped template rather than a real page. */
 export function isWikiTemplateSlug(slug) {
@@ -53,7 +53,7 @@ export function isWikiTemplateSlug(slug) {
   return name === WIKI_TEMPLATE_FILENAME || name === WIKI_TEMPLATE_FILENAME.replace(/\.md$/, '');
 }
 /** Vault folder holding the raw sources a page cites. */
-export const WIKI_SOURCES_DIR = 'sources';
+const WIKI_SOURCES_DIR = 'sources';
 
 /**
  * Frontmatter, in the order the template writes it.
@@ -117,8 +117,6 @@ export const WIKI_REQUIRED_FIELDS = Object.freeze(
   WIKI_FIELDS.filter((field) => field.required).map((field) => field.key),
 );
 
-export const WIKI_STATUS_VALUES = Object.freeze(['draft', 'reviewed']);
-
 /**
  * The five level-2 sections, in this order, always all five.
  *
@@ -157,12 +155,12 @@ export const WIKI_SECTION_ORDER = Object.freeze([
  * can check, and an uncheckable citation is the failure this whole shape exists to
  * prevent.
  */
-export const WIKI_CITATION_ANCHOR_PATTERN = 'p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*';
+const WIKI_CITATION_ANCHOR_PATTERN = 'p\\d+|s\\d+(?:r\\d+)?|r\\d+|l\\d+|h:[a-z0-9][a-z0-9-]*';
 export const WIKI_CITATION_PATTERN =
   `\\[\\[src:(${WIKI_SOURCES_DIR}\\/[^\\]#]+)#(${WIKI_CITATION_ANCHOR_PATTERN})\\]\\]`;
 
 /** A fresh global regex. Global regexes carry `lastIndex`, so never share one. */
-export function wikiCitationRegex() {
+function wikiCitationRegex() {
   return new RegExp(WIKI_CITATION_PATTERN, 'g');
 }
 
@@ -172,7 +170,7 @@ function citationCandidateRegex() {
 }
 
 /** Every well-formed citation in `text`, in order. */
-export function extractWikiCitations(text) {
+function extractWikiCitations(text) {
   const out = [];
   const regex = wikiCitationRegex();
   let match;
@@ -408,13 +406,4 @@ export function validateWikiPage(raw, options = {}) {
   }
 
   return { ok: problems.length === 0, problems };
-}
-
-/**
- * Whether a vault-relative slug names a wiki page. Path only — whether the file also
- * *fits* the contract is `validateWikiPage`'s answer, and keeping the two apart is what
- * lets a page that does not fit still be listed as one, rather than disappearing.
- */
-export function isWikiSlug(slug) {
-  return typeof slug === 'string' && slug.startsWith(`${WIKI_DIR}/`);
 }

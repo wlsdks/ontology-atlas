@@ -26,6 +26,7 @@ The MCP server is the stdio JSON-RPC surface that lets an AI coding agent read a
 - MCP tool registration, annotations, and the `tools/list` inventory contract, including the read-only server variant that advertises no write tools.
 - The task-scoped compact `agent_brief` projection: one bounded handoff for a selected project and one task, carrying the selected capability, its evidence coordinates, and source currentness.
 - The vault Markdown parser and writer, the deterministic compiler, and graph queries over meaning, relationships, evidence, and impact.
+- `validate_wiki`: whether the pages under `wiki/` fit the wiki page contract. They carry no `kind:` by contract, so `validate_vault` cannot judge them and does not try; this is the separate answer, in the shape the CLI's `wiki-validate --json` prints.
 - Connection-time verification of the actual vault and repository coordinates and of the advertised tool inventory, so an incorrect folder or a stale client is detected.
 - Project source binding and unbinding through `connect_project_source` and `disconnect_project_source`, with source-currentness receipts.
 - Concurrency guards, dry-runs, and structured errors that refuse duplicates, broken relationships, and destructive changes before a write lands.
