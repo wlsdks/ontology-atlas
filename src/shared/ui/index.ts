@@ -7,6 +7,7 @@ export { Button, buttonVariants, type ButtonProps } from './button';
 export { Surface } from './surface';
 export { AGENT_DOCK_INSET_SURFACE_CLASS } from './agent-dock-surface';
 export { Dialog } from './dialog';
+export { Disclosure } from './disclosure';
 export { Textarea } from './input';
 export { Checkbox } from './checkbox';
 /**

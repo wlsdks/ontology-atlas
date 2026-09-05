@@ -217,8 +217,15 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
 
     const choices = screen.getByTestId('acp-chat-choices');
-    expect(choices).toHaveClass('w-full', 'min-w-0');
+    // Equal slots decide the width, so a long option label cannot widen one picker past the
+    // other or push the send button off the composer row.
+    expect(choices).toHaveClass('flex', 'min-w-0', 'flex-1');
     expect(choices).not.toHaveClass('shrink-0');
+    // `className` lands on the Select's own wrapper; the trigger inside it is `w-full`.
+    for (const id of ['acp-chat-model', 'acp-chat-mode']) {
+      const wrapper = screen.getByTestId(id).closest('.relative')!;
+      expect(wrapper.className, id).toContain('flex-1 basis-0');
+    }
     expect(screen.getByTestId('acp-chat-model')).toHaveTextContent('model');
     expect(screen.getByTestId('acp-chat-mode')).toHaveTextContent('mode');
 
@@ -226,6 +233,45 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     fireEvent.click(screen.getByTestId('acp-chat-send'));
     await waitFor(() => expect(screen.getByTestId('acp-chat-stop')).toBeInTheDocument());
     expect(screen.getByTestId('acp-chat-choices')).toBeInTheDocument();
+  });
+
+  /**
+   * ⚠️ **The transcript opens on the sentence a person can read** (2026-09-06). The workbench's
+   * 「Analyze」 door sends about 1,200 app-composed characters, and drawn whole the answer to them
+   * started below the fold. Nothing is dropped — the whole request is one disclosure away — which
+   * is what keeps the 2026-08-24 decision (a caller may send on somebody's behalf, because the
+   * sentence lands as their own turn) intact.
+   */
+  it('앱이 지은 요청은 읽을 문장만 서고, 전문은 한 번 펼쳐서 그대로 남는다', async () => {
+    await bootSession();
+    const composed = [
+      '이 온톨로지의 뜻과 경계를 검토해 줘.',
+      'Scope: {"projectSlug":"storefront"}.',
+      'Keep the answer useful as plain Markdown.',
+    ].join('\n');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: composed } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    const bubble = await waitFor(() => document.querySelector('[data-acp-entry="user"]')!);
+    expect(bubble).toHaveAttribute('data-user-request', 'app-composed');
+    expect(bubble).toHaveTextContent('이 온톨로지의 뜻과 경계를 검토해 줘.');
+    expect(bubble).not.toHaveTextContent('Scope: {"projectSlug"');
+    // Verbatim and in one piece behind the disclosure, which stands outside the quotation.
+    const fold = screen.getByTestId('acp-chat-request-full');
+    expect(bubble.contains(fold)).toBe(false);
+    expect(fold.closest('details')).toHaveTextContent('Scope: {"projectSlug":"storefront"}.');
+  });
+
+  it('사람이 직접 쓴 줄바꿈은 말풍선에서도 줄바꿈으로 남는다', async () => {
+    await bootSession();
+    // ⇧Enter is the documented way to break a line in this composer; the bubble used to reflow
+    // every paragraph of a three-step request into one wall.
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '첫째 줄\n둘째 줄' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    const bubble = await waitFor(() => document.querySelector('[data-acp-entry="user"]')!);
+    expect(bubble).toHaveAttribute('data-user-request', 'typed');
+    expect(screen.queryByTestId('acp-chat-request-full')).toBeNull();
+    expect(bubble.className).toContain('whitespace-pre-wrap');
   });
 
   it('세션이 서면 준비됨이 되고, 보낸 말과 받은 말이 각각 남는다', async () => {
@@ -628,9 +674,13 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     );
   });
 
-  it('draws consecutive calls as one run', async () => {
+  it('draws consecutive calls on different targets as one run of standing rows', async () => {
     await bootSession();
-    for (const id of ['r1', 'r2', 'r3']) {
+    for (const [id, slug] of [
+      ['r1', 'domains/order'],
+      ['r2', 'domains/payment'],
+      ['r3', 'domains/delivery'],
+    ]) {
       emit({
         jsonrpc: '2.0',
         method: 'session/update',
@@ -641,6 +691,7 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
             title: 'mcp__atlas-vault__get_concept',
             kind: 'read',
             status: 'completed',
+            rawInput: { slug },
           },
         },
       });
@@ -651,6 +702,44 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     const runs = document.querySelectorAll('[data-acp-entry="tool-run"]');
     expect(runs).toHaveLength(1);
     expect(runs[0]).toHaveAttribute('data-tool-run-count', '3');
+    expect(runs[0]).toHaveAttribute('data-tool-run-rows', '3');
+    expect(document.querySelectorAll('[data-tool-repeat]')).toHaveLength(0);
+  });
+
+  /*
+   * ⚠️ **Only repetition collapses** (2026-09-06). Three byte-identical calls are one fact stated
+   * three times, and stating it three times pushes the *next*, different call out of view. The row
+   * still says how many, so nothing about what happened is hidden — which is what keeps this
+   * inside the 2026-09-05 decision that an agent's lookups stand above its answer.
+   */
+  it('folds a run of identical calls onto one row that says how many', async () => {
+    await bootSession();
+    for (const id of ['r1', 'r2', 'r3', 'r4']) {
+      emit({
+        jsonrpc: '2.0',
+        method: 'session/update',
+        params: {
+          update: {
+            sessionUpdate: 'tool_call',
+            toolCallId: id,
+            title: 'mcp__atlas-vault__get_concept',
+            kind: 'read',
+            status: 'completed',
+            rawInput: { slug: 'domains/order' },
+          },
+        },
+      });
+    }
+    await waitFor(() =>
+      expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(1),
+    );
+    const run = document.querySelector('[data-acp-entry="tool-run"]')!;
+    expect(run).toHaveAttribute('data-tool-run-count', '4');
+    expect(run).toHaveAttribute('data-tool-run-rows', '1');
+    const repeat = screen.getByTestId('acp-chat-tool-repeat');
+    expect(repeat).toHaveTextContent('×4');
+    // The multiplication sign is read aloud by nothing, so the count carries a stated name.
+    expect(repeat).toHaveAttribute('aria-label', 'toolRepeat:{"count":4}');
   });
 
   it('a very long provider tool name never pushes the transcript sideways', async () => {
@@ -875,6 +964,41 @@ describe('대화 패널 — 권한 카드가 실제로 막는다', () => {
     await waitFor(() => expect(previews.at(-1)).toBeNull());
     expect(previews.some((preview) => preview?.phase === 'committing')).toBe(false);
     expect(answerFor(91)).toEqual({ outcome: 'selected', optionId: 'reject' });
+  });
+
+  /**
+   * ⚠️ **The two answers must stay in the frame** (2026-09-06). The card sat unbounded in the
+   * panel's flex column, so a batch write — one review row per item — grew it until 「Don't」 and
+   * 「Allow once」 were below the bottom edge of a 1040×720 window. jsdom has no layout, so what is
+   * pinned here is the structure that produces the behaviour: the panel caps the card's height,
+   * the card scrolls **only its reading matter**, and the decision row sits after that scroller
+   * rather than inside it. Rendered geometry is the installed app's job.
+   */
+  it('권한 카드가 길어져도 답할 두 버튼은 스크롤 밖에 남는다', async () => {
+    await bootSession();
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '관계를 정리해줘' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    emit(
+      mcpPermissionRequest('mcp__atlas-vault__add_relation', 97, {
+        from: 'capabilities/a',
+        to: 'domains/b',
+        type: 'relates',
+        why: '같은 흐름이라서',
+      }),
+    );
+    const card = await screen.findByTestId('acp-permission-card');
+    const scroller = screen.getByTestId('acp-permission-body-scroll');
+    const reject = screen.getByTestId('acp-permission-reject');
+    const allow = screen.getByTestId('acp-permission-allow');
+
+    expect(scroller.className).toContain('overflow-y-auto');
+    expect(scroller.className).toContain('atlas-scroll-quiet');
+    expect(scroller.contains(reject)).toBe(false);
+    expect(scroller.contains(allow)).toBe(false);
+    expect(card.contains(reject)).toBe(true);
+    // The card yields its own height rather than the panel's, so the transcript is not evicted.
+    expect(card.className).toContain('max-h-full');
+    expect(card.closest('[data-surface-state]')?.className).toContain('max-h-[45%]');
   });
 
   it('온톨로지 쓰기의 사람 결정과 최종 도구 상태를 작업 영수증으로 내보낸다', async () => {
@@ -1584,21 +1708,22 @@ describe('작성 칸 — 안내가 쓰는 글을 가리지 않는다', () => {
     expect(box).toHaveAttribute('placeholder', 'composerPlaceholder');
   });
 
-  it('머리의 아이콘 버튼은 이름을 갖고, 작지 않다', async () => {
+  it('세션 제어 아이콘 버튼은 이름을 갖고, 작지 않다', async () => {
     /*
      * An icon-only button has no visible name. The accessible name is enforced by the
      * type (`IconButton.label`), but for **someone looking at the screen** the tooltip
      * plays that role.
      */
     await bootSession();
-    // Close exists only where `onClose` was passed — only the always-present ones are checked here.
+    // The panel no longer draws a close button: the workbench that hosts it owns closing.
+    expect(screen.queryByTestId('acp-chat-close')).toBeNull();
     for (const id of ['acp-chat-new']) {
       const button = screen.getByTestId(id);
       expect(button, id).toHaveAccessibleName();
       /*
-       * The icon-control ramp is 24 / 28 / 32 and `lg` is the top. This is the panel's
-       * primary chrome, so it uses the top — growing further would mean extending the
-       * ramp, and that is not decided alone in this place (the 「System」 seat's call).
+       * The icon-control ramp is 24 / 28 / 32 and `lg` is the top. These are the session's
+       * own controls, and they kept the top step when they moved down onto the composer row —
+       * the send button beside them is 32px too, and one row of controls has one height.
        */
       expect(button.className, `${id}: 크기가 한 단 내려갔다`).toContain('h-8 w-8');
     }

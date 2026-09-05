@@ -85,9 +85,22 @@ export const PAGE_FRAME =
  * 960 is not a CSS token because the form family is still its only consumer —
  * a value earns a name when a second consumer appears
  * (`.claude/rules/design.md`).
+ *
+ * ⚠️ **The bottom breath is not in this constant, and that is a deliberate hold** (2026-09-06).
+ * When `/agents` and `/mcp` moved onto this column they brought the taller-than-viewport case with
+ * them, and `scroll-end-gap` requires a framed page to reserve `--page-bottom-breath` at `lg`. The
+ * right home for that is here, beside the list frame's own `lg:pb-…`, so the two frames would agree
+ * on top spacing and bottom breath and differ only in the one thing they exist to differ in.
+ *
+ * It is not here yet because changing a value in this file is a **specification change**
+ * (`.claude/rules/design.md`, the design-spec census) and therefore owes an appended
+ * `docs/DECISIONS.md` record, which this round could not write. Until it does, the two screens pay
+ * the breath in their own `className` — the axis they already own below `lg`, where the tab-bar
+ * reserve genuinely differs per surface. `page-frame.contract.test.ts` holds every form member to
+ * paying it exactly once, so the interim cannot drift the way the list frame's bottom once did.
  */
 export const PAGE_FRAME_FORM =
-  "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12" as const;
+  "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12 lg:pb-[var(--page-bottom-breath)]" as const;
 
 /**
  * **Stage column** — the narrow column stood in the middle of the screen when
@@ -133,6 +146,26 @@ export const PAGE_COLUMN_STAGE = "mx-auto w-full max-w-[640px]" as const;
  * owns the column of rows inside it.
  */
 export const PAGE_COLUMN_FORM = "mx-auto w-full max-w-[960px]" as const;
+
+/**
+ * **Which frame a screen wears** (owner, 2026-09-06).
+ *
+ * > *"Agents and MCP should use the 960 centred column like the project editor, not the 1600
+ * > one — title, lede, tabs and cards inside that column."*
+ *
+ * The rule the instruction generalises to, so the next screen does not ask again:
+ *
+ * | The screen is | Frame | Why |
+ * |---|---|---|
+ * | text and settings — you read sentences and act on rows | `PAGE_FRAME_FORM` (960) | A row you read across and act on at the end gets worse the wider it is. Measured on `/mcp` at 2560: 700px of every connector row was dead span between the name on the left and the switch on the right |
+ * | a canvas — a map, a graph, a diagram | `--page-max` (1600) via `PAGE_FRAME`, or no frame at all | The drawing uses the width. A cap on a canvas is a cap on how much of the ontology fits on screen |
+ * | a list of many short cards | `PAGE_FRAME` (1600) | Cards tile across the width; nothing is read left to right |
+ *
+ * The test is not "how much data is there" but **which direction the eye travels**. Both halves
+ * are gated: `page-frame.contract.test.ts` pins each screen's membership, and the same rule is
+ * recorded in `docs/DESIGN-SYSTEM.md` for the reader who arrives from the design system rather
+ * than from this file.
+ */
 
 /**
  * **There are three columns, and this file does not own the third**

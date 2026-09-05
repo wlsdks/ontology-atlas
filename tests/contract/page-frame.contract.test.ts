@@ -45,7 +45,19 @@ const REPO_ROOT = join(import.meta.dirname, "..", "..");
  * Screens using the form/edit column (2026-08-11) — **the same top spacing as the
  * list screens, only narrower**.
  */
-const FORM_MEMBERS = ["src/views/project-editor/ui/ProjectEditorPage.tsx"] as const;
+const FORM_MEMBERS = [
+  "src/views/project-editor/ui/ProjectEditorPage.tsx",
+  /*
+   * ⚠️ **Agents and MCP moved here on 2026-09-06** (owner: *"they should use the 960 centred
+   * column like the project editor, not the 1600 one"*). Both are text-and-settings screens: you
+   * read a sentence and act on a row, and a row you read across gets worse the wider it is —
+   * measured on the connectors tab at 2560, about 700px of every row was dead span between the
+   * name on the left and the switch on the right. The frame file records the rule they generalise
+   * to, so the next screen decides by direction of travel rather than by taste.
+   */
+  "src/views/agents/ui/AgentsPage.tsx",
+  "src/views/mcp/ui/McpPage.tsx",
+] as const;
 
 /** Screens that must own their horizontal inset (safe-area) — only the top spacing follows the spec. */
 const TOP_PAD_MEMBERS = ["src/views/project-detail/ui/ProjectDetailPage.tsx"] as const;
@@ -53,10 +65,6 @@ const TOP_PAD_MEMBERS = ["src/views/project-detail/ui/ProjectDetailPage.tsx"] as
 const MEMBERS = [
   "src/views/project-selector/ui/ProjectSelectorPage.tsx",
   "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
-  "src/views/agents/ui/AgentsPage.tsx",
-  // MCP joined the family on 2026-09-05. A member missing from this list is a screen free to
-  // eyeball the frame again, which is the whole defect this file exists for.
-  "src/views/mcp/ui/McpPage.tsx",
 ] as const;
 
 const read = (relative: string) => readFileSync(join(REPO_ROOT, relative), "utf8");
@@ -126,8 +134,21 @@ describe("페이지 틀 규격", () => {
     );
   });
 
+  /**
+   * **The form column carries the desktop bottom breath itself** (2026-09-06 record).
+   *
+   * `/agents` and `/mcp` moved onto the 960 column and brought the taller-than-viewport case with
+   * them, so `scroll-end-gap` requires them to reserve `--page-bottom-breath` at `lg`. For one
+   * round the two members paid it in their own `className`; the record moved the value into the
+   * constant beside the list frame's own, so it has one definition site again and a member that
+   * restates it is caught below with the list members.
+   */
+  it("폼 틀이 lg 바닥 여백을 스스로 낸다", () => {
+    expect(PAGE_FRAME_FORM).toContain("lg:pb-[var(--page-bottom-breath)]");
+  });
+
   it("멤버가 lg 바닥 여백을 두 번째로 다시 적지 않는다", () => {
-    for (const member of MEMBERS) {
+    for (const member of [...MEMBERS, ...FORM_MEMBERS]) {
       const source = read(member);
       expect(
         source,
@@ -137,7 +158,10 @@ describe("페이지 틀 규격", () => {
   });
 
   it("멤버 세 화면이 전부 이 틀을 입는다", () => {
-    expect(MEMBERS.length, "멤버가 비면 이 시험 전체가 공회전한다").toBeGreaterThan(2);
+    // Two since 2026-09-06: Agents and MCP left for the 960 column. The floor exists so an empty
+    // list cannot pass as a green run; it is not a claim about how many screens the wide frame
+    // deserves.
+    expect(MEMBERS.length, "멤버가 비면 이 시험 전체가 공회전한다").toBeGreaterThan(1);
     for (const member of MEMBERS) {
       const source = read(member);
       expect(source, `${member} 가 PAGE_FRAME 을 안 쓴다`).toContain("PAGE_FRAME");
@@ -203,9 +227,12 @@ describe("페이지 틀 — 둘째 컬럼과 상단 여백 (2026-08-11)", () => 
   it("폼 컬럼은 좁고, 폭을 한 곳에서만 정한다", () => {
     expect(PAGE_FRAME_FORM).toContain("max-w-[960px]");
     expect(PAGE_FRAME_FORM).not.toContain("--page-max");
+    expect(FORM_MEMBERS.length, "폼 멤버가 비면 공회전이다").toBeGreaterThan(2);
     for (const member of FORM_MEMBERS) {
       const source = read(member);
       expect(source, `${member} 가 PAGE_FRAME_FORM 을 안 쓴다`).toContain("PAGE_FRAME_FORM");
+      // The 1600 column is the thing they left; wearing both is how a screen ends up in neither.
+      expect(source, `${member} 가 넓은 틀도 같이 입었다`).not.toMatch(/PAGE_FRAME(?!_FORM)/);
       expect(source, `${member} 가 폭을 다시 적었다`).not.toMatch(/max-w-\[9[0-9]{2}px\]/);
     }
   });

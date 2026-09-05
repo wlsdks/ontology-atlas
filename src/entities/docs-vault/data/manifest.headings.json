@@ -6249,6 +6249,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — The agent conversation loses its tabs and scrollbar, Agents and MCP read in a 960 column that carries the breath, and Korean is never tracked",
+      "slug": "2026-09-06-the-agent-conversation-loses-its-tabs-and-scrollbar-agents-and-mcp-read-in-a-960-column-that-carries-the-breath-and-korean-is-never-tracked"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — The library becomes a place, the rail cap moves to nine, and the tile's padding pays for it",
       "slug": "2026-09-06-the-library-becomes-a-place-the-rail-cap-moves-to-nine-and-the-tiles-padding-pays-for-it"
     },
@@ -9422,6 +9427,16 @@
     },
     {
       "depth": 3,
+      "text": "Caps tracking is a Latin device (owner, 2026-09-06)",
+      "slug": "caps-tracking-is-a-latin-device-owner-2026-09-06"
+    },
+    {
+      "depth": 3,
+      "text": "Quiet scroller — `.atlas-scroll-quiet` (2026-09-06)",
+      "slug": "quiet-scroller-atlas-scroll-quiet-2026-09-06"
+    },
+    {
+      "depth": 3,
       "text": "App-embedded terminal dock tokens — Removed (2026-07-26)",
       "slug": "app-embedded-terminal-dock-tokens-removed-2026-07-26"
     },
@@ -9584,6 +9599,11 @@
       "depth": 3,
       "text": "Page Column — Single `--page-max`",
       "slug": "page-column-single---page-max"
+    },
+    {
+      "depth": 3,
+      "text": "Which frame a screen wears — 960 for text, `--page-max` for canvases (owner, 2026-09-06)",
+      "slug": "which-frame-a-screen-wears-960-for-text---page-max-for-canvases-owner-2026-09-06"
     },
     {
       "depth": 4,

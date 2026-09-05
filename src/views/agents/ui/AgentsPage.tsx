@@ -4,10 +4,11 @@ import { useTranslations } from 'next-intl';
 import { useCallback } from 'react';
 
 import { AcpRuntimeSettings } from '@/widgets/app-settings-menu';
+import { Disclosure } from '@/shared/ui';
 import { useRouter } from '@/i18n/navigation';
 import { DESTINATION_HREF } from '@/shared/config/destinations';
 import { queueAgentChatIntent } from '@/shared/lib/agent-chat-intent';
-import { PAGE_FRAME, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
+import { PAGE_FRAME_FORM, PAGE_HEADER_ROW, PAGE_TITLE_ROW } from '@/shared/ui/page-frame';
 
 /**
  * The "agents" destination — where this computer's AI coding tools are **downloaded, installed,
@@ -77,7 +78,7 @@ export function AgentsPage() {
       id="main"
       tabIndex={-1}
       data-testid="agents-page"
-      className={`${PAGE_FRAME} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+      className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/*
         ⚠️ **The description is «outside» the header.** `PAGE_HEADER_ROW` is a single
@@ -93,9 +94,22 @@ export function AgentsPage() {
           </h1>
         </div>
       </header>
+      {/*
+        ⚠️ **One line stands, the rest folds** (owner review, 2026-09-06: three long lines of body
+        copy stood between the title and the first card). The screen's job is a list of tools on
+        this machine, and a paragraph naming everything it does and does not do is a preface to a
+        list nobody has reached yet. The first sentence says what the screen is; what it also does,
+        and what it deliberately does not hold, is one row away — nothing is dropped, because the
+        boundary lines (no API keys, no folder here) are the ones people come back to ask about.
+      */}
       <p className="mt-2 max-w-2xl break-keep text-body-lg leading-title text-[color:var(--color-text-tertiary)]">
         {t('lede')}
       </p>
+      <Disclosure className="mt-2" summary={t('ledeMore')}>
+        <p className="mt-2 max-w-2xl break-keep text-label leading-prose text-[color:var(--color-text-quaternary)]">
+          {t('ledeDetail')}
+        </p>
+      </Disclosure>
 
       <section className="mt-6 min-w-0" aria-label={t('runtimesHeading')}>
         <h2 className="sr-only">{t('runtimesHeading')}</h2>

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { cn } from "@/shared/lib/cn";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from "@/shared/ui";
-import { AcpChatPanel, AcpChatResizeHandle, useChatWidth } from "@/widgets/acp-chat-panel";
+import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "@/widgets/acp-chat-panel";
 
 /**
  * The guarded ACP conversation, docked to the Library.
@@ -57,6 +58,7 @@ export function LibraryAgentDock({
   knownSlugs: ReadonlySet<string>;
   onClose: () => void;
 }) {
+  const tChat = useTranslations("acpChat");
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
   const [enabledRequestNonce, setEnabledRequestNonce] = useState<number | null>(null);
@@ -125,6 +127,7 @@ export function LibraryAgentDock({
               onCommit={chatWidth.commitWidth}
             />
           </div>
+          <AcpDockHeader title={tChat("dockTitle")} onClose={onClose} />
           <AcpChatPanel
             key={runtime.id}
             runtimeId={runtime.id}
@@ -138,7 +141,6 @@ export function LibraryAgentDock({
             }
             openingRequest={openingRequest}
             knownSlugs={knownSlugs}
-            onClose={onClose}
           />
         </Surface>
       ) : null}

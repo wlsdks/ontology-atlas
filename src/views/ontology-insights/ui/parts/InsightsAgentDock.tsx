@@ -157,7 +157,6 @@ export function InsightsAgentDock({
             openingRequest={openingRequest}
             requestScopeKey={JSON.stringify([vaultRoot, 'meaning'])}
             onOpeningRequestSent={(nonce) => setOpeningRequest((current) => current?.nonce === nonce ? null : current)}
-            contextLabel={contextLabel}
             knownSlugs={knownSlugs}
             knownRelations={knownRelations}
             presentationIntent={prefillRequest.kind === 'flow' ? 'business-flow' : null}
@@ -165,8 +164,15 @@ export function InsightsAgentDock({
             onDraftPresenceChange={onDraftPresenceChange}
             onPresentationOpenMap={onPresentationOpenMap}
             onTurnActivityChange={onTurnActivityChange}
+            /*
+             * ⚠️ **One close, and it belongs to the workbench** (2026-09-06). The panel drew its
+             * own X beside the workbench's, so the dock had two identical buttons a few pixels
+             * apart doing exactly the same thing — and the inner one closed a surface it does not
+             * own. The chat is a tab inside this workbench; what closes it is the workbench's
+             * close button, and `contextLabel` is likewise the workbench header's `h2`, so the
+             * panel does not repeat it as a badge either.
+             */
             onTurnStarted={capture.onTurnStarted}
-            onClose={onClose}
           />}
           />
         </Surface>

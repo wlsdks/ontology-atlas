@@ -149,14 +149,25 @@ export function AcpPermissionCard({
        * indigo. Every one of the three still stops for an answer; only the alarm is spent where it
        * is earned.
        */
+      /*
+       * ⚠️ **The two answers never scroll away** (2026-09-06). This was a `grid` with no bound, so
+       * a batch ontology write — one review row per item — grew the card until 「Don't」 and
+       * 「Allow once」 sat below the bottom of a 1040×720 window. The panel caps the card's height;
+       * the card puts the scroll **around its reading matter only**, so the decision row is always
+       * the last thing in the frame. A checkpoint you cannot answer is a wall.
+       */
       className={
         ontologyWrite
-          ? 'grid gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
+          ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-indigo-a28)] bg-[color:var(--color-indigo-a08)] p-[var(--card-pad)]'
           : locality === 'inside-project'
-            ? 'grid gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]'
-            : 'grid gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'
+            ? 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-[var(--card-pad)]'
+            : 'flex max-h-full min-h-0 flex-col gap-3 rounded-panel border border-[color:var(--color-amber-source-a35)] bg-[color:var(--color-amber-source-a08)] p-[var(--card-pad)]'
       }
     >
+      <div
+        data-testid="acp-permission-body-scroll"
+        className="atlas-scroll-quiet flex min-h-0 shrink flex-col gap-3 overflow-y-auto"
+      >
       <div className="flex items-start gap-2.5">
         {ontologyWrite ? (
           <GitCompareArrows
@@ -279,8 +290,9 @@ export function AcpPermissionCard({
           {request.title ?? t('unknownTarget')}
         </p>
       )}
+      </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
         <Button
           ref={rejectRef}
           variant="ghost"
@@ -308,7 +320,7 @@ export function AcpPermissionCard({
         with the sentence that qualifies it, separated from the primary row by a rule.
       */}
       {allowAlways && !ontologyWrite ? (
-        <div className="grid gap-1 border-t border-[color:var(--color-border-soft)] pt-2.5">
+        <div className="grid shrink-0 gap-1 border-t border-[color:var(--color-border-soft)] pt-2.5">
           <button
             type="button"
             data-testid="acp-permission-allow-always"

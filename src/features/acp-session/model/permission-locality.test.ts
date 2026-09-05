@@ -31,4 +31,26 @@ describe('권한 요청의 위치 — 내 프로젝트 안인가, 전혀 다른 
     expect(permissionLocality(null, '/anything')).toBe('elsewhere');
     expect(permissionLocality(VAULT, null)).toBe('elsewhere');
   });
+
+  /**
+   * 2026-09-06: the card headed a write to a file **inside the opened folder** with "it wants to
+   * touch something outside this folder", because locality was measured only against the project
+   * above the vault. A folder that is not one of ours has no project above it, so every request in
+   * it answered `elsewhere` — the folder named as outside itself.
+   */
+  it('연 폴더 안은 프로젝트가 위에 없어도 「안」이다', () => {
+    expect(permissionLocality(VAULT, `${VAULT}/domains/order.md`)).toBe('inside-project');
+    expect(permissionLocality('/Users/dana/notes', '/Users/dana/notes/order.md')).toBe(
+      'inside-project',
+    );
+    expect(permissionLocality('/Users/dana/notes/', '/Users/dana/notes')).toBe('inside-project');
+  });
+
+  it('폴더 이름이 접두사로 겹치는 이웃은 여전히 밖이다', () => {
+    expect(permissionLocality('/Users/dana/notes', '/Users/dana/notes-old/x.md')).toBe('elsewhere');
+  });
+
+  it('풀 수 없는 경로는 경고를 유지한다 — 틀려도 안전한 방향', () => {
+    expect(permissionLocality(VAULT, `${VAULT}/../../.ssh/id_rsa`)).toBe('elsewhere');
+  });
 });

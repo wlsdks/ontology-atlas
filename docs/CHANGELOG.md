@@ -47,9 +47,9 @@
 
 ## 2026-09-05 · Unreleased: changes since v1.0.6
 
-**Added**: Agent lookups show targets and counts above the answer; Insights lists names the folder lacks and keeps versioned ACP analyses. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token only in the keychain. Library, a ninth screen, holds Sources (project documents of any format, kept as they arrived, marked not compiled, stale or compiled) and Wiki pages shaped by wiki/_template.md; Add files, Find documents and Compile start the work. Docs keeps only its document tree.
-**Changed**: The Cone view fills the canvas (62% at 1920, was 23%); panels close faster; Agents keeps tools and chat only.
-**Fixed**: Pages keep a bottom margin on desktop; a failed sign-in probe reads "could not check"; a tab's count stays apart from its label; CONTENTS steps aside when a chat docks beside a page.
+**Added**: Agent lookups show targets and counts above the answer; Insights keeps versioned ACP analyses. MCP has its own screen: the folder's connection plus Connectors that attach external MCP servers to the in-app chat, off by default, token in the keychain. Library, a ninth screen, holds Sources (documents of any format, kept as they arrived, marked not compiled, stale or compiled) and Wiki pages shaped by wiki/_template.md, with Add files, Find documents and Compile.
+**Changed**: The Cone view fills the canvas; the agent conversation scrolls without a bar and glides to new answers under one header band with tabs and one close; Agents and MCP read in a 960 column; Korean labels lose tracking.
+**Fixed**: Pages keep a bottom margin on desktop; repeated lookups fold onto one row; the permission card keeps Don't and Allow on screen; CONTENTS steps aside when a chat docks beside a page.
 
 ## 2026-09-05 · v1.0.6: the in-app Claude chat keeps its permission gate
 
