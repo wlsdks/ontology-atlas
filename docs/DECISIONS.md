@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold
+
+**Why**: reviewing a wrong in-app answer, a person could not see which lookups the agent made or that one came back empty; and names agents reference that the vault lacks accumulated nowhere, only inside health totals. Observed in the deeplethe/utopia review (Apache-2.0, ideas only).
+**Prior**: 2026-08-07 (3) "one screen does not count the same thing two ways" and 2026-09-01 "Do next is one list titled by one count" stand and shaped the narrowing.
+**Decision**: every ACP tool call renders one standing line (target, result count only for the vault MCP server's own tools, otherwise status; a hollow ring while running, a danger seam plus weight for failed and cancelled, "nothing found" as a longer string, one rule per run); thinking stays folded. `/ontology/insights` gains a "Not held" tab that lists only unresolved references by name with counts and who asked, the sum of counts equal to the health summary's unresolved edges, disjoint from the Do-next queue; dismissal hides a row on this computer only and moves no count. The shared tab strip scrolls instead of wrapping, keeps the active tab in view, and meets the 44 px floor under a coarse pointer.
+**Dissent**: design-lead's, accepted: the reference's three grouped panels were rebuilt then rejected for the flat list the neighbouring tab already earned; design-responsive's literal "no tab outside the viewport at 390" is unsatisfiable without wrapping and was replaced by "active tab visible, page never scrolls sideways". The "asked for relation X" case needs the MCP server to persist refused writes and is not built.
+**Falsifier**: a tool line whose count is not the tool's own top-level total, a dismissal that moves any count or vault byte, the same fact counted on two insights badges, or a selected tab whose underline is off screen at 390.
+**Owner**: jinan
+
 ## 2026-09-05 — A session mode is judged by the class the adapter states, not only its name, and a moved session is announced
 
 **Why**: claude-agent-acp 0.71+ advertises `auto` ("Claude handles permission decisions", `_meta.kind: auto_review`) to every session and the app pins 0.74.0; `mode-safety.ts` judged modes by id alone, so Auto sat in the shipped dropdown as a selectable row, while a silent adapter clamp (`auto` to `acceptEdits`, `current_mode_update`) was dropped and the screen kept the old mode.
