@@ -71,9 +71,11 @@ const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
  */
 const WEBVIEW_MCP_WORKBENCH_MARKERS = [
   /MCP/,
-  // The tab strip renders its labels uppercase through CSS, and WebKit's innerText reports the
-  // transformed text, so the marker must not care about case (measured 2026-09-05: "SHARE THIS F…").
-  /Share this folder|Connectors|이 폴더 공유|커넥터/i,
+  // The payload carries only the first few hundred characters of the body, and the tab strip's
+  // labels arrive uppercase through CSS text-transform, so the route is recognised by its own
+  // lede sentence (both locales) with the tab words as a fallback (measured 2026-09-05: the
+  // body text ended at "SHARE THIS F").
+  /MCP is the wire|AI 코딩 에이전트가 쓰는 선|Share this folder|Connectors|이 폴더 공유|커넥터/i,
 ];
 
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
