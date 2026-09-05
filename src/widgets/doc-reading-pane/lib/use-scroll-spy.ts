@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
- * Tracks the current heading inside the docs page's article scroll container.
+ * Tracks the current heading inside a reading pane's scroll container.
  *
  * A rAF-throttled scroll handler recomputes each heading's position relative to the root and picks
  * the heading most recently passed by the 32px baseline at the top of the scroll. With no heading
@@ -28,7 +28,7 @@ import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
  * - `setActiveHeadingSlug` — updates active immediately from an outside click, moving the
  *   indicator before the scroll animation arrives
  */
-export function useDocsVaultScrollSpy(
+export function useDocReadingScrollSpy(
   selectedSlug: string | null,
   source: string,
 ): {

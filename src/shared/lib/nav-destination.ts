@@ -2,6 +2,7 @@ export type AppNavDestinationId =
   | "map"
   | "architecture"
   | "docs"
+  | "library"
   | "insights"
   | "projects"
   | "agents"
@@ -36,6 +37,11 @@ export function resolveActiveNavDestination(pathname: string): AppNavDestination
   // `/agents` because the two answer different questions about the same work
   // (which tools this computer has vs. what an agent reaches over MCP).
   if (path.startsWith("/mcp")) return "mcp";
+  // Library — destination added 2026-09-06. Gathering documents of any format and
+  // the wiki pages compiled from them left `/docs`, which is the graph's Markdown
+  // again. Matched before `/docs` only in reading order; the two prefixes cannot
+  // collide.
+  if (path.startsWith("/library")) return "library";
   if (path.startsWith("/docs")) return "docs";
   if (path.startsWith("/projects") || path.startsWith("/project/")) return "projects";
   if (path === "/" || path.startsWith("/topology")) return "map";
@@ -63,9 +69,9 @@ const GATEWAY_ROUTE_PREFIXES = ["/download", "/guide", "/changelog"] as const;
  *
  * `.claude/rules/surfaces.md` pins the web's primary job as the **gateway**: a
  * place to open the map with no install, and a link to share. The left rail is
- * chrome for someone already working in a vault. Standing eight destinations (map,
- * architecture, docs, insights, projects, agents, mcp, git) in front of a visitor who has opened
- * nothing makes it a workbench, not a gateway — they see eight doors none of which
+ * chrome for someone already working in a vault. Standing nine destinations (map,
+ * architecture, docs, library, insights, projects, agents, mcp, git) in front of a visitor who has
+ * opened nothing makes it a workbench, not a gateway — they see nine doors none of which
  * they can walk through yet.
  *
  * **Why the shell decides this, not the page**: making each page remember its own

@@ -1,22 +1,12 @@
-export { DocReadingPane, type DocReadingPaneProps } from "./ui/DocReadingPane";
-export {
-  DocReadingOutlineRail,
-  type DocReadingOutlineRailProps,
-  type OutlineHeading,
-} from "./ui/DocReadingOutlineRail";
-export { BackToTopButton } from "./ui/BackToTopButton";
-export {
-  OUTLINE_RAIL_MIN_HEADINGS,
-  OUTLINE_RAIL_NARROW_PANE_MIN,
-  OUTLINE_RAIL_WIDE_PANE_MIN,
-  resolveOutlineRailFit,
-  shouldShowOutlineRail,
-  type OutlineRailFit,
-} from "./lib/outline-rail";
-export { useOutlineRailFit } from "./lib/use-outline-rail-fit";
-export {
-  BACK_TO_TOP_SCROLL_THRESHOLD,
-  shouldShowBackToTop,
-  useBackToTop,
-} from "./lib/use-back-to-top";
-export { useDocsVaultScrollSpy } from "./lib/use-scroll-spy";
+/**
+ * The public API is only what another slice actually opens with.
+ *
+ * Everything else — the rail and the button themselves, the fit verdict, the two pane
+ * floors, the scroll threshold — is this widget's own business, and an export with no
+ * consumer is misinformation rather than a spec (the discipline `dead-code` enforces and
+ * three retired components paid for). Tests reach the files directly.
+ */
+export { DocReadingPane } from "./ui/DocReadingPane";
+export { shouldShowOutlineRail } from "./lib/outline-rail";
+export { useBackToTop } from "./lib/use-back-to-top";
+export { useDocReadingScrollSpy } from "./lib/use-scroll-spy";

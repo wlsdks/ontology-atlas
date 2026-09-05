@@ -92,6 +92,15 @@ export const AUDITED_ROUTES = [
   // files or hold a token, so that is both what the ratchet can see and what a
   // first-time visitor meets.
   "/ko/mcp/",
+  // Library (added 2026-09-06). Sources and Wiki left `/docs` for their own destination;
+  // the same reason MCP is on this list applies unchanged — a new route that is not here
+  // is a surface four gates (scroll padding, responsive overflow, cursor, Korean line
+  // breaking) cannot see at all.
+  //
+  // Measures the **no-folder** state, which is what a ratchet without a vault can reach
+  // and also what a first-time visitor meets: one centred stage naming the two kinds of
+  // file this folder keeps, and the door that opens one.
+  "/ko/library/",
   "/ko/download/",
   "/ko/guide/",
   "/ko/guide/what-is-atlas/",

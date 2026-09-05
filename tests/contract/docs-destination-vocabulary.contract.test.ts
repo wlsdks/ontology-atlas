@@ -20,6 +20,13 @@ import ko from '../../messages/ko.json';
  * had the extra name there, and the repair was to stop calling one destination two things rather
  * than to coin a third Korean word.
  *
+ * ⚠️ **A real Library appeared the next day, and this table did not become wrong** (2026-09-06).
+ * `/library` is now a destination with its own name in both languages — `Library` and 「자료실」 —
+ * and that is exactly why the row above still stands: the settings card at
+ * `nav.settingsMenu.vaultTitle` still opens `/docs/`, so calling *it* "Library" would now name one
+ * screen with another screen's name, which is worse than the ambiguity this file was written for.
+ * The assertions below are unchanged and are what hold the two apart.
+ *
  * Why it matters more in Korean: one label asked for the absolute path of a *screen*, because the
  * folder word and the destination word were the same word. Someone reading it has to work out
  * which of the two things each sentence means, and the one word gave them nothing to work with.

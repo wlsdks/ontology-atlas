@@ -103,6 +103,7 @@ export const TOUR_STEPS: readonly TourStep[] = [
 export type DestinationTourId =
   | "architecture"
   | "docs"
+  | "library"
   | "insights"
   | "projects"
   | "agents"
@@ -154,6 +155,21 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "mcp-tabs" },
       persona: "all",
       copyKey: "mcpTabs",
+    },
+  ],
+  /*
+   * Library — a destination added 2026-09-06. The second page points at Sources
+   * rather than at Wiki: with nothing gathered there are no wiki pages to point at,
+   * and a guide whose anchor is absent folds to one page (`computeVisibleSteps`).
+   * Sources is drawn in every state a person can reach this screen in.
+   */
+  library: [
+    { id: "library-what", anchor: null, persona: "all", copyKey: "libraryWhat" },
+    {
+      id: "library-sources",
+      anchor: { type: "testid", value: "library-sources" },
+      persona: "all",
+      copyKey: "librarySources",
     },
   ],
   insights: [

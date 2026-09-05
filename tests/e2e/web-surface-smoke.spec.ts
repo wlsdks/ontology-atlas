@@ -422,21 +422,20 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
      * is that walk's result. What it cannot reach is a second folder, so that is what the
      * sentence says.
      */
+    /*
+     * ⚠️ **Re-addressed 2026-09-06.** The claim did not change; the screen carrying it
+     * did. Sources and Wiki left `/docs` for `/library`, and with no folder open that
+     * destination is a single stage whose one control is the picker — so the two presses
+     * this row used to need became one.
+     */
     name: "문서 찾기 — 브라우저는 연결해 둔 프로젝트 폴더까지 훑지 못한다",
-    url: "/ko/docs/",
+    url: "/ko/library/",
     open: async (page) => {
-      // Two presses, not one. Beside the read-only sample the first button switches the
-      // source preference; the picker is offered by the card that then appears.
-      await page.getByTestId("docs-sidebar-new-doc").waitFor({ timeout: 25_000 });
-      const sampleDoor = page.getByRole("button", { name: /내 폴더 열기/ });
-      if ((await sampleDoor.count()) > 0 && (await sampleDoor.first().isVisible().catch(() => false))) {
-        await sampleDoor.first().click();
-      }
-      const pickerDoor = page.getByRole("button", { name: /기존 폴더 열기/ });
-      await pickerDoor.first().waitFor({ timeout: 25_000 });
-      await pickerDoor.first().click();
-      await page.getByTestId("docs-library-find-documents").waitFor({ timeout: 20_000 });
-      await page.getByTestId("docs-library-find-documents").click();
+      const picker = page.getByTestId("library-open-vault");
+      await picker.waitFor({ timeout: 25_000 });
+      await picker.click();
+      await page.getByTestId("library-find-documents").waitFor({ timeout: 20_000 });
+      await page.getByTestId("library-find-documents").click();
     },
     needsVault: true,
     card: "find-documents-web-limit",

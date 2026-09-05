@@ -54,7 +54,6 @@ import { useHydrated } from '@/shared/lib/use-hydrated';
 import {
   createTauriVaultHandle,
   getTauriVaultRootPath,
-  revealTauriVaultFile,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
 import {
@@ -79,7 +78,7 @@ import {
   DocReadingPane,
   shouldShowOutlineRail,
   useBackToTop,
-  useDocsVaultScrollSpy,
+  useDocReadingScrollSpy,
 } from '@/widgets/doc-reading-pane';
 import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
@@ -146,25 +145,6 @@ import {
 } from "./parts/DocFrontmatterBlock";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { useAgentFilesModel } from "../lib/use-agent-files";
-import { useLibraryModel } from "../lib/use-library-model";
-import { useVaultIdentityScope } from "@/entities/vault-session";
-import { useDocsAgent } from "../lib/use-docs-agent";
-import { DocsAgentDock } from "./parts/DocsAgentDock";
-import {
-  FindDocumentsDialog,
-  addSources,
-  discoverSources,
-  forgetDeclinedCandidates,
-  partitionByDeclined,
-  readDeclinedCandidates,
-  rememberDeclinedCandidates,
-  buildCompileBrief,
-  summarizeAddSources,
-  withoutImportedNames,
-  type DiscoveryOutcome,
-} from "@/features/docs-library";
-import { addSourcesInBrowser } from "@/features/docs-library";
-import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { useSkillParity } from "../lib/use-skill-parity";
 import { buildSkillParityHandoff } from "../lib/skill-parity-handoff";
 import type { SkillParityRow } from "../lib/skill-parity";
@@ -369,15 +349,6 @@ function DocsVaultContent() {
     ? getTauriVaultRootPath(localVault.handle) ?? localVault.handle.name ?? null
     : null;
   const toast = useToast();
-  const tLibrary = useTranslations('docsLibrary');
-  /**
-   * The vault's **absolute** path, or null. `localVaultRootPath` above falls back to the
-   * handle name so a browser has something to show a person; a native bridge must never
-   * be handed that fallback, because it names a path that does not exist there.
-   */
-  const nativeVaultRootPath = localVault.handle
-    ? getTauriVaultRootPath(localVault.handle) ?? null
-    : null;
   const handleOpenDogfoodVault = useCallback(() => {
     const now = Date.now();
     void resolveDogfoodVaultPath().then((rootPath) => {
@@ -640,7 +611,7 @@ function DocsVaultContent() {
 
   // Scroll spy — tracks the outline's active heading as the body scrolls.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
-    useDocsVaultScrollSpy(selectedSlug, source);
+    useDocReadingScrollSpy(selectedSlug, source);
   // Back-to-top threshold and click behaviour. Subscribes to the same scroll container as the
   // scroll spy but is a separate hook because the concern differs.
   const backToTop = useBackToTop(articleScrollRef, selectedSlug);
@@ -2013,237 +1984,11 @@ function DocsVaultContent() {
   // detection is read-only.
   const agentFiles = useAgentFilesModel(manifest, localVault.fileHandles);
   /*
-   * The library — raw sources and wiki pages, the two vault file kinds that are not the
-   * graph. Guarded by `isLocalSourceLoaded` rather than only hidden: the model hashes
-   * files and reads page bodies, and `.claude/rules/architecture.md` forbids computing a
-   * model for a surface that is not drawn. The read-only sample carries neither folder to
-   * write into nor files to hash.
+   * The library left this screen on 2026-09-06 for `/library`. Sources, Wiki, the two
+   * doors that fill them and the agent dock that compiles them all moved together —
+   * `src/views/library/ui/LibraryPage.tsx` carries the owner's reading and the
+   * measurement behind it. What stays here is the graph's own Markdown.
    */
-  const libraryModel = useLibraryModel({
-    docs: manifest.docs,
-    sources: manifest.sources,
-    sourceHandles: localVault.sourceHandles,
-    fileHandles: localVault.fileHandles,
-    // An absolute path only. On the web `localVaultRootPath` falls back to the handle
-    // name, and handing that to a native bridge would name a path that does not exist.
-    vaultRootPath: nativeVaultRootPath,
-    enabled: isLocalSourceLoaded,
-  });
-  const [libraryBusy, setLibraryBusy] = useState(false);
-  const handleAddSources = useCallback(() => {
-    const root = localVault.handle;
-    if (!root || libraryBusy) return;
-    setLibraryBusy(true);
-    void addSources({
-      root,
-      vaultRootPath: nativeVaultRootPath,
-      dialogTitle: tLibrary('sources.addTooltip'),
-    })
-      .then(async (outcome) => {
-        if (outcome.cancelled) return;
-        const { added, duplicate, failed } = summarizeAddSources(outcome);
-        // Three different things happened and the sentence says all three. "Imported 2
-        // files" while one was silently refused is the kind of half-truth that teaches a
-        // person to re-check the folder in Finder afterwards.
-        if (added > 0) toast.show(tLibrary('sources.added', { count: added }), 'success');
-        if (duplicate > 0) {
-          const first = outcome.results.find((row) => row.status === 'duplicate');
-          toast.show(
-            tLibrary('sources.duplicate', {
-              count: duplicate,
-              path: first?.relativePath ?? '',
-            }),
-            'info',
-          );
-        }
-        if (failed > 0) toast.show(tLibrary('sources.failed', { count: failed }), 'error');
-        // The folder changed under us; the walk is what turns that into rows.
-        await localVault.refresh();
-      })
-      .catch((error) => {
-        toast.show(
-          tLibrary('sources.failedReason', {
-            reason: error instanceof Error ? error.message : String(error),
-          }),
-          'error',
-        );
-      })
-      .finally(() => setLibraryBusy(false));
-  }, [libraryBusy, localVault, nativeVaultRootPath, tLibrary, toast]);
-  /*
-   * "Find documents" — proposal, approval, then copy, and never in another order.
-   * `discovery` null while the walk runs; the dialog says so rather than drawing an
-   * empty list that reads as "nothing found".
-   */
-  const [findOpen, setFindOpen] = useState(false);
-  const [discovery, setDiscovery] = useState<DiscoveryOutcome | null>(null);
-  const [declinedCount, setDeclinedCount] = useState(0);
-  // The same per-vault scope every other stored slot uses, so a refusal in one folder
-  // cannot hide a candidate in another (`scope-registry.contract.test.ts`).
-  const vaultLibraryScope = useVaultIdentityScope();
-  const importedSourceNames = useMemo(
-    () => new Set((manifest.sources ?? []).map((source) => source.name)),
-    [manifest.sources],
-  );
-  const runDiscovery = useCallback(async () => {
-    const root = localVault.handle;
-    if (!root) return;
-    setDiscovery(null);
-    const outcome = await discoverSources({
-      handle: root,
-      vaultRootPath: nativeVaultRootPath,
-      vaultLabel: root.name,
-    });
-    const declined = readDeclinedCandidates(vaultLibraryScope);
-    const { fresh, declinedCount: hidden } = partitionByDeclined(
-      withoutImportedNames(outcome.candidates, importedSourceNames),
-      declined,
-    );
-    setDeclinedCount(hidden);
-    setDiscovery({ ...outcome, candidates: fresh });
-  }, [importedSourceNames, localVault.handle, nativeVaultRootPath, vaultLibraryScope]);
-  const handleFindDocuments = useCallback(() => {
-    setFindOpen(true);
-    void runDiscovery();
-  }, [runDiscovery]);
-  const handleAddCandidates = useCallback(
-    (selected: SourceCandidate[], declined: SourceCandidate[]) => {
-      const root = localVault.handle;
-      if (!root || selected.length === 0) return;
-      setLibraryBusy(true);
-      // The refusals are remembered first. A person who ticks three of twenty has said
-      // something about the other seventeen, and losing that because the copy failed
-      // would make them scroll the same list again.
-      rememberDeclinedCandidates(vaultLibraryScope, declined);
-      void (async () => {
-        try {
-          if (nativeVaultRootPath) {
-            const { importTauriSourceFiles } = await import('@/shared/lib/tauri-vault-fs');
-            const absolute = selected.map(
-              (candidate) => `${candidate.rootPath}/${candidate.relativePath}`,
-            );
-            const results = (await importTauriSourceFiles(nativeVaultRootPath, absolute)) ?? [];
-            const { added, duplicate, failed } = summarizeAddSources({
-              results,
-              cancelled: false,
-            });
-            if (added > 0) toast.show(tLibrary('sources.added', { count: added }), 'success');
-            if (duplicate > 0) {
-              toast.show(tLibrary('sources.duplicate', { count: duplicate, path: '' }), 'info');
-            }
-            if (failed > 0) toast.show(tLibrary('sources.failed', { count: failed }), 'error');
-          } else {
-            // The browser can only reach what its own handle covers, which is exactly the
-            // set discovery proposed there.
-            const files: File[] = [];
-            for (const candidate of selected) {
-              const segments = candidate.relativePath.split('/');
-              const name = segments.pop() as string;
-              let cursor: FileSystemDirectoryHandle = root;
-              for (const segment of segments) {
-                cursor = await cursor.getDirectoryHandle(segment);
-              }
-              files.push(await (await cursor.getFileHandle(name)).getFile());
-            }
-            const outcome = await addSourcesInBrowser(root, files);
-            const { added, duplicate, failed } = summarizeAddSources(outcome);
-            if (added > 0) toast.show(tLibrary('sources.added', { count: added }), 'success');
-            if (duplicate > 0) {
-              toast.show(tLibrary('sources.duplicate', { count: duplicate, path: '' }), 'info');
-            }
-            if (failed > 0) toast.show(tLibrary('sources.failed', { count: failed }), 'error');
-          }
-          setFindOpen(false);
-          await localVault.refresh();
-        } catch (error) {
-          toast.show(
-            tLibrary('sources.failedReason', {
-              reason: error instanceof Error ? error.message : String(error),
-            }),
-            'error',
-          );
-        } finally {
-          setLibraryBusy(false);
-        }
-      })();
-    },
-    [localVault, nativeVaultRootPath, tLibrary, toast, vaultLibraryScope],
-  );
-  const handleForgetDeclined = useCallback(() => {
-    forgetDeclinedCandidates(vaultLibraryScope);
-    setDeclinedCount(0);
-    void runDiscovery();
-  }, [runDiscovery, vaultLibraryScope]);
-  /*
-   * Compile is one in-app agent turn, started beside the library it compiles. The dock is
-   * drawn only when a verified runtime, an absolute folder path, and the folder's own MCP
-   * server are all present, so the button is absent rather than dead when they are not.
-   */
-  const docsAgent = useDocsAgent(nativeVaultRootPath);
-  const knownDocSlugs = useMemo(
-    () => new Set(manifest.docs.map((doc) => doc.slug)),
-    [manifest.docs],
-  );
-  const handleCompile = useCallback(() => {
-    /*
-     * **A press that does nothing must never be silent** (installed app, 2026-09-05). The
-     * first version of this handler had no catch, so anything thrown between the click and
-     * the dock — building the brief, seating the request — left a chip that looked pressed
-     * and a screen that did not change, which reads as a broken product rather than a
-     * failure with a cause.
-     */
-    try {
-      const brief = buildCompileBrief({
-        sources: libraryModel.sources,
-        locale,
-        writerId: docsAgent.runtime ? `agent:${docsAgent.runtime.id}` : 'agent:unknown',
-        // The dock is only drawn with an absolute path, so this is never the handle name.
-        vaultRoot: nativeVaultRootPath ?? '',
-      });
-      docsAgent.start(brief);
-    } catch (error) {
-      toast.show(
-        tLibrary('wiki.compileFailed', {
-          reason: error instanceof Error ? error.message : String(error),
-        }),
-        'error',
-      );
-    }
-  }, [docsAgent, libraryModel.sources, locale, nativeVaultRootPath, tLibrary, toast]);
-  const handleOpenSource = useCallback(
-    (row: LibrarySourceRow) => {
-      // Two surfaces, one intent: put the person in front of the file. The app selects it
-      // in Finder — reveal, never open, because Atlas launches no program on somebody's
-      // behalf. The browser has no Finder and no absolute path, so it hands over the
-      // bytes it was already granted.
-      if (nativeVaultRootPath) {
-        void revealTauriVaultFile(nativeVaultRootPath, row.path).catch((error) => {
-          toast.show(
-            tLibrary('sources.revealFailed', {
-              reason: error instanceof Error ? error.message : String(error),
-            }),
-            'error',
-          );
-        });
-        return;
-      }
-      const handle = localVault.sourceHandles.get(row.path);
-      if (!handle) return;
-      void handle
-        .getFile()
-        .then((file) => {
-          const url = URL.createObjectURL(file);
-          window.open(url, '_blank', 'noopener');
-          // The tab has the blob by the time this runs; revoking frees the copy the page
-          // would otherwise hold for its whole life.
-          window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-        })
-        .catch(() => {
-          toast.show(tLibrary('sources.openFailed'), 'error');
-        });
-    },
-    [localVault.sourceHandles, nativeVaultRootPath, tLibrary, toast],
-  );
   /**
    * Skill-copy parity — **only when there is an absolute path.** On the web `localVaultRootPath`
    * falls back to the handle name, and using that would call the bridge with a path that does not
@@ -2305,24 +2050,6 @@ function DocsVaultContent() {
       onSortChange={handleTreeSortChange}
       onGroupChange={handleTreeGroupChange}
       agentFiles={agentFiles}
-      library={
-        isLocalSourceLoaded && localVault.handle
-          ? {
-              model: libraryModel,
-              onOpenSource: handleOpenSource,
-              onAddFiles: handleAddSources,
-              onFindDocuments: handleFindDocuments,
-              onCompile: docsAgent.route === 'agent' ? handleCompile : null,
-              // Compile hands the folder to a coding agent, whose own provider traffic
-              // Atlas is not in the path of and does not log. Saying so beside the button
-              // rather than in a settings page is the whole point.
-              transferNote:
-                docsAgent.route === 'agent' ? tLibrary('wiki.transfer') : null,
-              vaultLabel: localVaultRootPath ?? localVault.handle.name,
-              busy: libraryBusy,
-            }
-          : null
-      }
     />
   );
 
@@ -3047,29 +2774,6 @@ function DocsVaultContent() {
           )}
         </main>
 
-        {/*
-          The dock is a **sibling of `<main>` inside this row**, which is the whole of what
-          makes it visible: its surface is `absolute inset-y-3 right-3`, so the frame needs
-          a parent that gives it height. Measured in the installed app on 2026-09-05 — the
-          first placement put it after the row, inside the page's flex **column**, where a
-          frame whose only child is absolutely positioned collapses to zero height and
-          `overflow-hidden` finished the job. Compile ran, the session started, and nothing
-          appeared. Map's chat panel and the Architecture dock are the working precedents
-          and both sit exactly here.
-        */}
-        {docsAgent.route === 'agent' && docsAgent.runtime && nativeVaultRootPath ? (
-          <DocsAgentDock
-            open={docsAgent.open}
-            runtime={docsAgent.runtime}
-            runtimes={docsAgent.runtimes}
-            onRuntimeChange={docsAgent.setRuntimeId}
-            vaultRoot={nativeVaultRootPath}
-            mcpServers={docsAgent.mcpServers}
-            openingRequest={docsAgent.openingRequest}
-            knownSlugs={knownDocSlugs}
-            onClose={() => docsAgent.setOpen(false)}
-          />
-        ) : null}
           </div>
         </>
       )}
@@ -3102,17 +2806,6 @@ function DocsVaultContent() {
         onClose={() => setNewDocKindDialogOpen(false)}
       />
 
-      {/* Discovery proposes; this dialog is where a person approves. Blocking, because it
-          is asking to take copies of their files. */}
-      <FindDocumentsDialog
-        open={findOpen}
-        onClose={() => setFindOpen(false)}
-        outcome={discovery}
-        declinedCount={declinedCount}
-        onForgetDeclined={handleForgetDeclined}
-        onAdd={handleAddCandidates}
-        busy={libraryBusy}
-      />
 
       {/* Non-blocking near-duplicate warning. A bottom-anchored chip that does not cover the screen
           (no scrim, no backdrop), so interaction with the content behind it is not blocked. No
