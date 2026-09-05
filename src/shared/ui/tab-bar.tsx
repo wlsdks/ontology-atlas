@@ -246,6 +246,20 @@ export function TabBar({
             aria-controls={`${idPrefix}-tabpanel-${item.key}`}
             id={`${idPrefix}-tab-${item.key}`}
             tabIndex={active ? 0 : -1}
+            /*
+             * ⚠️ **The count must not run into the label.** Measured on `/en/mcp/`,
+             * 2026-09-05: the accessible name of the connectors tab was `Connectors0` —
+             * the label text node and the count span sit side by side, and the name
+             * computation concatenates them with nothing between. Read aloud that is one
+             * word, and a screen-reader user hunting for "Connectors" hears a tab that is
+             * not it.
+             *
+             * The name is stated rather than left to concatenation, so the separator
+             * cannot depend on whitespace an engine may or may not insert. `countTitle`
+             * still reaches the description through `title`, which is where the *unit*
+             * belongs — the name says which tab and how many, not what they are.
+             */
+            aria-label={item.count === undefined ? undefined : `${item.label}, ${item.count}`}
             title={item.count !== undefined ? item.countTitle : undefined}
             onClick={() => activateTab(item.key)}
             onKeyDown={(event) => handleKeyDown(event, index)}
@@ -293,7 +307,12 @@ export function TabBar({
           >
             {item.label}
             {item.count !== undefined ? (
-              <span className="font-mono text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-tertiary)]">
+              // The number is already in the button's `aria-label`; leaving it in the
+              // accessibility tree as well would read it twice.
+              <span
+                aria-hidden
+                className="font-mono text-label font-[var(--font-weight-emphasis)] tracking-[var(--tracking-label)] tabular-nums text-[color:var(--color-text-tertiary)]"
+              >
                 {item.count}
               </span>
             ) : null}
