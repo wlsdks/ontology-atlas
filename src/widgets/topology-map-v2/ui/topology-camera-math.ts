@@ -311,6 +311,66 @@ export function computeOverviewCameraTarget(
 }
 
 /**
+ * **The cone's own fit** — fill the free canvas, not the safe rect.
+ *
+ * ## Why the overview fit could not do this (measured 2026-09-05, sample vault)
+ *
+ * `computeOverviewCameraTarget` was fitting the cone, and it reserves the 2D
+ * map's promises: `safeInsetTop` 148 (the tool lane plus the docking chips),
+ * `safeInsetBottom` 96 plus the label allowance, `safeInsetLeft` 350 and
+ * `safeInsetRight` 120 — 268 px of the height and 470 px of the width before a
+ * dot is drawn. On top of that the caller padded the bounds by 15% a side and the
+ * overview entry ratio took another 5%. The arithmetic lands exactly where the
+ * screen did: at 1920x1080 the cone came out 602 x 620 px, **18.6% of the canvas
+ * and 22.6% of the free area**, an object adrift in the middle of an empty stage.
+ *
+ * None of those reservations describes the cone. The docking chips are a 2D
+ * density device and are not drawn in 3D; the label allowance is a 2D bottom-row
+ * reservation; the left and right numbers are static guesses at panels this
+ * function is handed the *measured* width of.
+ *
+ * ## What this fits into
+ *
+ * The free canvas — the canvas minus the panels actually covering it
+ * (`interaction/free-area.ts#measureCanvasInsets`, the same measurement the
+ * camera already consumes) — minus a top band for the floating tool lane and a
+ * bottom band for the instrument readout, both passed in as `insets`. The scale
+ * then fills `fill` of whichever axis binds. `nodeRadiusPx` is subtracted because
+ * the outline is the discs, not the centres, and a cone node is a fixed number of
+ * screen pixels (`DOME_NODE_PX`) — which is what keeps this fit buying spacing
+ * instead of ink.
+ *
+ * There is no padding term beyond `fill`: two multiplied paddings is how the old
+ * number got small without anyone choosing it.
+ */
+export function computeDomeFitCameraTarget(
+  /** The projected bounds of the node **centres** (world units). */
+  bounds: { minX: number; minY: number; maxX: number; maxY: number },
+  viewportWidth: number,
+  viewportHeight: number,
+  /** Live panel obstruction plus the cone's own top/bottom bands, in screen px. */
+  insets: { left: number; right: number; top: number; bottom: number },
+  /** Half the widest disc the cone draws, in screen px. */
+  nodeRadiusPx: number,
+  tokens: Pick<TopologyV2Tokens, "cameraScaleMax" | "cameraScaleMin"> & { domeFitFill: number },
+): CameraTarget {
+  const effW = Math.max(1, viewportWidth - insets.left - insets.right);
+  const effH = Math.max(1, viewportHeight - insets.top - insets.bottom);
+  const fill = tokens.domeFitFill > 0 ? tokens.domeFitFill : 1;
+  const availW = Math.max(1, effW * fill - nodeRadiusPx * 2);
+  const availH = Math.max(1, effH * fill - nodeRadiusPx * 2);
+  const spanX = Math.max(1e-6, bounds.maxX - bounds.minX);
+  const spanY = Math.max(1e-6, bounds.maxY - bounds.minY);
+  const tscale = Math.min(
+    tokens.cameraScaleMax,
+    Math.max(tokens.cameraScaleMin, Math.min(availW / spanX, availH / spanY)),
+  );
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+  return { ...centerForInsets(centerX, centerY, insets, tscale), tscale };
+}
+
+/**
  * The pan envelope with no focus — **around the fit when a leash is set, otherwise
  * the world bbox plus slack, as before**.
  *

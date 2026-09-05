@@ -4086,12 +4086,15 @@ function HomePageImpl() {
     }),
     [t],
   );
-  // The project count in the bottom-right readout (`FirstRunReadout`). Real data,
-  // derived from the same `ontologyInsight` as `indexDomainCount`, so it cannot drift.
-  const firstRunProjectCount = useMemo(
-    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
-    [ontologyInsight],
-  );
+  /*
+   * The bottom-right readout's own numbers (`FirstRunReadout`). `drawnConceptCount`
+   * is reported by the map for the frame it just painted, and the total comes from
+   * the same `ontologyInsight` as `indexDomainCount`, so the two cannot drift. The
+   * readout used to open with the project count — 1 in every vault anyone has
+   * opened — and then describe the zoom rule rather than the screen.
+   */
+  const [drawnConceptCount, setDrawnConceptCount] = useState(0);
+  const totalConceptCount = ontologyInsight?.nodes.length ?? 0;
   const visibleTopologyNodeCount =
     localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
   const visibleTopologyRelationCount =
@@ -5505,6 +5508,7 @@ function HomePageImpl() {
                         handleClose();
                       }}
                       onVisibleCountChange={setTopologyVisibleCount}
+                      onDrawnCountChange={setDrawnConceptCount}
                       onGraphStatsChange={handleTopologyGraphStatsChange}
                       onZoomTierChange={setMapZoomTier}
                       onContextMenuNode={handleContextMenuNode}
@@ -5791,7 +5795,8 @@ function HomePageImpl() {
                 aria-hidden={v2DatasheetModel ? true : undefined}
               >
                 <FirstRunReadout
-                  projectCount={firstRunProjectCount}
+                  conceptCount={drawnConceptCount}
+                  totalConceptCount={totalConceptCount}
                   domainCount={indexDomainCount}
                   tier={mapZoomTier}
                   // Plain mode can never reach the element tier (`PLAIN_TIER_REVEAL`), so

@@ -159,6 +159,17 @@ export interface TopologyV2Tokens {
   altitudeFarHighRatio: number;
   altitudeFarLowRatio: number;
   overviewEntryRatio: number;
+  /**
+   * The fraction of the free canvas axis the fitted cone spans
+   * (`ui/topology-camera-math.ts#computeDomeFitCameraTarget`). The cone's only
+   * padding term — it replaces the 15% bounds pad plus 0.95 overview ratio it
+   * used to inherit from the 2D overview fit.
+   */
+  domeFitFill: number;
+  /** Screen px the cone fit leaves above itself for the floating tool lane. */
+  domeFitInsetTop: number;
+  /** Screen px the cone fit leaves below itself for the instrument readout. */
+  domeFitInsetBottom: number;
   focusFitMaxScale: number;
   focusBboxMargin: number;
   /** The zoom-in ceiling for selection (ego) framing — a ratio against overviewEntryScale. */
@@ -340,6 +351,9 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "altitudeFarHighRatio", cssVar: "--topology-v2-altitude-far-high-ratio", kind: "number" },
   { key: "altitudeFarLowRatio", cssVar: "--topology-v2-altitude-far-low-ratio", kind: "number" },
   { key: "overviewEntryRatio", cssVar: "--topology-v2-overview-entry-ratio", kind: "number" },
+  { key: "domeFitFill", cssVar: "--topology-v2-dome-fit-fill", kind: "number" },
+  { key: "domeFitInsetTop", cssVar: "--topology-v2-dome-fit-inset-top", kind: "number" },
+  { key: "domeFitInsetBottom", cssVar: "--topology-v2-dome-fit-inset-bottom", kind: "number" },
   { key: "focusFitMaxScale", cssVar: "--topology-v2-focus-fit-max-scale", kind: "number" },
   { key: "focusBboxMargin", cssVar: "--topology-v2-focus-bbox-margin", kind: "number" },
   { key: "focusMaxZoomRatio", cssVar: "--topology-v2-focus-max-zoom-ratio", kind: "number" },
