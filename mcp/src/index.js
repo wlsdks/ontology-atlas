@@ -43,6 +43,7 @@
  */
 import { Server } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
+import { listAnalysisRecords, readAnalysisRecord } from './analysis-records.mjs';
 import { basename, isAbsolute, relative, resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
@@ -4199,6 +4200,7 @@ const TOOLS = [
   {
     name: 'query_ontology',
     description:
+      'Analysis archive: `analysis_history` reads immutable diagnostic Markdown summaries without compiling the graph; use analysisMode, project, limit (1–100 scanned files, default 30), and analysisCursor. `analysis_record` reads one exact run or review with recordId (UUID). Records retain raw answers, full-body evidence when available, request scope and uncertainty. They are not approved ontology facts; stored qualification describes captured evidence, never current source validity. Reviews are joined to their exact run/finding id. Follow pagination even if a filtered page is empty. These archive operations do not support query_plan. ' +
       'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route between two nodes with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance), `query_plan` (EXPLAIN-style side-effect-free cost/index estimate plus execution advice before a target operation, filter-preserving suggestedQuery, and filter-aware estimate.totalMatches for match_nodes/match_edges), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation clusters inside the graph), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges, shortest path, and shared-neighbor explanation between two nodes), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths such as project → domains → capabilities), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `builder_context` (persisted Workshop focus, layout positions, direct graph slice, and safe write handoff; unsaved UI drafts are explicitly excluded; operation name retained for compatibility), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters plus a followUp packet for the first returned row), `match_edges` (graph DB-style edge pattern rows plus a followUp packet for the first returned real edge), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, ready cursor `cursor.found=true` / `cursor.reason=null`, cursor `nextAfterActionId`/`hasMore` pagination metadata, afterActionId resume, unknown-cursor empty page with `cursor.nextAfterActionId=null` / `cursor.hasMore=false`, kind filters, executable graph-array canonicalization, `executable` flags, and current-page `nextExecutableAction` / `nextReviewAction` pointers), `agent_brief` (Claude Code/Codex handoff prompt, structured businessOntologyLens with business-first outcome → domain → capability → element read order, graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, explain_relation, and business_questions scans for outcome / domain boundary / capability claim nodes / implementation evidence edges, structured cliFallbackCommands, recipes, graph entrypoints, graph_traversal playbook, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance, playbook evidence/stopWhen checklists, write guardrails, relationDecisionGuide, resultContracts for all_paths completeness and match_nodes/match_edges followUp evidence, and read-first write policy), `meaning_repair_review` (provenance-bound, byte-bounded typed evidence pages and literal full-body read calls for the compact meaning repair manifest), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard whose `relationCensus` labels compiler declaration counts and the nonnumeric canonical app-map comparison unit). ' +
       'For `agent_brief`, select `project` explicitly when the vault has more than one project. Omitted `detail` and `detail:"full"` return the complete project-scoped diagnostic contract. For a known coding task, call `detail:"compact"` directly after `connection_info`; do not precede it with `workspace_brief` or a full inventory unless the question needs whole-vault health. Compact v2 requires a nonblank request-local `task` (max 2000 characters) and returns at most 12000 UTF-8 JSON bytes: final source/meaning currentness, claim-compatible broad capability selection, persisted element/path evidence, explicit unknown impact and verification, exact full-body next reads, and a `detail:"full"` follow-up. Definition and Includes support desired work; Excludes may align with explicit non-goals, while a desired/negative boundary conflict, an unsupported claim, or a tied top claim returns no capability. Its `content[0].text` is the bounded handoff prompt while `structuredContent` carries the typed facts once. When the selected element Markdown contains reviewed Primary implementation / Supporting implementation / Focused test coordinates and the bound source is current, taskNavigation verifies only those named files and returns exact current lines plus the reviewed non-exhaustive IN/OUT boundary. After those reads, Atlas rechecks the same source identity, fingerprint, revision, and graph hash; any mismatch removes the exact target and downgrades the complete outer currentness contract. A ready prompt reads primary, supporting, focused tests, and a verified manifest together; requires named positive and negative regression tests with exact observable output; and runs the focused check once followed by one non-overlapping full check. Missing, ambiguous, stale, unsafe, or unrecorded coordinates emit no exact target. Task matching selects evidence only; it never searches the repository, never proves source behavior, never persists task text, never approves meaning, and never writes the vault. ' +
       'For `impact` and `blast_radius`, only declared `depends_on` is allowed; use reachability/subgraph for structure. Blast radius reports unknown risk/completeness plus review_required or declared_with_rationale edge qualification until relation-level source receipts exist. A missing `depends_on` preflight is schema-only: `relation_check` returns `proposedAction:null` plus a non-writing `approvalGate` until the agent explains the observable ability and semantic rationale and receives explicit human approval. ' +
@@ -4215,8 +4217,11 @@ const TOOLS = [
           ...NON_BLANK_STRING_SCHEMA,
           enum: QUERY_PLAN_TARGET_OPERATIONS,
           description:
-            'query_plan only: read-only graph operation to explain before execution. Supports every graph-engine operation except query_plan and the source-aware meaning_repair_review operation.',
+            'query_plan only: read-only graph operation to explain before execution. Excludes query_plan, meaning_repair_review, analysis_history and analysis_record.',
         },
+        recordId: nonBlankStringSchema('analysis_record only: immutable analysis or diagnostic-review UUID.'),
+        analysisMode: { type: 'string', enum: ['meaning', 'architecture'], description: 'analysis_history only: optional analysis subject filter.' },
+        analysisCursor: nonBlankStringSchema('analysis_history only: nextCursor from the preceding scanned-file page.'),
         iterations: {
           type: 'integer',
           minimum: 1,
@@ -6830,7 +6835,7 @@ server.setRequestHandler('tools/call', async (request) => {
       case 'compile_ontology':
         return ok(compileOntologyTool(args));
       case 'query_ontology':
-        return ok(queryOntologyTool(args));
+        return ok(await queryOntologyTool(args));
       case 'validate_vault':
         return ok(validateVaultTool(args));
       case 'inspect_architecture':
@@ -9101,8 +9106,12 @@ function privateCurrentProjectSourceAccess(projectSlug, projectSource, graphHash
   };
 }
 
-function queryOntologyTool(args = {}) {
+async function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
+  if (args.operation === 'analysis_history') {
+    return listAnalysisRecords(VAULT_ROOT, { limit: args.limit ?? 30, cursor: args.analysisCursor ?? null, mode: args.analysisMode ?? null, project: args.project ?? null });
+  }
+  if (args.operation === 'analysis_record') return readAnalysisRecord(VAULT_ROOT, args.recordId);
   const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const ontologyAtlasIgnorePatterns = loadOntologyAtlasIgnore(VAULT_ROOT);
   if (args.operation === 'meaning_repair_review') {
@@ -9970,6 +9979,13 @@ function validateQueryOntologyArgs(args = {}) {
   requireOptionalEnum(args.operation, 'operation', QUERY_ONTOLOGY_OPERATIONS);
   requireOptionalNonBlankString(args.targetOperation, 'targetOperation');
   requireOptionalEnum(args.targetOperation, 'targetOperation', QUERY_PLAN_TARGET_OPERATIONS);
+  requireOptionalNonBlankString(args.recordId, 'recordId');
+  requireOptionalNonBlankString(args.analysisCursor, 'analysisCursor');
+  requireOptionalEnum(args.analysisMode, 'analysisMode', ['meaning', 'architecture']);
+  if (args.operation === 'analysis_record') requireNonBlankString(args.recordId, 'recordId');
+  if (args.recordId !== undefined && args.operation !== 'analysis_record') throw new Error('recordId is only valid for analysis_record.');
+  if ((args.analysisMode !== undefined || args.analysisCursor !== undefined) && args.operation !== 'analysis_history') throw new Error('Analysis history filters require analysis_history.');
+  if (args.operation === 'analysis_history' && args.limit !== undefined && (!Number.isInteger(args.limit) || args.limit < 1 || args.limit > 100)) throw new Error('Analysis history limit must be between 1 and 100 scanned files.');
 
   for (const key of [
     'slug',

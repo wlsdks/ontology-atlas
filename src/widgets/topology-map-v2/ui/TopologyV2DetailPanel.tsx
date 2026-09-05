@@ -358,6 +358,8 @@ export interface TopologyV2DetailPanelProps {
    * becomes the primary action. Do not draw a door that won't open.
    */
   onAskAgent?: () => void;
+  /** Open the shared meaning context without sending a model request. */
+  meaningReview?: { label: string; onOpen: () => void };
   /** Hide this panel's filled action while another surface owns the primary next step. */
   suppressPrimaryAction?: boolean;
   onClose: () => void;
@@ -914,6 +916,7 @@ export function TopologyV2DetailPanel({
   onEditRelations,
   onCreateLinked,
   onAskAgent,
+  meaningReview,
   suppressPrimaryAction = false,
   onClose,
   onEnterRealm,
@@ -1600,7 +1603,12 @@ export function TopologyV2DetailPanel({
               ? "flex items-center gap-1.5 border-t border-[color:var(--topology-v2-panel-zone-divider)] pt-3"
               : "flex items-center gap-1.5"}
           >
-            {!suppressPrimaryAction && canAskAgent ? (
+            {!suppressPrimaryAction && meaningReview ? (
+              <Button size="sm" onClick={meaningReview.onOpen} data-testid="topology-v2-detail-panel-action-meaning" data-action-role="primary" className="atlas-touch-floor min-w-0 flex-1">
+                <MessageCircle size={ICON_SIZE.sm} aria-hidden />
+                <span className="truncate">{meaningReview.label}</span>
+              </Button>
+            ) : !suppressPrimaryAction && canAskAgent ? (
               <Button
                 size="sm"
                 onClick={onAskAgent}

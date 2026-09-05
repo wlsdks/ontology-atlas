@@ -36,6 +36,8 @@ const bridge = vi.hoisted(() => ({
   stopped: [] as string[],
   /** The requests we sent — the only window onto "what did we put on the wire". */
   sent: [] as Array<{ id?: number; method?: string; params?: unknown }>,
+  holdPrompt: false,
+  pendingPrompt: null as number | null,
 }));
 
 vi.mock('@/shared/lib/tauri-acp', () => ({
@@ -56,6 +58,10 @@ vi.mock('@/shared/lib/tauri-acp', () => ({
     const message = JSON.parse(line) as { id?: number; method?: string; params?: unknown };
     bridge.sent.push(message);
     if (typeof message.id !== 'number') return;
+    if (message.method === 'session/prompt' && bridge.holdPrompt) {
+      bridge.pendingPrompt = message.id;
+      return;
+    }
     if (message.method === 'session/set_mode' && bridge.failSetMode) {
       queueMicrotask(() =>
         bridge.listener?.(
@@ -115,6 +121,76 @@ afterEach(() => {
   bridge.sessionModes = null;
   bridge.stopped = [];
   bridge.sent = [];
+  bridge.holdPrompt = false;
+  bridge.pendingPrompt = null;
+});
+
+describe('analysis turn capture', () => {
+  const answer = (text: string) => bridge.listener?.(JSON.stringify({
+    jsonrpc: '2.0', method: 'session/update',
+    params: { sessionId: 's-1', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } } },
+  }));
+  const finish = () => bridge.listener?.(JSON.stringify({ jsonrpc: '2.0', id: bridge.pendingPrompt, result: { stopReason: 'end_turn' } }));
+
+  it('seals exact streamed text into the observer captured before a callback change', async () => {
+    const firstDone = vi.fn();
+    const secondDone = vi.fn();
+    const first = vi.fn((_start: import('./use-acp-session').AcpTurnStart) => firstDone);
+    const second = vi.fn(() => secondDone);
+    const { result, rerender } = renderHook(({ observer }) => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/original-vault', onTurnStarted: observer }), { initialProps: { observer: first } });
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Review this exact request.'); });
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    act(() => { answer('A cited '); answer('answer.'); });
+    rerender({ observer: second });
+    await act(async () => { finish(); await sent; });
+    expect(firstDone).toHaveBeenCalledTimes(1);
+    expect(secondDone).not.toHaveBeenCalled();
+    const completion = firstDone.mock.calls[0][0];
+    expect(completion.vaultRoot).toBe('/original-vault');
+    expect(completion.outcome).toBe('completed');
+    expect(completion.stopReason).toBe('end_turn');
+    expect(completion.events.filter((event: { kind: string }) => event.kind === 'agent')).toEqual([expect.objectContaining({ text: 'A cited answer.' })]);
+    expect(completion.userEventId).toBe(first.mock.calls[0][0].userEventId);
+    await act(async () => { await result.current.stop(); });
+  });
+
+  it('does not certify completion after cancellation or repeat capture after close', async () => {
+    const done = vi.fn();
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', onTurnStarted: () => done }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Review.'); });
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    act(() => { answer('Partial result'); result.current.cancel(); });
+    await act(async () => { finish(); await sent; await result.current.stop(); });
+    expect(done).toHaveBeenCalledTimes(1);
+    expect(done.mock.calls[0][0].outcome).toBe('cancelled');
+  });
+
+  it('captures a stopped in-flight turn once and ignores the disposed prompt result', async () => {
+    const done = vi.fn();
+    const { result } = renderHook(() => useAcpSession({ runtimeId: 'claude-acp', vaultRoot: '/vault', onTurnStarted: () => done }));
+    const starting = result.current.start();
+    await waitFor(() => expect(bridge.release).not.toBeNull());
+    await act(async () => { bridge.release?.(); await starting; });
+    bridge.holdPrompt = true;
+    let sent!: Promise<void>;
+    act(() => { sent = result.current.send('Review before close.'); });
+    await waitFor(() => expect(bridge.pendingPrompt).not.toBeNull());
+    act(() => answer('An unfinished answer'));
+    await act(async () => { await result.current.stop(); await sent; });
+    expect(done).toHaveBeenCalledTimes(1);
+    expect(done.mock.calls[0][0]).toMatchObject({ outcome: 'cancelled', stopReason: 'session_closed' });
+    expect(result.current.status).toBe('idle');
+  });
 });
 
 describe('세션 하나 — 겹쳐 불러도 프로세스는 하나', () => {

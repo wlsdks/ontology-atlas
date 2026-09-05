@@ -617,16 +617,6 @@ function deriveOntologyFromVaultUncached(
     );
   }
 
-  // Whitelist the edge type (defensively) and dedupe by id. A vault can state the
-  // same relation from both ends (`domain.capabilities[]` plus `capability.domain:`),
-  // pushing the same edge id twice. First one wins, which stops React duplicate-key
-  // warnings and edges silently dropped from the ego graph.
-  const dedupedById = new Map<string, OntologyStubEdge>();
-  for (const e of edges) {
-    if (!VALID_RELATION_TYPES.has(e.type)) continue;
-    if (!dedupedById.has(e.id)) dedupedById.set(e.id, e);
-  }
-
   // Promote `relation_notes: {ref: why}` onto the matching edge's label. The key is
   // matched against both the declaring document's canonical ref and its tail.
   {
@@ -653,6 +643,16 @@ function deriveOntologyFromVaultUncached(
         }
       }
     }
+  }
+
+  // Both endpoints may declare the same containment. Promote notes before deduping,
+  // then keep the declaration carrying the recorded reason and its source document.
+  // Otherwise a child's domain field can hide its parent's explicit rationale.
+  const dedupedById = new Map<string, OntologyStubEdge>();
+  for (const edge of edges) {
+    if (!VALID_RELATION_TYPES.has(edge.type)) continue;
+    const existing = dedupedById.get(edge.id);
+    if (!existing || (!existing.label && edge.label)) dedupedById.set(edge.id, edge);
   }
 
   return {

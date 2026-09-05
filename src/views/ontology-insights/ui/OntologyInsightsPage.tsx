@@ -102,6 +102,8 @@ import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp"
 import { getTauriVaultRootPath } from "@/shared/lib/tauri-vault-fs";
 import {
   presentationRelationKeysForGraphEdge,
+  analysisGraphFromInsight,
+  type AnalysisCaptureContext,
   runtimeOwnsWriteGate,
   vaultMcpServers,
   vaultSelfReadSlot,
@@ -340,6 +342,17 @@ export function OntologyInsightsPage() {
   const [agentOpen, setAgentOpen] = useState(false);
   const [agentDraftPresent, setAgentDraftPresent] = useState(false);
   const [agentPrefill, setAgentPrefill] = useState<InsightsAgentPrefill | null>(null);
+  const analysisContext = useMemo<AnalysisCaptureContext>(() => {
+    const projects = (insight?.nodes ?? []).filter((node) => node.kind === 'project');
+    const projectSlug = projects.length === 1 ? resolveNodeAgentTarget(projects[0]).ref : null;
+    const project = vault.manifest?.docs.find((doc) => doc.slug === projectSlug);
+    return {
+      mode: 'meaning', surface: 'analysis', handle: dataSourceMode === 'local' ? vault.handle : null,
+      writable: dataSourceMode === 'local' && vault.status === 'loaded', fileHandles: vault.fileHandles,
+      scope: { projectSlug, projectUid: typeof project?.frontmatter.uid === 'string' ? project.frontmatter.uid : null, targetSlugs: [], profileSlug: null },
+      graph: analysisGraphFromInsight(insight), sourceFingerprint: null, profileHash: null,
+    };
+  }, [insight, vault.manifest, vault.handle, vault.status, vault.fileHandles, dataSourceMode]);
 
   useEffect(() => {
     if (!acpBridgeAvailable) return;
@@ -1488,6 +1501,8 @@ export function OntologyInsightsPage() {
           contextLabel={agentContextLabel}
           knownSlugs={agentKnownSlugs}
           knownRelations={agentKnownRelations}
+          analysisContext={analysisContext}
+          onEvidence={(slug) => router.push(buildDocsVaultHref({ slug }))}
           onDraftPresenceChange={setAgentDraftPresent}
           onPresentationOpenMap={openPresentationOnMap}
           onClose={() => setAgentOpen(false)}

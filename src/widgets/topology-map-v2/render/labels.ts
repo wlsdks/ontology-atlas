@@ -133,7 +133,7 @@ export function scaledLabelFontSize(kind: LabelDrawState["kind"], scale: number)
 }
 
 /** Scaled font string. */
-function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): string {
+export function scaledLabelFont(kind: LabelDrawState["kind"], scale: number): string {
   return `${LABEL_FONT_WEIGHT[kind]} ${scaledLabelFontSize(kind, scale)}px ${LABEL_FONT_FAMILY}`;
 }
 

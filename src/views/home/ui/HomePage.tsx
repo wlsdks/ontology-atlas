@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { withBasePath } from "@/shared/lib/base-path";
-import { useHeldValue, useSurfaceSwap } from "@/shared/lib/use-presence";
+import { useHeldValue, usePanelPresence, useSurfaceSwap } from "@/shared/lib/use-presence";
 import { LG_BREAKPOINT_PX, useViewportBelow } from "@/shared/lib/use-viewport-below";
 import { detectAcpRuntimes, isAcpBridgeAvailable } from "@/shared/lib/tauri-acp";
 import {
@@ -15,9 +15,12 @@ import {
   vaultMcpServers,
   vaultSelfReadSlot,
   useChatSuggestions,
+  useAnalysisCapture,
+  analysisGraphFromInsight,
   presentationRelationKeysForGraphEdge,
 } from "@/features/acp-session";
 import { agentChatDoor } from "../model/agent-chat-door";
+import { resolveAnalysisFindingTarget } from '../model/analysis-finding-target';
 import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "../model/search-lane-density";
 import {
   planRouteAskDockSync,
@@ -31,6 +34,9 @@ import {
   type AcpOntologyRelationPreview,
 } from "@/widgets/acp-chat-panel";
 import type { ChatSuggestion, AcpTurnActivity } from "@/features/acp-session";
+import type { AnalysisCaptureContext } from "@/features/acp-session";
+import type { AnalysisFinding } from "@/entities/analysis-record";
+import { AnalysisWorkbench, MeaningContext } from "@/widgets/analysis-workbench";
 import { cn } from "@/shared/lib/cn";
 import { edgeSentenceValues, normalizeEdgeSentenceKey } from "../lib/edge-sentence";
 import {
@@ -393,6 +399,7 @@ export function HomePage() {
 }
 
 function HomePageImpl() {
+  const tWorkbench = useTranslations('analysisWorkbench');
   const t = useTranslations('topology');
   const tMeaningEditor = useTranslations('meaningEditor');
   const reducedMotion = usePrefersReducedMotion();
@@ -488,6 +495,18 @@ function HomePageImpl() {
   const [vaultAgentOpen, setVaultAgentOpen] = useState(false);
   const [acpChatOpen, setAcpChatOpen] = useState(false);
   const [acpDockFrameOpen, setAcpDockFrameOpen] = useState(false);
+  const [meaningWorkbenchOpen, setMeaningWorkbenchOpen] = useState(false);
+  const meaningWorkbenchPresence = usePanelPresence(meaningWorkbenchOpen);
+  const reviewUsesSheet = useViewportBelow(LG_BREAKPOINT_PX);
+  const [showRelationMeaning, setShowRelationMeaning] = useState(true);
+  const [analysisParentRunId, setAnalysisParentRunId] = useState<string | null>(null);
+  const [analysisParentRequestText, setAnalysisParentRequestText] = useState<string | null>(null);
+  const [workbenchSectionRequest, setWorkbenchSectionRequest] = useState<{ tab: 'meaning' | 'history' | 'conversation'; nonce: number }>({ tab: 'meaning', nonce: 0 });
+  const workbenchOpenRef = useRef({ agent: false, meaning: false });
+  useLayoutEffect(() => { workbenchOpenRef.current = { agent: acpDockFrameOpen, meaning: meaningWorkbenchOpen }; }, [acpDockFrameOpen, meaningWorkbenchOpen]);
+  const requestWorkbenchSection = useCallback((tab: 'meaning' | 'history' | 'conversation') => setWorkbenchSectionRequest((current) => ({ tab, nonce: current.nonce + 1 })), []);
+  const openMeaningWorkbench = useCallback(() => { setVaultAgentOpen(false); setMeaningWorkbenchOpen(true); requestWorkbenchSection('meaning'); }, [requestWorkbenchSection]);
+  const [analysisFindings, setAnalysisFindings] = useState<readonly AnalysisFinding[]>([]);
   /**
    * Whether the dock starts open — true only in the installed app with a key
    * present (`null` means not known yet). The owner asked for it to be "in view",
@@ -1283,7 +1302,7 @@ function HomePageImpl() {
     if (!from || !to) return null;
     // This relation's why: `relation_notes` promoted to `edge.label` by derivation.
     const edgeRecord = ontologyInsight.edges.find(
-      (e) => e.from === selectedEdge.sourceId && e.to === selectedEdge.targetId,
+      (e) => e.from === selectedEdge.sourceId && e.to === selectedEdge.targetId && e.type === selectedEdge.relationType,
     );
     const why = edgeRecord?.label?.trim() || null;
     const typeLabel = relationVocabulary(selectedEdge.relationType, relationRegister);
@@ -1341,8 +1360,8 @@ function HomePageImpl() {
    * error #301 (infinite re-render): `edgePanelModel` comes from a `useMemo` whose
    * identity is new every render, so identity comparison never converged.
    */
-  const edgePanelOpen = Boolean(edgePanelModel) && !selectedOntologyNode && !createNodeOpen;
-  const edgePanelKey = selectedEdge ? `${selectedEdge.sourceId}→${selectedEdge.targetId}` : null;
+  const edgePanelOpen = Boolean(edgePanelModel) && !selectedOntologyNode && !createNodeOpen && !meaningWorkbenchOpen && !acpDockFrameOpen;
+  const edgePanelKey = selectedEdge ? `${selectedEdge.sourceId}→${selectedEdge.relationType}→${selectedEdge.targetId}` : null;
   const heldEdgePanelModel = useHeldValue(edgePanelOpen ? edgePanelModel : null, edgePanelKey);
   // Edge hover micro-card — the lightweight precursor to the click popover.
   const [hoverEdge, setHoverEdge] = useState<{
@@ -1365,7 +1384,7 @@ function HomePageImpl() {
     const to = ontologyInsight.nodes.find((n) => n.id === hoverEdge.edge.targetId);
     if (!from || !to) return null;
     const edgeRecord = ontologyInsight.edges.find(
-      (e) => e.from === hoverEdge.edge.sourceId && e.to === hoverEdge.edge.targetId,
+      (e) => e.from === hoverEdge.edge.sourceId && e.to === hoverEdge.edge.targetId && e.type === hoverEdge.edge.relationType,
     );
     // The hover card names the endpoints the way the map does (`display_<locale>`
     // first); it once used the canonical titles, so a Korean map showed an
@@ -2318,6 +2337,7 @@ function HomePageImpl() {
    * arriving in the URL honours the same spatial contract from its first frame.
    */
   const agentDockRequestedOpen =
+    meaningWorkbenchOpen ||
     acpDockFrameOpen ||
     vaultAgentOpen ||
     Boolean(
@@ -2399,6 +2419,7 @@ function HomePageImpl() {
   const [agentOpeningRequest, setAgentOpeningRequest] = useState<{
     text: string;
     nonce: number;
+    scopeKey?: string;
   } | null>(null);
   const pendingAgentChatPromptRef = useRef<string | null>(null);
   /**
@@ -2870,6 +2891,8 @@ function HomePageImpl() {
   // disagree about whether the first Esc should close it.
   const nodePopoverVisible =
     selectedNodeFocusActive &&
+    !meaningWorkbenchOpen &&
+    !acpDockFrameOpen &&
     !selectedRelationActive &&
     !createNodeOpen &&
     !nodePopoverDismissed;
@@ -2896,7 +2919,7 @@ function HomePageImpl() {
     v2DatasheetModel,
     selectedOntologyNode?.id ?? null,
   );
-  const selectedNodeOwnsRightRail = selectedNodeFocusActive;
+  const selectedNodeOwnsRightRail = selectedNodeFocusActive && !meaningWorkbenchOpen && !acpDockFrameOpen;
   const topologyUtilityChromeState = selectedRelationActive
     ? "collapsed-active-relation"
     : selectedNodeOwnsRightRail
@@ -2987,14 +3010,18 @@ function HomePageImpl() {
   const agentChatUsesRuntime = Boolean(acpRuntime && gitVaultPath);
 
   const openVaultAgent = useCallback(() => {
-    cancelAcpSessionStart();
+    const alreadyOpen = workbenchOpenRef.current.agent || workbenchOpenRef.current.meaning;
+    requestWorkbenchSection('conversation');
+    if (!alreadyOpen) cancelAcpSessionStart();
     if (agentChatUsesRuntime) {
       setChatMounted(true);
-      setAcpChatOpen(false);
+      if (!alreadyOpen) setAcpChatOpen(false);
+      else if (!workbenchOpenRef.current.agent) setAcpChatOpen(true);
       setAcpDockFrameOpen(true);
       setVaultAgentOpen(false);
     } else {
       setAcpDockFrameOpen(false);
+      setMeaningWorkbenchOpen(false);
       setVaultAgentOpen(true);
       setAcpChatOpen(false);
     }
@@ -3002,7 +3029,12 @@ function HomePageImpl() {
     // out.
     setOntologySearchOpen(false);
     setCreateNodeOpen(false);
-  }, [agentChatUsesRuntime, cancelAcpSessionStart, setCreateNodeOpen]);
+  }, [agentChatUsesRuntime, cancelAcpSessionStart, requestWorkbenchSection, setCreateNodeOpen]);
+  const handleWorkbenchSectionChange = useCallback((tab: 'meaning' | 'history' | 'conversation') => {
+    if (tab === 'conversation' && agentChatUsesRuntime && !workbenchOpenRef.current.agent) {
+      setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);
+    }
+  }, [agentChatUsesRuntime]);
 
   /**
    * On-screen wording for the first line, read from **the same keys** as the panel's
@@ -3133,6 +3165,10 @@ function HomePageImpl() {
     setVaultAgentOpen(false);
     setAcpChatOpen(false);
     setVaultAgentPrefill(null);
+    setMeaningWorkbenchOpen(false);
+    setAgentOpeningRequest(null);
+    setAnalysisParentRunId(null);
+    setAnalysisParentRequestText(null);
     setRouteState(
       { askIntent: null, askBusinessFlow: false },
       { replace: true },
@@ -3159,7 +3195,7 @@ function HomePageImpl() {
     keyOpen: vaultAgentOpen,
     hasAskIntent: Boolean(askPrefill),
   });
-  const agentDockOpen = agentChatOpen || acpDockFrameOpen;
+  const agentDockOpen = agentChatOpen || acpDockFrameOpen || meaningWorkbenchOpen;
 
   /**
    * Pressing the collapsed INDEX tab is an explicit choice to go back to the left
@@ -3285,13 +3321,13 @@ function HomePageImpl() {
       openVaultAgent();
       const prompt = pendingAgentChatPromptRef.current;
       pendingAgentChatPromptRef.current = null;
-      if (prompt) setAgentOpeningRequest({ text: prompt, nonce: Date.now() });
+      if (prompt) setAgentOpeningRequest({ text: prompt, nonce: Date.now(), scopeKey: JSON.stringify([gitVaultPath, 'meaning']) });
       setPendingAgentChatRuntimeId(null);
     });
     return () => {
       cancelled = true;
     };
-  }, [pendingAgentChatRuntimeId, acpRuntime?.id, agentChatUsesRuntime, openVaultAgent]);
+  }, [pendingAgentChatRuntimeId, acpRuntime?.id, agentChatUsesRuntime, openVaultAgent, gitVaultPath]);
 
   /*
    * Opening by itself goes through **the same door**. It lives here because
@@ -4219,6 +4255,52 @@ function HomePageImpl() {
     return () => window.clearTimeout(handle);
   }, [hubs, preloadProjectAsset, selectedSlug]);
 
+  const meaningAnalysisContext = useMemo<AnalysisCaptureContext>(() => {
+    const project = (ontologyInsight?.nodes ?? []).filter((node) => node.kind === 'project');
+    const projectSlug = project.length === 1 ? resolveNodeAgentTarget(project[0]).ref : null;
+    const projectDoc = vault.manifest?.docs.find((doc) => doc.slug === projectSlug);
+    return {
+      mode: 'meaning', surface: 'map', handle: vault.handle,
+      writable: vault.status === 'loaded',
+      fileHandles: vault.fileHandles,
+      scope: { projectSlug, projectUid: typeof projectDoc?.frontmatter.uid === 'string' ? projectDoc.frontmatter.uid : null, targetSlugs: [], profileSlug: null },
+      graph: analysisGraphFromInsight(ontologyInsight),
+      sourceFingerprint: null, profileHash: null, parentRunId: analysisParentRunId, parentRequestText: analysisParentRequestText,
+    };
+  }, [ontologyInsight, vault.handle, vault.manifest, vault.status, vault.fileHandles, analysisParentRunId, analysisParentRequestText]);
+  const analysisCapture = useAnalysisCapture(meaningAnalysisContext);
+  const meaningRelations = useMemo(() => {
+    if (!ontologyInsight || (!meaningWorkbenchOpen && !acpDockFrameOpen)) return [];
+    const focus = selectedOntologyNode?.id;
+    const nodes = new Map(ontologyInsight.nodes.map((node) => [node.id, node]));
+    return ontologyInsight.edges.filter((edge) => selectedEdge
+      ? edge.from === selectedEdge.sourceId && edge.to === selectedEdge.targetId && edge.type === selectedEdge.relationType
+      : focus ? edge.from === focus || edge.to === focus : false).map((edge) => {
+      const from = nodes.get(edge.from); const to = nodes.get(edge.to);
+      const key = normalizeEdgeSentenceKey(edge.type);
+      return { id: edge.id, sentence: t(`edgeSentence.${key}`, edgeSentenceValues(key, from?.display ?? from?.title ?? edge.from, to?.display ?? to?.title ?? edge.to)), typeLabel: relationVocabulary(edge.type, relationRegister), why: edge.label?.trim() || null, declaredBy: edge.evidenceIds[0] ?? null };
+    });
+  }, [ontologyInsight, meaningWorkbenchOpen, acpDockFrameOpen, selectedOntologyNode, selectedEdge, t, relationVocabulary, relationRegister]);
+  const mapRelationCaptions = useMemo(() => (meaningWorkbenchOpen || acpDockFrameOpen) && showRelationMeaning ? new Map((ontologyInsight?.edges ?? []).map((edge) => [edge.id, relationVocabulary(edge.type, relationRegister)])) : null, [meaningWorkbenchOpen, acpDockFrameOpen, showRelationMeaning, ontologyInsight, relationVocabulary, relationRegister]);
+  const mapReviewQuestionIds = useMemo(() => new Set(analysisFindings.flatMap((finding) => finding.targetSlugs.map((slug) => chatNodeIndex.get(slug)).filter((id): id is string => !!id))), [analysisFindings, chatNodeIndex]);
+  const openAnalysisEvidence = useCallback((slug: string) => {
+    const nodeId = chatNodeIndex.get(slug);
+    if (nodeId) { handleSelect(nodeId); setFullDetailSlug(nodeId); }
+    else router.push(buildDocsVaultHref({ slug }));
+  }, [chatNodeIndex, handleSelect, router, setFullDetailSlug]);
+  const showAnalysisRelation = useCallback((edge: NonNullable<typeof selectedEdge>) => {
+    interactionSelectedSlugRef.current = null;
+    setExpandAllActive(false);
+    setMeaningEditorState(null);
+    setFullDetailSlug(null);
+    setSelectedRelationActive(false);
+    // The existing path lens reveals both ancestor chains and frames their visible endpoints.
+    setRouteState((current) => selectTopologyPathRouteState({ ...current, realmSlug: null }, {
+      sourceSlug: edge.sourceId, targetSlug: edge.targetId,
+    }));
+    setSelectedEdge(edge);
+  }, [setFullDetailSlug, setMeaningEditorState, setRouteState, setSelectedEdge, setSelectedRelationActive]);
+
   return (
     <VaultSourceHydrationBoundary>
     <main
@@ -4245,7 +4327,7 @@ function HomePageImpl() {
        * the key branch.
        */
       style={
-        acpDockFrameOpen || runtimeChatOpen
+        acpDockFrameOpen || runtimeChatOpen || meaningWorkbenchOpen
           ? ({ '--agent-panel-width': `${chatWidth.width}px` } as CSSProperties)
           : undefined
       }
@@ -4254,7 +4336,7 @@ function HomePageImpl() {
       {/* The left nav rail lives in `app/[locale]/layout.tsx` (AppShell); this page no
           longer mounts it. Its settings gear is registered through context by
           `useNavRailSettingsSlot(navRailSettingsSlot)` above. */}
-      <div className="relative h-full flex-1 overflow-hidden">
+      <div className="relative h-full flex-1 overflow-hidden" inert={reviewUsesSheet && (meaningWorkbenchOpen || acpDockFrameOpen)}>
       {/*
         Screen-reader landmark and SEO h1. The visual design is canvas-first with
         nowhere to put a visible h1, so it exists in the document structure only.
@@ -4534,6 +4616,14 @@ function HomePageImpl() {
                         className="relative flex items-center gap-[var(--topology-utility-lane-gap)]"
                         data-testid="topology-utility-action-row"
                       >
+                    <ChromeChip
+                      icon={<HelpCircle />}
+                      aria-label={tWorkbench('meaningTitle')}
+                      active={meaningWorkbenchOpen}
+                      compact={topologyUtilityChromeCompact}
+                      data-testid="topology-meaning-workbench-toggle"
+                      onClick={openMeaningWorkbench}
+                    >{tWorkbench('meaningTitle')}</ChromeChip>
                     {/* 「Agent」 — This button's spot is the moment you go from viewing a map to saying "fix this."
                         It uses the same chip spec as the existing utility lane without creating a rail destination or new route (zero surface addition).
                         The name is defined in **only one place**: `vaultAgentPanel.title` —
@@ -4546,10 +4636,10 @@ function HomePageImpl() {
                         <ChromeChip
                           onClick={() =>
                             (agentDockTouchedRef.current = true,
-                            agentDockOpen ? closeVaultAgent() : openVaultAgent())
+                            openVaultAgent())
                           }
                           aria-label={tAgent('title')}
-                          aria-pressed={agentDockOpen}
+                          aria-expanded={agentDockOpen}
                           data-testid="topology-vault-agent-toggle"
                           active={agentDockOpen}
                           compact={topologyUtilityChromeCompact}
@@ -5446,6 +5536,8 @@ function HomePageImpl() {
                     <TopologyMapV2
                       nodes={topologyV2Graph.nodes}
                       edges={topologyV2Graph.edges}
+                      relationCaptions={mapRelationCaptions}
+                      reviewQuestionIds={mapReviewQuestionIds}
                       /* Say so when an arrow key has nowhere to walk (owner, 2026-08-10).
                          With no response at all the user cannot tell "broken" from "nothing
                          that way". The wording and the surface belong to the page; the
@@ -5491,7 +5583,7 @@ function HomePageImpl() {
                         setSelectedEdge(edge);
                       }}
                       onHoverEdge={handleHoverEdge}
-                      selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId } : null}
+                      selectedEdge={selectedEdge ? { sourceId: selectedEdge.sourceId, targetId: selectedEdge.targetId, relationType: selectedEdge.relationType } : null}
                       previewEdge={mapRelationPreview}
                       onSelect={(slug) => {
                         setMeaningEditorState(null);
@@ -6114,6 +6206,7 @@ function HomePageImpl() {
                 // In environments without an agent surface (web), we do not inject; handoff copy
                 // takes over as the primary action. We do not draw a door that will not open.
                 onAskAgent={llmBridgeAvailable ? askAgentAboutSelectedNode : undefined}
+                meaningReview={{ label: tWorkbench('meaningTitle'), onOpen: openMeaningWorkbench }}
                 suppressPrimaryAction={acpPresentationVisible}
                 onClose={handleDatasheetClose}
                 projectSource={projectSource.view}
@@ -6405,12 +6498,12 @@ function HomePageImpl() {
         The rule that the map comes first still holds: this panel stands beside the map
         and never covers it.
       */}
-      {gitVaultPath ? (
+      {gitVaultPath || meaningWorkbenchPresence.mounted ? (
         <div
           data-agent-dock-frame="true"
-          data-right-dock={acpDockFrameOpen || chatMounted ? "chat" : undefined}
+          data-right-dock={acpDockFrameOpen || chatMounted || meaningWorkbenchOpen ? "chat" : undefined}
           style={{
-            width: acpDockFrameOpen ? `${chatWidth.width}px` : "0px",
+            width: acpDockFrameOpen || meaningWorkbenchOpen ? reviewUsesSheet ? '100%' : `${chatWidth.width}px` : "0px",
             transitionProperty: "width",
             // Same role and same clock as the key branch's `VaultAgentPanel`. If the two
             // chat panels pushed the map at different speeds, "one door" would stop being
@@ -6424,11 +6517,11 @@ function HomePageImpl() {
             // briefly occupies the WebKit main thread, already-finished layout motion is not interrupted.
              if (acpDockFrameOpen && !acpChatOpen) scheduleAcpSessionStart();
           }}
-          className="relative min-h-0 shrink-0 overflow-hidden bg-[color:var(--color-canvas)]"
+          className="absolute right-0 top-0 bottom-[var(--topology-mobile-bottom-tab-reserve)] z-30 min-h-0 shrink-0 overflow-hidden bg-[color:var(--color-canvas)] lg:relative lg:inset-auto lg:z-auto"
         >
-          {(runtimeChatOpen || chatMounted) && acpRuntime ? (
+          {runtimeChatOpen || chatMounted || meaningWorkbenchPresence.mounted ? (
           <Surface
-            open={acpDockFrameOpen}
+            open={acpDockFrameOpen || meaningWorkbenchOpen}
             as="aside"
             motion="overlay"
           /*
@@ -6455,7 +6548,7 @@ function HomePageImpl() {
            * viewport-width branch left, the `xl:` goes too.
            */
             data-agent-dock-surface="inset"
-            style={{ width: `calc(${chatWidth.width}px - var(--chrome-inset))` }}
+            style={{ width: reviewUsesSheet ? 'calc(100% - var(--chrome-inset) * 2)' : `calc(${chatWidth.width}px - var(--chrome-inset))` }}
             /*
              * The fixed-width content is pinned right and only the outer frame animates
              * from 0 to the stored width. Animating the content width every frame would
@@ -6480,13 +6573,60 @@ function HomePageImpl() {
               />
             )}
           >
-          <AcpChatPanel
+          <AnalysisWorkbench
+            returnFocusSelector={'[data-testid="topology-meaning-workbench-toggle"]'}
+            context={meaningAnalysisContext}
+            capture={analysisCapture}
+            contextLabel={edgePanelModel?.sentence ?? selectedOntologyNode?.display ?? selectedOntologyNode?.title ?? tWorkbench('wholeProject')}
+            open={acpDockFrameOpen || meaningWorkbenchOpen}
+            requestNonce={agentOpeningRequest?.nonce}
+            sectionRequest={workbenchSectionRequest}
+            onSectionChange={handleWorkbenchSectionChange}
+            initialTab={meaningWorkbenchOpen ? 'meaning' : 'conversation'}
+            onClose={() => { setMeaningWorkbenchOpen(false); closeVaultAgent(); }}
+            onEvidence={openAnalysisEvidence}
+            onFindingsChange={setAnalysisFindings}
+            onFinding={(finding) => {
+              const target = resolveAnalysisFindingTarget(finding, ontologyInsight);
+              if (!target) return false;
+              if (target.kind === 'edge') showAnalysisRelation(target.edge);
+              else handleSelect(target.nodeId);
+              return true;
+            }}
+            onRequest={agentChatUsesRuntime ? (text, parentRunId) => {
+              setAnalysisParentRunId(parentRunId);
+              const focus = selectedOntologyNode ? `${selectedOntologyNode.display ?? selectedOntologyNode.title} (${resolveNodeAgentTarget(selectedOntologyNode).ref ?? selectedOntologyNode.id})` : selectedEdge ? edgePanelModel?.sentence ?? '' : tWorkbench('wholeProject');
+              const relation = selectedEdge ? `\nSelected relation: ${JSON.stringify({
+                from: resolveNodeAgentTarget(ontologyInsight?.nodes.find((node) => node.id === selectedEdge.sourceId)).ref,
+                to: resolveNodeAgentTarget(ontologyInsight?.nodes.find((node) => node.id === selectedEdge.targetId)).ref,
+                type: selectedEdge.relationType,
+              })}` : '';
+              const requestText = `${tWorkbench('meaningTitle')}: ${focus}${relation}\n${text}`;
+              setAnalysisParentRequestText(parentRunId ? requestText : null);
+              setAgentOpeningRequest({ text: requestText, nonce: Date.now(), scopeKey: JSON.stringify([gitVaultPath, 'meaning']) });
+              if (acpDockFrameOpen || meaningWorkbenchOpen) {
+                setChatMounted(true); setAcpDockFrameOpen(true); setAcpChatOpen(true);
+              } else openVaultAgent();
+            } : undefined}
+            facts={<MeaningContext
+              showLabels={showRelationMeaning}
+              onShowLabelsChange={setShowRelationMeaning}
+              node={selectedOntologyNode ? { ...selectedOntologyNode, title: selectedOntologyNode.display ?? selectedOntologyNode.title } : null}
+              relations={meaningRelations}
+              onEvidence={openAnalysisEvidence}
+              onSelectRelation={(id) => {
+                const edge = ontologyInsight?.edges.find((item) => item.id === id);
+                if (!edge) return;
+                showAnalysisRelation({ sourceId: edge.from, targetId: edge.to, relationType: edge.type, declaredBySlug: edge.evidenceIds[0] ?? null });
+              }}
+            />}
+            conversation={acpRuntime && gitVaultPath ? <AcpChatPanel
             /*
              * Changing the runtime **rebuilds the panel.** A session is bound to one
              * process, so swapping only the tool inside the same panel blurs "what is
              * alive right now". Rebuilding is cheaper and unambiguous.
              */
-            key={acpRuntime.id}
+            key={`${gitVaultPath}:${acpRuntime.id}`}
             runtimeId={acpRuntime.id}
             runtimeLabel={acpRuntime.label}
             runtimes={acpRuntimes}
@@ -6497,6 +6637,8 @@ function HomePageImpl() {
             // The sentence jumped from the node sits in the **here** write box — it is not sent.
             prefillRequest={vaultAgentPrefill ?? askPrefill}
             openingRequest={agentOpeningRequest}
+            requestScopeKey={JSON.stringify([gitVaultPath, 'meaning'])}
+            onOpeningRequestSent={(nonce) => setAgentOpeningRequest((current) => current?.nonce === nonce ? null : current)}
             suggestions={chatSuggestions}
             onSuggestionAction={handleChatSuggestionAction}
             knownSlugs={chatKnownSlugs}
@@ -6509,7 +6651,9 @@ function HomePageImpl() {
             onMapIntent={handleAcpMapIntent}
             onOntologyRelationPreviewChange={setAcpRelationPreview}
             onWorkReceipt={handleAcpWorkReceipt}
+            onTurnStarted={analysisCapture.onTurnStarted}
             onClose={closeVaultAgent}
+          /> : undefined}
           />
           </ErrorBoundary>
           </Surface>

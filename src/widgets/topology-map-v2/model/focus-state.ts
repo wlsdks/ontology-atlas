@@ -201,6 +201,7 @@ export function resolveEdgeEgoState(
 export interface EdgePairFocus {
   sourceId: string;
   targetId: string;
+  relationType?: string;
 }
 
 export function resolveNodeEgoStateWithPair(

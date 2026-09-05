@@ -19,6 +19,8 @@ mod acp_doctor;
 mod managed_node;
 /// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
+/// Immutable, vault-local ACP analysis and diagnostic-review Markdown.
+mod analysis_archive;
 /// One shape for every failure a command hands to the WebView (`<code>: <detail>`).
 mod errors;
 /// Atlas Git — native layer for versioning vaults with git (invoked by the web GUI).
@@ -3453,6 +3455,8 @@ pub fn run() {
             read_vault_text_file,
             read_vault_binary_file,
             write_vault_text_file,
+            analysis_archive::append_analysis_record,
+            analysis_archive::read_analysis_record_text,
             remove_vault_entry,
             ensure_vault_directory,
             vault_path_exists,

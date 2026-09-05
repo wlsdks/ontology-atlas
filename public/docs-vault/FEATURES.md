@@ -359,6 +359,17 @@ had become false).
   agent/growth/handoff controls below the tree.
 
 #### Agent Panel — From What to Say First to Next Steps (2026-07-27, Desktop App Only)
+- **Meaning, findings/history, and conversation share one context dock.** The
+  map toolbar and selected concept expose Meaning review. It explains the
+  normative kind criteria, actual directional relations, stored rationale and
+  missing rationale. Optional relation captions avoid concept labels and shapes.
+  Explicit AI analysis actions capture immutable Markdown records in the active
+  folder; ordinary drafts still require Send. Historical answers, source/profile
+  snapshots, observed Architecture measurements, and reasoned keep/dismiss
+  records remain inspectable. Qualified current questions may mark map labels
+  with `?`; no report or review automatically edits meaning. Architecture and
+  Analysis use the same archive and keep their ACP conversation mounted across
+  context sections. [Record contract and limits](ANALYSIS-RECORDS.md).
 - **Guarded ACP runtime eligibility** — The app offers Claude Agent and Codex for in-app ACP chat only behind an app-owned gate. Codex runs through the exact reviewed `@agentclientprotocol/codex-acp@1.6.2` adapter with an isolated `on-request` approval policy and a forced `read-only` mode; every direct write pauses at an ordinary explicit permission card, while every injected or self-registered Atlas MCP write pauses at the server-owned typed review card for `reject_once` or `allow_once`. One-time approval never carries into the next write.
 - Clicking the **「Agent」** button in the top toolbar opens a tall vertical panel on the right side of the map. When the panel opens, the map and node info areas shift together to adjust their width. This feature is exclusive to the desktop app — browsers lack a secure place to store API keys and a valid path for requests, so the button is not rendered at all if it would do nothing.
 - The outer dock continues to yield space to the map width, but the actual conversation surface stands as a panel with 12px spacing on the top, bottom, and right sides. Its borders, radius, and shadows share existing panel tokens used by INDEX and node details, with ACP and API-key conversations sharing the same form. The top and vertical map controls on the left side of the panel are attached 12px from each side of the seam, totaling a 24px gap, moving in sync with the dock's timing and curvature.

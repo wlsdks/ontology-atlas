@@ -174,6 +174,33 @@
       "slug": "triage-labels"
     }
   ],
+  "ANALYSIS-RECORDS": [
+    {
+      "depth": 1,
+      "text": "Analysis records",
+      "slug": "analysis-records"
+    },
+    {
+      "depth": 2,
+      "text": "Reading and acting",
+      "slug": "reading-and-acting"
+    },
+    {
+      "depth": 2,
+      "text": "Format and ownership",
+      "slug": "format-and-ownership"
+    },
+    {
+      "depth": 2,
+      "text": "Persistence boundaries",
+      "slug": "persistence-boundaries"
+    },
+    {
+      "depth": 2,
+      "text": "Agent and CLI access",
+      "slug": "agent-and-cli-access"
+    }
+  ],
   "ARCHITECTURE": [
     {
       "depth": 1,
@@ -8794,6 +8821,11 @@
       "depth": 2,
       "text": "2026-09-04 — Analysis owns one ACP conversation; Map is an explicit continuation",
       "slug": "2026-09-04-analysis-owns-one-acp-conversation-map-is-an-explicit-continuation"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-05 — Meaning review keeps diagnostic analyses with their evidence and history",
+      "slug": "2026-09-05-meaning-review-keeps-diagnostic-analyses-with-their-evidence-and-history"
     }
   ],
   "DEMO-SCENARIO": [
@@ -12477,6 +12509,11 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    },
+    {
+      "depth": 2,
+      "text": "Versioned analysis review",
+      "slug": "versioned-analysis-review"
     }
   ],
   "ontology/capabilities/agent-work-visibility": [
@@ -12489,6 +12526,33 @@
       "depth": 2,
       "text": "Boundaries",
       "slug": "boundaries"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/capabilities/ai-analysis-review": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
     },
     {
       "depth": 2,
@@ -12553,6 +12617,11 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    },
+    {
+      "depth": 2,
+      "text": "Versioned analysis review",
+      "slug": "versioned-analysis-review"
     }
   ],
   "ontology/capabilities/cli-developer-entry": [
@@ -13604,6 +13673,60 @@
       "slug": "excludes"
     }
   ],
+  "ontology/elements/analysis-record-archive": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/elements/analysis-review-workbench": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Includes",
+      "slug": "includes"
+    },
+    {
+      "depth": 2,
+      "text": "Excludes",
+      "slug": "excludes"
+    },
+    {
+      "depth": 2,
+      "text": "Evidence",
+      "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
   "ontology/elements/app-nav-rail": [
     {
       "depth": 2,
@@ -13715,6 +13838,11 @@
       "depth": 2,
       "text": "Confidence",
       "slug": "confidence"
+    },
+    {
+      "depth": 2,
+      "text": "Versioned analysis review",
+      "slug": "versioned-analysis-review"
     }
   ],
   "ontology/elements/atlas-git-panel": [

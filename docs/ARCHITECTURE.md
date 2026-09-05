@@ -202,6 +202,16 @@ the other. Where such links work, treat it as a convenience, not a promise.
 
 ### In-app coding agents over ACP (2026-08-16)
 
+ACP turn observers capture start/completion identity before a later selection
+can change the context. The framework-free `entities/analysis-record` codec
+owns diagnostic Markdown; `features/acp-session` captures actual full-body
+results and architecture measurements; `widgets/analysis-workbench` renders
+meaning, immutable history, and the still-mounted conversation. The native
+`analysis_archive` module exclusively appends inside the captured vault's
+`.ontology-atlas/analyses/`. MCP/CLI read the same format without compiling it
+into ontology nodes. The Architecture view may reconstruct a dated observation
+only against its matching profile snapshot. [Contract and boundaries](ANALYSIS-RECORDS.md).
+
 The app can launch a coding agent the user already installed (Claude Code,
 Codex, …) and speak the Agent Client Protocol v1 to it over stdio. It is a
 desktop-only ability, so it attaches through the bridge convention above. Both

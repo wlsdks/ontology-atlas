@@ -11,6 +11,8 @@ export interface ArchitectureAgentRuntime {
 export interface ArchitectureAgentRequest {
   kind: 'draft' | 'change' | 'verify' | 'improve';
   prompt: string;
+  profileSlug?: string | null;
+  roleId?: string | null;
 }
 
 /** Only a present, verified, login-ready runtime with an app-owned write checkpoint may enter. */

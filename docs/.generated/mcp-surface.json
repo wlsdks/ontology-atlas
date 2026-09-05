@@ -360,6 +360,8 @@
         "mode": "read",
         "arguments": [
           "afterActionId",
+          "analysisCursor",
+          "analysisMode",
           "candidateSlug",
           "componentLimit",
           "componentTypes",
@@ -398,6 +400,7 @@
           "phases",
           "project",
           "recommendationLimit",
+          "recordId",
           "relation",
           "reviewRevision",
           "searchBudget",

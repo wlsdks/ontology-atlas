@@ -21,6 +21,8 @@ vi.mock('@/widgets/acp-chat-panel', () => ({
   }),
 }));
 
+vi.mock('@/widgets/analysis-workbench', () => ({ AnalysisWorkbench: ({ conversation }: { conversation: React.ReactNode }) => <div>{conversation}</div> }));
+
 import { ArchitectureAgentDock } from './ArchitectureAgentDock';
 
 const baseProps = {
@@ -32,6 +34,9 @@ const baseProps = {
   openingRequest: { kind: 'verify' as const, text: 'Inspect the architecture', nonce: 1 },
   knownSlugs: new Set(['capabilities/example']),
   onClose: vi.fn(),
+  contextLabel: 'Example',
+  onEvidence: vi.fn(),
+  analysisContext: { mode: 'architecture' as const, surface: 'architecture' as const, handle: null, writable: false, fileHandles: new Map(), graph: { nodes: [], edges: [] }, scope: { projectSlug: null, projectUid: null, targetSlugs: [], profileSlug: null }, sourceFingerprint: null, profileHash: null },
 };
 
 afterEach(() => {
@@ -80,16 +85,24 @@ describe('ArchitectureAgentDock', () => {
     );
   });
 
-  it('uses a full work-area sheet below xl and reserves the side dock for wide workbenches', () => {
+  it('can start an analysis after opening history in an already settled dock', () => {
+    const view = render(<ArchitectureAgentDock open {...baseProps} openingRequest={null} />);
+    fireEvent.transitionEnd(screen.getByTestId('architecture-agent-dock-frame'), { propertyName: 'width' });
+    expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-session-enabled', 'false');
+    view.rerender(<ArchitectureAgentDock open {...baseProps} />);
+    expect(screen.getByTestId('mock-acp-chat')).toHaveAttribute('data-session-enabled', 'true');
+  });
+
+  it('uses a full work-area sheet below lg and reserves the side dock for wide workbenches', () => {
     render(<ArchitectureAgentDock open {...baseProps} />);
 
     const frame = screen.getByTestId('architecture-agent-dock-frame');
-    expect(frame).toHaveClass('absolute', 'w-full', 'xl:relative');
-    expect(frame.className).toContain('xl:w-[var(--architecture-agent-chat-width)]');
+    expect(frame).toHaveClass('absolute', 'w-full', 'lg:relative');
+    expect(frame.className).toContain('lg:w-[var(--architecture-agent-chat-width)]');
     expect(screen.getByTestId('architecture-agent-dock')).toHaveClass('left-3', 'w-auto');
     expect(screen.getByTestId('mock-acp-resize').parentElement).toHaveClass(
       'hidden',
-      'xl:contents',
+      'lg:contents',
     );
   });
 });

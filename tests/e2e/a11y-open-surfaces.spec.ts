@@ -57,15 +57,15 @@ import { expect, test, type Page } from "@playwright/test";
  * ## How many surfaces can be opened — the denominator
  * ════════════════════════════════════════════════════════════════════
  *
- * The exhaustive source count is **34** (`censusAppearingSurfaces`, surfaces that
- * appear conditionally). This file opens **7** of them. Most of the rest cannot be
+ * The exhaustive source count is **36** (`censusAppearingSurfaces`, surfaces that
+ * appear conditionally). This file opens **9** of them. Most of the rest cannot be
  * opened here because they **need a vault** (document editor autocomplete, the agent
  * panel) or require canvas coordinates (map node popover, right-click menu — the
  * route through `?e2e=1`'s `window.__atlasMap` reached coordinate conversion this
  * round, but the click never landed on a node, so it was deferred).
  *
- * **Why the denominator is written into the code**: writing 7/34 lets the next person
- * ask "why are the other 27 not measured". Opening 7 and saying nothing makes that
+ * **Why the denominator is written into the code**: writing 9/36 lets the next person
+ * ask "why are the other 27 not measured". Opening 9 and saying nothing makes that
  * question disappear. When the denominator grows, `surface-motion-ratchet`'s "openable
  * surfaces never grow" turns red first — and that is the moment to review this list
  * too.
@@ -168,7 +168,10 @@ const MIN_RULES_PASSED = 15;
  * progress and keyboard/focus path, and separately covers fail-closed qualification.
  */
 // The Analysis dock is desktop-only; InsightsAgentDock tests and the native walkthrough cover it.
-const APPEARING_SURFACES_IN_SOURCE = 35;
+// 35 → 36: ACP's held-scope request status requires a runtime; AcpChatPanel tests
+// its no-send and eventual real-turn acknowledgement. Map Meaning and Architecture
+// history now open without that runtime and join the measured browser paths below.
+const APPEARING_SURFACES_IN_SOURCE = 36;
 
 interface Opener {
   readonly name: string;
@@ -243,6 +246,12 @@ const CONSTRUCTION_REVIEW_FILE = JSON.stringify({
 
 const OPENERS: readonly Opener[] = [
   {
+    name: "Map meaning review",
+    route: "/ko/topology/",
+    trigger: "topology-meaning-workbench-toggle",
+    surface: '[data-testid="analysis-workbench"]',
+  },
+  {
     name: "설정 시트",
     route: "/ko/topology/",
     trigger: "app-settings-trigger",
@@ -283,6 +292,13 @@ const OPENERS: readonly Opener[] = [
       mimeType: "application/json",
       body: CONSTRUCTION_REVIEW_FILE,
     },
+  },
+  {
+    name: "Architecture analysis history",
+    route: "/ko/architecture/",
+    trigger: "architecture-review-open",
+    surface: '[data-testid="analysis-workbench"]',
+    dogfood: true,
   },
   {
     name: "아키텍처 근거 흐름",
@@ -406,7 +422,7 @@ test("접근성 래칫(열린 표면) — 새 룰 위반 0, 기존 개수는 늘
   ).toEqual([]);
 });
 
-test("측정 목록이 분모를 잃지 않는다 — 7/34 라고 말할 수 있어야 한다", async () => {
+test("측정 목록이 분모를 잃지 않는다 — 9/36 라고 말할 수 있어야 한다", async () => {
   expect(OPENERS.length, "열 표면 목록이 비면 위 시험은 공집합 위에서 전부 초록이다").toBeGreaterThanOrEqual(5);
   expect(
     new Set(OPENERS.map((o) => o.route)).size,

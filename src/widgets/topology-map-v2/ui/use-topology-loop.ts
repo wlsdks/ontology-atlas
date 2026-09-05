@@ -44,7 +44,7 @@ import { buildDustPoints, buildRealmCosmosPoints, computeStarDustCount, type Dus
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { centerForInsets, computeClusterFitTarget, computeDomeFocusCameraTarget, computeEffectiveCameraScaleMax, computeEffectiveCameraScaleMin, computeFocusCameraTarget, computeOverviewCameraTarget, computeOverviewFitScale, fitWorldTarget, hasAnyNodeOnScreen, worldToScreen } from "./topology-camera-math";
-import { drawTopologyFrame, lastDrawnLabelBoxes } from "./topology-frame-draw";
+import { drawTopologyFrame, lastDrawnLabelBoxes, lastDrawnRelationCaptions } from "./topology-frame-draw";
 import { MOTION } from "@/shared/motion";
 import { isPreviewEndpoint, isPreviewEndpointHidden } from "../render/preview-edge";
 import { relaxNewlyVisible } from "../model/layout";
@@ -312,7 +312,9 @@ export interface UseTopologyLoopArgs {
   mapLensKind?: TopologyMapLensKind;
   pathEdgeIds?: ReadonlySet<string> | null;
   /** Edge selection = pair focus (show only endpoints, selected edge pale indigo). */
-  selectedEdge?: { sourceId: string; targetId: string } | null;
+  selectedEdge?: { sourceId: string; targetId: string; relationType?: string } | null;
+  relationCaptions?: ReadonlyMap<string, string> | null;
+  reviewQuestionIds?: ReadonlySet<string> | null;
   previewEdge?: TopologyMapV2Props["previewEdge"];
   /**
    * Density gate — the set of parent slugs the user has expanded (URL
@@ -477,6 +479,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
+  const annotationRef = useRef({ captions: args.relationCaptions, questions: args.reviewQuestionIds });
   const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -868,7 +871,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   /** The edge under hover — shared by the draw's ink emphasis and the micro-card. */
   const hoveredEdgeRef = useRef<{ sourceId: string; targetId: string; relationType: string; declaredBySlug: string | null } | null>(null);
   /** Edge-selection (pair focus) prop mirror, for the rAF closure. */
-  const selectedEdgeRef = useRef<{ sourceId: string; targetId: string } | null>(selectedEdge);
+  const selectedEdgeRef = useRef<{ sourceId: string; targetId: string; relationType?: string } | null>(selectedEdge);
   /** Footprint trail prop mirror — the rAF closure builds the recency rank from it each frame. */
   const visitedTrailRef = useRef<readonly string[]>(visitedTrail);
   /**
@@ -1029,7 +1032,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * focus while a selection is active, then lingers until the retained subject's
    * ramp decays to ~0 (see the per-frame update after `stepTopologyPhysics`).
    */
-  const colorFocusRef = useRef<{ focusedNodeId: string | null; selectedEdge: { sourceId: string; targetId: string } | null } | null>(null);
+  const colorFocusRef = useRef<{ focusedNodeId: string | null; selectedEdge: { sourceId: string; targetId: string; relationType?: string } | null } | null>(null);
   const rippleStartRef = useRef<Map<string, number>>(new Map());
   const reducedMotionRef = useRef(false);
   /**
@@ -1457,6 +1460,10 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     // while idle skipping.
     lastActiveMsRef.current = performance.now();
   }, [selectedEdge]);
+  useEffect(() => {
+    annotationRef.current = { captions: args.relationCaptions, questions: args.reviewQuestionIds };
+    lastActiveMsRef.current = performance.now();
+  }, [args.relationCaptions, args.reviewQuestionIds]);
 
   useEffect(() => {
     const prev = prevExpandedParentsRef.current;
@@ -4908,6 +4915,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         emphasizedNeighborId: panelEmphasisNodeId,
         hoveredEdge: hoveredEdgeRef.current,
         selectedEdge: selectedEdgeRef.current,
+        relationCaptions: annotationRef.current.captions,
+        reviewQuestionIds: annotationRef.current.questions,
         previewEdge: previewEdgeHeldRef.current && previewAlphaRef.current > 0.001
           ? {
               ...previewEdgeHeldRef.current,
@@ -5774,6 +5783,7 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
        * crossed (2026-08-22). Names collide long before discs do.
        */
       labels: () => lastDrawnLabelBoxes(),
+      relationCaptions: () => lastDrawnRelationCaptions(),
       chips: () => {
         const world = worldRef.current;
         const clustered = clusteredIdsRef.current;

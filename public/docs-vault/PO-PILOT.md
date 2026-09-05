@@ -94,6 +94,8 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 
 | 29 | 2026-09-05 | Measure compact budget on unchanged transmitted JSON rather than display indentation | one-way | review | handoff | public-contract | truth=unchanged;transfer=affected;agent-write=unchanged;human-correction=unchanged | meaning | 2 | 2 | redirected | po-evidence+po-steward |
 
+| 30 | 2026-09-05 | Keep business meaning, AI questions and versioned evidence together in the existing workbench | one-way | review | judge | public-contract+positioning+surface-inventory | truth=affected;transfer=unchanged;agent-write=affected;human-correction=affected | meaning | 2 | 0 | verification-strengthened | po-evidence+po-steward |
+
 ## Outcome updates
 
 | Run | Date | Recovery proof | Owner clear | Boundary miss | Later result |
@@ -139,3 +141,5 @@ This row predates the typed register and remains unaltered as the v2 baseline.
 | 27 | 2026-09-05 | pass | yes | no | pending |
 | 28 | 2026-09-05 | pass | yes | no | pending |
 | 29 | 2026-09-05 | pass | yes | no | pending |
+
+| 30 | 2026-09-05 | pending | yes | no | pending |

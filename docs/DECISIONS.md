@@ -4697,3 +4697,12 @@ record stays in Git history before commit `e4fb49a89`.
 **Dissent**: one conversation can mix questions from different tabs, while six tab-local sessions would preserve cleaner transcripts; it lost because separate sessions fragment context, multiply process cost, and turn navigation into hidden agent state.
 **Falsifier**: reopen if tab switching mutates or sends a draft, starts another ACP session, loses the transcript, obscures the request origin, or if the Analysis content and dock cannot both remain usable at the installed 1040×720 minimum.
 **Owner**: jinan
+
+## 2026-09-05 — Meaning review keeps diagnostic analyses with their evidence and history
+
+**Why**: the owner asked to judge business meaning and AI findings on the map, run ACP reviews from Map and Architecture, and retrieve every analysis as Markdown history.
+**Prior**: extends 2026-09-04 “Analysis owns one ACP conversation; Map is an explicit continuation”. Supersedes only the archive location in 2026-08-31 “An analysis is a dated record beside the vault, not a concept inside it” for new app-owned records; the legacy CLI writer and Flow's ephemeral projection remain. The public meta-model is unchanged.
+**Decision**: use one persistent dock for Meaning, findings/history, and conversation. Explain declared direction, rationale and missing rationale; reveal selected connections. Explicit ACP analyses append exclusive UUID-addressed Markdown under `.ontology-atlas/analyses/`, preserving original answers, actual evidence/measurements, profile, scope, outcome and uncertainty. Latest and earlier versions remain selectable. Only matching qualified evidence can draw optional question marks. Diagnostic reviews never approve or edit ontology. Architecture shows measured scope and concerns, not an uncalibrated maintainability percentage.
+**Dissent**: the existing popovers would minimize change; a central report page would emphasize history. They lost because the first hides meaning and the second separates judgment from the map. The dock adds evidence-integrity and currentness obligations.
+**Falsifier**: reopen if a stale or unread result appears current, an answer is lost, a completion reaches another vault, an id overwrites bytes, history restarts ACP, or the map and selected fact become unusable at 1040×720. Human comprehension and complete business meaning require separate evidence.
+**Owner**: jinan
