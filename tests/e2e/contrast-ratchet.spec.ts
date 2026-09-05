@@ -114,10 +114,34 @@ const COLLECT = `(() => {
     if (r.width < 1 || r.height < 1) continue;
     if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
     const bg = resolveBackground(el);
-    const key = cs.color + '|' + cs.fontSize + '|' + cs.fontWeight + '|' + bg;
+    /*
+     * **The ink is what the eye receives, not what \`color\` says.** \`opacity\` composites
+     * the whole element against what is behind it, and it never touches the computed
+     * \`color\`, so an \`opacity-80\` on a word was invisible to this collector — the
+     * first-run card's ⌘O keycap read 4.70:1 here while measuring 3.63:1 on screen
+     * (2026-09-05). Opacity multiplies down the tree, so the effective alpha is the
+     * product from the element up to the root, and \`resolveBackground\` has already
+     * flattened what sits behind it.
+     */
+    let alpha = 1;
+    for (let node = el; node; node = node.parentElement) {
+      const o = Number(getComputedStyle(node).opacity);
+      if (Number.isFinite(o)) alpha *= o;
+      if (alpha <= 0) break;
+    }
+    const fg = alpha >= 0.999 ? cs.color : (() => {
+      const f = /rgba?\(([^)]+)\)/.exec(cs.color);
+      const b = /rgba?\(([^)]+)\)/.exec(bg);
+      if (!f || !b) return cs.color;
+      const fp = f[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+      const bp = b[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+      const mix = (i) => fp[i] * alpha + bp[i] * (1 - alpha);
+      return 'rgb(' + mix(0) + ', ' + mix(1) + ', ' + mix(2) + ')';
+    })();
+    const key = fg + '|' + cs.fontSize + '|' + cs.fontWeight + '|' + bg;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ fg: cs.color, bg, fontSizePx: parseFloat(cs.fontSize), fontWeight: cs.fontWeight, sample: own.slice(0, 40) });
+    out.push({ fg, bg, fontSizePx: parseFloat(cs.fontSize), fontWeight: cs.fontWeight, sample: own.slice(0, 40) });
   }
   return out;
 })()`;

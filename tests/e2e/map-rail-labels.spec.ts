@@ -45,6 +45,7 @@ async function labelState(page: Page) {
         const label = button.querySelector('.chrome-tile-label')!;
         return {
           id,
+          left: Math.round(button.getBoundingClientRect().left),
           width: Math.round(button.getBoundingClientRect().width),
           height: Math.round(button.getBoundingClientRect().height),
           labelOpacity: Number(getComputedStyle(label).opacity),
@@ -84,11 +85,32 @@ test.describe('map utility rail — the group names itself', () => {
     const state = await labelState(page);
     const collapsed = Number.parseFloat(state.tileSizeToken);
     for (const t of state.tiles) {
-      // Each tile grew to fit its own word; the rail is not one padded width.
       expect(t.width, `${t.id} expanded width`).toBeGreaterThan(collapsed);
       expect(t.height, `${t.id} height is the fixed axis`).toBe(collapsed);
       expect(t.labelText.length).toBeGreaterThan(0);
     }
+  });
+
+  /**
+   * **4. The expanded rail is one width.** Shrink-to-fit gave the four tiles 122 /
+   * 104 / 161 / 141px, and because the rail hangs off the right edge that is a
+   * **56px ragged left edge** encoding nothing but which word is longer (measured
+   * 2026-09-05, 1440×900; ko differed again at 118 / 96 / 122 / 150, so it was not
+   * even a stable raggedness). `--chrome-tile-expanded-min` derives the shared width
+   * from the label cap, so this holds in any locale.
+   *
+   * Only a rendered check can see it: the width comes from shrink-to-fit over
+   * translated text, so no class string and no token carries the number.
+   */
+  test('the expanded group shares one width and one left edge', async ({ page }) => {
+    await tile(page, 'topology-shortcuts-help-button').hover();
+    await expect
+      .poll(async () => (await labelState(page)).tiles.every((t) => t.labelOpacity === 1))
+      .toBe(true);
+
+    const { tiles } = await labelState(page);
+    expect(new Set(tiles.map((t) => t.width)).size, `expanded widths: ${tiles.map((t) => `${t.id}=${t.width}`).join(' ')}`).toBe(1);
+    expect(new Set(tiles.map((t) => t.left)).size, `left edges: ${tiles.map((t) => `${t.id}=${t.left}`).join(' ')}`).toBe(1);
   });
 
   test('keyboard focus reveals the same group, and the name is the visible word', async ({

@@ -760,7 +760,13 @@ describe("TopologyV2DetailPanel — viewport clamp (P3-③)", () => {
   it("always carries a viewport-bounded max-height and internal scroll so the footer link stays reachable", () => {
     renderPanel(vi.fn());
     const panel = screen.getByTestId("topology-v2-detail-panel");
-    expect(panel.className).toContain("max-h-[var(--topology-v2-panel-max-height)]");
+    // `--topology-v2-inspector-max-height`, not the shared panel ceiling. It aliases
+    // that ceiling at `lg` and above and diverges below it, where this surface is a
+    // bottom sheet capped so the map keeps its majority. The meaning editor shares
+    // this anchor and must keep the unclamped ceiling — it is a form, and 405px of
+    // it put its own textarea behind its own sticky footer at 600x900 (2026-09-05,
+    // `contextual-meaning-editor.spec.ts`).
+    expect(panel.className).toContain("max-h-[var(--topology-v2-inspector-max-height)]");
     expect(panel.className).toContain("overflow-y-auto");
     // The full-detail footer link is inside the same clamped/scrollable
     // root, not a sibling escaping the clamp.

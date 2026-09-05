@@ -472,7 +472,12 @@ export function TopologyIndexPanel({
             its direction matches the result of collapsing, `‹`. */}
         <span
           aria-hidden="true"
-          className="ml-auto inline-flex size-[26px] shrink-0 items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors group-hover:text-[color:var(--topology-v2-panel-text-secondary)]"
+          // `size-5` (20), not the old 26. The row is `shape: "row"`, whose floor is
+          // `min-h-9` (36), but a 26px glyph box plus `py-2` measured **42** — the
+          // content overshot the floor and put the whole control two steps off the
+          // ladder (2026-09-05). At 20 the row lands exactly on its own 36, and the
+          // coarse-pointer floor still lifts it to 44. The glyph itself is unchanged.
+          className="ml-auto inline-flex size-5 shrink-0 items-center justify-center text-[color:var(--topology-v2-panel-text-quaternary)] transition-colors group-hover:text-[color:var(--topology-v2-panel-text-secondary)]"
         >
           <ChevronLeft size={ICON_SIZE.sm} aria-hidden="true" />
         </span>

@@ -249,3 +249,66 @@ for (const width of [375, 768, 1023, 1024] as const) {
     });
   }
 }
+
+/**
+ * **The two right-hand chrome lanes at 390 with INDEX folded away.**
+ *
+ * Reported by the 2026-09-05 audit as a live defect — the search chip's centre said
+ * to be unreachable. It **did not reproduce**: measured at 390×844 with a coarse
+ * pointer, the utility lane occupies y 16–60 and the search lane y 76–120, and
+ * `elementFromPoint` at the chip's centre and at all four of its corners returns the
+ * chip itself. The rects in the report (88×44 at 286,76) match this measurement
+ * exactly, so what was wrong was the verdict, not the geometry.
+ *
+ * The case is kept because the shape that produced the report is real: the two lanes
+ * are **separately absolutely positioned** against the same right edge with 16px
+ * between them, and the upper one grows downward with state (the agent activity chip
+ * mounts under its row). Nothing today holds that gap open, and the sweep above never
+ * visits this state because INDEX is expanded by default at this width — which is
+ * also why it could not have caught the defect had it been real.
+ *
+ * Reachability, not intersection: two lanes may overlap harmlessly, and a chip may be
+ * clear of every rect and still be unpressable. Only hit-testing answers the
+ * question that was asked.
+ */
+test("390px /topology — INDEX 를 접어도 검색 칩이 자기 중심을 돌려준다", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  // The starter card takes the whole INDEX panel until it is answered, and the fold
+  // control lives underneath it — without this the click times out on the card, not
+  // on the defect this case is about.
+  await page.addInitScript(() => {
+    window.sessionStorage.setItem("demo:first-run-starter-dismissed:v1", "1");
+  });
+  await page.goto("/ko/topology/?guides=off&e2e=1");
+  await expect(page.getByTestId("topology-index-fold")).toBeVisible({ timeout: 30_000 });
+  await page.getByTestId("topology-index-fold").click();
+  await page.waitForTimeout(900);
+
+  const report = await page.evaluate(() => {
+    const search = document.querySelector<HTMLElement>('[data-testid="topology-concept-search"]');
+    const utility = document.querySelector<HTMLElement>('[data-testid="topology-utility-action-lane"]');
+    const searchLane = document.querySelector<HTMLElement>('[data-testid="topology-search-action-lane"]');
+    if (!search || !utility || !searchLane) return null;
+    const box = search.getBoundingClientRect();
+    const at = (dx: number, dy: number) => {
+      const hit = document.elementFromPoint(box.x + box.width * dx, box.y + box.height * dy);
+      return hit && (search.contains(hit) || hit.contains(search))
+        ? "self"
+        : (hit?.closest("[data-testid]")?.getAttribute("data-testid") ?? hit?.tagName ?? "null");
+    };
+    const a = utility.getBoundingClientRect();
+    const b = searchLane.getBoundingClientRect();
+    return {
+      chip: [Math.round(box.width), Math.round(box.height)],
+      hits: [at(0.5, 0.5), at(0.1, 0.1), at(0.9, 0.1), at(0.1, 0.9), at(0.9, 0.9)],
+      laneGap: Math.round(b.top - a.bottom),
+    };
+  });
+
+  expect(report, "두 레인이나 검색 칩을 못 찾았다 — 이 시험이 아무것도 지키지 않는다").not.toBeNull();
+  expect(report!.chip[1], "검색 칩 높이").toBeGreaterThanOrEqual(36);
+  expect(report!.hits, "검색 칩의 중심과 네 모서리").toEqual(["self", "self", "self", "self", "self"]);
+  // Measured 16px. The lanes are independent absolute boxes, so this number is the
+  // only thing keeping the upper one off the lower one as its contents change.
+  expect(report!.laneGap, "두 레인 사이 간격").toBeGreaterThan(0);
+});
