@@ -79,7 +79,7 @@ test("the measured Codex compatibility pin has a live upstream subject", () => {
       {
         id: "codex-acp",
         distribution: {
-          npx: { package: "@agentclientprotocol/codex-acp@1.9.0", args: [] },
+          npx: { package: "@agentclientprotocol/codex-acp@1.10.0", args: [] },
         },
       },
     ]),
@@ -101,7 +101,7 @@ test("a new upstream Codex adapter turns the compatibility gate red with both id
       {
         id: "codex-acp",
         pinned: "@agentclientprotocol/codex-acp@1.6.2",
-        reviewedUpstream: "@agentclientprotocol/codex-acp@1.9.0",
+        reviewedUpstream: "@agentclientprotocol/codex-acp@1.10.0",
         actualUpstream: "@agentclientprotocol/codex-acp@2.0.0",
       },
     ],

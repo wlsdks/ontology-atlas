@@ -104,7 +104,11 @@ const RUNTIME_LAUNCH_PINS = {
     // 1.9.0 inspected 2026-09-05: its `read-only` mode still maps to a `workspaceWrite` sandbox
     // (shipped `AgentMode.ReadOnly`, and the `turn_context` record of a live isolated session),
     // exactly the 1.8.0 boundary failure. Pin retained; decision ledger 2026-09-05.
-    reviewedUpstreamPackage: '@agentclientprotocol/codex-acp@1.9.0',
+    // 1.10.0 inspected statically on 2026-09-05: `AgentMode.ts` is byte-identical to the reviewed
+    // 1.9.0, so `read-only` still maps to `sandboxMode: "workspace-write"`; the only functional
+    // change is a background-terminal ("async tasks") feature, and permission / mcpServers
+    // handling did not move. Pin retained; decision ledger 2026-09-05.
+    reviewedUpstreamPackage: '@agentclientprotocol/codex-acp@1.10.0',
   },
 };
 
