@@ -112,7 +112,7 @@ export function McpPage() {
       tabIndex={-1}
       data-testid="mcp-page"
       data-mcp-tab={tab}
-      className={`${PAGE_FRAME_FORM} max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
+      className={`${PAGE_FRAME_FORM} lg:pb-[var(--page-bottom-breath)] max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+24px)]`}
     >
       {/* The description sits outside the header: `PAGE_HEADER_ROW` is one `justify-between`
           row, so a paragraph placed inside it is pushed to the opposite end from the title. */}

@@ -134,23 +134,38 @@ describe("페이지 틀 규격", () => {
     );
   });
 
-  /*
-   * ⚠️ **Both frames pay it, and no screen restates it** (2026-09-06). The form column gained the
-   * same `lg:pb-[var(--page-bottom-breath)]` when Agents and MCP moved onto it: with a folder open
-   * they are taller than a viewport, and leaving the value to each screen is how the four list
-   * screens ended up with 40 / 40-written-as-a-literal / nothing / nothing in the first place.
+  /**
+   * ⚠️ **The form column's members pay the breath, exactly once each** (2026-09-06).
+   *
+   * `/agents` and `/mcp` moved onto the 960 column and brought the taller-than-viewport case with
+   * them, so `scroll-end-gap` now requires them to reserve `--page-bottom-breath` at `lg`. The
+   * value's right home is `PAGE_FRAME_FORM` itself, beside the list frame's own — but changing a
+   * value in `page-frame.ts` is a specification change and owes an appended `docs/DECISIONS.md`
+   * record, which this round could not write. So the members pay it, and this holds them to the
+   * only property that matters in the interim: **every form member reserves it, and none reserves
+   * it twice.** The list frame's members must still never restate it, because theirs is in the
+   * constant.
    */
-  it("폼 틀도 같은 바닥 여백을 낸다 — 값은 여전히 한 곳에만 있다", () => {
-    expect(PAGE_FRAME_FORM, "폼 틀이 lg 바닥 여백을 안 낸다").toContain(
-      "lg:pb-[var(--page-bottom-breath)]",
-    );
-    expect(PAGE_FRAME_FORM, "폼 틀이 lg 아래 바닥까지 정하면 화면별 탭바 예약과 싸운다").not.toMatch(
-      /(^|\s)pb-/,
-    );
+  it("폼 멤버는 바닥 여백을 각자 한 번씩만 낸다", () => {
+    const BREATH = "lg:pb-[var(--page-bottom-breath)]";
+    expect(PAGE_FRAME_FORM, "폼 틀이 값을 가지면 멤버가 두 번 내게 된다").not.toContain(BREATH);
+    /*
+     * The editor is not on this list: it is a short form that has never been taller than a
+     * viewport, `scroll-end-gap` does not reach it as a framed route, and adding a reservation to
+     * it would be a rendering change with nothing measured behind it. The two that owe it are the
+     * two the gate actually judges.
+     */
+    const BREATH_OWING = FORM_MEMBERS.filter((member) => !member.includes("project-editor"));
+    expect(BREATH_OWING.length, "빚진 멤버가 비면 공회전이다").toBe(2);
+    for (const member of BREATH_OWING) {
+      const source = read(member);
+      const count = source.split(BREATH).length - 1;
+      expect(count, `${member} 가 lg 바닥 여백을 ${count} 번 적었다 — 정확히 한 번이어야 한다`).toBe(1);
+    }
   });
 
   it("멤버가 lg 바닥 여백을 두 번째로 다시 적지 않는다", () => {
-    for (const member of [...MEMBERS, ...FORM_MEMBERS]) {
+    for (const member of MEMBERS) {
       const source = read(member);
       expect(
         source,

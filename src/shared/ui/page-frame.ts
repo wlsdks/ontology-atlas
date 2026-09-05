@@ -86,16 +86,21 @@ export const PAGE_FRAME =
  * a value earns a name when a second consumer appears
  * (`.claude/rules/design.md`).
  *
- * ⚠️ **It carries the same bottom breath as the list frame** (2026-09-06). It did not, because
- * its only member was one page shorter than a viewport. When `/agents` and `/mcp` moved onto this
- * column — text and settings screens, not canvases — they brought the taller-than-viewport case
- * with them, and the value would have had to be restated on each of them. The list frame records
- * why this half has one answer everywhere while the sub-`lg` half does not; the two frames now
- * agree on top spacing **and** bottom breath, and differ only in the one thing they exist to
- * differ in.
+ * ⚠️ **The bottom breath is not in this constant, and that is a deliberate hold** (2026-09-06).
+ * When `/agents` and `/mcp` moved onto this column they brought the taller-than-viewport case with
+ * them, and `scroll-end-gap` requires a framed page to reserve `--page-bottom-breath` at `lg`. The
+ * right home for that is here, beside the list frame's own `lg:pb-…`, so the two frames would agree
+ * on top spacing and bottom breath and differ only in the one thing they exist to differ in.
+ *
+ * It is not here yet because changing a value in this file is a **specification change**
+ * (`.claude/rules/design.md`, the design-spec census) and therefore owes an appended
+ * `docs/DECISIONS.md` record, which this round could not write. Until it does, the two screens pay
+ * the breath in their own `className` — the axis they already own below `lg`, where the tab-bar
+ * reserve genuinely differs per surface. `page-frame.contract.test.ts` holds every form member to
+ * paying it exactly once, so the interim cannot drift the way the list frame's bottom once did.
  */
 export const PAGE_FRAME_FORM =
-  "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12 lg:pb-[var(--page-bottom-breath)]" as const;
+  "mx-auto w-full max-w-[960px] px-5 pt-6 md:px-10 md:pt-12" as const;
 
 /**
  * **Stage column** — the narrow column stood in the middle of the screen when

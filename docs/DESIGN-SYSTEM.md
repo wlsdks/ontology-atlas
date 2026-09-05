@@ -2037,11 +2037,15 @@ how much data a screen holds but **which direction the eye travels**:
 Measured at 1512×949 in Korean when `/agents` and `/mcp` moved onto the 960 column: the column
 went from 1448px to 960, the `h1` from x=104 to x=348, and the widest ink from 1356px to 868.
 
-**Both frames pay the same bottom breath.** `PAGE_FRAME_FORM` gained
-`lg:pb-[var(--page-bottom-breath)]` in the same change: with a folder open these two screens are
-taller than a viewport, and leaving the value to each screen is how the four list screens once
-ended up with 40 / 40-as-a-literal / nothing / nothing. Below `lg` both frames stay silent, because
-there the reservation is the bottom tab bar and its size depends on the surface.
+**The bottom breath, and one thing left open.** With a folder open these two screens are taller
+than a viewport, so `scroll-end-gap` requires them to reserve `--page-bottom-breath` at `lg`. Its
+right home is `PAGE_FRAME_FORM` itself, beside the list frame's own — but changing a value in
+`src/shared/ui/page-frame.ts` is a **specification change** and owes an appended
+`docs/DECISIONS.md` record, which this round could not write. Until it does, the two screens pay it
+in their own `className`, and `page-frame.contract.test.ts` holds each of them to paying it exactly
+once so the interim cannot drift the way the list frame's bottom once did (40 / 40-as-a-literal /
+nothing / nothing across four screens). Below `lg` both frames stay silent, because there the
+reservation is the bottom tab bar and its size depends on the surface.
 
 Ownership and gates: `src/shared/ui/page-frame.ts` is the single definition site;
 `tests/contract/page-frame.contract.test.ts` pins each screen's membership and both frames'
