@@ -19,6 +19,8 @@ mod acp_doctor;
 mod managed_node;
 /// "Agent Connection" — interprets bundled MCP server paths · plans/writes config files · self-validates.
 mod agent_setup;
+/// Immutable, vault-local ACP analysis and diagnostic-review Markdown.
+mod analysis_archive;
 /// Read-only discovery of MCP servers the person already registered elsewhere — names and key
 /// names, never secret values.
 mod connectors;
@@ -3464,6 +3466,8 @@ pub fn run() {
             read_vault_text_file,
             read_vault_binary_file,
             write_vault_text_file,
+            analysis_archive::append_analysis_record,
+            analysis_archive::read_analysis_record_text,
             remove_vault_entry,
             ensure_vault_directory,
             vault_path_exists,

@@ -412,6 +412,15 @@ describe('deriveOntologyFromVault', () => {
 });
 /** `relation_notes` is promoted to the matching edge's label (the "why"). */
 describe("relation_notes → edge label", () => {
+  it.each([false, true])('keeps the declared reason when containment is stated at both ends (parent first: %s)', (parentFirst) => {
+    const child = makeDoc({ slug: 'capabilities/review', frontmatter: { kind: 'capability', title: 'Review', domain: 'domains/agents' } });
+    const parent = makeDoc({ slug: 'domains/agents', frontmatter: { kind: 'domain', title: 'Agents', capabilities: ['capabilities/review'], relation_notes: { 'capabilities/review': 'Agents owns review because it preserves the evidence used for judgment.' } } });
+    const result = deriveOntologyFromVault(makeManifest(parentFirst ? [parent, child] : [child, parent]));
+    const edges = result.edges.filter((edge) => edge.from === 'domain:agents' && edge.to === 'capability:review');
+    expect(edges).toHaveLength(1);
+    expect(edges[0].label).toBe('Agents owns review because it preserves the evidence used for judgment.');
+    expect(edges[0].sourceSlug).toBe('domains/agents');
+  });
   it("dependencies ref 의 노트가 그 엣지에 실린다", () => {
     const manifest = makeManifest([
       makeDoc({

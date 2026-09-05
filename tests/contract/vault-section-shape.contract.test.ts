@@ -1,5 +1,6 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 import { describe, expect, it } from "vitest";
 
@@ -71,6 +72,8 @@ type Section = { readonly file: string; readonly heading: string; readonly bytes
 function markdownFilesUnder(dir: string): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    // App-owned raw analysis history is metadata, not an authored ontology node.
+    if (entry.isDirectory() && entry.name === '.ontology-atlas') continue;
     const full = join(dir, entry.name);
     if (entry.isDirectory()) found.push(...markdownFilesUnder(full));
     else if (entry.name.endsWith(".md")) found.push(full);
@@ -99,6 +102,19 @@ function sectionsOf(file: string): Section[] {
 const ALL_SECTIONS = markdownFilesUnder(VAULT_ROOT).flatMap(sectionsOf);
 
 describe("dogfood vault body sections hold one idea each", () => {
+  it('excludes raw analysis metadata while retaining an oversized authored section', () => {
+    const root = mkdtempSync(join(tmpdir(), 'atlas-section-scope-'));
+    try {
+      mkdirSync(join(root, '.ontology-atlas', 'analyses'), { recursive: true });
+      mkdirSync(join(root, 'capabilities'));
+      const largeBody = `## One idea\n${'x'.repeat(SECTION_BYTE_CAP + 1)}\n`;
+      const node = join(root, 'capabilities', 'review.md');
+      writeFileSync(node, largeBody);
+      writeFileSync(join(root, '.ontology-atlas', 'analyses', 'run.md'), largeBody);
+      expect(markdownFilesUnder(root)).toEqual([node]);
+      expect(markdownFilesUnder(root).flatMap(sectionsOf).filter((section) => section.bytes > SECTION_BYTE_CAP)).toHaveLength(1);
+    } finally { rmSync(root, { recursive: true, force: true }); }
+  });
   it("reads a vault that actually has sections", () => {
     expect(ALL_SECTIONS.length, "the vault walk found no `##` sections").toBeGreaterThan(100);
   });

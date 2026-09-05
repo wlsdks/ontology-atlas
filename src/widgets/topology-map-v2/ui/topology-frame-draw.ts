@@ -62,7 +62,9 @@ import {
   measureLabelWidth,
   measureLabelVerticalMetrics,
   scaledLabelFontSize,
+  scaledLabelFont,
 } from "../render/labels";
+import { placeRelationCaptions, relationCaptionText, type PlacedRelationCaption, type RelationCaption } from '../render/relation-captions';
 import {
   CLUSTER_CHIP_LABEL_PRIORITY,
   ellipsizeToWidth,
@@ -317,6 +319,8 @@ let drawnNodeCount = 0;
  * is what was painted.
  */
 let drawnLabelBoxes: { nodeId: string; text: string; minX: number; minY: number; maxX: number; maxY: number }[] = [];
+let drawnRelationCaptions: PlacedRelationCaption[] = [];
+export function lastDrawnRelationCaptions(): readonly PlacedRelationCaption[] { return drawnRelationCaptions; }
 
 export function lastDrawnLabelBoxes(): readonly {
   nodeId: string;
@@ -517,6 +521,8 @@ export interface FrameDrawParams {
   hoveredEdge: { sourceId: string; targetId: string; relationType: string } | null;
   /** Edge selection = pair focus — only the two endpoints stay lit, the rest dims, and the selected edge goes pale indigo. */
   selectedEdge: EdgePairFocus | null;
+  relationCaptions?: ReadonlyMap<string, string> | null;
+  reviewQuestionIds?: ReadonlySet<string> | null;
   previewEdge: {
     sourceId: string;
     targetId: string;
@@ -824,6 +830,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     emphasizedNeighborId,
     hoveredEdge,
     selectedEdge,
+    relationCaptions,
+    reviewQuestionIds,
     previewEdge,
     emphasisById,
     egoRevealById,
@@ -1362,6 +1370,8 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
   // edge draw loop read the same value; predicates and values are unchanged, so
   // the results are too.
   edgeAlphaReused.length = 0;
+  const captionCandidates: RelationCaption[] = [];
+  drawnRelationCaptions = [];
   for (let i = 0; i < world.edges.length; i += 1) {
     const edge = world.edges[i];
     edgeAlphaReused.push(
@@ -1538,12 +1548,14 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       const isSelectedEdge =
         selectedEdge !== null &&
         edge.sourceId === selectedEdge.sourceId &&
-        edge.targetId === selectedEdge.targetId;
+        edge.targetId === selectedEdge.targetId &&
+        (!selectedEdge.relationType || edge.relationType === selectedEdge.relationType);
       const isPathEdge = isPathLensEdge(mapLensKind, edge.id, pathEdgeIds);
       const hovered =
         hoveredEdge !== null &&
         edge.sourceId === hoveredEdge.sourceId &&
-        edge.targetId === hoveredEdge.targetId;
+        edge.targetId === hoveredEdge.targetId &&
+        edge.relationType === hoveredEdge.relationType;
       const emphasized =
         !trailLensActive &&
         (hovered ||
@@ -1694,6 +1706,12 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         },
         traceTokensFrame,
       );
+      const caption = edge.id ? relationCaptions?.get(edge.id) : null;
+      const directionalCaption = isDirectionalRelation(edge.relationType);
+      const captionInFocus = selectedEdge ? isSelectedEdge : focusedNodeId ? touches : true;
+      if (caption && captionInFocus && ctx.globalAlpha >= 0.5 && !passthrough && (directionalCaption || isSelectedEdge || touches || hovered)) {
+        captionCandidates.push({ edgeId: edge.id!, text: relationCaptionText(caption, a, b, directionalCaption), x: (a.x + 2 * control.x + b.x) / 4, y: (a.y + 2 * control.y + b.y) / 4, priority: isSelectedEdge ? 5 : touches ? 4 : hovered ? 3 : edge.kind === 'contains' ? 2 : 1 });
+      }
       /**
        * Footprints beside the line — only when this relation was **walked
        * consecutively**. Stamped along the normal, offset from the line rather
@@ -2693,7 +2711,7 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     // bbox left the offset unscaled while the paint scaled it, so the box and the
     // glyphs drifted apart.
     const anchorY = resolveLabelBaselineY(node.kind, screen.y, screenRadius, labelScale);
-    const text = ellipsizeToWidth(node.label, tokens.labelMaxWidth * labelScale, (candidate) =>
+    const text = ellipsizeToWidth(reviewQuestionIds?.has(node.id) ? `? ${node.label}` : node.label, tokens.labelMaxWidth * labelScale, (candidate) =>
       measureLabelWidth(ctx, node.kind, candidate, labelScale),
     );
     const width = measureLabelWidth(ctx, node.kind, text, labelScale);
@@ -2944,5 +2962,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         amberHub: tokens.amberHub,
       },
     );
+  }
+  if (captionCandidates.length) {
+    drawnRelationCaptions = placeRelationCaptions(captionCandidates, [...nodeDiscReservations.map((item) => item.bbox), ...chipReservations.map((item) => item.bbox), ...drawnLabelBoxes], safeRect, (text) => measureLabelWidth(ctx, 'capability', text, 1), scaledLabelFontSize('capability', 1) + 8);
+    ctx.save();
+    ctx.font = scaledLabelFont('capability', 1);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.globalAlpha = 1;
+    for (const caption of drawnRelationCaptions) {
+      ctx.fillStyle = tokens.canvasBgNear;
+      ctx.fillRect(caption.minX, caption.minY, caption.maxX - caption.minX, caption.maxY - caption.minY);
+      ctx.fillStyle = tokens.labelCapability;
+      ctx.fillText(caption.text, caption.x, caption.y);
+    }
+    ctx.restore();
   }
 }

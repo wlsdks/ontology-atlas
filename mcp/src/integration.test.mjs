@@ -35,6 +35,7 @@ import {
   WRITE_RELATION_TYPE_VALUES,
 } from "./ontology-engine.mjs";
 import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
+import { analysisRecordFileName, serializeAnalysisRecord } from '../../src/entities/analysis-record/model/analysis-record.mts';
 import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";
 import { defaultBody } from "./schema.mjs";
@@ -1938,6 +1939,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "maintenance_plan",
         "agent_brief",
         "meaning_repair_review",
+        "analysis_history",
+        "analysis_record",
         "workspace_brief",
         "health",
       ],
@@ -4633,6 +4636,35 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+await test('query_ontology analysis archive — restores raw records without graph meaning and rejects unsafe ids', async () => {
+  const root = makeVault();
+  const record = {
+    schema: 'atlas-analysis/v1', recordType: 'run', id: '95f4ba81-41f7-483b-a617-2a4be815be32', createdAt: '2026-09-05T08:00:00.000Z', mode: 'meaning',
+    scope: { projectSlug: null, projectUid: null, targetSlugs: [], profileSlug: null },
+    request: { id: 'user-1', text: 'Review the boundary.', parentRunId: null },
+    origin: { surface: 'map', runtimeId: 'test', sessionId: null, userEventId: 'user-1', answerEventId: 'answer-1', startedAt: '2026-09-05T07:59:00.000Z', stopReason: 'end_turn', outcome: 'completed' },
+    basis: { graphHash: null, sourceFingerprint: null, profileHash: null, documents: [] }, evidence: [], observations: [], profileSnapshot: null, toolReads: [], sourceAccess: 'unproven', findings: [], qualification: { status: 'unverified', reasons: ['no_evidence'] }, answer: 'An answer without a structured finding.\nUnknown: business policy.\n',
+  };
+  try {
+    const directory = join(root, '.ontology-atlas/analyses');
+    mkdirSync(directory, { recursive: true });
+    writeFileSync(join(directory, analysisRecordFileName(record)), serializeAnalysisRecord(record));
+    const { responses } = await rpc(root, [...INIT_REQUESTS,
+      callTool(10, 'query_ontology', { operation: 'analysis_history', limit: 1 }),
+      callTool(11, 'query_ontology', { operation: 'analysis_record', recordId: record.id }),
+      callTool(12, 'query_ontology', { operation: 'analysis_record', recordId: '../secret' }),
+      callTool(13, 'query_ontology', { operation: 'analysis_history', limit: 101 }),
+      callTool(14, 'compile_ontology'),
+    ]);
+    assert.equal(getCallParsed(responses, 10).records[0].id, record.id);
+    assert.deepEqual(getCallParsed(responses, 11).record, record);
+    assert.equal(isErrorResponse(responses, 12), true);
+    assert.equal(isErrorResponse(responses, 13), true);
+    assert.equal(getCallParsed(responses, 14).nodeCount, 0);
+    assert.equal(readFileSync(join(directory, analysisRecordFileName(record)), 'utf8'), serializeAnalysisRecord(record));
+  } finally { rmSync(root, { recursive: true, force: true }); }
 });
 
 await test("query_ontology health/workspace_brief/agent_brief — summary history is batched and reused", async () => {

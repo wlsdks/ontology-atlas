@@ -11,6 +11,8 @@ export interface ArchitectureAgentRuntime {
 export interface ArchitectureAgentRequest {
   kind: 'draft' | 'change' | 'verify' | 'improve';
   prompt: string;
+  profileSlug?: string | null;
+  roleId?: string | null;
 }
 
 /**

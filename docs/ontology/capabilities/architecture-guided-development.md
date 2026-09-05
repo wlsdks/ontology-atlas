@@ -9,6 +9,8 @@ domain: domains/codebase-architecture
 elements: [elements/architecture-profile-contract, elements/architecture-workbench]
 path: mcp/src/architecture-profile.mjs
 created_by: "agent:unknown"
+relates: [capabilities/ai-analysis-review]
+relation_notes: { capabilities/ai-analysis-review: "Architecture analysis uses the shared versioned review loop to retain its actual measurement, profile snapshot and unresolved questions." }
 ---
 
 ## Definition
@@ -32,3 +34,9 @@ Before editing, call `inspect_architecture`, report selected scope, roles, decla
 
 ## Confidence
 high (0.96): parser parity, focused component tests, zero-profile and reviewed-profile installed-app journeys, a real guarded inspection, and recorded import-replay motion provide current evidence
+
+## Versioned analysis review
+
+The workbench shares the versioned analysis loop in `capabilities/ai-analysis-review`. Each analysis retains the actual source measurement and exact profile snapshot with its raw answer. A matching stored observation can populate the current profile, while changed or unavailable profile evidence remains unknown. Earlier answers, measurements and profiles remain inspectable, and a follow-up names its parent run. These diagnostics do not approve architectural intent or imply a calibrated maintainability percentage.
+
+Implementation evidence: `docs/ANALYSIS-RECORDS.md`, `src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx`, and `src/features/acp-session/model/analysis-capture.ts`.

@@ -72,3 +72,9 @@ Eleven things this capability actually does:
 
 ## Confidence
 medium-high (0.8): Protocol/process layer, configuration section, home panel entry point, and mode state transmission are backed by code and component tests. Whether labels/descriptions don't get cut off when the installed app's actual adapter presents a new unverified mode has not yet been measured.
+
+## Versioned analysis review
+
+Map, Analysis and Architecture can attach an app-owned turn observer to this runtime. It captures request/session/folder identity and outcomes, then delegates diagnostic persistence and review to `capabilities/ai-analysis-review`. Switching a context section keeps the conversation mounted; canonical ontology/code permissions remain independent of saving the diagnostic record.
+
+Implementation evidence: `docs/ANALYSIS-RECORDS.md`, `src/widgets/analysis-workbench/ui/AnalysisWorkbench.tsx`, and `src/features/acp-session/model/analysis-capture.ts`.

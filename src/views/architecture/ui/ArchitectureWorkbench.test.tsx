@@ -231,6 +231,8 @@ describe('ArchitectureWorkbench', () => {
     expect(onAgentRequest).toHaveBeenCalledWith({
       kind: 'verify',
       prompt: expect.stringContaining('Call inspect_architecture'),
+      profileSlug: 'atlas-web',
+      roleId: null,
     });
     expect(onAgentRequest.mock.calls[0]?.[0].prompt).toContain('"kind":"verify"');
     expect(screen.getByTestId('architecture-agent-action')).toHaveClass('atlas-touch-floor');

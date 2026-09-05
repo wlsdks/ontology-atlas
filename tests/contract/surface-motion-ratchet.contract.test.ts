@@ -189,7 +189,9 @@ const BASELINE_HARD_CUTS = 0;
  * `AcpChatPanel.test.tsx` and the denominator note in a11y-open-surfaces.
  */
 // Analysis owns one additional dock; native walkthrough and dock component tests cover its opening path.
-const BASELINE_APPEARING_SURFACES = 35;
+// 35 → 36: a mismatched queued ACP request now explains why it is held. Its exact
+// request/turn-start path is exercised in AcpChatPanel.test.tsx; native proof is separate.
+const BASELINE_APPEARING_SURFACES = 36;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';
