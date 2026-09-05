@@ -171,7 +171,7 @@ const MIN_RULES_PASSED = 15;
  * 35 → 36 (2026-09-05): Docs gained a same-route ACP dock, the surface Compile opens.
  * Like the Analysis and Architecture docks it needs a verified desktop ACP runtime, an
  * absolute vault path and the bundled MCP server, so this static browser sweep cannot
- * reach it; `DocsAgentDock` reuses `AcpChatPanel` verbatim, whose own tests carry the
+ * reach it; `LibraryAgentDock` reuses `AcpChatPanel` verbatim, whose own tests carry the
  * named region, keyboard path and prefill-without-send contract, and the installed-app
  * walkthrough carries the rendered proof.
  *

@@ -173,6 +173,12 @@ async function installDesktopBridge(page: Page) {
  * With the runtime signal injected, Docs opens on the installed app's own first screen —
  * "Open a folder to start working" — rather than the read-only sample. Its middle door
  * calls the native picker, which the stub answers with an absolute path.
+ *
+ * ⚠️ **The folder is still opened from Docs, and that is deliberate.** The Library moved
+ * to its own destination on 2026-09-06, but the app's first-run card lives on the docs
+ * intent, and this spec's subject is the dock rather than the picker. Walking in the way a
+ * person does — open the folder, then cross the rail — also proves the rail tile reaches
+ * the new destination with the session's folder still attached.
  */
 async function openFolder(page: Page) {
   await page.goto("/en/docs/");
@@ -181,13 +187,13 @@ async function openFolder(page: Page) {
   await door.first().waitFor({ timeout: 25_000 });
   await door.first().click();
   // Opening a folder from the first-run card lands on the map, which is where a person
-  // who just chose one wants to be. Docs is one press away, and it is where the library
-  // lives, so the spec goes back rather than pretending the card stays put.
+  // who just chose one wants to be. The Library is one press away, so the spec crosses
+  // rather than pretending the card stays put.
   await page.getByRole("heading", { name: "Map", level: 1 }).waitFor({ timeout: 30_000 });
   // Walk back the way a person would, rather than reloading: the rail link keeps the
   // open folder in the session instead of asking the restore to find it again.
-  await page.getByTestId("app-nav-rail").getByRole("link", { name: "Docs" }).click();
-  await page.getByTestId("docs-library-sources").waitFor({ timeout: 30_000 });
+  await page.getByTestId("app-nav-rail").getByRole("link", { name: "Library" }).click();
+  await page.getByTestId("library-sources").waitFor({ timeout: 30_000 });
 }
 
 test.describe("Compile opens the agent dock", () => {
@@ -200,30 +206,34 @@ test.describe("Compile opens the agent dock", () => {
     page,
   }) => {
     await openFolder(page);
-    await expect(page.getByTestId("docs-library-compile")).toBeVisible({ timeout: 25_000 });
-    await expect(page.getByTestId("docs-library-compile")).toBeEnabled();
+    await expect(page.getByTestId("library-compile")).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId("library-compile")).toBeEnabled();
     // Four sources, none written up, so the chip has work to do and says so.
-    await expect(page.getByTestId("docs-library-needs-compile")).toContainText("4");
+    await expect(page.getByTestId("library-needs-compile")).toContainText("4");
     // And what leaves this computer is stated beside the button that starts it.
-    await expect(page.getByTestId("docs-library-transfer")).toContainText("llm-audit.jsonl");
+    await expect(page.getByTestId("library-transfer")).toContainText("llm-audit.jsonl");
   });
 
   test("pressing it opens a dock with a real rect, inside the row that holds the reader", async ({
     page,
   }) => {
     await openFolder(page);
-    await page.getByTestId("docs-library-compile").click();
+    await page.getByTestId("library-compile").click();
 
-    const dock = page.getByTestId("docs-agent-dock");
+    const dock = page.getByTestId("library-agent-dock");
     await expect(dock).toBeVisible({ timeout: 25_000 });
 
     // The regression, measured rather than asserted by visibility: the frame must have
     // height, and it must come from the row that holds `<main>` rather than from the
-    // page column below it.
+    // page column below it. The row is the Library's now; the geometry it has to satisfy
+    // is unchanged, because the defect was never about which screen it was on.
     const geometry = await page.evaluate(() => {
-      const surface = document.querySelector('[data-testid="docs-agent-dock"]');
-      const frame = document.querySelector('[data-testid="docs-agent-dock-frame"]');
-      const main = document.querySelector("main#main");
+      const surface = document.querySelector('[data-testid="library-agent-dock"]');
+      const frame = document.querySelector('[data-testid="library-agent-dock-frame"]');
+      // The reader, not `<main>`. On this destination `<main>` **is** the row — below
+      // `lg` the reader stands aside and a landmark that can vanish is a landmark with
+      // nothing in it — so the sibling the dock has to share a parent with is the reader.
+      const main = document.querySelector('[data-testid="library-reader"]');
       if (!surface || !frame || !main) return null;
       const rect = (el: Element) => {
         const box = el.getBoundingClientRect();
@@ -242,15 +252,18 @@ test.describe("Compile opens the agent dock", () => {
     expect(geometry!.surface.height, "the surface has no height to paint into").toBeGreaterThan(200);
     expect(geometry!.surface.width).toBeGreaterThan(200);
     // Same row as the reader: the frame's top sits within the reader's band, not below it.
-    expect(geometry!.sharesParent, "the dock must be a sibling of <main>, not of the page").toBe(true);
+    expect(
+      geometry!.sharesParent,
+      "the dock must be a sibling of the reader inside the row, not of the page column",
+    ).toBe(true);
     expect(Math.abs(geometry!.frame.top - geometry!.main.top)).toBeLessThan(24);
   });
 
   test("the dock carries the compile request and names the runtime it will use", async ({ page }) => {
     await openFolder(page);
-    await page.getByTestId("docs-library-compile").click();
+    await page.getByTestId("library-compile").click();
 
-    const dock = page.getByTestId("docs-agent-dock");
+    const dock = page.getByTestId("library-agent-dock");
     await expect(dock).toBeVisible({ timeout: 25_000 });
     // The request reached the surface. `compile-brief.test.ts` owns what is inside it.
     await expect(dock).toHaveAttribute("data-agent-request-kind", "compile");
@@ -259,8 +272,8 @@ test.describe("Compile opens the agent dock", () => {
 
   test("the keyboard opens it too, which is how the defect was first pressed", async ({ page }) => {
     await openFolder(page);
-    await page.getByTestId("docs-library-compile").focus();
+    await page.getByTestId("library-compile").focus();
     await page.keyboard.press("Enter");
-    await expect(page.getByTestId("docs-agent-dock")).toBeVisible({ timeout: 25_000 });
+    await expect(page.getByTestId("library-agent-dock")).toBeVisible({ timeout: 25_000 });
   });
 });

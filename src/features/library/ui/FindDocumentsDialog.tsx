@@ -50,7 +50,7 @@ export function FindDocumentsDialog({
   onAdd,
   busy,
 }: FindDocumentsDialogProps) {
-  const t = useTranslations("docsLibrary.find");
+  const t = useTranslations("library.find");
   const [ticked, setTicked] = useState<Set<string>>(() => new Set());
   /**
    * **Every run starts from nothing ticked**, and the reset is keyed rather than done in
@@ -183,8 +183,15 @@ export function FindDocumentsDialog({
                     className="min-h-[var(--control-h-lg)] w-full gap-3 rounded-chip px-2 hover:bg-[color:var(--color-overlay-1)]"
                     label={
                       <>
-                        <span className="min-w-0 flex-1 truncate">{candidate.name}</span>
-                        <span className="min-w-0 truncate font-mono text-caption text-[color:var(--color-text-quaternary)]">
+                        {/*
+                          **The name wins the space.** Measured at 390 on 2026-09-05: with
+                          both spans shrinking equally the name cut to "2026 budg…" while
+                          the path beside it stayed whole — the recognisable half lost to
+                          the disambiguating one. The path still truncates rather than
+                          disappearing, because two folders can hold the same file name.
+                        */}
+                        <span className="min-w-0 flex-[2] truncate">{candidate.name}</span>
+                        <span className="min-w-0 flex-1 truncate text-right font-mono text-caption text-[color:var(--color-text-quaternary)]">
                           {candidate.relativePath}
                         </span>
                         <span className="flex-none font-mono text-caption tabular-nums text-[color:var(--color-text-quaternary)]">

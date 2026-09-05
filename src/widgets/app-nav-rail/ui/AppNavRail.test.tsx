@@ -73,14 +73,16 @@ describe("AppNavRail", () => {
     expect(screen.queryByText("Atlas")).toBeNull();
   });
 
-  it("renders all 7 destinations with i18n labels", () => {
+  it("renders all 9 destinations with i18n labels", () => {
     renderRail();
     expect(screen.getByTestId("app-nav-rail-item-map")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-architecture")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-docs")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-library")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-insights")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-projects")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-agents")).toBeInTheDocument();
+    expect(screen.getByTestId("app-nav-rail-item-mcp")).toBeInTheDocument();
     expect(screen.getByTestId("app-nav-rail-item-git")).toBeInTheDocument();
     // The retired ERD builder (2026-07-24) — removed from the rail.
     expect(screen.queryByTestId("app-nav-rail-item-builder")).not.toBeInTheDocument();

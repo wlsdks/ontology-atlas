@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type RefObject } from "react";
-import { scheduleStateSync } from "./persistence";
+import { scheduleStateSync } from "@/shared/lib/schedule-state-sync";
 
 /**
  * The visibility threshold and click behaviour of the "back to top" button in the article scroll

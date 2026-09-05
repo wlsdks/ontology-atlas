@@ -56,8 +56,8 @@ describe("접근성 래칫의 라우트 커버리지", () => {
   it("정본 인벤토리를 실제로 찾아낸다 — 탐지기가 빈 집합 위에서 놀지 않는다", () => {
     // Without this assertion, `discoverRoutes` returning 0 would leave every check
     // below green (an empty set satisfies any universal statement). The current
-    // authoritative count is 18.
-    expect(routes.length).toBeGreaterThanOrEqual(18);
+    // authoritative count is 19 (`/library` joined 2026-09-06).
+    expect(routes.length).toBeGreaterThanOrEqual(19);
     expect(routes).toContain("/topology");
     expect(routes).toContain("/git");
     expect(routes).toContain("/project/[slug]");
