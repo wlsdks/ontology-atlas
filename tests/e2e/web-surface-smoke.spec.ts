@@ -385,7 +385,16 @@ const DEGRADED_SURFACES: readonly DegradedSurface[] = [
       await page.getByTestId("vault-guide-pick-existing").click();
       await page.getByTestId("first-run-starter").waitFor({ state: "detached", timeout: 20_000 });
       await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+      /*
+       * ⚠️ **Two presses further in since 2026-09-05.** Connectors are the second tab of the MCP
+       * destination, and this card moved into the "add a connector" dialog — finding what is
+       * already registered is what happens there, and a card about that step reads as a verdict on
+       * the whole panel when it stands outside it. The claim is unchanged; the address of the
+       * claim is not.
+       */
+      await page.getByRole("tab", { name: /연결 도구/ }).click();
       await page.getByTestId("connectors-panel").waitFor({ timeout: 15_000 });
+      await page.getByTestId("connectors-add-open").click();
     },
     needsVault: true,
     card: "connectors-discovery-unavailable",
@@ -518,7 +527,8 @@ test.describe("웹 스모크 ③ 정직한 강등", () => {
      * not be dropped into the middle of a document halfway through.
      */
     await expect(page.getByTestId("agent-setup-section")).toBeVisible();
-    expect(new URL(page.url()).pathname).toBe("/ko/agents/");
+    // 2026-09-05: the pane moved to its own destination.
+    expect(new URL(page.url()).pathname).toBe("/ko/mcp/");
   });
 
   /**
