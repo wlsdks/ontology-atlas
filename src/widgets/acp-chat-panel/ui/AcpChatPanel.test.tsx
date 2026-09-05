@@ -322,6 +322,65 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(document.querySelectorAll('[data-acp-entry="tool"]')).toHaveLength(1);
   });
 
+  it('renders an external connector call as a status-only trace line, with no invented meaning', async () => {
+    /*
+     * A connector's tools are somebody else's. The row may say **that** the call happened and how
+     * it ended, and nothing more: translating `API-post-page` into a sentence of ours would make
+     * the screen describe a Notion action in Atlas words, and it would keep describing it that way
+     * on the day the tool changed. The vault's own outcome reading (「found N」) is withheld for the
+     * same reason — we do not know the shape of somebody else's answer.
+     */
+    await bootSession();
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call',
+          toolCallId: 'ext1',
+          title: 'mcp__notion__API-post-page',
+          kind: 'other',
+          status: 'in_progress',
+          rawInput: { parent: { page_id: 'abc' } },
+        },
+      },
+    });
+    await waitFor(() => {
+      const row = document.querySelector('[data-acp-entry="tool"]');
+      expect(row).toHaveAttribute('data-tool-label', 'raw');
+      expect(row).toHaveAttribute('data-tool-status', 'in_progress');
+    });
+    // The server prefix is stripped; the tool's own name is shown as it is.
+    expect(document.querySelector('[data-tool-label-text]')?.textContent).toBe('API-post-page');
+    // No vault node is claimed to have been touched by somebody else's tool.
+    expect(document.querySelector('[data-testid="acp-chat-slug"]')).toBeNull();
+
+    emit({
+      jsonrpc: '2.0',
+      method: 'session/update',
+      params: {
+        update: {
+          sessionUpdate: 'tool_call_update',
+          toolCallId: 'ext1',
+          status: 'completed',
+          rawOutput: { content: [{ type: 'text', text: '{"object":"page"}' }] },
+        },
+      },
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+        'data-tool-status',
+        'completed',
+      ),
+    );
+    // A status word, not a count. `data-tool-outcome` holds a number only for the vault
+    // server's own tools, whose answer shape we wrote and can therefore read.
+    expect(document.querySelector('[data-acp-entry="tool"]')).toHaveAttribute(
+      'data-tool-outcome',
+      'done',
+    );
+  });
+
   it('stands the tool line in the transcript — no disclosure is created for a turn that only called tools', async () => {
     /*
      * The trace only works if it is read without being asked for. Folded away, a `0 found`

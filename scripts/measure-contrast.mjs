@@ -65,6 +65,9 @@ export const DEFAULT_ROUTES = [
   "/ko/git/",
   // Agents (added 2026-08-20, ledger 90) — promoted to a destination, so it became auditable.
   "/ko/agents/",
+  // MCP (added 2026-09-05) — the folder's own connection and the connectors split off
+  // `/agents` into their own destination.
+  "/ko/mcp/",
   // 404 is **two pages** — with and without a locale prefix. This is exactly where
   // the AA shortfall of 4.42:1 hid on 2026-08-03, and neither ratchet had ever looked
   // here. Including only one blocks half of that incident.

@@ -133,7 +133,29 @@ describe("Dialog 채택 래칫", () => {
   it("탐지기가 공회전하지 않는다 — 프리미티브 자신이 마크업을 갖고, 장부 파일이 실재한다", () => {
     // If the source of truth disappears (a rename, say), this whole ratchet loses its target.
     const primitive = readFileSync(path.join(ROOT, PRIMITIVE), "utf8");
-    expect(countDialogMarkup(primitive), "프리미티브에서 role=dialog 마크업을 못 찾았다").toBeGreaterThan(0);
+    /*
+     * ⚠️ **The primitive stopped writing the role as a literal on 2026-09-05** and now passes a
+     * prop, because a confirmation that names what it is about to destroy is `alertdialog` in the
+     * APG and the alternative was a consumer hand-building a modal to get one attribute.
+     *
+     * So what the anti-idle check asks for is unchanged in substance — **does the primitive still
+     * own the role** — and is asked of the shape it now has: it must default the prop to
+     * `dialog`, offer only `dialog | alertdialog`, and put the prop on the element. A rename
+     * still empties all three and kills this ratchet loudly, which is the whole point of the
+     * check.
+     */
+    expect(
+      primitive.includes('role = "dialog"'),
+      "프리미티브가 role 기본값을 dialog 로 두지 않는다",
+    ).toBe(true);
+    expect(
+      primitive.includes('role?: "dialog" | "alertdialog"'),
+      "프리미티브의 role 선택지가 dialog | alertdialog 가 아니다",
+    ).toBe(true);
+    expect(
+      primitive.includes("role={role}"),
+      "프리미티브가 role 을 요소에 붙이지 않는다",
+    ).toBe(true);
     // A debt ledger holding non-existent files lets a "decrease" be achieved by a move or rename.
     for (const [file] of [...REGISTERED, ...DEBT]) {
       expect(statSync(path.join(ROOT, file)).isFile(), `${file} 이 실재하지 않는다`).toBe(true);

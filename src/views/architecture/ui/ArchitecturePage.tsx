@@ -25,10 +25,12 @@ import {
   type AnalysisCaptureContext,
   ANALYSIS_FINDINGS_INSTRUCTION,
   analysisGraphFromInsight,
+  connectorAcpServers,
   runtimeOwnsWriteGate,
   vaultMcpServers,
   vaultSelfReadSlot,
 } from '@/features/acp-session';
+import { useVaultConnectors } from '@/features/mcp-connectors';
 import { detectAcpRuntimes, isAcpBridgeAvailable } from '@/shared/lib/tauri-acp';
 import {
   getTauriVaultRootPath,
@@ -175,6 +177,8 @@ export function ArchitecturePage() {
   }, [acpBridgeAvailable]);
 
   const acpRuntime = acpRuntimes.find((runtime) => runtime.id === acpRuntimeId) ?? null;
+  /* Same list as the map's, read from the same file — one vault, one set of attached tools. */
+  const vaultConnectors = useVaultConnectors(localVault.handle);
   const acpMcpServers = useMemo(() => {
     const registration =
       vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
@@ -183,15 +187,21 @@ export function ArchitecturePage() {
             validForCurrentVault: localVault.agentConfigStatus?.codexConfigValid === true,
           }
         : null;
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
-      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
-    });
+    // The vault server first, then the connectors the person switched on — the order the
+    // handshake reads, and the one that keeps a same-named entry from replacing our own.
+    return [
+      ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+        ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+      }),
+      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId),
+    ];
   }, [
     acpRuntimeId,
     agentServer.launch,
     gitVaultPath,
     localVault.agentConfigStatus?.codexConfigValid,
     localVault.agentConfigStatus?.codexRegisteredCommand,
+    vaultConnectors.connectors,
   ]);
   const agentRoute = resolveArchitectureAgentRoute({
     bridgeAvailable: acpBridgeAvailable,

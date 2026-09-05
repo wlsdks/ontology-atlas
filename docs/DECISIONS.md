@@ -54,6 +54,33 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — MCP becomes its own destination, the rail cap moves to eight, and the page frame owns the desktop bottom
+
+**Why**: `/agents` carried two jobs sharing only the word "agent" (which coding tools this computer has, and what an agent reaches over MCP); the owner asked for the split and approved a longer rail. With a folder open the page reserved 0px at the bottom, so the last card sat on the window edge.
+**Prior**: overturns the seven-destination cap in 2026-08-21 (91); upholds 2026-08-20 (90), the 2026-08-26 record that Architecture is additive and Git stays primary, and 2026-08-01 "MCP attaches to the folder, not the screen".
+**Decision**: new route `/mcp` with two tabs on `?tab=`: Share this folder (three steps, step 3 ending in the vault-bound proof packet) and Connectors (attached rows only; adding, keychain fields and removal behind blocking dialogs, removal confirmed). Rail cap 7→8, measured at the 1040×720 floor: eight tiles in 12–522px of a 616px pane, gear drawn 48px above the edge, nothing scrolls; one slot remains at that floor. `/agents` keeps runtimes and chat and links to `/mcp`. `PAGE_FRAME` gains the desktop bottom breath token. Six-seat council approved with six corrections; only the GitHub mark ships, other services show a plug until their guideline is read.
+**Dissent**: design-interaction: the write-authority sentence belongs on the switch's own path (row-level aria-describedby), because the dialog is skippable and a preamble is read once; the guardian chose the two-sentence preamble for the 390 first screen.
+**Falsifier**: two of the first three cold walkers opening `/agents` for "let an agent reach this folder" (the first two went straight to MCP) folds the tabs back into `/agents` and leaves `/mcp` as a redirect; a 390 walkthrough enabling a connector with the authority sentence out of view ships the row-bound binding; a ninth tile asked for without a rail measurement, or as a job rather than a place (ingest is a job), reopens the cap.
+**Owner**: jinan
+
+## 2026-09-05 — A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path
+
+**Why**: the in-app agent could reach only the vault server, so a person who wanted it to read a Notion or GitHub page had to leave Atlas and rerun the question in an external agent. The owner asked for connectors, custom ones included.
+**Prior**: 2026-07-23 owner direction (MCP servers run inside the agent the person already trusts; Atlas executes no third-party code) and 2026-07-27 "the app embeds MCP" stand; 2026-08-24 (111) stands as narrowed by the 2026-09-03 codex pin.
+**Decision**: a Connectors section on /agents lists servers from ~/.claude.json (user + this folder), the vault's .mcp.json, ~/.codex/config.toml and ~/.cursor/mcp.json as names only; attached ones live in .ontology-atlas/connectors.json, default off, never a credential literal; a secret is a per-variable keychain choice resolved in Rust one line before session/new; connectors ride Claude sessions only until Codex is measured; the panel states transfer and write authority and that llm-audit.jsonl does not cover this traffic.
+**Dissent**: po-evidence, accepted: adapter behaviour had been read off version numbers, so an installed session came before merge. Measured 2026-09-05: stdio and http both attach (15 and 3 tools), the first connector tool call raised the permission card, no audit line was written.
+**Falsifier**: a connector tool executing in any offered runtime without a permission card; a token in connectors.json or in the WebView; or no connector switched on in the first ten installs that have one discoverable.
+**Owner**: jinan
+
+## 2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn
+
+**Why**: the 3D cone filled 18.7% of the canvas at 1920 with 27 overlapping pairs and a median rim contrast of 1.75:1, and its readout described a zoom rule while it painted 125 concepts; the owner chose direction B2 (same geometry, corrected drawing).
+**Prior**: 2026-09-02 "the 3D ownership arrangement becomes a cone tree" stands except the height:width proportion. 2026-08-18 (76) is overturned for the cone only: on-demand labels and the fog waiver over a node's rim; its own falsifier (people reading in 3D) was observed.
+**Decision**: the cone fits the canvas minus measured panels, a tool-lane band and a readout band, tier heights scaled 0.8 so the silhouette is wider than tall; a node is a fixed number of screen pixels; fog keeps a rim at or above 3:1 against the ground while the fill still sinks; resting labels use the flat map's placement, reservations and top-K budget, nearer node winning; the readout names the concepts painted. Fill 22.6→61.9% (1920), 23.9→70.5% (1440), 29.0→63.8% (1024), 13.9→35.1% (834); same-tier overlaps 27→0.
+**Dissent**: none convened (solo route); the builder's reservation: the pixel-sampled rim median is 2.59:1, not 3:1, because a node's neighbour in a 125-node cone is usually another stroke, so the floor is gated on the composited token.
+**Falsifier**: a report that the cone reads as a text field reopens the label rule; a rim legible while depth stops reading reopens the fog floor; a silhouette outside the 1.12–1.26 aspect window missing the fill floors reopens the height scale.
+**Owner**: jinan
+
 ## 2026-09-05 — Budget compact handoffs by transmitted JSON, preserving every fact
 
 **Why**: the known-task read-only integration fails on both the branch and base main: one unchanged response is 13,697 bytes with display indentation but 10,238 bytes when serialized for transport. Even removing the entire handoff prompt leaves 12,048 pretty bytes.

@@ -106,6 +106,7 @@ export type DestinationTourId =
   | "insights"
   | "projects"
   | "agents"
+  | "mcp"
   | "git";
 
 export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> = {
@@ -138,6 +139,21 @@ export const DESTINATION_TOURS: Record<DestinationTourId, readonly TourStep[]> =
       anchor: { type: "testid", value: "app-settings-runtimes-recheck" },
       persona: "all",
       copyKey: "agentsCheck",
+    },
+  ],
+  /*
+   * MCP — a destination added 2026-09-05. Two pages: what this screen is for, and the tab strip,
+   * because the second half of the screen (the connectors) is behind a tab and a person who never
+   * presses it never learns it is there. Anchoring on the strip rather than on either panel keeps
+   * the guide correct whichever tab the URL opened.
+   */
+  mcp: [
+    { id: "mcp-what", anchor: null, persona: "all", copyKey: "mcpWhat" },
+    {
+      id: "mcp-tabs",
+      anchor: { type: "testid", value: "mcp-tabs" },
+      persona: "all",
+      copyKey: "mcpTabs",
     },
   ],
   insights: [

@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  hasVaultMcpServer,
   VAULT_MCP_SERVER_NAME,
   vaultAlreadyRegisters,
   vaultMcpServers,
   vaultSelfReadSlot,
+  vaultWriteConsentOn,
 } from './vault-mcp-server';
 
 /**
@@ -126,5 +128,50 @@ describe('저장소 루트 — 지도가 프로젝트 안에 있으면 코드는
 
   it('파일시스템 뿌리에 있는 atlas 는 프로젝트가 없다', () => {
     expect(rootOf(vaultMcpServers(launch, '/atlas'))).toBeNull();
+  });
+});
+
+describe('볼트 항목은 이름으로 찾는다 — 목록이 우리 것만은 아니게 되었으므로', () => {
+  const vaultEntry = {
+    name: VAULT_MCP_SERVER_NAME,
+    command: '/app/ontology-atlas-mcp',
+    args: [],
+    env: [{ name: 'OATLAS_WRITE_CONSENT', value: 'on' }],
+  };
+  const connectorEntry = {
+    name: 'notion',
+    command: '/opt/homebrew/bin/npx',
+    args: ['-y', '@notionhq/notion-mcp-server'],
+    env: [{ name: 'OATLAS_WRITE_CONSENT', value: 'on' }],
+  };
+
+  it('외부 연결 도구만 실린 목록을 볼트 서버로 착각하지 않는다', () => {
+    // Before external connectors, "the list is not empty" and "we wired the vault" were the same
+    // sentence. They stopped being the same the moment somebody else's server could be in it.
+    expect(hasVaultMcpServer([connectorEntry])).toBe(false);
+    expect(hasVaultMcpServer([vaultEntry, connectorEntry])).toBe(true);
+    expect(hasVaultMcpServer([])).toBe(false);
+    expect(hasVaultMcpServer(null)).toBe(false);
+  });
+
+  it('체크포인트 여부는 볼트 항목의 환경만 읽는다 — 남의 설정이 우리 문장을 참으로 만들 수 없다', () => {
+    // The screen says "changes through Atlas tools still stop at the server". A connector
+    // carrying a variable of that name would have made that sentence true for a gate that is
+    // not there.
+    expect(vaultWriteConsentOn([connectorEntry])).toBe(false);
+    expect(vaultWriteConsentOn([vaultEntry])).toBe(true);
+    expect(vaultWriteConsentOn([connectorEntry, vaultEntry])).toBe(true);
+  });
+
+  it('볼트 항목과 연결 도구를 한 배열에 섞어도 각자의 모양을 지킨다', () => {
+    const servers = [
+      ...vaultMcpServers(launch, VAULT),
+      { type: 'http' as const, name: 'linear', url: 'https://mcp.linear.app/mcp', headers: [] },
+    ];
+    expect(servers[0]).toMatchObject({ name: VAULT_MCP_SERVER_NAME });
+    expect(servers[1]).toMatchObject({ type: 'http', name: 'linear' });
+    // The vault server stays first: it is the one the session's instructions name.
+    expect(hasVaultMcpServer(servers)).toBe(true);
+    expect(vaultWriteConsentOn(servers)).toBe(true);
   });
 });

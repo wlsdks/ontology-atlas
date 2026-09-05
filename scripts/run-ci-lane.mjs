@@ -16,12 +16,27 @@ function planFromEnvironment(env = process.env) {
   return decodePlan(env.CI_IMPACT_PLAN);
 }
 
+/**
+ * Gate commands that compile the Tauri crate, which the Linux gates runner cannot do.
+ *
+ * `checks.yml` runs the gates lane on ubuntu with Node only: no GTK, WebKitGTK or glib
+ * headers, so `cargo test` on `src-tauri` dies in `glib-sys`'s build script before a single
+ * test runs (measured 2026-09-05 on PR #1445 and on the main push for #1442, both of which
+ * touched `src-tauri/src/lib.rs`). The bridge contract is still executed where a Tauri
+ * toolchain exists: the Windows beta job runs the crate's tests on every `src-tauri/**`
+ * change, and the macOS release rehearsal runs `test:desktop:bridge` before a tag. Dropping
+ * the command here on a non-macOS host is therefore a routing decision, not a skipped gate,
+ * and the runner says so in its log instead of failing silently.
+ */
+export const MACOS_ONLY_GATE_COMMANDS = Object.freeze(['pnpm test:desktop:bridge']);
+
 export function commandsForLane({
   lane,
   plan,
   base,
   shard = '1/3',
   eventName = 'pull_request',
+  platform = process.platform,
 }) {
   if (!plan?.lanes?.[lane] && !['static', 'web', 'e2e'].includes(lane)) {
     throw new Error(`unknown CI lane: ${lane}`);
@@ -34,7 +49,11 @@ export function commandsForLane({
     if (eventName === 'pull_request' && base) {
       commands.splice(1, 0, `pnpm decisions:check -- --base=${shellArgument(base)}`);
     }
-    return unique(commands);
+    return unique(
+      platform === 'darwin'
+        ? commands
+        : commands.filter((command) => !MACOS_ONLY_GATE_COMMANDS.includes(command)),
+    );
   }
 
   if (lane === 'unit') {
@@ -137,6 +156,21 @@ export function runCiLane({ argv = process.argv.slice(2), env = process.env } = 
       shard,
       eventName: env.GITHUB_EVENT_NAME || 'pull_request',
     });
+    if (lane === 'gates' && process.platform !== 'darwin') {
+      const planned = commandsForLane({
+        lane,
+        plan,
+        base,
+        shard,
+        eventName: env.GITHUB_EVENT_NAME || 'pull_request',
+        platform: 'darwin',
+      });
+      for (const command of planned.filter((entry) => !commands.includes(entry))) {
+        process.stdout.write(
+          `[ci-lane] ${lane}: ${command} needs a Tauri toolchain and runs on the Windows beta job and the macOS release rehearsal instead of this ${process.platform} runner\n`,
+        );
+      }
+    }
     if (commands.length === 0) {
       process.stdout.write(`[ci-lane] ${lane}: no affected command\n`);
       return 0;

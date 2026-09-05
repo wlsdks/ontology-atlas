@@ -33,7 +33,8 @@ tags: [architecture, infra, overview]
 │ ├─ /ontology/studio        compatibility → topology    │
 │ ├─ /ontology/insights      five measures + Flow        │
 │ ├─ /git                    vault Git workbench         │
-│ ├─ /agents                 fetch · install · connect   │
+│ ├─ /agents                 fetch · install · converse   │
+│ ├─ /mcp                    folder server + connectors  │
 │ ├─ /projects               project list                │
 │ ├─ /project/[slug]         project detail              │
 │ ├─ /download               gateway as an explicit link │
@@ -158,6 +159,8 @@ ability. The canonical roster is the bridge table in
 | Keychain | `src/shared/lib/tauri-secrets.ts` | Impossible by design → degraded card |
 | LLM calls | `src/shared/lib/tauri-llm.ts` | Impossible by design → action not rendered |
 | In-app agent runtime (ACP) | `src/shared/lib/tauri-acp.ts` | A browser cannot spawn a process → one row states why and where |
+| Connector discovery | `src/shared/lib/tauri-connectors.ts` | Cannot read the person's own agent config files → degraded card; adding one by hand still works |
+| Connector secrets | `src/shared/lib/tauri-connector-secrets.ts` | No keychain in a browser → degraded card |
 
 Every bridge follows one convention: `getInvoke()` returns `null` when
 `isTauri()` is false, and the screen then says plainly that it cannot do this
@@ -372,7 +375,19 @@ until a local manifest exists.
                            values, this is operational work with progress state. API Key and
                            Workspace stay in settings (the 2026-08-16 freeze and a different
                            owning domain). Desktop launches the tools; on the web the page
-                           still renders and says what it cannot do, plus what it can.
+                           still renders and says what it cannot do, plus what it can. MCP
+                           left this screen on 2026-09-05 for /mcp
+/mcp                       everything MCP: the folder's own server (share this folder with a
+                           coding tool — the three steps, the config each tool needs, and the
+                           first-contact proof packet) and Connectors (the external MCP
+                           servers an in-app agent may reach). Two tabs on ?tab=. Split out
+                           of /agents 2026-09-05: "which coding tools does this computer
+                           have" and "what does an agent reach over MCP" are different
+                           questions, and only the first needs programs on this machine. The
+                           whole screen works on the web, because MCP attaches to the folder
+                           rather than to an Atlas screen; discovery of already-registered
+                           servers and keychain storage are the app-only halves and each says
+                           so where it is missing
 /projects                  project list (cards)
 /project/[slug]            project detail (inline edit when vault loaded)
 /project/[slug]/edit       full project editor
@@ -395,11 +410,11 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 > `/reset-password`, `/settings/*`.
 
 **One piece of code decides which nav item is active; each screen size shows a
-different list of buttons.** The desktop rail shows seven destinations: Map,
-Architecture, Docs, Insights, Projects, Agents, and Git. The mobile bottom bar shows
+different list of buttons.** The desktop rail shows eight destinations: Map,
+Architecture, Docs, Insights, Projects, Agents, MCP, and Git. The mobile bottom bar shows
 five persistent destinations: Map, Architecture, Docs, Insights, and Projects;
 web adds Get App as a separate utility. Contextual writing stays inside Map,
-Agents and Git keep their narrow-screen entry points.
+Agents, MCP and Git keep their narrow-screen entry points.
 Both read the same rules in
 `src/shared/lib/nav-destination.ts`, so every route belongs to exactly one
 destination even on a screen size that deliberately hides that button. The

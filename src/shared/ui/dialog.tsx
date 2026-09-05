@@ -65,6 +65,18 @@ export interface DialogProps {
   onClose: () => void;
   /** Two width steps — sm 420 (default), md 560. A new step means convening the design-systems seat first. */
   size?: "sm" | "md";
+  /**
+   * `alertdialog` for a surface that interrupts to confirm something **irreversible**, `dialog`
+   * (the default) for everything else. The WAI-ARIA APG separates the two on exactly that
+   * question, and assistive tech reads an alert dialog's body immediately instead of waiting to
+   * be walked into it — which is the whole point when the body names what is about to be
+   * destroyed.
+   *
+   * ⚠️ **It is a role, not a second contract.** Scrim, focus trap, Escape, focus restoration and
+   * scroll lock are unchanged and still not optional; this switches one attribute so a consumer
+   * does not hand-build a modal to get it (2026-09-05, design council).
+   */
+  role?: "dialog" | "alertdialog";
   /** Id of the title element inside the panel. Without one, pass `aria-label` — an unnamed modal is not allowed. */
   labelledBy?: string;
   "aria-label"?: string;
@@ -95,6 +107,7 @@ export function Dialog({
   open,
   onClose,
   size = "sm",
+  role = "dialog",
   labelledBy,
   "aria-label": ariaLabel,
   initialFocus = "first",
@@ -140,7 +153,7 @@ export function Dialog({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 8, opacity: 0, transition: EXIT_TRANSITION }}
             transition={reducedMotion ? OVERLAY_SPRING_REDUCED : OVERLAY_SPRING}
-            role="dialog"
+            role={role}
             aria-modal="true"
             aria-labelledby={labelledBy}
             aria-label={ariaLabel}

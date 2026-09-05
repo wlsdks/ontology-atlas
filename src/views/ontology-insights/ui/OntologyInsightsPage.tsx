@@ -1178,7 +1178,10 @@ export function OntologyInsightsPage() {
       tabIndex={-1}
           data-insights-surface="maintenance-board"
           data-insights-question-model="one-tab-one-question"
-          className={`${PAGE_FRAME} flex min-h-full shrink-0 flex-col pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))] lg:pb-[var(--page-bottom-breath)]`}
+          // The `lg` breath moved into `PAGE_FRAME` on 2026-09-05 — stating it here as well
+          // would be the second source the frame spec exists to remove. What stays is the
+          // below-`lg` tab-bar reserve, which is the page's to decide.
+          className={`${PAGE_FRAME} flex min-h-full shrink-0 flex-col max-lg:pb-[calc(var(--topology-mobile-bottom-tab-reserve)+var(--page-bottom-breath))]`}
         >
         <MountedGlobalSearch open={searchPaletteOpen} onOpenChange={setSearchPaletteOpen} />
 

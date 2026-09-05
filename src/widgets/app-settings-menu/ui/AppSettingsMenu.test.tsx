@@ -275,9 +275,15 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
     expect(screen.queryByText('nav.settingsMenu.mcpProofTitle')).not.toBeInTheDocument();
 
     routerPush.mockClear();
-    fireEvent.click(screen.getByTestId('app-settings-nav-agents'));
+    /*
+     * ⚠️ **Re-aimed to `/mcp` on 2026-09-05** (PO council). Two panes left this group, and one
+     * row can only point at one place; it points at the half the group is still about — what
+     * remains here is the folder and the key, and MCP is the folder's connection. The runner list
+     * is one named hop further (`/mcp` → "see your runtimes"), not lost.
+     */
+    fireEvent.click(screen.getByTestId('app-settings-nav-mcp'));
     expect(routerPush).toHaveBeenCalledTimes(1);
-    expect(String(routerPush.mock.calls[0][0])).toContain('/agents/');
+    expect(String(routerPush.mock.calls[0][0])).toContain('/mcp/');
   });
 
   /**
@@ -287,7 +293,7 @@ describe('AppSettingsMenu single-sheet recomposition', () => {
    */
   it('이정표 행은 인디고를 쓰지 않는다', () => {
     openSheet();
-    const row = screen.getByTestId('app-settings-nav-agents');
+    const row = screen.getByTestId('app-settings-nav-mcp');
     // The focus ring's indigo is an app-wide specification and is not measured — what is measured is **surface and text**.
     expect(row.className).not.toMatch(/bg-\[color:var\(--color-indigo/);
     expect(row.className).not.toMatch(/text-\[color:var\(--color-indigo/);

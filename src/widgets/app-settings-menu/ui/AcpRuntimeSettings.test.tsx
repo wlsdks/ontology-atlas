@@ -16,6 +16,20 @@ vi.mock('next-intl', () => ({
     values ? `${key}:${JSON.stringify(values)}` : key,
 }));
 
+/*
+ * The locale-aware `Link` needs an intl provider this file deliberately does not mount (every
+ * string here is its own key, so a real catalogue would hide which key each assertion is about).
+ * A plain anchor keeps the href assertion below honest — what matters is the address the row
+ * offers, not who prefixes the locale.
+ */
+vi.mock('@/i18n/navigation', () => ({
+  Link: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 import { AcpRuntimeSettings } from './AcpRuntimeSettings';
 
 type Runtime = Parameters<typeof makeRuntime>[0];
@@ -65,6 +79,31 @@ describe('실행기 목록 — 지금 할 수 있는 일이 먼저다', () => {
     expect(button).toHaveClass('min-h-8');
     fireEvent.click(button);
     expect(onOpenChat).toHaveBeenCalledWith('claude-acp');
+  });
+
+  it('브릿지가 있는 화면에서도 MCP 로 갈 길이 있다 — 세 번 이름을 대고 못 가게 두지 않는다', async () => {
+    /*
+     * ⚠️ **Measured by the PO council, 2026-09-05.** `DESTINATION_HREF.mcp` had two production
+     * consumers: the rail tile, and the link in the no-bridge branch — which renders **only in a
+     * browser**. So in the installed app this screen named MCP setup three times (`intro`,
+     * `guardedExplainer`, `unknownExplainer`) and offered no way to follow any of them.
+     *
+     * The other case is covered by the degradation test below; this one asserts the half that was
+     * missing, on the path a real desktop session takes.
+     */
+    bridge.detect.mockResolvedValue([
+      makeRuntime({ id: 'claude-acp', isolated: true, verified: true }),
+    ]);
+    render(<AcpRuntimeSettings embedded />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/mcp/');
+    // The bridge really was available on this path — otherwise this test measures the browser
+    // branch and passes for the wrong reason.
+    expect(bridge.detect).toHaveBeenCalled();
+    expect(screen.queryByTestId('app-settings-runtimes-web')).toBeNull();
   });
 
   it('바로 쓸 수 있는 것은 펼쳐 두고, 설치가 필요한 것은 접어 둔다', async () => {
@@ -301,6 +340,12 @@ describe('실행기 목록 — 못 하는 일은 정직하게', () => {
     render(<AcpRuntimeSettings />);
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webLabel');
     expect(screen.getByTestId('app-settings-runtimes-web')).toHaveTextContent('webCaption');
+    /*
+     * ⚠️ **The place it names has to be reachable** (2026-09-05). The caption used to point at a
+     * section of this same screen; MCP became its own destination, and a name with no way there is
+     * the dead-end guidance `.claude/rules/surfaces.md` forbids in a degradation card.
+     */
+    expect(screen.getByTestId('app-settings-runtimes-mcp-link')).toHaveAttribute('href', '/mcp/');
     // In a browser it does not even set out to look.
     expect(bridge.detect).not.toHaveBeenCalled();
   });

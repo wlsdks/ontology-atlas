@@ -59,17 +59,16 @@ test("「MCP 연결」 칸의 첫 화면 인구조사", async ({ page }, testInf
   ).toHaveCount(0, { timeout: 30_000 });
 
   /*
-   * ⚠️ **Re-aimed 2026-08-21** (ledger 90). This pane left the settings sheet and
-   * became the Agents destination. It used to open the sheet and click
-   * `app-settings-nav-agent`; that control no longer exists and this check broke in
-   * CI — **the check was right.**
+   * ⚠️ **Re-aimed twice.** 2026-08-21 (ledger 90): the pane left the settings sheet for
+   * the Agents destination, and the old `app-settings-nav-agent` control disappeared —
+   * the check broke in CI and **the check was right**. 2026-09-05: the pane left again,
+   * for its own `/mcp` destination, so the rail tile it travels through is MCP.
    *
-   * An attached vault is still required (otherwise the settings panel is not drawn).
-   * After attaching, it navigates via the rail's Agents tile — the same path a user
-   * takes.
+   * An attached vault is still required (otherwise the panel is not drawn). After
+   * attaching, it navigates via the rail — the same path a user takes.
    */
-  await page.getByTestId("app-nav-rail").getByRole("link", { name: "에이전트" }).click();
-  await expect(page.getByTestId("agents-page")).toBeVisible({ timeout: 10_000 });
+  await page.getByTestId("app-nav-rail").getByRole("link", { name: "MCP" }).click();
+  await expect(page.getByTestId("mcp-page")).toBeVisible({ timeout: 10_000 });
 
   const pane = page.getByTestId("agent-setup-section");
   await expect(pane).toBeVisible({ timeout: 10_000 });

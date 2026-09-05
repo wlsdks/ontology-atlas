@@ -103,8 +103,8 @@
       "vaultBodyStatic": "저장 가능한 폴더는 데스크톱 앱 또는 로컬 작업공간에서 열어요",
       "vaultCtaLocal": "열기",
       "vaultCtaStatic": "시작하기",
-      "agentStatusNoVault": "작업공간 미연결",
-      "agentNoVaultHint": "작업공간 폴더를 열면 설정 파일 상태 확인과 수리를 여기서 할 수 있어요.",
+      "agentStatusNoVault": "폴더가 열려 있지 않습니다",
+      "agentNoVaultHint": "온톨로지가 있는 폴더를 열면 연결 설정 파일의 상태 확인과 수리를 여기서 할 수 있습니다.",
       "agentTerminalTitle": "터미널에서 연결하기",
       "agentTerminalBody": "이 두 줄이 폴더를 만들고, Claude Code · Cursor · Codex 가 그 폴더를 보도록 .mcp.json 과 .codex/config.toml 을 씁니다. 내 컴퓨터에서만 실행되고 밖으로 나가는 것은 없어요.",
       "cliPlaceholderHint": "먼저 한 번만, 터미널에서 export ATLAS=\"ontology-atlas 소스 폴더 경로\". npm 패키지는 없어요.",
@@ -213,6 +213,7 @@
       "agentNotificationKindsCaption": "끈 갈래는 벨에 쌓이지 않습니다.",
       "runtimes": {
         "intro": "이 컴퓨터에 설치된 AI 코딩 도구를 찾습니다. 쓰기 전에 먼저 묻는 것이 확인된 도구만 지도 옆에서 대화를 열고, 나머지는 에이전트 연결(MCP) 설정에 계속 쓸 수 있어요.",
+        "mcpLink": "직접 띄운 도구에 이 폴더를 내주거나 연결 도구를 붙이는 일은 MCP 화면에서 합니다",
         "recheck": "다시 확인",
         "checking": "찾는 중이에요",
         "readyHeading": "이 컴퓨터에서 확인됐어요 ({count})",
@@ -221,7 +222,7 @@
         "noneReady": "확인된 도구가 없어요",
         "noneReadyCaption": "Claude Agent 나 Codex 를 설치하면 여기에 나타나요. 설치 방법은 아래 목록에 있어요.",
         "webLabel": "브라우저는 이 컴퓨터의 프로그램을 띄울 권한이 없어요",
-        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 이 화면 아래 「MCP 연결」 칸에서, 직접 띄운 도구를 이 폴더에 붙일 수 있어요.",
+        "webCaption": "맥 앱을 받으면 이 컴퓨터에 설치된 도구를 앱 안에서 바로 쓸 수 있어요. 직접 띄운 도구를 이 폴더에 붙이는 일은 MCP 화면의 「이 폴더 내주기」 칸에서 지금도 됩니다.",
         "state": {
           "ready": "준비됨",
           "cli-missing": "설치 필요",
@@ -237,7 +238,8 @@
         "installGuide": "설치 방법",
         "openChat": "이 도구로 대화 열기",
         "loginHint": "이 도구에 로그인이 안 돼 있어요. 터미널에서 한 번 실행해 로그인하면 여기에 나타나요.",
-        "diskNote": "대화를 시작하면 Atlas 가 그 도구용 설정 폴더를 앱 안에 따로 만들어요. 당신이 그 도구에 해 둔 설정은 건드리지 않아요. 이미 해 둔 로그인은 복사하지 않고 링크만 걸어서, 다시 로그인하지 않아도 되게 해요. 원본은 그대로 한 곳에 있어요."
+        "diskNote": "대화를 시작하면 Atlas 가 그 도구용 설정 폴더를 앱 안에 따로 만들어요. 당신이 그 도구에 해 둔 설정은 건드리지 않아요. 이미 해 둔 로그인은 복사하지 않고 링크만 걸어서, 다시 로그인하지 않아도 되게 해요. 원본은 그대로 한 곳에 있어요.",
+        "webMcpLink": "MCP 열기"
       },
       "appUpdate": {
         "intro": "이 앱의 새 판이 나오면 우하단에 알려 드려요. 지금 바로 확인할 수도 있어요.",
@@ -252,7 +254,7 @@
         "resultFailed": "업데이트 정보를 가져오지 못했어요. 인터넷 연결을 확인한 뒤 다시 시도해 주세요.",
         "resultInstallFailed": "업데이트 설치를 마치지 못했어요. 잠시 뒤 다시 시도해 주세요."
       },
-      "goToAgents": "에이전트"
+      "goToMcp": "MCP"
     },
     "primaryAriaLabel": "주요 메뉴",
     "notificationsAriaLabel": "작업 알림"
@@ -265,6 +267,7 @@
     "insights": "분석",
     "projects": "프로젝트",
     "agents": "에이전트",
+    "mcp": "MCP",
     "git": "기록",
     "getApp": "앱 받기",
     "getAppTitle": "맥 앱을 받으면 폴더를 기억하고, 인터넷 없이 열고, 기록과 AI 연결까지 다룹니다. 윈도우는 준비 중이에요"
@@ -512,7 +515,7 @@
       "reason": "전부 진짜 문서에서 나왔어요"
     },
     "readout": {
-      "projectUnit": "프로젝트",
+      "conceptUnit": "개념",
       "domainUnit": "도메인",
       "tier_spine": "도메인까지 보기",
       "tier_circuit": "역량까지 보기",
@@ -631,6 +634,14 @@
       "agentsCheck": {
         "title": "안 붙으면 여기서 재 봐요",
         "body": "「다시 확인」은 이 컴퓨터를 다시 훑어요. 도구마다 「연결 점검」이 따로 있어서, 어디서 막혔는지 단계별로 재고 고칠 수 있는 것은 그 자리에서 고쳐요."
+      },
+      "mcpWhat": {
+        "title": "MCP 는 전부 여기 있어요",
+        "body": "MCP 는 코딩 에이전트가 쓰는 선이에요. 한쪽 끝은 이 폴더에 닿고, 다른 쪽 끝은 붙여 둔 서비스에 닿아요. 화면이 아니라 폴더에 붙기 때문에, 여기서 해 둔 설정은 Atlas 를 어디서 열어도 그대로예요."
+      },
+      "mcpTabs": {
+        "title": "탭 둘, 하는 일 둘",
+        "body": "「이 폴더 내주기」는 코딩 도구에 이 폴더를 가리키는 설정을 건네줘요. 「연결 도구」는 그 에이전트가 함께 닿을 바깥 서버이고, 옆의 숫자는 켜 둔 개수예요."
       }
     }
   },
@@ -934,6 +945,7 @@
         "goTo_insights": "분석으로",
         "goTo_projects": "프로젝트로",
         "goTo_agents": "에이전트로",
+        "goTo_mcp": "MCP 로",
         "goTo_git": "Git 기록으로",
         "openProjectPalette": "검색 팔레트 열기",
         "openGlobalPalette": "개념 · 문서 · 프로젝트 통합 검색",
@@ -3981,9 +3993,8 @@
   },
   "agents": {
     "title": "에이전트",
-    "lede": "이 컴퓨터의 코딩 도구를 찾고, 앱 안에서 안전하게 열 수 있는 도구를 구분해 보여 줍니다. 나머지도 에이전트 연결(MCP) 설정은 할 수 있고, 지원하는 도구가 없으면 여기서 설치할 수 있어요.",
-    "runtimesHeading": "이 컴퓨터의 도구",
-    "mcpHeading": "MCP 연결"
+    "lede": "Atlas 가 이 컴퓨터의 코딩 도구를 찾아, 앱 안에서 안전하게 열리는 것이 무엇인지 보여 주고, 지원하는 도구가 없으면 여기서 설치합니다.",
+    "runtimesHeading": "이 컴퓨터의 도구"
   },
   "nativeErrors": {
     "unsupported-provider": "이 앱이 아는 제공자가 아니에요. Anthropic, OpenAI, Gemini 중에서 고르거나, 주소를 적어서 이 컴퓨터의 러너에 연결해 주세요.",
@@ -4040,7 +4051,10 @@
     "remote-url-empty": "보낼 저장소 주소를 적어 주세요.",
     "remote-url-leading-dash": "주소는 붙임표로 시작할 수 없어요. 저장소 주소만 붙여 넣어 주세요.",
     "remote-url-has-whitespace": "주소에 공백이 들어 있어요. 저장소 주소만 붙여 넣어 주세요.",
-    "remote-url-unrecognized": "저장소 주소처럼 보이지 않아요. git@github.com:you/repo.git 같은 모양이면 돼요."
+    "remote-url-unrecognized": "저장소 주소처럼 보이지 않아요. git@github.com:you/repo.git 같은 모양이면 돼요.",
+    "connector-secret-ref-invalid": "이 연결 도구의 참조 형식을 이 컴퓨터에 저장할 수 없습니다. 연결 도구를 지우고 다시 추가하십시오.",
+    "connector-secret-missing": "이 연결 도구에 필요한 토큰이 이 컴퓨터의 키체인에 없습니다. 연결 도구에서 다시 입력하시거나 연결을 끄십시오.",
+    "acp-line-rewrite-failed": "에이전트에게 보낼 메시지를 준비하지 못했습니다. 대화를 다시 여십시오."
   },
   "analysisWorkbench": {
     "meaningTitle": "의미 검토",
@@ -4132,5 +4146,104 @@
     "earlierQuestions": "이전 기록의 질문 {count}개",
     "earlierQuestionsNote": "불러온 기록에서 기각되지 않은 질문입니다. 나중 분석이 비어 있거나 취소되어도 해결된 것으로 보지 않습니다.",
     "targetUnavailable": "현재 지도에서 이 대상을 찾지 못했습니다. 기록 당시 근거를 확인하거나 다시 분석하세요."
+  },
+  "mcp": {
+    "title": "MCP",
+    "lede": "MCP(에이전트가 이 폴더를 읽고 쓰는 연결) 는 AI 코딩 에이전트가 쓰는 선입니다. 한쪽 끝은 이 폴더에 닿고, 다른 쪽 끝은 붙여 둔 서비스에 닿습니다. 양쪽 끝이 이 화면에 있습니다.",
+    "tablistAriaLabel": "MCP 구역",
+    "shareHeading": "이 폴더 내주기",
+    "connectorsHeading": "연결 도구",
+    "connectorsCountTitle": "켜 둔 연결 도구 수"
+  },
+  "connectors": {
+    "title": "연결 도구",
+    "transfer": "오가는 것은 코딩 에이전트에서 서비스로 곧장 가고, Atlas 는 중간에 없으며 Atlas 의 전송 기록에도 남지 않습니다.",
+    "authority": "쓰기 권한이 있는 토큰은 에이전트가 그 서비스를 바꾸게 하고, 그래도 호출은 매번 권한 카드에서 멈춥니다.",
+    "runtimeNarrowing": "연결 도구는 Claude 세션에만 실립니다. Codex 는 아직 이 부분을 재지 않아, Codex 세션에는 온톨로지 폴더를 읽는 서버 하나만 갑니다.",
+    "runtimeAgentsLink": "실행기 보기",
+    "none": "아직 붙인 것이 없습니다.",
+    "noFolderTitle": "폴더를 먼저 여세요",
+    "noFolderBody": "연결 도구는 열어 둔 폴더 안에 적힙니다. 폴더를 열고 나서 붙이세요.",
+    "loading": "이 폴더의 연결 도구 목록을 읽는 중입니다.",
+    "scanning": "이 컴퓨터에 이미 등록된 것을 읽는 중입니다.",
+    "onOfTotal": "{total}개 중 {on}개 켜짐",
+    "on": "켬",
+    "off": "끔",
+    "add": "추가",
+    "addOpen": "연결 도구 추가",
+    "addTitle": "연결 도구 추가",
+    "close": "닫기",
+    "detailOpen": "{name} 설정",
+    "whatRunsLabel": "실제로 도는 것",
+    "searchLabel": "찾기",
+    "searchPlaceholder": "이름, 명령, 주소",
+    "remove": "지우기",
+    "removeConfirmTitle": "{name} 을(를) 지울까요?",
+    "removeConfirmBody": "이 폴더의 연결 도구 목록에서 그 줄이 사라집니다. 이 컴퓨터의 다른 것은 그대로입니다.",
+    "removeConfirmBodyKeys": "이 폴더의 연결 도구 목록에서 그 줄이 사라지고, 이 컴퓨터 키체인에서 {keys} 값이 지워집니다. 다시 읽어 올 방법은 없습니다.",
+    "removeCancel": "취소",
+    "removedAnnouncement": "{name} 을(를) 지웠습니다.",
+    "rowTransfer": "켜면 에이전트가 {destination} 과(와) 직접 주고받습니다.",
+    "rowTransferStdio": "켜면 이것이 이 컴퓨터에서 돌고, 그것이 닿는 곳과는 거기서 곧장 주고받습니다. Atlas 는 그 사이에 없습니다.",
+    "collision": "이 컴퓨터에 이미 {name} 이라는 이름의 서버가 등록되어 있습니다. Codex 는 같은 이름의 두 번째를 말없이 버리므로, 이름을 바꾸십시오.",
+    "malformed": "{path} 를 읽지 못해 여기서 아무것도 저장할 수 없습니다. 그 파일을 열어 고치시거나 지우십시오.",
+    "plaintext": "{path} 에 토큰이 그대로 적혀 있습니다({keys}). 아래에 입력하시면 이 컴퓨터의 키체인으로 옮기고, 다음 저장 때 평문은 지워집니다.",
+    "foundTitle": "이 컴퓨터에서 찾은 것",
+    "foundNone": "이 앱이 읽을 수 있는 자리 어디에도 등록된 MCP(에이전트가 바깥 서비스에 닿는 연결) 서버가 없습니다.",
+    "foundNoneForSearch": "「{query}」 와 맞는 등록이 없습니다.",
+    "sourceLabel": "찾은 곳",
+    "source": {
+      "claude": "claude",
+      "codex": "codex",
+      "cursor": "cursor",
+      "folder": "이 폴더",
+      "other": "다른 파일"
+    },
+    "foundUnsupported": "{transport} 방식 서버인데, 두 코딩 에이전트 모두 더는 이 방식을 받지 않습니다.",
+    "secretStored": "이 컴퓨터에 저장되어 있습니다. 끝 네 자리는 {last4} 입니다.",
+    "keepInKeychain": "{name} 값을 이 컴퓨터의 키체인에 둡니다",
+    "secretStoredPlain": "이 컴퓨터에 저장되어 있습니다.",
+    "valueNotInFile": "이 이름의 값은 파일에 적지 않습니다. 입력하시려면 키체인을 켜십시오.",
+    "valuePlaceholder": "값",
+    "secretMissing": "이 컴퓨터에 아직 값이 없습니다. 값 없이는 이 연결 도구가 뜨지 않습니다.",
+    "secretSave": "저장",
+    "secretsWeb": "이 연결 도구에는 {keys} 값이 필요합니다. 그 값을 담아 두려면 설치한 앱이 필요합니다.",
+    "customTitle": "직접 적기",
+    "customBody": "아직 어디에도 등록되지 않은 서버는 여기에 적습니다.",
+    "transportLabel": "무엇인가요",
+    "customAdd": "연결 도구 추가",
+    "addFailed": "아무것도 저장되지 않았습니다: {reason}.",
+    "addFailReason": {
+      "noFolder": "열려 있는 폴더가 없습니다",
+      "malformed": "그 폴더의 연결 도구 파일을 읽을 수 없습니다",
+      "writeFailed": "폴더가 쓰기를 거부했습니다",
+      "secret": "토큰이 평문으로 적힐 뻔했습니다"
+    },
+    "fieldName": "이름",
+    "fieldCommand": "실행할 것",
+    "fieldCommandHint": "전체 경로를 적으십시오. 에이전트는 PATH 없이 돌기 때문에 npx 처럼 이름만 적으면 아무것도 찾지 못합니다.",
+    "fieldArgs": "덧붙일 말",
+    "fieldUrl": "주소",
+    "fieldEnvKeys": "환경 변수 이름",
+    "fieldHeaderKeys": "헤더 이름",
+    "fieldKeysHint": "이름만 적으십시오. 자격 증명처럼 보이는 값은 파일이 아니라 키체인으로 들어갑니다.",
+    "fieldKeysHintWeb": "이름만 적으십시오. 값을 담아 두려면 설치한 앱이 필요합니다.",
+    "webTitle": "이미 등록된 것을 찾으려면 설치한 앱이 필요합니다",
+    "webBody": "~/.claude.json 이나 ~/.codex/config.toml 을 읽으려면 이 컴퓨터에서 도는 프로그램이 있어야 하고, 토큰을 담아 둘 자리도 여기에는 없습니다. 직접 추가하는 일은 여기서도 되고, 그 목록은 폴더에 적힙니다.",
+    "webGetApp": "앱 받기",
+    "transport": {
+      "stdio": "프로그램",
+      "http": "주소"
+    },
+    "problem": {
+      "name-empty": "이름을 적으십시오.",
+      "name-not-unique": "같은 이름을 쓰는 연결 도구가 이미 있습니다.",
+      "command-missing": "실행할 것을 적으십시오.",
+      "command-not-absolute": "전체 경로를 적으십시오. 에이전트는 PATH 없이 돕니다.",
+      "url-missing": "주소를 적으십시오.",
+      "url-not-http": "주소는 http:// 또는 https:// 로 시작해야 합니다.",
+      "secret-literal": "토큰이 그대로 적혀 있습니다. 먼저 키체인으로 옮기십시오.",
+      "value-missing": "키체인에서 가져오기로 한 변수인데 그 뒤에 아직 아무것도 없습니다."
+    }
   }
 }

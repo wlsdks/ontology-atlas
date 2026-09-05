@@ -103,8 +103,8 @@
       "vaultBodyStatic": "Pick a writable folder in the desktop app or the local workspace flow",
       "vaultCtaLocal": "Open",
       "vaultCtaStatic": "Get started",
-      "agentStatusNoVault": "No workspace connected",
-      "agentNoVaultHint": "Open a workspace folder to check and repair agent config files here.",
+      "agentStatusNoVault": "No folder open",
+      "agentNoVaultHint": "Open the folder your ontology lives in, and the connection files can be checked and repaired here.",
       "agentTerminalTitle": "Connect from the terminal instead",
       "agentTerminalBody": "These two lines make a vault and write a .mcp.json and a .codex/config.toml that point Claude Code, Cursor and Codex at that folder. They run on your machine and nothing leaves it.",
       "cliPlaceholderHint": "Set this once in your terminal: export ATLAS=\"path to your ontology-atlas source folder\". There is no npm package.",
@@ -213,6 +213,7 @@
       "agentNotificationKindsCaption": "Muted kinds never reach the bell.",
       "runtimes": {
         "intro": "Atlas finds the AI coding tools installed on this computer. Only a tool confirmed to ask before writing opens the chat beside the map; the rest can still be used for the agent connection (MCP) setup.",
+        "mcpLink": "Share this folder with a tool you run yourself, or attach a connector, on the MCP screen",
         "recheck": "Check again",
         "checking": "Looking…",
         "readyHeading": "Found on this computer ({count})",
@@ -221,7 +222,7 @@
         "noneReady": "Nothing found yet",
         "noneReadyCaption": "Install Claude Agent or Codex and they show up here. The install guides are in the list below.",
         "webLabel": "A browser is not allowed to start programs on this computer",
-        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Even here, the “MCP connection” section below lets you point a tool you started yourself at this folder.",
+        "webCaption": "Install the macOS app to run the tools on this computer from inside Atlas. Pointing a tool you started yourself at this folder works right now, in the “Share this folder” section on the MCP screen.",
         "state": {
           "ready": "Ready",
           "cli-missing": "Install needed",
@@ -237,7 +238,8 @@
         "installGuide": "How to install",
         "openChat": "Open a chat with this tool",
         "loginHint": "You are not signed in to this tool. Run it once in a terminal to sign in and it will appear here.",
-        "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place."
+        "diskNote": "Starting a chat gives Atlas its own settings folder for that tool inside the app, so your own settings for it are left alone. The login you already did is linked, not copied, so you do not have to sign in again. The original stays in one place.",
+        "webMcpLink": "Open MCP"
       },
       "appUpdate": {
         "intro": "When a new build of this app ships, we tell you in the bottom-right corner. You can also check right now.",
@@ -252,7 +254,7 @@
         "resultFailed": "Couldn't fetch the update information. Check your connection, then try again.",
         "resultInstallFailed": "The update could not finish installing. Try again in a moment."
       },
-      "goToAgents": "Agents"
+      "goToMcp": "MCP"
     },
     "primaryAriaLabel": "Primary menu",
     "notificationsAriaLabel": "Notifications"
@@ -265,6 +267,7 @@
     "insights": "Insights",
     "projects": "Projects",
     "agents": "Agents",
+    "mcp": "MCP",
     "git": "History",
     "getApp": "Get the app",
     "getAppTitle": "The Mac app remembers your folder, opens offline, and handles history and AI connections: Windows is in progress"
@@ -512,7 +515,7 @@
       "reason": "all of it comes from real documents"
     },
     "readout": {
-      "projectUnit": "project",
+      "conceptUnit": "concepts",
       "domainUnit": "domains",
       "tier_spine": "Domains only",
       "tier_circuit": "Down to capabilities",
@@ -631,6 +634,14 @@
       "agentsCheck": {
         "title": "If nothing connects, measure it here",
         "body": "“Check again” re-scans this computer. Each tool also has its own connection check that measures where things are stuck, step by step, and repairs what it can."
+      },
+      "mcpWhat": {
+        "title": "Everything MCP lives here",
+        "body": "MCP is the wire a coding agent uses. One end reaches this folder, the other reaches the services you attach. It attaches to the folder rather than to a screen, so what you set up here holds wherever Atlas is open."
+      },
+      "mcpTabs": {
+        "title": "Two tabs, two jobs",
+        "body": "“Share this folder” hands a coding tool the config that points it here. “Connectors” is the outside servers that agent may also reach, and the number beside it counts the ones switched on."
       }
     }
   },
@@ -934,6 +945,7 @@
         "goTo_insights": "Go to insights",
         "goTo_projects": "Go to projects",
         "goTo_agents": "Go to Agents",
+        "goTo_mcp": "Go to MCP",
         "goTo_git": "Go to git history",
         "openProjectPalette": "Open the search palette",
         "openGlobalPalette": "Search concepts, docs, and projects together",
@@ -3981,9 +3993,8 @@
   },
   "agents": {
     "title": "Agents",
-    "lede": "Atlas finds coding tools on this computer, shows which can open safely inside the app, and keeps agent-connection (MCP) setup available for the rest. If a supported tool is missing, you can install it here.",
-    "runtimesHeading": "Tools on this computer",
-    "mcpHeading": "MCP connection"
+    "lede": "Atlas finds coding tools on this computer, shows which of them can open safely inside the app, and installs a supported one that is missing.",
+    "runtimesHeading": "Tools on this computer"
   },
   "nativeErrors": {
     "unsupported-provider": "That is not an AI provider this app knows. Pick Anthropic, OpenAI, or Gemini, or connect a local runner by its address.",
@@ -4040,7 +4051,10 @@
     "remote-url-empty": "Type the repository address to send to.",
     "remote-url-leading-dash": "The address cannot start with a dash. Paste only the repository address.",
     "remote-url-has-whitespace": "The address has a space in it. Paste only the repository address.",
-    "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git."
+    "remote-url-unrecognized": "That does not look like a repository address. It looks like git@github.com:you/repo.git.",
+    "connector-secret-ref-invalid": "That connector reference is not a shape this machine can store. Remove the connector and add it again.",
+    "connector-secret-missing": "A token this connector needs is not in this machine’s keychain. Open Connectors, enter it again, or switch the connector off.",
+    "acp-line-rewrite-failed": "The message to the agent could not be prepared. Try opening the conversation again."
   },
   "analysisWorkbench": {
     "meaningTitle": "Meaning review",
@@ -4132,5 +4146,104 @@
     "earlierQuestions": "Questions from earlier versions: {count}",
     "earlierQuestionsNote": "These questions have no dismissal in loaded history. A later empty or cancelled result does not resolve them.",
     "targetUnavailable": "This target is unavailable on the current map. Inspect its recorded evidence or run a new analysis."
+  },
+  "mcp": {
+    "title": "MCP",
+    "lede": "MCP is the wire an AI coding agent uses. One end reaches this folder, the other reaches the services you attach. Both ends live on this screen.",
+    "tablistAriaLabel": "MCP sections",
+    "shareHeading": "Share this folder",
+    "connectorsHeading": "Connectors",
+    "connectorsCountTitle": "Connectors switched on"
+  },
+  "connectors": {
+    "title": "Connectors",
+    "transfer": "Traffic goes from the coding agent straight to the service; Atlas is not in the middle and its transfer log does not record it.",
+    "authority": "A token that can write lets the agent change that service; every call still stops at your permission card.",
+    "runtimeNarrowing": "Connectors ride Claude sessions. Codex has not been measured for this yet, so a Codex session gets the folder's own server and nothing else.",
+    "runtimeAgentsLink": "See your runtimes",
+    "none": "Nothing attached yet.",
+    "noFolderTitle": "Open your folder first",
+    "noFolderBody": "Connectors are written into the folder you open. Open it, then attach one.",
+    "loading": "Reading this folder’s connector list.",
+    "scanning": "Reading what this computer already registers.",
+    "onOfTotal": "{on} of {total} on",
+    "on": "On",
+    "off": "Off",
+    "add": "Add",
+    "addOpen": "Add a connector",
+    "addTitle": "Add a connector",
+    "close": "Close",
+    "detailOpen": "Settings for {name}",
+    "whatRunsLabel": "What runs",
+    "searchLabel": "Search",
+    "searchPlaceholder": "A name, a command, an address",
+    "remove": "Remove",
+    "removeConfirmTitle": "Remove {name}?",
+    "removeConfirmBody": "The row leaves this folder’s connector list. Nothing else on this computer changes.",
+    "removeConfirmBodyKeys": "The row leaves this folder’s connector list, and these values are deleted from this computer’s keychain: {keys}. There is no way to read them back.",
+    "removeCancel": "Cancel",
+    "removedAnnouncement": "{name} removed.",
+    "rowTransfer": "Once on, the agent talks to {destination} directly.",
+    "rowTransferStdio": "Once on, this runs on your computer, and whatever it reaches it reaches from there. Atlas is not in between.",
+    "collision": "This machine already registers a server called {name}. Codex drops a second one under that name without saying so. Rename this one.",
+    "malformed": "{path} could not be read, so nothing here can be saved. Open that file and fix or delete it.",
+    "plaintext": "{path} holds a token in plain text ({keys}). Enter it below to move it into this machine's keychain; the next save removes the plain text.",
+    "foundTitle": "Found on this computer",
+    "foundNone": "No MCP server is registered anywhere this app can read.",
+    "foundNoneForSearch": "Nothing registered here matches “{query}”.",
+    "sourceLabel": "In",
+    "source": {
+      "claude": "claude",
+      "codex": "codex",
+      "cursor": "cursor",
+      "folder": "this folder",
+      "other": "another file"
+    },
+    "foundUnsupported": "This is an {transport} server, and neither coding agent accepts that transport any more.",
+    "secretStored": "Stored on this machine, ending {last4}.",
+    "keepInKeychain": "Keep {name} in this machine's keychain",
+    "secretStoredPlain": "Stored on this machine.",
+    "valueNotInFile": "A value under this name is never written to the file. Turn the keychain on to enter it.",
+    "valuePlaceholder": "value",
+    "secretMissing": "No value on this machine yet. The connector will not start without it.",
+    "secretSave": "Save",
+    "secretsWeb": "This connector needs a value for {keys}. Keeping it needs the installed app.",
+    "customTitle": "By hand",
+    "customBody": "For a server that is not registered anywhere yet.",
+    "transportLabel": "What it is",
+    "customAdd": "Add connector",
+    "addFailed": "Nothing was saved: {reason}.",
+    "addFailReason": {
+      "noFolder": "no folder is open",
+      "malformed": "the connector file in that folder could not be read",
+      "writeFailed": "the folder refused the write",
+      "secret": "a token would have been written in plain text"
+    },
+    "fieldName": "Name",
+    "fieldCommand": "Command",
+    "fieldCommandHint": "The full path. The agent runs without a PATH, so a bare name like npx finds nothing.",
+    "fieldArgs": "Arguments",
+    "fieldUrl": "Address",
+    "fieldEnvKeys": "Environment variable names",
+    "fieldHeaderKeys": "Header names",
+    "fieldKeysHint": "Names only. A value that looks like a credential goes in the keychain, never in the file.",
+    "fieldKeysHintWeb": "Names only. Keeping a value needs the installed app.",
+    "webTitle": "Finding what is already registered needs the installed app",
+    "webBody": "Reading ~/.claude.json or ~/.codex/config.toml needs a program running on this computer, and there is nowhere on this surface to keep a token. Adding a connector by hand still works, and the list is written into your folder.",
+    "webGetApp": "Get the app",
+    "transport": {
+      "stdio": "A program",
+      "http": "An address"
+    },
+    "problem": {
+      "name-empty": "Give it a name.",
+      "name-not-unique": "Another connector already uses this name.",
+      "command-missing": "Name the program to run.",
+      "command-not-absolute": "Write the full path: the agent runs without a PATH.",
+      "url-missing": "Give the address.",
+      "url-not-http": "The address has to start with http:// or https://.",
+      "secret-literal": "A token is written in plain text; move it into the keychain first.",
+      "value-missing": "A variable is set to come from the keychain and there is nothing behind it yet."
+    }
   }
 }

@@ -6244,6 +6244,21 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — MCP becomes its own destination, the rail cap moves to eight, and the page frame owns the desktop bottom",
+      "slug": "2026-09-05-mcp-becomes-its-own-destination-the-rail-cap-moves-to-eight-and-the-page-frame-owns-the-desktop-bottom"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-05 — A person attaches external MCP servers to the in-app agent; Atlas hands the list over and never sits in the path",
+      "slug": "2026-09-05-a-person-attaches-external-mcp-servers-to-the-in-app-agent-atlas-hands-the-list-over-and-never-sits-in-the-path"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-05 — The cone fits the free canvas, its dots stop riding the zoom, a fogged rim stays visible, and its labels and readout say what is drawn",
+      "slug": "2026-09-05-the-cone-fits-the-free-canvas-its-dots-stop-riding-the-zoom-a-fogged-rim-stays-visible-and-its-labels-and-readout-say-what-is-drawn"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — Budget compact handoffs by transmitted JSON, preserving every fact",
       "slug": "2026-09-05-budget-compact-handoffs-by-transmitted-json-preserving-every-fact"
     },
@@ -11067,6 +11082,16 @@
       "slug": "agents-agent-new-2026-08-20-catalog-90"
     },
     {
+      "depth": 3,
+      "text": "`/mcp` — MCP (new 2026-09-05)",
+      "slug": "mcp-mcp-new-2026-09-05"
+    },
+    {
+      "depth": 4,
+      "text": "Connectors — the external MCP servers a folder may reach (new 2026-09-05)",
+      "slug": "connectors-the-external-mcp-servers-a-folder-may-reach-new-2026-09-05"
+    },
+    {
       "depth": 2,
       "text": "3. MCP server (current runtime inventory)",
       "slug": "3-mcp-server-current-runtime-inventory"
@@ -12971,6 +12996,43 @@
       "depth": 2,
       "text": "Evidence",
       "slug": "evidence"
+    },
+    {
+      "depth": 2,
+      "text": "Confidence",
+      "slug": "confidence"
+    }
+  ],
+  "ontology/capabilities/mcp-connectors": [
+    {
+      "depth": 2,
+      "text": "Definition",
+      "slug": "definition"
+    },
+    {
+      "depth": 2,
+      "text": "Four fences",
+      "slug": "four-fences"
+    },
+    {
+      "depth": 2,
+      "text": "What the person is told before switching one on",
+      "slug": "what-the-person-is-told-before-switching-one-on"
+    },
+    {
+      "depth": 2,
+      "text": "Runtime narrowing",
+      "slug": "runtime-narrowing"
+    },
+    {
+      "depth": 2,
+      "text": "Where the values live",
+      "slug": "where-the-values-live"
+    },
+    {
+      "depth": 2,
+      "text": "Implementation evidence",
+      "slug": "implementation-evidence"
     },
     {
       "depth": 2,

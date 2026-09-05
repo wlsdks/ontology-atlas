@@ -10,6 +10,7 @@ import {
   subscribeAgentChatIntent,
 } from "@/shared/lib/agent-chat-intent";
 import {
+  connectorAcpServers,
   isGuardedRuntime,
   runtimeOwnsWriteGate,
   vaultMcpServers,
@@ -19,6 +20,7 @@ import {
   analysisGraphFromInsight,
   presentationRelationKeysForGraphEdge,
 } from "@/features/acp-session";
+import { useVaultConnectors } from "@/features/mcp-connectors";
 import { agentChatDoor } from "../model/agent-chat-door";
 import { resolveAnalysisFindingTarget } from '../model/analysis-finding-target';
 import { isSearchLaneCrowded, SEARCH_LANE_CROWDED_BELOW_PX } from "../model/search-lane-density";
@@ -2498,6 +2500,12 @@ function HomePageImpl() {
    * `mcp.atlas-vault.*` produced identical results from two processes. The decision
    * and its evidence are in `vault-mcp-server.ts`.
    */
+  /*
+   * The external MCP servers this person attached to this vault. Read from the folder rather
+   * than from browser storage, so the answer travels with the vault and both surfaces see the
+   * same list (`.ontology-atlas/connectors.json`).
+   */
+  const vaultConnectors = useVaultConnectors(vault.handle);
   const acpMcpServers = useMemo(() => {
     const registration =
       vaultSelfReadSlot(acpRuntimeId) === 'codex-config'
@@ -2508,15 +2516,26 @@ function HomePageImpl() {
         : null;
     // Claude's isolated config already asks before every tool call, so a second
     // server-side gate would double-prompt. Everything else gets the server gate.
-    return vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
-      ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
-    });
+    return [
+      ...vaultMcpServers(agentServer.launch, gitVaultPath, registration, {
+        ownsWriteGate: runtimeOwnsWriteGate(acpRuntimeId),
+      }),
+      /*
+       * **The vault first, then whatever the person attached.** Atlas runs none of these — the
+       * descriptor goes into the handshake and the agent spawns it (`connector-servers.ts`).
+       * Order matters twice: claude-agent-acp lets a later same-named entry override an earlier
+       * one, and the session's instructions name the vault server, so it must be the one that
+       * survives.
+       */
+      ...connectorAcpServers(vaultConnectors.connectors, acpRuntimeId),
+    ];
   }, [
     agentServer.launch,
     gitVaultPath,
     acpRuntimeId,
     vault.agentConfigStatus?.codexConfigValid,
     vault.agentConfigStatus?.codexRegisteredCommand,
+    vaultConnectors.connectors,
   ]);
 
   /*
@@ -4122,12 +4141,15 @@ function HomePageImpl() {
     }),
     [t],
   );
-  // The project count in the bottom-right readout (`FirstRunReadout`). Real data,
-  // derived from the same `ontologyInsight` as `indexDomainCount`, so it cannot drift.
-  const firstRunProjectCount = useMemo(
-    () => ontologyInsight?.nodes.filter((node) => node.kind === "project").length ?? 0,
-    [ontologyInsight],
-  );
+  /*
+   * The bottom-right readout's own numbers (`FirstRunReadout`). `drawnConceptCount`
+   * is reported by the map for the frame it just painted, and the total comes from
+   * the same `ontologyInsight` as `indexDomainCount`, so the two cannot drift. The
+   * readout used to open with the project count — 1 in every vault anyone has
+   * opened — and then describe the zoom rule rather than the screen.
+   */
+  const [drawnConceptCount, setDrawnConceptCount] = useState(0);
+  const totalConceptCount = ontologyInsight?.nodes.length ?? 0;
   const visibleTopologyNodeCount =
     localGraphRoot === null ? topologyTotalNodes : localGraphProjects.length;
   const visibleTopologyRelationCount =
@@ -5597,6 +5619,7 @@ function HomePageImpl() {
                         handleClose();
                       }}
                       onVisibleCountChange={setTopologyVisibleCount}
+                      onDrawnCountChange={setDrawnConceptCount}
                       onGraphStatsChange={handleTopologyGraphStatsChange}
                       onZoomTierChange={setMapZoomTier}
                       onContextMenuNode={handleContextMenuNode}
@@ -5883,7 +5906,8 @@ function HomePageImpl() {
                 aria-hidden={v2DatasheetModel ? true : undefined}
               >
                 <FirstRunReadout
-                  projectCount={firstRunProjectCount}
+                  conceptCount={drawnConceptCount}
+                  totalConceptCount={totalConceptCount}
                   domainCount={indexDomainCount}
                   tier={mapZoomTier}
                   // Plain mode can never reach the element tier (`PLAIN_TIER_REVEAL`), so

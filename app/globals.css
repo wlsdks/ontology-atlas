@@ -2421,6 +2421,15 @@
      */
     --dialog-w-sm: 420px;
     --dialog-w-md: 560px;
+    /*
+     * How tall a dialog may grow before its own body scrolls. Added 2026-09-05 (design council):
+     * the add-a-connector dialog carried `max-h-[min(80vh,44rem)]`, the only height clamp in the
+     * codebase that was not a token, so a second long dialog would have eyeballed its own number
+     * exactly as the eight hardcoded widths above once did. `80vh` stays at the call site — it is
+     * a relationship to the viewport, not a value — and this is the absolute ceiling paired with
+     * it.
+     */
+    --dialog-max-h: 44rem;
     /* 44 → 36 (owner's 3rd report on 2026-07-23: "visibly too large" even after removing zoom)
        — Chrome density itself is set to pro-toolbar levels (32–36). Since this is a single token, all previous chrome
        fields/tiles/status chips/floating stacks decrease together. */
@@ -3072,6 +3081,24 @@
        ratio (0.92) so the DEFAULT overview reads as CIRCUIT (farT ≈ 0), while
        tier visibility rides a separate zoom-ratio signal (model/tier-visibility). */
     --topology-v2-overview-entry-ratio: 0.95;
+    /* Cone (3D) fit — `topology-camera-math.ts#computeDomeFitCameraTarget`.
+       The cone is fitted into the FREE canvas (canvas minus the measured panels)
+       minus these two bands, and then spans this fraction of whichever axis binds.
+       Bottom band = the instrument readout row. There is no second padding term:
+       the 15% pad plus the 0.95 overview ratio the cone used to inherit is what
+       left it at 18.6% of the canvas (measured 2026-09-05).
+       Top band 104, not the tool lane's own 66: the LABEL pipeline culls against
+       `--topology-v2-safe-inset-top`(148), and a project label is protected there
+       — it CLAMPS to the inset edge instead of culling, and the clamp shift is
+       then carried into the flipped slot. At 80 the apex centre landed at y=101
+       and y=99, above that line, so the apex ring ran through its own name at
+       1920 and the name sat 43px below its disc at 1440 (guardian measurement,
+       2026-09-05). 104 puts the apex near 125, its below-slot anchor near 159,
+       and it flips above with no clamp — the clean 1024 frame's behaviour at
+       every width. Fill stays over the 60% floor: 62% at 1920, 70% at 1440. */
+    --topology-v2-dome-fit-fill: 0.98;
+    --topology-v2-dome-fit-inset-top: 104;
+    --topology-v2-dome-fit-inset-bottom: 32;
     --topology-v2-focus-fit-max-scale: 1.9;
     /* Dive-framing fix (owner: "diving too deep on click — over-zoom·label
        collision") — now MULTIPLICATIVE margin (previously fixed px padding 70): expand ego bbox

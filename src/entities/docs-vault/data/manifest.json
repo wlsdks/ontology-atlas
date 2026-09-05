@@ -95,7 +95,7 @@
       },
       "headings": [],
       "excerpt": "2026-07-27 update — the current architecture is a local-first, git-backed meaning layer: a folder of markdown files that records what each part of the product is, who owns it, what it depends on, and what proves it. People and AI coding agents read and write that same folder. Round 10 permanently removed every login an",
-      "wordCount": 4264,
+      "wordCount": 4434,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -773,7 +773,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29908,
+      "wordCount": 29924,
       "updatedAt": "2026-09-05",
       "linksOut": []
     },
@@ -809,7 +809,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 102000,
+      "wordCount": 102859,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "slug"
@@ -874,7 +874,7 @@
       },
       "headings": [],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see design-references/DESIGN-linear.md. v2 (2026-07): The B2+ \"Circuit × Constellation\" visual language shipped from topology-map-v2 has become the standard for page rollout (gateway → docs/ontology hub → projects/",
-      "wordCount": 39147,
+      "wordCount": 39673,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "design-references/DESIGN-linear",
@@ -915,7 +915,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 26897,
+      "wordCount": 27649,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -1773,6 +1773,36 @@
       "excerpt": "Ability to switch the UI locale via [locale] prefix routing based on next-intl. src/features/locale-switch (implementation evidence) AGENTS.md: Routes (\"The current routes are all [locale] prefixed by next-intl\") medium-high (0.8)",
       "wordCount": 37,
       "updatedAt": "2026-08-23",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/mcp-connectors",
+      "path": "docs/ontology/capabilities/mcp-connectors.md",
+      "title": "External MCP Connectors",
+      "tags": [],
+      "frontmatter": {
+        "uid": "b2242e13-b82e-40e2-aff7-ee15f5fcc911",
+        "slug": "capabilities/mcp-connectors",
+        "kind": "capability",
+        "title": "External MCP Connectors",
+        "display_ko": "외부 MCP 연결 도구",
+        "display_en": "External MCP Connectors",
+        "domain": "domains/agent-integration",
+        "elements": [],
+        "path": "src/features/mcp-connectors/ui/ConnectorsPanel.tsx",
+        "created_by": "agent:claude",
+        "dependencies": [
+          "capabilities/acp-runtime"
+        ],
+        "relation_notes": {
+          "capabilities/acp-runtime": "A connector is a descriptor this capability hands to the ACP session in session/new; that runtime spawns it. Connectors ride only a runtime whose configuration was measured to raise a permission request for an MCP child, which today is Claude alone."
+        },
+        "relates": []
+      },
+      "headings": [],
+      "excerpt": "The ability to attach an external MCP server (Notion, GitHub, Atlassian, or one somebody wrote themselves) to the in-app coding-agent conversation, so the agent can use it beside the server that reads this ontology folder. Atlas runs none of them: it passes the descriptor into the ACP handshake and the coding agent spa",
+      "wordCount": 743,
+      "updatedAt": "2026-09-05",
       "linksOut": []
     },
     {
@@ -3865,7 +3895,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2198,
+      "wordCount": 2316,
       "updatedAt": "2026-09-05",
       "linksOut": [
         "DECISIONS"
@@ -4489,6 +4519,11 @@
         "linkText": "domains/agent-integration"
       },
       {
+        "fromSlug": "ontology/capabilities/mcp-connectors",
+        "context": "frontmatter · **[domains/agent-integration]**",
+        "linkText": "domains/agent-integration"
+      },
+      {
         "fromSlug": "ontology/capabilities/mcp-server",
         "context": "frontmatter · **[domains/agent-integration]**",
         "linkText": "domains/agent-integration"
@@ -4561,6 +4596,11 @@
     "ontology/capabilities/acp-runtime": [
       {
         "fromSlug": "ontology/capabilities/ai-analysis-review",
+        "context": "frontmatter · **[capabilities/acp-runtime]**",
+        "linkText": "capabilities/acp-runtime"
+      },
+      {
+        "fromSlug": "ontology/capabilities/mcp-connectors",
         "context": "frontmatter · **[capabilities/acp-runtime]**",
         "linkText": "capabilities/acp-runtime"
       },
@@ -6560,6 +6600,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/locale-switch",
                 "title": "Locale Switching"
+              },
+              {
+                "name": "mcp-connectors",
+                "path": "ontology/capabilities/mcp-connectors",
+                "type": "doc",
+                "slug": "ontology/capabilities/mcp-connectors",
+                "title": "External MCP Connectors"
               },
               {
                 "name": "mcp-server",

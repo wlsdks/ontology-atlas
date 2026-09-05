@@ -400,6 +400,86 @@ describe('볼트 서버 — 꽂았을 때만 꽂혔다고 말한다', () => {
       await result.current.stop();
     });
   });
+
+  it('외부 연결 도구만 실려도 볼트 서버가 있다고 말하지 않는다', async () => {
+    /*
+     * 2026-09-05. `hasVaultMcp` used to be «the array is not empty», which was the same sentence
+     * while the array was ours alone. With external connectors in it, a person with one switched
+     * on and no bundled MCP binary would have had the session claim a vault server it never
+     * wired — and pass `atlas-vault` as an auto-allowed name to whatever else answered to it.
+     */
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [
+          {
+            name: 'notion',
+            command: '/opt/homebrew/bin/npx',
+            args: ['-y', '@notionhq/notion-mcp-server'],
+            env: [],
+          },
+        ],
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const call = bridge.sent.find((m) => m.method === 'session/new');
+    const params = call?.params as Record<string, unknown>;
+    // The connector is still handed over — Atlas passes it along, the agent runs it.
+    expect(params.mcpServers).toEqual([
+      {
+        name: 'notion',
+        command: '/opt/homebrew/bin/npx',
+        args: ['-y', '@notionhq/notion-mcp-server'],
+        env: [],
+      },
+    ]);
+    const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
+    expect(meta?.systemPrompt?.append).not.toContain('atlas-vault');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
+
+  it('볼트 항목과 외부 연결 도구가 함께 실리면 볼트는 여전히 볼트다', async () => {
+    const { result } = renderHook(() =>
+      useAcpSession({
+        runtimeId: 'claude-acp',
+        vaultRoot: '/vault',
+        mcpServers: [
+          { name: 'atlas-vault', command: '/app/ontology-atlas-mcp', args: [], env: [] },
+          { type: 'http', name: 'linear', url: 'https://mcp.linear.app/mcp', headers: [] },
+        ],
+      }),
+    );
+    const first = result.current.start();
+    await waitFor(() => expect(bridge.starts).toBe(1));
+    await act(async () => {
+      bridge.release?.();
+      await first;
+    });
+
+    const call = bridge.sent.find((m) => m.method === 'session/new');
+    const params = call?.params as Record<string, unknown>;
+    // Vault first, and the connector alongside it — the array is passed through untouched.
+    expect((params.mcpServers as Array<{ name: string }>).map((s) => s.name)).toEqual([
+      'atlas-vault',
+      'linear',
+    ]);
+    const meta = params._meta as { systemPrompt?: { append?: string } } | undefined;
+    expect(meta?.systemPrompt?.append).toContain('atlas-vault');
+
+    await act(async () => {
+      await result.current.stop();
+    });
+  });
 });
 
 describe('Codex 권한 바닥 — 대화가 준비되기 전에 read-only를 건다', () => {

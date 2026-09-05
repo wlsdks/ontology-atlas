@@ -64,6 +64,20 @@ const WEBVIEW_AGENTS_WORKBENCH_MARKERS = [
   /이 컴퓨터의 도구|MCP 연결|Tools on this computer|MCP connection/,
 ];
 
+/*
+ * MCP became its own destination on 2026-09-05, and `--require-webview-content` went red on the
+ * packaged bundle because the generic markers are the map's. Two route-owned, user-visible
+ * strings: the destination's own title, and either tab name in either locale.
+ */
+const WEBVIEW_MCP_WORKBENCH_MARKERS = [
+  /MCP/,
+  // The payload carries only the first few hundred characters of the body, and the tab strip's
+  // labels arrive uppercase through CSS text-transform, so the route is recognised by its own
+  // lede sentence (both locales) with the tab words as a fallback (measured 2026-09-05: the
+  // body text ended at "SHARE THIS F").
+  /MCP is the wire|AI 코딩 에이전트가 쓰는 선|Share this folder|Connectors|이 폴더 공유|커넥터/i,
+];
+
 const WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS = [
   /온톨로지|Ontology|Atlas/,
   /Map|지도|INDEX|Concept map|개념|Workspace|작업공간|Relief/,
@@ -79,6 +93,9 @@ export function webviewWorkbenchMarkersForPath(expectedPath = null) {
     const pathname = new URL(expectedPath, "tauri://localhost/").pathname;
     if (/\/(?:ko|en)\/agents\/?$/.test(pathname)) {
       return WEBVIEW_AGENTS_WORKBENCH_MARKERS;
+    }
+    if (/\/(?:ko|en)\/mcp\/?$/.test(pathname)) {
+      return WEBVIEW_MCP_WORKBENCH_MARKERS;
     }
     if (/\/(?:ko|en)\/topology\/?$/.test(pathname)) {
       return WEBVIEW_TOPOLOGY_WORKBENCH_MARKERS;

@@ -238,6 +238,7 @@ Intentional deviations between prototype and shipped code (not drift, for refere
 
 - The default overview is tight-fit (towards the star) in the prototype, but enters from the circuit side in shipping with `--topology-v2-overview-entry-ratio: 0.95`.
 - `--topology-v2-edge-pulse-speed-ego`(0.2) is an added lead spec not present in the prototype ("more current flows through selected nodes").
+- The **Cone (3D) view fits itself**, not through the 2D overview fit: `--topology-v2-dome-fit-fill`(0.98) with `--topology-v2-dome-fit-inset-top`(104) and `--topology-v2-dome-fit-inset-bottom`(32), against the canvas minus the **measured** panel obstruction (`measureCanvasInsets`) rather than the static `--topology-v2-safe-inset-*`. Why it is its own fit: the 2D reservations describe things the cone never draws — the docking chips inside `safe-inset-top`(148) are a density device, `safe-inset-bottom`(96) plus its label allowance is a 2D bottom-row reservation, and the side values are static guesses at panels the measurement already knows the width of. Fitted through them, and padded 15% a side on top, the cone measured **602 x 620 px on a 1532 x 1080 free canvas at 1920 — 22.6%** (2026-09-05, sample vault). The bottom band is the instrument readout row; `domeFitFill` is the only padding term, because two multiplied paddings is how the old number got small without anyone choosing it. The top band is **104, not the tool lane's own 66**: the label pipeline culls against `--topology-v2-safe-inset-top`(148) and a project label is *protected* there, so it clamps to the inset edge instead of culling and carries the clamp shift into its flipped slot. At 80 the apex centre landed at y=101 (1920) and y=99 (1440), above that line — the apex ring ran through its own name at 1920, and at 1440 the name sat 43px below its disc, 9px under an unlabelled neighbour (guardian measurement, 2026-09-05). At 104 the apex sits near 125 and flips above cleanly at every width, and the fill stays over the floor (62% at 1920, 70% at 1440). Decision logic: `topology-camera-math.ts#computeDomeFitCameraTarget`; gate: `tests/contract/cone-fit-fill.contract.test.ts`.
 - `--topology-v2-safe-inset-*` is a concept absent from the panel-less prototype — a width correction for analysis panels/popover rails covering the canvas in the shipping environment.
 - The data sheet panel (`TopologyV2DetailPanel`) itself is a surface added after the prototype (only tip existed) — the instrument density contract's truth source is §2.6 token block.
 - Panel tertiary text `#868690` is an AA contrast nudge from prototype `#77777f` (Guardian follow-up #2).
@@ -291,6 +292,8 @@ The node icon set (geometry/lines, see "Personalization" section #21 below) neve
 | element | 7 | `--topology-v2-radius-element` |
 
 `radiusForKind()` (`ui/topology-world.ts`) is the single lookup point. The values themselves are a **design decision** enforcing a strict hierarchy, so lint/contract tests cannot judge them — changing them requires re-convergence at the same evidence level (45 rounds of research + systematic review) as described in the "Map Ink Ladder" section.
+
+**The Cone (3D) view has its own radius unit: screen pixels.** `DOME_NODE_PX` (`model/dome-view.ts`) is project 13 / domain 8.5 / capability 5.8 / element 4, multiplied only by perspective — the camera zoom is deliberately not a factor, so fitting the cone larger buys spacing rather than ink. It was a dome-unit table riding the zoom until 2026-09-05, and that is why 27 overlapping node pairs came back unchanged at 1920, 1440, 1024 and 834: the dots grew by exactly what the gaps grew. The ladder's order is the same as the world ladder above; the numbers differ because a 3D dot is a dot, not a chip carrying a numeral. A cone node's **rim** is the flat map's own stroke token, and depth fog may not darken it past the 3:1 ink floor — `DOME_RIM_FOG_FLOOR` (0.75) is the alpha share that keeps the dimmest of those tokens at 3:1 over the canvas ground, derived from the shipped token values by `tests/contract/dome-rim-contrast.contract.test.ts` rather than trusted as a number. Only the rim has that floor; the fill still sinks to 0.09, so depth keeps reading.
 
 We correct the optical illusion where squares appear larger than circles by reducing their radius — `DOMAIN_HALF_EXTENT_RATIO = 0.86` (shape half-angle = 86% of circle radius), element is 92%. Even with the same `r`, a square's corner area is larger than a circle's, making it look optically inflated — this is an optical correction, so it remains a constant rather than a ramp (a list of stepped values), for the same reason we don't enforce spacing optical corrections (see "specs are enforced by lint" and "spacing is not enforced").
 
@@ -2650,12 +2653,18 @@ The value is not preference but **the exact derived value from the root face**; 
 ```
 --dialog-w-sm: 420px;   /* Dialog default — convergence point of hardcoded cluster 360~448 */
 --dialog-w-md: 560px;   /* Topology «Add Concept» composer · wide sheet */
+--dialog-max-h: 44rem;  /* Ceiling before a dialog's own body scrolls (2026-09-05) */
 ```
 
 - **That’s all for Level 2** (approved by the "System" team on 2026-08-15). The old `--dialog-w-lg: 720` was removed because it was a ghost with zero consumers and zero definitions — unused tokens are not specifications, they are misinformation. If a new level is needed, convening the "System" team comes first.
 - Single source of truth for centered modal/composer width; primary consumer is `Dialog`
   (`src/shared/ui/dialog.tsx`). Actual application wraps narrow viewports with
   `w-[min(var(--dialog-w-*), calc(100vw - 2rem))]`.
+- **Height** is `max-h-[min(80vh, var(--dialog-max-h))]` for a dialog long enough to scroll its own
+  body. `80vh` is a relationship to the viewport and stays at the call site; the ceiling is the
+  token. Added 2026-09-05 by the design council after the connectors add dialog was measured as
+  the only untokenized height clamp in the codebase — the same shape as the eight hardcoded widths
+  the scale above replaced.
 
 ### Consumption Norms (Hard)
 
