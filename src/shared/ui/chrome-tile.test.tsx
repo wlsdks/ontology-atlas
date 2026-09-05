@@ -53,4 +53,58 @@ describe('ChromeTile', () => {
     tile.click();
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  /**
+   * The group-revealed label (2026-09-05). Measured in the browser at 1440x900:
+   * collapsed the tile is 36x36 — exactly `--chrome-tile-size` — and hovering or
+   * focusing any tile in `.chrome-rail` grows all four at once (122 / 104 / 161 /
+   * 141 px). These cases hold the two halves lint cannot see: the collapsed box
+   * still measures the token, and the visible word is inside the accessible name.
+   */
+  describe('label mode', () => {
+    it('keeps the chrome-tile-size box while allowing the tile to grow past it', () => {
+      render(<ChromeTile icon={<svg />} title="Guided tour" label="Guided tour" />);
+      const tile = screen.getByRole('button');
+      // `size-[…]` would pin the width to the height and clip the label, so the
+      // labelled shape must not carry it.
+      expect(tile.className).not.toContain('size-[var(--chrome-tile-size)]');
+      expect(tile.className).toContain('h-[var(--chrome-tile-size)]');
+      expect(tile.className).toContain('min-w-[var(--chrome-tile-size)]');
+    });
+
+    it('spends the icon-to-label distance as a margin, never as a flex gap', () => {
+      // A flex `gap` counts even while the label is clipped to zero width, so a
+      // collapsed tile would measure 44px instead of the 36px contract.
+      render(<ChromeTile icon={<svg />} title="Guided tour" label="Guided tour" />);
+      expect(screen.getByRole('button').className).not.toMatch(/(^|\s)gap-/);
+    });
+
+    it('names the control with the label the reader can see', () => {
+      render(<ChromeTile icon={<svg />} title="Guided tour" label="Guided tour" />);
+      const tile = screen.getByRole('button', { name: 'Guided tour' });
+      expect(tile.querySelector('.chrome-tile-label')).toHaveTextContent('Guided tour');
+    });
+
+    it('drops the native tooltip, because the label already says it on screen', () => {
+      render(<ChromeTile icon={<svg />} title="Guided tour" label="Guided tour" />);
+      const tile = screen.getByRole('button', { name: 'Guided tour' });
+      expect(tile).not.toHaveAttribute('title');
+    });
+
+    it('ignores aria-label in this mode, so the name cannot drift from the word on screen', () => {
+      // Two of the four map-rail tiles announced a different sentence than they
+      // displayed before this rule existed, which is a WCAG 2.5.3 failure and leaves
+      // speech input unable to address the control by what it shows.
+      render(
+        <ChromeTile
+          icon={<svg />}
+          title="Guided tour"
+          label="Guided tour"
+          aria-label="Start the guided tour"
+        />,
+      );
+      const tile = screen.getByRole('button', { name: 'Guided tour' });
+      expect(tile).not.toHaveAttribute('aria-label');
+    });
+  });
 });

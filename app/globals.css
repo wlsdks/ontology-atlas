@@ -1818,14 +1818,65 @@
   }
 
   /* Exit path also uses separation from entry path — brightness reverses app-wide ramp,
-     movement uses chrome family curve. Separating only one makes exit syntax differ from entry. */
+     movement takes the exit family. Separating only one makes exit syntax differ from entry.
+     2026-09-05: movement moved off `--topology-motion-ease-out` (an entry curve: 61.5% of the
+     3px/0.98 travel landed in the first frame, so the panel jumped and then idled) onto
+     `--motion-ease-exit`, the same curve every framer `EXIT_TRANSITION` runs. Brightness stays
+     on `--motion-ease`: `reduced-motion-equivalent` pins it, and a fade that accelerates would
+     hold 79% opacity into its final frame while the movement is already gone. */
   .topology-chrome-out {
     animation:
       topologyChromeOut calc(var(--topology-motion-panel-duration) * 0.67)
-        var(--topology-motion-ease-out) both,
+        var(--motion-ease-exit) both,
       overlayFadeOut var(--motion-fast) var(--motion-ease) both;
     transform-origin: var(--topology-chrome-in-origin, center top);
     pointer-events: none;
+  }
+
+  /*
+   * ── The map's utility rail names itself as one group ─────────────────────────
+   *
+   * The rail is four icon-only tiles (fit · tour · shortcuts · replay). Each one
+   * carried its own tooltip, so finding a control meant hovering tiles one at a
+   * time and reading one answer per wait — the rail could not be *scanned*.
+   *
+   * `:hover` and `:focus-within` are on the **group**, not the tile, so touching
+   * any one of them names all four at once and the semantic group reads as a
+   * group. `:focus-within` is not decoration here: it is the only way a keyboard
+   * user ever sees the labels, and it costs nothing because tabbing into the rail
+   * is exactly the moment the names are wanted.
+   *
+   * The group element is `pointer-events: none` with `pointer-events: auto` on the
+   * tiles, so it does not take the map's drag surface away; hover still resolves
+   * to the ancestor of whichever tile the pointer is over.
+   *
+   * Zero new durations: width takes `--motion-base` (a surface changing size) and
+   * brightness takes `--motion-fast` (the ramp's acknowledge step), which is also
+   * why the label is legible before the box has finished growing.
+   *
+   * Reduced motion is already correct through the global kill rule below
+   * (`transition-duration: 0.01ms !important`): the reveal still happens, the
+   * growth does not. That is the equivalent this file asks for — remove the
+   * moving axis, keep the information — so no carve-out is added.
+   */
+  .chrome-tile-label {
+    display: inline-block;
+    overflow: hidden;
+    max-width: 0;
+    margin-inline-start: 0;
+    opacity: 0;
+    white-space: nowrap;
+    transition:
+      max-width var(--motion-base) var(--motion-ease),
+      margin-inline-start var(--motion-base) var(--motion-ease),
+      opacity var(--motion-fast) var(--motion-ease);
+  }
+
+  .chrome-rail:hover .chrome-tile-label,
+  .chrome-rail:focus-within .chrome-tile-label {
+    max-width: var(--chrome-tile-label-max);
+    margin-inline-start: var(--chrome-tile-label-gap);
+    opacity: 1;
   }
 
   /* W6 LNB agent heartbeat dot — mount feels like "state awakens." Appears by fading in via opacity 0→1 + scale 0.4→1 from center origin instead of sliding (prevents sudden pop). Reuses only chrome motion family tokens
@@ -2394,6 +2445,23 @@
        above. This line was the only one manually written (pre-release audit on 2026-08-17). `--color-shadow-a35` **already has the same value**, so the screen changes by zero pixels, and 18 consumers require no code changes. When the same value is written in two places, they start drifting from that moment on. */
     --chrome-shadow: 0 6px 20px var(--color-shadow-a35);
     --chrome-inset: 24px;
+    /*
+     * The utility rail's label, revealed for the whole group (2026-09-05).
+     *
+     * `max` is the clip width the label expands into, not a width it is given:
+     * `max-width` is what can be transitioned, `width: auto` cannot. The longest
+     * label on the rail today is "Keyboard shortcuts (?)", measured 116.8px at
+     * `text-label` on 2026-09-05, so 9rem leaves headroom for a longer translation
+     * without letting a runaway string grow the rail across the map.
+     *
+     * `gap` is the icon-to-label distance and it is spent as a **margin on the
+     * label**, not as `gap` on the tile: a flex `gap` counts even when the label
+     * is clipped to zero, so the collapsed tile would have measured 44px instead
+     * of the 36px chrome contract. Same value as `ChromeChip`'s `gap-2`, so an
+     * expanded tile reads as the chip it becomes.
+     */
+    --chrome-tile-label-max: 9rem;
+    --chrome-tile-label-gap: 0.5rem;
     /* `active` (selected/in-progress) indicator for ChromeTile/ChromeChip — adhering to the single-hue principle using only indigo, differing only in alpha. */
     --chrome-active-surface: var(--color-indigo-a12);
     --chrome-active-border: var(--color-indigo-a40);
@@ -2557,6 +2625,19 @@
     --motion-base: 180ms;
     --motion-settle: 240ms;
     --motion-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+    /* Exit easing (design-system seat, 2026-09-05) — the one licensed second family.
+       `--motion-ease` decelerates into place, which is right for arriving. A leaving
+       surface run on it is the entrance clock played backwards: it slows down while it
+       is still on screen. An exit accelerates away — starts at resting speed, leaves at
+       full speed. Paired with the exit clock every CSS exit already uses,
+       `calc(var(--motion-base) * 0.67)` (= `--motion-fast`); JS copy `MOTION_EASE_EXIT`
+       reaches surfaces only through `EXIT_TRANSITION`. At 120.6ms this curve puts 3.4%
+       of the travel in the first frame and 21.3% in the last; the previous inspector
+       movement exit (`--topology-motion-ease-out`) spent 61.5% in its first frame, a
+       hard cut wearing an easing. Direction is the contract, not the four numbers:
+       `motion-token-mirror.contract.test.ts` lets only `-out` / `[data-state="closed"]`
+       rules reference it, only on a `*Out` keyframe, never in a `transition`. */
+    --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
     /* --topology-card-scale is injected by SigmaSkeletonCards into container based on viewport width — CSS pipeline drops custom property without utility reference, so not declared here. */
 
     /*
@@ -3650,6 +3731,10 @@ primary colors reference global monochrome/single indigo ladder (`--color-indigo
     .topology-chrome-out {
       animation-name: overlayFadeOut !important;
       animation-duration: calc(var(--topology-motion-panel-duration) * 0.67) !important;
+      /* The shorthand above lists the movement first, so the surviving fade would inherit
+         the exit curve; brightness keeps the settling family here as it does with motion on
+         (measured 2026-09-05 on the real recording, r5-motion-verify-C). */
+      animation-timing-function: var(--motion-ease) !important;
     }
 
     /* Select list — removes only the shaking axis (scaleY) and restores brightness time.

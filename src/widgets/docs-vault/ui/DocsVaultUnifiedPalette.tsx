@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { fieldClass } from '@/shared/ui/control-class';
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from '@/i18n/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
@@ -126,6 +126,8 @@ export function DocsVaultUnifiedPalette({
   const [query, setQuery] = useState(initialQuery);
   const [activeIdx, setActiveIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: panelLockoutRef, onAnimationStart: panelLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
   const listRef = useRef<HTMLUListElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
@@ -493,18 +495,22 @@ export function DocsVaultUnifiedPalette({
   return (
     <motion.div
       key="unified-backdrop"
+      ref={scrimLockoutRef}
+      onAnimationStart={scrimLockoutOnAnimationStart}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      exit={{ opacity: 0, transition: EXIT_TRANSITION }}
       transition={MOTION.fast}
       className="fixed inset-0 z-50 flex items-start justify-center bg-[color:var(--color-scrim-a50)] p-4 pt-[12vh]"
       onClick={onClose}
     >
       <motion.div
         key="unified-palette"
+        ref={panelLockoutRef}
+        onAnimationStart={panelLockoutOnAnimationStart}
         initial={{ opacity: 0, y: -8, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+        exit={{ opacity: 0, y: -8, scale: 0.98, transition: EXIT_TRANSITION }}
       // 0.14 with an unnamed easing curve → the ramp's "movement" step (2026-07-28).
         transition={MOTION.base}
         onClick={(e) => e.stopPropagation()}

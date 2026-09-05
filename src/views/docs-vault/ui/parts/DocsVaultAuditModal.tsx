@@ -6,7 +6,7 @@ import type { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Bot, Check, Clipboard, GitCompareArrows, HardDrive, Network, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
 import { Link } from "@/i18n/navigation";
 import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { IconButton, controlClass, useToast } from "@/shared/ui";
@@ -70,6 +70,7 @@ export function DocsVaultAuditModal({
   const copiedGate = gateCopyState === "copied";
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
 
     // Close on Esc.
   useEffect(() => {
@@ -210,9 +211,11 @@ export function DocsVaultAuditModal({
       {open ? (
         <motion.div
           key="docs-audit-modal"
+          ref={scrimLockoutRef}
+          onAnimationStart={scrimLockoutOnAnimationStart}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           // Leaving is faster than entering — measured, the two were the same speed.
           transition={reducedMotion ? MOTION.fast : MOTION.base}
           className="fixed inset-0 z-50 flex justify-center px-4"

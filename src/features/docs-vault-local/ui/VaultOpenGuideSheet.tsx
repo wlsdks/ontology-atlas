@@ -7,7 +7,8 @@ import { useHydrated } from "@/shared/lib/use-hydrated";
 import { FolderOpen, HardDrive, ShieldCheck, Sparkles, X } from "lucide-react";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { Link } from "@/i18n/navigation";
-import { MOTION } from "@/shared/motion";
+import { EXIT_TRANSITION, MOTION, useExitLockout } from "@/shared/motion";
+import { mergeRefs } from "@/shared/lib/merge-refs";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { useDialogFocusTrap } from "@/shared/lib/use-dialog-focus-trap";
 import { controlClass } from "@/shared/ui/control-class";
@@ -81,26 +82,31 @@ export function VaultOpenGuideSheet({
     open,
     onEscape: onClose,
   });
+  const { ref: scrimLockoutRef, onAnimationStart: scrimLockoutOnAnimationStart } = useExitLockout<HTMLDivElement>();
+  const { ref: dialogLockoutRef, onAnimationStart: dialogLockoutOnAnimationStart } = useExitLockout<HTMLElement>();
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={scrimLockoutRef}
           data-interactive-overlay="true"
+          onAnimationStart={scrimLockoutOnAnimationStart}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
+          exit={{ opacity: 0, transition: EXIT_TRANSITION }}
           transition={MOTION.base}
           className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--color-backdrop-medium)] p-4 sm:p-6"
           onClick={onClose}
           data-testid="vault-guide-scrim"
         >
           <motion.section
-            ref={dialogRef}
+            ref={mergeRefs(dialogRef, dialogLockoutRef)}
             tabIndex={-1}
+            onAnimationStart={dialogLockoutOnAnimationStart}
             initial={{ opacity: 0, y: 12, scale: 0.985 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.985 }}
+            exit={{ opacity: 0, y: 12, scale: 0.985, transition: EXIT_TRANSITION }}
             transition={MOTION.base}
             onClick={(event) => event.stopPropagation()}
             role="dialog"

@@ -5549,6 +5549,16 @@ function HomePageImpl() {
                   to { opacity: 1; transform: scale(1); }
                 }
               `}</style>
+              {/*
+                  ── The utility rail is one group, not four neighbours ──────────────
+                  Fit, tour, shortcuts and replay are still positioned one by one from
+                  `--topology-floating-control-desktop-top` plus the tile rhythm, so this
+                  wrapper has no box of its own: `display: contents` leaves each tile positioned
+                  against the map exactly as before, and gives the four tiles one DOM ancestor so
+                  `:hover` and `:focus-within` on it (through any descendant, label included) reveal
+                  four at once (`.chrome-rail` in `app/globals.css`). A full-inset box was tried first
+                  and every geometry probe read it as a panel covering the map (map-keyboard-walk). */}
+              <div className="chrome-rail contents" data-testid="topology-utility-rail">
               {createNodeOpen ||
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
@@ -5566,18 +5576,15 @@ function HomePageImpl() {
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
-                <Tooltip content={t('controls.tourTooltip')} side="left" withProvider={false}>
-                  <button
-                    type="button"
-                    onClick={openGuidedTour}
-                    aria-label={t('controls.tourAriaLabel')}
-                    data-testid="topology-tour-button"
-                    data-agent-dock-adjacent-rail="true"
-                    className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)]"
-                  >
-                    <Compass className="size-[var(--chrome-icon)]" aria-hidden />
-                  </button>
-                </Tooltip>
+                <ChromeTile
+                  icon={<Compass />}
+                  title={t('controls.tourTooltip')}
+                  label={t('controls.tourTooltip')}
+                  onClick={openGuidedTour}
+                  data-testid="topology-tour-button"
+                  data-agent-dock-adjacent-rail="true"
+                  className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-tour-help-desktop-top)] md:inline-flex xl:right-8"
+                />
               )}
               {/* Shortcut and gesture help entry point: two slots below the fit tile, after
                   the tour tile. On phones it appears only in overview and focus, where it
@@ -5586,11 +5593,11 @@ function HomePageImpl() {
               selectedRelationActive ||
               topologyBlockingOverlayActive ||
               selectedNodeFocusActive ? null : (
-                <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
-                <button
-                  type="button"
+                <ChromeTile
+                  icon={<HelpCircle />}
+                  title={t('controls.shortcutsTooltip')}
+                  label={t('controls.shortcutsTooltip')}
                   onClick={() => setShortcutsOpen(true)}
-                  aria-label={t('controls.shortcutsAriaLabel')}
                   data-testid="topology-shortcuts-help-button"
                   data-agent-dock-adjacent-rail="true"
                   data-controls-density={
@@ -5622,19 +5629,16 @@ function HomePageImpl() {
                     selectedNodeFocusActive
                       ? "top-[var(--topology-shortcuts-help-focus-phone-top)]"
                       : "top-[var(--topology-shortcuts-help-phone-top)]"
-                  } z-20 items-center justify-center rounded-[var(--chrome-radius)] border border-[color:var(--chrome-border)] bg-[color:var(--chrome-surface)] text-[color:var(--color-text-tertiary)] shadow-[var(--chrome-shadow)] transition-colors hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-indigo-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:flex xl:right-8 size-[var(--chrome-tile-size)] ${
+                  } z-20 md:right-6 md:top-[var(--topology-shortcuts-help-desktop-top)] md:inline-flex xl:right-8 ${
                     // Below `md`, while the expanded INDEX is a full-bleed sheet, the "?"
                     // tile floated on top of it and overlapped (measured at 600×900,
                     // y188). The sheet is the primary surface, so the chrome demotes. At
-                    // `md`+ the `md:flex` keeps it.
+                    // `md`+ the `md:inline-flex` keeps it.
                     topologyShortcutHelpPhoneVisible && renderedIndexState !== "expanded"
-                      ? "flex"
+                      ? "inline-flex"
                       : "hidden"
                   }`}
-                >
-                  <HelpCircle className="size-[var(--chrome-icon)]" aria-hidden />
-                </button>
-                </Tooltip>
+                />
               )}
               {/* Growth replay (2026-09-02): the fourth slot of the right rail rhythm, one row
                   below the "?" tile. Replays the ontology appearing in containment order
@@ -5648,17 +5652,16 @@ function HomePageImpl() {
                   className="topology-ui-scale pointer-events-auto absolute right-4 z-20 hidden md:right-6 md:top-[var(--topology-growth-replay-desktop-top)] md:block xl:right-8"
                   data-agent-dock-adjacent-rail="true"
                 >
-                  <Tooltip content={t('controls.replayGrowthTooltip')} side="left" withProvider={false}>
-                    <ChromeTile
-                      icon={<Play />}
-                      title={t('controls.replayGrowthTooltip')}
-                      aria-label={t('controls.replayGrowthAriaLabel')}
-                      data-testid="topology-replay-growth"
-                      onClick={() => setGrowthReplayToken((t) => t + 1)}
-                    />
-                  </Tooltip>
+                  <ChromeTile
+                    icon={<Play />}
+                    title={t('controls.replayGrowthTooltip')}
+                    label={t('controls.replayGrowthTooltip')}
+                    data-testid="topology-replay-growth"
+                    onClick={() => setGrowthReplayToken((t) => t + 1)}
+                  />
                 </div>
               )}
+              </div>
               {/* The settings gear moved to the bottom of the left nav rail. After the
                   dead controls panel was removed, the right vertical rail holds only the
                   map's three tiles: fit view, guided tour, and shortcuts. */}
