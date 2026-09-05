@@ -57,6 +57,10 @@ interface TopologyIndexPanelLabels {
   censusConcepts: string;
   censusRelations: string;
   censusDomains: string;
+  /** The unit word after the document count in the source line — "documents". */
+  sourceDocuments: string;
+  /** Hover explanation when the folder walk stopped before the end of the tree. */
+  sourceDocumentsPartialTitle: string;
   capabilitiesShort: string;
   elementsShort: string;
   /** What those two kind names mean — see `TopologyIndexTreeRowLabels.subcountsTitle`. */
@@ -204,6 +208,33 @@ export interface TopologyIndexPanelProps {
    * reappear as before (values are demoted, not deleted).
    */
   vaultLoaded?: boolean;
+  /**
+   * **The basename of the folder these concepts were actually read from** — `null` in sample
+   * mode or before a folder is open.
+   *
+   * Audit, 2026-09-05: opening a folder from the first-run panel redrew the map with the
+   * person's own concepts and nothing anywhere on the screen said *which folder* had been
+   * read. The panel that had said 「sample」 a second earlier simply stopped saying anything,
+   * so the one visible confirmation that the pick landed disappeared at the moment it was
+   * wanted. A first-run walker could not tell the sample from their own folder without
+   * recognising a node name.
+   *
+   * A basename, not a path, because that is the only identity the browser has: the File System
+   * Access API hands over a directory handle carrying the folder's own name and nothing else.
+   * The app knows the absolute path, but a line that says more on one surface than the other
+   * would mean two different things in two places.
+   */
+  sourceName?: string | null;
+  /** Markdown documents read out of that folder. `null` while the manifest is not built yet. */
+  sourceDocumentCount?: number | null;
+  /**
+   * Did the walk stop before the end of the tree (`VaultManifest.walkTruncated`)?
+   *
+   * `entities/docs-vault/model/types.ts` states the rule this implements: a screen saying
+   * "N documents" must be able to say **in the same place** whether N is all of them. A
+   * truncated count renders as `N+`.
+   */
+  sourceDocumentCountPartial?: boolean;
 }
 
 /**
@@ -238,6 +269,9 @@ export function TopologyIndexPanel({
   brokenDocCount,
   unboundProjectNodeId = null,
   noProjectsYet = false,
+  sourceName = null,
+  sourceDocumentCount = null,
+  sourceDocumentCountPartial = false,
   openedInsidePickedFolder = null,
   agentAvailable = false,
   onDismissOpenedInside,
@@ -482,6 +516,40 @@ export function TopologyIndexPanel({
           <ChevronLeft size={ICON_SIZE.sm} aria-hidden="true" />
         </span>
       </button>
+      {/*
+          **Which folder these rows came from.** One quiet line directly under the panel's own
+          name, in the same place the search field and the rows begin — not a new surface and not
+          a second control. It sits here rather than in the bottom-right instrument readout
+          because that readout is `md:` and up, and at 390 the INDEX panel *is* the screen: a
+          confirmation only a desktop visitor can see is not a confirmation.
+
+          It renders only with a folder open, so the sample keeps its own SAMPLE badge and this
+          line never has to say what it does not know. */}
+      {sourceName ? (
+        <p
+          data-testid="topology-index-source"
+          className="mb-3 flex min-w-0 items-center gap-1.5 text-label leading-label text-[color:var(--topology-v2-panel-text-quaternary)]"
+        >
+          <span
+            className="min-w-0 truncate text-[color:var(--topology-v2-panel-text-tertiary)]"
+            title={sourceName}
+          >
+            {sourceName}
+          </span>
+          {sourceDocumentCount === null ? null : (
+            <>
+              <span aria-hidden>·</span>
+              <span
+                className="shrink-0"
+                title={sourceDocumentCountPartial ? labels.sourceDocumentsPartialTitle : undefined}
+              >
+                {sourceDocumentCount}
+                {sourceDocumentCountPartial ? "+" : ""} {labels.sourceDocuments}
+              </span>
+            </>
+          )}
+        </p>
+      ) : null}
       <p data-testid="topology-index-census" className="sr-only">
         {totalConcepts} {labels.censusConcepts} · {totalRelations} {labels.censusRelations} ·{" "}
         {domainCount} {labels.censusDomains}

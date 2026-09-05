@@ -76,10 +76,13 @@ describe('관문 — 말하는 것과 거는 것이 같아야 한다', () => {
     const lib = readFileSync(join(ROOT, 'src-tauri/src/lib.rs'), 'utf8');
     const acp = readFileSync(join(ROOT, 'src-tauri/src/acp.rs'), 'utf8');
     const start = lib.slice(lib.indexOf('fn acp_start('), lib.indexOf('fn acp_permission_verdict('));
+    // The login probe spawns from its own function so a failed run can be logged and retried;
+    // slice **that** function, or this gate measures a wrapper that no longer starts a process.
     const probe = acp.slice(
+      acp.indexOf('fn run_login_probe('),
       acp.indexOf('pub(crate) fn real_probe()'),
-      acp.indexOf('const LOGIN_PROBE_TIMEOUT'),
     );
+    expect(probe, '로그인 확인이 프로세스를 띄우는 자리를 못 찾았다').toContain('command.spawn()');
 
     expect(start, '실제 세션만 부모 환경을 그대로 받으면 로그인 판정과 실행이 갈라진다').toContain(
       'apply_runtime_environment',

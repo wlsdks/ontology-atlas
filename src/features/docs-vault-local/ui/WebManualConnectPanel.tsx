@@ -9,6 +9,7 @@ import { copyText } from '@/shared/lib/copy-text';
 import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { controlClass, fieldClass, fieldLabel } from '@/shared/ui/control-class';
 import { Checkbox } from '@/shared/ui';
+import { SegmentedControl } from '@/shared/ui/segmented-control';
 
 import { AGENT_CLIENTS, type AgentClientId } from '@/entities/vault-session';
 import {
@@ -256,32 +257,35 @@ export function WebManualConnectPanel({
         label={<span>{t('manualPathConfirmation')}</span>}
       />
 
-      {/* Tool selection — the config file location differs per tool. Same structure as the global scope panel. */}
+      {/*
+        Tool selection — the config file location differs per tool.
+
+        ⚠️ **Not a second tab set** (design-lead finding, 2026-09-05). This row was
+        `role="tablist"` while `/mcp` already carries the page's own tab bar directly above it, so
+        one screen announced two tab lists: assistive technology heard two section switchers where
+        there is one, and the outer tabs' meaning — *which half of this screen am I in* — was
+        borrowed by a control that only parameterises a config block inside one half.
+
+        It is a radiogroup, which is what an exclusive choice inside a panel is, and going through
+        `SegmentedControl` brings the roving tabindex with it: measured before the change, the four
+        chips had `role="tab"` and no key handler at all, so the role promised arrow-key movement
+        that never happened (`use-roving-radio-group.ts` records that exact failure across 18
+        groups). `variant="chips"` is the container this row already had.
+      */}
       <div className="flex flex-col gap-2">
-        <div
-          role="tablist"
-          aria-label={t('scopeGlobalToolLabel')}
-          data-testid={`${testIdPrefix}-tools`}
-          className="flex flex-wrap gap-1"
-        >
-          {AGENT_CLIENTS.map((entry) => (
-            <button
-              key={entry.id}
-              type="button"
-              role="tab"
-              aria-selected={entry.id === active.id}
-              onClick={() => setClient(entry.id)}
-              data-testid={`${testIdPrefix}-tool-${entry.id}`}
-              className={controlClass({
-                shape: 'chip',
-                active: entry.id === active.id,
-                className: 'font-[var(--font-weight-signature)] hover:text-[color:var(--color-text-primary)]',
-              })}
-            >
-              {entry.name}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          ariaLabel={t('scopeGlobalToolLabel')}
+          value={client}
+          onChange={setClient}
+          size="md"
+          variant="chips"
+          testId={`${testIdPrefix}-tools`}
+          options={AGENT_CLIENTS.map((entry) => ({
+            value: entry.id,
+            label: entry.name,
+            testId: `${testIdPrefix}-tool-${entry.id}`,
+          }))}
+        />
 
         <div
           data-testid={`${testIdPrefix}-config-${active.id}`}

@@ -204,8 +204,8 @@ export function AcpRuntimeSettings({
     );
   }
 
-  const ready = (runtimes ?? []).filter((r) => r.state === 'ready');
-  const others = (runtimes ?? []).filter((r) => r.state !== 'ready');
+  const ready = (runtimes ?? []).filter((r) => isRuntimeUsable(r.state));
+  const others = (runtimes ?? []).filter((r) => !isRuntimeUsable(r.state));
   /*
    * The names inside the explanation — **not written by hand.** When more runners
    * become isolated the sentence follows on its own, and with none it branches to a
@@ -382,6 +382,19 @@ export function AcpRuntimeSettings({
   );
 }
 
+/**
+ * **Present and launchable**, which is not the same as "we confirmed the sign-in".
+ *
+ * `login-unknown` means the sign-in probe failed, not that the tool is broken (owner report,
+ * 2026-09-05: a load spike put 「Sign in needed」 on two runtimes that were signed in). Dropping
+ * such a row into the collapsed group would do the very thing that report complained about —
+ * take a working tool off the screen. It stays in the first group, without the confirmed dot and
+ * with a caption saying the check did not come back.
+ */
+function isRuntimeUsable(state: AcpRuntimeStatus['state']): boolean {
+  return state === 'ready' || state === 'login-unknown';
+}
+
 function RuntimeRow({
   runtime,
   onOpenChat,
@@ -392,7 +405,10 @@ function RuntimeRow({
   onRuntimesChanged?: () => void;
 }) {
   const t = useTranslations('nav.settingsMenu.runtimes');
+  /** Confirmed — this is what earns the green dot and the 「Ready」 word. */
   const isReady = runtime.state === 'ready';
+  /** Present and launchable; `login-unknown` is here too, without the claim. */
+  const isUsable = isRuntimeUsable(runtime.state);
 
   /*
    * ## Why a link to that tool's own instructions, not an 「Install」 button
@@ -405,7 +421,7 @@ function RuntimeRow({
    *
    * So there is exactly one thing done here — **send them to that tool's official instructions.** We do not even transcribe the install command (the vendor can change it, and our copy would go stale).
    */
-  const website = isReady ? null : runtime.website;
+  const website = isUsable ? null : runtime.website;
 
   /*
    * **The doctor is offered only for tools with a gate.** A tool whose isolation
@@ -430,7 +446,15 @@ function RuntimeRow({
         // A tool that only lacks a login gets **the thing to do** written out — that
         // state had a badge and nothing anywhere in the code told you what to do
         // (review 2026-08-16).
-        caption={runtime.state === 'login-needed' ? t('loginHint') : undefined}
+        caption={
+          runtime.state === 'login-needed'
+            ? t('loginHint')
+            : /* Asked and got nothing back. The caption says that, and says the tool still opens —
+                 anything shorter reads as a second way of spelling 「Sign in needed」. */
+              runtime.state === 'login-unknown'
+              ? t('loginUnknownHint')
+              : undefined
+        }
         testId={`app-settings-runtime-${runtime.id}`}
         icon={runtime.icon}
         iconInk={runtime.brandInk}
@@ -455,7 +479,7 @@ function RuntimeRow({
              *
              * Offered only for tools with a gate. Opening a conversation with an ungated tool would break the promise this screen makes one sentence above (it asks first before going outside the folder).
              */}
-            {isReady && isGuardedRuntime(runtime.id, runtime.isolated) ? (
+            {isUsable && isGuardedRuntime(runtime.id, runtime.isolated) ? (
               <Chip
                 size="lg"
                 tone="accentOnTint"

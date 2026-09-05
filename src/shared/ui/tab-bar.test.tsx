@@ -166,4 +166,44 @@ describe('TabBar', () => {
     // badge that is not there.
     expect(screen.getByRole('tab', { name: /신선도/ })).not.toHaveAttribute('title');
   });
+
+  /*
+   * Measured on `/en/mcp/`, 2026-09-05: the connectors tab's accessible name was
+   * `Connectors0` — the label text node and the count span sit side by side, and the name
+   * computation runs them together. Read aloud that is one word, and someone hunting for
+   * "Connectors" hears a tab that is not it.
+   */
+  it('배지가 라벨에 달라붙지 않는다 — 이름은 「라벨, 숫자」로 읽힌다', () => {
+    render(
+      <TabBar
+        items={[{ key: 'connectors', label: 'Connectors', count: 2, countTitle: '켜 둔 개수' }]}
+        activeKey="connectors"
+        onSelect={() => {}}
+        ariaLabel="탭"
+      />,
+    );
+
+    const tab = screen.getByRole('tab', { name: 'Connectors, 2' });
+    expect(tab).toBeInTheDocument();
+    expect(
+      screen.queryByRole('tab', { name: 'Connectors2' }),
+      '라벨과 숫자가 한 낱말로 붙어 읽힌다',
+    ).toBeNull();
+    // The number is still on screen — only its second reading was removed.
+    expect(screen.getByText('2')).toBeInTheDocument();
+  });
+
+  it('배지가 없으면 이름을 손대지 않는다 — 라벨 그대로다', () => {
+    render(
+      <TabBar
+        items={[{ key: 'share', label: 'Share this folder' }]}
+        activeKey="share"
+        onSelect={() => {}}
+        ariaLabel="탭"
+      />,
+    );
+
+    const tab = screen.getByRole('tab', { name: 'Share this folder' });
+    expect(tab).not.toHaveAttribute('aria-label');
+  });
 });

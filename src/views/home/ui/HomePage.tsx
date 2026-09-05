@@ -5301,6 +5301,16 @@ function HomePageImpl() {
                     brokenDocCount={brokenDocCount}
                     unboundProjectNodeId={unboundProjectSource?.nodeId ?? null}
                     noProjectsYet={projectSourceReadiness.state === "no-projects"}
+                    /*
+                     * Which folder these rows came from. Audit, 2026-09-05: opening a folder
+                     * from the first-run panel redrew the map with the person's own concepts
+                     * and nothing on the screen said which folder had been read.
+                     * `handle.name` is the basename both surfaces have — the browser gets no
+                     * absolute path, so the app does not claim one either.
+                     */
+                    sourceName={vault.status === "loaded" ? (vault.handle?.name ?? null) : null}
+                    sourceDocumentCount={vault.manifest?.docs.length ?? null}
+                    sourceDocumentCountPartial={vault.manifest?.walkTruncated ?? false}
                     // The door hands work to an agent; without one it would create a folder and
                     // then silently do nothing, having promised a map.
                     agentAvailable={acpRuntimes.length > 0}
@@ -5317,6 +5327,8 @@ function HomePageImpl() {
                       foldAria: t("index.foldAria"),
                       searchPlaceholder: t("index.searchPlaceholder"),
                       censusConcepts: t("index.censusConcepts"),
+                      sourceDocuments: t("index.sourceDocuments"),
+                      sourceDocumentsPartialTitle: t("index.sourceDocumentsPartialTitle"),
                       censusRelations: t("index.censusRelations"),
                       censusDomains: t("index.censusDomains"),
                       capabilitiesShort: t("index.capabilitiesShort"),

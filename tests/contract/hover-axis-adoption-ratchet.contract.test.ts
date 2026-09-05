@@ -73,8 +73,12 @@ const ROOT = process.cwd();
  * chrome went with it, and the row actions converged onto three shared ink fragments in
  * `parts/FixRow.tsx` instead of one hand-written hover per row family. Part of this is genuine
  * convergence and part is places that **ceased to exist**; either way the floor comes down.
+ *
+ * 304 → 303 (2026-09-05): the web connect panel's tool row stopped being a hand-built
+ * `role="tablist"` and became `SegmentedControl` — its hand-written `hover:text-*` went with the
+ * chips. Genuine adoption: the axis (`hoverInk`) now supplies that ink from the primitive.
  */
-const CEILING = 304;
+const CEILING = 303;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
