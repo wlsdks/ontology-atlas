@@ -43,6 +43,7 @@ import type { AgentServerAvailability } from '@/shared/config';
 import { ATLAS_CLI } from '@/shared/config/cli-invocation';
 
 import { AgentSetupStep, type AgentSetupStepState } from './AgentSetupStep';
+import { McpProofPacket } from './McpProofPacket';
 
 /**
  * The presentational panel that moved the AI-agent settings block out of the old
@@ -68,6 +69,21 @@ import { AgentSetupStep, type AgentSetupStepState } from './AgentSetupStep';
  * sites, and written by hand six times one copy eventually diverges. One constant
  * removes that divergence.
  */
+/**
+ * **One label/value row shape for the whole fold** (2026-09-05).
+ *
+ * The four definition lists inside "Not working?" carried four different term columns - 84, 92,
+ * 52 and 92 - for the same kind of content: a short name on the left, a sentence on the right.
+ * Nobody decided those numbers; each list was written beside the block that needed it and picked a
+ * width by eye, which is the same drift `page-frame.ts` records for three destinations choosing
+ * their own top spacing. The remedy is the same: one definition site, and the widest real term
+ * decides it.
+ *
+ * The value is the majority of what was already there (92), so two of the four lists do not move
+ * at all, and the other two stop being narrower than their neighbours for no reason.
+ */
+const DEFINITION_ROW = 'grid grid-cols-[92px_1fr] gap-2';
+
 const NEUTRAL_COPY_CHIP =
   'border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] hover:border-[color:var(--color-indigo-a46)] hover:text-[color:var(--color-text-primary)]';
 
@@ -821,7 +837,14 @@ export function VaultAgentSetupPanel({
             })
           : t('agentSetup.serverStatusSummary')}
         {publicPackagesReady && nextMissingAgentConfig ? (
-          <span className="font-mono text-[color:var(--color-amber-source-text-a95)]">
+          /*
+           * ⚠️ **No `font-mono` here** (2026-09-05). This is a whole sentence that happens to
+           * contain a path, and it used to be set in monospace end to end. In Korean that face
+           * has no metrics to align and buys nothing but a harder read; monospace belongs on a
+           * command or an address, not on the words around one. The amber still marks it as the
+           * line that needs attention.
+           */
+          <span className="text-[color:var(--color-amber-source-text-a95)]">
             {' · '}
             {agentStatus[nextMissingAgentConfig.key]
               ? t('agentSetup.nextInvalid', { path: nextMissingAgentConfig.path })
@@ -970,6 +993,8 @@ export function VaultAgentSetupPanel({
                       <dt className="min-w-0 truncate text-body text-[color:var(--color-text-secondary)]">
                         {label}
                       </dt>
+                      {/* Monospace, because the value really is the command you type into that
+                          tool. It is the one place in this box where that face carries meaning. */}
                       <dd className="shrink-0 font-mono text-label text-[color:var(--color-text-tertiary)]">
                         {check}
                       </dd>
@@ -977,6 +1002,15 @@ export function VaultAgentSetupPanel({
                   ))}
                 </dl>
               </div>
+              {/*
+                **The proof packet ends the step whose job is proving it** (2026-09-05). It used to
+                be a card below this whole pane, so on the installed app the thing that actually
+                confirms the connection stood after the three steps rather than inside the one
+                called "check the connection". What this screen knows on its own stops at the
+                config files' validity; the packet is how the agent answers for the rest, and that
+                is the same question this step asks.
+              */}
+              <McpProofPacket frame="inline" />
             </AgentSetupStep>
           </>
         ) : null}
@@ -1259,7 +1293,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.modeGraphTerm'), desc: t('agentSetup.modeGraphDesc') },
               { term: t('agentSetup.modeGateTerm'), desc: t('agentSetup.modeGateDesc') },
             ].map((mode) => (
-              <div key={mode.term} className="grid grid-cols-[84px_1fr] gap-2">
+              <div key={mode.term} className={DEFINITION_ROW}>
                 <dt className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {mode.term}
                 </dt>
@@ -1288,7 +1322,7 @@ export function VaultAgentSetupPanel({
               className="mt-2 grid gap-1"
             >
               {agentFirstContactProofRows.map((row) => (
-                <div key={row.key} className="grid grid-cols-[92px_1fr] gap-2">
+                <div key={row.key} className={DEFINITION_ROW}>
                   <dt className="text-body text-[color:var(--color-text-quaternary)]">
                     {row.label}
                   </dt>
@@ -1361,7 +1395,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.gateSlowTerm'), desc: t('agentSetup.gateSlowDesc') },
               { term: t('agentSetup.gateReadyTerm'), desc: t('agentSetup.gateReadyDesc') },
             ].map((rule) => (
-              <div key={rule.term} className="grid grid-cols-[52px_1fr] gap-2">
+              <div key={rule.term} className={DEFINITION_ROW}>
                 <dt className="text-body text-[color:var(--color-text-secondary)]">
                   {rule.term}
                 </dt>
@@ -1443,7 +1477,7 @@ export function VaultAgentSetupPanel({
               { term: t('agentSetup.rootVaultTerm'), desc: t('agentSetup.rootVaultDesc') },
               { term: t('agentSetup.rootCodebaseTerm'), desc: t('agentSetup.rootCodebaseDesc') },
             ].map((rootMode) => (
-              <div key={rootMode.term} className="grid grid-cols-[92px_1fr] gap-2">
+              <div key={rootMode.term} className={DEFINITION_ROW}>
                 <dt className="text-body font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
                   {rootMode.term}
                 </dt>
