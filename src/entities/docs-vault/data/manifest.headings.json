@@ -6217,6 +6217,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-05 — Budget compact handoffs by transmitted JSON, preserving every fact",
+      "slug": "2026-09-05-budget-compact-handoffs-by-transmitted-json-preserving-every-fact"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold",
       "slug": "2026-09-05-an-agents-lookups-stand-above-its-answer-and-the-folder-keeps-a-list-of-names-it-was-asked-for-and-does-not-hold"
     },

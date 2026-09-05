@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-05 — Budget compact handoffs by transmitted JSON, preserving every fact
+
+**Why**: the known-task read-only integration fails on both the branch and base main: one unchanged response is 13,697 bytes with display indentation but 10,238 bytes when serialized for transport. Even removing the entire handoff prompt leaves 12,048 pretty bytes.
+**Prior**: supersedes only the pretty-JSON accounting in 2026-08-30 "Compact v2 spends 12 KiB on exact evidence, below the 20 KiB task gate"; all evidence, approval, opt-in, and full-detail boundaries remain standing.
+**Decision**: retain 12,000 UTF-8 bytes for `JSON.stringify(completeCompactObject)`, including handoffPrompt and every typed field, and the unchanged 20,000-character combined connection/compact wire guard. Return identical data; this is an accounting change, not compression or a performance claim.
+**Dissent**: the old display-whitespace reserve limited future content growth; allowing that reserve to hold actual data relaxes the previous acceptance rule and must not justify further budget expansion. Evidence and Steward both require exact-object parity and genuinely oversized negative controls.
+**Falsifier**: reject the change if any parsed fact, qualifier, conflict guard, or approval state changes, UTF-8 bytes exceed 12,000, a genuinely oversized object passes, or the complete two-call wire reaches 20,000 characters.
+**Owner**: jinan
+
 ## 2026-09-05 — An agent's lookups stand above its answer, and the folder keeps a list of names it was asked for and does not hold
 
 **Why**: reviewing a wrong in-app answer, a person could not see which lookups the agent made or that one came back empty; and names agents reference that the vault lacks accumulated nowhere, only inside health totals. Observed in the deeplethe/utopia review (Apache-2.0, ideas only).

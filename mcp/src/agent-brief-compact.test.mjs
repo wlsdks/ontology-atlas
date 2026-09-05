@@ -170,7 +170,7 @@ DER parsing and unrelated encodings.
       assert.match(result.handoffPrompt, /Read: primary \+ supporting \+ tests \+ manifest; stop_on_match\./);
       assert.equal(JSON.stringify(result).includes('return true'), false);
       assert.equal(Object.hasOwn(result.task, 'text'), false);
-      assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+      assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -272,7 +272,7 @@ DER parsing and unrelated encodings.
     assert.deepEqual(result.focus.verification.recordedPaths, []);
     assert.ok(result.focus.unknowns.every((row) => row.length <= 96));
     assert.equal(Object.hasOwn(result.task, 'text'), false);
-    assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+    assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
   });
 
   it('returns no capability when the bounded vault records no task match', () => {
@@ -848,7 +848,7 @@ DER parsing and unrelated encodings.
       assert.match(result.handoffPrompt, /receipt stale; coordinates verified against live source ffffffffffff/);
       assert.match(result.handoffPrompt, /Current source: review_required\/stale \(live ffffffffffff: 1\/1 witnesses resolve\)/);
       assert.equal(JSON.stringify(result).includes(root), false);
-      assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+      assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
 
       // The live answer is re-confirmed after the named-file reads; a source
       // that moved again in between withdraws every coordinate.
@@ -879,6 +879,35 @@ DER parsing and unrelated encodings.
       }),
       /task must contain at most 2000 characters/,
     );
+  });
+
+  it('budgets the complete serialized object without charging presentation indentation', () => {
+    const reviewBrief = structuredClone(brief);
+    reviewBrief.meaningRepair.stopWhen = Array.from(
+      { length: 300 }, (_, index) => `required_stop_${index}`,
+    );
+    const result = buildCompactAgentBrief({
+      brief: reviewBrief, artifact, docs, task: 'Encode an optional DER SET.',
+    });
+    assert.ok(Buffer.byteLength(JSON.stringify(result), 'utf8') <= AGENT_BRIEF_COMPACT_MAX_BYTES);
+    assert.ok(Buffer.byteLength(JSON.stringify(result, null, 2), 'utf8') > AGENT_BRIEF_COMPACT_MAX_BYTES);
+    assert.deepEqual(result.meaningRepair, reviewBrief.meaningRepair);
+    assert.deepEqual(JSON.parse(JSON.stringify(result)), result);
+    assert.equal(result.safety.humanApprovalRequiredForMeaningWrites, true);
+    assert.equal(result.safety.automaticWrite, false);
+    assert.equal(result.safety.automaticFinalize, false);
+    assert.ok(result.handoffPrompt.length > 0);
+  });
+
+  it('counts multibyte safety text as UTF-8 bytes rather than JavaScript characters', () => {
+    const wideBrief = structuredClone(brief);
+    const text = String.fromCodePoint(0x1F512).repeat(3000);
+    assert.ok(text.length < AGENT_BRIEF_COMPACT_MAX_BYTES);
+    assert.equal(Buffer.byteLength(text, 'utf8'), AGENT_BRIEF_COMPACT_MAX_BYTES);
+    wideBrief.meaningRepair.stopWhen = [text];
+    assert.throws(() => buildCompactAgentBrief({
+      brief: wideBrief, artifact, docs, task: 'Encode an optional DER SET.',
+    }), /above the 12000-byte budget/);
   });
 
   it('fails closed when retained safety detail pushes the compact response over budget', () => {

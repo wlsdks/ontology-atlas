@@ -894,6 +894,9 @@ prints one record in full, `--since=` narrows the window. Decision numbers
 repeat in the ledger, so a bare `(n)` citation resolves to the nearest earlier
 record with that number.
 
+Compact MCP handoffs budget the complete serialized JSON at 12,000 UTF-8 bytes;
+display indentation is excluded and the 20,000-character combined wire guard remains.
+
 Within one stable-checkout `pnpm checks:changed -- --run`, an earlier full
 contract run covers later equivalent contract-only checks. The runner prints
 those planned coverage relationships; it never reuses success from a prior run.
