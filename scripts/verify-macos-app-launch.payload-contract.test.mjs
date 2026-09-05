@@ -132,6 +132,17 @@ test("payload contract · 모양이 틀린 페이로드를 이유와 함께 막�
     validateWebviewVerifyPayload(validPayload({ readyState: "loading" })),
     /readyState=loading/,
   );
+  // 2026-09-06: a deploy check ran against a locked display; the map mounts after one
+  // animation frame, WebKit fires none for a hidden document, and the run failed on
+  // "marker missing" for a screen nobody saw. The hidden state is named before any marker.
+  assert.match(
+    validateWebviewVerifyPayload(validPayload({ visibilityState: "hidden" })),
+    /document is hidden.*display is locked/,
+  );
+  assert.equal(
+    validateWebviewVerifyPayload(validPayload({ visibilityState: "visible" })),
+    validateWebviewVerifyPayload(validPayload()),
+  );
   assert.match(validateWebviewVerifyPayload(validPayload({ bodyText: "   " })), /body text was empty/);
   assert.match(
     validateWebviewVerifyPayload(validPayload({ bodyText: "lorem ipsum dolor" })),
