@@ -55,6 +55,7 @@ export { TabBar } from './tab-bar';
 export { ChromeTile } from './chrome-tile';
 export { ChromeChip, CHROME_STATUS_CHIP_CLASS } from './chrome-chip';
 export { GithubMark } from './github-mark';
+export { ServiceMark, resolveServiceMark, type ServiceMarkName } from './service-mark';
 export { XMark } from './x-mark';
 export { CompactCopyButton } from './compact-copy-button';
 export { SimilarNodeWarning } from './similar-node-warning';

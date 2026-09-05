@@ -48,7 +48,13 @@ vi.mock('@/shared/lib/tauri-connector-secrets', async () => {
   };
 });
 
-import { ConnectorsPanel, connectorDestination, whatRuns } from './ConnectorsPanel';
+import {
+  ConnectorsPanel,
+  connectorDestination,
+  groupDiscovered,
+  shortSourceKey,
+  whatRuns,
+} from './ConnectorsPanel';
 import { useVaultConnectors } from '../model/use-vault-connectors';
 
 /**
@@ -60,6 +66,23 @@ import { useVaultConnectors } from '../model/use-vault-connectors';
 function Panel({ handle }: { handle: FileSystemDirectoryHandle }) {
   const store = useVaultConnectors(handle);
   return <ConnectorsPanel handle={handle} store={store} />;
+}
+
+/**
+ * **Two things left the row on 2026-09-05** and the tests follow them rather than dropping.
+ *
+ * A row now carries the service mark, the name, what runs, the switch, and one more-actions
+ * button; a connector's variables, keychain fields and removal live in that button's dialog, and
+ * everything about *adding* lives in the "Add a connector" dialog. The owner's report was that the
+ * previous panel - list, machine scan, and a five-field form all open at once - was hard to look
+ * at, and the assertions below say the same things they said before, one press further in.
+ */
+function openDetail() {
+  fireEvent.click(screen.getByTestId('connectors-item-menu'));
+}
+
+function openAdd() {
+  fireEvent.click(screen.getByTestId('connectors-add-open'));
 }
 
 /** A folder handle backed by a map, enough for the store to read and write. */
@@ -205,9 +228,12 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
   it('토큰은 키체인으로 보내고 입력란에서 지운다', async () => {
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-secret-missing')).toBeInTheDocument(),
     );
+    openDetail();
     const input = screen.getByTestId('connectors-item-secret-input');
     fireEvent.change(input, { target: { value: 'ntn_live_value' } });
     fireEvent.click(screen.getByTestId('connectors-item-secret-save'));
@@ -233,9 +259,12 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-item-toggle')).toBeDisabled());
+    // The reason the switch will not move stays in the row - a disabled control whose reason is
+    // one press away is a control with no reason at all.
     expect(screen.getByTestId('connectors-item-problem')).toBeInTheDocument();
 
     bridge.stored.set('connector:c1:NOTION_TOKEN', 'alue');
+    openDetail();
     fireEvent.change(screen.getByTestId('connectors-item-secret-input'), {
       target: { value: 'ntn_live_value' },
     });
@@ -253,6 +282,8 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
       seeded({ ...stdioRecord, env: [{ name: 'OPENAPI_MCP_HEADERS' }] }),
     );
     draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable')).toHaveAttribute(
         'data-variable-keychain',
@@ -278,6 +309,8 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // rule people route around stops protecting anything.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_VERSION' }] }));
     draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-value')).toBeInTheDocument(),
     );
@@ -294,6 +327,8 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     // something that is then thrown away.
     const vault = fakeVault(seeded({ ...stdioRecord, env: [{ name: 'NOTION_TOKEN' }] }));
     draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-item-menu')).toBeInTheDocument());
+    openDetail();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-item-variable-refused')).toBeInTheDocument(),
     );
@@ -305,15 +340,23 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     bridge.secretsAvailable = false;
     const vault = fakeVault(seeded(stdioRecord));
     draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-list')).toBeInTheDocument());
+    /*
+     * ⚠️ **The card moved into the add dialog on 2026-09-05**, because finding what is already
+     * registered is what happens there. The claim is unchanged and so is the check: a reason and a
+     * place to go, beside a list that still works.
+     */
+    openAdd();
     await waitFor(() =>
       expect(screen.getByTestId('connectors-discovery-unavailable')).toBeInTheDocument(),
     );
-    // Why + where, and the list itself is still there and usable.
     expect(screen.getByTestId('connectors-web-get-app')).toHaveAttribute(
       'href',
       expect.stringContaining('/download'),
     );
-    expect(screen.getByTestId('connectors-list')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    openDetail();
     expect(screen.getByTestId('connectors-item-secrets-unavailable')).toHaveTextContent(
       'NOTION_TOKEN',
     );
@@ -325,6 +368,7 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
     await waitFor(() => expect(screen.getByTestId('connectors-empty')).toBeInTheDocument());
+    openAdd();
     fireEvent.change(screen.getByTestId('connectors-custom-name'), {
       target: { value: 'github' },
     });
@@ -374,11 +418,158 @@ describe('연결 도구 패널 — 켜기 전에 무엇이 도는지 말한다',
     };
     const vault = fakeVault();
     draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
     await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(2));
     // The deprecated transport is shown and explained, never offered.
     const rows = screen.getAllByTestId('connectors-found-item');
     expect(rows[1]).toHaveAttribute('data-connector-transport', 'sse');
     expect(screen.getAllByTestId('connectors-found-add')).toHaveLength(1);
+  });
+
+  it('같은 것이 여러 파일에 등록돼 있어도 줄은 하나다 — 어디서 찾았는지는 함께 적는다', async () => {
+    /*
+     * Anyone who set up two coding tools has byte-identical entries in both config files. Drawing
+     * one row per file offers the same command twice, and choosing between identical rows teaches
+     * nothing. Measured on this machine on 2026-09-05: three of the registered servers appeared in
+     * two files each.
+     */
+    bridge.discovered = {
+      connectors: [
+        {
+          source: 'claude-user',
+          name: 'notion',
+          transport: 'stdio',
+          command: '/opt/homebrew/bin/npx',
+          args: ['-y', '@notionhq/notion-mcp-server'],
+          envKeys: [],
+          headerKeys: [],
+        },
+        {
+          source: 'codex-user',
+          // A different spelling of the same registration. The name is the part a person was free
+          // to invent, so it cannot be what decides whether two entries are the same server.
+          name: 'notion-mcp',
+          transport: 'stdio',
+          command: '/opt/homebrew/bin/npx',
+          args: ['-y', '@notionhq/notion-mcp-server'],
+          envKeys: [],
+          headerKeys: [],
+        },
+      ],
+      sources: [],
+    };
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
+    await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(1));
+    expect(screen.getByTestId('connectors-found-item')).toHaveAttribute(
+      'data-connector-sources',
+      'claude-user codex-user',
+    );
+    // Both tools are named, once each.
+    expect(screen.getAllByTestId('connectors-found-source').map((el) => el.textContent)).toEqual([
+      'claude',
+      'codex',
+    ]);
+  });
+
+  it('찾기로 목록을 좁힌다 — 이름으로도, 명령으로도', async () => {
+    bridge.discovered = {
+      connectors: [
+        {
+          source: 'claude-user',
+          name: 'notion',
+          transport: 'stdio',
+          command: '/opt/homebrew/bin/npx',
+          args: ['-y', '@notionhq/notion-mcp-server'],
+          envKeys: [],
+          headerKeys: [],
+        },
+        {
+          source: 'claude-user',
+          name: 'linear',
+          transport: 'http',
+          command: null,
+          args: [],
+          url: 'https://mcp.linear.app/mcp',
+          envKeys: [],
+          headerKeys: [],
+        },
+      ],
+      sources: [],
+    };
+    const vault = fakeVault();
+    draw(<Panel handle={vault.handle} />);
+    await waitFor(() => expect(screen.getByTestId('connectors-add-open')).toBeInTheDocument());
+    openAdd();
+    await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(2));
+
+    // By name.
+    fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'linear' } });
+    await waitFor(() => expect(screen.getAllByTestId('connectors-found-item')).toHaveLength(1));
+
+    // …and by what actually runs, which is what somebody remembers about a server they set up
+    // months ago and renamed since.
+    fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'notionhq' } });
+    await waitFor(() =>
+      expect(screen.getByTestId('connectors-found-item')).toHaveTextContent('notion'),
+    );
+
+    fireEvent.change(screen.getByTestId('connectors-search'), { target: { value: 'zzz' } });
+    await waitFor(() => expect(screen.getByTestId('connectors-found-empty')).toBeInTheDocument());
+  });
+});
+
+describe('one row per thing that actually runs', () => {
+  const base = {
+    transport: 'stdio' as const,
+    command: '/usr/bin/npx',
+    args: ['-y', 'pkg'],
+    url: null,
+    envKeys: [],
+    headerKeys: [],
+  };
+
+  it('collapses identical transport, command and arguments across files', () => {
+    const groups = groupDiscovered([
+      { ...base, source: 'claude-user', name: 'a' },
+      { ...base, source: 'codex-user', name: 'b' },
+      { ...base, source: 'claude-user', name: 'c' },
+    ]);
+    expect(groups).toHaveLength(1);
+    // The first spelling seen wins the row.
+    expect(groups[0].server.name).toBe('a');
+    // A file that reported it twice is still one chip.
+    expect(groups[0].sources).toEqual(['claude-user', 'codex-user']);
+  });
+
+  it('keeps a different command apart, and never merges across transports', () => {
+    const groups = groupDiscovered([
+      { ...base, source: 'claude-user', name: 'a' },
+      { ...base, source: 'claude-user', name: 'a', args: ['-y', 'other'] },
+      {
+        source: 'claude-user',
+        name: 'a',
+        transport: 'http' as const,
+        command: null,
+        args: [],
+        url: 'https://example.test/mcp',
+        envKeys: [],
+        headerKeys: [],
+      },
+    ]);
+    expect(groups).toHaveLength(3);
+  });
+
+  it('reduces a source id to the tool a person recognises', () => {
+    expect(shortSourceKey('claude-user')).toBe('claude');
+    expect(shortSourceKey('claude-project')).toBe('claude');
+    expect(shortSourceKey('codex-user')).toBe('codex');
+    expect(shortSourceKey('cursor-user')).toBe('cursor');
+    expect(shortSourceKey('vault-mcp-json')).toBe('folder');
+    expect(shortSourceKey('something-new')).toBe('other');
   });
 });
 
