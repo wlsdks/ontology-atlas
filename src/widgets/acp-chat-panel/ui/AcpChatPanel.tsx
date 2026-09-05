@@ -81,6 +81,7 @@ import type { AcpWorkReceipt } from '@/shared/lib/acp-work-receipt';
 import { AcpPermissionCard } from './AcpPermissionCard';
 import { AcpPresentationPanel } from './AcpPresentationPanel';
 import { groupEvents } from './group-events';
+import { splitAppRequest } from './request-parts';
 import { isVaultTool, toolLabel } from './tool-label';
 
 /**
@@ -2189,13 +2190,57 @@ function TranscriptEntry({
      *
      * So it gets three things: top margin (separating it from the next turn), a border (so it reads as an object rather than a surface), and a solid line above it unless it is the first turn. The colour was not deepened because indigo means 「Selected」 in this app.
      */
+    /*
+     * ⚠️ **A typed question kept its line breaks nowhere** (2026-09-06). ⇧Enter is the documented
+     * way to break a line in this composer, and the bubble then reflowed every paragraph into one
+     * — a person's own three-step request came back as a wall.
+     *
+     * And a turn the app composed opens on **the sentence a person can read**. The workbench's
+     * 「Analyze」 door sends around 1,200 characters, of which the first sixty are meant for a
+     * human; drawn whole, the answer to it started below the fold. The rest is one disclosure
+     * away, verbatim — the 2026-08-24 decision that a caller may send on somebody's behalf rests
+     * on the whole sentence being in the transcript as their own turn, so nothing is dropped.
+     */
+    const parts = splitAppRequest(event.text);
     return (
-      <p
-        data-acp-entry="user"
-        className="mt-1 max-w-[85%] self-end break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
-      >
-        {event.text}
-      </p>
+      <>
+        <p
+          data-acp-entry="user"
+          data-user-request={parts.detail ? 'app-composed' : 'typed'}
+          className="mt-1 max-w-[85%] self-end whitespace-pre-wrap break-keep rounded-card border border-[color:var(--color-indigo-a22)] bg-[color:var(--color-indigo-a12)] px-3 py-2 text-body-lg leading-body-lg text-[color:var(--color-text-primary)]"
+        >
+          {parts.lead}
+        </p>
+        {/*
+          The folded half stands **outside** the bubble, the way the work trace does. Inside it, a
+          disclosure row would put a control in the tinted box that means 「what the person said」,
+          and the box would stop being a quotation.
+        */}
+        {parts.detail ? (
+          <details className="group mt-1 max-w-[85%] self-end">
+            <summary
+              data-testid="acp-chat-request-full"
+              className={controlClass({
+                shape: 'link',
+                size: 'sm',
+                tone: 'muted',
+                hoverInk: 'strong',
+                className: 'list-none gap-1.5 [&::-webkit-details-marker]:hidden',
+              })}
+            >
+              <ChevronRight
+                size={ICON_SIZE.sm}
+                aria-hidden
+                className="shrink-0 transition-transform group-open:rotate-90"
+              />
+              {t('fullRequest')}
+            </summary>
+            <p className="mt-1.5 whitespace-pre-wrap break-words text-left font-mono text-caption leading-caption text-[color:var(--color-text-quaternary)]">
+              {event.text}
+            </p>
+          </details>
+        ) : null}
+      </>
     );
   }
   if (event.kind === 'agent') {

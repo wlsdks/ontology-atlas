@@ -3808,6 +3808,7 @@
       "mergeNodes": "개념 둘을 합쳤어요",
       "addRelation": "관계를 이었어요"
     },
+    "fullRequest": "요청 전문",
     "toolRepeat": "같은 호출 {count}번",
     "toolOutcome": {
       "foundUnit": "개 찾음",

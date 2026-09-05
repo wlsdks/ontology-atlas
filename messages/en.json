@@ -3808,6 +3808,7 @@
       "mergeNodes": "Merged two concepts",
       "addRelation": "Linked a relation"
     },
+    "fullRequest": "Full request",
     "toolRepeat": "Repeated {count} times",
     "toolOutcome": {
       "foundUnit": " found",

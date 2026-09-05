@@ -235,6 +235,45 @@ describe('대화 패널 — 일어난 일만 그린다', () => {
     expect(screen.getByTestId('acp-chat-choices')).toBeInTheDocument();
   });
 
+  /**
+   * ⚠️ **The transcript opens on the sentence a person can read** (2026-09-06). The workbench's
+   * 「Analyze」 door sends about 1,200 app-composed characters, and drawn whole the answer to them
+   * started below the fold. Nothing is dropped — the whole request is one disclosure away — which
+   * is what keeps the 2026-08-24 decision (a caller may send on somebody's behalf, because the
+   * sentence lands as their own turn) intact.
+   */
+  it('앱이 지은 요청은 읽을 문장만 서고, 전문은 한 번 펼쳐서 그대로 남는다', async () => {
+    await bootSession();
+    const composed = [
+      '이 온톨로지의 뜻과 경계를 검토해 줘.',
+      'Scope: {"projectSlug":"storefront"}.',
+      'Keep the answer useful as plain Markdown.',
+    ].join('\n');
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: composed } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+
+    const bubble = await waitFor(() => document.querySelector('[data-acp-entry="user"]')!);
+    expect(bubble).toHaveAttribute('data-user-request', 'app-composed');
+    expect(bubble).toHaveTextContent('이 온톨로지의 뜻과 경계를 검토해 줘.');
+    expect(bubble).not.toHaveTextContent('Scope: {"projectSlug"');
+    // Verbatim and in one piece behind the disclosure, which stands outside the quotation.
+    const fold = screen.getByTestId('acp-chat-request-full');
+    expect(bubble.contains(fold)).toBe(false);
+    expect(fold.closest('details')).toHaveTextContent('Scope: {"projectSlug":"storefront"}.');
+  });
+
+  it('사람이 직접 쓴 줄바꿈은 말풍선에서도 줄바꿈으로 남는다', async () => {
+    await bootSession();
+    // ⇧Enter is the documented way to break a line in this composer; the bubble used to reflow
+    // every paragraph of a three-step request into one wall.
+    fireEvent.change(screen.getByRole('textbox'), { target: { value: '첫째 줄\n둘째 줄' } });
+    fireEvent.click(screen.getByTestId('acp-chat-send'));
+    const bubble = await waitFor(() => document.querySelector('[data-acp-entry="user"]')!);
+    expect(bubble).toHaveAttribute('data-user-request', 'typed');
+    expect(screen.queryByTestId('acp-chat-request-full')).toBeNull();
+    expect(bubble.className).toContain('whitespace-pre-wrap');
+  });
+
   it('세션이 서면 준비됨이 되고, 보낸 말과 받은 말이 각각 남는다', async () => {
     await bootSession();
 
