@@ -293,7 +293,7 @@ describe("rpc response completion helpers", () => {
     drifted.find((tool) => tool.name === "list_concepts").annotations.openWorldHint = true;
     assert.equal(
       toolsListAnnotationSummary(drifted),
-      "36/36 titled; 20/20 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 35/36 local-only",
+      "37/37 titled; 21/21 read; 16/16 write; 9/9 destructive; 3/3 idempotent; 36/37 local-only",
     );
     assert.equal(toolsListAnnotationSummary(null), "missing tools/list");
   });
