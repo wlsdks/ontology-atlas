@@ -55,6 +55,24 @@ describe('useTypingShortcuts', () => {
     expect(onFire).toHaveBeenCalledTimes(1);
   });
 
+  it('leaves a letter alone while an open listbox owns the keyboard', () => {
+    const onFire = vi.fn();
+    renderHook(() => useTypingShortcuts([{ combo: { key: 'd' }, onFire }]));
+    const listbox = document.createElement('div');
+    listbox.setAttribute('role', 'listbox');
+    const option = document.createElement('div');
+    option.setAttribute('role', 'option');
+    listbox.append(option);
+    document.body.append(listbox);
+
+    option.dispatchEvent(
+      new KeyboardEvent('keydown', { bubbles: true, cancelable: true, key: 'd', code: 'KeyD' }),
+    );
+
+    expect(onFire).not.toHaveBeenCalled();
+    listbox.remove();
+  });
+
   it('does not steal a keystroke that belongs to an IME composition', () => {
     const onFire = vi.fn();
     renderHook(() => useTypingShortcuts([{ combo: { key: 'd' }, onFire }]));
