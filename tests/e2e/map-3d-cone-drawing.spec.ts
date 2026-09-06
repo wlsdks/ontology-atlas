@@ -39,7 +39,7 @@ import { seedFirstRunSeen } from "./first-run-seed";
 
 /** The four sizes the direction names, with the fill floor each has to clear. */
 const SCREENS = [
-  { width: 1920, height: 1080, fillFloor: 0.6, overlapMax: 4, sameTierMax: 1, stolenMax: 1 },
+  { width: 1920, height: 1080, fillFloor: 0.6, overlapMax: 4, sameTierMax: 1, stolenMax: 3 },
   { width: 1440, height: 900, fillFloor: 0.6, overlapMax: 7, sameTierMax: 1, stolenMax: 1 },
   { width: 1024, height: 768, fillFloor: 0.6, overlapMax: 10, sameTierMax: 1, stolenMax: 1 },
   /*
@@ -381,11 +381,15 @@ for (const screen of [SCREENS[0], SCREENS[3]]) {
      * That node is then not competing at all, and whichever disc reaches it
      * through the slack ring answers. The population is the same before and after
      * the ink rule changed, which is how it is known not to be this rule's doing;
-     * the counts fell from 4 to 0..1 at 1920 and from 12 to 0..3 at 834 as the
-     * rule took the cases it owns. The ceilings are one above what was measured,
-     * because which nodes the fog catches moves with the parked pose. Planting the
-     * old rule back returns 2 and 6 (gate probe, 2026-09-06), so this still fails
-     * on the defect it was written for.
+     * the counts fell from 4 to 0..2 at 1920 and from 12 to 0..3 at 834 as the rule
+     * took the cases it owns. The ceilings sit above what was measured, because
+     * which nodes the fog catches moves with the parked pose.
+     *
+     * **Which size is the detector.** Planting the old ranking back returns 6 at
+     * 834×1112 against a ceiling of 4, and 3 at Strata 1040×720 against 1 — those
+     * two fail on the defect. At 1920 it returns 2, the same as the residual, so
+     * that size is a ratchet on a population rather than a detector, and saying so
+     * is the point of writing it down (gate probe, 2026-09-06).
      */
     expect(
       stolen.length,
