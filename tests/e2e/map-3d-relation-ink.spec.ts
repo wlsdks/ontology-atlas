@@ -43,33 +43,58 @@ import { seedFirstRunSeen } from "./first-run-seed";
  * derives for the node rim — this one measures it on the real frame instead.
  *
  * The floors are set well under the measured medians, the way the sibling drawing
- * specs set theirs. The spread here is wider than theirs and it is worth naming:
- * the entry pose parks a few hundredths of a radian differently between loads, and
- * which lines that puts in front of which decides both how many are sampled and
- * how much halo has been cut out of them — Strata's dependency median read 1.78
- * over 30 lines on one load and 1.55 over 31 on the next. A floor pinned near
- * either number is a coin toss, so these sit at 1.55 / 1.45. The direction's own
- * bar is ≥ 1.8 : 1 for containment and ≥ 1.5 : 1 for dependency at rest; what
- * these floors defend is the distance already travelled from 1.1–1.3 : 1, which is
- * the regression that would otherwise return unseen.
+ * specs set theirs. The direction's own bar is ≥ 1.8 : 1 for containment and
+ * ≥ 1.5 : 1 for dependency at rest; what these floors defend is the distance
+ * already travelled from 1.1–1.3 : 1, which is the regression that would
+ * otherwise return unseen.
+ *
+ * ## …and the same frames on a screen that is not Retina (2026-09-07)
+ *
+ * The first version of this gate ran at DPR 2 only, and said so: "the same frame
+ * that measures 1.89 : 1 here measures 1.23 : 1 at DPR 1, before and after the
+ * floor alike". That is the whole gain given back on every non-Retina screen, and
+ * it happens because a line's width is a **CSS** quantity: at ratio 1 a 0.32 px
+ * stroke covers a third of a device pixel, the rasteriser spreads its alpha over
+ * the two rows it straddles, and the peak — what a reader follows a line by, and
+ * what this instrument samples — collapses even though the ink floor's budget is
+ * intact.
+ *
+ * `DOME_EDGE_DEVICE_WIDTH_FLOOR` (1.0 **device** px, converted to CSS px by the
+ * ratio the canvas is rasterising at) stops the resting stroke going sub-pixel on
+ * the device. Measured on the sample vault at 1512×982, nothing selected or
+ * hovered, contains / depends median:
+ *
+ * | at rest | DPR 2 before → after | DPR 1 before → after |
+ * |---|---|---|
+ * | Cone | 1.89 / 1.75 → **2.44 / 1.96** | 1.29 / 1.26 → **2.72 / 2.33** |
+ * | Strata | 1.72 / 1.55 → **2.26 / 1.87** | 1.25 / 1.19 → **2.33 / 1.57** |
+ * | Cloud | 1.83 / 1.78 → **2.51 / 2.08** | 1.27 / 1.25 → **2.52 / 2.05** |
+ *
+ * DPR 2 rises too, because a floor of one device pixel is 0.5 CSS px there and the
+ * thinnest resting strokes were 0.32. That is the same defect a step smaller, not
+ * a second change. The whole 2D map is untouched at either ratio: its canvas comes
+ * back byte-identical (`render/traces.test.ts` pins the mechanism — no
+ * `minWidthPx`, no difference).
+ *
+ * Strata's dependency at DPR 1 is the tightest reading in the file, 1.571, and it
+ * is worth naming why: its cross-plane lines are dashed, so where the instrument's
+ * three samples land relative to a gap moves the number more than the ink does.
+ * The floors sit under that.
  */
 
-/*
- * **DPR 2, because that is the screen the report came from and the one the ratio
- * is a property of.** A line's width is a CSS quantity, so at device-pixel ratio 1
- * the same stroke covers half as many device pixels and antialiasing spreads what
- * is left: the same frame that measures 1.89 : 1 here measures 1.23 : 1 at DPR 1,
- * before and after the floor alike. Fixing that is a stroke-width question rather
- * than a depth-ink one and is not what this gate is for; pinning the ratio keeps
- * the number comparable between runs either way.
- */
-test.use({ viewport: { width: 1512, height: 982 }, deviceScaleFactor: 2 });
+/** Both device pixel ratios, because the defect above lives in exactly that gap. */
+const RATIOS = [2, 1] as const;
 
-/** The three 3D arrangements, with the resting-ink floor each has to hold. */
+/**
+ * The three 3D arrangements, with the resting-ink floor each has to hold. One set
+ * of floors for both ratios — the point of the width floor is that a resting line
+ * reads the same whatever screen it is drawn on, so a gate that asked less of one
+ * ratio would be conceding the thing being fixed.
+ */
 const ARRANGEMENTS = [
-  { key: "ownership", name: "Cone", containsFloor: 1.55, dependsFloor: 1.45 },
-  { key: "strata", name: "Strata", containsFloor: 1.55, dependsFloor: 1.45 },
-  { key: "coupling", name: "Cloud", containsFloor: 1.55, dependsFloor: 1.45 },
+  { key: "ownership", name: "Cone", containsFloor: 1.9, dependsFloor: 1.4 },
+  { key: "strata", name: "Strata", containsFloor: 1.9, dependsFloor: 1.4 },
+  { key: "coupling", name: "Cloud", containsFloor: 1.9, dependsFloor: 1.4 },
 ] as const;
 
 async function open3d(page: Page, arrangement: string) {
@@ -194,8 +219,12 @@ async function readRelationInk(page: Page) {
   });
 }
 
+for (const dpr of RATIOS) {
+  test.describe(`device pixel ratio ${dpr}`, () => {
+    test.use({ viewport: { width: 1512, height: 982 }, deviceScaleFactor: dpr });
+
 for (const arrangement of ARRANGEMENTS) {
-  test(`${arrangement.name} 1512x982 — resting relation lines are visible against the ground`, async ({ page }) => {
+  test(`${arrangement.name} 1512x982 @${dpr}x — resting relation lines are visible against the ground`, async ({ page }) => {
     test.setTimeout(120_000);
     await open3d(page, arrangement.key);
     const read = await readRelationInk(page);
@@ -215,5 +244,8 @@ for (const arrangement of ARRANGEMENTS) {
       ink.depends!.median,
       `dependency lines at rest: median ${ink.depends!.median} : 1 over ${ink.depends!.drawn} drawn lines`,
     ).toBeGreaterThanOrEqual(arrangement.dependsFloor);
+  });
+}
+
   });
 }

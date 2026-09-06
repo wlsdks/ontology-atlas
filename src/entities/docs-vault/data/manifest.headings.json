@@ -6407,6 +6407,16 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-07 — Strata's tier legend takes the right edge only where the fit was not going to use it",
+      "slug": "2026-09-07-stratas-tier-legend-takes-the-right-edge-only-where-the-fit-was-not-going-to-use-it"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-07 — A resting 3D relation line is never thinner than one device pixel",
+      "slug": "2026-09-07-a-resting-3d-relation-line-is-never-thinner-than-one-device-pixel"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — The Library stays on every rail; only a wiki without a map hides the map doors",
       "slug": "2026-09-06-the-library-stays-on-every-rail-only-a-wiki-without-a-map-hides-the-map-doors"
     },

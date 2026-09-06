@@ -6,7 +6,7 @@ import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
 import { TopologyV2TierLegend } from "./TopologyV2TierLegend";
-import type { TierLegendAnchor } from "../model/tier-legend-rows";
+import type { TierLegendAnchor, TierLegendPlacement } from "../model/tier-legend-rows";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
@@ -518,6 +518,12 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
    */
   const [tierAnchors, setTierAnchors] = useState<readonly TierLegendAnchor[] | null>(null);
   const [tierLegendFits, setTierLegendFits] = useState(true);
+  /**
+   * Where the four names may sit. The loop derives it from the fit's own free box
+   * and publishes it on change, so the reserved column and the drawn legend read
+   * one predicate (`model/tier-legend-rows.ts#tierLegendPlacement`).
+   */
+  const [tierLegendPlacement, setTierLegendPlacement] = useState<TierLegendPlacement>("rail");
   const handleTierAnchors = useCallback((next: readonly TierLegendAnchor[] | null) => {
     setTierAnchors(next);
   }, []);
@@ -567,6 +573,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       // The rim names are the fallback, not the default — see `tierLegendActive`.
       domeTierLabels: tierLegendActive && tierLegendFits ? null : domeTierLabels,
       onDomeTierAnchorsChange: handleTierAnchors,
+      onTierLegendPlacementChange: setTierLegendPlacement,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,
@@ -738,6 +745,7 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
           labels={domeTierLabels!}
           onRaise={raiseDomeTier}
           onFitChange={setTierLegendFits}
+          placement={tierLegendPlacement}
         />
       ) : null}
       {/* The guided tour's canvas node anchor (steps 2 and 4) — the same projection
