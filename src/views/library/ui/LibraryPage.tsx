@@ -28,6 +28,7 @@ import {
   useDocReadingScrollSpy,
 } from "@/widgets/doc-reading-pane";
 import { DocsVaultViewer } from "@/widgets/docs-vault";
+import { LibraryGraph } from "@/widgets/library-graph";
 import { cn } from "@/shared/lib/cn";
 import { getTauriVaultRootPath, revealTauriVaultFile } from "@/shared/lib/tauri-vault-fs";
 import { controlClass } from "@/shared/ui/control-class";
@@ -590,6 +591,35 @@ export function LibraryPage() {
           !narrowShowsReader && "max-lg:hidden",
         )}
       >
+        {/*
+          The overview, above the one thing open. The Library's two lists say what is in
+          the folder one row at a time; this says it all at once — which page came from
+          which file, and which concepts a page reaches into. It is the same two file
+          kinds, drawn instead of listed, so it belongs to this screen rather than to the
+          map, which draws neither of them (`docs/DECISIONS.md`, 2026-09-06).
+        */}
+        <LibraryGraph
+          docs={manifest?.docs ?? EMPTY_DOCS}
+          wikiPages={model.wikiPages}
+          /* `model.sources`, never `manifest.sources`: the rows carry the state the list
+             prints, so the canvas cannot draw a confident citation beside a row that says
+             the file changed underneath it (design-infoviz, 2026-09-06). */
+          sources={model.sources}
+          selection={
+            opened === null
+              ? null
+              : opened.kind === "wiki"
+                ? { kind: "wiki", ref: opened.slug }
+                : { kind: "source", ref: opened.path }
+          }
+          onSelect={(next) =>
+            setSelected(
+              next.kind === "wiki"
+                ? { kind: "wiki", slug: next.ref }
+                : { kind: "source", path: next.ref },
+            )
+          }
+        />
         {selected ? (
           /*
            * **The way back exists at every width now.** It was `lg:hidden`, because below

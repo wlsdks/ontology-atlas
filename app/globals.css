@@ -4141,6 +4141,44 @@ body[data-no-tabbar] [data-tabbar="primary"] {
   transition-duration: var(--motion-fast);
 }
 
+/* The toaster is top-centred, but "centre" means the map area, not the viewport: with
+   the agent dock open the map's own toolbar is centred over what is left of the width,
+   and a toast centred on the viewport would sit half under the dock. The dock effect
+   publishes its width (`--app-right-dock-width`, `right-dock-reserve.ts`); half of it
+   moves the toaster's anchor left. sonner injects its own stylesheet at runtime,
+   after ours, with the same `[data-sonner-toaster][data-x-position]` selector, so
+   the `html` prefix is what makes this rule win. */
+html [data-sonner-toaster][data-x-position='center'] {
+  left: calc(50% - var(--app-right-dock-width, 0px) / 2);
+  transform: translateX(-50%);
+}
+
+/* The close button sits at the right end of the one-line box and appears on hover or
+   keyboard focus, so the box reads as message · action and nothing else until the
+   pointer arrives. Written here, not as utilities, for the same reason as the rule
+   above: sonner's runtime stylesheet follows ours. */
+html [data-sonner-toast].app-toast [data-close-button] {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  transition: opacity var(--motion-fast) var(--motion-ease), background-color var(--motion-fast) var(--motion-ease), color var(--motion-fast) var(--motion-ease);
+}
+
+html [data-sonner-toast].app-toast:hover [data-close-button],
+html [data-sonner-toast].app-toast [data-close-button]:focus-visible {
+  opacity: 1;
+}
+
+html [data-sonner-toast].app-toast [data-close-button]:hover {
+  background: var(--color-overlay-2);
+  color: var(--color-text-primary);
+}
+
 
 
 /* ─── Gateway landing — living screen (2026-08-18 remake) ────────────────────────
