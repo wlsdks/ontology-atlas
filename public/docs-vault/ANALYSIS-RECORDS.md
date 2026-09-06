@@ -67,6 +67,7 @@ vault and replaceable Architecture JSON receipts remain separate formats.
 ## Format and ownership
 
 The shared, framework-free validator and codec are
+`mcp/src/analysis-record.mts`; the app reads them through
 `src/entities/analysis-record/model/analysis-record.mts`. App code and the
 Node 24 MCP/CLI readers consume that same contract. A filename is an exact UTC
 timestamp followed by a writer-minted UUIDv4, for example:

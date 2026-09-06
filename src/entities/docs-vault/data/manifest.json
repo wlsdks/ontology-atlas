@@ -70,8 +70,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Atlas keeps each in-app ACP analysis as a separate Markdown file under .ontology-atlas/analyses/ in the folder captured when the request starts. Map, Analysis, and Architecture use the same format. An analysis can be reopened after a session closes, exported, inspected through MCP or CLI, or used as the parent of anoth",
-      "wordCount": 1288,
-      "updatedAt": "2026-09-05",
+      "wordCount": 1294,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ONTOLOGY-ATLAS-SPEC"
       ]
@@ -2735,13 +2735,13 @@
         "display_en": "Analysis Record Archive",
         "display_ko": "분석 기록 보관소",
         "domain": "domains/agent-integration",
-        "path": "src/entities/analysis-record/model/analysis-record.mts",
+        "path": "mcp/src/analysis-record.mts",
         "created_by": "agent:unknown"
       },
       "headings": [],
       "excerpt": "The cross-runtime diagnostic record format, bounded readers, and exclusive native persistence that preserve an ACP analysis as one immutable Markdown version. It retains the original final answer, actual full-body Atlas evidence, Architecture measurements and profile snapshots, request identity, outcome, and qualificat",
-      "wordCount": 151,
-      "updatedAt": "2026-09-05",
+      "wordCount": 158,
+      "updatedAt": "2026-09-07",
       "linksOut": []
     },
     {

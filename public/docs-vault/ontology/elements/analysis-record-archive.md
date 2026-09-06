@@ -6,7 +6,7 @@ title: Analysis Record Archive
 display_en: Analysis Record Archive
 display_ko: 분석 기록 보관소
 domain: domains/agent-integration
-path: src/entities/analysis-record/model/analysis-record.mts
+path: mcp/src/analysis-record.mts
 created_by: "agent:unknown"
 ---
 
@@ -22,7 +22,8 @@ The cross-runtime diagnostic record format, bounded readers, and exclusive nativ
 - Ontology kinds, canonical meaning approval, Git commits, authenticated authorship, and automatic resolution of missing findings.
 
 ## Evidence
-- Primary implementation: `src/entities/analysis-record/model/analysis-record.mts#validateAnalysisRecord`
+- Primary implementation: `mcp/src/analysis-record.mts#validateAnalysisRecord`
+- Supporting implementation: `src/entities/analysis-record/model/analysis-record.mts` (the app-side re-export)
 - Supporting implementation: `src-tauri/src/analysis_archive.rs#append_analysis_record`
 - Focused test: `src/entities/analysis-record/model/analysis-record.test.ts`
 - Focused test: `mcp/src/analysis-records.test.mjs`

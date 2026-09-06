@@ -35,7 +35,7 @@ import {
   WRITE_RELATION_TYPE_VALUES,
 } from "./ontology-engine.mjs";
 import { GRAPH_ARRAY_KEYS, loadVaultDocs } from "./vault.mjs";
-import { analysisRecordFileName, serializeAnalysisRecord } from '../../src/entities/analysis-record/model/analysis-record.mts';
+import { analysisRecordFileName, serializeAnalysisRecord } from './analysis-record.mts';
 import { buildProjectSourceGraphHash } from "./project-source-graph-hash.mjs";
 import { renderProjectCompetencyMarkdown } from "./project-meaning-receipt.mjs";
 import { defaultBody } from "./schema.mjs";

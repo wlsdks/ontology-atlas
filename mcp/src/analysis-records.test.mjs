@@ -7,7 +7,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import { analysisDigest, analysisRecordFileName, serializeAnalysisRecord } from '../../src/entities/analysis-record/model/analysis-record.mts';
+import { analysisDigest, analysisRecordFileName, serializeAnalysisRecord } from './analysis-record.mts';
 import { listAnalysisRecords, readAnalysisRecord } from './analysis-records.mjs';
 const CLI_ENTRY = fileURLToPath(new URL('../../cli/src/index.mjs', import.meta.url));
 
