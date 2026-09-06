@@ -484,28 +484,33 @@ export function LibrarySection({
                 <li
                   key={`${candidate.name}\u0000${candidate.pages.join(",")}`}
                   data-testid="library-candidate"
-                  className="flex min-w-0 items-center gap-2 rounded-chip px-1 py-0.5"
+                  className="flex min-w-0 flex-col gap-0.5 rounded-chip px-1 py-1"
                 >
-                  <span className="min-w-0 flex-1 truncate text-label text-[color:var(--color-text-primary)]" title={candidate.why || undefined}>
+                  {/* The name is the whole point of the row; at the rail's 280px it was
+                      "Timber…" beside its own meta (installed app, 2026-09-06). It takes the
+                      full line and may wrap; the meta and the chip share the line below. */}
+                  <span className="text-label text-[color:var(--color-text-primary)] [word-break:keep-all]" title={candidate.why || undefined}>
                     {candidate.name}
                   </span>
-                  <span className="flex-none text-caption text-[color:var(--color-text-quaternary)]">
-                    {t(`wiki.candidateKind.${candidate.kind}`)} · {t("wiki.candidatePages", { count: candidate.pages.length })}
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate text-caption text-[color:var(--color-text-quaternary)]">
+                      {t(`wiki.candidateKind.${candidate.kind}`)} · {t("wiki.candidatePages", { count: candidate.pages.length })}
+                    </span>
+                    {onPropose && isMapKind(candidate.kind) ? (
+                      <Tooltip content={t("wiki.proposeTooltip")}>
+                        <Chip
+                          data-testid="library-candidate-propose"
+                          onClick={() => onPropose(candidate)}
+                          disabled={busy}
+                          tone="muted"
+                          className="flex-none hover:text-[color:var(--color-text-primary)]"
+                          aria-label={`${t("wiki.propose")}: ${candidate.name}`}
+                        >
+                          <span className="min-w-0 truncate">{t("wiki.propose")}</span>
+                        </Chip>
+                      </Tooltip>
+                    ) : null}
                   </span>
-                  {onPropose && isMapKind(candidate.kind) ? (
-                    <Tooltip content={t("wiki.proposeTooltip")}>
-                      <Chip
-                        data-testid="library-candidate-propose"
-                        onClick={() => onPropose(candidate)}
-                        disabled={busy}
-                        tone="muted"
-                        className="flex-none hover:text-[color:var(--color-text-primary)]"
-                        aria-label={`${t("wiki.propose")}: ${candidate.name}`}
-                      >
-                        <span className="min-w-0 truncate">{t("wiki.propose")}</span>
-                      </Chip>
-                    </Tooltip>
-                  ) : null}
                 </li>
               ))}
             </ul>

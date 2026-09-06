@@ -39,6 +39,7 @@ const HEADER = [
   "Written by Ontology Atlas after each Compile and Check-the-wiki run. Append-only; one line",
   "per event; the app writes it and nothing else should. Not a page.",
   "",
+  "",
 ].join("\n");
 
 const ENTRY = /^## \[([^\]]+)\] (compile|lint) \| (.*) \| ([^|]+)$/;
@@ -123,7 +124,10 @@ export async function appendWikiLog(
   } catch {
     // A just-created file has nothing yet.
   }
-  const body = current.trim() === "" ? HEADER : current.replace(/\s+$/, "") + "\n";
+  const trimmed = current.replace(/\s+$/, "");
+  // Entries sit on consecutive lines so `grep "^## \["` reads them; only the header keeps
+  // one blank line before the first entry.
+  const body = trimmed === "" ? HEADER : trimmed + (ENTRY.test(trimmed.split("\n").at(-1) ?? "") ? "\n" : "\n\n");
   const next = `${body}${formatWikiLogEntry(entry)}\n`;
   const writable = await file.createWritable();
   await writable.write(next);

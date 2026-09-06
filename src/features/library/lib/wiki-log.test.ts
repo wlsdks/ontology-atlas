@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeCompileTurn, describeLintTurn, formatWikiLogEntry, parseWikiLog } from "./wiki-log";
+import { appendWikiLog, describeCompileTurn, describeLintTurn, formatWikiLogEntry, parseWikiLog } from "./wiki-log";
 
 describe("a log line is one parseable line", () => {
   it("round-trips through format and parse", () => {
@@ -43,5 +43,37 @@ describe("the lint line carries the report's counts when the report states them"
   it("does not invent counts the report did not state", () => {
     expect(describeLintTurn("I read the pages and found nothing to report.")).toBe("ran; counts not stated");
     expect(describeLintTurn(null)).toBe("ran; counts not stated");
+  });
+});
+
+describe("appendWikiLog writes a file a person and grep can both read", () => {
+  function memoryVault() {
+    let content: string | null = null;
+    const file = {
+      getFile: async () => ({ text: async () => content ?? "" }),
+      createWritable: async () => ({
+        write: async (next: string) => {
+          content = next;
+        },
+        close: async () => {},
+      }),
+    };
+    const dir = { getFileHandle: async () => file };
+    const vault = { getDirectoryHandle: async () => dir } as unknown as FileSystemDirectoryHandle;
+    return { vault, read: () => content };
+  }
+
+  it("keeps one blank line after the header and none between entries", async () => {
+    const { vault, read } = memoryVault();
+    const first = { at: "2026-09-06T13:45:43Z", kind: "lint" as const, summary: "disagreement 1", writer: "agent:claude" };
+    const second = { at: "2026-09-06T13:50:00Z", kind: "compile" as const, summary: "sources/a.pdf → a (new)", writer: "agent:claude" };
+    await appendWikiLog(vault, first);
+    await appendWikiLog(vault, second);
+    const text = read() ?? "";
+    // Seen on the installed app on 2026-09-06: the first entry sat directly under the header prose.
+    expect(text).toMatch(/Not a page\.\n\n## \[2026-09-06T13:45:43Z\] lint/);
+    expect(text).toMatch(/agent:claude\n## \[2026-09-06T13:50:00Z\] compile/);
+    expect(text.endsWith("\n")).toBe(true);
+    expect(parseWikiLog(text)).toEqual([first, second]);
   });
 });

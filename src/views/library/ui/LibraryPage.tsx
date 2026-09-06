@@ -51,6 +51,7 @@ import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { LibrarySection } from "./parts/LibrarySection";
 import { LibraryAgentDock } from "./parts/LibraryAgentDock";
+import { selectLibraryHandle } from "../lib/select-library-handle";
 import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
 import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
@@ -103,7 +104,7 @@ export function LibraryPage() {
   const toast = useToast();
   const localVault = useLocalVault();
 
-  const handle = localVault.status === "loaded" ? (localVault.handle ?? null) : null;
+  const handle = selectLibraryHandle(localVault.status, localVault.handle);
   const manifest = localVault.manifest;
   const hasFolder = handle !== null && manifest !== null;
   /**

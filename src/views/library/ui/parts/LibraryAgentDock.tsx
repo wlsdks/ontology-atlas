@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 
 import type { PageWriteRequest, PageWriteVerdict } from "@/features/library";
@@ -73,6 +73,17 @@ export function LibraryAgentDock({
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
   const [enabledRequestNonce, setEnabledRequestNonce] = useState<number | null>(null);
+  /*
+   * Born wide: a dock mounted while already open has no width transition to wait for.
+   * Measured in the installed app on 2026-09-06 — the page remounted the dock mid-request
+   * and, at xl, the session waited on a `transitionend` that never came, so the panel sat
+   * on "Connecting" and every later chip pressed into a session that never started. Once
+   * the dock has closed, the next opening is a real transition again and owns the handoff.
+   */
+  const bornOpenRef = useRef(open);
+  useEffect(() => {
+    if (!open) bornOpenRef.current = false;
+  }, [open]);
 
   useEffect(() => {
     if (!open || !openingRequest) return;
@@ -86,7 +97,7 @@ export function LibraryAgentDock({
       typeof window === "undefined" || typeof window.matchMedia !== "function"
         ? true
         : window.matchMedia("(min-width: 1280px)").matches;
-    if (wide) return;
+    if (wide && !bornOpenRef.current) return;
     const nonce = openingRequest.nonce;
     const frame = window.requestAnimationFrame(() => setEnabledRequestNonce(nonce));
     return () => window.cancelAnimationFrame(frame);
