@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Library gets its own small graph, separate from the map
+
+**Why**: the owner asked for one inside this tab, "separate from (map, architecture)", drawn as small circles like a force graph. The Library says what is in the folder one row at a time, and nothing on the screen says which page came from which file; the map cannot say it either, because a raw source has no `kind:` and never becomes a node.
+**Prior**: 2026-09-05 "A vault holds three kinds of file and only one is the graph" stands, and is why this is a second picture rather than more nodes on the map.
+**Decision**: a canvas-2D section above the Library reader, opened by a chip and remembered per machine: sources as squares (hollow when nobody has written them up), pages as filled circles, named concepts as rings, `cites` solid, `mentions` dashed, a citation the folder can no longer vouch for broken once at its midpoint, indigo only on the selection. Every distinction survives with colour removed. ForceAtlas2 (already installed) runs to a stop before the first frame, is rotated onto the canvas's long axis, and settles once on the 420ms canvas-travel token; nothing ticks after. Open by default at `lg` and above, closed below. Measured: 500 nodes in 95ms, marks at 4.2:1 or better, zero crossings on the seeded folder.
+**Dissent**: design-lead: close it by default everywhere, because an overview taking 41% of the pane above a reader inverts the hierarchy this screen set the same day. design-interaction: a concept click should open in place like the reader's own wikilink. Both kept: the owner asked for the canvas to be present, the preference persists, and the reader carries no map link, so opening a concept there strands a person further from it. The label names the destination before the click.
+**Falsifier**: the stored preference showing this section closed on every visit; or a person who opens a concept from the canvas and did not want to leave the Library.
+**Owner**: jinan
+
 ## 2026-09-06 — A containment pair carries its reason once, on the parent document
 
 **Why**: the first fill-notes turn on the dogfood vault wrote twelve reasons and stopped at a question: the 93 `domain:` back-pointers on capability and element documents draw the same connection the parent's `capabilities:` and `elements:` lists already draw, so a reason written on both sides would show twice on the map and drift apart in a week.
