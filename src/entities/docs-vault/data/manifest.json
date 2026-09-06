@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-09-06",
+  "generatedAt": "2026-09-07",
   "docs": [
     {
       "slug": "AGENT-DESIGN-METHOD",
@@ -970,8 +970,8 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 33636,
-      "updatedAt": "2026-09-06",
+      "wordCount": 33683,
+      "updatedAt": "2026-09-07",
       "linksOut": [
         "ANALYSIS-RECORDS",
         "slug",

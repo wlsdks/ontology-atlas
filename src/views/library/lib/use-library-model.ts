@@ -11,6 +11,7 @@ import {
 import { nativeVaultFileHashes } from "@/shared/lib/tauri-vault-fs";
 import { parseWikiLog, type WikiLogEntry } from "@/features/library";
 import { isWikiFurnitureSlug, validateWikiFolder, validateWikiPage } from "@/shared/lib/wiki-page-schema";
+import { mergeWikiVerdict } from "./merge-wiki-verdict";
 
 /**
  * The library, measured lazily, for one open folder.
@@ -266,20 +267,7 @@ export function useLibraryModel({
           if (!base) continue;
           // Page problems first, folder problems after: the page's own shape is what
           // a writer fixes first, and the first code shown is the one they see.
-          const own = base.problems.filter(
-            (problem) =>
-              problem.code !== "dangling-wikilink" &&
-              problem.code !== "orphan-page" &&
-              problem.code !== "shared-source-unlinked",
-          );
-          const problems = [...own, ...(folderByPath.get(path) ?? [])];
-          next.set(slug, {
-            ok: problems.length === 0,
-            firstProblem: problems[0]?.code ?? null,
-            firstProblemMessage: problems[0]?.message ?? null,
-            problemCount: problems.length,
-            problems,
-          });
+          next.set(slug, mergeWikiVerdict(base, folderByPath.get(path) ?? []));
         }
         return next;
       });

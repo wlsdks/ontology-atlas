@@ -815,7 +815,10 @@ store can drift from it.
 - **Wiki** — Markdown under `wiki/**` with no `kind:`. Each row shows `created_by` and,
   when the page does not fit the contract, the first problem code `wiki-validate` prints
   (`section-order`, `uncited-fact`, …), the folder's own findings included
-  (`orphan-page`, `dangling-wikilink`, `shared-source-unlinked`). The shape is
+  (`orphan-page`, `dangling-wikilink`, `shared-source-unlinked`). Only the page's own
+  problems and a broken link make a row **off-template**; an orphan or an unlinked
+  shared source is named on the row and in the Check-the-wiki brief but not counted,
+  because in a two-page wiki with no links yet every page is an orphan. The shape is
   `docs/ONTOLOGY-ATLAS-SPEC.md` §11,
   and `wiki/_template.md` is written into every new vault by `ontology-atlas init`.
   Files under `wiki/` that start with `_` are the wiki's furniture, never pages: the
