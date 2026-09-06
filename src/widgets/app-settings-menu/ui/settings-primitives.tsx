@@ -169,7 +169,7 @@ export function SettingsRow({
   return (
     <div
       className={cn(
-        'flex min-w-0 items-center justify-between gap-3 px-3',
+        'flex items-center justify-between gap-3 px-3 min-w-0',
         hasMarkSlot ? 'min-h-16 py-2.5' : 'min-h-12 py-2',
       )}
       data-testid={testId}
