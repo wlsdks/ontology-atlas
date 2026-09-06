@@ -176,6 +176,9 @@ export function FirstRunPage() {
               </p>
               <p className="break-keep text-label leading-body text-[color:var(--color-text-tertiary)]">{t("shapeTitle")}</p>
             </div>
+            {/* One row of repeated cards keeps one height: the shortest copy does not
+                make its card shorter (Don'ts, content-decided card height). */}
+            <div className="grid auto-rows-fr gap-2">
             {(
               [
                 { id: "wiki", shape: { map: false, wiki: true }, Icon: Library, title: t("shapeWikiTitle"), body: t("shapeWikiBody") },
@@ -204,6 +207,7 @@ export function FirstRunPage() {
                 </span>
               </button>
             ))}
+            </div>
             <Chip
               tone="muted"
               onClick={() => setChoosingFor(null)}
