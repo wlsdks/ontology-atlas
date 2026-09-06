@@ -40,6 +40,7 @@ import { libraryCompileBlockedReason } from "../lib/compile-availability";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { LibrarySection } from "./parts/LibrarySection";
+import { CompileBrainSelect } from "./parts/CompileBrainSelect";
 import { LibraryStage } from "./parts/LibraryStage";
 import { LibraryAgentDock } from "./parts/LibraryAgentDock";
 import { SourceSummary } from "./parts/SourceSummary";
@@ -590,13 +591,31 @@ export function LibraryPage() {
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
-            // Compile hands the folder to a coding agent, whose own provider traffic
-            // Atlas is not in the path of and does not log. Saying so beside the button
-            // rather than in a settings page is the whole point.
-            /* The runner's own transfer sentence lives on step two, which states the host
-               and whether it is this computer; repeating a second, different disclosure
-               beside a source is how two surfaces come to disagree. */
-            transferNote={agent.route === "agent" ? t("wiki.transfer") : null}
+            /*
+             * The same picker as step two, reading and writing the same stored answer, so
+             * the sidebar and the shelf can never name different brains.
+             */
+            brainControl={
+              agent.brainChoosable ? (
+                <CompileBrainSelect
+                  brain={agent.brain}
+                  agentLabel={agent.runtime?.label ?? null}
+                  localModel={agent.localModel}
+                  onChoose={agent.chooseBrain}
+                  t={t}
+                />
+              ) : null
+            }
+            /*
+             * Compile hands the folder to a coding agent, whose own provider traffic Atlas
+             * is not in the path of and does not log. Saying so beside the button rather
+             * than in a settings page is the whole point — but only where step two is not
+             * already saying it, because the shelf owns that sentence whenever it is drawn
+             * and two copies of one disclosure teach a reader to skip it.
+             */
+            transferNote={
+              selected !== null && agent.route === "agent" ? t("wiki.transfer") : null
+            }
             vaultLabel={nativeVaultRootPath ?? handle.name}
             busy={busy}
             t={t}
@@ -726,6 +745,9 @@ export function LibraryPage() {
             agentLabel={agent.runtime?.label ?? null}
             localModel={agent.localModel}
             localCompile={agent.localCompile}
+            brain={agent.brain}
+            brainChoosable={agent.brainChoosable}
+            onChooseBrain={agent.chooseBrain}
             inApp={nativeVaultRootPath !== null}
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}

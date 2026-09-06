@@ -23,6 +23,7 @@ import { isLlmChatBridgeAvailable } from "@/shared/lib/tauri-llm";
 
 import type { LibrarySourceRow } from "@/entities/docs-vault";
 
+import { resolveCompileBrain, useCompileBrainChoice } from "./compile-brain";
 import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/parts/LibraryAgentDock";
 
 /**
@@ -63,6 +64,16 @@ import type { LibraryAgentOpeningRequest, LibraryAgentRuntime } from "../ui/part
  * leave the process and "on this computer" has to be true rather than named; and a source
  * whose format needs a parser Atlas does not ship is not a target, so step two can reach
  * done instead of offering a turn it cannot finish.
+ *
+ * ## The brain is chosen, not ranked (owner, 2026-09-06)
+ *
+ * The first pass made the coding agent outrank the runner whenever both were installed.
+ * On the owner's own machine both are, and the reason the runner is there at all is to be
+ * chosen **deliberately for a folder whose documents should not leave it** — which a
+ * precedence rule quietly takes away. So `resolveCompileBrain` turns the rank into a
+ * default: both available draws one picker, the stored answer wins, and the coding agent
+ * is what an unanswered folder gets. `route` follows that answer, and a stored answer
+ * naming a brain this machine no longer offers falls back **and stops being stored**.
  */
 
 const subscribeDesktopRuntime = () => () => undefined;
@@ -236,18 +247,41 @@ export function useLibraryAgent(
    * permission card. `local` is what is left when that is absent: a named brain the shelf
    * can point at rather than an empty step.
    */
-  const route: LibraryAgentRoute =
-    !bridgeAvailable && localModel
+  /*
+   * Each brain's availability is asked separately now, because the picker needs both
+   * answers rather than one winner. `checking` still comes first while the bridge is
+   * present and the runtime scan is unfinished: naming a brain before the scan lands would
+   * make the shelf change its mind under the reader.
+   */
+  const agentAvailable =
+    bridgeAvailable && runtime !== null && vaultRoot !== null && agentServer.launch !== null;
+  const localAvailable = localModel !== null;
+  const { stored: storedBrain, choose: chooseBrain, forget: forgetBrain } = useCompileBrainChoice();
+  const brainSettled = !bridgeAvailable || (runtimesChecked && serverCheckComplete);
+  const brain = resolveCompileBrain({
+    agentAvailable,
+    localAvailable,
+    stored: storedBrain,
+  });
+
+  /*
+   * A stored answer for a brain that is gone is cleared once — but only after the scan
+   * settles, or a transient "the agent is not ready yet" would erase a valid choice on
+   * every launch.
+   */
+  useEffect(() => {
+    if (brainSettled && brain.staleChoice) forgetBrain();
+    // `forgetBrain` is the stable callback, not the hook's wrapper object: depending on
+    // the object would rerun this effect on every render.
+  }, [brain.staleChoice, brainSettled, forgetBrain]);
+
+  const route: LibraryAgentRoute = !bridgeAvailable
+    ? localAvailable
       ? "local"
-      : !bridgeAvailable
-        ? "unavailable"
-        : !runtimesChecked || !serverCheckComplete
-          ? "checking"
-          : runtime && vaultRoot && agentServer.launch !== null
-            ? "agent"
-            : localModel
-              ? "local"
-              : "unavailable";
+      : "unavailable"
+    : !runtimesChecked || !serverCheckComplete
+      ? "checking"
+      : (brain.brain ?? "unavailable");
 
   /**
    * The turn a connect-by-address runner actually runs. It is built in every route so the
@@ -287,6 +321,11 @@ export function useLibraryAgent(
     route,
     localModel,
     localCompile,
+    /** Both brains are here, so the person picks. False draws today's static line. */
+    brainChoosable: brain.choosable,
+    /** The brain that will run, for the label and the transfer sentence. */
+    brain: brain.brain,
+    chooseBrain,
     runtime,
     runtimes,
     runtimeId,

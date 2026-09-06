@@ -6293,6 +6293,11 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — Which brain Compile runs on is a default the person can change, not a rank",
+      "slug": "2026-09-06-which-brain-compile-runs-on-is-a-default-the-person-can-change-not-a-rank"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — Compile runs on a local model: a read tool, a proposal tool, one card, parsers deferred",
       "slug": "2026-09-06-compile-runs-on-a-local-model-a-read-tool-a-proposal-tool-one-card-parsers-deferred"
     },

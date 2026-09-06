@@ -17,8 +17,11 @@ import {
 } from "../../lib/compile-availability";
 import type { LocalCompileSession } from "@/features/vault-agent";
 
+import type { CompileBrain } from "../../lib/compile-brain";
+
 import type { LibraryUiModel } from "../../lib/use-library-model";
 import type { LibraryLocalModel } from "../../lib/use-library-agent";
+import { CompileBrainSelect } from "./CompileBrainSelect";
 import { LocalCompileCard } from "./LocalCompileCard";
 
 /**
@@ -79,6 +82,16 @@ export interface LibraryStageProps {
    * the answer to their own press.
    */
   localCompile: LocalCompileSession | null;
+  /**
+   * The brain that will run, and whether the person gets to change it.
+   *
+   * `choosable` is true only when this computer offers both, which is the one case where
+   * a control can change anything; with one brain the static line stays (owner,
+   * 2026-09-06 — a rank became a default, because the runner exists to be chosen).
+   */
+  brain: CompileBrain | null;
+  brainChoosable: boolean;
+  onChooseBrain: (brain: CompileBrain) => void;
   /** True in the installed app. On the web, Compile has no runtime at all. */
   inApp: boolean;
   onAddFiles: () => void;
@@ -145,8 +158,14 @@ function Step({
    * so the screen answers "which one now" with one answer.
    */
   lead: boolean;
-  /** Label/value pairs. Each number keeps its own line; none is buried in prose. */
-  facts: Array<{ key: string; label: string; value: string }>;
+  /**
+   * Label/value pairs. Each number keeps its own line; none is buried in prose.
+   *
+   * A value may be a control rather than a string — "Runs on" becomes a picker when this
+   * computer offers two brains — so the row draws whatever it is given rather than
+   * growing a second row shape beside the definition list.
+   */
+  facts: Array<{ key: string; label: string; value: React.ReactNode }>;
   children?: React.ReactNode;
   testId: string;
   t: LibraryStageProps["t"];
@@ -210,6 +229,9 @@ export function LibraryStage({
   agentLabel,
   localModel,
   localCompile,
+  brain,
+  brainChoosable,
+  onChooseBrain,
   inApp,
   onAddFiles,
   onFindDocuments,
@@ -226,7 +248,7 @@ export function LibraryStage({
   const newest = newestWikiPage(model.wikiPages);
   const compiledCount = model.sources.filter((row) => row.state === "compiled").length;
 
-  const brain = libraryBrainLabel({ route, agentLabel, localModel }, t);
+  const brainName = libraryBrainLabel({ route, agentLabel, localModel }, t);
 
   /**
    * **What leaves the computer, said once.**
@@ -246,7 +268,16 @@ export function LibraryStage({
           host: localModel.host,
           file: ".ontology-atlas/llm-audit.jsonl",
         })
-      : null;
+      : /*
+         * With a picker on the step, the sentence has to answer the control above it —
+         * choosing the coding agent and reading nothing about where the folder goes is
+         * the same gap this block was written to close, one option over. The agent's own
+         * disclosure is a different fact and says so: Atlas is not in the path of that
+         * traffic and does not log it.
+         */
+        route === "agent" && brainChoosable
+        ? t("wiki.transfer")
+        : null;
 
   const blocked = libraryCompileBlockedReason(
     {
@@ -391,7 +422,22 @@ export function LibraryStage({
                 label: t("stage.compile.staleLabel"),
                 value: String(model.staleCount),
               },
-              { key: "brain", label: t("stage.compile.brainLabel"), value: brain },
+              {
+                key: "brain",
+                label: t("stage.compile.brainLabel"),
+                value: brainChoosable ? (
+                  <CompileBrainSelect
+                    brain={brain}
+                    agentLabel={agentLabel}
+                    localModel={localModel}
+                    onChoose={onChooseBrain}
+                    className="max-w-[280px]"
+                    t={t}
+                  />
+                ) : (
+                  brainName
+                ),
+              },
             ]}
           >
             <div className="flex flex-col gap-2">

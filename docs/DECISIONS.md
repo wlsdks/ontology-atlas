@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — Which brain Compile runs on is a default the person can change, not a rank
+
+**Why**: the same day's local-Compile record made a verified coding agent outrank the connect-by-address runner whenever both were installed. On the owner's machine both are, and the reason the runner is there is to be chosen deliberately for a folder whose documents should not leave it. A precedence rule takes that choice away silently: the sensitive folder goes to the coding agent's provider and nothing on screen says a choice existed.
+**Prior**: overturns the "a coding agent outranks the runner" clause of 2026-09-06 "Compile runs on a local model…"; the loopback bound, the format bound and the consent card in that record stand.
+**Decision**: `resolveCompileBrain` turns the rank into a default. Both available draws one select in the two places Compile starts — step two's Runs on row and the index's wiki header — naming the options exactly as the shelf already does; the stored answer wins and the coding agent is what an unanswered folder gets, because it opens formats the runner cannot. The answer is per machine in `localStorage` beside the chat width, both surfaces read and write that one value, and the sentence about what leaves this computer switches with it. One brain available draws nothing, and a stored answer for a brain this machine no longer offers falls back and stops being stored.
+**Dissent**: a default plus a picker is two things to explain where a rank was one, and a person who never opens the select ends in exactly the state the rank produced. Kept: the rank was not wrong about which brain finishes more of the job, only about who decides, and the select is drawn only where a decision is really available.
+**Falsifier**: a person who chose the runner for a folder and finds a page on it written by the coding agent, or a walkthrough where nobody can say which brain step two would use.
+**Owner**: jinan
+
 ## 2026-09-06 — Compile runs on a local model: a read tool, a proposal tool, one card, parsers deferred
 
 **Why**: this morning's record left `local` a named brain whose step two read "it cannot run Compile", and wrote what would reopen it. The agent's catalogue is fifteen ontology tools, none opening a file under `sources/` or writing under `wiki/`, while a runner answered on `127.0.0.1:11434` with eight models. Somebody keeping documents off other computers had a brain named and no way to use it.
