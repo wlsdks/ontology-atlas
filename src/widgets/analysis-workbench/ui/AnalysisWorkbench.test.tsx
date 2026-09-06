@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), message: vi.fn(), info: vi.fn(), warning: vi.fn() }, Toaster: () => null }));
 import messages from '../../../../messages/en.json';
 import { analysisDigest, type AnalysisBasis, type AnalysisRun } from '@/entities/analysis-record';
 import type { AnalysisCaptureContext } from '@/features/acp-session';
@@ -9,6 +11,7 @@ import type { AnalysisCaptureContext } from '@/features/acp-session';
 const archive = vi.hoisted(() => ({ read: vi.fn(), append: vi.fn(), basis: vi.fn() }));
 vi.mock('@/entities/analysis-record', async (original) => ({ ...await original<object>(), readAnalysisHistory: archive.read, appendAnalysisRecord: archive.append, analysisArchiveWritable: () => true }));
 vi.mock('@/features/acp-session', async (original) => ({ ...await original<object>(), currentAnalysisBasis: archive.basis }));
+import { toast as sonnerToast } from 'sonner';
 import { AnalysisWorkbench } from './AnalysisWorkbench';
 
 const handle = {} as FileSystemDirectoryHandle;
@@ -33,6 +36,16 @@ beforeEach(async () => {
 
 function wrapper(children: React.ReactNode) { return <NextIntlClientProvider locale="en" messages={messages}>{children}</NextIntlClientProvider>; }
 describe('analysis context workbench', () => {
+  it('announces a saved analysis once, even when the workbench remounts with the same save state', () => {
+    const state = { status: 'saved' as const, id: '2b5f1c3e-7a44-4d9b-9c1e-0f5a6b7c8d9e', handle: context.handle, record: null, error: null };
+    const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest: vi.fn(), capture: { state, setState: vi.fn() } };
+    const first = render(wrapper(<AnalysisWorkbench {...props} />));
+    expect(sonnerToast.success).toHaveBeenCalledTimes(1);
+    first.unmount();
+    render(wrapper(<AnalysisWorkbench {...props} />));
+    expect(sonnerToast.success).toHaveBeenCalledTimes(1);
+  });
+
   it('offers to write the missing connection reasons only when there are some, and sends a bounded write request', () => {
     const onRequest = vi.fn();
     const props = { context, contextLabel: 'Refund', open: true, onClose: () => {}, onRequest };

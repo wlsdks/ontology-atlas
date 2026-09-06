@@ -2689,6 +2689,7 @@
       "justNowLabel": "Just now",
       "stepsAgoLabel": "{count} back",
       "rowAriaLabel": "Go to {title}",
+      "stepUnrelated": "Not directly related",
       "copyLabel": "Hand off to AI",
       "copyAriaLabel": "Copy your trail to hand off to AI",
       "copyCopiedAriaLabel": "Copied: paste into your AI chat",

@@ -21,6 +21,8 @@ function args(overrides: Partial<UseFootprintTrailArgs> = {}): UseFootprintTrail
     graphNodes,
     insightNodes: undefined,
     dustySlugs: new Set(),
+    insightEdges: undefined,
+    relationLabelOf: (type) => type,
     ...overrides,
   };
 }

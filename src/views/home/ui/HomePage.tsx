@@ -451,6 +451,16 @@ function HomePageImpl() {
   // The map surface's relation-vocabulary register. Plain mode uses the same
   // register as the datasheet.
   const relationRegister: "formal" | "plain" = audiencePlain ? "plain" : "formal";
+  /**
+   * One-argument relation naming for a consumer that only knows a type — the trail's step
+   * captions. `relationVocabulary` is a fresh closure on every render (next-intl), so this
+   * is not stable; the trail keeps the expensive half (scanning every edge) in its own
+   * memo, and only the naming pass, at most one line per walked step, repeats.
+   */
+  const relationLabelInRegister = useCallback(
+    (type: string) => relationVocabulary(type, relationRegister),
+    [relationVocabulary, relationRegister],
+  );
   const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
   /*
    * Hold the breadcrumb's contents so it still draws during its exit window.
@@ -1888,6 +1898,7 @@ function HomePageImpl() {
     lastVisitedNodeRef,
     footprintNodeLookup,
     footprintTrailEntries,
+    footprintTrailStepCaptions,
     footprintVisitedIds,
     footprintPacketCopied,
     copyFootprintPacket,
@@ -1900,6 +1911,10 @@ function HomePageImpl() {
     graphNodes: topologyV2Graph.nodes,
     insightNodes: ontologyInsight?.nodes,
     dustySlugs,
+    // The walked pairs are read back against the vault's own edges, so the trail can
+    // say *why* one step follows another instead of only which places were opened.
+    insightEdges: ontologyInsight?.edges,
+    relationLabelOf: relationLabelInRegister,
   });
   const {
     pastWalkRows,
@@ -4514,6 +4529,7 @@ function HomePageImpl() {
                         <TopologyTrailChip
                           label={t("footprint.chipLabel", { count: footprintTrailEntries.length })}
                           entries={footprintTrailEntries}
+                          stepCaptions={footprintTrailStepCaptions}
                           currentId={canvasSelectedSlug}
                           copied={footprintPacketCopied}
                           onFocusEntry={(id) => handleSelect(id)}
@@ -4533,6 +4549,7 @@ function HomePageImpl() {
                             justNowLabel: t("footprint.justNowLabel"),
                             stepsAgoLabel: (count) => t("footprint.stepsAgoLabel", { count }),
                             rowAriaLabel: (title) => t("footprint.rowAriaLabel", { title }),
+                            stepUnrelatedLabel: t("footprint.stepUnrelated"),
                             copyLabel: t("footprint.copyLabel"),
                             copyAriaLabel: t("footprint.copyAriaLabel"),
                             copyCopiedAriaLabel: t("footprint.copyCopiedAriaLabel"),
