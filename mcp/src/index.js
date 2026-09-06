@@ -202,7 +202,7 @@ import {
   suppressLibraryKindIssues,
   suppressParentedExpectedFieldIssues,
 } from './validate.mjs';
-import { WIKI_DIR, isWikiTemplateSlug, validateWikiPage } from './wiki-schema.mjs';
+import { WIKI_DIR, isWikiFurnitureSlug, validateWikiPage, validateWikiFolder } from './wiki-schema.mjs';
 import {
   buildFrontmatter,
   defaultBody,
@@ -10346,7 +10346,7 @@ function validateWikiTool({ paths } = {}) {
     paths === undefined
       ? docs
           .map((doc) => `${doc.slug}.md`)
-          .filter((path) => path.startsWith(wikiPrefix) && !isWikiTemplateSlug(path))
+          .filter((path) => path.startsWith(wikiPrefix) && !isWikiFurnitureSlug(path))
           .sort()
       : paths.map((path) => String(path));
 
@@ -10378,6 +10378,21 @@ function validateWikiTool({ paths } = {}) {
     }
     const { ok, problems } = validateWikiPage(doc.raw || '', { knownSources });
     pages.push({ path, ok, problems });
+  }
+
+  // The folder half is judged over every page in the folder, whatever `paths` narrowed
+  // the report to: whether somebody links to a page is a fact about the other pages,
+  // and a page asked about alone would otherwise always read as an orphan.
+  const folderPages = docs
+    .filter((doc) => doc.slug.startsWith(wikiPrefix) && !isWikiFurnitureSlug(doc.slug))
+    .map((doc) => ({ path: `${doc.slug}.md`, raw: doc.raw || '' }));
+  const folderByPath = new Map(validateWikiFolder(folderPages).map((entry) => [entry.path, entry.problems]));
+  for (const page of pages) {
+    const extra = folderByPath.get(page.path) ?? [];
+    if (extra.length > 0) {
+      page.problems.push(...extra);
+      page.ok = false;
+    }
   }
 
   return {

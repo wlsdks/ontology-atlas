@@ -2689,6 +2689,48 @@
       "slug": "examined-and-found-correct"
     }
   ],
+  "benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe": [
+    {
+      "depth": 1,
+      "text": "Findings 2026-09-06 · does the Library wiki accumulate, or only summarise?",
+      "slug": "findings-2026-09-06-does-the-library-wiki-accumulate-or-only-summarise"
+    },
+    {
+      "depth": 2,
+      "text": "Setup",
+      "slug": "setup"
+    },
+    {
+      "depth": 2,
+      "text": "Result",
+      "slug": "result"
+    },
+    {
+      "depth": 2,
+      "text": "What this does and does not show",
+      "slug": "what-this-does-and-does-not-show"
+    },
+    {
+      "depth": 2,
+      "text": "Second pass, same day: the brief with rules g and h",
+      "slug": "second-pass-same-day-the-brief-with-rules-g-and-h"
+    },
+    {
+      "depth": 2,
+      "text": "Third pass, same day: links, the folder half of the contract, and a Lint door",
+      "slug": "third-pass-same-day-links-the-folder-half-of-the-contract-and-a-lint-door"
+    },
+    {
+      "depth": 2,
+      "text": "Fourth pass, same day: the gate, the log, and one page per source",
+      "slug": "fourth-pass-same-day-the-gate-the-log-and-one-page-per-source"
+    },
+    {
+      "depth": 2,
+      "text": "Fifth pass, same evening: a second corpus, and the order of arrival",
+      "slug": "fifth-pass-same-evening-a-second-corpus-and-the-order-of-arrival"
+    }
+  ],
   "benchmark/FINDINGS-2026-09-06-wiki-probe": [
     {
       "depth": 1,
@@ -6360,6 +6402,36 @@
     },
     {
       "depth": 2,
+      "text": "2026-09-06 — The Library stays on every rail; only a wiki without a map hides the map doors",
+      "slug": "2026-09-06-the-library-stays-on-every-rail-only-a-wiki-without-a-map-hides-the-map-doors"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — A folder of pages and no nodes opens on the Library",
+      "slug": "2026-09-06-a-folder-of-pages-and-no-nodes-opens-on-the-library"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — One vault folder with a fixed inside; `atlas/` by default in a repository, and a documents-only scaffold",
+      "slug": "2026-09-06-one-vault-folder-with-a-fixed-inside-atlas-by-default-in-a-repository-and-a-documents-only-scaffold"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — A name the wiki keeps mentioning becomes a node candidate, and the graph is entered only through the card",
+      "slug": "2026-09-06-a-name-the-wiki-keeps-mentioning-becomes-a-node-candidate-and-the-graph-is-entered-only-through-the-card"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — The permission card judges a wiki page before Allow, the app keeps the wiki's log, and underscore files are furniture",
+      "slug": "2026-09-06-the-permission-card-judges-a-wiki-page-before-allow-the-app-keeps-the-wikis-log-and-underscore-files-are-furniture"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — The wiki page contract gains a folder half, and the Compile brief revises, flags, and links",
+      "slug": "2026-09-06-the-wiki-page-contract-gains-a-folder-half-and-the-compile-brief-revises-flags-and-links"
+    },
+    {
+      "depth": 2,
       "text": "2026-09-06 — The Library pane is the graph; the shelf is a popup",
       "slug": "2026-09-06-the-library-pane-is-the-graph-the-shelf-is-a-popup"
     },
@@ -9037,6 +9109,11 @@
       "depth": 2,
       "text": "2026-09-05 — Meaning review keeps diagnostic analyses with their evidence and history",
       "slug": "2026-09-05-meaning-review-keeps-diagnostic-analyses-with-their-evidence-and-history"
+    },
+    {
+      "depth": 2,
+      "text": "2026-09-06 — A folder says what it holds; the rail reads the files, and creation asks once",
+      "slug": "2026-09-06-a-folder-says-what-it-holds-the-rail-reads-the-files-and-creation-asks-once"
     }
   ],
   "DEMO-SCENARIO": [
@@ -11266,6 +11343,11 @@
       "depth": 4,
       "text": "GitHub row + release-gate note + footer",
       "slug": "github-row-release-gate-note-footer"
+    },
+    {
+      "depth": 3,
+      "text": "First run — what the folder holds (2026-09-06)",
+      "slug": "first-run-what-the-folder-holds-2026-09-06"
     },
     {
       "depth": 3,

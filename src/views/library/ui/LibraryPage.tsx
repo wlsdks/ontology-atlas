@@ -5,12 +5,22 @@ import { useLocale, useTranslations } from "next-intl";
 import { ArrowLeft, ListChecks } from "lucide-react";
 
 import { useLocalVault, useVaultIdentityScope } from "@/entities/vault-session";
+import { isWikiPage } from "@/entities/docs-vault";
+import type { LintNodeCandidate } from "@/features/library";
 import type { LibrarySourceRow, SourceCandidate } from "@/entities/docs-vault";
 import { OpenVaultCta } from "@/features/docs-vault-local";
 import {
   addSources,
   addSourcesInBrowser,
   buildCompileBrief,
+  appendWikiLog,
+  buildLintBrief,
+  buildProposeNodeBrief,
+  describeCompileTurn,
+  describeLintTurn,
+  judgePageWrite,
+  parseLintCandidates,
+  selectCompileTargets,
   discoverSources,
   FindDocumentsDialog,
   forgetDeclinedCandidates,
@@ -20,6 +30,7 @@ import {
   summarizeAddSources,
   withoutImportedNames,
   type DiscoveryOutcome,
+  dropCandidatesWithNodes,
 } from "@/features/library";
 import {
   DocReadingPane,
@@ -36,6 +47,7 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { useToast } from "@/shared/ui";
 
+import { isWikiFurnitureSlug } from "@/shared/lib/wiki-page-schema";
 import { libraryCompileBlockedReason, libraryTransferSentence } from "../lib/compile-availability";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
@@ -45,6 +57,7 @@ import { LibraryShelfPopover } from "./parts/LibraryShelfPopover";
 import { LibraryStage } from "./parts/LibraryStage";
 import { LibraryStatusStrip } from "./parts/LibraryStatusStrip";
 import { LibraryAgentDock } from "./parts/LibraryAgentDock";
+import { selectLibraryHandle } from "../lib/select-library-handle";
 import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
 import { WikiTemplateProblems } from "./parts/WikiTemplateProblems";
@@ -114,7 +127,7 @@ export function LibraryPage() {
   const toast = useToast();
   const localVault = useLocalVault();
 
-  const handle = localVault.status === "loaded" ? (localVault.handle ?? null) : null;
+  const handle = selectLibraryHandle(localVault.status, localVault.handle);
   const manifest = localVault.manifest;
   const hasFolder = handle !== null && manifest !== null;
   /**
@@ -134,8 +147,9 @@ export function LibraryPage() {
    * the work that builds its model. The model hashes files and reads page bodies, so it
    * is switched off, not merely hidden, until a folder is really open.
    */
+  const docs = manifest?.docs ?? EMPTY_DOCS;
   const model = useLibraryModel({
-    docs: manifest?.docs ?? EMPTY_DOCS,
+    docs,
     sources: manifest?.sources,
     sourceHandles: localVault.sourceHandles,
     fileHandles: localVault.fileHandles,
@@ -420,6 +434,7 @@ export function LibraryPage() {
       agent.start(
         buildCompileBrief({
           sources: model.sources,
+          existingPages: model.wikiPages,
           locale,
           /*
            * Whoever will actually write it. On the local route Atlas mints `created_by`
@@ -442,7 +457,129 @@ export function LibraryPage() {
         "error",
       );
     }
-  }, [agent, locale, model.sources, nativeVaultRootPath, t, toast]);
+  }, [agent, locale, model.sources, model.wikiPages, nativeVaultRootPath, t, toast]);
+
+  /**
+   * The verdict the permission card shows before Allow: the page as this write would leave
+   * it, judged against the wiki page contract. Edits are applied to the page text the model
+   * last read; a page it has not read yet gets no verdict rather than a guessed one.
+   */
+  const judgeWrite = useCallback(
+    (request: { filePath: string | null; rawInput: Record<string, unknown>; toolKind: string | null }) =>
+      nativeVaultRootPath
+        ? judgePageWrite({
+            request,
+            vaultRoot: nativeVaultRootPath,
+            currentText: (slug) => model.pageTexts.get(slug) ?? null,
+            knownSources: model.sources.map((row) => row.path),
+          })
+        : null,
+    [model.pageTexts, model.sources, nativeVaultRootPath],
+  );
+
+  /**
+   * `wiki/_log.md`, one line per run, written by the app from what it saw: the pages
+   * present before the turn and after it (new, revised), the sources the turn was handed,
+   * and for a check the counts the report ended with. The agent's transcript is not the
+   * source of the compile line; the folder is.
+   */
+  /**
+   * Names the last Check-the-wiki run found on three or more pages with no page of their
+   * own — the wiki's candidates for the graph. Read from the report's closing block when
+   * a lint turn completes; cleared by the next lint. Never persisted: a candidate is an
+   * offer, and the offer is remade each time the wiki is checked.
+   */
+  const [candidates, setCandidates] = useState<LintNodeCandidate[]>([]);
+  /* A candidate the card already turned into a node leaves the list; the report cannot know. */
+  const openCandidates = useMemo(() => dropCandidatesWithNodes(candidates, docs), [candidates, docs]);
+  const latestDocsRef = useRef(docs);
+  useEffect(() => {
+    latestDocsRef.current = docs;
+  }, [docs]);
+  const handleTurnStarted = useCallback(
+    (_start: { text: string; startedAt: string }) => {
+      const kind = agent.openingRequest?.kind ?? "compile";
+      if (!handle) return null;
+      const stamp = (list: typeof docs) =>
+        new Map(
+          list
+            .filter((doc) => isWikiPage(doc) && !isWikiFurnitureSlug(doc.slug))
+            .map((doc) => [doc.slug, doc.mtime ?? 0] as const),
+        );
+      const before = stamp(latestDocsRef.current);
+      const sources = selectCompileTargets(model.sources).map((row) => row.path);
+      const writer = agent.runtime ? `agent:${agent.runtime.id}` : "agent:unknown";
+      return async (completion: { endedAt: string; outcome: string; events: ReadonlyArray<{ kind: string; text?: string }> }) => {
+        if (completion.outcome === "cancelled") return;
+        const after = stamp(latestDocsRef.current);
+        const lastAgentText = [...completion.events].reverse().find((event) => event.kind === "agent")?.text ?? null;
+        if (kind === "lint") setCandidates(parseLintCandidates(lastAgentText));
+        if (kind === "propose") return;
+        const summary =
+          kind === "lint"
+            ? describeLintTurn(lastAgentText)
+            : describeCompileTurn({ sources, before, after });
+        try {
+          await appendWikiLog(handle, { at: completion.endedAt, kind, summary, writer });
+        } catch {
+          // A log that cannot be written is not a reason to interrupt the person; the
+          // pages themselves are unaffected and the activity receipts still exist.
+        }
+      };
+    },
+    [agent.openingRequest?.kind, agent.runtime, handle, model.sources],
+  );
+
+  /**
+   * The bridge shows only where there is a map to bridge to. A folder of documents with
+   * no `kind:` node anywhere is a wiki on its own — the person who opened it asked for
+   * pages, not an ontology — and offering "propose as node" there would press a concept
+   * they never chose. With even one node in the folder the offer is meaningful.
+   */
+  const hasOntology = useMemo(
+    () => docs.some((doc) => typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind.trim() !== "" && !doc.slug.startsWith("wiki/")),
+    [docs],
+  );
+
+  const handlePropose = useCallback(
+    (candidate: LintNodeCandidate) => {
+      try {
+        agent.start(
+          buildProposeNodeBrief({ candidate, locale, vaultRoot: nativeVaultRootPath ?? "" }),
+          "propose",
+        );
+      } catch (error) {
+        toast.show(
+          t("wiki.compileFailed", { reason: error instanceof Error ? error.message : String(error) }),
+          "error",
+        );
+      }
+    },
+    [agent, locale, nativeVaultRootPath, t, toast],
+  );
+
+  const handleLint = useCallback(() => {
+    try {
+      agent.start(
+        buildLintBrief({
+          pages: model.wikiPages,
+          findings: new Map(
+            [...model.verdicts].filter(([, verdict]) => !verdict.ok).map(([slug, verdict]) => [slug, verdict.problems]),
+          ),
+          locale,
+          vaultRoot: nativeVaultRootPath ?? "",
+        }),
+        "lint",
+      );
+    } catch (error) {
+      toast.show(
+        t("wiki.compileFailed", {
+          reason: error instanceof Error ? error.message : String(error),
+        }),
+        "error",
+      );
+    }
+  }, [agent, locale, model.verdicts, model.wikiPages, nativeVaultRootPath, t, toast]);
 
   /*
    * One sentence, two surfaces. The shelf's step two and a source with no write-up ask
@@ -660,6 +797,9 @@ export function LibraryPage() {
             onAddFiles={handleAddFiles}
             onFindDocuments={handleFindDocuments}
             onCompile={agent.route === "agent" || agent.route === "local" ? handleCompile : null}
+            onLint={agent.route === "agent" ? handleLint : null}
+            candidates={openCandidates}
+            onPropose={agent.route === "agent" && hasOntology ? handlePropose : null}
             /*
              * The same picker as step two, reading and writing the same stored answer, so
              * the sidebar and the shelf can never name different brains.
@@ -917,6 +1057,8 @@ export function LibraryPage() {
       */}
       {agent.route === "agent" && agent.runtime && nativeVaultRootPath ? (
         <LibraryAgentDock
+          judgeWrite={judgeWrite}
+          onTurnStarted={handleTurnStarted}
           open={agent.open}
           runtime={agent.runtime}
           runtimes={agent.runtimes}

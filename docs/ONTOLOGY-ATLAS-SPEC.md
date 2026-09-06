@@ -771,8 +771,28 @@ NOT**.
 | `citation-target-missing` | a cited path is not in `sources:`, or not in the folder |
 | `describes-needs-approval` | `describes:` on a page that is not `reviewed` |
 
-`wiki/_template.md` is the copy-ready page `init` writes and every writer is
-handed; it is skipped by validation because its own citations name a placeholder.
+Three more codes come from the folder, not the page. `validateWikiFolder` (the same
+two modules) judges every page under `wiki/` together, and `wiki-validate` and
+`validate_wiki` append its findings to the page they concern. A page link is
+`[[wiki/<slug>]]`, `[[<slug>]]`, optionally with `|text` or `#anchor`; a citation
+(`src:`) is never a link.
+
+| Code | Means |
+|---|---|
+| `dangling-wikilink` | a page link whose target is not in the folder |
+| `orphan-page` | no other page links to this one; a folder of one page reports nothing |
+| `shared-source-unlinked` | another page lists a source this page lists, and neither links the other; reported on both |
+
+These three are facts of the folder and are decided by a script. Whether two pages
+*disagree* is a judgement; it is not a code here.
+
+A file under `wiki/` whose name starts with `_` is the wiki's own furniture, not a
+page: it is not judged, listed, compiled, or linked. `wiki/_template.md` is the
+copy-ready page `init` writes and every writer is handed; `wiki/_log.md` is the
+append-only record the app writes after each Compile and Check-the-wiki run, one
+`## [ISO-8601] compile|lint | summary | writer` line per event, provenance of the
+process and never a copy of any page's content. A person who renames such a file
+drops the underscore, and it starts being a page.
 
 ### 11.5 Example
 

@@ -233,3 +233,15 @@ describe('what the shelf counts', () => {
     expect(model.needsCompileCount).toBe(2);
   });
 });
+
+describe('the shipped template is not a page', () => {
+  it('leaves wiki/_template.md out of the list, as the validators leave it out of judgement', () => {
+    // Seen in the installed app on 2026-09-06: "<the page name>" at the top of five real
+    // pages, opened first in the reader. The template is the shape, not a page.
+    const pages = selectWikiPages([
+      wiki('wiki/_template', { title: '<the page name>', created_by: 'agent:claude' }),
+      wiki('wiki/a', { created_by: 'agent:claude' }),
+    ]);
+    expect(pages.map((page) => page.slug)).toEqual(['wiki/a']);
+  });
+});

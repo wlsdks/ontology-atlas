@@ -214,6 +214,15 @@ describe('extractOutLinksWithContext — wikilinks inside the nested ontology/ v
   });
 });
 
+describe('extractOutLinksWithContext — a wiki citation is not a link', () => {
+  it('skips [[src:sources/…#anchor]] and keeps the page links beside it', () => {
+    const body = '- fact [[src:sources/plan.pdf#p2]] and see [[wiki/other]] and [[src:sources/a.csv#r3|row]]';
+    const { slugs, contexts } = extractOutLinksWithContext(body, 'wiki/me');
+    expect(slugs).toEqual(['wiki/other']);
+    expect(contexts.map((c) => c.target)).toEqual(['wiki/other']);
+  });
+});
+
 describe('parseFrontmatter — malformed-quoted-scalar', () => {
   const codesOf = (raw: string) =>
     (parseFrontmatter(raw).diagnostics ?? []).map((d) => d.code);

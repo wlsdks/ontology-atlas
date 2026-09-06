@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import type { VaultShape } from '@/shared/lib/vault-shape';
 import { CURRENT_LOCAL_FS_HANDLE_ID, type LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
   createTauriVaultHandle,
@@ -17,7 +18,7 @@ export interface JustStartVaultVault {
   status: string;
   manifest: { docs: unknown[] } | null;
   openRecent: (record: LocalFsHandleRecord) => Promise<void>;
-  scaffoldOntology: (starterLocale: string) => Promise<{ created: number; skipped: number }>;
+  scaffoldOntology: (starterLocale: string, shape?: VaultShape) => Promise<{ created: number; skipped: number }>;
 }
 
 /**
@@ -44,7 +45,10 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
   const [actionError, setActionError] = useState<string | null>(null);
   const [createdPath, setCreatedPath] = useState<string | null>(null);
 
-  const justStart = useCallback(async () => {
+  /** What the person said the folder will hold; the scaffold runs after the open settles. */
+  const [shape, setShape] = useState<VaultShape | null>(null);
+  const justStart = useCallback(async (chosen: VaultShape | null = null) => {
+    setShape(chosen);
     setActionError(null);
     setCreatedPath(null);
     setPreparing(true);
@@ -84,8 +88,7 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
       if (shouldScaffoldAfterOpen({ createIntent: true, status, docCount })) {
         setArmed(false);
         setScaffolding(true);
-        vault
-          .scaffoldOntology(starterLocale)
+        (shape ? vault.scaffoldOntology(starterLocale, shape) : vault.scaffoldOntology(starterLocale))
           .catch((err: unknown) => {
             setActionError(err instanceof Error && err.message ? err.message : '');
           })
@@ -96,7 +99,7 @@ export function useJustStartVault(vault: JustStartVaultVault, starterLocale: str
         setArmed(false);
       }
     });
-  }, [armed, starterLocale, vault, vault.manifest, vault.status]);
+  }, [armed, shape, starterLocale, vault, vault.manifest, vault.status]);
 
   const clearCreatedPath = useCallback(() => setCreatedPath(null), []);
 

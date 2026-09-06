@@ -10,5 +10,6 @@ const wiki = await loadMcpModule('wiki-schema.mjs');
 
 /* Only what the CLI actually consumes; the MCP module keeps the full surface. */
 export const WIKI_DIR = wiki.WIKI_DIR;
-export const isWikiTemplateSlug = wiki.isWikiTemplateSlug;
+export const isWikiFurnitureSlug = wiki.isWikiFurnitureSlug;
 export const validateWikiPage = wiki.validateWikiPage;
+export const validateWikiFolder = wiki.validateWikiFolder;

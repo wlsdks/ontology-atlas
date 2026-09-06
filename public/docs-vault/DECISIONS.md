@@ -54,6 +54,60 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-06 — The Library stays on every rail; only a wiki without a map hides the map doors
+
+**Why**: PO review of the same-day shape record found the map-side half unevidenced and creator-dependent: `cli/src/index.mjs` writes `wiki/_template.md` into every code vault while the app's map card writes none, so the two creators would have drawn different rails for "a codebase map", and every vault made before today — the dogfood `docs/ontology/` included — would have lost the Library on upgrade. The Library also holds `sources/`, which any folder may have.
+**Prior**: 2026-09-06 "A folder says what it holds; the rail reads the files, and creation asks once" is narrowed here: its wiki side stands, its map side is dropped. 2026-09-06 "A folder of pages and no nodes opens on the Library" stands; its dissent rejected a picker because the folder already answers — the one question is asked only at creation, when the folder has no files to answer with.
+**Decision**: `destinationsForVaultShape` hides Map, Architecture, Docs, Insights and Projects only for a wiki without a map; a map, an empty folder, or no folder draws all nine. The three-card creation and the add-only Settings row stay.
+**Dissent**: symmetry ("the rail draws what the folder holds") is easier to say, and the Settings row restores the Library in one click (po-leverage); rejected because an honest empty Library costs nothing and a retired door on upgrade does.
+**Falsifier**: a map-only vault whose Library shows nothing a person can act on; the CLI and the app drawing different rails from the same folder.
+**Owner**: jinan
+
+## 2026-09-06 — A folder of pages and no nodes opens on the Library
+
+**Why**: with the vault shape fixed and a documents-only `init`, a person who opened Atlas on a folder of documents landed on the topology canvas, which had nothing to draw and said so. The two probes of the day ran on exactly such folders. The first screen was the one surface that could not help them.
+**Prior**: 2026-09-06 "One vault folder with a fixed inside…" stands and is what makes a document folder recognisable; 2026-09-05 "A vault holds three kinds of file…" stands. `/` stays selected by caller as `AGENTS.md` records; this adds one branch, no route.
+**Decision**: when the manifest of an opened folder holds at least one wiki page and no `kind:` node, the map page replaces itself with `/library`, once per manifest, read from the manifest rather than from the drawn graph (which is empty for a moment on every open). A folder with even one node still opens on the map. Pinned by an e2e with a wiki-only stub folder and the two dock specs, whose stub carries a `project.md`, still landing on the map.
+**Dissent**: a picker at first run ("documents or code?") would make the choice explicit; rejected because the folder already says which it is, and a question the folder can answer is a question the person should not be asked.
+**Falsifier**: a person walking from the Library to the map and being sent back; a folder with a node opening on the Library; a document folder still landing on an empty canvas.
+**Owner**: jinan
+
+## 2026-09-06 — One vault folder with a fixed inside; `atlas/` by default in a repository, and a documents-only scaffold
+
+**Why**: the owner asked what Atlas creates in a folder and whether the shape should be fixed like `.claude/`. It was scattered: the CLI scaffolded `vault/` while the app and the docs read `<repo>/atlas/`, and a person with documents and no code got node folders, a project file and starter skills they did not ask for.
+**Prior**: 2026-09-05 "A vault holds three kinds of file and only one is the graph…" stands and is the inside this fixes; 2026-09-06 "…the wiki's log, and underscore files are furniture" stands.
+**Decision**: the unit is one folder, never two, and its name is `atlas/`: `<repo>/atlas/` beside code, `<workdir>/atlas/` for documents, the one name a person can say to another. Every creator makes it; an opener recognises a vault by its contents (the dogfood `docs/ontology/` stays openable); no second name is admitted. Inside is fixed: `sources/` and `wiki/` always; `domains/`, `capabilities/`, `elements/` and `project.md` when there is a map; `.ontology-atlas/` for the app's records; the agent wiring beside them. `init --documents` scaffolds the documents shape — `sources/`, `wiki/` with the template, the MCP wiring, and none of the map: no node folders, no project file, no starter skills. A documents folder is a wiki on its own; the map, and the bridge to it, appear only when a `kind:` node exists.
+**Dissent**: nesting the map under `ontology/` inside the vault would read cleaner; rejected because every slug and every existing vault is `capabilities/<x>` at the root, and the gain is a tidier listing against a migration of all of them.
+**Falsifier**: a person asked to choose between two folders to start; a documents-only `init` writing a node folder; an app or doc still calling the repository's vault `vault/`.
+**Owner**: jinan
+
+## 2026-09-06 — A name the wiki keeps mentioning becomes a node candidate, and the graph is entered only through the card
+
+**Why**: the Check-the-wiki report on two corpora ended each time with names on three or more pages and no page of their own — people, systems, contractors. In the LLM Wiki pattern those become entity pages the model writes; here a wiki page is what a document said and a node is what we mean, so an entity page would be a node nobody reviewed. The report's last list was prose a person had to retype.
+**Prior**: 2026-09-05 "A vault holds three kinds of file and only one is the graph…" stands and is the boundary this record keeps; 2026-09-06 "The permission card judges a wiki page before Allow…" stands and is the gate this reuses.
+**Decision**: the Lint brief ends with one fenced JSON block of node candidates (name, kind among domain / capability / element / person / organisation / other, pages, why); the Library parses only that block and lists the names under the Wiki. A Propose chip appears only for the three map kinds, and only in a folder that already holds a `kind:` node — a document folder without one is a wiki on its own. Pressing it starts one agent turn whose only write is `add_concept`, after reading the pages and the vault's kinds and domains, with the pages cited as `[[wiki/…]]` links in the body and the reason for kind and parent stated first. The write reaches the ontology-write card; the wiki pages are not edited and `describes:` is not set. Candidates are not persisted: the next check remakes the offer.
+**Dissent**: an app-side `add_concept` without an agent would be cheaper and deterministic; rejected because choosing kind and parent is a judgement, and the card already exists to put a judgement in front of the person.
+**Falsifier**: a node landing with a kind or parent the person did not see on the card; a candidate row surviving a check that no longer names it; a wiki page changed by a propose turn.
+**Owner**: jinan
+
+## 2026-09-06 — The permission card judges a wiki page before Allow, the app keeps the wiki's log, and underscore files are furniture
+
+**Why**: a live Compile turn in the fresh build reached its first page write with the card saying only the path; the codes showed afterwards. The owner asked whether `index.md` and `log.md` belong here: without a commit there is no history, and with one there are diffs, not "Lint found three disagreements". The template was listed as a page and opened first.
+**Prior**: 2026-09-06 "The wiki page contract gains a folder half…" stands and is extended; 2026-09-05 "A vault holds three kinds of file…" stands: nothing here enters the graph.
+**Decision**: the Library judges a wiki page write from the request itself (a whole file, or an edit applied to the page on disk) and the card shows the verdict above Allow and Don't; the person still decides. No `index.md`: the index is computed from frontmatter (the Library list, the brief's page list). `wiki/_log.md` is written by the app, never the agent, after each Compile and Check run: one `## [ISO] compile|lint | summary | writer` line, the compile summary read from the folder's before and after, the lint counts from the report when stated. Any `wiki/_*` file is furniture: not judged, listed, compiled, or linked. The Lint brief carries the script's findings and asks the model not to repeat them; rule g adds "a source with nothing new gets no page, say so".
+**Dissent**: a log beside `.ontology-atlas/acp-work.jsonl` is a second record of one event; kept because the receipt is machine-only and hidden, and the log is the person's and Obsidian's, in the folder, append-only, and says nothing a page says.
+**Falsifier**: a log line that disagrees with the folder it describes; a verdict shown for text other than what landed; a person hand-editing `_log.md` because the app's line was wrong; an `_`-prefixed file a person meant as a page.
+**Owner**: jinan
+
+## 2026-09-06 — The wiki page contract gains a folder half, and the Compile brief revises, flags, and links
+
+**Why**: the sealed accumulation probe (`docs/benchmark/FINDINGS-2026-09-06-wiki-accumulation-probe.md`) compiled seven documents one at a time as the Library sends them. No later run touched an earlier page, the plan page kept a date, owner and budget three later documents had replaced, no page linked another, and `wiki-validate` stayed green because it judges one page's shape and nothing about the folder.
+**Prior**: 2026-09-05 "A vault holds three kinds of file…" stands, its falsifier tested on 2026-09-06 and not fired; 2026-09-06 "…the wiki probe keeps Compile" stands and is the probe this extends to unfamiliar documents.
+**Decision**: the brief lists the pages that exist and gains three rules: g, read `wiki/` first and add a source to the page covering its topic, adding rather than merging; h, a disagreement goes under `## Open questions` on every page carrying either claim, both cited, the later document named, every cited source in `sources:`; i, a page links the pages it talks about with `[[wiki/<slug>]]`. Spec §11.4 gains three folder codes a script decides: `dangling-wikilink`, `orphan-page`, `shared-source-unlinked`. Disagreement stays a judgement, not a code. The brief stops claiming a failing page "will be rejected".
+**Dissent**: compile time rose about 2.5× (a run revising five pages: four to five minutes, 105k tokens); kept because the first-page metric moved from 0 of 4 to 4 of 4 and every older figure stayed beside the newer one.
+**Falsifier**: a one-at-a-time rerun where a first page carries a superseded figure with no flag; a page that drops a fact to make room; `orphan-page` on a page something links to; a linked wiki whose reader loses a question the unlinked one answered.
+**Owner**: jinan
+
 ## 2026-09-06 — The Library pane is the graph; the shelf is a popup
 
 **Why**: the owner opened the installed app on a folder a local `qwen3:8b` had compiled and read it as two half-screens: *"shouldn't the Library tab's default be the graph? why is the area split above and below? the area underneath should be a popup."* Measured at 1512×982: a 320px band took 41% of the pane, its picture filled 40.4% of that width, and the shelf under it needed 850px of a 579px box. Below `lg` the shelf was not drawn at all — a zero rect at 390 and 768.
@@ -4876,4 +4930,13 @@ record stays in Git history before commit `e4fb49a89`.
 **Decision**: use one persistent dock for Meaning, findings/history, and conversation. Explain declared direction, rationale and missing rationale; reveal selected connections. Explicit ACP analyses append exclusive UUID-addressed Markdown under `.ontology-atlas/analyses/`, preserving original answers, actual evidence/measurements, profile, scope, outcome and uncertainty. Latest and earlier versions remain selectable. Only matching qualified evidence can draw optional question marks. Diagnostic reviews never approve or edit ontology. Architecture shows measured scope and concerns, not an uncalibrated maintainability percentage.
 **Dissent**: the existing popovers would minimize change; a central report page would emphasize history. They lost because the first hides meaning and the second separates judgment from the map. The dock adds evidence-integrity and currentness obligations.
 **Falsifier**: reopen if a stale or unread result appears current, an answer is lost, a completion reaches another vault, an id overwrites bytes, history restarts ACP, or the map and selected fact become unusable at 1040×720. Human comprehension and complete business meaning require separate evidence.
+**Owner**: jinan
+
+## 2026-09-06 — A folder says what it holds; the rail reads the files, and creation asks once
+
+**Why**: after the fixed `atlas/` shape the owner asked whether starting should offer "wiki, ontology map, or both", and whether a wiki person needs the map, the architecture reading and the analysis at all. Measured: a documents-only folder met nine tabs, five of them empty doors; the empty map was its first screen.
+**Prior**: 2026-09-06 "One vault folder with a fixed inside…" stands and is the tree this reads; 2026-09-06 "A name the wiki keeps mentioning becomes a node candidate…" stands, and its bridge shows only where a map exists.
+**Decision**: the app never stores a mode. `describeVaultShape` reads the files: any `kind:` node outside `wiki/` is a map, anything under `wiki/` (the template included) is a wiki. `destinationsForVaultShape` turns that into the rail, the phone tabs and the `G` keys: a wiki without a map hides Map, Architecture, Docs, Insights and Projects; a map without a wiki hides the Library; Agents, MCP and History stay; an empty folder or no folder shows everything. Creation asks once — "Just start" and "Create" open a three-way choice (documents wiki / ontology map of a codebase / both) — and the answer is written as files by `scaffoldOntology(locale, shape)`, which makes every folder of the tree either way. Settings carries an add-only row, "This folder holds", whose chip writes the missing part's starter; there is no "turn off".
+**Dissent**: a stored preference would let a person hide a part they still have; rejected because the screen would then disagree with the folder a teammate pulls, and vault Markdown wins every such disagreement. A per-tab toggle was rejected for the same reason.
+**Falsifier**: a wiki-only folder whose first screen is the map or whose rail shows an empty Architecture tab; a shape that two teammates see differently from the same commit; a person who cannot add the other part later.
 **Owner**: jinan
