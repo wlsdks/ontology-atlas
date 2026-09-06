@@ -6358,6 +6358,10 @@ function HomePageImpl() {
           <Surface
             open={edgePanelOpen}
             data-testid="topology-edge-popover-positioner"
+            /* The same reserved right as the node inspector: with the dock open the rule in
+               globals.css moves this card left by the dock's width, so the two never cover
+               each other (measured overlapping at 1512 before the role was set). */
+            data-fixed-surface-role="selected-node-inspector"
             className="topology-ui-scale fixed inset-x-3 top-[72px] z-30 flex justify-center lg:inset-x-auto lg:right-[var(--topology-node-popover-right-inset)] lg:top-[var(--topology-node-popover-top)] lg:block"
           >
             <TopologyV2EdgePanel
