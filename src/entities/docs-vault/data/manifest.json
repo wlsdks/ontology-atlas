@@ -2315,7 +2315,7 @@
         "relation_notes": {
           "capabilities/design-token-ramps": "This is the values leg of the domain's four: the fixed ladders every screen must choose from, which is what gives lint something concrete to block any other value against.",
           "capabilities/control-primitives": "This is the components leg: it stops screen authors writing their own className, and it hands the token values themselves back to design-token-ramps, so the two sit beside each other under one owner rather than duplicating a value source.",
-          "capabilities/design-gate-ratchets": "This is the enforcement leg and the domain's stated differentiator — gates enforce the spec rather than documentation, which the 2026-08-03 census showed by driving hand-written buttons, links and forms to zero once they were switched on.",
+          "capabilities/design-gate-ratchets": "This is the enforcement leg and the domain's stated differentiator, gates enforce the spec rather than documentation, which the 2026-08-03 census showed by driving hand-written buttons, links and forms to zero once they were switched on.",
           "capabilities/design-build-handoff": "This is the assembly-order leg: it decides which rendered proof a UI change owes before implementation starts, while judging whether the finished design is good stays outside it."
         }
       },
@@ -3835,14 +3835,14 @@
         "created_by": "human",
         "path": "README.md",
         "relation_notes": {
-          "domains/agent-integration": "Atlas promises that an AI agent reads and maintains the same vault a person does, so the project keeps agent transport — MCP, the terminal CLI, the in-app connect flow, and the ACP executor — as one stable boundary, separate from the schema those agents write.",
+          "domains/agent-integration": "Atlas promises that an AI agent reads and maintains the same vault a person does, so the project keeps agent transport, MCP, the terminal CLI, the in-app connect flow, and the ACP executor, as one stable boundary, separate from the schema those agents write.",
           "domains/codebase-architecture": "The project needs somewhere to declare reviewed implementation roles and dependency rules and compare them against observed source imports; that stays separate from the ontology map, which records what the product means rather than how the code is organised.",
           "domains/design-system": "People and agents build screens from the same predefined values, so the project holds the source of those values and the gates that fail on deviation as one boundary, owning values only up to their source and not the map's rendering.",
           "domains/graph-modeling": "Markdown frontmatter is the project's whole database, so the authorable kinds, the relation vocabulary, the non-inference boundaries, and the check that the compiled graph still tells the truth are kept apart from the business meaning any single domain carries.",
           "domains/local-vault-management": "The project promises backend-zero, local-first data, so choosing a folder on disk, branching between a picked vault and a sample source, and treating Git as the source of truth form their own boundary, separate from the graph-editing surface.",
           "domains/onboarding-and-shell": "The project has to carry someone from a shared link to an installed, connected app in the first five minutes, so the download decision, first run, locale, auto-update, and the navigation shell around them stay one boundary, separate from the vault data source itself.",
           "domains/project-portfolio": "One vault can hold several project nodes, so listing, viewing, editing, and sharing them is its own responsibility, distinct from the meaning of the domains and capabilities those projects contain.",
-          "domains/topology-navigation": "The canvas map is the product's primary entry point for reading the whole vault visually, so browsing — renderer, search palette, index panel — is kept apart from graph editing."
+          "domains/topology-navigation": "The canvas map is the product's primary entry point for reading the whole vault visually, so browsing, renderer, search palette, index panel, is kept apart from graph editing."
         }
       },
       "headings": [],
