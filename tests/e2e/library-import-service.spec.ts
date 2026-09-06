@@ -34,11 +34,12 @@ test("자료실에 서비스에서 가져오는 문이 있고, 전문 용어를 
   await page.goto("/ko/library/");
   await page.waitForLoadState("networkidle");
 
-  // Three doors, in the order of how far away the document is: on disk, in the folders you
-  // granted, and somewhere else entirely.
-  await expect(page.getByTestId("library-add-files")).toBeVisible();
-  await expect(page.getByTestId("library-find-documents")).toBeVisible();
-  const door = page.getByTestId("library-import-open");
+  // The fixture folder has no sources, so this is the empty stage: three doors, in the order
+  // of how far away the document is — on disk, in the folders you granted, and somewhere else
+  // entirely. The workbench carries the same three as chips (`library-import-open`).
+  await expect(page.getByTestId("library-start-add-files")).toBeVisible();
+  await expect(page.getByTestId("library-start-find-documents")).toBeVisible();
+  const door = page.getByTestId("library-start-import");
   await expect(door).toBeVisible();
 
   await door.click();
@@ -86,7 +87,7 @@ test("웹에서는 못 누를 버튼을 내밀지 않고, 대신 무엇이 되�
   await expect(page.getByTestId("first-run-starter")).toHaveCount(0, { timeout: 30_000 });
   await page.goto("/ko/library/");
   await page.waitForLoadState("networkidle");
-  await page.getByTestId("library-import-open").click();
+  await page.getByTestId("library-start-import").click();
   await page.locator('[data-testid="library-import-service"][data-service="notion"]').click();
   await page.getByTestId("library-import-connect").click();
 

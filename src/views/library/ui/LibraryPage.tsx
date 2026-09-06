@@ -818,6 +818,47 @@ export function LibraryPage() {
    * ⚠️ It is not "no sources". A folder with hand-written pages and no sources still has
    * a picture to draw and an index worth reading, so it keeps the workbench.
    */
+  /*
+   * The service door, shared by the empty stage and the workbench: the folder that has
+   * nothing in it yet is exactly where a person whose notes live elsewhere arrives.
+   */
+  const importDialog = (
+    <>
+    {/*
+      The service door. Blocking, because it ends in a connection being written into the
+      folder and a conversation opening — an errand with a beginning and an end, which is what
+      `Dialog` is for. It closes before it hands the brief over, so the dock is never behind a
+      scrim (`.claude/rules/design.md` forbids two blocking surfaces at once).
+    */}
+    <LibraryImportDialog
+      open={importOpen}
+      onClose={() => setImportOpen(false)}
+      onAttach={(connector) => connectors.upsert(connector)}
+      onBrief={(brief) => agent.start(brief, "import")}
+      /*
+       * ⚠️ **Whether the last press can do anything** (cold walkthrough, 2026-09-07). Only the
+       * coding-agent route can fetch from a service: `useLocalCompile` reads files already
+       * under `sources/` and has no tool that reaches outward, and a browser has no agent at
+       * all. Without this the dialog closed on a press that started nothing, which reads as a
+       * broken product rather than a surface that cannot do it.
+       */
+      canRunAgent={agent.route === "agent"}
+      /*
+       * Two different absences: a browser cannot start any program, while the installed app can
+       * and has simply verified no coding tool yet. The remedies differ too — one is the app,
+       * the other is the runtimes screen — so the card is told which it is meeting.
+       */
+      agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
+      /*
+       * A service this list does not know goes to the technical dialog, which lives on `/mcp`
+       * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody
+       * arrives on the share tab wondering where the connectors went.
+       */
+      onOpenAdvanced={() => importRouter.push(`${DESTINATION_HREF.mcp}?tab=connectors`)}
+    />
+    </>
+  );
+
   if (libraryIsEmpty) {
     return (
       <main
@@ -832,8 +873,10 @@ export function LibraryPage() {
           busy={busy}
           onAddFiles={handleAddFiles}
           onFindDocuments={handleFindDocuments}
+          onImportFromService={openImport}
           t={t}
         />
+        {importDialog}
         {/* The same dialog the workbench uses: discovery proposes, a person approves. */}
         <FindDocumentsDialog
           open={findOpen}
@@ -1212,38 +1255,7 @@ export function LibraryPage() {
         />
       ) : null}
 
-      {/*
-        The service door. Blocking, because it ends in a connection being written into the
-        folder and a conversation opening — an errand with a beginning and an end, which is what
-        `Dialog` is for. It closes before it hands the brief over, so the dock is never behind a
-        scrim (`.claude/rules/design.md` forbids two blocking surfaces at once).
-      */}
-      <LibraryImportDialog
-        open={importOpen}
-        onClose={() => setImportOpen(false)}
-        onAttach={(connector) => connectors.upsert(connector)}
-        onBrief={(brief) => agent.start(brief, "import")}
-        /*
-         * ⚠️ **Whether the last press can do anything** (cold walkthrough, 2026-09-07). Only the
-         * coding-agent route can fetch from a service: `useLocalCompile` reads files already
-         * under `sources/` and has no tool that reaches outward, and a browser has no agent at
-         * all. Without this the dialog closed on a press that started nothing, which reads as a
-         * broken product rather than a surface that cannot do it.
-         */
-        canRunAgent={agent.route === "agent"}
-        /*
-         * Two different absences: a browser cannot start any program, while the installed app can
-         * and has simply verified no coding tool yet. The remedies differ too — one is the app,
-         * the other is the runtimes screen — so the card is told which it is meeting.
-         */
-        agentGap={isAcpBridgeAvailable() ? "runtime" : "browser"}
-        /*
-         * A service this list does not know goes to the technical dialog, which lives on `/mcp`
-         * and is unchanged. `?tab=connectors` opens it on the half that adds one, so nobody
-         * arrives on the share tab wondering where the connectors went.
-         */
-        onOpenAdvanced={() => importRouter.push(`${DESTINATION_HREF.mcp}?tab=connectors`)}
-      />
+      {importDialog}
 
       {/* Discovery proposes; this dialog is where a person approves. Blocking, because it
           is asking to take copies of their files. */}

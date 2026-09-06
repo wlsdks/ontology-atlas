@@ -398,9 +398,10 @@ test.describe("the Library pane", () => {
       );
     }
 
-    // The two doors, and the one quiet line that names where a drop goes.
+    // The three doors, and the one quiet line that names where a drop goes.
     await expect(stage.getByTestId("library-start-add-files")).toBeVisible();
     await expect(stage.getByTestId("library-start-find-documents")).toBeVisible();
+    await expect(stage.getByTestId("library-start-import")).toBeVisible();
     await expect(stage.getByTestId("library-start-drop")).toContainText("sources/");
 
     /*
