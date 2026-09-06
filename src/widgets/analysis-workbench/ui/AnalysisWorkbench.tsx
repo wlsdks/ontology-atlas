@@ -40,6 +40,15 @@ type Tab = 'meaning' | 'history' | 'conversation';
 const EMPTY_RECORDS: AnalysisRecord[] = [];
 
 /** One context slot beside the canvas. Hiding conversation never unmounts its ACP session. */
+/**
+ * Ids of saved analyses already announced as a toast. Module-level on purpose: the
+ * workbench unmounts whenever its dock closes (opening the index closes it), and a
+ * ref inside the component forgot the announcement on every remount, so one saved
+ * record raised the same toast on each reopen (installed app, 2026-09-06). The save
+ * state itself outlives the component, so its memory must too.
+ */
+const announcedSaveIds = new Set<string>();
+
 export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, sectionRequest, onSectionChange, initialTab = 'meaning', facts, conversation, onRequest, relationNoteGaps = 0, onClose, onEvidence, onFinding, onFindingsChange, capture, returnFocusSelector }: {
   context: AnalysisCaptureContext;
   contextLabel: string;
@@ -152,10 +161,9 @@ export function AnalysisWorkbench({ context, contextLabel, open, requestNonce, s
    * saving in progress, or an error with its retry.
    */
   const toast = useToast();
-  const savedToastId = useRef<string | null>(null);
   useEffect(() => {
-    if (saved?.status !== 'saved' || savedToastId.current === saved.id) return;
-    savedToastId.current = saved.id;
+    if (saved?.status !== 'saved' || announcedSaveIds.has(saved.id)) return;
+    announcedSaveIds.add(saved.id);
     toast.show(t('save.saved'), 'success', { label: t('viewSaved'), onClick: () => { setSelectedId(saved.id); setTab('history'); } });
   }, [saved, t, toast, setSelectedId, setTab]);
   const sameScope = selected ? analysisScopeKey(selected.mode, selected.scope) === analysisScopeKey(context.mode, context.scope) : false;

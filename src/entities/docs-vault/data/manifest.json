@@ -928,7 +928,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 29605,
+      "wordCount": 29734,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -1417,13 +1417,15 @@
           "capabilities/acp-runtime"
         ],
         "relation_notes": {
-          "capabilities/acp-runtime": "New in-app analyses execute through the guarded ACP runtime; stored results remain readable without starting another agent."
+          "capabilities/acp-runtime": "New in-app analyses execute through the guarded ACP runtime; stored results remain readable without starting another agent.",
+          "elements/analysis-record-archive": "Returning to an original answer or continuing from a selected earlier version is only possible because this element keeps each analysis as one immutable Markdown record holding the full-body evidence, Architecture measurements, and outcome as they stood at analysis time.",
+          "elements/analysis-review-workbench": "This is the surface where a person actually reads the concept criteria and relationship rationale, follows an AI question down to its evidence, and picks an earlier version without navigation restarting the agent."
         }
       },
       "headings": [],
       "excerpt": "The ability for a person or successor agent to request a business-meaning or Architecture analysis, inspect what evidence supports each AI question, retain a reasoned judgment, and return to the original result or continue from a selected prior version. The user explicitly requested this review and Markdown-versioning ",
       "wordCount": 174,
-      "updatedAt": "2026-09-05",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -1681,12 +1683,15 @@
           "elements/download"
         ],
         "path": "src/views/download",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "relation_notes": {
+          "elements/download": "Everything a visitor needs in order to choose, the per-platform installers, the published release facts, and the unsigned Windows warning placed ahead of its own button, is rendered on this one page, so the decision has no surface apart from it."
+        }
       },
       "headings": [],
       "excerpt": "The ability to compare platform-specific installers and trust status in one place, and continue via web if installation is blocked. macOS presents signed/notarized Apple Silicon/Intel DMGs; Windows presents unsigned x64 betas with SmartScreen risks disclosed first. src/views/download (platform group, release facts, war",
       "wordCount": 217,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -1743,13 +1748,14 @@
           "capabilities/vault-sample-source"
         ],
         "relation_notes": {
-          "capabilities/vault-sample-source": "The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice."
+          "capabilities/vault-sample-source": "The starter appears only in settled static mode and teaches through the bundled sample vault; without that sample source it cannot present the pre-folder map and sample choice.",
+          "elements/first-run": "This is the installed-app half of the same starter: the bundled sample is deliberately withheld there, so a real vault has to be created or opened before the workbench appears."
         }
       },
       "headings": [],
       "excerpt": "The first-run experience that brings a completely new user from scratch to a starter vault they can use. The first-run card at the top of the INDEX panel on the left side of the map (/topology) is the surface of this capability. It appears only before choosing a vault. Once the folder opens, the card disappears and the",
       "wordCount": 558,
-      "updatedAt": "2026-08-30",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -1921,12 +1927,15 @@
           "elements/project-editor"
         ],
         "path": "src/features/project-edit",
-        "created_by": "agent:unknown"
+        "created_by": "agent:unknown",
+        "relation_notes": {
+          "elements/project-editor": "The form's validation, serialization, and placement rules only reach a person through the /project/new and /project/[slug]/edit page, which is where create, update, duplicate, and delete are wired to that form."
+        }
       },
       "headings": [],
       "excerpt": "Form editing capability that validates project main fields to create/update/duplicate/delete, and automatically places the position considering category boundaries and overlaps when creating a new project or changing categories. Included: Form validation/serialization, schedule and taxonomy preservation, create/update/",
       "wordCount": 97,
-      "updatedAt": "2026-08-23",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -1992,7 +2001,8 @@
           "capabilities/vault-ontology"
         ],
         "relation_notes": {
-          "capabilities/vault-ontology": "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify."
+          "capabilities/vault-ontology": "Source receipts derive project scope, capability and element path claims, and typed relations from the ontology schema; schema changes alter which witnesses and impacts the receipt can verify.",
+          "elements/semantic-evidence-selector": "A receipt may only call a claim supported when it rests on exact model-visible source text, and this selector is what separates current claim sections from review-only policy lines, so it decides which prose the receipt is allowed to cite."
         },
         "elements": [
           "elements/semantic-evidence-selector"
@@ -2001,7 +2011,7 @@
       "headings": [],
       "excerpt": "The ability to connect a single Git repository or local folder to one project node, and compare the implementation paths of capabilities/elements declared by the ontology against actual source lists, leaving versioned categorical receipts. Map datasheets, full details, CLI, and MCP agentbrief read the same state, recen",
       "wordCount": 1022,
-      "updatedAt": "2026-09-02",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
@@ -2137,12 +2147,16 @@
           "elements/vault-agent-panel"
         ],
         "path": "src/features/vault-agent",
-        "created_by": "human"
+        "created_by": "human",
+        "relation_notes": {
+          "elements/agents-destination": "Attaching an agent to this folder is an operational task with progress, so the connect flow needs one address where a person installs a tool, runs the eight-step connection check, and repairs what it finds; that work sat in three separate places until this destination gathered it.",
+          "elements/vault-agent-panel": "The rule that an answer only counts when it cites actual vault reads is worth nothing unless a person can see those reads, so this panel is the surface where the agent's tool calls, audit logs, timeouts, and mandatory-read failures are judged before its answer is trusted."
+        }
       },
       "headings": [],
       "excerpt": "The app's connect flow and MCP surface that allow AI agents to discover, authenticate, read, and write the vault. Interactive agents within the app collect actual vault tool evidence. Activated only when both absolute paths and read manifests are present, ensuring concepts on screen, text read by models, and audit logs",
       "wordCount": 570,
-      "updatedAt": "2026-08-31",
+      "updatedAt": "2026-09-06",
       "linksOut": []
     },
     {
