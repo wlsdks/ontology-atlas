@@ -67,6 +67,26 @@ describe('walkVault — 경계', () => {
     expect(result.prunedDirs).toEqual([]);
   });
 
+  it('keeps a Markdown file under sources/ as a raw source, not a page', async () => {
+    // A Notion or Obsidian export arrives as `.md`; an import from a service is written
+    // as `.md`. Both belong to the Library verbatim, and neither is a node or a page.
+    const result = await run(
+      dir('vault', [
+        file('a.md'),
+        dir('sources', [file('notes.md'), file('plan.pdf'), dir('deep', [file('memo.md')])]),
+        dir('wiki', [file('page.md')]),
+      ]),
+    );
+    const kinds = Object.fromEntries(result.entries.map((e) => [e.relativePath, e.kind]));
+    expect(kinds).toEqual({
+      'a.md': 'md',
+      'sources/notes.md': 'source',
+      'sources/plan.pdf': 'source',
+      'sources/deep/memo.md': 'source',
+      'wiki/page.md': 'md',
+    });
+  });
+
   it('normalizes NFD filesystem names to NFC so Hangul slugs match NFC refs', async () => {
     // macOS hands back NFD names; frontmatter refs are NFC. Caught in the
     // 2026-09-01 review: the unnormalized slug matched no ref, the containment

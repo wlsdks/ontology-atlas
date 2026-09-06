@@ -39,9 +39,9 @@ mkdirSync(join(fixtureRoot, 'capabilities'), { recursive: true });
 // Bytes that are not Markdown and not text. The point is that nothing reads them.
 writeFileSync(join(fixtureRoot, 'sources/plan.pdf'), Buffer.from('%PDF-1.7\n%âãÏÓ\n'));
 writeFileSync(join(fixtureRoot, 'sources/budget.xlsx'), Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-// Markdown filed beside a raw source: still Markdown, so still a document, and still no
-// `kind:`, so still not a node. Named apart from `plan.pdf` on purpose — a shadow called
-// `plan.pdf.md` would carry the slug `sources/plan.pdf`, which is the raw file's own path.
+// Markdown filed under `sources/` is a raw source like the PDF beside it (2026-09-07
+// decision): listed by name and size, never parsed as a page, never a node. A Notion or
+// Obsidian export and every imported document arrive in exactly this shape.
 writeFileSync(
   join(fixtureRoot, 'sources/plan-notes.md'),
   '---\norigin: sources/plan.pdf\n---\n\n# Plan notes\n',
@@ -117,10 +117,11 @@ describe('the library never enters the graph', () => {
     expect(slugs).not.toContain('sources/budget.xlsx');
     expect(build.manifest.sources?.map((source) => source.path).sort()).toEqual([
       'sources/budget.xlsx',
+      'sources/plan-notes.md',
       'sources/plan.pdf',
     ]);
-    // Markdown beside a source is a document, because it is Markdown.
-    expect(slugs).toContain('sources/plan-notes');
+    // Markdown under sources/ is a source, not a document: it never reaches `docs`.
+    expect(slugs).not.toContain('sources/plan-notes');
   });
 
   it('the manifest lists a raw source by metadata only', async () => {

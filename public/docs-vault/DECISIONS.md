@@ -54,6 +54,15 @@ citation still resolves, and `pnpm decisions:find` lists who cites a record,
 so status is derived rather than edited. The full original text of every
 record stays in Git history before commit `e4fb49a89`.
 
+## 2026-09-07 — Markdown under sources/ is a raw source, not a shadow page
+
+**Why**: reviewing the merged Library on a seeded folder, a `.md` dropped under `sources/` was the one format the list, the graph and Compile could not see: the walk read every Markdown file as a vault page before asking whether the path sat under `sources/`. Notes arrive as Markdown most of all (a Notion or Obsidian export), and the service import writes exactly that.
+**Prior**: narrows 2026-09-05 "A vault holds three kinds of file and only one is the graph": its "Markdown shadow beside the raw file" was never built; the compile flow, its consent card and the import brief have all treated `sources/*.md` as a source since they shipped. The three-kinds rule, the `kind:` gate and "raw wins on what a document said" stand.
+**Decision**: under `sources/` every file is a raw source, Markdown included, listed by name, size and mtime and never parsed as a page or a node; `wiki/` and the rest of the folder keep reading `.md` as before. Provenance for an imported document lives in that file's own frontmatter (`source_url`, `fetched_at`), which the Library shows as text and Compile cites like any other source.
+**Dissent**: the 2026-09-05 record's own shape: a shadow lets a PDF carry a searchable text twin. Not adopted; a text twin of a raw file is a Compile output under `wiki/`, not a second source.
+**Falsifier**: a person who drops a Markdown note under `sources/` and cannot find it in the Library within one screen; or a `sources/*.md` answering `get_concept`.
+**Owner**: jinan
+
 ## 2026-09-07 — Attaching an MCP server is a catalogue pick; a deep link only pre-fills
 
 **Why**: the owner read the add dialog in the installed app — *"split what was found and what is being connected into tabs… I don't know what I'm supposed to do here. Everyone does one-click MCP now"* — and asked how Notion, Atlassian and GitHub connect, and whether Claude Code is fast because it is a partner. The form asked an absolute path and variable **names**, values entered elsewhere. Nobody knows where their own `npx` is, and nothing there held the word Notion.
