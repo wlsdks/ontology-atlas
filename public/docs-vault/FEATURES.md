@@ -339,6 +339,44 @@ had become false).
   bootstrap from found docs, create a node, open Topology INDEX, open Workshop,
   or choose a vault.
 - **Filter active** → bottom-left "filter · N / TOTAL" badge
+- **Three 3D arrangements, chosen in one picker** — the `3D` chip in the top tool
+  lane opens a four-row list: **Flat** (the ordinary 2D map, default), **Cone**,
+  **Strata**, and **Cloud**. Cone and Strata both draw containment and answer
+  different questions with it: Cone makes a parent the apex of its own cone, so a
+  subtree is a bump you can point at and rotate to the front; **Strata** (2026-09-06)
+  lays the four kinds out as stacked planes — project on top, then domain,
+  capability, element — each drawn as one hairline ellipse, so
+  "which level is this on" is a glance rather than an inference. The four names
+  sit on a **legend rail** at the canvas's right edge (2026-09-06), below the
+  utility tiles: one row per plane, each row aligned to that plane's projected
+  height and re-aligned as you orbit or morph, and hovering a row raises its
+  plane's ring. They used to hang on the rims themselves, which at 1040x720 put
+  them on the graph; the rim names remain only as the fallback on a canvas too
+  short for the rail, and the two are never both on. On a Strata plane
+  a node keeps its parent's bearing, which makes every containment drop short,
+  near-vertical and unable to cross a sibling's; a node whose parent is not in the
+  map falls to the outer rim of its own plane, where "nothing above holds this"
+  is a position rather than a missing line. Cloud drops containment altogether and
+  lets relations decide all three coordinates. Switching between any two runs the
+  same continuous morph — nodes travel, they do not cut — and the choice is
+  remembered. Measured on the sample vault (2026-09-06): Strata leaves 2
+  overlapping node pairs at 1512x982 against the Cone's 4, and none of them are
+  same-tier. Geometry: `buildStrataTargets` and `layoutConeTree` in
+  `src/widgets/topology-map-v2/model/dome-view.ts`; gates:
+  `tests/e2e/map-3d-strata-drawing.spec.ts` and `map-3d-cone-drawing.spec.ts`.
+- **A click lands on the concept you are pointing at, in every 3D arrangement**
+  (2026-09-06) — the pointer answers with whatever the frame painted under the
+  cursor, and the small pressable ring around a dot no longer competes with a
+  painted disc. Before, a near, larger concept could answer for a smaller one
+  drawn beside it: measured on the sample vault by pointing at each drawn centre
+  in turn, 4 of 125 answered wrongly in Cone at 1512x982 and 12 of 125 at
+  834x1112. Gates: the "drawn centre" cases in both 3D drawing specs.
+- **Relations stay visible at rest in 3D** (2026-09-06) — depth still fades a
+  line towards the back, but its ink now stops at a floor instead of reaching
+  3.5% of a near line's. Measured at 1512x982 against the canvas ground:
+  containment lines went from 1.26 / 1.33 / 1.14 : 1 (Cone / Strata / Cloud) to
+  1.89 / 1.75 / 1.78 : 1, with the 2D map untouched. Gate:
+  `tests/e2e/map-3d-relation-ink.spec.ts`.
 
 #### `TopologyFitControl` (top-right, desktop-only)
 - Single **Fit Map** tile — fits the camera to the graph bounds. Desktop-only (mobile uses pinch-zoom).
@@ -690,15 +728,79 @@ also the only way in below `lg`.
 pane branches on the kind of file selected — a wiki page opens in the reading pane every
 Markdown surface here shares (`src/widgets/doc-reading-pane/`), headed by its title, its
 author and status, and a chip per source it was built from; a source opens as the six
-facts the folder holds about a file Atlas has never opened (path, format, size, state,
-sha256 or "not measured", and the pages citing it) plus one door that reveals it in Finder
-or hands over the bytes. With nothing selected the reader opens the first wiki page. With
-no folder open the whole screen is one centred stage naming the two kinds of file and
-offering the picker. A folder that holds wiki pages and no `kind:` node opens here rather
-than on the map: it is a wiki on its own, and an empty canvas had nothing to say to the
-person who chose it (ledger, 2026-09-06). A folder with even one node still opens on the
-map. Below `lg` there is one column and selecting swaps it, with a way
-back.
+facts the folder holds about a file Atlas has never opened (path, format, size, state and
+sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
+With no folder open the whole screen is one centred stage naming the two kinds of file and
+offering the picker. **With a folder open and nothing selected the right pane is the
+graph**, at the pane's own height. Below `lg` there is one column — the graph on top, the
+two lists under it — and selecting swaps it, with a way back. A folder that holds wiki
+pages and no `kind:` node opens here rather than on the map: it is a wiki on its own, and
+an empty canvas had nothing to say to the person who chose it (ledger, 2026-09-06). A
+folder with even one node still opens on the map.
+
+**The guided shelf, one press from the graph's header** (2026-09-06, third pass). The
+owner opened the new destination and said they did not know what to do on it; the pane at
+that moment was either "Nothing gathered yet" or the first wiki page, opened on the
+reader's behalf. The answer was three steps in the order the work happens — and later the
+same day, reading the installed app on a folder a local `qwen3:8b` had compiled, the owner
+read the result as two half-screens and moved the shelf off the pane: *"shouldn't the
+Library tab's default be the graph? why is the area split above and below? the area
+underneath should be a popup."* So the steps live in a popover opened by **What to do
+next** in the graph's header, and what stays permanently on screen is their verdict, as
+one `text-label` strip beside the counts: `Gather done · Compile next · Read next · 5
+waiting · 2 off-template`. Both read `libraryStepStates`, so the strip and the panel
+cannot disagree. The panel is `transientSurface("anchored")` and not a modal — no scrim,
+no trap, the picture stays visible behind it, because "5 waiting" is a claim about dots a
+person should be able to look at while reading it. It is at most 560px, hangs from the row
+rather than the pane (parented in the pane it measured 373px tall at 390×844), scrolls
+inside, and closes on Escape or an outside press with focus returned to its chip. It
+raises itself **only** over a folder with no sources at all, and a person's own press —
+either way — settles it for the rest of the session.
+
+Each step states the folder's own counts and carries its own door: **① Gather** (sources, formats present, last added, and how
+many candidates the last Find documents run proposed, with both doors), **② Compile**
+(sources waiting, how many are behind their source, and **which brain would run** — the
+verified coding agent's name, or the local model and the host it answers on — with what
+leaves the computer stated for that route), **③ Read** (wiki pages, sources covered,
+off-template pages, and a row that opens the newest page). Each step says `done`, `next`
+or `waiting` from those counts, and the three rows are one height (`auto-rows-fr`,
+measured 2026-09-06 inside the 560px panel: 233px each in English, 213 in Korean, equal at
+every width). Two steps can honestly be next at once, so the one
+indigo edge goes to the earliest of them while the badges stay true. Compile is drawn in
+every state and disabled with the exact reason rather than hidden, because a missing step
+two would leave a hole in the middle of the sequence. Selecting swaps the right pane and
+moves focus to it, and the source list shows which row that pane is showing; the back
+control that used to appear only below `lg` now stands at every width, and Escape does the
+same thing.
+
+**Below `lg` the whole pane reaches a phone** (2026-09-06, third pass). None of it used to
+be drawn there: the pane was hidden whenever nothing was chosen, which is the state it
+exists for, so a phone and any window under 1024px opened a folder and got two lists, no
+overview and no guidance — a measured zero rect at both 390×844 and 768×1024. The row is
+now a column below `lg`: the graph takes the top of it (390: 350×296 of canvas; 768:
+648×406), the two lists take the bottom under a hairline, the popup still hangs from the
+row so it keeps the column's whole height, and choosing a file swaps the whole column with
+the same way back. The index changes its scroll model there rather than its content: two
+list scrollers sharing half a phone left the source list 30px and the wiki list zero, so
+below `lg` the index scrolls as one box and the lists stand at their natural height, while
+at `lg` and above the two lists keep their own scrollers. Cases: `the Library pane` and
+`the graph takes the top of the column at …` in `tests/e2e/library.spec.ts`.
+
+**The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
+the action: one cited source is a single **View original** button carrying the file name;
+several keep a list under the same words; a citation naming a file that is not in the
+folder is drawn as plain text, because a door that leads nowhere is worse than a stated
+fact. Both crossings are drawn as list rows at the index's own 36px step rather than as
+32px chips, because opening a document is one job and it was carrying two heights
+depending on which pane a person pressed from; the source pane's label column moved 132 →
+148px for the same reason, matching the shelf's. A source's pane answers the other direction with **View write-up** — every page
+citing it, each marked `current`, `behind`, or `not checked` from the sha256 it recorded
+— and, when no page cites it, the Compile button in that row's place. `not checked` is its
+own word because hashing is lazy: reporting an unmeasured file as `behind` made this pane
+contradict its own state row, which reads `checking` in exactly that window. Both directions are derived in
+`buildLibraryPairing` (`src/entities/docs-vault/lib/vault-library.ts`) from the same
+`sources:` and `source_hash:` frontmatter the state machine already reads, so no second
+store can drift from it.
 
 - **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
   one state. Atlas never opens them; the walk records what a directory listing already
@@ -745,8 +847,9 @@ Four one-click doors:
   would leave it (a whole file, or an edit applied to the page on disk), judged against
   the contract, one quiet line when it fits and the codes with the first message when it
   does not. Allow and Don't stay where they are; the gate is the person.
-  The dock opens on this screen: Compile is a job, not a place, and the job runs beside
-  the shelf it is compiling. The brief lists the pages that already exist and asks the
+  The dock opens on this screen, above `AcpDockHeader` a lucide `Library` glyph and the
+  destination's name: Compile is a job, not a place, and the job runs beside the shelf it
+  is compiling. The brief lists the pages that already exist and asks the
   writer for one page per source, named after it and never folded into another (a page
   is what one document said), to link the pages it touches both ways, to record a
   disagreement on both pages with both citations, and to write nothing for a source
@@ -771,6 +874,105 @@ Four one-click doors:
   wiki flows into it, through the person. The brief carries what the script already found (the page
   and folder codes the Wiki list shows) and asks the agent not to repeat them, so the
   model's reading goes to judgement.
+- **The local-model route** — when Settings → AI connection holds a verified
+  connect-by-address runner (any OpenAI-compatible `/v1` server: Ollama, LM Studio,
+  llama.cpp, vLLM), the shelf names that model and its host as the brain. It says nothing
+  leaves this computer only when the saved host really is this computer; a runner reached
+  over `https://` at another address is named as one, because `normalize_base_url` in
+  `src-tauri/src/llm.rs` requires loopback for plaintext but accepts a remote TLS host.
+  `.ontology-atlas/llm-audit.jsonl` records each request either way.
+  **It compiles** (second pass, 2026-09-06). The 2026-09-06 record left this route a named
+  brain because the runner's tool catalogue read and proposed ontology concepts only, and
+  wrote its own reopening condition: *a local tool catalogue that reads a source and writes
+  a page under one consent card reopens local Compile.* That catalogue is
+  `src/features/vault-agent/model/compile-tool-catalog.ts`, and it is two tools, kept out
+  of `AGENT_TOOLS` because neither exists on the MCP server. `read_source_text` opens one
+  file this folder's own walk found under `sources/` and this bundle can decode — Markdown,
+  plain text, CSV, TSV, JSON and HTML with its tags stripped — and returns it with every
+  paragraph numbered `[p1]`, `[p2]`, capped at 8,000 characters with `truncated` stated
+  rather than hidden. A PDF, Word, PowerPoint or Excel file comes back **unread and named**:
+  reading those needs a parser Atlas does not ship, and shipping one is deferred rather
+  than guessed at. Any other path — absolute, `..`, a backslash, or simply not in this
+  folder — is refused before the disk is touched. `propose_wiki_page` takes fields, never
+  Markdown: Atlas assembles the five sections itself and mints `created_by: model:<name>`,
+  `compiled_at`, `sources:` and `source_hash:` from the bytes it actually handed over, so a
+  page cannot claim a document the model never opened. **It writes nothing.** The turn ends
+  at one card that names, per page, the path it would take, what each of its five sections
+  carries, how many citations it holds, which sources it was written from, which were read
+  only in part, and which could not be opened at all; only Allow once writes, through the
+  same `applyProposal` a concept change takes. A page that fails the contract produces no
+  proposal at all, so the card has nothing to offer and shows the exact problem codes
+  instead. Beyond the shared `validateWikiPage` rules the proposal adds two: every
+  `## Decisions` bullet cites, and **every citation anchor resolves inside the bytes read
+  this turn** — the shared validator captures an anchor and never opens a file, so
+  `#p47` in a three-paragraph document would otherwise pass and land as a citation a reader
+  cannot follow. Three pages per turn, ten rounds. The button goes live only for a loopback
+  runner, because whole documents now leave the process and "on this computer" has to be
+  true rather than named; a remote saved address and a folder whose waiting files all need
+  a parser each get their own sentence naming what is missing rather than blaming the
+  route. Measured on this machine 2026-09-06 against Ollama: `qwen3:8b` (65s) and
+  `gemma4:12b` (82s) each read both sources and proposed both pages with every bullet cited
+  and every anchor resolvable; `qwen3.6:35b-a3b` proposed pages with no citations at all,
+  which the card refused with `uncited-fact` and no write action.
+- **Which brain runs is chosen, not ranked** (owner, 2026-09-06, second pass). A verified
+  coding agent still opens formats the runner cannot, so it stays the **default** — but it
+  no longer outranks the runner, because the reason a local runner is set up at all is to
+  be pointed at a folder whose documents should not leave the machine, and a precedence
+  rule takes exactly that choice away. When this computer offers both, step two's
+  **Runs on** row and the index's wiki header each draw one select naming them as the
+  shelf already does (`Claude Agent` and `gemma4:12b on localhost:11434`); the answer is
+  stored per machine in `localStorage` beside the chat width, both surfaces read and write
+  that one value, and the sentence about what leaves this computer switches with it. With
+  one brain available nothing is drawn — a select that cannot change anything is not a
+  choice — and a stored answer naming a brain the machine no longer offers falls back to
+  the one that is there **and stops being stored**, so a preference never outlives what it
+  points at. `resolveCompileBrain` is that table, tested as one.
+
+**Graph** (2026-09-06) — **the pane itself** whenever nothing is chosen, drawing the same
+two file kinds the lists carry, plus the third thing they reach: a raw
+source is a square, a wiki page a filled circle, and an ontology concept a page names with
+`[[slug]]` is a ring. A solid line is a citation from the page's `sources:` frontmatter; a
+dashed line is a mention from its body. A link that resolves to nothing is not drawn, and a
+source nobody has written up simply has no line, which is the same fact the `not compiled`
+word carries in the list. The caption counts what is on the canvas: sources, pages,
+concepts, links; beside it stand the status strip and the door to the shelf. A citation is
+drawn 1.5px against a mention's 1px, so the two relations read apart without the legend.
+**Up to 60 nodes every mark carries its own name** — the page's title, the file's name, the
+concept's title — standing under it in `text-label`, secondary ink for a page and
+quaternary for the two things it stands on; a screen-space pass claims the marks first and
+then each name in turn, sliding one back inside the frame rather than dropping it at the
+edge and hiding only a genuine collision, so no two names ever cross. Above 60 the picture
+is an overview and a name is something you ask a dot for: hover keeps its box. Pointing at
+a dot names it either way; clicking a page or a source selects it here, in
+the index and in the reader at once, while clicking a concept opens it on the map, because a
+concept is not a file in this folder. Selection is the only place indigo appears: the node,
+its ring, and the edges that touch it.
+
+It is **not the map, and separate on purpose** (`docs/DECISIONS.md`, 2026-09-06). The map
+draws the ontology, whose nodes all carry `kind:`; neither a PDF nor a wiki page ever
+becomes one. This picture answers the other question, what was read to write that down.
+Layout is ForceAtlas2 (Graphology, already installed for the map's force pass) run to a
+stop before the first frame, rotated so its longest direction lies along the canvas, then
+fitted at one scale for both axes so distance means the same thing in x and y. It settles
+once, over the 420ms canvas-travel duration, and then nothing moves; under
+`prefers-reduced-motion` the settled frame is drawn at once. 500 nodes lay out in 95ms.
+
+**The canvas is the pane, and is cut to the picture** (2026-09-06). It used to be a band
+of at most 320px or `34dvh` above the reader, and one scale for both axes meant the height
+decided how big the picture was: measured on the seeded five-source, three-page folder at
+1512, a 1144px canvas carried a 462px picture — 40.4% of its width, with a 341px gutter
+each side — while its height was already 86.6% used. Both premises went. The canvas takes
+the pane's height, and it is never wider than the picture plus the fit's own label
+allowance, so a cloud squarer than a tall pane leaves its slack split evenly rather than
+gathered on one side. Measured after, both locales: **1046×623 of a 1088×900 canvas at
+1512 — 96.1% of its width, against 40.4% — and 93.2% at 1040, 93.5% at 768, 88.0% at 390**,
+with 21px gutters at every band. The picture itself is 2.26× wider than it was, and its marks are one step larger with it
+(a page's circle r5 → 6, a concept's ring r4 → 6, a source's square 7.2 → 10px), because
+marks sized for a 320px strip read across that field as specks. A hovered
+name is truncated to fit rather than allowed past either edge. The settle also stopped
+cancelling itself: its animation frame is held across effect runs, because the width the
+canvas takes from the picture arrives after the first measurement and used to kill the
+arrival 0.85 of the way in.
 
 **What left `/docs` on 2026-09-06**: Sources, Wiki, the doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.
@@ -910,7 +1112,7 @@ explain old screenshots and decisions; none of it is a current destination.
 
 </details>
 
-**2026-09-06, the conversation and the workbench**: the meaning workbench keeps one 50px header band, a `tablist` of its sections (Meaning · Findings and history · Conversation) and one close button; the transcript, slash menu, history and presentation body scroll under `.atlas-scroll-quiet` (no visible bar, scrolling intact) and follow new text smoothly within one viewport, instantly beyond it, never under reduced motion; runs of three identical lookups fold onto one row with a count; the permission card caps at 45% of the panel with Don't and Allow outside its scroller. A dock with no header of its own (Library) wears `AcpDockHeader`, title and one close, so no screen has two. Later the same day the owner read the Meaning and Findings views as walls of same-grey prose: the Meaning view now leads with the one action (analyze) and its caveat, then what is picked on the map, then the map-label switch, then the glossary folded under one question; the Findings view puts the version picker, refresh and re-analyze on one control row, the scope as heading with outcome · basis · evidence count as one caption, the findings (with the map-question switch only when there are any), the answer, the details, and the caveat once at the foot; hairlines set the groups apart. The conversation's default width moved 420 → 460px (`CHAT_WIDTH_DEFAULT`). The Meaning view also counts the relations in scope whose `relation_notes` sentence is empty and offers **Write N missing connection reasons**: one bounded agent turn (12 notes) that reads both documents with `get_concepts(body: full)` and proposes the sentence on the source document through `patch_concept(expected_mtime)`, every write stopping at a permission card. On the map, an edge's hover card and click card lead with that recorded reason when it exists and drop the templated sentence ("A holds B") to a caption; without one the template stands. Measured 2026-09-06 on the dogfood graph: 31 of 242 edges carried a reason, and no containment edge did. Later the same day: the edge card opens beside the dock too (it used to yield to the workbench, which only renamed its header) and says in one caption when no reason is recorded; the conversation's status word carries a clock ("thinking · 1m 12s") and the corner chip says how long the agent has been at it, from the turn's own start; closing the dock while a turn runs keeps the panel mounted so the session finishes; a saved analysis arrives as a toast with "open saved result" instead of a permanent footer; a permission card titles the change in plain words derived from typed facts ("Writes 8 connection reasons in ontology-atlas"; a missing target gives "Updates this document", never a guess), leads with an operation chip and the document address, names frontmatter keys as words with the raw key as provenance, renders a map of sentences one target per line, stacks before above after only where the change set holds a previous value, and keeps the buttons outside its scrolling body; the Library's off-template callout and the conversation's notices dropped their amber fill for the neutral surface, amber staying only where a write leaves the person's own folder. A readability pass the same afternoon gave both views one control step (every button, chip and select 32px, 12.5px text, one filled primary per view), sans section labels in place of the mono caps eyebrow (Korean read as spaced glyphs in mono), a version picker that no longer truncates at 460px, and fewer hairlines (Meaning with nothing picked 3 → 1, Findings 4 → 2). That evening the toasts left the bottom-right corner, where the agent dock hid them, for the top centre under the map toolbar (`--app-toast-top-offset`, 72px on the map, 16px elsewhere), centred over the map area rather than the viewport when a dock stands on the right (`--app-right-dock-width`, now published from the dock's own width state); the box is drawn from the design tokens (elevated surface, hairline, one 14px status icon in the tone's ink, `text-body` message, one quiet indigo action, a close button that appears on hover at the right end), and a message raised twice while its toast is still up refreshes that toast instead of stacking a twin.
+**2026-09-06, the conversation and the workbench**: the meaning workbench keeps one 50px header band, a `tablist` of its sections (Meaning · Findings and history · Conversation) and one close button; the transcript, slash menu, history and presentation body scroll under `.atlas-scroll-quiet` (no visible bar, scrolling intact) and follow new text smoothly within one viewport, instantly beyond it, never under reduced motion; runs of three identical lookups fold onto one row with a count; the permission card caps at 45% of the panel with Don't and Allow outside its scroller. A dock with no header of its own (Library) wears `AcpDockHeader`, title and one close, so no screen has two. Later the same day the owner read the Meaning and Findings views as walls of same-grey prose: the Meaning view now leads with the one action (analyze) and its caveat, then what is picked on the map, then the map-label switch, then the glossary folded under one question; the Findings view puts the version picker, refresh and re-analyze on one control row, the scope as heading with outcome · basis · evidence count as one caption, the findings (with the map-question switch only when there are any), the answer, the details, and the caveat once at the foot; hairlines set the groups apart. The conversation's default width moved 420 → 460px (`CHAT_WIDTH_DEFAULT`). The Meaning view also counts the relations in scope whose `relation_notes` sentence is empty and offers **Write N missing connection reasons**: one bounded agent turn (12 notes) that reads both documents with `get_concepts(body: full)` and proposes the sentence on the source document through `patch_concept(expected_mtime)`, every write stopping at a permission card. On the map, an edge's hover card and click card lead with that recorded reason when it exists and drop the templated sentence ("A holds B") to a caption; without one the template stands. Measured 2026-09-06 on the dogfood graph: 31 of 242 edges carried a reason, and no containment edge did. Later the same day: the edge card opens beside the dock too (it used to yield to the workbench, which only renamed its header) and says in one caption when no reason is recorded; the conversation's status word carries a clock ("thinking · 1m 12s") and the corner chip says how long the agent has been at it, from the turn's own start; closing the dock while a turn runs keeps the panel mounted so the session finishes; a saved analysis arrives as a toast with "open saved result" instead of a permanent footer; a permission card titles the change in plain words derived from typed facts ("Writes 8 connection reasons in ontology-atlas"; a missing target gives "Updates this document", never a guess), leads with an operation chip and the document address, names frontmatter keys as words with the raw key as provenance, renders a map of sentences one target per line, stacks before above after only where the change set holds a previous value, and keeps the buttons outside its scrolling body; the Library's off-template callout and the conversation's notices dropped their amber fill for the neutral surface, amber staying only where a write leaves the person's own folder. A readability pass the same afternoon gave both views one control step (every button, chip and select 32px, 12.5px text, one filled primary per view), sans section labels in place of the mono caps eyebrow (Korean read as spaced glyphs in mono), a version picker that no longer truncates at 460px, and fewer hairlines (Meaning with nothing picked 3 → 1, Findings 4 → 2). That evening the toasts left the bottom-right corner, where the agent dock hid them, for the top centre under the map toolbar (`--app-toast-top-offset`, 72px on the map, 16px elsewhere), centred over the map area rather than the viewport when a dock stands on the right (`--app-right-dock-width`, now published from the dock's own width state); the box is drawn from the design tokens (elevated surface, hairline, one 14px status icon in the tone's ink, `text-body` message, one quiet indigo action, a close button that appears on hover at the right end), and a message raised twice while its toast is still up refreshes that toast instead of stacking a twin. The conversation's default width moved 420 → 460 → 520px (`CHAT_WIDTH_DEFAULT`), now a ceiling rather than a fixed number: a width nobody chose leaves the map 540px rather than the 480px floor a drag may cross, so the app's smallest 1040px window opens the conversation at 436px and only a 1124px window or wider gets the whole 520 (`defaultChatWidth`, and double-clicking the edge returns to that same screen's number). Its composer's footer became a container that answers to its own box rather than the window: below 540px of composer width the tool and mode pickers take a row of their own and the status word, its clock and the session buttons take the row beneath, and a picker never renders narrower than 104px, so a long name truncates to its first word instead of to its chevron. Measured on the built export at 1512: 211px per picker at the default width, 111px at the panel minimum of 320px, and one row again from a 632px panel. The Meaning view also counts the relations in scope whose `relation_notes` sentence is empty and offers **Write N missing connection reasons**: one bounded agent turn (12 notes) that reads both documents with `get_concepts(body: full)` and proposes the sentence on the source document through `patch_concept(expected_mtime)`, every write stopping at a permission card. On the map, an edge's hover card and click card lead with that recorded reason when it exists and drop the templated sentence ("A holds B") to a caption; without one the template stands. Measured 2026-09-06 on the dogfood graph: 31 of 242 edges carried a reason, and no containment edge did. Later the same day: the edge card opens beside the dock too (it used to yield to the workbench, which only renamed its header) and says in one caption when no reason is recorded; the conversation's status word carries a clock ("thinking · 1m 12s") and the corner chip says how long the agent has been at it, from the turn's own start; closing the dock while a turn runs keeps the panel mounted so the session finishes; a saved analysis arrives as a toast with "open saved result" instead of a permanent footer; a permission card titles the change in plain words derived from typed facts ("Writes 8 connection reasons in ontology-atlas"; a missing target gives "Updates this document", never a guess), leads with an operation chip and the document address, names frontmatter keys as words with the raw key as provenance, renders a map of sentences one target per line, stacks before above after only where the change set holds a previous value, and keeps the buttons outside its scrolling body; the Library's off-template callout and the conversation's notices dropped their amber fill for the neutral surface, amber staying only where a write leaves the person's own folder. A readability pass the same afternoon gave both views one control step (every button, chip and select 32px, 12.5px text, one filled primary per view), sans section labels in place of the mono caps eyebrow (Korean read as spaced glyphs in mono), a version picker that no longer truncates at 460px, and fewer hairlines (Meaning with nothing picked 3 → 1, Findings 4 → 2).
 
 ### `/ontology/edit` and `/ontology/studio` — compatibility redirects
 

@@ -84,6 +84,7 @@ import {
 import {
   beginDomeModelBuild,
   beginDomeMorph,
+  domeRingAlphaFor,
   clampDomePitch,
   DOME_BUILD_SLICE_MS,
   createDomeRuntime,
@@ -111,6 +112,7 @@ import {
   settleDomeRuntimeOffscreen,
   updateDomeFrame,
   type DomeModel,
+  type DomeViewKind,
   type DomeModelBuild,
   type DomeRuntime,
 } from "../model/dome-view";
@@ -292,6 +294,14 @@ export interface UseTopologyLoopArgs {
    */
   onDrawnCountChange?: (drawn: number) => void;
   /**
+   * The Strata plane heights this frame, in canvas CSS px, top tier first — what
+   * `TopologyV2TierLegend` aligns its rows to. Emitted only when a value moved by
+   * more than half a pixel, so an idle frame does not re-render the overlay, and
+   * `null` whenever the arrangement is not Strata or its rings are not up yet.
+   */
+  onDomeTierAnchorsChange?: (anchors: readonly { kind: DomeViewKind; y: number }[] | null) => void;
+
+  /**
    * The semantic-zoom altitude tier changed (spine → circuit → element). Fires
    * on transitions only, not per frame, and is driven by the same reveal bands
    * the draw pass uses to gate node visibility — so the corner readout can
@@ -389,6 +399,8 @@ export interface UseTopologyLoopArgs {
    * builds user-facing strings — same path `realmCaption` already uses.
    */
   clusterBarLabels?: ClusterBarLabels | null;
+  /** Translated kind names, written at the rim of each Strata plane ring. */
+  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * Trail brushing — a **ref** holding the node id of the popover row under
    * hover/focus. While the lens is on, the map borrows its own hover channel
@@ -473,6 +485,23 @@ export interface UseTopologyLoopArgs {
 const EMPTY_DOME_CLUSTERED: ReadonlySet<string> = new Set();
 const EMPTY_DOME_CHIPS: readonly ClusterChip[] = [];
 
+/**
+ * The width the Strata fit keeps clear at the canvas's right edge for the tier
+ * legend — the widest of the four names plus its inset, measured on the rendered
+ * rail rather than taken from its 64 px column.
+ *
+ * **Why not the whole column.** The reservation is width the graph does not get,
+ * and at 1040×720 it comes out of a 976 px canvas. At 88 px the fit crowded two
+ * more element pairs onto one plane than the gate allows; at 56 px no node lands
+ * under a legend row and the crowding cost is two touching pairs, which is the
+ * trade `tests/e2e/map-3d-strata-drawing.spec.ts` records. At 1512 the fit is
+ * bound by height and the reservation costs nothing at all.
+ */
+const TIER_LEGEND_RESERVE_PX = 56;
+
+/** Top tier first — the order the legend rail lists its rows in. */
+const DOME_LEGEND_KINDS: readonly DomeViewKind[] = ["project", "domain", "capability", "element"];
+
 const EMPTY_EXPANDED_SET: ReadonlySet<string> = new Set();
 const EMPTY_TRAIL: readonly string[] = [];
 
@@ -481,14 +510,17 @@ export type UseTopologyLoopResult = TopologyPointerHandlers & {
   containerRef: RefObject<HTMLDivElement | null>;
   /** Walk to a neighbour with the arrow keys — the canvas's `onKeyDown`. */
   handleKeyDown: (event: ReactKeyboardEvent<HTMLCanvasElement>) => void;
+  /** Raise one Strata plane's ring — the tier legend's hover; null clears it. */
+  raiseDomeTier: (kind: DomeViewKind | null) => void;
 };
 
 export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResult {
-  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
+  const { nodes, edges, focusedSlug, emphasizedNeighborSlug = null, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken = 0, onSelectEdge, onHoverEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onDomeTierAnchorsChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId = null, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, selectedEdge = null, previewEdge = null, expandedParents = EMPTY_EXPANDED_SET, onToggleCluster, onHoverCluster, realmRootId = null, onEnterRealm, realmEnterButtonRef, realmCaption = null, visitedTrail = EMPTY_TRAIL, trailLensActiveRef, clusterBarLabels = null, domeTierLabels = null, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal = DEFAULT_TIER_REVEAL, tourAnchorNodeId = null, tourAnchorRef, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = args;
 
   const getRealmCaption = useEffectEvent(() => realmCaption);
   const annotationRef = useRef({ captions: args.relationCaptions, questions: args.reviewQuestionIds });
   const getClusterBarLabels = useEffectEvent(() => clusterBarLabels);
+  const getDomeTierLabels = useEffectEvent(() => domeTierLabels);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1113,6 +1145,11 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
    * track the last emitted tier so the callback fires only on transitions. */
   const onZoomTierChangeRef = useRef<typeof onZoomTierChange>(onZoomTierChange);
   const onDrawnCountChangeRef = useRef<typeof onDrawnCountChange>(onDrawnCountChange);
+  const onDomeTierAnchorsChangeRef = useRef<typeof onDomeTierAnchorsChange>(onDomeTierAnchorsChange);
+  /** The legend row under the pointer — that plane's ring is raised for as long as it is set. */
+  const domeTierRaisedKindRef = useRef<DomeViewKind | null>(null);
+  /** The last anchor set handed out — the change filter's memory, never read by the draw. */
+  const domeTierAnchorsSentRef = useRef<{ kind: DomeViewKind; y: number }[] | null>(null);
   /** The last count reported, so the callback fires on change rather than every frame. */
   const drawnNodeCountRef = useRef(-1);
   const lastZoomTierRef = useRef<ZoomTier | null>(null);
@@ -1198,11 +1235,21 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
           right = measured.right;
         }
       }
+      /*
+       * Strata keeps its legend rail's names clear of the graph. The rail sits at
+       * the canvas's right edge (`TopologyV2TierLegend`) and it is **not** a side
+       * panel — it covers under half the canvas height, so `measureCanvasInsets`
+       * correctly declines to treat it as one, and the fit would otherwise run the
+       * graph out to the canvas edge. It did: three nodes landed under the rows at
+       * 1040×720, measured 2026-09-06, which is the same "a name on the data"
+       * defect the rail exists to end.
+       */
+      const legendRight = model.arrangement === "strata" ? TIER_LEGEND_RESERVE_PX : 0;
       return computeDomeFitCameraTarget(
         bounds,
         width,
         height,
-        { left, right, top: tokens.domeFitInsetTop, bottom: tokens.domeFitInsetBottom },
+        { left, right: Math.max(right, legendRight), top: tokens.domeFitInsetTop, bottom: tokens.domeFitInsetBottom },
         DOME_NODE_FIT_ALLOWANCE_PX,
         tokens,
       );
@@ -1233,7 +1280,8 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
   useEffect(() => {
     onZoomTierChangeRef.current = onZoomTierChange;
     onDrawnCountChangeRef.current = onDrawnCountChange;
-  }, [onZoomTierChange, onDrawnCountChange]);
+    onDomeTierAnchorsChangeRef.current = onDomeTierAnchorsChange;
+  }, [onZoomTierChange, onDrawnCountChange, onDomeTierAnchorsChange]);
 
   useEffect(() => {
     onEnterRealmRef.current = onEnterRealm;
@@ -5030,6 +5078,9 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
         depthDotPatterns: canvasBackgroundRef.current === "depth" ? depthDotPatternsRef.current : undefined,
         expand: expandPrefRef.current,
         clusterBarLabels: getClusterBarLabels(),
+        domeRingAlpha: domeRingAlphaFor(mapArrangementRef.current),
+        domeTierLabels: getDomeTierLabels(),
+        domeTierRaisedKind: domeTierRaisedKindRef.current,
       });
       // Record which lens state this frame drew; the idle gate compares
       // against it next frame to decide whether the lens changed.
@@ -5065,6 +5116,50 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
       if (painted !== drawnNodeCountRef.current) {
         drawnNodeCountRef.current = painted;
         onDrawnCountChangeRef.current?.(painted);
+      }
+
+      /*
+       * **Where each Strata plane sits on screen this frame.** The legend rail's
+       * rows line up with these, so they have to come from the same rings the
+       * frame just drew rather than from the model — during an orbit or a morph
+       * the two are different numbers. The anchor is each named ring's own label
+       * point (its screen-rightmost sample), which is where the rim name used to
+       * hang, so moving the name out to the rail does not move it vertically.
+       */
+      {
+        const runtime = domeRuntimeRef.current;
+        let anchors: { kind: DomeViewKind; y: number }[] | null = null;
+        if (runtime !== null && runtime.rampClock > 0 && runtime.model.arrangement === "strata") {
+          const strongest = new Map<DomeViewKind, { a: number; y: number }>();
+          for (const ring of runtime.rings) {
+            if (ring.label === null || ring.a <= 0.01) continue;
+            const seen = strongest.get(ring.kind);
+            // A morph draws the old model's rings behind the new ones; the tier
+            // belongs to whichever of the two is currently the stronger.
+            if (seen && seen.a >= ring.a) continue;
+            strongest.set(ring.kind, {
+              a: ring.a,
+              y: worldToScreen(camera, width, height, ring.label.wx, ring.label.wy).y,
+            });
+          }
+          if (strongest.size > 0) {
+            anchors = DOME_LEGEND_KINDS.filter((kind) => strongest.has(kind)).map((kind) => ({
+              kind,
+              y: strongest.get(kind)!.y,
+            }));
+          }
+        }
+        const sent = domeTierAnchorsSentRef.current;
+        const moved =
+          (sent === null) !== (anchors === null) ||
+          (sent !== null &&
+            anchors !== null &&
+            (sent.length !== anchors.length ||
+              anchors.some((a, i) => sent[i].kind !== a.kind || Math.abs(sent[i].y - a.y) > 0.5)));
+        if (moved) {
+          domeTierAnchorsSentRef.current = anchors;
+          onDomeTierAnchorsChangeRef.current?.(anchors);
+        }
       }
 
       handle = requestAnimationFrame(frame);
@@ -5852,5 +5947,17 @@ export function useTopologyLoop(args: UseTopologyLoopArgs): UseTopologyLoopResul
     };
   }, []);
 
-  return { canvasRef, containerRef, ...handlers, ...wrappedHandlers };
+  /**
+   * Raise one Strata plane's ring — the legend rail's hover, arriving from a DOM
+   * row rather than from the canvas. It marks activity as well as setting the ref,
+   * because the idle gate is skipping frames whenever the map is at rest, which is
+   * exactly when someone reads the legend.
+   */
+  const raiseDomeTier = useCallback((kind: DomeViewKind | null) => {
+    if (domeTierRaisedKindRef.current === kind) return;
+    domeTierRaisedKindRef.current = kind;
+    lastActiveMsRef.current = performance.now();
+  }, []);
+
+  return { canvasRef, containerRef, raiseDomeTier, ...handlers, ...wrappedHandlers };
 }

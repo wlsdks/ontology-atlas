@@ -43,6 +43,8 @@ import {
   DOME_TIER_LAG,
   DOME_DETAIL_FADE_END,
   DOME_DETAIL_FADE_START,
+  domeEdgeFogAlpha,
+  domeEdgeWidthFactor,
   domeDetailFactor,
   domeEdgeControl,
   domeFogAlpha,
@@ -62,6 +64,10 @@ import {
   domeRingSampleCount,
   settleDomeRuntimeOffscreen,
   type DomeRuntime,
+  buildStrataTargets,
+  DOME_STRATA_RING_ALPHA,
+  domeRingAlphaFor,
+  type DomeCoord,
   type DomeInputNode,
   type DomeViewKind,
 } from "./dome-view";
@@ -1221,5 +1227,283 @@ describe("구름 이완 슬라이스 — 쌍 루프 안에서 끊어도 결과�
     // A 0.02 ms budget has to pause inside the pair loop many times.
     expect(calls).toBeGreaterThan(10);
     for (const [id, coord] of whole.coords) expect(build.model.coords.get(id)).toEqual(coord);
+  });
+});
+
+describe("Strata — four labelled planes, and drops that cannot cross (2026-09-06)", () => {
+  /** 1 project · 2 domains · 3 capabilities · 2 elements · 1 element with no parent in the model. */
+  const tree: DomeInputNode[] = [
+    { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+    { id: "d-a", kind: "domain", x: -200, y: 0, parentId: "p" },
+    { id: "d-b", kind: "domain", x: 200, y: 0, parentId: "p" },
+    { id: "c-a1", kind: "capability", x: -260, y: 120, parentId: "d-a" },
+    { id: "c-a2", kind: "capability", x: -180, y: 200, parentId: "d-a" },
+    { id: "c-b1", kind: "capability", x: 240, y: 140, parentId: "d-b" },
+    { id: "e-a1", kind: "element", x: -300, y: 260, parentId: "c-a1" },
+    { id: "e-b1", kind: "element", x: 280, y: 240, parentId: "c-b1" },
+    { id: "e-loose", kind: "element", x: 40, y: 380, parentId: null },
+  ];
+  const bearing = (c: DomeCoord) => Math.atan2(c.pz, c.px);
+  const radius = (c: DomeCoord) => Math.hypot(c.px, c.pz);
+
+  it("puts height on the tier and nothing else — no per-parent nesting", () => {
+    const { coords } = buildStrataTargets(tree);
+    for (const node of tree) {
+      expect(coords.get(node.id)!.py).toBe(DOME_PLANE[node.kind].y);
+    }
+  });
+
+  it("gives an only child its parent's whole sector, so the drop is exactly vertical", () => {
+    const chain: DomeInputNode[] = [
+      { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+      { id: "d", kind: "domain", x: 0, y: 0, parentId: "p" },
+      { id: "c", kind: "capability", x: 0, y: 0, parentId: "d" },
+      { id: "e", kind: "element", x: 0, y: 0, parentId: "c" },
+    ];
+    const { coords } = buildStrataTargets(chain);
+    const d = bearing(coords.get("d")!);
+    expect(bearing(coords.get("c")!)).toBeCloseTo(d, 12);
+    expect(bearing(coords.get("e")!)).toBeCloseTo(d, 12);
+    // A lone project is the axis the structure stands on.
+    expect(radius(coords.get("p")!)).toBe(0);
+  });
+
+  it("keeps a whole subtree inside its own arc, so two domains never share a bearing band", () => {
+    const { coords } = buildStrataTargets(tree);
+    // Bearings measured from where the walk starts (−π/2), so an arc that
+    // straddles ±π is still one interval rather than two.
+    const arc = (id: string) => (bearing(coords.get(id)!) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
+    const spanOf = (rootId: string) => {
+      const seen: number[] = [];
+      const walk = (id: string) => {
+        seen.push(arc(id));
+        for (const child of tree.filter((n) => n.parentId === id)) walk(child.id);
+      };
+      walk(rootId);
+      return { min: Math.min(...seen), max: Math.max(...seen) };
+    };
+    const a = spanOf("d-a");
+    const b = spanOf("d-b");
+    expect(a.max).toBeLessThan(b.min);
+  });
+
+  it("draws no two containment drops that cross, seen from above", () => {
+    const { coords } = buildStrataTargets(tree);
+    const drops = tree
+      .filter((n) => n.parentId !== null && coords.has(n.parentId))
+      .map((n) => {
+        const a = coords.get(n.parentId!)!;
+        const b = coords.get(n.id)!;
+        return { ax: a.px, az: a.pz, bx: b.px, bz: b.pz, ids: [n.parentId!, n.id] };
+      });
+    const side = (px: number, pz: number, qx: number, qz: number, rx: number, rz: number) =>
+      Math.sign((qx - px) * (rz - pz) - (qz - pz) * (rx - px));
+    let crossings = 0;
+    for (let i = 0; i < drops.length; i += 1) {
+      for (let j = i + 1; j < drops.length; j += 1) {
+        const s = drops[i];
+        const t = drops[j];
+        // Drops that share a node meet at it by construction; meeting is not crossing.
+        if (s.ids.some((id) => t.ids.includes(id))) continue;
+        const d1 = side(s.ax, s.az, s.bx, s.bz, t.ax, t.az);
+        const d2 = side(s.ax, s.az, s.bx, s.bz, t.bx, t.bz);
+        const d3 = side(t.ax, t.az, t.bx, t.bz, s.ax, s.az);
+        const d4 = side(t.ax, t.az, t.bx, t.bz, s.bx, s.bz);
+        if (d1 !== d2 && d3 !== d4) crossings += 1;
+      }
+    }
+    expect(drops.length).toBeGreaterThan(5);
+    expect(crossings).toBe(0);
+  });
+
+  it("drops an unparented node onto its plane's outer rim, outside where placed nodes sit", () => {
+    const { coords } = buildStrataTargets(tree);
+    expect(radius(coords.get("e-loose")!)).toBeCloseTo(DOME_PLANE.element.r, 9);
+    expect(radius(coords.get("e-a1")!)).toBeLessThan(DOME_PLANE.element.r);
+  });
+
+  it("emits one named ring per populated plane, and none for a level this vault does not have", () => {
+    const { circles } = buildStrataTargets(tree);
+    expect(circles.map((c) => c.kind)).toEqual(["project", "domain", "capability", "element"]);
+    for (const circle of circles) {
+      expect(circle.named).toBe(true);
+      expect(circle.cx).toBe(0);
+      expect(circle.cz).toBe(0);
+      expect(circle.y).toBe(DOME_PLANE[circle.kind].y);
+    }
+    expect(circles[0].r).toBeGreaterThan(0); // the project plane needs a rim the apex never had
+    const noElements = buildStrataTargets(tree.filter((n) => n.kind !== "element"));
+    expect(noElements.circles.map((c) => c.kind)).toEqual(["project", "domain", "capability"]);
+  });
+
+  it("is deterministic — the same vault draws the same picture", () => {
+    const first = buildStrataTargets(tree);
+    const second = buildStrataTargets([...tree].reverse());
+    for (const node of tree) {
+      expect(second.coords.get(node.id)).toEqual(first.coords.get(node.id));
+    }
+  });
+
+  it("interleaves a crowded parent's children on two radii rather than fusing them on one", () => {
+    const crowded: DomeInputNode[] = [
+      { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+      { id: "d", kind: "domain", x: 0, y: 0, parentId: "p" },
+      ...Array.from({ length: 12 }, (_, i) => ({
+        id: `c-${i}`,
+        kind: "capability" as const,
+        x: 0,
+        y: 0,
+        parentId: "d",
+      })),
+    ];
+    const { coords } = buildStrataTargets(crowded);
+    const radii = new Set(
+      Array.from({ length: 12 }, (_, i) => radius(coords.get(`c-${i}`)!).toFixed(6)),
+    );
+    expect(radii.size).toBe(2);
+  });
+
+  it("orders siblings by the barycenter of their relations, so dependency arcs stop crossing", () => {
+    /*
+     * Two domains, two capabilities each, and one relation from each capability
+     * on the left to its counterpart on the right. In id order the two arcs
+     * interleave and cross exactly once; the barycenter sweep swaps the left
+     * pair inside its own sector — it never leaves that sector — and the arcs
+     * nest instead. This is the one-sided crossing reduction of the Sugiyama
+     * framework with a circular key (Bachmaier, IEEE TVCG 13(3), 2007).
+     */
+    const pair: DomeInputNode[] = [
+      { id: "p", kind: "project", x: 0, y: 0, parentId: null },
+      { id: "d-a", kind: "domain", x: 0, y: 0, parentId: "p" },
+      { id: "d-b", kind: "domain", x: 0, y: 0, parentId: "p" },
+      { id: "c-a1", kind: "capability", x: 0, y: 0, parentId: "d-a" },
+      { id: "c-a2", kind: "capability", x: 0, y: 0, parentId: "d-a" },
+      { id: "c-b1", kind: "capability", x: 0, y: 0, parentId: "d-b" },
+      { id: "c-b2", kind: "capability", x: 0, y: 0, parentId: "d-b" },
+    ];
+    const relations = [
+      { sourceId: "c-a1", targetId: "c-b1" },
+      { sourceId: "c-a2", targetId: "c-b2" },
+    ];
+    /** Do the two relation chords cross, seen from above? */
+    const crosses = (coords: ReadonlyMap<string, DomeCoord>): boolean => {
+      const side = (p: DomeCoord, q: DomeCoord, r: DomeCoord) =>
+        Math.sign((q.px - p.px) * (r.pz - p.pz) - (q.pz - p.pz) * (r.px - p.px));
+      const [e1, e2] = relations.map((r) => [coords.get(r.sourceId)!, coords.get(r.targetId)!] as const);
+      return (
+        side(e1[0], e1[1], e2[0]) !== side(e1[0], e1[1], e2[1]) &&
+        side(e2[0], e2[1], e1[0]) !== side(e2[0], e2[1], e1[1])
+      );
+    };
+    expect(crosses(buildStrataTargets(pair).coords), "the id order is the crossing one").toBe(true);
+    expect(crosses(buildStrataTargets(pair, relations).coords)).toBe(false);
+    // …and the reorder stayed inside the sector: both capabilities are still on
+    // their own domain's side of the disc.
+    const { coords } = buildStrataTargets(pair, relations);
+    const arc = (id: string) =>
+      (Math.atan2(coords.get(id)!.pz, coords.get(id)!.px) + Math.PI / 2 + Math.PI * 4) % (Math.PI * 2);
+    expect(Math.max(arc("c-a1"), arc("c-a2"))).toBeLessThan(Math.min(arc("c-b1"), arc("c-b2")));
+  });
+
+  it("draws a containment drop straight — its control point is the chord's own midpoint", () => {
+    const model = buildDomeModel(tree, { arrangement: "strata" });
+    const control = domeEdgeControl(model, "d-a", "c-a1", "contains");
+    const a = model.coords.get("d-a")!;
+    const b = model.coords.get("c-a1")!;
+    expect(control).not.toBeNull();
+    expect(control!.px).toBeCloseTo((a.px + b.px) / 2, 12);
+    expect(control!.py).toBeCloseTo((a.py + b.py) / 2, 12);
+    expect(control!.pz).toBeCloseTo((a.pz + b.pz) / 2, 12);
+    // A dependency still rides the shell, exactly as on the cone.
+    const depends = domeEdgeControl(model, "c-a1", "c-b1", "depends");
+    expect(depends).not.toBeNull();
+    expect(Math.hypot(depends!.px, depends!.pz)).toBeGreaterThan(
+      Math.hypot((a.px + b.px) / 2, (a.pz + b.pz) / 2),
+    );
+    // The cone leaves containment on its 2D control point, as before.
+    const cone = buildDomeModel(tree, { arrangement: "ownership" });
+    expect(domeEdgeControl(cone, "d-a", "c-a1", "contains")).toBeNull();
+  });
+
+  it("gives its plane rings their own base opacity, and leaves the cone's bases on theirs", () => {
+    expect(domeRingAlphaFor("strata")).toBe(DOME_STRATA_RING_ALPHA);
+    // Below 1: at full ink the four ellipses read as the subject rather than as
+    // the stage (measured 2026-09-06 — see the constant's doc-block).
+    expect(DOME_STRATA_RING_ALPHA).toBeLessThan(1);
+    expect(domeRingAlphaFor("ownership")).toBe(DOME_RING_ALPHA);
+    expect(domeRingAlphaFor("coupling")).toBe(DOME_RING_ALPHA);
+  });
+
+  it("names its plane rings and leaves the cone's bases unnamed", () => {
+    const strata = buildDomeModel(tree, { arrangement: "strata" });
+    const runtime = createDomeRuntime(strata);
+    runtime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
+    updateDomeFrame(runtime, tree, () => 8);
+    const named = runtime.rings.filter((r) => r.label !== null);
+    expect(named.map((r) => r.kind)).toEqual(["project", "domain", "capability", "element"]);
+    for (const ring of named) {
+      // The anchor is the ring's screen-rightmost sample — stable under rotation.
+      expect(ring.label!.wx).toBe(Math.max(...ring.points.map((p) => p.wx)));
+    }
+    const coneRuntime = createDomeRuntime(buildDomeModel(tree, { arrangement: "ownership" }));
+    coneRuntime.rampClock = DOME_ASSEMBLE_TOTAL_MS;
+    updateDomeFrame(coneRuntime, tree, () => 8);
+    expect(coneRuntime.rings.every((r) => r.label === null)).toBe(true);
+  });
+});
+
+describe("domeEdgeFogAlpha x domeEdgeWidthFactor — 관계선의 깊이 잉크에 바닥을 둔다", () => {
+  /**
+   * The floor the two functions are tuned to, spelled out here rather than
+   * imported: 0.62 alpha x 0.72 width. The module keeps both numbers private, so
+   * this is the one place that states what they are supposed to multiply to, and
+   * it fails the moment either moves without the other.
+   */
+  const INK_FLOOR = 0.4464;
+  const ink = (u: number) => domeEdgeFogAlpha(u) * domeEdgeWidthFactor(u);
+
+  it("가까운 쪽은 한 픽셀도 바뀌지 않는다 — 생 램프의 곱이 이미 바닥 위다", () => {
+    for (const u of [0, 0.05, 0.1]) {
+      expect(domeEdgeFogAlpha(u)).toBeCloseTo(domeFogAlpha(u), 9);
+      expect(domeEdgeWidthFactor(u)).toBeCloseTo(domeLineWidthFactor(u), 9);
+    }
+  });
+
+  it("깊이 어디에서도 잉크가 바닥 아래로 내려가지 않는다", () => {
+    for (let u = 0; u <= 1.0001; u += 0.05) {
+      expect(ink(u)).toBeGreaterThanOrEqual(INK_FLOOR - 1e-9);
+    }
+    // Before the floor the far end drew at 0.09 x 0.35 = 3.5% of the near end's
+    // ink, and the owner's report was that the relations were invisible there.
+    expect(domeFogAlpha(1) * domeLineWidthFactor(1)).toBeLessThan(0.04);
+    expect(ink(1) / ink(0)).toBeGreaterThan(0.4);
+  });
+
+  it("잉크는 깊이에 따라 단조 감소하고, 근거리 값을 절대 넘지 않는다", () => {
+    /*
+     * The invariant is on the **product**, not on either factor. Past the
+     * crossover the two trade against each other at a fixed total — the alpha
+     * rises exactly as fast as the width falls — so asserting a falling alpha
+     * would be asserting the wrong thing, while a rising product would mean a far
+     * line drawn stronger than a near one.
+     */
+    let previous = Infinity;
+    for (let u = 0; u <= 1.0001; u += 0.05) {
+      const value = ink(u);
+      expect(value).toBeLessThanOrEqual(ink(0) + 1e-9);
+      expect(value).toBeLessThanOrEqual(previous + 1e-9);
+      expect(domeEdgeFogAlpha(u)).toBeLessThanOrEqual(1);
+      previous = value;
+    }
+    // The width keeps a real falloff of its own rather than going flat.
+    expect(domeEdgeWidthFactor(1)).toBeLessThan(domeEdgeWidthFactor(0));
+  });
+
+  it("노드와 링의 램프는 손대지 않는다 — 바닥은 관계선 전용이다", () => {
+    // `domeFogAlpha` and `domeLineWidthFactor` are what the node fill, the rim and
+    // the plane rings read; only the edge pass reads the floored pair.
+    expect(domeFogAlpha(1)).toBeCloseTo(0.09, 9);
+    expect(domeLineWidthFactor(1)).toBeCloseTo(0.35, 9);
+    expect(domeFogAlpha(0.8)).toBeLessThan(domeEdgeFogAlpha(0.8));
   });
 });

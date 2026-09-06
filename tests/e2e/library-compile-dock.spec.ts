@@ -210,7 +210,47 @@ test.describe("Compile opens the agent dock", () => {
     await expect(page.getByTestId("library-compile")).toBeEnabled();
     // Four sources, none written up, so the chip has work to do and says so.
     await expect(page.getByTestId("library-needs-compile")).toContainText("4");
-    // And what leaves this computer is stated beside the button that starts it.
+    /*
+     * And what leaves this computer is stated beside the button that starts it — on the
+     * shelf, which is where Compile's own brain picker stands.
+     *
+     * It used to be read from the index column. The sentence moved on 2026-09-06 when
+     * step two grew a brain picker and the disclosure had to answer the control above it;
+     * exactly one surface prints it, and which one depends on whether the shelf is drawn.
+     * The move shipped broken for one commit — the shelf printed it only while the picker
+     * was drawn, so a machine with a single brain showed it **nowhere** — which is why the
+     * next case pins the other half rather than trusting that this one covers both.
+     *
+     * ⚠️ **"The shelf is drawn" now means the popup is open.** Later the same day the pane
+     * became the graph and the shelf became a `Surface` raised by a chip, so "nothing is
+     * selected" stopped implying the steps are on screen. The condition the screen uses is
+     * the popup's own openness, and so is this case's: it presses the chip first, which is
+     * the state a person is in when they can see step two at all.
+     */
+    await page.getByTestId("library-shelf-open").click();
+    await expect(page.getByTestId("library-shelf-popover")).toBeVisible();
+    await expect(page.getByTestId("library-stage-transfer")).toContainText("llm-audit.jsonl");
+    await expect(page.getByTestId("library-transfer")).toHaveCount(0);
+  });
+
+  test("the disclosure follows the reader: the index takes it over once the shelf is gone", async ({
+    page,
+  }) => {
+    await openFolder(page);
+    /*
+     * Closing the shelf hands the sentence to the column, and so does opening a document.
+     * Both are pinned here, because between them they are every moment step two is not on
+     * screen — and losing the sentence in either is the regression this exists for: the
+     * person is one press away from Compile in the index column the whole time.
+     */
+    await page.getByTestId("library-shelf-open").click();
+    await expect(page.getByTestId("library-stage-transfer")).toBeVisible();
+    await page.getByTestId("library-shelf-close").click();
+    await expect(page.getByTestId("library-stage-transfer")).toHaveCount(0);
+    await expect(page.getByTestId("library-transfer")).toContainText("llm-audit.jsonl");
+
+    await page.getByTestId("library-source-sources/architecture.docx").click();
+    await expect(page.getByTestId("library-stage")).toHaveCount(0);
     await expect(page.getByTestId("library-transfer")).toContainText("llm-audit.jsonl");
   });
 

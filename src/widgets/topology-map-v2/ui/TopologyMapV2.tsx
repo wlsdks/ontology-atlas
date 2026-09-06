@@ -5,9 +5,12 @@ import { Orbit } from "lucide-react";
 import { MAP_CANVAS_SURFACE_ROLE } from "@/shared/lib/focus-map-canvas";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { useTopologyLoop } from "./use-topology-loop";
+import { TopologyV2TierLegend } from "./TopologyV2TierLegend";
+import type { TierLegendAnchor } from "../model/tier-legend-rows";
 import type { TierRevealConfig } from "../model/tier-visibility";
 import type { TopologyMapLensKind } from "../model/path-lens";
 import type { ClusterBarLabels } from "../render/cluster-chips";
+import type { DomeViewKind } from "../model/dome-view";
 import { DEFAULT_EXPAND, DEFAULT_MAP_ARRANGEMENT } from "@/shared/lib/appearance-preferences";
 import type { CanvasBackground, ExpandPreference, FootprintPreference, GlyphSet, MapArrangement } from "@/shared/lib/appearance-preferences";
 import { controlClass } from '@/shared/ui/control-class';
@@ -245,6 +248,8 @@ export interface TopologyMapV2Props {
    * catches a broken wiring.
    */
   clusterBarLabels?: ClusterBarLabels | null;
+  /** Translated kind names, written at the rim of each Strata plane ring. */
+  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
   /**
    * H3 P2 — the canvas accessibility label (i18n, injected by HomePage). A canvas
    * is painted pixels and reads to a screen reader as an empty graphic, so
@@ -399,7 +404,7 @@ export interface TopologyMapV2Props {
 }
 
 export function TopologyMapV2(props: TopologyMapV2Props) {
-  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
+  const { nodes, edges, focus, minimal, emphasizedNeighborSlug, dataSourceKey = null, overviewFit = "spine", fitViewToken, growthReplayToken = 0, spotlightFitToken = 0, relayoutToken, revealToken, onSelectEdge, onSelect, onPaneClick, onVisibleCountChange, onGraphStatsChange, onDrawnCountChange, onZoomTierChange, onContextMenuNode, onContextMenuPane, agentFocusNodeId, spotlightIds = null, mapLensKind = "recent", pathEdgeIds = null, onHoverEdge, selectedEdge = null, previewEdge = null, expandedParents, onToggleCluster, onHoverCluster, clusterHint, realmRootId = null, onEnterRealm, realmEnterLabel, realmEnterTooltip, realmCaption = null, clusterBarLabels = null, domeTierLabels = null, canvasLabel, walkNoticeLabel, visitedTrail, trailLensActiveRef, trailHoverNodeIdRef, panelHoverNodeIdRef, tierReveal, tourAnchorNodeId = null, tourAnchorRef, overlayOpen = false, glyphSet = "geometric", canvasBackground = "dot", view3d = false, mapArrangement = DEFAULT_MAP_ARRANGEMENT, detailPanelVisible = false, footprint = null, expand = DEFAULT_EXPAND, wheelIntent = "zoom", ambientSleepDelayMs, onWalkDeadEnd = null } = props;
 
   const realmEnterButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -502,7 +507,23 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
     [],
   );
 
-  const { canvasRef, containerRef, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
+  /*
+   * ── Strata's tier-name rail ────────────────────────────────────────────────
+   *
+   * The four plane heights, as the frame last projected them, and whether the
+   * rail could place its rows in the band it has. While it can, the canvas draws
+   * no rim names (`domeTierLabels` goes in as null) — the rail and the rims are
+   * the same legend and only one of them is ever on. `TopologyV2TierLegend` owns
+   * the reasoning; this is the wiring.
+   */
+  const [tierAnchors, setTierAnchors] = useState<readonly TierLegendAnchor[] | null>(null);
+  const [tierLegendFits, setTierLegendFits] = useState(true);
+  const handleTierAnchors = useCallback((next: readonly TierLegendAnchor[] | null) => {
+    setTierAnchors(next);
+  }, []);
+  const tierLegendActive = view3d && mapArrangement === "strata" && tierAnchors !== null && domeTierLabels !== null;
+
+  const { canvasRef, containerRef, raiseDomeTier, handlePointerDown, handlePointerMove, handlePointerUp, handlePointerCancel, handleContextMenu, handleKeyDown } =
     useTopologyLoop({
       nodes,
       edges,
@@ -543,6 +564,9 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
       realmEnterButtonRef,
       realmCaption,
       clusterBarLabels,
+      // The rim names are the fallback, not the default — see `tierLegendActive`.
+      domeTierLabels: tierLegendActive && tierLegendFits ? null : domeTierLabels,
+      onDomeTierAnchorsChange: handleTierAnchors,
       visitedTrail,
       trailLensActiveRef,
       trailHoverNodeIdRef,
@@ -707,6 +731,14 @@ export function TopologyMapV2(props: TopologyMapV2Props) {
             </span>
           ) : null}
         </button>
+      ) : null}
+      {tierLegendActive && !detailPanelVisible ? (
+        <TopologyV2TierLegend
+          anchors={tierAnchors!}
+          labels={domeTierLabels!}
+          onRaise={raiseDomeTier}
+          onFitChange={setTierLegendFits}
+        />
       ) : null}
       {/* The guided tour's canvas node anchor (steps 2 and 4) — the same projection
           technique as the realm button (the loop refreshes the transform and

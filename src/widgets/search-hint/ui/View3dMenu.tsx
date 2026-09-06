@@ -48,10 +48,17 @@ import {
  * code's words is normal; putting the code's words on screen is the accident.
  */
 
-/** One row of the list — flat (2D) plus the two 3D arrangements. */
+/** One row of the list — flat (2D) plus the three 3D arrangements. */
 type View3dChoice = 'flat' | MapArrangement;
 
-const CHOICES: readonly View3dChoice[] = ['flat', 'ownership', 'coupling'];
+/*
+ * Cone before Strata before Cloud. The order is how far each moves from the flat
+ * map above it: Cone and Strata both draw containment (Cone as nested shapes,
+ * Strata as stacked levels) and Cloud drops containment altogether, so reading
+ * down the list is one continuous step away from the default rather than a jump
+ * out and back.
+ */
+const CHOICES: readonly View3dChoice[] = ['flat', 'ownership', 'strata', 'coupling'];
 
 export function View3dMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useTranslations('searchWidgets.hint');

@@ -1057,11 +1057,13 @@
       "view3dChoice": {
         "flat": "평면",
         "ownership": "원뿔",
+        "strata": "층",
         "coupling": "구름"
       },
       "view3dChoiceHint": {
         "flat": "보통의 2D 지도",
         "ownership": "담긴 구조대로 원뿔이 층층이 매달린 모양",
+        "strata": "같은 담김 구조를 층으로 나눠 읽는 모양",
         "coupling": "관계가 가까운 것끼리 모인 모양"
       },
       "view3dLabel": "3D",
@@ -4383,7 +4385,6 @@
     "lede": "형식을 가리지 않고 모아 둔 문서와, 그 문서를 읽고 쓴 위키 문서가 여기 있습니다. 원문은 온 그대로 남고, 위키 문서의 문장은 저마다 원문을 인용합니다.",
     "emptyTitle": "아직 모아 둔 것이 없습니다",
     "emptyBody": "이미 갖고 있는 문서를 넣으세요. 기획서, 발표 자료, 표, 내려받아 둔 페이지 무엇이든 됩니다. sources/ 로 그대로 복사할 뿐, 부르기 전에는 열지 않습니다.",
-    "readerEmpty": "왼쪽에서 원문이나 위키 문서를 고르면 여기서 읽습니다.",
     "sources": {
       "header": "원문 · {count}",
       "listAria": "이 폴더의 원문 파일",
@@ -4457,7 +4458,6 @@
       "offTemplateTitle": "이 문서는 위키 서식에 맞지 않습니다",
       "offTemplateBody": "그래도 문서이고 그대로 고칠 수 있습니다. 아래를 고치면 다른 문서와 같은 방식으로 읽힙니다. `ontology-atlas wiki-validate` 와 `validate_wiki` 도구가 같은 코드를 알려 줍니다.",
       "writtenBy": "쓴이 {author}",
-      "builtFrom": "바탕이 된 원문",
       "writer": {
         "human": "사람",
         "agent": "{name}(AI)",
@@ -4466,7 +4466,29 @@
       "status": {
         "draft": "초안",
         "reviewed": "검토됨"
-      }
+      },
+      "viewOriginal": "원본 보기",
+      "viewOriginalOne": "원본 보기: {name}",
+      "originalMissing": "{name} 을(를) 인용하지만 이 폴더에는 없습니다.",
+      "compileCreateFile": "{path} 만들기",
+      "compileModifyFile": "{path} 바꾸기"
+    },
+    "graph": {
+      "title": "그래프",
+      "counts": "원문 {sources}개 · 위키 문서 {pages}개 · 개념 {concepts}개 · 인용 {cites} · 언급 {mentions}",
+      "empty": "아직 그릴 것이 없습니다. 「정리 시작」이 문서를 한 편 쓰고 나면, 그 문서가 어떤 원문에서 나왔고 어떤 개념을 부르는지 여기 그려집니다.",
+      "canvasAria": "자료실 그래프: 원문과 위키 문서, 그리고 그 문서가 부르는 개념.",
+      "legend": "채운 원은 위키 문서, 네모는 원문, 고리는 지도 위의 개념입니다. 굵은 선은 인용, 점선은 언급입니다. 점을 가리키면 이름이 나오고, 누르면 열립니다.",
+      "keys": "화살표 키로 점 사이를 옮기고, Enter 로 열고, Esc 로 빠져나옵니다.",
+      "announce": "{kind} {name}, {total}개 중 {position}번째. Enter 를 누르면 {action}.",
+      "kind": {
+        "page": "위키 문서",
+        "source": "원문",
+        "concept": "개념"
+      },
+      "actionSelect": "여기서 엽니다",
+      "actionMap": "지도에서 엽니다",
+      "openOnMap": "지도에서 열기"
     },
     "find": {
       "title": "허락한 폴더 안의 문서",
@@ -4492,19 +4514,108 @@
       "state": "상태",
       "hash": "sha256",
       "hashUnmeasured": "재지 않았습니다. 아직 이 파일을 해시와 함께 인용한 문서가 없습니다",
-      "citedBy": "인용한 문서",
       "citedByNobody": "아직 없습니다",
       "neverOpened": "Atlas 는 이 파일을 연 적이 없습니다. 아래는 모두 폴더 목록에서 읽었거나, 어떤 문서가 해시를 적어 두어 그것만 재어 본 값입니다.",
       "reveal": "Finder 에서 보기",
-      "download": "사본 열기"
+      "download": "사본 열기",
+      "viewWriteUp": "정리본 보기",
+      "writeUp": {
+        "current": "지금 내용",
+        "behind": "뒤처짐",
+        "unchecked": "확인 전"
+      }
     },
-    "readerSourceHint": "원문은 온 그대로 두므로 여기서 그려 낼 것이 없습니다. 폴더가 이미 아는 사실만 적습니다.",
-    "readerNoWikiTitle": "아직 정리한 문서가 없습니다",
-    "readerNoWikiBody": "원문 {count}개가 기다리고 있습니다. 「정리 시작」은 그 원문을 읽고 문서를 한 편씩 초안으로 쓰는 에이전트 턴을 한 번 띄웁니다. 쓰기는 저장 전에 모두 허락 카드에서 멈춥니다.",
     "kindsAria": "이 폴더가 두는 것",
     "kindSourcesTitle": "원문",
     "kindSourcesBody": "온 그대로의 파일입니다. 형식을 가리지 않고, 한 바이트도 고치지 않고, 열어 보지도 않습니다.",
     "kindWikiTitle": "위키",
-    "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다."
+    "kindWikiBody": "원문 하나에 문서 한 편, 같은 서식으로. 문장마다 바탕이 된 파일을 인용합니다.",
+    "stage": {
+      "title": "모으고, 정리하고, 읽습니다",
+      "lede": "일이 일어나는 순서대로 세 단계입니다. 아래 숫자는 모두 이 폴더의 파일을 세어 나온 값이라, Finder 에서 그대로 확인할 수 있습니다.",
+      "state": {
+        "done": "끝남",
+        "next": "다음",
+        "waiting": "차례 전"
+      },
+      "none": "없음",
+      "formatEntry": "{format} {count}",
+      "gather": {
+        "title": "모으기",
+        "body": "이 프로젝트가 이미 갖고 있는 문서를 형식을 가리지 않고 넣습니다. sources/ 로 그대로 복사할 뿐, 부르기 전에는 열지 않습니다.",
+        "sourcesLabel": "원문",
+        "formatsLabel": "형식",
+        "lastLabel": "마지막으로 넣은 날",
+        "candidatesLabel": "제안받은 후보",
+        "candidatesUnknown": "아직 찾아본 적 없음"
+      },
+      "compile": {
+        "title": "정리",
+        "body": "에이전트 턴 한 번이 원문을 읽고 파일마다 위키 문서를 씁니다. 서식은 wiki/_template.md 그대로이고, 쓰기는 모두 허락 카드에서 멈춥니다.",
+        "waitingLabel": "기다리는 파일",
+        "staleLabel": "원문이 달라진 문서",
+        "brainLabel": "쓰는 쪽"
+      },
+      "read": {
+        "title": "읽기",
+        "body": "위키 문서는 kind: 가 없는 마크다운이라 온톨로지에는 그려지지 않습니다. 문장마다 나온 파일을 인용하고, 문서에서 그 파일을 바로 엽니다.",
+        "pagesLabel": "위키 문서",
+        "coveredLabel": "정리된 원문",
+        "coveredValue": "{total}개 중 {compiled}개",
+        "offTemplateLabel": "서식 밖",
+        "startWith": "{title} 부터 읽기",
+        "nothingYet": "아직 위키 문서가 없습니다. 정리를 시작하면 첫 문서가 만들어집니다."
+      },
+      "brainAgent": "{name}",
+      "brainLocal": "{model} · {host}",
+      "brainNone": "아직 아무것도 연결하지 않음",
+      "transferLocal": "이 컴퓨터 밖으로 나가는 건 없어요. 읽은 파일의 내용은 이 컴퓨터의 {host} 로 가고, {file} 이 모든 요청을 기록해요.",
+      "blockedWeb": "정리하려면 이 컴퓨터에서 도는 코딩 에이전트가 필요하고, 그건 앱만 띄울 수 있습니다.",
+      "blockedChecking": "이 컴퓨터에서 쓸 수 있는 코딩 에이전트를 아직 찾는 중입니다.",
+      "blockedLocalRemote": "이 폴더에 저장된 러너는 {host} 라서 이 컴퓨터가 아니에요. 컴파일은 문서 내용을 보내기 때문에 이 컴퓨터에 있는 러너에서만 돌아가요. 설정 → AI 연결에서 주소를 바꿔 주세요.",
+      "blockedLocalFormats": "{model} 은 Markdown, 일반 텍스트, CSV, JSON, HTML 을 읽어요. 지금 남아 있는 파일은 {formats} 라서, 자기 리더를 가진 코딩 에이전트가 필요해요.",
+      "blockedNoAgent": "확인된 코딩 에이전트가 이 컴퓨터에 없고, 저장해 둔 로컬 모델 주소도 없습니다. 로컬 주소는 설정의 AI 연결에 넣습니다.",
+      "blockedNoSources": "아직 정리할 것이 없습니다. 문서는 1번에서 들어옵니다.",
+      "blockedNothingWaiting": "모든 원문이 지금 내용과 맞는 정리본을 갖고 있습니다.",
+      "transferLocalRemote": "여기 저장된 러너는 {host} 라서 이 컴퓨터가 아니고, 그래서 컴파일은 돌지 않아요. 돌면 문서 내용이 그리로 가니까요. Atlas 가 실제로 보내는 요청은 {file} 에 남아요.",
+      "open": "다음 할 일",
+      "close": "닫기",
+      "status": "{step} {state}",
+      "statusWaiting": "{count}개 기다림",
+      "statusOffTemplate": "서식 벗어남 {count}개"
+    },
+    "localCompile": {
+      "title": "쓸 준비가 됐어요",
+      "running": "파일을 읽고 문서를 쓰는 중이에요. 아직 저장된 건 없어요.",
+      "runningWith": "{model} 이 파일 {count}개를 읽는 중이에요.",
+      "stop": "중지",
+      "sectionsLabel": "절",
+      "sectionEntry": "{name} {count}",
+      "citationsLabel": "출처 표기",
+      "readLabel": "읽은 원문",
+      "truncatedLabel": "일부만 읽음",
+      "unreadableLabel": "읽지 못함",
+      "unreadableEntry": "{path} · {reason}",
+      "reason": {
+        "needs-a-parser": "Atlas 가 갖고 있지 않은 리더가 필요한 형식이에요",
+        "unknown-format": "Atlas 가 텍스트로 읽지 못하는 형식이에요",
+        "not-in-this-folder": "이 폴더에 없어요",
+        "path-refused": "sources/ 아래 경로가 아니에요",
+        "unreadable": "파일을 열지 못했어요",
+        "hash-unavailable": "이 컴퓨터가 sha256 을 재지 못했어요"
+      },
+      "replaces": "이미 있는 문서를 대체해요",
+      "refusedTitle": "쓰지 않음: 템플릿에 맞지 않아요",
+      "refusedLede": "이 문서는 아무것도 제안하지 않아요. 다시 컴파일하거나 직접 쓰면 돼요.",
+      "allow": "한 번 허용",
+      "allowCount": "한 번 허용 ({count})",
+      "deny": "안 할래요",
+      "dismiss": "닫기",
+      "applying": "쓰는 중…",
+      "written": "썼어요: {paths}",
+      "failed": "아무것도 쓰지 않았어요. {reason}",
+      "noSnapshot": "여기서는 저장 지점을 만들지 않아요. 변경은 폴더와 Git 에 그대로 남아요.",
+      "nothing": "문서를 제안하지 않고 끝났어요."
+    }
   }
 }

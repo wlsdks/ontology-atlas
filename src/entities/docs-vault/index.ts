@@ -36,8 +36,21 @@ export type {
   VaultStampIndex,
 } from './lib/build-local-manifest';
 export { VAULT_SOURCES_DIR } from './lib/build-local-manifest';
-export { buildLibraryModel, formatSourceBytes, isWikiPage } from './lib/vault-library';
-export type { LibraryModel, LibrarySourceRow, LibraryWikiPage } from './lib/vault-library';
+export {
+  buildLibraryModel,
+  countSourceFormats,
+  formatSourceBytes,
+  isWikiPage,
+  lastSourceAddedAt,
+  newestWikiPage,
+} from './lib/vault-library';
+export type {
+  LibraryModel,
+  LibraryOriginalLink,
+  LibrarySourceRow,
+  LibraryWikiPage,
+  LibraryWriteUpLink,
+} from './lib/vault-library';
 export { candidateKey, discoverCandidatesInHandle } from './lib/source-discovery';
 export type { SourceCandidate, SourceDiscoveryReport } from './lib/source-discovery';
 export {

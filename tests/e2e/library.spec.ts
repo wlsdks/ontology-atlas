@@ -117,9 +117,12 @@ const VAULT = {
  * past first — the destination has no sample state, because a library of somebody else's
  * documents is not a demo of anything.
  */
-async function openLibrary(page: import("@playwright/test").Page) {
+async function openLibrary(
+  page: import("@playwright/test").Page,
+  vault: Record<string, string> = VAULT,
+) {
   await seedFirstRunSeen(page);
-  await stubDirectoryPicker(page, VAULT);
+  await stubDirectoryPicker(page, vault);
   await page.goto("/en/library/");
   await page.waitForLoadState("networkidle");
   // The stage is drawn only after the IndexedDB handle restore has decided there is no
@@ -227,9 +230,28 @@ test.describe("the Library destination", () => {
     await expect(summary).toContainText("quarter-plan.pdf");
     await expect(summary).toContainText("sources/quarter-plan.pdf");
     await expect(summary).toContainText("PDF");
-    // The page that cites it, and the one door: a browser cannot reveal in Finder, so it
-    // offers the bytes instead.
-    await expect(summary).toContainText("wiki/quarter-plan");
+    /*
+     * **Which page cites it, and whether that page still describes these bytes.**
+     *
+     * Until 2026-09-06 this pane listed the citing pages as slugs inside a `Cited by`
+     * fact row, and the assertion read `wiki/quarter-plan` out of the pane's text. The
+     * fact did not leave: it became a pressable row under `View write-up`, carrying the
+     * page's title — the name every other surface in this product uses for a page — and
+     * one word for how it stands to the file. The slug is still the row's `title`, so
+     * the address a person can copy did not go with the old spelling.
+     *
+     * This fixture's page records a 64-zero `source_hash`, which the frontmatter parser
+     * types as a number rather than a string, so no usable hash reaches the model: the
+     * source reads `stale` and its write-up reads `behind`, which are the same fact said
+     * from the two ends. Asserting both is what would catch them drifting apart.
+     */
+    const writeUp = page.getByTestId("library-source-writeup-wiki/quarter-plan");
+    await expect(writeUp).toBeVisible();
+    await expect(writeUp).toContainText("Quarter plan");
+    await expect(writeUp).toContainText("behind");
+    await expect(writeUp).toHaveAttribute("title", "wiki/quarter-plan");
+    await expect(summary).toContainText("stale");
+    // The one door: a browser cannot reveal in Finder, so it offers the bytes instead.
     await expect(page.getByTestId("library-source-open")).toBeVisible();
   });
 
@@ -267,3 +289,240 @@ test.describe("the Library destination", () => {
     await expect(page.getByTestId("library-source-list")).toContainText("not compiled");
   });
 });
+
+
+/**
+ * **The pane is the graph, and the guide is a popup over it.**
+ *
+ * The owner opened the installed app on 2026-09-06 — two sources, two pages a local
+ * `qwen3:8b` had compiled — and read the screen as two half-screens: the graph as a strip
+ * on top and the three-step shelf stacked under it. *"Shouldn't the Library tab's default
+ * be the graph? Why is the area split above and below? The area underneath should come up
+ * as a popup."* (`docs/DECISIONS.md`, 2026-09-06.)
+ *
+ * These cases hold the four things that shape has to keep true, and every one of them was
+ * a real state of the old build rather than a hypothetical:
+ *
+ * 1. the picture is the default and fills the pane — not a band with a shelf beneath it;
+ * 2. the shelf is one press away and comes back with its three steps intact;
+ * 3. it raises **itself** only over a folder with nothing in it, and a person's own press
+ *    settles it either way for the session — a guide that reappears every visit is the
+ *    spent answer the shelf itself was written to replace;
+ * 4. choosing a file still swaps the pane for the reader, and the way back returns the
+ *    picture rather than a blank column.
+ *
+ * The narrow bands stay in the list because the whole rule is "the same at every width":
+ * below `lg` the graph takes the top of the column, the index keeps the bottom, and the
+ * popup hangs from the row so it is not cut to half a phone.
+ */
+const NO_SOURCE_VAULT: Record<string, string> = {
+  "project.md": ["---", "kind: project", "slug: empty-demo", "title: Empty demo", "---", "", "# Empty demo", ""].join("\n"),
+};
+
+test.describe("the Library pane", () => {
+  test("opens on the graph, with the shelf behind one chip", async ({ page }) => {
+    await openLibrary(page);
+
+    // 1 — the picture, not a strip: it is drawn, and it is most of the pane's height.
+    const canvas = page.getByTestId("library-graph-canvas");
+    await expect(canvas).toBeVisible();
+    const readerBox = (await page.getByTestId("library-reader").boundingBox())!;
+    const canvasBox = (await canvas.boundingBox())!;
+    expect(canvasBox.height).toBeGreaterThan(readerBox.height * 0.6);
+
+    /*
+     * Small enough to hold them, so every mark wears its name. The attribute is the
+     * canvas's own account of which policy is in force — there is no DOM to read a
+     * painted name out of, so without it the rule would be unfalsifiable.
+     */
+    await expect(canvas).toHaveAttribute("data-labels", "standing");
+
+    // The shelf's verdict stayed behind on the header when its copy left for the popup.
+    const strip = page.getByTestId("library-status-strip");
+    await expect(strip).toContainText("Gather done");
+    await expect(strip).toContainText("Compile next");
+
+    // 2 — one press away, and nothing was auto-raised over a folder that has files.
+    await expect(page.getByTestId("library-shelf-popover")).toHaveCount(0);
+    await page.getByTestId("library-shelf-open").click();
+    const shelf = page.getByTestId("library-shelf-popover");
+    await expect(shelf).toBeVisible();
+    for (const step of ["gather", "compile", "read"]) {
+      await expect(shelf.getByTestId(`library-stage-${step}`)).toBeVisible();
+    }
+    /*
+     * Equal height survived the move into a 560px panel. The tolerance is 2px, not 0:
+     * `auto-rows-fr` distributes a fractional remainder, and the dev server and the static
+     * export round it differently (measured 1.33px apart). What this case exists to catch
+     * is a height decided by copy length, which differs by tens of pixels.
+     */
+    const heights = [];
+    for (const step of ["gather", "compile", "read"]) {
+      heights.push((await shelf.getByTestId(`library-stage-${step}`).boundingBox())!.height);
+    }
+    for (const height of heights) expect(Math.abs(height - heights[0]!)).toBeLessThanOrEqual(2);
+    // It is a popover, never a modal: the picture behind it stays in the accessibility
+    // tree and stays visible, which is the whole reason "1 waiting" is readable here.
+    await expect(canvas).toBeVisible();
+    expect((await shelf.boundingBox())!.width).toBeLessThanOrEqual(560);
+
+    // Escape closes it and hands focus back to the chip that opened it.
+    await page.keyboard.press("Escape");
+    await expect(shelf).toHaveCount(0);
+    await expect(page.getByTestId("library-shelf-open")).toBeFocused();
+  });
+
+  test("raises itself over a folder with no sources, and only until it is answered", async ({
+    page,
+  }) => {
+    await openLibrary(page, NO_SOURCE_VAULT);
+
+    // The one state where there is nothing else to look at.
+    const shelf = page.getByTestId("library-shelf-popover");
+    await expect(shelf).toBeVisible();
+    await expect(shelf.getByTestId("library-stage-gather")).toContainText("next");
+
+    // Closing it is an answer, and the answer holds: re-rendering the pane by opening and
+    // closing something else must not raise it again.
+    await page.getByTestId("library-shelf-close").click();
+    await expect(shelf).toHaveCount(0);
+    await page.getByTestId("library-shelf-open").click();
+    await expect(shelf).toBeVisible();
+    await page.getByTestId("library-shelf-close").click();
+    await expect(shelf).toHaveCount(0);
+  });
+
+  test("choosing a file swaps the pane for the reader, and the way back returns the graph", async ({
+    page,
+  }) => {
+    await openLibrary(page);
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+
+    await page.getByTestId("library-wiki-wiki/quarter-plan").click();
+    await expect(page.getByTestId("library-wiki-header")).toContainText("Quarter plan");
+    // The canvas stands aside rather than unmounting — it keeps its settled positions.
+    await expect(page.getByTestId("library-graph-canvas")).toBeHidden();
+
+    await page.getByTestId("library-reader-back").click();
+    await expect(page.getByTestId("library-graph-canvas")).toBeVisible();
+    await expect(page.getByTestId("library-wiki-header")).toHaveCount(0);
+  });
+});
+
+const NARROW_VIEWPORTS = [
+  { label: "390×844", width: 390, height: 844 },
+  { label: "768×1024", width: 768, height: 1024 },
+] as const;
+
+/**
+ * The same rule below `lg`, where the column is one thing at a time.
+ *
+ * The folder here is its own fixture with **enough files to overflow both lists**, because
+ * the index's scroll model changes at this width — the two lists shared half a phone and
+ * measured 30px and **zero**, so the index scrolls as one box and the lists stand at their
+ * natural height. A scroller with nothing to scroll cannot fail that assertion.
+ */
+const NARROW_VAULT: Record<string, string> = {
+  "project.md": ["---", "kind: project", "slug: narrow-demo", "title: Narrow demo", "---", "", "# Narrow demo", ""].join("\n"),
+  ...Object.fromEntries(
+    Array.from({ length: 12 }, (_, index) => [
+      `sources/report-${String(index + 1).padStart(2, "0")}.pdf`,
+      `%PDF-1.7 report ${index + 1}\n`,
+    ]),
+  ),
+  ...Object.fromEntries(
+    Array.from({ length: 8 }, (_, index) => [
+      `wiki/note-${String(index + 1).padStart(2, "0")}.md`,
+      [
+        "---",
+        `title: Note ${index + 1}`,
+        "created_by: human",
+        "compiled_at: 2026-09-05T10:00:00Z",
+        "sources: []",
+        "source_hash: {}",
+        "status: draft",
+        `summary: Note ${index + 1}.`,
+        "---",
+        "",
+        "## Summary",
+        "",
+        `Note ${index + 1}.`,
+        "",
+        "## Facts",
+        "",
+        "## Decisions",
+        "",
+        "## Open questions",
+        "",
+        "## Not in sources",
+        "",
+      ].join("\n"),
+    ]),
+  ),
+};
+
+for (const viewport of NARROW_VIEWPORTS) {
+  test(`the graph takes the top of the column at ${viewport.label}`, async ({ page }) => {
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await openLibrary(page, NARROW_VAULT);
+
+    // 1 — the picture is drawn here too. It used not to be: the pane holding it was
+    // hidden whenever nothing was chosen, so a phone got two lists and nothing else.
+    const canvas = page.getByTestId("library-graph-canvas");
+    await expect(canvas).toBeVisible();
+    const canvasBox = (await canvas.boundingBox())!;
+    const indexBox = (await page.getByTestId("library-index").boundingBox())!;
+    expect(canvasBox.y).toBeLessThan(indexBox.y);
+    /*
+     * Height, not width: the canvas is cut to the **picture's** width so a uniform fit
+     * leaves no gutters, and a folder of unconnected files settles into a squarer cloud
+     * than a tall column. What has to be true here is that the graph really took the top
+     * of the column rather than a strip of it.
+     */
+    const readerBox = (await page.getByTestId("library-reader").boundingBox())!;
+    expect(canvasBox.height).toBeGreaterThan(readerBox.height * 0.6);
+
+    // 2 — the popup hangs from the row, so it is not cut to the graph's half.
+    await page.getByTestId("library-shelf-open").click();
+    const shelf = page.getByTestId("library-shelf-popover");
+    await expect(shelf).toBeVisible();
+    const shelfBox = (await shelf.boundingBox())!;
+    expect(shelfBox.height).toBeGreaterThan(canvasBox.height);
+    for (const step of ["gather", "compile", "read"]) {
+      await expect(shelf.getByTestId(`library-stage-${step}`)).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+    await expect(shelf).toHaveCount(0);
+
+    // 3 — the index still owns its own overflow, in one scroller rather than two.
+    const scroller = page.getByTestId("library-index-scroll");
+    const scrolled = await scroller.evaluate((element) => {
+      const before = element.scrollTop;
+      element.scrollTop = element.scrollHeight;
+      return {
+        overflowY: getComputedStyle(element).overflowY,
+        overflows: element.scrollHeight > element.clientHeight + 1,
+        moved: element.scrollTop > before,
+      };
+    });
+    expect(scrolled.overflowY, "the index is not a scroller").toBe("auto");
+    expect(scrolled.overflows, "the index has nothing to scroll — the case is idling").toBe(true);
+    expect(scrolled.moved, "the index did not scroll").toBe(true);
+    await expect(page.getByTestId("library-wiki-wiki/note-08")).toBeInViewport();
+    const pageScrolls = await page.evaluate(
+      () => document.documentElement.scrollHeight > window.innerHeight + 1,
+    );
+    expect(pageScrolls, "the narrow column handed its overflow to the page").toBe(false);
+    await scroller.evaluate((element) => {
+      element.scrollTop = 0;
+    });
+
+    // 4 — choosing swaps the whole column, and the way back returns the picture.
+    await page.getByTestId("library-source-sources/report-01.pdf").click();
+    await expect(page.getByTestId("library-source-summary")).toBeVisible();
+    await expect(page.getByTestId("library-index")).toBeHidden();
+    await page.getByTestId("library-reader-back").click();
+    await expect(canvas).toBeVisible();
+    await expect(page.getByTestId("library-index")).toBeVisible();
+  });
+}

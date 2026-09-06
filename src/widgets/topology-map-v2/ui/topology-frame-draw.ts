@@ -33,13 +33,16 @@ import {
   DOME_RING_ALPHA,
   DOME_RING_WIDTH_PX,
   domeDetailFactor,
+  domeEdgeFogAlpha,
+  domeEdgeWidthFactor,
   domeFogAlpha,
   DOME_RIM_FOG_FLOOR,
   domeHaloPx,
   domeLineWidthFactor,
   type DomeNodeFrame,
+  type DomeViewKind,
 } from "../model/dome-view";
-import { draw as domeRingsDraw } from "../render/dome-rings";
+import { draw as domeRingsDraw, drawTierLabels as domeTierLabelsDraw } from "../render/dome-rings";
 import { realmDepthClarityAlpha, realmDepthClarityScale } from "../model/realm-transition";
 import { classifyZoomTier, DEFAULT_TIER_REVEAL, edgeTierAlpha, effectiveNodeAlpha, HITTABLE_MIN_TIER_ALPHA, nodeTierAlpha, type TierRevealConfig } from "../model/tier-visibility";
 import {
@@ -180,7 +183,12 @@ const domeAncestryColorNodesReused = new Set<string>();
 const domeAncestryColorEdgesReused = new Set<string>();
 const domeAncestryUnionReused = new Set<string>();
 const domeAncestryColorUnionReused = new Set<string>();
-const domeRingScreenReused: { a: number; points: { x: number; y: number; u: number }[] }[] = [];
+const domeRingScreenReused: {
+  kind: DomeViewKind;
+  a: number;
+  points: { x: number; y: number; u: number }[];
+  label: { x: number; y: number; text: string } | null;
+}[] = [];
 /**
  * perf 2026-08-19 — one `DomeNodeFrame` lookup per node per frame.
  *
@@ -791,7 +799,32 @@ export interface FrameDrawParams {
    * Why the rings are needed: the `DOME_RING_KINDS` doc-block in
    * `model/dome-view.ts`. Null draws none.
    */
-  domeRings?: readonly { a: number; points: readonly { wx: number; wy: number; u: number }[] }[] | null;
+  domeRings?:
+    | readonly {
+        kind: DomeViewKind;
+        a: number;
+        points: readonly { wx: number; wy: number; u: number }[];
+        /** Set only on a Strata plane ring — where that tier's name hangs. */
+        label?: { wx: number; wy: number } | null;
+      }[]
+    | null;
+  /**
+   * 3D — base opacity for the rings this frame. The cone's small bases and
+   * Strata's four full-width planes cannot share one value; `domeRingAlphaFor` in
+   * `model/dome-view.ts` owns which is which.
+   */
+  domeRingAlpha?: number;
+  /**
+   * 3D — the tier names Strata writes at its plane rims, already translated. Null
+   * (or a missing entry) draws the ring without a name rather than an English
+   * fallback: a legend in the wrong language is worse than no legend.
+   */
+  domeTierLabels?: Readonly<Partial<Record<DomeViewKind, string>>> | null;
+  /**
+   * The Strata tier whose plane ring is raised — the legend row under the pointer
+   * (`TopologyV2TierLegend`). Null raises nothing.
+   */
+  domeTierRaisedKind?: DomeViewKind | null;
   /**
    * 3D — the **meridian control point** for one edge (world 2D). Why an edge must
    * bow rather than run straight: the `DOME_EDGE_BOW` doc-block in
@@ -881,6 +914,9 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
     domeFrame = null,
     domeRamp = 0,
     domeRings = null,
+    domeRingAlpha = DOME_RING_ALPHA,
+    domeTierLabels = null,
+    domeTierRaisedKind = null,
     domeControlFor = null,
     trailLensRamp,
   } = params;
@@ -1457,10 +1493,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
    * void (`gridPattern: null` above) and the rings take its place, because the
    * floor of a 3D scene is a sphere, so its coordinate system must be spherical.
    */
+  let domeRingsState: Parameters<typeof domeRingsDraw>[1] | null = null;
+  let domeRingsTokens: Parameters<typeof domeRingsDraw>[2] | null = null;
   if (domeOn && domeRings !== null && domeRings.length > 0) {
-    domeRingsDraw(
-      ctx,
-      {
+    domeRingsState = {
         // Ring projection writes into the scratch in place, rather than
         // allocating 288 objects per frame (see the buffer doc-block above).
         rings: (() => {
@@ -1468,10 +1504,18 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
             const ring = domeRings[i];
             let out = domeRingScreenReused[i];
             if (!out) {
-              out = { a: 0, points: [] };
+              out = { kind: ring.kind, a: 0, points: [], label: null };
               domeRingScreenReused[i] = out;
             }
+            out.kind = ring.kind;
             out.a = ring.a;
+            const tierName = domeTierLabels?.[ring.kind];
+            if (ring.label && tierName) {
+              const at = project(ring.label.wx, ring.label.wy);
+              out.label = { x: at.x, y: at.y, text: tierName };
+            } else {
+              out.label = null;
+            }
             for (let k = 0; k < ring.points.length; k += 1) {
               const point = ring.points[k];
               const screen = project(point.wx, point.wy);
@@ -1489,16 +1533,32 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
           domeRingScreenReused.length = domeRings.length;
           return domeRingScreenReused;
         })(),
-        baseAlpha: DOME_RING_ALPHA,
+        baseAlpha: domeRingAlpha,
         baseWidthPx: DOME_RING_WIDTH_PX,
         // The **same fog ramp** the nodes and edges use: if the coordinate system
         // fogged differently from the data, two things at one depth would render at
         // different brightness and the depth cues would contradict each other.
         fog: domeFogAlpha,
         widthFactor: domeLineWidthFactor,
-      },
-      { stroke: tokens.domeRing },
-    );
+        // The same right edge node labels are culled against, so a tier name and
+        // a concept name obey one boundary.
+        labelMaxX: viewportWidth - tokens.safeInsetRight,
+        raisedKind: domeTierRaisedKind,
+    };
+    domeRingsTokens = {
+        stroke: tokens.domeRing,
+        // The hovered plane's ring only — it borrows the application's tertiary
+        // text step rather than adding a colour (`domeRingRaised`).
+        strokeRaised: tokens.domeRingRaised,
+        // The dimmest node-label ink: a tier name must be read, so it stands a
+        // step above the hairline it names, and it borrows an existing token
+        // rather than introducing a colour for four words.
+        labelFill: tokens.labelElement,
+        // The capability step of the label ramp (`render/labels.ts`) — no larger
+        // than a data label, because the stage never outranks the actors.
+        labelFont: scaledLabelFont("capability", labelScale),
+    };
+    domeRingsDraw(ctx, domeRingsState, domeRingsTokens);
   }
 
   for (const kind of EDGE_KIND_PASSES) {
@@ -1531,8 +1591,10 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
         const aMin = Math.min(edgeFrameA.a, edgeFrameB.a);
         if (aMin > 0) {
           const uAvg = (edgeFrameA.u + edgeFrameB.u) / 2;
-          domeEdgeFog = 1 + (domeFogAlpha(uAvg) - 1) * aMin;
-          domeWidthScale = 1 + (domeLineWidthFactor(uAvg) - 1) * aMin;
+          // The **edge** fog carries a floor under its product with the width
+          // factor (`domeEdgeFogAlpha`); nodes and rings keep the raw ramp.
+          domeEdgeFog = 1 + (domeEdgeFogAlpha(uAvg) - 1) * aMin;
+          domeWidthScale = 1 + (domeEdgeWidthFactor(uAvg) - 1) * aMin;
           domeHaloWidthPx = domeHaloPx(uAvg) * aMin;
           domeEdgeDetail = 1 + (domeDetailFactor(uAvg) - 1) * aMin;
         }
@@ -2518,6 +2580,15 @@ export function drawTopologyFrame(params: FrameDrawParams): void {
       },
     );
     ctx.globalAlpha = 1;
+  }
+
+  /*
+   * Strata's tier names, after the relations and nodes. A ring is the stage and
+   * goes under them; the name of the tier is a legend and has to survive them —
+   * see `drawTierLabels`.
+   */
+  if (domeRingsState !== null && domeRingsTokens !== null) {
+    domeTierLabelsDraw(ctx, domeRingsState, domeRingsTokens);
   }
 
   // --- labels: viewport/panel cull + priority greedy suppression + ellipsis ---

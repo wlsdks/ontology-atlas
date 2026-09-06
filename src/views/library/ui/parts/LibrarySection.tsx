@@ -54,6 +54,16 @@ export interface LibrarySectionProps {
   onSelect: (slug: string) => void;
   /** Opens a raw source: the browser hands the file over, the app reveals it in Finder. */
   onOpenSource: (row: LibrarySourceRow) => void;
+  /**
+   * The source the reader is showing, if any.
+   *
+   * Measured 2026-09-06 (design-interaction): a selected source row was byte-identical to
+   * a resting one — same ink, no fill, no `aria-current` — while the reader beside it was
+   * showing that very file. The wiki list had carried the state since it shipped; only
+   * this list had a selection nobody could see, which is what makes "View write-up" and
+   * "View original" hard to follow: they change the pane and leave the index unmoved.
+   */
+  selectedSourcePath: string | null;
   /** The one-click "add files" door. */
   onAddFiles: () => void;
   /** Proposes candidates from the open folder and any bound project root. */
@@ -66,6 +76,12 @@ export interface LibrarySectionProps {
   candidates: readonly LintNodeCandidate[];
   /** Starts one agent turn that proposes the candidate through the ontology-write card; null like the others. */
   onPropose: ((candidate: LintNodeCandidate) => void) | null;
+  /**
+   * The brain picker, when this computer offers two and Compile can therefore be pointed
+   * at either. Null draws nothing: with one brain there is no choice to make, and the
+   * shelf's own line already names it.
+   */
+  brainControl?: React.ReactNode;
   /**
    * What leaves this computer when Compile runs, stated beside the button that starts it.
    *
@@ -160,12 +176,14 @@ export function LibrarySection({
   selectedSlug,
   onSelect,
   onOpenSource,
+  selectedSourcePath,
   onAddFiles,
   onFindDocuments,
   onCompile,
   onLint,
   candidates,
   onPropose,
+  brainControl,
   transferNote,
   vaultLabel,
   busy,
@@ -185,9 +203,17 @@ export function LibrarySection({
 
   return (
     <>
+      {/*
+        `max-lg:flex-none` and the `max-lg:overflow-visible` on the list below are one
+        decision: below `lg` the index is half a column and scrolls as a whole, so a
+        section that shrank would be competing with its sibling for a box neither can fit
+        in — measured at 390, that competition left this list 30px and the Wiki list zero.
+        At `lg` both sections still share the column and both lists still own their own
+        overflow.
+      */}
       <section
         data-testid="library-sources"
-        className="flex min-h-0 flex-col border-b border-[color:var(--color-overlay-2)] pb-1"
+        className="flex min-h-0 flex-col border-b border-[color:var(--color-overlay-2)] pb-1 max-lg:flex-none"
       >
         <SectionHeader
           icon={
@@ -235,11 +261,15 @@ export function LibrarySection({
             <ul
               data-testid="library-source-list"
               aria-label={t("sources.listAria")}
-              className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
+              className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2 max-lg:overflow-visible"
             >
-              {model.sources.map((row) => (
+              {model.sources.map((row) => {
+                const active = row.path === selectedSourcePath;
+                return (
                 <li key={row.path}>
                   <RowButton
+                    active={active}
+                    aria-current={active ? "true" : undefined}
                     data-testid={`library-source-${row.path}`}
                     onClick={() => onOpenSource(row)}
                     // The full name first: a 280px column truncates, and the row's own
@@ -267,7 +297,8 @@ export function LibrarySection({
                     </StateBadge>
                   </RowButton>
                 </li>
-              ))}
+                );
+              })}
             </ul>
             {model.needsCompileCount > 0 ? (
               <p
@@ -305,7 +336,7 @@ export function LibrarySection({
 
       <section
         data-testid="library-wiki"
-        className="flex min-h-0 flex-col pb-1"
+        className="flex min-h-0 flex-col pb-1 max-lg:flex-none"
       >
         <SectionHeader
           icon={
@@ -358,6 +389,12 @@ export function LibrarySection({
           }
         />
 
+        {brainControl ? (
+          <div className="flex-none px-3 pb-2" data-testid="library-brain-control">
+            {brainControl}
+          </div>
+        ) : null}
+
         {/*
           **Compile is app-only, so the web says so instead of describing it.** The empty
           state used to open with "Compile turns the sources above into pages" on a
@@ -405,7 +442,7 @@ export function LibrarySection({
           <ul
             data-testid="library-wiki-list"
             aria-label={t("wiki.listAria")}
-            className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2"
+            className="flex min-h-0 flex-col gap-0.5 overflow-auto px-2 max-lg:overflow-visible"
           >
             {model.wikiPages.map((page) => {
               const active = page.slug === selectedSlug;

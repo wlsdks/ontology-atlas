@@ -202,7 +202,15 @@ const BASELINE_HARD_CUTS = 0;
 // explanation above and the Docs dock described in the block before it. Both are born as
 // `Surface`, so hard cuts stay at zero, and both need a desktop runtime, so neither joins
 // the static browser sweep.
-const BASELINE_APPEARING_SURFACES = 37;
+/*
+ * 37 → 38 (2026-09-06): the Library's guided shelf became a popover when the pane became
+ * the graph (`docs/DECISIONS.md`, "The Library pane is the graph; the shelf is a popup").
+ * It is born as `Surface` with `transientSurface("anchored")`, so hard cuts stay at zero,
+ * and unlike the two above it needs **no** desktop runtime — a folder and one press reach
+ * it in a browser — so its open path is measured directly, by the `the Library pane` cases
+ * in `tests/e2e/library.spec.ts` (drawn, Escape closes it, focus returns to its chip).
+ */
+const BASELINE_APPEARING_SURFACES = 38;
 
 const SELF = 'tests/contract/surface-motion-ratchet.contract.test.ts';
 const FIXTURES = 'tests/fixtures/surface-motion';

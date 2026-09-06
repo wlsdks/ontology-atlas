@@ -767,6 +767,18 @@
       "linksOut": []
     },
     {
+      "slug": "benchmark/STRATA-2026-09-06",
+      "path": "docs/benchmark/STRATA-2026-09-06.md",
+      "title": "Strata — the techniques it is built from, and the ones it refused",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [],
+      "excerpt": "The 2026-09-06 decision record (docs/DECISIONS.md) names these in one line each; it has 2,000 bytes and no room for the reasons. This page carries them. It is a sources page, not a plan: the geometry lives in buildStrataTargets (src/widgets/topology-map-v2/model/dome-view.ts) and the numbers live in tests/e2e/map-3d-st",
+      "wordCount": 1123,
+      "updatedAt": "2026-09-06",
+      "linksOut": []
+    },
+    {
       "slug": "benchmark/tasks",
       "path": "docs/benchmark/tasks.md",
       "title": "Benchmark tasks",
@@ -802,7 +814,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed, for a person who uses the product. Newest at the top. One entry per release, named by its tag; the single Unreleased entry at the top collects what has merged since the last tag, and the release cut renames it. v1.0.0",
-      "wordCount": 29916,
+      "wordCount": 29915,
       "updatedAt": "2026-09-06",
       "linksOut": []
     },
@@ -838,7 +850,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "This file keeps the decisions and the arguments that lost when they were made. docs/CHANGELOG.md answers what changed and when; this file answers why it was decided that way, and what was staked on it. Newest first. Records are appended, never edited. When a judgment changes, write a new record whose Prior names the ol",
-      "wordCount": 106978,
+      "wordCount": 109911,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "wiki/…",
@@ -946,7 +958,7 @@
       "frontmatter": {},
       "headings": [],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 2026-09-05 (kept one ACP conversation across Analysis tabs, including Not held, and added the source-hidden, current-turn Ontology DNA presentation inside that workbench. Earlier chose the architecture comparison ladder by canvas height, sea",
-      "wordCount": 30278,
+      "wordCount": 33636,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "ANALYSIS-RECORDS",
@@ -4046,7 +4058,7 @@
       },
       "headings": [],
       "excerpt": "This temporary register measures the 2026-09-01 Atlas product-decision system. It is not a second decision archive. Significant rationale stays in DECISIONS.md; this file keeps only the typed facts needed to decide whether the gate earns, narrows, or loses its place. Run pnpm po:pilot for the current report and pnpm po",
-      "wordCount": 2627,
+      "wordCount": 2682,
       "updatedAt": "2026-09-06",
       "linksOut": [
         "DECISIONS"
@@ -6572,6 +6584,13 @@
             "type": "doc",
             "slug": "benchmark/rubric",
             "title": "Rubric — how to score each run"
+          },
+          {
+            "name": "STRATA-2026-09-06",
+            "path": "benchmark/STRATA-2026-09-06",
+            "type": "doc",
+            "slug": "benchmark/STRATA-2026-09-06",
+            "title": "Strata — the techniques it is built from, and the ones it refused"
           },
           {
             "name": "tasks",

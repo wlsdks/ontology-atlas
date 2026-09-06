@@ -35,6 +35,7 @@ function Harness({ onPropose, candidates = CANDIDATES }: { onPropose: ((c: LintN
     <LibrarySection
       model={MODEL}
       selectedSlug={null}
+      selectedSourcePath={null}
       onSelect={() => {}}
       onOpenSource={() => {}}
       onAddFiles={() => {}}

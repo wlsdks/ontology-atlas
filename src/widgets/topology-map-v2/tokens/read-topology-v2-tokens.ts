@@ -78,6 +78,13 @@ export interface TopologyV2Tokens {
   canvasBgNear: string;
   /** 3D dome latitude ring ink — consumed only in 3D. The rationale for the value is the doc-comment in `globals.css`. */
   domeRing: string;
+  /**
+   * The ink one Strata plane ring rises to while its legend row is hovered. It is
+   * the application's existing tertiary text step rather than a new colour: the
+   * ring is briefly promoted to the rank of something you are reading, and drops
+   * straight back to `domeRing` when the pointer leaves.
+   */
+  domeRingRaised: string;
   canvasBgFar: string;
   gridMinor: string;
   gridMajor: string;
@@ -314,6 +321,7 @@ const TOKEN_SPECS: readonly TokenSpec[] = [
   { key: "gridMinor", cssVar: "--topology-v2-grid-minor", kind: "color" },
   { key: "gridMajor", cssVar: "--topology-v2-grid-major", kind: "color" },
   { key: "domeRing", cssVar: "--topology-v2-dome-ring", kind: "color" },
+  { key: "domeRingRaised", cssVar: "--color-text-tertiary", kind: "color" },
   { key: "vignetteBaseAlpha", cssVar: "--topology-v2-vignette-base-alpha", kind: "number" },
   { key: "vignetteFarAlpha", cssVar: "--topology-v2-vignette-far-alpha", kind: "number" },
 
