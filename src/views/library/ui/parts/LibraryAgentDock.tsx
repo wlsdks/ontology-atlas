@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { Library } from "lucide-react";
 
 import { cn } from "@/shared/lib/cn";
+import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { usePanelPresence } from "@/shared/lib/use-presence";
 import { AGENT_DOCK_INSET_SURFACE_CLASS, Surface } from "@/shared/ui";
 import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "@/widgets/acp-chat-panel";
@@ -25,6 +27,13 @@ import { AcpChatPanel, AcpChatResizeHandle, AcpDockHeader, useChatWidth } from "
  * **The standing-line ladder in the chat panel is the running state.** No spinner is
  * added here — the panel already says what the agent is doing, and a second indicator
  * that only says "something is happening" would compete with the one that says what.
+ *
+ * **Which library this conversation is about** rides above the shared dock header. The
+ * header itself is `AcpDockHeader`, the same one the map and the architecture view use,
+ * so its title is the same word on three screens; the eyebrow is what says the turn was
+ * started from here and is compiling *this* folder. One lucide `Library` glyph, matching
+ * the destination's own rail icon — a second wordmark would be chrome, and a second title
+ * would be two headings in eight pixels of each other.
  */
 export interface LibraryAgentOpeningRequest {
   kind: "compile";
@@ -59,6 +68,7 @@ export function LibraryAgentDock({
   onClose: () => void;
 }) {
   const tChat = useTranslations("acpChat");
+  const tLibrary = useTranslations("library");
   const chatWidth = useChatWidth();
   const presence = usePanelPresence(open);
   const [enabledRequestNonce, setEnabledRequestNonce] = useState<number | null>(null);
@@ -126,6 +136,16 @@ export function LibraryAgentDock({
               onWidth={chatWidth.setWidth}
               onCommit={chatWidth.commitWidth}
             />
+          </div>
+          <div className="flex flex-none items-center gap-1.5 pb-1">
+            <Library
+              size={ICON_SIZE.sm}
+              aria-hidden
+              className="flex-none text-[color:var(--color-text-quaternary)]"
+            />
+            <span className="min-w-0 truncate font-mono text-caption uppercase tracking-[var(--tracking-caps-16)] text-[color:var(--color-text-quaternary)]">
+              {tLibrary("title")}
+            </span>
           </div>
           <AcpDockHeader title={tChat("dockTitle")} onClose={onClose} />
           <AcpChatPanel

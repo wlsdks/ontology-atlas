@@ -2,193 +2,216 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildLibraryModel,
-  collectWikiCitations,
-  deriveSourceState,
-  formatSourceBytes,
-  isWikiPage,
+  countSourceFormats,
+  lastSourceAddedAt,
+  newestWikiPage,
   selectWikiPages,
 } from './vault-library';
 import type { VaultDoc, VaultSourceFile } from '../model/types';
 
-function doc(slug: string, frontmatter: Record<string, unknown>): VaultDoc {
+/**
+ * The pairing is reached through `buildLibraryModel`, the way every screen reaches it.
+ * Testing the derivation directly would pin an internal name and let the wiring between
+ * it and the model break silently, which is the one failure a screen would actually show.
+ */
+const buildLibraryPairing = (input: {
+  docs: readonly VaultDoc[];
+  sources: readonly VaultSourceFile[] | undefined;
+  hashes: ReadonlyMap<string, string>;
+}) => buildLibraryModel(input).pairing;
+
+/**
+ * The pairing is the crossing a person makes between what a document said and what we
+ * made of it. Every case below is a way that crossing can lie: a page citing a file
+ * that is not in the folder, a page citing it with no hash, and two pages covering one
+ * file where only one is current.
+ */
+
+function source(path: string, mtime = 1_757_000_000_000): VaultSourceFile {
+  return {
+    path,
+    name: path.split('/').pop() as string,
+    format: (path.split('.').pop() as string).toLowerCase(),
+    bytes: 2048,
+    mtime,
+  };
+}
+
+function wiki(
+  slug: string,
+  frontmatter: Record<string, unknown>,
+  title = slug.replace('wiki/', ''),
+): VaultDoc {
   return {
     slug,
     path: `${slug}.md`,
-    title: slug.split('/').pop() ?? slug,
+    title,
     tags: [],
     frontmatter,
     headings: [],
     excerpt: '',
-    wordCount: 0,
-    updatedAt: '2026-09-05T00:00:00.000Z',
+    wordCount: 10,
+    updatedAt: '2026-09-06T00:00:00Z',
     linksOut: [],
   };
 }
 
-function source(path: string, over: Partial<VaultSourceFile> = {}): VaultSourceFile {
-  return {
-    path,
-    name: path.split('/').pop() ?? path,
-    format: 'pdf',
-    bytes: 1024,
-    mtime: 1_757_000_000_000,
-    ...over,
-  };
-}
+const PLAN_HASH = 'a'.repeat(64);
 
-const HASH = '3b1f0a'.padEnd(64, '0');
-const OTHER_HASH = 'ffffff'.padEnd(64, '0');
+const SOURCES = [source('sources/plan.pdf'), source('sources/budget.xlsx', 1_757_100_000_000)];
 
-describe('a wiki page is Markdown under wiki/ with no kind:', () => {
-  it('accepts a page with no kind', () => {
-    expect(isWikiPage(doc('wiki/quarter-plan', { created_by: 'agent:claude' }))).toBe(true);
+const DOCS: VaultDoc[] = [
+  wiki(
+    'wiki/quarter-plan',
+    {
+      sources: ['sources/plan.pdf'],
+      source_hash: { 'sources/plan.pdf': PLAN_HASH.toUpperCase() },
+      compiled_at: '2026-09-05T10:00:00Z',
+      created_by: 'agent:claude',
+    },
+    'Quarter plan',
+  ),
+  wiki(
+    'wiki/older-take',
+    {
+      sources: ['sources/plan.pdf'],
+      source_hash: { 'sources/plan.pdf': 'c'.repeat(64) },
+      compiled_at: '2026-09-01T10:00:00Z',
+    },
+    'Older take',
+  ),
+  wiki(
+    'wiki/ghost',
+    { sources: ['sources/deleted.docx'], source_hash: {}, compiled_at: '2026-09-06T10:00:00Z' },
+    'Ghost',
+  ),
+  // A file under `wiki/` carrying a kind is an ontology node someone filed wrong; it is
+  // not a write-up and must not appear on either side of the crossing.
+  wiki('wiki/impostor', { kind: 'domain', sources: ['sources/budget.xlsx'] }, 'Impostor'),
+];
+
+describe('a wiki page points back at the originals it stands on', () => {
+  const pairing = buildLibraryPairing({
+    docs: DOCS,
+    sources: SOURCES,
+    hashes: new Map([['sources/plan.pdf', PLAN_HASH]]),
   });
 
-  it('refuses a document outside wiki/', () => {
-    expect(isWikiPage(doc('notes/quarter-plan', {}))).toBe(false);
-  });
-
-  it('refuses a file under wiki/ that grew a kind:, because that belongs to the graph', () => {
-    expect(isWikiPage(doc('wiki/mis-filed', { kind: 'capability' }))).toBe(false);
-  });
-
-  it('treats an empty kind: as no kind at all', () => {
-    expect(isWikiPage(doc('wiki/blank', { kind: '   ' }))).toBe(true);
-  });
-});
-
-describe('citations are read from sources + source_hash', () => {
-  it('groups every citing page under the source path it names', () => {
-    const citations = collectWikiCitations([
-      doc('wiki/a', {
-        sources: ['sources/plan.pdf', 'sources/budget.xlsx'],
-        source_hash: { 'sources/plan.pdf': HASH },
-      }),
-      doc('wiki/b', { sources: ['sources/plan.pdf'], source_hash: { 'sources/plan.pdf': OTHER_HASH } }),
-      doc('capabilities/mcp-server', { kind: 'capability', sources: ['sources/plan.pdf'] }),
+  it('resolves the citation against the folder, so the state is the file’s own', () => {
+    expect(pairing.originalsByWiki.get('wiki/quarter-plan')).toEqual([
+      { path: 'sources/plan.pdf', name: 'plan.pdf', state: 'compiled' },
     ]);
-    expect(citations.get('sources/plan.pdf')?.map((c) => c.wikiSlug)).toEqual(['wiki/a', 'wiki/b']);
-    expect(citations.get('sources/budget.xlsx')?.[0]?.sourceHash).toBeNull();
   });
 
-  it('ignores an ontology node that happens to carry a sources: key', () => {
-    const citations = collectWikiCitations([
-      doc('capabilities/mcp-server', { kind: 'capability', sources: ['sources/plan.pdf'] }),
+  it('reports a cited file that is not in this folder as absent, not as stale', () => {
+    expect(pairing.originalsByWiki.get('wiki/ghost')).toEqual([
+      { path: 'sources/deleted.docx', name: 'deleted.docx', state: null },
     ]);
-    expect(citations.size).toBe(0);
   });
 
-  it('reads a single citation written as a scalar', () => {
-    const citations = collectWikiCitations([doc('wiki/a', { sources: 'sources/plan.pdf' })]);
-    expect(citations.get('sources/plan.pdf')).toHaveLength(1);
-  });
-
-  it('reads created_by and compiled_at as written', () => {
-    expect(
-      selectWikiPages([
-        doc('wiki/a', { created_by: 'agent:claude', compiled_at: '2026-09-05T10:00:00Z' }),
-      ])[0],
-    ).toMatchObject({ createdBy: 'agent:claude', compiledAt: '2026-09-05T10:00:00Z' });
-  });
-});
-
-describe('a source state says whether the write-up still matches the file', () => {
-  it('is not compiled when nothing cites it', () => {
-    expect(deriveSourceState(undefined, undefined)).toBe('not-compiled');
-    expect(deriveSourceState([], HASH)).toBe('not-compiled');
-  });
-
-  it('is checking while a cited file has not been hashed yet', () => {
-    expect(
-      deriveSourceState([{ wikiSlug: 'wiki/a', sourcePath: 'sources/p.pdf', sourceHash: HASH }], undefined),
-    ).toBe('checking');
-  });
-
-  it('is compiled when a citing page names the file own hash', () => {
-    expect(
-      deriveSourceState([{ wikiSlug: 'wiki/a', sourcePath: 'sources/p.pdf', sourceHash: HASH }], HASH),
-    ).toBe('compiled');
-  });
-
-  it('is compiled when any one of several citing pages still matches', () => {
-    expect(
-      deriveSourceState(
-        [
-          { wikiSlug: 'wiki/a', sourcePath: 'sources/p.pdf', sourceHash: OTHER_HASH },
-          { wikiSlug: 'wiki/b', sourcePath: 'sources/p.pdf', sourceHash: HASH },
-        ],
-        HASH,
-      ),
-    ).toBe('compiled');
-  });
-
-  it('is stale when the file changed under the page', () => {
-    expect(
-      deriveSourceState([{ wikiSlug: 'wiki/a', sourcePath: 'sources/p.pdf', sourceHash: OTHER_HASH }], HASH),
-    ).toBe('stale');
-  });
-
-  it('is stale when a page cites the file without recording a hash — coverage it cannot prove', () => {
-    expect(
-      deriveSourceState([{ wikiSlug: 'wiki/a', sourcePath: 'sources/p.pdf', sourceHash: null }], HASH),
-    ).toBe('stale');
-  });
-
-  it('compares hashes case-insensitively', () => {
-    expect(
-      deriveSourceState(
-        [{ wikiSlug: 'wiki/a', sourcePath: 'sources/p.pdf', sourceHash: HASH }],
-        HASH.toUpperCase(),
-      ),
-    ).toBe('compiled');
-  });
-});
-
-describe('the library model', () => {
-  const docs = [
-    doc('wiki/plan', { sources: ['sources/plan.pdf'], source_hash: { 'sources/plan.pdf': HASH } }),
-    doc('capabilities/mcp-server', { kind: 'capability' }),
-  ];
-  const sources = [source('sources/plan.pdf'), source('sources/budget.xlsx', { format: 'xlsx' })];
-
-  it('asks for a hash only for a cited source', () => {
-    const model = buildLibraryModel({ sources, docs, hashes: new Map() });
-    expect(model.pathsNeedingHash).toEqual(['sources/plan.pdf']);
-  });
-
-  it('counts what Compile would act on, and never a compiled row', () => {
-    const model = buildLibraryModel({
-      sources,
-      docs,
-      hashes: new Map([['sources/plan.pdf', HASH]]),
+  it('gives a page citing nothing an empty list rather than no entry', () => {
+    const empty = buildLibraryPairing({
+      docs: [wiki('wiki/handover', { created_by: 'human' })],
+      sources: SOURCES,
+      hashes: new Map(),
     });
-    expect(model.sources.map((row) => [row.path, row.state])).toEqual([
-      ['sources/plan.pdf', 'compiled'],
-      ['sources/budget.xlsx', 'not-compiled'],
-    ]);
-    expect(model.needsCompileCount).toBe(1);
-    expect(model.notCompiledCount + model.staleCount).toBe(model.needsCompileCount);
+    expect(empty.originalsByWiki.get('wiki/handover')).toEqual([]);
   });
 
-  it('names the pages citing a source', () => {
-    const model = buildLibraryModel({ sources, docs, hashes: new Map() });
-    expect(model.sources.find((row) => row.path === 'sources/plan.pdf')?.citedBy).toEqual([
-      'wiki/plan',
-    ]);
-  });
-
-  it('holds no sources and no wiki pages for a folder that has neither', () => {
-    const model = buildLibraryModel({ sources: undefined, docs: [], hashes: new Map() });
-    expect(model).toMatchObject({ sources: [], wikiPages: [], needsCompileCount: 0, notCompiledCount: 0, staleCount: 0 });
+  it('never treats a document with a kind as a write-up', () => {
+    expect(pairing.originalsByWiki.has('wiki/impostor')).toBe(false);
   });
 });
 
-describe('sizes read as sizes', () => {
-  it('uses bytes below a kilobyte and one decimal above it', () => {
-    expect(formatSourceBytes(0)).toBe('0 B');
-    expect(formatSourceBytes(999)).toBe('999 B');
-    expect(formatSourceBytes(1500)).toBe('1.5 KB');
-    expect(formatSourceBytes(2_400_000)).toBe('2.4 MB');
-    expect(formatSourceBytes(150_000)).toBe('150 KB');
+describe('a source points forward at the pages written from it', () => {
+  const pairing = buildLibraryPairing({
+    docs: DOCS,
+    sources: SOURCES,
+    hashes: new Map([['sources/plan.pdf', PLAN_HASH]]),
+  });
+
+  it('lists every citing page and says which of them still matches the bytes', () => {
+    expect(pairing.writeUpsBySource.get('sources/plan.pdf')).toEqual([
+      { slug: 'wiki/older-take', title: 'Older take', current: false },
+      { slug: 'wiki/quarter-plan', title: 'Quarter plan', current: true },
+    ]);
+  });
+
+  it('matches a recorded hash case-insensitively, because YAML is hand-edited', () => {
+    const [, current] = pairing.writeUpsBySource.get('sources/plan.pdf') as [
+      unknown,
+      { current: boolean },
+    ];
+    expect(current.current).toBe(true);
+  });
+
+  it('calls an unmeasured source’s page not-current rather than guessing', () => {
+    const unmeasured = buildLibraryPairing({ docs: DOCS, sources: SOURCES, hashes: new Map() });
+    expect(
+      unmeasured.writeUpsBySource.get('sources/plan.pdf')?.every((link) => !link.current),
+    ).toBe(true);
+  });
+
+  it('leaves a source nobody cites out of the map, which is what “none” means', () => {
+    expect(pairing.writeUpsBySource.has('sources/budget.xlsx')).toBe(false);
+  });
+});
+
+describe('the model carries the pairing, so one derivation serves both panes', () => {
+  it('exposes both directions', () => {
+    const model = buildLibraryModel({
+      sources: SOURCES,
+      docs: DOCS,
+      hashes: new Map([['sources/plan.pdf', PLAN_HASH]]),
+    });
+    expect(model.pairing.originalsByWiki.get('wiki/quarter-plan')).toHaveLength(1);
+    expect(model.pairing.writeUpsBySource.get('sources/plan.pdf')).toHaveLength(2);
+  });
+});
+
+describe('what the shelf counts', () => {
+  it('opens on the freshest write-up', () => {
+    expect(newestWikiPage(selectWikiPages(DOCS))?.slug).toBe('wiki/ghost');
+  });
+
+  it('still answers when no page records when it was compiled', () => {
+    const pages = selectWikiPages([
+      wiki('wiki/b', { created_by: 'human' }),
+      wiki('wiki/a', { created_by: 'human' }),
+    ]);
+    expect(newestWikiPage(pages)?.slug).toBe('wiki/a');
+  });
+
+  it('has nothing to open in an empty folder', () => {
+    expect(newestWikiPage([])).toBeNull();
+  });
+
+  it('orders formats by how many arrived in each', () => {
+    expect(
+      countSourceFormats([
+        source('sources/a.pdf'),
+        source('sources/b.xlsx'),
+        source('sources/c.pdf'),
+      ]),
+    ).toEqual([
+      { format: 'pdf', count: 2 },
+      { format: 'xlsx', count: 1 },
+    ]);
+  });
+
+  it('names the newest arrival, and nothing when nothing arrived', () => {
+    expect(lastSourceAddedAt(SOURCES)).toBe(1_757_100_000_000);
+    expect(lastSourceAddedAt([])).toBeNull();
+  });
+
+  it('keeps the counts of the two unfinished states apart', () => {
+    const model = buildLibraryModel({
+      sources: SOURCES,
+      docs: DOCS,
+      hashes: new Map([['sources/plan.pdf', 'd'.repeat(64)]]),
+    });
+    expect(model.staleCount).toBe(1);
+    expect(model.notCompiledCount).toBe(1);
+    expect(model.needsCompileCount).toBe(2);
   });
 });

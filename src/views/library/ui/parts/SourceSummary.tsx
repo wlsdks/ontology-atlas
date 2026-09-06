@@ -1,9 +1,14 @@
 "use client";
 
 import type { useTranslations } from "next-intl";
-import { FileText, FolderOpen, Download } from "lucide-react";
+import { BookText, FileText, FolderOpen, Download, Sparkles } from "lucide-react";
 
-import { formatSourceBytes, type LibrarySourceRow } from "@/entities/docs-vault";
+import {
+  formatSourceBytes,
+  type LibrarySourceRow,
+  type LibraryWriteUpLink,
+} from "@/entities/docs-vault";
+import { cn } from "@/shared/lib/cn";
 import { controlClass } from "@/shared/ui/control-class";
 import { ICON_SIZE } from "@/shared/ui/icon-size";
 
@@ -24,12 +29,31 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
  * a reason rather than by convenience: the app reveals it in Finder — reveal, never open,
  * because Atlas launches no program on somebody's behalf — while a browser has no Finder
  * and no absolute path, so it hands over the bytes it was already granted.
+ *
+ * ## The second door: what was made of it (owner, 2026-09-06)
+ *
+ * The original and the write-up must be separate things a person can move between, and
+ * this pane held only one half of that: `Cited by` was a fact in a list, spelled as
+ * slugs, that a reader could not press. It is now the row **View write-up**, and each
+ * page says whether it still matches these bytes — a write-up citing an older version of
+ * this file is exactly the case where following the link matters most, and the one a
+ * plain list of names cannot tell apart.
+ *
+ * When nothing cites the file, the row is **Compile** instead, because "no wiki page yet"
+ * describes a gap whose cure is one press. It is disabled with its own reason wherever
+ * that press cannot happen, never silently absent: on this pane the person arrived by
+ * choosing this very file, so a missing step is a dead end rather than tidiness.
  */
 export function SourceSummary({
   row,
   hash,
   canReveal,
+  writeUps,
   onOpen,
+  onOpenWiki,
+  onCompile,
+  compileBlockedReason,
+  busy,
   t,
 }: {
   row: LibrarySourceRow;
@@ -37,7 +61,14 @@ export function SourceSummary({
   hash: string | null;
   /** True in the installed app, where the door reveals rather than downloads. */
   canReveal: boolean;
+  /** Pages citing this file, and whether each still matches its bytes. */
+  writeUps: readonly LibraryWriteUpLink[];
   onOpen: () => void;
+  onOpenWiki: (slug: string) => void;
+  onCompile: () => void;
+  /** The exact reason Compile cannot run now, or null when it can. */
+  compileBlockedReason: string | null;
+  busy: boolean;
   t: ReturnType<typeof useTranslations<"library">>;
 }) {
   const facts: Array<{ key: string; label: string; value: string; mono?: boolean }> = [
@@ -61,11 +92,6 @@ export function SourceSummary({
       value: hash ?? t("source.hashUnmeasured"),
       // A hash is an identifier and sits in mono; the sentence that stands in for one is prose.
       mono: hash !== null,
-    },
-    {
-      key: "citedBy",
-      label: t("source.citedBy"),
-      value: row.citedBy.length > 0 ? row.citedBy.join(", ") : t("source.citedByNobody"),
     },
   ];
 
@@ -119,6 +145,74 @@ export function SourceSummary({
           )}
           {canReveal ? t("source.reveal") : t("source.download")}
         </button>
+      </div>
+
+      <div
+        data-testid="library-source-writeups"
+        className="mt-5 border-t border-[color:var(--color-border-soft)] pt-4"
+      >
+        <p className="font-mono text-caption uppercase tracking-[var(--tracking-caps-14)] text-[color:var(--color-text-quaternary)]">
+          {t("source.viewWriteUp")}
+        </p>
+        {writeUps.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-1.5">
+            {writeUps.map((page) => (
+              <li key={page.slug}>
+                <button
+                  type="button"
+                  onClick={() => onOpenWiki(page.slug)}
+                  data-testid={`library-source-writeup-${page.slug}`}
+                  className={controlClass({
+                    shape: "chip",
+                    tone: "muted",
+                    className: "max-w-full gap-1.5",
+                  })}
+                >
+                  <BookText size={ICON_SIZE.sm} aria-hidden />
+                  <span className="min-w-0 truncate">{page.title}</span>
+                  {/* Whether the page still describes *these* bytes is the fact that
+                      decides whether following it is worth the reader's time. */}
+                  <span
+                    className={cn(
+                      "flex-none",
+                      page.current
+                        ? "text-[color:var(--color-success-text-a90)]"
+                        : "text-[color:var(--color-amber-source-a90)]",
+                    )}
+                  >
+                    {page.current ? t("source.writeUpCurrent") : t("source.writeUpBehind")}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-2 flex flex-col gap-2">
+            <p className="text-label leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
+              {t("source.citedByNobody")}
+            </p>
+            <div>
+              <button
+                type="button"
+                onClick={onCompile}
+                disabled={busy || compileBlockedReason !== null}
+                data-testid="library-source-compile"
+                className={controlClass({ shape: "chip", tone: "muted", className: "gap-1.5" })}
+              >
+                <Sparkles size={ICON_SIZE.sm} aria-hidden />
+                {t("wiki.compile")}
+              </button>
+            </div>
+            {compileBlockedReason ? (
+              <p
+                data-testid="library-source-compile-blocked"
+                className="text-caption leading-body text-[color:var(--color-text-quaternary)] [word-break:keep-all]"
+              >
+                {compileBlockedReason}
+              </p>
+            ) : null}
+          </div>
+        )}
       </div>
     </div>
   );

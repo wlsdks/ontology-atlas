@@ -35,9 +35,11 @@ import { ICON_SIZE } from "@/shared/ui/icon-size";
 import { PAGE_COLUMN_STAGE } from "@/shared/ui/page-frame";
 import { useToast } from "@/shared/ui";
 
+import { libraryCompileBlockedReason } from "../lib/compile-availability";
 import { useLibraryModel } from "../lib/use-library-model";
 import { useLibraryAgent } from "../lib/use-library-agent";
 import { LibrarySection } from "./parts/LibrarySection";
+import { LibraryStage } from "./parts/LibraryStage";
 import { LibraryAgentDock } from "./parts/LibraryAgentDock";
 import { SourceSummary } from "./parts/SourceSummary";
 import { WikiPageHeader } from "./parts/WikiPageHeader";
@@ -120,18 +122,22 @@ export function LibraryPage() {
   });
 
   /**
-   * **What the reader shows, which is not the same as what was clicked.**
+   * **Nothing chosen is its own state, and it is the one this screen is for.**
    *
-   * With nothing chosen the pane opens the first wiki page rather than a sentence in the
-   * middle of 1168px of canvas. That is the grammar Docs already uses (`firstReadableSlug`)
-   * and the reason is the same: a workbench whose main pane is empty on arrival makes the
-   * person's first act "find something to look at" rather than "read".
+   * Until 2026-09-06 this line read `selected ?? firstWikiSelection(model.wikiPages)`: with
+   * nothing clicked the pane opened the first wiki page, on the grammar Docs uses, so that
+   * a workbench would not arrive empty. The owner read the result and said *"entering the
+   * Library I don't know what to do"* — and the default was part of why. Opening a page
+   * nobody asked for answers "what am I looking at" with a document, and leaves "what is
+   * this screen for" unanswered on every visit after the first.
    *
-   * It is a **derivation, not an effect**. Writing the default into state would make the
-   * narrow layout — where selecting swaps the whole column — open a reader nobody asked
-   * for, and would need an effect to undo it. `narrowShowsReader` reads the real click.
+   * So the reader now branches three ways, and `null` is the guided shelf
+   * (`LibraryStage`) rather than a stand-in document. It stays a **derivation of the real
+   * click**, which is what keeps the narrow layout honest: below `lg` selecting swaps the
+   * whole column, and a default written into state would open a reader nobody asked for
+   * and need an effect to undo.
    */
-  const opened = selected ?? firstWikiSelection(model.wikiPages);
+  const opened = selected;
   const selectedWikiDoc = useMemo(() => {
     if (opened?.kind !== "wiki") return null;
     return manifest?.docs.find((doc) => doc.slug === opened.slug) ?? null;
@@ -398,6 +404,21 @@ export function LibraryPage() {
     }
   }, [agent, locale, model.sources, nativeVaultRootPath, t, toast]);
 
+  /*
+   * One sentence, two surfaces. The shelf's step two and a source with no write-up ask
+   * the same question, and answering it twice is how two screens come to disagree.
+   */
+  const compileBlocked = libraryCompileBlockedReason(
+    {
+      route: agent.route,
+      inApp: nativeVaultRootPath !== null,
+      sourceCount: model.sources.length,
+      needsCompileCount: model.needsCompileCount,
+      localModel: agent.localModel,
+    },
+    t,
+  );
+
   const wikiProblems = selectedWikiDoc
     ? (model.verdicts.get(selectedWikiDoc.slug)?.problems ?? [])
     : [];
@@ -556,6 +577,7 @@ export function LibraryPage() {
           >
             <WikiPageHeader
               doc={selectedWikiDoc}
+              originals={model.pairing.originalsByWiki.get(selectedWikiDoc.slug) ?? EMPTY_ORIGINALS}
               onOpenSource={(path) => setSelected({ kind: "source", path })}
               t={t}
             />
@@ -575,30 +597,36 @@ export function LibraryPage() {
               row={selectedSource}
               hash={model.hashes.get(selectedSource.path) ?? null}
               canReveal={nativeVaultRootPath !== null}
+              writeUps={model.pairing.writeUpsBySource.get(selectedSource.path) ?? EMPTY_WRITE_UPS}
               onOpen={() => handleOpenSource(selectedSource)}
+              onOpenWiki={(slug) => setSelected({ kind: "wiki", slug })}
+              onCompile={handleCompile}
+              compileBlockedReason={compileBlocked}
+              busy={busy}
               t={t}
             />
           </div>
         ) : (
           /*
-           * Reached only when the folder holds no wiki page at all, because the pane
-           * otherwise opens the first one. So the sentence is about the step that is
-           * actually next, and it differs by whether anything is waiting to be written
-           * up — "nothing here" and "three files waiting for Compile" are different
-           * facts and a single empty state would tell the second person the first thing.
+           * Nothing chosen: the three steps of the work, with the folder's own numbers in
+           * them. This replaced two sentences that between them could not tell a person
+           * what to do next — see `LibraryStage` for the owner's reading that produced it.
            */
-          <div className="flex min-h-0 flex-1 items-center justify-center px-6 py-10">
-            <div className="max-w-[46ch] text-center">
-              <p className="text-body font-[var(--font-weight-signature)] leading-title text-[color:var(--color-text-primary)]">
-                {model.sources.length > 0 ? t("readerNoWikiTitle") : t("emptyTitle")}
-              </p>
-              <p className="mt-2 text-body leading-body text-[color:var(--color-text-tertiary)] [word-break:keep-all]">
-                {model.sources.length > 0
-                  ? t("readerNoWikiBody", { count: model.needsCompileCount })
-                  : t("emptyBody")}
-              </p>
-            </div>
-          </div>
+          <LibraryStage
+            model={model}
+            route={agent.route}
+            agentLabel={agent.runtime?.label ?? null}
+            localModel={agent.localModel}
+            inApp={nativeVaultRootPath !== null}
+            onAddFiles={handleAddFiles}
+            onFindDocuments={handleFindDocuments}
+            onCompile={handleCompile}
+            onOpenWiki={(slug) => setSelected({ kind: "wiki", slug })}
+            lastDiscoveryCount={discovery?.candidates.length ?? null}
+            busy={busy}
+            locale={locale}
+            t={t}
+          />
         )}
       </div>
 
@@ -664,11 +692,6 @@ function LibraryHeader({ t, inFolder = true }: { t: ReturnType<typeof useTransla
 
 /** A stable empty array, so the model's memo does not see a new identity every render. */
 const EMPTY_DOCS: never[] = [];
-
-/** The reader's default subject: the first wiki page, or nothing when there is none. */
-function firstWikiSelection(
-  pages: ReadonlyArray<{ slug: string }>,
-): { kind: "wiki"; slug: string } | null {
-  const first = pages[0];
-  return first ? { kind: "wiki", slug: first.slug } : null;
-}
+/** The same reason, for the two crossings: a fresh `[]` each render remounts their rows. */
+const EMPTY_ORIGINALS: never[] = [];
+const EMPTY_WRITE_UPS: never[] = [];

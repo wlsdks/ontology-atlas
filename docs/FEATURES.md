@@ -689,12 +689,37 @@ also the only way in below `lg`.
 pane branches on the kind of file selected — a wiki page opens in the reading pane every
 Markdown surface here shares (`src/widgets/doc-reading-pane/`), headed by its title, its
 author and status, and a chip per source it was built from; a source opens as the six
-facts the folder holds about a file Atlas has never opened (path, format, size, state,
-sha256 or "not measured", and the pages citing it) plus one door that reveals it in Finder
-or hands over the bytes. With nothing selected the reader opens the first wiki page. With
-no folder open the whole screen is one centred stage naming the two kinds of file and
+facts the folder holds about a file Atlas has never opened (path, format, size, state and
+sha256 or "not measured") plus one door that reveals it in Finder or hands over the bytes.
+With no folder open the whole screen is one centred stage naming the two kinds of file and
 offering the picker. Below `lg` there is one column and selecting swaps it, with a way
 back.
+
+**With nothing selected, the guided shelf** (2026-09-06, second pass). The owner opened
+the new destination and said they did not know what to do on it; the pane at that moment
+was either "Nothing gathered yet" or the first wiki page, opened on the reader's behalf.
+It is now three steps in the order the work happens, each stating the folder's own counts
+and carrying its own door: **① Gather** (sources, formats present, last added, and how
+many candidates the last Find documents run proposed, with both doors), **② Compile**
+(sources waiting, how many are behind their source, and **which brain would run** — the
+verified coding agent's name, or the local model and the host it answers on — with what
+leaves the computer stated for that route), **③ Read** (wiki pages, sources covered,
+off-template pages, and a row that opens the newest page). Each step says `done`, `next`
+or `waiting` from those counts, and the three rows are one height (`auto-rows-fr`,
+measured 249px at both 1512 and 1040). Compile is drawn in every state and disabled with
+the exact reason rather than hidden, because a missing step two would leave a hole in the
+middle of the sequence.
+
+**The original and the write-up cross both ways** (2026-09-06). A wiki page's header names
+the action: one cited source is a single **View original** button carrying the file name;
+several keep a chip list under the same words; a citation naming a file that is not in the
+folder is drawn as plain text, because a door that leads nowhere is worse than a stated
+fact. A source's pane answers the other direction with **View write-up** — every page
+citing it, each marked `current` or `behind` from the sha256 it recorded — and, when no
+page cites it, the Compile button in that row's place. Both directions are derived in
+`buildLibraryPairing` (`src/entities/docs-vault/lib/vault-library.ts`) from the same
+`sources:` and `source_hash:` frontmatter the state machine already reads, so no second
+store can drift from it.
 
 - **Sources** — every non-`.md` file under `sources/**`, listed by name, format, size and
   one state. Atlas never opens them; the walk records what a directory listing already
@@ -729,8 +754,17 @@ Three one-click doors:
   verbatim and names `wiki-validate` as the acceptance test. Enabled only while some
   source is not compiled or stale. Beside it: the coding agent's provider traffic is not
   in `.ontology-atlas/llm-audit.jsonl`. Every write still stops at the permission card.
-  The dock opens on this screen: Compile is a job, not a place, and the job runs beside
-  the shelf it is compiling.
+  The dock opens on this screen, above `AcpDockHeader` a lucide `Library` glyph and the
+  destination's name: Compile is a job, not a place, and the job runs beside the shelf it
+  is compiling.
+- **The local-model route** — when Settings → AI connection holds a verified
+  connect-by-address runner (any OpenAI-compatible `/v1` server: Ollama, LM Studio,
+  llama.cpp, vLLM), the shelf names that model and its host as the brain and states that
+  nothing leaves this computer, `.ontology-atlas/llm-audit.jsonl` recording each request.
+  It is a **named brain, not a second Compile engine**: the local runner reaches Atlas
+  through the vault agent's tool catalogue, which reads and proposes ontology concepts
+  only — no tool opens a source and none writes a page — so Compile stays on the coding
+  agent and step two says exactly that.
 
 **What left `/docs` on 2026-09-06**: Sources, Wiki, the three doors, and the agent dock.
 What stayed: the review queue, recently changed, the tree, and the editor.

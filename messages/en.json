@@ -4362,7 +4362,6 @@
     "lede": "The project documents you gathered, in whatever format they arrived, and the wiki pages written from them. A source is kept byte for byte, and every claim on a page cites one.",
     "emptyTitle": "Nothing gathered yet",
     "emptyBody": "Bring in the documents this project already has: a spec, a slide deck, a spreadsheet, a page you exported. Atlas copies them into sources/ untouched and never opens them until you ask.",
-    "readerEmpty": "Pick a source or a wiki page on the left to read it here.",
     "sources": {
       "header": "Sources · {count}",
       "listAria": "Raw sources in this folder",
@@ -4420,7 +4419,6 @@
       "offTemplateTitle": "This page does not fit the wiki template",
       "offTemplateBody": "It is still a document and still yours to edit. Fixing these lines makes it readable the same way every other page is; `ontology-atlas wiki-validate` and the `validate_wiki` tool report the same codes.",
       "writtenBy": "Written by {author}",
-      "builtFrom": "Built from",
       "writer": {
         "human": "a person",
         "agent": "{name} (AI)",
@@ -4429,7 +4427,10 @@
       "status": {
         "draft": "draft",
         "reviewed": "reviewed"
-      }
+      },
+      "viewOriginal": "View original",
+      "viewOriginalOne": "View original: {name}",
+      "originalMissing": "Cites {name}, which is not in this folder."
     },
     "find": {
       "title": "Documents in the folders you granted",
@@ -4455,19 +4456,66 @@
       "state": "State",
       "hash": "sha256",
       "hashUnmeasured": "Not measured. Nothing has cited this file with a hash yet",
-      "citedBy": "Cited by",
       "citedByNobody": "No wiki page yet",
       "neverOpened": "Atlas has never opened this file. Everything below came from the folder listing, or from a hash it measured because a page claimed one.",
       "reveal": "Show in Finder",
-      "download": "Open a copy"
+      "download": "Open a copy",
+      "viewWriteUp": "View write-up",
+      "writeUpCurrent": "current",
+      "writeUpBehind": "behind"
     },
-    "readerSourceHint": "A source is kept exactly as it arrived, so there is nothing here to render. What the folder already knows about it is below.",
-    "readerNoWikiTitle": "Nothing written up yet",
-    "readerNoWikiBody": "{count, plural, one {# source is waiting.} other {# sources are waiting.}} Compile starts one agent turn that reads them and drafts a page for each, and every write stops at your permission card before it lands.",
     "kindsAria": "What this folder keeps",
     "kindSourcesTitle": "Sources",
     "kindSourcesBody": "The files as they arrived: any format, byte for byte, never parsed.",
     "kindWikiTitle": "Wiki",
-    "kindWikiBody": "One page per source, in one shape, with every claim citing the file it came from."
+    "kindWikiBody": "One page per source, in one shape, with every claim citing the file it came from.",
+    "stage": {
+      "eyebrow": "The work here",
+      "title": "Gather, compile, read",
+      "lede": "Three steps in the order they happen. Every number below is counted from the files in this folder, so you can check any of them in Finder.",
+      "state": {
+        "done": "done",
+        "next": "next",
+        "waiting": "waiting"
+      },
+      "none": "None",
+      "formatEntry": "{format} {count}",
+      "gather": {
+        "title": "Gather",
+        "body": "Bring in the documents this project already has, in whatever format they arrived. Atlas copies them into sources/ untouched and does not open them until you ask.",
+        "sourcesLabel": "Sources",
+        "formatsLabel": "Formats",
+        "lastLabel": "Last added",
+        "candidatesLabel": "Proposed",
+        "candidatesUnknown": "Not searched yet"
+      },
+      "compile": {
+        "title": "Compile",
+        "body": "One agent turn reads the sources and writes a wiki page for each, in the shape wiki/_template.md holds. Every write stops at your permission card before it lands.",
+        "waitingLabel": "Waiting",
+        "staleLabel": "Behind its source",
+        "brainLabel": "Runs on"
+      },
+      "read": {
+        "title": "Read",
+        "body": "A wiki page is Markdown with no kind:, so the ontology never draws it. Every claim on one cites the file it came from, and the page opens that file.",
+        "pagesLabel": "Wiki pages",
+        "coveredLabel": "Sources covered",
+        "coveredValue": "{compiled} of {total}",
+        "offTemplateLabel": "Off-template",
+        "startWith": "Start with {title}",
+        "nothingYet": "No wiki page yet. Compile writes the first one."
+      },
+      "brainAgent": "{name}",
+      "brainLocal": "{model} on {host}",
+      "brainNone": "Nothing set up yet",
+      "transferLocal": "Nothing leaves this computer: the request goes to {host} on this machine, and {file} records every one.",
+      "blockedWeb": "Compile needs a coding agent running on this computer, and only the app can start one.",
+      "blockedChecking": "Still looking for a coding agent on this computer.",
+      "blockedLocal": "{model} answers, but it cannot run Compile. Atlas gives a local model ontology reading and one approval card for concept changes; Compile needs something that opens a PDF itself and writes a page. Set up a coding agent to compile today.",
+      "blockedNoAgent": "No verified coding agent is set up on this computer, and no local model address is saved. Settings, then AI connection, is where the local address goes.",
+      "blockedNoSources": "Nothing to compile yet. Step one is where documents come in.",
+      "blockedNothingWaiting": "Every source already has a write-up that matches its bytes."
+    }
   }
 }
