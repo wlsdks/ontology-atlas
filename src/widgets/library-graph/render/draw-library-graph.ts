@@ -17,8 +17,8 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  *
  * | Edge | Mark |
  * |---|---|
- * | cites, hash still matching | solid |
- * | mentions | dashed |
+ * | cites, hash still matching | solid, 1.5px |
+ * | mentions | dashed, 1px |
  * | either, unverified | broken once at its midpoint |
  *
  * A source nobody has written up is a **hollow** square: the state the list beside this
@@ -26,20 +26,39 @@ import type { LibraryGraphInk } from "./library-graph-ink";
  * the absence of a 1.4:1 hairline (design-infoviz, 2026-09-06).
  *
  * Both take the same neutral ink; only the dash says which relation it is. Value on an
- * edge means one thing here — whether it touches the selected node — and measured
- * against the canvas ground every mark clears the 3:1 non-text floor: 13.6:1 (page),
- * 6.1:1 (source), 5.2:1 (concept and edge) and 4.2:1 (selected).
+ * edge means one thing here — whether it touches the selected or pointed-at node — and
+ * measured against the canvas ground every mark clears the 3:1 non-text floor: 13.6:1
+ * (page), 6.1:1 (source), 5.2:1 (concept and edge) and 4.2:1 (selected).
  *
  * **Every distinction survives with the colour removed.** Shape separates the three node
- * kinds and dash separates the two relations, so the picture is still readable when
- * indigo is the only colour on it — which it is, and only ever on the selection.
+ * kinds, dash separates the two relations, and **size** now separates a busy mark from a
+ * quiet one — so the picture is still readable when indigo is the only colour on it,
+ * which it is, and only ever on the selection.
+ *
+ * ## What the 2026-09-07 rebuild added, and why each was needed
+ *
+ * The owner's verdict on the shipped picture was that it was *"a static hairball —
+ * identical thin grey straight lines, nothing moves, nothing responds"*. Four of the five
+ * answers are in this file:
+ *
+ * 1. **Degree grades the mark** (`radii`, a 5–10px band). Every dot was the same size, so
+ *    a source six pages were written from looked exactly like one nobody had opened.
+ * 2. **Edges bow** (`EDGE_BOW_RATIO`). Between two clusters that cite each other, straight
+ *    lines of equal length lie on top of one another and read as one thick line; a gentle
+ *    curve whose depth grows with length separates them without moving a single node.
+ * 3. **Everything away from the pointer dims** (`dim` + `focus`). On a folder where six
+ *    pages cite the same seven sources, position cannot separate anything — no layout can
+ *    cluster a near-complete bipartite graph. Attention has to do it, and dimming to 35%
+ *    is what turns "which of these lines are mine" into a question the picture answers.
+ * 4. **Every mark carries a 1px halo of the ground** it stands on, so a dot over a bundle
+ *    of lines is still a dot. It is a *ground-coloured* separation, not a glow:
+ *    `.claude/rules/forbidden.md` forbids a colour spreading outward, and nothing here
+ *    spreads or animates.
  *
  * ## What is deliberately absent
  *
- * No glow, no halo, no gradient, no shadow: `.claude/rules/forbidden.md`. A selected node
- * is bigger by its ring and different by its ink, which are both measurable; a bloom is
- * neither. Nothing pulses — the only motion this canvas has is the one settle the caller
- * drives, and it ends.
+ * No glow, no gradient, no shadow, no scale-on-hover. A selected node is bigger by its
+ * ring and different by its ink, which are both measurable; a bloom is neither.
  */
 
 export interface LibraryGraphFrame {
@@ -68,24 +87,54 @@ export interface LibraryGraphFrame {
    * one number in one place and the renderer stays a pure function of its frame.
    */
   standingLabels: boolean;
+  /**
+   * The drawn half-extent of each mark, graded by degree
+   * (`libraryMarkRadii`). Absent falls back to the flat {@link NODE_RADIUS} band, which is
+   * what every test written before the grading existed still measures.
+   */
+  radii?: ReadonlyMap<string, number>;
+  /**
+   * Arrival and departure, 0 → 1. A node Compile has just written fades **in** while the
+   * simulation carries it out of its neighbour's position; a node whose file is gone fades
+   * **out** from where it was. Missing means 1: fully present.
+   */
+  opacity?: ReadonlyMap<string, number>;
+  /**
+   * How far the focus dim has travelled, 0 → 1, eased by the caller over `--motion-fast`.
+   * At 1 everything outside {@link focus} is drawn at {@link DIMMED_INK}.
+   */
+  dim?: number;
+  /**
+   * What stays at full ink while {@link dim} is above zero: the pointed-at node and its
+   * neighbours. Null means nothing is being pointed at and nothing dims.
+   */
+  focus?: ReadonlySet<string> | null;
 }
 
 /**
- * Half-extent in CSS px. A source is square, so this is half its side.
+ * Half-extent in CSS px, when the caller hands no graded radii.
  *
  * **One step up on 2026-09-06**, when the canvas stopped being a 320px band and became
- * the pane: at 1512 the picture went from 462px wide to 1046, and marks sized for a strip
- * read across that field as five specks on an empty ground — the owner's word was that it
- * should look refined. Page 5 → 6 and concept 4 → 6 are the numbers asked for. The source
- * is 3.6 → 5, a 10px square: a square reads heavier than a circle of the same extent, so
- * matching the 12px circle by *bounding box* would have made the file the loudest mark on
- * a canvas whose subject is the page. 10px is the equal-weight step between them.
+ * the pane. The source is a step under the circle: a square reads heavier than a circle of
+ * the same extent, so matching by *bounding box* would have made the file the loudest mark
+ * on a canvas whose subject is the page.
  */
 export const NODE_RADIUS: Record<LibraryGraphNodeKind, number> = {
   page: 6,
   source: 5,
   concept: 6,
 };
+
+/**
+ * What everything outside the pointed-at neighbourhood fades to.
+ *
+ * 0.35 against an opaque ground, which is the ratio the brief asked for and the one that
+ * leaves a dimmed edge visible as *context* while removing it from the reading. It is
+ * applied as `globalAlpha` over a ground this canvas painted itself one instruction
+ * earlier — not as a translucent token — so there is no compositing surprise of the kind
+ * that made low-alpha WebGL marks read as opaque.
+ */
+export const DIMMED_INK = 0.35;
 
 /** The ring a selected or hovered node wears, outside its own mark. */
 const SELECTION_RING_GAP = 3.5;
@@ -107,23 +156,38 @@ const LABEL_GAP = 6;
 /** The break an unverified citation carries at its midpoint, in CSS px. */
 const BROKEN_EDGE_GAP = 7;
 const LABEL_RADIUS = 4;
-/** Pointer slop around a mark for a mouse. A 3.6px square is smaller than any pointer. */
+/** Pointer slop around a mark for a mouse. A 5px square is smaller than any pointer. */
 const FINE_HIT_REACH = 4;
 
-function nodeCentre(
-  frame: LibraryGraphFrame,
-  id: string,
-): LayoutPoint | null {
+/**
+ * How deep an edge bows, as a fraction of its own length, capped by {@link EDGE_BOW_MAX}.
+ *
+ * Depth ∝ length is the property that matters: two long parallel edges separate visibly
+ * while a short one between a page and the source beside it stays almost straight, so the
+ * curve never travels far enough to suggest a path through somewhere it does not go.
+ */
+const EDGE_BOW_RATIO = 0.11;
+const EDGE_BOW_MAX = 17;
+/** The ground each mark clears around itself so it reads over the lines beneath it. */
+const MARK_HALO = 1.5;
+/** Half-width of the ground outline every standing name is stroked with, in CSS px. */
+const LABEL_OUTLINE_PX = 1;
+
+function nodeCentre(frame: LibraryGraphFrame, id: string): LayoutPoint | null {
   return frame.positions.get(id) ?? null;
+}
+
+function radiusOf(frame: Pick<LibraryGraphFrame, "radii">, node: LibraryGraphNode): number {
+  return frame.radii?.get(node.id) ?? NODE_RADIUS[node.kind];
 }
 
 /**
  * Hit testing, shared by the pointer and the renderer so a person can never highlight
- * one node and select another. Generous by 4px: a 3.6px square is smaller than the
+ * one node and select another. Generous by 4px: a 5px square is smaller than the
  * pointing device of anybody's hand.
  */
 export function hitTestLibraryGraph(
-  frame: Pick<LibraryGraphFrame, "nodes" | "positions">,
+  frame: Pick<LibraryGraphFrame, "nodes" | "positions" | "radii">,
   point: LayoutPoint,
   /** Extra reach around the mark. The caller widens it for a coarse pointer. */
   reachBonus: number = FINE_HIT_REACH,
@@ -136,13 +200,45 @@ export function hitTestLibraryGraph(
     const dx = point.x - centre.x;
     const dy = point.y - centre.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    const reach = NODE_RADIUS[node.kind] + reachBonus;
+    const reach = radiusOf(frame, node) + reachBonus;
     if (distance <= reach && distance < bestDistance) {
       best = node;
       bestDistance = distance;
     }
   }
   return best;
+}
+
+/**
+ * The quadratic control point that gives an edge its bow.
+ *
+ * Always the same side of the line, so the picture has one consistent hand rather than a
+ * scatter of curves; and since every edge in this graph leaves a page, that side is
+ * always the same side of the page too.
+ */
+export function edgeControlPoint(from: LayoutPoint, to: LayoutPoint): LayoutPoint {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy);
+  if (length < 1e-6) return { x: from.x, y: from.y };
+  const bow = Math.min(EDGE_BOW_MAX, length * EDGE_BOW_RATIO);
+  return {
+    x: (from.x + to.x) / 2 - (dy / length) * bow,
+    y: (from.y + to.y) / 2 + (dx / length) * bow,
+  };
+}
+
+/** One point on the quadratic, for the break in an unverified citation. */
+function quadraticAt(from: LayoutPoint, control: LayoutPoint, to: LayoutPoint, t: number): LayoutPoint {
+  const inverse = 1 - t;
+  return {
+    x: inverse * inverse * from.x + 2 * inverse * t * control.x + t * t * to.x,
+    y: inverse * inverse * from.y + 2 * inverse * t * control.y + t * t * to.y,
+  };
+}
+
+function lerp(a: LayoutPoint, b: LayoutPoint, t: number): LayoutPoint {
+  return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
 /**
@@ -191,7 +287,18 @@ function roundedRect(
 
 export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGraphFrame): void {
   const { ink } = frame;
+  const dim = frame.dim ?? 0;
+  const focus = frame.focus ?? null;
+  const opacity = frame.opacity;
+  /** Full ink, dimmed ink, or somewhere between while the ramp is running. */
+  const attention = (id: string): number => {
+    if (dim <= 0 || !focus || focus.has(id)) return 1;
+    return 1 - (1 - DIMMED_INK) * dim;
+  };
+  const alphaOf = (id: string): number => attention(id) * (opacity?.get(id) ?? 1);
+
   ctx.save();
+  ctx.globalAlpha = 1;
   ctx.fillStyle = ink.ground;
   ctx.fillRect(0, 0, frame.width, frame.height);
 
@@ -210,6 +317,12 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     // Pointing at a dot is a question about its links, so its links answer. This is also
     // what gives every edge a reading well above the 3:1 floor on demand.
     const touchesActive = active !== null && (edge.source === active || edge.target === active);
+    /*
+     * An edge is as present as its dimmer end. A line from a full-ink node to a dimmed one
+     * that stayed bright would claim a relationship the dimming has just said is not the
+     * one being asked about.
+     */
+    ctx.globalAlpha = Math.min(alphaOf(edge.source), alphaOf(edge.target));
     ctx.beginPath();
     ctx.setLineDash(edge.relation === "mentions" ? [2.5, 3.5] : []);
     ctx.strokeStyle = touchesSelection ? ink.selected : touchesActive ? ink.source : ink.edge;
@@ -221,41 +334,72 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
      * the selection — this is width, a third channel, and the one the legend needed.
      */
     const relationWidth = edge.relation === "mentions" ? MENTIONS_WIDTH : CITES_WIDTH;
-    ctx.lineWidth =
-      relationWidth + (touchesSelection ? 0.75 : touchesActive ? 0.5 : 0);
+    ctx.lineWidth = relationWidth + (touchesSelection ? 0.75 : touchesActive ? 0.5 : 0);
+    const control = edgeControlPoint(from, to);
     if (edge.certainty === "unverified") {
-      // One break at the midpoint, orthogonal to the dash: the line is drawn as two
-      // segments with a gap, so "there is a citation" and "it may no longer describe this
-      // file" are two different marks rather than two shades of one.
-      const midX = (from.x + to.x) / 2;
-      const midY = (from.y + to.y) / 2;
+      /*
+       * One break at the midpoint: the line is drawn as two arcs with a gap, so "there is
+       * a citation" and "it may no longer describe this file" are two different marks
+       * rather than two shades of one. Each half is the original curve exactly — de
+       * Casteljau's split, not a straight chord standing in for it — so the break does not
+       * quietly change the shape of the line it interrupts.
+       */
       const length = Math.hypot(to.x - from.x, to.y - from.y) || 1;
-      const gap = Math.min(BROKEN_EDGE_GAP, length / 3) / 2;
-      const ux = (to.x - from.x) / length;
-      const uy = (to.y - from.y) / length;
+      const half = Math.min(BROKEN_EDGE_GAP, length / 3) / 2 / length;
+      const first = 0.5 - half;
+      const second = 0.5 + half;
+      // Splitting a quadratic at t gives (P0, A, M) before it and (M, B, P1) after it,
+      // where A and B are the two edges of the control triangle at t and M is the point on
+      // the curve. Each piece is drawn from its own split.
+      const beforeControl = lerp(from, control, first);
+      const beforeEnd = quadraticAt(from, control, to, first);
       ctx.moveTo(from.x, from.y);
-      ctx.lineTo(midX - ux * gap, midY - uy * gap);
-      ctx.moveTo(midX + ux * gap, midY + uy * gap);
-      ctx.lineTo(to.x, to.y);
+      ctx.quadraticCurveTo(beforeControl.x, beforeControl.y, beforeEnd.x, beforeEnd.y);
+      const afterControl = lerp(control, to, second);
+      const afterStart = quadraticAt(from, control, to, second);
+      ctx.moveTo(afterStart.x, afterStart.y);
+      ctx.quadraticCurveTo(afterControl.x, afterControl.y, to.x, to.y);
     } else {
       ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
+      ctx.quadraticCurveTo(control.x, control.y, to.x, to.y);
     }
     ctx.stroke();
   }
   ctx.setLineDash([]);
+  ctx.globalAlpha = 1;
 
   // ── Nodes. ──
   for (const node of frame.nodes) {
     const centre = nodeCentre(frame, node.id);
     if (!centre) continue;
-    const radius = NODE_RADIUS[node.kind];
+    const radius = radiusOf(frame, node);
     const isSelected = node.id === frame.selectedId;
     const isHovered = node.id === frame.hoveredId;
     const isFocused = node.id === frame.focusedId;
     const ownInk = node.kind === "page" ? ink.page : node.kind === "source" ? ink.source : ink.concept;
     const mark = isSelected ? ink.selected : ownInk;
 
+    /*
+     * **The halo, in the ground's own colour.** A ring of canvas is laid down first, one
+     * mark's worth wider than the mark, so every line running underneath stops at the dot
+     * instead of crossing it. It also clears the inside of the two hollow marks, which is
+     * what "the ground shows through" means once there are lines to show through it.
+     *
+     * This is not a glow. A glow spreads a *colour* outward and usually pulses; this is
+     * the background, it is exactly {@link MARK_HALO} wide, and it never animates.
+     */
+    ctx.globalAlpha = opacity?.get(node.id) ?? 1;
+    ctx.fillStyle = ink.ground;
+    if (node.kind === "source") {
+      const reach = radius + MARK_HALO;
+      ctx.fillRect(centre.x - reach, centre.y - reach, reach * 2, reach * 2);
+    } else {
+      ctx.beginPath();
+      ctx.arc(centre.x, centre.y, radius + MARK_HALO, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = alphaOf(node.id);
     if (node.kind === "source") {
       if (node.state === "not-compiled") {
         // Hollow: nobody has written this file up. The empty square is the positive mark
@@ -312,6 +456,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       ctx.stroke();
     }
   }
+  ctx.globalAlpha = 1;
 
   // ── Every name, while the picture is small enough to hold them. ──
   /*
@@ -339,7 +484,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     for (const node of frame.nodes) {
       const centre = nodeCentre(frame, node.id);
       if (!centre) continue;
-      const half = NODE_RADIUS[node.kind];
+      const half = radiusOf(frame, node);
       taken.push({
         x: centre.x - half,
         y: centre.y - half,
@@ -351,7 +496,6 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
       });
     }
     const order: LibraryGraphNodeKind[] = ["page", "source", "concept"];
-    const active = frame.hoveredId ?? frame.focusedId;
     for (const kind of order) {
       for (const node of frame.nodes) {
         if (node.kind !== kind) continue;
@@ -381,7 +525,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
         );
         const box = {
           x: left,
-          y: centre.y + NODE_RADIUS[node.kind] + STANDING_LABEL_GAP,
+          y: centre.y + radiusOf(frame, node) + STANDING_LABEL_GAP,
           width,
           height: lineHeight,
         };
@@ -393,12 +537,29 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
          * A page is what somebody wrote and is the subject of this canvas; a file and a
          * concept are what it stands on. The two inks are the ones the marks already
          * carry, so the names sit in the same hierarchy as the dots they belong to.
+         *
+         * A name dims with the mark it belongs to. A bright name over a dimmed dot would
+         * be the loudest thing on a canvas that has just been told to quieten it.
          */
+        ctx.globalAlpha = alphaOf(node.id);
+        /*
+         * **A 1px outline of the ground, under every name.** A canvas this connected puts
+         * a line under most labels, and grey glyphs crossed by a grey line are the one
+         * thing on this picture a person genuinely cannot read. The outline is the same
+         * device as the marks' halo and the same colour — the ground, never a colour
+         * spreading outward — and it is stroked before the fill so the glyph itself is
+         * never thickened by it.
+         */
+        ctx.strokeStyle = ink.ground;
+        ctx.lineWidth = LABEL_OUTLINE_PX * 2;
+        ctx.lineJoin = "round";
+        ctx.strokeText(text, box.x + box.width / 2, box.y);
         ctx.fillStyle = node.kind === "page" ? ink.page : ink.concept;
         // Drawn from the box, not the centre: a slid label is no longer centred on its dot.
         ctx.fillText(text, box.x + box.width / 2, box.y);
       }
     }
+    ctx.globalAlpha = 1;
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
   }
@@ -426,7 +587,7 @@ export function drawLibraryGraph(ctx: CanvasRenderingContext2D, frame: LibraryGr
     // runs off the edge is the same as no name.
     // Measured from the **edge of the mark and its ring**, not from the node's centre:
     // an 8px gap from the centre put the box on top of the ring it was labelling.
-    const clearance = NODE_RADIUS[activeNode.kind] + SELECTION_RING_GAP + LABEL_GAP;
+    const clearance = radiusOf(frame, activeNode) + SELECTION_RING_GAP + LABEL_GAP;
     let x = activeCentre.x + clearance;
     if (x + boxWidth > frame.width - 2) x = activeCentre.x - clearance - boxWidth;
     if (x < 2) x = 2;

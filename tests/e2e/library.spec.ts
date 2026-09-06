@@ -591,20 +591,52 @@ test.describe("the Library pane", () => {
     );
     expect(sticky.after).toBeLessThan(sticky.before);
 
-    // 3 — every row is a whole row: 36px, and none is cut by the column's own edge.
+    /*
+     * 3 — every row is a whole row: 36px, none crosses the column's side edges, and every
+     * one of them can be brought fully into view.
+     *
+     * ⚠️ **This case first asked the wrong question and CI caught it** (2026-09-07). It
+     * counted rows straddling the column's **bottom** edge — which is the scroller's own
+     * fold, something every scrolled list has exactly one of, and whose presence depends
+     * on nothing but where the row grid happens to land. Measured on the built export at
+     * 1280 wide: 0 straddling rows at heights 700-800, 1 at 900 and 982, with the layout
+     * identical and no row ever past the right edge. It passed on macOS at Playwright's
+     * default 720 and failed on CI's chromium shard at the same width, because Linux font
+     * metrics move the header block a few pixels and the fold lands on a row instead of
+     * between two.
+     *
+     * The two claims that are actually about this column, and cannot pass by accident:
+     * a row must not cross the 280px column sideways, and — the owner's complaint, which
+     * was never about the fold but about rows two nested scrollers could not reach —
+     * every row must be scrollable fully into the box.
+     */
     const rows = await aside.evaluate((element) => {
       const box = element.getBoundingClientRect();
       return [...element.querySelectorAll('[data-control="row"]')].map((node) => {
         const rect = node.getBoundingClientRect();
         return {
           height: Math.round(rect.height),
-          // A row hidden below the fold is fine; a row the box paints only half of is not.
-          sliced: rect.top < box.bottom - 1 && rect.bottom > box.bottom + 1,
+          past: rect.left < box.left - 1 || rect.right > box.right + 1,
         };
       });
     });
     expect(new Set(rows.map((row) => row.height))).toEqual(new Set([36]));
-    expect(rows.filter((row) => row.sliced).length, "a row is cut in half by the column").toBe(0);
+    expect(rows.filter((row) => row.past).length, "a row crosses the column's side edge").toBe(0);
+
+    const unreachable = await scroller.evaluate((element) => {
+      const names: string[] = [];
+      for (const row of element.querySelectorAll('[data-control="row"]')) {
+        row.scrollIntoView({ block: "nearest" });
+        const box = element.getBoundingClientRect();
+        const rect = row.getBoundingClientRect();
+        if (rect.top < box.top - 1 || rect.bottom > box.bottom + 1) {
+          names.push(row.getAttribute("data-testid") ?? "(unnamed row)");
+        }
+      }
+      element.scrollTop = 0;
+      return names;
+    });
+    expect(unreachable, "a row cannot be scrolled fully into the column").toEqual([]);
 
     // 4 — the column never hands its overflow to the page.
     expect(
